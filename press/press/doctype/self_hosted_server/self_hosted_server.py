@@ -31,7 +31,10 @@ class SelfHostedServer(Document):
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(
-				playbook="ping.yml", server=self, user=self.ssh_user or "root", port=self.ssh_port
+				playbook="ping.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 			self.reload()
@@ -46,8 +49,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="get_sites.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -64,8 +67,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="get_apps.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -213,12 +216,11 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			server = frappe.get_doc("Server", self.name)
 			db_server = frappe.new_doc("Database Server")
-			db_server.hostname = server.hostname
+			db_server.hostname = self.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
-			db_server.domain = server.domain
+			db_server.domain = self.domain
 			db_server.self_hosted_server_domain = self.domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
@@ -226,8 +228,8 @@ class SelfHostedServer(Document):
 			db_server.ssh_user = self.ssh_user
 			db_server.ssh_port = self.ssh_port
 			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
-			db_server.cluster = server.cluster
-			db_server.agent_password = server.get_password("agent_password")
+			db_server.cluster = self.cluster
+			db_server.agent_password = self.get_password("agent_password")
 			db_server.is_server_setup = False if self.new_server else True
 			_db = db_server.insert()
 			self.database_setup = True
@@ -282,6 +284,7 @@ class SelfHostedServer(Document):
 			server.is_self_hosted = True
 			server.domain = self.domain
 			server.self_hosted_server_domain = self.domain
+			server.self_hosted_mariadb_server = self.private_ip
 			server.team = self.team
 			server.ip = self.ip
 			server.private_ip = self.private_ip
@@ -289,6 +292,8 @@ class SelfHostedServer(Document):
 			server.ssh_port = self.ssh_port
 			server.proxy_server = self.proxy_server
 			server.database_server = self.database_server
+			server.cluster = self.cluster
+			server.agent_password = self.get_password("agent_password")
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
 			new_server = server.insert()
 			self.server = new_server.name
@@ -361,8 +366,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="self_hosted_restore.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"bench_path": self.bench_directory,
 					"ex_sites": ex_sites,
@@ -381,7 +386,7 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_proxy_server(self):
 		"""
-		Add a new record to the Server doctype
+		Add a new record to the Proxy Server doctype
 		"""
 		try:
 			server = frappe.new_doc("Proxy Server")
@@ -395,8 +400,10 @@ class SelfHostedServer(Document):
 			server.private_ip = self.private_ip
 			server.ssh_user = self.ssh_user
 			server.is_primary = True
+			server.cluster = self.cluster
 			server.ssh_port = self.ssh_port
 			new_server = server.insert()
+			self.agent_password = new_server.get_password("agent_password")
 			self.proxy_server = new_server.name
 			self.proxy_server_ip = self.private_ip
 			self.status = "Active"
