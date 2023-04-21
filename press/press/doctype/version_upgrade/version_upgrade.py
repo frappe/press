@@ -13,6 +13,7 @@ class VersionUpgrade(Document):
 	def validate(self):
 		self.validate_same_server()
 		self.validate_apps()
+		self.validate_versions()
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
@@ -35,6 +36,25 @@ class VersionUpgrade(Document):
 		if set(site_apps) - set(bench_apps):
 			frappe.throw(
 				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
+				frappe.ValidationError,
+			)
+
+	def validate_versions(self):
+		source_version = frappe.get_value("Release Group", self.source_group, "version")
+		dest_version = frappe.get_value("Release Group", self.destination_group, "version")
+		if dest_version == "Nightly":
+			frappe.msgprint(
+				"You are upgrading the site to Nightly Branch. Please note that Nightly might not be stable"
+			)
+			return
+		elif source_version == "Nightly":
+			versions = frappe.get_all("Frappe Version", pluck="name")
+			source_version = max([opt for opt in versions if opt.startswith("Version")])
+		source = int(source_version.split()[1])
+		dest = int(dest_version.split()[1])
+		if dest - source > 1:
+			frappe.throw(
+				f"Upgrading Sites by skipping a major version is unsupported. Destination Release Group {self.destination_group} is {dest_version.title()}",
 				frappe.ValidationError,
 			)
 
