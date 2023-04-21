@@ -28,9 +28,7 @@
   "column_break_15",
   "net_total_usd",
   "section_break_21",
-  "overall_net_total",
-  "commission",
-  "final_payout"
+  "ignore_commission"
  ],
  "fields": [
   {
@@ -148,26 +146,17 @@
    "fieldtype": "Section Break"
   },
   {
-   "description": "In recipient's currency",
-   "fieldname": "overall_net_total",
-   "fieldtype": "Currency",
-   "label": "Overall Net Total"
-  },
-  {
-   "fieldname": "commission",
-   "fieldtype": "Currency",
-   "label": "Commission"
-  },
-  {
-   "fieldname": "final_payout",
-   "fieldtype": "Currency",
-   "label": "Final Payout"
+   "default": "0",
+   "fieldname": "ignore_commission",
+   "fieldtype": "Check",
+   "label": "Ignore Commission",
+   "options": "0"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-12-02 16:54:51.235547",
+ "modified": "2023-04-21 13:15:56.555350",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Payout Order",
