@@ -102,7 +102,11 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Install an app on your site', position: 'top', size: 'lg' }"
+			:options="{
+				title: 'Install an app on your site',
+				position: 'top',
+				size: 'lg'
+			}"
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
@@ -114,7 +118,7 @@
 				<div
 					v-if="availableApps.data && availableApps.data.length"
 					class="divide-y max-h-96 overflow-auto"
-					:class="filteredOptions.length > 7 ? 'pr-2': ''"
+					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div
 						class="flex items-center py-3"
@@ -155,7 +159,7 @@
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			:options="{ 
+			:options="{
 				title: 'Select app plan',
 				size: '2xl'
 			}"
@@ -267,7 +271,7 @@ export default {
 			appToInstall: null,
 			selectedPlan: null,
 			selectedPlanIsFree: null,
-			searchTerm: "",
+			searchTerm: '',
 			filteredOptions: []
 		};
 	},
@@ -347,7 +351,7 @@ export default {
 				this.fuse = new Fuse(this.$resources.availableApps.data, {
 					limit: 20,
 					keys: ['title']
-				})
+				});
 				this.filteredOptions = this.$resources.availableApps.data;
 			}
 			return this.$resources.availableApps;
@@ -370,7 +374,7 @@ export default {
 					.search(value)
 					.map(result => result.item);
 			} else {
-				this.filteredOptions = this.$resources.availableApps.data
+				this.filteredOptions = this.$resources.availableApps.data;
 			}
 		},
 		subscribe(app) {

@@ -214,7 +214,7 @@ export default {
 					this.$resources.plans.reset();
 					this.$resources.fetchDatabaseAccessInfo.fetch();
 				},
-				onError(error) {	
+				onError(error) {
 					this.showChangePlanDialog = false;
 					this.$notify({
 						title: error,
@@ -267,9 +267,7 @@ export default {
 				if (message.status === 'Success') {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();
-				} else if (
-					message.status === 'Failure'
-				) {
+				} else if (message.status === 'Failure') {
 					this.pollingAgentJob = false;
 					this.error = 'Something went wrong. Please try again.';
 				} else {

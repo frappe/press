@@ -139,7 +139,7 @@ export default {
 			selectedApp: null,
 			showAddAppDialog: false,
 			appToChangeBranchOf: null,
-			searchTerm: "",
+			searchTerm: '',
 			filteredOptions: []
 		};
 	},
@@ -197,7 +197,7 @@ export default {
 					.search(value)
 					.map(result => result.item);
 			} else {
-				this.filteredOptions = this.$resources.installableApps.data
+				this.filteredOptions = this.$resources.installableApps.data;
 			}
 		},
 		dropdownItems(app) {

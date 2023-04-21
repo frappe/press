@@ -90,7 +90,7 @@
 			</div>
 		</div>
 		<template #actions>
-			<Button 
+			<Button
 				v-if="app.status == 'Draft'"
 				:loading="$resources.fetchReadme.loading"
 				@click="$resources.fetchReadme.submit()"
@@ -163,7 +163,7 @@ export default {
 						icon: 'x'
 					});
 				}
-			}
+			};
 		}
 	},
 	computed: {
