@@ -11,9 +11,9 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
+		self.validate_versions()
 		self.validate_same_server()
 		self.validate_apps()
-		self.validate_versions()
 
 	def validate_same_server(self):
 		site_server = frappe.get_doc("Site", self.site).server
@@ -48,13 +48,15 @@ class VersionUpgrade(Document):
 			)
 			return
 		elif source_version == "Nightly":
-			versions = frappe.get_all("Frappe Version", pluck="name")
-			source_version = max([opt for opt in versions if opt.startswith("Version")])
+			frappe.throw(
+				f"Downgrading from Nightly to {dest_version.title()} is not allowed",
+				frappe.ValidationError,
+			)
 		source = int(source_version.split()[1])
 		dest = int(dest_version.split()[1])
 		if dest - source > 1:
 			frappe.throw(
-				f"Upgrading Sites by skipping a major version is unsupported. Destination Release Group {self.destination_group} is {dest_version.title()}",
+				f"Upgrading Sites by skipping a major version is unsupported. Destination Release Group {self.destination_group} Version is {dest_version.title()} and Source Version is {source_version.title()}",
 				frappe.ValidationError,
 			)
 
@@ -110,7 +112,7 @@ def update_from_site_update():
 			recipient = site.notify_email or site.team
 
 			frappe.sendmail(
-				recipient=[recipient],
+				recipients=[recipient],
 				subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
 				reference_doctype="Version Upgrade",
 				reference_name=version_upgrade.name,
