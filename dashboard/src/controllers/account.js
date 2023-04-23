@@ -23,6 +23,7 @@ export default class Account {
 			this.team = result.team;
 			this.teams = result.teams;
 			this.team_members = result.team_members;
+			this.child_team_members = result.child_team_members;
 			this.onboarding = result.onboarding;
 			this.balance = result.balance;
 			this.feature_flags = result.feature_flags;

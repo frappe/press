@@ -4,6 +4,14 @@
 			title="Team"
 			subtitle="Teams you are part of and the current active team"
 		>
+			<template #actions>
+				<Button
+					v-if="showManageTeamButton"
+					@click="showManageTeamDialog = true"
+				>
+					Manage
+				</Button>
+			</template>
 			<ListItem v-for="team in teams" :title="team" :key="team">
 				<template #actions>
 					<div v-if="$account.team.name === team">
@@ -18,6 +26,58 @@
 					</div>
 				</template>
 			</ListItem>
+
+			<Dialog
+				:options="{ title: 'Manage Team' }"
+				v-model="showManageTeamDialog"
+			>
+				<template v-slot:body-content>
+					<ListItem
+						v-for="member in $account.child_team_members"
+						:title="`${member.name}`"
+						:description="member.name"
+						:key="member.name"
+					>
+						<template #actions>
+							<Button
+								class="ml-2 p-4"
+								@click="removeMember(member)"
+								:loading="$resources.removeMember.loading"
+							>
+								Remove
+							</Button>
+						</template>
+					</ListItem>
+					<div v-if="showManageTeamForm">
+						<h5 class="mt-5 text-sm font-semibold"> Create child team</h5>
+						<Input
+							label="Enter the team Id of child team."
+							type="text"
+							class="mt-2"
+							v-model="childTeamEmail"
+							required
+						/>
+						<ErrorMessage :message="$resourceErrors" />
+
+						<div class="mt-5 flex flex-row justify-end">
+							<Button @click="showManageTeamForm = false"> Cancel </Button>
+							<Button
+								class="ml-2"
+								appearance="primary"
+								:loading="$resources.addChildTeam.loading"
+								@click="$resources.addChildTeam.submit({ team: childTeamEmail })"
+							>
+								Add Child Team
+							</Button>
+						</div>
+					</div>
+					<div v-else class="mt-5 flex flex-row justify-end">
+						<Button appearance="primary" @click="showManageTeamForm = true">
+							Add Child team
+						</Button>
+					</div>
+				</template>
+			</Dialog>
 		</Card>
 	</div>
 </template>
@@ -25,6 +85,13 @@
 <script>
 export default {
 	name: 'AccountTeam',
+	data() {
+		return {
+			showManageTeamDialog: false,
+			showManageTeamForm: false,
+			childTeamEmail: null
+		};
+	},
 	computed: {
 		teams() {
 			let current_team = this.$account.team.name;
@@ -32,6 +99,11 @@ export default {
 				this.$account.teams.push(current_team);
 			}
 			return this.$account.teams;
+		},
+		showManageTeamButton() {
+			const team = this.$account.team;
+			let show = this.$account.hasRole('Press Admin');
+			return show;
 		}
 	},
 	resources: {
@@ -54,6 +126,19 @@ export default {
 					});
 				}
 			};
+		},
+		addChildTeam: {
+			method: 'press.api.account.create_child_team',
+			onSuccess() {
+				this.showManageTeamDialog = false;
+				this.childTeamEmail = null;
+				this.notify({
+					title: 'Team Created!',
+					message: 'A new team is created',
+					color: 'green',
+					icon: 'check'
+				})
+			}
 		}
 	},
 	methods: {

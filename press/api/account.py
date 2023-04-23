@@ -14,7 +14,7 @@ from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
 
-from press.press.doctype.team.team import Team, get_team_members
+from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
 from press.utils import get_country_info, get_current_team
 
 
@@ -293,6 +293,7 @@ def get():
 		"ssh_key": get_ssh_key(user),
 		"team": team_doc,
 		"team_members": get_team_members(team),
+		"child_team_members": get_child_team_members(team),
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
@@ -302,6 +303,21 @@ def get():
 			)
 		},
 	}
+
+
+@frappe.whitelist()
+def create_child_team(team):
+	current_team = get_current_team(True)
+
+	if current_team.name == team:
+		frappe.throw("Child team cannot be same as parent team")
+
+	if frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1):
+		frappe.db.set_value("Team", team, "parent_team", current_team.name)
+		current_team.append("child_team_members", {"team", team})
+		current_team.save()
+	else:
+		frappe.throw("No Active Team record found.")
 
 
 def get_ssh_key(user):

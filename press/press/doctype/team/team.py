@@ -776,6 +776,35 @@ def get_team_members(team):
 	return users
 
 
+def get_child_team_members(team):
+	if not frappe.db.exists("Team", team):
+		return []
+
+	# a child team cannot be parent to another child team
+	if frappe.get_value("Team", team, "parent_team"):
+		return []
+
+	children = frappe.db.get_all(
+		"Child Team Member", filters={"parent": team}, fields=["child_team"]
+	)
+	child_team_members = [d.child_team for d in children]
+
+	child_teams = []
+	if child_team_members:
+		child_teams = frappe.db.sql(
+			"""
+				select t.name
+				from `tabTeam` t
+				where ifnull(t.name, '') in %s
+				and t.enabled = 1
+			""",
+			[child_team_members],
+			as_dict=True,
+		)
+
+	return child_teams
+
+
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user

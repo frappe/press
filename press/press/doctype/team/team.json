@@ -19,6 +19,8 @@
   "parent_team",
   "section_break_6",
   "team_members",
+  "section_break_tdm9",
+  "child_team_members",
   "section_break_9",
   "send_notifications",
   "column_break_9",
@@ -307,6 +309,16 @@
    "label": "Parent Team",
    "mandatory_depends_on": "eval:doc.child_team==1",
    "options": "Team"
+  },
+  {
+   "fieldname": "section_break_tdm9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "child_team_members",
+   "fieldtype": "Table",
+   "label": "Child Team Members",
+   "options": "Child Team Member"
   }
  ],
  "links": [
@@ -361,7 +373,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-04-21 13:04:29.453834",
+ "modified": "2023-04-22 10:28:59.660846",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
