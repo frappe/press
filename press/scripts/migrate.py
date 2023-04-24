@@ -342,7 +342,7 @@ def select_site():
 
 	if get_all_sites_request.ok:
 		# the following lines have data with a lot of redundancy, but there's no real reason to bother cleaning them up
-		all_sites = get_all_sites_request.json()["message"]
+		all_sites = get_all_sites_request.json()["message"]["site_list"]
 		sites_info = {site["name"]: get_site_info(site["name"]) for site in all_sites}
 		sites_version = {x: get_version(y) for x, y in sites_info.items()}
 		available_sites = render_site_table(all_sites, sites_version)
