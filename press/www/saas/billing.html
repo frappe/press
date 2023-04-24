@@ -83,7 +83,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 
 						</div>
 						</div>
-						<button id="email-verify-btn" class='rounded my-4 w-full bg-gray-100 btn btn-primary' onclick='sendLoginLink()'>Send Login Link</button>
+						<button id="email-verify-btn" class='rounded my-4 w-full bg-gray-100 btn' onclick='sendLoginLink()'>Send Login Link</button>
 				</div>
 			`)
 		for (let i in plans) {
@@ -113,7 +113,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 							${features}
 						</div>
 						</div>
-						<button class='rounded my-4 w-full bg-gray-100 btn ${
+						<button class='btn btn-primary rounded my-4 w-full bg-gray-100 btn ${
 							sub.marketplace_app_plan === plans[i].name
 								? 'btn-primary disabled'
 								: 'active-btn'
