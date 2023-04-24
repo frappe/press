@@ -16,15 +16,18 @@
  "fields": [
   {
    "fieldname": "old_name",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Old name",
+   "options": "App",
    "reqd": 1
   },
   {
    "fieldname": "new_name",
-   "fieldtype": "Data",
-   "label": "New name"
+   "fieldtype": "Link",
+   "label": "New name",
+   "options": "App",
+   "reqd": 1
   },
   {
    "fieldname": "script",
@@ -45,7 +48,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-20 14:13:07.023610",
+ "modified": "2023-04-24 10:55:10.756151",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Rename",
