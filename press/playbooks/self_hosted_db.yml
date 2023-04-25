@@ -1,10 +1,10 @@
 ---
-- name: Convert Frappe Server to Database Server
+- name: Setup Self Hosted Database Server
   hosts: all
   become: yes
   become_user: root
-  gather_facts: true
+  gather_facts: yes
   roles:
-    - role: convert
+    - role: mariadb
     - role: mysqld_exporter
     - role: deadlock_logger

@@ -19,6 +19,10 @@ class SelfHostedServer(Document):
 			self.mariadb_ip = self.private_ip
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
+		if not self.mariadb_root_password:
+			self.mariadb_root_password = frappe.generate_hash(length=32)
+		if not self.agent_password:
+			self.agent_password = frappe.generate_hash(length=32)
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -29,7 +33,10 @@ class SelfHostedServer(Document):
 	def ping_ansible(self):
 		try:
 			ansible = Ansible(
-				playbook="ping.yml", server=self, user=self.ssh_user or "root", port=self.ssh_port
+				playbook="ping.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 			self.reload()
@@ -44,8 +51,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="get_sites.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -62,8 +69,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="get_apps.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
 				variables={"bench_path": self.bench_directory},
 			)
 			play = ansible.run()
@@ -211,21 +218,20 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			server = frappe.get_doc("Server", self.name)
 			db_server = frappe.new_doc("Database Server")
-			db_server.hostname = server.hostname
+			db_server.hostname = self.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
-			db_server.domain = server.domain
-			db_server.self_hosted_server_domain = server.self_hosted_server_domain
+			db_server.domain = self.domain
+			db_server.self_hosted_server_domain = self.domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
 			db_server.team = self.team
 			db_server.ssh_user = self.ssh_user
 			db_server.ssh_port = self.ssh_port
 			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
-			db_server.cluster = server.cluster
-			db_server.agent_password = server.get_password("agent_password")
+			db_server.cluster = self.cluster
+			db_server.agent_password = self.get_password("agent_password")
 			db_server.is_server_setup = False if self.new_server else True
 			_db = db_server.insert()
 			self.database_setup = True
@@ -278,13 +284,18 @@ class SelfHostedServer(Document):
 			server.hostname = self.hostname
 			server.title = self.title
 			server.is_self_hosted = True
-			server.domain = "self.frappe.dev"
+			server.domain = self.domain
 			server.self_hosted_server_domain = self.domain
+			server.self_hosted_mariadb_server = self.private_ip
 			server.team = self.team
 			server.ip = self.ip
 			server.private_ip = self.private_ip
 			server.ssh_user = self.ssh_user
 			server.ssh_port = self.ssh_port
+			server.proxy_server = self.proxy_server
+			server.database_server = self.database_server
+			server.cluster = self.cluster
+			server.agent_password = self.get_password("agent_password")
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
 			new_server = server.insert()
 			self.server = new_server.name
@@ -302,31 +313,34 @@ class SelfHostedServer(Document):
 		"""
 		try:
 			for _site in self.sites:
-				new_site = frappe.new_doc("Site")
 				if len(_site.site_name) < 5:
 					sdomain = _site.site_name + "-new"
 				else:
 					sdomain = _site.site_name
-				new_site.subdomain = sdomain.replace(".", "-")
-				new_site.domain = frappe.db.get_list("Root Domain", pluck="name")[0]
-				try:
-					new_site.bench = frappe.get_last_doc(
-						"Bench", {"group": self.release_group, "server": self.name}
-					).name
-				except Exception as e:
-					frappe.throw("Site Creation Failed", exc=e)
-				new_site.team = self.team
-				new_site.server = self.name
-				for app in _site.apps.split(","):
-					new_site.append("apps", {"app": app})
-				config = json.loads(_site.site_config)
-				for key, value in config.items():
-					new_site.append("configuration", {"key": key, "value": value})
-				new_site.database_name = config["db_name"]
-				_new_site = new_site.insert()
-				_site.site = _new_site.name
-				self.save()
-				self.reload()
+				sdomain = sdomain.replace(".", "-")
+				domain = self.domain
+				if not frappe.db.exists("Site", f"{sdomain}.{domain}"):
+					new_site = frappe.new_doc("Site")
+					new_site.subdomain = sdomain
+					new_site.domain = domain
+					try:
+						new_site.bench = frappe.get_last_doc(
+							"Bench", {"group": self.release_group, "server": self.name}
+						).name
+					except Exception as e:
+						frappe.throw("Site Creation Failed", exc=e)
+					new_site.team = self.team
+					new_site.server = self.name
+					for app in _site.apps.split(","):
+						new_site.append("apps", {"app": app})
+					config = json.loads(_site.site_config)
+					for key, value in config.items():
+						new_site.append("configuration", {"key": key, "value": value})
+					new_site.database_name = config["db_name"]
+					_new_site = new_site.insert()
+					_site.site = _new_site.name
+					self.save()
+					self.reload()
 		except Exception:
 			log_error("New Site Creation Error", server=self.as_dict())
 
@@ -354,8 +368,8 @@ class SelfHostedServer(Document):
 			ansible = Ansible(
 				playbook="self_hosted_restore.yml",
 				server=self,
-				user=self.ssh_user,
-				port=self.ssh_port,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"bench_path": self.bench_directory,
 					"ex_sites": ex_sites,
@@ -369,4 +383,34 @@ class SelfHostedServer(Document):
 		except Exception:
 			self.status = "Broken"
 			log_error("Self Hosted Restore error", server=self.name)
+		self.save()
+
+	@frappe.whitelist()
+	def create_proxy_server(self):
+		"""
+		Add a new record to the Proxy Server doctype
+		"""
+		try:
+			server = frappe.new_doc("Proxy Server")
+			server.hostname = self.hostname
+			server.title = self.title
+			server.is_self_hosted = True
+			server.domain = self.domain
+			server.self_hosted_server_domain = self.domain
+			server.team = self.team
+			server.ip = self.ip
+			server.private_ip = self.private_ip
+			server.ssh_user = self.ssh_user
+			server.is_primary = True
+			server.cluster = self.cluster
+			server.ssh_port = self.ssh_port
+			new_server = server.insert()
+			self.agent_password = new_server.get_password("agent_password")
+			self.proxy_server = new_server.name
+			self.proxy_server_ip = self.private_ip
+			self.status = "Active"
+			self.proxy_created = True
+		except Exception as e:
+			self.status = "Broken"
+			frappe.throw("Server Creation Error", exc=e)
 		self.save()

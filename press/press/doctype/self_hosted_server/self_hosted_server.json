@@ -9,21 +9,27 @@
   "title",
   "hostname",
   "domain",
+  "ip",
+  "proxy_created",
   "database_setup",
   "server_created",
   "column_break_3eap",
   "status",
+  "cluster",
   "team",
   "release_group",
+  "private_ip",
   "different_database_server",
   "existing_bench_present",
+  "section_break_0fky",
+  "proxy_server",
+  "column_break_bcsw",
+  "agent_password",
   "server_section",
   "server",
   "ssh_user",
-  "ssh_port",
   "column_break_smwr",
-  "ip",
-  "private_ip",
+  "ssh_port",
   "new_server",
   "database_section",
   "database_server",
@@ -62,7 +68,8 @@
    "reqd": 1
   },
   {
-   "fetch_from": "server.ssh_user",
+   "default": "root",
+   "fetch_from": ".ssh_user",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -95,6 +102,7 @@
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
    "label": "MariaDB Root Password",
+   "mandatory_depends_on": "eval:doc.existing_bench_present",
    "reqd": 1
   },
   {
@@ -176,8 +184,9 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Data",
-   "label": "Domain"
+   "fieldtype": "Link",
+   "label": "Domain",
+   "options": "Root Domain"
   },
   {
    "fieldname": "column_break_smwr",
@@ -213,6 +222,7 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Status",
    "options": "Active\nPending\nBroken",
@@ -229,10 +239,46 @@
    "fieldname": "new_server",
    "fieldtype": "Check",
    "label": "New Server"
+  },
+  {
+   "fieldname": "section_break_0fky",
+   "fieldtype": "Section Break",
+   "label": "Proxy"
+  },
+  {
+   "fieldname": "proxy_server",
+   "fieldtype": "Link",
+   "label": "Proxy Server",
+   "mandatory_depends_on": "eval:doc.proxy_created",
+   "options": "Proxy Server"
+  },
+  {
+   "fieldname": "column_break_bcsw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "proxy_created",
+   "fieldtype": "Check",
+   "label": "Proxy Created"
+  },
+  {
+   "fieldname": "agent_password",
+   "fieldtype": "Password",
+   "hidden": 1,
+   "label": "Agent Password"
+  },
+  {
+   "fetch_from": "proxy_server.cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "links": [],
- "modified": "2023-03-30 14:54:24.170050",
+ "modified": "2023-04-25 09:20:44.719904",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",
