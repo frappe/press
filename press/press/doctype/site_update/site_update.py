@@ -33,6 +33,7 @@ class SiteUpdate(Document):
 				frappe.throw("Could not find suitable Destination Bench", frappe.ValidationError)
 
 			self.validate_destination_bench(differences)
+			self.set_site_apps()
 			self.validate_deploy_candidate_difference(differences)
 		else:
 			self.validate_destination_bench([])
@@ -70,9 +71,8 @@ class SiteUpdate(Document):
 			self.difference = difference.name
 			self.deploy_type = "Pull"
 			difference_doc = frappe.get_doc("Deploy Candidate Difference", self.difference)
-			site_doc = frappe.get_doc("Site", self.site)
-			for site_app in site_doc.apps:
-				difference_app = find(difference_doc.apps, lambda x: x.app == site_app.app)
+			for site_app in self.site_apps:
+				difference_app = find(difference_doc.apps, lambda x: x.app == site_app)
 				if difference_app and difference_app.deploy_type == "Migrate":
 					self.deploy_type = "Migrate"
 
@@ -101,16 +101,26 @@ class SiteUpdate(Document):
 		filters = {"old_name": ["in", site_apps]}
 		return frappe.get_list("App Rename", fields=fields, filters=filters)
 
-	def validate_apps(self):
-		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
+	def set_site_apps(self):
+		"""
+		Set site_apps and bench_apps
+
+		Consider app renames when apps that are updating
+		"""
+		self.site_apps: list[str] = [
+			app.app for app in frappe.get_doc("Site", self.site).apps
+		]
+		self.bench_apps = [
+			app.app for app in frappe.get_doc("Bench", self.destination_bench).apps
+		]
 
 		for app_rename in self.get_app_renames():
-			if app_rename.old_name in site_apps and app_rename.new_name in bench_apps:
-				site_apps.remove(app_rename.old_name)
-				site_apps.append(app_rename.new_name)
+			if app_rename.old_name in self.site_apps and app_rename.new_name in self.bench_apps:
+				self.site_apps.remove(app_rename.old_name)
+				self.site_apps.append(app_rename.new_name)
 
-		if set(site_apps) - set(bench_apps):
+	def validate_apps(self):
+		if set(self.site_apps) - set(self.bench_apps):
 			frappe.throw(
 				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
