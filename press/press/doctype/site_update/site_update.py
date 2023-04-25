@@ -364,11 +364,11 @@ def is_site_in_deploy_hours(site):
 
 
 def update_site_record_for_site_update(
-	site_name: str, site_update: frappe._dict, rollback=False
+	site_name: str, site_update: frappe._dict, recover=False
 ):
 
 	site = frappe.get_doc("Site", site_name)
-	if not rollback:
+	if not recover:
 		site.db_set("bench", site_update.source_bench)
 		site.db_set("group", site_update.group)
 	else:
@@ -380,7 +380,7 @@ def update_site_record_for_site_update(
 		old_name = frappe.get_value("App Release", app.source_release, "app")
 		new_name = frappe.get_value("App Release", app.destination_release, "app")
 		if frappe.db.exists("App Rename", {"old_name": old_name, "new_name": new_name}):
-			if rollback:
+			if recover:
 				old_name, new_name = new_name, old_name
 			if old_name in site.apps:
 				frappe.db.set_value(
@@ -445,7 +445,7 @@ def process_update_site_recover_job_update(job):
 			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
 		)
 		if site_bench != site_update.source_bench and move_site_step_status == "Success":
-			update_site_record_for_site_update(job.site, site_update, rollback=True)
+			update_site_record_for_site_update(job.site, site_update, recover=True)
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
