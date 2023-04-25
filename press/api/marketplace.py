@@ -1063,7 +1063,7 @@ def login_via_token(token, team, site):
 		frappe.local.response["location"] = f"/dashboard/sites/{site}/apps"
 	else:
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
+		frappe.local.response["location"] = "/dashboard/login?showRemoteLoginError=true"
 
 
 @frappe.whitelist()
