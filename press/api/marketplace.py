@@ -1060,12 +1060,10 @@ def login_via_token(token, team, site):
 		doc.save(ignore_permissions=True)
 		frappe.local.login_manager.login_as(team)
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response[
-			"location"
-		] = f"/dashboard/saas/remote/success?team={team}&site={site}"
+		frappe.local.response["location"] = f"/dashboard/sites/{site}/apps"
 	else:
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
+		frappe.local.response["location"] = "/dashboard/login?showRemoteLoginError=true"
 
 
 @frappe.whitelist()
