@@ -368,7 +368,7 @@ def update_site_record_for_site_update(
 ):
 
 	site = frappe.get_doc("Site", site_name)
-	if not recover:
+	if recover:
 		site.db_set("bench", site_update.source_bench)
 		site.db_set("group", site_update.group)
 	else:
