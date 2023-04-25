@@ -333,7 +333,10 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
-		if settings.docker_registry_namespace:
+		if "docker.io" in settings.docker_registry_namespace:
+			namespace = settings.docker_registry_namespace
+			
+		elif settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
 		else:
 			namespace = f"{settings.domain}"
