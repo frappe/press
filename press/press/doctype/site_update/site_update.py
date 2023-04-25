@@ -382,7 +382,7 @@ def update_site_record_for_site_update(
 		if frappe.db.exists("App Rename", {"old_name": old_name, "new_name": new_name}):
 			if recover:
 				old_name, new_name = new_name, old_name
-			if old_name in site.apps:
+			if find(site.apps, lambda x: x.app == old_name):
 				frappe.db.set_value(
 					"Site App", {"parent": site_name, "app": old_name}, "app", new_name
 				)
