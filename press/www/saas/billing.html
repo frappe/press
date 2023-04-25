@@ -37,13 +37,13 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 
 				for (let i in subscriptions) {
 					$('#subs-wrapper').append(`
-						<div class="flex flex-row items-center m-2 p-4 w-2/7 border border-gray-100 rounded cursor-pointer transition-all hover:shadow-lg" onclick='showPlans(${JSON.stringify(
+						<div class="flex flex-col items-center m-2 p-4 w-2/7  rounded cursor-pointer transition-all" onclick='showPlans(${JSON.stringify(
 							subscriptions[i]
 						)})'>
 							<img src="${
 								subscriptions[i].image
-							}" alt="Logo" style="height: 38px;" class="rounded mr-2">
-							<span class="text-base">${subscriptions[i].title}</span>
+							}" alt="Logo" class="rounded mr-2 h-[64px] hover:scale-105 transition-all" />
+							<span class="text-sm mt-3 font-semibold">${subscriptions[i].title}</span>
 						</div>
 						`);
 				}
@@ -230,6 +230,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 			city: $('input[name="city"]').val(),
 			state: $('input[name="state"]').val(),
 			postal_code: $('input[name="postal-code"]').val(),
+			gstin: $('input[name="gstin"]').val(),
 		};
 
 		call('press.api.developer.marketplace.update_billing_info', {

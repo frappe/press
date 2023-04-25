@@ -56,7 +56,9 @@ class PayoutOrder(Document):
 				).insert(ignore_permissions=True)
 			)
 
-			row.commission = app_payment.get_commission(row.total_amount) if not self.ignore_commission else 0.0
+			row.commission = (
+				app_payment.get_commission(row.total_amount) if not self.ignore_commission else 0.0
+			)
 
 			if invoice.transaction_fee > 0:
 				row.gateway_fee = (invoice.transaction_fee) * (

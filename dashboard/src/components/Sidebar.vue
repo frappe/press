@@ -4,8 +4,7 @@
 			<div class="flex justify-between">
 				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
 				<div class="self-center">
-					<Button class="text-xs" iconLeft="search" @click="show = true">
-						(Ctrl + k)
+					<Button icon="search" @click="show = true">
 					</Button>
 				</div>
 			</div>
