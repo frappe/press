@@ -263,8 +263,6 @@
    "label": "Proxy Created"
   },
   {
-   "fetch_from": "proxy_server.agent_password",
-   "fetch_if_empty": 1,
    "fieldname": "agent_password",
    "fieldtype": "Password",
    "hidden": 1,
@@ -280,7 +278,7 @@
   }
  ],
  "links": [],
- "modified": "2023-04-21 11:55:30.536605",
+ "modified": "2023-04-25 09:20:44.719904",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

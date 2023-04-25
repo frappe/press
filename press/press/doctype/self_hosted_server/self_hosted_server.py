@@ -21,6 +21,8 @@ class SelfHostedServer(Document):
 			self.mariadb_root_user = "root"
 		if not self.mariadb_root_password:
 			self.mariadb_root_password = frappe.generate_hash(length=32)
+		if not self.agent_password:
+			self.agent_password = frappe.generate_hash(length=32)
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
