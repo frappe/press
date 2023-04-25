@@ -132,7 +132,7 @@ export default {
 			onSuccess() {
 				this.showManageTeamDialog = false;
 				this.childTeamEmail = null;
-				this.notify({
+				this.$notify({
 					title: 'Team Created!',
 					message: 'A new team is created',
 					color: 'green',

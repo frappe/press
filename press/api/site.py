@@ -1407,3 +1407,17 @@ def change_notify_email(name, email):
 	site_doc = frappe.get_doc("Site", name)
 	site_doc.notify_email = email
 	site_doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_team(team, name):
+
+	if not (
+		frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1)
+	):
+		frappe.throw("No Active Team record found.")
+
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.team = team
+	site_doc.save(ignore_permissions=True)

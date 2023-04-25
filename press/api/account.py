@@ -317,7 +317,7 @@ def create_child_team(team):
 		current_team.append("child_team_members", {"team", team})
 		current_team.save()
 	else:
-		frappe.throw("No Active Team record found.")
+		add_team_member(team)
 
 
 def get_ssh_key(user):

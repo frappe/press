@@ -918,7 +918,7 @@ class Site(Document):
 			subscription = self.subscription
 			if subscription:
 				subscription.team = self.team
-				subscription.save()
+				subscription.save(ignore_permissions=True)
 
 	def enable_subscription(self):
 		subscription = self.subscription
