@@ -16,6 +16,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 	let elements = null;
 	let stripe = null;
 	let response = {};
+	let gstApplicable = false
 
 	if (secret_key.length >= 0 && secret_key != null) {
 		setup();
@@ -222,6 +223,14 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 		}
 	}
 
+	function toggleGSTField(show) {
+		gstApplicable = show
+		$('#gstinhide').toggleClass('hidden')
+		$('#gstinshow').toggleClass('hidden')
+
+		$('#gstin').toggleClass('hidden')
+	}
+
 	function updateBillingInfo() {
 		let billing_info = {
 			billing_name: $('input[name="billing-name"]').val(),
@@ -230,7 +239,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 			city: $('input[name="city"]').val(),
 			state: $('input[name="state"]').val(),
 			postal_code: $('input[name="postal-code"]').val(),
-			gstin: $('input[name="gstin"]').val(),
+			gstin: gstApplicable ? $('input[name="gstin"]').val() : 'Not Applicable',
 		};
 
 		call('press.api.developer.marketplace.update_billing_info', {
