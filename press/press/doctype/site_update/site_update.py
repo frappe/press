@@ -373,8 +373,9 @@ def update_site_record_for_site_update(
 			if rollback:
 				old_name, new_name = new_name, old_name
 			if old_name in site.apps:
-				site.apps.remove(old_name)
-				site.apps.append(new_name)
+				frappe.db.set_value(
+					"Site App", {"parent": site_name, "app": old_name}, "app", new_name
+				)
 
 
 def process_update_site_job_update(job):
