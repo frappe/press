@@ -353,11 +353,41 @@ def is_site_in_deploy_hours(site):
 	return False
 
 
+def update_site_record_for_site_update(
+	site_name: str, site_update: frappe._dict, rollback=False
+):
+
+	site = frappe.get_doc("Site", site_name)
+	if not rollback:
+		site.db_set("bench", site_update.source_bench)
+		site.db_set("group", site_update.group)
+	else:
+		site.db_set("bench", site_update.destination_bench)
+		site.db_set("group", site_update.destination_group)
+
+	difference = frappe.get_doc("Deploy Candidate Difference", site_update.difference)
+	for app in difference.apps:
+		old_name = frappe.get_value("App Release", app.source_release, "app")
+		new_name = frappe.get_value("App Release", app.destination_release, "app")
+		if frappe.db.exists("App Rename", {"old_name": old_name, "new_name": new_name}):
+			if rollback:
+				old_name, new_name = new_name, old_name
+			if old_name in site.apps:
+				site.apps.remove(old_name)
+				site.apps.append(new_name)
+
+
 def process_update_site_job_update(job):
 	updated_status = job.status
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "destination_bench", "destination_group"],
+		fields=[
+			"name",
+			"status",
+			"destination_bench",
+			"destination_group",
+			"difference",
+		],
 		filters={"update_job": job.name},
 	)
 
@@ -372,8 +402,7 @@ def process_update_site_job_update(job):
 			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
 		)
 		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
-			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
-			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
+			update_site_record_for_site_update(job.site, site_update)
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
@@ -396,7 +425,7 @@ def process_update_site_recover_job_update(job):
 	}[job.status]
 	site_update = frappe.get_all(
 		"Site Update",
-		fields=["name", "status", "source_bench", "group"],
+		fields=["name", "status", "source_bench", "group", "difference"],
 		filters={"recover_job": job.name},
 	)[0]
 	if updated_status != site_update.status:
@@ -405,9 +434,7 @@ def process_update_site_recover_job_update(job):
 			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
 		)
 		if site_bench != site_update.source_bench and move_site_step_status == "Success":
-			frappe.db.set_value("Site", job.site, "bench", site_update.source_bench)
-			frappe.db.set_value("Site", job.site, "group", site_update.group)
-
+			update_site_record_for_site_update(job.site, site_update, rollback=True)
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Recovered":
 			frappe.get_doc("Site", job.site).reset_previous_status()
