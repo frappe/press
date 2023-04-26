@@ -99,7 +99,7 @@ class SiteUpdate(Document):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		fields = ["*"]
 		filters = {"old_name": ["in", site_apps]}
-		return frappe.get_list("App Rename", fields=fields, filters=filters)
+		return frappe.get_all("App Rename", fields=fields, filters=filters)
 
 	def set_site_apps(self):
 		"""
