@@ -249,7 +249,13 @@ class Agent:
 		)
 
 	def update_site(
-		self, site, target, deploy_type, skip_failing_patches=False, skip_backups=False, before_migrate_scripts=None
+		self,
+		site,
+		target,
+		deploy_type,
+		skip_failing_patches=False,
+		skip_backups=False,
+		before_migrate_scripts=None,
 	):
 		activate = site.status_before_update in ("Active", "Broken")
 		data = {
