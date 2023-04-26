@@ -19,5 +19,5 @@ class MarketplaceAppPayment(Document):
 		return (
 			total * frappe.db.get_single_value("Press Settings", "commission")
 			if self.has_threshold_passed()
-			else 0.0
+			else total
 		)
