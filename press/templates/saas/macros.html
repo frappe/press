@@ -43,11 +43,11 @@
 			<div class="flex">
 				<div class="form-group mr-2">
 					<p>City</p>
-					<input type="text" name="city" class="form-control" />
+					<input type="text" name="city" class="form-control" required />
 				</div>
 				<div class="form-group">
 					<p>State/Province/Region</p>
-					<input type="text" name="state" class="form-control" />
+					<input type="text" name="state" class="form-control" required />
 				</div>
 			</div>
 			<div class="form-group">
@@ -113,7 +113,7 @@
 		</div>
 		<form class="flex justify-content-between my-2">
 			<span></span>
-			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">PROCEED TO PAY</span>
+			<button type="button" class="btn btn-primary w-36" onclick="setupStripe()">Proceed To Pay</span>
 		</form>
 	</div>
 {% endmacro %}
@@ -150,7 +150,7 @@
 		<div id="card" class="hidden" ref="card-element"></div>
 		<button id="pay-btn" type="button" class="btn btn-primary w-full mt-6 py-3 rounded-lg" onclick="handlePayment()">
 			<span id="pay-btn-spinner" class="spinner-border spinner-border-sm mr-3 hidden"></span>
-			<span id="pay-btn-text">PAY</span>
+			<span id="pay-btn-text">Pay Now</span>
 		</button>
 	</div>
 {% endmacro %}
