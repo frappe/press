@@ -240,7 +240,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-04-20 16:50:14.084277",
+  "modified": "2023-04-26 11:58:49.683943",
   "name": "Update Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate",
@@ -310,6 +310,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Disable Maintenance Mode"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Build Search Index"
    }
   ]
  },
