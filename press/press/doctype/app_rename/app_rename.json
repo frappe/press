@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-04-20 14:10:57.268298",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "old_name",
+  "column_break_ccmj",
+  "new_name",
+  "section_break_pgse",
+  "script"
+ ],
+ "fields": [
+  {
+   "fieldname": "old_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Old name",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "new_name",
+   "fieldtype": "Link",
+   "label": "New name",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "fieldname": "script",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Script",
+   "options": "Python",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ccmj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_pgse",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-04-24 10:55:10.756151",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Rename",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

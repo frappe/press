@@ -249,7 +249,7 @@ class Agent:
 		)
 
 	def update_site(
-		self, site, target, deploy_type, skip_failing_patches=False, skip_backups=False
+		self, site, target, deploy_type, skip_failing_patches=False, skip_backups=False, before_migrate_scripts=None
 	):
 		activate = site.status_before_update in ("Active", "Broken")
 		data = {
@@ -257,6 +257,7 @@ class Agent:
 			"activate": activate,
 			"skip_failing_patches": skip_failing_patches,
 			"skip_backups": skip_backups,
+			"before_migrate_scripts": before_migrate_scripts,
 		}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",

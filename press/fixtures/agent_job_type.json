@@ -240,7 +240,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-27 19:19:05.246993",
+  "modified": "2023-04-20 16:50:14.084277",
   "name": "Update Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate",
@@ -292,6 +292,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   },
+   {
+    "parent": "Update Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run Before Migrate Scripts"
    },
    {
     "parent": "Update Site Migrate",
