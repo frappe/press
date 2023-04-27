@@ -27,6 +27,7 @@ export default class Account {
 			this.onboarding = result.onboarding;
 			this.balance = result.balance;
 			this.feature_flags = result.feature_flags;
+			this.parent_team = result.parent_team;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		}

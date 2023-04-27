@@ -56,6 +56,7 @@ def setup_account(
 	country=None,
 	user_exists=False,
 	accepted_user_terms=False,
+	invited_by_parent_team=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -105,6 +106,9 @@ def setup_account(
 			country=country,
 			user_exists=bool(user_exists),
 		)
+		if invited_by_parent_team:
+			doc = frappe.get_doc("Team", account_request.invited_by)
+			doc.append("child_team_members", {"child_team": team})
 
 	frappe.local.login_manager.login_as(email)
 
@@ -236,6 +240,7 @@ def get_email_from_request_key(key):
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
+			"invited_by_parent_team": account_request.invited_by_parent_team,
 		}
 
 
@@ -288,6 +293,9 @@ def get():
 	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
+	for child in get_child_team_members(team):
+		teams.append(child.name)
+
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
@@ -297,6 +305,7 @@ def get():
 		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
+		"parent_team": team_doc.parent_team or "",
 		"feature_flags": {
 			"verify_cards_with_micro_charge": frappe.db.get_single_value(
 				"Press Settings", "verify_cards_with_micro_charge"
@@ -307,17 +316,46 @@ def get():
 
 @frappe.whitelist()
 def create_child_team(team):
+	team = team.strip().lower()
+	exists, enabled = frappe.db.get_value("Team", team, ["name", "enabled"]) or [0, 0]
 	current_team = get_current_team(True)
 
-	if current_team.name == team:
-		frappe.throw("Child team cannot be same as parent team")
-
-	if frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1):
-		frappe.db.set_value("Team", team, "parent_team", current_team.name)
-		current_team.append("child_team_members", {"team", team})
-		current_team.save()
+	if not (exists and enabled):
+		new_team(team, current_team.name)
+	elif exists and not enabled:
+		frappe.throw("Team is not active.")
 	else:
-		add_team_member(team)
+		if current_team.name == team:
+			frappe.throw(_("Child team cannot be same as parent team"))
+
+		if frappe.get_value("Team", team, "parent_team"):
+			frappe.throw(_(f"{team} is already added as child team to another Team."))
+
+		frappe.db.set_value("Team", team, "parent_team", current_team.name)
+		current_team.append(
+			"child_team_members",
+			{"child_team": team},
+		)
+		current_team.save()
+		return "hello"
+
+
+def new_team(email, current_team):
+	frappe.utils.validate_email_address(email, True)
+
+	frappe.get_doc(
+		{
+			"doctype": "Account Request",
+			"email": email,
+			"role": "Press Member",
+			"send_email": True,
+			"team": email,
+			"invited_by": current_team,
+			"invited_by_parent_team": 1,
+		}
+	).insert()
+
+	return "ok"
 
 
 def get_ssh_key(user):

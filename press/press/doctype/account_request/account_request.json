@@ -13,6 +13,7 @@
   "role",
   "invited_by",
   "ip_address",
+  "invited_by_parent_team",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -231,12 +232,18 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is State or Europe"
+  },
+  {
+   "default": "0",
+   "fieldname": "invited_by_parent_team",
+   "fieldtype": "Check",
+   "label": "Invited By Parent Team"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 16:24:52.009703",
+ "modified": "2023-04-27 22:19:02.660253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

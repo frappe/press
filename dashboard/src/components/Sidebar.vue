@@ -150,7 +150,8 @@ export default {
 					highlight: route => {
 						return this.$route.fullPath.indexOf('/billing') >= 0;
 					},
-					icon: FCIcons.BillingIcon
+					icon: FCIcons.BillingIcon,
+					condition: () => !this.$account.team?.parent_team
 				},
 				{
 					label: 'Settings',

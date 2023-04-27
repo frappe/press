@@ -124,19 +124,24 @@ class Team(Document):
 
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
-		team.append("communication_emails", {"type": "invoices", "value": user.name})
-		team.append(
-			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
-		)
+		if not account_request.invited_by_parent_team:
+			team.append("communication_emails", {"type": "invoices", "value": user.name})
+			team.append(
+				"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+			)
+		else:
+			team.parent_team = account_request.invited_by
 		team.save(ignore_permissions=True)
 
-		team.create_stripe_customer()
+		if not account_request.invited_by_parent_team:
+			team.create_stripe_customer()
 
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
 
 		if not team.via_erpnext:
-			team.create_upcoming_invoice()
+			if not account_request.invited_by_parent_team:
+				team.create_upcoming_invoice()
 			# TODO: Partner account moved to PRM
 			if team.has_partner_account_on_erpnext_com():
 				team.enable_erpnext_partner_privileges()
