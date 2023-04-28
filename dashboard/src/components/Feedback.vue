@@ -29,7 +29,7 @@
 				</Button>
 			</template>
 			<SuccessCard class="mb-4" title="Thanks for your feedback!" v-else>
-				Your feedback helps improve Frappe Cloud.
+				Your feedback helps improve NexTash Cloud.
 			</SuccessCard>
 		</Dialog>
 	</div>

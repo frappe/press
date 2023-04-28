@@ -3,7 +3,7 @@
 		<div>
 			<div class="flex">
 				<FrappeCloudLogo
-					class="mx-auto h-4 w-auto"
+					class="mx-auto h-7 w-auto"
 					@dblclick="redirectForFrappeioAuth"
 				/>
 			</div>
@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import FrappeCloudLogo from '@/components/FrappeCloudLogoFull.vue';
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],

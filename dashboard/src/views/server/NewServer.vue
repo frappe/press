@@ -47,7 +47,7 @@
 							class="ml-1 text-sm font-semibold text-gray-900"
 						>
 							I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe.
+							applicable to me and NexTash.
 						</label>
 					</div>
 

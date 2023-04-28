@@ -46,7 +46,7 @@
 					<Input
 						label="Preferred Payment Method"
 						type="select"
-						:options="['Frappe Cloud Credits', 'Bank Transfer', 'PayPal']"
+						:options="['NexTash Cloud Credits', 'Bank Transfer', 'PayPal']"
 						v-model="payoutMethod"
 					/>
 
@@ -59,7 +59,7 @@
 
 					<Input
 						label="GSTIN (if applicable)"
-						v-if="payoutMethod != 'Frappe Cloud Credits'"
+						v-if="payoutMethod != 'NexTash Cloud Credits'"
 						type="text"
 						v-model="gstin"
 					/>
