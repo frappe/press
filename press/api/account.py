@@ -109,6 +109,7 @@ def setup_account(
 		if invited_by_parent_team:
 			doc = frappe.get_doc("Team", account_request.invited_by)
 			doc.append("child_team_members", {"child_team": team})
+			doc.save()
 
 	frappe.local.login_manager.login_as(email)
 
@@ -320,8 +321,8 @@ def create_child_team(team):
 	exists, enabled = frappe.db.get_value("Team", team, ["name", "enabled"]) or [0, 0]
 	current_team = get_current_team(True)
 
-	if not (exists and enabled):
-		new_team(team, current_team.name)
+	if not exists:
+		return new_team(team, current_team.name)
 	elif exists and not enabled:
 		frappe.throw("Team is not active.")
 	else:
@@ -337,7 +338,7 @@ def create_child_team(team):
 			{"child_team": team},
 		)
 		current_team.save()
-		return "hello"
+	return "created"
 
 
 def new_team(email, current_team):
@@ -355,7 +356,7 @@ def new_team(email, current_team):
 		}
 	).insert()
 
-	return "ok"
+	return "new_team"
 
 
 def get_ssh_key(user):
@@ -454,6 +455,20 @@ def add_team_member(email):
 def remove_team_member(user_email):
 	team = get_current_team(True)
 	team.remove_team_member(user_email)
+
+
+@frappe.whitelist()
+def remove_child_team(child_team):
+	team = frappe.get_doc("Team", child_team)
+	sites = frappe.get_all(
+		"Site", {"status": ("!=", "Archived"), "team": team.name}, pluck="name"
+	)
+	if sites:
+		frappe.throw("Child team has Active Sites")
+
+	team.enabled = 0
+	team.parent_team = ""
+	team.save()
 
 
 @frappe.whitelist()

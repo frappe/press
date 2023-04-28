@@ -15,7 +15,6 @@
   "column_break_6",
   "erpnext_partner",
   "partner_email",
-  "child_team",
   "parent_team",
   "section_break_6",
   "team_members",
@@ -297,17 +296,9 @@
    "label": "Allow to skip Backups"
   },
   {
-   "default": "0",
-   "fieldname": "child_team",
-   "fieldtype": "Check",
-   "label": "Child Team"
-  },
-  {
-   "depends_on": "eval:doc.child_team==1",
    "fieldname": "parent_team",
    "fieldtype": "Link",
    "label": "Parent Team",
-   "mandatory_depends_on": "eval:doc.child_team==1",
    "options": "Team"
   },
   {
@@ -373,7 +364,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-04-22 10:28:59.660846",
+ "modified": "2023-04-28 10:34:44.264374",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

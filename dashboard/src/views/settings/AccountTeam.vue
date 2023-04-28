@@ -39,9 +39,10 @@
 						:key="member.name"
 					>
 						<template #actions>
+							<ErrorMessage :message="$resourceErrors" />
 							<Button
 								class="ml-2 p-4"
-								@click="removeMember(member)"
+								@click="$resources.removeMember.submit({ child_team: member.name })"
 								:loading="$resources.removeMember.loading"
 							>
 								Remove
@@ -89,7 +90,9 @@ export default {
 		return {
 			showManageTeamDialog: false,
 			showManageTeamForm: false,
-			childTeamEmail: null
+			childTeamEmail: null,
+			newChildTeamMessage: 'A new team is created',
+			newChildTeamTitle: 'Team Created!'
 		};
 	},
 	computed: {
@@ -127,19 +130,34 @@ export default {
 				}
 			};
 		},
-		addChildTeam: {
-			method: 'press.api.account.create_child_team',
-			onSuccess() {
-				this.showManageTeamDialog = false;
-				this.childTeamEmail = null;
-				this.$notify({
-					title: 'Team Created!',
-					message: 'A new team is created',
-					color: 'green',
-					icon: 'check'
-				})
-			}
-		}
+		addChildTeam() {
+			return {
+				method: 'press.api.account.create_child_team',
+				onSuccess(data) {
+					if (data == "new_team") {
+						this.newChildTeamMessage = "We have sent a verification email to " + this.childTeamEmail + ".";
+						this.newChildTeamTitle = "Email Sent"
+					}
+					this.showManageTeamDialog = false;
+					this.childTeamEmail = null;
+					this.$account.fetchAccount();
+					this.$notify({
+						title: this.newChildTeamTitle,
+						message: this.newChildTeamMessage,
+						color: 'green',
+						icon: 'check'
+					})
+				}
+			};
+		},
+		removeMember() {
+			return {
+				method: 'press.api.account.remove_child_team',
+				onSuccess() {
+					this.$account.fetchAccount();
+				}
+			};
+		},
 	},
 	methods: {
 		dropdownItems(team_name) {
