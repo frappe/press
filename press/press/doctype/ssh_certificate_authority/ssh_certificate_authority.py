@@ -130,7 +130,7 @@ class SSHCertificateAuthority(Document):
 			as_dict=True,
 		)
 
-		if "docker.io" in settings.docker_registry_namespace:
+		if "docker.io" in settings.docker_registry_url:
 			namespace = settings.docker_registry_namespace
 
 		elif settings.docker_registry_namespace:
