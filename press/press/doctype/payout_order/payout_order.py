@@ -60,21 +60,15 @@ class PayoutOrder(Document):
 				app_payment.get_commission(row.total_amount) if not self.ignore_commission else 0.0
 			)
 
-			if invoice.transaction_fee > 0:
-				row.gateway_fee = (invoice.transaction_fee) * (
-					invoice_item.amount / invoice.amount_paid
-				)
-				if invoice.exchange_rate > 0:
-					row.gateway_fee = row.gateway_fee / invoice.exchange_rate
-
 			row.net_amount = row.total_amount - row.commission
 
-			if row.currency == "inr":
+			if row.currency == "INR":
 				app_payment.total_inr += row.net_amount
 			else:
 				app_payment.total_usd += row.net_amount
 
 			app_payment.save(ignore_permissions=True)
+			self.ignore_commission = True
 
 	def validate_net_totals(self):
 		self.net_total_usd = 0

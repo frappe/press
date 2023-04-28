@@ -119,7 +119,7 @@ address_wrapper, email_verify_wrapper -%} {% block content %}
 								? 'btn-primary disabled'
 								: 'active-btn'
 						}' onclick='selectPlan(${JSON.stringify(plans[i])}, "${sub.name}")'>
-						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'BUY NOW'}
+						${sub.marketplace_app_plan === plans[i].name ? 'Current Plan' : 'Buy Now'}
 					</button>
 				</div>
 				`);
