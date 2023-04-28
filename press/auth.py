@@ -13,6 +13,7 @@ PRESS_AUTH_MAX_ENTRIES = 1000000
 ALLOWED_PATHS = [
 	"/api/method/create-site-migration",
 	"/api/method/create-version-upgrade",
+	"/api/method/migrate-to-private-bench",
 	"/api/method/find-my-sites",
 	"/api/method/frappe.core.doctype.communication.email.mark_email_as_seen",
 	"/api/method/frappe.realtime.get_user_info",
@@ -24,6 +25,9 @@ ALLOWED_PATHS = [
 	"/api/method/press.press.doctype.stripe_webhook_log.stripe_webhook_log.stripe_webhook_handler",
 	"/api/method/upload_file",
 	"/api/method/frappe.search.web_search",
+	"/api/method/frappe.email.queue.unsubscribe",
+	"/api/method/frappe.client.get",
+	"/api/method/frappe.client.get_count",
 ]
 
 ALLOWED_WILDCARD_PATHS = [

@@ -72,6 +72,8 @@ class BenchFieldCheck(Audit):
 		servers = Server.get_all_primary_prod()
 		for server in servers:
 			benches = get_benches_in_server(server)
+			if not benches:
+				continue
 			for bench_name, bench_desc in benches.items():
 				for site in bench_desc["sites"]:
 					self.server_map.setdefault(site, []).append(bench_name)

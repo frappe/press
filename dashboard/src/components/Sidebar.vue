@@ -7,6 +7,7 @@
 				@click="show = true"
 			>
 				Search (Ctrl + k)
+
 			</div>
 			<CommandPalette :show="show" @close="show = false" />
 			<router-link

@@ -15,7 +15,7 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Setup ProxySQL Monitor'), "setup_proxysql_monitor", true, frm.doc.is_proxysql_setup],
 			[__('Setup Wildcard Hosts'), "setup_wildcard_hosts", true, frm.doc.is_server_setup],
 			[__('Fetch Keys'), "fetch_keys", false, frm.doc.is_server_setup && (!frm.doc.frappe_public_key || !frm.doc.root_public_key)],
-			[__('Update TLS Certificate'), "update_tls_certificate", true]
+			[__('Update TLS Certificate'), "update_tls_certificate", true],
 			[__('Setup Replication'), "setup_replication", true, frm.doc.is_server_setup && !frm.doc.is_primary && !frm.doc.is_replication_setup],
 			[__('Trigger Failover'), "trigger_failover", true, frm.doc.is_server_setup && !frm.doc.is_primary && frm.doc.is_replication_setup],
 			[__('Setup Fail2ban'), "setup_fail2ban", true, frm.doc.is_server_setup],

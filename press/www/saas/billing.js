@@ -30,10 +30,26 @@ let $floatingBar = $(`
 		>
 		Subscribe
 		</button>
+				<a type="button" class="dismiss-upgrade text-muted" data-dismiss="modal" aria-hidden="true" style="font-size:30px; margin-bottom: 5px; margin-right: 10px">×</a>
+
     </div>
     </div>
 `);
-$('footer').append($floatingBar);
+let showFloatingBanner = localStorage.getItem("showFloatingBanner")
+let banner = true;
+
+if (showFloatingBanner != null) {
+	let now = new Date();
+	let temp = new Date(showFloatingBanner);
+
+	if (temp.getTime() > now.getTime() && temp.getDate() <= now.getDate()) {
+		banner = false;	
+	}
+}
+
+if (frappe.boot.setup_complete === 1 && banner) { // check if setup complete
+		$('footer').append($floatingBar);
+}
 
 const d = new frappe.ui.Dialog({
 	title: __('Manage your subscriptions'),
@@ -43,6 +59,16 @@ const d = new frappe.ui.Dialog({
 $('#show-dialog').on('click', function () {
 	d.show();
 });
+
+// dismiss banner and add 4 hour dismissal time
+$floatingBar.find('.dismiss-upgrade').on('click', () => {
+		const now = new Date();
+		const sixHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+
+		localStorage.setItem("showFloatingBanner", sixHoursLater)
+		$floatingBar.remove();
+});
+
 
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">

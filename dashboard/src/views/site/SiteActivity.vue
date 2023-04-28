@@ -29,14 +29,16 @@
 		</template>
 		<Dialog
 			:options="{ title: 'Change Notify Email' }"
-			v-model="showChangeNotifyEmailDialog">
+			v-model="showChangeNotifyEmailDialog"
+		>
 			<template v-slot:body-content>
-				<Input
-					v-model="site.notify_email"
-				/>
+				<Input v-model="site.notify_email" />
 			</template>
 			<template v-slot:actions>
-				<Button appearance="primary" @click="$resources.changeNotifyEmail.submit()">
+				<Button
+					appearance="primary"
+					@click="$resources.changeNotifyEmail.submit()"
+				>
 					Save
 				</Button>
 			</template>
@@ -69,14 +71,14 @@ export default {
 					email: this.site?.notify_email
 				},
 				onSuccess() {
-					this.showChangeNotifyEmailDialog = false
+					this.showChangeNotifyEmailDialog = false;
 					this.$notify({
 						title: 'Notify Email Changed!',
 						icon: 'check',
 						color: 'green'
 					});
 				}
-			}
+			};
 		}
 	},
 	computed: {
@@ -87,7 +89,7 @@ export default {
 	data() {
 		return {
 			pageStart: 0,
-			showChangeNotifyEmailDialog: false,
+			showChangeNotifyEmailDialog: false
 		};
 	},
 	methods: {

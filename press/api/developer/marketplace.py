@@ -187,12 +187,6 @@ def get_subscription_info(secret_key: str) -> Dict:
 
 
 @frappe.whitelist(allow_guest=True)
-def get_login_url(secret_key: str) -> str:
-	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.get_login_url()
-
-
-@frappe.whitelist(allow_guest=True)
 def get_subscriptions(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_subscriptions()

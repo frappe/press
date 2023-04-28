@@ -161,7 +161,7 @@ class Bench(Document):
 
 	def check_ongoing_job(self):
 		ongoing_jobs = frappe.db.exists(
-			"Agent Job", {"bench": self.name, "status": "Running"}
+			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending"])}
 		)
 		if ongoing_jobs:
 			frappe.throw("Cannot archive bench with ongoing jobs.")

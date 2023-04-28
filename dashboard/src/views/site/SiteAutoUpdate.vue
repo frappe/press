@@ -180,7 +180,10 @@
 					<strong>Note:</strong> All times are in IST (UTC + 5:30 hours).
 				</h4>
 
-				<ErrorMessage class="mt-4" :message="$resources.enableAutoUpdate.error" />
+				<ErrorMessage
+					class="mt-4"
+					:message="$resources.enableAutoUpdate.error"
+				/>
 			</Card>
 		</div>
 	</div>

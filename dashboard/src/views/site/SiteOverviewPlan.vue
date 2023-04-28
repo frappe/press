@@ -142,7 +142,7 @@ export default {
 					this.$emit('plan-change');
 					this.$resources.plans.reset();
 				},
-				onError(error) {	
+				onError(error) {
 					this.showChangePlanDialog = false;
 					this.$notify({
 						title: error,

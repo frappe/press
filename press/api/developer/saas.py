@@ -110,12 +110,6 @@ def get_subscription_info(secret_key):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_login_url(secret_key):
-	api_handler = SaasApiHandler(secret_key)
-	return api_handler.get_login_url()
-
-
-@frappe.whitelist(allow_guest=True)
 def get_trial_expiry(secret_key):
 	api_handler = SaasApiHandler(secret_key)
 	return api_handler.get_trial_expiry()

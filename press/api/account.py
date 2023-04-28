@@ -261,24 +261,19 @@ def set_country(country):
 
 
 def get_account_request_from_key(key):
-	"""Find Account Request using `key` in the past 4 hours"""
+	"""Find Account Request using `key` in the past 12 hours or if site is active"""
 
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	hours = 8
-	result = frappe.db.get_all(
-		"Account Request",
-		filters={
-			"request_key": key,
-			"creation": (">", frappe.utils.add_to_date(None, hours=-hours)),
-		},
-		pluck="name",
-		order_by="creation desc",
-		limit=1,
-	)
-	if result:
-		return frappe.get_doc("Account Request", result[0])
+	hours = 12
+	ar = frappe.get_doc("Account Request", {"request_key": key})
+	if ar.creation > frappe.utils.add_to_date(None, hours=-hours):
+		return ar
+	elif ar.subdomain and ar.saas_app:
+		domain = frappe.db.get_value("Saas Settings", ar.saas_app, "domain")
+		if frappe.db.get_value("Site", ar.subdomain + "." + domain, "status") == "Active":
+			return ar
 
 
 @frappe.whitelist()

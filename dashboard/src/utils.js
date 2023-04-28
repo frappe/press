@@ -114,7 +114,7 @@ let utils = {
 				Trial: 'yellow',
 				Published: 'green',
 				Owner: 'blue',
-				Primary: 'green',
+				Primary: 'green'
 			};
 		}
 	}

@@ -10,8 +10,9 @@ frappe.ui.form.on('Self Hosted Server', {
 		);
 		[	
 			[__('Ping Server'), "ping_ansible", false],
-			[__('Create App Server'), "create_server", false],
-			[__('Create Database Server'), "create_db_server", false, frm.doc.server_created],
+			[__('Create Proxy Server'), "create_proxy_server", false],
+			[__('Create Database Server'), "create_db_server", false, frm.doc.proxy_created],
+			[__('Create App Server'), "create_server", false,frm.doc.database_setup],
 			[__('Restore Files from Existing Sites'), "restore_files", true, frm.doc.existing_bench_present ],
 			[__('Get Apps from Existing Bench'), "fetch_apps_and_sites", false, frm.doc.existing_bench_present],
 			[__('Create a Release Group for Existing Bench'), "create_new_rg", false, frm.doc.existing_bench_present ],

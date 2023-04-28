@@ -11,6 +11,7 @@ class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
 
 	def validate(self):
+		self.validate_versions()
 		self.validate_same_server()
 		self.validate_apps()
 
@@ -35,6 +36,27 @@ class VersionUpgrade(Document):
 		if set(site_apps) - set(bench_apps):
 			frappe.throw(
 				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
+				frappe.ValidationError,
+			)
+
+	def validate_versions(self):
+		source_version = frappe.get_value("Release Group", self.source_group, "version")
+		dest_version = frappe.get_value("Release Group", self.destination_group, "version")
+		if dest_version == "Nightly":
+			frappe.msgprint(
+				"You are upgrading the site to Nightly Branch. Please note that Nightly might not be stable"
+			)
+			return
+		elif source_version == "Nightly":
+			frappe.throw(
+				f"Downgrading from Nightly to {dest_version.title()} is not allowed",
+				frappe.ValidationError,
+			)
+		source = int(source_version.split()[1])
+		dest = int(dest_version.split()[1])
+		if dest - source > 1:
+			frappe.throw(
+				f"Upgrading Sites by skipping a major version is unsupported. Destination Release Group {self.destination_group} Version is {dest_version.title()} and Source Version is {source_version.title()}",
 				frappe.ValidationError,
 			)
 
@@ -90,7 +112,7 @@ def update_from_site_update():
 			recipient = site.notify_email or site.team
 
 			frappe.sendmail(
-				recipient=[recipient],
+				recipients=[recipient],
 				subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
 				reference_doctype="Version Upgrade",
 				reference_name=version_upgrade.name,

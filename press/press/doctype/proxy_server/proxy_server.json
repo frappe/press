@@ -8,6 +8,7 @@
   "status",
   "hostname",
   "domain",
+  "self_hosted_server_domain",
   "column_break_3",
   "cluster",
   "provider",
@@ -28,6 +29,8 @@
   "primary",
   "is_replication_setup",
   "ssh_section",
+  "ssh_user",
+  "ssh_port",
   "frappe_user_password",
   "frappe_public_key",
   "column_break_18",
@@ -277,10 +280,31 @@
    "fieldname": "is_self_hosted",
    "fieldtype": "Check",
    "label": "Is Self Hosted"
+  },
+  {
+   "default": "root",
+   "depends_on": "eval:doc.is_self_hosted",
+   "fetch_if_empty": 1,
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "default": "22",
+   "fieldname": "ssh_port",
+   "fieldtype": "Int",
+   "label": "SSH Port"
+  },
+  {
+   "default": "self.frappe.dev",
+   "depends_on": "eval:doc.is_self_hosted",
+   "fieldname": "self_hosted_server_domain",
+   "fieldtype": "Data",
+   "label": "Self Hosted Server Domain"
   }
  ],
  "links": [],
- "modified": "2023-04-02 02:27:50.375593",
+ "modified": "2023-04-20 11:58:35.926243",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

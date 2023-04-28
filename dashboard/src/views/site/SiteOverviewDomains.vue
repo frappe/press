@@ -29,7 +29,10 @@
 								{{ d.domain }}
 							</a>
 							<span v-else>{{ d.domain }}</span>
-							<div class="flex" v-if="d.redirect_to_primary == 1 && d.status == 'Active'">
+							<div
+								class="flex"
+								v-if="d.redirect_to_primary == 1 && d.status == 'Active'"
+							>
 								<FeatherIcon name="arrow-right" class="w-4 mx-1" />
 								<a
 									class="text-blue-500"
@@ -282,21 +285,20 @@ export default {
 			});
 		},
 		confirmSetPrimary(domain) {
-			let workingRedirects = false
-			this.$resources.domains.data.forEach((d) => {
+			let workingRedirects = false;
+			this.$resources.domains.data.forEach(d => {
 				if (d.redirect_to_primary) {
-					workingRedirects = true
+					workingRedirects = true;
 				}
-			})
+			});
 
 			if (workingRedirects) {
-					this.$notify({
-						title: 'Please Remove all Active Redirects',
-						color: 'red',
-						icon: 'x'
-					});
-			}
-			else {
+				this.$notify({
+					title: 'Please Remove all Active Redirects',
+					color: 'red',
+					icon: 'x'
+				});
+			} else {
 				this.$confirm({
 					title: 'Set as Primary Domain',
 					message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,

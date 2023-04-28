@@ -1390,7 +1390,11 @@ def process_archive_site_job_update(job):
 	first = get_remove_step_status(job)
 	second = get_remove_step_status(other_job)
 
-	if "Success" == first == second:
+	if (
+		("Success" == first == second)
+		or ("Skipped" == first == second)
+		or sorted(("Success", "Skipped")) == sorted((first, second))
+	):
 		updated_status = "Archived"
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
