@@ -96,7 +96,7 @@ import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 
 export default {
-	name: 'CheckoutStripe',
+	name: 'CheckoutPayment',
 	components: {
 		StripeLogo
 	},

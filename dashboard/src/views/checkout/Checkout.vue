@@ -23,7 +23,7 @@
 			:countries="$resources.subscriptions.data.countries"
 			v-model:step="step"
 		/>
-		<Stripe
+		<Payment
 			v-if="step === 4"
 			:selectedSubscription="selectedSubscription"
 			:selectedPlan="selectedPlan"
@@ -39,7 +39,7 @@
 import Apps from './CheckoutApps.vue';
 import Plans from './CheckoutPlans.vue';
 import Address from './CheckoutAddress.vue';
-import Stripe from './CheckoutStripe.vue';
+import Payment from './CheckoutPayment.vue';
 
 export default {
 	name: 'Checkout',
@@ -47,7 +47,7 @@ export default {
 		Apps,
 		Plans,
 		Address,
-		Stripe
+		Payment
 	},
 	data() {
 		return {
