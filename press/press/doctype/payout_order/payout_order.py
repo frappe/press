@@ -79,6 +79,9 @@ class PayoutOrder(Document):
 			else:
 				self.net_total_usd += row.net_amount
 
+		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
+			self.status = "Commissioned"
+
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
 			frappe.throw(
