@@ -68,7 +68,6 @@ class PayoutOrder(Document):
 				app_payment.total_usd += row.net_amount
 
 			app_payment.save(ignore_permissions=True)
-			self.ignore_commission = True
 
 	def validate_net_totals(self):
 		self.net_total_usd = 0
