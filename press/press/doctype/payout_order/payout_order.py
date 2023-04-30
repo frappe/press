@@ -63,9 +63,9 @@ class PayoutOrder(Document):
 			row.net_amount = row.total_amount - row.commission
 
 			if row.currency == "INR":
-				app_payment.total_inr += row.net_amount
+				app_payment.total_inr += row.net_amount if row.net_amount > 0 else row.commission
 			else:
-				app_payment.total_usd += row.net_amount
+				app_payment.total_usd += row.net_amount if row.net_amount > 0 else row.commission
 
 			app_payment.save(ignore_permissions=True)
 			self.ignore_commission = True
