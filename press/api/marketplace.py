@@ -861,6 +861,7 @@ def get_payout_details(name: str) -> Dict:
 			"net_amount",
 			"gateway_fee",
 			"quantity",
+			"commission",
 		],
 		order_by="idx",
 	)
