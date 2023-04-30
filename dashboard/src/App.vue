@@ -3,7 +3,10 @@
 		<div class="flex h-screen overflow-hidden">
 			<div
 				class="flex flex-1 overflow-y-auto"
-				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
+				:class="{
+					'sm:bg-gray-50':
+						$route.meta.isLoginPage && $route.fullPath.indexOf('/checkout') < 0
+				}"
 			>
 				<div class="flex-1">
 					<Navbar class="sm:hidden" />
@@ -12,7 +15,11 @@
 							class="hidden sticky top-0 sm:flex flex-shrink-0 w-64"
 							v-if="$auth.isLoggedIn"
 						/>
-						<router-view v-slot="{ Component }" class="w-full pb-8 sm:mr-0 p-6">
+						<router-view
+							v-slot="{ Component }"
+							class="w-full sm:mr-0"
+							:class="{ 'pb-8 p-6': $auth.isLoggedIn }"
+						>
 							<keep-alive
 								:include="[
 									'Sites',

@@ -46,10 +46,7 @@
 					currency == 'INR' ? '₹' + getTotal() : '$' + getTotal()
 				}}</span>
 			</div>
-			<ErrorMessage
-				class="mt-2"
-				:message="confirmError"
-			/>
+			<ErrorMessage class="mt-2" :message="confirmError" />
 			<Button
 				v-if="!stripePayment"
 				class="mt-4"
@@ -64,18 +61,18 @@
 		<!-- Stripe -->
 		<div class="flex justify-center h-full w-full">
 			<div class="flex flex-col my-auto w-64 h-20">
-				<div id="card" 
-					class="form-input mt-2 block w-full py-2 pl-3" :class="{ hidden: 'card' == null }"
-					ref="card-element"></div>
-					<ErrorMessage
-						class="mt-2"
-						:message="errorMessage"
+				<div
+					id="card"
+					class="form-input mt-2 block w-full py-2 pl-3"
+					:class="{ hidden: 'card' == null }"
+					ref="card-element"
+				></div>
+				<ErrorMessage class="mt-2" :message="errorMessage" />
+				<div class="flex justify-between">
+					<StripeLogo
+						class="mt-4 justify-self-end"
+						:loading="$resources.handlePayment.loading"
 					/>
-					<div class="flex justify-between" >
-						<StripeLogo
-							class="mt-4 justify-self-end"
-							:loading="$resources.handlePayment.loading"
-						/>
 					<Button
 						v-if="card != null"
 						class="mt-4"
@@ -115,7 +112,7 @@ export default {
 			card: null,
 			stripePayment: false,
 			errorMessage: null,
-			confirmError: null,
+			confirmError: null
 		};
 	},
 	resources: {
@@ -170,13 +167,12 @@ export default {
 							}
 						});
 						this.card.mount(this.$refs['card-element']);
-						this.confirmError = e
 					} else {
-						this.confirmError = e
+						this.confirmError = r;
 					}
 				},
 				onError(e) {
-					this.confirmError = e
+					this.confirmError = e;
 				}
 			};
 		}

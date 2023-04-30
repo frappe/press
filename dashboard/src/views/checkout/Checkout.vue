@@ -1,6 +1,6 @@
 <template>
 	<div class="p-0" v-if="$resources.subscriptions.data">
-		<ErrorMessage :message="errorMessage"/>
+		<ErrorMessage :message="errorMessage" />
 		<Apps
 			v-if="step === 1"
 			:data="$resources.subscriptions.data"
@@ -32,6 +32,11 @@
 			:secretKey="secretKey"
 			v-model:step="step"
 		/>
+		<ConfirmEmail
+			v-if="step === 5"
+			:email="$resources.subscriptions.data.team"
+			v-model:step="step"
+		/>
 	</div>
 </template>
 
@@ -40,6 +45,7 @@ import Apps from './CheckoutApps.vue';
 import Plans from './CheckoutPlans.vue';
 import Address from './CheckoutAddress.vue';
 import Payment from './CheckoutPayment.vue';
+import ConfirmEmail from './CheckoutConfirmEmail.vue';
 
 export default {
 	name: 'Checkout',
@@ -47,7 +53,8 @@ export default {
 		Apps,
 		Plans,
 		Address,
-		Payment
+		Payment,
+		ConfirmEmail
 	},
 	data() {
 		return {
@@ -56,7 +63,7 @@ export default {
 			selectedSubscription: '',
 			selectedPlan: '',
 			step: 1,
-			errorMessage: null,
+			errorMessage: null
 		};
 	},
 	created() {
@@ -72,11 +79,10 @@ export default {
 				},
 				auto: true,
 				onSuccess(r) {
-					console.log(r);
-					this.errorMessage = null
+					this.errorMessage = null;
 				},
 				onError(e) {
-					this.errorMessage = e
+					this.errorMessage = e;
 				}
 			};
 		}

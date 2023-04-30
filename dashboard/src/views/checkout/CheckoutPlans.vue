@@ -5,6 +5,21 @@
 	>
 		← Back to Apps
 	</div>
+	<div class="flex justify-between mb-4 p-4 rounded-lg border text-base">
+		<span class="self-center"
+			>Checkout Frappe Cloud plans for site hosting from
+			<span class="font-bold"
+				>{{ currency === 'INR' ? '₹ 750' : '$ 10' }} Onwards</span
+			>
+		</span>
+		<Button
+			appearance="secondary"
+			@click="$resources.sendLoginLink.submit()"
+			:loading="$resources.sendLoginLink.loading"
+		>
+			Get Login Link
+		</Button>
+	</div>
 	<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
 		<div
 			v-for="plan in $resources.plans.data"
@@ -55,7 +70,18 @@ export default {
 					secret_key: this.secretKey,
 					subscription: this.selectedSubscription.name
 				},
-				auto: true,
+				auto: true
+			};
+		},
+		sendLoginLink() {
+			return {
+				method: 'press.api.developer.marketplace.send_login_link',
+				params: {
+					secret_key: this.secretKey
+				},
+				onSuccess() {
+					this.$emit('update:step', 5);
+				}
 			};
 		}
 	},
