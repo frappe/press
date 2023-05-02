@@ -69,6 +69,10 @@ export default {
 	created() {
 		const params = new URLSearchParams(window.location.search);
 		this.secretKey = params.get('secret_key');
+
+		if (this.secretKey != null) {
+			this.$resources.subscriptions.submit();
+		}
 	},
 	resources: {
 		subscriptions() {
@@ -77,7 +81,6 @@ export default {
 				params: {
 					secret_key: this.secretKey
 				},
-				auto: true,
 				onSuccess(r) {
 					this.errorMessage = null;
 				},
