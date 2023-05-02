@@ -118,6 +118,32 @@
 				>
 			</template>
 		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Transfer Site to Team' }"
+			v-model="showTransferSiteDialog"
+		>
+			<template #body-content>
+				<Input
+					label="Enter email of the team"
+					type="text"
+					v-model="emailOfChildTeam"
+					required
+				/>
+
+				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
+			</template>
+
+			<template #actions>
+				<Button
+					:loading="$resources.transferSite.loading"
+					@click="$resources.transferSite.submit({ team: emailOfChildTeam, name: siteName })"
+					appearance="primary"
+				>
+					Submit
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -141,6 +167,7 @@ export default {
 			runningJob: false,
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
+			showTransferSiteDialog: false,
 			errorMessage: ''
 		};
 	},
@@ -172,6 +199,21 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin(this.siteName);
+		},
+		transferSite() {
+			return {
+				method: 'press.api.site.change_team',
+				onSuccess() {
+					this.showTransferSiteDialog = false;
+					this.emailOfChildTeam = null;
+					this.$notify({
+						title: 'Site Transferred to Child Team',
+						message: 'Site Transferred to Child Team',
+						color: 'green',
+						icon: 'check',
+					});
+				}
+			}
 		}
 	},
 	activated() {
@@ -303,6 +345,17 @@ export default {
 							icon: 'check',
 							color: 'green'
 						});
+					}
+				},
+				this.site.status == 'Active' && {
+					label: 'Transfer Site',
+					icon: 'tool',
+					loading: this.$resources.transferSite.loading,
+					handler: () => {
+						this.showTransferSiteDialog = true;
+					},
+					condition: () => {
+						return !this.$account.parent_team;
 					}
 				}
 			].filter(Boolean);
