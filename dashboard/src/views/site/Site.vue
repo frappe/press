@@ -120,12 +120,12 @@
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Transfer Site to Child Team' }"
+			:options="{ title: 'Transfer Site to Team' }"
 			v-model="showTransferSiteDialog"
 		>
 			<template #body-content>
 				<Input
-					label="Enter name of the child team"
+					label="Enter email of the team"
 					type="text"
 					v-model="emailOfChildTeam"
 					required

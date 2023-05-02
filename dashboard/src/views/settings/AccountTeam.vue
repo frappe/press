@@ -52,7 +52,7 @@
 					<div v-if="showManageTeamForm">
 						<h5 class="mt-5 text-sm font-semibold"> Create child team</h5>
 						<Input
-							label="Enter the team Id of child team."
+							label="Enter the email address to create a new child team for shared access."
 							type="text"
 							class="mt-2"
 							v-model="childTeamEmail"
