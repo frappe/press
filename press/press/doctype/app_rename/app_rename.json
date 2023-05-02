@@ -16,11 +16,14 @@
  "fields": [
   {
    "fieldname": "old_name",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Old name",
-   "options": "App",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ccmj",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "new_name",
@@ -30,25 +33,21 @@
    "reqd": 1
   },
   {
+   "fieldname": "section_break_pgse",
+   "fieldtype": "Section Break"
+  },
+  {
    "fieldname": "script",
    "fieldtype": "Code",
    "in_list_view": 1,
    "label": "Script",
    "options": "Python",
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_ccmj",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_pgse",
-   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-24 10:55:10.756151",
+ "modified": "2023-05-02 10:25:26.630181",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Rename",
