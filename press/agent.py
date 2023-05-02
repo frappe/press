@@ -263,6 +263,7 @@ class Agent:
 			"activate": activate,
 			"skip_failing_patches": skip_failing_patches,
 			"skip_backups": skip_backups,
+			"before_migrate_scripts": before_migrate_scripts,
 		}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",

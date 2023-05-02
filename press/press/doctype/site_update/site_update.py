@@ -108,6 +108,17 @@ class SiteUpdate(Document):
 	def after_insert(self):
 		self.create_agent_request()
 
+	def get_before_migrate_scripts(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		scripts = {}
+
+		for app_rename in frappe.get_all(
+			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", "script"]
+		):
+			scripts[app_rename.old_name] = app_rename.script
+
+		return scripts
+
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
@@ -117,6 +128,7 @@ class SiteUpdate(Document):
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
 			skip_backups=self.skipped_backups,
+			before_migrate_scripts=self.get_before_migrate_scripts(),
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
