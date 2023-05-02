@@ -131,7 +131,7 @@
 					required
 				/>
 
-				<ErrorMessage class="mt-3" :message="errorMessage" />
+				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
 			</template>
 
 			<template #actions>
@@ -352,8 +352,10 @@ export default {
 					icon: 'tool',
 					loading: this.$resources.transferSite.loading,
 					handler: () => {
-
 						this.showTransferSiteDialog = true;
+					},
+					condition: () => {
+						return !this.$account.parent_team;
 					}
 				}
 			].filter(Boolean);

@@ -535,7 +535,7 @@ def all():
 	team = get_current_team()
 	child_teams = [x.name for x in get_child_team_members(team)]
 	if not child_teams:
-		condition = f"= {team}"
+		condition = f"= '{team}'"
 	else:
 		condition = f"in {tuple([team] + child_teams)}"
 	sites_data = frappe._dict()
@@ -1429,6 +1429,15 @@ def change_team(team, name):
 		frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1)
 	):
 		frappe.throw("No Active Team record found.")
+
+	from press.press.doctype.team.team import get_child_team_members
+
+	current_team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(current_team)]
+	teams = [current_team] + child_teams
+
+	if team not in teams:
+		frappe.throw(f"{team} is not part of your organization.")
 
 	site_doc = frappe.get_doc("Site", name)
 	site_doc.team = team
