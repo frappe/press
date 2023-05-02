@@ -7,7 +7,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.core.utils import find
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 class DeployCandidateDifference(Document):
@@ -47,19 +46,11 @@ class DeployCandidateDifference(Document):
 
 		self.populate_apps_table()
 
-	def is_app_same(self, source: DeployCandidate, destination: DeployCandidate):
-		"""Check if app is same in source and destination"""
-		if source.app == destination.app or frappe.db.exists(
-			"App Rename", {"old_name": source.app, "new_name": destination.app}
-		):
-			return True
-		return False
-
 	def populate_apps_table(self):
 		source_candidate = frappe.get_doc("Deploy Candidate", self.source)
 		destination_candidate = frappe.get_doc("Deploy Candidate", self.destination)
 		for destination in destination_candidate.apps:
-			source = find(source_candidate.apps, lambda x: self.is_app_same(x, destination))
+			source = find(source_candidate.apps, lambda x: x.app == destination.app)
 			if not source or source.release == destination.release:
 				continue
 			differences = frappe.get_all(
