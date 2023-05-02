@@ -33,10 +33,15 @@ def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		if frappe.session.data.user_type == "System User":
+			print("shadrak")
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
+
+		from press.press.doctype.team.team import get_child_team_members
+
+		child_teams = [team.name for team in get_child_team_members(team)]
 
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
@@ -44,7 +49,7 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team:
+			if owner == team or owner in child_teams:
 				return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
@@ -525,7 +530,14 @@ def sites_with_recent_activity(sites, limit=3):
 
 @frappe.whitelist()
 def all():
+	from press.press.doctype.team.team import get_child_team_members
+
 	team = get_current_team()
+	child_teams = [x.name for x in get_child_team_members(team)]
+	if not child_teams:
+		condition = f"= {team}"
+	else:
+		condition = f"in {tuple([team] + child_teams)}"
 	sites_data = frappe._dict()
 	sites = frappe.db.sql(
 		f"""
@@ -534,7 +546,7 @@ def all():
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
 			WHERE s.status != 'Archived'
-			AND s.team = '{team}'
+			AND s.team {condition}
 			ORDER BY creation DESC""",
 		as_dict=True,
 	)

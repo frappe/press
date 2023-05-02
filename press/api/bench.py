@@ -4,6 +4,7 @@
 
 import json
 from collections import OrderedDict
+from press.press.doctype.team.team import get_child_team_members
 from typing import Dict, List
 
 import frappe
@@ -78,6 +79,8 @@ def get_group_status(name):
 @frappe.whitelist()
 def all(server=None):
 	team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
 
 	group = frappe.qb.DocType("Release Group")
 	site = frappe.qb.DocType("Site")
@@ -86,7 +89,7 @@ def all(server=None):
 		.left_join(site)
 		.on((site.group == group.name) & (site.status != "Archived"))
 		.where((group.enabled == 1) & (group.public == 0))
-		.where(group.team == team)
+		.where((group.team).isin(teams))
 		.groupby(group.name)
 		.select(
 			frappe.query_builder.functions.Count(site.name).as_("number_of_sites"),

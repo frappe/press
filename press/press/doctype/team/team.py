@@ -133,8 +133,7 @@ class Team(Document):
 			team.parent_team = account_request.invited_by
 		team.save(ignore_permissions=True)
 
-		if not account_request.invited_by_parent_team:
-			team.create_stripe_customer()
+		team.create_stripe_customer()
 
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)

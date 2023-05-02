@@ -11,6 +11,7 @@ from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
 from datetime import datetime, timezone as tz
 from frappe.utils import flt
+from press.press.doctype.team.team import get_child_team_members
 
 
 def poly_get_doc(doctypes, name):
@@ -23,14 +24,16 @@ def poly_get_doc(doctypes, name):
 @frappe.whitelist()
 def all():
 	team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
 	app_servers = frappe.get_all(
 		"Server",
-		{"team": team, "status": ("!=", "Archived")},
+		{"team": ("in", teams), "status": ("!=", "Archived")},
 		["name", "creation", "status", "title"],
 	)
 	database_servers = frappe.get_all(
 		"Database Server",
-		{"team": team, "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
+		{"team": ("in", teams), "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
 		["name", "creation", "status", "title"],
 	)
 	all_servers = app_servers + database_servers
