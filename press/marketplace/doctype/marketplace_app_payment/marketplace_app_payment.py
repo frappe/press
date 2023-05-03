@@ -10,7 +10,7 @@ class MarketplaceAppPayment(Document):
 		total = self.total_usd + (
 			self.total_inr / frappe.db.get_single_value("Press Settings", "usd_rate")
 		)
-		return total > frappe.db.get_single_value("Press Settings", "threshold")
+		return total >= frappe.db.get_single_value("Press Settings", "threshold")
 
 	def get_commission(self, total):
 		# TODO: Handle partial commission

@@ -53,6 +53,10 @@ class Subscription(Document):
 			return
 
 		team = frappe.get_cached_doc("Team", self.team)
+
+		if team.parent_team:
+			team = frappe.get_cached_doc("Team", team.parent_team)
+
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
@@ -61,7 +65,7 @@ class Subscription(Document):
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
-			team=self.team,
+			team=team.name,
 			document_type=self.document_type,
 			document_name=self.document_name,
 			plan=plan.name,

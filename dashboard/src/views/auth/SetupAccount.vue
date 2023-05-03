@@ -120,7 +120,8 @@ export default {
 			invitationToTeam: null,
 			isInvitation: null,
 			country: null,
-			termsAccepted: false
+			termsAccepted: false,
+			invitedByParentTeam: false,
 		};
 	},
 	resources: {
@@ -138,6 +139,7 @@ export default {
 						this.userExists = res.user_exists;
 						this.invitationToTeam = res.team;
 						this.isInvitation = res.is_invitation;
+						this.invitedByParentTeam = res.invited_by_parent_team;
 					}
 				}
 			};
@@ -153,6 +155,7 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
+					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted
 				},
 				onSuccess(res) {

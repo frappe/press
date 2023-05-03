@@ -4,8 +4,7 @@
 			<div class="flex justify-between">
 				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
 				<div class="self-center">
-					<Button icon="search" @click="show = true">
-					</Button>
+					<Button icon="search" @click="show = true"> </Button>
 				</div>
 			</div>
 			<CommandPalette :show="show" @close="show = false" />
@@ -151,7 +150,8 @@ export default {
 					highlight: route => {
 						return this.$route.fullPath.indexOf('/billing') >= 0;
 					},
-					icon: FCIcons.BillingIcon
+					icon: FCIcons.BillingIcon,
+					condition: () => !this.$account.team?.parent_team
 				},
 				{
 					label: 'Settings',

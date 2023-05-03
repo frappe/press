@@ -376,7 +376,7 @@ def get_site_status(key, app=None):
 		return {"status": "Pending"}
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_site_url_and_sid(key, app=None):
 	"""
 	return: Site url and session id for login-redirect

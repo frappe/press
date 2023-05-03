@@ -116,6 +116,9 @@ class MarketplaceAppSubscription(Document):
 		team_name = frappe.db.get_value("Site", self.site, "team")
 		team = frappe.get_cached_doc("Team", team_name)
 
+		if team.parent_team:
+			team = frappe.get_cached_doc("Team", team.name)
+
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
@@ -124,7 +127,7 @@ class MarketplaceAppSubscription(Document):
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
-			team=team_name,
+			team=team.name,
 			document_type="Marketplace App",
 			document_name=self.app,
 			plan=self.plan,

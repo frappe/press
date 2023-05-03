@@ -124,10 +124,13 @@ class Team(Document):
 
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
-		team.append("communication_emails", {"type": "invoices", "value": user.name})
-		team.append(
-			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
-		)
+		if not account_request.invited_by_parent_team:
+			team.append("communication_emails", {"type": "invoices", "value": user.name})
+			team.append(
+				"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+			)
+		else:
+			team.parent_team = account_request.invited_by
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
@@ -136,7 +139,8 @@ class Team(Document):
 			team.create_referral_bonus(account_request.referrer_id)
 
 		if not team.via_erpnext:
-			team.create_upcoming_invoice()
+			if not account_request.invited_by_parent_team:
+				team.create_upcoming_invoice()
 			# TODO: Partner account moved to PRM
 			if team.has_partner_account_on_erpnext_com():
 				team.enable_erpnext_partner_privileges()
@@ -774,6 +778,35 @@ def get_team_members(team):
 			user.roles = (user.roles or "").split(",")
 
 	return users
+
+
+def get_child_team_members(team):
+	if not frappe.db.exists("Team", team):
+		return []
+
+	# a child team cannot be parent to another child team
+	if frappe.get_value("Team", team, "parent_team"):
+		return []
+
+	children = frappe.db.get_all(
+		"Child Team Member", filters={"parent": team}, fields=["child_team"]
+	)
+	child_team_members = [d.child_team for d in children]
+
+	child_teams = []
+	if child_team_members:
+		child_teams = frappe.db.sql(
+			"""
+				select t.name
+				from `tabTeam` t
+				where ifnull(t.name, '') in %s
+				and t.enabled = 1
+			""",
+			[child_team_members],
+			as_dict=True,
+		)
+
+	return child_teams
 
 
 def get_default_team(user):

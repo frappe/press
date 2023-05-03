@@ -33,10 +33,15 @@ def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		if frappe.session.data.user_type == "System User":
+			print("shadrak")
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
+
+		from press.press.doctype.team.team import get_child_team_members
+
+		child_teams = [team.name for team in get_child_team_members(team)]
 
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
@@ -44,7 +49,7 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team:
+			if owner == team or owner in child_teams:
 				return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
@@ -525,7 +530,14 @@ def sites_with_recent_activity(sites, limit=3):
 
 @frappe.whitelist()
 def all():
+	from press.press.doctype.team.team import get_child_team_members
+
 	team = get_current_team()
+	child_teams = [x.name for x in get_child_team_members(team)]
+	if not child_teams:
+		condition = f"= '{team}'"
+	else:
+		condition = f"in {tuple([team] + child_teams)}"
 	sites_data = frappe._dict()
 	sites = frappe.db.sql(
 		f"""
@@ -534,7 +546,7 @@ def all():
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
 			WHERE s.status != 'Archived'
-			AND s.team = '{team}'
+			AND s.team {condition}
 			ORDER BY creation DESC""",
 		as_dict=True,
 	)
@@ -1406,4 +1418,27 @@ def get_job_status(job_name):
 def change_notify_email(name, email):
 	site_doc = frappe.get_doc("Site", name)
 	site_doc.notify_email = email
+	site_doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_team(team, name):
+
+	if not (
+		frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1)
+	):
+		frappe.throw("No Active Team record found.")
+
+	from press.press.doctype.team.team import get_child_team_members
+
+	current_team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(current_team)]
+	teams = [current_team] + child_teams
+
+	if team not in teams:
+		frappe.throw(f"{team} is not part of your organization.")
+
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.team = team
 	site_doc.save(ignore_permissions=True)

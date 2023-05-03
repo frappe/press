@@ -15,8 +15,11 @@
   "column_break_6",
   "erpnext_partner",
   "partner_email",
+  "parent_team",
   "section_break_6",
   "team_members",
+  "section_break_tdm9",
+  "child_team_members",
   "section_break_9",
   "send_notifications",
   "column_break_9",
@@ -291,6 +294,22 @@
    "fieldname": "skip_backups",
    "fieldtype": "Check",
    "label": "Allow to skip Backups"
+  },
+  {
+   "fieldname": "parent_team",
+   "fieldtype": "Link",
+   "label": "Parent Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "section_break_tdm9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "child_team_members",
+   "fieldtype": "Table",
+   "label": "Child Team Members",
+   "options": "Child Team Member"
   }
  ],
  "links": [
@@ -345,7 +364,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-03-21 16:51:49.538848",
+ "modified": "2023-04-28 10:34:44.264374",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import get_url
-from typing import Dict
+from typing import Dict, List
 
 from press.api.developer import raise_invalid_key_error
 from press.api.marketplace import prepaid_saas_payment
@@ -65,6 +65,7 @@ class DeveloperApiHandler:
 				"currency": currency,
 				"address": True if address else False,
 				"team": self.app_subscription_doc.team,
+				"countries": frappe.db.get_all("Country", pluck="name"),
 			}
 			response["subscriptions"] = [
 				s.update(
@@ -87,6 +88,16 @@ class DeveloperApiHandler:
 			]
 
 			return response
+
+	def get_plans(self, subscription):
+		team = self.app_subscription_doc.team
+		with SessionManager(team) as _:
+			from press.api.marketplace import get_plans_for_app
+
+			return get_plans_for_app(
+				frappe.db.get_value("Marketplace App Subscription", subscription, "app"),
+				include_free=False,
+			)
 
 	def update_billing_info(self, data: Dict) -> str:
 		team = self.app_subscription_doc.team
@@ -190,6 +201,12 @@ def get_subscription_info(secret_key: str) -> Dict:
 def get_subscriptions(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.get_subscriptions()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_plans(secret_key: str, subscription: str) -> List:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.get_plans(subscription)
 
 
 @frappe.whitelist(allow_guest=True)
