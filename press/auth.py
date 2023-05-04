@@ -18,6 +18,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.core.doctype.communication.email.mark_email_as_seen",
 	"/api/method/frappe.realtime.get_user_info",
 	"/api/method/frappe.www.login.login_via_frappe",
+	"/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log",
 	"/api/method/get-user-sites-list-for-new-ticket",
 	"/api/method/login",
 	"/api/method/logout",
