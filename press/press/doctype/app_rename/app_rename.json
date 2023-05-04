@@ -11,7 +11,7 @@
   "column_break_ccmj",
   "new_name",
   "section_break_pgse",
-  "script",
+  "before_migrate_script",
   "rollback_script"
  ],
  "fields": [
@@ -38,23 +38,23 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "script",
-   "fieldtype": "Code",
-   "in_list_view": 1,
-   "label": "Script",
-   "options": "Python",
-   "reqd": 1
-  },
-  {
    "fieldname": "rollback_script",
    "fieldtype": "Code",
    "label": "Rollback Script",
    "options": "Python"
+  },
+  {
+   "fieldname": "before_migrate_script",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Before Migrate Script",
+   "options": "Python",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-04 13:31:55.727364",
+ "modified": "2023-05-04 14:11:07.271889",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Rename",
