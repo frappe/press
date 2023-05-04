@@ -11,7 +11,8 @@
   "column_break_ccmj",
   "new_name",
   "section_break_pgse",
-  "script"
+  "script",
+  "rollback_script"
  ],
  "fields": [
   {
@@ -43,11 +44,17 @@
    "label": "Script",
    "options": "Python",
    "reqd": 1
+  },
+  {
+   "fieldname": "rollback_script",
+   "fieldtype": "Code",
+   "label": "Rollback Script",
+   "options": "Python"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-02 10:25:26.630181",
+ "modified": "2023-05-04 13:31:55.727364",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Rename",

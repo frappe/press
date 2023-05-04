@@ -284,8 +284,10 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover_move(self, site, target, deploy_type, activate):
-		data = {"target": target, "activate": activate}
+	def update_site_recover_move(
+		self, site, target, deploy_type, activate, rollback_scripts=None
+	):
+		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
