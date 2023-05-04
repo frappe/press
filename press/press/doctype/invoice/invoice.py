@@ -519,7 +519,12 @@ class Invoice(Document):
 
 		unallocated_balances = frappe.db.get_all(
 			"Balance Transaction",
-			filters={"team": self.team, "type": "Adjustment", "unallocated_amount": (">", 0)},
+			filters={
+				"team": self.team,
+				"type": "Adjustment",
+				"unallocated_amount": (">", 0),
+				"docstatus": ("<", 2),
+			},
 			fields=["name", "unallocated_amount", "source"],
 			order_by="creation desc",
 		)
