@@ -46,10 +46,10 @@
 			<ErrorMessage class="mt-2" :message="errorMessage" />
 
 			<div class="mt-6 flex items-center justify-between">
+				<StripeLogo />
 				<Button appearance="primary" @click="submit" :loading="addingCard">
 					Save Card
 				</Button>
-				<StripeLogo />
 			</div>
 		</div>
 	</div>

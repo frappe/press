@@ -80,8 +80,9 @@
 					/>
 				</div>
 			</template>
-			<template v-slot:actions>
+			<template v-slot:actions v-if="!$account.team.billing_address">
 				<Button
+					v-if="!$account.team.billing_address"
 					appearance="primary"
 					@click="updateAddress"
 					:loading="$resources.updateBillingInformation.loading"
