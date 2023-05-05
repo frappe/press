@@ -240,7 +240,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-04-26 11:58:49.683943",
+  "modified": "2023-05-04 14:15:26.755183",
   "name": "Update Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate",
@@ -297,7 +297,7 @@
     "parent": "Update Site Migrate",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
-    "step_name": "Run Before Migrate Scripts"
+    "step_name": "Run App Specific Scripts"
    },
    {
     "parent": "Update Site Migrate",
@@ -886,7 +886,7 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-27 20:48:35.869422",
+  "modified": "2023-05-04 14:15:56.315104",
   "name": "Recover Failed Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate/recover",
@@ -920,6 +920,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Restore Touched Tables"
+   },
+   {
+    "parent": "Recover Failed Site Migrate",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Run App Specific Scripts"
    },
    {
     "parent": "Recover Failed Site Migrate",

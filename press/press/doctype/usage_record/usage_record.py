@@ -28,7 +28,10 @@ class UsageRecord(Document):
 
 	def update_usage_in_invoice(self):
 		invoice_type = "Summary" if self.prepaid else "Subscription"
-		team = frappe.get_doc("Team", self.parent_team or self.team)
+		team = frappe.get_doc("Team", self.team)
+
+		if team.parent_team:
+			team = frappe.get_doc("Team", team.parent_team)
 
 		if team.free_account:
 			return

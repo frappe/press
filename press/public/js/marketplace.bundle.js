@@ -17,6 +17,9 @@ for (let node of allAppCardNodes) {
 // Initialize fuse.js
 const options = {
 	keys: ['title'], // Can add description later if required
+	includeScore: true,
+	shouldSort: true,
+	minMatchCharLength: 3,
 };
 const fuse = new Fuse(appList, options);
 
@@ -101,7 +104,5 @@ var category = new URLSearchParams(window.location.search).get('category');
 if (category != null && category.length > 0) {
 	updateCategories(category)
 } else if (category == null) {
-	try{
-		updateCategories('Featured')
-	} catch(e) {}
+		updateCategories('')
 }

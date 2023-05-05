@@ -108,14 +108,18 @@ class SiteUpdate(Document):
 	def after_insert(self):
 		self.create_agent_request()
 
-	def get_before_migrate_scripts(self):
+	def get_before_migrate_scripts(self, rollback=False):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
-		scripts = {}
 
+		script_field = "before_migrate_script"
+		if rollback:
+			script_field = "rollback_script"
+
+		scripts = {}
 		for app_rename in frappe.get_all(
-			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", "script"]
+			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", script_field]
 		):
-			scripts[app_rename.old_name] = app_rename.script
+			scripts[app_rename.old_name] = app_rename.get(script_field)
 
 		return scripts
 
@@ -191,7 +195,11 @@ def trigger_recovery_job(site_update_name):
 		# Disable maintenance mode for active sites
 		activate = site.status_before_update == "Active"
 		job = agent.update_site_recover_move(
-			site, site_update.source_bench, site_update.deploy_type, activate
+			site,
+			site_update.source_bench,
+			site_update.deploy_type,
+			activate,
+			rollback_scripts=site_update.get_before_migrate_scripts(rollback=True),
 		)
 	else:
 		# Site is already on the source bench
