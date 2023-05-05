@@ -201,7 +201,7 @@ def _new(site, server: str = None):
 
 def validate_plan(server, plan):
 	price_usd = frappe.db.get_value("Plan", plan, "price_usd") or 0
-	if frappe.db.get_value("Plan", plan, "price_usd") > 0:
+	if price_usd > 0:
 		return
 	if (
 		frappe.session.data.user_type == "System User"
