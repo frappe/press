@@ -9,18 +9,19 @@
 			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
 		>
 			<div
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
 				<span class="hidden md:inline">Amount</span>
 				<span>Status</span>
+				<span class="hidden md:inline">Payment Date</span>
 				<span></span>
 			</div>
 			<div
 				:key="invoice.name"
 				v-for="invoice in $resources.pastInvoices.data"
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-5"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
 			>
 				<div>
 					<div>
@@ -61,6 +62,15 @@
 					<Badge v-bind="getStatusBadgeProps(invoice)">
 						{{ invoice.status }}
 					</Badge>
+				</span>
+				<span v-if="invoice.status == 'Paid'" class="hidden md:inline">
+					{{
+						$date(invoice.payment_date).toLocaleString({
+							month: 'long',
+							day: 'numeric',
+							year: 'numeric'
+						})
+					}}
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button
