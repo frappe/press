@@ -45,6 +45,10 @@ def account_request(
 	if not check_subdomain_availability(subdomain, app):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
 
+	password_validation = validate_password(password, first_name, last_name, email)
+	if not password_validation.get("validation_passed"):
+		frappe.throw(password_validation.get("suggestion")[0])
+
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
@@ -174,16 +178,18 @@ def get_hybrid_saas_pool(account_request):
 
 @frappe.whitelist(allow_guest=True)
 def validate_password(password, first_name, last_name, email):
-	available = True
+	passed = True
+	suggestion = None
 
 	user_data = (first_name, last_name, email)
 	result = test_password_strength(password, "", None, user_data)
 	feedback = result.get("feedback", None)
 
 	if feedback and not feedback.get("password_policy_validation_passed", False):
-		available = False
+		passed = False
+		suggestion = feedback.get("suggestions")
 
-	return available
+	return {"validation_passed": passed, "suggestion": suggestion}
 
 
 @frappe.whitelist(allow_guest=True)

@@ -157,6 +157,8 @@ class FormController {
 				});
 			$('.form-alert-info').html(info).toggle(Boolean(info));
 			$('.form-alert-error').html(error).toggle(Boolean(error));
+			$('#accountRequestButton').prop('disabled', false)
+			$('#accountRequestButton').html('Create Account');
 		};
 		$('.form-alert-info, .form-alert-error').toggle(false);
 	}

@@ -68,13 +68,6 @@
 							onfocusin="togglePasswordPopup()">
 						<i class="bi bi-eye-slash" id="togglePassword"></i>
 					</div>
-					<div class="password-popup hidden">
-						<span class="password-popup-list-item-text p8char">At least 8 characters</span>
-						<span class="password-popup-list-item-text pucase">At least 1 uppercase letter</span>
-						<span class="password-popup-list-item-text plcase">At least 1 lowercase letter</span>
-						<span class="password-popup-list-item-text pnum">At least 1 number</span>
-						<span class="password-popup-list-item-text pschar">At least 1 special character</span>
-					</div>
 				</div>
 
 				<div class="form-group">
@@ -162,36 +155,8 @@
 		},
 		password: (value) => {
 			let password = value;
-			// length
-			(password.length >= 8) ? $('.p8char').css("color", "green") : $('.p8char').css("color", "rgb(220 38 38)")
-			// numbers
-			let regex = /[0-9]+/;
-			updateCSS(regex, '.pnum');
-			// capital letters
-			regex = /[A-Z]+/;
-			updateCSS(regex, '.pucase');
-			// small letters
-			regex = /[a-z]+/;
-			updateCSS(regex, '.plcase');
-			// special characters
-			regex = /[$@$!%*#?&]+/;
-			updateCSS(regex, '.pschar');
-
-			function updateCSS(regex, classname) {
-				(regex.test(password)) ? $(classname).css("color", "green") : $(classname).css("color", "rgb(220 38 38)");
-			}
-
 			if (!value) {
 				return "Password is required"
-			} else {
-				let password = value;
-				var pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])[a-zA-Z0-9!@#\$%\^&\*]+$/;
-
-				if (password.match(pattern) && password.length >= 8) {
-					return false
-				} else {
-					return "Please use a strong password!";
-				}
 			}
 		},
 		country: (value) => {
@@ -211,8 +176,8 @@
 	}
 
 	function submit_account_request($form, values) {
-		document.getElementById("accountRequestButton").disabled = true;
-		document.getElementById("accountRequestButton").innerHTML = '<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+		$('#accountRequestButton').prop('disabled', true);
+		$("#accountRequestButton").html('<span class="mr-2">Signing up</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
 		let url_args = frappe.utils.get_query_params();
 		let form_data = {};
 		if (Object.keys(url_args)) {
@@ -256,34 +221,26 @@
 
 	function validate_password(input) {
 		const $input = $(input);
-		const password = $input.val();
-		const error = controller.validate_value("password", password);
-		const error_text = "The password is very easy to guess please use a strong password!"
+		const password = $input.val() || input
 
-		if (error === false) {
-			// first authenticate ui validation
-			// if it passes only then call api validation
-			// if both pass, only then allow next data-step
-			// show_input_error should raise
-			frappe.call({
-				method: "press.api.saas.validate_password",
-				args: {
-					password: password,
-					first_name: document.querySelector("#first_name").value,
-					last_name: document.querySelector("#last_name").value,
-					email: document.querySelector("#email").value,
-				},
-				type: "POST",
-			}).then((r) => {
-				if (r.message && error === false) {
-					controller.show_input_feedback("password", "Strong Password")
-				} else {
-					controller.show_input_error("password", error_text);
-				}
-			})
-		} else {
-				controller.show_input_error("password", error_text);
-		}
+		return frappe.call({
+			method: "press.api.saas.validate_password",
+			args: {
+				password: password,
+				first_name: document.querySelector("#first_name").value,
+				last_name: document.querySelector("#last_name").value,
+				email: document.querySelector("#email").value,
+			},
+			type: "POST",
+		}).then((r) => {
+			if (r.message.validation_passed === true) {
+				controller.show_input_feedback("password", "Strong Password")
+					return false
+			} else {
+				controller.show_input_error("password", r.message.suggestion);
+				return r.message.suggestion;
+			}
+		})
 	}
 
 	function validate_subdomain(input) {
