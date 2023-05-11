@@ -255,8 +255,9 @@ class Site(Document):
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
-		if self.cluster == domain.default_cluster:
-			return
+		# ! commented because we need to add dns record for any site even withing the default cluster
+		# if self.cluster == domain.default_cluster:
+		# 	return
 		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
 		self._change_dns_record("UPSERT", domain, proxy_server)
 
