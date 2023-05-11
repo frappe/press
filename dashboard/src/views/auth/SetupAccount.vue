@@ -121,7 +121,7 @@ export default {
 			isInvitation: null,
 			country: null,
 			termsAccepted: false,
-			invitedByParentTeam: false,
+			invitedByParentTeam: false
 		};
 	},
 	resources: {
@@ -159,6 +159,7 @@ export default {
 					accepted_user_terms: this.termsAccepted
 				},
 				onSuccess(res) {
+					window.posthog.capture('completed_client_fc_setup_account');
 					if (res) {
 						this.$router.push(res.dashboard_route || '/');
 					}

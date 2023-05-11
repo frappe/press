@@ -71,6 +71,10 @@ export default {
 				},
 				onSuccess() {
 					this.emailSent = true;
+					window.posthog.capture(
+						'init_client_fc_account_email_sent',
+						'fc_setup'
+					);
 				}
 			};
 		}
