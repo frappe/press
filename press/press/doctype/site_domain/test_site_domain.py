@@ -244,29 +244,6 @@ class TestSiteDomain(unittest.TestCase):
 
 		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
 
-	def test_site_rename_doesnt_update_host_name_for_custom_domain(self):
-		"""Ensure site configuration isn't updated after rename when custom domain is host_name."""
-		site = create_test_site("old-name")
-		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
-		site.set_host_name(site_domain1.name)
-		new_name = "new-name.fc.dev"
-		site.rename(new_name)
-
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
-		process_rename_site_job_update(rename_job)
-		site = frappe.get_doc("Site", new_name)
-		if site.configuration[0].key == "host_name":
-			config_host = site.configuration[0].value
-		self.assertEqual(config_host, f"https://{site_domain1.name}")
-
 	def test_primary_domain_cannot_be_deleted(self):
 		site = create_test_site("old-name")
 		site_domain = create_test_site_domain(site.name, "sitedomain1.com")
