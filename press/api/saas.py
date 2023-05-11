@@ -17,6 +17,7 @@ from press.press.doctype.site.saas_site import (
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import clear_setup_intent
+from press.utils.telemetry import capture
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
@@ -54,6 +55,7 @@ def account_request(
 	if not country:
 		frappe.throw("Country filed should be a valid country name")
 
+	capture("init_server_account_request", app)
 	account_request = frappe.get_doc(
 		{
 			"doctype": "Account Request",
@@ -92,6 +94,7 @@ def account_request(
 		}
 	else:
 		create_or_rename_saas_site(app, account_request)
+		capture("completed_server_account_request", app)
 
 
 def create_or_rename_saas_site(app, account_request):
@@ -235,6 +238,7 @@ def validate_account_request(key):
 		"Saas Setup Account Generator", app, ["headless", "route"]
 	)
 
+	capture("init_server_setup_account", app)
 	if headless:
 		headless_setup_account(key)
 	else:
@@ -274,6 +278,7 @@ def setup_account(key, business_data=None):
 	account_request.save(ignore_permissions=True)
 
 	create_marketplace_subscription(account_request)
+	capture("completed_server_setup_account", account_request.saas_app)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -288,6 +293,7 @@ def headless_setup_account(key):
 	frappe.set_user("Administrator")
 
 	create_marketplace_subscription(account_request)
+	capture("completed_server_setup_account", account_request.saas_app)
 
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response[
@@ -377,6 +383,7 @@ def get_site_status(key, app=None):
 		as_dict=1,
 	)
 	if site:
+		capture("completed_server_site_allocation", app)
 		return site
 	else:
 		return {"status": "Pending"}

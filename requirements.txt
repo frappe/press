@@ -13,3 +13,4 @@ stripe~=2.56.0
 pyOpenSSL~=23.0.0
 tomli==2.0.1
 tqdm==4.65.0
+posthog==3.0.1
