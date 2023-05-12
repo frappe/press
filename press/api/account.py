@@ -292,11 +292,22 @@ def get():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 
-	teams = [
+	parent_teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
-	for child in get_child_team_members(team):
-		teams.append(child.name)
+
+	if parent_teams:
+		teams = frappe.db.sql(
+			"""
+			select name, team_title, user from tabTeam where name in %s
+		""",
+			[parent_teams],
+			as_dict=True,
+		)
+	else:
+		teams = [
+			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
+		]
 
 	return {
 		"user": frappe.get_doc("User", user),
@@ -304,7 +315,7 @@ def get():
 		"team": team_doc,
 		"team_members": get_team_members(team_doc.name),
 		"child_team_members": get_child_team_members(team_doc.name),
-		"teams": list(set(teams)),
+		"teams": list(teams),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
@@ -317,28 +328,34 @@ def get():
 
 
 @frappe.whitelist()
-def create_child_team(team):
-	team = team.strip().lower()
-	exists, enabled = frappe.db.get_value("Team", team, ["name", "enabled"]) or [0, 0]
+def create_child_team(title):
+	team = title.strip()
+
 	current_team = get_current_team(True)
+	if title in [
+		d.team_title
+		for d in frappe.get_all("Team", {"parent_team": current_team.name}, ["team_title"])
+	]:
+		frappe.throw(f"Child Team {title} already exists.")
+	elif title == "Parent Team":
+		frappe.throw("Child team name cannot be same as parent team")
 
-	if not exists:
-		return new_team(team, current_team.name)
-	elif exists and not enabled:
-		frappe.throw("Team is not active.")
-	else:
-		if current_team.name == team:
-			frappe.throw(_("Child team cannot be same as parent team"))
+	doc = frappe.get_doc(
+		{
+			"doctype": "Team",
+			"team_title": team,
+			"user": current_team.user,
+			"parent_team": current_team.name,
+			"enabled": 1,
+		}
+	)
+	doc.insert(ignore_permissions=True, ignore_links=True)
+	doc.append("team_members", {"user": current_team.user})
+	doc.save()
 
-		if frappe.get_value("Team", team, "parent_team"):
-			frappe.throw(_(f"{team} is already added as child team to another Team."))
+	current_team.append("child_team_members", {"child_team": doc.name})
+	current_team.save()
 
-		frappe.db.set_value("Team", team, "parent_team", current_team.name)
-		current_team.append(
-			"child_team_members",
-			{"child_team": team},
-		)
-		current_team.save()
 	return "created"
 
 

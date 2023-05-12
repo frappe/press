@@ -58,8 +58,7 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User",
-   "unique": 1
+   "options": "User"
   },
   {
    "fieldname": "team_members",
@@ -370,7 +369,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-05-12 10:48:45.920926",
+ "modified": "2023-05-12 13:16:49.574435",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -788,16 +788,15 @@ def get_child_team_members(team):
 	if frappe.get_value("Team", team, "parent_team"):
 		return []
 
-	children = frappe.db.get_all(
-		"Child Team Member", filters={"parent": team}, fields=["child_team"]
-	)
-	child_team_members = [d.child_team for d in children]
+	child_team_members = [
+		d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])
+	]
 
 	child_teams = []
 	if child_team_members:
 		child_teams = frappe.db.sql(
 			"""
-				select t.name
+				select t.name, t.team_title, t.parent_team, t.user
 				from `tabTeam` t
 				where ifnull(t.name, '') in %s
 				and t.enabled = 1

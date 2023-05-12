@@ -12,13 +12,18 @@
 					Manage
 				</Button>
 			</template>
-			<ListItem v-for="team in teams" :title="team" :key="team">
+			<ListItem
+				v-for="team in teams"
+				:title="`${team.team_title}`"
+				:description="team.user"
+				:key="team"
+			>
 				<template #actions>
-					<div v-if="$account.team.name === team">
+					<div v-if="$account.team.name === team.name">
 						<Badge color="blue">Active</Badge>
 					</div>
 					<div v-else class="flex flex-row justify-end">
-						<Dropdown class="ml-2" :options="dropdownItems(team)" right>
+						<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>
 							<template v-slot="{ open }">
 								<Button icon="more-horizontal" />
 							</template>
@@ -34,8 +39,8 @@
 				<template v-slot:body-content>
 					<ListItem
 						v-for="member in $account.child_team_members"
-						:title="`${member.name}`"
-						:description="member.name"
+						:title="`${member.user}`"
+						:description="member.team_title"
 						:key="member.name"
 					>
 						<template #actions>
@@ -52,10 +57,11 @@
 					<div v-if="showManageTeamForm">
 						<h5 class="mt-5 text-sm font-semibold"> Create child team</h5>
 						<Input
-							label="Enter the email address to create a new child team for shared access."
+							label="Enter name to create a new child team for shared access."
 							type="text"
 							class="mt-2"
-							v-model="childTeamEmail"
+							placeholder="e.g Accounts Team"
+							v-model="childTeamTitle"
 							required
 						/>
 						<ErrorMessage :message="$resourceErrors" />
@@ -66,7 +72,7 @@
 								class="ml-2"
 								appearance="primary"
 								:loading="$resources.addChildTeam.loading"
-								@click="$resources.addChildTeam.submit({ team: childTeamEmail })"
+								@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
 							>
 								Add Child Team
 							</Button>
@@ -90,17 +96,13 @@ export default {
 		return {
 			showManageTeamDialog: false,
 			showManageTeamForm: false,
-			childTeamEmail: null,
+			childTeamTitle: null,
 			newChildTeamMessage: 'A new team is created',
 			newChildTeamTitle: 'Team Created!'
 		};
 	},
 	computed: {
 		teams() {
-			let current_team = this.$account.team.name;
-			if (!this.$account.teams.includes(current_team)) {
-				this.$account.teams.push(current_team);
-			}
 			return this.$account.teams;
 		},
 		showManageTeamButton() {
@@ -134,12 +136,8 @@ export default {
 			return {
 				method: 'press.api.account.create_child_team',
 				onSuccess(data) {
-					if (data == "new_team") {
-						this.newChildTeamMessage = "We have sent a verification email to " + this.childTeamEmail + ".";
-						this.newChildTeamTitle = "Email Sent"
-					}
 					this.showManageTeamDialog = false;
-					this.childTeamEmail = null;
+					this.childTeamTitle = null;
 					this.$account.fetchAccount();
 					this.$notify({
 						title: this.newChildTeamTitle,
