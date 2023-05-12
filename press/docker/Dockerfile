@@ -103,6 +103,14 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
+{% if doc.apt_packages %}
+# Install Additional APT Packages
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  {{ doc.apt_packages }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-apt-packages`
+{% endif %}
 
 RUN useradd -ms /bin/bash frappe
 USER frappe
