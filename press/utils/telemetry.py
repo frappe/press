@@ -21,8 +21,8 @@ def init_telemetry():
 		frappe.local.posthog = Posthog(posthog_project_id, host=posthog_host)
 
 
-def capture(event, app):
+def capture(event, app, site=None):
 	init_telemetry()
 	ph: Posthog = getattr(frappe.local, "posthog", None)
 	with suppress(Exception):
-		ph and ph.capture(frappe.local.site, f"{app}_{event}")
+		ph and ph.capture(site or frappe.local.site, f"{app}_{event}")
