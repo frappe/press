@@ -139,18 +139,29 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		preparation_steps = [
-			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
-			("pre", "redis", "Setup Prerequisites", "Install Redis"),
-			("pre", "python", "Setup Prerequisites", "Install Python"),
-			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
-			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
-			("pre", "node", "Setup Prerequisites", "Install Node.js"),
-			("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
-			("pre", "pip", "Setup Prerequisites", "Install pip"),
-			("bench", "bench", "Setup Bench", "Install Bench"),
-			("bench", "env", "Setup Bench", "Setup Virtual Environment"),
-		]
+		self.apt_packages = self.get_apt_packages()
+
+		preparation_steps = (
+			[
+				("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
+				("pre", "redis", "Setup Prerequisites", "Install Redis"),
+				("pre", "python", "Setup Prerequisites", "Install Python"),
+				("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
+				("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
+			]
+			+ (
+				[("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages")]
+				if self.apt_packages
+				else []
+			)
+			+ [
+				("pre", "node", "Setup Prerequisites", "Install Node.js"),
+				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
+				("pre", "pip", "Setup Prerequisites", "Install pip"),
+				("bench", "bench", "Setup Bench", "Install Bench"),
+				("bench", "env", "Setup Bench", "Setup Virtual Environment"),
+			]
+		)
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
@@ -249,8 +260,8 @@ class DeployCandidate(Document):
 			dockerfile_template = "press/docker/Dockerfile"
 
 			for d in self.dependencies:
-				if d.dependency == "BENCH_VERSION" and d.version != "5.2.1":
-					dockerfile_template = "press/docker/Dockerfile_Bench_5_15_2"
+				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
+					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
@@ -628,6 +639,9 @@ class DeployCandidate(Document):
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
+
+	def get_apt_packages(self):
+		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
 
 
 def ansi_escape(text):

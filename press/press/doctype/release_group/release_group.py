@@ -149,6 +149,10 @@ class ReleaseGroup(Document):
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
 
+		packages = [
+			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
+		]
+
 		apps = self.get_sorted_based_on_rg_apps(apps)
 
 		# Create and deploy the DC
@@ -158,6 +162,7 @@ class ReleaseGroup(Document):
 				"group": self.name,
 				"apps": apps,
 				"dependencies": dependencies,
+				"packages": packages,
 			}
 		).insert()
 

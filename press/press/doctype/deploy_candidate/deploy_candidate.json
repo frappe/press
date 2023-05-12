@@ -15,6 +15,8 @@
   "section_break_4",
   "apps",
   "dependencies",
+  "packages",
+  "apt_packages",
   "section_break_6",
   "build_start",
   "build_end",
@@ -229,10 +231,23 @@
    "fieldname": "is_redisearch_enabled",
    "fieldtype": "Check",
    "label": "Is RediSearch Enabled"
+  },
+  {
+   "fieldname": "packages",
+   "fieldtype": "Table",
+   "label": "Packages",
+   "options": "Deploy Candidate Package",
+   "read_only": 1
+  },
+  {
+   "fieldname": "apt_packages",
+   "fieldtype": "Text",
+   "label": "APT Packages",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-04-01 17:11:40.188553",
+ "modified": "2023-05-12 16:24:51.452853",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
