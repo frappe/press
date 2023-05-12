@@ -17,6 +17,7 @@ from press.press.doctype.site.saas_site import (
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import clear_setup_intent
+from press.utils.telemetry import capture
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
@@ -92,6 +93,9 @@ def account_request(
 		}
 	else:
 		create_or_rename_saas_site(app, account_request)
+		capture(
+			"completed_server_account_request", "fc_saas", account_request.get_site_name()
+		)
 
 
 def create_or_rename_saas_site(app, account_request):
@@ -251,6 +255,11 @@ def setup_account(key, business_data=None):
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
+	capture(
+		"init_server_setup_account",
+		"fc_saas",
+		account_request.get_site_name(),
+	)
 	frappe.set_user("Administrator")
 
 	if business_data:
@@ -274,6 +283,11 @@ def setup_account(key, business_data=None):
 	account_request.save(ignore_permissions=True)
 
 	create_marketplace_subscription(account_request)
+	capture(
+		"completed_server_setup_account",
+		"fc_saas",
+		account_request.get_site_name(),
+	)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -285,9 +299,19 @@ def headless_setup_account(key):
 	if not account_request:
 		frappe.throw("Invalid or Expired Key")
 
+	capture(
+		"init_server_setup_account",
+		"fc_saas",
+		account_request.get_site_name(),
+	)
 	frappe.set_user("Administrator")
 
 	create_marketplace_subscription(account_request)
+	capture(
+		"completed_server_setup_account",
+		"fc_saas",
+		account_request.get_site_name(),
+	)
 
 	frappe.local.response["type"] = "redirect"
 	frappe.local.response[
@@ -373,10 +397,11 @@ def get_site_status(key, app=None):
 	site = frappe.db.get_value(
 		"Site",
 		{"subdomain": account_request.subdomain, "domain": domain},
-		["status", "subdomain"],
+		["status", "subdomain", "name"],
 		as_dict=1,
 	)
 	if site:
+		capture("completed_site_allocation", "fc_saas", site.name)
 		return site
 	else:
 		return {"status": "Pending"}
