@@ -4,7 +4,7 @@ import frappe
 
 
 def execute():
-	frappe.reload_doc("press", "doctype", "telegram_group_topics")
+	frappe.reload_doc("press", "doctype", "telegram_group_topic")
 	frappe.reload_doc("press", "doctype", "telegram_group")
 	frappe.reload_doc("press", "doctype", "press_settings")
 	settings = frappe.get_doc("Press Settings")
