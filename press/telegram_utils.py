@@ -59,6 +59,9 @@ class Telegram:
 		if self.chat_id != str(message["chat"]["id"]):
 			return
 
+		# Respond on the same topic
+		self.topic_id = message.get("message_thread_id")
+
 		text = message["text"]
 		entities = message.get("entities", [])
 		# Ignore pointless chatter
