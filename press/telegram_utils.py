@@ -54,7 +54,6 @@ class Telegram:
 	def respond(self, message):
 		if not message:
 			return
-		self.chat_id = frappe.db.get_single_value("Press Settings", "telegram_alert_chat_id")
 
 		# Only respond to message from the Telegram alerts group
 		if self.chat_id != str(message["chat"]["id"]):
