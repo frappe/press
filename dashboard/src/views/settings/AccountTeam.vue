@@ -39,8 +39,7 @@
 				<template v-slot:body-content>
 					<ListItem
 						v-for="member in $account.child_team_members"
-						:title="`${member.user}`"
-						:description="member.team_title"
+						:title="`${member.team_title}`"
 						:key="member.name"
 					>
 						<template #actions>
