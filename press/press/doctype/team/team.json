@@ -1,13 +1,14 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Prompt",
+ "autoname": "hash",
  "creation": "2022-01-28 20:07:37.989538",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "team_title",
   "user",
   "is_developer",
   "free_account",
@@ -310,6 +311,11 @@
    "fieldtype": "Table",
    "label": "Child Team Members",
    "options": "Child Team Member"
+  },
+  {
+   "fieldname": "team_title",
+   "fieldtype": "Data",
+   "label": "Team Title"
   }
  ],
  "links": [
@@ -364,11 +370,11 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-04-28 10:34:44.264374",
+ "modified": "2023-05-12 10:48:45.920926",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
- "naming_rule": "Set by user",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -391,8 +397,10 @@
   }
  ],
  "quick_entry": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "user",
  "track_changes": 1
 }

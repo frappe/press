@@ -41,7 +41,7 @@ class Team(Document):
 
 	def before_insert(self):
 		if not self.notify_email:
-			self.notify_email = self.name
+			self.notify_email = self.user
 
 		if not self.referrer_id:
 			self.set_referrer_id()
@@ -50,7 +50,7 @@ class Team(Document):
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
-		h.update(self.name.encode())
+		h.update(self.user.encode())
 		self.referrer_id = h.hexdigest()
 
 	def set_partner_payment_mode(self):
@@ -59,7 +59,7 @@ class Team(Document):
 
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
-			self.partner_email = self.name
+			self.partner_email = self.user
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -104,7 +104,6 @@ class Team(Document):
 		team = frappe.get_doc(
 			{
 				"doctype": "Team",
-				"name": account_request.team,
 				"user": account_request.email,
 				"country": country,
 				"enabled": 1,
@@ -122,6 +121,7 @@ class Team(Document):
 			user.append_roles(account_request.role)
 			user.save(ignore_permissions=True)
 
+		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
 		if not account_request.invited_by_parent_team:
@@ -181,7 +181,7 @@ class Team(Document):
 
 	def set_billing_name(self):
 		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.name)
+			self.billing_name = frappe.utils.get_fullname(self.user)
 
 	def set_default_user(self):
 		if not self.user and self.team_members:
@@ -270,7 +270,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.partner_email = self.name
+		self.partner_email = self.user
 		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
@@ -575,7 +575,7 @@ class Team(Document):
 			return False
 		erpnext_com = get_erpnext_com_connection()
 		res = erpnext_com.get_value(
-			"ERPNext Partner", "name", filters={"email": self.name, "status": "Approved"}
+			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
 		)
 		return res["name"] if res else None
 

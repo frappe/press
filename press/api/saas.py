@@ -351,7 +351,7 @@ def create_team(account_request, get_stripe_id=False):
 			user_exists=frappe.db.exists("User", email),
 		)
 	else:
-		team_doc = frappe.get_doc("Team", email)
+		team_doc = frappe.get_doc("Team", {"user": email})
 
 	if get_stripe_id:
 		return team_doc.stripe_customer_id
