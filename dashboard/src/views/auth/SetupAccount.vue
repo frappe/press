@@ -159,7 +159,7 @@ export default {
 					accepted_user_terms: this.termsAccepted
 				},
 				onSuccess(res) {
-					window.posthog.capture('completed_client_fc_setup_account');
+					//window.posthog.capture('completed_client_fc_setup_account');
 					if (res) {
 						this.$router.push(res.dashboard_route || '/');
 					}

@@ -112,7 +112,7 @@ export default {
 			let result = await this.$call(
 				'press.api.billing.get_publishable_key_and_setup_intent'
 			);
-			window.posthog.capture('init_client_add_card', 'fc_signup');
+			//window.posthog.capture('init_client_add_card', 'fc_signup');
 			let { publishable_key, setup_intent } = result;
 			this.setupIntent = setup_intent;
 			this.stripe = await loadStripe(publishable_key);
@@ -201,7 +201,7 @@ export default {
 								address: this.withoutAddress ? null : this.billingInformation
 							}
 						);
-						window.posthog.capture('completed_client_add_card', 'fc_signup');
+						//window.posthog.capture('completed_client_add_card', 'fc_signup');
 
 						await this.verifyWithMicroChargeIfApplicable(payment_method_name);
 
