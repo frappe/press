@@ -98,8 +98,5 @@ class AlertmanagerWebhookLog(Document):
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
-		client = Telegram()
-		client.chat_id = frappe.db.get_single_value(
-			"Press Settings", "telegram_alert_chat_id"
-		)
+		client = Telegram(self.severity)
 		client.send(message)

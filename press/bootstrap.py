@@ -167,8 +167,15 @@ def setup_monitoring(settings):
 	settings.monitor_token = frappe.generate_hash()
 	settings.press_monitoring_password = frappe.generate_hash()
 
-	settings.telegram_alert_chat_id = TELEGRAM_CHAT_ID
-	settings.telegram_chat_id = TELEGRAM_CHAT_ID
+	frappe.get_doc(
+		{
+			"doctype": "Telegram Group",
+			"name": "Alerts",
+			"chat_id": TELEGRAM_CHAT_ID,
+		}
+	).insert()
+
+	settings.telegram_alerts_chat_group = "Alerts"
 	settings.telegram_bot_token = TELEGRAM_BOT_TOKEN
 
 	settings.save()
