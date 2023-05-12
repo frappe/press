@@ -10,10 +10,7 @@ import frappe
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.site.site import (
-	process_rename_site_job_update,
-	site_cleanup_after_archive,
-)
+from press.press.doctype.site.site import site_cleanup_after_archive
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_domain.site_domain import SiteDomain
 from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
