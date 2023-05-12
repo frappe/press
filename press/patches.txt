@@ -92,4 +92,5 @@ press.press.doctype.user_ssh_key.patches.set_existing_keys_as_default
 press.press.doctype.press_settings.patches.set_press_monitoring_password
 press.press.doctype.deploy_candidate_app.patches.set_app_name_to_app
 press.press.doctype.site.patches.set_database_access_credentials
+press.press.doctype.team.patches.set_team_title
 press.press.doctype.telegram_group.patches.create_groups_from_press_settings

@@ -125,7 +125,7 @@
 		>
 			<template #body-content>
 				<Input
-					label="Enter email of the team"
+					label="Enter title of the child team"
 					type="text"
 					v-model="emailOfChildTeam"
 					required
