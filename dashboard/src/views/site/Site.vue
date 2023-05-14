@@ -137,7 +137,12 @@
 			<template #actions>
 				<Button
 					:loading="$resources.transferSite.loading"
-					@click="$resources.transferSite.submit({ team: emailOfChildTeam, name: siteName })"
+					@click="
+						$resources.transferSite.submit({
+							team: emailOfChildTeam,
+							name: siteName
+						})
+					"
 					appearance="primary"
 				>
 					Submit
@@ -210,10 +215,10 @@ export default {
 						title: 'Site Transferred to Child Team',
 						message: 'Site Transferred to Child Team',
 						color: 'green',
-						icon: 'check',
+						icon: 'check'
 					});
 				}
-			}
+			};
 		}
 	},
 	activated() {

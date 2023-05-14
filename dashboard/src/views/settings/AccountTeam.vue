@@ -46,7 +46,9 @@
 							<ErrorMessage :message="$resourceErrors" />
 							<Button
 								class="ml-2 p-4"
-								@click="$resources.removeMember.submit({ child_team: member.name })"
+								@click="
+									$resources.removeMember.submit({ child_team: member.name })
+								"
 								:loading="$resources.removeMember.loading"
 							>
 								Remove
@@ -54,7 +56,7 @@
 						</template>
 					</ListItem>
 					<div v-if="showManageTeamForm">
-						<h5 class="mt-5 text-sm font-semibold"> Create child team</h5>
+						<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
 						<Input
 							label="Enter name to create a new child team for shared access."
 							type="text"
@@ -71,7 +73,9 @@
 								class="ml-2"
 								appearance="primary"
 								:loading="$resources.addChildTeam.loading"
-								@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
+								@click="
+									$resources.addChildTeam.submit({ title: childTeamTitle })
+								"
 							>
 								Add Child Team
 							</Button>
@@ -107,7 +111,7 @@ export default {
 		showManageTeamButton() {
 			const team = this.$account.team;
 			let show = this.$account.hasRole('Press Admin');
-			return (show && !this.$account.parent_team);
+			return show && !this.$account.parent_team;
 		}
 	},
 	resources: {
@@ -143,7 +147,7 @@ export default {
 						message: this.newChildTeamMessage,
 						color: 'green',
 						icon: 'check'
-					})
+					});
 				}
 			};
 		},
@@ -154,7 +158,7 @@ export default {
 					this.$account.fetchAccount();
 				}
 			};
-		},
+		}
 	},
 	methods: {
 		dropdownItems(team_name) {
