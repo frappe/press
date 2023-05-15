@@ -100,12 +100,7 @@ export default {
 					handler: () => (this.showTeamSwitcher = true)
 				},
 				{
-					label: 'Docs',
-					icon: 'book-open',
-					handler: () => (window.location.href = '/docs')
-				},
-				{
-					label: 'Support',
+					label: 'Support & Docs',
 					icon: 'help-circle',
 					handler: () => (window.location.href = '/support')
 				},
