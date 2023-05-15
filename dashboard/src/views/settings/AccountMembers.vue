@@ -8,7 +8,7 @@
 				v-if="showManageTeamButton"
 				@click="showManageMemberDialog = true"
 			>
-				Add New Member
+				Manage
 			</Button>
 		</template>
 		<div class="max-h-96 divide-y">
@@ -20,45 +20,65 @@
 			>
 				<template #actions>
 					<Badge
-						v-if="getRoleBadgeProps(member).status == 'Owner'"
 						:label="getRoleBadgeProps(member).status"
 						:colorMap="$badgeStatusColorMap"
 					/>
-					<Button
-						v-else
-						icon="trash-2"
-						@click="removeMember(member)"
-						:loading="$resources.removeMember.loading"
-					>
-					</Button>
 				</template>
 			</ListItem>
 		</div>
 
 		<Dialog
-			:options="{ title: 'Add New Member' }"
+			:options="{ title: 'Manage Members' }"
 			v-model="showManageMemberDialog"
 		>
 			<template v-slot:body-content>
-				<Input
-					label="Enter the email address of your teammate to invite them."
-					type="text"
-					class="mt-2"
-					v-model="memberEmail"
-					required
-				/>
-				<ErrorMessage :message="$resourceErrors" />
-			</template>
-
-			<template v-slot:actions>
-				<Button
-					class="ml-2"
-					appearance="primary"
-					:loading="$resources.addMember.loading"
-					@click="$resources.addMember.submit({ email: memberEmail })"
+				<ListItem
+					v-for="member in $account.team_members"
+					:title="`${member.first_name} ${member.last_name}`"
+					:description="member.name"
+					:key="member.name"
 				>
-					Send Invitation
-				</Button>
+					<template #actions>
+						<Button
+							v-if="getRoleBadgeProps(member).status == 'Member'"
+							class="ml-2 p-4"
+							@click="removeMember(member)"
+							:loading="$resources.removeMember.loading"
+						>
+							Remove
+						</Button>
+						<Badge v-else v-bind="getRoleBadgeProps(member)" />
+					</template>
+				</ListItem>
+
+				<div v-if="showAddMemberForm">
+					<h5 class="mt-5 text-sm font-semibold">Add Member</h5>
+					<Input
+						label="Enter the email address of your teammate to invite them."
+						type="text"
+						class="mt-2"
+						v-model="memberEmail"
+						required
+					/>
+					<ErrorMessage :message="$resourceErrors" />
+
+					<div class="mt-5 flex flex-row justify-end">
+						<Button @click="showAddMemberForm = false"> Cancel </Button>
+						<Button
+							class="ml-2"
+							appearance="primary"
+							:loading="$resources.addMember.loading"
+							@click="$resources.addMember.submit({ email: memberEmail })"
+						>
+							Send Invitation
+						</Button>
+					</div>
+				</div>
+				<div v-else class="mt-5 flex flex-row justify-end">
+					<Button appearance="primary" @click="showAddMemberForm = true">
+						Add Member
+					</Button>
+				</div>
 			</template>
 		</Dialog>
 	</Card>
@@ -120,7 +140,6 @@ export default {
 				title: 'Remove Member',
 				message: `Are you sure you want to remove ${member.first_name} ?`,
 				actionLabel: 'Remove',
-				actionType: 'danger',
 				action: closeDialog => {
 					this.$resources.removeMember.submit({ user_email: member.name });
 					closeDialog();

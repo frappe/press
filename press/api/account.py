@@ -26,9 +26,7 @@ def signup(email, referrer=None):
 	frappe.set_user("Administrator")
 
 	email = email.strip().lower()
-	exists, enabled = frappe.db.get_value(
-		"Team", {"user": email}, ["name", "enabled"]
-	) or [0, 0]
+	exists, enabled = frappe.db.get_value("Team", email, ["name", "enabled"]) or [0, 0]
 
 	if exists and not enabled:
 		frappe.throw(_("Account {0} has been deactivated").format(email))
@@ -181,8 +179,8 @@ def enable_account():
 
 @frappe.whitelist()
 def request_team_deletion():
-	team = get_current_team(get_doc=True)
-	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team.name}).insert()
+	team = get_current_team()
+	doc = frappe.get_doc({"doctype": "Team Deletion Request", "team": team}).insert()
 	return doc.name
 
 
@@ -261,10 +259,11 @@ def clear_country_list_cache():
 
 @frappe.whitelist()
 def set_country(country):
-	team_doc = get_current_team(get_doc=True)
-	team_doc.country = country
-	team_doc.save()
-	team_doc.create_stripe_customer()
+	team = get_current_team()
+	doc = frappe.get_doc("Team", team)
+	doc.country = country
+	doc.save()
+	doc.create_stripe_customer()
 
 
 def get_account_request_from_key(key):
@@ -292,30 +291,19 @@ def get():
 	team = get_current_team()
 	team_doc = frappe.get_doc("Team", team)
 
-	parent_teams = [
+	teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
-
-	if parent_teams:
-		teams = frappe.db.sql(
-			"""
-			select name, team_title, user from tabTeam where name in %s
-		""",
-			[parent_teams],
-			as_dict=True,
-		)
-	else:
-		teams = [
-			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-		]
+	for child in get_child_team_members(team):
+		teams.append(child.name)
 
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
 		"team": team_doc,
-		"team_members": get_team_members(team_doc.name),
-		"child_team_members": get_child_team_members(team_doc.name),
-		"teams": list(teams),
+		"team_members": get_team_members(team),
+		"child_team_members": get_child_team_members(team),
+		"teams": list(set(teams)),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
@@ -328,34 +316,28 @@ def get():
 
 
 @frappe.whitelist()
-def create_child_team(title):
-	team = title.strip()
-
+def create_child_team(team):
+	team = team.strip().lower()
+	exists, enabled = frappe.db.get_value("Team", team, ["name", "enabled"]) or [0, 0]
 	current_team = get_current_team(True)
-	if title in [
-		d.team_title
-		for d in frappe.get_all("Team", {"parent_team": current_team.name}, ["team_title"])
-	]:
-		frappe.throw(f"Child Team {title} already exists.")
-	elif title == "Parent Team":
-		frappe.throw("Child team name cannot be same as parent team")
 
-	doc = frappe.get_doc(
-		{
-			"doctype": "Team",
-			"team_title": team,
-			"user": current_team.user,
-			"parent_team": current_team.name,
-			"enabled": 1,
-		}
-	)
-	doc.insert(ignore_permissions=True, ignore_links=True)
-	doc.append("team_members", {"user": current_team.user})
-	doc.save()
+	if not exists:
+		return new_team(team, current_team.name)
+	elif exists and not enabled:
+		frappe.throw("Team is not active.")
+	else:
+		if current_team.name == team:
+			frappe.throw(_("Child team cannot be same as parent team"))
 
-	current_team.append("child_team_members", {"child_team": doc.name})
-	current_team.save()
+		if frappe.get_value("Team", team, "parent_team"):
+			frappe.throw(_(f"{team} is already added as child team to another Team."))
 
+		frappe.db.set_value("Team", team, "parent_team", current_team.name)
+		current_team.append(
+			"child_team_members",
+			{"child_team": team},
+		)
+		current_team.save()
 	return "created"
 
 
@@ -486,7 +468,7 @@ def remove_child_team(child_team):
 
 	team.enabled = 0
 	team.parent_team = ""
-	team.save(ignore_permissions=True)
+	team.save()
 
 
 @frappe.whitelist()
@@ -542,8 +524,8 @@ def feedback(message, route=None):
 
 @frappe.whitelist()
 def user_prompts():
-	team = get_current_team(True)
-	doc = frappe.get_doc("Team", team.name)
+	team = get_current_team()
+	doc = frappe.get_doc("Team", team)
 
 	onboarding = doc.get_onboarding()
 	if not onboarding["complete"]:
@@ -596,9 +578,9 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 
 @frappe.whitelist()
 def get_emails():
-	team = get_current_team(True)
+	team = get_current_team()
 	data = frappe.get_all(
-		"Communication Email", filters={"parent": team.name}, fields=["type", "value"]
+		"Communication Email", filters={"parent": team}, fields=["type", "value"]
 	)
 
 	return data
@@ -645,26 +627,26 @@ def me():
 
 @frappe.whitelist()
 def fuse_list():
-	team = get_current_team(get_doc=True)
+	team = get_current_team()
 	query = f"""
 		SELECT
 			'Site' as doctype, name as title, name as route
 		FROM
 			`tabSite`
 		WHERE
-			team = '{team.name}' AND status NOT IN ('Archived')
+			team = '{team}' AND status NOT IN ('Archived')
 		UNION ALL
 		SELECT 'Bench' as doctype, title as title, name as route
 		FROM
 			`tabRelease Group`
 		WHERE
-			team = '{team.name}' AND enabled = 1
+			team = '{team}' AND enabled = 1
 		UNION ALL
 		SELECT 'Server' as doctype, name as title, name as route
 		FROM
 			`tabServer`
 		WHERE
-			team = '{team.name}' AND status = 'Active'
+			team = '{team}' AND status = 'Active'
 	"""
 
 	return frappe.db.sql(query, as_dict=True)

@@ -5,6 +5,7 @@
 			<AccountProfile />
 			<AccountTeam />
 			<AccountMembers />
+			<AccountActions />
 			<AccountReferral />
 			<AccountEmails />
 			<AccountAPI />
@@ -17,6 +18,7 @@
 import AccountProfile from './AccountProfile.vue';
 import AccountTeam from './AccountTeam.vue';
 import AccountMembers from './AccountMembers.vue';
+import AccountActions from './AccountActions.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountEmails from './AccountEmails.vue';
 import AccountAPI from './AccountAPI.vue';
@@ -31,6 +33,7 @@ export default {
 		};
 	},
 	components: {
+		AccountActions,
 		AccountProfile,
 		AccountTeam,
 		AccountMembers,
