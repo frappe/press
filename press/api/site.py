@@ -687,14 +687,13 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @protected("Site")
 def overview(name):
 	site = frappe.get_cached_doc("Site", name)
-	team = frappe.get_cached_doc("Team", site.team)
 
 	return {
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				team.user,
+				site.team,
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),
@@ -1428,21 +1427,19 @@ def change_notify_email(name, email):
 def change_team(team, name):
 
 	if not (
-		frappe.db.exists("Team", {"team_title": team})
-		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
+		frappe.db.exists("Team", team) and frappe.db.get_value("Team", team, "enabled", 1)
 	):
 		frappe.throw("No Active Team record found.")
 
 	from press.press.doctype.team.team import get_child_team_members
 
-	current_team = get_current_team(True)
-	child_teams = [team.name for team in get_child_team_members(current_team.name)]
-	teams = [current_team.name] + child_teams
+	current_team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(current_team)]
+	teams = [current_team] + child_teams
 
 	if team not in teams:
 		frappe.throw(f"{team} is not part of your organization.")
 
-	child_team = frappe.get_doc("Team", {"team_title": team})
 	site_doc = frappe.get_doc("Site", name)
-	site_doc.team = child_team.name
+	site_doc.team = team
 	site_doc.save(ignore_permissions=True)

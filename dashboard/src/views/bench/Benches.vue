@@ -5,7 +5,7 @@
 				<Button
 					appearance="primary"
 					iconLeft="plus"
-					class="ml-2"
+					class="ml-2 hidden sm:inline-flex"
 					@click="showBillingDialog"
 				>
 					New
