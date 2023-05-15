@@ -168,6 +168,7 @@ export default {
 				title: 'Leave Team',
 				message: `Are you sure you want to leave team <strong>${team_name}</strong>?`,
 				actionLabel: 'Leave Team',
+				actionType: 'danger',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.leaveTeam.submit({ team: team_name });

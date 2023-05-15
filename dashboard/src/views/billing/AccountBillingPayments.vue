@@ -63,7 +63,10 @@
 						{{ invoice.status }}
 					</Badge>
 				</span>
-				<span v-if="invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'" class="hidden md:inline">
+				<span
+					v-if="invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'"
+					class="hidden md:inline"
+				>
 					{{
 						$date(invoice.payment_date).toLocaleString({
 							month: 'long',
