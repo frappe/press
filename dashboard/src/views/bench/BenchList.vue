@@ -15,13 +15,13 @@
 					class="block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
 					<div class="flex items-center justify-between">
-						<div class="text-base sm:w-4/12">
+						<div class="text-base w-2/3 sm:w-4/12">
 							{{ bench.title }}
 						</div>
-						<div class="text-base sm:w-4/12">
+						<div class="text-base w-1/3 sm:w-4/12">
 							<Badge :label="bench.status" :colorMap="$badgeStatusColorMap" />
 						</div>
-						<div class="text-base sm:w-4/12">
+						<div class="text-base hidden sm:block sm:w-4/12">
 							<Badge
 								:label="`${bench.number_of_apps} ${
 									bench.number_of_apps == 1 ? 'App' : 'Apps'

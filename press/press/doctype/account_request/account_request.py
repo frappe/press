@@ -117,3 +117,8 @@ class AccountRequest(Document):
 	@property
 	def full_name(self):
 		return self.first_name + " " + self.last_name
+
+	def get_site_name(self):
+		return (
+			self.subdomain + "." + frappe.db.get_value("Saas Settings", self.saas_app, "domain")
+		)

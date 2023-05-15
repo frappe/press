@@ -13,11 +13,11 @@
 				>
 					<div class="flex items-center justify-between">
 						<div
-							class="hover:text-ellipses truncate break-all text-base sm:w-4/12"
+							class="hover:text-ellipses truncate break-all text-base w-1/2 sm:w-4/12"
 						>
 							{{ site.host_name || site.name }}
 						</div>
-						<div class="text-base sm:w-3/12">
+						<div class="text-base w-1/3 sm:w-3/12">
 							<Badge
 								class="pointer-events-none"
 								:colorMap="$badgeStatusColorMap"
@@ -32,7 +32,10 @@
 								{{ site.title }}
 							</div>
 						</div>
-						<div v-if="showBenchInfo" class="text-base sm:w-3/12">
+						<div
+							v-if="showBenchInfo"
+							class="text-base hidden sm:block sm:w-3/12"
+						>
 							<Badge>
 								{{ site.version }}
 							</Badge>

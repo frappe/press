@@ -10,10 +10,7 @@ import frappe
 
 from press.agent import Agent
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.site.site import (
-	process_rename_site_job_update,
-	site_cleanup_after_archive,
-)
+from press.press.doctype.site.site import site_cleanup_after_archive
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_domain.site_domain import SiteDomain
 from press.press.doctype.tls_certificate.tls_certificate import TLSCertificate
@@ -243,29 +240,6 @@ class TestSiteDomain(unittest.TestCase):
 		from collections import Counter
 
 		self.assertEqual(Counter(args[-1]), Counter([site_domain1.name, site_domain2.name]))
-
-	def test_site_rename_doesnt_update_host_name_for_custom_domain(self):
-		"""Ensure site configuration isn't updated after rename when custom domain is host_name."""
-		site = create_test_site("old-name")
-		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
-		site.set_host_name(site_domain1.name)
-		new_name = "new-name.fc.dev"
-		site.rename(new_name)
-
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
-		process_rename_site_job_update(rename_job)
-		site = frappe.get_doc("Site", new_name)
-		if site.configuration[0].key == "host_name":
-			config_host = site.configuration[0].value
-		self.assertEqual(config_host, f"https://{site_domain1.name}")
 
 	def test_primary_domain_cannot_be_deleted(self):
 		site = create_test_site("old-name")

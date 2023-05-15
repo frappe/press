@@ -94,7 +94,7 @@ def create_test_site(
 	return site
 
 
-@patch.object(AgentJob, "after_insert", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
@@ -128,15 +128,7 @@ class TestSite(unittest.TestCase):
 		new_name = f"new-name.{domain}"
 		site.rename(new_name)
 
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
+		rename_job = self._fake_succeed_rename_jobs()
 		process_rename_site_job_update(rename_job)
 
 		self.assertFalse(frappe.db.exists("Site", {"name": f"old-name.{domain}"}))
@@ -188,6 +180,35 @@ class TestSite(unittest.TestCase):
 			rename_upstream_jobs_count_after - rename_upstream_jobs_count_before, 1
 		)
 
+	def _fake_succeed_rename_jobs(self):
+		rename_step_name_map = {
+			"Rename Site": "Rename Site",
+			"Rename Site on Upstream": "Rename Site File in Upstream Directory",
+		}
+		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		rename_upstream_job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Rename Site on Upstream"}
+		)
+		frappe.db.set_value(
+			"Agent Job Step",
+			{
+				"step_name": rename_step_name_map[rename_job.job_type],
+				"agent_job": rename_job.name,
+			},
+			"status",
+			"Success",
+		)
+		frappe.db.set_value(
+			"Agent Job Step",
+			{
+				"step_name": rename_step_name_map[rename_upstream_job.job_type],
+				"agent_job": rename_upstream_job.name,
+			},
+			"status",
+			"Success",
+		)
+		return rename_job
+
 	def test_default_domain_is_renamed_along_with_site(self):
 		"""Ensure default domains are renamed when site is renamed."""
 		site = create_test_site("old-name")
@@ -197,15 +218,7 @@ class TestSite(unittest.TestCase):
 		self.assertTrue(frappe.db.exists("Site Domain", site.name))
 		site.rename(new_name)
 
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
+		rename_job = self._fake_succeed_rename_jobs()
 		process_rename_site_job_update(rename_job)
 
 		self.assertFalse(frappe.db.exists("Site Domain", old_name))
@@ -217,15 +230,7 @@ class TestSite(unittest.TestCase):
 		new_name = "new-name.fc.dev"
 		site.rename(new_name)
 
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
+		rename_job = self._fake_succeed_rename_jobs()
 		process_rename_site_job_update(rename_job)
 
 		site = frappe.get_doc("Site", new_name)
@@ -243,15 +248,7 @@ class TestSite(unittest.TestCase):
 		new_name = "new-name.fc.dev"
 		site.rename(new_name)
 
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
+		rename_job = self._fake_succeed_rename_jobs()
 		process_rename_site_job_update(rename_job)
 		site = frappe.get_doc("Site", new_name)
 		if site.configuration[0].key == "host_name":
@@ -264,15 +261,7 @@ class TestSite(unittest.TestCase):
 		new_name = "new-name.fc.dev"
 		site.rename(new_name)
 
-		rename_job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
-		rename_upstream_job = frappe.get_last_doc(
-			"Agent Job", {"job_type": "Rename Site on Upstream"}
-		)
-		rename_job.status = "Success"
-		rename_upstream_job.status = "Success"
-		rename_job.save()
-		rename_upstream_job.save()
-
+		rename_job = self._fake_succeed_rename_jobs()
 		job_count_before = frappe.db.count("Agent Job")
 		process_rename_site_job_update(rename_job)
 		job_count_after = frappe.db.count("Agent Job")
@@ -313,3 +302,20 @@ class TestSite(unittest.TestCase):
 		domains = site.get_config_value_for_key("domains")
 		self.assertNotIn(domain, domains)
 		self.assertIn(domain_2, domains)
+
+	def test_site_rename_doesnt_update_host_name_for_custom_domain(self):
+		"""Ensure site configuration isn't updated after rename when custom domain is host_name."""
+		from press.press.doctype.site_domain.test_site_domain import create_test_site_domain
+
+		site = create_test_site("old-name")
+		site_domain1 = create_test_site_domain(site.name, "sitedomain1.com")
+		site.set_host_name(site_domain1.name)
+		new_name = "new-name.fc.dev"
+		site.rename(new_name)
+
+		rename_job = self._fake_succeed_rename_jobs()
+		process_rename_site_job_update(rename_job)
+		site = frappe.get_doc("Site", new_name)
+		if site.configuration[0].key == "host_name":
+			config_host = site.configuration[0].value
+		self.assertEqual(config_host, f"https://{site_domain1.name}")
