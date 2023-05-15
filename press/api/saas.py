@@ -17,7 +17,7 @@ from press.press.doctype.site.saas_site import (
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
 from press.utils.billing import clear_setup_intent
-from press.utils.telemetry import capture
+from press.utils.telemetry import capture, identify
 
 
 # ----------------------------- SIGNUP APIs ---------------------------------
@@ -93,9 +93,12 @@ def account_request(
 		}
 	else:
 		create_or_rename_saas_site(app, account_request)
-		capture(
-			"completed_server_account_request", "fc_saas", account_request.get_site_name()
+		site_name = account_request.get_site_name()
+		identify(
+			site_name,
+			app=account_request.saas_app,
 		)
+		capture("completed_server_account_request", "fc_saas", site_name)
 
 
 def create_or_rename_saas_site(app, account_request):
@@ -396,7 +399,7 @@ def get_site_status(key, app=None):
 
 	site = frappe.db.get_value(
 		"Site",
-		{"subdomain": account_request.subdomain, "domain": domain},
+		{"subdomain": account_request.subdomain, "domain": domain, "status": "Active"},
 		["status", "subdomain", "name"],
 		as_dict=1,
 	)

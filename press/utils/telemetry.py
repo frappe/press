@@ -8,9 +8,6 @@ def init_telemetry():
 	if hasattr(frappe.local, "posthog"):
 		return
 
-	if not frappe.get_system_settings("enable_telemetry"):
-		return
-
 	posthog_host = frappe.conf.get("posthog_host")
 	posthog_project_id = frappe.conf.get("posthog_project_id")
 
@@ -26,3 +23,10 @@ def capture(event, app, site=None):
 	ph: Posthog = getattr(frappe.local, "posthog", None)
 	with suppress(Exception):
 		ph and ph.capture(site or frappe.local.site, f"{app}_{event}")
+
+
+def identify(site, **kwargs):
+	init_telemetry()
+	ph: Posthog = getattr(frappe.local, "posthog", None)
+	with suppress(Exception):
+		ph and ph.identify(site, kwargs)
