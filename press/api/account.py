@@ -543,7 +543,7 @@ def feedback(message, route=None):
 @frappe.whitelist()
 def user_prompts():
 	team = get_current_team(True)
-	doc = frappe.get_doc("Team", team)
+	doc = frappe.get_doc("Team", team.name)
 
 	onboarding = doc.get_onboarding()
 	if not onboarding["complete"]:

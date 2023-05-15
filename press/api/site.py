@@ -686,13 +686,14 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @protected("Site")
 def overview(name):
 	site = frappe.get_cached_doc("Site", name)
+	team = frappe.get_cached_doc("Team", site.team)
 
 	return {
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				site.team,
+				team.user,
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),
