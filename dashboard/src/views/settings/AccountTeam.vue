@@ -1,95 +1,85 @@
 <template>
-	<div>
-		<Card
-			title="Team"
-			subtitle="Teams you are part of and the current active team"
+	<Card
+		title="Team"
+		subtitle="Teams you are part of and the current active team"
+	>
+		<template #actions>
+			<Button v-if="showManageTeamButton" @click="showManageTeamDialog = true">
+				Manage
+			</Button>
+		</template>
+		<ListItem
+			v-for="team in teams"
+			:title="`${team.team_title}`"
+			:description="team.user"
+			:key="team"
 		>
 			<template #actions>
-				<Button
-					v-if="showManageTeamButton"
-					@click="showManageTeamDialog = true"
-				>
-					Manage
-				</Button>
-			</template>
-			<ListItem
-				v-for="team in teams"
-				:title="`${team.team_title}`"
-				:description="team.user"
-				:key="team"
-			>
-				<template #actions>
-					<div v-if="$account.team.name === team.name">
-						<Badge color="blue">Active</Badge>
-					</div>
-					<div v-else class="flex flex-row justify-end">
-						<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>
-							<template v-slot="{ open }">
-								<Button icon="more-horizontal" />
-							</template>
-						</Dropdown>
-					</div>
-				</template>
-			</ListItem>
-
-			<Dialog
-				:options="{ title: 'Manage Team' }"
-				v-model="showManageTeamDialog"
-			>
-				<template v-slot:body-content>
-					<ListItem
-						v-for="member in $account.child_team_members"
-						:title="`${member.team_title}`"
-						:key="member.name"
-					>
-						<template #actions>
-							<ErrorMessage :message="$resourceErrors" />
-							<Button
-								class="ml-2 p-4"
-								@click="
-									$resources.removeMember.submit({ child_team: member.name })
-								"
-								:loading="$resources.removeMember.loading"
-							>
-								Remove
-							</Button>
+				<div v-if="$account.team.name === team.name">
+					<Badge color="blue">Active</Badge>
+				</div>
+				<div v-else class="flex flex-row justify-end">
+					<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
-					</ListItem>
-					<div v-if="showManageTeamForm">
-						<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
-						<Input
-							label="Enter name to create a new child team for shared access."
-							type="text"
-							class="mt-2"
-							placeholder="e.g Accounts Team"
-							v-model="childTeamTitle"
-							required
-						/>
-						<ErrorMessage :message="$resourceErrors" />
+					</Dropdown>
+				</div>
+			</template>
+		</ListItem>
 
-						<div class="mt-5 flex flex-row justify-end">
-							<Button @click="showManageTeamForm = false"> Cancel </Button>
-							<Button
-								class="ml-2"
-								appearance="primary"
-								:loading="$resources.addChildTeam.loading"
-								@click="
-									$resources.addChildTeam.submit({ title: childTeamTitle })
-								"
-							>
-								Add Child Team
-							</Button>
-						</div>
-					</div>
-					<div v-else class="mt-5 flex flex-row justify-end">
-						<Button appearance="primary" @click="showManageTeamForm = true">
-							Add Child team
+		<Dialog :options="{ title: 'Manage Team' }" v-model="showManageTeamDialog">
+			<template v-slot:body-content>
+				<ListItem
+					v-for="member in $account.child_team_members"
+					:title="`${member.team_title}`"
+					:key="member.name"
+				>
+					<template #actions>
+						<ErrorMessage :message="$resourceErrors" />
+						<Button
+							class="ml-2 p-4"
+							@click="
+								$resources.removeMember.submit({ child_team: member.name })
+							"
+							:loading="$resources.removeMember.loading"
+						>
+							Remove
+						</Button>
+					</template>
+				</ListItem>
+				<div v-if="showManageTeamForm">
+					<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
+					<Input
+						label="Enter name to create a new child team for shared access."
+						type="text"
+						class="mt-2"
+						placeholder="e.g Accounts Team"
+						v-model="childTeamTitle"
+						required
+					/>
+					<ErrorMessage :message="$resourceErrors" />
+
+					<div class="mt-5 flex flex-row justify-end">
+						<Button @click="showManageTeamForm = false"> Cancel </Button>
+						<Button
+							class="ml-2"
+							appearance="primary"
+							:loading="$resources.addChildTeam.loading"
+							@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
+						>
+							Add Child Team
 						</Button>
 					</div>
-				</template>
-			</Dialog>
-		</Card>
-	</div>
+				</div>
+				<div v-else class="mt-5 flex flex-row justify-end">
+					<Button appearance="primary" @click="showManageTeamForm = true">
+						Add Child team
+					</Button>
+				</div>
+			</template>
+		</Dialog>
+	</Card>
 </template>
 
 <script>
