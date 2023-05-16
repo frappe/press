@@ -6,6 +6,7 @@ import frappe
 import json
 
 from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
+from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
@@ -14,12 +15,13 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 from press.telegram_utils import Telegram
 
 
-@patch.object(Telegram, "send", new=Mock())
 class TestAudit(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
 
+@patch.object(Telegram, "send", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestBackupRecordCheck(TestAudit):
 	older_than_interval = datetime.now() - timedelta(
 		hours=(BackupRecordCheck.interval + 2)
@@ -80,6 +82,8 @@ class TestBackupRecordCheck(TestAudit):
 		self.assertEqual(audit_log.status, "Success")
 
 
+@patch.object(Telegram, "send", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestOffsiteBackupCheck(TestAudit):
 	def test_audit_succeeds_when_all_remote_files_are_in_remote(self):
 		create_test_press_settings()
