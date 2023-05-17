@@ -13,6 +13,7 @@ from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
+from frappe.rate_limiter import rate_limit
 
 from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
 from press.utils import get_country_info, get_current_team
@@ -117,6 +118,7 @@ def setup_account(
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
 		frappe.throw("No registered account with this email address")
@@ -145,6 +147,7 @@ def send_login_link(email):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def login_using_key(key):
 	cache_key = f"one_time_login_key:{key}"
 	email = frappe.cache().get_value(cache_key)
@@ -420,6 +423,7 @@ def update_profile_picture():
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def send_reset_password_email(email):
 	frappe.utils.validate_email_address(email, True)
 
