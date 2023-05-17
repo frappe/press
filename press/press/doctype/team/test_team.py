@@ -12,6 +12,14 @@ from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
 from press.press.doctype.team.team import Team
+from frappe.tests.ui_test_helpers import create_test_user
+
+
+def create_test_press_admin_user(email: str = frappe.mock("email")):
+	"""Create test press admin user."""
+	user = create_test_user(email)
+	user.add_roles("Press Admin")
+	return user
 
 
 def create_test_team(email: str = frappe.mock("email")):
