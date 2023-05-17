@@ -6,6 +6,13 @@
   args:
     chdir: /home/frappe/agent
 
+- name: Setup Agent Authentication
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent setup authentication --password {{ agent_password }}'
+  args:
+    chdir: /home/frappe/agent
+
 - name: Setup Agent NGINX
   become: yes
   become_user: frappe

@@ -557,6 +557,7 @@ class Server(BaseServer):
 
 	def _agent_set_proxy_ip(self):
 		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		agent_password = self.get_password("agent_password")
 
 		try:
 			ansible = Ansible(
@@ -568,6 +569,7 @@ class Server(BaseServer):
 					"server": self.name,
 					"proxy_ip": proxy_ip,
 					"workers": "2",
+					"agent_password": agent_password,
 				},
 			)
 			ansible.run()
