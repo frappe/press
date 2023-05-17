@@ -83,7 +83,7 @@ def create_test_site(
 			"subdomain": subdomain,
 			"server": bench.server,
 			"bench": bench.name,
-			"team": "Administrator",
+			"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,

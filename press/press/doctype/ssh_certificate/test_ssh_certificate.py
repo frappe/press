@@ -6,4 +6,6 @@ import unittest
 
 
 class TestSSHCertificate(unittest.TestCase):
-	pass
+
+	def test_press_admin_user_can_create_ssh_certificate(self):
+		pass

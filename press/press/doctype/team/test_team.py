@@ -7,24 +7,27 @@ import unittest
 from unittest.mock import patch
 
 import frappe
+from frappe.tests.ui_test_helpers import create_test_user
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
 )
 from press.press.doctype.team.team import Team
-from frappe.tests.ui_test_helpers import create_test_user
 
 
-def create_test_press_admin_user(email: str = frappe.mock("email")):
+def create_test_press_admin_team(email: str = frappe.mock("email")):
 	"""Create test press admin user."""
 	user = create_test_user(email)
 	user.add_roles("Press Admin")
+	create_test_team(email)
 	return user
 
 
 def create_test_team(email: str = frappe.mock("email")):
 	"""Create test team doc."""
-	return frappe.get_doc({"doctype": "Team", "name": email}).insert(
+	create_test_user(email)  # ignores if user already exists
+	user = frappe.get_value("User", {"email": email}, "name")
+	return frappe.get_doc({"doctype": "Team", "user": user}).insert(
 		ignore_if_duplicate=True
 	)
 
