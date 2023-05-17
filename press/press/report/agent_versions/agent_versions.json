@@ -21,11 +21,18 @@
    "mandatory": 0,
    "options": "\nServer\nDatabase Server\nProxy Server\nLog Server\nMonitor Server\nRegistry Server\nTrace Server\nAnalytics Server",
    "wildcard_filter": 0
+  },
+  {
+   "fieldname": "exclude_self_hosted",
+   "fieldtype": "Check",
+   "label": "Exclude Self Hosted",
+   "mandatory": 0,
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2023-01-30 17:16:09.288587",
+ "modified": "2023-05-17 18:31:33.157701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Versions",
