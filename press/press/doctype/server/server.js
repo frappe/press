@@ -85,6 +85,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Agent Setup Proxy IP'),
+				'agent_set_proxy_ip',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,

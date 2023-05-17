@@ -484,6 +484,7 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 
 		try:
 			ansible = Ansible(
@@ -496,6 +497,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -545,6 +547,32 @@ class Server(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def agent_set_proxy_ip(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200
+		)
+
+	def _agent_set_proxy_ip(self):
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+
+		try:
+			ansible = Ansible(
+				playbook="agent_set_proxy_ip.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"proxy_ip": proxy_ip,
+					"workers": "2",
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Proxy IP Setup Exception", server=self.as_dict())
 		self.save()
 
 	@frappe.whitelist()
@@ -701,6 +729,8 @@ class Server(BaseServer):
 		else:
 			kibana_password = None
 
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+
 		try:
 			ansible = Ansible(
 				playbook="rename.yml",
@@ -710,6 +740,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,

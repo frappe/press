@@ -1,0 +1,14 @@
+---
+- name: Generate Agent Configuration File
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }} {% if proxy_ip is defined %}--proxy-ip {{ proxy_ip }}{% endif %}'
+  args:
+    chdir: /home/frappe/agent
+
+- name: Setup Agent NGINX
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup nginx
+  args:
+    chdir: /home/frappe/agent
