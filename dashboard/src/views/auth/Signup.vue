@@ -30,10 +30,27 @@
 					</span>
 				</div>
 			</div>
-			<router-link class="text-center text-base" to="/login">
+		</form>
+		<div class="flex flex-col">
+			<Button
+				:loading="$resources.oauthLogin.loading"
+				@click="
+					() => {
+						state = 'RequestStarted';
+						$resources.oauthLogin.submit();
+					}
+				"
+				appearance="secondary"
+			>
+				<div class="flex">
+					<GoogleIcon />
+					<span class="ml-2">Signup with Google</span>
+				</div>
+			</Button>
+			<router-link class="text-center text-base mt-4" to="/login">
 				Already have an account? Log in.
 			</router-link>
-		</form>
+		</div>
 	</LoginBox>
 	<SuccessCard
 		class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto"
@@ -49,11 +66,13 @@
 
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
+import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
 export default {
 	name: 'Signup',
 	components: {
-		LoginBox
+		LoginBox,
+		GoogleIcon
 	},
 	data() {
 		return {
@@ -75,6 +94,14 @@ export default {
 					//'init_client_fc_account_email_sent',
 					//'fc_setup'
 					//);
+				}
+			};
+		},
+		oauthLogin() {
+			return {
+				method: 'press.api.oauth.google_login',
+				onSuccess(r) {
+					window.location = r;
 				}
 			};
 		}

@@ -49,11 +49,29 @@
 						</span>
 					</div>
 				</div>
-				<router-link class="text-center text-base" to="/signup">
-					Sign up for a new account
-				</router-link>
 			</template>
 		</form>
+
+		<div class="flex flex-col">
+			<Button
+				:disabled="state === 'RequestStarted'"
+				@click="
+					() => {
+						state = 'RequestStarted';
+						$resources.oauthLogin.submit();
+					}
+				"
+				appearance="secondary"
+			>
+				<div class="flex">
+					<GoogleIcon />
+					<span class="ml-2">Login with Google</span>
+				</div>
+			</Button>
+			<router-link class="text-center text-base mt-4" to="/signup">
+				Sign up for a new account
+			</router-link>
+		</div>
 	</LoginBox>
 	<SuccessCard
 		v-else
@@ -66,6 +84,7 @@
 </template>
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
+import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
 export default {
 	name: 'Login',
@@ -75,7 +94,8 @@ export default {
 		}
 	},
 	components: {
-		LoginBox
+		LoginBox,
+		GoogleIcon
 	},
 	data() {
 		return {
@@ -108,6 +128,22 @@ export default {
 						this.$auth.isLoggedIn = true;
 						return res;
 					}
+				}
+			};
+		},
+		oauthLogin() {
+			return {
+				method: 'press.api.oauth.google_login',
+				onSuccess(r) {
+					window.location = r;
+				},
+				onError(e) {
+					this.state = null;
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		}
