@@ -70,9 +70,11 @@ def callback(code=None, state=None):
 				"oauth_signup": True,
 			}
 		).insert(ignore_permissions=True)
+		frappe.db.commit()
+
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = (
-			f"/dashboard/setup-account?key={account_request.request_key}"
+			f"/dashboard/setup-account/{account_request.request_key}"
 		)
 	else:
 		frappe.local.login_manager.login_as(email)
