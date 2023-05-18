@@ -65,6 +65,7 @@ class SSHCertificate(Document):
 		self.create_public_key_file()
 		self.generate_certificate()
 		self.extract_certificate_details()
+		frappe.local.role_permissions = {}
 		self.save()
 
 	def generate_certificate(self):
