@@ -13,6 +13,7 @@
 					v-show="activeStep.name === 'Hostname'"
 					v-model:title="title"
 					v-model:selectedRegion="selectedRegion"
+					v-model:selectedType="selectedType"
 				/>
 				<AppServerPlans
 					v-model:selectedAppPlan="selectedAppPlan"
@@ -109,6 +110,7 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
+			selectedType: null,
 			selectedAppPlan: null,
 			selectedDBPlan: null,
 			validationMessage: null,
@@ -116,7 +118,7 @@ export default {
 				{
 					name: 'Hostname',
 					validate: () => {
-						return this.title && this.selectedRegion;
+						return this.title && this.selectedRegion && this.selectedType;
 					}
 				},
 				{
@@ -139,7 +141,10 @@ export default {
 		};
 	},
 	async mounted() {
-		this.options = await this.$call('press.api.server.options');
+		console.log(this.selectedType)
+		this.options = await this.$call('press.api.server.options',{
+			type: this.selectedType ? "self_hosted": "fc"
+		});
 		this.options.app_plans = this.options.app_plans.map(plan => {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
@@ -166,6 +171,9 @@ export default {
 					this.$router.push(`/servers/${server}/install`);
 				},
 				validate() {
+				this.options = this.$call('press.api.server.options',{
+					type: this.selectedType
+				});
 					let canCreate =
 						this.title &&
 						this.selectedAppPlan &&
