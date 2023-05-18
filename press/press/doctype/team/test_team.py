@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.ui_test_helpers import create_test_user
+from frappe.tests.ui_test_helpers import add_remove_role, create_test_user
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -17,10 +17,13 @@ from press.press.doctype.team.team import Team
 
 def create_test_press_admin_team(email: str = frappe.mock("email")):
 	"""Create test press admin user."""
-	user = create_test_user(email)
+	create_test_user(email)
+	user = frappe.get_doc("User", {"email": email})
+	user.remove_roles(*frappe.get_all("Role", pluck="name"))
 	user.add_roles("Press Admin")
-	create_test_team(email)
-	return user
+	print(user.user_type)
+	print(frappe.get_roles(user.name))
+	return create_test_team(email)
 
 
 def create_test_team(email: str = frappe.mock("email")):

@@ -20,7 +20,7 @@ from press.press.doctype.release_group.release_group import (
 )
 
 
-def create_test_release_group(app: App) -> ReleaseGroup:
+def create_test_release_group(app: App, user: str = "Administrator") -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
@@ -33,7 +33,7 @@ def create_test_release_group(app: App) -> ReleaseGroup:
 			"version": frappe_version.name,
 			"enabled": True,
 			"title": f"Test ReleaseGroup {frappe.mock('name')}",
-			"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+			"team": frappe.get_value("Team", {"user": user}, "name"),
 		}
 	)
 	app_source = create_test_app_source(release_group.version, app)
