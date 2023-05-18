@@ -140,11 +140,16 @@ export default {
 			agreedToRegionConsent: false
 		};
 	},
+	watch: {
+		async selectedType() {
+			// Changes the Regions based on the the Server Type
+			this.options = await this.$call('press.api.server.options', {
+				type: this.selectedType
+			})
+		}
+	},
 	async mounted() {
-		console.log(this.selectedType)
-		this.options = await this.$call('press.api.server.options',{
-			type: this.selectedType ? "self_hosted": "fc"
-		});
+		this.options = await this.$call('press.api.server.options');
 		this.options.app_plans = this.options.app_plans.map(plan => {
 			plan.disabled = !this.$account.hasBillingInfo;
 			return plan;
@@ -171,9 +176,6 @@ export default {
 					this.$router.push(`/servers/${server}/install`);
 				},
 				validate() {
-				this.options = this.$call('press.api.server.options',{
-					type: this.selectedType
-				});
 					let canCreate =
 						this.title &&
 						this.selectedAppPlan &&
