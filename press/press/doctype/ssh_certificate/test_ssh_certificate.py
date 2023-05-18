@@ -16,7 +16,6 @@ from press.press.doctype.user_ssh_key.test_user_ssh_key import create_test_user_
 @patch.object(SSHCertificate, "validate_certificate_authority", new=Mock())
 @patch.object(SSHCertificate, "generate_certificate", new=Mock())
 @patch.object(SSHCertificate, "extract_certificate_details", new=Mock())
-@patch.object(SSHCertificate, "extract_certificate_details", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSSHCertificate(unittest.TestCase):
 	def setUp(self):
