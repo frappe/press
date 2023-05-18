@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.ui_test_helpers import add_remove_role, create_test_user
+from frappe.tests.ui_test_helpers import create_test_user
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
