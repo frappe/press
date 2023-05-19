@@ -29,7 +29,7 @@ sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
 
 bench get-app press
 
-if [ "$TYPE" == "server" ]; then bench setup requirements --dev; fi
+bench setup requirements --dev
 
 bench start &> bench_run_logs.txt &
 CI=Yes bench build --app frappe &
