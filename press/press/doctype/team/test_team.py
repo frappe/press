@@ -21,8 +21,6 @@ def create_test_press_admin_team(email: str = frappe.mock("email")):
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
 	user.add_roles("Press Admin")
-	print(user.user_type)
-	print(frappe.get_roles(user.name))
 	return create_test_team(email)
 
 
