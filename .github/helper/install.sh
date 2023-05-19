@@ -34,5 +34,6 @@ if [ "$TYPE" == "server" ]; then bench setup requirements --dev; fi
 bench start &> bench_run_logs.txt &
 CI=Yes bench build --app frappe &
 bench new-site --db-root-password root --admin-password admin test_site
+bench --site test_site install-app press
 
 
