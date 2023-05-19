@@ -30,7 +30,7 @@ jobs:
       - name: Flake8 Test
         run: |
           flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
-          
+
   tests:
     runs-on: ubuntu-latest
     strategy:
@@ -87,22 +87,9 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - name: Setup
-        run: |
-          pip install frappe-bench
-          bench init --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+
       - name: Install
-        working-directory: /home/runner/frappe-bench
-        run: |
-          bench get-app press $GITHUB_WORKSPACE
-          bench setup requirements --dev
-          bench new-site --db-root-password root --admin-password admin test_site
-          bench --site test_site install-app press
-          bench build
-        env:
-          CI: "Yes"
+        run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench

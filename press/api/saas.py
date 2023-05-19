@@ -74,6 +74,12 @@ def account_request(
 			"send_email": True,
 		}
 	).insert(ignore_permissions=True)
+	site_name = account_request.get_site_name()
+	identify(
+		site_name,
+		app=account_request.saas_app,
+	)
+	capture("completed_server_account_request", "fc_saas", site_name)
 
 	if stripe_setup:
 		frappe.set_user("Administrator")
@@ -93,12 +99,7 @@ def account_request(
 		}
 	else:
 		create_or_rename_saas_site(app, account_request)
-		site_name = account_request.get_site_name()
-		identify(
-			site_name,
-			app=account_request.saas_app,
-		)
-		capture("completed_server_account_request", "fc_saas", site_name)
+		capture("completed_server_site_created", "fc_saas", site_name)
 
 
 def create_or_rename_saas_site(app, account_request):

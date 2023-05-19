@@ -35,7 +35,7 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
-		frappe.set_user(team)
+		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)

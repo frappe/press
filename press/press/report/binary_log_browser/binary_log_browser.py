@@ -8,7 +8,7 @@ from press.agent import Agent
 from frappe.utils import (
 	get_datetime,
 	get_datetime_str,
-	get_time_zone,
+	get_system_timezone,
 )
 from frappe.core.doctype.access_log.access_log import make_access_log
 
@@ -117,6 +117,6 @@ def get_files_in_timespan(
 
 
 def convert_user_timezone_to_utc(datetime):
-	timezone = pytz.timezone(get_time_zone())
+	timezone = pytz.timezone(get_system_timezone())
 	datetime = get_datetime(datetime)
 	return get_datetime_str(timezone.localize(datetime).astimezone(pytz.utc))

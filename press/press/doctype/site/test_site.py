@@ -4,8 +4,8 @@
 
 
 import unittest
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 from unittest.mock import Mock, patch
 
 import frappe
@@ -24,7 +24,7 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 
-def create_test_bench():
+def create_test_bench(user: str = "Administrator"):
 	"""
 	Create test Bench doc.
 
@@ -35,7 +35,7 @@ def create_test_bench():
 	server = create_test_server(proxy_server.name, database_server.name)
 
 	app = create_test_app()
-	release_group = create_test_release_group(app)
+	release_group = create_test_release_group(app, user)
 
 	name = frappe.mock("name")
 	candidate = release_group.create_deploy_candidate()
@@ -83,7 +83,7 @@ def create_test_site(
 			"subdomain": subdomain,
 			"server": bench.server,
 			"bench": bench.name,
-			"team": "Administrator",
+			"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,

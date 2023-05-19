@@ -172,8 +172,8 @@ class DeveloperApiHandler:
 
 class SessionManager:
 	# set user for authenticated requests and then switch to guest once completed
-	def __init__(self, team):
-		frappe.set_user(team)
+	def __init__(self, team: str):
+		frappe.set_user(frappe.db.get_value("Team", team, "user"))
 
 	def __enter__(self):
 		return self
