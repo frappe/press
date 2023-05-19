@@ -40,7 +40,7 @@ def execute(filters=None):
 
 
 def convert_user_timezone_to_utc(datetime_obj):
-	timezone = pytz.timezone(get_time_zone())
+	timezone = pytz.timezone(get_system_timezone())
 	datetime_obj = get_datetime(datetime_obj)
 	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
 
