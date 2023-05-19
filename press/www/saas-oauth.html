@@ -1,0 +1,123 @@
+{%- extends "templates/saas/layout.html" -%}
+
+{%- block navbar -%}
+{%- endblock -%}
+
+{%- block content -%}
+<section>
+	<div class="flex justify-center mx-auto mt-20 form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup" data-validators="field_validators">
+		<div class="card">
+			<div class="card-body">
+			<div class="alert alert-danger form-alert-error small mt-10" style="display: none;" role="alert"></div>
+				{%- if frappe.form_dict.key -%}
+					<form class="form-step create-account-form" data-step="1" data-action="submit_account_request">
+					<div class="form-group mt-10" style="max-width: 100%;">
+						<p for="country" class="mb-2">Country</p>
+						<select id="country" class="custom-select" name="country">
+							{%- if country_name -%}
+							<option selected="selected">{{ country_name }}</option>
+							{%- else -%}
+							<option disabled selected="selected">Select Country</option>
+							{%- endif -%}
+							{%- for country in frappe.db.get_all('Country') -%}
+							<option>
+								{{ country.name }}
+							</option>
+							{%- endfor -%}
+						</select>
+					</div>
+					<button type="submit" style="width: 100%;" class="btn btn-primary btn-step-1">Submit</button>
+				</form>
+				{%- else -%}
+				<div>
+					Invalid or expired key
+				</div>
+				{%- endif -%}
+			</div>
+		</div>
+	</div>
+</section>
+{%- endblock -%}
+
+{%- block footer -%}
+{%- endblock -%}
+
+{%- block script -%}
+<script src="/assets/press/js/form_controller.js"></script>
+<script>
+	let key = frappe.utils.get_url_arg('key');
+	let app = frappe.utils.get_url_arg('app');
+
+	frappe.ready(() => {
+		if (!key) {
+			return
+		}
+		controller = new FormController("user-signup");
+	});
+
+
+	function submit_account_request($form, values) {
+		const country = document.getElementById('country').value;
+		return frappe.call('press.api.oauth.saas_setup', { key, app, country })
+			.then((r) => {
+				window.open(r.message, "_self");
+			});
+	}
+
+	var field_validators = {
+		country: (value) => {
+			if (!value) {
+				return "Please enter your country name";
+			}
+		},
+	}
+
+
+</script>
+{%- endblock -%}
+
+{%- block style -%}
+<style>
+	body {
+		background-color: #F3F5F8;
+	}
+
+	h1 {
+		font-size: var(--font-size-lg);
+		text-align: center;
+	}
+
+	.card {
+		box-shadow: 0px 1px 42px rgba(97, 97, 97, 0.07), 0px 1px 4px rgba(255, 255, 255, 1);
+		border-radius: 10px;
+		border-color: transparent;
+		padding: 0px 80px 60px 80px;
+	}
+
+	.card-body {
+			padding: 0px;
+	}
+
+	.spinner {
+		text-align: center;
+		margin: 0 auto;
+		color: var(--gray-600);
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.animate-spin {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
+	}
+</style>
+{%- endblock -%}
