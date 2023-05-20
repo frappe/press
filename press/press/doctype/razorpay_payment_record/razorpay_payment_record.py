@@ -74,15 +74,15 @@ def fetch_pending_payment_orders():
 
 		try:
 			response = client.order.payments(order_id)
-			for item in response.items:
-				if item.status == "captured":
+			for item in response.get("items"):
+				if item["status"] == "captured":
 					frappe.get_doc(
 						{
 							"doctype": "Razorpay Webhook Log",
 							"payload": frappe.as_json(item),
 							"event": "order.paid",
-							"payment_id": item.id,
-							"name": item.order_id,
+							"payment_id": item["id"],
+							"name": item["order_id"],
 						}
 					).insert(ignore_if_duplicate=True)
 		except Exception:
