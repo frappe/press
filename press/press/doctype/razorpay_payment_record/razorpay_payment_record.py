@@ -56,6 +56,23 @@ class RazorpayPaymentRecord(Document):
 
 		enqueue_finalize_unpaid_for_team(team.name)
 
+	@frappe.whitelist()
+	def sync(self):
+		client = get_razorpay_client()
+		response = client.order.payments(self.order_id)
+
+		for item in response.get("items"):
+			if item["status"] == "captured":
+				frappe.get_doc(
+					{
+						"doctype": "Razorpay Webhook Log",
+						"payload": frappe.as_json(item),
+						"event": "order.paid",
+						"payment_id": item["id"],
+						"name": item["order_id"],
+					}
+				).insert(ignore_if_duplicate=True)
+
 
 def fetch_pending_payment_orders():
 
