@@ -86,7 +86,7 @@ def fetch_pending_payment_orders():
 						}
 					).insert(ignore_if_duplicate=True)
 		except Exception:
-			log_error(title="Failed to capture pending order", payment_id=order_id)
+			log_error(title="Failed to capture pending order", order_id=order_id)
 
 	"""
 	Sample Response
