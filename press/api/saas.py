@@ -73,13 +73,15 @@ def account_request(
 			"url_args": url_args or json.dumps({}),
 			"send_email": True,
 		}
-	).insert(ignore_permissions=True)
+	)
 	site_name = account_request.get_site_name()
 	identify(
 		site_name,
 		app=account_request.saas_app,
 	)
 	capture("completed_server_account_request", "fc_saas", site_name)
+
+	account_request.insert(ignore_permissions=True)
 
 	if stripe_setup:
 		frappe.set_user("Administrator")

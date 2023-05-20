@@ -63,9 +63,9 @@ class DeployCandidate(Document):
 		user, session_data, team, = (
 			frappe.session.user,
 			frappe.session.data,
-			get_current_team(),
+			get_current_team(True),
 		)
-		frappe.set_user(frappe.get_value("Team", team, "user"))
+		frappe.set_user(frappe.get_value("Team", team.name, "user"))
 		frappe.enqueue_doc(
 			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
 		)
