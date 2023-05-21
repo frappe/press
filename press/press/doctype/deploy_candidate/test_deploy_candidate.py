@@ -39,7 +39,7 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 class TestDeployCandidate(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
-		self.user = self.team.user
+		self.user: str = self.team.user
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -47,15 +47,34 @@ class TestDeployCandidate(unittest.TestCase):
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	def test_press_admin_user_can_pre_build(self, mock_enqueue_doc, mock_commit):
+	def test_if_new_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
 		"""
-		Test if press admin user can pre build
+		Test if new press admin team user can pre build
 
 		Checks permission. Make sure no PermissionError is raised
 		"""
 		app = create_test_app()
 		group = create_test_release_group(app, self.user)
 		group.db_set("team", self.team.name)
+		frappe.set_user(self.user)
+		deploy_candidate = create_test_deploy_candidate(group)
+		try:
+			deploy_candidate.pre_build(method="_build")
+		except frappe.PermissionError:
+			self.fail("PermissionError raised in pre_build")
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_old_style_press_admin_team_can_pre_build(self, mock_enqueue_doc, mock_commit):
+		"""
+		Test if old style press admin team can pre build
+
+		Checks permission. Make sure no PermissionError is raised
+		"""
+		app = create_test_app()
+		group = create_test_release_group(app, self.user)
+		group.db_set("team", self.team.name)
+		frappe.rename_doc("Team", self.team.name, self.user)
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
 		try:
