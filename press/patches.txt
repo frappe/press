@@ -3,7 +3,7 @@ press.patches.v0_0_1.user_account_to_team #6
 press.patches.v0_0_1.rename_transaction_currency_to_currency
 press.patches.v0_0_1.create_site_plan_change_log
 execute:frappe.reload_doc('press', 'doctype', 'team')
-execute:frappe.db.update('Team', {'enabled': 1}, {'free_credits_allocated': 1}, update_modified=False)
+execute:frappe.db.set_value('Team', {'enabled': 1}, {'free_credits_allocated': 1}, update_modified=False)
 press.patches.v0_0_1.update_proxy_for_suspended_and_inactive_sites
 press.patches.v0_0_1.rename_site_backup_fields # 2020-05-22
 press.patches.v0_0_1.rename_archived_sites
