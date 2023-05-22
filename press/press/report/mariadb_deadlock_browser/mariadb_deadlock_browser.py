@@ -64,7 +64,7 @@ def get_data(filters):
 		"max_lines": filters.max_lines or 1000,
 	}
 
-	results = agent.post(f"database/deadlocks", data=data)
+	results = agent.post("database/deadlocks", data=data)
 
 	return post_process(results)
 
@@ -74,7 +74,7 @@ def post_process(rows):
 
 	for idx, row in enumerate(rows):
 		row["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(row["ts"]).replace(tzinfo=None), get_time_zone()
+			frappe.utils.get_datetime(row["ts"]).replace(tzinfo=None), get_system_timezone()
 		)
 		results.append(row)
 
