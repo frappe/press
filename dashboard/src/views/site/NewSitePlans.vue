@@ -6,7 +6,11 @@
 		</p>
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
+			<div v-if="$resources.plans.loading" class="flex justify-center">
+				<LoadingText />
+			</div>
 			<SitePlansTable
+				v-if="plans"
 				:plans="plans"
 				:selectedPlan="selectedPlan"
 				@update:selectedPlan="plan => $emit('update:selectedPlan', plan)"
