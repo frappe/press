@@ -123,9 +123,10 @@ class DeveloperApiHandler:
 	def send_login_link(self):
 		try:
 			login_url = self.get_login_url()
+			users = frappe.get_doc("Team", self.app_subscription_doc.team).user
 			frappe.sendmail(
 				subject="Login Verification Email",
-				recipients=[self.app_subscription_doc.team],
+				recipients=[users],
 				template="remote_login",
 				args={"login_url": login_url, "site": self.app_subscription_doc.site},
 				now=True,

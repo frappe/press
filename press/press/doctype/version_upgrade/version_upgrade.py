@@ -109,7 +109,7 @@ def update_from_site_update():
 			version_upgrade.last_output = last_output
 			version_upgrade.status = "Failure"
 			site = frappe.get_doc("Site", version_upgrade.site)
-			recipient = site.notify_email or site.team
+			recipient = site.notify_email or frappe.get_doc("Team", site.team).user
 
 			frappe.sendmail(
 				recipients=[recipient],

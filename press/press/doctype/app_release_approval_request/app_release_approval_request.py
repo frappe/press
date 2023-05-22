@@ -108,7 +108,7 @@ class AppReleaseApprovalRequest(Document):
 			"Marketplace App", self.marketplace_app
 		)
 		app_release: AppRelease = frappe.get_doc("App Release", self.app_release)
-		publisher_email = marketplace_app.team
+		publisher_email = frappe.get_doc("Team", marketplace_app.team).user
 
 		frappe.sendmail(
 			[publisher_email],
