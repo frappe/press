@@ -206,7 +206,6 @@ export default {
 	},
 	resources: {
 		versions() {
-			console.log(this.bench)
 			return {
 				method: 'press.api.site.get_new_site_options',
 				auto: true,
