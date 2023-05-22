@@ -20,6 +20,7 @@
 				<Apps
 					v-show="activeStep.name === 'Apps'"
 					:privateBench="privateBench"
+					:bench="benchName"
 					v-model:selectedApps="selectedApps"
 					v-model:selectedGroup="selectedGroup"
 					v-model:selectedRegion="selectedRegion"
@@ -143,6 +144,7 @@ export default {
 			subdomain: null,
 			subdomainValid: false,
 			privateBench: false,
+			benchName: null,
 			benchTitle: null,
 			benchCreation: null,
 			benchTeam: null,
@@ -208,6 +210,7 @@ export default {
 					name: this.bench
 				}
 			);
+			this.benchName = this.bench;
 			this.benchTitle = title;
 			this.benchCreation = creation;
 			this.benchTeam = team;

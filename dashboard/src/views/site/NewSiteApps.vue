@@ -129,7 +129,8 @@ export default {
 		'selectedGroup',
 		'privateBench',
 		'selectedRegion',
-		'shareDetailsConsent'
+		'shareDetailsConsent',
+		'bench'
 	],
 	data() {
 		return {
@@ -205,9 +206,13 @@ export default {
 	},
 	resources: {
 		versions() {
+			console.log(this.bench)
 			return {
 				method: 'press.api.site.get_new_site_options',
 				auto: true,
+				params: {
+					group: this.privateBench ? this.bench : ""
+				},
 				onSuccess(r) {
 					this.versions = r.versions.filter(v => {
 						return v.group;
@@ -216,7 +221,7 @@ export default {
 
 					// from mounted
 					if (this.privateBench) {
-						this.selectedVersion = this.versions[0].name;
+						this.selectedVersion = this.versions.filter(v => v.group.name === this.bench)[0].name;
 						this.$emit('update:selectedApps', ['frappe']);
 					} else {
 						this.selectedVersion = this.versions[0].name;
