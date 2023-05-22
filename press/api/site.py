@@ -483,7 +483,7 @@ def get_new_site_options(group: str = None):
 	filters = {
 		"enabled": True,
 		"team": team,
-		"public": True if group else False,
+		"public": False if group else True,
 	}
 	if group:  # private bench
 		filters.update({"name": group})
