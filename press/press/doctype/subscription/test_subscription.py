@@ -29,7 +29,7 @@ def create_test_subscription(
 class TestSubscription(unittest.TestCase):
 	def test_subscription_daily(self):
 		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
+		team = frappe.get_doc(doctype="Team", user=email, country="India", enabled=1).insert()
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
 			doctype="Plan",
@@ -76,7 +76,7 @@ class TestSubscription(unittest.TestCase):
 
 	def test_subscription_for_non_chargeable_document(self):
 		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
+		team = frappe.get_doc(doctype="Team", user=email, country="India", enabled=1).insert()
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
 			doctype="Plan",
@@ -108,7 +108,7 @@ class TestSubscription(unittest.TestCase):
 
 	def test_site_in_trial(self):
 		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
+		team = frappe.get_doc(doctype="Team", user=email, country="India", enabled=1).insert()
 		team.create_upcoming_invoice()
 
 		two_days_after = frappe.utils.add_days(None, 2)
