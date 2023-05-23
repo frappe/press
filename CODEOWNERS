@@ -11,11 +11,13 @@ nginx.conf @adityahase
 playbooks/ @adityahase @balamurali27
 
 site* @balamurali27
+team/ @shadrak98
 
 dashboard/ @rutwikhdev
 invoice/ @shadrak98
-marketplace @rutwikhdev
+marketplace* @rutwikhdev
 stripe* @shadrak98
 razorpay* @shadrak98
+subscription/ @shadrak98
 
 saas @rutwikhdev
