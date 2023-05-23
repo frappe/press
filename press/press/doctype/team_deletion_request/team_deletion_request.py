@@ -20,7 +20,7 @@ def handle_exception(self):
 class TeamDeletionRequest(PersonalDataDeletionRequest):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.email = self.team
+		self.email = frappe.db.get_value("Team", self.team, "user")
 		# turn off data deletions in partial content for the sake of sanity
 		self.full_match_privacy_docs += self.partial_privacy_docs
 		self.partial_privacy_docs = []

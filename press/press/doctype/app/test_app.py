@@ -73,12 +73,13 @@ class TestApp(unittest.TestCase):
 
 	def test_create_app_with_one_source_multiple_versions(self):
 		app = new_app("erpnext_documentation", "ERPNext Documentation")
+		team_name = create_test_team().name
 
 		source_1 = app.add_source(
 			"Version 12",
 			"https://github.com/frappe/erpnext_documentation",
 			"master",
-			create_test_team().name,
+			team_name,
 		)
 		self.assertEqual(source_1.branch, "master")
 		self.assertEqual(len(source_1.versions), 1)
@@ -88,7 +89,7 @@ class TestApp(unittest.TestCase):
 			"Version 13",
 			"https://github.com/frappe/erpnext_documentation",
 			"master",
-			create_test_team().name,
+			team_name,
 		)
 
 		self.assertEqual(source_1.name, source_2.name)
