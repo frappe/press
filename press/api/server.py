@@ -408,7 +408,7 @@ def press_jobs(name):
 	for job in frappe.get_all("Press Job", {"server": name}, pluck="name"):
 		jobs.append(frappe.get_doc("Press Job", job).detail())
 	return jobs
-
+		
 
 @frappe.whitelist()
 @protected("Server")

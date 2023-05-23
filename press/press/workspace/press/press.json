@@ -10,9 +10,10 @@
  "hide_custom": 0,
  "icon": "setting-gear",
  "idx": 0,
- "is_default": 0,
+ "is_default": 1,
  "is_standard": 1,
  "label": "Press",
+ "title": "Press",
  "links": [
   {
    "hidden": 0,

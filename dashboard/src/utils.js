@@ -11,7 +11,7 @@ let utils = {
 		},
 		$date(date) {
 			// assuming all dates on the server are stored in our timezone
-			let serverDatesTimezone = 'Asia/Kolkata';
+			let serverDatesTimezone = 'Asia/Aden';
 			let localZone = DateTime.local().zoneName;
 			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(
 				localZone

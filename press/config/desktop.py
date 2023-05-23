@@ -13,6 +13,7 @@ def get_data():
 			"icon": "octicon octicon-rocket",
 			"type": "module",
 			"label": _("Press"),
+			"title": _("Press"),
 			"reverse": 1,
 		}
 	]
