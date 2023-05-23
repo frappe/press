@@ -5,7 +5,7 @@
 
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
-					:error="
+					:message="
 						$resources.options.error === 'Bad credentials'
 							? 'Access token expired, reauthorization required'
 							: $resources.options.error
@@ -22,7 +22,7 @@
 					Reauthorize GitHub</Button
 				>
 
-				<ErrorMessage :error="$resources.clearAccessToken.error" />
+				<ErrorMessage :message="$resources.clearAccessToken.error" />
 			</div>
 
 			<div v-if="needsAuthorization">
@@ -68,7 +68,7 @@
 					</div>
 				</div>
 				<div>
-					<ErrorMessage class="mb-2" :error="$resourceErrors" />
+					<ErrorMessage class="mb-2" :message="$resourceErrors" />
 					<Button
 						appearance="primary"
 						v-if="selectedRepo && selectedBranch && !validatedApp"
@@ -84,16 +84,12 @@
 </template>
 
 <script>
-import GreenCheckIcon from '@/components/global/GreenCheckIcon.vue';
 import NewAppRepositories from './NewAppRepositories.vue';
-import ErrorMessage from '@/components/global/ErrorMessage.vue';
 
 export default {
 	name: 'SelectAppFromGithub',
 	components: {
-		NewAppRepositories,
-		GreenCheckIcon,
-		ErrorMessage
+		NewAppRepositories
 	},
 	data() {
 		return {

@@ -159,13 +159,10 @@ def get_apps() -> List[Dict]:
 def get_app(name: str) -> Dict:
 	"""Return the `Marketplace App` document with name"""
 	app = frappe.get_doc("Marketplace App", name).as_dict()
-	deploy_info = deploy_information(name)
 
 	# Attach sources information to marketplace sources
 	for source in app.sources:
-		source_information = frappe.get_doc("App Source", source.source).as_dict()
-		source_information.status = deploy_info.get(source.version)
-		source.source_information = source_information
+		source.source_information = frappe.get_doc("App Source", source.source).as_dict()
 
 	return app
 
@@ -208,6 +205,10 @@ def profile_image_url(app: str) -> str:
 @frappe.whitelist()
 def update_app_image() -> str:
 	"""Handles App Image Upload"""
+	file_content = frappe.local.uploaded_file
+
+	validate_app_image_dimensions(file_content)
+
 	app_name = frappe.form_dict.docname
 	_file = frappe.get_doc(
 		{
@@ -218,7 +219,7 @@ def update_app_image() -> str:
 			"folder": "Home/Attachments",
 			"file_name": frappe.local.uploaded_filename,
 			"is_private": 0,
-			"content": frappe.local.uploaded_file,
+			"content": file_content,
 		}
 	)
 	_file.save(ignore_permissions=True)
@@ -229,11 +230,64 @@ def update_app_image() -> str:
 
 
 @frappe.whitelist()
-def update_app_profile(name: str, title: str, category: str) -> MarketplaceApp:
+def add_app_screenshot() -> str:
+	"""Handles App Image Upload"""
+	file_content = frappe.local.uploaded_file
+	app_name = frappe.form_dict.docname
+	app_doc = frappe.get_doc("Marketplace App", app_name)
+
+	_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"attached_to_field": "image",
+			"folder": "Home/Attachments",
+			"file_name": frappe.local.uploaded_filename,
+			"is_private": 0,
+			"content": file_content,
+		}
+	)
+	_file.save(ignore_permissions=True)
+	file_url = _file.file_url
+
+	app_doc.append(
+		"screenshots",
+		{
+			"image": file_url,
+		},
+	)
+	app_doc.save(ignore_permissions=True)
+
+	return file_url
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def remove_app_screenshot(name, file):
+	app_doc = frappe.get_doc("Marketplace App", name)
+
+	for i, sc in enumerate(app_doc.screenshots):
+		if sc.image == file:
+			frappe.delete_doc("File", file)
+			app_doc.screenshots.pop(i)
+	app_doc.save(ignore_permissions=True)
+
+
+def validate_app_image_dimensions(file_content):
+	"""Throws if image is not a square image, atleast 300x300px in size"""
+	from PIL import Image
+	from io import BytesIO
+
+	im = Image.open(BytesIO(file_content))
+	im_width, im_height = im.size
+	if im_width != im_height or im_height < 300:
+		frappe.throw("Logo must be a square image atleast 300x300px in size")
+
+
+@frappe.whitelist()
+def update_app_title(name: str, title: str) -> MarketplaceApp:
 	"""Update `title` and `category`"""
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.title = title
-	app.category = category
 	app.save(ignore_permissions=True)
 
 	return app
@@ -540,8 +594,8 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 
 @frappe.whitelist()
-def get_app_plans(app: str):
-	return get_plans_for_app(app, include_disabled=True)
+def get_app_plans(app: str, include_disabled=True):
+	return get_plans_for_app(app, include_disabled=include_disabled)
 
 
 @frappe.whitelist()
@@ -807,6 +861,7 @@ def get_payout_details(name: str) -> Dict:
 			"net_amount",
 			"gateway_fee",
 			"quantity",
+			"commission",
 		],
 		order_by="idx",
 	)
@@ -960,6 +1015,7 @@ def use_partner_credits(name, app, site, plan, amount, credits):
 					"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
 					"rate": amount,
 					"quantity": 1,
+					"site": site,
 				},
 			)
 
@@ -973,6 +1029,7 @@ def use_partner_credits(name, app, site, plan, amount, credits):
 				)
 				change_app_plan(name, plan)
 				change_site_hosting_plan(site, plan, team)
+				frappe.get_cached_doc("Site", site).update_site_config({"app_include_js": []})
 		except Exception as e:
 			frappe.throw(e)
 	else:
@@ -987,6 +1044,7 @@ def login_via_token(token, team, site):
 	if not token or not isinstance(token, str):
 		frappe.throw("Invalid Token")
 
+	team = team.replace(" ", "+")
 	token_exists = frappe.db.exists(
 		"Saas Remote Login",
 		{
@@ -1003,12 +1061,10 @@ def login_via_token(token, team, site):
 		doc.save(ignore_permissions=True)
 		frappe.local.login_manager.login_as(team)
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response[
-			"location"
-		] = f"/dashboard/saas/remote/success?team={team}&site={site}"
+		frappe.local.response["location"] = f"/dashboard/sites/{site}/overview"
 	else:
 		frappe.local.response["type"] = "redirect"
-		frappe.local.response["location"] = "/dashboard/saas/remote/failure"
+		frappe.local.response["location"] = "/dashboard/login?showRemoteLoginError=true"
 
 
 @frappe.whitelist()
@@ -1033,3 +1089,122 @@ def subscriptions():
 				sub["selected_plan"] = ele
 
 	return subscriptions
+
+
+@protected("App Source")
+@frappe.whitelist()
+def branches(name):
+	from press.api.bench import branches
+
+	app_source = frappe.get_doc("App Source", name)
+	installation_id = app_source.github_installation_id
+	repo_owner = app_source.repository_owner
+	repo_name = app_source.repository
+
+	return branches(installation_id, repo_owner, repo_name)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def change_branch(name, source, version, to_branch):
+	app = frappe.get_doc("Marketplace App", name)
+	app.change_branch(source, version, to_branch)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def options_for_version(name, source):
+	frappe_version = frappe.get_all("Frappe Version", {"public": True}, pluck="name")
+	added_versions = frappe.get_all(
+		"Marketplace App Version", {"parent": name}, pluck="version"
+	)
+	return {
+		"versions": list(set(frappe_version).difference(set(added_versions))),
+		"branches": branches(source),
+	}
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def add_version(name, branch, version):
+	app = frappe.get_doc("Marketplace App", name)
+	app.add_version(version, branch)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def remove_version(name, version):
+	app = frappe.get_doc("Marketplace App", name)
+	app.remove_version(version)
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def review_stages(name):
+	app = frappe.get_doc("Marketplace App", name)
+	return {
+		"logo": True if app.image else False,
+		"description": True if app.description and app.long_description else False,
+		"publish": True
+		if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+		else False,
+		"links": True if app.website and app.support and app.documentation else False,
+	}
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def start_review(name):
+	# TODO: Start security check and auto deploy process here
+	app = frappe.get_doc("Marketplace App", name)
+	app.status = "In Review"
+	app.save()
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def communication(name):
+	comm = frappe.qb.DocType("Communication")
+	user = frappe.qb.DocType("User")
+	query = (
+		frappe.qb.from_(comm)
+		.left_join(user)
+		.on(comm.sender == user.email)
+		.select(comm.sender, comm.content, comm.communication_date, user.user_image)
+		.where((comm.reference_doctype == "Marketplace App") & (comm.reference_name == name))
+		.orderby(comm.creation, order=frappe.qb.desc)
+	)
+	res = query.run(as_dict=True)
+	return res
+
+
+@frappe.whitelist()
+def add_reply(name, message):
+	team = get_current_team()
+	doctype = "Marketplace App"
+	app = frappe.get_doc(doctype, name)
+	recipients = ", ".join(list(app.get_assigned_users()) or [])
+	doc = frappe.get_doc(
+		{
+			"doctype": "Communication",
+			"communication_type": "Communication",
+			"communication_medium": "Email",
+			"reference_doctype": doctype,
+			"reference_name": name,
+			"subject": "Marketplace App Review: New message!",
+			"sender": team,
+			"content": message,
+			"is_notification": True,
+			"recipients": recipients,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	doc.send_email()
+
+
+@protected("Marketplace App")
+@frappe.whitelist()
+def fetch_readme(name):
+	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
+	app.long_description = app.fetch_readme()
+	app.save()

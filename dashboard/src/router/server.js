@@ -27,6 +27,11 @@ export default [
 				component: () => import('../views/server/ServerAnalytics.vue')
 			},
 			{
+				name: 'ServerBenches',
+				path: 'benches',
+				component: () => import('../views/server/ServerBenches.vue')
+			},
+			{
 				name: 'ServerJobs',
 				path: 'jobs/:jobName?',
 				component: () => import('../views/server/ServerJobs.vue'),

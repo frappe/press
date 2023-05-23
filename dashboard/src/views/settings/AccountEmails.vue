@@ -16,10 +16,7 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<FrappeUIDialog
-			:options="{ title: 'Edit Emails' }"
-			v-model="showEmailsEditDialog"
-		>
+		<Dialog :options="{ title: 'Edit Emails' }" v-model="showEmailsEditDialog">
 			<template v-slot:body-content>
 				<div class="mt-3" v-for="email in emailData" :key="email.type">
 					<Input
@@ -28,9 +25,9 @@
 						v-model="email.value"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.changeEmail.error" />
+				<ErrorMessage class="mt-2" :message="$resources.changeEmail.error" />
 			</template>
-			
+
 			<template #actions>
 				<Button class="mr-3" @click="showEmailsEditDialog = false"
 					>Cancel</Button
@@ -39,7 +36,7 @@
 					Save Changes
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

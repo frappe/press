@@ -65,7 +65,9 @@ class MonitorServer(BaseServer):
 				}
 			)
 		press_url = frappe.utils.get_url()
-		monitor_token = frappe.db.get_single_value("Press Settings", "monitor_token")
+		settings = frappe.get_single("Press Settings")
+		monitor_token = settings.monitor_token
+		press_monitoring_password = settings.get_password("press_monitoring_password")
 		try:
 			ansible = Ansible(
 				playbook="monitor.yml",
@@ -78,6 +80,8 @@ class MonitorServer(BaseServer):
 					"agent_repository_url": agent_repository_url,
 					"monitor": True,
 					"monitoring_password": monitoring_password,
+					"press_monitoring_password": press_monitoring_password,
+					"press_server": frappe.local.site,
 					"press_url": press_url,
 					"monitor_token": monitor_token,
 					"registries_json": json.dumps(registries),
@@ -109,6 +113,8 @@ class MonitorServer(BaseServer):
 		)
 
 	def _reconfigure_monitor_server(self):
+		settings = frappe.get_single("Press Settings")
+		press_monitoring_password = settings.get_password("press_monitoring_password")
 		monitoring_password = self.get_password("monitoring_password")
 
 		registries = []
@@ -148,6 +154,8 @@ class MonitorServer(BaseServer):
 				variables={
 					"server": self.name,
 					"monitoring_password": monitoring_password,
+					"press_monitoring_password": press_monitoring_password,
+					"press_server": frappe.local.site,
 					"registries_json": json.dumps(registries),
 					"log_servers_json": json.dumps(log_servers),
 					"clusters_json": json.dumps(clusters),

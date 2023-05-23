@@ -23,7 +23,7 @@
 			></div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add billing information' }"
 			v-model="showDialog"
 		>
@@ -33,16 +33,8 @@
 					<AddressForm ref="address-form" v-model:address="address" />
 					<ErrorMessage
 						class="mt-2"
-						:error="$resources.updateBillingInformation.error"
+						:message="$resources.updateBillingInformation.error"
 					/>
-					<Button
-						class="mt-4"
-						appearance="primary"
-						@click="updateAddress"
-						:loading="$resources.updateBillingInformation.loading"
-					>
-						Submit
-					</Button>
 				</div>
 
 				<div class="space-y-4" v-if="$account.team.billing_address">
@@ -88,7 +80,17 @@
 					/>
 				</div>
 			</template>
-		</FrappeUIDialog>
+			<template v-slot:actions v-if="!$account.team.billing_address">
+				<Button
+					v-if="!$account.team.billing_address"
+					appearance="primary"
+					@click="updateAddress"
+					:loading="$resources.updateBillingInformation.loading"
+				>
+					Submit
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>

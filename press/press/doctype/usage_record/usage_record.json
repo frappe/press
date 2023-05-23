@@ -129,7 +129,6 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Site",
    "options": "Site"
   },
@@ -143,7 +142,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-28 18:58:47.267728",
+ "modified": "2023-03-31 13:52:00.471001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",

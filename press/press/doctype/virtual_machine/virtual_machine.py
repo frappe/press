@@ -9,6 +9,7 @@ from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.desk.utils import slug
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
 
 
 class VirtualMachine(Document):
@@ -160,6 +161,7 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def reboot(self):
 		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
+		self.sync()
 
 	def increase_disk_size(self, increment=50):
 		volume = self.volumes[0]
@@ -261,6 +263,34 @@ class VirtualMachine(Document):
 			{"doctype": "Virtual Machine Image", "virtual_machine": self.name}
 		).insert()
 		return image.name
+
+	@frappe.whitelist()
+	def create_snapshots(self):
+		response = self.client().create_snapshots(
+			InstanceSpecification={"InstanceId": self.aws_instance_id},
+			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
+			TagSpecifications=[
+				{
+					"ResourceType": "snapshot",
+					"Tags": [
+						{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - {frappe.utils.now()}"}
+					],
+				},
+			],
+		)
+		for snapshot in response.get("Snapshots", []):
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "Virtual Disk Snapshot",
+						"virtual_machine": self.name,
+						"aws_snapshot_id": snapshot["SnapshotId"],
+					}
+				).insert()
+			except Exception:
+				log_error(
+					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
+				)
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
@@ -389,6 +419,16 @@ def sync_virtual_machines():
 			frappe.get_doc("Virtual Machine", machine.name).sync()
 			frappe.db.commit()
 		except Exception:
-			import traceback
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Sync Error", virtual_machine=machine.name)
 
-			traceback.print_exc()
+
+def snapshot_virtual_machines():
+	machines = frappe.get_all("Virtual Machine", {"status": "Running"})
+	for machine in machines:
+		try:
+			frappe.get_doc("Virtual Machine", machine.name).create_snapshots()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Virtual Machine Snapshot Error", virtual_machine=machine.name)

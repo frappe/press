@@ -3,6 +3,8 @@
   hosts: all
   become: yes
   become_user: root
-  gather_facts: no
+  gather_facts: true
   roles:
     - role: convert
+    - role: mysqld_exporter
+    - role: deadlock_logger

@@ -32,8 +32,8 @@ export default {
 	pageMeta() {
 		return {
 			title: 'Billing - Frappe Cloud'
-		}
-	},	
+		};
+	},
 	props: ['invoiceName'],
 	components: {
 		AccountBillingUsage,

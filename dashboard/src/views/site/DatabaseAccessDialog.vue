@@ -1,12 +1,12 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:options="{ title: 'Access Database' }"
 		v-if="site"
 		:modelValue="Boolean(site) && show"
 		@close="dialogClosed"
 	>
 		<template v-slot:body-content>
-			<LoadingIndicator v-if="$resources.fetchDatabaseAccessInfo.loading" />
+			<LoadingText v-if="$resources.fetchDatabaseAccessInfo.loading" />
 
 			<!-- Not available on current plan, upsell higher plans -->
 			<div v-else-if="!databaseAccessInfo?.is_available_on_current_plan">
@@ -24,7 +24,7 @@
 					>
 				</div>
 
-				<FrappeUIDialog
+				<Dialog
 					:options="{ title: 'Upgrade Plan' }"
 					v-model="showChangePlanDialog"
 				>
@@ -34,7 +34,7 @@
 							:plans="plans"
 							v-model:selectedPlan="selectedPlan"
 						/>
-						<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
+						<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
 					</template>
 					<template #actions>
 						<Button @click="showChangePlanDialog = false"> Cancel </Button>
@@ -47,7 +47,7 @@
 							Submit
 						</Button>
 					</template>
-				</FrappeUIDialog>
+				</Dialog>
 			</div>
 
 			<!-- Available on the current plan -->
@@ -103,7 +103,7 @@
 					</div>
 				</div>
 
-				<ErrorMessage class="mt-3" :error="$resourceErrors || error" />
+				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
 
 				<div class="mt-2">
 					<Button
@@ -133,7 +133,7 @@
 				</div>
 			</div>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>
@@ -213,6 +213,14 @@ export default {
 					this.selectedPlan = null;
 					this.$resources.plans.reset();
 					this.$resources.fetchDatabaseAccessInfo.fetch();
+				},
+				onError(error) {
+					this.showChangePlanDialog = false;
+					this.$notify({
+						title: error,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}
@@ -230,7 +238,7 @@ export default {
 		dbAccessCommand() {
 			if (this.databaseAccessInfo) {
 				const { credentials } = this.databaseAccessInfo;
-				return `mysql -u ${credentials.username} -p${credentials.password} -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
+				return `mysql -u ${credentials.username} -p -h ${credentials.host} -P ${credentials.port} --ssl --ssl-verify-server-cert`;
 			}
 			return null;
 		},
@@ -259,10 +267,7 @@ export default {
 				if (message.status === 'Success') {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();
-				} else if (
-					message.status === 'Failure' ||
-					message.status === 'Undelivered'
-				) {
+				} else if (message.status === 'Failure') {
 					this.pollingAgentJob = false;
 					this.error = 'Something went wrong. Please try again.';
 				} else {

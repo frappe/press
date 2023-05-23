@@ -65,7 +65,10 @@ class AppSource(Document):
 		# self.create_release()
 
 	@frappe.whitelist()
-	def create_release(self):
+	def create_release(self, force=False):
+		if self.last_github_poll_failed and not force:
+			return
+
 		github_response = None
 		try:
 			token = None
@@ -107,14 +110,22 @@ class AppSource(Document):
 			frappe.db.set_value(
 				"App Source",
 				self.name,
-				{"last_github_response": "", "last_github_poll_failed": False},
+				{
+					"last_github_response": "",
+					"last_github_poll_failed": False,
+					"last_synced": frappe.utils.now(),
+				},
 			)
 		except Exception:
 			github_response = github_response.text if (github_response is not None) else None
 			frappe.db.set_value(
 				"App Source",
 				self.name,
-				{"last_github_response": github_response, "last_github_poll_failed": True},
+				{
+					"last_github_response": github_response,
+					"last_github_poll_failed": True,
+					"last_synced": frappe.utils.now(),
+				},
 			)
 			log_error(
 				"App Release Creation Error", app=self.name, github_response=github_response

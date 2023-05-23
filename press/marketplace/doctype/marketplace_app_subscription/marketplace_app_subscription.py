@@ -86,10 +86,20 @@ class MarketplaceAppSubscription(Document):
 			{"key": key_id, "value": secret_key, "type": "String"},
 			{
 				"key": "subscription",
-				"value": {"login_url": get_login_url(secret_key)},
+				"value": {"secret_key": secret_key},
 				"type": "JSON",
 			},
 		]
+		if "prepaid" == frappe.db.get_value(
+			"Saas Settings", self.app, "billing_type"
+		) and frappe.db.get_value("Site", self.site, "trial_end_date"):
+			config.append(
+				{
+					"key": "app_include_js",
+					"value": [frappe.db.get_single_value("Press Settings", "app_include_script")],
+					"type": "JSON",
+				}
+			)
 
 		config = config + old_config
 
@@ -106,6 +116,9 @@ class MarketplaceAppSubscription(Document):
 		team_name = frappe.db.get_value("Site", self.site, "team")
 		team = frappe.get_cached_doc("Team", team_name)
 
+		if team.parent_team:
+			team = frappe.get_cached_doc("Team", team.name)
+
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
@@ -114,7 +127,7 @@ class MarketplaceAppSubscription(Document):
 
 		usage_record = frappe.get_doc(
 			doctype="Usage Record",
-			team=team_name,
+			team=team.name,
 			document_type="Marketplace App",
 			document_name=self.app,
 			plan=self.plan,

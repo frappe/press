@@ -79,7 +79,7 @@ class Bench(Document):
 				{
 					"redis_cache": "redis://localhost:13000",
 					"redis_queue": "redis://localhost:11000",
-					"redis_socketio": "redis://localhost:12000",
+					"redis_socketio": "redis://localhost:13000",
 				}
 			)
 
@@ -155,8 +155,16 @@ class Bench(Document):
 		)
 		if unarchived_sites:
 			frappe.throw("Cannot archive bench with active sites.")
+		self.check_ongoing_job()
 		agent = Agent(self.server)
 		agent.archive_bench(self)
+
+	def check_ongoing_job(self):
+		ongoing_jobs = frappe.db.exists(
+			"Agent Job", {"bench": self.name, "status": ("in", ["Running", "Pending"])}
+		)
+		if ongoing_jobs:
+			frappe.throw("Cannot archive bench with ongoing jobs.")
 
 	@frappe.whitelist()
 	def sync_info(self):
@@ -180,13 +188,16 @@ class Bench(Document):
 
 		agent = Agent(self.server)
 		data = agent.get_sites_info(self, since=last_synced_time)
-		for site, info in data.items():
-			try:
-				frappe.get_doc("Site", site).sync_info(info)
-				frappe.db.commit()
-			except Exception:
-				log_error("Site Sync Error", site=site, info=info)
-				frappe.db.rollback()
+		if data:
+			for site, info in data.items():
+				if not frappe.db.exists("Site", site):
+					continue
+				try:
+					frappe.get_doc("Site", site).sync_info(info)
+					frappe.db.commit()
+				except Exception:
+					log_error("Site Sync Error", site=site, info=info)
+					frappe.db.rollback()
 
 	@frappe.whitelist()
 	def sync_analytics(self):
@@ -233,6 +244,11 @@ class Bench(Document):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_ssh_user(self)
+
+	@frappe.whitelist()
+	def generate_nginx_config(self):
+		agent = Agent(self.server)
+		agent.update_bench_config(self)
 
 	@property
 	def work_load(self) -> float:
@@ -292,6 +308,15 @@ class Bench(Document):
 					"scheduled_time": frappe.utils.add_to_date(None, minutes=5 * idx),
 				}
 			).insert()
+
+	@frappe.whitelist()
+	def retry_bench(self):
+
+		if frappe.get_value("Deploy Candidate", self.candidate, "status") != "Success":
+			frappe.throw(f"Deploy Candidate {self.candidate} is not Active")
+
+		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
+		candidate._create_deploy([self.server])
 
 	@frappe.whitelist()
 	def restart(self, web_only=False):
@@ -373,6 +398,10 @@ def process_archive_bench_job_update(job):
 		"Failure": "Broken",
 	}[job.status]
 
+	if job.status == "Failure":
+		if "Bench has sites" in job.traceback:  # custom exception hardcoded in agent
+			updated_status = "Active"
+
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		is_ssh_proxy_setup = frappe.db.get_value("Bench", job.bench, "is_ssh_proxy_setup")
@@ -396,24 +425,34 @@ def archive_obsolete_benches():
 	)
 	for bench in benches:
 		# If this bench is already being archived then don't do anything.
-		active_archival_jobs = frappe.db.exists(
+		active_archival_jobs = frappe.get_all(
 			"Agent Job",
 			{
 				"job_type": "Archive Bench",
 				"bench": bench.name,
 				"status": ("in", ("Pending", "Running", "Success")),
 			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="job_type",
 		)
 		if active_archival_jobs:
 			continue
 
-		active_site_updates = frappe.db.exists(
+		active_site_updates = frappe.get_all(
 			"Site Update",
 			{
-				"destination_bench": bench.name,
 				"status": ("in", ["Pending", "Running", "Failure"]),
 			},
+			or_filters={
+				"source_bench": bench.name,
+				"destination_bench": bench.name,
+			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="destination_bench",
 		)
+
 		if active_site_updates:
 			continue
 
@@ -440,9 +479,11 @@ def archive_obsolete_benches():
 			):
 				try:
 					frappe.get_doc("Bench", bench.name).archive()
-					return
+					frappe.db.commit()
+					break
 				except Exception:
 					log_error("Bench Archival Error", bench=bench.name)
+					frappe.db.rollback()
 
 
 def sync_benches():

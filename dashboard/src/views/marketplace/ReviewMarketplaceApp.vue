@@ -8,7 +8,7 @@ const props = defineProps({
 });
 
 const params = new Proxy(new URLSearchParams(window.location.search), {
-  get: (searchParams, prop) => searchParams.get(prop),
+	get: (searchParams, prop) => searchParams.get(prop)
 });
 let appTitle = params.title;
 
@@ -39,9 +39,7 @@ const submitReview = useResource({
 <template>
 	<div class="px-4 py-4 text-base sm:px-8">
 		<div>
-			<h1 class="mb-4 text-xl font-semibold">
-				Review App: {{ appTitle }}
-			</h1>
+			<h1 class="mb-4 text-xl font-semibold">Review App: {{ appTitle }}</h1>
 		</div>
 
 		<div class="mt-2 sm:grid sm:grid-cols-2">
@@ -68,7 +66,7 @@ const submitReview = useResource({
 					placeholder="Write Review"
 				/>
 
-				<ErrorMessage class="mt-2" :error="submitReview.error" />
+				<ErrorMessage class="mt-2" :message="submitReview.error" />
 				<Button
 					class="mt-4"
 					:loading="submitReview.loading"

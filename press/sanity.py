@@ -2,6 +2,8 @@ import os
 import re
 import urllib.request
 from selenium import webdriver
+import requests
+import subprocess
 
 import click
 import frappe
@@ -35,12 +37,11 @@ def checks():
 
 def initialize_webdriver():
 	if not os.path.exists(CHROMEDRIVER_PATH):
-		# Download from https://chromedriver.chromium.org/
 		click.secho(
-			f"Chromedriver not found at {CHROMEDRIVER_PATH}. Skipping Browser Assets Test...",
+			f"Chromedriver not found at {CHROMEDRIVER_PATH}, Downloading from https://chromedriver.chromium.org/",
 			fg="yellow",
 		)
-		return False
+		download_chromedriver()
 
 	global chrome
 
@@ -49,8 +50,30 @@ def initialize_webdriver():
 	options.add_argument("--no-sandbox")
 	options.add_argument("--disable-dev-shm-usage")
 	options.add_argument("--disable-setuid-sandbox")
-	chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
+	try:
+		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
+	except Exception as e:
+		version = re.search(r"is (\d+.\d+.\d+.\d+) with", e.msg).group(1)
+		download_chromedriver(version=version.rsplit(".", 1)[0])
+		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
 	return True
+
+
+def download_chromedriver(version=None):
+	if version:
+		latest_release_url = (
+			f"https://chromedriver.storage.googleapis.com/LATEST_RELEASE_{version}"
+		)
+	else:
+		latest_release_url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE"
+
+	latest_release = requests.get(latest_release_url).text
+	subprocess.check_output(
+		f"curl -o chromedriver.zip https://chromedriver.storage.googleapis.com/{latest_release}/chromedriver_linux64.zip".split()
+	)
+	subprocess.check_output(
+		f"unzip -o chromedriver.zip -d {os.path.expanduser('~')}".split()
+	)
 
 
 def test_browser_assets():

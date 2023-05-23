@@ -8,7 +8,7 @@
 				v-if="showManageTeamButton"
 				@click="showManageMemberDialog = true"
 			>
-				Manage
+				Add New Member
 			</Button>
 		</template>
 		<div class="max-h-96 divide-y">
@@ -19,65 +19,48 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge v-bind="getRoleBadgeProps(member)" />
+					<Badge
+						v-if="getRoleBadgeProps(member).status == 'Owner'"
+						:label="getRoleBadgeProps(member).status"
+						:colorMap="$badgeStatusColorMap"
+					/>
+					<Button
+						v-else
+						icon="trash-2"
+						@click="removeMember(member)"
+						:loading="$resources.removeMember.loading"
+					>
+					</Button>
 				</template>
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
-			:options="{ title: 'Manage Members' }"
+		<Dialog
+			:options="{ title: 'Add New Member' }"
 			v-model="showManageMemberDialog"
 		>
 			<template v-slot:body-content>
-				<ListItem
-					v-for="member in $account.team_members"
-					:title="`${member.first_name} ${member.last_name}`"
-					:description="member.name"
-					:key="member.name"
-				>
-					<template #actions>
-						<Button
-							v-if="getRoleBadgeProps(member).status == 'Member'"
-							class="ml-2 p-4"
-							@click="removeMember(member)"
-							:loading="$resources.removeMember.loading"
-						>
-							Remove
-						</Button>
-						<Badge v-else v-bind="getRoleBadgeProps(member)" />
-					</template>
-				</ListItem>
-
-				<div v-if="showAddMemberForm">
-					<h5 class="mt-5 text-sm font-semibold">Add Member</h5>
-					<Input
-						label="Enter the email address of your teammate to invite them."
-						type="text"
-						class="mt-2"
-						v-model="memberEmail"
-						required
-					/>
-					<ErrorMessage :error="$resourceErrors" />
-
-					<div class="mt-5 flex flex-row justify-end">
-						<Button @click="showAddMemberForm = false"> Cancel </Button>
-						<Button
-							class="ml-2"
-							appearance="primary"
-							:loading="$resources.addMember.loading"
-							@click="$resources.addMember.submit({ email: memberEmail })"
-						>
-							Send Invitation
-						</Button>
-					</div>
-				</div>
-				<div v-else class="mt-5 flex flex-row justify-end">
-					<Button appearance="primary" @click="showAddMemberForm = true">
-						Add Member
-					</Button>
-				</div>
+				<Input
+					label="Enter the email address of your teammate to invite them."
+					type="text"
+					class="mt-2"
+					v-model="memberEmail"
+					required
+				/>
+				<ErrorMessage :message="$resourceErrors" />
 			</template>
-		</FrappeUIDialog>
+
+			<template v-slot:actions>
+				<Button
+					class="ml-2"
+					appearance="primary"
+					:loading="$resources.addMember.loading"
+					@click="$resources.addMember.submit({ email: memberEmail })"
+				>
+					Send Invitation
+				</Button>
+			</template>
+		</Dialog>
 	</Card>
 </template>
 <script>
@@ -137,6 +120,7 @@ export default {
 				title: 'Remove Member',
 				message: `Are you sure you want to remove ${member.first_name} ?`,
 				actionLabel: 'Remove',
+				actionType: 'danger',
 				action: closeDialog => {
 					this.$resources.removeMember.submit({ user_email: member.name });
 					closeDialog();
@@ -153,7 +137,8 @@ export default {
 				(team.default_payment_method ||
 					team.payment_mode == 'Prepaid Credits' ||
 					team.free_account ||
-					team.erpnext_partner)
+					team.erpnext_partner ||
+					team.parent_team)
 			);
 		}
 	}

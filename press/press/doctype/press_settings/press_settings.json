@@ -127,6 +127,7 @@
   "threshold",
   "commission",
   "usd_rate",
+  "app_include_script",
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
@@ -142,11 +143,13 @@
   "ssh_section",
   "ssh_certificate_authority",
   "monitoring_section",
-  "telegram_alert_chat_id",
   "monitor_server",
-  "column_break_100",
   "monitor_token",
+  "press_monitoring_password",
+  "column_break_100",
   "log_server",
+  "telegram_alert_chat_id",
+  "telegram_alerts_chat_group",
   "feature_flags_tab",
   "verify_cards_with_micro_charge"
  ],
@@ -934,11 +937,28 @@
    "fieldname": "usd_rate",
    "fieldtype": "Float",
    "label": "Commission USD Rate"
+  },
+  {
+   "fieldname": "press_monitoring_password",
+   "fieldtype": "Password",
+   "label": "Press Monitoring Password"
+  },
+  {
+   "description": "Adds this script to app_include_js via site config. Used for in-site billing",
+   "fieldname": "app_include_script",
+   "fieldtype": "Data",
+   "label": "App Include Script"
+  },
+  {
+   "fieldname": "telegram_alerts_chat_group",
+   "fieldtype": "Link",
+   "label": "Telegram Alerts Chat Group",
+   "options": "Telegram Group"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2022-12-02 18:56:47.099335",
+ "modified": "2023-05-12 12:00:13.969001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

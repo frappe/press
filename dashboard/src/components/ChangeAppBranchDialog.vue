@@ -1,9 +1,8 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		v-if="app"
 		:modelValue="Boolean(bench && app)"
 		:options="{ title: `Change branch for ${app.title}` }"
-		@close="dialogClosed"
 	>
 		<template v-slot:body-content>
 			<div>
@@ -21,7 +20,7 @@
 					</select>
 				</div>
 
-				<ErrorMessage class="mt-2" :error="$resourceErrors" />
+				<ErrorMessage class="mt-2" :message="$resourceErrors" />
 			</div>
 		</template>
 		<template v-slot:actions>
@@ -35,7 +34,7 @@
 				Change Branch
 			</Button>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

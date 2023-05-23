@@ -19,7 +19,11 @@
 							{{ server.title }}
 						</div>
 						<div class="text-base sm:w-3/12">
-							<Badge class="pointer-events-none" v-bind="serverBadge(server)" />
+							<Badge
+								class="pointer-events-none"
+								:colorMap="$badgeStatusColorMap"
+								:label="server.status"
+							/>
 						</div>
 						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
 							Created {{ formatDate(server.creation, 'relative') }}
@@ -30,11 +34,11 @@
 				<div class="text-right text-base">
 					<Dropdown
 						v-if="server.status === 'Active' || server.status === 'Updating'"
-						:items="dropdownItems(server)"
+						:options="dropdownItems(server)"
 						right
 					>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 					<div v-else class="h-[30px] w-[30px]"></div>

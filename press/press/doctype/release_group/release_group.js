@@ -7,18 +7,14 @@ frappe.ui.form.on('Release Group', {
 			`/dashboard/benches/${frm.doc.name}`,
 			__('Visit Dashboard')
 		);
-		frm.add_custom_button(
-			__('Create Deploy Candidate'),
-			() => {
-				frm
-					.call({
-						method: 'press.api.bench.create_deploy_candidate',
-						freeze: true,
-						args: {
-							name: frm.doc.name,
-						},
-					})
-					.then(({ message }) => {
+		[
+			[__('Create Deploy Candidate'), "create_deploy_candidate"],
+			[__('Create Duplicate Deploy Candidate'), "create_duplicate_deploy_candidate"],
+		].forEach(([label, method]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frm.call(method).then(({ message }) => {
 						frappe.msgprint({
 							title: __('New Deploy Candidate Created'),
 							indicator: 'green',
@@ -26,12 +22,12 @@ frappe.ui.form.on('Release Group', {
 								`New <a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a> for this bench was created successfully.`
 							),
 						});
-
 						frm.refresh();
 					});
-			},
-			__('Actions')
-		);
+				},
+				__('Actions')
+			);
+		});
 
 		frm.add_custom_button(
 			'Change Server',

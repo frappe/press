@@ -43,13 +43,15 @@
 			</div>
 		</div>
 
-		<Dialog title="Change Plan" v-model="showChangePlanDialog">
-			<ServerPlansTable
-				class="mt-6"
-				:plans="plans"
-				v-model:selectedPlan="selectedPlan"
-			/>
-			<ErrorMessage class="mt-4" :error="$resources.changePlan.error" />
+		<Dialog :options="{ title: 'Change Plan' }" v-model="showChangePlanDialog">
+			<template v-slot:body-content>
+				<ServerPlansTable
+					class="mt-6"
+					:plans="plans"
+					v-model:selectedPlan="selectedPlan"
+				/>
+				<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
+			</template>
 			<template #actions>
 				<Button @click="showChangePlanDialog = false"> Cancel </Button>
 				<Button
@@ -121,6 +123,14 @@ export default {
 					this.selectedPlan = null;
 					this.$emit('plan-change');
 					this.$resources.plans.reset();
+				},
+				onError(error) {
+					this.showChangePlanDialog = false;
+					this.$notify({
+						title: error,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}

@@ -1,5 +1,5 @@
 <template>
-	<Dropdown :items="dropdownOptions" :dropdown-width-full="true">
+	<OldDropdown :items="dropdownOptions" :dropdown-width-full="true">
 		<template v-slot="{ toggleDropdown }">
 			<button
 				class="select relative flex w-full items-center justify-between rounded-md bg-gray-100 py-1 pl-3 pr-2 text-left text-base leading-5 focus:bg-gray-200 focus:outline-none"
@@ -34,7 +34,7 @@
 				</svg>
 			</button>
 		</template>
-	</Dropdown>
+	</OldDropdown>
 </template>
 <script>
 import { h } from 'vue';

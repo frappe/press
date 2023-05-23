@@ -80,7 +80,7 @@
 				</div>
 
 				<div>
-					<ErrorMessage class="mb-2" :error="$resources.createBench.error" />
+					<ErrorMessage class="mb-2" :message="$resources.createBench.error" />
 					<Button
 						appearance="primary"
 						:loading="$resources.createBench.loading"

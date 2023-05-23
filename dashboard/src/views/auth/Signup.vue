@@ -13,7 +13,7 @@
 				v-model="email"
 				required
 			/>
-			<ErrorMessage class="mt-4" :error="$resources.signup.error" />
+			<ErrorMessage class="mt-4" :message="$resources.signup.error" />
 			<Button
 				class="mt-6"
 				:loading="$resources.signup.loading"
@@ -71,6 +71,10 @@ export default {
 				},
 				onSuccess() {
 					this.emailSent = true;
+					//window.posthog.capture(
+					//'init_client_fc_account_email_sent',
+					//'fc_setup'
+					//);
 				}
 			};
 		}

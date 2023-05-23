@@ -10,6 +10,7 @@
   "team",
   "currency",
   "amount",
+  "invoice",
   "start_date",
   "end_date",
   "remark"
@@ -61,11 +62,17 @@
    "fieldname": "remark",
    "fieldtype": "Small Text",
    "label": "Remark"
+  },
+  {
+   "fieldname": "invoice",
+   "fieldtype": "Link",
+   "label": "Invoice",
+   "options": "Invoice"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-29 22:03:47.255920",
+ "modified": "2023-02-22 12:27:18.620592",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Consumption Record",

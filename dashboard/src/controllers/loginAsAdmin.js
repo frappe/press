@@ -9,7 +9,7 @@ export function loginAsAdmin(siteName) {
 		},
 		onError() {
 			this.$notify({
-				title: 'An error occurred',
+				title: 'Could not login as Administrator',
 				color: 'red',
 				icon: 'x'
 			});

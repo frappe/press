@@ -8,7 +8,7 @@
 				Install App: {{ options ? options.title : '' }}
 			</h1>
 
-			<ErrorMessage :error="$resources.optionsForQuickInstall.error" />
+			<ErrorMessage :message="$resources.optionsForQuickInstall.error" />
 
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
 				<Card title="Sites" subtitle="Select a site to install">
@@ -74,19 +74,20 @@
 
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			title="Select app plan"
-			width="half"
-			:dismissable="true"
+			:options="{
+				title: 'Select app plan',
+				size: 'xl'
+			}"
 		>
-			<ChangeAppPlanSelector
-				v-if="marketplaceApp"
-				:app="marketplaceApp"
-				class="mb-9"
-				@change="plan => (selectedPlan = plan.name)"
-			/>
-
-			<ErrorMessage :error="$resourceErrors" />
-
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					v-if="marketplaceApp"
+					:app="marketplaceApp"
+					class="mb-9"
+					@change="plan => (selectedPlan = plan.name)"
+				/>
+				<ErrorMessage :message="$resourceErrors" />
+			</template>
 			<template v-slot:actions>
 				<Button
 					appearance="primary"

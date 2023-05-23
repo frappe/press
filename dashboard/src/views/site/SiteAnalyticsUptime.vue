@@ -4,7 +4,7 @@
 			<div class="flex h-8 justify-between">
 				<div
 					v-for="d in data"
-					:key="d.timestamp"
+					:key="d.date"
 					style="width: 2px"
 					:class="[
 						d[type.key] === undefined
@@ -15,6 +15,7 @@
 							? 'bg-red-500'
 							: 'bg-yellow-500'
 					]"
+					:title="`${d.date} Uptime: ${(d.value * 100).toFixed(2)}%`"
 				></div>
 			</div>
 		</div>

@@ -1,0 +1,34 @@
+---
+- name: Get Sites from Current Bench
+  become: yes
+  become_user: frappe
+  command: bench --site all list-apps --format json
+  ignore_errors: True
+  args:
+    chdir: "{{ bench_path }}"
+
+- name: Get Site list from Bench
+  command: bench execute frappe.utils.get_sites
+  register: sites
+  ignore_errors: True
+  args:
+    chdir: "{{ bench_path }}"
+
+- name: Load Site Configs from Existing Sites
+  command: cat {{item}}/site_config.json
+  ignore_errors: True
+  loop: "{{ sites.stdout }}"
+  register: confs
+  args:
+    chdir: "{{ bench_path }}/sites"
+
+- name: Load Configs
+  set_fact:
+    configs: "{{ configs | default([])+ [{ 'site' : item.0, 'config' : item.1 }] }}" 
+  ignore_errors: True
+  with_together:
+    - "{{ sites.stdout }}"
+    - "{{ confs.results | map(attribute='stdout') }}"
+
+- name: Get Site Configs from Existing Sites
+  command: python3 -c 'import json;data=json.loads(r"""{{ configs | to_json }}""");print(data)'

@@ -12,19 +12,36 @@
 					class="block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
 					<div class="flex items-center justify-between">
-						<div class="text-base sm:w-4/12">
+						<div
+							class="hover:text-ellipses truncate break-all text-base w-1/2 sm:w-4/12"
+						>
 							{{ site.host_name || site.name }}
 						</div>
-						<div class="text-base sm:w-3/12">
-							<Badge class="pointer-events-none" v-bind="siteBadge(site)" />
+						<div class="text-base w-1/3 sm:w-3/12">
+							<Badge
+								class="pointer-events-none"
+								:colorMap="$badgeStatusColorMap"
+								:label="siteBadge(site)"
+							/>
 						</div>
-						<div class="text-base sm:w-4/12">
-							<div class="sm:w-6/12 break-all truncate hover:text-ellipses hover:w-full">
-							{{ site.title }}
+						<div
+							v-if="showBenchInfo"
+							class="text-base sm:w-4/12 hidden sm:block"
+						>
+							<div class="hover:text-ellipses truncate break-all hover:w-full">
+								{{ site.title }}
 							</div>
 						</div>
-						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-							Created {{ formatDate(site.creation, 'relative') }}
+						<div
+							v-if="showBenchInfo"
+							class="text-base hidden sm:block sm:w-3/12"
+						>
+							<Badge>
+								{{ site.version }}
+							</Badge>
+						</div>
+						<div class="hidden w-1/12 text-sm text-gray-600 sm:block">
+							{{ $dayjs.shortFormating($dayjs(site.creation).fromNow()) }}
 						</div>
 					</div>
 				</router-link>
@@ -32,11 +49,10 @@
 				<div class="text-right text-base">
 					<Dropdown
 						v-if="site.status === 'Active' || site.status === 'Updating'"
-						:items="dropdownItems(site)"
-						right
+						:options="dropdownItems(site)"
 					>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 					<div v-else class="h-[30px] w-[30px]"></div>
@@ -48,7 +64,7 @@
 			/>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
@@ -60,7 +76,7 @@
 					required
 				/>
 
-				<ErrorMessage class="mt-3" :error="errorMessage" />
+				<ErrorMessage class="mt-3" :message="errorMessage" />
 			</template>
 
 			<template #actions>
@@ -71,7 +87,7 @@
 					>Proceed</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -79,7 +95,14 @@ import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 
 export default {
 	name: 'SiteList',
-	props: ['sites'],
+	props: {
+		sites: {
+			default: []
+		},
+		showBenchInfo: {
+			default: true
+		}
+	},
 	data() {
 		return {
 			adminLoginInProcess: false,
@@ -97,10 +120,8 @@ export default {
 	methods: {
 		siteBadge(site) {
 			let status = site.status;
-			let color = null;
 			if (site.update_available && site.status == 'Active') {
 				status = 'Update Available';
-				color = 'blue';
 			}
 
 			let usage = Math.max(
@@ -110,28 +131,23 @@ export default {
 			);
 			if (usage && usage >= 80 && status == 'Active') {
 				status = 'Attention Required';
-				color = 'yellow';
 			}
 			if (site.trial_end_date) {
 				status = 'Trial';
-				color = 'yellow';
 			}
-			return {
-				color,
-				status
-			};
+			return status;
 		},
 		dropdownItems(site) {
 			return [
 				{
 					label: 'Visit Site',
-					action: () => {
+					handler: () => {
 						window.open(`https://${site.name}`, '_blank');
 					}
 				},
 				{
 					label: 'Login As Admin',
-					action: () => {
+					handler: () => {
 						if (this.$account.team.name == site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: site.name

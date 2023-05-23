@@ -2,7 +2,7 @@
 - name: Update Agent Repository
   become: yes
   become_user: frappe
-  command: "git remote set-url upstream {{ agent_repository_url }}"
+  command: 'git remote set-url upstream {{ agent_repository_url }}'
   args:
     chdir: /home/frappe/agent/repo
 
@@ -14,7 +14,14 @@
     chdir: /home/frappe/agent
   ignore_errors: yes
 
+- name: Set Ownership of Agent Logs to Frappe user
+  file:
+    path: /home/frappe/agent/logs
+    owner: frappe
+    group: frappe
+    recurse: yes
+
 - name: Start Agent processes
-  supervisorctl:
-    name: "agent:"
-    state: started
+  become: yes
+  become_user: frappe
+  command: 'sudo supervisorctl start agent:'

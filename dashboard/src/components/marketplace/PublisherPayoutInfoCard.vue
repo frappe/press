@@ -37,7 +37,7 @@
 			</template>
 		</Card>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Edit Publisher Profile' }"
 			v-model="showEditProfileDialog"
 		>
@@ -88,7 +88,7 @@
 
 				<ErrorMessage
 					class="mt-4"
-					:error="$resources.updatePublisherProfile.error"
+					:message="$resources.updatePublisherProfile.error"
 				/>
 			</template>
 
@@ -105,7 +105,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

@@ -16,8 +16,7 @@ states_with_tin = {
 	"Bihar": "10",
 	"Chandigarh": "04",
 	"Chhattisgarh": "22",
-	"Dadra and Nagar Haveli": "26",
-	"Daman and Diu": "25",
+	"Dadra and Nagar Haveli and Daman and Diu": "26",
 	"Delhi": "07",
 	"Goa": "30",
 	"Gujarat": "24",
@@ -37,7 +36,7 @@ states_with_tin = {
 	"Nagaland": "13",
 	"Odisha": "21",
 	"Other Territory": "97",
-	"Pondicherry": "34",
+	"Puducherry": "34",
 	"Punjab": "03",
 	"Rajasthan": "08",
 	"Sikkim": "11",
@@ -161,7 +160,7 @@ def get_stripe():
 
 
 def convert_stripe_money(amount):
-	return amount / 100
+	return (amount / 100) if amount else 0
 
 
 def validate_gstin_check_digit(gstin, label="GSTIN"):

@@ -42,6 +42,11 @@ const payout = useResource({
 						>
 							Fee
 						</th>
+						<th
+							class="whitespace-nowrap border-b py-3 pr-2 text-right font-normal"
+						>
+							Commission
+						</th>
 						<th class="border-b py-3 pr-2 text-right font-normal">
 							Net Amount
 						</th>
@@ -62,6 +67,9 @@ const payout = useResource({
 						</td>
 						<td class="border-b py-3 pr-2 text-right">
 							${{ round(row.gateway_fee, 2) }}
+						</td>
+						<td class="border-b py-3 pr-2 text-right">
+							${{ round(row.commission, 2) }}
 						</td>
 						<td class="border-b py-3 pr-2 text-right">
 							${{ round(row.net_amount, 2) }}
@@ -101,6 +109,9 @@ const payout = useResource({
 							₹{{ round(row.gateway_fee, 2) }}
 						</td>
 						<td class="border-b py-3 pr-2 text-right">
+							₹{{ round(row.commission, 2) }}
+						</td>
+						<td class="border-b py-3 pr-2 text-right">
 							₹{{ round(row.net_amount, 2) }}
 						</td>
 					</tr>
@@ -108,6 +119,6 @@ const payout = useResource({
 			</table>
 		</div>
 
-		<ErrorMessage :error="payout.error" />
+		<ErrorMessage :message="payout.error" />
 	</div>
 </template>

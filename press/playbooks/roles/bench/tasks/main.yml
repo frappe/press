@@ -1,16 +1,4 @@
 ---
-- name: Clone Bench Repository
-  become: yes
-  become_user: frappe
-  git:
-    repo: https://github.com/frappe/bench
-    dest: /home/frappe/bench-repo
-
-- name: Install Bench
-  pip:
-    name: file:///home/frappe/bench-repo
-    executable: pip3
-
 - name: Create Benches Directory
   become: yes
   become_user: frappe

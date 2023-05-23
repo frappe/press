@@ -6,10 +6,11 @@
 		"test": "cd dashboard && yarn test",
 		"watch": "yarn dev",
 		"build": "NODE_ENV=production yarn run build-all",
-		"build-all": "yarn run build-app && yarn run build-email-css && yarn run build-marketplace-css",
+		"build-all": "yarn run build-app && yarn run build-email-css && yarn run build-marketplace-css && yarn run build-saas-css",
 		"build-app": "cd dashboard && yarn build",
 		"build-email-css": "npx tailwindcss -i ./press/public/email/style.css -o ./press/public/css/email.css --config ./press/public/email/tailwind.config.js",
 		"build-marketplace-css": "npx tailwindcss -i ./press/public/marketplace/style.css -o ./press/public/css/marketplace-next.css --config ./press/public/marketplace/tailwind.config.js",
+		"build-saas-css": "npx tailwindcss -i ./press/public/marketplace/style.css -o ./press/public/css/saas-next.css --config ./press/templates/saas/tailwind.config.js",
 		"postinstall": "cd dashboard && yarn install"
 	},
 	"devDependencies": {

@@ -108,6 +108,21 @@ class SiteUpdate(Document):
 	def after_insert(self):
 		self.create_agent_request()
 
+	def get_before_migrate_scripts(self, rollback=False):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+
+		script_field = "before_migrate_script"
+		if rollback:
+			script_field = "rollback_script"
+
+		scripts = {}
+		for app_rename in frappe.get_all(
+			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", script_field]
+		):
+			scripts[app_rename.old_name] = app_rename.get(script_field)
+
+		return scripts
+
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
@@ -116,6 +131,8 @@ class SiteUpdate(Document):
 			self.destination_bench,
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
+			skip_backups=self.skipped_backups,
+			before_migrate_scripts=self.get_before_migrate_scripts(),
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
@@ -140,6 +157,29 @@ class SiteUpdate(Document):
 			{"site": self.site, "status": ("in", ("Pending", "Running", "Failure"))},
 		)
 
+	def reallocate_workers(self):
+		"""
+		Reallocate workers on source and destination benches
+
+		Do it for private benches only now as there'll be too many worker updates for public benches
+		"""
+		group = frappe.get_doc("Release Group", self.destination_group)
+
+		if group.public or group.central_bench:
+			return
+
+		server = frappe.get_doc("Server", self.server)
+		source_bench = frappe.get_doc("Bench", self.source_bench)
+		dest_bench = frappe.get_doc("Bench", self.destination_bench)
+
+		work_load_diff = dest_bench.work_load - source_bench.work_load
+		if (
+			server.new_worker_allocation
+			and work_load_diff
+			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
+		):
+			server.auto_scale_workers()
+
 
 def trigger_recovery_job(site_update_name):
 	site_update = frappe.get_doc("Site Update", site_update_name)
@@ -155,7 +195,11 @@ def trigger_recovery_job(site_update_name):
 		# Disable maintenance mode for active sites
 		activate = site.status_before_update == "Active"
 		job = agent.update_site_recover_move(
-			site, site_update.source_bench, site_update.deploy_type, activate
+			site,
+			site_update.source_bench,
+			site_update.deploy_type,
+			activate,
+			rollback_scripts=site_update.get_before_migrate_scripts(rollback=True),
 		)
 	else:
 		# Site is already on the source bench
@@ -177,7 +221,7 @@ def benches_with_available_update():
 		"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
-		WHERE sb.status = 'Active' AND sb.candidate = dcd.source
+		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
 		""",
 		as_dict=True,
 	)
@@ -247,6 +291,11 @@ def schedule_updates():
 			continue
 		if update_triggered_count > queue_size:
 			break
+		if frappe.db.exists(
+			"Site Update",
+			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
+		):
+			continue
 		try:
 			site = frappe.get_doc("Site", site.name)
 			site.schedule_update()
@@ -270,6 +319,15 @@ def should_try_update(site):
 		filters={"source": source},
 		limit=1,
 	)[0].destination
+
+	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
+	dest_apps = [
+		app.app for app in frappe.get_doc("Bench", dict(candidate=destination)).apps
+	]
+
+	if set(source_apps) - set(dest_apps):
+		return False
+
 	return not frappe.db.exists(
 		"Site Update",
 		{
@@ -322,9 +380,11 @@ def process_update_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
 			frappe.get_doc("Site", job.site).reset_previous_status()
+			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
-			trigger_recovery_job(site_update.name)
+			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
+				trigger_recovery_job(site_update.name)
 
 
 def process_update_site_recover_job_update(job):
@@ -353,3 +413,15 @@ def process_update_site_recover_job_update(job):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Fatal":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
+
+
+def mark_stuck_updates_as_fatal():
+	frappe.db.set_value(
+		"Site Update",
+		{
+			"status": ("in", ["Pending", "Running", "Failure"]),
+			"modified": ("<", frappe.utils.add_days(None, -2)),
+		},
+		"status",
+		"Fatal",
+	)

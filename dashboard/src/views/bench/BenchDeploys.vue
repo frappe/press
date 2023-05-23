@@ -29,10 +29,9 @@
 						<template #actions>
 							<Badge
 								v-if="candidate.status != 'Success'"
-								:status="candidate.status"
+								:label="candidate.status"
 								:colorMap="$badgeStatusColorMap"
 							>
-								{{ candidate.status }}
 							</Badge>
 						</template>
 					</ListItem>

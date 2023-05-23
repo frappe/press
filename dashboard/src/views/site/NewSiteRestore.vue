@@ -93,7 +93,7 @@
 				/>
 				<div class="mt-2">
 					<ErrorMessage
-						:error="$resources.getBackupLinks.error"
+						:message="$resources.getBackupLinks.error"
 						v-if="!$resources.getBackupLinks.data"
 					/>
 					<div
@@ -144,7 +144,7 @@ import { DateTime } from 'luxon';
 export default {
 	name: 'Restore',
 	emits: ['update:selectedFiles', 'update:skipFailingPatches'],
-	props: ['options', 'selectedFiles', 'manualMigration', 'skipFailingPatches'],
+	props: ['selectedFiles', 'manualMigration', 'skipFailingPatches'],
 	components: {
 		FileUploader,
 		Form,
@@ -181,7 +181,7 @@ export default {
 					ext: 'application/json',
 					title: 'Config Files',
 					file: null
-				},
+				}
 			],
 			uploadedFiles: {
 				database: null,

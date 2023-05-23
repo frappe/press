@@ -19,7 +19,7 @@
 			<div v-for="d in domains.data" :key="d.name">
 				<div class="py-2">
 					<div class="flex items-center">
-						<div class="w-1/2 text-base font-medium">
+						<div class="flex w-2/3 text-base font-medium">
 							<a
 								class="text-blue-500"
 								:href="'https://' + d.domain"
@@ -29,15 +29,32 @@
 								{{ d.domain }}
 							</a>
 							<span v-else>{{ d.domain }}</span>
+							<div
+								class="flex"
+								v-if="d.redirect_to_primary == 1 && d.status == 'Active'"
+							>
+								<FeatherIcon name="arrow-right" class="w-4 mx-1" />
+								<a
+									class="text-blue-500"
+									:href="'https://' + d.domain"
+									target="_blank"
+									v-if="d.status === 'Active'"
+								>
+									{{ site.host_name }}
+								</a>
+							</div>
 						</div>
 						<div class="ml-auto flex items-center space-x-2">
 							<Badge
-								v-if="d.status != 'Active' || d.primary"
-								:status="d.status"
+								v-if="d.status == 'Active' && d.primary"
+								:label="'Primary'"
 								:colorMap="$badgeStatusColorMap"
-							>
-								{{ d.primary ? 'Primary' : d.status }}
-							</Badge>
+							/>
+							<Badge
+								v-else-if="d.status != 'Active'"
+								:label="d.status"
+								:colorMap="$badgeStatusColorMap"
+							/>
 							<Button
 								v-if="d.status == 'Broken' && d.retry_count <= 5"
 								:loading="$resources.retryAddDomain.loading"
@@ -59,9 +76,9 @@
 							>
 								Removing domain
 							</Button>
-							<Dropdown v-else :items="actionItems(d)" right>
-								<template v-slot="{ toggleDropdown }">
-									<Button icon="more-horizontal" @click="toggleDropdown()" />
+							<Dropdown v-else :options="actionItems(d)">
+								<template v-slot="{ open }">
+									<Button icon="more-horizontal" />
 								</template>
 							</Dropdown>
 						</div>
@@ -70,12 +87,12 @@
 						v-if="d.status == 'Broken'"
 						error="We encountered an error while adding the domain."
 					/>
-					<ErrorMessage :error="$resources.removeDomain.error" />
-					<ErrorMessage :error="$resources.setHostName.error" />
+					<ErrorMessage :message="$resources.removeDomain.error" />
+					<ErrorMessage :message="$resources.setHostName.error" />
 				</div>
 			</div>
 		</div>
-		<FrappeUIDialog v-model="showDialog" :options="{ title: 'Add Domain' }">
+		<Dialog v-model="showDialog" :options="{ title: 'Add Domain' }">
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -107,13 +124,12 @@
 						/>
 						DNS records successfully verified. Click on Add Domain.
 					</p>
-					<ErrorMessage :error="$resources.checkDNS.error" />
-					<ErrorMessage :error="$resources.addDomain.error" />
-					<ErrorMessage :error="$resources.retryAddDomain.error" />
+					<ErrorMessage :message="$resources.checkDNS.error" />
+					<ErrorMessage :message="$resources.addDomain.error" />
+					<ErrorMessage :message="$resources.retryAddDomain.error" />
 				</div>
 			</template>
 
-			
 			<template v-slot:actions>
 				<Button @click="showDialog = false"> Cancel </Button>
 				<Button
@@ -145,7 +161,7 @@
 					Add Domain
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 
@@ -228,12 +244,12 @@ export default {
 			return [
 				{
 					label: 'Remove',
-					action: () => this.confirmRemoveDomain(domain.domain)
+					handler: () => this.confirmRemoveDomain(domain.domain)
 				},
 				{
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
-					action: () => this.confirmSetPrimary(domain.domain)
+					handler: () => this.confirmSetPrimary(domain.domain)
 				},
 				{
 					label: 'Redirect to Primary',
@@ -241,7 +257,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						!domain.redirect_to_primary,
-					action: () => this.confirmSetupRedirect(domain.domain)
+					handler: () => this.confirmSetupRedirect(domain.domain)
 				},
 				{
 					label: 'Remove Redirect',
@@ -249,7 +265,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						domain.redirect_to_primary,
-					action: () => this.confirmRemoveRedirect(domain.domain)
+					handler: () => this.confirmRemoveRedirect(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},
@@ -269,19 +285,34 @@ export default {
 			});
 		},
 		confirmSetPrimary(domain) {
-			this.$confirm({
-				title: 'Set as Primary Domain',
-				message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
-				actionLabel: 'Set Primary',
-				actionType: 'primary',
-				action: closeDialog => {
-					closeDialog();
-					this.$resources.setHostName.submit({
-						name: this.site.name,
-						domain: domain
-					});
+			let workingRedirects = false;
+			this.$resources.domains.data.forEach(d => {
+				if (d.redirect_to_primary) {
+					workingRedirects = true;
 				}
 			});
+
+			if (workingRedirects) {
+				this.$notify({
+					title: 'Please Remove all Active Redirects',
+					color: 'red',
+					icon: 'x'
+				});
+			} else {
+				this.$confirm({
+					title: 'Set as Primary Domain',
+					message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
+					actionLabel: 'Set Primary',
+					actionType: 'primary',
+					action: closeDialog => {
+						closeDialog();
+						this.$resources.setHostName.submit({
+							name: this.site.name,
+							domain: domain
+						});
+					}
+				});
+			}
 		},
 		confirmSetupRedirect(domain) {
 			this.$confirm({

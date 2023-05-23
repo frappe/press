@@ -23,7 +23,8 @@
   "update_job",
   "recover_job",
   "cause_of_failure_is_resolved",
-  "skipped_failing_patches"
+  "skipped_failing_patches",
+  "skipped_backups"
  ],
  "fields": [
   {
@@ -181,11 +182,17 @@
    "fieldtype": "Link",
    "label": "Destination Group",
    "options": "Release Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "skipped_backups",
+   "fieldtype": "Check",
+   "label": "Skipped Backups"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-02-26 19:47:20.358497",
+ "modified": "2023-03-21 14:31:40.445390",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

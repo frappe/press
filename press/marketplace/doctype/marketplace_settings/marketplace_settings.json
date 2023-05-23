@@ -7,7 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "featured_apps_section",
-  "featured_apps"
+  "featured_apps",
+  "release_auto_approval_section",
+  "auto_release_apps",
+  "auto_release_teams"
  ],
  "fields": [
   {
@@ -20,12 +23,29 @@
    "fieldtype": "Table",
    "label": "Featured Apps",
    "options": "Featured App"
+  },
+  {
+   "fieldname": "release_auto_approval_section",
+   "fieldtype": "Section Break",
+   "label": "Auto Release Approval"
+  },
+  {
+   "fieldname": "auto_release_apps",
+   "fieldtype": "Table",
+   "label": "Auto Release Apps",
+   "options": "Featured App"
+  },
+  {
+   "fieldname": "auto_release_teams",
+   "fieldtype": "Table",
+   "label": "Auto Release Teams",
+   "options": "Auto Release Team"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2022-03-24 22:52:15.104746",
+ "modified": "2023-03-23 19:08:26.722209",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace Settings",

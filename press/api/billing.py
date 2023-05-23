@@ -65,7 +65,7 @@ def balances():
 	has_bought_credits = frappe.db.get_all(
 		"Balance Transaction",
 		filters={
-			"source": ("in", ("Prepaid Credits", "Transferred Credits")),
+			"source": ("in", ("Prepaid Credits", "Transferred Credits", "Free Credits")),
 			"team": team,
 			"docstatus": 1,
 		},
@@ -239,17 +239,27 @@ def create_payment_intent_for_prepaid_app(amount, metadata):
 		"Stripe Payment Method", team.default_payment_method, "stripe_payment_method_id"
 	)
 	try:
-		intent = stripe.PaymentIntent.create(
-			amount=amount * 100,
-			currency=team.currency.lower(),
-			customer=team.stripe_customer_id,
-			description="Prepaid App Purchase",
-			off_session=True,
-			confirm=True,
-			metadata=metadata,
-			payment_method=payment_method,
-			payment_method_options={"card": {"request_three_d_secure": "any"}},
-		)
+		if not payment_method:
+			intent = stripe.PaymentIntent.create(
+				amount=amount * 100,
+				currency=team.currency.lower(),
+				customer=team.stripe_customer_id,
+				description="Prepaid App Purchase",
+				metadata=metadata,
+			)
+		else:
+			intent = stripe.PaymentIntent.create(
+				amount=amount * 100,
+				currency=team.currency.lower(),
+				customer=team.stripe_customer_id,
+				description="Prepaid App Purchase",
+				off_session=True,
+				confirm=True,
+				metadata=metadata,
+				payment_method=payment_method,
+				payment_method_options={"card": {"request_three_d_secure": "any"}},
+			)
+
 		return {
 			"payment_method": payment_method,
 			"client_secret": intent["client_secret"],
@@ -539,3 +549,13 @@ def handle_razorpay_payment_failed(response):
 	payment_record.status = "Failed"
 	payment_record.failure_reason = response["error"]["description"]
 	payment_record.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def total_unpaid_amount():
+	return frappe.get_all(
+		"Invoice",
+		{"status": "Unpaid", "team": get_current_team(), "type": "Subscription"},
+		["sum(total) as total"],
+		pluck="total",
+	)[0]

@@ -20,13 +20,9 @@
 						{{ app.source.repository_owner }}/{{ app.source.repository }}
 					</div>
 				</div>
-				<Dropdown :items="dropdownItems(app)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button
-							type="white"
-							@click.stop="toggleDropdown()"
-							icon-right="chevron-down"
-						>
+				<Dropdown :options="dropdownItems(app)" right>
+					<template v-slot="{ open }">
+						<Button type="white" icon-right="chevron-down">
 							<span>{{ app.source.branch }}</span>
 						</Button>
 					</template>
@@ -74,7 +70,7 @@ export default {
 		dropdownItems(app) {
 			return app.sources.map(source => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
-				action: () => this.selectSource(app, source)
+				handler: () => this.selectSource(app, source)
 			}));
 		},
 		selectSource(app, source) {

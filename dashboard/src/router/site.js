@@ -34,9 +34,10 @@ export default [
 				component: () => import('../views/site/SiteOverview.vue')
 			},
 			{
-				name: 'SiteApps',
+				name: 'SiteOverviewAppsAndSubscriptions',
 				path: 'apps',
-				component: () => import('../views/site/SiteApps.vue'),
+				component: () =>
+					import('../views/site/SiteOverviewAppsAndSubscriptions.vue'),
 				props: true
 			},
 			{
@@ -58,11 +59,6 @@ export default [
 			{
 				path: 'console',
 				component: () => import('../views/site/SiteConsole.vue')
-			},
-			{
-				path: 'activity',
-				component: () => import('../views/site/SiteActivity.vue'),
-				props: true
 			},
 			{
 				path: 'jobs/:jobName?',

@@ -140,11 +140,12 @@ class Agent:
 		)
 
 	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"new_name": new_name, "domains": domains}
 		return self.create_agent_job(
 			"Rename Site on Upstream",
-			f"proxy/upstreams/{private_ip}/sites/{site.name}/rename",
+			f"proxy/upstreams/{ip}/sites/{site.name}/rename",
 			data,
 			site=site.name,
 		)
@@ -228,8 +229,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def migrate_site(self, site, skip_failing_patches=False):
-		data = {"skip_failing_patches": skip_failing_patches}
+	def migrate_site(self, site, skip_failing_patches=False, activate=True):
+		data = {"skip_failing_patches": skip_failing_patches, "activate": activate}
 		return self.create_agent_job(
 			"Migrate Site",
 			f"benches/{site.bench}/sites/{site.name}/migrate",
@@ -247,12 +248,22 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site(self, site, target, deploy_type, skip_failing_patches=False):
+	def update_site(
+		self,
+		site,
+		target,
+		deploy_type,
+		skip_failing_patches=False,
+		skip_backups=False,
+		before_migrate_scripts=None,
+	):
 		activate = site.status_before_update in ("Active", "Broken")
 		data = {
 			"target": target,
 			"activate": activate,
 			"skip_failing_patches": skip_failing_patches,
+			"skip_backups": skip_backups,
+			"before_migrate_scripts": before_migrate_scripts,
 		}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
@@ -273,8 +284,10 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover_move(self, site, target, deploy_type, activate):
-		data = {"target": target, "activate": activate}
+	def update_site_recover_move(
+		self, site, target, deploy_type, activate, rollback_scripts=None
+	):
+		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
@@ -304,7 +317,17 @@ class Agent:
 			site=site.name,
 		)
 
-	def archive_site(self, site, force=False):
+	def reset_site_usage(self, site):
+		return self.create_agent_job(
+			"Reset Site Usage",
+			f"benches/{site.bench}/sites/{site.name}/usage",
+			method="DELETE",
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def archive_site(self, site, site_name=None, force=False):
+		site_name = site_name or site.name
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		data = {
 			"mariadb_root_password": get_decrypted_password(
@@ -315,7 +338,7 @@ class Agent:
 
 		return self.create_agent_job(
 			"Archive Site",
-			f"benches/{site.bench}/sites/{site.name}/archive",
+			f"benches/{site.bench}/sites/{site_name}/archive",
 			data,
 			bench=site.bench,
 			site=site.name,
@@ -329,14 +352,18 @@ class Agent:
 		if offsite:
 			settings = frappe.get_single("Press Settings")
 			backups_path = os.path.join(site.name, str(date.today()))
-			backup_bucket = get_backup_bucket(site.cluster)
-			if settings.aws_s3_bucket or backup_bucket:
+			backup_bucket = get_backup_bucket(site.cluster, region=True)
+			bucket_name = (
+				backup_bucket.get("name") if isinstance(backup_bucket, dict) else backup_bucket
+			)
+			if settings.aws_s3_bucket or bucket_name:
 				auth = {
 					"ACCESS_KEY": settings.offsite_backups_access_key_id,
 					"SECRET_KEY": settings.get_password("offsite_backups_secret_access_key"),
+					"REGION": backup_bucket.get("region") if isinstance(backup_bucket, dict) else "",
 				}
 				data.update(
-					{"offsite": {"bucket": backup_bucket, "auth": auth, "path": backups_path}}
+					{"offsite": {"bucket": bucket_name, "auth": auth, "path": backups_path}}
 				)
 
 			else:
@@ -416,36 +443,39 @@ class Agent:
 		)
 
 	def new_server(self, server):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
-		data = {"name": private_ip}
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"name": ip}
 		return self.create_agent_job(
 			"Add Upstream to Proxy", "proxy/upstreams", data, upstream=server
 		)
 
 	def update_upstream_private_ip(self, server):
-		ip = frappe.db.get_value("Server", server, "ip")
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		ip, private_ip = frappe.db.get_value("Server", server, ["ip", "private_ip"])
 		data = {"name": private_ip}
 		return self.create_agent_job(
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
 	def new_upstream_site(self, server, site):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		data = {"name": site}
 		return self.create_agent_job(
 			"Add Site to Upstream",
-			f"proxy/upstreams/{private_ip}/sites",
+			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site):
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+	def remove_upstream_site(self, server, site: str, site_name=None):
+		site_name = site_name or site
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Remove Site from Upstream",
-			f"proxy/upstreams/{private_ip}/sites/{site}",
+			f"proxy/upstreams/{ip}/sites/{site_name}",
 			method="DELETE",
 			site=site,
 			upstream=server,
@@ -473,11 +503,11 @@ class Agent:
 			upstream=bench.server,
 		)
 
-	def add_proxysql_user(self, site, username, password, database_server):
+	def add_proxysql_user(self, site, database, username, password, database_server):
 		data = {
 			"username": username,
 			"password": password,
-			"database": username,
+			"database": database,
 			"backend": {"ip": database_server.private_ip, "id": database_server.server_id},
 		}
 		return self.create_agent_job(
@@ -498,12 +528,38 @@ class Agent:
 			site=site.name,
 		)
 
+	def create_database_access_credentials(self, site, mode):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mode": mode,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		credentials = self.post(
+			f"benches/{site.bench}/sites/{site.name}/credentials", data=data
+		)
+		return credentials
+
+	def revoke_database_access_credentials(self, site):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"user": site.database_access_user,
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
+		)
+
 	def update_site_status(self, server, site, status):
 		data = {"status": status}
-		private_ip = frappe.db.get_value("Server", server, "private_ip")
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
 			"Update Site Status",
-			f"proxy/upstreams/{private_ip}/sites/{site}/status",
+			f"proxy/upstreams/{ip}/sites/{site}/status",
 			data=data,
 			site=site,
 			upstream=server,
@@ -546,8 +602,11 @@ class Agent:
 				result = requests.request(
 					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
 				)
+			json_response = None
 			try:
-				return result.json()
+				json_response = result.json()
+				result.raise_for_status()
+				return json_response
 			except Exception:
 				log_error(
 					title="Agent Request Result Exception",
@@ -556,7 +615,7 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=result.text,
+					result=json_response or result.text,
 				)
 		except Exception:
 			log_error(
@@ -589,7 +648,7 @@ class Agent:
 				"host": host,
 				"site": site,
 				"upstream": upstream,
-				"status": "Pending",
+				"status": "Undelivered",
 				"request_method": method,
 				"request_path": path,
 				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
@@ -629,6 +688,9 @@ class Agent:
 			return [status]
 		return status
 
+	def get_version(self):
+		return self.get("version")
+
 	def update(self):
 		url = frappe.get_doc(self.server_type, self.server).get_agent_repository_url()
 		return self.post("update", data={"url": url})
@@ -649,11 +711,15 @@ class Agent:
 		return data
 
 	def run_after_migrate_steps(self, site):
+		data = {
+			"admin_password": site.get_password("admin_password"),
+		}
 		return self.create_agent_job(
 			"Run After Migrate Steps",
 			f"benches/{site.bench}/sites/{site.name}/run_after_migrate_steps",
 			bench=site.bench,
 			site=site.name,
+			data=data,
 		)
 
 	def move_site_to_bench(

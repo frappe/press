@@ -23,12 +23,11 @@
 			<Button v-if="!$account.ssh_key" @click="showAddNewKeyDialog = true">
 				New SSH Key
 			</Button>
-			<Button v-else @click="showAddNewKeyDialog = true"> Change SSH Key </Button>
+			<Button v-else @click="showAddNewKeyDialog = true">
+				Change SSH Key
+			</Button>
 		</template>
-		<FrappeUIDialog
-			:options="{ title: 'New SSH Key' }"
-			v-model="showAddNewKeyDialog"
-		>
+		<Dialog :options="{ title: 'New SSH Key' }" v-model="showAddNewKeyDialog">
 			<template v-slot:body-content>
 				<div class="mt-3">
 					<Input
@@ -39,7 +38,7 @@
 						v-model="newKey"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.saveKey.error" />
+				<ErrorMessage class="mt-2" :message="$resources.saveKey.error" />
 			</template>
 
 			<template #actions>
@@ -47,7 +46,7 @@
 					Add Key
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</Card>
 </template>
 <script>

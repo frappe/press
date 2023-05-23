@@ -14,10 +14,9 @@
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="server.status"
+							:label="server.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ server.status }}</Badge
-						>
+						></Badge>
 
 						<div
 							v-if="regionInfo"
@@ -35,9 +34,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :status="server.status" :colorMap="$badgeStatusColorMap">{{
-								server.status
-							}}</Badge>
+							<Badge :label="server.status" :colorMap="$badgeStatusColorMap" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
@@ -56,13 +53,11 @@
 						<!-- Only for mobile view -->
 						<Dropdown
 							v-if="serverActions.length > 0"
-							:items="serverActions"
+							:options="serverActions"
 							right
 						>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
-									>Actions</Button
-								>
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -80,11 +75,9 @@
 							{{ action.label }}
 						</Button>
 
-						<Dropdown v-if="serverActions.length > 2" :items="serverActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
-									>Actions</Button
-								>
+						<Dropdown v-if="serverActions.length > 2" :options="serverActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -131,10 +124,29 @@ export default {
 				},
 				auto: true,
 				onSuccess() {},
-				onError(e) {
-					if (e.indexOf('not found') >= 0) {
-						this.$router.replace('/404NotFound');
-					}
+				onError: this.$routeTo404PageIfNotFound
+			};
+		},
+		reboot() {
+			return {
+				method: 'press.api.server.reboot',
+				params: {
+					name: this.serverName
+				},
+				onSuccess(data) {
+					this.$notify({
+						title: 'Server Reboot Scheduled Successfully',
+						color: 'green',
+						icon: 'check'
+					});
+					this.$resources.server.reload();
+				},
+				onError() {
+					this.$notify({
+						title: 'An error occurred',
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		}
@@ -173,14 +185,14 @@ export default {
 				['Active', 'Updating'].includes(this.server.status) && {
 					label: 'Visit Server',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(`https://${this.server.name}`, '_blank');
 					}
 				},
 				this.server.status === 'Active' && {
 					label: 'New Bench',
 					icon: 'plus',
-					action: () => {
+					handler: () => {
 						this.$router.replace(
 							`/servers/${this.server.app_server}/bench/new`
 						);
@@ -189,11 +201,32 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
 							'_blank'
 						);
+					}
+				},
+				this.server.status === 'Active' && {
+					label: 'Reboot',
+					icon: 'tool',
+					loading: this.$resources.reboot.loading,
+					handler: () => {
+						return this.$resources.reboot.submit();
+					}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					handler: async () => {
+						await this.$account.switchTeam(this.server.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.server.team}`,
+							icon: 'check',
+							color: 'green'
+						});
 					}
 				}
 			].filter(Boolean);
@@ -205,12 +238,13 @@ export default {
 				{ label: 'Installing', route: 'install' },
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Benches', route: 'benches' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Plays', route: 'plays', showRedDot: this.runningPlay }
 			];
 
 			let tabsByStatus = {
-				Active: ['Overview', 'Analytics', 'Jobs', 'Plays'],
+				Active: ['Overview', 'Analytics', 'Benches', 'Jobs', 'Plays'],
 				Pending: ['Installing'],
 				Installing: ['Installing']
 			};

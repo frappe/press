@@ -3,23 +3,31 @@
 		<div class="flex h-screen overflow-hidden">
 			<div
 				class="flex flex-1 overflow-y-auto"
-				:class="{ 'sm:bg-gray-50': $route.meta.isLoginPage }"
+				:class="{
+					'sm:bg-gray-50':
+						$route.meta.isLoginPage && $route.fullPath.indexOf('/checkout') < 0
+				}"
 			>
 				<div class="flex-1">
-					<Navbar v-if="$auth.isLoggedIn" />
-
-					<div class="mx-auto mt-5 flex flex-row justify-start md:container">
-						<Sidebar class="hidden sm:block" v-if="!$route.meta.isLoginPage" />
+					<Navbar class="sm:hidden" />
+					<div class="mx-auto flex flex-row justify-start">
+						<Sidebar
+							class="hidden sticky top-0 sm:flex flex-shrink-0 w-64"
+							v-if="$auth.isLoggedIn"
+						/>
 						<router-view
 							v-slot="{ Component }"
-							class="mx-4 w-full pb-20 sm:ml-8 sm:mr-0"
+							class="w-full sm:mr-0"
+							:class="{ 'pb-8 p-6': $auth.isLoggedIn }"
 						>
 							<keep-alive
 								:include="[
 									'Sites',
 									'Benches',
+									'Servers',
 									'Site',
 									'Bench',
+									'Server',
 									'Marketplace',
 									'Account',
 									'MarketplaceApp'
@@ -39,16 +47,17 @@
 	</div>
 </template>
 <script>
+import Sidebar from '@/components/Sidebar.vue';
 import Navbar from '@/components/Navbar.vue';
-import Sidebar from '@/views/saas/Sidebar.vue';
 import UserPrompts from '@/views/onboarding/UserPrompts.vue';
 import ConfirmDialogs from '@/components/ConfirmDialogs.vue';
 import NotificationToasts from '@/components/NotificationToasts.vue';
+
 export default {
 	name: 'App',
 	components: {
-		Navbar,
 		Sidebar,
+		Navbar,
 		UserPrompts,
 		ConfirmDialogs,
 		NotificationToasts

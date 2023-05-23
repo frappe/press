@@ -174,7 +174,6 @@ scheduler_events = {
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.press.doctype.drip_email.drip_email.send_drip_emails",
-		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
 	"daily_long": [
@@ -185,14 +184,15 @@ scheduler_events = {
 		"press.press.doctype.invoice.invoice.finalize_unpaid_prepaid_credit_invoices",
 		"press.press.doctype.bench.bench.sync_analytics",
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
-		"press.press.doctype.backup_restoration_test.backup_test.archive_backup_test_sites",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
+		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
+		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 	],
 	"hourly_long": [
-		"press.press.doctype.bench.bench.archive_obsolete_benches",
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
@@ -201,18 +201,23 @@ scheduler_events = {
 		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
+		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
+		"press.marketplace.doctype.marketplace_consumption_record.marketplace_consumption_record.consume_credits_for_prepaid_records",
 	],
 	"all": [
 		"press.auth.flush",
 	],
 	"cron": {
-		"0 3 * * *": ["press.press.doctype.remote_file.remote_file.poll_file_statuses"],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
+			"press.press.audit.check_unbilled_subscriptions",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
-		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
+		"0 */6 * * *": [
+			"press.press.doctype.server.server.cleanup_unused_files",
+			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
+		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
@@ -220,10 +225,15 @@ scheduler_events = {
 			"press.press.doctype.site.backups.schedule",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
+			"press.press.doctype.bench.bench.archive_obsolete_benches",
+			"press.press.doctype.subscription.subscription.create_usage_records",
+			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
+			"press.press.doctype.site_replication.site_replication.update_from_site",
+			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 		],
 		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
@@ -233,9 +243,6 @@ scheduler_events = {
 		],
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
-		],
-		"0 0 1 */3 *": [
-			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
 	},
 }

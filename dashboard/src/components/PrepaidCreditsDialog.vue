@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 		:options="{
@@ -22,7 +22,7 @@
 					name="amount"
 					autocomplete="off"
 					type="number"
-					min="1"
+					:min="minimumAmount"
 				/>
 
 				<p class="mt-3 text-xs">
@@ -32,7 +32,7 @@
 
 				<ErrorMessage
 					class="mt-3"
-					:error="$resources.createRazorpayOrder.error"
+					:message="$resources.createRazorpayOrder.error"
 				/>
 
 				<div class="mt-4 flex w-full justify-between">
@@ -77,7 +77,7 @@
 				</div>
 			</div>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 <script>
 import BuyPrepaidCredits from './BuyPrepaidCredits.vue';
@@ -164,7 +164,7 @@ export default {
 				name: 'Frappe Cloud',
 				image: '/assets/press/images/frappe-cloud-logo.png',
 				prefill: {
-					email: this.$account.team.name
+					email: this.$account.team.user
 				},
 				theme: { color: '#2490EF' },
 				handler: this.handlePaymentSuccess

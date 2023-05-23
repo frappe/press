@@ -1,5 +1,5 @@
 <template>
-	<div class="flex-1">
+	<div>
 		<div v-if="bench">
 			<div class="pb-3">
 				<div class="text-base text-gray-700">
@@ -14,26 +14,17 @@
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
 						<Badge
 							class="ml-4"
-							:status="bench.status"
+							:label="bench.status"
 							:colorMap="$badgeStatusColorMap"
-						>
-							{{ bench.status }}
-						</Badge>
+						/>
 					</div>
-					<span class="flex space-x-1">
-						<div v-if="bench.status == 'Active'">
-							<Button icon-left="plus" :route="`/${bench.name}/new`">
-								New Site
-							</Button>
-						</div>
-						<Button
-							v-if="$account.user.user_type == 'System User'"
-							icon-left="external-link"
-							:link="deskUrl"
-						>
-							View in Desk
-						</Button>
-					</span>
+					<div class="flex-row space-x-3 md:flex">
+						<Dropdown :options="benchActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down">Actions</Button>
+							</template>
+						</Dropdown>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -133,8 +124,39 @@ export default {
 			}
 			return [];
 		},
-		deskUrl() {
-			return `${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`;
+		benchActions() {
+			return [
+				this.bench.status == 'Active' && {
+					label: 'New Site',
+					icon: 'plus',
+					handler: () => {
+						this.$router.push(`/${this.bench.name}/new`);
+					}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'View in Desk',
+					icon: 'external-link',
+					handler: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
+							'_blank'
+						);
+					}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					handler: async () => {
+						await this.$account.switchTeam(this.bench.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.bench.team}`,
+							icon: 'check',
+							color: 'green'
+						});
+					}
+				}
+			].filter(Boolean);
 		}
 	}
 };

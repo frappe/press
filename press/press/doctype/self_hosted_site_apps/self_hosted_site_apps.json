@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2023-03-16 10:53:27.900551",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "site_name",
+  "apps",
+  "site_config",
+  "site"
+ ],
+ "fields": [
+  {
+   "fieldname": "site_name",
+   "fieldtype": "Data",
+   "label": "Site Name"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Data",
+   "label": "Apps"
+  },
+  {
+   "fieldname": "site_config",
+   "fieldtype": "Code",
+   "label": "Site Config",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-03-28 12:24:09.561279",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Self Hosted Site Apps",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

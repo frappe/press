@@ -78,7 +78,7 @@
 					</label>
 				</div>
 			</div>
-			<ErrorMessage class="mt-4" :error="$resourceErrors" />
+			<ErrorMessage class="mt-4" :message="$resourceErrors" />
 			<Button
 				class="mt-4"
 				appearance="primary"
@@ -120,7 +120,8 @@ export default {
 			invitationToTeam: null,
 			isInvitation: null,
 			country: null,
-			termsAccepted: false
+			termsAccepted: false,
+			invitedByParentTeam: false
 		};
 	},
 	resources: {
@@ -138,6 +139,7 @@ export default {
 						this.userExists = res.user_exists;
 						this.invitationToTeam = res.team;
 						this.isInvitation = res.is_invitation;
+						this.invitedByParentTeam = res.invited_by_parent_team;
 					}
 				}
 			};
@@ -153,9 +155,11 @@ export default {
 					country: this.country,
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
+					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted
 				},
 				onSuccess(res) {
+					//window.posthog.capture('completed_client_fc_setup_account');
 					if (res) {
 						this.$router.push(res.dashboard_route || '/');
 					}

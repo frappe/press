@@ -20,7 +20,8 @@ const props = defineProps({
 const appPlans = useResource({
 	method: 'press.api.marketplace.get_app_plans',
 	params: {
-		app: props.app?.name
+		app: props.app?.name,
+		include_disabled: true
 	},
 	auto: true
 });
@@ -134,20 +135,12 @@ function resetCurrentEditingPlan() {
 				</div>
 			</div>
 
-			<template
-				v-if="
-					appPlans.data && 0 < appPlans.data.length && appPlans.data.length < 3
-				"
-				#actions
-			>
+			<template v-if="appPlans.data && 0 < appPlans.data.length" #actions>
 				<Button @click="editPlan()">New Plan</Button>
 			</template>
 		</Card>
 
-		<FrappeUIDialog
-			:options="{ title: 'Edit Plan' }"
-			v-model="showEditPlanDialog"
-		>
+		<Dialog :options="{ title: 'Edit Plan' }" v-model="showEditPlanDialog">
 			<template v-slot:body-content>
 				<div>
 					<div class="mb-4">
@@ -218,8 +211,8 @@ function resetCurrentEditingPlan() {
 						</div>
 
 						<div>
-							<ErrorMessage class="mt-3" :error="updateAppPlan.error" />
-							<ErrorMessage class="mt-3" :error="createAppPlan.error" />
+							<ErrorMessage class="mt-3" :message="updateAppPlan.error" />
+							<ErrorMessage class="mt-3" :message="createAppPlan.error" />
 						</div>
 					</div>
 				</div>
@@ -234,6 +227,6 @@ function resetCurrentEditingPlan() {
 					>Save</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>

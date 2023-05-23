@@ -74,7 +74,7 @@
 								</button>
 							</div>
 						</div>
-						<ErrorMessage :error="$resources.updateSiteConfig.error" />
+						<ErrorMessage :message="$resources.updateSiteConfig.error" />
 						<div class="space-x-2">
 							<Button @click="addConfig" v-if="!isDirty"> Add Key </Button>
 						</div>

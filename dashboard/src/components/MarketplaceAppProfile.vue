@@ -1,6 +1,6 @@
 <template>
 	<Card title="App Profile" subtitle="Your app's primary profile">
-		<div class="flex items-center">
+		<div class="flex items-center border-b pb-6">
 			<div class="group relative">
 				<Avatar
 					size="lg"
@@ -10,6 +10,7 @@
 				/>
 				<FileUploader
 					@success="onAppImageChange"
+					@failure="onAppImageUploadError"
 					fileTypes="image/*"
 					:upload-args="{
 						doctype: 'Marketplace App',
@@ -41,7 +42,6 @@
 				<h3 class="text-lg font-semibold">
 					{{ app.title }}
 				</h3>
-				<p class="text-sm text-gray-600">{{ app.category }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showAppProfileEditDialog = true">
@@ -49,8 +49,18 @@
 				</Button>
 			</div>
 		</div>
-		<div class="mt-5">
+		<div class="mt-8 flex justify-between">
 			<p class="text-lg font-semibold">Published Versions</p>
+			<Button
+				icon-left="plus"
+				@click="
+					() => {
+						showCreateNewVersionDialog = true;
+					}
+				"
+			>
+				Add
+			</Button>
 		</div>
 		<div class="divide-y" v-if="app">
 			<ListItem
@@ -60,34 +70,25 @@
 				:description="branchUri(source.source_information)"
 			>
 				<template #actions>
-					<Badge
-						:status="source.source_information.status"
-						:colorMap="$badgeStatusColorMap"
-					/>
+					<div class="flex items-center">
+						<Dropdown :options="dropdownItems(source)">
+							<template v-slot="{ open }">
+								<Button icon="more-horizontal" />
+							</template>
+						</Dropdown>
+					</div>
 				</template>
 			</ListItem>
 		</div>
 
-		<FrappeUIDialog
-			:options="{ title: 'Update App Profile' }"
+		<Dialog
+			:options="{ title: 'Update App Title' }"
 			v-model="showAppProfileEditDialog"
 		>
 			<template v-slot:body-content>
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="App Title" type="text" v-model="app.title" />
-					<div>
-						<span class="mb-2 block text-sm leading-4 text-gray-700">
-							Category
-						</span>
-						<select class="form-select block w-full" v-model="app.category">
-							<option v-for="category in categories" :key="category">
-								{{ category }}
-							</option>
-						</select>
-					</div>
-				</div>
+				<Input label="App Title" type="text" v-model="app.title" />
 
-				<ErrorMessage class="mt-4" :error="$resources.updateAppProfile.error" />
+				<ErrorMessage class="mt-4" :message="$resources.updateAppTitle.error" />
 			</template>
 
 			<template #actions>
@@ -95,19 +96,37 @@
 					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
 					<Button
 						appearance="primary"
-						:loading="$resources.updateAppProfile.loading"
+						:loading="$resources.updateAppTitle.loading"
 						loadingText="Saving..."
-						@click="$resources.updateAppProfile.submit()"
+						@click="$resources.updateAppTitle.submit()"
 					>
 						Save changes
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
+
+		<ChangeAppBranchDialog
+			v-if="showBranchChangeDialog"
+			:show="showBranchChangeDialog"
+			:app="app.name"
+			:source="selectedSource"
+			:version="selectedVersion"
+			:activeBranch="activeBranch"
+			@close="showBranchChangeDialog = false"
+		/>
+
+		<CreateAppVersionDialog
+			:show="showCreateNewVersionDialog"
+			:app="app"
+			@close="showCreateNewVersionDialog = false"
+		/>
 	</Card>
 </template>
 
 <script>
+import CreateAppVersionDialog from '@/components/marketplace/CreateAppVersionDialog.vue';
+import ChangeAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
 import FileUploader from '@/components/FileUploader.vue';
 
 export default {
@@ -116,28 +135,34 @@ export default {
 		app: Object
 	},
 	components: {
-		FileUploader
+		FileUploader,
+		CreateAppVersionDialog,
+		ChangeAppBranchDialog
+	},
+	data() {
+		return {
+			showAppProfileEditDialog: false,
+			showAppVersionEditDialog: false,
+			showBranchChangeDialog: false,
+			showCreateNewVersionDialog: false,
+			selectedSource: null,
+			selectedVersion: null,
+			activeBranch: null
+		};
 	},
 	resources: {
-		categories() {
-			return {
-				method: 'press.api.marketplace.categories',
-				auto: true
-			};
-		},
-		updateAppProfile() {
-			let { name, title, category } = this.app;
+		updateAppTitle() {
+			let { name, title } = this.app;
 
 			return {
-				method: 'press.api.marketplace.update_app_profile',
+				method: 'press.api.marketplace.update_app_title',
 				params: {
 					name,
-					title,
-					category
+					title
 				},
 				onSuccess() {
 					this.showAppProfileEditDialog = false;
-					this.$resources.updateAppProfile.reset();
+					this.$resources.updateAppTitle.reset();
 					this.notifySuccess();
 				}
 			};
@@ -149,6 +174,21 @@ export default {
 					app: this.app.name
 				}
 			};
+		},
+		removeVersion() {
+			return {
+				method: 'press.api.marketplace.remove_version',
+				onSuccess() {
+					window.location.reload();
+				},
+				onError(e) {
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
+				}
+			};
 		}
 	},
 	methods: {
@@ -156,8 +196,37 @@ export default {
 			this.$resources.profileImageUrl.submit();
 			this.notifySuccess();
 		},
+		onAppImageUploadError(errorMessage) {
+			this.$notify({
+				title: errorMessage,
+				color: 'red',
+				icon: 'x'
+			});
+		},
 		branchUri(source) {
 			return `${source.repository_owner}/${source.repository}:${source.branch}`;
+		},
+		dropdownItems(source) {
+			return [
+				{
+					label: 'Change Branch',
+					handler: () => {
+						this.selectedSource = source.source;
+						this.selectedVersion = source.version;
+						this.activeBranch = source.source_information.branch;
+						this.showBranchChangeDialog = true;
+					}
+				},
+				{
+					label: 'Remove',
+					handler: () => {
+						this.$resources.removeVersion.submit({
+							name: this.app.name,
+							version: source.version
+						});
+					}
+				}
+			];
 		},
 		notifySuccess() {
 			this.$notify({
@@ -167,22 +236,7 @@ export default {
 			});
 		}
 	},
-	data() {
-		return {
-			showAppProfileEditDialog: false
-		};
-	},
 	computed: {
-		categories() {
-			if (
-				this.$resources.categories.loading ||
-				!this.$resources.categories.data
-			) {
-				return [];
-			}
-
-			return this.$resources.categories.data;
-		},
 		profileImageUrl() {
 			if (!this.$resources.profileImageUrl.data) {
 				return this.app.image;

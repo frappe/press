@@ -1,7 +1,7 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<FrappeUIDialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
+		<Dialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop your site? The site will be archived and
@@ -15,14 +15,14 @@
 				<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
 				<div class="mt-4">
 					<Input
-			 			v-show="!site.archive_failed"
+						v-show="!site.archive_failed"
 						id="auto-update-checkbox"
 						v-model="forceDrop"
 						type="checkbox"
 						label="Force"
 					/>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.dropSite.error" />
+				<ErrorMessage class="mt-2" :message="$resources.dropSite.error" />
 			</template>
 
 			<template v-slot:actions>
@@ -38,7 +38,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

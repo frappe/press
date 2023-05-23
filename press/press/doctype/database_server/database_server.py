@@ -52,8 +52,12 @@ class DatabaseServer(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="database.yml",
+				playbook="self_hosted_db.yml"
+				if getattr(self, "is_self_hosted", False)
+				else "database.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"workers": "2",
@@ -145,7 +149,7 @@ class DatabaseServer(BaseServer):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=7200
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=18000
 		)
 
 	def _trigger_failover(self):
@@ -191,6 +195,8 @@ class DatabaseServer(BaseServer):
 			ansible = Ansible(
 				playbook="convert.yml",
 				server=self,
+				user=self.ssh_user,
+				port=self.ssh_port,
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_root_password": mariadb_root_password,

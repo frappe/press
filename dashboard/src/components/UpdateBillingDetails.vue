@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIDialog
+	<Dialog
 		:options="{ title: 'Update Billing Details' }"
 		:modelValue="show"
 		@update:modelValue="$emit('update:show', $event)"
@@ -21,7 +21,7 @@
 			/>
 			<ErrorMessage
 				class="mt-2"
-				:error="$resources.updateBillingInformation.error"
+				:message="$resources.updateBillingInformation.error"
 			/>
 		</template>
 
@@ -34,7 +34,7 @@
 				Submit
 			</Button>
 		</template>
-	</FrappeUIDialog>
+	</Dialog>
 </template>
 
 <script>

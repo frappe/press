@@ -1,76 +1,190 @@
 <template>
-	<div>
-		<div
-			class="block flex h-full flex-col justify-between bg-gray-100 px-2 pb-2 text-sm"
-		>
-			<div>
-				<div class="flex px-2 py-4">
-					<router-link class="text-lg font-bold" :to="'/'">
-						Frappe Cloud
-					</router-link>
+	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
+		<div>
+			<div class="flex justify-between">
+				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
+				<div class="self-center">
+					<Button icon="search" @click="show = true"> </Button>
 				</div>
-				<router-link
-					v-for="item in items"
-					:key="item.label"
-					:to="item.route"
-					v-slot="{ href, route, navigate, isActive, isExactActive }"
-				>
-					<a
-						class="mt-1 flex cursor-pointer items-center rounded-lg px-3 py-2 hover:bg-white"
-						:class="[
-							(item.route == '/' ? isExactActive : isActive)
-								? 'bg-white text-blue-500'
-								: 'text-gray-900'
-						]"
-						:href="href"
-						@click="navigate"
-					>
-						{{ item.label }}
-					</a>
-				</router-link>
 			</div>
+			<CommandPalette :show="show" @close="show = false" />
 			<router-link
-				v-if="$account.user"
-				to="/account"
-				v-slot="{ href, route, navigate, isActive }"
+				v-for="item in items"
+				:key="item.label"
+				:to="item.route"
+				v-slot="{ href, route, navigate }"
 			>
 				<a
-					class="inline-flex items-start rounded-md px-2 py-3"
-					:class="isActive ? 'bg-white' : 'hover:bg-gray-300'"
+					:class="[
+						(
+							Boolean(item.highlight)
+								? item.highlight(route)
+								: item.route == '/'
+						)
+							? 'bg-gray-200'
+							: 'text-gray-900 hover:bg-gray-50'
+					]"
 					:href="href"
+					@click="navigate"
+					class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
 				>
-					<Avatar
-						:label="$account.user.first_name"
-						:imageURL="$account.user.user_image"
-					/>
-					<div class="ml-2">
-						<div class="font-semibold">
-							{{ $account.user.first_name }}
-							{{ $account.user.last_name }}
-						</div>
-						<div class="text-xs" @click.prevent="$auth.logout">Logout</div>
-					</div>
+					<Component class="mr-1.5" :is="item.icon" />
+					{{ item.label }}
 				</a>
 			</router-link>
 		</div>
+		<Dropdown placement="center" :options="dropdownItems">
+			<template v-slot="{ open }">
+				<div
+					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
+					:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
+				>
+					<Avatar
+						v-if="$account.user"
+						:label="$account.user.first_name"
+						:imageURL="$account.user.user_image"
+					/>
+
+					<div v-if="$account.user">
+						<h3 class="text-base font-semibold">
+							{{ $account.user.full_name }}
+						</h3>
+						<p class="text-xs text-gray-600">{{ $account.user.email }}</p>
+					</div>
+				</div>
+			</template>
+		</Dropdown>
+		<Dialog :options="{ title: 'Switch Team' }" v-model="showTeamSwitcher">
+			<template v-slot:body-content>
+				<ListItem
+					v-for="team in $account.teams"
+					:title="`${team.team_title}`"
+					:description="team.user"
+					:key="team"
+				>
+					<template #actions>
+						<div v-if="$account.team.name === team.name">
+							<Badge color="blue">Active</Badge>
+						</div>
+						<div v-else class="flex flex-row justify-end">
+							<Button @click="$account.switchToTeam(team.name)">
+								Switch
+							</Button>
+						</div>
+					</template>
+				</ListItem>
+			</template>
+		</Dialog>
 	</div>
 </template>
+
 <script>
+import { FCIcons } from '@/components/icons';
+import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
+
 export default {
 	name: 'Sidebar',
+	components: {
+		FrappeCloudLogo,
+		CommandPalette
+	},
 	data() {
 		return {
-			items: [
+			show: false,
+			showTeamSwitcher: false,
+			dropdownItems: [
 				{
-					label: 'Sites',
-					route: '/sites'
+					label: 'Switch Team',
+					icon: 'command',
+					handler: () => (this.showTeamSwitcher = true)
 				},
 				{
-					label: 'Support',
-					route: '/support'
+					label: 'Support & Docs',
+					icon: 'help-circle',
+					handler: () => (window.location.href = '/support')
+				},
+				{
+					label: 'Settings',
+					icon: 'settings',
+					handler: () => this.$router.push('/settings')
+				},
+				{
+					label: 'Logout',
+					icon: 'log-out',
+					handler: () => this.$auth.logout()
 				}
 			]
 		};
+	},
+	mounted() {
+		window.addEventListener('keydown', e => {
+			if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+				this.show = !this.show;
+				e.preventDefault();
+			}
+			if (e.key === 'Escape') {
+				this.show = false;
+			}
+		});
+	},
+	computed: {
+		items() {
+			return [
+				{
+					label: 'Sites',
+					route: '/sites',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/sites') >= 0;
+					},
+					icon: FCIcons.SiteIcon
+				},
+				{
+					label: 'Benches',
+					route: '/benches',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/benches') >= 0;
+					},
+					icon: FCIcons.BenchIcon
+				},
+				{
+					label: 'Servers',
+					route: '/servers',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/servers') >= 0;
+					},
+					icon: FCIcons.ServerIcon,
+					condition: () => this.$account.team?.servers_enabled
+				},
+				{
+					label: 'Developer',
+					route: '/marketplace/apps',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/marketplace') >= 0;
+					},
+					icon: FCIcons.AppsIcon,
+					condition: () => this.$account.team?.is_developer
+				},
+
+				{
+					label: 'Billing',
+					route: '/billing',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/billing') >= 0;
+					},
+					icon: FCIcons.BillingIcon,
+					condition: () => !this.$account.team?.parent_team
+				},
+				{
+					label: 'Settings',
+					route: '/settings',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/settings') >= 0;
+					},
+					icon: FCIcons.SettingsIcon
+				}
+			].filter(d => (d.condition ? d.condition() : true));
+		}
 	}
 };
 </script>

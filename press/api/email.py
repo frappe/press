@@ -108,11 +108,13 @@ def validate_plan(secret_key):
 
 	if subscription["status"] == "Active":
 		# TODO: add a date filter(use start date from plan)
+		first_day = str(datetime.now().replace(day=1).date())
 		count = frappe.db.count(
 			"Mail Log",
 			filters={
 				"site": subscription["site"],
 				"status": "delivered",
+				"creation": (">=", first_day),
 				"subscription_key": secret_key,
 			},
 		)
@@ -188,8 +190,9 @@ def event_log():
 	data = {"status": status, "message_id": message_id, "secret_key": secret_key}
 
 	try:
+		host_name = frappe.db.get_value("Site", site, "host_name") or site
 		requests.post(
-			f"https://{site}/api/method/email_delivery_service.controller.update_status",
+			f"https://{host_name}/api/method/email_delivery_service.controller.update_status",
 			data=data,
 		)
 	except Exception as e:

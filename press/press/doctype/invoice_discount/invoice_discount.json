@@ -10,7 +10,9 @@
   "based_on",
   "percent",
   "amount",
-  "via_team"
+  "via_team",
+  "via_items",
+  "note"
  ],
  "fields": [
   {
@@ -47,12 +49,24 @@
    "fieldname": "via_team",
    "fieldtype": "Check",
    "label": "Via Team"
+  },
+  {
+   "default": "0",
+   "description": "This discount is calculated from invoice.items",
+   "fieldname": "via_items",
+   "fieldtype": "Check",
+   "label": "Via Items"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Data",
+   "label": "Note"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-02-23 13:00:38.018304",
+ "modified": "2023-02-15 15:00:20.433287",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice Discount",

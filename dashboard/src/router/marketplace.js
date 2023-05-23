@@ -62,6 +62,13 @@ export default [
 					import('../views/marketplace/MarketplaceAppOverview.vue')
 			},
 			{
+				name: 'MarketplaceAppReview',
+				path: 'review',
+				component: () =>
+					import('../views/marketplace/MarketplaceAppReview.vue'),
+				props: true
+			},
+			{
 				name: 'MarketplaceAppAnalytics',
 				path: 'analytics',
 				component: () =>

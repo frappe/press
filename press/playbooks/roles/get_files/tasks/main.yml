@@ -1,0 +1,12 @@
+---
+- name: Move files from Existing to new Site
+  become: yes
+  become_user: frappe
+  command: cp -R {{ bench_path }}/sites/{{ item.0 }}/public {{ bench_path }}/sites/{{ item.0 }}/private /home/frappe/benches/{{ item.1 }}/sites/{{ item.2 }}
+  with_together:
+    - "{{ ex_sites }}"
+    - "{{ new_benches }}"
+    - "{{ new_sites }}"
+  ignore_errors: yes
+  async: 300
+  poll: 5

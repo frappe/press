@@ -8,7 +8,7 @@
 						<span v-if="uploading">Uploading {{ progress }}%</span>
 						<span v-else>{{ label }}</span>
 					</Button>
-					<ErrorMessage class="mt-1" :error="error" />
+					<ErrorMessage class="mt-1" :message="error" />
 				</div>
 			</template>
 		</FileUploader>

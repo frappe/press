@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "Prompt",
  "creation": "2020-09-03 00:13:41.932937",
  "doctype": "DocType",
@@ -23,10 +24,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-09-30 21:07:58.159721",
+ "modified": "2023-03-14 16:39:22.547107",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App Category",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -45,5 +47,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

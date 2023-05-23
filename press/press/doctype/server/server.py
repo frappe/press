@@ -23,10 +23,14 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
+		if getattr(self, "is_self_hosted", False):
+			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
 		self.validate_cluster()
 		self.validate_agent_password()
+		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
+			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
 		if self.ip:
@@ -140,7 +144,10 @@ class BaseServer(Document):
 
 	def _install_nginx(self):
 		try:
-			ansible = Ansible(playbook="nginx.yml", server=self)
+			ansible = Ansible(
+				playbook="nginx.yml",
+				server=self,
+			)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -171,6 +178,8 @@ class BaseServer(Document):
 			ansible = Ansible(
 				playbook="filebeat.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"log_server": log_server,
@@ -190,18 +199,28 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
-			ansible = Ansible(playbook="ping.yml", server=self)
+			ansible = Ansible(
+				playbook="ping.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+			)
 			ansible.run()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def update_agent_ansible(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_agent_ansible")
+
+	def _update_agent_ansible(self):
 		try:
 			ansible = Ansible(
 				playbook="update_agent.yml",
 				variables={"agent_repository_url": self.get_agent_repository_url()},
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 			)
 			ansible.run()
 		except Exception:
@@ -230,7 +249,13 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Unprepared Server Ping Exception", server=self.as_dict())
 
+	@frappe.whitelist()
 	def cleanup_unused_files(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400
+		)
+
+	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
 		agent.cleanup_unused_files()
 
@@ -345,6 +370,7 @@ class BaseServer(Document):
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
 
+	@frappe.whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Plan", plan)
@@ -399,6 +425,42 @@ class BaseServer(Document):
 	def get_monitoring_password(self):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
+	@frappe.whitelist()
+	def increase_swap(self):
+		"""Increase swap by size defined in playbook"""
+		from press.api.server import calculate_swap
+
+		swap_size = calculate_swap(self.name).get("swap", 0)
+		# We used to do 4 GB minimum swap files, to avoid conflict, name files accordingly
+		swap_file_name = "swap" + str(int((swap_size // 4) + 1))
+		try:
+			ansible = Ansible(
+				playbook="increase_swap.yml",
+				server=self,
+				variables={
+					"swap_file": swap_file_name,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Increase swap exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def update_tls_certificate(self):
+		from press.press.doctype.tls_certificate.tls_certificate import (
+			update_server_tls_certifcate,
+		)
+
+		certificate = frappe.get_last_doc(
+			"TLS Certificate",
+			{"wildcard": True, "domain": self.domain, "status": "Active"},
+		)
+		update_server_tls_certifcate(self, certificate)
+
+	@frappe.whitelist()
+	def show_agent_password(self):
+		return self.get_password("agent_password")
+
 
 class Server(BaseServer):
 	def on_update(self):
@@ -422,14 +484,20 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 
 		try:
 			ansible = Ansible(
-				playbook="server.yml",
+				playbook="self_hosted.yml"
+				if getattr(self, "is_self_hosted", False)
+				else "server.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -479,6 +547,34 @@ class Server(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def agent_set_proxy_ip(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200
+		)
+
+	def _agent_set_proxy_ip(self):
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		agent_password = self.get_password("agent_password")
+
+		try:
+			ansible = Ansible(
+				playbook="agent_set_proxy_ip.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"proxy_ip": proxy_ip,
+					"workers": "2",
+					"agent_password": agent_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Proxy IP Setup Exception", server=self.as_dict())
 		self.save()
 
 	@frappe.whitelist()
@@ -635,13 +731,18 @@ class Server(BaseServer):
 		else:
 			kibana_password = None
 
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+
 		try:
 			ansible = Ansible(
 				playbook="rename.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -697,12 +798,16 @@ class Server(BaseServer):
 
 		for bench_name, workload in bench_workloads.items():
 			bench = frappe.get_cached_doc("Bench", bench_name)
-			gunicorn_workers = min(
-				24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
-			)
-			background_workers = min(
-				8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
-			)
+			try:
+				gunicorn_workers = min(
+					24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
+				)
+				background_workers = min(
+					8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+				)
+			except ZeroDivisionError:  # when total_workload is 0
+				gunicorn_workers = 2
+				background_workers = 1
 			bench.gunicorn_workers = gunicorn_workers
 			bench.background_workers = background_workers
 			bench.save()

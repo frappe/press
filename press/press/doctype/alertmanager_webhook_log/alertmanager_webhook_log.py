@@ -45,6 +45,17 @@ class AlertmanagerWebhookLog(Document):
 		self.group_labels = json.dumps(self.parsed["groupLabels"], indent=2, sort_keys=True)
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
+		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
+
+		frappe.enqueue_doc(
+			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
+		)
+
+	def generate_telegram_message(self):
+		context = self.as_dict()
+		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
+
+		self.parsed = json.loads(self.payload)
 		self.instances = [
 			{
 				"name": alert["labels"]["instance"],
@@ -54,13 +65,6 @@ class AlertmanagerWebhookLog(Document):
 			}
 			for alert in self.parsed["alerts"][:20]
 		]
-		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
-
-		self.send_telegram_notification()
-
-	def generate_telegram_message(self):
-		context = self.as_dict()
-		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
 
 		labels = self.parsed["groupLabels"]
 		labels.pop("alertname", None)
@@ -94,8 +98,5 @@ class AlertmanagerWebhookLog(Document):
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
-		client = Telegram()
-		client.chat_id = frappe.db.get_single_value(
-			"Press Settings", "telegram_alert_chat_id"
-		)
+		client = Telegram(self.severity)
 		client.send(message)

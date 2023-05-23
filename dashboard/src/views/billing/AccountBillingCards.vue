@@ -2,10 +2,7 @@
 	<Card title="Payment methods" :subtitle="subtitle">
 		<template #actions>
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
-			<FrappeUIDialog
-				:options="{ title: 'Add new card' }"
-				v-model="showAddCardDialog"
-			>
+			<Dialog :options="{ title: 'Add new card' }" v-model="showAddCardDialog">
 				<template v-slot:body-content>
 					<StripeCard
 						class="mb-1"
@@ -16,7 +13,7 @@
 						"
 					/>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 		</template>
 		<div class="max-h-52 space-y-3">
 			<div
@@ -38,9 +35,9 @@
 						<span>Added on {{ $date(card.creation).toLocaleString() }}</span>
 					</div>
 				</div>
-				<Dropdown :items="dropdownItems(card)" right>
-					<template v-slot="{ toggleDropdown }">
-						<Button icon="more-horizontal" @click="toggleDropdown()" />
+				<Dropdown :options="dropdownItems(card)" right>
+					<template v-slot="{ open }">
+						<Button icon="more-horizontal" />
 					</template>
 				</Dropdown>
 			</div>
@@ -87,11 +84,11 @@ export default {
 			return [
 				!card.is_default && {
 					label: 'Set as default',
-					action: () => this.confirmSetAsDefault(card)
+					handler: () => this.confirmSetAsDefault(card)
 				},
 				{
 					label: 'Remove',
-					action: () => this.confirmRemove(card)
+					handler: () => this.confirmRemove(card)
 				}
 			];
 		},

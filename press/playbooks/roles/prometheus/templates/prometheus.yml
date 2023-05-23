@@ -32,6 +32,19 @@ scrape_configs:
       - files:
           - /home/frappe/prometheus/file_sd/self.yml
 
+  - job_name: press
+    scrape_interval: 5m
+    scheme: https
+    basic_auth:
+      username: frappe
+      password: "{{ press_monitoring_password }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+    file_sd_configs:
+      - files:
+          - /home/frappe/prometheus/file_sd/press.yml
+
   - job_name: site
     scrape_interval: 1m
     metrics_path: /blackbox/probe

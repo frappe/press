@@ -9,7 +9,8 @@
  "field_order": [
   "cluster",
   "bucket_name",
-  "region"
+  "region",
+  "endpoint_url"
  ],
  "fields": [
   {
@@ -29,11 +30,16 @@
    "fieldname": "region",
    "fieldtype": "Data",
    "label": "Region"
+  },
+  {
+   "fieldname": "endpoint_url",
+   "fieldtype": "Data",
+   "label": "Endpoint URL"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-25 19:25:05.955859",
+ "modified": "2023-03-12 15:34:52.023834",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Backup Bucket",

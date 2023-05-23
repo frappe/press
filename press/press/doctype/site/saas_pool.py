@@ -29,6 +29,7 @@ class SaasSitePool:
 				sites_created += 1
 
 	def create_one(self):
+		bench, apps, subdomain, domain = None, None, None, None
 		try:
 			if frappe.db.get_value("Saas Settings", self.app, "enable_hybrid_pools"):
 				self.create_hybrid_pool_sites()
@@ -105,7 +106,12 @@ class SaasSitePool:
 def create():
 	saas_apps = frappe.get_all("Saas Settings", {"enable_pooling": 1}, pluck="name")
 	for app in saas_apps:
-		SaasSitePool(app).create()
+		try:
+			SaasSitePool(app).create()
+			frappe.db.commit()
+		except Exception:
+			log_error("Pool Error", app=app)
+			frappe.db.rollback()
 
 
 def get(app, hybrid_saas_pool=""):

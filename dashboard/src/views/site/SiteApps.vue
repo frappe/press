@@ -39,16 +39,16 @@
 					</div>
 				</div>
 				<div class="ml-auto flex items-center space-x-2">
-					<Dropdown :items="dropdownItems(app)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(app)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
 			</div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Install an app on your site' }"
 			v-model="showInstallAppsDialog"
 		>
@@ -91,7 +91,7 @@
 					</p>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<Dialog
 			v-model="showCheckoutDialog"
@@ -118,13 +118,15 @@
 				:frappeVersion="site?.frappe_version"
 				:editable="false"
 				class="mb-9"
-				@change="plan => {
-					selectedPlan = plan.name;
-					selectedPlanIsFree = plan.is_free;
-				}"
+				@change="
+					plan => {
+						selectedPlan = plan.name;
+						selectedPlanIsFree = plan.is_free;
+					}
+				"
 			/>
 
-			<ErrorMessage :error="$resourceErrors" />
+			<ErrorMessage :message="$resourceErrors" />
 
 			<template #actions>
 				<Button
@@ -227,26 +229,29 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			if (this.appToInstall.billing_type == 'prepaid' && !this.selectedPlanIsFree) {
+			if (
+				this.appToInstall.billing_type == 'prepaid' &&
+				!this.selectedPlanIsFree
+			) {
 				if (this.$account.hasBillingInfo) {
 					this.showPlanSelectionDialog = false;
 					this.showCheckoutDialog = true;
 				} else {
-					window.location = '/dashboard/billing'
+					window.location = '/dashboard/billing';
 				}
 			} else {
-				this.$resources.installApp.submit()
+				this.$resources.installApp.submit();
 			}
 		},
 		dropdownItems(app) {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app)
+					handler: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

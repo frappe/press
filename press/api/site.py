@@ -38,13 +38,17 @@ def protected(doctypes):
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
 
+		from press.press.doctype.team.team import get_child_team_members
+
+		child_teams = [team.name for team in get_child_team_members(team)]
+
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
 			doctypes = [doctypes]
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team:
+			if owner == team or owner in child_teams:
 				return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
@@ -247,6 +251,7 @@ def jobs(name, start=0):
 		filters={"site": name},
 		start=start,
 		limit=10,
+		order_by="creation desc",
 	)
 	return jobs
 
@@ -461,6 +466,96 @@ def options_for_new():
 
 
 @frappe.whitelist()
+def get_domain():
+	return frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
+
+
+@frappe.whitelist()
+def get_new_site_options(group: str = None):
+	team = get_current_team()
+	versions = frappe.get_all(
+		"Frappe Version",
+		["name", "number", "default", "status"],
+		{"public": True},
+		order_by="`default` desc, number desc",
+	)
+	apps = set()
+	filters = {"enabled": True}
+	if group:  # private bench
+		filters.update({"name": group})
+
+	for version in versions:
+		filters.update({"version": version.name})
+		rg = frappe.get_all(
+			"Release Group",
+			fields=["name", "`default`", "title"],
+			filters=filters,
+			or_filters={"public": True, "team": team},
+			limit=1,
+		)
+		if not rg:
+			continue
+		else:
+			rg = rg[0]
+
+		benches = frappe.get_all(
+			"Bench",
+			filters={"status": "Active", "group": rg.name},
+			order_by="creation desc",
+			limit=1,
+		)
+		if not benches:
+			continue
+
+		bench_name = benches[0].name
+		bench_apps = frappe.get_all("Bench App", {"parent": bench_name}, pluck="source")
+		app_sources = frappe.get_all(
+			"App Source",
+			[
+				"name",
+				"app",
+				"repository_url",
+				"repository",
+				"repository_owner",
+				"branch",
+				"team",
+				"public",
+				"app_title",
+				"frappe",
+			],
+			filters={"name": ("in", bench_apps)},
+			or_filters={"public": True, "team": team},
+		)
+		rg["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+
+		# Regions with latest update
+		cluster_names = unique(
+			frappe.db.get_all(
+				"Bench",
+				filters={"candidate": frappe.db.get_value("Bench", bench_name, "candidate")},
+				pluck="cluster",
+			)
+		)
+		rg["clusters"] = frappe.db.get_all(
+			"Cluster",
+			filters={"name": ("in", cluster_names), "public": True},
+			fields=["name", "title", "image"],
+		)
+		version["group"] = rg
+		apps.update([source.app for source in app_sources])
+
+	marketplace_apps = frappe.db.get_all(
+		"Marketplace App",
+		fields=["title", "image", "description", "app", "route"],
+		filters={"app": ("in", list(apps))},
+	)
+	return {
+		"versions": versions,
+		"marketplace_apps": {row.app: row for row in marketplace_apps},
+	}
+
+
+@frappe.whitelist()
 def get_plans(name=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
@@ -524,16 +619,23 @@ def sites_with_recent_activity(sites, limit=3):
 
 @frappe.whitelist()
 def all():
+	from press.press.doctype.team.team import get_child_team_members
+
 	team = get_current_team()
+	child_teams = [x.name for x in get_child_team_members(team)]
+	if not child_teams:
+		condition = f"= '{team}'"
+	else:
+		condition = f"in {tuple([team] + child_teams)}"
 	sites_data = frappe._dict()
 	sites = frappe.db.sql(
 		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title
+			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
 			WHERE s.status != 'Archived'
-			AND s.team = '{team}'
+			AND s.team {condition}
 			ORDER BY creation DESC""",
 		as_dict=True,
 	)
@@ -556,8 +658,19 @@ def all():
 @protected("Site")
 def get(name):
 	team = get_current_team()
-	site = frappe.get_doc("Site", name)
-
+	try:
+		site = frappe.get_doc("Site", name)
+	except frappe.DoesNotExistError:
+		# If name is a custom domain then redirect to the site name
+		site_name = frappe.db.get_value("Site Domain", name, "site")
+		if site_name:
+			frappe.local.response["type"] = "redirect"
+			frappe.local.response[
+				"location"
+			] = f"/api/method/press.api.site.get?name={site_name}"
+			return
+		else:
+			raise
 	rg_info = frappe.db.get_value(
 		"Release Group", site.group, ["team", "version"], as_dict=True
 	)
@@ -580,6 +693,7 @@ def get(name):
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
 		"hide_config": site.hide_config,
+		"notify_email": site.notify_email,
 	}
 
 
@@ -661,14 +775,14 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @protected("Site")
 def overview(name):
 	site = frappe.get_cached_doc("Site", name)
+	team = frappe.get_cached_doc("Team", site.team)
 
 	return {
-		"recent_activity": activities(name, limit=3),
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				site.team,
+				team.user,
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),
@@ -721,15 +835,17 @@ def get_installed_apps(site):
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
 		app_source.hash = app.hash
-		app_source.tag = frappe.db.get_value(
+		app_tags = frappe.db.get_value(
 			"App Tag",
 			{
 				"repository": app_source.repository,
 				"repository_owner": app_source.repository_owner,
 				"hash": app_source.hash,
 			},
-			"tag",
+			["tag", "timestamp"],
+			as_dict=True,
 		)
+		app_source.update(app_tags if app_tags else {})
 		app_source.subscription_available = bool(
 			frappe.db.exists(
 				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
@@ -912,9 +1028,9 @@ def login(name, reason=None):
 
 @frappe.whitelist()
 @protected("Site")
-def update(name, skip_failing_patches=False):
+def update(name, skip_failing_patches=False, skip_backups=False):
 	return frappe.get_doc("Site", name).schedule_update(
-		skip_failing_patches=skip_failing_patches
+		skip_failing_patches=skip_failing_patches, skip_backups=skip_backups
 	)
 
 
@@ -1294,22 +1410,6 @@ def get_backup_links(url, email, password):
 
 
 @frappe.whitelist()
-def search_list():
-	team = get_current_team()
-	sites = frappe.get_list(
-		"Site",
-		["name", "name as site"],
-		filters={"status": ("!=", "Archived"), "team": team},
-	)
-	domains = frappe.get_all(
-		"Site Domain",
-		["name", "site"],
-		filters={"status": "Active", "dns_type": "CNAME", "team": team},
-	)
-	return sites + domains
-
-
-@frappe.whitelist()
 @protected("Site")
 def enable_auto_update(name):
 	site_doc = frappe.get_doc("Site", name)
@@ -1401,3 +1501,36 @@ def disable_database_access(name):
 @frappe.whitelist()
 def get_job_status(job_name):
 	return {"status": frappe.db.get_value("Agent Job", job_name, "status")}
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_notify_email(name, email):
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.notify_email = email
+	site_doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_team(team, name):
+
+	if not (
+		frappe.db.exists("Team", {"team_title": team})
+		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
+	):
+		frappe.throw("No Active Team record found.")
+
+	from press.press.doctype.team.team import get_child_team_members
+
+	current_team = get_current_team(True)
+	child_teams = [team.name for team in get_child_team_members(current_team.name)]
+	teams = [current_team.name] + child_teams
+
+	if team not in teams:
+		frappe.throw(f"{team} is not part of your organization.")
+
+	child_team = frappe.get_doc("Team", {"team_title": team})
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.team = child_team.name
+	site_doc.save(ignore_permissions=True)

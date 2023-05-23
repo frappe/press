@@ -9,7 +9,7 @@ import sqlparse
 from frappe.utils import (
 	get_datetime,
 	convert_utc_to_timezone,
-	get_time_zone,
+	get_system_timezone,
 )
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils.password import get_decrypted_password
@@ -40,6 +40,24 @@ def execute(filters=None):
 			"fieldtype": "Data",
 			"width": 1200,
 		},
+		{
+			"fieldname": "duration",
+			"label": frappe._("Duration"),
+			"fieldtype": "Float",
+			"width": 140,
+		},
+		{
+			"fieldname": "rows_examined",
+			"label": frappe._("Rows Examined"),
+			"fieldtype": "Int",
+			"width": 140,
+		},
+		{
+			"fieldname": "rows_sent",
+			"label": frappe._("Rows Sent"),
+			"fieldtype": "Int",
+			"width": 140,
+		},
 	]
 
 	data = get_data(filters)
@@ -48,7 +66,7 @@ def execute(filters=None):
 
 def get_data(filters):
 	def convert_user_timezone_to_utc(datetime_obj):
-		timezone = pytz.timezone(get_time_zone())
+		timezone = pytz.timezone(get_system_timezone())
 		datetime_obj = get_datetime(datetime_obj)
 		return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
 
@@ -57,7 +75,7 @@ def get_data(filters):
 		convert_user_timezone_to_utc(filters.start_datetime),
 		convert_user_timezone_to_utc(filters.end_datetime),
 		filters.search_pattern,
-		filters.max_lines or 100,
+		int(filters.max_lines) or 100,
 	)
 	for row in rows:
 		if filters.format_queries:
@@ -65,7 +83,8 @@ def get_data(filters):
 				row["query"].strip(), keyword_case="upper", reindent=True
 			)
 		row["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None), get_time_zone()
+			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
+			get_system_timezone(),
 		)
 	return rows
 
@@ -102,5 +121,6 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 	for d in response["hits"]["hits"]:
 		data = d["_source"]["mysql"]["slowlog"]
 		data["timestamp"] = d["_source"]["@timestamp"]
+		data["duration"] = d["_source"].get("event", {}).get("duration", 0) / 1e9
 		out.append(data)
 	return out

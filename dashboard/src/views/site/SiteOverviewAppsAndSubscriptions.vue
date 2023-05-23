@@ -30,14 +30,14 @@
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
-				<div class="w-2/6">
+				<div class="group w-2/6">
 					<div class="flex flex-row items-center">
 						<div class="text-lg font-medium text-gray-900">
 							{{ app.title }}
 						</div>
 
 						<CommitTag
-							class="ml-2"
+							class="hidden ml-2 group-hover:block"
 							:tag="app.tag || app.hash.substr(0, 7)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
@@ -60,11 +60,9 @@
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
 						><Badge
-							:status="app.subscription.status"
+							:label="app.subscription.status"
 							:colorMap="$badgeStatusColorMap"
-						>
-							{{ app.subscription.status }}
-						</Badge>
+						/>
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -84,7 +82,7 @@
 						>Change Plan</Button
 					>
 					<Button
-						appearance="primary"
+						appearance="secondary"
 						v-if="!app.plan_info && app.subscription_available"
 						@click="
 							() => {
@@ -94,33 +92,43 @@
 						"
 						>Subscribe</Button
 					>
-					<Dropdown :items="dropdownItems(app)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(app)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
 			</div>
 		</div>
 
-		<FrappeUIDialog
-			:options="{ title: 'Install an app on your site' }"
+		<Dialog
+			:options="{
+				title: 'Install an app on your site',
+				position: 'top',
+				size: 'lg'
+			}"
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
+				<Input
+					class="mb-2"
+					placeholder="Search for Apps"
+					v-on:input="e => updateSearchTerm(e)"
+				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="divide-y"
+					class="divide-y max-h-96 overflow-auto"
+					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div
 						class="flex items-center py-3"
-						v-for="app in availableApps.data"
+						v-for="app in filteredOptions"
 						:key="app.name"
 					>
-						<div class="w-1/3 text-base font-medium">
+						<div class="w-2/4 text-base font-medium">
 							{{ app.title }}
 						</div>
-						<div class="text-base text-gray-700">
+						<div class="w-1/4 text-base text-gray-700">
 							{{ app.repository_owner }}:{{ app.branch }}
 						</div>
 						<Button
@@ -146,29 +154,32 @@
 					</p>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			title="Select app plan"
-			width="half"
-			:dismissable="true"
+			:options="{
+				title: 'Select app plan',
+				size: '2xl'
+			}"
 		>
-			<ChangeAppPlanSelector
-				v-if="appToInstall?.app"
-				:app="appToInstall.app"
-				:frappeVersion="site?.frappe_version"
-				class="mb-9"
-				@change="
-					plan => {
-						selectedPlan = plan.name;
-						selectedPlanIsFree = plan.is_free;
-					}
-				"
-			/>
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					v-if="appToInstall?.app"
+					:app="appToInstall.app"
+					:frappeVersion="site?.frappe_version"
+					class="mb-9"
+					@change="
+						plan => {
+							selectedPlan = plan.name;
+							selectedPlanIsFree = plan.is_free;
+						}
+					"
+				/>
 
-			<ErrorMessage :error="$resourceErrors" />
+				<ErrorMessage :message="$resourceErrors" />
+			</template>
 
 			<template #actions>
 				<Button
@@ -181,19 +192,27 @@
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
-		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
-			<ChangeAppPlanSelector
-				@change="
-					plan => {
-						newAppPlan = plan.name;
-						newAppPlanIsFree = plan.is_free;
-					}
-				"
-				v-if="appToChangePlan"
-				:app="appToChangePlan.name"
-				:currentPlan="appToChangePlan.plan"
-				:frappeVersion="site.frappe_version"
-			/>
+		<Dialog
+			:options="{
+				title: 'Select Plan',
+				size: '2xl'
+			}"
+			v-model="showAppPlanChangeDialog"
+		>
+			<template v-slot:body-content>
+				<ChangeAppPlanSelector
+					@change="
+						plan => {
+							newAppPlan = plan.name;
+							newAppPlanIsFree = plan.is_free;
+						}
+					"
+					v-if="appToChangePlan"
+					:app="appToChangePlan.name"
+					:currentPlan="appToChangePlan.plan"
+					:frappeVersion="site.frappe_version"
+				/>
+			</template>
 
 			<template #actions>
 				<Button
@@ -207,25 +226,27 @@
 
 		<Dialog
 			v-model="showCheckoutDialog"
-			title="Checkout Details"
+			:options="{ title: 'Checkout Details' }"
 			:dismissable="true"
 		>
-			<MarketplacePrepaidCredits
-				v-if="newAppPlan"
-				:subscription="currentSubscription"
-				:app="appToChangePlan.name"
-				:appTitle="appToChangePlan.title"
-				:site="site.name"
-				:plan="newAppPlan"
-			/>
+			<template v-slot:body-content>
+				<MarketplacePrepaidCredits
+					v-if="newAppPlan"
+					:subscription="currentSubscription"
+					:app="appToChangePlan.name"
+					:appTitle="appToChangePlan.title"
+					:site="site.name"
+					:plan="newAppPlan"
+				/>
 
-			<MarketplacePrepaidCredits
-				v-if="selectedPlan"
-				:app="appToInstall.app"
-				:appTitle="appToInstall.title"
-				:site="site.name"
-				:plan="selectedPlan"
-			/>
+				<MarketplacePrepaidCredits
+					v-if="selectedPlan"
+					:app="appToInstall.app"
+					:appTitle="appToInstall.title"
+					:site="site.name"
+					:plan="selectedPlan"
+				/>
+			</template>
 		</Dialog>
 	</Card>
 </template>
@@ -234,6 +255,7 @@ import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -248,7 +270,9 @@ export default {
 			newAppPlan: '',
 			appToInstall: null,
 			selectedPlan: null,
-			selectedPlanIsFree: null
+			selectedPlanIsFree: null,
+			searchTerm: '',
+			filteredOptions: []
 		};
 	},
 	components: {
@@ -323,6 +347,13 @@ export default {
 	},
 	computed: {
 		availableApps() {
+			if (this.$resources.availableApps.data) {
+				this.fuse = new Fuse(this.$resources.availableApps.data, {
+					limit: 20,
+					keys: ['title']
+				});
+				this.filteredOptions = this.$resources.availableApps.data;
+			}
 			return this.$resources.availableApps;
 		},
 		marketplaceSubscriptions() {
@@ -337,6 +368,15 @@ export default {
 		}
 	},
 	methods: {
+		updateSearchTerm(value) {
+			if (value) {
+				this.filteredOptions = this.fuse
+					.search(value)
+					.map(result => result.item);
+			} else {
+				this.filteredOptions = this.$resources.availableApps.data;
+			}
+		},
 		subscribe(app) {
 			this.showPlanSelectionDialog = true;
 		},
@@ -418,11 +458,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					action: () => this.confirmRemoveApp(app)
+					handler: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					action: () =>
+					handler: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

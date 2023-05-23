@@ -4,6 +4,7 @@
 
 import json
 from collections import OrderedDict
+from press.press.doctype.team.team import get_child_team_members
 from typing import Dict, List
 
 import frappe
@@ -55,23 +56,31 @@ def new(bench):
 @protected("Release Group")
 def get(name):
 	group = frappe.get_doc("Release Group", name)
-	active_benches = frappe.get_all(
-		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
-	)
 	return {
 		"name": group.name,
 		"title": group.title,
+		"team": group.team,
 		"version": group.version,
-		"status": "Active" if active_benches else "Awaiting Deploy",
+		"status": get_group_status(name),
 		"last_updated": group.modified,
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
 	}
 
 
+def get_group_status(name):
+	active_benches = frappe.get_all(
+		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
+	)
+
+	return "Active" if active_benches else "Awaiting Deploy"
+
+
 @frappe.whitelist()
-def all():
+def all(server=None):
 	team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
 
 	group = frappe.qb.DocType("Release Group")
 	site = frappe.qb.DocType("Site")
@@ -80,7 +89,7 @@ def all():
 		.left_join(site)
 		.on((site.group == group.name) & (site.status != "Archived"))
 		.where((group.enabled == 1) & (group.public == 0))
-		.where(group.team == team)
+		.where((group.team).isin(teams))
 		.groupby(group.name)
 		.select(
 			frappe.query_builder.functions.Count(site.name).as_("number_of_sites"),
@@ -91,11 +100,19 @@ def all():
 		)
 		.orderby(group.title, order=frappe.qb.desc)
 	)
+	if server:
+		group_server = frappe.qb.DocType("Release Group Server")
+		query = (
+			query.inner_join(group_server)
+			.on(group_server.parent == group.name)
+			.where(group_server.server == server)
+		)
 	private_groups = query.run(as_dict=True)
 
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
 		group.number_of_apps = app_counts[group.name]
+		group.status = get_group_status(group.name)
 
 	return private_groups
 
@@ -242,7 +259,7 @@ def installable_apps(name):
 def fetch_latest_app_update(name, app):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
-	app_source.create_release()
+	app_source.create_release(force=True)
 
 
 @frappe.whitelist()
@@ -313,8 +330,9 @@ def versions(name):
 				frappe.db.get_value(
 					"App Source",
 					app.source,
-					["branch", "repository", "repository_owner", "repository_url"],
+					("branch", "repository", "repository_owner", "repository_url"),
 					as_dict=1,
+					cache=True,
 				)
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
@@ -399,10 +417,10 @@ def deploy(name, apps_to_ignore=[]):
 	if isinstance(apps_to_ignore, str):
 		apps_to_ignore = json.loads(apps_to_ignore)
 
-	team = get_current_team()
+	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
-	if rg.team != team:
+	if rg.team != team.name:
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
@@ -489,7 +507,11 @@ def branch_list(name: str, app: str) -> List[Dict]:
 		"Marketplace App", filters={"app": app}, pluck="name", limit=1
 	)
 
-	if marketplace_app and (not belongs_to_current_team(marketplace_app[0])):
+	if (
+		marketplace_app
+		and app_source.public
+		and (not belongs_to_current_team(marketplace_app[0]))
+	):
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
 	return branches(installation_id, repo_owner, repo_name)
@@ -532,18 +554,6 @@ def belongs_to_current_team(app: str) -> bool:
 	marketplace_app = frappe.get_doc("Marketplace App", app)
 
 	return marketplace_app.team == current_team
-
-
-@frappe.whitelist()
-def search_list():
-	groups = frappe.get_list(
-		"Release Group",
-		fields=["name", "title"],
-		filters={"enabled": True, "team": get_current_team()},
-		order_by="creation desc",
-	)
-
-	return groups
 
 
 @frappe.whitelist()

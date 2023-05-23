@@ -7,18 +7,26 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "description"
+  "root_domain",
+  "block_for_all"
  ],
  "fields": [
   {
-   "fieldname": "description",
-   "fieldtype": "Data",
-   "label": "Description"
+   "fieldname": "root_domain",
+   "fieldtype": "Link",
+   "label": "Root Domain",
+   "options": "Root Domain"
+  },
+  {
+   "default": "0",
+   "fieldname": "block_for_all",
+   "fieldtype": "Check",
+   "label": "Block for All Root Domain"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-09-21 16:48:16.978474",
+ "modified": "2023-01-25 10:59:42.568228",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Blocked Domain",
@@ -40,5 +48,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

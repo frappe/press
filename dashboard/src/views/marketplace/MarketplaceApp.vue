@@ -14,10 +14,9 @@
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 						<Badge
 							class="ml-4"
-							:status="app.status"
+							:label="app.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ app.status }}</Badge
-						>
+						/>
 					</div>
 					<div class="space-x-3">
 						<Button
@@ -85,22 +84,51 @@ export default {
 			return this.$resources.app.data;
 		},
 		tabs() {
+			let tabsByStatus = {
+				Draft: ['Overview', 'Releases', 'Review'],
+				'In Review': ['Overview', 'Releases', 'Review'],
+				Rejected: ['Overview', 'Releases', 'Review'],
+				Published: [
+					'Overview',
+					'Releases',
+					'Analytics',
+					'Subscriptions',
+					'Pricing'
+				],
+				'Attention Required': [
+					'Overview',
+					'Releases',
+					'Review',
+					'Analytics',
+					'Subscriptions',
+					'Pricing'
+				]
+			};
 			let tabRoute = subRoute =>
 				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Releases', route: 'releases' },
+				{ label: 'Review', route: 'review' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Subscriptions', route: 'subscriptions' },
 				{ label: 'Pricing', route: 'pricing' }
 			];
 
-			return tabs.map(tab => {
-				return {
-					...tab,
-					route: tabRoute(tab.route)
-				};
-			});
+			if (this.app) {
+				let tabsToShow = tabsByStatus[this.app.status];
+
+				if (tabsToShow?.length) {
+					tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
+				}
+				return tabs.map(tab => {
+					return {
+						...tab,
+						route: tabRoute(tab.route)
+					};
+				});
+			}
+			return [];
 		}
 	}
 };

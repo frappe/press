@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.website.website_generator import WebsiteGenerator
+from press.utils import get_country_info
 
 
 class SaasSignupGenerator(WebsiteGenerator):
@@ -14,6 +15,13 @@ class SaasSignupGenerator(WebsiteGenerator):
 
 	def get_context(self, context):
 		context.parents = [{"name": "Marketplace App"}]
+		country_info = get_country_info() or {}
+		country_name = country_info.get("country")
+		context.country_name = (
+			country_name if frappe.db.exists("Country", country_name) else ""
+		)
+
+		return context
 
 	def validate(self):
 		if not self.custom_route:

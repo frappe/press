@@ -57,7 +57,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="confirmClearCache"
 				>
-					<span class="text-red-600"> Clear Cache </span>
+					<span class="text-red-600"> Clear </span>
 				</Button>
 			</div>
 			<div
@@ -74,7 +74,7 @@
 			</div>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Migrate Database' }"
 			v-model="showMigrateDialog"
 			@close="
@@ -90,7 +90,10 @@
 					you sure you want to run this command? We recommend that you download
 					a database backup before continuing.
 				</p>
-				<ErrorMessage class="mt-2" :error="$resources.migrateDatabase.error" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.migrateDatabase.error"
+				/>
 				<div class="mt-2">
 					<!-- Skip Failing Checkbox -->
 					<input
@@ -113,9 +116,9 @@
 					Migrate
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
-		<FrappeUIDialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+		<Dialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -135,7 +138,7 @@
 						Skip failing patches (if any patch fails)
 					</label>
 				</div>
-				<ErrorMessage class="mt-2" :error="$resources.restoreBackup.error" />
+				<ErrorMessage class="mt-2" :message="$resources.restoreBackup.error" />
 			</template>
 
 			<template #actions>
@@ -147,7 +150,7 @@
 					Restore Database
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"

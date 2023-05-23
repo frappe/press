@@ -46,7 +46,7 @@ const appSubscriptions = useResource({
 
 					<p>
 						<Badge
-							:status="subscription.status"
+							:label="subscription.status"
 							:colorMap="$badgeStatusColorMap"
 						></Badge>
 					</p>
@@ -74,6 +74,6 @@ const appSubscriptions = useResource({
 			<Button :loading="true">Loading</Button>
 		</div>
 
-		<ErrorMessage :error="appSubscriptions.error" />
+		<ErrorMessage :message="appSubscriptions.error" />
 	</Card>
 </template>

@@ -1,7 +1,7 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<FrappeUIDialog :options="{ title: 'Drop Server' }" v-model="dialogOpen">
+		<Dialog :options="{ title: 'Drop Server' }" v-model="dialogOpen">
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop your server? The server will be archived
@@ -13,7 +13,7 @@
 					<span class="font-semibold">{{ server.name }}</span> to confirm.
 				</p>
 				<Input type="text" class="mt-4 w-full" v-model="confirmServerName" />
-				<ErrorMessage class="mt-2" :error="$resources.dropServer.error" />
+				<ErrorMessage class="mt-2" :message="$resources.dropServer.error" />
 			</template>
 
 			<template v-slot:actions>
@@ -29,7 +29,7 @@
 					</Button>
 				</div>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 

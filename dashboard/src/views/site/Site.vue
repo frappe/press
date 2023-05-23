@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div v-if="site">
-			<div class="pb-3">
+			<div class="pb-2">
 				<div class="text-base text-gray-700">
 					<router-link to="/sites" class="hover:text-gray-800">
 						← Back to Sites
@@ -11,13 +11,14 @@
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ site.host_name || site.name }}</h1>
+						<h1 class="text-2xl font-bold">
+							{{ site.host_name || site.name }}
+						</h1>
 						<Badge
 							class="ml-4 hidden md:inline-block"
-							:status="site.status"
+							:label="site.status"
 							:colorMap="$badgeStatusColorMap"
-							>{{ site.status }}</Badge
-						>
+						/>
 
 						<div
 							v-if="regionInfo"
@@ -35,9 +36,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :status="site.status" :colorMap="$badgeStatusColorMap">{{
-								site.status
-							}}</Badge>
+							<Badge :label="site.status" :colorMap="$badgeStatusColorMap" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
@@ -54,11 +53,13 @@
 						</div>
 
 						<!-- Only for mobile view -->
-						<Dropdown v-if="siteActions.length > 0" :items="siteActions" right>
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
-									>Actions</Button
-								>
+						<Dropdown
+							v-if="siteActions.length > 0"
+							:options="siteActions"
+							right
+						>
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -71,16 +72,14 @@
 							:icon-left="action.icon"
 							:loading="action.loading"
 							:route="action.route"
-							@click="action.action"
+							@click="action.handler"
 						>
 							{{ action.label }}
 						</Button>
 
-						<Dropdown v-if="siteActions.length > 2" :items="siteActions">
-							<template v-slot="{ toggleDropdown }">
-								<Button icon-right="chevron-down" @click="toggleDropdown()"
-									>Actions</Button
-								>
+						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
+							<template v-slot="{ open }">
+								<Button icon-right="chevron-down">Actions</Button>
 							</template>
 						</Dropdown>
 					</div>
@@ -88,14 +87,14 @@
 			</div>
 		</div>
 		<div>
-			<Tabs class="pb-8" :tabs="tabs">
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
 				</router-view>
 			</Tabs>
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Login As Administrator' }"
 			v-model="showReasonForAdminLoginDialog"
 		>
@@ -107,7 +106,7 @@
 					required
 				/>
 
-				<ErrorMessage class="mt-3" :error="errorMessage" />
+				<ErrorMessage class="mt-3" :message="errorMessage" />
 			</template>
 
 			<template #actions>
@@ -118,7 +117,38 @@
 					>Proceed</Button
 				>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Transfer Site to Team' }"
+			v-model="showTransferSiteDialog"
+		>
+			<template #body-content>
+				<Input
+					label="Enter title of the child team"
+					type="text"
+					v-model="emailOfChildTeam"
+					required
+				/>
+
+				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
+			</template>
+
+			<template #actions>
+				<Button
+					:loading="$resources.transferSite.loading"
+					@click="
+						$resources.transferSite.submit({
+							team: emailOfChildTeam,
+							name: siteName
+						})
+					"
+					appearance="primary"
+				>
+					Submit
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -142,6 +172,7 @@ export default {
 			runningJob: false,
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
+			showTransferSiteDialog: false,
 			errorMessage: ''
 		};
 	},
@@ -154,6 +185,9 @@ export default {
 				},
 				auto: true,
 				onSuccess() {
+					if (this.siteName !== this.site.name) {
+						this.$router.replace({ params: { siteName: this.site.name } });
+					}
 					if (this.site.status !== 'Active' || this.site.setup_wizard_complete)
 						return;
 
@@ -170,6 +204,21 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin(this.siteName);
+		},
+		transferSite() {
+			return {
+				method: 'press.api.site.change_team',
+				onSuccess() {
+					this.showTransferSiteDialog = false;
+					this.emailOfChildTeam = null;
+					this.$notify({
+						title: 'Site Transferred to Child Team',
+						message: 'Site Transferred to Child Team',
+						color: 'green',
+						icon: 'check'
+					});
+				}
+			};
 		}
 	},
 	activated() {
@@ -215,11 +264,10 @@ export default {
 		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
-				let path = this.$route.fullPath;
 				let tab = ['Pending', 'Installing'].includes(this.site.status)
 					? 'jobs'
 					: 'overview';
-				this.$router.replace(`${path}/${tab}`);
+				this.$router.replace(`/sites/${this.site.name}/${tab}`);
 			}
 		},
 		proceedWithLoginAsAdmin() {
@@ -255,14 +303,14 @@ export default {
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(`https://${this.site.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
 							'_blank'
@@ -273,7 +321,7 @@ export default {
 					label: 'Manage Bench',
 					icon: 'tool',
 					route: `/benches/${this.site.group}`,
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${this.site.group}`);
 					}
 				},
@@ -281,14 +329,38 @@ export default {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
-					action: () => {
-						if (this.$account.team.name == this.site.team) {
+					handler: () => {
+						if (this.$account.team.name == this.site.notify_email) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
 							});
 						}
 
 						this.showReasonForAdminLoginDialog = true;
+					}
+				},
+				this.$account.user.user_type == 'System User' && {
+					label: 'Impersonate Team',
+					icon: 'tool',
+					handler: async () => {
+						await this.$account.switchTeam(this.site.team);
+						this.$notify({
+							title: 'Switched Team',
+							message: `Switched to ${this.site.team}`,
+							icon: 'check',
+							color: 'green'
+						});
+					}
+				},
+				this.site.status == 'Active' && {
+					label: 'Transfer Site',
+					icon: 'tool',
+					loading: this.$resources.transferSite.loading,
+					handler: () => {
+						this.showTransferSiteDialog = true;
+					},
+					condition: () => {
+						return !this.$account.parent_team;
 					}
 				}
 			].filter(Boolean);
@@ -299,12 +371,12 @@ export default {
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Logs', route: 'logs' },
-				{ label: 'Activity', route: 'activity' }
+				{ label: 'Logs', route: 'logs' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -314,39 +386,19 @@ export default {
 			let tabsByStatus = {
 				Active: [
 					'Overview',
+					'Apps',
 					'Analytics',
 					'Database',
 					siteConfig,
-					'Activity',
 					'Jobs',
 					'Logs',
 					'Request Logs'
 				],
-				Inactive: [
-					'Overview',
-					'Database',
-					siteConfig,
-					'Activity',
-					'Jobs',
-					'Logs'
-				],
+				Inactive: ['Overview', 'Apps', 'Database', siteConfig, 'Jobs', 'Logs'],
 				Installing: ['Jobs'],
 				Pending: ['Jobs'],
-				Broken: [
-					'Overview',
-					siteConfig,
-					'Database',
-					'Activity',
-					'Jobs',
-					'Logs'
-				],
-				Suspended: [
-					'Overview',
-					'Activity',
-					'Database',
-					'Jobs',
-					'Plan'
-				]
+				Broken: ['Overview', 'Apps', siteConfig, 'Database', 'Jobs', 'Logs'],
+				Suspended: ['Overview', 'Apps', 'Database', 'Jobs', 'Plan']
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

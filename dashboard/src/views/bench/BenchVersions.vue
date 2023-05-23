@@ -28,7 +28,7 @@
 					<template #actions>
 						<Badge
 							v-if="v.status != 'Active'"
-							:status="v.status"
+							:label="v.status"
 							:colorMap="$badgeStatusColorMap"
 						/>
 						<Badge v-else color="green">
@@ -78,11 +78,9 @@
 							>
 								{{ action.label }}
 							</Button>
-							<Dropdown :items="versionActions">
-								<template v-slot="{ toggleDropdown }">
-									<Button icon-right="chevron-down" @click="toggleDropdown()"
-										>Actions</Button
-									>
+							<Dropdown :options="versionActions">
+								<template v-slot="{ open }">
+									<Button icon-right="chevron-down">Actions</Button>
 								</template>
 							</Dropdown>
 						</div>
@@ -92,6 +90,7 @@
 						<SiteList
 							class="sm:border-gray-200 sm:shadow-none"
 							:sites="selectedVersion.sites || []"
+							:showBenchInfo="false"
 						/>
 					</div>
 				</section>
@@ -116,9 +115,9 @@
 				</section>
 			</div>
 		</template>
-		<FrappeUIDialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
+		<Dialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
 			<template v-slot:body-content>
-				<div v-if="certificate" class="space-y-4">
+				<div v-if="certificate" class="space-y-4" style="max-width: 29rem">
 					<div class="space-y-2">
 						<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
 						<div class="space-y-1">
@@ -165,9 +164,9 @@
 			</template>
 			<ErrorMessage
 				class="mt-3"
-				:error="$resources.generateCertificate.error"
+				:message="$resources.generateCertificate.error"
 			/>
-		</FrappeUIDialog>
+		</Dialog>
 	</CardWithDetails>
 </template>
 <script>
@@ -286,7 +285,7 @@ export default {
 			return [
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
-					action: () => {
+					handler: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${this.selectedVersion.name}`,
 							'_blank'
@@ -297,13 +296,13 @@ export default {
 					this.$account.ssh_key &&
 					this.selectedVersion.is_ssh_proxy_setup && {
 						label: 'SSH Access',
-						action: () => {
+						handler: () => {
 							this.showSSHDialog = true;
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'View Logs',
-					action: () => {
+					handler: () => {
 						this.$router.push(
 							`/benches/${this.bench.name}/logs/${this.selectedVersion.name}/`
 						);
@@ -312,13 +311,13 @@ export default {
 				this.selectedVersion.status == 'Active' &&
 					this.selectedVersion.sites.length > 0 && {
 						label: 'Update All Sites',
-						action: () => {
+						handler: () => {
 							this.$resources.updateAllSites.submit();
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'Restart Bench',
-					action: () => {
+					handler: () => {
 						this.confirmRestart();
 					}
 				}

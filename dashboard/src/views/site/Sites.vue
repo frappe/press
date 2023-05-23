@@ -6,7 +6,7 @@
 					<Button
 						appearance="primary"
 						iconLeft="plus"
-						class="ml-2 hidden sm:inline-flex"
+						class="ml-2"
 						@click="showBillingDialog"
 					>
 						New
@@ -68,11 +68,7 @@
 			</div>
 
 			<div v-if="recentSitesVisible" class="mb-6">
-				<SectionHeader heading="Recents">
-					<template v-slot:actions>
-						<SiteAndBenchSearch />
-					</template>
-				</SectionHeader>
+				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
@@ -80,19 +76,15 @@
 				</div>
 			</div>
 
-			<div>
-				<SectionHeader heading="All Sites">
-					<template v-if="!recentSitesVisible" v-slot:actions>
-						<SiteAndBenchSearch />
-					</template>
-				</SectionHeader>
+			<div class="mb-6">
+				<SectionHeader heading="All Sites"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
-			<FrappeUIDialog
+			<Dialog
 				:options="{ title: 'Add card to create new sites' }"
 				v-model="showAddCardDialog"
 			>
@@ -106,14 +98,13 @@
 						"
 					/>
 				</template>
-			</FrappeUIDialog>
+			</Dialog>
 		</div>
 	</div>
 </template>
 <script>
 import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
@@ -126,7 +117,6 @@ export default {
 	props: ['bench'],
 	components: {
 		SiteList,
-		SiteAndBenchSearch,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),

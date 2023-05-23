@@ -3,8 +3,14 @@
   set_fact:
     swap_file: "{{ swap_file | default('swap') }}"
 
-- name: Create 4 GB Swap file
-  command: fallocate -l 4G /{{ swap_file }}
+- name: Confirm file doesn't exist
+  stat:
+    path: '/{{ swap_file }}'
+  register: stat_result
+  failed_when: 'stat_result.stat.exists'
+
+- name: Create 8 GB Swap file
+  command: fallocate -l 8G /{{ swap_file }}
 
 - name: Change Swap file permissions
   file:

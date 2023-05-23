@@ -69,7 +69,7 @@ export default {
 			} else if (this.width === 'half') {
 				return ['sm:max-w-2xl'];
 			} else if (this.width === 'w-2/6') {
-				return ['w-2/6']
+				return ['w-2/6'];
 			} else {
 				return [];
 			}

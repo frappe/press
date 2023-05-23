@@ -30,7 +30,7 @@
 				</router-link>
 				<router-link v-else to="/login/forgot"> Forgot Password </router-link>
 			</div>
-			<ErrorMessage :error="errorMessage" class="mt-4" />
+			<ErrorMessage :message="errorMessage" class="mt-4" />
 			<Button
 				class="mt-4"
 				:disabled="state === 'RequestStarted'"
@@ -55,7 +55,11 @@
 			</template>
 		</form>
 	</LoginBox>
-	<SuccessCard v-else class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto" title="Password Reset Link Sent.">
+	<SuccessCard
+		v-else
+		class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto"
+		title="Password Reset Link Sent."
+	>
 		We have sent an email to <span class="font-semibold">{{ email }}</span
 		>. Please click on the link received to reset your password.
 	</SuccessCard>
@@ -79,7 +83,7 @@ export default {
 			email: null,
 			password: null,
 			errorMessage: null,
-			successMessage: null,
+			successMessage: null
 		};
 	},
 	watch: {

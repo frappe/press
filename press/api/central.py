@@ -13,7 +13,6 @@ from press.press.doctype.site.erpnext_site import (
 )
 from press.press.doctype.site.pool import get as get_pooled_site
 from press.press.doctype.team.team import Team
-from press.utils.billing import get_erpnext_com_connection
 
 
 @frappe.whitelist(allow_guest=True)
@@ -124,14 +123,6 @@ def setup_account(key, business_data=None):
 
 @frappe.whitelist(allow_guest=True)
 def check_subdomain_availability(subdomain):
-	erpnext_com = get_erpnext_com_connection()
-
-	result = erpnext_com.post_api(
-		"central.www.signup.check_subdomain_availability", {"subdomain": subdomain}
-	)
-	if result:
-		return False
-
 	exists = bool(
 		frappe.db.exists(
 			"Site",

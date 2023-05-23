@@ -6,29 +6,34 @@ import requests
 
 from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
+from press.api.bench import all as all_benches
 from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
 from datetime import datetime, timezone as tz
 from frappe.utils import flt
+from press.press.doctype.team.team import get_child_team_members
 
 
 def poly_get_doc(doctypes, name):
 	for doctype in doctypes:
 		if frappe.db.exists(doctype, name):
 			return frappe.get_doc(doctype, name)
+	return frappe.get_doc(doctypes[-1], name)
 
 
 @frappe.whitelist()
 def all():
 	team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
 	app_servers = frappe.get_all(
 		"Server",
-		{"team": team, "status": ("!=", "Archived")},
+		{"team": ("in", teams), "status": ("!=", "Archived")},
 		["name", "creation", "status", "title"],
 	)
 	database_servers = frappe.get_all(
 		"Database Server",
-		{"team": team, "status": ("!=", "Archived")},
+		{"team": ("in", teams), "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
 		["name", "creation", "status", "title"],
 	)
 	all_servers = app_servers + database_servers
@@ -167,23 +172,6 @@ def new(server):
 
 
 @frappe.whitelist()
-def search_list():
-	servers = frappe.get_list(
-		"Server",
-		fields=["name as server", "title"],
-		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc",
-	)
-	database_servers = frappe.get_list(
-		"Database Server",
-		fields=["name as server", "title"],
-		filters={"status": ("!=", "Archived"), "team": get_current_team()},
-		order_by="creation desc",
-	)
-	return servers + database_servers
-
-
-@frappe.whitelist()
 @protected(["Server", "Database Server"])
 def usage(name):
 	query_map = {
@@ -197,6 +185,66 @@ def usage(name):
 		),
 		"memory": (
 			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} - node_memory_MemFree_bytes{{instance="{name}",job="node"}} - (node_memory_Cached_bytes{{instance="{name}",job="node"}} + node_memory_Buffers_bytes{{instance="{name}",job="node"}})) / (1024 * 1024)""",
+			lambda x: x,
+		),
+	}
+
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
+
+
+@protected(["Server", "Database Server"])
+def total_resource(name):
+	query_map = {
+		"vcpu": (
+			f"""(count(count(node_cpu_seconds_total{{instance="{name}",job="node"}}) by (cpu)))""",
+			lambda x: x,
+		),
+		"disk": (
+			f"""(node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}}) / (1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+		"memory": (
+			f"""(node_memory_MemTotal_bytes{{instance="{name}",job="node"}}) / (1024 * 1024)""",
+			lambda x: x,
+		),
+	}
+
+	result = {}
+	for usage_type, query in query_map.items():
+		response = prometheus_query(query[0], query[1], "Asia/Kolkata", 120, 120)["datasets"]
+		if response:
+			result[usage_type] = response[0]["values"][-1]
+	return result
+
+
+def calculate_swap(name):
+	query_map = {
+		"swap_used": (
+			f"""((node_memory_SwapTotal_bytes{{instance="{name}",job="node"}} - node_memory_SwapFree_bytes{{instance="{name}",job="node"}}) / node_memory_SwapTotal_bytes{{instance="{name}",job="node"}}) * 100""",
+			lambda x: x,
+		),
+		"swap": (
+			f"""node_memory_SwapTotal_bytes{{instance="{name}",job="node"}} / (1024 * 1024 * 1024)""",
+			lambda x: x,
+		),
+		"required": (
+			f"""(
+					(node_memory_MemTotal_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapTotal_bytes{{instance="{name}",job="node"}}
+					) -
+					(node_memory_MemFree_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapFree_bytes{{instance="{name}",job="node"}} +
+						node_memory_Cached_bytes{{instance="{name}",job="node"}} +
+						node_memory_Buffers_bytes{{instance="{name}",job="node"}} +
+						node_memory_SwapCached_bytes{{instance="{name}",job="node"}}
+					)
+				) /
+				(1024 * 1024 * 1024)""",
 			lambda x: x,
 		),
 	}
@@ -414,3 +462,20 @@ def press_jobs(name):
 @protected("Server")
 def get_title_and_cluster(name):
 	return frappe.db.get_value("Server", name, ["title", "cluster"], as_dict=True)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def groups(name):
+	server = poly_get_doc(["Server", "Database Server"], name)
+	if server.doctype == "Database Server":
+		app_server = frappe.db.get_value("Server", {"database_server": server.name}, "name")
+		server = frappe.get_doc("Server", app_server)
+
+	return all_benches(server=server.name)
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def reboot(name):
+	return poly_get_doc(["Server", "Database Server"], name).reboot()

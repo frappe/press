@@ -15,6 +15,14 @@ from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
+	def before_save(self):
+		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
+		teams = frappe.get_all(
+			"Auto Release Team", {"parent": "Marketplace Settings"}, pluck="team"
+		)
+		if self.team in teams or self.app in apps:
+			self.status = "Approved"
+
 	def after_insert(self):
 		self.publish_created()
 		self.create_release_differences()
@@ -54,6 +62,7 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
+			self.on_trash()
 			log_error("App Release Clone Exception", command=command, output=e.output.decode())
 			raise e
 
@@ -146,7 +155,8 @@ class AppRelease(Document):
 			group = frappe.get_doc("Release Group", group.parent)
 			apps_to_ignore = [app.as_dict() for app in group.apps if not app.enable_auto_deploy]
 			candidate = group.create_deploy_candidate(apps_to_ignore)
-			candidate.build_and_deploy()
+			if candidate:
+				candidate.build_and_deploy()
 
 
 def get_permission_query_conditions(user):

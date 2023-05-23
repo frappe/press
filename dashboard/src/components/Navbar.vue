@@ -1,5 +1,5 @@
 <template>
-	<nav class="border-b bg-white">
+	<nav class="px-4 border-b bg-gray-50">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center">
@@ -17,14 +17,13 @@
 						>
 						<div class="relative ml-3">
 							<div>
-								<Dropdown :items="dropdownItems" right>
-									<template v-slot="{ toggleDropdown }">
+								<Dropdown :options="dropdownItems" right>
+									<template v-slot="{ open }">
 										<button
 											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
 											id="user-menu"
 											aria-label="User menu"
 											aria-haspopup="true"
-											@click="toggleDropdown()"
 										>
 											<Avatar
 												v-if="$account.user"
@@ -60,7 +59,7 @@
 					<a
 						:class="[
 							(item.route == '/' ? isExactActive : isActive)
-								? 'bg-blue-50 bg-white text-blue-500'
+								? 'bg-blue-50 bg-gray-200'
 								: 'text-gray-900 hover:bg-gray-50'
 						]"
 						:href="href"
@@ -130,11 +129,11 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Settings',
-					action: () => this.$router.push('/settings')
+					handler: () => this.$router.push('/settings')
 				},
 				{
 					label: 'Logout',
-					action: () => this.$auth.logout()
+					handler: () => this.$auth.logout()
 				}
 			]
 		};
@@ -143,19 +142,33 @@ export default {
 		items() {
 			return [
 				{
-					label: 'Dashboard',
+					label: 'Sites',
 					route: '/sites',
 					highlight: () => {
 						return this.$route.fullPath.endsWith('/sites');
 					}
 				},
 				{
-					label: 'My Apps',
+					label: 'Benches',
+					route: '/benches',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
+				},
+				{
+					label: 'Developer',
 					route: '/marketplace',
 					highlight: () => {
 						return this.$route.fullPath.includes('/marketplace');
 					},
 					condition: () => this.$account.team?.is_developer
+				},
+				{
+					label: 'Billing',
+					route: '/billing',
+					highlight: () => {
+						return this.$route.fullPath.endsWith('/sites');
+					}
 				},
 				{
 					label: 'Settings',

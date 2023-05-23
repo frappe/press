@@ -77,6 +77,7 @@ frappe.ui.form.on('Site', {
 
 		[
 			[__('Backup'), 'backup'],
+			[__('Sync Info'), 'sync_info'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
@@ -87,7 +88,7 @@ frappe.ui.form.on('Site', {
 			);
 		});
 		[
-			[__('Archive'), 'archive'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
 			[__('Cleanup after Archive'), 'cleanup_after_archive'],
 			[__('Migrate'), 'migrate'],
 			[__('Reinstall'), 'reinstall'],
@@ -95,12 +96,17 @@ frappe.ui.form.on('Site', {
 			[__('Restore Tables'), 'restore_tables'],
 			[__('Update'), 'schedule_update'],
 			[__('Deactivate'), 'deactivate'],
-			[__('Activate'), 'activate'],
+			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
+			[__('Reset Site Usage'), 'reset_site_usage'],
 			[__('Clear Cache'), 'clear_site_cache'],
+			[__('Update Site Config'), 'update_site_config'],
 			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
 			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
 			[__('Create DNS Record'), 'create_dns_record'],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
+			[__('Retry Rename'), 'retry_rename'],
+			[__('Retry Archive'), 'retry_archive', frm.doc.name.includes('.archived')],
+			[__('Update without Backup'), 'update_without_backup'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === "undefined" || condition){
 				frm.add_custom_button(
@@ -176,6 +182,24 @@ Password: ${r.message.password}
 				__('Actions')
 			);
 		}
+
+		frm.add_custom_button(__('Replicate Site'), () => {
+			const dialog = new frappe.ui.Dialog({
+				title: __('New Subdomain for Test Site'),
+				fields: [{
+					fieldtype: 'Data',
+					fieldname: 'subdomain',
+					label: 'New Subdomain',
+					reqd: 1
+				}],
+				primary_action({ subdomain }) {
+					frappe.set_route('List', 'Site Replication', {'site': frm.doc.name})
+					frappe.new_doc('Site Replication', {site: frm.doc.name, subdomain: subdomain})
+				}
+			});
+			dialog.show();
+		}, __('Actions'));
+
 		frm.add_custom_button(
 			__('Move to Group'),
 			() => {

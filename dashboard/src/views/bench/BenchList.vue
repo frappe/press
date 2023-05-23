@@ -6,7 +6,7 @@
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="benches.length === 0"
 		>
-			No benches to show. Go ahead, add a new one 🚀!
+			No benches to show. Go ahead, add a new one 🚀
 		</div>
 		<div class="py-2" v-for="(bench, index) in benches" :key="bench.name">
 			<div class="flex items-center justify-between">
@@ -15,11 +15,18 @@
 					class="block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
 					<div class="flex items-center justify-between">
-						<div class="text-base sm:w-4/12">
+						<div class="text-base w-2/3 sm:w-4/12">
 							{{ bench.title }}
 						</div>
-						<div class="text-base sm:w-4/12">
-							<Badge :status="`${bench.number_of_apps} Apps`" />
+						<div class="text-base w-1/3 sm:w-4/12">
+							<Badge :label="bench.status" :colorMap="$badgeStatusColorMap" />
+						</div>
+						<div class="text-base hidden sm:block sm:w-4/12">
+							<Badge
+								:label="`${bench.number_of_apps} ${
+									bench.number_of_apps == 1 ? 'App' : 'Apps'
+								}`"
+							/>
 						</div>
 						<div
 							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"
@@ -30,9 +37,9 @@
 				</router-link>
 
 				<div class="text-right text-base">
-					<Dropdown :items="dropdownItems(bench)" right>
-						<template v-slot="{ toggleDropdown }">
-							<Button icon="more-horizontal" @click.stop="toggleDropdown()" />
+					<Dropdown :options="dropdownItems(bench)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
 						</template>
 					</Dropdown>
 				</div>
@@ -62,13 +69,13 @@ export default {
 			return [
 				{
 					label: 'New Site',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/${bench.name}/new`);
 					}
 				},
 				{
 					label: 'View Versions',
-					action: () => {
+					handler: () => {
 						this.$router.push(`/benches/${bench.name}/versions`);
 					}
 				}

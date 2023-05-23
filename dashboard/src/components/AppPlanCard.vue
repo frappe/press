@@ -30,8 +30,8 @@
 
 					<span v-else>
 						{{ $planTitle(plan) }}
-						<span class="text-base font-normal text-gray-600"> 
-						{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+						<span class="text-base font-normal text-gray-600">
+							{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 						</span>
 					</span>
 				</div>
@@ -58,7 +58,7 @@
 
 		<Badge
 			v-if="editable"
-			:status="plan.enabled ? 'Enabled' : 'Disabled'"
+			:label="plan.enabled ? 'Enabled' : 'Disabled'"
 			class="mt-4 self-start"
 			:colorMap="$badgeStatusColorMap"
 		></Badge>
@@ -90,7 +90,7 @@ export default {
 		editable: {
 			type: Boolean,
 			default: false
-		}	
+		}
 	},
 	components: {
 		FeatureList

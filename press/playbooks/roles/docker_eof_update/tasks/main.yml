@@ -1,0 +1,10 @@
+---
+- name: Update docker's daemon json file
+  template:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Restart Docker Daemon
+  systemd:
+    name: docker
+    state: restarted

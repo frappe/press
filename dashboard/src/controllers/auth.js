@@ -25,7 +25,7 @@ export default class Auth {
 		});
 		if (res) {
 			await window.$account.fetchAccount();
-			let last_used_team = window.$account.team.last_used_team
+			let last_used_team = window.$account.team.last_used_team;
 			let team = window.$account.team.name;
 
 			if (last_used_team && last_used_team != team) {
@@ -33,17 +33,13 @@ export default class Auth {
 			}
 			localStorage.setItem('current_team', team);
 			this.isLoggedIn = true;
-			window.location.reload()
+			window.location.reload();
 			return res;
 		}
 		return false;
 	}
 	async logout() {
 		localStorage.removeItem('current_team');
-		localStorage.removeItem('saas_login');
-		if (window.$saas.isSaasLogin) {
-			localStorage.setItem('was_saas_logout', true);
-		}
 		await call('logout');
 		window.location.reload();
 	}

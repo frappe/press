@@ -5,7 +5,7 @@
 			:subtitle="subtitle"
 			class="w-full border-none shadow-none md:w-1/3"
 			:class="{ 'hidden md:flex': showDetails }"
-			:style="{ height: viewportWidth > 768 ? 'calc(100vh - 16rem)' : null }"
+			:style="{ height: viewportWidth > 768 ? 'calc(100vh - 12rem)' : null }"
 		>
 			<slot></slot>
 		</Card>

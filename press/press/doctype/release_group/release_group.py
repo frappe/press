@@ -18,7 +18,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.7"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
-	{"dependency": "BENCH_VERSION", "version": "5.2.1"},
+	{"dependency": "BENCH_VERSION", "version": "5.15.2"},
 ]
 
 
@@ -39,7 +39,12 @@ class ReleaseGroup(Document):
 	def validate_title(self):
 		if frappe.get_all(
 			"Release Group",
-			{"title": self.title, "team": self.team or "", "name": ("!=", self.name)},
+			{
+				"title": self.title,
+				"team": self.team or "",
+				"name": ("!=", self.name),
+				"enabled": True,
+			},
 			limit=1,
 		):
 			frappe.throw(f"Release Group {self.title} already exists.", frappe.ValidationError)
@@ -91,9 +96,16 @@ class ReleaseGroup(Document):
 			self.extend("dependencies", dependencies)
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_ignore=[]):
+	def create_duplicate_deploy_candidate(self):
+		return self.create_deploy_candidate([app.as_dict() for app in self.apps])
+
+	@frappe.whitelist()
+	def create_deploy_candidate(self, apps_to_ignore=None):
 		if not self.enabled:
 			return
+
+		if apps_to_ignore is None:
+			apps_to_ignore = []
 
 		# Get the deploy information for apps
 		# that have updates available
@@ -142,6 +154,10 @@ class ReleaseGroup(Document):
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
 		]
 
+		packages = [
+			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
+		]
+
 		apps = self.get_sorted_based_on_rg_apps(apps)
 
 		# Create and deploy the DC
@@ -151,6 +167,7 @@ class ReleaseGroup(Document):
 				"group": self.name,
 				"apps": apps,
 				"dependencies": dependencies,
+				"packages": packages,
 			}
 		).insert()
 
@@ -224,9 +241,11 @@ class ReleaseGroup(Document):
 			will_branch_change = False
 			current_branch = source.branch
 			if bench_app:
-				current_source = frappe.get_doc("App Source", bench_app.source)
-				will_branch_change = current_source.branch != source.branch
-				current_branch = current_source.branch
+				current_source_branch = frappe.db.get_value(
+					"App Source", bench_app.source, "branch"
+				)
+				will_branch_change = current_source_branch != source.branch
+				current_branch = current_source_branch
 
 			current_tag = (
 				get_app_tag(source.repository, source.repository_owner, current_hash)

@@ -15,7 +15,7 @@
 			</template>
 		</PageHeader>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{
 				title: 'Add App to Marketplace'
 			}"
@@ -34,7 +34,7 @@
 				/>
 				<p v-else class="text-base">No app sources available.</p>
 
-				<ErrorMessage class="mt-2" :error="$resourceErrors" />
+				<ErrorMessage class="mt-2" :message="$resourceErrors" />
 
 				<p class="mt-4 text-base" @click="showAddAppDialog = false">
 					Don't find your app here?
@@ -57,7 +57,7 @@
 					Add {{ selectedApp.app }}
 				</Button>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 
 		<Tabs class="pb-32" :tabs="tabs">
 			<router-view v-if="$account.team"></router-view>

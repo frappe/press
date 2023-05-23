@@ -8,7 +8,7 @@
 			<ClickToCopyField :textContent="referralLink" />
 			<h3 class="text-base text-gray-700">
 				When someone sign's up using the above link and spends at least
-				{{ creditAmountInTeamCurrency }} on Frappe Cloud, you
+				{{ minimumSpentAmount }} on Frappe Cloud, you
 				<strong
 					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
 				>!
@@ -31,8 +31,11 @@ export default {
 			}
 			return '';
 		},
-		creditAmountInTeamCurrency() {
+		minimumSpentAmount() {
 			return this.$account.team.country == 'India' ? '₹1800' : '$25';
+		},
+		creditAmountInTeamCurrency() {
+			return this.$account.team.country == 'India' ? '₹750' : '$10';
 		}
 	}
 };

@@ -35,7 +35,7 @@ class TLSCertificate(Document):
 			frappe.session.data,
 			get_current_team(),
 		)
-		frappe.set_user(team)
+		frappe.set_user(frappe.get_value("Team", team, "user"))
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_obtain_certificate", enqueue_after_commit=True
 		)
@@ -247,6 +247,7 @@ class LetsEncrypt(BaseCA):
 			plugin = "--dns-route53"
 		else:
 			plugin = f"--webroot --webroot-path {self.webroot_directory}"
+			# plugin = f"-a dns-multi --dns-multi-credentials={self.directory}/cert.ini" # Used for Getting TLS certs. pip install  dns-multi and need to add creds #TODO
 
 		staging = "--staging" if self.staging else ""
 		force_renewal = "--keep" if frappe.conf.developer_mode else "--force-renewal"

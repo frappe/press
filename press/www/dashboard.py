@@ -13,3 +13,7 @@ def get_context(context):
 	frappe.db.commit()
 	context.csrf_token = csrf_token
 	context.press_frontend_sentry_dsn = frappe.get_conf().press_frontend_sentry_dsn
+	context.posthog_keys = {
+		"host": frappe.conf.get("posthog_host"),
+		"project_id": frappe.conf.get("posthog_project_id"),
+	}

@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<ErrorMessage :error="$resources.getAppPlans.error" />
+		<ErrorMessage :message="$resources.getAppPlans.error" />
 
 		<Button
 			v-if="
@@ -60,6 +60,7 @@ export default {
 				method: 'press.api.marketplace.get_app_plans',
 				params: {
 					app: this.app,
+					include_disabled: false,
 					release_group: this.group,
 					frappe_version: this.frappeVersion
 				},

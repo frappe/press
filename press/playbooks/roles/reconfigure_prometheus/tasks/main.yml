@@ -1,4 +1,13 @@
 ---
+- name: Configure Prometheus Service Discovery for Press Server
+  become: yes
+  become_user: frappe
+  template:
+    src: ../../prometheus/templates/press.yml
+    dest: /home/frappe/prometheus/file_sd/press.yml
+    force: true
+    mode: 0600
+
 - name: Set JSON Variables
   set_fact:
     registries: "{{ registries_json | from_json }}"

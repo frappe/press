@@ -5,7 +5,7 @@
 				<Button
 					appearance="primary"
 					iconLeft="plus"
-					class="ml-2 hidden sm:inline-flex"
+					class="ml-2"
 					@click="showBillingDialog"
 				>
 					New
@@ -13,20 +13,12 @@
 			</template>
 		</PageHeader>
 
-		<div>
-			<SectionHeader heading="All Benches">
-				<template v-slot:actions>
-					<SiteAndBenchSearch />
-				</template>
-			</SectionHeader>
-
-			<div class="mt-3">
-				<LoadingText v-if="$resources.allBenches.loading" />
-				<BenchList v-else :benches="benches" />
-			</div>
+		<div class="mt-3">
+			<LoadingText v-if="$resources.allBenches.loading" />
+			<BenchList v-else :benches="benches" />
 		</div>
 
-		<FrappeUIDialog
+		<Dialog
 			:options="{ title: 'Add card to create new benches' }"
 			v-model="showAddCardDialog"
 		>
@@ -40,12 +32,11 @@
 					"
 				/>
 			</template>
-		</FrappeUIDialog>
+		</Dialog>
 	</div>
 </template>
 
 <script>
-import SiteAndBenchSearch from '@/components/SiteAndBenchSearch.vue';
 import BenchList from './BenchList.vue';
 import { defineAsyncComponent } from 'vue';
 
@@ -62,7 +53,6 @@ export default {
 		};
 	},
 	components: {
-		SiteAndBenchSearch,
 		BenchList,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
