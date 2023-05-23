@@ -27,7 +27,7 @@
 					v-model:shareDetailsConsent="shareDetailsConsent"
 				/>
 
-				<div v-if="activeStep.name === 'Select App Plans'">
+				<div v-if="activeStep.name === 'Plan'">
 					<ChangeAppPlanSelector
 						v-for="app in appsWithPlans"
 						:key="app.name"
@@ -241,7 +241,6 @@ export default {
 					let canCreate =
 						this.subdomainValid &&
 						this.selectedApps.length > 0 &&
-						this.selectedPlan &&
 						(!this.wantsToRestore || this.selectedFiles.database);
 
 					if (!this.agreedToRegionConsent) {
@@ -300,11 +299,11 @@ export default {
 			const appsStepIndex = this.steps.findIndex(step => step.name == 'Apps');
 
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				step => step.name == 'Select App Plans'
+				step => step.name == 'Plan'
 			);
 			if (selectAppPlansStepIndex < 0) {
 				this.steps.splice(appsStepIndex + 1, 0, {
-					name: 'Select App Plans',
+					name: 'Plan',
 					validate: () => {
 						for (let app of Object.keys(this.selectedAppPlans)) {
 							if (!this.selectedAppPlans[app]) {
@@ -322,7 +321,7 @@ export default {
 		},
 		removePlanSelectionStepIfExists() {
 			const selectAppPlansStepIndex = this.steps.findIndex(
-				step => step.name == 'Select App Plans'
+				step => step.name == 'Plan'
 			);
 			if (selectAppPlansStepIndex >= 0) {
 				this.steps.splice(selectAppPlansStepIndex, 1);
