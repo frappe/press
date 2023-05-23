@@ -1,14 +1,5 @@
 <template>
 	<div>
-		<div class="mt-1 space-y-1">
-			<h2 class="text-lg font-semibold">Select Server Type</h2>
-			<p class="text-base text-gray-700">
-				Select the Type of Server you want to setup
-			</p>
-			<div class="mt-1">
-				<RichSelect :value="selectedType" @change="$emit('update:selectedType', $event)" :options="typeOptions" />
-			</div>
-		</div>
 		<label class="text-lg font-semibold"> Choose a name for your server </label>
 		<p class="text-base text-gray-700">
 			Name your server based on its purpose. For e.g., Personal Websites,
@@ -37,8 +28,8 @@ import RichSelect from '@/components/RichSelect.vue';
 
 export default {
 	name: 'Hostname',
-	props: ['options', 'title', 'selectedRegion', 'selectedType'],
-	emits: ['update:title', 'error', 'update:selectedRegion', 'update:selectedType'],
+	props: ['options', 'title', 'selectedRegion'],
+	emits: ['update:title', 'error', 'update:selectedRegion'],
 	data() {
 		return {
 			errorMessage: null
@@ -55,10 +46,6 @@ export default {
 				image: d.image
 			}));
 		},
-		typeOptions() {
-			const types = [{ label: "Self Hosted Server", value: "self_hosted" }, { label: "FC Server", value: "fc" }];
-			return types
-		}
 	},
 	async mounted() {
 		if (this.regionOptions.length == 1) {

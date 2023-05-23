@@ -13,7 +13,6 @@
 					v-show="activeStep.name === 'Hostname'"
 					v-model:title="title"
 					v-model:selectedRegion="selectedRegion"
-					v-model:selectedType="selectedType"
 				/>
 				<AppServerPlans
 					v-model:selectedAppPlan="selectedAppPlan"
@@ -110,7 +109,6 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
-			selectedType: null,
 			selectedAppPlan: null,
 			selectedDBPlan: null,
 			validationMessage: null,
@@ -118,7 +116,7 @@ export default {
 				{
 					name: 'Hostname',
 					validate: () => {
-						return this.title && this.selectedRegion && this.selectedType;
+						return this.title && this.selectedRegion;
 					}
 				},
 				{
@@ -139,14 +137,6 @@ export default {
 			],
 			agreedToRegionConsent: false
 		};
-	},
-	watch: {
-		async selectedType() {
-			// Changes the Regions based on the the Server Type
-			this.options = await this.$call('press.api.server.options', {
-				type: this.selectedType
-			})
-		}
 	},
 	async mounted() {
 		this.options = await this.$call('press.api.server.options');
