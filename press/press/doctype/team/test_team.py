@@ -15,7 +15,7 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_press_admin_team(email: str = frappe.mock("email")):
+def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
 	"""Create test press admin user."""
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
@@ -24,7 +24,7 @@ def create_test_press_admin_team(email: str = frappe.mock("email")):
 	return create_test_team(email)
 
 
-def create_test_team(email: str = frappe.mock("email")):
+def create_test_team(email: str = frappe.mock("email")) -> Team:
 	"""Create test team doc."""
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")

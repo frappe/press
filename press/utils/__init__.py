@@ -24,7 +24,7 @@ def get_current_team(get_doc=False):
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user})
 			if get_doc
-			else frappe.session.user
+			else frappe.get_value("Team", {"user": frappe.session.user}, "name")
 		)
 
 	user_is_system_user = frappe.session.data.user_type == "System User"
@@ -39,7 +39,7 @@ def get_current_team(get_doc=False):
 		return (
 			frappe.get_doc("Team", {"user": frappe.session.user})
 			if get_doc
-			else frappe.session.user
+			else frappe.get_value("Team", {"name": frappe.session.user}, "name")
 		)
 
 	if not team:
