@@ -296,16 +296,19 @@
    "label": "ERPNext Authentication"
   },
   {
+   "default": "app.hisabcloud.com",
    "fieldname": "erpnext_url",
    "fieldtype": "Data",
    "label": "ERPNext URL"
   },
   {
+   "default": "ea4fff910580e62",
    "fieldname": "erpnext_api_key",
    "fieldtype": "Data",
    "label": "ERPNext API Key"
   },
   {
+   "default": "6ef27189aeda102",
    "fieldname": "erpnext_api_secret",
    "fieldtype": "Password",
    "label": "ERPNext API Secret"
@@ -321,11 +324,13 @@
    "label": "Frappe.io Authentication"
   },
   {
+   "default": "app.hisabcloud.com",
    "fieldname": "frappe_url",
    "fieldtype": "Data",
    "label": "URL"
   },
   {
+   "default": "ea4fff910580e62",
    "fieldname": "frappeio_api_key",
    "fieldtype": "Data",
    "label": "Frappe.io API Key"
@@ -335,6 +340,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "6ef27189aeda102",
    "fieldname": "frappeio_api_secret",
    "fieldtype": "Password",
    "label": "Frappe.io API Secret"
