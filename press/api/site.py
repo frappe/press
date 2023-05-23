@@ -480,18 +480,18 @@ def get_new_site_options(group: str = None):
 		order_by="`default` desc, number desc",
 	)
 	apps = set()
-	filters = {
-		"enabled": True,
-		"team": team,
-		"public": False if group else True,
-	}
+	filters = {"enabled": True}
 	if group:  # private bench
 		filters.update({"name": group})
 
 	for version in versions:
 		filters.update({"version": version.name})
 		rg = frappe.get_all(
-			"Release Group", fields=["name", "`default`", "title"], filters=filters, limit=1
+			"Release Group",
+			fields=["name", "`default`", "title"],
+			filters=filters,
+			or_filters={"public": True, "team": team},
+			limit=1,
 		)
 		if not rg:
 			continue
