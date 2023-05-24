@@ -302,15 +302,11 @@ def get():
 	if parent_teams:
 		teams = frappe.db.sql(
 			"""
-			select name, team_title, user from tabTeam where name in %s
+			select name, team_title, user from tabTeam where enabled = 1 and name in %s
 		""",
 			[parent_teams],
 			as_dict=True,
 		)
-	else:
-		teams = [
-			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-		]
 
 	return {
 		"user": frappe.get_doc("User", user),
@@ -318,7 +314,7 @@ def get():
 		"team": team_doc,
 		"team_members": get_team_members(team_doc.name),
 		"child_team_members": get_child_team_members(team_doc.name),
-		"teams": list(teams),
+		"teams": list(teams if teams else parent_teams),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
