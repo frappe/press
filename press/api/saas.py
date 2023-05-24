@@ -277,6 +277,7 @@ def setup_account(key, business_data=None):
 				"industry",
 				"no_of_users",
 				"designation",
+				"phone_number",
 				"referral_source",
 				"agreed_to_partner_consent",
 			]
