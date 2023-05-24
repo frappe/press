@@ -219,13 +219,13 @@
    "options": "Release Group"
   },
   {
-   "default": "Pending",
+   "default": "Unreachable",
    "fieldname": "status",
    "fieldtype": "Select",
    "hidden": 1,
    "in_list_view": 1,
    "label": "Status",
-   "options": "Active\nPending\nBroken",
+   "options": "Active\nPending\nBroken\nArchived\nUnreachable",
    "read_only": 1
   },
   {
@@ -278,7 +278,7 @@
   }
  ],
  "links": [],
- "modified": "2023-04-25 09:20:44.719904",
+ "modified": "2023-05-25 01:01:38.958889",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

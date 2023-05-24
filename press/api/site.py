@@ -33,7 +33,6 @@ def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		if frappe.session.data.user_type == "System User":
-			print("shadrak")
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]

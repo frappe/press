@@ -16,13 +16,14 @@
 				/>
 					<SelfHostedServerForm
 					v-show="activeStep.name === 'ServerDetails'"
-					v-model:public_ip="public_ip"
-					v-model:private_ip="private_ip"
+					v-model:publicIp="publicIP"
+					v-model:privateIp="privateIP"
 					/>
 				<div class="mt-4">
 				<SelfHostedServerVerify
 					v-show="activeStep.name === 'VerifyServer'"
 					v-model:ssh_key="ssh_key"/>
+			<Button v-show="activeStep.name === 'VerifyServer'" :loading="playStatus" appearance="primary" @click="startVerification">Verify Server</Button>
 				</div>
 				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
@@ -63,13 +64,6 @@
 							Next
 						</Button>
 						<Button
-						appearence="danger"
-							v-show="activeStep.name==='ServerDetails'"
-						@click="hasAlert"
-						>
-							Next
-						</Button>
-						<Button
 							v-show="!hasNext"
 							appearance="primary"
 							@click="$resources.newServer.submit()"
@@ -104,12 +98,14 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
-			public_ip:null,
-			private_ip:null,
+			publicIP:null,
+			privateIP:null,
 			validationMessage: null,
-			docCreated:false,
-
-			ssh_key:"Ajsbadgiiuerzxtcfgvhbjnkmlztwerxdyctfvyghjnkmxyertcyvubindxtcfgv",
+			newDoc:null,
+			playID:null,
+			playStatus:false,
+			playOutput:null,
+			ssh_key:null,
 			steps: [
 				{
 					name: 'Hostname',
@@ -120,7 +116,7 @@ export default {
 				{
 					name:"ServerDetails",
 					validate:()=>{
-						return this.private_ip && this.public_ip
+						return this.privateIP && this.publicIP
 					}
 				},
 				{
@@ -134,48 +130,82 @@ export default {
 		this.options = await this.$call('press.api.server.options',{
 				type: "self_hosted"
 		});
+		this.ssh_key = await this.$call("press.api.selfhosted.sshkey")
 	},
 	resources: {
 		newServer() {
 			return {
-				method: 'press.api.server.new',
+				method: 'press.api.selfhosted.new',
 				params: {
 					server: {
 						title: this.title,
 						cluster: this.selectedRegion,
-						app_plan: this.selectedAppPlan?.name,
-						db_plan: this.selectedDBPlan?.name
+						publicIP: this.publicIP,
+						privateIP: this.privateIP,
 					}
 				},
 				onSuccess(data) {
-					let { server } = data;
-					this.$router.push(`/servers/${server}/install`);
+					this.newDoc = data
 				},
 				validate() {
 					let canCreate = this.title
 
 
-					if (!this.agreedToRegionConsent) {
-						document.getElementById('region-consent').focus();
-
-						return 'Please agree to the above consent to create server';
-					}
+					// if (!this.agreedToRegionConsent) {
+					// 	document.getElementById('region-consent').focus();
+					//
+					// 	return 'Please agree to the above consent to create server';
+					// }
 
 					if (!canCreate) {
 						return 'Cannot create server';
 					}
 				}
 			};
+		},
+		verify(){
+			return{
+				method: 'press.api.selfhosted.verify',
+				params:{
+					server:this.newDoc
+				},
+				onSuccess(data){
+					this.playID = data
+				}
+			}
 		}
 	},
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
+			if (activeStep.name === 'ServerDetails'){
+				console.log("Heyyo")
+				this.$resources.newServer.submit()
+			}
 			next();
 		},
-	hasAlert(){
-	alert("Hey")
-},
+		async startVerification(){
+			this.playStatus=true
+			await this.$resources.verify.submit()
+			setTimeout(this.verifyStatus,10000)
+		},
+		async verifyStatus(){
+
+			this.playOutput = this.$call("press.api.selfhosted.verify_status",{
+				play:this.playID
+			})
+
+
+			if (!this.playOutput){
+				for(let i=0;i<=3;i++){
+					console.log("Onnude",i)
+					this.playStatus=true
+					setTimeout(this.verifyStatus,2000)
+				}
+			}
+
+			this.playStatus = false
+		}
 	}
 };
 </script>
