@@ -3,7 +3,7 @@
 		<PageHeader title="Servers" subtitle="Your Servers">
 		<template v-if="this.$account.team.enabled" v-slot:actions>
 			<Dropdown
-			v-if="!showAddCardDialog"
+			v-if="$account.team.self_hosted_servers_enabled===1 && !showAddCardDialog"
 			:options="dropDownOptions">
 			<!-- <template v-slot="{ open }"> -->
 				<Button
@@ -16,6 +16,15 @@
 				</Button>
     	<!-- </template> -->
 			</Dropdown>
+				<Button
+					v-else
+					appearance="primary"
+					iconLeft="plus"
+					class="ml-2 hidden sm:inline-flex"
+					@click="showBillingDialog"
+				>
+							New
+				</Button>
 	</template>
 		</PageHeader>
 
@@ -59,6 +68,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
+
 			dropDownOptions:[
 			{ label: 'Frappe Cloud Server',handler: () => this.$router.replace('/servers/new')},
       { label: 'Self Hosted Server', handler: () => this.$router.replace('/selfhosted/new') },
@@ -86,6 +96,9 @@ export default {
 				console.log(this.$account.hasBillingInfo)
 				this.showAddCardDialog = true;
 			}else{
+				if(this.$account.team.self_hosted_servers_enabled!==1){
+				this.$router.replace("/servers/new")
+				}
 				this.showAddCardDialog=false
 			}
 		}

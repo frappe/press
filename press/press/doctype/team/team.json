@@ -47,6 +47,7 @@
   "database_access_enabled",
   "razorpay_enabled",
   "servers_enabled",
+  "self_hosted_servers_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -315,6 +316,12 @@
    "fieldname": "team_title",
    "fieldtype": "Data",
    "label": "Team Title"
+  },
+  {
+   "default": "0",
+   "fieldname": "self_hosted_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Self Hosted Servers Enabled"
   }
  ],
  "links": [
@@ -331,11 +338,6 @@
   {
    "group": "General",
    "link_doctype": "App",
-   "link_fieldname": "team"
-  },
-  {
-   "group": "General",
-   "link_doctype": "Feedback",
    "link_fieldname": "team"
   },
   {
@@ -369,7 +371,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-05-12 13:16:49.574435",
+ "modified": "2023-05-24 21:32:08.485322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

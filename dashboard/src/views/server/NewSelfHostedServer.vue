@@ -1,7 +1,7 @@
 <template>
 	<WizardCard v-if="options">
 		<div class="mb-6 text-center">
-			<h1 class="text-2xl font-bold">Create a new server</h1>
+			<h1 class="text-2xl font-bold">Create a new Self Hosted Server</h1>
 		</div>
 		<Steps :steps="steps">
 			<template
@@ -18,12 +18,12 @@
 					v-show="activeStep.name === 'ServerDetails'"
 					v-model:public_ip="public_ip"
 					v-model:private_ip="private_ip"
-					v-model:ssh_user="ssh_user"
-					v-model:ssh_port="ssh_port"
 					/>
+				<div class="mt-4">
 				<SelfHostedServerVerify
 					v-show="activeStep.name === 'VerifyServer'"
 					v-model:ssh_key="ssh_key"/>
+				</div>
 				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
@@ -42,7 +42,6 @@
 							applicable to me and Frappe.
 						</label>
 					</div>
-					<!-- <NewSelfHostedServerForm/> -->
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
@@ -60,6 +59,13 @@
 							:class="{
 								'pointer-events-none opacity-0': !hasNext
 							}"
+						>
+							Next
+						</Button>
+						<Button
+						appearence="danger"
+							v-show="activeStep.name==='ServerDetails'"
+						@click="hasAlert"
 						>
 							Next
 						</Button>
@@ -100,9 +106,9 @@ export default {
 			selectedRegion: null,
 			public_ip:null,
 			private_ip:null,
-			ssh_user:null,
-			ssh_port:null,
 			validationMessage: null,
+			docCreated:false,
+
 			ssh_key:"Ajsbadgiiuerzxtcfgvhbjnkmlztwerxdyctfvyghjnkmxyertcyvubindxtcfgv",
 			steps: [
 				{
@@ -114,7 +120,7 @@ export default {
 				{
 					name:"ServerDetails",
 					validate:()=>{
-						return this.private_ip && this.public_ip && this.ssh_port && this.ssh_user
+						return this.private_ip && this.public_ip
 					}
 				},
 				{
@@ -166,7 +172,10 @@ export default {
 	methods: {
 		async nextStep(activeStep, next) {
 			next();
-		}
+		},
+	hasAlert(){
+	alert("Hey")
+},
 	}
 };
 </script>
