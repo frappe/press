@@ -47,26 +47,17 @@ export default {
 						return plan;
 					});
 
-					if (this.benchTeam == this.$account.team.name) {
-						// Select a zero cost plan and remove the plan selection step
-						this.selectedPlan = { name: 'Unlimited' };
-						let plan_step_index = this.steps.findIndex(
-							step => step.name == 'Plan'
-						);
-						this.steps.splice(plan_step_index, 1);
-					} else {
-						// poor man's bench paywall
-						// this will disable creation of $10 sites on private benches
-						// wanted to avoid adding a new field, so doing this with a date check :)
-						let benchCreation = DateTime.fromSQL(this.benchCreation);
-						let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
-						let isPaywalledBench = benchCreation > paywalledBenchDate;
-						if (
-							isPaywalledBench &&
-							this.$account.user.user_type != 'System User'
-						) {
-							this.plans = this.plans.filter(plan => plan.price_usd >= 25);
-						}
+					// poor man's bench paywall
+					// this will disable creation of $10 sites on private benches
+					// wanted to avoid adding a new field, so doing this with a date check :)
+					let benchCreation = DateTime.fromSQL(this.benchCreation);
+					let paywalledBenchDate = DateTime.fromSQL('2021-09-21 00:00:00');
+					let isPaywalledBench = benchCreation > paywalledBenchDate;
+					if (
+						isPaywalledBench &&
+						this.$account.user.user_type != 'System User'
+					) {
+						this.plans = this.plans.filter(plan => plan.price_usd >= 25);
 					}
 				}
 			};

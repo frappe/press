@@ -214,6 +214,12 @@ export default {
 			this.benchTitle = title;
 			this.benchCreation = creation;
 			this.benchTeam = team;
+			if (team == this.$account.team.name) {
+				// Select a zero cost plan and remove the plan selection step
+				this.selectedPlan = { name: 'Unlimited' };
+				let plan_step_index = this.steps.findIndex(step => step.name == 'Plan');
+				this.steps.splice(plan_step_index, 1);
+			}
 		}
 	},
 	resources: {
