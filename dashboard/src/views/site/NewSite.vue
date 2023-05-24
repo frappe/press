@@ -45,8 +45,9 @@
 					v-show="activeStep.name == 'Restore'"
 				/>
 				<Plans
+					v-if="benchCreation"
 					v-model:selectedPlan="selectedPlan"
-					:benchCreation="benchCreation"
+					v-model:benchCreation="benchCreation"
 					:benchTeam="benchTeam"
 					v-show="activeStep.name === 'Plan'"
 				/>
