@@ -5,10 +5,16 @@
 
 {%- block content -%}
 <section>
-	<div class="flex justify-center mx-auto mt-20 form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup" data-validators="field_validators">
+	<nav class="bg-transparent navbar navbar-light justify-content-center border-bottom-0">
+		<div class="text-center mt-8">
+			<img id="appLogo" class="mb-2" src="/files/frappe.png" alt="Logo" style="height: 22px;">
+		</div>
+	</nav>
+	<div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup" data-validators="field_validators">
 		<div class="card" style="padding: 30px 30px; width: 60%;">
 			<div class="card-body">
-			<div class="alert alert-danger form-alert-error small mt-10" style="display: none;" role="alert"></div>
+				<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
+				<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
 				{%- if frappe.form_dict.key -%}
 					<form class="form-step create-account-form" data-step="1" data-action="submit_account_request">
 					<div class="form-group">
@@ -47,7 +53,7 @@
 						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
 					</label>
 				</div>
-					<button id="submitButton" type="submit" style="width: 100%;" class="btn btn-primary btn-step-1">Submit</button>
+					<button id="submitButton" type="submit" style="width: 100%;" class="btn btn-primary btn-step-1">Create Account</button>
 				</form>
 				{%- else -%}
 				<div>
@@ -70,6 +76,7 @@
 	let app = frappe.utils.get_url_arg('app');
 	let domain = frappe.utils.get_url_arg('domain');
 	$('#domain').text(domain)
+	$('#appLogo').attr('src', frappe.utils.get_url_arg('logo'));
 
 	frappe.ready(() => {
 		if (!key) {
@@ -147,16 +154,6 @@
 				return false;
 			});
 	}
-
-	var field_validators = {
-		country: (value) => {
-			if (!value) {
-				return "Please enter your country name";
-			}
-		},
-	}
-
-
 </script>
 {%- endblock -%}
 

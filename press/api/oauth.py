@@ -104,9 +104,10 @@ def callback(code=None, state=None):
 			phone_number=number,
 		)
 
+		logo = frappe.db.get_value("Saas Signup Generator", cached_state, "image_path")
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = get_url(
-			f"/saas-oauth.html?app={cached_state}&key={account_request.request_key}&domain={get_saas_domain(cached_state)}"
+			f"/saas-oauth.html?app={cached_state}&key={account_request.request_key}&domain={get_saas_domain(cached_state)}&logo={logo}"
 		)
 	else:
 		# fc login or signup
