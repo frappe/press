@@ -107,10 +107,10 @@ jobs:
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
+        if: always()
 
   coverage:
     name: Coverage Wrap Up
-    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Clone
