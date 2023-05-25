@@ -8,11 +8,10 @@
 				v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }"
 			>
 				<div class="mt-8"></div>
-				<Hostname
+				<SelfHostedHostname
 					:options="options"
-					v-show="activeStep.name === 'Hostname'"
+					v-show="activeStep.name === 'SelfHostedHostname'"
 					v-model:title="title"
-					v-model:selectedRegion="selectedRegion"
 				/>
 				<div>
 					<SelfHostedServerForm
@@ -41,7 +40,7 @@
 					<Button
 						v-show="activeStep.name === 'VerifyServer' && playOutput"
 						icon-left="check"
-						appearance="success"
+						appearance="primary"
 						:loading="playStatus"
 						@click="startVerification"
 					>
@@ -98,6 +97,7 @@
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
+							:disabled='!playOutput'
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -113,7 +113,7 @@
 <script>
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
-import Hostname from './NewServerHostname.vue';
+import SelfHostedHostname from './NewSelfHostedServerHostname.vue';
 import SelfHostedServerForm from './NewSelfHostedServerForm.vue';
 import SelfHostedServerVerify from './SelfHostedServerVerify.vue';
 export default {
@@ -121,7 +121,7 @@ export default {
 	components: {
 		WizardCard,
 		Steps,
-		Hostname,
+		SelfHostedHostname,
 		SelfHostedServerForm,
 		SelfHostedServerVerify
 	},
@@ -129,7 +129,6 @@ export default {
 		return {
 			title: null,
 			options: null,
-			selectedRegion: null,
 			publicIP: null,
 			privateIP: null,
 			validationMessage: null,
@@ -141,9 +140,9 @@ export default {
 			ssh_key: null,
 			steps: [
 				{
-					name: 'Hostname',
+					name: 'SelfHostedHostname',
 					validate: () => {
-						return this.title && this.selectedRegion;
+						return this.title;
 					}
 				},
 				{
@@ -180,7 +179,6 @@ export default {
 				params: {
 					server: {
 						title: this.title,
-						cluster: this.selectedRegion,
 						publicIP: this.publicIP,
 						privateIP: this.privateIP
 					}
@@ -194,12 +192,12 @@ export default {
 			return {
 				method: 'press.api.selfhosted.verify',
 				params: {
-					server: "ss5.athul.fc.frappe.dev" //this.serverDoc
+					server: this.serverDoc
 				},
 				onSuccess(data) {
 					if (data) {
 						this.playOutput = true;
-						this.unreachable=false
+						this.unreachable = false
 					} else {
 						this.playOutput = false;
 						this.unreachable = true;
@@ -214,11 +212,8 @@ export default {
 					server: this.serverDoc
 				},
 				validate() {
-					let canCreate = this.title && this.selectedRegion;
+					let canCreate = this.title;
 
-					if (!this.selectedRegion) {
-						return 'Please select the region';
-					}
 					if (!this.agreedToRegionConsent) {
 						document.getElementById('region-consent').focus();
 

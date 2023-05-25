@@ -345,25 +345,10 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 
 
 @frappe.whitelist()
-def options(type="fc"):
-	print(frappe.form_dict)
+def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
-	if type == "self_hosted":
-		print("self_hosted")
-		proxies = frappe.get_all(
-			"Proxy Server Domain",
-			{"domain": "self.frappe.dev", "parenttype": "Proxy Server"},
-			pluck="parent",
-		)
-		clusters = []
-		for proxy in proxies:
-			clusters.append(frappe.db.get_value("Proxy Server", proxy, "cluster"))
-		regions = frappe.get_all(
-			"Cluster", ["name", "title", "image"], {"name": ("in", tuple(set(clusters)))}
-		)
-	else:
-		regions = frappe.get_all(
+	regions = frappe.get_all(
 			"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 		)
 	return {
