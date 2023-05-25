@@ -42,6 +42,8 @@
 						v-show="activeStep.name === 'VerifyServer' && playOutput"
 						icon-left="check"
 						appearance="success"
+						:loading="playStatus"
+						@click="startVerification"
 					>
 					Server Verified
 					</Button>
@@ -49,8 +51,10 @@
 						v-show="activeStep.name === 'VerifyServer' && unreachable"
 						icon-left="x"
 						appearance="danger"
+						:loading="playStatus"
+						@click="startVerification"
 					>
-					Server Unreachabled
+					Server Unreachable
 					</Button>
 				</div>
 				<ErrorMessage :message="validationMessage" />
@@ -190,11 +194,12 @@ export default {
 			return {
 				method: 'press.api.selfhosted.verify',
 				params: {
-					server: this.serverDoc
+					server: "ss5.athul.fc.frappe.dev" //this.serverDoc
 				},
 				onSuccess(data) {
 					if (data) {
 						this.playOutput = true;
+						this.unreachable=false
 					} else {
 						this.playOutput = false;
 						this.unreachable = true;
@@ -229,9 +234,9 @@ export default {
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			// if (activeStep.name === 'ServerDetails') {
-			// this.$resources.newServer.submit();
-			// }
+			if (activeStep.name === 'ServerDetails') {
+			this.$resources.newServer.submit();
+			}
 			next();
 		},
 		async setupServers() {
@@ -242,7 +247,7 @@ export default {
 		},
 		async startVerification() {
 			this.playStatus = true;
-			// await this.$resources.verify.submit();
+			await this.$resources.verify.submit();
 			this.playStatus = false;
 		},
 		verifyIP(ip) {

@@ -42,7 +42,7 @@ def verify(server):
 		server=server_doc,
 	)
 	play = ansible.run()
-	time.sleep(10)
+	time.sleep(3)
 	play_doc = frappe.get_doc("Ansible Play", play.name)
 	if play_doc.status == "Success":
 		server_doc.status = "Pending"
