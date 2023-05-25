@@ -103,7 +103,7 @@ jobs:
           TYPE: server
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/upload-artifact@v3
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
