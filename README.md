@@ -1,6 +1,6 @@
 ## Press
 
-![unittests](https://github.com/frappe/press/actions/workflows/main.yml/badge.svg)
+![unittests](https://github.com/frappe/press/actions/workflows/main.yaml/badge.svg)
 
 
 This is `press`, a Frappe custom app that runs Frappe Cloud. This app manages infrastructure, subscription, marketplace, SaaS and much more.
