@@ -1232,7 +1232,7 @@ class Site(Document):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites)},
+			{"name": ("in", sites), "skip_scheduled_backups": False},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
