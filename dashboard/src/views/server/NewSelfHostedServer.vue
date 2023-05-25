@@ -14,16 +14,44 @@
 					v-model:title="title"
 					v-model:selectedRegion="selectedRegion"
 				/>
+				<div>
 					<SelfHostedServerForm
-					v-show="activeStep.name === 'ServerDetails'"
-					v-model:publicIp="publicIP"
-					v-model:privateIp="privateIP"
+						v-show="activeStep.name === 'ServerDetails'"
+						v-model:publicIP="publicIP"
+						v-model:privateIP="privateIP"
+						v-model:error="ipValidationMessage"
 					/>
+				</div>
 				<div class="mt-4">
-				<SelfHostedServerVerify
-					v-show="activeStep.name === 'VerifyServer'"
-					v-model:ssh_key="ssh_key"/>
-			<Button v-show="activeStep.name === 'VerifyServer'" :loading="playStatus" appearance="primary" @click="startVerification">Verify Server</Button>
+					<SelfHostedServerVerify
+						v-show="activeStep.name === 'VerifyServer'"
+						v-model:ssh_key="ssh_key"
+					/>
+
+					<Button
+						v-show="
+							activeStep.name === 'VerifyServer' && !playOutput && !unreachable
+						"
+						:loading="playStatus"
+						appearance="primary"
+						@click="startVerification"
+						>
+						Verify Server
+						</Button>
+					<Button
+						v-show="activeStep.name === 'VerifyServer' && playOutput"
+						icon-left="check"
+						appearance="success"
+					>
+					Server Verified
+					</Button>
+					<Button
+						v-show="activeStep.name === 'VerifyServer' && unreachable"
+						icon-left="x"
+						appearance="danger"
+					>
+					Server Unreachabled
+					</Button>
 				</div>
 				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
@@ -66,8 +94,8 @@
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
-							@click="$resources.newServer.submit()"
-							:loading="$resources.newServer.loading"
+							@click="setupServers"
+							:loading="$resources.setupServer.loading"
 						>
 							Setup Server
 						</Button>
@@ -82,8 +110,8 @@
 import WizardCard from '@/components/WizardCard.vue';
 import Steps from '@/components/Steps.vue';
 import Hostname from './NewServerHostname.vue';
-import SelfHostedServerForm from './NewSelfHostedServerForm.vue'
-import SelfHostedServerVerify from './SelfHostedServerVerify.vue'
+import SelfHostedServerForm from './NewSelfHostedServerForm.vue';
+import SelfHostedServerVerify from './SelfHostedServerVerify.vue';
 export default {
 	name: 'NewSelfHostedServer',
 	components: {
@@ -98,14 +126,15 @@ export default {
 			title: null,
 			options: null,
 			selectedRegion: null,
-			publicIP:null,
-			privateIP:null,
+			publicIP: null,
+			privateIP: null,
 			validationMessage: null,
-			newDoc:null,
-			playID:null,
-			playStatus:false,
-			playOutput:null,
-			ssh_key:null,
+			ipValidationMessage: null,
+			serverDoc: null,
+			playID: null,
+			playStatus: false,
+			unreachable: false,
+			ssh_key: null,
 			steps: [
 				{
 					name: 'Hostname',
@@ -114,23 +143,31 @@ export default {
 					}
 				},
 				{
-					name:"ServerDetails",
-					validate:()=>{
-						return this.privateIP && this.publicIP
+					name: 'ServerDetails',
+					validate: () => {
+						if (this.verifyIP(this.privateIP) && this.verifyIP(this.publicIP)) {
+							return this.privateIP && this.publicIP;
+						} else {
+							this.ipValidationMessage = 'Please enter valid IP addresses';
+						}
 					}
 				},
 				{
-					name: 'VerifyServer'
+					name: 'VerifyServer',
+					validate: () => {
+						return this.playOutput;
+					}
 				}
 			],
+			playOutput: false,
 			agreedToRegionConsent: false
 		};
 	},
 	async mounted() {
-		this.options = await this.$call('press.api.server.options',{
-				type: "self_hosted"
+		this.options = await this.$call('press.api.server.options', {
+			type: 'self_hosted'
 		});
-		this.ssh_key = await this.$call("press.api.selfhosted.sshkey")
+		this.ssh_key = await this.$call('press.api.selfhosted.sshkey');
 	},
 	resources: {
 		newServer() {
@@ -141,70 +178,77 @@ export default {
 						title: this.title,
 						cluster: this.selectedRegion,
 						publicIP: this.publicIP,
-						privateIP: this.privateIP,
+						privateIP: this.privateIP
 					}
 				},
 				onSuccess(data) {
-					this.newDoc = data
+					this.serverDoc = data;
+				}
+			};
+		},
+		verify() {
+			return {
+				method: 'press.api.selfhosted.verify',
+				params: {
+					server: this.serverDoc
+				},
+				onSuccess(data) {
+					if (data) {
+						this.playOutput = true;
+					} else {
+						this.playOutput = false;
+						this.unreachable = true;
+					}
+				}
+			};
+		},
+		setupServer() {
+			return {
+				method: 'press.api.selfhosted.setup',
+				params: {
+					server: this.serverDoc
 				},
 				validate() {
-					let canCreate = this.title
+					let canCreate = this.title && this.selectedRegion;
 
+					if (!this.selectedRegion) {
+						return 'Please select the region';
+					}
+					if (!this.agreedToRegionConsent) {
+						document.getElementById('region-consent').focus();
 
-					// if (!this.agreedToRegionConsent) {
-					// 	document.getElementById('region-consent').focus();
-					//
-					// 	return 'Please agree to the above consent to create server';
-					// }
-
+						return 'Please agree to the above consent to create server';
+					}
 					if (!canCreate) {
 						return 'Cannot create server';
 					}
 				}
 			};
-		},
-		verify(){
-			return{
-				method: 'press.api.selfhosted.verify',
-				params:{
-					server:this.newDoc
-				},
-				onSuccess(data){
-					this.playID = data
-				}
-			}
 		}
 	},
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name === 'ServerDetails'){
-				console.log("Heyyo")
-				this.$resources.newServer.submit()
-			}
+			// if (activeStep.name === 'ServerDetails') {
+			// this.$resources.newServer.submit();
+			// }
 			next();
 		},
-		async startVerification(){
-			this.playStatus=true
-			await this.$resources.verify.submit()
-			setTimeout(this.verifyStatus,10000)
-		},
-		async verifyStatus(){
-
-			this.playOutput = this.$call("press.api.selfhosted.verify_status",{
-				play:this.playID
-			})
-
-
-			if (!this.playOutput){
-				for(let i=0;i<=3;i++){
-					console.log("Onnude",i)
-					this.playStatus=true
-					setTimeout(this.verifyStatus,2000)
-				}
+		async setupServers() {
+			await this.$resources.setupServer.submit();
+			if (this.agreedToRegionConsent) {
+				this.$router.replace(`/servers/${this.serverDoc}/overview`);
 			}
-
-			this.playStatus = false
+		},
+		async startVerification() {
+			this.playStatus = true;
+			// await this.$resources.verify.submit();
+			this.playStatus = false;
+		},
+		verifyIP(ip) {
+			const ipAddressRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
+			const ver = ipAddressRegex.test(ip);
+			return ver;
 		}
 	}
 };

@@ -351,14 +351,20 @@ def options(type="fc"):
 		frappe.throw("Servers feature is not yet enabled on your account")
 	if type == "self_hosted":
 		print("self_hosted")
-		proxies = frappe.get_all("Proxy Server Domain",{"domain":"athul.fc.frappe.dev","parenttype":"Proxy Server"},pluck="parent")
+		proxies = frappe.get_all(
+			"Proxy Server Domain",
+			{"domain": "self.frappe.dev", "parenttype": "Proxy Server"},
+			pluck="parent",
+		)
 		clusters = []
 		for proxy in proxies:
-			clusters.append(frappe.db.get_value("Proxy Server",proxy,"cluster"))
-		regions = frappe.get_all("Cluster",["name", "title", "image"],{"name": ("in",tuple(set(clusters)))})
+			clusters.append(frappe.db.get_value("Proxy Server", proxy, "cluster"))
+		regions = frappe.get_all(
+			"Cluster", ["name", "title", "image"], {"name": ("in", tuple(set(clusters)))}
+		)
 	else:
 		regions = frappe.get_all(
-			"Cluster", {"cloud_provider":"AWS EC2","public":True},["name", "title", "image"]
+			"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 		)
 	return {
 		"regions": regions,
