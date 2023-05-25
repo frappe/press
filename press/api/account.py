@@ -332,6 +332,15 @@ def get():
 	}
 
 
+@frappe.whitelist(allow_guest=True)
+def guest_feature_flags():
+	return {
+		"enable_google_oauth": frappe.db.get_single_value(
+			"Press Settings", "enable_google_oauth"
+		)
+	}
+
+
 @frappe.whitelist()
 def create_child_team(title):
 	team = title.strip()

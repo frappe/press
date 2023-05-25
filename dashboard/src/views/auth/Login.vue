@@ -54,6 +54,7 @@
 
 		<div class="flex flex-col">
 			<Button
+				v-if="$resources.guestFeatureFlags.data && $resources.guestFeatureFlags.data.enable_google_oauth === 1"
 				:disabled="state === 'RequestStarted'"
 				@click="
 					() => {
@@ -146,7 +147,16 @@ export default {
 					});
 				}
 			};
+		},
+		guestFeatureFlags() {
+			return {
+				method: 'press.api.account.guest_feature_flags',
+				auto: true
+			}
 		}
+	},
+	mounted() {
+		this.$resources.guestFeatureFlags.submit();
 	},
 	methods: {
 		async loginOrResetPassword() {

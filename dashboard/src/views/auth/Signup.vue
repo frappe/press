@@ -33,6 +33,7 @@
 		</form>
 		<div class="flex flex-col">
 			<Button
+				v-if="$resources.guestFeatureFlags.data && $resources.guestFeatureFlags.data.enable_google_oauth === 1"
 				:loading="$resources.oauthLogin.loading"
 				@click="
 					() => {
@@ -104,7 +105,16 @@ export default {
 					window.location = r;
 				}
 			};
+		},
+		guestFeatureFlags() {
+			return {
+				method: 'press.api.account.guest_feature_flags',
+				auto: true
+			}
 		}
+	},
+	mounted() {
+		this.$resources.guestFeatureFlags.submit();
 	},
 	methods: {
 		getReferrerIfAny() {
