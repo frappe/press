@@ -37,15 +37,13 @@ def poll_file_statuses():
 	)
 	default_region = frappe.db.get_single_value("Press Settings", "backup_region")
 	buckets = {
-		"backups": {
-			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+		frappe.db.get_single_value("Press Settings", "aws_s3_bucket"): {
 			"region": default_region,
 			"access_key_id": aws_access_key,
 			"secret_access_key": aws_secret_key,
 			"tag": "Offsite Backup",
 		},
-		"uploads": {
-			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+		frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"): {
 			"region": default_region,
 			"access_key_id": frappe.db.get_single_value(
 				"Press Settings", "remote_access_key_id"
@@ -60,8 +58,7 @@ def poll_file_statuses():
 	[
 		buckets.update(
 			{
-				f"backups_{b['cluster'].lower()}": {
-					"bucket": b["bucket_name"],
+				b["bucket_name"]: {
 					"region": b["region"],
 					"access_key_id": aws_access_key,
 					"secret_access_key": aws_secret_key,
@@ -72,9 +69,8 @@ def poll_file_statuses():
 		for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster", "region"])
 	]
 
-	for bucket in buckets:
-		current_bucket = buckets[bucket]
-		available_files[current_bucket["bucket"]] = []
+	for bucket_name, current_bucket in buckets.items():
+		available_files[bucket_name] = []
 
 		s3 = resource(
 			"s3",
@@ -83,10 +79,10 @@ def poll_file_statuses():
 			region_name=current_bucket["region"],
 		)
 
-		for s3_object in s3.Bucket(current_bucket["bucket"]).objects.all():
-			available_files[current_bucket["bucket"]].append(s3_object.key)
+		for s3_object in s3.Bucket(bucket_name).objects.all():
+			available_files[bucket_name].append(s3_object.key)
 
-		all_files = tuple(available_files[current_bucket["bucket"]])
+		all_files = tuple(available_files[bucket_name])
 
 		remote_files = frappe.get_all(
 			doctype,
