@@ -9,8 +9,16 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
 
+from frappe.utils import get_url
+from frappe.core.utils import find
 
-from press.api.account import get_account_request_from_key
+from press.api.account import get_account_request_from_key, setup_account
+from press.api.saas import (
+	check_subdomain_availability,
+	create_marketplace_subscription,
+	create_or_rename_saas_site,
+)
+from press.press.doctype.site.saas_site import get_saas_domain
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
@@ -51,9 +59,11 @@ def callback(code=None, state=None):
 	saas_app = cached_state in frappe.db.get_all("Saas Settings", pluck="name")
 	frappe.cache().delete_value(cached_key)
 
-	if not state == cached_state or saas_app:
+	if (state == cached_state) or (saas_app):
+		pass
+	else:
 		frappe.local.response["http_status_code"] = 401
-		return {"message": "Invalid state parameter"}
+		return "Invalid state parameter. The session timed out. Please try again or contact  Frappe Cloud support at https://frappecloud.com/support"
 
 	try:
 		flow = google_oauth_flow()
@@ -71,51 +81,93 @@ def callback(code=None, state=None):
 
 	email = id_info.get("email")
 
-	# phone and address (this may return nothing if info doesn't exists)
+	# phone (this may return nothing if info doesn't exists)
 	credentials = Credentials.from_authorized_user_info(
 		json.loads(flow.credentials.to_json())
 	)
 	service = build("people", "v1", credentials=credentials)
 	person = (
-		service.people()
-		.get(resourceName="people/me", personFields="addresses,phoneNumbers")
-		.execute()
+		service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
 	)
-	print(person)
+	number = ""
+	if person:
+		phone = person.get("phoneNumbers")
+		if phone:
+			number = phone[0].get("value")
 
-	if not frappe.db.exists("User", email):  # signup
-		account_request = frappe.get_doc(
-			{
-				"doctype": "Account Request",
-				"team": email,
-				"email": email,
-				"first_name": id_info.get("given_name"),
-				"last_name": id_info.get("family_name"),
-				"send_email": False,
-				"role": "Press Admin",
-				"oauth_signup": True,
-			}
-		).insert(ignore_permissions=True)
-		frappe.db.commit()
+	# saas signup
+	if saas_app and cached_state:
+		account_request = create_account_request(
+			email=email,
+			first_name=id_info.get("given_name"),
+			last_name=id_info.get("family_name"),
+			phone_number=number,
+		)
 
 		frappe.local.response.type = "redirect"
-		if saas_app:  # saas signup
-			frappe.local.response.location = (
-				f"/saas-oauth.html?app={saas_app}?key={account_request.request_key}"
+		frappe.local.response.location = get_url(
+			f"/saas-oauth.html?app={cached_state}&key={account_request.request_key}&domain={get_saas_domain(cached_state)}"
+		)
+	else:
+		# fc login or signup
+		if not frappe.db.exists("User", email):
+			account_request = create_account_request(
+				email=email,
+				first_name=id_info.get("given_name"),
+				last_name=id_info.get("family_name"),
+				phone_number=number,
 			)
-		else:  # dashbaord signup
+			frappe.local.response.type = "redirect"
 			frappe.local.response.location = (
 				f"/dashboard/setup-account/{account_request.request_key}"
 			)
-	else:  # login
-		frappe.local.login_manager.login_as(email)
-		frappe.local.response.type = "redirect"
-		frappe.response.location = "/dashboard"
+		# login
+		else:
+			frappe.local.login_manager.login_as(email)
+			frappe.local.response.type = "redirect"
+			frappe.response.location = "/dashboard"
+
+
+def create_account_request(email, first_name, last_name, phone_number=""):
+	account_request = frappe.get_doc(
+		{
+			"doctype": "Account Request",
+			"team": email,
+			"email": email,
+			"first_name": first_name,
+			"last_name": last_name,
+			"phone_number": phone_number,
+			"send_email": False,
+			"role": "Press Admin",
+			"oauth_signup": True,
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	return account_request
 
 
 @frappe.whitelist(allow_guest=True)
-def saas_setup(key, app, country):
+def saas_setup(key, app, country, subdomain):
+	if not check_subdomain_availability(subdomain, app):
+		frappe.throw(f"Subdomain {subdomain} is already taken")
+
+	all_countries = frappe.db.get_all("Country", pluck="name")
+	country = find(all_countries, lambda x: x.lower() == country.lower())
+	if not country:
+		frappe.throw("Country filed should be a valid country name")
+
+	# create team and user
 	account_request = get_account_request_from_key(key)
+	if not frappe.db.exists("Team", {"user": account_request.email}):
+		setup_account(
+			key=key,
+			first_name=account_request.first_name,
+			last_name=account_request.last_name,
+			country=country,
+			accepted_user_terms=True,
+			oauth_signup=True,
+		)
 
 	# create a signup account request
 	signup_ar = frappe.get_doc(
@@ -131,32 +183,11 @@ def saas_setup(key, app, country):
 			"saas_app": app,
 			"role": "Press Admin",
 			"country": country,
+			"subdomain": subdomain,
 		}
 	).insert(ignore_permissions=True)
+	create_or_rename_saas_site(app, signup_ar)
+	frappe.set_user("Administrator")
+	create_marketplace_subscription(signup_ar)
 
-	site = get_site(app)
-
-	if site.status == "Active":
-		signup_ar.subdomain = site.subdomain
-		sid = site.get_login_sid()
-		return f"https://{site.name}/desk?sid={sid}"
-	else:
-		from frappe.utils import get_url
-
-		return get_url("/prepare-site.html?key={signup_ar.key}&app={app}")
-
-
-def get_site(app):
-	# Returns a standby site (if ready) or Creates a new one
-	# TODO: add marketplace subscription keys to standby sites as well
-	site = None
-	from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
-
-	pooled_site = get_pooled_saas_site(app)
-	if pooled_site:
-		site = pooled_site
-	else:
-		# create a new site by hybrid pools conditioning (site=new_site_doc)
-		# redirect to prepaire-site.html
-		pass
-	return frappe.get_doc("Site", site)
+	return get_url("/prepare-site?key=" + signup_ar.request_key + "&app=" + app)
