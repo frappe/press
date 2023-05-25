@@ -111,6 +111,7 @@ jobs:
 
   coverage:
     name: Coverage Wrap Up
+    if: always()
     needs: tests
     runs-on: ubuntu-latest
     steps:
