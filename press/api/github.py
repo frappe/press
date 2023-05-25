@@ -237,8 +237,7 @@ def app(installation, owner, repository, branch):
 				)
 	else:
 		reason_for_invalidation = (
-			f"Files {frappe.bold(' or '.join(py_setup_files))} do not exist in app"
-			" directory."
+			f"Files {frappe.bold(' or '.join(py_setup_files))} do not exist in app directory."
 		)
 
 	if not (app_name and title):
