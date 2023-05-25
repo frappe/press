@@ -1254,8 +1254,24 @@ class Site(Document):
 				pluck="name",
 			)
 		)
-		return list(all_sites - set(cls.get_sites_with_backup_in_interval(interval_hrs_ago)))
+		return list(
+			all_sites
+			- set(cls.get_sites_with_backup_in_interval(interval_hrs_ago))
+			- set(cls.get_sites_with_pending_backups(interval_hrs_ago))
+		)
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
+
+	@classmethod
+	def get_sites_with_pending_backups(cls, interval: int) -> List[str]:
+		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
+		return frappe.get_all(
+			"Site Backup",
+			{
+				"status": ("in", ["Running", "Pending"]),
+				"creation": (">=", interval_hrs_ago),
+			},
+			pluck="site",
+		)
 
 	@classmethod
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
