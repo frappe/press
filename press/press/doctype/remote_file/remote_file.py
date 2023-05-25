@@ -41,7 +41,6 @@ def poll_file_statuses():
 			"region": default_region,
 			"access_key_id": aws_access_key,
 			"secret_access_key": aws_secret_key,
-			"tag": "Offsite Backup",
 		},
 		frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"): {
 			"region": default_region,
@@ -51,7 +50,6 @@ def poll_file_statuses():
 			"secret_access_key": get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
 			),
-			"tag": "Site Upload",
 		},
 	}
 
@@ -62,7 +60,6 @@ def poll_file_statuses():
 					"region": b["region"],
 					"access_key_id": aws_access_key,
 					"secret_access_key": aws_secret_key,
-					"tag": "Offsite Backup",
 				},
 			}
 		)
@@ -87,7 +84,7 @@ def poll_file_statuses():
 		remote_files = frappe.get_all(
 			doctype,
 			fields=["name", "file_path", "status"],
-			filters={"_user_tags": ("like", f"%{current_bucket['tag']}%")},
+			filters={"bucket": bucket_name},
 		)
 
 		for remote_file in remote_files:
