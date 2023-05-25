@@ -79,7 +79,7 @@ def poll_file_statuses():
 		for s3_object in s3.Bucket(bucket_name).objects.all():
 			available_files[bucket_name].append(s3_object.key)
 
-		all_files = tuple(available_files[bucket_name])
+		all_files = set(available_files[bucket_name])
 
 		remote_files = frappe.get_all(
 			doctype,
