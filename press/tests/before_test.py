@@ -10,6 +10,9 @@ def execute():
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
 		create_test_stripe_credentials()
+	import cssutils
+	# Silence the cssutils errors that are mostly pointless
+	cssutils.log.setLevel(50)
 
 
 def create_test_stripe_credentials():
