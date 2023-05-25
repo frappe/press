@@ -30,7 +30,6 @@ jobs:
       - name: Flake8 Test
         run: |
           flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
-
   tests:
     runs-on: ubuntu-latest
     strategy:
@@ -111,7 +110,7 @@ jobs:
 
   coverage:
     name: Coverage Wrap Up
-    needs: test
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - name: Clone
