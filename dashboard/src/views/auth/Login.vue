@@ -49,11 +49,30 @@
 						</span>
 					</div>
 				</div>
-				<router-link class="text-center text-base" to="/signup">
-					Sign up for a new account
-				</router-link>
 			</template>
 		</form>
+
+		<div class="flex flex-col">
+			<Button
+				v-if="$resources.guestFeatureFlags.data && $resources.guestFeatureFlags.data.enable_google_oauth === 1"
+				:disabled="state === 'RequestStarted'"
+				@click="
+					() => {
+						state = 'RequestStarted';
+						$resources.oauthLogin.submit();
+					}
+				"
+				appearance="secondary"
+			>
+				<div class="flex">
+					<GoogleIcon />
+					<span class="ml-2">Login with Google</span>
+				</div>
+			</Button>
+			<router-link class="text-center text-base mt-4" to="/signup">
+				Sign up for a new account
+			</router-link>
+		</div>
 	</LoginBox>
 	<SuccessCard
 		v-else
@@ -66,6 +85,7 @@
 </template>
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
+import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
 export default {
 	name: 'Login',
@@ -75,7 +95,8 @@ export default {
 		}
 	},
 	components: {
-		LoginBox
+		LoginBox,
+		GoogleIcon
 	},
 	data() {
 		return {
@@ -110,7 +131,32 @@ export default {
 					}
 				}
 			};
+		},
+		oauthLogin() {
+			return {
+				method: 'press.api.oauth.google_login',
+				onSuccess(r) {
+					window.location = r;
+				},
+				onError(e) {
+					this.state = null;
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
+				}
+			};
+		},
+		guestFeatureFlags() {
+			return {
+				method: 'press.api.account.guest_feature_flags',
+				auto: true
+			}
 		}
+	},
+	mounted() {
+		this.$resources.guestFeatureFlags.submit();
 	},
 	methods: {
 		async loginOrResetPassword() {

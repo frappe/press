@@ -280,6 +280,7 @@ def setup_account(key, business_data=None):
 				"industry",
 				"no_of_users",
 				"designation",
+				"phone_number",
 				"referral_source",
 				"agreed_to_partner_consent",
 			]
@@ -352,7 +353,9 @@ def create_marketplace_subscription(account_request):
 					"app": account_request.saas_app,
 					"site": site_name,
 					"marketplace_app_plan": get_saas_plan(account_request.saas_app),
-					"initial_plan": json.loads(account_request.url_args).get("plan"),
+					"initial_plan": json.loads(account_request.url_args).get("plan")
+					if account_request.url_args
+					else "",
 					"interval": "Daily",
 				}
 			).insert(ignore_permissions=True)
@@ -369,7 +372,7 @@ def create_team(account_request, get_stripe_id=False):
 	"""
 	email = account_request.email
 
-	if not frappe.db.exists("Team", email):
+	if not frappe.db.exists("Team", {"user": email}):
 		team_doc = Team.create_new(
 			account_request,
 			account_request.first_name,

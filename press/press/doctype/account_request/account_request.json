@@ -9,6 +9,7 @@
   "team",
   "email",
   "password",
+  "oauth_signup",
   "column_break_4",
   "role",
   "invited_by",
@@ -238,12 +239,17 @@
    "fieldname": "invited_by_parent_team",
    "fieldtype": "Check",
    "label": "Invited By Parent Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "oauth_signup",
+   "fieldtype": "Check",
+   "label": "Oauth Signup"
   }
  ],
- "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-27 22:19:02.660253",
+ "modified": "2023-05-16 21:34:40.064604",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

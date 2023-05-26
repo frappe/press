@@ -13,6 +13,7 @@
 		>
 			<div class="space-y-4">
 				<Input
+					v-if="oauthSignup == 0"
 					label="Email"
 					input-class="pointer-events-none"
 					type="text"
@@ -20,7 +21,7 @@
 					autocomplete="off"
 					disabled
 				/>
-				<template v-if="!userExists">
+				<template v-if="oauthSignup == 0">
 					<Input
 						label="First Name"
 						type="text"
@@ -47,10 +48,12 @@
 					/>
 				</template>
 				<Input
-					type="text"
+					type="select"
+					:options="countries"
 					v-if="!isInvitation"
 					label="Country"
 					v-model="country"
+					:value="country"
 					required
 				/>
 				<div class="mt-4 flex">
@@ -119,9 +122,11 @@ export default {
 			userExists: null,
 			invitationToTeam: null,
 			isInvitation: null,
+			oauthSignup: 0,
 			country: null,
 			termsAccepted: false,
-			invitedByParentTeam: false
+			invitedByParentTeam: false,
+			countries: []
 		};
 	},
 	resources: {
@@ -135,11 +140,15 @@ export default {
 				onSuccess(res) {
 					if (res && res.email) {
 						this.email = res.email;
+						this.firstName = res.first_name;
+						this.lastName = res.last_name;
 						this.country = res.country;
 						this.userExists = res.user_exists;
 						this.invitationToTeam = res.team;
 						this.isInvitation = res.is_invitation;
 						this.invitedByParentTeam = res.invited_by_parent_team;
+						this.oauthSignup = res.oauth_signup;
+						this.countries = res.countries;
 					}
 				}
 			};
@@ -156,7 +165,8 @@ export default {
 					is_invitation: this.isInvitation,
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,
-					accepted_user_terms: this.termsAccepted
+					accepted_user_terms: this.termsAccepted,
+					oauth_signup: this.oauthSignup
 				},
 				onSuccess(res) {
 					//window.posthog.capture('completed_client_fc_setup_account');
@@ -166,6 +176,14 @@ export default {
 					window.location.reload();
 				}
 			};
+		}
+	},
+	methods: {
+		showFormFields() {
+			let show = true;
+			show = !this.userExists;
+			show = this.oauthSignup == 0;
+			return show;
 		}
 	}
 };

@@ -1,0 +1,209 @@
+{%- extends "templates/saas/layout.html" -%}
+
+{%- block navbar -%}
+{%- endblock -%}
+
+{%- block content -%}
+<section>
+	<nav class="bg-transparent navbar navbar-light justify-content-center border-bottom-0">
+		<div class="text-center mt-8">
+			<img id="appLogo" class="mb-2" src="/files/frappe.png" alt="Logo" style="height: 22px;">
+		</div>
+	</nav>
+	<div class="flex justify-center mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9" id="user-signup" data-validators="field_validators">
+		<div class="card" style="padding: 30px 30px; width: 60%;">
+			<div class="card-body">
+				<div class="alert alert-primary form-alert-info small" style="display: none;" role="alert"></div>
+				<div class="alert alert-danger form-alert-error small" style="display: none;" role="alert"></div>
+				{%- if frappe.form_dict.key -%}
+					<form class="form-step create-account-form" data-step="1" data-action="submit_account_request">
+					<div class="form-group">
+						<p>Site Name</p>
+						<div class="input-group">
+							<input type="text" id="subdomain" name="subdomain" class="form-control"
+								placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
+							<div class="input-group-append">
+								<p id="domain" class="px-2 py-0 text-xs input-group-text rounded-right">.{{ domain }}</p>
+							</div>
+						</div>
+						<small class="form-text"></small>
+					</div>
+					<div class="form-group" style="max-width: 100%;">
+						<p for="country" class="mb-2">Country</p>
+						<select id="country" class="custom-select" name="country">
+							{%- if country_name -%}
+							<option selected="selected">{{ country_name }}</option>
+							{%- else -%}
+							<option disabled selected="selected">Select Country</option>
+							{%- endif -%}
+							{%- for country in frappe.db.get_all('Country') -%}
+							<option>
+								{{ country.name }}
+							</option>
+							{%- endfor -%}
+						</select>
+					</div>
+				<div class="form-group">
+					<input type="checkbox" name="user_accept_terms" id="user_accept_terms">
+					<label style="font-size: small;"class="d-inline" for="user_accept_terms">
+						By clicking on <b>Create Account</b>, you accept our
+						<a href="https://frappecloud.com/terms" class="text-blue-600">Terms of Service</a>,
+						<a href="https://frappecloud.com/privacy" class="text-blue-600">Privacy Policy</a>
+						&#38;
+						<a href="https://frappecloud.com/cookie-policy" class="text-blue-600">Cookie Policy.</a>
+					</label>
+				</div>
+					<button id="submitButton" type="submit" style="width: 100%;" class="btn btn-primary btn-step-1">Create Account</button>
+				</form>
+				{%- else -%}
+				<div>
+					Invalid or expired key
+				</div>
+				{%- endif -%}
+			</div>
+		</div>
+	</div>
+</section>
+{%- endblock -%}
+
+{%- block footer -%}
+{%- endblock -%}
+
+{%- block script -%}
+<script src="/assets/press/js/form_controller.js"></script>
+<script>
+	let key = frappe.utils.get_url_arg('key');
+	let app = frappe.utils.get_url_arg('app');
+	let domain = frappe.utils.get_url_arg('domain');
+	$('#domain').text(domain)
+	$('#appLogo').attr('src', frappe.utils.get_url_arg('logo'));
+
+	frappe.ready(() => {
+		if (!key) {
+			return
+		}
+		controller = new FormController("user-signup");
+	});
+
+	var field_validators = {
+		subdomain: (value) => {
+			let MIN_LENGTH = 4;
+			let MAX_LENGTH = 20;
+			if (value.length < MIN_LENGTH) {
+				return `Site name cannot have less than ${MIN_LENGTH} characters`;
+			}
+			if (value.length > MAX_LENGTH) {
+				return `Site name cannot have more than ${MAX_LENGTH} characters`;
+			}
+			if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(value)) {
+				return "Site name should contain lowercase alphabets, numbers, and hyphens";
+			}
+		},
+		user_accept_terms: (value) => {
+			if (!value) {
+				return "You need to accept our Terms of Service & Privary Policy"
+			}
+		},
+		country: (value) => {
+			if (!value) {
+				return "Please enter your country name";
+			}
+		},
+	};
+
+	function submit_account_request($form, values) {
+		const country = $('#country').val();
+		const subdomain = $('#subdomain').val();
+		$('#submitButton').prop('disabled', true);
+		$("#submitButton").html('<span class="mr-2">Creating site</span><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+		return frappe.call('press.api.oauth.saas_setup', { key, app, country, subdomain: subdomain })
+			.then((r) => {
+				window.open(r.message, "_self");
+			});
+	}
+
+	function validate_subdomain(input) {
+		let $input = $(input);
+		let subdomain = $input.val();
+		let error = controller.validate_value("subdomain", subdomain);
+		if (error) {
+			controller.show_input_error("subdomain", error);
+		} else {
+			check_if_available(subdomain).then((available) => {
+				controller.show_input_feedback(
+					"subdomain",
+					!available ? `${subdomain}.${domain} is already taken` : `${subdomain}.${domain} is available`,
+					!available
+				);
+			});
+		}
+	}
+
+	function check_if_available(subdomain) {
+		return frappe
+			.call({
+				method: "press.api.saas.check_subdomain_availability",
+				args: { subdomain, app: app },
+				type: "POST",
+			})
+			.then((r) => {
+				if (r.message) {
+					return true;
+				}
+				return false;
+			});
+	}
+</script>
+{%- endblock -%}
+
+{%- block style -%}
+<style>
+	body {
+		background-color: #F3F5F8;
+		font-size: 16px;
+	}
+
+	.card {
+		box-shadow: 0px 1px 42px rgba(97, 97, 97, 0.07), 0px 1px 4px rgba(255, 255, 255, 1);
+		border-radius: 10px;
+		border-color: transparent;
+		padding: 0px 80px 60px 80px;
+	}
+
+	.card-body {
+			padding: 0px;
+	}
+
+	.spinner {
+		text-align: center;
+		margin: 0 auto;
+		color: var(--gray-600);
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.animate-spin {
+		animation: spin 1s linear infinite;
+	}
+
+	p {
+		font-size: 13px;
+		margin-bottom: 4px;
+	}
+
+	#country{
+		font-size: small;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
+	}
+</style>
+{%- endblock -%}
