@@ -29,6 +29,16 @@ frappe.ui.form.on('Agent Job', {
 			);
 		});
 
+		frm.add_custom_button(__('Process Job Updates'), () => {
+			frappe.confirm(`Are you sure you want to process updates for this job?`, () =>
+				frm
+					.call('process_job_updates')
+					.then(() =>
+						frm.refresh()
+					)
+			);
+		});
+
 		if (['Update Site Migrate', 'Migrate Site'].includes(frm.doc.job_type)) {
 			frm.add_custom_button('Run by Skipping Failing Patches', () => {
 				frm

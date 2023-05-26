@@ -98,6 +98,10 @@ class AgentJob(Document):
 
 		return self.retry()
 
+	@frappe.whitelist()
+	def process_job_updates(self):
+		process_job_updates(self.name)
+
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
