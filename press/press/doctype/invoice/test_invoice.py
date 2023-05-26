@@ -10,11 +10,26 @@ from frappe.utils.data import add_days, today
 from .invoice import Invoice
 
 
+def create_test_user(email: str = frappe.mock("email")) -> str:
+	"""Create test user."""
+	user = frappe.get_doc(
+		{
+			"doctype": "User",
+			"email": email,
+			"first_name": "Test",
+			"last_name": "User",
+			"enabled": 1,
+		}
+	).insert(ignore_permissions=True)
+	user.new_password = "test"
+	user.save(ignore_permissions=True)
+	return user.name
+
+
 class TestInvoice(unittest.TestCase):
 	def test_invoice_add_usage_record(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -39,9 +54,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.amount_due, 60)
 
 	def test_invoice_cancel_usage_record(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser2@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -71,9 +85,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(usage_records[0].invoice, None)
 
 	def test_invoice_with_credits_less_than_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser2@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser44@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -102,9 +115,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 10)
 
 	def test_invoice_with_credits_more_than_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser3@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser4@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -133,9 +145,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.applied_credits, 60)
 
 	def test_invoice_credit_allocation(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser3@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser5@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		# First Invoice
 		# Total: 600
@@ -192,9 +203,8 @@ class TestInvoice(unittest.TestCase):
 		)
 
 	def test_invoice_cancel_reverse_credit_allocation(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser4@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser6@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		# First Invoice
 		# Total: 600
@@ -232,9 +242,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(team.get_balance(), 1100)
 
 	def test_intersecting_invoices(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser4@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser7@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice1 = frappe.get_doc(
 			doctype="Invoice",
@@ -280,9 +289,10 @@ class TestInvoice(unittest.TestCase):
 		from press.press.doctype.team.team import process_stripe_webhook
 		from pathlib import Path
 
+		user = create_test_user(email="testuser88@example.com")
 		team = frappe.get_doc(
 			doctype="Team",
-			name="testuser6@example.com",
+			user=user,
 			country="India",
 			stripe_customer_id="cus_H3L4w6RXJPKLQs",
 			enabled=1,
@@ -304,9 +314,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(team.get_balance(), 900)
 
 	def test_single_x_percent_flat_on_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser9@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -334,9 +343,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 900)
 
 	def test_multiple_discounts_flat_on_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser10@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -367,9 +375,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 800)
 
 	def test_discount_borrowed_from_team(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser1@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		# Give 30% to team
 		team.append(
@@ -395,9 +402,8 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 700)
 
 	def test_mix_discounts_flat_on_total_and_percent(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+		user = create_test_user(email="testuser0@example.com")
+		team = frappe.get_doc(doctype="Team", user=user, country="India", enabled=1).insert()
 
 		# Give 30% to team
 		team.append(
