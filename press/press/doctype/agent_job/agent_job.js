@@ -18,7 +18,7 @@ frappe.ui.form.on('Agent Job', {
 						)
 					)
 			);
-		});
+		}, __('Actions'));
 		frm.add_custom_button(__('Retry In-Place'), () => {
 			frappe.confirm(`Are you sure you want to retry this job in-place?`, () =>
 				frm
@@ -27,7 +27,7 @@ frappe.ui.form.on('Agent Job', {
 						frm.refresh()
 					)
 			);
-		});
+		}, __('Actions'));
 
 		frm.add_custom_button(__('Process Job Updates'), () => {
 			frappe.confirm(`Are you sure you want to process updates for this job?`, () =>
@@ -37,7 +37,7 @@ frappe.ui.form.on('Agent Job', {
 						frm.refresh()
 					)
 			);
-		});
+		}, __('Actions'));
 
 		if (['Update Site Migrate', 'Migrate Site'].includes(frm.doc.job_type)) {
 			frm.add_custom_button('Run by Skipping Failing Patches', () => {
@@ -48,7 +48,7 @@ frappe.ui.form.on('Agent Job', {
 							frappe.utils.get_form_link('Agent Job', result.message.name, true)
 						)
 					);
-			});
+			}, __('Actions'));
 		}
 	},
 });
