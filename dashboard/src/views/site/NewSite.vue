@@ -45,9 +45,8 @@
 					v-show="activeStep.name == 'Restore'"
 				/>
 				<Plans
-					v-if="benchCreation"
 					v-model:selectedPlan="selectedPlan"
-					v-model:benchCreation="benchCreation"
+					:bench="bench"
 					:benchTeam="benchTeam"
 					v-show="activeStep.name === 'Plan'"
 				/>
@@ -147,7 +146,6 @@ export default {
 			privateBench: false,
 			benchName: null,
 			benchTitle: null,
-			benchCreation: null,
 			benchTeam: null,
 			selectedApps: [],
 			selectedGroup: null,
@@ -213,7 +211,6 @@ export default {
 			);
 			this.benchName = this.bench;
 			this.benchTitle = title;
-			this.benchCreation = creation;
 			this.benchTeam = team;
 			if (team == this.$account.team.name) {
 				// Select a zero cost plan and remove the plan selection step

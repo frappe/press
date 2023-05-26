@@ -556,7 +556,7 @@ def get_new_site_options(group: str = None):
 
 
 @frappe.whitelist()
-def get_plans(name=None):
+def get_plans(name=None, rg=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
@@ -577,17 +577,22 @@ def get_plans(name=None):
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
 
-	if name:
+	if name or rg:
 		team = get_current_team()
-		release_group_name = frappe.db.get_value("Site", name, "group")
+		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
+		is_system_user = (
+			frappe.db.get_value("User", frappe.session.user, "user_type") == "System User"
+		)
 		# poor man's bench paywall
 		# this will not allow creation of $10 sites on private benches
 		# wanted to avoid adding a new field, so doing this with a date check :)
 		# TODO: find a better way to do paywalls
 		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
-		is_paywalled_bench = is_private_bench and release_group.creation > paywall_date
+		is_paywalled_bench = (
+			is_private_bench and release_group.creation > paywall_date and not is_system_user
+		)
 	else:
 		is_paywalled_bench = False
 
