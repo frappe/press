@@ -1,5 +1,3 @@
-import os
-
 import json
 import frappe
 
@@ -19,8 +17,6 @@ from press.api.saas import (
 	create_or_rename_saas_site,
 )
 from press.press.doctype.site.saas_site import get_saas_domain
-
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 def google_oauth_flow():
