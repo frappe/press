@@ -3,10 +3,15 @@
 # See license.txt
 
 
-import frappe
 import unittest
+from unittest.mock import Mock, patch
+
+import frappe
+
+from press.press.doctype.server.server import BaseServer
 
 
+@patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_database_server():
 	"""Create test Database Server doc"""
 	return frappe.get_doc(
