@@ -213,7 +213,7 @@ scheduler_events = {
 			"press.press.cleanup.unlink_remote_files_from_site",
 			"press.press.audit.check_unbilled_subscriptions",
 		],
-		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+		"* * * * *": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
