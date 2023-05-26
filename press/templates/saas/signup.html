@@ -82,6 +82,7 @@
 					class="btn btn-primary btn-step-1">Create Account</button>
 			</form>
 
+			{% if enable_google_oauth %}
 			<div id="googleLogin" class="flex justify-content-between" style="flex-direction: column;">
 				<div class="my-2 border-t text-center text-xs">
 					<div class="-translate-y-1/2 transform">
@@ -106,6 +107,7 @@
 					</span>
 				</div>
 			</div>
+			{% endif %}
 			<!-- 2. Verification Email Sent -->
 			<form class="form-step" data-step="2">
 				<div class="text-center">
