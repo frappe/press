@@ -41,9 +41,9 @@ def get_current_team(get_doc=False):
 	):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
-			frappe.get_doc("Team", {"user": frappe.session.user})
+			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
 			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user}, "name")
+			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
 		)
 
 	if not team:
