@@ -439,6 +439,12 @@ def archive_obsolete_benches():
 		if active_archival_jobs:
 			continue
 
+		ongoing_jobs = frappe.db.exists(
+			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
+		)
+		if ongoing_jobs:
+			continue
+
 		active_site_updates = frappe.get_all(
 			"Site Update",
 			{
