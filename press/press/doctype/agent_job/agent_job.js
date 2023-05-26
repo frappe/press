@@ -19,6 +19,15 @@ frappe.ui.form.on('Agent Job', {
 					)
 			);
 		});
+		frm.add_custom_button(__('Retry In-Place'), () => {
+			frappe.confirm(`Are you sure you want to retry this job in-place?`, () =>
+				frm
+					.call('retry_in_place')
+					.then(() =>
+						frm.refresh()
+					)
+			);
+		});
 
 		if (['Update Site Migrate', 'Migrate Site'].includes(frm.doc.job_type)) {
 			frm.add_custom_button('Run by Skipping Failing Patches', () => {
