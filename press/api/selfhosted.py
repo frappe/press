@@ -30,7 +30,6 @@ def new(server):
 @frappe.whitelist()
 def sshkey():
 	key_doc = frappe.get_doc("SSH Key", "Frappe Cloud Production")
-	print(key_doc.public_key)
 	return key_doc.public_key
 
 

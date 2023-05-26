@@ -93,7 +93,6 @@ export default {
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
-				console.log(this.$account.hasBillingInfo)
 				this.showAddCardDialog = true;
 			}else{
 				if(this.$account.team.self_hosted_servers_enabled!==1){
