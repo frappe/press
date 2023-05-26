@@ -16,6 +16,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, cstr, get_datetime
+from datetime import datetime
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -1262,8 +1263,7 @@ class Site(Document):
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
 
 	@classmethod
-	def get_sites_with_pending_backups(cls, interval: int) -> List[str]:
-		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
+	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> List[str]:
 		return frappe.get_all(
 			"Site Backup",
 			{
