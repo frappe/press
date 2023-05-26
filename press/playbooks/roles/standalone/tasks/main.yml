@@ -6,6 +6,13 @@
     path: /home/frappe/agent/nginx/hosts
     state: directory
 
+- name: Create Agent NGINX Upstream Directory
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/upstreams
+    state: directory
+
 - name: Setup Agent Standalone
   become: yes
   become_user: frappe
