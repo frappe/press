@@ -256,10 +256,14 @@ class Site(Document):
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
-		if self.cluster == domain.default_cluster:
+		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
+		if self.cluster == domain.default_cluster and not is_standalone:
 			return
-		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-		self._change_dns_record("UPSERT", domain, proxy_server)
+		if is_standalone:
+			self._change_dns_record("UPSERT", domain, self.server)
+		else:
+			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+			self._change_dns_record("UPSERT", domain, proxy_server)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -1315,7 +1319,11 @@ def site_cleanup_after_archive(site):
 def delete_site_subdomain(site):
 	site_doc = frappe.get_doc("Site", site)
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
-	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
+	is_standalone = frappe.get_value("Server", site.server, "is_standalone")
+	if is_standalone:
+		proxy_server = site.server
+	else:
+		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
 	site_doc.remove_dns_record(domain, proxy_server, site)
 
 

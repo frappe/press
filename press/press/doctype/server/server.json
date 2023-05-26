@@ -56,7 +56,11 @@
   "use_for_new_sites",
   "staging",
   "new_worker_allocation",
-  "ram"
+  "ram",
+  "standalone_section",
+  "is_standalone",
+  "column_break_edyf",
+  "is_standalone_setup"
  ],
  "fields": [
   {
@@ -376,10 +380,33 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "standalone_section",
+   "fieldtype": "Section Break",
+   "label": "Standalone"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standalone",
+   "fieldtype": "Check",
+   "label": "Is Standalone"
+  },
+  {
+   "fieldname": "column_break_edyf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standalone_setup",
+   "fieldtype": "Check",
+   "label": "Is Standalone Setup",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-04-14 14:50:21.341281",
+ "modified": "2023-05-26 20:15:54.580347",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

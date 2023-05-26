@@ -1,0 +1,14 @@
+---
+- name: Create Agent NGINX Hosts Directory
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/agent/nginx/hosts
+    state: directory
+
+- name: Setup Agent Standalone
+  become: yes
+  become_user: frappe
+  command: '/home/frappe/agent/env/bin/agent setup standalone --domain {{ domain }}'
+  args:
+    chdir: /home/frappe/agent
