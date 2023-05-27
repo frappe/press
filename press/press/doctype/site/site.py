@@ -1319,7 +1319,7 @@ def site_cleanup_after_archive(site):
 def delete_site_subdomain(site):
 	site_doc = frappe.get_doc("Site", site)
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
-	is_standalone = frappe.get_value("Server", site.server, "is_standalone")
+	is_standalone = frappe.get_value("Server", site_doc.server, "is_standalone")
 	if is_standalone:
 		proxy_server = site.server
 	else:
