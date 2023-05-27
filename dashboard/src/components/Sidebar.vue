@@ -56,23 +56,28 @@
 		</Dropdown>
 		<Dialog :options="{ title: 'Switch Team' }" v-model="showTeamSwitcher">
 			<template v-slot:body-content>
-				<ListItem
-					v-for="team in $account.teams"
-					:title="`${team.team_title}`"
-					:description="team.user"
-					:key="team"
+				<span class="text-xs text-gray-600"
+					>Current Team: {{ $account.team.name }}</span
 				>
-					<template #actions>
-						<div v-if="$account.team.name === team.name">
-							<Badge color="blue">Active</Badge>
-						</div>
-						<div v-else class="flex flex-row justify-end">
-							<Button @click="$account.switchToTeam(team.name)">
-								Switch
-							</Button>
-						</div>
-					</template>
-				</ListItem>
+				<div class="border-t my-2">
+					<ListItem
+						v-for="team in $account.teams"
+						:title="`${team.team_title}`"
+						:description="team.user"
+						:key="team"
+					>
+						<template #actions>
+							<div v-if="$account.team.name === team.name">
+								<Badge color="blue">Active</Badge>
+							</div>
+							<div v-else class="flex flex-row justify-end">
+								<Button @click="$account.switchToTeam(team.name)">
+									Switch
+								</Button>
+							</div>
+						</template>
+					</ListItem>
+				</div>
 			</template>
 		</Dialog>
 	</div>
