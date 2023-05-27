@@ -1,21 +1,25 @@
 <template>
 	<div>
 		<PageHeader title="Servers" subtitle="Your Servers">
-		<template v-if="this.$account.team.enabled" v-slot:actions>
-			<Dropdown
-			v-if="$account.team.self_hosted_servers_enabled===1 && !showAddCardDialog"
-			:options="dropDownOptions">
-			<!-- <template v-slot="{ open }"> -->
-				<Button
-					appearance="primary"
-					iconLeft="plus"
-					class="ml-2 hidden sm:inline-flex"
-					@click="showBillingDialog"
+			<template v-if="this.$account.team.enabled" v-slot:actions>
+				<Dropdown
+					v-if="
+						$account.team.self_hosted_servers_enabled === 1 &&
+						!showAddCardDialog
+					"
+					:options="dropDownOptions"
 				>
-							New
-				</Button>
-    	<!-- </template> -->
-			</Dropdown>
+					<!-- <template v-slot="{ open }"> -->
+					<Button
+						appearance="primary"
+						iconLeft="plus"
+						class="ml-2 hidden sm:inline-flex"
+						@click="showBillingDialog"
+					>
+						New
+					</Button>
+					<!-- </template> -->
+				</Dropdown>
 				<Button
 					v-else
 					appearance="primary"
@@ -23,9 +27,9 @@
 					class="ml-2 hidden sm:inline-flex"
 					@click="showBillingDialog"
 				>
-							New
+					New
 				</Button>
-	</template>
+			</template>
 		</PageHeader>
 
 		<div>
@@ -60,19 +64,27 @@ import { defineAsyncComponent } from 'vue';
 export default {
 	name: 'Servers',
 	components: {
-    ServerList,
-    PageHeader,
-    StripeCard: defineAsyncComponent(() => import("@/components/StripeCard.vue")),
-    Dropdown
-},
+		ServerList,
+		PageHeader,
+		StripeCard: defineAsyncComponent(() =>
+			import('@/components/StripeCard.vue')
+		),
+		Dropdown
+	},
 	data() {
 		return {
 			showAddCardDialog: false,
 
-			dropDownOptions:[
-			{ label: 'Frappe Cloud Server',handler: () => this.$router.replace('/servers/new')},
-      { label: 'Self Hosted Server', handler: () => this.$router.replace('/selfhosted/new') },
-    ]
+			dropDownOptions: [
+				{
+					label: 'Frappe Cloud Server',
+					handler: () => this.$router.replace('/servers/new')
+				},
+				{
+					label: 'Self Hosted Server',
+					handler: () => this.$router.replace('/selfhosted/new')
+				}
+			]
 		};
 	},
 	resources: {
@@ -94,11 +106,11 @@ export default {
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
-			}else{
-				if(this.$account.team.self_hosted_servers_enabled!==1){
-				this.$router.replace("/servers/new")
+			} else {
+				if (this.$account.team.self_hosted_servers_enabled !== 1) {
+					this.$router.replace('/servers/new');
 				}
-				this.showAddCardDialog=false
+				this.showAddCardDialog = false;
 			}
 		}
 	},

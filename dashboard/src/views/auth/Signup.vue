@@ -33,7 +33,10 @@
 		</form>
 		<div class="flex flex-col">
 			<Button
-				v-if="$resources.guestFeatureFlags.data && $resources.guestFeatureFlags.data.enable_google_oauth === 1"
+				v-if="
+					$resources.guestFeatureFlags.data &&
+					$resources.guestFeatureFlags.data.enable_google_oauth === 1
+				"
 				:loading="$resources.oauthLogin.loading"
 				@click="
 					() => {
@@ -110,7 +113,7 @@ export default {
 			return {
 				method: 'press.api.account.guest_feature_flags',
 				auto: true
-			}
+			};
 		}
 	},
 	mounted() {

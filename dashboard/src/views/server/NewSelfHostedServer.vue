@@ -34,9 +34,9 @@
 						:loading="playStatus"
 						appearance="primary"
 						@click="startVerification"
-						>
+					>
 						Verify Server
-						</Button>
+					</Button>
 					<Button
 						v-show="activeStep.name === 'VerifyServer' && playOutput"
 						icon-left="check"
@@ -44,7 +44,7 @@
 						:loading="playStatus"
 						@click="startVerification"
 					>
-					Server Verified
+						Server Verified
 					</Button>
 					<Button
 						v-show="activeStep.name === 'VerifyServer' && unreachable"
@@ -53,7 +53,7 @@
 						:loading="playStatus"
 						@click="startVerification"
 					>
-					Server Unreachable
+						Server Unreachable
 					</Button>
 				</div>
 				<ErrorMessage :message="validationMessage" />
@@ -97,7 +97,7 @@
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
-							:disabled='!playOutput'
+							:disabled="!playOutput"
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -197,7 +197,7 @@ export default {
 				onSuccess(data) {
 					if (data) {
 						this.playOutput = true;
-						this.unreachable = false
+						this.unreachable = false;
 					} else {
 						this.playOutput = false;
 						this.unreachable = true;
@@ -230,7 +230,7 @@ export default {
 	methods: {
 		async nextStep(activeStep, next) {
 			if (activeStep.name === 'ServerDetails') {
-			this.$resources.newServer.submit();
+				this.$resources.newServer.submit();
 			}
 			next();
 		},

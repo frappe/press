@@ -6,8 +6,13 @@
 			Staging Server, etc.
 		</p>
 		<div class="mt-4 flex">
-			<input class="form-input z-10 w-full rounded-r-none" type="text" :value="title" @change="titleChange"
-				placeholder="Server" />
+			<input
+				class="form-input z-10 w-full rounded-r-none"
+				type="text"
+				:value="title"
+				@change="titleChange"
+				placeholder="Server"
+			/>
 		</div>
 		<div class="mt-6 space-y-1">
 			<h2 class="text-lg font-semibold">Select Region</h2>
@@ -15,7 +20,11 @@
 				Select the datacenter region where your server should be created
 			</p>
 			<div class="mt-1">
-				<RichSelect :value="selectedRegion" @change="$emit('update:selectedRegion', $event)" :options="regionOptions" />
+				<RichSelect
+					:value="selectedRegion"
+					@change="$emit('update:selectedRegion', $event)"
+					:options="regionOptions"
+				/>
 			</div>
 		</div>
 		<div class="mt-4">
@@ -45,7 +54,7 @@ export default {
 				value: d.name,
 				image: d.image
 			}));
-		},
+		}
 	},
 	async mounted() {
 		if (this.regionOptions.length == 1) {

@@ -246,7 +246,7 @@ export default {
 			let tabsByStatus = {
 				Active: ['Overview', 'Analytics', 'Benches', 'Jobs', 'Plays'],
 				Pending: ['Installing'],
-				Installing: ['Installing',"Plays"]
+				Installing: ['Installing', 'Plays']
 			};
 			if (this.server) {
 				let tabsToShow = tabsByStatus[this.server.status];

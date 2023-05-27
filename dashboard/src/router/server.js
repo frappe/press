@@ -52,9 +52,9 @@ export default [
 		]
 	},
 	{
-		name:"New SelfHosted Server",
-		path:"/selfhosted/new",
-		component:()=>import('../views/server/NewSelfHostedServer.vue'),
-		props:true
+		name: 'New SelfHosted Server',
+		path: '/selfhosted/new',
+		component: () => import('../views/server/NewSelfHostedServer.vue'),
+		props: true
 	}
 ];
