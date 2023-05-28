@@ -522,6 +522,32 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def setup_standalone(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_standalone", queue="short", timeout=1200
+		)
+
+	def _setup_standalone(self):
+		try:
+			ansible = Ansible(
+				playbook="standalone.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"domain": self.domain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_standalone_setup = True
+		except Exception:
+			log_error("Standalone Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def whitelist_ipaddress(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200

@@ -23,8 +23,10 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
+from press.press.doctype.release_group.release_group import ReleaseGroup
 
-def create_test_bench(user: str = "Administrator"):
+
+def create_test_bench(user: str = "Administrator", group: ReleaseGroup = None):
 	"""
 	Create test Bench doc.
 
@@ -34,11 +36,12 @@ def create_test_bench(user: str = "Administrator"):
 	database_server = create_test_database_server()
 	server = create_test_server(proxy_server.name, database_server.name)
 
-	app = create_test_app()
-	release_group = create_test_release_group(app, user)
+	if not group:
+		app = create_test_app()
+		group = create_test_release_group(app, user)
 
 	name = frappe.mock("name")
-	candidate = release_group.create_deploy_candidate()
+	candidate = group.create_deploy_candidate()
 	candidate.db_set("docker_image", frappe.mock("url"))
 	return frappe.get_doc(
 		{
@@ -47,7 +50,7 @@ def create_test_bench(user: str = "Administrator"):
 			"status": "Active",
 			"background_workers": 1,
 			"gunicorn_workers": 2,
-			"group": release_group.name,
+			"group": group.name,
 			"candidate": candidate.name,
 			"server": server.name,
 		}

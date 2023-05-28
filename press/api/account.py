@@ -60,6 +60,7 @@ def setup_account(
 	user_exists=False,
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
+	oauth_signup=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -72,7 +73,7 @@ def setup_account(
 		if not last_name:
 			frappe.throw("Last Name is required")
 
-		if not password:
+		if not password and not oauth_signup:
 			frappe.throw("Password is required")
 
 		if not is_invitation and not country:
@@ -102,10 +103,10 @@ def setup_account(
 	else:
 		# Team doesn't exist, create it
 		Team.create_new(
-			account_request,
-			first_name,
-			last_name,
-			password,
+			account_request=account_request,
+			first_name=first_name,
+			last_name=last_name,
+			password=password,
 			country=country,
 			user_exists=bool(user_exists),
 		)
@@ -242,11 +243,15 @@ def get_email_from_request_key(key):
 		data = get_country_info()
 		return {
 			"email": account_request.email,
+			"first_name": account_request.first_name,
+			"last_name": account_request.last_name,
 			"country": data.get("country"),
+			"countries": frappe.db.get_all("Country", pluck="name"),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 			"invited_by_parent_team": account_request.invited_by_parent_team,
+			"oauth_signup": account_request.oauth_signup,
 		}
 
 
@@ -302,15 +307,11 @@ def get():
 	if parent_teams:
 		teams = frappe.db.sql(
 			"""
-			select name, team_title, user from tabTeam where name in %s
+			select name, team_title, user from tabTeam where enabled = 1 and name in %s
 		""",
 			[parent_teams],
 			as_dict=True,
 		)
-	else:
-		teams = [
-			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-		]
 
 	return {
 		"user": frappe.get_doc("User", user),
@@ -318,7 +319,7 @@ def get():
 		"team": team_doc,
 		"team_members": get_team_members(team_doc.name),
 		"child_team_members": get_child_team_members(team_doc.name),
-		"teams": list(teams),
+		"teams": list(teams if teams else parent_teams),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
@@ -327,6 +328,15 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def guest_feature_flags():
+	return {
+		"enable_google_oauth": frappe.db.get_single_value(
+			"Press Settings", "enable_google_oauth"
+		)
 	}
 
 

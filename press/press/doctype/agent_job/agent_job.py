@@ -85,6 +85,11 @@ class AgentJob(Document):
 		return job
 
 	@frappe.whitelist()
+	def retry_in_place(self):
+		self.enqueue_http_request()
+		frappe.db.commit()
+
+	@frappe.whitelist()
 	def retry_skip_failing_patches(self):
 		# Add the skip flag and update request data
 		updated_request_data = json.loads(self.request_data) if self.request_data else {}
@@ -92,6 +97,10 @@ class AgentJob(Document):
 		self.request_data = json.dumps(updated_request_data, indent=4, sort_keys=True)
 
 		return self.retry()
+
+	@frappe.whitelist()
+	def process_job_updates(self):
+		process_job_updates(self.name)
 
 	def on_trash(self):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})

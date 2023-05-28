@@ -38,28 +38,21 @@
 							autocomplete="family-name">
 					</div>
 				</div>
-				<div class="form-row flex">
-					<div class="form-group col-12 col-md-6">
-						<p for="phone">Phone Number</p>
-						<input type="tel" id="phone" class="form-control" name="phone_number" autocomplete="tel">
-					</div>
-					<div class="form-group col-12 col-md-6">
-						<p for="country" class="">Country</p>
-						<select id="country" class="custom-select" name="country">
-							{%- if country_name -%}
-							<option selected="selected">{{ country_name }}</option>
-							{%- else -%}
-							<option disabled selected="selected">Select Country</option>
-							{%- endif -%}
-							{%- for country in frappe.db.get_all('Country') -%}
-							<option>
-								{{ country.name }}
-							</option>
-							{%- endfor -%}
-						</select>
-					</div>
+				<div class="form-group">
+					<p for="country" class="">Country</p>
+					<select id="country" class="custom-select" name="country">
+						{%- if country_name -%}
+						<option selected="selected">{{ country_name }}</option>
+						{%- else -%}
+						<option disabled selected="selected">Select Country</option>
+						{%- endif -%}
+						{%- for country in frappe.db.get_all('Country') -%}
+						<option>
+							{{ country.name }}
+						</option>
+						{%- endfor -%}
+					</select>
 				</div>
-
 				<div class="form-group">
 					<p>Email Address</p>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
@@ -85,12 +78,36 @@
 					</p>
 				</div>
 
-				<div class="mt-8 d-flex justify-content-between">
-					<div></div>
-					<button id="accountRequestButton" type="submit" class="btn btn-primary btn-step-1">Create
-						Account</button>
-				</div>
+				<button id="accountRequestButton" type="submit" style="width: 100%;"
+					class="btn btn-primary btn-step-1">Create Account</button>
 			</form>
+
+			{% if enable_google_oauth %}
+			<div id="googleLogin" class="flex justify-content-between" style="flex-direction: column;">
+				<div class="my-2 border-t text-center text-xs">
+					<div class="-translate-y-1/2 transform">
+						<p class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800">
+							Or
+						</p>
+					</div>
+				</div>
+				<div class="btn btn-secondary" style="width: 100%;" onclick="signupWithGoogle()">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px">
+						<path fill="#FFC107"
+							d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+						<path fill="#FF3D00"
+							d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+						<path fill="#4CAF50"
+							d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+						<path fill="#1976D2"
+							d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+					</svg>
+					<span>
+						Signup with Google
+					</span>
+				</div>
+			</div>
+			{% endif %}
 			<!-- 2. Verification Email Sent -->
 			<form class="form-step" data-step="2">
 				<div class="text-center">
@@ -195,6 +212,7 @@
 		return call('press.api.saas.account_request', form_data)
 			.then(() => {
 				$('h1').hide();
+				$('#googleLogin').toggle();
 				$('.verification-email').text(form_data.email);
 			});
 	}
@@ -239,7 +257,7 @@
 		}).then((r) => {
 			if (r.message.validation_passed === true) {
 				controller.show_input_feedback("password", "Strong Password")
-					return false
+				return false
 			} else {
 				controller.show_input_error("password", r.message.suggestion);
 				return r.message.suggestion;
@@ -295,6 +313,18 @@
 			togglePassword.classList.add('bi-eye-slash');
 		}
 	});
+
+	function signupWithGoogle() {
+		return frappe.call({
+			method: "press.api.oauth.google_login",
+			args: {
+				saas_app: app
+			},
+			type: "POST",
+		}).then(r => {
+			window.open(r.message, '_self');
+		})
+	}
 
 </script>
 {%- endblock -%}

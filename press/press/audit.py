@@ -182,15 +182,17 @@ class BackupRecordCheck(Audit):
 			"""
 		)
 		sites_with_backup_in_interval = set([t[0] for t in tuples])
+		filters = {
+			"status": "Active",
+			"creation": ("<=", interval_hrs_ago),
+			"is_standby": False,
+		}
+		if trial_plans:
+			filters.update({"plan": ("not in", trial_plans)})
 		all_sites = set(
 			frappe.get_all(
 				"Site",
-				{
-					"status": "Active",
-					"creation": ("<=", interval_hrs_ago),
-					"is_standby": False,
-					"plan": ("not in", trial_plans),
-				},
+				filters=filters,
 				pluck="name",
 			)
 		)

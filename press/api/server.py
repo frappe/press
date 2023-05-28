@@ -348,7 +348,6 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
-
 	regions = frappe.get_all(
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)

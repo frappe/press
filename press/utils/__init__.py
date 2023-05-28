@@ -34,19 +34,30 @@ def get_current_team(get_doc=False):
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
 
-	if not team and user_is_press_admin and frappe.db.exists("Team", frappe.session.user):
+	if (
+		not team
+		and user_is_press_admin
+		and frappe.db.exists("Team", {"user": frappe.session.user})
+	):
 		# if user has_role of Press Admin then just return current user as default team
 		return (
-			frappe.get_doc("Team", {"user": frappe.session.user})
+			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
 			if get_doc
-			else frappe.get_value("Team", {"name": frappe.session.user}, "name")
+			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
 		)
 
 	if not team:
 		# if team is not passed via header, get the first team that this user is part of
-		team = frappe.db.get_value(
-			"Team Member", {"parenttype": "Team", "user": frappe.session.user}, "parent"
+		team_dict = frappe.db.sql(
+			"""select t.name from `tabTeam` t
+			inner join `tabTeam Member` tm on tm.parent = t.name
+			where tm.user = %s and tm.parenttype = 'Team' and t.enabled = 1
+			order by t.creation asc
+			limit 1""",
+			frappe.session.user,
+			as_dict=True,
 		)
+		team = team_dict[0].name
 
 	if not frappe.db.exists("Team", team):
 		frappe.throw("Invalid Team", frappe.PermissionError)
@@ -78,7 +89,7 @@ def get_app_tag(repository, repository_owner, hash):
 def get_default_team_for_user(user):
 	"""Returns the Team if user has one, or returns the Team to which they belong"""
 	if frappe.db.exists("Team", {"user": user}):
-		return user
+		return frappe.db.get_value("Team", {"user": user}, "name")
 
 	team = frappe.db.get_value(
 		"Team Member", filters={"parenttype": "Team", "user": user}, fieldname="parent"

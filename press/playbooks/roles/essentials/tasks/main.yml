@@ -21,4 +21,5 @@
       - screen
       - supervisor
       - vim
+      - acl
       - zlib1g-dev

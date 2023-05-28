@@ -7,14 +7,18 @@ env:
   DB_USER: test_frappe
   DB_PASSWORD: test_frappe
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format:
-      name: 'Black and Flake8'
-      runs-on: ubuntu-latest
+    name: 'Black and Flake8'
+    runs-on: ubuntu-latest
 
-      steps:
+    steps:
       - name: Checkout code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,11 +34,13 @@ jobs:
       - name: Flake8 Test
         run: |
           flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
-
   tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        container: [1, 2, 3, 4]
+
     name: Server
 
     services:
@@ -48,7 +54,7 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Check for valid Python & Merge Conflicts
         run: |
@@ -58,9 +64,9 @@ jobs:
               exit 1
           fi
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -95,7 +101,32 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-tests --app press --coverage
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 4 --build-number ${{ matrix.container }}
           cd apps/press/dashboard && yarn run test
         env:
           TYPE: server
+
+      - name: Upload coverage reports to Codecov
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ matrix.container }}
+          path: /home/runner/frappe-bench/sites/coverage.xml
+        if: always()
+
+  coverage:
+    name: Coverage Wrap Up
+    if: always()
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Upload coverage data
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
