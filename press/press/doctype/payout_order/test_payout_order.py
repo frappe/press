@@ -12,11 +12,12 @@ from press.press.doctype.payout_order.payout_order import (
 	create_marketplace_payout_orders_monthly,
 	create_payout_order_from_invoice_items,
 )
+from press.press.doctype.team.test_team import create_test_team
 
 
 class TestPayoutOrder(FrappeTestCase):
-	def setUp(self):
-		frappe.db.savepoint("test_transaction")
+	def tearDown(self):
+		frappe.db.rollback()
 
 	def test_net_amount_calculations_inr(self):
 		self.create_test_inr_invoice()
@@ -74,9 +75,7 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(po.net_total_usd, 20.0 - expected_gateway_fee)
 
 	def create_test_inr_invoice(self):
-		self.test_team = frappe.get_doc(
-			doctype="Team", name="testuserinr@example.com", country="India", enabled=1
-		).insert()
+		self.test_team = create_test_team()
 
 		self.test_invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -106,9 +105,7 @@ class TestPayoutOrder(FrappeTestCase):
 		self.test_invoice.submit()
 
 	def create_test_usd_invoice(self):
-		self.test_team = frappe.get_doc(
-			doctype="Team", name="testuserusd@example.com", country="United States", enabled=1
-		).insert()
+		self.test_team = create_test_team(country="United States")
 
 		self.test_invoice = frappe.get_doc(
 			doctype="Invoice",
@@ -200,6 +197,3 @@ class TestPayoutOrder(FrappeTestCase):
 			"Invoice Item", po.items[0].invoice_item, "has_marketplace_payout_completed"
 		)
 		self.assertTrue(marked_completed)
-
-	def tearDown(self):
-		frappe.db.rollback(save_point="test_transaction")
