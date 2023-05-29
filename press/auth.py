@@ -29,6 +29,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.email.queue.unsubscribe",
 	"/api/method/frappe.client.get",
 	"/api/method/frappe.client.get_count",
+	"/api/method/press.utils.telemetry.capture_read_event",
 ]
 
 ALLOWED_WILDCARD_PATHS = [
