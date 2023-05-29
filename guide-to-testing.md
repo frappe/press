@@ -84,6 +84,19 @@ you need a valid bench (which itself has dependencies on many other doctypes)
 You can also add default args to these utility functions as you come across the
 need. Just append to end so you won't have to rewrite pre-existing tests.
 
+You write a test by writing a method in the TestCase. Make the method name as
+long as you want. Test methods are supposed to test a specific case. When the
+test breaks eventually (serving it's purpose), the reader should be able to
+tell what it's trying to test is supposed without even having to read the code.
+Making the method name small is pointless; we're never going to reference this
+method anywhere in code, ever. Eg:
+
+https://github.com/frappe/press/blob/2503e523284fb905eca60acf3271d3fb1dccbc3f/press/press/doctype/site/test_site.py#L215-L228
+
+You can also go the extra mile and write a function docstring. This docstring
+will be shown in the output when the testrunner detects that the test has
+failed.
+
 ### Rerunnability
 
 Not a real word, but I like to be able to re-run my tests without having to
