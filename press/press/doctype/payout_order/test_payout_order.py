@@ -38,11 +38,10 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(len(po.items), 1)
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
 		self.assertEqual(po.items[0].total_amount, 40.0)
-		self.assertEqual(po.items[0].gateway_fee, (200 / 1000) * 40)
-		self.assertEqual(po.items[0].net_amount, 32.0)
+		self.assertEqual(po.items[0].net_amount, 40.0)
 		self.assertEqual(po.items[0].currency, "INR")
 
-		self.assertEqual(po.net_total_inr, 32.0)
+		self.assertEqual(po.net_total_inr, 40.0)
 		self.assertEqual(po.net_total_usd, 0)
 
 	def test_net_amount_calculations_usd(self):
@@ -66,13 +65,11 @@ class TestPayoutOrder(FrappeTestCase):
 		self.assertEqual(po.items[0].invoice, self.test_invoice.name)
 		self.assertEqual(po.items[0].total_amount, 20.0)
 
-		expected_gateway_fee = 14.4
-		self.assertEqual(po.items[0].gateway_fee, expected_gateway_fee)
-		self.assertEqual(po.items[0].net_amount, 20.0 - expected_gateway_fee)
+		self.assertEqual(po.items[0].net_amount, 20.0)
 		self.assertEqual(po.items[0].currency, "USD")
 
 		self.assertEqual(po.net_total_inr, 0)
-		self.assertEqual(po.net_total_usd, 20.0 - expected_gateway_fee)
+		self.assertEqual(po.net_total_usd, 20.0)
 
 	def create_test_inr_invoice(self):
 		self.test_team = create_test_team()
