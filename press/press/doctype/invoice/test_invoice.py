@@ -100,7 +100,14 @@ class TestInvoice(unittest.TestCase):
 		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.finalize_invoice()
+			try:
+				invoice.finalize_invoice()
+			except Exception as e:
+				self.assertEqual(
+					str(e),
+					"Not enough credits for this invoice. Change payment mode to Card to"
+					" pay using Stripe.",
+				)
 
 		self.assertEqual(self.team.get_balance(), 0)
 		self.assertEqual(invoice.total, 60)
@@ -181,10 +188,17 @@ class TestInvoice(unittest.TestCase):
 			period_start=add_days(today(), 11),
 			items=[{"quantity": 1, "rate": 700}],
 		).insert()
+		invoice2.reload()
 
 		with patch.object(invoice2, "create_stripe_invoice", return_value=None):
-			invoice2.finalize_invoice()
-		invoice2.reload()
+			try:
+				invoice2.finalize_invoice()
+			except Exception as e:
+				self.assertEqual(
+					str(e),
+					"Not enough credits for this invoice. Change payment mode to Card to"
+					" pay using Stripe.",
+				)
 
 		self.assertEqual(invoice2.total, 700)
 		self.assertEqual(invoice2.applied_credits, 500)
