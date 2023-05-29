@@ -277,7 +277,7 @@ class TestInvoice(unittest.TestCase):
 
 		from press.press.doctype.team.team import process_stripe_webhook
 
-		self.team.stripe_customer_id = "cus_H3L4w6RXJPKLQs"
+		self.team.db_set("stripe_customer_id", "cus_H3L4w6RXJPKLQs")
 		# initial balance is 0
 		self.assertEqual(self.team.get_balance(), 0)
 
