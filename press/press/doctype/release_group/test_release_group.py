@@ -22,15 +22,16 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	app: App, user: str = "Administrator", public=False, frappe_version: str = None
+	app: App,
+	user: str = "Administrator",
+	public=False,
+	frappe_version=create_test_frappe_version().name,
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
 	Also creates app source
 	"""
-	if not frappe_version:
-		frappe_version = create_test_frappe_version().name
 	release_group = frappe.get_doc(
 		{
 			"doctype": "Release Group",

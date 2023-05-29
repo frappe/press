@@ -1,6 +1,9 @@
 from contextlib import suppress
 from posthog import Posthog
+
 import frappe
+
+from press.utils import log_error
 
 
 def init_telemetry():
@@ -30,3 +33,13 @@ def identify(site, **kwargs):
 	ph: Posthog = getattr(frappe.local, "posthog", None)
 	with suppress(Exception):
 		ph and ph.identify(site, kwargs)
+
+
+@frappe.whitelist(allow_guest=True)
+def capture_read_event(name: str = None):
+	try:
+		capture("read_email", "fc_signup", name)
+	except Exception as e:
+		log_error("Failed to capture read_email event", e)
+	finally:
+		frappe.response.update(frappe.utils.get_imaginary_pixel_response())

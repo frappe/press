@@ -97,6 +97,10 @@ jobs:
       - name: Install
         run: bash ${GITHUB_WORKSPACE}/.github/helper/install.sh
 
+      - name: Add to Hosts
+        run: |
+          echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
         run: |

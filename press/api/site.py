@@ -186,6 +186,12 @@ def _new(site, server: str = None):
 			ignore_permissions=True
 		)
 
+	# Telemetry: Send event if first site
+	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
+		from press.utils.telemetry import capture
+
+		capture("created_first_site", "fc_signup", team.user)
+
 	return {
 		"site": site.name,
 		"job": frappe.db.get_value(

@@ -337,7 +337,7 @@ class StagingSite(Site):
 				"staging": True,
 				"bench": bench.name,
 				"apps": [{"app": app.app} for app in bench.apps],
-				"team": "Administrator",
+				"team": frappe.db.get_value("Team", {"user": "Administrator"}, "name"),
 				"subscription_plan": plan,
 			}
 		)

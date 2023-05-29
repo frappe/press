@@ -10,6 +10,8 @@ from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
+from datetime import date
+
 
 class PayoutOrder(Document):
 	def validate(self):
@@ -203,8 +205,8 @@ def get_unaccounted_marketplace_invoice_items():
 def create_payout_order_from_invoice_items(
 	invoice_items: List[InvoiceItem],
 	recipient: str,
-	period_start: str,
-	period_end: str,
+	period_start: date,
+	period_end: date,
 	mode_of_payment: str = "Cash",
 	notes: str = "",
 	type: str = "Marketplace",
