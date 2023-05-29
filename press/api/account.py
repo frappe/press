@@ -17,6 +17,7 @@ from frappe.rate_limiter import rate_limit
 
 from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
 from press.utils import get_country_info, get_current_team
+from press.utils.telemetry import capture, identify
 
 
 @frappe.whitelist(allow_guest=True)
@@ -47,6 +48,10 @@ def signup(email, referrer=None):
 		).insert()
 
 	frappe.set_user(current_user)
+
+	# Telemetry: Verification email sent
+	identify(email)
+	capture("verification_email_sent", "fc_signup", email)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -115,6 +120,8 @@ def setup_account(
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
 
+	# Telemetry: Created account
+	capture("completed_signup", "fc_signup", email)
 	frappe.local.login_manager.login_as(email)
 
 
