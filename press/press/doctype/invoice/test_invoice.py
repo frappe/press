@@ -155,6 +155,7 @@ class TestInvoice(unittest.TestCase):
 		self.team.allocate_credit_amount(100, source="Free Credits")
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
 		self.assertEqual(self.team.get_balance(), 1100)
+		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
 			invoice.finalize_invoice()
