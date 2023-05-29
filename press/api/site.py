@@ -482,7 +482,9 @@ def get_new_site_options(group: str = None):
 	apps = set()
 	filters = {"enabled": True}
 	if group:  # private bench
-		filters.update({"name": group})
+		filters.update({"name": group, "team": team})
+	else:
+		filters.update({"public": True})
 
 	for version in versions:
 		filters.update({"version": version.name})
@@ -490,7 +492,6 @@ def get_new_site_options(group: str = None):
 			"Release Group",
 			fields=["name", "`default`", "title"],
 			filters=filters,
-			or_filters={"public": True, "team": team},
 			limit=1,
 		)
 		if not rg:

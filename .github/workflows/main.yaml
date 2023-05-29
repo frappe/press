@@ -7,6 +7,10 @@ env:
   DB_USER: test_frappe
   DB_PASSWORD: test_frappe
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   format:
     name: 'Black and Flake8'
@@ -14,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -50,7 +54,7 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Check for valid Python & Merge Conflicts
         run: |
@@ -60,7 +64,7 @@ jobs:
               exit 1
           fi
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 

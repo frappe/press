@@ -5,6 +5,7 @@
 import json
 import re
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, List
 
 import boto3
@@ -28,11 +29,11 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.site import check_dns
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
+from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 
 
 class Site(Document):
@@ -1262,8 +1263,7 @@ class Site(Document):
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
 
 	@classmethod
-	def get_sites_with_pending_backups(cls, interval: int) -> List[str]:
-		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-interval)
+	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> List[str]:
 		return frappe.get_all(
 			"Site Backup",
 			{
