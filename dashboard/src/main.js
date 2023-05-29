@@ -34,7 +34,7 @@ if (window.press_frontend_sentry_dsn.includes('https://')) {
 }
 
 // posthog
-if (window.press_frontend_posthog_host.include('https://')) {
+if (window.press_frontend_posthog_host.includes('https://')) {
 	try {
 		posthog.init(window.press_frontend_posthog_project_id, {
 			api_host: window.press_frontend_posthog_host,
@@ -43,7 +43,7 @@ if (window.press_frontend_posthog_host.include('https://')) {
 			capture_pageleave: false,
 			advanced_disable_decide: true
 		});
-		document.window.posthog = posthog || [];
+		window.posthog = posthog
 	} catch (e) {
 		console.trace('Failed to initialize telemetry', e);
 	}
