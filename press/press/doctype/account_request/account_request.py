@@ -58,6 +58,7 @@ class AccountRequest(Document):
 		signature, message, image_path = "", "", ""
 		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
 		sender = ""
+		args = {}
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
@@ -86,23 +87,31 @@ class AccountRequest(Document):
 		else:
 			subject = "Verify your account"
 			template = "verify_account"
+			args.update(
+				{
+					"read_pixel_path": f"http://a.io:8000/api/method/press.utils.telemetry.capture_read_event?name={self.email}"
+				}
+			)
 
 			if self.invited_by and self.role != "Press Admin":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
 				template = "invite_team_member"
 
-		frappe.sendmail(
-			sender=sender,
-			recipients=self.email,
-			subject=subject,
-			template=template,
-			args={
+		args.update(
+			{
 				"link": url,
 				"title": app_title,
 				"message": message,
 				"signature_text": signature,
 				"image_path": image_path,
-			},
+			}
+		)
+		frappe.sendmail(
+			sender=sender,
+			recipients=self.email,
+			subject=subject,
+			template=template,
+			args=args,
 			now=True,
 		)
 
