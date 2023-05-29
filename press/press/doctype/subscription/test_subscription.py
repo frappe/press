@@ -28,7 +28,6 @@ def create_test_subscription(
 
 
 class TestSubscription(unittest.TestCase):
-
 	def setUp(self):
 		self.team = create_test_team()
 
