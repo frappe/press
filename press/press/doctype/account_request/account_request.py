@@ -89,7 +89,9 @@ class AccountRequest(Document):
 			template = "verify_account"
 			args.update(
 				{
-					"read_pixel_path": f"http://a.io:8000/api/method/press.utils.telemetry.capture_read_event?name={self.email}"
+					"read_pixel_path": get_url(
+						f"/api/method/press.utils.telemetry.capture_read_event?name={self.email}"
+					)
 				}
 			)
 
