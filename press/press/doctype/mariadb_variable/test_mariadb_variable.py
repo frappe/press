@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestMariaDBSystemVariable(FrappeTestCase):
+class TestMariaDBVariable(FrappeTestCase):
 	pass

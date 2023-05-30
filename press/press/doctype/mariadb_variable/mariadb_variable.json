@@ -33,7 +33,7 @@
  "modified": "2023-05-30 15:19:34.089115",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "MariaDB System Variable",
+ "name": "MariaDB Variable",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
