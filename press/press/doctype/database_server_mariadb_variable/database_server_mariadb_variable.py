@@ -28,6 +28,10 @@ class DatabaseServerMariaDBVariable(Document):
 		"""Return the value of the first value field that has a value"""
 		return self.get(self.value_field)
 
+	@property
+	def dynamic(self) -> bool:
+		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "dynamic")
+
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
 			frappe.throw("Only one value can be set for MariaDB system variable")

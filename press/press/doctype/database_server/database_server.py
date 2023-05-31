@@ -31,7 +31,35 @@ class DatabaseServer(BaseServer):
 			variable.validate()
 
 	def on_update(self):
-		pass
+		if self.has_value_changed("mariadb_system_variables"):
+			self.update_mariadb_system_variables()
+
+	def update_mariadb_system_variables(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_update_mariadb_system_variables", queue="long"
+		)
+
+	def _update_mariadb_system_variables(self):
+		for variable in self.mariadb_system_variables:
+			if variable.has_value_changed(variable.value_field):
+				self.update_mariadb_system_variable(variable)
+
+	def update_mariadb_system_variable(self, variable: DatabaseServerMariaDBVariable):
+		ansible = Ansible(
+			playbook="mysqld_variable.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+				"variable": variable.mariadb_variable,
+				"value": variable.value,
+				"dynamic": variable.dynamic,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB System Variable Update Error", server=self.name)
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
