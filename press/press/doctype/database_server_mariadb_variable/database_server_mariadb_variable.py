@@ -26,7 +26,10 @@ class DatabaseServerMariaDBVariable(Document):
 	@property
 	def value(self) -> Any:
 		"""Return the value of the first value field that has a value"""
-		return self.get(self.value_field)
+		v = self.get(self.value_field)
+		if self.value_field == "value_int":
+			v = v * 1024 * 1024  # Convert MB to bytes
+		return v
 
 	@property
 	def dynamic(self) -> bool:
