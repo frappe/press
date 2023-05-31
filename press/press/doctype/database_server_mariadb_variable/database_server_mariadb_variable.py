@@ -52,8 +52,9 @@ class DatabaseServerMariaDBVariable(Document):
 		self,
 	):
 		self.validate_only_one_value_is_set()
-		self.validate_value_field_set_is_correct()
-		self.validate_datatype_of_field_is_correct()
+		if self.value:
+			self.validate_value_field_set_is_correct()
+			self.validate_datatype_of_field_is_correct()
 		self.validate_skipped_should_be_bool()
 
 
