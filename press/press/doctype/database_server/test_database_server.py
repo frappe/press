@@ -9,6 +9,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.server.server import BaseServer
+from press.runner import Ansible
+from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
@@ -27,6 +29,7 @@ def create_test_database_server():
 	).insert(ignore_if_duplicate=True)
 
 
+@patch.object(Ansible, "run", new=Mock())
 class TestDatabaseServer(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -101,7 +104,7 @@ class TestDatabaseServer(FrappeTestCase):
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
-		server = create_test_database_server()
+		server.reload()
 		server.append(
 			"mariadb_system_variables",
 			{"mariadb_variable": "log_bin", "skip": True},
@@ -110,3 +113,64 @@ class TestDatabaseServer(FrappeTestCase):
 			server.save()
 		except Exception:
 			self.fail("Boolean variables should be able skipped")
+
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		wraps=foreground_enqueue_doc,
+	)
+	def test_ansible_playbook_triggered_with_correct_input_on_update_of_child_table(
+		self, mock_enqueue_doc, Mock_Ansible
+	):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.save()
+		mock_enqueue_doc.assert_called_with(
+			server.doctype, server.name, "_update_mariadb_system_variables", queue="long"
+		)
+		args, kwargs = Mock_Ansible.call_args
+		expected_vars = {
+			"server": server.name,
+			"variable": "innodb_buffer_pool_size",
+			"value": 1000,
+			"dynamic": 1,
+		}
+		self.assertEqual("mysqld_variable.yml", kwargs["playbook"])
+		server.reload()  # reload to get the right typing
+		self.assertDocumentEqual(server, kwargs["server"])
+		self.assertDictEqual(expected_vars, kwargs["variables"])
+
+	def test_ansible_playbook_not_triggered_on_update_of_unrelated_things(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.save()
+		server.status = "Broken"
+		with patch(
+			"press.press.doctype.database_server.database_server.Ansible"
+		) as Mock_Ansible:
+			server.save()
+		Mock_Ansible.assert_not_called()
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_playbook_run_on_update_of_child_table(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.save()
+		server.mariadb_system_variables[0].value_int = 2000
+		with patch(
+			"press.press.doctype.database_server.database_server.Ansible"
+		) as Mock_Ansible:
+			server.save()
+		Mock_Ansible.assert_called_once()
