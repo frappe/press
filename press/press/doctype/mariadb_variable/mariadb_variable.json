@@ -9,7 +9,8 @@
  "engine": "InnoDB",
  "field_order": [
   "dynamic",
-  "datatype"
+  "datatype",
+  "replication_and_binary_log"
  ],
  "fields": [
   {
@@ -26,11 +27,17 @@
    "label": "Datatype",
    "options": "Int\nBool\nFloat",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "replication_and_binary_log",
+   "fieldtype": "Check",
+   "label": "Replication And Binary Log"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-31 11:58:09.822133",
+ "modified": "2023-05-31 12:05:27.290979",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",
