@@ -36,12 +36,12 @@ class TestDatabaseServer(FrappeTestCase):
 		server = create_test_database_server()
 		server.append(
 			"mariadb_system_variables",
-			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": "1000"},
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
 		)
 		server.save()
 		server.append(
 			"mariadb_system_variables",
-			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": "2000"},
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 2000},
 		)
 
 		with self.assertRaises(frappe.ValidationError):
@@ -54,7 +54,7 @@ class TestDatabaseServer(FrappeTestCase):
 			"mariadb_system_variables",
 			{
 				"mariadb_variable": "innodb_buffer_pool_size",
-				"value_int": "1000",
+				"value_int": 1000,
 				"value_check": True,
 			},
 		)
@@ -66,7 +66,19 @@ class TestDatabaseServer(FrappeTestCase):
 		server = create_test_database_server()
 		server.append(
 			"mariadb_system_variables",
-			{"mariadb_variable": "innodb_buffer_pool_size", "value_check": True},
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": True},
+		)
+		with self.assertRaises(frappe.ValidationError):
+			server.save()
+
+	def test_value_field_set_matches_datatype(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{
+				"mariadb_variable": "innodb_buffer_pool_size",
+				"value_check": 1000,  # seeing if only value is checked and not the field
+			},
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
@@ -76,7 +88,7 @@ class TestDatabaseServer(FrappeTestCase):
 		server = create_test_database_server()
 		server.append(
 			"mariadb_system_variables",
-			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": "1000", "skip": True},
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000, "skip": True},
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
