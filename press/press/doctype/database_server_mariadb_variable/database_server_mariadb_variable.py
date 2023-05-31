@@ -42,12 +42,19 @@ class DatabaseServerMariaDBVariable(Document):
 				f"Value field for {self.mariadb_variable} must be value_{self.datatype.lower()}"
 			)
 
+	def validate_skipped_should_be_bool(self):
+		if self.skip and self.datatype.lower() != "bool":
+			frappe.throw(
+				f"Only boolean variables can be skipped. {self.mariadb_variable} is not a boolean variable"
+			)
+
 	def validate(  # Is not called by FF. Called manually from database_server.py
 		self,
 	):
 		self.validate_only_one_value_is_set()
 		self.validate_value_field_set_is_correct()
 		self.validate_datatype_of_field_is_correct()
+		self.validate_skipped_should_be_bool()
 
 
 def on_doctype_update():
