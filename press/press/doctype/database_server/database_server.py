@@ -25,16 +25,10 @@ class DatabaseServer(BaseServer):
 		if not self.mariadb_root_password:
 			self.mariadb_root_password = frappe.generate_hash(length=32)
 
-	def validate_only_one_value_is_set(self, variable: DatabaseServerMariaDBVariable):
-		value_fields = list(
-			filter(lambda x: x.startswith("value_"), variable.as_dict().keys())
-		)
-		if sum([bool(variable.get(f)) for f in value_fields]) > 1:
-			frappe.throw("Only one value can be set for MariaDB system variable")
-
 	def validate_mariadb_system_variables(self):
+		variable: DatabaseServerMariaDBVariable
 		for variable in self.mariadb_system_variables:
-			self.validate_only_one_value_is_set(variable)
+			variable.validate()
 
 	def on_update(self):
 		pass
