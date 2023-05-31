@@ -69,7 +69,7 @@ class TestDatabaseServer(FrappeTestCase):
 		server = create_test_database_server()
 		server.append(
 			"mariadb_system_variables",
-			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": True},
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": "OFF"},
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
@@ -135,7 +135,7 @@ class TestDatabaseServer(FrappeTestCase):
 		expected_vars = {
 			"server": server.name,
 			"variable": "innodb_buffer_pool_size",
-			"value": 1000,
+			"value": 1000 * 1024 * 1024,  # convert to bytes
 			"dynamic": 1,
 		}
 		self.assertEqual("mysqld_variable.yml", kwargs["playbook"])
