@@ -82,6 +82,15 @@ class TestDatabaseServer(FrappeTestCase):
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
+		server.append(
+			"mariadb_system_variables",
+			{
+				"mariadb_variable": "log_bin",
+				"value_int": False,  # seeing if only value is checked and not the field
+			},
+		)
+		with self.assertRaises(frappe.ValidationError):
+			server.save()
 
 	def test_only_bool_variables_can_be_skipped(self):
 		"""Test that only bool variables can be skipped"""
@@ -92,3 +101,12 @@ class TestDatabaseServer(FrappeTestCase):
 		)
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "log_bin", "skip": True},
+		)
+		try:
+			server.save()
+		except Exception:
+			self.fail("Boolean variables should be able skipped")
