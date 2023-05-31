@@ -174,3 +174,23 @@ class TestDatabaseServer(FrappeTestCase):
 		) as Mock_Ansible:
 			server.save()
 		Mock_Ansible.assert_called_once()
+
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		wraps=foreground_enqueue_doc,
+	)
+	def test_multiple_playbooks_triggered_for_multiple_variables_in_child_table(
+		self, mock_enqueue_doc, Mock_Ansible
+	):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "log_bin", "skip": True},
+		)
+		server.save()
+		self.assertEqual(2, Mock_Ansible.call_count)
