@@ -44,7 +44,9 @@
   "column_break_18",
   "ssh_user",
   "ssh_port",
-  "root_public_key"
+  "root_public_key",
+  "mariadb_settings_tab",
+  "mariadb_system_variables"
  ],
  "fields": [
   {
@@ -300,11 +302,22 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "fieldname": "mariadb_settings_tab",
+   "fieldtype": "Tab Break",
+   "label": "MariaDB Settings"
+  },
+  {
+   "fieldname": "mariadb_system_variables",
+   "fieldtype": "Table",
+   "label": "MariaDB System Variables",
+   "options": "Database Server MariaDB Variable"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-28 16:51:30.381450",
+ "modified": "2023-05-30 15:56:50.230078",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
