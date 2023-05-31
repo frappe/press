@@ -4,10 +4,14 @@
 
 
 import frappe
+
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
+	DatabaseServerMariaDBVariable,
+)
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
-from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DatabaseServer(BaseServer):
@@ -15,10 +19,25 @@ class DatabaseServer(BaseServer):
 		super().validate()
 		self.validate_mariadb_root_password()
 		self.validate_server_id()
+		self.validate_mariadb_system_variables()
 
 	def validate_mariadb_root_password(self):
 		if not self.mariadb_root_password:
 			self.mariadb_root_password = frappe.generate_hash(length=32)
+
+	def validate_only_one_value_is_set(self, variable: DatabaseServerMariaDBVariable):
+		value_fields = list(
+			filter(lambda x: x.startswith("value_"), variable.as_dict().keys())
+		)
+		if sum([bool(variable.get(f)) for f in value_fields]) > 1:
+			frappe.throw("Only one value can be set for MariaDB system variable")
+
+	def validate_mariadb_system_variables(self):
+		for variable in self.mariadb_system_variables:
+			self.validate_only_one_value_is_set(variable)
+
+	def on_update(self):
+		pass
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
