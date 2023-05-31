@@ -1,0 +1,10 @@
+[
+ {
+  "datatype": "Int",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-05-30 15:14:51.543889",
+  "name": "innodb_buffer_pool_size"
+ }
+]
