@@ -24,13 +24,13 @@
    "fieldname": "datatype",
    "fieldtype": "Select",
    "label": "Datatype",
-   "options": "Int\nCheck\nFloat",
+   "options": "Int\nBoolean\nFloat",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-30 15:19:34.089115",
+ "modified": "2023-05-31 10:02:47.024443",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",
