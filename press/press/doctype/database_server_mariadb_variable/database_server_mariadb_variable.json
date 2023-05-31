@@ -17,36 +17,40 @@
   {
    "fieldname": "mariadb_variable",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "MariaDB Variable",
    "options": "MariaDB Variable"
   },
   {
    "fieldname": "value_int",
    "fieldtype": "Int",
-   "label": "Value_Int"
+   "in_list_view": 1,
+   "label": "Value Int"
   },
   {
    "default": "0",
    "fieldname": "value_check",
    "fieldtype": "Check",
-   "label": "Value_Check"
+   "in_list_view": 1,
+   "label": "Value Check"
   },
   {
    "fieldname": "value_float",
    "fieldtype": "Float",
-   "label": "Value_Float"
+   "label": "Value Float"
   },
   {
    "default": "0",
    "fieldname": "skip",
    "fieldtype": "Check",
+   "in_list_view": 1,
    "label": "Skip"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-30 15:52:52.309918",
+ "modified": "2023-05-30 17:06:48.052877",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server MariaDB Variable",
