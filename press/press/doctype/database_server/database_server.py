@@ -56,6 +56,7 @@ class DatabaseServer(BaseServer):
 				"value": variable.value,
 				"dynamic": variable.dynamic,
 				"persist": variable.persist,
+				"skip": variable.skip,
 			},
 		)
 		play = ansible.run()

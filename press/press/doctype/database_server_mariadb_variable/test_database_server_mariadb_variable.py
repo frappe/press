@@ -97,6 +97,31 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		except frappe.ValidationError:
 			self.fail("Should be able to skip skippable variables")
 
+	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_skip_implies_persist_and_not_dynamic(self, Mock_Ansible):
+		"""Test that skip enables persist and not dynamic"""
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "log_bin", "skip": True},
+		)
+		server.save()
+		Mock_Ansible.assert_called_once()
+		args, kwargs = Mock_Ansible.call_args
+		expected = {
+			"server": server.name,
+			"variable": "log_bin",
+			"value": frappe.db.get_value("MariaDB Variable", "log_bin", "default_value"),
+			"dynamic": 0,
+			"persist": 1,
+			"skip": 1,
+		}
+		self.assertDictEqual(kwargs["variables"], expected)
+
 	def test_default_value_is_applied_if_empty(self):
 		"""Test that default value is applied if empty"""
 		server = create_test_database_server()
@@ -132,6 +157,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"value": 1000 * 1024 * 1024,  # convert to bytes
 			"dynamic": 1,
 			"persist": 0,
+			"skip": 0,
 		}
 		self.assertEqual("mysqld_variable.yml", kwargs["playbook"])
 		server.reload()  # reload to get the right typing

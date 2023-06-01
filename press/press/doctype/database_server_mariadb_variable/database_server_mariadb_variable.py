@@ -33,7 +33,15 @@ class DatabaseServerMariaDBVariable(Document):
 
 	@property
 	def dynamic(self) -> bool:
-		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "dynamic")
+		if not self.get("_dynamic"):
+			self._dynamic = frappe.db.get_value(
+				"MariaDB Variable", self.mariadb_variable, "dynamic"
+			)
+		return self._dynamic
+
+	@dynamic.setter
+	def dynamic(self, value: bool):
+		self._dynamic = value
 
 	@property
 	def skippable(self) -> bool:
@@ -72,6 +80,11 @@ class DatabaseServerMariaDBVariable(Document):
 		if not self.value and not self.skippable:
 			frappe.throw(f"Value for {self.mariadb_variable} cannot be empty")
 
+	def set_persist_and_unset_dynamic_if_skipped(self):
+		if self.skip:
+			self.persist = True
+			self.dynamic = False
+
 	def validate(  # Is not called by FF. Called manually from database_server.py
 		self,
 	):
@@ -79,6 +92,7 @@ class DatabaseServerMariaDBVariable(Document):
 		self.set_default_value_if_no_value()
 		self.validate_skipped_should_be_skippable()
 		self.validate_empty_only_if_skippable()
+		self.set_persist_and_unset_dynamic_if_skipped()
 		if self.value:
 			self.validate_value_field_set_is_correct()
 			self.validate_datatype_of_field_is_correct()
