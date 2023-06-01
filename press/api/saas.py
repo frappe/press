@@ -345,7 +345,9 @@ def create_marketplace_subscription(account_request):
 			subscription.save()
 
 	subscriptions = frappe.get_all(
-		"Marketplace App Subscrition", {"site": site_name, "enabled": 0}, pluck="name"
+		"Marketplace App Subscription",
+		{"site": site_name, "status": "Disabled"},
+		pluck="name",
 	)
 	for subscription in subscriptions:
 		frappe.db.set_value(
