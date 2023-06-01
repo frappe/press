@@ -366,6 +366,7 @@ def guess_type(value):
 		bool: "Boolean",
 		dict: "JSON",
 		list: "JSON",
+		str: "String",
 	}
 	value_type = type(value)
 
