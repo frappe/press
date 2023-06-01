@@ -1,0 +1,23 @@
+---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install NGINX
+  apt:
+    pkg:
+      - nginx
+      - nginx-extras
+      - apache2-utils
+      - libpcre3-dev
+    state: present
+    
+- name: Add SSL Proxy for TLS
+  template:
+    src: ssl.conf
+    dest: /etc/nginx/conf.d/ssl.conf
+
+- name: Restart NGINX and Enable at Boot
+  service:
+    name: nginx
+    state: restarted

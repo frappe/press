@@ -12,11 +12,7 @@ from press.utils import log_error
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		_series = "s"
-		series = f"{_series}-.#####"
-		self.index = int(make_autoname(series)[-5:])
-		self.name = f"{_series}{self.index}.{self.domain}"
-		# self.name = f"{self.hostname}.{self.domain}"
+		self.name = self.domain
 
 	def validate(self):
 		if not self.mariadb_ip:
@@ -28,13 +24,15 @@ class SelfHostedServer(Document):
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
 		if not self.hostname:
-			self.hostname = self.name.split(".")[0]
+			self.hostname = self.domain.split(".")[0]
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_get_apps", queue="long", timeout=1200)
 		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
 
+	# def get_hostnames(self):
+			
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
@@ -353,7 +351,7 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def restore_files(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_restore_files", queue="long", timeout=1200
+			self.doctype, self.name, "_restore_files", queue="long", timeout=2400
 		)
 
 	def _restore_files(self):
@@ -420,3 +418,36 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 		self.save()
+
+	@frappe.whitelist()
+	def get_tls_certs(self):
+		try:
+			tls_cert = frappe.get_doc({
+				"doctype":"TLS Certificate",
+				"domain":f"{self.hostname}.{self.domain}",
+				"team":self.team,
+				"wildcard":False
+			}).insert()
+			return tls_cert.name
+		except:
+			log_error("TLS Certificate(SelfHosted) Creation Error")
+			
+	@frappe.whitelist()
+	def setup_nginx(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx", queue="long", timeout=1200)
+
+	def _setup_nginx(self):
+		try:
+			ansible = Ansible(
+				playbook="self_hosted_nginx.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
+				domain=self.name
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				self.get_tls_certs()
+
+		except:
+			log_error("Setting Up Nginx for SSL Failed")

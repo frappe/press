@@ -184,9 +184,8 @@
   },
   {
    "fieldname": "domain",
-   "fieldtype": "Link",
-   "label": "Domain",
-   "options": "Root Domain"
+   "fieldtype": "Data",
+   "label": "Domain"
   },
   {
    "fieldname": "column_break_smwr",
@@ -278,7 +277,7 @@
   }
  ],
  "links": [],
- "modified": "2023-05-25 21:14:36.458388",
+ "modified": "2023-05-31 16:15:02.883829",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

@@ -10,6 +10,7 @@ frappe.ui.form.on('Self Hosted Server', {
 		);
 		[	
 			[__('Ping Server'), "ping_ansible", false],
+			[__('Setup Nginx'), "setup_nginx", false],
 			[__('Create Proxy Server'), "create_proxy_server", false],
 			[__('Create Database Server'), "create_db_server", false, frm.doc.proxy_created],
 			[__('Create App Server'), "create_server", false,frm.doc.database_setup],
