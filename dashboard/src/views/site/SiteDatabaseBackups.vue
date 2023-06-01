@@ -160,11 +160,6 @@ export default {
 					}
 				},
 				{
-					label: 'Actions',
-					isGroup: true,
-					condition: () => backup.offsite
-				},
-				{
 					label: 'Restore',
 					condition: () => backup.offsite,
 					handler: () => {
