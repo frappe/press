@@ -1,20 +1,24 @@
 [
  {
   "datatype": "Int",
+  "default_value": null,
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
   "modified": "2023-05-30 15:14:51.543889",
   "name": "innodb_buffer_pool_size",
-  "replication_and_binary_log": 0
+  "replication_and_binary_log": 0,
+  "skippable": 0
  },
  {
-  "datatype": "Bool",
+  "datatype": "Str",
+  "default_value": "/var/lib/mysql/mysql-bin",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 0,
-  "modified": "2023-05-31 12:05:42.486523",
+  "modified": "2023-06-01 10:40:38.292454",
   "name": "log_bin",
-  "replication_and_binary_log": 1
+  "replication_and_binary_log": 1,
+  "skippable": 1
  }
 ]
