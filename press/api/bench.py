@@ -616,6 +616,24 @@ def update(name, bench):
 
 
 @frappe.whitelist()
+@protected("Release Group")
+def update_all_sites_to_latest_version(bench_name):
+	sites_to_be_updated = frappe.get_list(
+		"Site", filters=[["bench", "like", f"{bench_name}%"]]
+	)
+	for site in sites_to_be_updated:
+		try:
+			site = frappe.get_doc("Site", site)
+			site.schedule_update()
+			frappe.db.commit()
+		except Exception:
+			import traceback
+
+			traceback.print_exc()
+			frappe.db.rollback()
+
+
+@frappe.whitelist()
 @protected("Bench")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
