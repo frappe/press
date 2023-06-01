@@ -138,7 +138,7 @@ def create_app_subscriptions(site, app):
 	marketplace_apps = (
 		get_saas_apps(app)
 		if frappe.db.get_value("Saas Settings", app, "multi_subscription")
-		else app
+		else [app]
 	)
 
 	# create subscriptions
