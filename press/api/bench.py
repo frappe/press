@@ -618,19 +618,9 @@ def update(name, bench):
 @frappe.whitelist()
 @protected("Release Group")
 def update_all_sites(bench_name):
-	sites_to_be_updated = frappe.get_list(
-		"Site", filters=[["bench", "like", f"{bench_name}%"]], pluck="name"
-	)
-	for site in sites_to_be_updated:
-		try:
-			site = frappe.get_doc("Site", site)
-			site.schedule_update()
-			frappe.db.commit()
-		except Exception:
-			import traceback
-
-			traceback.print_exc()
-			frappe.db.rollback()
+	benches = frappe.get_all("Bench", {"group": bench_name})
+	for bench in benches:
+		frappe.get_cached_doc("Bench", bench).update_all_sites()
 
 
 @frappe.whitelist()
