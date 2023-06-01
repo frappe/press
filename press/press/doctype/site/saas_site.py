@@ -150,7 +150,7 @@ def create_app_subscriptions(site, app):
 	return subscription_docs
 
 
-def get_app_subscriptions(apps=None, site=None):
+def get_app_subscriptions(apps=None):
 	subscriptions = []
 
 	for app in apps:
@@ -165,7 +165,6 @@ def get_app_subscriptions(apps=None, site=None):
 					if frappe.db.exists("Saas Settings", app)
 					else free_plan[0],
 					"app": app,
-					"site": site,
 					"while_site_creation": True,
 					"status": "Disabled",
 				}
