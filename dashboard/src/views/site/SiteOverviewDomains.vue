@@ -103,13 +103,53 @@
 						type="text"
 						placeholder="www.example.com"
 						v-model="newDomain"
+						:readonly="dnsVerified"
 					/>
 
-					<p class="text-base" v-if="newDomain && !dnsVerified">
-						Make a <span class="font-semibold">CNAME</span> record from
-						<span class="font-semibold">{{ newDomain }}</span> to
-						<span class="font-semibold">{{ site.name }}</span>
-					</p>
+					<div v-if="newDomain && !dnsVerified" class="text-base space-y-2">
+						<p>
+							Create one of the following DNS records
+						</p>
+						<p class="px-2">
+							<span class="font-semibold text-gray-700">CNAME</span> record from
+							<span class="font-semibold text-gray-700">{{ newDomain }}</span> to
+							<span class="font-semibold text-gray-700">{{ site.name }}</span>
+						</p>
+						<p class="px-2">
+							<span class="font-semibold text-gray-700">A</span> record from
+							<span class="font-semibold text-gray-700">{{ newDomain }}</span> to
+							<span class="font-semibold text-gray-700">{{ site.ip }}</span>
+						</p>
+					</div>
+					<div v-if="dnsResult && !dnsResult.matched" class="space-y-2">
+						<p class="text-base">
+							Received following DNS query responses for <span class="font-semibold text-gray-700">{{ newDomain }}</span>.
+						</p>
+						<div v-if="newDomain && dnsResult.CNAME && !dnsResult.CNAME.matched" class="space-y-2">
+							<p class="text-base">
+								<span class="font-semibold text-gray-700">CNAME</span>
+							</p>
+							<div
+								class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
+							>	
+								<p class="select-all overflow-hidden font-mono text-sm text-gray-800">
+									{{ dnsResult.CNAME.answer }}
+								</p>
+							</div>
+						</div>
+						<div v-if="newDomain && dnsResult.A && !dnsResult.A.matched" class="space-y-2">
+							<p class="text-base">
+								<span class="font-semibold text-gray-700">A</span>
+							</p>
+							<div
+								class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
+							>
+								<p class="select-all overflow-hidden font-mono text-sm text-gray-800">
+									{{ dnsResult.A.answer }}
+								</p>
+							</div>
+						</div>
+					</div>
 					<p class="flex text-base" v-if="dnsVerified === false">
 						<FeatherIcon
 							name="x"
@@ -131,7 +171,7 @@
 			</template>
 
 			<template v-slot:actions>
-				<Button @click="showDialog = false"> Cancel </Button>
+				<Button @click="cancelAddDomainDialog()"> Cancel </Button>
 				<Button
 					v-if="!dnsVerified"
 					class="ml-3"
@@ -233,11 +273,19 @@ export default {
 			return this.$resources.domains;
 		},
 		dnsVerified() {
+			return this.dnsResult?.matched;
+		},
+		dnsResult() {
 			return this.$resources.checkDNS.data;
 		},
 		primaryDomain() {
 			return this.$resources.domains.data.filter(d => d.primary)[0].domain;
 		}
+	},
+	watch: {
+		newDomain() {
+			this.$resources.checkDNS.reset();
+		},
 	},
 	methods: {
 		actionItems(domain) {
@@ -343,7 +391,12 @@ export default {
 					});
 				}
 			});
-		}
+		},
+		cancelAddDomainDialog() {
+			this.showDialog = false;
+			this.newDomain = null;
+			this.$resources.checkDNS.reset();
+		},
 	}
 };
 </script>

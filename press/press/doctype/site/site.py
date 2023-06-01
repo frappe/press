@@ -486,7 +486,7 @@ class Site(Document):
 	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
@@ -533,7 +533,7 @@ class Site(Document):
 		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			site_domain = frappe.get_all(
 				"Site Domain",
 				filters={
