@@ -883,7 +883,9 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append("configuration", {"key": key, "value": convert(value)})
+				self.append(
+					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
+				)
 
 		if save:
 			self.save()
