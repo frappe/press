@@ -11,8 +11,10 @@
     path: /etc/mysql/conf.d/frappe.cnf
     section: mysqld
     option: '{{ variable | replace("_", "-") }}'
-    value: '{{ value }}'
+    value: '{{ value | default(None) }}' # condition to not set rhs
     backup: true
+    allow_no_value: true
+    create: false
   when: persist | default(false) | bool
 
 - name: Restart MariaDB Service

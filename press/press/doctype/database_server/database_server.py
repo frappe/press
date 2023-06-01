@@ -52,11 +52,7 @@ class DatabaseServer(BaseServer):
 			port=self.ssh_port or 22,
 			variables={
 				"server": self.name,
-				"variable": variable.mariadb_variable,
-				"value": variable.value,
-				"dynamic": variable.dynamic,
-				"persist": variable.persist,
-				"skip": variable.skip,
+				**variable.get_variable_dict_for_play(),
 			},
 		)
 		play = ansible.run()

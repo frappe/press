@@ -47,6 +47,20 @@ class DatabaseServerMariaDBVariable(Document):
 	def skippable(self) -> bool:
 		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "skippable")
 
+	def get_variable_dict_for_play(self) -> dict:
+		var = self.mariadb_variable
+		if self.skip:
+			var = "skip-" + var
+		res = {
+			"variable": var,
+			"dynamic": self.dynamic,
+			"persist": self.persist,
+			"skip": self.skip,
+		}
+		if not self.skip:
+			res.update({"value": self.value})
+		return res
+
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
 			frappe.throw("Only one value can be set for MariaDB system variable")
