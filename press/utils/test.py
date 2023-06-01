@@ -7,9 +7,9 @@ def foreground_enqueue_doc(
 	doctype: str,
 	docname: str,
 	doc_method: str,
-	queue="default",  # default arg unused to avoid going to kwargs
+	queue="default",
 	timeout=None,
-	now=False,
+	now=False,  # default args unused to avoid them from going to kwargs
 	**kwargs
 ):
 	"""
