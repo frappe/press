@@ -11,8 +11,8 @@ from press.press.doctype.site.saas_site import (
 	SaasSite,
 	get_default_team_for_app,
 	get_saas_domain,
-	get_saas_plan,
 	get_saas_site_plan,
+	set_site_in_subscription_docs,
 )
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
@@ -125,6 +125,7 @@ def create_or_rename_saas_site(app, account_request):
 			saas_site = SaasSite(
 				account_request=account_request, app=app, hybrid_saas_pool=hybrid_saas_pool
 			).insert(ignore_permissions=True)
+			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
 			saas_site.create_subscription(get_saas_site_plan(app))
 	finally:
 		frappe.set_user(current_user)
@@ -314,6 +315,7 @@ def headless_setup_account(key):
 	frappe.set_user("Administrator")
 
 	create_marketplace_subscription(account_request)
+	# create team and enable the subscriptions for site
 	capture(
 		"completed_server_setup_account",
 		"fc_saas",
@@ -342,23 +344,15 @@ def create_marketplace_subscription(account_request):
 			subscription.team = team_doc.name
 			subscription.save()
 
-	if len(frappe.get_all("Marketplace App Plan", {"app": account_request.saas_app})) > 0:
-		if not frappe.db.exists(
-			"Marketplace App Subscription", {"app": account_request.saas_app, "site": site_name}
-		):
-			frappe.get_doc(
-				{
-					"doctype": "Marketplace App Subscription",
-					"team": team_doc.name,
-					"app": account_request.saas_app,
-					"site": site_name,
-					"marketplace_app_plan": get_saas_plan(account_request.saas_app),
-					"initial_plan": json.loads(account_request.url_args).get("plan")
-					if account_request.url_args
-					else "",
-					"interval": "Daily",
-				}
-			).insert(ignore_permissions=True)
+	subscriptions = frappe.get_all(
+		"Marketplace App Subscrition", {"site": site_name, "enabled": 0}, pluck="name"
+	)
+	for subscription in subscriptions:
+		frappe.db.set_value(
+			"Marketplace App Subscription",
+			subscription,
+			{"status": "Active", "team": site.team},
+		)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)

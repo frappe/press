@@ -40,6 +40,8 @@ class SaasSite(Site):
 				}
 			)
 
+			self.subscription_docs = create_app_subscriptions(site=self, app=self.app)
+
 	def rename_pooled_site(self, account_request=None, subdomain=None):
 		self.subdomain = account_request.subdomain if account_request else subdomain
 		self.is_standby = False
@@ -126,3 +128,55 @@ def get_pool_apps(pool_name):
 
 def get_default_team_for_app(app):
 	return frappe.db.get_value("Saas Settings", app, "default_team")
+
+
+# Saas Update site config utils
+
+
+def create_app_subscriptions(site, app):
+	marketplace_apps = (
+		get_saas_apps(app)
+		if frappe.db.get_value("Saas Settings", app, "multi_subscription")
+		else app
+	)
+
+	# create subscriptions
+	subscription_docs = get_app_subscriptions(marketplace_apps, site.name)
+
+	# set site config
+	secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+	site._update_configuration(secret_keys, save=False)
+
+	return subscription_docs
+
+
+def get_app_subscriptions(apps=None, site=None):
+	subscriptions = []
+
+	for app in apps:
+		free_plan = frappe.get_all(
+			"Marketplace App Plan", {"enabled": 1, "is_free": 1, "app": app}, pluck="name"
+		)
+		if free_plan:
+			new_subscription = frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"marketplace_app_plan": get_saas_plan(app)
+					if frappe.db.exists("Saas Settings", app)
+					else free_plan[0],
+					"app": app,
+					"site": site,
+					"while_site_creation": True,
+					"status": "Disabled",
+				}
+			).insert(ignore_permissions=True)
+
+			subscriptions.append(new_subscription)
+
+	return subscriptions
+
+
+def set_site_in_subscription_docs(subscription_docs, site):
+	for doc in subscription_docs:
+		doc.site = site
+		doc.save(ignore_permissions=True)
