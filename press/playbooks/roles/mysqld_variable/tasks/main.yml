@@ -10,7 +10,7 @@
   ini_file:
     path: /etc/mysql/conf.d/frappe.cnf
     section: mysqld
-    option: '{{ variable }}'
+    option: '{{ variable | replace("_", "-") }}'
     value: '{{ value }}'
     backup: true
   when: persist | default(false) | bool
