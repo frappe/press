@@ -114,7 +114,7 @@ class TestDatabaseServer(FrappeTestCase):
 		except Exception:
 			self.fail("Boolean variables should be able skipped")
 
-	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		wraps=foreground_enqueue_doc,
@@ -137,6 +137,7 @@ class TestDatabaseServer(FrappeTestCase):
 			"variable": "innodb_buffer_pool_size",
 			"value": 1000 * 1024 * 1024,  # convert to bytes
 			"dynamic": 1,
+			"persist": 0,
 		}
 		self.assertEqual("mysqld_variable.yml", kwargs["playbook"])
 		server.reload()  # reload to get the right typing
@@ -152,7 +153,7 @@ class TestDatabaseServer(FrappeTestCase):
 		server.save()
 		server.status = "Broken"
 		with patch(
-			"press.press.doctype.database_server.database_server.Ansible"
+			"press.press.doctype.database_server.database_server.Ansible", wraps=Ansible
 		) as Mock_Ansible:
 			server.save()
 		Mock_Ansible.assert_not_called()
@@ -175,7 +176,7 @@ class TestDatabaseServer(FrappeTestCase):
 			server.save()
 		Mock_Ansible.assert_called_once()
 
-	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		wraps=foreground_enqueue_doc,
@@ -195,7 +196,7 @@ class TestDatabaseServer(FrappeTestCase):
 		server.save()
 		self.assertEqual(2, Mock_Ansible.call_count)
 
-	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
