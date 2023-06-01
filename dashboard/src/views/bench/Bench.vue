@@ -63,9 +63,9 @@ export default {
 				onError: this.$routeTo404PageIfNotFound
 			};
 		},
-		updateAllSitesToLatest() {
+		updateAllSites() {
 			return {
-				method: 'press.api.bench.update_all_sites_to_latest_version',
+				method: 'press.api.bench.update_all_sites',
 				params: {
 					bench_name: this.benchName
 				},
@@ -168,7 +168,7 @@ export default {
 					label: 'Update All Sites to Latest Version',
 					icon: 'arrow-up-circle',
 					handler: async() => {
-						await this.$resources.updateAllSitesToLatest.submit()
+						await this.$resources.updateAllSites.submit()
 					}
 				}
 			].filter(Boolean);

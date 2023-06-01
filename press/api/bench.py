@@ -617,7 +617,7 @@ def update(name, bench):
 
 @frappe.whitelist()
 @protected("Release Group")
-def update_all_sites_to_latest_version(bench_name):
+def update_all_sites(bench_name):
 	sites_to_be_updated = frappe.get_list(
 		"Site", filters=[["bench", "like", f"{bench_name}%"]], pluck="name"
 	)
