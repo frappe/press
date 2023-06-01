@@ -78,7 +78,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			server.save()
 
-	def test_only_bool_variables_can_be_skipped(self):
+	def test_only_skippable_variables_can_be_skipped(self):
 		"""Test that only bool variables can be skipped"""
 		server = create_test_database_server()
 		server.append(
@@ -94,8 +94,19 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		)
 		try:
 			server.save()
-		except Exception:
-			self.fail("Boolean variables should be able skipped")
+		except frappe.ValidationError:
+			self.fail("Should be able to skip skippable variables")
+
+	def test_default_value_is_applied_if_empty(self):
+		"""Test that default value is applied if empty"""
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "log_bin"},
+		)
+		server.save()
+		default_value = frappe.db.get_value("MariaDB Variable", "log_bin", "default_value")
+		self.assertEqual(server.mariadb_system_variables[0].value_str, default_value)
 
 	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
 	@patch(

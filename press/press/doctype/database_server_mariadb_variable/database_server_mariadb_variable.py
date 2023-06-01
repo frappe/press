@@ -35,6 +35,10 @@ class DatabaseServerMariaDBVariable(Document):
 	def dynamic(self) -> bool:
 		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "dynamic")
 
+	@property
+	def skippable(self) -> bool:
+		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "skippable")
+
 	def validate_only_one_value_is_set(self):
 		if sum([bool(self.get(f)) for f in self.value_fields]) > 1:
 			frappe.throw("Only one value can be set for MariaDB system variable")
@@ -49,20 +53,35 @@ class DatabaseServerMariaDBVariable(Document):
 				f"Value field for {self.mariadb_variable} must be value_{self.datatype.lower()}"
 			)
 
-	def validate_skipped_should_be_bool(self):
-		if self.skip and self.datatype.lower() != "bool":
+	def validate_skipped_should_be_skippable(self):
+		if self.skip and not self.skippable:
 			frappe.throw(
-				f"Only boolean variables can be skipped. {self.mariadb_variable} is not a boolean variable"
+				f"Only skippable variables can be skipped. {self.mariadb_variable} is not skippable"
 			)
+
+	def set_default_value_if_no_value(self):
+		if self.value:
+			return
+		default_value = frappe.db.get_value(
+			"MariaDB Variable", self.mariadb_variable, "default_value"
+		)
+		if default_value:
+			self.set(f"value_{self.datatype.lower()}", default_value)
+
+	def validate_empty_only_if_skippable(self):
+		if not self.value and not self.skippable:
+			frappe.throw(f"Value for {self.mariadb_variable} cannot be empty")
 
 	def validate(  # Is not called by FF. Called manually from database_server.py
 		self,
 	):
 		self.validate_only_one_value_is_set()
+		self.set_default_value_if_no_value()
+		self.validate_skipped_should_be_skippable()
+		self.validate_empty_only_if_skippable()
 		if self.value:
 			self.validate_value_field_set_is_correct()
 			self.validate_datatype_of_field_is_correct()
-		self.validate_skipped_should_be_bool()
 
 
 def on_doctype_update():

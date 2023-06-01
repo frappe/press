@@ -9,6 +9,7 @@
  "field_order": [
   "mariadb_variable",
   "value_int",
+  "value_str",
   "value_bool",
   "value_float",
   "skip",
@@ -44,7 +45,6 @@
    "default": "0",
    "fieldname": "value_bool",
    "fieldtype": "Check",
-   "in_list_view": 1,
    "label": "Value Bool"
   },
   {
@@ -53,12 +53,18 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Persist"
+  },
+  {
+   "fieldname": "value_str",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Value Str"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-06-01 08:50:43.894945",
+ "modified": "2023-06-01 10:55:14.041364",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server MariaDB Variable",
