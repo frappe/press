@@ -194,3 +194,22 @@ class TestDatabaseServer(FrappeTestCase):
 		)
 		server.save()
 		self.assertEqual(2, Mock_Ansible.call_count)
+
+	@patch("press.press.doctype.database_server.database_server.Ansible")
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_persist_check_passes_option_to_playbook_run(self, Mock_Ansible):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{
+				"mariadb_variable": "innodb_buffer_pool_size",
+				"value_int": 1000,
+				"persist": True,
+			},
+		)
+		server.save()
+		args, kwargs = Mock_Ansible.call_args
+		self.assertTrue(kwargs["variables"]["persist"])

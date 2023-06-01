@@ -55,6 +55,7 @@ class DatabaseServer(BaseServer):
 				"variable": variable.mariadb_variable,
 				"value": variable.value,
 				"dynamic": variable.dynamic,
+				"persist": variable.persist,
 			},
 		)
 		play = ansible.run()
