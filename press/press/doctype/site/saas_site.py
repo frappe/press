@@ -142,7 +142,7 @@ def create_app_subscriptions(site, app):
 	)
 
 	# create subscriptions
-	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps)
+	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps, app)
 
 	# set site config
 	site_config = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
@@ -152,9 +152,14 @@ def create_app_subscriptions(site, app):
 	return subscription_docs
 
 
-def get_app_subscriptions(apps=None):
+def get_app_subscriptions(apps=None, standby_for=None):
+	"""
+	Create Marketplace App Subscription docs for all the apps that are installed
+	and set subscription keys in site config
+	"""
 	subscriptions = []
 	custom_saas_config = {}
+	secret_key = ""
 
 	for app in apps:
 		free_plan = frappe.get_all(
@@ -177,6 +182,21 @@ def get_app_subscriptions(apps=None):
 			config = frappe.db.get_value("Marketplace App", app, "site_config")
 			config = json.loads(config) if config else {}
 			custom_saas_config.update(config)
+
+			if app == standby_for:
+				secret_key = new_subscription.secret_key
+
+	if standby_for in frappe.get_all(
+		"Saas Settings", {"billing_type": "prepaid"}, pluck="name"
+	):
+		custom_saas_config.update(
+			{
+				"subscription": {"secret_key": secret_key},
+				"app_include_js": [
+					frappe.db.get_single_value("Press Settings", "app_include_script")
+				],
+			}
+		)
 
 	return subscriptions, custom_saas_config
 
