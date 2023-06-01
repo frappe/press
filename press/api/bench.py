@@ -619,7 +619,7 @@ def update(name, bench):
 @protected("Release Group")
 def update_all_sites_to_latest_version(bench_name):
 	sites_to_be_updated = frappe.get_list(
-		"Site", filters=[["bench", "like", f"{bench_name}%"]]
+		"Site", filters=[["bench", "like", f"{bench_name}%"]], pluck="name"
 	)
 	for site in sites_to_be_updated:
 		try:
