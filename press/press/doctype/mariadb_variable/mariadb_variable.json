@@ -10,7 +10,9 @@
  "field_order": [
   "dynamic",
   "datatype",
-  "replication_and_binary_log"
+  "replication_and_binary_log",
+  "default_value",
+  "skippable"
  ],
  "fields": [
   {
@@ -25,7 +27,7 @@
    "fieldname": "datatype",
    "fieldtype": "Select",
    "label": "Datatype",
-   "options": "Int\nBool\nFloat",
+   "options": "Int\nBool\nFloat\nStr",
    "reqd": 1
   },
   {
@@ -33,11 +35,22 @@
    "fieldname": "replication_and_binary_log",
    "fieldtype": "Check",
    "label": "Replication And Binary Log"
+  },
+  {
+   "fieldname": "default_value",
+   "fieldtype": "Data",
+   "label": "Default Value"
+  },
+  {
+   "default": "0",
+   "fieldname": "skippable",
+   "fieldtype": "Check",
+   "label": "Skippable"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-31 12:05:27.290979",
+ "modified": "2023-06-01 10:40:30.671988",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",
