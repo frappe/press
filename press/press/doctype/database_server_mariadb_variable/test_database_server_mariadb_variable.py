@@ -114,8 +114,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		args, kwargs = Mock_Ansible.call_args
 		expected = {
 			"server": server.name,
-			"variable": "log_bin",
-			"value": frappe.db.get_value("MariaDB Variable", "log_bin", "default_value"),
+			"variable": "skip-log_bin",
 			"dynamic": 0,
 			"persist": 1,
 			"skip": 1,
