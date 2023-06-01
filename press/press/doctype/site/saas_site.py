@@ -1,4 +1,5 @@
 import frappe
+import json
 from press.press.doctype.site.site import Site
 from press.press.doctype.account_request.account_request import AccountRequest
 
@@ -141,17 +142,19 @@ def create_app_subscriptions(site, app):
 	)
 
 	# create subscriptions
-	subscription_docs = get_app_subscriptions(marketplace_apps, site.name)
+	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps)
 
 	# set site config
-	secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
-	site._update_configuration(secret_keys, save=False)
+	site_config = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+	site_config.update(custom_saas_config)
+	site._update_configuration(site_config, save=False)
 
 	return subscription_docs
 
 
 def get_app_subscriptions(apps=None):
 	subscriptions = []
+	custom_saas_config = {}
 
 	for app in apps:
 		free_plan = frappe.get_all(
@@ -171,8 +174,11 @@ def get_app_subscriptions(apps=None):
 			).insert(ignore_permissions=True)
 
 			subscriptions.append(new_subscription)
+			config = frappe.db.get_value("Marketplace App", app, "site_config")
+			config = json.loads(config) if config else {}
+			custom_saas_config.update(config)
 
-	return subscriptions
+	return subscriptions, custom_saas_config
 
 
 def set_site_in_subscription_docs(subscription_docs, site):
