@@ -17,6 +17,16 @@
     create: false
   when: persist | default(false) | bool
 
+- name: Remove variable as it's been skipped/disabled
+  ini_file:
+    path: /etc/mysql/conf.d/frappe.cnf
+    section: mysqld
+    option: '{{ variable | replace("_", "-") | replace("skip-", "") }}'
+    create: false
+    state: absent
+  when: skip | default(false) | bool
+
+
 - name: Restart MariaDB Service
   systemd:
     name: mysql
