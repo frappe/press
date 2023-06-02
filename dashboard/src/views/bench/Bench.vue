@@ -164,7 +164,7 @@ export default {
 						});
 					}
 				},
-				this.bench.status == 'Active' && {
+				this.bench.status == 'Active' && !this.bench.public && {
 					label: 'Update All Sites to Latest Version',
 					icon: 'arrow-up-circle',
 					handler: async() => {
