@@ -5,14 +5,15 @@ import json
 
 import frappe
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from press.runner import Ansible
 from press.utils import log_error
+
+from tldextract import extract as sdext
 
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		self.name = self.domain
+		self.name = sdext(self.server_url).fqdn
 
 	def validate(self):
 		if not self.mariadb_ip:
@@ -23,8 +24,10 @@ class SelfHostedServer(Document):
 			self.mariadb_root_password = frappe.generate_hash(length=32)
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
-		if not self.hostname:
-			self.hostname = self.domain.split(".")[0]
+		if not self.hostname or not self.domain:
+			extracted_url = sdext(self.server_url)
+			self.hostname = extracted_url.subdomain
+			self.domain = extracted_url.registered_domain
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -32,7 +35,7 @@ class SelfHostedServer(Document):
 		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
 
 	# def get_hostnames(self):
-			
+
 	@frappe.whitelist()
 	def ping_ansible(self):
 		try:
@@ -42,7 +45,10 @@ class SelfHostedServer(Document):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status == "Success" and self.status == "Unreachable":
+				self.status = "Pending"
+				self.save()
 			self.reload()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -226,7 +232,6 @@ class SelfHostedServer(Document):
 			db_server.hostname = self.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
-			db_server.domain = self.domain
 			db_server.self_hosted_server_domain = self.domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
@@ -288,7 +293,6 @@ class SelfHostedServer(Document):
 			server.hostname = self.hostname
 			server.title = self.title
 			server.is_self_hosted = True
-			server.domain = self.domain
 			server.self_hosted_server_domain = self.domain
 			server.self_hosted_mariadb_server = self.private_ip
 			server.team = self.team
@@ -420,21 +424,25 @@ class SelfHostedServer(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def get_tls_certs(self):
+	def create_tls_certs(self):
 		try:
-			tls_cert = frappe.get_doc({
-				"doctype":"TLS Certificate",
-				"domain":f"{self.hostname}.{self.domain}",
-				"team":self.team,
-				"wildcard":False
-			}).insert()
+			tls_cert = frappe.get_doc(
+				{
+					"doctype": "TLS Certificate",
+					"domain": self.name,
+					"team": self.team,
+					"wildcard": False,
+				}
+			).insert()
 			return tls_cert.name
-		except:
+		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
-			
+
 	@frappe.whitelist()
 	def setup_nginx(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx", queue="long", timeout=1200)
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_nginx", queue="long", timeout=1200
+		)
 
 	def _setup_nginx(self):
 		try:
@@ -443,11 +451,11 @@ class SelfHostedServer(Document):
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or "22",
-				domain=self.name
+				variables={"domain": self.name},
 			)
 			play = ansible.run()
 			if play.status == "Success":
-				self.get_tls_certs()
+				self.create_tls_certs()
 
-		except:
-			log_error("Setting Up Nginx for SSL Failed")
+		except Exception:
+			log_error("Setting Up Nginx(Self Hosted) for SSL Failed")

@@ -42,7 +42,12 @@
     owner: root
     group: root
     mode: 0644
-
+    
+- name: Set my.cnf to load frappe.cnf file
+  lineinfile:
+    dest: /etc/mysql/my.cnf
+    line: "!includedir /etc/mysql/conf.d/"
+    
 - name: Set Open Files Count Limit for MariaDB
   lineinfile:
     dest: /lib/systemd/system/mariadb.service

@@ -16,6 +16,7 @@
   template:
     src: ssl.conf
     dest: /etc/nginx/conf.d/ssl.conf
+    mode: 0644
 
 - name: Restart NGINX and Enable at Boot
   service:

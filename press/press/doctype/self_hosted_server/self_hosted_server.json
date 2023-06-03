@@ -9,6 +9,7 @@
   "title",
   "hostname",
   "domain",
+  "server_url",
   "ip",
   "proxy_created",
   "database_setup",
@@ -180,12 +181,14 @@
   {
    "fieldname": "hostname",
    "fieldtype": "Data",
-   "label": "Hostname"
+   "label": "Hostname",
+   "read_only": 1
   },
   {
    "fieldname": "domain",
    "fieldtype": "Data",
-   "label": "Domain"
+   "label": "Domain",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_smwr",
@@ -274,10 +277,16 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "fieldname": "server_url",
+   "fieldtype": "Data",
+   "label": "Server URL",
+   "reqd": 1
   }
  ],
  "links": [],
- "modified": "2023-05-31 16:15:02.883829",
+ "modified": "2023-06-01 12:15:39.758008",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",
