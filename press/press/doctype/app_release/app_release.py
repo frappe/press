@@ -63,7 +63,7 @@ class AppRelease(Document):
 			).decode()
 		except Exception as e:
 			self.on_trash()
-			log_error("App Release Clone Exception", command=command, output=e.output.decode())
+			log_error("App Release Command Exception", command=command, output=e.output.decode())
 			raise e
 
 	def _prepare_clone_directory(self):
