@@ -9,7 +9,7 @@
 		<span class="self-center"
 			>Checkout Frappe Cloud plans for site hosting from
 			<span class="font-bold"
-				>{{ currency === 'INR' ? '₹ 750' : '$ 10' }} Onwards</span
+				>{{ currency === 'INR' ? '₹ 820' : '$ 10' }} Onwards</span
 			>
 		</span>
 		<Button

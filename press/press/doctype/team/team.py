@@ -684,7 +684,7 @@ class Team(Document):
 
 	def get_upcoming_invoice(self, type="Subscription"):
 		# get the current period's invoice
-		today = frappe.utils.datetime.datetime.today()
+		today = frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
