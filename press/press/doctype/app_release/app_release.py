@@ -15,6 +15,10 @@ from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
+	def validate(self):
+		if not self.clone_directory:
+			self.set_clone_directory()
+
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all(
@@ -65,6 +69,12 @@ class AppRelease(Document):
 			self.on_trash()
 			log_error("App Release Command Exception", command=command, output=e.output.decode())
 			raise e
+
+	def set_clone_directory(self):
+		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+		self.clone_directory = os.path.join(
+			clone_directory, self.app, self.source, self.hash[:10]
+		)
 
 	def _prepare_clone_directory(self):
 		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
