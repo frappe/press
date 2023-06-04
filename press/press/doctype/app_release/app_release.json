@@ -49,7 +49,7 @@
   },
   {
    "fieldname": "code_server_url",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Code Server URL",
    "read_only": 1
   },
@@ -88,7 +88,7 @@
   },
   {
    "fieldname": "clone_directory",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Clone Directory",
    "read_only": 1
   },
@@ -135,7 +135,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2021-07-14 12:56:02.094505",
+ "modified": "2023-06-04 18:26:16.675250",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -168,5 +168,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
