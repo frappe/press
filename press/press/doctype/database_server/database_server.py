@@ -59,6 +59,24 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB System Variable Update Error", server=self.name)
 
+	@frappe.whitelist()
+	def restart_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_restart_mariadb")
+
+	def _restart_mariadb(self):
+		ansible = Ansible(
+			playbook="restart_mysql.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Restart Error", server=self.name)
+
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all(
