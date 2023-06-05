@@ -46,6 +46,11 @@
   "ssh_port",
   "root_public_key",
   "mariadb_settings_tab",
+  "memory_limits_section",
+  "memory_high",
+  "column_break_eiyu",
+  "memory_max",
+  "section_break_ladc",
   "mariadb_system_variables"
  ],
  "fields": [
@@ -313,11 +318,36 @@
    "fieldtype": "Table",
    "label": "MariaDB System Variables",
    "options": "Database Server MariaDB Variable"
+  },
+  {
+   "fieldname": "memory_limits_section",
+   "fieldtype": "Section Break",
+   "label": "Memory Limits"
+  },
+  {
+   "fieldname": "memory_high",
+   "fieldtype": "Int",
+   "label": "Memory High (GB)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_eiyu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "memory_max",
+   "fieldtype": "Int",
+   "label": "Memory Max (GB)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "section_break_ladc",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-30 15:56:50.230078",
+ "modified": "2023-06-05 17:02:50.336834",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

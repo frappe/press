@@ -33,11 +33,32 @@ class DatabaseServer(BaseServer):
 	def on_update(self):
 		if self.has_value_changed("mariadb_system_variables"):
 			self.update_mariadb_system_variables()
+		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+			self.update_memory_limits()
+
+	def update_memory_limits(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
+
+	def _update_memory_limits(self):
+		if not self.memory_high or not self.memory_max:
+			return
+		ansible = Ansible(
+			playbook="database_memory_limits.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+				"memory_high": self.memory_high,
+				"memory_max": self.memory_max,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("Database Server Update Memory Limits Error", server=self.name)
 
 	def update_mariadb_system_variables(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_update_mariadb_system_variables", queue="long"
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_update_mariadb_system_variables")
 
 	def _update_mariadb_system_variables(self):
 		variable: DatabaseServerMariaDBVariable
