@@ -6,7 +6,7 @@
 					<Button
 						appearance="primary"
 						iconLeft="plus"
-						class="ml-2 hidden sm:inline-flex"
+						class="ml-2"
 						@click="showBillingDialog"
 					>
 						New

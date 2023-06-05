@@ -149,6 +149,7 @@
   "column_break_100",
   "log_server",
   "telegram_alert_chat_id",
+  "telegram_alerts_chat_group",
   "feature_flags_tab",
   "verify_cards_with_micro_charge"
  ],
@@ -941,11 +942,17 @@
    "fieldname": "app_include_script",
    "fieldtype": "Data",
    "label": "App Include Script"
+  },
+  {
+   "fieldname": "telegram_alerts_chat_group",
+   "fieldtype": "Link",
+   "label": "Telegram Alerts Chat Group",
+   "options": "Telegram Group"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-02-22 12:18:22.115183",
+ "modified": "2023-05-12 12:00:13.969001",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

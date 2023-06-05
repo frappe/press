@@ -54,6 +54,27 @@
 				</div>
 			</template>
 		</Dropdown>
+		<Dialog :options="{ title: 'Switch Team' }" v-model="showTeamSwitcher">
+			<template v-slot:body-content>
+				<ListItem
+					v-for="team in $account.teams"
+					:title="`${team.team_title}`"
+					:description="team.user"
+					:key="team"
+				>
+					<template #actions>
+						<div v-if="$account.team.name === team.name">
+							<Badge color="blue">Active</Badge>
+						</div>
+						<div v-else class="flex flex-row justify-end">
+							<Button @click="$account.switchToTeam(team.name)">
+								Switch
+							</Button>
+						</div>
+					</template>
+				</ListItem>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -71,14 +92,15 @@ export default {
 	data() {
 		return {
 			show: false,
+			showTeamSwitcher: false,
 			dropdownItems: [
 				{
-					label: 'Docs',
-					icon: 'book-open',
-					handler: () => (window.location.href = '/docs')
+					label: 'Switch Team',
+					icon: 'command',
+					handler: () => (this.showTeamSwitcher = true)
 				},
 				{
-					label: 'Support',
+					label: 'Support & Docs',
 					icon: 'help-circle',
 					handler: () => (window.location.href = '/support')
 				},

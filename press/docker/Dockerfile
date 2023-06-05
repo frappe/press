@@ -6,9 +6,9 @@ ENV {{ d.dependency }} {{ d.version }}
 {% else %}
 ENV NVM_VERSION 0.36.0
 ENV NODE_VERSION 14.19.0
-ENV PYTHON_VERSION 3.7
+ENV PYTHON_VERSION 3.10
 ENV WKHTMLTOPDF_VERSION 0.12.5
-ENV BENCH_VERSION 5.2.1
+ENV BENCH_VERSION 5.15.2
 {% endfor %}
 
 ENV LANG C.UTF-8
@@ -78,6 +78,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   python${PYTHON_VERSION} \
   python${PYTHON_VERSION}-dev \
+  python${PYTHON_VERSION}-venv \
   python${PYTHON_VERSION}-distutils \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-python`
@@ -102,6 +103,14 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
+{% if doc.apt_packages %}
+# Install Additional APT Packages
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  {{ doc.apt_packages }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-apt-packages`
+{% endif %}
 
 RUN useradd -ms /bin/bash frappe
 USER frappe
@@ -130,43 +139,41 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install Jinja2~=3.0.3
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 pip3 install --upgrade virtualenv setuptools
-RUN mkdir /home/frappe/frappe-bench
-WORKDIR /home/frappe/frappe-bench
-RUN mkdir -p apps logs sites config/pids redis
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade setuptools
 
-# Install Redisearch 2.0 from precompiled binaries
-COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
-
-# Create virtual environment for bench
-RUN virtualenv -p python${PYTHON_VERSION} env `#stage-bench-env`
-
-COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 RUN git config --global advice.detachedHead false
 
 ENV PYTHONUNBUFFERED 1
 
+# For the sake of completing the step
+RUN `#stage-bench-env`
+
 # Install Frappe app
-RUN echo '["build"]' > .bench.cmd
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench get-app /home/frappe/context/apps/frappe `#stage-apps-frappe`
-RUN rm .bench.cmd
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
+WORKDIR /home/frappe/frappe-bench
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
+
+# Install Redisearch 2.0 from precompiled binaries
+COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
+
+COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 # Install other apps
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} bench get-app /home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} bench get-app file:///home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
+
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 

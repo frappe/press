@@ -125,7 +125,7 @@
 		>
 			<template #body-content>
 				<Input
-					label="Enter email of the team"
+					label="Enter title of the child team"
 					type="text"
 					v-model="emailOfChildTeam"
 					required
@@ -137,7 +137,12 @@
 			<template #actions>
 				<Button
 					:loading="$resources.transferSite.loading"
-					@click="$resources.transferSite.submit({ team: emailOfChildTeam, name: siteName })"
+					@click="
+						$resources.transferSite.submit({
+							team: emailOfChildTeam,
+							name: siteName
+						})
+					"
 					appearance="primary"
 				>
 					Submit
@@ -210,10 +215,10 @@ export default {
 						title: 'Site Transferred to Child Team',
 						message: 'Site Transferred to Child Team',
 						color: 'green',
-						icon: 'check',
+						icon: 'check'
 					});
 				}
-			}
+			};
 		}
 	},
 	activated() {
