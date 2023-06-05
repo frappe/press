@@ -21,11 +21,18 @@
    "mandatory": 0,
    "options": "\nServer\nDatabase Server\nProxy Server\nLog Server\nMonitor Server\nRegistry Server\nTrace Server\nAnalytics Server",
    "wildcard_filter": 0
+  },
+  {
+   "fieldname": "exclude_self_hosted",
+   "fieldtype": "Check",
+   "label": "Exclude Self Hosted",
+   "mandatory": 0,
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,
  "is_standard": "Yes",
- "modified": "2023-01-30 16:53:45.271421",
+ "modified": "2023-05-17 18:33:39.554734",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Stats",

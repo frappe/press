@@ -13,9 +13,11 @@ from frappe.utils import get_url, random_string
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
+from frappe.rate_limiter import rate_limit
 
 from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
 from press.utils import get_country_info, get_current_team
+from press.utils.telemetry import capture, identify
 
 
 @frappe.whitelist(allow_guest=True)
@@ -47,6 +49,10 @@ def signup(email, referrer=None):
 
 	frappe.set_user(current_user)
 
+	# Telemetry: Verification email sent
+	identify(email)
+	capture("verification_email_sent", "fc_signup", email)
+
 
 @frappe.whitelist(allow_guest=True)
 def setup_account(
@@ -59,6 +65,7 @@ def setup_account(
 	user_exists=False,
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
+	oauth_signup=False,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -71,7 +78,7 @@ def setup_account(
 		if not last_name:
 			frappe.throw("Last Name is required")
 
-		if not password:
+		if not password and not oauth_signup:
 			frappe.throw("Password is required")
 
 		if not is_invitation and not country:
@@ -101,10 +108,10 @@ def setup_account(
 	else:
 		# Team doesn't exist, create it
 		Team.create_new(
-			account_request,
-			first_name,
-			last_name,
-			password,
+			account_request=account_request,
+			first_name=first_name,
+			last_name=last_name,
+			password=password,
 			country=country,
 			user_exists=bool(user_exists),
 		)
@@ -113,10 +120,13 @@ def setup_account(
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
 
+	# Telemetry: Created account
+	capture("completed_signup", "fc_signup", email)
 	frappe.local.login_manager.login_as(email)
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def send_login_link(email):
 	if not frappe.db.exists("User", email):
 		frappe.throw("No registered account with this email address")
@@ -145,6 +155,7 @@ def send_login_link(email):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def login_using_key(key):
 	cache_key = f"one_time_login_key:{key}"
 	email = frappe.cache().get_value(cache_key)
@@ -239,11 +250,15 @@ def get_email_from_request_key(key):
 		data = get_country_info()
 		return {
 			"email": account_request.email,
+			"first_name": account_request.first_name,
+			"last_name": account_request.last_name,
 			"country": data.get("country"),
+			"countries": frappe.db.get_all("Country", pluck="name"),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 			"invited_by_parent_team": account_request.invited_by_parent_team,
+			"oauth_signup": account_request.oauth_signup,
 		}
 
 
@@ -299,15 +314,11 @@ def get():
 	if parent_teams:
 		teams = frappe.db.sql(
 			"""
-			select name, team_title, user from tabTeam where name in %s
+			select name, team_title, user from tabTeam where enabled = 1 and name in %s
 		""",
 			[parent_teams],
 			as_dict=True,
 		)
-	else:
-		teams = [
-			d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
-		]
 
 	return {
 		"user": frappe.get_doc("User", user),
@@ -315,7 +326,7 @@ def get():
 		"team": team_doc,
 		"team_members": get_team_members(team_doc.name),
 		"child_team_members": get_child_team_members(team_doc.name),
-		"teams": list(teams),
+		"teams": list(teams if teams else parent_teams),
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
@@ -324,6 +335,15 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def guest_feature_flags():
+	return {
+		"enable_google_oauth": frappe.db.get_single_value(
+			"Press Settings", "enable_google_oauth"
+		)
 	}
 
 
@@ -420,6 +440,7 @@ def update_profile_picture():
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=60 * 60)
 def send_reset_password_email(email):
 	frappe.utils.validate_email_address(email, True)
 

@@ -255,9 +255,9 @@ class Invoice(Document):
 		self.customer_name = team.billing_name or frappe.utils.get_fullname(self.team)
 		self.customer_email = (
 			frappe.db.get_value(
-				"Communication Email", {"parent": self.team, "type": "invoices"}, ["value"]
+				"Communication Email", {"parent": team.user, "type": "invoices"}, ["value"]
 			)
-			or self.team
+			or team.user
 		)
 		self.currency = team.currency
 		if not self.payment_mode:

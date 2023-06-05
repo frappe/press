@@ -1,0 +1,8 @@
+---
+- name: Set Proxy IP for Agent
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: agent_set_proxy_ip

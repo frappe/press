@@ -14,7 +14,7 @@
 				@change="subdomainChange"
 			/>
 			<div class="flex items-center rounded-r bg-gray-100 px-4 text-base">
-				.{{ options.domain }}
+				.{{ domain }}
 			</div>
 		</div>
 		<div class="mt-1">
@@ -23,7 +23,7 @@
 				class="text-sm text-green-600"
 				role="alert"
 			>
-				{{ modelValue }}.{{ options.domain }} is available
+				{{ modelValue }}.{{ domain }} is available
 			</div>
 			<ErrorMessage :message="errorMessage" />
 		</div>
@@ -32,13 +32,26 @@
 <script>
 export default {
 	name: 'Hostname',
-	props: ['options', 'modelValue'],
+	props: ['modelValue'],
 	emits: ['update:modelValue', 'error'],
 	data() {
 		return {
 			subdomainAvailable: false,
 			errorMessage: null
 		};
+	},
+	resources: {
+		domain() {
+			return {
+				method: 'press.api.site.get_domain',
+				auto: true
+			};
+		}
+	},
+	computed: {
+		domain() {
+			return this.$resources.domain.data;
+		}
 	},
 	methods: {
 		async subdomainChange(e) {
@@ -50,10 +63,10 @@ export default {
 			if (!error) {
 				let subdomainTaken = await this.$call('press.api.site.exists', {
 					subdomain,
-					domain: this.options.domain
+					domain: this.domain
 				});
 				if (subdomainTaken) {
-					error = `${subdomain}.${this.options.domain} already exists.`;
+					error = `${subdomain}.${this.domain} already exists.`;
 				} else {
 					this.subdomainAvailable = true;
 				}

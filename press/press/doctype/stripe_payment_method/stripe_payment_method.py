@@ -21,7 +21,7 @@ class StripePaymentMethod(Document):
 			self.stripe_customer_id,
 			invoice_settings={"default_payment_method": self.stripe_payment_method_id},
 		)
-		frappe.db.update(
+		frappe.db.set_value(
 			"Stripe Payment Method",
 			{"team": self.team, "name": ("!=", self.name)},
 			"is_default",

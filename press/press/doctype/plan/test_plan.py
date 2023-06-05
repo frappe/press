@@ -34,7 +34,7 @@ class TestPlan(unittest.TestCase):
 		self.plan = create_test_plan("Site")
 
 	def tearDown(self):
-		self.plan.delete()
+		frappe.db.rollback()
 
 	def test_period_int(self):
 		self.assertIsInstance(self.plan.period, int)

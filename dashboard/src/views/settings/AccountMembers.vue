@@ -137,7 +137,8 @@ export default {
 				(team.default_payment_method ||
 					team.payment_mode == 'Prepaid Credits' ||
 					team.free_account ||
-					team.erpnext_partner)
+					team.erpnext_partner ||
+					team.parent_team)
 			);
 		}
 	}

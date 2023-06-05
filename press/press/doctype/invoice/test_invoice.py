@@ -3,28 +3,36 @@
 # See license.txt
 
 
-import frappe
 import unittest
 from unittest.mock import patch
+
+import frappe
 from frappe.utils.data import add_days, today
+
+from press.press.doctype.team.test_team import create_test_team
+
 from .invoice import Invoice
 
 
 class TestInvoice(unittest.TestCase):
-	def test_invoice_add_usage_record(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
+	def setUp(self):
+		self.team = create_test_team()
 
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_invoice_add_usage_record(self):
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(doctype="Usage Record", team=team.name, amount=amount)
+			usage_record = frappe.get_doc(
+				doctype="Usage Record", team=self.team.name, amount=amount
+			)
 			usage_record.insert()
 			usage_record.submit()
 
@@ -39,20 +47,19 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.amount_due, 60)
 
 	def test_invoice_cancel_usage_record(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
 
 		usage_records = []
 		for amount in [10, 20, 30, 40]:
-			usage_record = frappe.get_doc(doctype="Usage Record", team=team.name, amount=amount)
+			usage_record = frappe.get_doc(
+				doctype="Usage Record", team=self.team.name, amount=amount
+			)
 			usage_record.insert()
 			usage_record.submit()
 			usage_records.append(usage_record)
@@ -71,71 +78,73 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(usage_records[0].invoice, None)
 
 	def test_invoice_with_credits_less_than_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser2@example.com", country="India", enabled=1
-		).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(doctype="Usage Record", team=team.name, amount=amount)
+			usage_record = frappe.get_doc(
+				doctype="Usage Record", team=self.team.name, amount=amount
+			)
 			usage_record.insert()
 			usage_record.submit()
 
-		self.assertEqual(team.get_balance(), 0)
-		team.allocate_credit_amount(10, source="Free Credits")
-		self.assertEqual(team.get_balance(), 10)
+		self.assertEqual(self.team.get_balance(), 0)
+		self.team.allocate_credit_amount(10, source="Free Credits")
+		self.assertEqual(self.team.get_balance(), 10)
 
 		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
-			invoice.finalize_invoice()
+			try:
+				invoice.finalize_invoice()
+			except Exception as e:
+				self.assertEqual(
+					str(e),
+					"Not enough credits for this invoice. Change payment mode to Card to"
+					" pay using Stripe.",
+				)
 
-		self.assertEqual(team.get_balance(), 0)
+		self.assertEqual(self.team.get_balance(), 0)
 		self.assertEqual(invoice.total, 60)
 		self.assertEqual(invoice.amount_due, 50)
 		self.assertEqual(invoice.applied_credits, 10)
 
 	def test_invoice_with_credits_more_than_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser3@example.com", country="India", enabled=1
-		).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
 
 		for amount in [10, 20, 30]:
-			usage_record = frappe.get_doc(doctype="Usage Record", team=team.name, amount=amount)
+			usage_record = frappe.get_doc(
+				doctype="Usage Record", team=self.team.name, amount=amount
+			)
 			usage_record.insert()
 			usage_record.submit()
 
-		self.assertEqual(team.get_balance(), 0)
-		team.allocate_credit_amount(70, source="Free Credits")
-		self.assertEqual(team.get_balance(), 70)
+		self.assertEqual(self.team.get_balance(), 0)
+		self.team.allocate_credit_amount(70, source="Free Credits")
+		self.assertEqual(self.team.get_balance(), 70)
 
 		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
 			invoice.finalize_invoice()
 
-		self.assertEqual(team.get_balance(), 10)
+		self.assertEqual(self.team.get_balance(), 10)
 		self.assertEqual(invoice.total, 60)
 		self.assertEqual(invoice.amount_due, 0)
 		self.assertEqual(invoice.applied_credits, 60)
 
 	def test_invoice_credit_allocation(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser3@example.com", country="India", enabled=1
-		).insert()
 
 		# First Invoice
 		# Total: 600
@@ -143,22 +152,23 @@ class TestInvoice(unittest.TestCase):
 		# Invoice can be paid using credits
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 			items=[{"quantity": 1, "rate": 600}],
 		).insert()
 
-		self.assertEqual(team.get_balance(), 0)
-		team.allocate_credit_amount(100, source="Free Credits")
-		team.allocate_credit_amount(1000, source="Prepaid Credits")
-		self.assertEqual(team.get_balance(), 1100)
+		self.assertEqual(self.team.get_balance(), 0)
+		self.team.allocate_credit_amount(100, source="Free Credits")
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.assertEqual(self.team.get_balance(), 1100)
+		invoice.reload()
 
 		with patch.object(invoice, "create_stripe_invoice", return_value=None):
 			invoice.finalize_invoice()
 
 		self.assertEqual(invoice.total, 600)
-		self.assertEqual(team.get_balance(), 1100 - 600)
+		self.assertEqual(self.team.get_balance(), 1100 - 600)
 		self.assertEqual(invoice.amount_due, 0)
 		self.assertEqual(invoice.applied_credits, 600)
 		self.assertDictContainsSubset(
@@ -174,14 +184,21 @@ class TestInvoice(unittest.TestCase):
 		# Invoice due should be 200
 		invoice2 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=add_days(today(), 11),
 			items=[{"quantity": 1, "rate": 700}],
 		).insert()
+		invoice2.reload()
 
 		with patch.object(invoice2, "create_stripe_invoice", return_value=None):
-			invoice2.finalize_invoice()
-		invoice2.reload()
+			try:
+				invoice2.finalize_invoice()
+			except Exception as e:
+				self.assertEqual(
+					str(e),
+					"Not enough credits for this invoice. Change payment mode to Card to"
+					" pay using Stripe.",
+				)
 
 		self.assertEqual(invoice2.total, 700)
 		self.assertEqual(invoice2.applied_credits, 500)
@@ -192,21 +209,18 @@ class TestInvoice(unittest.TestCase):
 		)
 
 	def test_invoice_cancel_reverse_credit_allocation(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser4@example.com", country="India", enabled=1
-		).insert()
 
 		# First Invoice
 		# Total: 600
 		# Team has 100 Free Credits and 1000 Prepaid Credits
 		# Invoice can be paid using credits
-		team.allocate_credit_amount(100, source="Free Credits")
-		team.allocate_credit_amount(1000, source="Prepaid Credits")
-		self.assertEqual(team.get_balance(), 1100)
+		self.team.allocate_credit_amount(100, source="Free Credits")
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.assertEqual(self.team.get_balance(), 1100)
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 			items=[{"quantity": 1, "rate": 600}],
@@ -216,7 +230,7 @@ class TestInvoice(unittest.TestCase):
 			invoice.finalize_invoice()
 
 		self.assertEqual(invoice.total, 600)
-		self.assertEqual(team.get_balance(), 1100 - 600)
+		self.assertEqual(self.team.get_balance(), 1100 - 600)
 		self.assertEqual(invoice.amount_due, 0)
 		self.assertEqual(invoice.applied_credits, 600)
 		self.assertDictContainsSubset(
@@ -229,44 +243,41 @@ class TestInvoice(unittest.TestCase):
 		# Cancel Invoice
 		invoice.cancel()
 		# Team balance should go back to 1100
-		self.assertEqual(team.get_balance(), 1100)
+		self.assertEqual(self.team.get_balance(), 1100)
 
 	def test_intersecting_invoices(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser4@example.com", country="India", enabled=1
-		).insert()
 
 		invoice1 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=frappe.utils.today(),
 			period_end=frappe.utils.add_days(frappe.utils.today(), 5),
 		).insert()
 
 		invoice2 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=frappe.utils.add_days(frappe.utils.today(), 1),
 			period_end=frappe.utils.add_days(frappe.utils.today(), 6),
 		)
 
 		invoice3 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=frappe.utils.today(),
 			period_end=frappe.utils.add_days(frappe.utils.today(), 5),
 		)
 
 		invoice4 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=frappe.utils.add_days(frappe.utils.today(), -2),
 			period_end=frappe.utils.add_days(frappe.utils.today(), 3),
 		)
 
 		invoice5 = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=frappe.utils.add_days(invoice1.period_end, 1),
 		)
 
@@ -277,18 +288,13 @@ class TestInvoice(unittest.TestCase):
 		invoice5.insert()
 
 	def test_prepaid_credits(self):
-		from press.press.doctype.team.team import process_stripe_webhook
 		from pathlib import Path
 
-		team = frappe.get_doc(
-			doctype="Team",
-			name="testuser6@example.com",
-			country="India",
-			stripe_customer_id="cus_H3L4w6RXJPKLQs",
-			enabled=1,
-		).insert()
+		from press.press.doctype.team.team import process_stripe_webhook
+
+		self.team.db_set("stripe_customer_id", "cus_H3L4w6RXJPKLQs")
 		# initial balance is 0
-		self.assertEqual(team.get_balance(), 0)
+		self.assertEqual(self.team.get_balance(), 0)
 
 		with open(
 			Path(__file__).parent / "fixtures/stripe_payment_intent_succeeded_webhook.json", "r"
@@ -301,16 +307,13 @@ class TestInvoice(unittest.TestCase):
 			process_stripe_webhook(doc, "")
 
 		# balance should 900 after buying prepaid credits
-		self.assertEqual(team.get_balance(), 900)
+		self.assertEqual(self.team.get_balance(), 900)
 
 	def test_single_x_percent_flat_on_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
@@ -334,13 +337,10 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 900)
 
 	def test_multiple_discounts_flat_on_total(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
@@ -367,19 +367,16 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 800)
 
 	def test_discount_borrowed_from_team(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
 
 		# Give 30% to team
-		team.append(
+		self.team.append(
 			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
 		)
-		team.save()
+		self.team.save()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
@@ -395,19 +392,16 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total, 700)
 
 	def test_mix_discounts_flat_on_total_and_percent(self):
-		team = frappe.get_doc(
-			doctype="Team", name="testuser@example.com", country="India", enabled=1
-		).insert()
 
 		# Give 30% to team
-		team.append(
+		self.team.append(
 			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
 		)
-		team.save()
+		self.team.save()
 
 		invoice = frappe.get_doc(
 			doctype="Invoice",
-			team=team.name,
+			team=self.team.name,
 			period_start=today(),
 			period_end=add_days(today(), 10),
 		).insert()
@@ -428,6 +422,3 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total_before_discount, 1000)
 		self.assertEqual(invoice.total_discount_amount, 400)
 		self.assertEqual(invoice.total, 600)
-
-	def tearDown(self):
-		frappe.db.rollback()

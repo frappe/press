@@ -89,9 +89,12 @@ def track_offsite_backups(
 
 
 def process_backup_site_job_update(job):
-	backup = frappe.get_all(
-		"Site Backup", fields=["name", "status"], filters={"job": job.name}
-	)[0]
+	backups = frappe.get_all(
+		"Site Backup", fields=["name", "status"], filters={"job": job.name}, limit=1
+	)
+	if not backups:
+		return
+	backup = backups[0]
 	if job.status != backup.status:
 		frappe.db.set_value(
 			"Site Backup", backup.name, "status", job.status, for_update=False

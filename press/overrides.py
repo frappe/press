@@ -60,7 +60,7 @@ def on_session_creation():
 	from press.utils import get_default_team_for_user
 
 	if (
-		not frappe.db.exists("Team", frappe.session.user)
+		not frappe.db.exists("Team", {"user": frappe.session.user})
 		and frappe.session.data.user_type == "System User"
 	):
 		return

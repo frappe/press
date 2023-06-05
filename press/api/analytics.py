@@ -4,7 +4,7 @@
 
 import frappe
 import requests
-
+import json
 from press.api.site import protected
 from press.press.doctype.plan.plan import get_plan_config
 from frappe.utils import convert_utc_to_timezone, get_datetime
@@ -173,6 +173,59 @@ def get_current_cpu_usage(site):
 		return 0
 	except Exception:
 		return 0
+
+
+def multi_get_current_cpu_usage(sites):
+	try:
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if not log_server:
+			return [0] * len(sites)
+
+		url = f"https://{log_server}/elasticsearch/filebeat-*/_msearch"
+		password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+		headers = ["{}"] * len(sites)
+		bodies = [
+			json.dumps(
+				{
+					"query": {
+						"bool": {
+							"filter": [
+								{"match_phrase": {"json.transaction_type": "request"}},
+								{"match_phrase": {"json.site": site}},
+							]
+						}
+					},
+					"sort": {"@timestamp": "desc"},
+					"size": 1,
+				}
+			)
+			for site in sites
+		]
+
+		multi_query = [None] * 2 * len(sites)
+		multi_query[::2] = headers
+		multi_query[1::2] = bodies
+
+		payload = "\n".join(multi_query) + "\n"
+
+		response = requests.post(
+			url,
+			data=payload,
+			auth=("frappe", password),
+			headers={"Content-Type": "application/x-ndjson"},
+		).json()
+
+		result = []
+		for response in response["responses"]:
+			hits = response["hits"]["hits"]
+			if hits:
+				result.append(hits[0]["_source"]["json"]["request"].get("counter", 0))
+			else:
+				result.append(0)
+		return result
+	except Exception:
+		return [0] * len(sites)
 
 
 @frappe.whitelist()

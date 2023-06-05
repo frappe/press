@@ -417,10 +417,10 @@ def deploy(name, apps_to_ignore=[]):
 	if isinstance(apps_to_ignore, str):
 		apps_to_ignore = json.loads(apps_to_ignore)
 
-	team = get_current_team()
+	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
-	if rg.team != team:
+	if rg.team != team.name:
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)

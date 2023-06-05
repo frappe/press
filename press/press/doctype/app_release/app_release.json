@@ -27,6 +27,7 @@
    "fieldname": "hash",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Hash",
    "read_only": 1,
    "reqd": 1
@@ -49,7 +50,7 @@
   },
   {
    "fieldname": "code_server_url",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Code Server URL",
    "read_only": 1
   },
@@ -88,7 +89,7 @@
   },
   {
    "fieldname": "clone_directory",
-   "fieldtype": "Data",
+   "fieldtype": "Text",
    "label": "Clone Directory",
    "read_only": 1
   },
@@ -134,8 +135,39 @@
   }
  ],
  "in_create": 1,
- "links": [],
- "modified": "2021-07-14 12:56:02.094505",
+ "links": [
+  {
+   "group": "Connections",
+   "link_doctype": "Bench",
+   "link_fieldname": "release"
+  },
+  {
+   "group": "Connections",
+   "link_doctype": "Deploy Candidate",
+   "link_fieldname": "release"
+  },
+  {
+   "group": "Sources",
+   "link_doctype": "App Release Difference",
+   "link_fieldname": "source_release"
+  },
+  {
+   "group": "Destinations",
+   "link_doctype": "App Release Difference",
+   "link_fieldname": "destination_release"
+  },
+  {
+   "group": "Sources",
+   "link_doctype": "Deploy Candidate Difference",
+   "link_fieldname": "source_release"
+  },
+  {
+   "group": "Destinations",
+   "link_doctype": "Deploy Candidate Difference",
+   "link_fieldname": "destination_release"
+  }
+ ],
+ "modified": "2023-06-04 18:49:35.960020",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
@@ -168,5 +200,6 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

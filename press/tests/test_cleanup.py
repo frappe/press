@@ -159,7 +159,7 @@ class TestGFS(unittest.TestCase):
 		_10_years_ago = date.today() - timedelta(3653)
 		oldest_allowed_yearly = (
 			_10_years_ago
-			if _10_years_ago.day == GFS.yearly_backup_day
+			if _10_years_ago.timetuple().tm_yday == GFS.yearly_backup_day
 			else self._get_next_yearly_backup_day(_10_years_ago)
 		)
 		older = self._get_previous_yearly_backup_day(oldest_allowed_yearly)

@@ -29,12 +29,14 @@ class AppReleaseDifference(Document):
 				github_access_token = get_access_token(source.github_installation_id)
 			except KeyError:
 				frappe.throw("Could not get access token for app source {0}".format(source.name))
-				raise
 		else:
 			github_access_token = frappe.get_value("Press Settings", None, "github_access_token")
 
 		client = Github(github_access_token)
-		repo = client.get_repo(f"{source.repository_owner}/{source.repository}")
+		try:
+			repo = client.get_repo(f"{source.repository_owner}/{source.repository}")
+		except Exception:
+			frappe.throw("Could not get repository {0}".format(source.repository))
 		try:
 			diff = repo.compare(self.source_hash, self.destination_hash)
 			self.github_diff_url = diff.html_url

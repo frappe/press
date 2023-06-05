@@ -160,7 +160,7 @@ def get_stripe():
 
 
 def convert_stripe_money(amount):
-	return amount / 100
+	return (amount / 100) if amount else 0
 
 
 def validate_gstin_check_digit(gstin, label="GSTIN"):

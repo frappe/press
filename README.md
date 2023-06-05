@@ -1,5 +1,9 @@
 ## Press
 
+[![codecov](https://codecov.io/gh/frappe/press/branch/master/graph/badge.svg?token=0puvH0jUx9)](https://codecov.io/gh/frappe/press)
+[![unittests](https://github.com/frappe/press/actions/workflows/main.yaml/badge.svg)](https://github.com/frappe/press/actions/workflows/main.yaml)
+
+
 This is `press`, a Frappe custom app that runs Frappe Cloud. This app manages infrastructure, subscription, marketplace, SaaS and much more.
 
 > press: "I have a brother, without which I cannot live, agent"
