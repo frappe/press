@@ -256,6 +256,7 @@ class Site(Document):
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
+
 		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
 		if self.cluster == domain.default_cluster and not is_standalone:
 			return
@@ -264,6 +265,7 @@ class Site(Document):
 		else:
 			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
 			self._change_dns_record("UPSERT", domain, proxy_server)
+
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
