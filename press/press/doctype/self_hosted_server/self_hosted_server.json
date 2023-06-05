@@ -21,6 +21,7 @@
   "private_ip",
   "different_database_server",
   "existing_bench_present",
+  "new_server",
   "section_break_0fky",
   "proxy_server",
   "column_break_bcsw",
@@ -30,7 +31,6 @@
   "ssh_user",
   "column_break_smwr",
   "ssh_port",
-  "new_server",
   "database_section",
   "database_server",
   "mariadb_ip",
@@ -219,13 +219,13 @@
    "options": "Release Group"
   },
   {
-   "default": "Pending",
+   "default": "Unreachable",
    "fieldname": "status",
    "fieldtype": "Select",
    "hidden": 1,
    "in_list_view": 1,
    "label": "Status",
-   "options": "Active\nPending\nBroken",
+   "options": "Active\nPending\nBroken\nArchived\nUnreachable",
    "read_only": 1
   },
   {
@@ -278,7 +278,7 @@
   }
  ],
  "links": [],
- "modified": "2023-04-25 09:20:44.719904",
+ "modified": "2023-05-25 21:14:36.458388",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

@@ -5,6 +5,7 @@
 import json
 import re
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, List
 
 import boto3
@@ -28,11 +29,11 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.site import check_dns
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
+from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 
 
 class Site(Document):
@@ -255,10 +256,14 @@ class Site(Document):
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
 		domain = frappe.get_doc("Root Domain", self.domain)
-		if self.cluster == domain.default_cluster:
+		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
+		if self.cluster == domain.default_cluster and not is_standalone:
 			return
-		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-		self._change_dns_record("UPSERT", domain, proxy_server)
+		if is_standalone:
+			self._change_dns_record("UPSERT", domain, self.server)
+		else:
+			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
+			self._change_dns_record("UPSERT", domain, proxy_server)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -481,7 +486,7 @@ class Site(Document):
 	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
@@ -528,7 +533,7 @@ class Site(Document):
 		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			site_domain = frappe.get_all(
 				"Site Domain",
 				filters={
@@ -878,7 +883,9 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append("configuration", {"key": key, "value": convert(value)})
+				self.append(
+					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
+				)
 
 		if save:
 			self.save()
@@ -1232,7 +1239,7 @@ class Site(Document):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites)},
+			{"name": ("in", sites), "skip_scheduled_backups": False},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1254,8 +1261,23 @@ class Site(Document):
 				pluck="name",
 			)
 		)
-		return list(all_sites - set(cls.get_sites_with_backup_in_interval(interval_hrs_ago)))
+		return list(
+			all_sites
+			- set(cls.get_sites_with_backup_in_interval(interval_hrs_ago))
+			- set(cls.get_sites_with_pending_backups(interval_hrs_ago))
+		)
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
+
+	@classmethod
+	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> List[str]:
+		return frappe.get_all(
+			"Site Backup",
+			{
+				"status": ("in", ["Running", "Pending"]),
+				"creation": (">=", interval_hrs_ago),
+			},
+			pluck="site",
+		)
 
 	@classmethod
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
@@ -1299,7 +1321,11 @@ def site_cleanup_after_archive(site):
 def delete_site_subdomain(site):
 	site_doc = frappe.get_doc("Site", site)
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
-	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
+	is_standalone = frappe.get_value("Server", site_doc.server, "is_standalone")
+	if is_standalone:
+		proxy_server = site.server
+	else:
+		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
 	site_doc.remove_dns_record(domain, proxy_server, site)
 
 

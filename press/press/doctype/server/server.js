@@ -96,6 +96,12 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Setup Standalone'),
+				'setup_standalone',
+				false,
+				frm.doc.is_server_setup && frm.doc.is_standalone && ! frm.doc.is_standalone_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

@@ -61,7 +61,7 @@ export default class Account {
 		if (!this.team) {
 			return true;
 		}
-		if (this.team.free_account) {
+		if (this.team.free_account || this.team.parent_team) {
 			return true;
 		}
 		if (

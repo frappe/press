@@ -100,30 +100,35 @@ class VersionUpgrade(Document):
 def update_from_site_update():
 	ongoing_version_upgrades = VersionUpgrade.get_all_ongoing_version_upgrades()
 	for version_upgrade in ongoing_version_upgrades:
-		site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
-		version_upgrade.status = site_update.status
-		if site_update.status in ["Failure", "Recovered", "Fatal"]:
-			last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
-			last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
-			version_upgrade.last_traceback = last_traceback
-			version_upgrade.last_output = last_output
-			version_upgrade.status = "Failure"
-			site = frappe.get_doc("Site", version_upgrade.site)
-			recipient = site.notify_email or frappe.get_doc("Team", site.team).user
+		try:
+			site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
+			version_upgrade.status = site_update.status
+			if site_update.status in ["Failure", "Recovered", "Fatal"]:
+				last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
+				last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
+				version_upgrade.last_traceback = last_traceback
+				version_upgrade.last_output = last_output
+				version_upgrade.status = "Failure"
+				site = frappe.get_doc("Site", version_upgrade.site)
+				recipient = site.notify_email or frappe.get_doc("Team", site.team).user
 
-			frappe.sendmail(
-				recipients=[recipient],
-				subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
-				reference_doctype="Version Upgrade",
-				reference_name=version_upgrade.name,
-				template="version_upgrade_failed",
-				args={
-					"site": version_upgrade.site,
-					"traceback": last_traceback,
-					"output": last_output,
-				},
-			)
-		version_upgrade.save()
+				frappe.sendmail(
+					recipients=[recipient],
+					subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
+					reference_doctype="Version Upgrade",
+					reference_name=version_upgrade.name,
+					template="version_upgrade_failed",
+					args={
+						"site": version_upgrade.site,
+						"traceback": last_traceback,
+						"output": last_output,
+					},
+				)
+			version_upgrade.save()
+			frappe.db.commit()
+		except Exception as e:
+			frappe.log_error(f"Error while updating Version Upgrade {version_upgrade.name}", e)
+			frappe.db.rollback()
 
 
 def run_scheduled_upgrades():

@@ -24,13 +24,13 @@ def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
 	return create_test_team(email)
 
 
-def create_test_team(email: str = frappe.mock("email")) -> Team:
+def create_test_team(email: str = frappe.mock("email"), country="India") -> Team:
 	"""Create test team doc."""
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
-	return frappe.get_doc({"doctype": "Team", "user": user}).insert(
-		ignore_if_duplicate=True
-	)
+	return frappe.get_doc(
+		{"doctype": "Team", "user": user, "enabled": 1, "country": country}
+	).insert(ignore_if_duplicate=True)
 
 
 class TestTeam(unittest.TestCase):

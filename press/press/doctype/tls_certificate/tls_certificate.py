@@ -134,7 +134,9 @@ def renew_tls_certificates():
 		)
 		if site:
 			site_status = frappe.db.get_value("Site", site, "status")
-			if site_status == "Active" and check_dns_cname_a(site, certificate.domain):
+			if (
+				site_status == "Active" and check_dns_cname_a(site, certificate.domain)["matched"]
+			):
 				certificate_doc = frappe.get_doc("TLS Certificate", certificate.name)
 				certificate_doc._obtain_certificate()
 				frappe.db.commit()

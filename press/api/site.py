@@ -8,6 +8,7 @@ from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_ap
 import wrapt
 import frappe
 import dns.resolver
+import dns.exception
 
 from typing import Dict
 from boto3 import client
@@ -185,6 +186,12 @@ def _new(site, server: str = None):
 		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
 			ignore_permissions=True
 		)
+
+	# Telemetry: Send event if first site
+	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
+		from press.utils.telemetry import capture
+
+		capture("created_first_site", "fc_signup", team.user)
 
 	return {
 		"site": site.name,
@@ -482,7 +489,9 @@ def get_new_site_options(group: str = None):
 	apps = set()
 	filters = {"enabled": True}
 	if group:  # private bench
-		filters.update({"name": group})
+		filters.update({"name": group, "team": team})
+	else:
+		filters.update({"public": True})
 
 	for version in versions:
 		filters.update({"version": version.name})
@@ -490,7 +499,6 @@ def get_new_site_options(group: str = None):
 			"Release Group",
 			fields=["name", "`default`", "title"],
 			filters=filters,
-			or_filters={"public": True, "team": team},
 			limit=1,
 		)
 		if not rg:
@@ -556,7 +564,7 @@ def get_new_site_options(group: str = None):
 
 
 @frappe.whitelist()
-def get_plans(name=None):
+def get_plans(name=None, rg=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
@@ -577,17 +585,22 @@ def get_plans(name=None):
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
 
-	if name:
+	if name or rg:
 		team = get_current_team()
-		release_group_name = frappe.db.get_value("Site", name, "group")
+		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
+		is_system_user = (
+			frappe.db.get_value("User", frappe.session.user, "user_type") == "System User"
+		)
 		# poor man's bench paywall
 		# this will not allow creation of $10 sites on private benches
 		# wanted to avoid adding a new field, so doing this with a date check :)
 		# TODO: find a better way to do paywalls
 		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
-		is_paywalled_bench = is_private_bench and release_group.creation > paywall_date
+		is_paywalled_bench = (
+			is_private_bench and release_group.creation > paywall_date and not is_system_user
+		)
 	else:
 		is_paywalled_bench = False
 
@@ -680,6 +693,14 @@ def get(name):
 		site.group if group_team == team or is_system_user(frappe.session.user) else None
 	)
 
+	server = frappe.db.get_value(
+		"Server", site.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
+	)
+	if server.is_standalone:
+		ip = server.ip
+	else:
+		ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
+
 	return {
 		"name": site.name,
 		"host_name": site.host_name,
@@ -691,9 +712,10 @@ def get(name):
 		"team": site.team,
 		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
-		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
+		"can_change_plan": server.team != team,
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
+		"ip": ip,
 	}
 
 
@@ -1115,26 +1137,50 @@ def setup_wizard_complete(name):
 
 def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
+		result = {"type": "CNAME", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
-			mapped_domain = answer.rsplit(".", 1)[0]
+			answer = dns.resolver.query(domain, "CNAME")
+			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
+			result["answer"] = answer.rrset.to_text()
 			if mapped_domain == name:
-				return True
-		except Exception:
-			log_error("DNS Query Exception - CNAME", site=name, domain=domain)
-		return False
+				result["matched"] = True
+		except dns.exception.DNSException as e:
+			result["answer"] = str(e)
+		except Exception as e:
+			result["answer"] = str(e)
+			log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
+		finally:
+			return result
 
 	def check_dns_a(name, domain):
+		result = {"type": "A", "matched": False, "answer": ""}
 		try:
-			domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+			answer = dns.resolver.query(domain, "A")
+			domain_ip = answer[0].to_text()
 			site_ip = dns.resolver.query(name, "A")[0].to_text()
+			result["answer"] = answer.rrset.to_text()
 			if domain_ip == site_ip:
-				return True
-		except Exception:
-			log_error("DNS Query Exception - A", site=name, domain=domain)
-		return False
+				result["matched"] = True
+		except dns.exception.DNSException as e:
+			result["answer"] = str(e)
+		except Exception as e:
+			result["answer"] = str(e)
+			log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
+		finally:
+			return result
 
-	return check_dns_cname(name, domain) or check_dns_a(name, domain)
+	cname = check_dns_cname(name, domain)
+	result = {"CNAME": cname}
+	result.update(cname)
+
+	if result["matched"]:
+		return result
+
+	a = check_dns_a(name, domain)
+	result.update({"A": a})
+	result.update(a)
+
+	return result
 
 
 @frappe.whitelist()

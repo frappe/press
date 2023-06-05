@@ -204,6 +204,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
 		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
 			try:
 				frappe.get_doc("Site", site).sync_analytics(analytics)
 				frappe.db.commit()
@@ -337,7 +339,7 @@ class StagingSite(Site):
 				"staging": True,
 				"bench": bench.name,
 				"apps": [{"app": app.app} for app in bench.apps],
-				"team": "Administrator",
+				"team": frappe.db.get_value("Team", {"user": "Administrator"}, "name"),
 				"subscription_plan": plan,
 			}
 		)
@@ -437,6 +439,12 @@ def archive_obsolete_benches():
 			order_by="job_type",
 		)
 		if active_archival_jobs:
+			continue
+
+		ongoing_jobs = frappe.db.exists(
+			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
+		)
+		if ongoing_jobs:
 			continue
 
 		active_site_updates = frappe.get_all(

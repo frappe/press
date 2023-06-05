@@ -46,7 +46,7 @@
 				/>
 				<Plans
 					v-model:selectedPlan="selectedPlan"
-					:benchCreation="benchCreation"
+					:bench="bench"
 					:benchTeam="benchTeam"
 					v-show="activeStep.name === 'Plan'"
 				/>
@@ -146,7 +146,6 @@ export default {
 			privateBench: false,
 			benchName: null,
 			benchTitle: null,
-			benchCreation: null,
 			benchTeam: null,
 			selectedApps: [],
 			selectedGroup: null,
@@ -212,8 +211,13 @@ export default {
 			);
 			this.benchName = this.bench;
 			this.benchTitle = title;
-			this.benchCreation = creation;
 			this.benchTeam = team;
+			if (team == this.$account.team.name) {
+				// Select a zero cost plan and remove the plan selection step
+				this.selectedPlan = { name: 'Unlimited' };
+				let plan_step_index = this.steps.findIndex(step => step.name == 'Plan');
+				this.steps.splice(plan_step_index, 1);
+			}
 		}
 	},
 	resources: {

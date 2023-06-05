@@ -47,6 +47,8 @@
   "column_break_33",
   "custom_verify_template",
   "subscription_update_hook",
+  "site_config_section",
+  "site_config",
   "scripts_tab",
   "run_after_install_script",
   "after_install_script",
@@ -334,6 +336,17 @@
    "fieldname": "stop_auto_review",
    "fieldtype": "Check",
    "label": "Stop Auto Review"
+  },
+  {
+   "description": "This keys are added to site config on saas signup",
+   "fieldname": "site_config",
+   "fieldtype": "JSON",
+   "label": "Site Config"
+  },
+  {
+   "fieldname": "site_config_section",
+   "fieldtype": "Section Break",
+   "label": "Site Config"
   }
  ],
  "has_web_view": 1,
@@ -357,7 +370,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2023-04-14 20:16:56.817101",
+ "modified": "2023-06-01 13:32:04.972967",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",

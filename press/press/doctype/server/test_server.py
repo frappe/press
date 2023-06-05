@@ -4,9 +4,11 @@
 
 
 import unittest
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -14,8 +16,10 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+from press.press.doctype.server.server import BaseServer
 
 
+@patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(proxy_server, database_server):
 	"""Create test Server doc."""
 	return frappe.get_doc(

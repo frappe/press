@@ -208,6 +208,14 @@ class DeployCandidate(Document):
 
 		os.mkdir(self.build_directory)
 
+	@frappe.whitelist()
+	def cleanup_build_directory(self):
+		if self.build_directory:
+			if os.path.exists(self.build_directory):
+				shutil.rmtree(self.build_directory)
+			self.build_directory = None
+			self.save()
+
 	def _prepare_build_context(self):
 		# Create apps directory
 		apps_directory = os.path.join(self.build_directory, "apps")
@@ -642,6 +650,30 @@ class DeployCandidate(Document):
 
 	def get_apt_packages(self):
 		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
+
+
+def cleanup_build_directories():
+	# Cleanup Build Directories for Deploy Candidates older than a day
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{
+			"status": ("!=", "Draft"),
+			"build_directory": ("is", "set"),
+			"creation": ("<=", frappe.utils.add_days(None, -1)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=100,
+	)
+	for candidate in candidates:
+		try:
+			frappe.get_doc("Deploy Candidate", candidate).cleanup_build_directory()
+			frappe.db.commit()
+		except Exception as e:
+			frappe.db.rollback()
+			log_error(
+				title="Deploy Candidate Build Cleanup Error", exception=e, candidate=candidate
+			)
 
 
 def ansi_escape(text):

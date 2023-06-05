@@ -57,6 +57,7 @@ class DeveloperApiHandler:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
 			from press.api.marketplace import get_plans_for_app
+			from press.utils.telemetry import capture
 
 			currency, address = frappe.db.get_value(
 				"Team", team, ["currency", "billing_address"]
@@ -82,10 +83,16 @@ class DeveloperApiHandler:
 						"team": self.app_subscription_doc.team,
 						"status": "Active",
 						"site": self.app_subscription_doc.site,
+						"app": (
+							"in",
+							frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"),
+						),
 					},
 					fields=["name", "app", "site", "plan"],
 				)
 			]
+
+			capture("clicked_subscribe_button", "fc_signup", team)
 
 			return response
 
@@ -137,7 +144,7 @@ class DeveloperApiHandler:
 
 	def get_login_url(self):
 		# check for active tokens
-		team = frappe.db.get_value("Site", self.app_subscription_doc.site, "team")
+		team = self.app_subscription_doc.team
 		if frappe.db.exists(
 			"Saas Remote Login",
 			{

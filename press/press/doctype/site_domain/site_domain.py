@@ -72,14 +72,22 @@ class SiteDomain(Document):
 
 	def create_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
-		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
+		if is_standalone:
+			agent = Agent(server, server_type="Server")
+		else:
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.new_host(self)
 
 	def create_remove_host_agent_request(self):
 		server = frappe.db.get_value("Site", self.site, "server")
-		proxy_server = frappe.db.get_value("Server", server, "proxy_server")
-		agent = Agent(proxy_server, server_type="Proxy Server")
+		is_standalone = frappe.db.get_value("Server", server, "is_standalone")
+		if is_standalone:
+			agent = Agent(server, server_type="Server")
+		else:
+			proxy_server = frappe.db.get_value("Server", server, "proxy_server")
+			agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_host(self)
 
 	def retry(self):

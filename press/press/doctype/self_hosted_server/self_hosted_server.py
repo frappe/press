@@ -5,14 +5,18 @@ import json
 
 import frappe
 from frappe.model.document import Document
-
+from frappe.model.naming import make_autoname
 from press.runner import Ansible
 from press.utils import log_error
 
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		self.name = f"{self.hostname}.{self.domain}"
+		_series = "s"
+		series = f"{_series}-.#####"
+		self.index = int(make_autoname(series)[-5:])
+		self.name = f"{_series}{self.index}.{self.domain}"
+		# self.name = f"{self.hostname}.{self.domain}"
 
 	def validate(self):
 		if not self.mariadb_ip:
@@ -23,6 +27,8 @@ class SelfHostedServer(Document):
 			self.mariadb_root_password = frappe.generate_hash(length=32)
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
+		if not self.hostname:
+			self.hostname = self.name.split(".")[0]
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):

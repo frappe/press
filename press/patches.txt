@@ -94,3 +94,4 @@ press.press.doctype.deploy_candidate_app.patches.set_app_name_to_app
 press.press.doctype.site.patches.set_database_access_credentials
 press.press.doctype.team.patches.set_team_title
 press.press.doctype.telegram_group.patches.create_groups_from_press_settings
+press.press.doctype.app_release.patches.set_clone_directory

@@ -2,7 +2,26 @@
 	<div>
 		<PageHeader title="Servers" subtitle="Your Servers">
 			<template v-if="this.$account.team.enabled" v-slot:actions>
+				<Dropdown
+					v-if="
+						$account.team.self_hosted_servers_enabled === 1 &&
+						!showAddCardDialog
+					"
+					:options="dropDownOptions"
+				>
+					<!-- <template v-slot="{ open }"> -->
+					<Button
+						appearance="primary"
+						iconLeft="plus"
+						class="ml-2 hidden sm:inline-flex"
+						@click="showBillingDialog"
+					>
+						New
+					</Button>
+					<!-- </template> -->
+				</Dropdown>
 				<Button
+					v-else
 					appearance="primary"
 					iconLeft="plus"
 					class="ml-2 hidden sm:inline-flex"
@@ -39,6 +58,7 @@
 <script>
 import ServerList from '@/views/server/ServerList.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
+import Dropdown from 'frappe-ui/src/components/Dropdown.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
@@ -48,11 +68,23 @@ export default {
 		PageHeader,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
-		)
+		),
+		Dropdown
 	},
 	data() {
 		return {
-			showAddCardDialog: false
+			showAddCardDialog: false,
+
+			dropDownOptions: [
+				{
+					label: 'Frappe Cloud Server',
+					handler: () => this.$router.replace('/servers/new')
+				},
+				{
+					label: 'Self Hosted Server',
+					handler: () => this.$router.replace('/selfhosted/new')
+				}
+			]
 		};
 	},
 	resources: {
@@ -75,7 +107,10 @@ export default {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
 			} else {
-				this.$router.replace('/servers/new');
+				if (this.$account.team.self_hosted_servers_enabled !== 1) {
+					this.$router.replace('/servers/new');
+				}
+				this.showAddCardDialog = false;
 			}
 		}
 	},

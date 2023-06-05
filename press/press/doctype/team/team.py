@@ -26,6 +26,7 @@ from press.utils.billing import (
 	get_stripe,
 	process_micro_debit_test_charge,
 )
+from press.utils.telemetry import capture
 
 
 class Team(Document):
@@ -439,6 +440,8 @@ class Team(Document):
 
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
+		# Telemetry: Added card
+		capture("added_card_or_prepaid_credits", "fc_signup", self.user)
 
 		return doc
 
@@ -681,7 +684,7 @@ class Team(Document):
 
 	def get_upcoming_invoice(self, type="Subscription"):
 		# get the current period's invoice
-		today = frappe.utils.datetime.datetime.today()
+		today = frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
@@ -846,6 +849,8 @@ def process_stripe_webhook(doc, method):
 	# Give them free credits too (only first time)
 	team.allocate_free_credits()
 
+	# Telemetry: Added prepaid credits
+	capture("added_card_or_prepaid_credits", "fc_signup", team.user)
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
