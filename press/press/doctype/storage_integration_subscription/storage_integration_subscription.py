@@ -92,6 +92,9 @@ def create_after_insert(doc, method):
 	if not doc.site:
 		return
 
+	if frappe.db.get_value("Site", doc.site, "standby_for"):
+		return
+
 	if doc.app == "storage_integration":
 		sub_exists = frappe.db.exists(
 			{"doctype": "Storage Integration Subscription", "site": doc.site}

@@ -204,6 +204,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
 		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
 			try:
 				frappe.get_doc("Site", site).sync_analytics(analytics)
 				frappe.db.commit()
