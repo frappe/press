@@ -8,17 +8,20 @@ from unittest.mock import Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.server.server import BaseServer
+from press.runner import Ansible
+from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-def create_test_database_server():
+def create_test_database_server(ip: str = frappe.mock("ipv4")) -> DatabaseServer:
 	"""Create test Database Server doc"""
 	return frappe.get_doc(
 		{
 			"doctype": "Database Server",
 			"status": "Active",
-			"ip": frappe.mock("ipv4"),
+			"ip": ip,
 			"private_ip": frappe.mock("ipv4_private"),
 			"agent_password": frappe.mock("password"),
 			"hostname": "m",
@@ -27,5 +30,44 @@ def create_test_database_server():
 	).insert(ignore_if_duplicate=True)
 
 
+@patch.object(Ansible, "run", new=Mock())
 class TestDatabaseServer(FrappeTestCase):
-	pass
+	def tearDown(self):
+		frappe.db.rollback()
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+		wraps=Ansible,
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_mariadb_service_restarted_on_restart_mariadb_fn_call(
+		self, Mock_Ansible: Mock
+	):
+		server = create_test_database_server()
+		server.restart_mariadb()
+		args, kwargs = Mock_Ansible.call_args
+		self.assertEqual("restart_mysql.yml", kwargs["playbook"])
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+		wraps=Ansible,
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_memory_limits_updated_on_update_of_corresponding_fields(
+		self, Mock_Ansible: Mock
+	):
+		server = create_test_database_server()
+		server.memory_high = 1
+		server.save()
+		Mock_Ansible.assert_not_called()
+		server.memory_max = 2
+		server.save()
+		Mock_Ansible.assert_called_once()
+		args, kwargs = Mock_Ansible.call_args
+		self.assertEqual("database_memory_limits.yml", kwargs["playbook"])
