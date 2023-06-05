@@ -6,6 +6,9 @@ from typing import Any
 import frappe
 from frappe.model.document import Document
 
+from press.runner import Ansible
+from press.utils import log_error
+
 
 class DatabaseServerMariaDBVariable(Document):
 	@property
@@ -110,6 +113,24 @@ class DatabaseServerMariaDBVariable(Document):
 		if self.value:
 			self.validate_value_field_set_is_correct()
 			self.validate_datatype_of_field_is_correct()
+
+	def update_on_server(self):
+		if not self.has_value_changed(self.value_field):
+			return
+		server = frappe.get_doc("Database Server", self.parent)
+		ansible = Ansible(
+			playbook="mysqld_variable.yml",
+			server=server,
+			user=server.ssh_user or "root",
+			port=server.ssh_port or 22,
+			variables={
+				"server": server.name,
+				**self.get_variable_dict_for_play(),
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB System Variable Update Error", server=server.name)
 
 
 def on_doctype_update():

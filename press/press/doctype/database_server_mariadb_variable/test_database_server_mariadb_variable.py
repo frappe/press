@@ -97,7 +97,10 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		except frappe.ValidationError:
 			self.fail("Should be able to skip skippable variables")
 
-	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
+	@patch(
+		"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+		wraps=Ansible,
+	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
@@ -132,7 +135,10 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		default_value = frappe.db.get_value("MariaDB Variable", "log_bin", "default_value")
 		self.assertEqual(server.mariadb_system_variables[0].value_str, default_value)
 
-	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
+	@patch(
+		"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+		wraps=Ansible,
+	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		wraps=foreground_enqueue_doc,
@@ -172,7 +178,8 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		server.save()
 		server.status = "Broken"
 		with patch(
-			"press.press.doctype.database_server.database_server.Ansible", wraps=Ansible
+			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+			wraps=Ansible,
 		) as Mock_Ansible:
 			server.save()
 		Mock_Ansible.assert_not_called()
@@ -190,12 +197,16 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		server.save()
 		server.mariadb_system_variables[0].value_int = 2000
 		with patch(
-			"press.press.doctype.database_server.database_server.Ansible"
+			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+			wraps=Ansible,
 		) as Mock_Ansible:
 			server.save()
 		Mock_Ansible.assert_called_once()
 
-	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
+	@patch(
+		"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+		wraps=Ansible,
+	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		wraps=foreground_enqueue_doc,
@@ -215,7 +226,10 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		server.save()
 		self.assertEqual(2, Mock_Ansible.call_count)
 
-	@patch("press.press.doctype.database_server.database_server.Ansible", wraps=Ansible)
+	@patch(
+		"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+		wraps=Ansible,
+	)
 	@patch(
 		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
