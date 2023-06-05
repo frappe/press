@@ -9,20 +9,38 @@ from press.utils import log_error
 
 
 class Telegram:
-	def __init__(self, chat_id: str = None):
-		self.token, self.chat_id = frappe.db.get_value(
-			"Press Settings", None, ["telegram_bot_token", "telegram_chat_id"]
+	def __init__(self, topic: str = None):
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			["telegram_bot_token", "telegram_alerts_chat_group"],
+			as_dict=True,
 		)
-		if chat_id:
-			self.chat_id = chat_id
+		self.token = settings.telegram_bot_token
+		self.group = settings.telegram_alerts_chat_group
+		self.chat_id = frappe.db.get_value("Telegram Group", self.group, "chat_id")
+		self.topic_id = frappe.db.get_value(
+			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
+		)
 
 	def send(self, message, html=False):
 		try:
 			text = message[: telegram.MAX_MESSAGE_LENGTH]
 			parse_mode = self._get_parse_mode(html)
-			return self.bot.send_message(chat_id=self.chat_id, text=text, parse_mode=parse_mode)
+			return self.bot.send_message(
+				chat_id=self.chat_id,
+				text=text,
+				parse_mode=parse_mode,
+				message_thread_id=self.topic_id,
+			)
 		except Exception:
-			log_error("Telegram Bot Error", message=message, html=html)
+			log_error(
+				"Telegram Bot Error",
+				message=message,
+				html=html,
+				chat_id=self.chat_id,
+				topic_id=self.topic_id,
+			)
 
 	def _get_parse_mode(self, html):
 		if html:
@@ -36,11 +54,13 @@ class Telegram:
 	def respond(self, message):
 		if not message:
 			return
-		self.chat_id = frappe.db.get_single_value("Press Settings", "telegram_alert_chat_id")
 
 		# Only respond to message from the Telegram alerts group
 		if self.chat_id != str(message["chat"]["id"]):
 			return
+
+		# Respond on the same topic
+		self.topic_id = message.get("message_thread_id")
 
 		text = message["text"]
 		entities = message.get("entities", [])

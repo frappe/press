@@ -26,6 +26,7 @@
   "bench_config",
   "dependencies_tab",
   "dependencies",
+  "packages",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "column_break_23",
@@ -193,10 +194,16 @@
    "fieldname": "apps_tab",
    "fieldtype": "Tab Break",
    "label": "Apps"
+  },
+  {
+   "fieldname": "packages",
+   "fieldtype": "Table",
+   "label": "Packages",
+   "options": "Release Group Package"
   }
  ],
  "links": [],
- "modified": "2022-09-30 14:48:01.414156",
+ "modified": "2023-05-12 16:25:51.970564",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

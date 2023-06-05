@@ -21,7 +21,11 @@ def log_error(title, **kwargs):
 def get_current_team(get_doc=False):
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
-		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
+		return (
+			frappe.get_doc("Team", {"user": frappe.session.user})
+			if get_doc
+			else frappe.session.user
+		)
 
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
@@ -32,7 +36,11 @@ def get_current_team(get_doc=False):
 
 	if not team and user_is_press_admin and frappe.db.exists("Team", frappe.session.user):
 		# if user has_role of Press Admin then just return current user as default team
-		return frappe.get_doc("Team", frappe.session.user) if get_doc else frappe.session.user
+		return (
+			frappe.get_doc("Team", {"user": frappe.session.user})
+			if get_doc
+			else frappe.session.user
+		)
 
 	if not team:
 		# if team is not passed via header, get the first team that this user is part of
@@ -69,7 +77,7 @@ def get_app_tag(repository, repository_owner, hash):
 
 def get_default_team_for_user(user):
 	"""Returns the Team if user has one, or returns the Team to which they belong"""
-	if frappe.db.exists("Team", user):
+	if frappe.db.exists("Team", {"user": user}):
 		return user
 
 	team = frappe.db.get_value(
