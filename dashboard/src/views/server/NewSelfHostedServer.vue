@@ -22,6 +22,13 @@
 					/>
 				</div>
 				<div class="mt-4">
+				<SelfHostedServerPlan
+				v-model:selectedPlan="selectedPlan"
+				:options="options"
+				v-show="activeStep.name === 'SelfHostedServerPlan'"
+				/>
+				</div>
+				<div class="mt-4">
 					<SelfHostedServerVerify
 						v-show="activeStep.name === 'VerifyServer'"
 						v-model:ssh_key="ssh_key"
@@ -116,14 +123,16 @@ import Steps from '@/components/Steps.vue';
 import SelfHostedHostname from './NewSelfHostedServerHostname.vue';
 import SelfHostedServerForm from './NewSelfHostedServerForm.vue';
 import SelfHostedServerVerify from './SelfHostedServerVerify.vue';
+import SelfHostedServerPlan from './SelfHostedServerPlan.vue';
 export default {
 	name: 'NewSelfHostedServer',
 	components: {
 		WizardCard,
 		Steps,
 		SelfHostedHostname,
+		SelfHostedServerPlan,
 		SelfHostedServerForm,
-		SelfHostedServerVerify
+		SelfHostedServerVerify,
 	},
 	data() {
 		return {
@@ -138,22 +147,26 @@ export default {
 			playStatus: false,
 			unreachable: false,
 			ssh_key: null,
+			selectedPlan:null,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
-					validate: () => {
-						return this.title;
-					}
+					// validate: () => {
+					// 	return this.title;
+					// }
 				},
 				{
 					name: 'ServerDetails',
-					validate: () => {
-						if (this.verifyIP(this.privateIP) && this.verifyIP(this.publicIP)) {
-							return this.privateIP && this.publicIP;
-						} else {
-							this.ipValidationMessage = 'Please enter valid IP addresses';
-						}
-					}
+					// validate: () => {
+					// 	if (this.verifyIP(this.privateIP) && this.verifyIP(this.publicIP)) {
+					// 		return this.privateIP && this.publicIP;
+					// 	} else {
+					// 		this.ipValidationMessage = 'Please enter valid IP addresses';
+					// 	}
+					// }
+				},
+				{
+					name: 'SelfHostedServerPlan',
 				},
 				{
 					name: 'VerifyServer',
@@ -167,8 +180,11 @@ export default {
 		};
 	},
 	async mounted() {
-		this.options = await this.$call('press.api.server.options', {
-			type: 'self_hosted'
+		const plans = await this.$call('press.api.selfhosted.get_plans');
+		this.options = plans.map(plan => {
+			plan.disabled = !this.$account.hasBillingInfo;
+			plan.vcpu = "Any"
+			return plan;
 		});
 		this.ssh_key = await this.$call('press.api.selfhosted.sshkey');
 	},
@@ -229,9 +245,9 @@ export default {
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name === 'ServerDetails') {
-				this.$resources.newServer.submit();
-			}
+			// if (activeStep.name === 'ServerDetails') {
+			// 	this.$resources.newServer.submit();
+			// }
 			next();
 		},
 		async setupServers() {

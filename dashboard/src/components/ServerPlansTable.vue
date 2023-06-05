@@ -40,16 +40,16 @@
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.vcpu }}
-				{{ $plural(plan.vcpu, 'vCPU', 'vCPUs') }}
+				{{ plan.vcpu > 0 ? $plural(plan.vcpu, 'vCPU', 'vCPUs') : '' }}
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
-				{{ formatBytes(plan.memory, 0, 2) }}
-			</div>
+				{{ plan.memory > 0 ? formatBytes(plan.memory, 0, 2) : 'Any' }}
+			</div>	
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.instance_type }}
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
-				{{ formatBytes(plan.disk, 0, 3) }}
+				{{ plan.disk > 0 ? formatBytes(plan.disk, 0, 3) : 'Any' }}
 			</div>
 		</div>
 	</div>

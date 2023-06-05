@@ -1,6 +1,7 @@
 import frappe
 from press.utils import get_current_team
 from press.runner import Ansible
+from press.api.server import plans
 
 import time
 
@@ -66,3 +67,9 @@ def start_server_setup(server_name):
 	db = frappe.get_doc("Database Server", server_name)
 	server.setup_server()
 	db.setup_server()
+
+@frappe.whitelist()
+def get_plans():
+	server_plan = plans("Self Hosted Server")
+	print(server_plan)
+	return server_plan
