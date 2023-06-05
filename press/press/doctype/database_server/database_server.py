@@ -58,7 +58,9 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Update Memory Limits Error", server=self.name)
 
 	def update_mariadb_system_variables(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_mariadb_system_variables")
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_update_mariadb_system_variables", queue="long"
+		)
 
 	def _update_mariadb_system_variables(self):
 		variable: DatabaseServerMariaDBVariable

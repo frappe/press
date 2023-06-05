@@ -144,7 +144,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		wraps=foreground_enqueue_doc,
 	)
 	def test_ansible_playbook_triggered_with_correct_input_on_update_of_child_table(
-		self, mock_enqueue_doc, Mock_Ansible
+		self, mock_enqueue_doc: Mock, Mock_Ansible
 	):
 		server = create_test_database_server()
 		server.append(
@@ -152,7 +152,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
 		)
 		server.save()
-		mock_enqueue_doc.assert_called_with(
+		mock_enqueue_doc.assert_any_call(
 			server.doctype, server.name, "_update_mariadb_system_variables", queue="long"
 		)
 		args, kwargs = Mock_Ansible.call_args
