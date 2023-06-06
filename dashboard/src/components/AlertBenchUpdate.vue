@@ -33,12 +33,7 @@
 					v-model:selectedApps="selectedApps"
 					:removedApps="deployInformation.removed_apps"
 				/>
-				<ErrorMessage class="mt-2" :message="$resources.deploy.error" />
-				<div
-					v-if="this.bench.team !== $account.team.name"
-					class="mt-2 whitespace-pre-line text-sm text-red-600">
-						Current Team doesn't have enough permissions
-				</div>
+				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</template>
 			<template v-slot:actions>
 				<Button
@@ -126,6 +121,9 @@ export default {
 					['Awaiting Deploy', 'Active'].includes(this.bench.status)
 				);
 			}
+		},
+		errorMessage() {
+			return this.$resources.deploy.error || (this.bench.team !== $account.team.name ? "Current Team doesn't have enough permissions" : '');
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;
