@@ -18,7 +18,7 @@
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
 						v-model:privateIP="privateIP"
-						v-model:error="ipValidationMessage"
+						v-model:error="ipInvalid"
 					/>
 				</div>
 				<div class="mt-4">
@@ -38,9 +38,9 @@
 						v-show="
 							activeStep.name === 'VerifyServer' && !playOutput && !unreachable
 						"
-						:loading="playStatus"
+						@click="$resources.verify.submit()"
+						:loading="$resources.verify.loading"
 						appearance="primary"
-						@click="startVerification"
 					>
 						Verify Server
 					</Button>
@@ -48,8 +48,6 @@
 						v-show="activeStep.name === 'VerifyServer' && playOutput"
 						icon-left="check"
 						appearance="primary"
-						:loading="playStatus"
-						@click="startVerification"
 					>
 						Server Verified
 					</Button>
@@ -57,8 +55,8 @@
 						v-show="activeStep.name === 'VerifyServer' && unreachable"
 						icon-left="x"
 						appearance="danger"
-						:loading="playStatus"
-						@click="startVerification"
+						:loading="$resources.verify.loading"
+						@click="$resources.verify.submit()"
 					>
 						Server Unreachable
 					</Button>
@@ -67,19 +65,14 @@
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<input
+						<Input
 							id="region-consent"
 							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							label="I agree that the laws of the region selected by me shall stand
+							applicable to me and Frappe."
+							class="rounded border-gray-300 focus:ring-blue-500"
 							v-model="agreedToRegionConsent"
 						/>
-						<label
-							for="region-consent"
-							class="ml-1 text-sm font-semibold text-gray-900"
-						>
-							I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe.
-						</label>
 					</div>
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
@@ -94,6 +87,7 @@
 						</Button>
 						<Button
 							appearance="primary"
+							:disabled="activeStep.name === 'ServerDetails' && this.ipInvalid"
 							@click="nextStep(activeStep, next)"
 							:class="{
 								'pointer-events-none opacity-0': !hasNext
@@ -141,13 +135,15 @@ export default {
 			publicIP: null,
 			privateIP: null,
 			validationMessage: null,
-			ipValidationMessage: null,
 			serverDoc: null,
 			playID: null,
-			playStatus: false,
-			unreachable: false,
 			ssh_key: null,
 			selectedPlan:null,
+			ipInvalid: false,
+			playStatus: false,
+			unreachable: false,
+			playOutput: false,
+			agreedToRegionConsent: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
@@ -157,13 +153,9 @@ export default {
 				},
 				{
 					name: 'ServerDetails',
-					// validate: () => {
-					// 	if (this.verifyIP(this.privateIP) && this.verifyIP(this.publicIP)) {
-					// 		return this.privateIP && this.publicIP;
-					// 	} else {
-					// 		this.ipValidationMessage = 'Please enter valid IP addresses';
-					// 	}
-					// }
+					validate: () => {
+						return this.privateIP && this.publicIP;
+					}
 				},
 				{
 					name: 'SelfHostedServerPlan',
@@ -175,8 +167,6 @@ export default {
 					}
 				}
 			],
-			playOutput: false,
-			agreedToRegionConsent: false
 		};
 	},
 	async mounted() {
@@ -201,6 +191,18 @@ export default {
 				},
 				onSuccess(data) {
 					this.serverDoc = data;
+				},
+				validate() {
+					let canCreate = this.title && this.privateIP && this.publicIP;
+
+					// if (!this.agreedToRegionConsent) {
+					// 	// document.getElementById('region-consent').focus();
+
+					// 	return 'Please agree to the above consent to create server';
+					// }
+					if (!canCreate) {
+						return 'Cannot create server';
+					}
 				}
 			};
 		},
@@ -208,7 +210,7 @@ export default {
 			return {
 				method: 'press.api.selfhosted.verify',
 				params: {
-					server: this.serverDoc
+					server: "ss5.athul.fc.frappe.dev"
 				},
 				onSuccess(data) {
 					if (data) {
@@ -231,7 +233,7 @@ export default {
 					let canCreate = this.title;
 
 					if (!this.agreedToRegionConsent) {
-						document.getElementById('region-consent').focus();
+						// document.getElementById('region-consent').focus();
 
 						return 'Please agree to the above consent to create server';
 					}
@@ -245,9 +247,9 @@ export default {
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			// if (activeStep.name === 'ServerDetails') {
-			// 	this.$resources.newServer.submit();
-			// }
+			if (activeStep.name === 'ServerDetails' && this.ipInvalid){
+				this.$resources.newServer.submit();
+			}
 			next();
 		},
 		async setupServers() {
@@ -256,16 +258,6 @@ export default {
 				this.$router.replace(`/servers/${this.serverDoc}/overview`);
 			}
 		},
-		async startVerification() {
-			this.playStatus = true;
-			await this.$resources.verify.submit();
-			this.playStatus = false;
-		},
-		verifyIP(ip) {
-			const ipAddressRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
-			const ver = ipAddressRegex.test(ip);
-			return ver;
-		}
 	}
 };
 </script>

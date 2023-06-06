@@ -16,7 +16,10 @@
 				@change="$emit('update:privateIP', $event)"
 				type="text"
 			/>
-			<ErrorMessage class="mt-3" :message="error" />
+			<div class="mt-4">
+				<ErrorMessage :message="publicIpErrorMessage" />
+				<ErrorMessage :message="privateIpErrorMessage" />
+			</div>
 		</div>
 	</div>
 </template>
@@ -24,6 +27,41 @@
 export default {
 	name: 'SelfHostedServerForm',
 	props: ['privateIP', 'publicIP', 'error'],
-	emits: ['update:publicIP', 'update:privateIP']
+	emits: ['update:publicIP', 'update:privateIP', 'update:error'],
+	watch: {
+		hasError() {
+			this.$emit('update:error', this.hasError);
+		}
+	},
+	mounted() {
+		this.$emit('update:error', this.hasError);
+	},
+	computed: {
+		privateIpErrorMessage() {
+			return this.validateIP(this.privateIP, 'Private');
+		},
+		publicIpErrorMessage() {
+			return this.validateIP(this.publicIP, 'Public');
+		},
+		hasError() {
+			return (
+				this.privateIpErrorMessage !== null ||
+				this.publicIpErrorMessage !== null
+			);
+		}
+	},
+	methods: {
+		validateIP(ip, type) {
+			try {
+				console.log('Validation Point');
+				const stripped_ip = ip.replace(/\s+/g, '');
+				const ipAddressRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
+				const ver = ipAddressRegex.test(stripped_ip);
+				return ver ? null : `${type} IP is invalid`;
+			} catch {
+				return `${type} IP cannot be blank`;
+			}
+		}
+	}
 };
 </script>

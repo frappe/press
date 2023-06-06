@@ -16,8 +16,8 @@ def new(server):
 	self_hosted_server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
-			"private_ip": server["privateIP"],
-			"ip": server["publicIP"],
+			"private_ip": server["privateIP"].strip(),
+			"ip": server["publicIP"].strip(),
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
