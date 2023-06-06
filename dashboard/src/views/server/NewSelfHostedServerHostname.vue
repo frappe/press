@@ -13,10 +13,10 @@
 		<div class="mt-6 space-y-2">
 			<h2 class="text-lg font-semibold">Add Domain</h2>
 
-		<p class="text-base text-gray-700">
-			Add Domain pointing to Server
-		</p>
-		<Input class="z-10 w-full rounded-r-none" type="text" :value="domain" @change="$emit('update:domain', $event)"
+			<p class="text-base text-gray-700">
+				Add Domain pointing to Server
+			</p>
+			<Input class="z-10 w-full rounded-r-none" type="text" :value="domain" @change="$emit('update:domain', $event)"
 				placeholder="abc.example.com" />
 		</div>
 		<ErrorMessage class="mt-4" :message="errorMessage" />

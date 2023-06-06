@@ -4,69 +4,37 @@
 			<h1 class="text-2xl font-bold">Create a new Self Hosted Server</h1>
 		</div>
 		<Steps :steps="steps">
-			<template
-				v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }"
-			>
+			<template v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }">
 				<div class="mt-8"></div>
-				<SelfHostedHostname
-					v-show="activeStep.name === 'SelfHostedHostname'"
-					v-model:title="title"
-					v-model:domain="domain"
-				/>
+				<SelfHostedHostname v-show="activeStep.name === 'SelfHostedHostname'" v-model:title="title"
+					v-model:domain="domain" />
 				<div>
-					<SelfHostedServerForm
-						v-show="activeStep.name === 'ServerDetails'"
-						v-model:publicIP="publicIP"
-						v-model:privateIP="privateIP"
-						v-model:error="ipInvalid"
-					/>
-					<Button
-							appearance="primary"
-							v-show="activeStep.name === 'ServerDetails' && !this.ipInvalid && this.domain"
-							@click="!domainVerified && $resources.verifyDNS.submit()"
-							:loading="$resources.verifyDNS.loading"
-							:icon-left="domainVerified?'check':''"
-						>
-							{{ domainVerified?"Domain Verified":"Verify Domain"}}
-						</Button>
+					<SelfHostedServerForm v-show="activeStep.name === 'ServerDetails'" v-model:publicIP="publicIP"
+						v-model:privateIP="privateIP" v-model:error="ipInvalid" />
+					<Button appearance="primary"
+						v-show="activeStep.name === 'ServerDetails' && !this.ipInvalid && this.domain"
+						@click="!domainVerified && $resources.verifyDNS.submit()" :loading="$resources.verifyDNS.loading"
+						:icon-left="domainVerified ? 'check' : ''">
+						{{ domainVerified ? "Domain Verified" : "Verify Domain" }}
+					</Button>
 				</div>
 				<div class="mt-4">
-				<SelfHostedServerPlan
-				v-model:selectedPlan="selectedPlan"
-				:options="options"
-				v-show="activeStep.name === 'SelfHostedServerPlan'"
-				/>
+					<SelfHostedServerPlan v-model:selectedPlan="selectedPlan" :options="options"
+						v-show="activeStep.name === 'SelfHostedServerPlan'" />
 				</div>
 				<div class="mt-4">
-					<SelfHostedServerVerify
-						v-show="activeStep.name === 'VerifyServer'"
-						v-model:ssh_key="ssh_key"
-					/>
+					<SelfHostedServerVerify v-show="activeStep.name === 'VerifyServer'" v-model:ssh_key="ssh_key" />
 
-					<Button
-						v-show="
-							activeStep.name === 'VerifyServer' && !playOutput && !unreachable
-						"
-						@click="$resources.verify.submit()"
-						:loading="$resources.verify.loading"
-						appearance="primary"
-					>
+					<Button v-show="activeStep.name === 'VerifyServer' && !playOutput && !unreachable
+						" @click="$resources.verify.submit()" :loading="$resources.verify.loading" appearance="primary">
 						Verify Server
 					</Button>
-					<Button
-						v-show="activeStep.name === 'VerifyServer' && playOutput"
-						icon-left="check"
-						appearance="primary"
-					>
+					<Button v-show="activeStep.name === 'VerifyServer' && playOutput" icon-left="check"
+						appearance="primary">
 						Server Verified
 					</Button>
-					<Button
-						v-show="activeStep.name === 'VerifyServer' && unreachable"
-						icon-left="x"
-						appearance="danger"
-						:loading="$resources.verify.loading"
-						@click="$resources.verify.submit()"
-					>
+					<Button v-show="activeStep.name === 'VerifyServer' && unreachable" icon-left="x" appearance="danger"
+						:loading="$resources.verify.loading" @click="$resources.verify.submit()">
 						Server Unreachable
 					</Button>
 				</div>
@@ -74,44 +42,28 @@
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<Input
-							id="region-consent"
-							type="checkbox"
-							label="I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe."
-							class="rounded border-gray-300 focus:ring-blue-500"
-							v-model="agreedToRegionConsent"
-						/>
+						<Input id="region-consent" type="checkbox" label="I agree that the laws of the region selected by me shall stand
+							applicable to me and Frappe." class="rounded border-gray-300 focus:ring-blue-500"
+							v-model="agreedToRegionConsent" />
 					</div>
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
+						<Button @click="previous" :class="{
 								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
+							}">
 							Back
 						</Button>
-						
-						<Button
-							appearance="primary"
-							@click="nextStep(activeStep, next)"
-							:disabled="activeStep.name === 'ServerDetails'?!domainVerified:false"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
-						>
+
+						<Button appearance="primary" @click="nextStep(activeStep, next)"
+							:disabled="activeStep.name === 'ServerDetails' ? !domainVerified : false" :class="{
+									'pointer-events-none opacity-0': !hasNext
+								}">
 							Next
 						</Button>
-						<Button
-							v-show="!hasNext"
-							appearance="primary"
-							:disabled="!playOutput || !this.agreedToRegionConsent"
-							@click="setupServers"
-							:loading="$resources.setupServer.loading"
-						>
+						<Button v-show="!hasNext" appearance="primary"
+							:disabled="!playOutput || !this.agreedToRegionConsent" @click="setupServers"
+							:loading="$resources.setupServer.loading">
 							Setup Server
 						</Button>
 					</div>
@@ -148,8 +100,8 @@ export default {
 			serverDoc: null,
 			playID: null,
 			ssh_key: null,
-			selectedPlan:null,
-			domain:null,
+			selectedPlan: null,
+			domain: null,
 			ipInvalid: false,
 			playStatus: false,
 			unreachable: false,
@@ -171,7 +123,7 @@ export default {
 				},
 				{
 					name: 'SelfHostedServerPlan',
-					validate:()=>{
+					validate: () => {
 						return this.selectedPlan;
 					}
 				},
@@ -258,15 +210,15 @@ export default {
 				}
 			};
 		},
-		verifyDNS(){
-			return{
+		verifyDNS() {
+			return {
 				method: 'press.api.selfhosted.check_dns',
-				params:{
-						domain: this.domain,
-						ip: this.publicIP
+				params: {
+					domain: this.domain,
+					ip: this.publicIP
 				},
-				onSuccess(data){
-					this.domainVerified=data
+				onSuccess(data) {
+					this.domainVerified = data
 				}
 			}
 		}
@@ -274,7 +226,7 @@ export default {
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name === 'ServerDetails' && this.ipInvalid){
+			if (activeStep.name === 'ServerDetails' && this.ipInvalid) {
 				this.$resources.newServer.submit();
 			}
 			next();

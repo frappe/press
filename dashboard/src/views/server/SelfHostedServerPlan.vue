@@ -5,11 +5,8 @@
 		</label>
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
-			<ServerPlansTable
-				:plans="planOptions"
-				:selectedPlan="selectedPlan"
-				@update:selectedPlan="plan => $emit('update:selectedPlan', plan)"
-			/>
+			<ServerPlansTable :plans="planOptions" :selectedPlan="selectedPlan"
+				@update:selectedPlan="plan => $emit('update:selectedPlan', plan)" />
 		</div>
 	</div>
 </template>
@@ -25,7 +22,7 @@ export default {
 		ServerPlansTable,
 		AlertBillingInformation
 	},
-    computed: {
+	computed: {
 		planOptions() {
 			return this.options
 		}
