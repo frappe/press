@@ -401,7 +401,9 @@ def process_archive_bench_job_update(job):
 	}[job.status]
 
 	if job.status == "Failure":
-		if "Bench has sites" in job.traceback:  # custom exception hardcoded in agent
+		if (
+			job.traceback and "Bench has sites" in job.traceback
+		):  # custom exception hardcoded in agent
 			updated_status = "Active"
 
 	if updated_status != bench_status:

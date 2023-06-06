@@ -199,6 +199,8 @@ def poll_pending_jobs_server(server):
 		return
 
 	for polled_job in polled_jobs:
+		if not polled_job:
+			continue
 		job = find(pending_jobs, lambda x: x.job_id == polled_job["id"])
 		try:
 			# Update Job Status
