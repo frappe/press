@@ -66,7 +66,7 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
-			self.on_trash()
+			self.cleanup()
 			log_error("App Release Command Exception", command=command, output=e.output.decode())
 			raise e
 
@@ -118,6 +118,12 @@ class AppRelease(Document):
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
 			shutil.rmtree(self.clone_directory)
+
+	@frappe.whitelist()
+	def cleanup(self):
+		self.on_trash()
+		self.cloned = False
+		self.save()
 
 	def create_release_differences(self):
 		releases = frappe.db.sql(
