@@ -9,9 +9,9 @@
 			>
 				<div class="mt-8"></div>
 				<SelfHostedHostname
-					:options="options"
 					v-show="activeStep.name === 'SelfHostedHostname'"
 					v-model:title="title"
+					v-model:domain="domain"
 				/>
 				<div>
 					<SelfHostedServerForm
@@ -20,6 +20,15 @@
 						v-model:privateIP="privateIP"
 						v-model:error="ipInvalid"
 					/>
+					<Button
+							appearance="primary"
+							v-show="activeStep.name === 'ServerDetails' && !this.ipInvalid && this.domain"
+							@click="!domainVerified && $resources.verifyDNS.submit()"
+							:loading="$resources.verifyDNS.loading"
+							:icon-left="domainVerified?'check':''"
+						>
+							{{ domainVerified?"Domain Verified":"Verify Domain"}}
+						</Button>
 				</div>
 				<div class="mt-4">
 				<SelfHostedServerPlan
@@ -85,10 +94,11 @@
 						>
 							Back
 						</Button>
+						
 						<Button
 							appearance="primary"
-							:disabled="activeStep.name === 'ServerDetails' && this.ipInvalid"
 							@click="nextStep(activeStep, next)"
+							:disabled="activeStep.name === 'ServerDetails'?!domainVerified:false"
 							:class="{
 								'pointer-events-none opacity-0': !hasNext
 							}"
@@ -98,7 +108,7 @@
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
-							:disabled="!playOutput"
+							:disabled="!playOutput || !this.agreedToRegionConsent"
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -139,17 +149,19 @@ export default {
 			playID: null,
 			ssh_key: null,
 			selectedPlan:null,
+			domain:null,
 			ipInvalid: false,
 			playStatus: false,
 			unreachable: false,
 			playOutput: false,
 			agreedToRegionConsent: false,
+			domainVerified: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
-					// validate: () => {
-					// 	return this.title;
-					// }
+					validate: () => {
+						return this.title && this.domain;
+					}
 				},
 				{
 					name: 'ServerDetails',
@@ -159,6 +171,9 @@ export default {
 				},
 				{
 					name: 'SelfHostedServerPlan',
+					validate:()=>{
+						return this.selectedPlan;
+					}
 				},
 				{
 					name: 'VerifyServer',
@@ -242,6 +257,18 @@ export default {
 					}
 				}
 			};
+		},
+		verifyDNS(){
+			return{
+				method: 'press.api.selfhosted.check_dns',
+				params:{
+						domain: this.domain,
+						ip: this.publicIP
+				},
+				onSuccess(data){
+					this.domainVerified=data
+				}
+			}
 		}
 	},
 	computed: {},

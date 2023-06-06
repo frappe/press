@@ -1,9 +1,12 @@
 import frappe
-from press.utils import get_current_team
+
+from press.utils import get_current_team,log_error
 from press.runner import Ansible
 from press.api.server import plans
 
 import time
+import dns.resolver
+
 
 
 @frappe.whitelist()
@@ -42,11 +45,16 @@ def verify(server):
 		server=server_doc,
 	)
 	play = ansible.run()
-	time.sleep(3)
 	play_doc = frappe.get_doc("Ansible Play", play.name)
 	if play_doc.status == "Success":
 		server_doc.status = "Pending"
 		server_doc.save()
+		try:
+			frappe.enqueue_doc(
+			server_doc.doctype, server_doc.name, "_setup_nginx", queue="long", timeout=1200,at_front=True,
+		)
+		except:
+			print("Moonji")
 		return True
 	if play_doc.unreachable:
 		return False
@@ -73,3 +81,15 @@ def get_plans():
 	server_plan = plans("Self Hosted Server")
 	print(server_plan)
 	return server_plan
+
+@frappe.whitelist()
+def check_dns(domain,ip):
+		print(domain,ip)
+		try:
+			domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+			print(domain_ip)
+			if domain_ip == ip:
+				return True
+		except Exception:
+			return False
+		return False
