@@ -108,8 +108,12 @@ class AppRelease(Document):
 			url = source.repository_url
 		self.output = ""
 		self.output += self.run("git init")
-		self.output += self.run(f"git checkout -b {source.branch}")
-		self.output += self.run(f"git remote add origin {url}")
+		self.output += self.run(f"git checkout -B {source.branch}")
+		origin_exists = self.run("git remote").strip() == "origin"
+		if origin_exists:
+			self.output += self.run(f"git remote set-url origin {url}")
+		else:
+			self.output += self.run(f"git remote add origin {url}")
 		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
