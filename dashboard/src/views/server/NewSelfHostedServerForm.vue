@@ -53,7 +53,6 @@ export default {
 	methods: {
 		validateIP(ip, type) {
 			try {
-				console.log('Validation Point');
 				const stripped_ip = ip.replace(/\s+/g, '');
 				const ipAddressRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
 				const ver = ipAddressRegex.test(stripped_ip);

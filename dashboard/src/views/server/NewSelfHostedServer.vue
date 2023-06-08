@@ -223,11 +223,10 @@ export default {
 			return {
 				method: 'press.api.selfhosted.verify',
 				params: {
-					server: 's2.athul.fc.frappe.dev'
+					server: this.serverDoc
 				},
 				onSuccess(data) {
-					console.log(data);
-					this.playOutput = data;
+					thsis.playOutput = data;
 				}
 			};
 		},
@@ -269,7 +268,7 @@ export default {
 	methods: {
 		async nextStep(activeStep, next) {
 			if (activeStep.name === 'ServerDetails' && this.ipInvalid) {
-				// this.$resources.newServer.submit();
+				this.$resources.newServer.submit();
 			}
 			next();
 		},

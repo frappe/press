@@ -81,16 +81,13 @@ def start_server_setup(server_name):
 @frappe.whitelist()
 def get_plans():
 	server_plan = plans("Self Hosted Server")
-	print(server_plan)
 	return server_plan
 
 
 @frappe.whitelist()
 def check_dns(domain, ip, plan):
-	print(plan["plan"]["name"])
 	try:
 		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
-		print(domain_ip)
 		if domain_ip == ip:
 			return True
 	except Exception:
