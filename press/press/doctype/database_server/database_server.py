@@ -91,9 +91,9 @@ class DatabaseServer(BaseServer):
 		if not old_doc:
 			return self.mariadb_system_variables
 		diff = get_diff(old_doc, self)
-		return self.get_newly_added_variables(
-			diff.get("added", [])
-		) + self.get_changed_variables(diff.get("row_changed", {}))
+		return self.get_changed_variables(
+			diff.get("row_changed", {})
+		) + self.get_newly_added_variables(diff.get("added", []))
 
 	def _update_mariadb_system_variables(
 		self, variables: list[DatabaseServerMariaDBVariable] = []

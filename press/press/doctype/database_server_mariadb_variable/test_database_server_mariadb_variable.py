@@ -292,3 +292,31 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			server.mariadb_system_variables[0].value_int = 2000
 			server.save()
 		Mock_Ansible.assert_called_once()
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_playbooks_triggered_for_added_and_changed_variables_in_one_save(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.save()
+		with patch(
+			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+			wraps=Ansible,
+		) as Mock_Ansible:
+			server.append(
+				"mariadb_system_variables",
+				{"mariadb_variable": "log_bin", "skip": False},
+			)
+			server.mariadb_system_variables[0].value_int = 2000
+			server.save()
+		self.assertEqual(2, Mock_Ansible.call_count)
+		for call in Mock_Ansible.call_args_list:
+			args, kwargs = call
+			self.assertIn(
+				kwargs["variables"]["variable"], ["innodb_buffer_pool_size", "log_bin"]
+			)
