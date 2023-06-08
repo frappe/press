@@ -115,8 +115,6 @@ class DatabaseServerMariaDBVariable(Document):
 			self.validate_datatype_of_field_is_correct()
 
 	def update_on_server(self):
-		if not self.has_value_changed(self.value_field):
-			return
 		server = frappe.get_doc("Database Server", self.parent)
 		ansible = Ansible(
 			playbook="mysqld_variable.yml",

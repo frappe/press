@@ -247,3 +247,48 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 		server.save()
 		args, kwargs = Mock_Ansible.call_args
 		self.assertTrue(kwargs["variables"]["persist"])
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_playbook_run_on_addition_of_variable_and_only_that_variable(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.save()
+		with patch(
+			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+			wraps=Ansible,
+		) as Mock_Ansible:
+			server.append(
+				"mariadb_system_variables",
+				{"mariadb_variable": "log_bin", "skip": True},
+			)
+			server.save()
+		Mock_Ansible.assert_called_once()
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_playbook_run_only_for_variable_changed(self):
+		server = create_test_database_server()
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
+		)
+		server.append(
+			"mariadb_system_variables",
+			{"mariadb_variable": "log_bin", "skip": True},
+		)
+		server.save()
+		with patch(
+			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
+			wraps=Ansible,
+		) as Mock_Ansible:
+			server.mariadb_system_variables[0].value_int = 2000
+			server.save()
+		Mock_Ansible.assert_called_once()
