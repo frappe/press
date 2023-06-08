@@ -46,7 +46,7 @@
 						:message="dnsErrorMessage"
 					/>
 				</div>
-				
+
 				<div class="mt-4" v-if="activeStep.name === 'VerifyServer'">
 					<SelfHostedServerVerify v-model:ssh_key="ssh_key" />
 
@@ -134,7 +134,7 @@ export default {
 		SelfHostedHostname,
 		SelfHostedServerPlan,
 		SelfHostedServerForm,
-		SelfHostedServerVerify,
+		SelfHostedServerVerify
 	},
 	data() {
 		return {
@@ -202,20 +202,11 @@ export default {
 						publicIP: this.publicIP,
 						privateIP: this.privateIP,
 						plan: this.selectedPlan,
+						url: this.domain
 					}
 				},
 				onSuccess(data) {
 					this.serverDoc = data;
-				},
-				validate() {
-					let canCreate = this.title && this.privateIP && this.publicIP;
-
-					if (!this.agreedToRegionConsent) {
-						return 'Please agree to the above consent to create server';
-					}
-					if (!canCreate) {
-						return 'Cannot create server';
-					}
 				}
 			};
 		},
@@ -226,7 +217,7 @@ export default {
 					server: this.serverDoc
 				},
 				onSuccess(data) {
-					thsis.playOutput = data;
+					this.playOutput = data;
 				}
 			};
 		},
@@ -253,7 +244,7 @@ export default {
 				method: 'press.api.selfhosted.check_dns',
 				params: {
 					domain: this.domain,
-					ip: this.publicIP,
+					ip: this.publicIP
 				},
 				onSuccess(data) {
 					this.domainVerified = data;
@@ -267,7 +258,7 @@ export default {
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name === 'ServerDetails' && this.ipInvalid) {
+			if (activeStep.name === 'ServerDetails' && !this.ipInvalid) {
 				this.$resources.newServer.submit();
 			}
 			next();

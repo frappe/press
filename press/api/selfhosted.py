@@ -24,7 +24,7 @@ def new(server):
 			"proxy_created": True,
 			"team": team.name,
 			"plan": server["plan"]["name"],
-			"domain": "self.frappe.dev",
+			"server_url": server["url"],
 		}
 	).insert()
 	return self_hosted_server.name
@@ -85,7 +85,7 @@ def get_plans():
 
 
 @frappe.whitelist()
-def check_dns(domain, ip, plan):
+def check_dns(domain, ip):
 	try:
 		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
 		if domain_ip == ip:
