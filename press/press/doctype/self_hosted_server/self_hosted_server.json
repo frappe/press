@@ -18,6 +18,7 @@
   "status",
   "cluster",
   "team",
+  "plan",
   "release_group",
   "private_ip",
   "different_database_server",
@@ -283,10 +284,16 @@
    "fieldtype": "Data",
    "label": "Server URL",
    "reqd": 1
+  },
+  {
+   "fieldname": "plan",
+   "fieldtype": "Link",
+   "label": "Plan",
+   "options": "Plan"
   }
  ],
  "links": [],
- "modified": "2023-06-01 12:15:39.758008",
+ "modified": "2023-06-07 14:52:00.906860",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

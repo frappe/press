@@ -23,6 +23,7 @@ def new(server):
 			"proxy_server": proxy_server,
 			"proxy_created": True,
 			"team": team.name,
+			"plan": server["plan"]["name"],
 			"domain": "self.frappe.dev",
 		}
 	).insert()
@@ -47,17 +48,14 @@ def verify(server):
 	if play_doc.status == "Success":
 		server_doc.status = "Pending"
 		server_doc.save()
-		try:
-			frappe.enqueue_doc(
-				server_doc.doctype,
-				server_doc.name,
-				"_setup_nginx",
-				queue="long",
-				timeout=1200,
-				at_front=True,
-			)
-		except:
-			print("Moonji")
+		frappe.enqueue_doc(
+			server_doc.doctype,
+			server_doc.name,
+			"_setup_nginx",
+			queue="long",
+			timeout=1200,
+			at_front=True,
+		)
 		return True
 	if play_doc.unreachable:
 		return False
@@ -88,8 +86,8 @@ def get_plans():
 
 
 @frappe.whitelist()
-def check_dns(domain, ip):
-	print(domain, ip)
+def check_dns(domain, ip, plan):
+	print(plan["plan"]["name"])
 	try:
 		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
 		print(domain_ip)

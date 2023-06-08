@@ -243,6 +243,7 @@ class SelfHostedServer(Document):
 			db_server.agent_password = self.get_password("agent_password")
 			db_server.is_server_setup = False if self.new_server else True
 			_db = db_server.insert()
+			_db.create_subscription("Unlimited")
 			self.database_setup = True
 			self.database_server = _db.name
 			self.status = "Active"
@@ -306,6 +307,7 @@ class SelfHostedServer(Document):
 			server.agent_password = self.get_password("agent_password")
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
 			new_server = server.insert()
+			new_server.create_subscription("Unlimited")
 			self.server = new_server.name
 			self.status = "Active"
 			self.server_created = True
