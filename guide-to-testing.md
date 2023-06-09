@@ -169,7 +169,7 @@ def setUp(self):
 ### Background jobs
 
 Since background jobs are forked off of a different process, our mocks and
-patches are not going to gold there. Not only that, but we can't
+patches are not going to hold there. Not only that, but we can't
 control/predict when the background job will run and finish. So, when your code
 involves creating a background job, we can simply mock the call so that it runs
 in foreground instead. There's a utility method you can use to achieve this with ease:
