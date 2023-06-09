@@ -264,6 +264,12 @@ def fetch_latest_app_update(name, app):
 
 @frappe.whitelist()
 @protected("Release Group")
+def add_app(name, source, app):
+	add_apps(name, [{"app": app, "source": source}])
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def add_apps(name, apps):
 	release_group = frappe.get_doc("Release Group", name)
 	for app in apps:
