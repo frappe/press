@@ -310,6 +310,9 @@ def backups(name):
 		"database_file",
 		"database_size",
 		"database_url",
+		"config_file_size",
+		"config_file_url",
+		"config_file",
 		"private_file",
 		"private_size",
 		"private_url",
@@ -322,6 +325,7 @@ def backups(name):
 		"remote_database_file",
 		"remote_public_file",
 		"remote_private_file",
+		"remote_config_file",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",
@@ -1117,6 +1121,7 @@ def restore(name, files, skip_failing_patches=False):
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
+	site.remote_config_file = files["config_file"]
 	site.save()
 	site.reload()
 	site.restore_site(skip_failing_patches=skip_failing_patches)
