@@ -138,11 +138,16 @@ things for the entirety of the test.
 
 https://github.com/frappe/press/blob/6dd6b2c8193b04f1aec1601d52ba09ce9dca8dfe/press/tests/test_audit.py#L97-L102
 
-> Note: When you use asserts on Mock object, you'll face failures if you're comparing Document objects even if all the fields in the db are the same. This is because when 2 objects are compared only their `id()` is checked by default. If you wish to have intuitive doc equality checking, you can patch `__eq__` of `Document` with comparison of `as_dict` outputs.
-
 Here, we're actually faking the output of the function which usually calls a
 remote endpoint that's out of our control by adding the `new` argument to the
 method.
+
+> Note: When you use asserts on Mock object, Document comparisons will mostly
+> work as expected as we're overriding **__eq__** of Document class during
+> tests (check before_test.py). This is because by default when 2 Document
+> objects are compared, only their `id()` is checked, which will return False
+> as the objects will be different in memory.
+
 
 > Note: If you need to mock some Callable while preserving it's function, (in
 > case you want to do asserts on it, you can use the `wraps` kwarg instead of
