@@ -13,15 +13,6 @@ from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils.test import foreground_enqueue_doc
 
-from frappe.model.document import Document
-
-
-def doc_equal(self: Document, other: Document) -> bool:
-	"""Partial equality checking of Document object"""
-	if self.as_dict() == other.as_dict():
-		return True
-	return False
-
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_database_server(ip: str = frappe.mock("ipv4")) -> DatabaseServer:
@@ -40,7 +31,6 @@ def create_test_database_server(ip: str = frappe.mock("ipv4")) -> DatabaseServer
 
 
 @patch.object(Ansible, "run", new=Mock())
-@patch.object(Document, "__eq__", new=doc_equal)
 class TestDatabaseServer(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
