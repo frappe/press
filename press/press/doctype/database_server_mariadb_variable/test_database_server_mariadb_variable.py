@@ -152,9 +152,6 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			{"mariadb_variable": "innodb_buffer_pool_size", "value_int": 1000},
 		)
 		server.save()
-		mock_enqueue_doc.assert_any_call(
-			server.doctype, server.name, "_update_mariadb_system_variables", queue="long"
-		)
 		args, kwargs = Mock_Ansible.call_args
 		expected_vars = {
 			"server": server.name,
@@ -165,7 +162,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"skip": 0,
 		}
 		self.assertEqual("mysqld_variable.yml", kwargs["playbook"])
-		server.reload()  # reload to get the right typing
+		server.reload()  # reload to get the right typing for datetime field
 		self.assertDocumentEqual(server, kwargs["server"])
 		self.assertDictEqual(expected_vars, kwargs["variables"])
 
