@@ -1323,7 +1323,7 @@ def delete_site_subdomain(site):
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
 	is_standalone = frappe.get_value("Server", site_doc.server, "is_standalone")
 	if is_standalone:
-		proxy_server = site.server
+		proxy_server = site_doc.server
 	else:
 		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
 	site_doc.remove_dns_record(domain, proxy_server, site)
