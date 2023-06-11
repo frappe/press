@@ -317,3 +317,11 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			self.assertIn(
 				kwargs["variables"]["variable"], ["innodb_buffer_pool_size", "log_bin"]
 			)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		wraps=foreground_enqueue_doc,
+	)
+	def test_background_jobs_not_created_for_new_server_doc(self, mock_enqueue_doc):
+		create_test_database_server()
+		mock_enqueue_doc.assert_not_called()

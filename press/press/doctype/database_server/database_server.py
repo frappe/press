@@ -32,6 +32,8 @@ class DatabaseServer(BaseServer):
 			variable.validate()
 
 	def on_update(self):
+		if self.flags.in_insert or self.is_new():
+			return
 		self.update_mariadb_system_variables()
 		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
 			self.update_memory_limits()
