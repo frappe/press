@@ -6,6 +6,8 @@ from press.api.server import plans
 
 import dns.resolver
 
+import time
+
 
 @frappe.whitelist()
 def new(server):
@@ -44,38 +46,24 @@ def verify(server):
 		server=server_doc,
 	)
 	play = ansible.run()
-	play_doc = frappe.get_doc("Ansible Play", play.name)
-	if play_doc.status == "Success":
+	if play.status == "Success":
 		server_doc.status = "Pending"
 		server_doc.save()
-		frappe.enqueue_doc(
-			server_doc.doctype,
-			server_doc.name,
-			"_setup_nginx",
-			queue="long",
-			timeout=1200,
-			at_front=True,
-		)
+		server_doc.create_db_server()
+		server_doc.reload()
+		server_doc.create_server()
+		server_doc.reload()
+		server_doc.setup_nginx()
 		return True
-	if play_doc.unreachable:
+	if play.unreachable:
 		return False
 
 
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	server_doc.create_db_server()
-	server_doc.reload()
-	server_doc.create_server()
-	server_doc.reload()
-	start_server_setup(server)
-
-
-def start_server_setup(server_name):
-	server = frappe.get_doc("Server", server_name)
-	db = frappe.get_doc("Database Server", server_name)
-	server.setup_server()
-	db.setup_server()
+	server_doc.start_setup()
+	time.sleep(2)
 
 
 @frappe.whitelist()

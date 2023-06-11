@@ -9,6 +9,7 @@ from press.runner import Ansible
 from press.utils import log_error
 
 from tldextract import extract as sdext
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 
 class SelfHostedServer(Document):
@@ -33,8 +34,6 @@ class SelfHostedServer(Document):
 	def fetch_apps_and_sites(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_get_apps", queue="long", timeout=1200)
 		frappe.enqueue_doc(self.doctype, self.name, "_get_sites", queue="long", timeout=1200)
-
-	# def get_hostnames(self):
 
 	@frappe.whitelist()
 	def ping_ansible(self):
@@ -440,13 +439,23 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
 
+	def setup_servers(self):
+		server = frappe.get_doc("Server", self.name)
+		db_server = frappe.get_doc("Database Server", self.name)
+		server.setup_server()
+		db_server.setup_server()
+
+	@frappe.whitelist()
+	def start_setup(self):
+		try:
+			cert_active = get_tls_cert_status(self.name)
+			if cert_active:
+				self.setup_servers()
+		except Exception:
+			log_error("Getting Cert status failed", server=self.as_dict())
+
 	@frappe.whitelist()
 	def setup_nginx(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_nginx", queue="long", timeout=1200
-		)
-
-	def _setup_nginx(self):
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
@@ -458,6 +467,14 @@ class SelfHostedServer(Document):
 			play = ansible.run()
 			if play.status == "Success":
 				self.create_tls_certs()
-
 		except Exception:
-			log_error("Setting Up Nginx(Self Hosted) for SSL Failed")
+			log_error("TLS Cert Generation Failed", server=self.as_dict())
+
+
+@retry(wait=wait_fixed(5), stop=stop_after_attempt(40), reraise=True)
+def get_tls_cert_status(server) -> bool:
+	cert_status = frappe.get_value("TLS Certificate", server, "status")
+	if cert_status != "Active":
+		raise Exception(f"TLS Certificate not Active for {server}")
+	else:
+		return True
