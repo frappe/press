@@ -33,31 +33,43 @@
 					v-model:selectedApps="selectedApps"
 					:removedApps="deployInformation.removed_apps"
 				/>
-				<ErrorMessage class="mt-2" :message="$resources.deploy.error" />
+				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</template>
 			<template v-slot:actions>
 				<Button
 					appearance="primary"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
+					v-if="this.bench.team === $account.team.name"
 				>
 					Deploy
 				</Button>
+				<Button
+					appearance="primary"
+					@click="showTeamSwitcher = true"
+					v-else
+				>
+					Switch Team
+				</Button>
+				<SwitchTeamDialog v-model="showTeamSwitcher"/>
 			</template>
 		</Dialog>
 	</Alert>
 </template>
 <script>
 import BenchAppUpdates from './BenchAppUpdates.vue';
+import SwitchTeamDialog from './SwitchTeamDialog.vue';
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
 	components: {
-		BenchAppUpdates
+		BenchAppUpdates,
+		SwitchTeamDialog
 	},
 	data() {
 		return {
 			showDeployDialog: false,
+			showTeamSwitcher: false,
 			selectedApps: []
 		};
 	},
@@ -109,6 +121,9 @@ export default {
 					['Awaiting Deploy', 'Active'].includes(this.bench.status)
 				);
 			}
+		},
+		errorMessage() {
+			return this.$resources.deploy.error || (this.bench.team !== $account.team.name ? "Current Team doesn't have enough permissions" : '');
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;

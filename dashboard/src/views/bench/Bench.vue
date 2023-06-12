@@ -62,6 +62,14 @@ export default {
 				auto: true,
 				onError: this.$routeTo404PageIfNotFound
 			};
+		},
+		updateAllSites() {
+			return {
+				method: 'press.api.bench.update_all_sites',
+				params: {
+					bench_name: this.benchName
+				},
+			}
 		}
 	},
 	activated() {
@@ -154,6 +162,13 @@ export default {
 							icon: 'check',
 							color: 'green'
 						});
+					}
+				},
+				this.bench.status == 'Active' && !this.bench.public && {
+					label: 'Update All Sites to Latest Version',
+					icon: 'arrow-up-circle',
+					handler: async() => {
+						await this.$resources.updateAllSites.submit()
 					}
 				}
 			].filter(Boolean);

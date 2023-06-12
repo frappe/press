@@ -1,4 +1,5 @@
 import frappe
+import json
 from press.press.doctype.site.site import Site
 from press.press.doctype.account_request.account_request import AccountRequest
 
@@ -39,6 +40,8 @@ class SaasSite(Site):
 					"trial_end_date": frappe.utils.add_days(None, 14),
 				}
 			)
+
+			self.subscription_docs = create_app_subscriptions(site=self, app=self.app)
 
 	def rename_pooled_site(self, account_request=None, subdomain=None):
 		self.subdomain = account_request.subdomain if account_request else subdomain
@@ -126,3 +129,79 @@ def get_pool_apps(pool_name):
 
 def get_default_team_for_app(app):
 	return frappe.db.get_value("Saas Settings", app, "default_team")
+
+
+# Saas Update site config utils
+
+
+def create_app_subscriptions(site, app):
+	marketplace_apps = (
+		get_saas_apps(app)
+		if frappe.db.get_value("Saas Settings", app, "multi_subscription")
+		else [app]
+	)
+
+	# create subscriptions
+	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps, app)
+
+	# set site config
+	site_config = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+	site_config.update(custom_saas_config)
+	site._update_configuration(site_config, save=False)
+
+	return subscription_docs
+
+
+def get_app_subscriptions(apps=None, standby_for=None):
+	"""
+	Create Marketplace App Subscription docs for all the apps that are installed
+	and set subscription keys in site config
+	"""
+	subscriptions = []
+	custom_saas_config = {}
+	secret_key = ""
+
+	for app in apps:
+		free_plan = frappe.get_all(
+			"Marketplace App Plan", {"enabled": 1, "is_free": 1, "app": app}, pluck="name"
+		)
+		if free_plan:
+			new_subscription = frappe.get_doc(
+				{
+					"doctype": "Marketplace App Subscription",
+					"marketplace_app_plan": get_saas_plan(app)
+					if frappe.db.exists("Saas Settings", app)
+					else free_plan[0],
+					"app": app,
+					"while_site_creation": True,
+					"status": "Disabled",
+				}
+			).insert(ignore_permissions=True)
+
+			subscriptions.append(new_subscription)
+			config = frappe.db.get_value("Marketplace App", app, "site_config")
+			config = json.loads(config) if config else {}
+			custom_saas_config.update(config)
+
+			if app == standby_for:
+				secret_key = new_subscription.secret_key
+
+	if standby_for in frappe.get_all(
+		"Saas Settings", {"billing_type": "prepaid"}, pluck="name"
+	):
+		custom_saas_config.update(
+			{
+				"subscription": {"secret_key": secret_key},
+				"app_include_js": [
+					frappe.db.get_single_value("Press Settings", "app_include_script")
+				],
+			}
+		)
+
+	return subscriptions, custom_saas_config
+
+
+def set_site_in_subscription_docs(subscription_docs, site):
+	for doc in subscription_docs:
+		doc.site = site
+		doc.save(ignore_permissions=True)

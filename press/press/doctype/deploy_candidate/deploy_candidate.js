@@ -21,6 +21,7 @@ frappe.ui.form.on('Deploy Candidate', {
 			[__('Deploy to Staging'), 'deploy_to_staging', true],
 			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
 			[__('Deploy to Production (build and deploy)'), 'deploy_to_production', true],
+			[__('Cleanup Build Drectory'), 'cleanup_build_directory', frm.doc.status !== 'Draft'],
 		].forEach(([label, method, show]) => {
 			if (show)
 				frm.add_custom_button(

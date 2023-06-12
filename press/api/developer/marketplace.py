@@ -83,6 +83,10 @@ class DeveloperApiHandler:
 						"team": self.app_subscription_doc.team,
 						"status": "Active",
 						"site": self.app_subscription_doc.site,
+						"app": (
+							"in",
+							frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"),
+						),
 					},
 					fields=["name", "app", "site", "plan"],
 				)

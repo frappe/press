@@ -204,6 +204,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
 		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
 			try:
 				frappe.get_doc("Site", site).sync_analytics(analytics)
 				frappe.db.commit()
@@ -399,7 +401,9 @@ def process_archive_bench_job_update(job):
 	}[job.status]
 
 	if job.status == "Failure":
-		if "Bench has sites" in job.traceback:  # custom exception hardcoded in agent
+		if (
+			job.traceback and "Bench has sites" in job.traceback
+		):  # custom exception hardcoded in agent
 			updated_status = "Active"
 
 	if updated_status != bench_status:

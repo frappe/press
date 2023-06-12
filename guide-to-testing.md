@@ -142,6 +142,21 @@ Here, we're actually faking the output of the function which usually calls a
 remote endpoint that's out of our control by adding the `new` argument to the
 method.
 
+> Note: When you use asserts on Mock object, Document comparisons will mostly
+> work as expected as we're overriding **__eq__** of Document class during
+> tests (check before_test.py). This is because by default when 2 Document
+> objects are compared, only their `id()` is checked, which will return False
+> as the objects will be different in memory.
+
+
+> Note: If you need to mock some Callable while preserving it's function, (in
+> case you want to do asserts on it, you can use the `wraps` kwarg instead of
+> new). Eg:
+
+https://github.com/frappe/press/blob/23711e2799f2d24dfd7bbe2b6cd148f54f4b253b/press/press/doctype/database_server_mariadb_variable/test_database_server_mariadb_variable.py#L138-L155
+
+Here, we check what args was Ansible constructor was called with.
+
 That's pretty much all you need to write safe, rerunnable tests for Press. You
 can checkout https://docs.python.org/3/library/unittest.mock.html for more
 things you can do with the standard python libraries. If your editor and
@@ -155,6 +170,18 @@ plugins are setup configured nicely, you can even do TDD with ease.
 def setUp(self):
    self.team = create_test_team()
 ```
+
+### Background jobs
+
+Since background jobs are forked off of a different process, our mocks and
+patches are not going to hold there. Not only that, but we can't
+control/predict when the background job will run and finish. So, when your code
+involves creating a background job, we can simply mock the call so that it runs
+in foreground instead. There's a utility method you can use to achieve this with ease:
+
+https://github.com/frappe/press/blob/23711e2799f2d24dfd7bbe2b6cd148f54f4b253b/press/press/doctype/database_server_mariadb_variable/test_database_server_mariadb_variable.py#L12
+
+https://github.com/frappe/press/blob/23711e2799f2d24dfd7bbe2b6cd148f54f4b253b/press/press/doctype/database_server_mariadb_variable/test_database_server_mariadb_variable.py#L104-L108
 
 ## Running tests
 
