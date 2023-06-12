@@ -159,7 +159,7 @@ export default {
 							}
 						},
 						{
-							label: `Config File (${this.formatBytes(
+							label: `Site Config (${this.formatBytes(
 								backup.config_file_size || 0
 							)})`,
 							condition: () => backup.config_file_size,
