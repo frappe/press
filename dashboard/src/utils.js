@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import theme from '../tailwind.theme.json';
 
 let utils = {
@@ -42,7 +42,13 @@ let utils = {
 				.split(':')
 				.map(x => x.padStart(2, '0'))
 				.join(':');
-			return formattedDuration;
+
+			const dateTime = Duration.fromISOTime(formattedDuration).toObject();
+			const hourString = dateTime.hours ? `${dateTime.hours}h` : '';
+			const minuteString = dateTime.minutes ? `${dateTime.minutes}m` : '';
+			const secondString = `${dateTime.seconds}s`;
+
+			return `${hourString} ${minuteString} ${secondString}`;
 		},
 		formatBytes(bytes, decimals = 2, current = 0) {
 			if (bytes === 0) return '0 Bytes';
