@@ -65,6 +65,7 @@ def get(name):
 		"last_updated": group.modified,
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
+		"public": group.public,
 	}
 
 
@@ -621,6 +622,14 @@ def restart(name, bench):
 @protected("Release Group")
 def update(name, bench):
 	frappe.get_doc("Bench", bench).update_all_sites()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_all_sites(bench_name):
+	benches = frappe.get_all("Bench", {"group": bench_name, "status": "Active"})
+	for bench in benches:
+		frappe.get_cached_doc("Bench", bench).update_all_sites()
 
 
 @frappe.whitelist()
