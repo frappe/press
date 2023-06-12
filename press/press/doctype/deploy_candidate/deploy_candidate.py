@@ -240,7 +240,7 @@ class DeployCandidate(Document):
 				self.save(ignore_version=True)
 				frappe.db.commit()
 
-				release = frappe.get_doc("App Release", app.release)
+				release = frappe.get_doc("App Release", app.release, for_update=True)
 				release._clone()
 				source = release.clone_directory
 
