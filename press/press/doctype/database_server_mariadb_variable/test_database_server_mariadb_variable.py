@@ -325,3 +325,16 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 	def test_background_jobs_not_created_for_new_server_doc(self, mock_enqueue_doc):
 		create_test_database_server()
 		mock_enqueue_doc.assert_not_called()
+
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		wraps=foreground_enqueue_doc,
+	)
+	def test_update_of_doc_with_member_that_is_not_a_field_works(self, mock_enqueue_doc):
+		server = create_test_database_server()
+		server.reload()
+		server.x = 4096  # member that is not field
+		try:
+			server.save()
+		except Exception:
+			self.fail("Update of doc without variables failed")

@@ -92,7 +92,7 @@ class DatabaseServer(BaseServer):
 		old_doc = self.get_doc_before_save()
 		if not old_doc:
 			return self.mariadb_system_variables
-		diff = get_diff(old_doc, self)
+		diff = get_diff(old_doc, self) or {}
 		return self.get_changed_variables(
 			diff.get("row_changed", {})
 		) + self.get_newly_added_variables(diff.get("added", []))
