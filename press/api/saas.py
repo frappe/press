@@ -6,6 +6,7 @@ from frappe.core.doctype.user.user import test_password_strength
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
+from press.utils import log_error
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -127,6 +128,10 @@ def create_or_rename_saas_site(app, account_request):
 			).insert(ignore_permissions=True)
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
 			saas_site.create_subscription(get_saas_site_plan(app))
+
+	except Exception as e:
+		log_error("Saas Site Creation or Rename failed", data=e)
+
 	finally:
 		frappe.set_user(current_user)
 		frappe.session.data = current_session_data
