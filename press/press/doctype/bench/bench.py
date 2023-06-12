@@ -405,6 +405,9 @@ def process_archive_bench_job_update(job):
 			job.traceback and "Bench has sites" in job.traceback
 		):  # custom exception hardcoded in agent
 			updated_status = "Active"
+		frappe.db.set_value(
+			"Bench", job.bench, "last_archive_failure", frappe.utils.now_datetime()
+		)
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
@@ -425,9 +428,16 @@ def process_remove_ssh_user_job_update(job):
 
 def archive_obsolete_benches():
 	benches = frappe.get_all(
-		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
+		"Bench",
+		fields=["name", "candidate", "last_archive_failure"],
+		filters={"status": "Active"},
 	)
 	for bench in benches:
+		if (
+			bench.last_archive_failure
+			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
+		):
+			continue
 		# If this bench is already being archived then don't do anything.
 		active_archival_jobs = frappe.get_all(
 			"Agent Job",
