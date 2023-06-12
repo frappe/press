@@ -119,62 +119,81 @@ export default {
 		dropdownItems(backup) {
 			return [
 				{
-					label: 'Download',
-					isGroup: true
-				},
-				{
-					label: `Database (${this.formatBytes(backup.database_size || 0)})`,
-					handler: () => {
-						this.downloadBackup(
-							backup.name,
-							'database',
-							backup.database_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: `Public Files (${this.formatBytes(backup.public_size || 0)})`,
-					condition: () => backup.public_file,
-					handler: () => {
-						this.downloadBackup(
-							backup.name,
-							'public',
-							backup.public_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: `Private Files (${this.formatBytes(
-						backup.private_size || 0
-					)})`,
-					condition: () => backup.private_file,
-					handler: () => {
-						this.downloadBackup(
-							backup.name,
-							'private',
-							backup.private_url,
-							backup.offsite
-						);
-					}
-				},
-				{
-					label: 'Restore',
-					condition: () => backup.offsite,
-					handler: () => {
-						this.$confirm({
-							title: 'Restore Backup',
-							// prettier-ignore
-							message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
-							actionLabel: 'Restore',
-							actionType: 'primary',
-							action: closeDialog => {
-								closeDialog();
-								this.restoreOffsiteBackup(backup);
+					group: 'Download',
+					items: [
+						{
+							label: `Database (${this.formatBytes(backup.database_size || 0)})`,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'database',
+									backup.database_url,
+									backup.offsite
+								);
 							}
-						});
-					}
+						},
+						{
+							label: `Public Files (${this.formatBytes(backup.public_size || 0)})`,
+							condition: () => backup.public_file,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'public',
+									backup.public_url,
+									backup.offsite
+								);
+							}
+						},
+						{
+							label: `Private Files (${this.formatBytes(
+								backup.private_size || 0
+							)})`,
+							condition: () => backup.private_file,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'private',
+									backup.private_url,
+									backup.offsite
+								);
+							}
+						},
+						{
+							label: `Site Config (${this.formatBytes(
+								backup.config_file_size || 0
+							)})`,
+							condition: () => backup.config_file_size,
+							handler: () => {
+								this.downloadBackup(
+									backup.name,
+									'config',
+									backup.config_file_url,
+									backup.offsite
+								);
+							}
+						},
+					]
+				},
+				{
+					group: 'Restore',
+					condition: () => backup.offsite,
+					items: [
+						{
+							label: 'Restore Backup',
+							handler: () => {
+								this.$confirm({
+									title: 'Restore Backup',
+									// prettier-ignore
+									message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
+									actionLabel: 'Restore',
+									actionType: 'primary',
+									action: closeDialog => {
+										closeDialog();
+										this.restoreOffsiteBackup(backup);
+									}
+								});
+							}
+						}]
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},
@@ -195,7 +214,8 @@ export default {
 				files: {
 					database: backup.remote_database_file,
 					public: backup.remote_public_file,
-					private: backup.remote_private_file
+					private: backup.remote_private_file,
+					config_file: backup.remote_config_file
 				}
 			}).then(() => {
 				this.isRestorePending = false;
