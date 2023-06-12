@@ -9,9 +9,9 @@ let utils = {
 			}
 			return plural;
 		},
-		$date(date) {
+		$date(date, serverDatesTimezone = 'Asia/Kolkata') {
 			// assuming all dates on the server are stored in our timezone
-			let serverDatesTimezone = 'Asia/Kolkata';
+
 			let localZone = DateTime.local().zoneName;
 			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(
 				localZone
@@ -21,8 +21,8 @@ let utils = {
 			let multiplier = Math.pow(10, precision || 0);
 			return Math.round(number * multiplier) / multiplier;
 		},
-		formatDate(value, type = 'DATETIME_FULL') {
-			let datetime = this.$date(value);
+		formatDate(value, type = 'DATETIME_FULL', isUTC = false) {
+			let datetime = isUTC ? this.$date(value, 'UTC') : this.$date(value);
 			let format = value;
 			if (type === 'relative') {
 				format = datetime.toRelative();
