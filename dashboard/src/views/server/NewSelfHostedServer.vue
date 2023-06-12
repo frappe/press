@@ -62,11 +62,17 @@
 						v-else
 						:icon-left="playOutput ? 'check' : 'x'"
 						:appearance="playOutput ? 'primary' : 'warning'"
-						:loading="$resources.verify.loading"
+						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
 						{{ playOutput ? 'Server Verified' : 'Server Unreachable' }}
 					</Button>
+					<div class="mt-1" v-if="playOutput && !nginxSetup">
+						<span class="text-sm text-green-600">
+							Server Verification is complete. Setting Up Nginx, this can take
+							upto a minute</span
+						>
+					</div>
 				</div>
 				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
@@ -106,7 +112,9 @@
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
-							:disabled="!playOutput || !this.agreedToRegionConsent"
+							:disabled="
+								!playOutput || !nginxSetup || !this.agreedToRegionConsent
+							"
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -144,17 +152,16 @@ export default {
 			privateIP: null,
 			validationMessage: null,
 			serverDoc: null,
-			playID: null,
 			ssh_key: null,
 			selectedPlan: null,
 			domain: null,
 			dnsErrorMessage: null,
 			ipInvalid: false,
-			playStatus: false,
 			unreachable: false,
 			playOutput: false,
 			agreedToRegionConsent: false,
 			domainVerified: false,
+			nginxSetup: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
@@ -218,6 +225,7 @@ export default {
 				},
 				onSuccess(data) {
 					this.playOutput = data;
+					this.$resources.setupNginx.submit();
 				}
 			};
 		},
@@ -251,6 +259,17 @@ export default {
 					this.dnsErrorMessage = this.domainVerified
 						? null
 						: `DNS verification Failed, Please make sure ${this.domain} is pointed to ${this.publicIP}`;
+				}
+			};
+		},
+		setupNginx() {
+			return {
+				method: 'press.api.selfhosted.setup_nginx',
+				params: {
+					server: this.serverDoc
+				},
+				onSuccess(data) {
+					this.nginxSetup = data;
 				}
 			};
 		}

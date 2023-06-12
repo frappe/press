@@ -467,11 +467,13 @@ class SelfHostedServer(Document):
 			play = ansible.run()
 			if play.status == "Success":
 				self.create_tls_certs()
+				return True
 		except Exception:
 			log_error("TLS Cert Generation Failed", server=self.as_dict())
+			return False
 
 
-@retry(wait=wait_fixed(5), stop=stop_after_attempt(40), reraise=True)
+@retry(wait=wait_fixed(5), stop=stop_after_attempt(10), reraise=True)
 def get_tls_cert_status(server) -> bool:
 	cert_status = frappe.get_value("TLS Certificate", server, "status")
 	if cert_status != "Active":

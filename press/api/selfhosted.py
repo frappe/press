@@ -1,12 +1,11 @@
-import frappe
-
-from press.utils import get_current_team
-from press.runner import Ansible
-from press.api.server import plans
+import time
 
 import dns.resolver
+import frappe
 
-import time
+from press.api.server import plans
+from press.runner import Ansible
+from press.utils import get_current_team
 
 
 @frappe.whitelist()
@@ -53,10 +52,15 @@ def verify(server):
 		server_doc.reload()
 		server_doc.create_server()
 		server_doc.reload()
-		server_doc.setup_nginx()
 		return True
 	if play.unreachable:
 		return False
+
+
+@frappe.whitelist()
+def setup_nginx(server):
+	server_doc = frappe.get_doc("Self Hosted Server", server)
+	return server_doc.setup_nginx()
 
 
 @frappe.whitelist()

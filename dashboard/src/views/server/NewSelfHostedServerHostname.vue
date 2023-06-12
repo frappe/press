@@ -3,7 +3,7 @@
 		<label class="text-lg font-semibold">
 			Choose a name for your Self Hosted server
 		</label>
-		<p class="mt-3 text-base text-gray-700">
+		<p class="my-3 text-base text-gray-700">
 			Name your server based on its purpose
 		</p>
 		<div class="space-y-2">
