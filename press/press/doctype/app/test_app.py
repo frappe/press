@@ -16,6 +16,9 @@ def create_test_app(name: str = "frappe", title: str = "Frappe Framework"):
 
 
 class TestApp(unittest.TestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_create_frappe_app(self):
 		app = new_app("frappe", "Frappe Framework")
 		self.assertEqual(app.frappe, True)
@@ -122,15 +125,3 @@ class TestApp(unittest.TestCase):
 		self.assertEqual(source_2.branch, "version-13")
 		self.assertEqual(len(source_2.versions), 1)
 		self.assertEqual(source_2.versions[0].version, "Version 13")
-
-	def setUp(self):
-		for group in frappe.get_all("Deploy Candidate"):
-			frappe.delete_doc("Deploy Candidate", group.name)
-		for group in frappe.get_all("Release Group"):
-			frappe.delete_doc("Release Group", group.name)
-		for app in frappe.get_all("App Release"):
-			frappe.delete_doc("App Release", app.name)
-		for app in frappe.get_all("App Source"):
-			frappe.delete_doc("App Source", app.name)
-		for app in frappe.get_all("App"):
-			frappe.delete_doc("App", app.name)

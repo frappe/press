@@ -5,18 +5,16 @@ import json
 
 import frappe
 from frappe.model.document import Document
-from frappe.model.naming import make_autoname
 from press.runner import Ansible
 from press.utils import log_error
+
+from tldextract import extract as sdext
+import time
 
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		_series = "s"
-		series = f"{_series}-.#####"
-		self.index = int(make_autoname(series)[-5:])
-		self.name = f"{_series}{self.index}.{self.domain}"
-		# self.name = f"{self.hostname}.{self.domain}"
+		self.name = sdext(self.server_url).fqdn
 
 	def validate(self):
 		if not self.mariadb_ip:
@@ -27,8 +25,10 @@ class SelfHostedServer(Document):
 			self.mariadb_root_password = frappe.generate_hash(length=32)
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
-		if not self.hostname:
-			self.hostname = self.name.split(".")[0]
+		if not self.hostname or not self.domain:
+			extracted_url = sdext(self.server_url)
+			self.hostname = extracted_url.subdomain
+			self.domain = extracted_url.registered_domain
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -44,7 +44,10 @@ class SelfHostedServer(Document):
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
 			)
-			ansible.run()
+			play = ansible.run()
+			if play.status == "Success" and self.status == "Unreachable":
+				self.status = "Pending"
+				self.save()
 			self.reload()
 		except Exception:
 			log_error("Server Ping Exception", server=self.as_dict())
@@ -228,7 +231,6 @@ class SelfHostedServer(Document):
 			db_server.hostname = self.hostname
 			db_server.title = self.title
 			db_server.is_self_hosted = True
-			db_server.domain = self.domain
 			db_server.self_hosted_server_domain = self.domain
 			db_server.ip = self.ip
 			db_server.private_ip = self.private_ip
@@ -240,6 +242,7 @@ class SelfHostedServer(Document):
 			db_server.agent_password = self.get_password("agent_password")
 			db_server.is_server_setup = False if self.new_server else True
 			_db = db_server.insert()
+			_db.create_subscription("Unlimited")
 			self.database_setup = True
 			self.database_server = _db.name
 			self.status = "Active"
@@ -290,7 +293,6 @@ class SelfHostedServer(Document):
 			server.hostname = self.hostname
 			server.title = self.title
 			server.is_self_hosted = True
-			server.domain = self.domain
 			server.self_hosted_server_domain = self.domain
 			server.self_hosted_mariadb_server = self.private_ip
 			server.team = self.team
@@ -304,6 +306,7 @@ class SelfHostedServer(Document):
 			server.agent_password = self.get_password("agent_password")
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
 			new_server = server.insert()
+			new_server.create_subscription("Unlimited")
 			self.server = new_server.name
 			self.status = "Active"
 			self.server_created = True
@@ -353,7 +356,7 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def restore_files(self):
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_restore_files", queue="long", timeout=1200
+			self.doctype, self.name, "_restore_files", queue="long", timeout=2400
 		)
 
 	def _restore_files(self):
@@ -420,3 +423,61 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 		self.save()
+
+	@frappe.whitelist()
+	def create_tls_certs(self):
+		try:
+			tls_cert = frappe.get_doc(
+				{
+					"doctype": "TLS Certificate",
+					"domain": self.name,
+					"team": self.team,
+					"wildcard": False,
+				}
+			).insert()
+			return tls_cert.name
+		except Exception:
+			log_error("TLS Certificate(SelfHosted) Creation Error")
+
+	@frappe.whitelist()
+	def _setup_nginx(self):
+		frappe.enqueue_doc(self.doctype, self.name, "setup_nginx", queue="long")
+
+	@frappe.whitelist()
+	def setup_nginx(self):
+		try:
+			ansible = Ansible(
+				playbook="self_hosted_nginx.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or "22",
+				variables={"domain": self.name},
+			)
+			play = ansible.run()
+			if play.status == "Success":
+				return True
+		except Exception:
+			log_error("TLS Cert Generation Failed", server=self.as_dict())
+			return False
+		
+	@frappe.whitelist()
+	def update_tls(self):
+			from press.press.doctype.tls_certificate.tls_certificate import (
+				update_server_tls_certifcate,
+			)
+
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.name, "status": "Active"}
+			)
+			update_server_tls_certifcate(self, cert)
+
+	def process_tls_cert_update(self):
+		server = frappe.get_doc("Server", self.name)
+		db_server = frappe.get_doc("Database Server", self.name)
+		if not (server.is_server_setup and db_server.is_server_setup):
+			db_server.setup_server()
+			time.sleep(60)
+			server.setup_server()
+		else:
+			self.update_tls()
+			

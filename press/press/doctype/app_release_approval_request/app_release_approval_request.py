@@ -125,7 +125,7 @@ class AppReleaseApprovalRequest(Document):
 
 	@frappe.whitelist()
 	def start_screening(self):
-		self.release = frappe.get_doc("App Release", self.app_release)
+		self.release = frappe.get_doc("App Release", self.app_release, for_update=True)
 		self._set_baseline()
 
 		# Clone the release, if not already

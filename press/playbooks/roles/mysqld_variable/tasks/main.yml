@@ -6,14 +6,37 @@
     mode: global
   when: dynamic | default(true) | bool
 
-- name: Update mysqld section in frappe.cnf
+- name: Add variable in frappe.cnf
   ini_file:
     path: /etc/mysql/conf.d/frappe.cnf
     section: mysqld
-    option: '{{ variable }}'
-    value: '{{ value }}'
+    option: '{{ variable | replace("_", "-") }}'
+    value: '{{ value | default(None) }}' # condition to not set rhs
     backup: true
+    allow_no_value: true
+    create: false
   when: persist | default(false) | bool
+
+- name: Remove variable as it's been skipped/disabled
+  ini_file:
+    path: /etc/mysql/conf.d/frappe.cnf
+    section: mysqld
+    option: '{{ variable | replace("_", "-") | replace("skip-", "") }}'
+    create: false
+    state: absent
+  when: skip | default(false) | bool
+
+- name: Remove skip prefixed variable as variable is enabled
+  ini_file:
+    path: /etc/mysql/conf.d/frappe.cnf
+    section: mysqld
+    option: '{{ "skip-" + variable | replace("_", "-") }}'
+    allow_no_value: true
+    create: false
+    state: absent
+  when:
+    - persist | default(false) | bool
+    - not skip | default(true) | bool
 
 - name: Restart MariaDB Service
   systemd:

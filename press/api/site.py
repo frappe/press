@@ -311,6 +311,9 @@ def backups(name):
 		"database_file",
 		"database_size",
 		"database_url",
+		"config_file_size",
+		"config_file_url",
+		"config_file",
 		"private_file",
 		"private_size",
 		"private_url",
@@ -323,6 +326,7 @@ def backups(name):
 		"remote_database_file",
 		"remote_public_file",
 		"remote_private_file",
+		"remote_config_file",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",

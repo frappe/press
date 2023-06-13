@@ -1,8 +1,11 @@
-import frappe
-from press.utils import get_current_team
-from press.runner import Ansible
-
 import time
+
+import dns.resolver
+import frappe
+
+from press.api.server import plans
+from press.runner import Ansible
+from press.utils import get_current_team
 
 
 @frappe.whitelist()
@@ -15,13 +18,14 @@ def new(server):
 	self_hosted_server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
-			"private_ip": server["privateIP"],
-			"ip": server["publicIP"],
+			"private_ip": server["privateIP"].strip(),
+			"ip": server["publicIP"].strip(),
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
 			"team": team.name,
-			"domain": "self.frappe.dev",
+			"plan": server["plan"]["name"],
+			"server_url": server["url"],
 		}
 	).insert()
 	return self_hosted_server.name
@@ -41,28 +45,45 @@ def verify(server):
 		server=server_doc,
 	)
 	play = ansible.run()
-	time.sleep(3)
-	play_doc = frappe.get_doc("Ansible Play", play.name)
-	if play_doc.status == "Success":
+	if play.status == "Success":
 		server_doc.status = "Pending"
 		server_doc.save()
+		server_doc.create_db_server()
+		server_doc.reload()
+		server_doc.create_server()
+		server_doc.reload()
 		return True
-	if play_doc.unreachable:
+	if play.unreachable:
 		return False
+
+
+@frappe.whitelist()
+def setup_nginx(server):
+	server_doc = frappe.get_doc("Self Hosted Server", server)
+	return server_doc.setup_nginx()
 
 
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	server_doc.create_db_server()
-	server_doc.reload()
-	server_doc.create_server()
-	server_doc.reload()
-	start_server_setup(server)
+	server_doc.start_setup = True
+	server_doc.create_tls_certs()
+	server_doc.save()
+	time.sleep(1)
 
 
-def start_server_setup(server_name):
-	server = frappe.get_doc("Server", server_name)
-	db = frappe.get_doc("Database Server", server_name)
-	server.setup_server()
-	db.setup_server()
+@frappe.whitelist()
+def get_plans():
+	server_plan = plans("Self Hosted Server")
+	return server_plan
+
+
+@frappe.whitelist()
+def check_dns(domain, ip):
+	try:
+		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+		if domain_ip == ip:
+			return True
+	except Exception:
+		return False
+	return False

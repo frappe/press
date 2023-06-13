@@ -1,7 +1,7 @@
 ---
 - name: Add Systemd memory limit file
   template:
-    src: memory.conf
+    src: memory-custom.conf
     dest: /etc/systemd/system/mariadb.service.d/memory.conf
     owner: root
     group: root

@@ -80,6 +80,8 @@ def get_uptime(site, timezone, timespan, timegrain):
 	response = requests.get(url, params=query, auth=("frappe", password)).json()
 
 	buckets = []
+	if not response["data"]["result"]:
+		return []
 	for timestamp, value in response["data"]["result"][0]["values"]:
 		buckets.append(
 			frappe._dict(

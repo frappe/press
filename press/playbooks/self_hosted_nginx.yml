@@ -1,0 +1,8 @@
+---
+- name: Setup Self Hosted Nginx
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: ssl_nginx

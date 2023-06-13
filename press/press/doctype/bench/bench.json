@@ -28,7 +28,9 @@
   "config",
   "bench_config",
   "ssh_section",
-  "is_ssh_proxy_setup"
+  "is_ssh_proxy_setup",
+  "failures_section",
+  "last_archive_failure"
  ],
  "fields": [
   {
@@ -205,10 +207,21 @@
    "fieldtype": "Check",
    "label": "Is SSH Proxy Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "failures_section",
+   "fieldtype": "Section Break",
+   "label": "Failures"
+  },
+  {
+   "fieldname": "last_archive_failure",
+   "fieldtype": "Datetime",
+   "label": "Last Archive Failure",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-10-29 00:57:45.295828",
+ "modified": "2023-06-12 10:38:19.724502",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

@@ -51,7 +51,9 @@ def get(name):
 		"title": server.title,
 		"status": server.status,
 		"team": server.team,
-		"app_server": f"f{server.name[1:]}",
+		"app_server": server.name
+		if server.is_self_hosted
+		else f"f{server.name[1:]}",  # Don't use `f` series if self hosted
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),

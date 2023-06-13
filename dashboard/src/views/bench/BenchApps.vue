@@ -92,28 +92,32 @@
 						class="pt-1 max-h-96 overflow-auto"
 						:class="filteredOptions.length > 5 ? 'pr-2' : ''"
 						:apps="filteredOptions"
-						v-model="selectedApp"
-						:multiple="false"
+						v-model="selectedApps"
+						:multiple="true"
 					/>
 					<p class="mt-4 text-base" @click="showAddAppDialog = false">
 						Don't find your app here?
-						<Link :to="`/benches/${benchName}/apps/new`"> Add from GitHub </Link>
+						<Link :to="`/benches/${benchName}/apps/new`">
+							Add from GitHub
+						</Link>
 					</p>
 				</template>
 				<template v-slot:actions>
 					<Button
 						appearance="primary"
-						v-if="selectedApp"
-						:loading="$resources.addApp.loading"
+						v-if="selectedApps.length > 0"
+						:loading="$resources.addApps.loading"
 						@click="
-							$resources.addApp.submit({
+							$resources.addApps.submit({
 								name: benchName,
-								source: selectedApp.source.name,
-								app: selectedApp.app
+								apps: selectedApps.map(app => ({
+									app: app.app,
+									source: app.source.name
+								}))
 							})
 						"
 					>
-						Add {{ selectedApp.app }}
+						Add App{{ selectedApps.length > 1 ? 's' : '' }}
 					</Button>
 				</template>
 			</Dialog>
@@ -141,7 +145,7 @@ export default {
 	props: ['benchName', 'bench'],
 	data() {
 		return {
-			selectedApp: null,
+			selectedApps: [],
 			showAddAppDialog: false,
 			appToChangeBranchOf: null,
 			searchTerm: '',
@@ -181,9 +185,9 @@ export default {
 				}
 			};
 		},
-		addApp() {
+		addApps() {
 			return {
-				method: 'press.api.bench.add_app',
+				method: 'press.api.bench.add_apps',
 				onSuccess() {
 					window.location.reload();
 				}
