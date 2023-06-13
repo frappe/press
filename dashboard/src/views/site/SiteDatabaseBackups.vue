@@ -220,7 +220,6 @@ export default {
 					database: backup.remote_database_file,
 					public: backup.remote_public_file,
 					private: backup.remote_private_file,
-					config_file: backup.remote_config_file
 				}
 			}).then(() => {
 				this.isRestorePending = false;
