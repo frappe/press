@@ -3,29 +3,38 @@
 		<label class="text-lg font-semibold">
 			Choose a name for your Self Hosted server
 		</label>
-		<p class="text-base text-gray-700">
-			Name your server based on its purpose. For e.g., Personal Websites,
-			Staging Server, etc.
+		<p class="my-3 text-base text-gray-700">
+			Name your server based on its purpose
 		</p>
-		<div class="mt-4 flex">
-			<input
-				class="form-input z-10 w-full rounded-r-none"
+		<div class="space-y-2">
+			<Input
+				class="z-10 w-full rounded-r-none"
 				type="text"
 				:value="title"
 				@change="titleChange"
-				placeholder="Server"
+				placeholder="AcmeCorp Production Server"
 			/>
 		</div>
-		<div class="mt-4">
-			<ErrorMessage :message="errorMessage" />
+		<div class="mt-6 space-y-2">
+			<h2 class="text-lg font-semibold">Add Domain</h2>
+
+			<p class="text-base text-gray-700">Add Domain pointing to Server</p>
+			<Input
+				class="z-10 w-full rounded-r-none"
+				type="text"
+				:value="domain"
+				@change="$emit('update:domain', $event)"
+				placeholder="abc.example.com"
+			/>
 		</div>
+		<ErrorMessage class="mt-4" :message="errorMessage" />
 	</div>
 </template>
 <script>
 export default {
 	name: 'SelfHostedHostname',
-	props: ['title'],
-	emits: ['update:title', 'error'],
+	props: ['title', 'domain'],
+	emits: ['update:title', 'update:domain', 'error'],
 	data() {
 		return {
 			errorMessage: null
@@ -33,7 +42,7 @@ export default {
 	},
 	methods: {
 		async titleChange(e) {
-			let title = e.target.value;
+			let title = e;
 			this.$emit('update:title', title);
 			let error = this.validateTitle(title);
 			this.errorMessage = error;

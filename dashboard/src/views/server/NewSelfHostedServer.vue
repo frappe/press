@@ -9,70 +9,83 @@
 			>
 				<div class="mt-8"></div>
 				<SelfHostedHostname
-					:options="options"
 					v-show="activeStep.name === 'SelfHostedHostname'"
 					v-model:title="title"
+					v-model:domain="domain"
 				/>
+				<div class="mt-4">
+					<SelfHostedServerPlan
+						v-model:selectedPlan="selectedPlan"
+						:options="options"
+						v-show="activeStep.name === 'SelfHostedServerPlan'"
+					/>
+				</div>
 				<div>
 					<SelfHostedServerForm
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
 						v-model:privateIP="privateIP"
-						v-model:error="ipValidationMessage"
+						v-model:error="ipInvalid"
+					/>
+					<Button
+						appearance="primary"
+						v-show="
+							activeStep.name === 'ServerDetails' &&
+							!this.ipInvalid &&
+							this.domain
+						"
+						@click="!domainVerified && $resources.verifyDNS.submit()"
+						:loading="$resources.verifyDNS.loading"
+						:icon-left="domainVerified ? 'check' : ''"
+					>
+						{{ domainVerified ? 'Domain Verified' : 'Verify Domain' }}
+					</Button>
+					<ErrorMessage
+						v-if="activeStep.name === 'ServerDetails'"
+						class="mt-2"
+						:message="dnsErrorMessage"
 					/>
 				</div>
-				<div class="mt-4">
-					<SelfHostedServerVerify
-						v-show="activeStep.name === 'VerifyServer'"
-						v-model:ssh_key="ssh_key"
-					/>
+
+				<div class="mt-4" v-if="activeStep.name === 'VerifyServer'">
+					<SelfHostedServerVerify v-model:ssh_key="ssh_key" />
 
 					<Button
-						v-show="
-							activeStep.name === 'VerifyServer' && !playOutput && !unreachable
-						"
-						:loading="playStatus"
+						v-if="$resources.verify.data === null"
+						@click="$resources.verify.submit()"
+						:loading="$resources.verify.loading"
 						appearance="primary"
-						@click="startVerification"
 					>
 						Verify Server
 					</Button>
 					<Button
-						v-show="activeStep.name === 'VerifyServer' && playOutput"
-						icon-left="check"
-						appearance="primary"
-						:loading="playStatus"
-						@click="startVerification"
+						v-else
+						:icon-left="playOutput ? 'check' : 'x'"
+						:appearance="playOutput ? 'primary' : 'warning'"
+						:loading="$resources.verify.loading || !nginxSetup"
+						@click="$resources.verify.submit()"
 					>
-						Server Verified
+						{{ playOutput ? 'Server Verified' : 'Server Unreachable' }}
 					</Button>
-					<Button
-						v-show="activeStep.name === 'VerifyServer' && unreachable"
-						icon-left="x"
-						appearance="danger"
-						:loading="playStatus"
-						@click="startVerification"
-					>
-						Server Unreachable
-					</Button>
+					<div class="mt-1" v-if="playOutput && !nginxSetup">
+						<span class="text-sm text-green-600">
+							Server Verification is complete. Setting Up Nginx, this can take
+							upto a minute</span
+						>
+					</div>
 				</div>
 				<ErrorMessage :message="validationMessage" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<input
+						<Input
 							id="region-consent"
 							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							label="I agree that the laws of the region selected by me shall stand
+							applicable to me and Frappe."
+							class="rounded border-gray-300 focus:ring-blue-500"
 							v-model="agreedToRegionConsent"
 						/>
-						<label
-							for="region-consent"
-							class="ml-1 text-sm font-semibold text-gray-900"
-						>
-							I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe.
-						</label>
 					</div>
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
@@ -85,19 +98,23 @@
 						>
 							Back
 						</Button>
+
 						<Button
 							appearance="primary"
 							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
+							:disabled="
+								activeStep.name === 'ServerDetails' ? !domainVerified : false
+							"
+							:class="{ 'pointer-events-none opacity-0': !hasNext }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
 							appearance="primary"
-							:disabled="!playOutput"
+							:disabled="
+								!playOutput || !nginxSetup || !this.agreedToRegionConsent
+							"
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -116,12 +133,14 @@ import Steps from '@/components/Steps.vue';
 import SelfHostedHostname from './NewSelfHostedServerHostname.vue';
 import SelfHostedServerForm from './NewSelfHostedServerForm.vue';
 import SelfHostedServerVerify from './SelfHostedServerVerify.vue';
+import SelfHostedServerPlan from './SelfHostedServerPlan.vue';
 export default {
 	name: 'NewSelfHostedServer',
 	components: {
 		WizardCard,
 		Steps,
 		SelfHostedHostname,
+		SelfHostedServerPlan,
 		SelfHostedServerForm,
 		SelfHostedServerVerify
 	},
@@ -132,27 +151,34 @@ export default {
 			publicIP: null,
 			privateIP: null,
 			validationMessage: null,
-			ipValidationMessage: null,
 			serverDoc: null,
-			playID: null,
-			playStatus: false,
-			unreachable: false,
 			ssh_key: null,
+			selectedPlan: null,
+			domain: null,
+			dnsErrorMessage: null,
+			ipInvalid: false,
+			unreachable: false,
+			playOutput: false,
+			agreedToRegionConsent: false,
+			domainVerified: false,
+			nginxSetup: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
 					validate: () => {
-						return this.title;
+						return this.title && this.domain;
+					}
+				},
+				{
+					name: 'SelfHostedServerPlan',
+					validate: () => {
+						return this.selectedPlan;
 					}
 				},
 				{
 					name: 'ServerDetails',
 					validate: () => {
-						if (this.verifyIP(this.privateIP) && this.verifyIP(this.publicIP)) {
-							return this.privateIP && this.publicIP;
-						} else {
-							this.ipValidationMessage = 'Please enter valid IP addresses';
-						}
+						return this.privateIP && this.publicIP;
 					}
 				},
 				{
@@ -161,14 +187,15 @@ export default {
 						return this.playOutput;
 					}
 				}
-			],
-			playOutput: false,
-			agreedToRegionConsent: false
+			]
 		};
 	},
 	async mounted() {
-		this.options = await this.$call('press.api.server.options', {
-			type: 'self_hosted'
+		const plans = await this.$call('press.api.selfhosted.get_plans');
+		this.options = plans.map(plan => {
+			plan.disabled = !this.$account.hasBillingInfo;
+			plan.vcpu = 'Any';
+			return plan;
 		});
 		this.ssh_key = await this.$call('press.api.selfhosted.sshkey');
 	},
@@ -180,7 +207,9 @@ export default {
 					server: {
 						title: this.title,
 						publicIP: this.publicIP,
-						privateIP: this.privateIP
+						privateIP: this.privateIP,
+						plan: this.selectedPlan,
+						url: this.domain
 					}
 				},
 				onSuccess(data) {
@@ -195,13 +224,8 @@ export default {
 					server: this.serverDoc
 				},
 				onSuccess(data) {
-					if (data) {
-						this.playOutput = true;
-						this.unreachable = false;
-					} else {
-						this.playOutput = false;
-						this.unreachable = true;
-					}
+					this.playOutput = data;
+					this.$resources.setupNginx.submit();
 				}
 			};
 		},
@@ -215,8 +239,6 @@ export default {
 					let canCreate = this.title;
 
 					if (!this.agreedToRegionConsent) {
-						document.getElementById('region-consent').focus();
-
 						return 'Please agree to the above consent to create server';
 					}
 					if (!canCreate) {
@@ -224,12 +246,38 @@ export default {
 					}
 				}
 			};
+		},
+		verifyDNS() {
+			return {
+				method: 'press.api.selfhosted.check_dns',
+				params: {
+					domain: this.domain,
+					ip: this.publicIP
+				},
+				onSuccess(data) {
+					this.domainVerified = data;
+					this.dnsErrorMessage = this.domainVerified
+						? null
+						: `DNS verification Failed, Please make sure ${this.domain} is pointed to ${this.publicIP}`;
+				}
+			};
+		},
+		setupNginx() {
+			return {
+				method: 'press.api.selfhosted.setup_nginx',
+				params: {
+					server: this.serverDoc
+				},
+				onSuccess(data) {
+					this.nginxSetup = data;
+				}
+			};
 		}
 	},
 	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
-			if (activeStep.name === 'ServerDetails') {
+			if (activeStep.name === 'ServerDetails' && !this.ipInvalid) {
 				this.$resources.newServer.submit();
 			}
 			next();
@@ -239,16 +287,6 @@ export default {
 			if (this.agreedToRegionConsent) {
 				this.$router.replace(`/servers/${this.serverDoc}/overview`);
 			}
-		},
-		async startVerification() {
-			this.playStatus = true;
-			await this.$resources.verify.submit();
-			this.playStatus = false;
-		},
-		verifyIP(ip) {
-			const ipAddressRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/;
-			const ver = ipAddressRegex.test(ip);
-			return ver;
 		}
 	}
 };
