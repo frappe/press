@@ -20,7 +20,7 @@ from press.press.doctype.server.server import BaseServer
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-def create_test_server(proxy_server, database_server):
+def create_test_server(proxy_server, database_server, cluster: str = "Default"):
 	"""Create test Server doc."""
 	return frappe.get_doc(
 		{
@@ -32,6 +32,7 @@ def create_test_server(proxy_server, database_server):
 			"private_ip": frappe.mock("ipv4_private"),
 			"domain": "fc.dev",
 			"hostname": make_autoname("f-.####"),
+			"cluster": cluster,
 		}
 	).insert()
 

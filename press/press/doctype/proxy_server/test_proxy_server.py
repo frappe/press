@@ -18,7 +18,10 @@ from press.press.doctype.server.server import BaseServer
 @patch.object(BaseServer, "after_insert", new=Mock())
 @patch.object(ProxyServer, "validate", new=Mock())
 def create_test_proxy_server(
-	hostname: str = "n", domain: str = "fc.dev", domains: List[Dict[str, str]] = []
+	hostname: str = "n",
+	domain: str = "fc.dev",
+	domains: List[Dict[str, str]] = [],
+	cluster: str = "Default",
 ):
 	"""Create test Proxy Server doc"""
 	create_test_press_settings()
@@ -29,7 +32,7 @@ def create_test_proxy_server(
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
 			"hostname": hostname,
-			"cluster": "Default",
+			"cluster": cluster,
 			"domain": domain,
 			"domains": domains,
 		}

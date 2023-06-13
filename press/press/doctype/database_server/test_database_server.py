@@ -15,7 +15,9 @@ from press.utils.test import foreground_enqueue_doc
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-def create_test_database_server(ip: str = frappe.mock("ipv4")) -> DatabaseServer:
+def create_test_database_server(
+	ip: str = frappe.mock("ipv4"), cluster="Default"
+) -> DatabaseServer:
 	"""Create test Database Server doc"""
 	return frappe.get_doc(
 		{
@@ -25,7 +27,7 @@ def create_test_database_server(ip: str = frappe.mock("ipv4")) -> DatabaseServer
 			"private_ip": frappe.mock("ipv4_private"),
 			"agent_password": frappe.mock("password"),
 			"hostname": "m",
-			"cluster": "Default",
+			"cluster": cluster,
 		}
 	).insert(ignore_if_duplicate=True)
 

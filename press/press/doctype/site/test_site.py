@@ -26,15 +26,18 @@ from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
-def create_test_bench(user: str = "Administrator", group: ReleaseGroup = None):
+def create_test_bench(
+	user: str = "Administrator", group: ReleaseGroup = None, server: str = None
+):
 	"""
 	Create test Bench doc.
 
 	API call to agent will be faked when creating the doc.
 	"""
-	proxy_server = create_test_proxy_server()
-	database_server = create_test_database_server()
-	server = create_test_server(proxy_server.name, database_server.name)
+	if not server:
+		proxy_server = create_test_proxy_server()
+		database_server = create_test_database_server()
+		server = create_test_server(proxy_server.name, database_server.name).name
 
 	if not group:
 		app = create_test_app()
@@ -52,7 +55,7 @@ def create_test_bench(user: str = "Administrator", group: ReleaseGroup = None):
 			"gunicorn_workers": 2,
 			"group": group.name,
 			"candidate": candidate.name,
-			"server": server.name,
+			"server": server,
 		}
 	).insert(ignore_if_duplicate=True)
 
