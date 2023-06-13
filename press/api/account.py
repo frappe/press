@@ -248,6 +248,7 @@ def get_email_from_request_key(key):
 	account_request = get_account_request_from_key(key)
 	if account_request:
 		data = get_country_info()
+		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
 			"email": account_request.email,
 			"first_name": account_request.first_name,
