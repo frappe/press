@@ -56,7 +56,7 @@ class AppRelease(Document):
 			self._prepare_clone_directory()
 			self._clone_repo()
 			self.cloned = True
-			self.save()
+			self.save(ignore_permissions=True)
 		except Exception:
 			log_error("App Release Clone Exception", release=self.name)
 
@@ -127,7 +127,7 @@ class AppRelease(Document):
 	def cleanup(self):
 		self.on_trash()
 		self.cloned = False
-		self.save()
+		self.save(ignore_permissions=True)
 
 	def create_release_differences(self):
 		releases = frappe.db.sql(
