@@ -107,44 +107,56 @@
 					/>
 
 					<div v-if="newDomain && !dnsVerified" class="text-base space-y-2">
-						<p>
-							Create one of the following DNS records
-						</p>
+						<p>Create one of the following DNS records</p>
 						<p class="px-2">
 							<span class="font-semibold text-gray-700">CNAME</span> record from
-							<span class="font-semibold text-gray-700">{{ newDomain }}</span> to
+							<span class="font-semibold text-gray-700">{{ newDomain }}</span>
+							to
 							<span class="font-semibold text-gray-700">{{ site.name }}</span>
 						</p>
 						<p class="px-2">
 							<span class="font-semibold text-gray-700">A</span> record from
-							<span class="font-semibold text-gray-700">{{ newDomain }}</span> to
+							<span class="font-semibold text-gray-700">{{ newDomain }}</span>
+							to
 							<span class="font-semibold text-gray-700">{{ site.ip }}</span>
 						</p>
 					</div>
 					<div v-if="dnsResult && !dnsResult.matched" class="space-y-2">
 						<p class="text-base">
-							Received following DNS query responses for <span class="font-semibold text-gray-700">{{ newDomain }}</span>.
+							Received following DNS query responses for
+							<span class="font-semibold text-gray-700">{{ newDomain }}</span
+							>.
 						</p>
-						<div v-if="newDomain && dnsResult.CNAME && !dnsResult.CNAME.matched" class="space-y-2">
+						<div
+							v-if="newDomain && dnsResult.CNAME && !dnsResult.CNAME.matched"
+							class="space-y-2"
+						>
 							<p class="text-base">
 								<span class="font-semibold text-gray-700">CNAME</span>
 							</p>
 							<div
 								class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
-							>	
-								<p class="select-all overflow-hidden font-mono text-sm text-gray-800">
+							>
+								<p
+									class="select-all overflow-hidden font-mono text-sm text-gray-800"
+								>
 									{{ dnsResult.CNAME.answer }}
 								</p>
 							</div>
 						</div>
-						<div v-if="newDomain && dnsResult.A && !dnsResult.A.matched" class="space-y-2">
+						<div
+							v-if="newDomain && dnsResult.A && !dnsResult.A.matched"
+							class="space-y-2"
+						>
 							<p class="text-base">
 								<span class="font-semibold text-gray-700">A</span>
 							</p>
 							<div
 								class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
 							>
-								<p class="select-all overflow-hidden font-mono text-sm text-gray-800">
+								<p
+									class="select-all overflow-hidden font-mono text-sm text-gray-800"
+								>
 									{{ dnsResult.A.answer }}
 								</p>
 							</div>
@@ -285,7 +297,7 @@ export default {
 	watch: {
 		newDomain() {
 			this.$resources.checkDNS.reset();
-		},
+		}
 	},
 	methods: {
 		actionItems(domain) {
@@ -396,7 +408,7 @@ export default {
 			this.showDialog = false;
 			this.newDomain = null;
 			this.$resources.checkDNS.reset();
-		},
+		}
 	}
 };
 </script>

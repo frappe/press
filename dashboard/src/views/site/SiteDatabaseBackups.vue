@@ -122,7 +122,9 @@ export default {
 					group: 'Download',
 					items: [
 						{
-							label: `Database (${this.formatBytes(backup.database_size || 0)})`,
+							label: `Database (${this.formatBytes(
+								backup.database_size || 0
+							)})`,
 							handler: () => {
 								this.downloadBackup(
 									backup.name,
@@ -133,7 +135,9 @@ export default {
 							}
 						},
 						{
-							label: `Public Files (${this.formatBytes(backup.public_size || 0)})`,
+							label: `Public Files (${this.formatBytes(
+								backup.public_size || 0
+							)})`,
 							condition: () => backup.public_file,
 							handler: () => {
 								this.downloadBackup(
@@ -171,7 +175,7 @@ export default {
 									backup.offsite
 								);
 							}
-						},
+						}
 					]
 				},
 				{
@@ -193,7 +197,8 @@ export default {
 									}
 								});
 							}
-						}]
+						}
+					]
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},

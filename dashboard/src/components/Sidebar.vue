@@ -54,7 +54,7 @@
 				</div>
 			</template>
 		</Dropdown>
-		<SwitchTeamDialog v-model="showTeamSwitcher"/>
+		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
 </template>
 

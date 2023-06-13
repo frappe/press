@@ -43,7 +43,7 @@ if (window.press_frontend_posthog_host.includes('https://')) {
 			capture_pageleave: false,
 			advanced_disable_decide: true
 		});
-		window.posthog = posthog
+		window.posthog = posthog;
 	} catch (e) {
 		console.trace('Failed to initialize telemetry', e);
 	}

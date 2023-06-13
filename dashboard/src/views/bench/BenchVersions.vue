@@ -21,7 +21,11 @@
 					:title="v.name"
 					:subtitle="
 						v.deployed_on
-							? `Deployed on ${formatDate(v.deployed_on, 'DATETIME_SHORT', true)}`
+							? `Deployed on ${formatDate(
+									v.deployed_on,
+									'DATETIME_SHORT',
+									true
+							  )}`
 							: ''
 					"
 				>

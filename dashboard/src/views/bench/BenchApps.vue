@@ -97,7 +97,9 @@
 					/>
 					<p class="mt-4 text-base" @click="showAddAppDialog = false">
 						Don't find your app here?
-						<Link :to="`/benches/${benchName}/apps/new`"> Add from GitHub </Link>
+						<Link :to="`/benches/${benchName}/apps/new`">
+							Add from GitHub
+						</Link>
 					</p>
 				</template>
 				<template v-slot:actions>

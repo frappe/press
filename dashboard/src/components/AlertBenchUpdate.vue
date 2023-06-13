@@ -44,14 +44,10 @@
 				>
 					Deploy
 				</Button>
-				<Button
-					appearance="primary"
-					@click="showTeamSwitcher = true"
-					v-else
-				>
+				<Button appearance="primary" @click="showTeamSwitcher = true" v-else>
 					Switch Team
 				</Button>
-				<SwitchTeamDialog v-model="showTeamSwitcher"/>
+				<SwitchTeamDialog v-model="showTeamSwitcher" />
 			</template>
 		</Dialog>
 	</Alert>
@@ -123,7 +119,12 @@ export default {
 			}
 		},
 		errorMessage() {
-			return this.$resources.deploy.error || (this.bench.team !== $account.team.name ? "Current Team doesn't have enough permissions" : '');
+			return (
+				this.$resources.deploy.error ||
+				(this.bench.team !== $account.team.name
+					? "Current Team doesn't have enough permissions"
+					: '')
+			);
 		},
 		deployInformation() {
 			return this.$resources.deployInformation.data;

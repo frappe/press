@@ -14,7 +14,9 @@
 			>
 				<ListItem
 					:title="log.name"
-					:description="`${formatDate(log.modified, isUTC=true) + '\n' + log.size} kB`"
+					:description="`${
+						formatDate(log.modified, (isUTC = true)) + '\n' + log.size
+					} kB`"
 				/>
 				<div class="border-b"></div>
 			</router-link>
