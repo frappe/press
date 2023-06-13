@@ -54,7 +54,7 @@ def account_request(
 	all_countries = frappe.db.get_all("Country", pluck="name")
 	country = find(all_countries, lambda x: x.lower() == country.lower())
 	if not country:
-		frappe.throw("Country filed should be a valid country name")
+		frappe.throw("Country field should be a valid country name")
 
 	account_request = frappe.get_doc(
 		{
@@ -131,6 +131,7 @@ def create_or_rename_saas_site(app, account_request):
 
 	except Exception as e:
 		log_error("Saas Site Creation or Rename failed", data=e)
+		raise
 
 	finally:
 		frappe.set_user(current_user)

@@ -32,7 +32,7 @@ class SaasSite(Site):
 					"domain": get_saas_domain(self.app),
 					"bench": get_saas_bench(self.app),
 					"apps": [{"app": app} for app in apps],
-					"team": "Administrator",
+					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 					"standby_for": self.app,
 					"hybrid_saas_pool": hybrid_saas_pool,
 					"account_request": ar_name,

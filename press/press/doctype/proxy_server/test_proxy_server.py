@@ -20,7 +20,7 @@ from press.press.doctype.server.server import BaseServer
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
-	domains: List[Dict[str, str]] = [],
+	domains: List[Dict[str, str]] = [{"domain": "fc.dev"}],
 	cluster: str = "Default",
 ):
 	"""Create test Proxy Server doc"""
