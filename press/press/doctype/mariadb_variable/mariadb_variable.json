@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "prompt",
+ "creation": "2023-04-29 00:00:12.372588",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "dynamic",
+  "datatype",
+  "replication_and_binary_log",
+  "default_value",
+  "skippable"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "dynamic",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Dynamic",
+   "reqd": 1
+  },
+  {
+   "fieldname": "datatype",
+   "fieldtype": "Select",
+   "label": "Datatype",
+   "options": "Int\nBool\nFloat\nStr",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "replication_and_binary_log",
+   "fieldtype": "Check",
+   "label": "Replication And Binary Log"
+  },
+  {
+   "fieldname": "default_value",
+   "fieldtype": "Data",
+   "label": "Default Value"
+  },
+  {
+   "default": "0",
+   "fieldname": "skippable",
+   "fieldtype": "Check",
+   "label": "Skippable"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-06-01 10:40:30.671988",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "MariaDB Variable",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

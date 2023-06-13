@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import theme from '../tailwind.theme.json';
 
 let utils = {
@@ -9,9 +9,9 @@ let utils = {
 			}
 			return plural;
 		},
-		$date(date) {
+		$date(date, serverDatesTimezone = 'Asia/Kolkata') {
 			// assuming all dates on the server are stored in our timezone
-			let serverDatesTimezone = 'Asia/Kolkata';
+
 			let localZone = DateTime.local().zoneName;
 			return DateTime.fromSQL(date, { zone: serverDatesTimezone }).setZone(
 				localZone
@@ -21,8 +21,8 @@ let utils = {
 			let multiplier = Math.pow(10, precision || 0);
 			return Math.round(number * multiplier) / multiplier;
 		},
-		formatDate(value, type = 'DATETIME_FULL') {
-			let datetime = this.$date(value);
+		formatDate(value, type = 'DATETIME_FULL', isUTC = false) {
+			let datetime = isUTC ? this.$date(value, 'UTC') : this.$date(value);
 			let format = value;
 			if (type === 'relative') {
 				format = datetime.toRelative();
@@ -42,7 +42,13 @@ let utils = {
 				.split(':')
 				.map(x => x.padStart(2, '0'))
 				.join(':');
-			return formattedDuration;
+
+			const dateTime = Duration.fromISOTime(formattedDuration).toObject();
+			const hourString = dateTime.hours ? `${dateTime.hours}h` : '';
+			const minuteString = dateTime.minutes ? `${dateTime.minutes}m` : '';
+			const secondString = `${dateTime.seconds}s`;
+
+			return `${hourString} ${minuteString} ${secondString}`;
 		},
 		formatBytes(bytes, decimals = 2, current = 0) {
 			if (bytes === 0) return '0 Bytes';

@@ -23,7 +23,7 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if getattr(self, "is_self_hosted", False):
+		if self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,7 +33,7 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip:
+		if self.ip and not self.is_self_hosted:
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -407,9 +407,16 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
+		if self.is_self_hosted:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",
+				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				"name",
+			)
+		else:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+			)
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):

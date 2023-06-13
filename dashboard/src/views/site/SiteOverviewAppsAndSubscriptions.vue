@@ -298,6 +298,14 @@ export default {
 				onSuccess() {
 					this.showAppPlanChangeDialog = false;
 					this.$resources.marketplaceSubscriptions.fetch();
+				},
+				onError(e) {
+					this.showAppPlanChangeDialog = false;
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		},

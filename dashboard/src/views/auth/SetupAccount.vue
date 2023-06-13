@@ -169,7 +169,6 @@ export default {
 					oauth_signup: this.oauthSignup
 				},
 				onSuccess(res) {
-					//window.posthog.capture('completed_client_fc_setup_account');
 					if (res) {
 						this.$router.push(res.dashboard_route || '/');
 					}

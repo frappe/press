@@ -2,8 +2,19 @@
 # For license information, please see license.txt
 
 
-import frappe
 import os
+
+import frappe
+from frappe.model.document import Document
+
+
+def doc_equal(self: Document, other: Document) -> bool:
+	"""Partial equality checking of Document object"""
+	if not isinstance(other, Document):
+		return False
+	if self.doctype == other.doctype and self.name == other.name:
+		return True
+	return False
 
 
 def execute():
@@ -14,6 +25,7 @@ def execute():
 
 	# Silence the cssutils errors that are mostly pointless
 	cssutils.log.setLevel(50)
+	Document.__eq__ = doc_equal
 
 
 def create_test_stripe_credentials():
