@@ -9,7 +9,7 @@ from press.runner import Ansible
 from press.utils import log_error
 
 from tldextract import extract as sdext
-from tenacity import retry, wait_fixed, stop_after_attempt
+import time
 
 
 class SelfHostedServer(Document):
@@ -439,20 +439,9 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
 
-	def setup_servers(self):
-		server = frappe.get_doc("Server", self.name)
-		db_server = frappe.get_doc("Database Server", self.name)
-		server.setup_server()
-		db_server.setup_server()
-
 	@frappe.whitelist()
-	def start_setup(self):
-		try:
-			cert_active = get_tls_cert_status(self.name)
-			if cert_active:
-				self.setup_servers()
-		except Exception:
-			log_error("Getting Cert status failed", server=self.as_dict())
+	def _setup_nginx(self):
+		frappe.enqueue_doc(self.doctype, self.name, "setup_nginx", queue="long")
 
 	@frappe.whitelist()
 	def setup_nginx(self):
@@ -466,17 +455,24 @@ class SelfHostedServer(Document):
 			)
 			play = ansible.run()
 			if play.status == "Success":
-				self.create_tls_certs()
 				return True
 		except Exception:
 			log_error("TLS Cert Generation Failed", server=self.as_dict())
 			return False
 
+	def process_tls_cert_update(self):
+		server = frappe.get_doc("Server", self.name)
+		db_server = frappe.get_doc("Database Server", self.name)
+		if not (server.is_server_setup and db_server.is_server_setup):
+			db_server.setup_server()
+			time.sleep(60)
+			server.setup_server()
+		else:
+			from press.press.doctype.tls_certificate.tls_certificate import (
+				update_server_tls_certifcate,
+			)
 
-@retry(wait=wait_fixed(5), stop=stop_after_attempt(10), reraise=True)
-def get_tls_cert_status(server) -> bool:
-	cert_status = frappe.get_value("TLS Certificate", server, "status")
-	if cert_status != "Active":
-		raise Exception(f"TLS Certificate not Active for {server}")
-	else:
-		return True
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.name, "status": "Active"}
+			)
+			update_server_tls_certifcate(server, cert)

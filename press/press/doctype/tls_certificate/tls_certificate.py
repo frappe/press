@@ -62,6 +62,7 @@ class TLSCertificate(Document):
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()
 		self.trigger_site_domain_callback()
+		self.trigger_self_hosted_server_callback()
 		if self.wildcard:
 			self.trigger_server_tls_setup_callback()
 			self._update_secondary_wildcard_domains()
@@ -107,6 +108,9 @@ class TLSCertificate(Document):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
 		if domain:
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
+
+	def trigger_self_hosted_server_callback(self):
+		frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
 
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)

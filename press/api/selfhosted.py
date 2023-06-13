@@ -66,8 +66,10 @@ def setup_nginx(server):
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	server_doc.start_setup()
-	time.sleep(2)
+	server_doc.start_setup = True
+	server_doc.create_tls_certs()
+	server_doc.save()
+	time.sleep(1)
 
 
 @frappe.whitelist()

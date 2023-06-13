@@ -21,7 +21,7 @@
   "plan",
   "release_group",
   "private_ip",
-  "different_database_server",
+  "start_setup",
   "existing_bench_present",
   "new_server",
   "section_break_0fky",
@@ -160,12 +160,6 @@
   },
   {
    "default": "0",
-   "fieldname": "different_database_server",
-   "fieldtype": "Check",
-   "label": "Different Database Server"
-  },
-  {
-   "default": "0",
    "fieldname": "existing_bench_present",
    "fieldtype": "Check",
    "label": "Existing Bench Present"
@@ -290,10 +284,16 @@
    "fieldtype": "Link",
    "label": "Plan",
    "options": "Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "start_setup",
+   "fieldtype": "Check",
+   "label": "Start Setup"
   }
  ],
  "links": [],
- "modified": "2023-06-07 14:52:00.906860",
+ "modified": "2023-06-13 15:19:01.155391",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",
