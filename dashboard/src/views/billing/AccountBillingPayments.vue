@@ -1,16 +1,14 @@
 <template>
-	<Card
-		title="Billing history"
-		:subtitle="subtitle"
-		v-if="!invoiceName && $resources.pastInvoices.data"
-	>
+	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
 		<template #actions>
-			<Input type="select" :options="selectItems" v-model="invoiceStatus"/>
+			<Input
+				v-if="$resources.pastInvoices.data?.length"
+				type="select"
+				:options="selectItems"
+				v-model="invoiceStatus"
+			/>
 		</template>
-		<div
-			class="max-h-96 divide-y"
-			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
-		>
+		<div class="max-h-96 divide-y" v-if="$resources.pastInvoices.data?.length">
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
@@ -139,7 +137,7 @@ export default {
 					invoice_status: this.invoiceStatus
 				},
 				auto: true
-			}
+			};
 		}
 	},
 	computed: {
