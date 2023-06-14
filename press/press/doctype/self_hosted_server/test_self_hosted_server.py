@@ -44,7 +44,7 @@ class TestSelfHostedServer(FrappeTestCase):
 			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
 			new=lambda x: create_test_ansible_play(server.name, {"server": "ssl.fc.dev"}),
 		):
-			server.setup_nginx()
+			server.create_tls_certs()
 		post_setup_count = frappe.db.count("TLS Certificate")
 		self.assertEqual(pre_setup_count, post_setup_count - 1)
 

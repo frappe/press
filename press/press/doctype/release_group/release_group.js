@@ -19,7 +19,7 @@ frappe.ui.form.on('Release Group', {
 							title: __('New Deploy Candidate Created'),
 							indicator: 'green',
 							message: __(
-								`New <a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a> for this bench was created successfully.`
+								`New {0} for this bench was created successfully.`, [`<a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a>`]
 							),
 						});
 						frm.refresh();

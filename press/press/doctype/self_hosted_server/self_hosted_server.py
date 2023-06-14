@@ -459,17 +459,17 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("TLS Cert Generation Failed", server=self.as_dict())
 			return False
-		
+
 	@frappe.whitelist()
 	def update_tls(self):
-			from press.press.doctype.tls_certificate.tls_certificate import (
-				update_server_tls_certifcate,
-			)
+		from press.press.doctype.tls_certificate.tls_certificate import (
+			update_server_tls_certifcate,
+		)
 
-			cert = frappe.get_last_doc(
-				"TLS Certificate", {"domain": self.name, "status": "Active"}
-			)
-			update_server_tls_certifcate(self, cert)
+		cert = frappe.get_last_doc(
+			"TLS Certificate", {"domain": self.name, "status": "Active"}
+		)
+		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
 		server = frappe.get_doc("Server", self.name)
@@ -480,4 +480,3 @@ class SelfHostedServer(Document):
 			server.setup_server()
 		else:
 			self.update_tls()
-			

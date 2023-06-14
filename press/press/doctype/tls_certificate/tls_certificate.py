@@ -84,6 +84,7 @@ class TLSCertificate(Document):
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
 			proxy.setup_wildcard_hosts()
 
+	@frappe.whitelist()
 	def trigger_server_tls_setup_callback(self):
 		server_doctypes = [
 			"Proxy Server",
@@ -110,7 +111,10 @@ class TLSCertificate(Document):
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 
 	def trigger_self_hosted_server_callback(self):
-		frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+		try:
+			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+		except Exception:
+			pass
 
 	def _extract_certificate_details(self):
 		x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, self.certificate)

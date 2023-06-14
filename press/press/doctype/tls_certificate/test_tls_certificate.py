@@ -18,6 +18,11 @@ import unittest
 
 @patch.object(TLSCertificate, "obtain_certificate", new=Mock())
 def create_test_tls_certificate(domain: str, wildcard: bool = False):
+	existing_certificate = frappe.get_all(
+		"TLS Certificate", {"domain": domain, "wildcard": wildcard}, limit=1
+	)
+	if existing_certificate:
+		return frappe.get_doc("TLS Certificate", existing_certificate[0].name)
 	return frappe.get_doc(
 		{
 			"doctype": "TLS Certificate",
