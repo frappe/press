@@ -20,7 +20,7 @@ repos:
     rev: v3.0.0-alpha.9-for-vscode
     hooks:
       - id: prettier
-        types_or: [javascript]
+        types_or: [javascript, vue]
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
