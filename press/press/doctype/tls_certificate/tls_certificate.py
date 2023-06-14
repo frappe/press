@@ -84,6 +84,7 @@ class TLSCertificate(Document):
 			proxy = frappe.get_doc("Proxy Server", proxy_name)
 			proxy.setup_wildcard_hosts()
 
+	@frappe.whitelist()
 	def trigger_server_tls_setup_callback(self):
 		server_doctypes = [
 			"Proxy Server",
