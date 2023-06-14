@@ -16,3 +16,18 @@ repos:
         args: [--ignore, 'W191,E501,W503']
         additional_dependencies: ['flake8==3.9.2']
 
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.9-for-vscode
+    hooks:
+      - id: prettier
+        types_or: [javascript]
+        # Ignore any files that might contain jinja / bundles
+        exclude: |
+            (?x)^(
+                press/public/dist/.*|
+                .*node_modules.*|
+                .*boilerplate.*|
+                press/www/website_script.js|
+                press/templates/includes/.*|
+                press/public/js/.*min.js
+            )$
