@@ -27,6 +27,7 @@
   "dependencies_tab",
   "dependencies",
   "packages",
+  "environment_variables",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "multiple_rq_queues",
@@ -207,10 +208,16 @@
    "fieldname": "multiple_rq_queues",
    "fieldtype": "Check",
    "label": "Multiple RQ Queues"
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Release Group Variable"
   }
  ],
  "links": [],
- "modified": "2023-05-12 16:25:51.970564",
+ "modified": "2023-06-13 16:16:18.973665",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

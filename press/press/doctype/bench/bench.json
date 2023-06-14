@@ -33,6 +33,7 @@
   "last_archive_failure",
   "feature_flags_section",
   "multiple_rq_queues",
+  "environment_variables"
  ],
  "fields": [
   {
@@ -199,6 +200,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "ssh_section",
    "fieldtype": "Section Break",
    "label": "SSH"
@@ -211,6 +213,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "failures_section",
    "fieldtype": "Section Break",
    "label": "Failures"
@@ -234,10 +237,16 @@
    "fieldtype": "Check",
    "label": "Multiple RQ Queues",
    "read_only": 1
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Bench Variable"
   }
  ],
  "links": [],
- "modified": "2023-06-12 10:38:19.724502",
+ "modified": "2023-06-13 16:18:42.248340",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

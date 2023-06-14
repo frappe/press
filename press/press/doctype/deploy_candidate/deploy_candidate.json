@@ -17,6 +17,7 @@
   "dependencies",
   "packages",
   "apt_packages",
+  "environment_variables",
   "section_break_6",
   "build_start",
   "build_end",
@@ -258,10 +259,17 @@
    "fieldtype": "Check",
    "label": "Multiple RQ Queues",
    "read_only": 1
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Deploy Candidate Variable",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-05-12 16:24:51.452853",
+ "modified": "2023-06-13 19:08:48.076264",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

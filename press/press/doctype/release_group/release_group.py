@@ -158,6 +158,10 @@ class ReleaseGroup(Document):
 			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
 		]
 
+		environment_variables = [
+			{"key": v.key, "value": v.value} for v in self.environment_variables
+		]
+
 		apps = self.get_sorted_based_on_rg_apps(apps)
 
 		# Create and deploy the DC
@@ -168,6 +172,7 @@ class ReleaseGroup(Document):
 				"apps": apps,
 				"dependencies": dependencies,
 				"packages": packages,
+				"environment_variables": environment_variables,
 			}
 		).insert()
 

@@ -110,6 +110,7 @@ class Bench(Document):
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
 			"multiple_rq_queues": bool(self.multiple_rq_queues),
+			"environment_variables": self.get_environment_variables(),
 		}
 		if self.is_single_container:
 			bench_config.update({"single_container": True})
@@ -325,6 +326,9 @@ class Bench(Document):
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
+
+	def get_environment_variables(self):
+		return {v.key: v.value for v in self.environment_variables}
 
 
 class StagingSite(Site):
