@@ -131,7 +131,7 @@ def developer_toggle_allowed():
 	if current_team.is_developer:
 		return False
 
-	return frappe.db.get_value("Press Settings", None, "allow_developer_account") == "1"
+	return frappe.db.get_single_value("Press Settings", "allow_developer_account") == "1"
 
 
 @frappe.whitelist()

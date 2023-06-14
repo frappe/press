@@ -355,9 +355,8 @@ class DeployCandidate(Document):
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		settings = frappe.db.get_value(
+		settings = frappe.db.get_single_value(
 			"Press Settings",
-			None,
 			["domain", "docker_registry_url", "docker_registry_namespace"],
 			as_dict=True,
 		)
@@ -498,9 +497,8 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 		try:
-			settings = frappe.db.get_value(
+			settings = frappe.db.get_single_value(
 				"Press Settings",
-				None,
 				["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 				as_dict=True,
 			)

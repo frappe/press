@@ -21,9 +21,8 @@ class Agent:
 		self.port = 443
 
 	def new_bench(self, bench):
-		settings = frappe.db.get_value(
+		settings = frappe.db.get_single_value(
 			"Press Settings",
-			None,
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
@@ -579,8 +578,8 @@ class Agent:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
 			headers = {"Authorization": f"bearer {password}"}
-			intermediate_ca = frappe.db.get_value(
-				"Press Settings", "Press Settings", "backbone_intermediate_ca"
+			intermediate_ca = frappe.db.get_single_value(
+				"Press Settings", "backbone_intermediate_ca"
 			)
 			if frappe.conf.developer_mode and intermediate_ca:
 				root_ca = frappe.db.get_value(

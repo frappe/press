@@ -30,7 +30,7 @@ class SSHCertificateAuthority(Document):
 		).decode()
 
 	def generate_key_pair(self):
-		domain = frappe.db.get_value("Press Settings", None, "domain")
+		domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.run(
 			f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory
 		)
@@ -112,7 +112,7 @@ class SSHCertificateAuthority(Document):
 
 		host_key_path = os.path.join(self.build_directory, "ssh_host_rsa_key.pub")
 
-		domain = frappe.db.get_value("Press Settings", None, "domain")
+		domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.sign(
 			domain, None, "+52w", host_key_path, cint(self.docker_image_tag) + 1, host_key=True
 		)
@@ -123,9 +123,8 @@ class SSHCertificateAuthority(Document):
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		settings = frappe.db.get_value(
+		settings = frappe.db.get_single_value(
 			"Press Settings",
-			None,
 			["domain", "docker_registry_url", "docker_registry_namespace"],
 			as_dict=True,
 		)
@@ -145,9 +144,8 @@ class SSHCertificateAuthority(Document):
 		self.run(f"docker build -t {self.docker_image} .", self.build_directory, environment)
 
 	def _push_docker_image(self):
-		settings = frappe.db.get_value(
+		settings = frappe.db.get_single_value(
 			"Press Settings",
-			None,
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)

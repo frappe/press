@@ -144,9 +144,8 @@ class ProxyServer(BaseServer):
 		)
 
 	def _setup_ssh_proxy(self):
-		settings = frappe.db.get_value(
+		settings = frappe.db.get_single_value(
 			"Press Settings",
-			None,
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
