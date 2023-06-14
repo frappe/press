@@ -2,8 +2,6 @@
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["Shared App Server Stats"] = {
-	"filters": [
-
-	]
+frappe.query_reports['Shared App Server Stats'] = {
+	filters: [],
 };

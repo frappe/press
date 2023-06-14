@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Site Backup', {
 	// refresh: function(frm) {
-
 	// }
 });

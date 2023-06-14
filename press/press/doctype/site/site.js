@@ -15,7 +15,7 @@ frappe.ui.form.on('Site', {
 			return {
 				filters: {
 					site: frm.doc.name,
-					status: 'Active'
+					status: 'Active',
 				},
 			};
 		});
@@ -28,21 +28,21 @@ frappe.ui.form.on('Site', {
 					<div class="col-sm-4">Database Usage: ${frm.doc.current_database_usage}%</div>
 					<div class="col-sm-4">Disk Usage: ${frm.doc.current_disk_usage}%</div>
 				</div>
-			</div>`
+			</div>`,
 		);
 		frm.add_web_link(`https://${frm.doc.name}`, __('Visit Site'));
-		frm.add_web_link(
-			`/dashboard/sites/${frm.doc.name}`,
-			__('Visit Dashboard')
-		);
+		frm.add_web_link(`/dashboard/sites/${frm.doc.name}`, __('Visit Dashboard'));
 
 		let site = frm.get_doc();
-		let account = await frappe.call({
-			method: 'press.api.account.get'
-		}).then(resp => resp.message);
+		let account = await frappe
+			.call({
+				method: 'press.api.account.get',
+			})
+			.then((resp) => resp.message);
 
-		if (site.status == "Active") {
-			frm.add_custom_button(__('Login as Adminstrator'),
+		if (site.status == 'Active') {
+			frm.add_custom_button(
+				__('Login as Adminstrator'),
 				() => {
 					if (account) {
 						if (site.team === account.team.name) {
@@ -50,11 +50,13 @@ frappe.ui.form.on('Site', {
 						} else {
 							new frappe.ui.Dialog({
 								title: 'Login as Adminstrator',
-								fields: [{
-									label: 'Please enter reason for this login.',
-									fieldname: 'reason',
-									fieldtype: 'Small Text'
-								}],
+								fields: [
+									{
+										label: 'Please enter reason for this login.',
+										fieldname: 'reason',
+										fieldtype: 'Small Text',
+									},
+								],
 								primary_action_label: 'Login',
 								primary_action(values) {
 									if (values) {
@@ -62,17 +64,22 @@ frappe.ui.form.on('Site', {
 										console.log(reason);
 										login_as_admin(site.name, reason);
 									} else {
-										frappe.throw(__('Reason field should not be empty'))
+										frappe.throw(__('Reason field should not be empty'));
 									}
 									this.hide();
-								}
+								},
 							}).show();
 						}
 					} else {
-						frappe.throw(__("Couldn't retrieve account. Check Error Log for more information"));
+						frappe.throw(
+							__(
+								"Couldn't retrieve account. Check Error Log for more information",
+							),
+						);
 					}
 				},
-				__('Actions'));
+				__('Actions'),
+			);
 		}
 
 		[
@@ -82,9 +89,9 @@ frappe.ui.form.on('Site', {
 			frm.add_custom_button(
 				label,
 				() => {
-					frm.call(method).then((r) => frm.refresh())
+					frm.call(method).then((r) => frm.refresh());
 				},
-				__('Actions')
+				__('Actions'),
 			);
 		});
 		[
@@ -100,37 +107,48 @@ frappe.ui.form.on('Site', {
 			[__('Reset Site Usage'), 'reset_site_usage'],
 			[__('Clear Cache'), 'clear_site_cache'],
 			[__('Update Site Config'), 'update_site_config'],
-			[__('Enable Database Access'), 'enable_database_access', !frm.doc.is_database_access_enabled],
-			[__('Disable Database Access'), 'disable_database_access', frm.doc.is_database_access_enabled],
+			[
+				__('Enable Database Access'),
+				'enable_database_access',
+				!frm.doc.is_database_access_enabled,
+			],
+			[
+				__('Disable Database Access'),
+				'disable_database_access',
+				frm.doc.is_database_access_enabled,
+			],
 			[__('Create DNS Record'), 'create_dns_record'],
 			[__('Run After Migrate Steps'), 'run_after_migrate_steps'],
 			[__('Retry Rename'), 'retry_rename'],
-			[__('Retry Archive'), 'retry_archive', frm.doc.name.includes('.archived')],
+			[
+				__('Retry Archive'),
+				'retry_archive',
+				frm.doc.name.includes('.archived'),
+			],
 			[__('Update without Backup'), 'update_without_backup'],
 		].forEach(([label, method, condition]) => {
-			if (typeof condition === "undefined" || condition){
+			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
 					() => {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()} this site?`,
-							() => frm.call(method).then((r) => frm.refresh())
+							() => frm.call(method).then((r) => frm.refresh()),
 						);
 					},
-					__('Actions')
+					__('Actions'),
 				);
 			}
 		});
 
 		frm.add_custom_button(
-			__("Force Archive"),
+			__('Force Archive'),
 			() => {
-				frappe.confirm(
-					`Are you sure you want to force drop this site?`,
-					() => frm.call('archive', {force: true}).then((r) => frm.refresh())
+				frappe.confirm(`Are you sure you want to force drop this site?`, () =>
+					frm.call('archive', { force: true }).then((r) => frm.refresh()),
 				);
 			},
-			__('Actions')
+			__('Actions'),
 		);
 
 		[
@@ -140,23 +158,24 @@ frappe.ui.form.on('Site', {
 			frm.add_custom_button(
 				label,
 				() => {
-					frappe.prompt({
-						fieldtype: 'Data',
-						label: 'Reason',
-						fieldname: 'reason',
-						reqd: 1
-					},
-						({
-							reason
-						}) => {
-							frm.call(method, {
-								reason
-							}).then((r) => frm.refresh());
+					frappe.prompt(
+						{
+							fieldtype: 'Data',
+							label: 'Reason',
+							fieldname: 'reason',
+							reqd: 1,
 						},
-						__('Provide Reason')
+						({ reason }) => {
+							frm
+								.call(method, {
+									reason,
+								})
+								.then((r) => frm.refresh());
+						},
+						__('Provide Reason'),
 					);
 				},
-				__('Actions')
+				__('Actions'),
 			);
 		});
 		frm.toggle_enable(['host_name'], frm.doc.status === 'Active');
@@ -164,8 +183,9 @@ frappe.ui.form.on('Site', {
 		if (frm.doc.is_database_access_enabled) {
 			frm.add_custom_button(
 				__('Show Database Credentials'),
-				() => frm.call("get_database_credentials").then((r) => {
-					let message = `Host: ${r.message.host}
+				() =>
+					frm.call('get_database_credentials').then((r) => {
+						let message = `Host: ${r.message.host}
 
 Port: ${r.message.port}
 
@@ -177,88 +197,109 @@ Password: ${r.message.password}
 
 \`\`\`\nmysql -u ${r.message.username} -p${r.message.password} -h ${r.message.host} -P ${r.message.port} --ssl --ssl-verify-server-cert\n\`\`\``;
 
-					frappe.msgprint(frappe.markdown(message), "Database Credentials");
-				}),
-				__('Actions')
+						frappe.msgprint(frappe.markdown(message), 'Database Credentials');
+					}),
+				__('Actions'),
 			);
 		}
 
-		frm.add_custom_button(__('Replicate Site'), () => {
-			const dialog = new frappe.ui.Dialog({
-				title: __('New Subdomain for Test Site'),
-				fields: [{
-					fieldtype: 'Data',
-					fieldname: 'subdomain',
-					label: 'New Subdomain',
-					reqd: 1
-				}],
-				primary_action({ subdomain }) {
-					frappe.set_route('List', 'Site Replication', {'site': frm.doc.name})
-					frappe.new_doc('Site Replication', {site: frm.doc.name, subdomain: subdomain})
-				}
-			});
-			dialog.show();
-		}, __('Actions'));
+		frm.add_custom_button(
+			__('Replicate Site'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('New Subdomain for Test Site'),
+					fields: [
+						{
+							fieldtype: 'Data',
+							fieldname: 'subdomain',
+							label: 'New Subdomain',
+							reqd: 1,
+						},
+					],
+					primary_action({ subdomain }) {
+						frappe.set_route('List', 'Site Replication', {
+							site: frm.doc.name,
+						});
+						frappe.new_doc('Site Replication', {
+							site: frm.doc.name,
+							subdomain: subdomain,
+						});
+					},
+				});
+				dialog.show();
+			},
+			__('Actions'),
+		);
 
 		frm.add_custom_button(
 			__('Move to Group'),
 			() => {
 				const dialog = new frappe.ui.Dialog({
 					title: __('Move to Group'),
-					fields: [{
-						fieldtype: 'Link',
-						options: 'Release Group',
-						label: __('Destination Group'),
-						fieldname: 'group',
-						get_query: () => {
- 							return {
-								filters: [
-									['server', "=", frm.doc.server],
-									['name', "!=", frm.doc.group],
-								]
-							}
-						}
-					},
-					{
-						fieldtype: 'Check',
-						label: __('Skip Failing Patches'),
-						fieldname: 'skip_failing_patches',
-					}]
+					fields: [
+						{
+							fieldtype: 'Link',
+							options: 'Release Group',
+							label: __('Destination Group'),
+							fieldname: 'group',
+							get_query: () => {
+								return {
+									filters: [
+										['server', '=', frm.doc.server],
+										['name', '!=', frm.doc.group],
+									],
+								};
+							},
+						},
+						{
+							fieldtype: 'Check',
+							label: __('Skip Failing Patches'),
+							fieldname: 'skip_failing_patches',
+						},
+					],
 				});
 
-				dialog.set_primary_action(__('Move Site'), args => {
-					frm.call('move_to_group',
-						{
+				dialog.set_primary_action(__('Move Site'), (args) => {
+					frm
+						.call('move_to_group', {
 							group: args.group,
-							skip_failing_patches: args.skip_failing_patches
-						}
-					).then((r) => {
-						dialog.hide();
-						frm.refresh();
-					})
+							skip_failing_patches: args.skip_failing_patches,
+						})
+						.then((r) => {
+							dialog.hide();
+							frm.refresh();
+						});
 				});
 
 				dialog.show();
 			},
-			__('Actions')
+			__('Actions'),
 		);
-	}
+	},
 });
 
 function login_as_admin(site_name, reason = null) {
-	frappe.call({
-		method: 'press.api.site.login',
-		args: {
-			name: site_name,
-			reason: reason
-		}
-	}).then((res) => {
-		console.log(site_name, res.message.sid)
-		if (res) {
-			window.open(`https://${site_name}/desk?sid=${res.message.sid}`, '_blank');
-		}
-	}, (error) => {
-		console.log(error);
-		frappe.throw(__(`An error occurred!!`));
-	})
+	frappe
+		.call({
+			method: 'press.api.site.login',
+			args: {
+				name: site_name,
+				reason: reason,
+			},
+		})
+		.then(
+			(res) => {
+				console.log(site_name, res.message.sid);
+				if (res) {
+					window.open(
+						`https://${site_name}/desk?sid=${res.message.sid}`,
+						'_blank',
+					);
+				}
+			},
+			(error) => {
+				console.log(error);
+				frappe.throw(__(`An error occurred!!`));
+			},
+		);
 }

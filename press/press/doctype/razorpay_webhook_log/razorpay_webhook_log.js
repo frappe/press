@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Razorpay Webhook Log', {
 	// refresh: function(frm) {
-
 	// }
 });

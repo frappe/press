@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Saas App Subscription', {
 	// refresh: function(frm) {
-
 	// }
 });
