@@ -37,7 +37,9 @@
   "user_private_key",
   "user_certificate",
   "feature_flags_section",
-  "is_redisearch_enabled"
+  "is_redisearch_enabled",
+  "column_break_tkdd",
+  "multiple_rq_queues"
  ],
  "fields": [
   {
@@ -243,6 +245,18 @@
    "fieldname": "apt_packages",
    "fieldtype": "Text",
    "label": "APT Packages",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tkdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.multiple_rq_queues",
+   "fieldname": "multiple_rq_queues",
+   "fieldtype": "Check",
+   "label": "Multiple RQ Queues",
    "read_only": 1
   }
  ],

@@ -30,7 +30,9 @@
   "ssh_section",
   "is_ssh_proxy_setup",
   "failures_section",
-  "last_archive_failure"
+  "last_archive_failure",
+  "feature_flags_section",
+  "multiple_rq_queues",
  ],
  "fields": [
   {
@@ -217,6 +219,20 @@
    "fieldname": "last_archive_failure",
    "fieldtype": "Datetime",
    "label": "Last Archive Failure",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.multiple_rq_queues",
+   "fieldname": "multiple_rq_queues",
+   "fieldtype": "Check",
+   "label": "Multiple RQ Queues",
    "read_only": 1
   }
  ],

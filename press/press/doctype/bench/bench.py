@@ -109,6 +109,7 @@ class Bench(Document):
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
+			"multiple_rq_queues": bool(self.multiple_rq_queues),
 		}
 		if self.is_single_container:
 			bench_config.update({"single_container": True})

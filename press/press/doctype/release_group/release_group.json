@@ -29,6 +29,7 @@
   "packages",
   "feature_flags_tab",
   "is_redisearch_enabled",
+  "multiple_rq_queues",
   "column_break_23",
   "is_push_to_deploy_enabled",
   "saas_tab",
@@ -200,6 +201,12 @@
    "fieldtype": "Table",
    "label": "Packages",
    "options": "Release Group Package"
+  },
+  {
+   "default": "0",
+   "fieldname": "multiple_rq_queues",
+   "fieldtype": "Check",
+   "label": "Multiple RQ Queues"
   }
  ],
  "links": [],
