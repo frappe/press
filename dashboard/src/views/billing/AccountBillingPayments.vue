@@ -5,9 +5,7 @@
 		v-if="!invoiceName && $resources.pastInvoices.data"
 	>
 		<template #actions>
-			<Dropdown :options="dropdownItems">
-				<Button icon-right="filter">Filter</Button>
-			</Dropdown>
+			<Input type="select" :options="selectItems" v-model="invoiceStatus"/>
 		</template>
 		<div
 			class="max-h-96 divide-y"
@@ -116,26 +114,33 @@ export default {
 	},
 	data() {
 		return {
-			dropdownItems: [
+			invoiceStatus: '',
+			selectItems: [
 				{
 					label: 'All Invoices',
-					handler: () => this.$resources.pastInvoices.submit()
+					value: ''
 				},
 				{
 					label: 'Unpaid Invoices',
-					handler: () =>
-						this.$resources.pastInvoices.submit({ invoice_status: 'unpaid' })
+					value: 'unpaid'
 				},
 				{
 					label: 'Paid Invoices',
-					handler: () =>
-						this.$resources.pastInvoices.submit({ invoice_status: 'paid' })
+					value: 'paid'
 				}
 			]
 		};
 	},
 	resources: {
-		pastInvoices: 'press.api.billing.invoices_and_payments'
+		pastInvoices() {
+			return {
+				method: 'press.api.billing.invoices_and_payments',
+				params: {
+					invoice_status: this.invoiceStatus
+				},
+				auto: true
+			}
+		}
 	},
 	computed: {
 		subtitle() {
