@@ -54,7 +54,7 @@
 							appearance="primary"
 							:link="'/dashboard/billing'"
 						>
-							Pay now
+							Go to Billing
 						</Button>
 					</template>
 				</Alert>
