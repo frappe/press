@@ -46,6 +46,7 @@ def create_test_release_group(
 	release_group.append("apps", {"app": app.name, "source": app_source.name})
 
 	release_group.insert(ignore_if_duplicate=True)
+	release_group.reload()
 	return release_group
 
 

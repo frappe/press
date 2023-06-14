@@ -25,7 +25,7 @@ def create_test_proxy_server(
 ):
 	"""Create test Proxy Server doc"""
 	create_test_press_settings()
-	return frappe.get_doc(
+	server = frappe.get_doc(
 		{
 			"doctype": "Proxy Server",
 			"status": "Active",
@@ -37,6 +37,8 @@ def create_test_proxy_server(
 			"domains": domains,
 		}
 	).insert(ignore_if_duplicate=True)
+	server.reload()
+	return server
 
 
 class TestProxyServer(unittest.TestCase):

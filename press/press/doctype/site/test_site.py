@@ -46,7 +46,7 @@ def create_test_bench(
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()
 	candidate.db_set("docker_image", frappe.mock("url"))
-	return frappe.get_doc(
+	bench = frappe.get_doc(
 		{
 			"name": f"Test Bench{name}",
 			"doctype": "Bench",
@@ -58,6 +58,8 @@ def create_test_bench(
 			"server": server,
 		}
 	).insert(ignore_if_duplicate=True)
+	bench.reload()
+	return bench
 
 
 def create_test_site(

@@ -50,7 +50,7 @@ class TestSelfHostedServer(FrappeTestCase):
 
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
-	return frappe.get_doc(
+	server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
 			"status": "Active",
@@ -60,6 +60,8 @@ def create_test_self_hosted_server(host) -> SelfHostedServer:
 			"team": create_test_team().name,
 		}
 	).insert(ignore_if_duplicate=True)
+	server.reload()
+	return server
 
 
 def create_test_ansible_play(server: str, vars: dict = {}):

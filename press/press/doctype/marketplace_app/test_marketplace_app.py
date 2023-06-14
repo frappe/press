@@ -13,9 +13,11 @@ from press.press.doctype.marketplace_app.utils import (
 
 
 def create_test_marketplace_app(app: str, team: Optional[str] = None):
-	return frappe.get_doc(
+	marketplace_app = frappe.get_doc(
 		{"doctype": "Marketplace App", "app": app, "description": "Test App", "team": team}
 	).insert(ignore_if_duplicate=True)
+	marketplace_app.reload()
+	return marketplace_app
 
 
 class TestMarketplaceApp(unittest.TestCase):

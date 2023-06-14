@@ -21,7 +21,7 @@ def create_test_site_domain(
 ) -> SiteDomain:
 	"""Create test Site Domain doc."""
 	with patch.object(TLSCertificate, "obtain_certificate"):
-		return frappe.get_doc(
+		site_domain = frappe.get_doc(
 			{
 				"doctype": "Site Domain",
 				"site": site,
@@ -31,6 +31,8 @@ def create_test_site_domain(
 				"dns_type": "A",
 			}
 		).insert(ignore_if_duplicate=True)
+		site_domain.reload()
+		return site_domain
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())

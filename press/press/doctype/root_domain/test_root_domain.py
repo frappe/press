@@ -22,7 +22,7 @@ from press.press.doctype.server.test_server import create_test_server
 
 @patch.object(RootDomain, "after_insert", new=Mock())
 def create_test_root_domain(name: str):
-	return frappe.get_doc(
+	root_domain = frappe.get_doc(
 		{
 			"doctype": "Root Domain",
 			"name": name,
@@ -31,6 +31,8 @@ def create_test_root_domain(name: str):
 			"aws_secret_access_key": "b",
 		}
 	).insert(ignore_if_duplicate=True)
+	root_domain.reload()
+	return root_domain
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
