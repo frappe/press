@@ -8,7 +8,7 @@ import frappe
 from unittest.mock import patch
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
-from press.press.doctype.app.app import App, new_app
+from press.press.doctype.app.app import App
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.frappe_version.test_frappe_version import (
@@ -58,7 +58,7 @@ class TestReleaseGroup(unittest.TestCase):
 		frappe.db.rollback()
 
 	def test_create_release_group(self):
-		app = new_app("frappe", "Frappe Framework")
+		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
 		)
@@ -71,11 +71,11 @@ class TestReleaseGroup(unittest.TestCase):
 		self.assertEqual(group.title, "Test Group")
 
 	def test_create_release_group_set_app_from_source(self):
-		app1 = new_app("frappe", "Frappe Framework")
+		app1 = create_test_app("frappe", "Frappe Framework")
 		source1 = app1.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
 		)
-		app2 = new_app("erpnext", "ERPNext")
+		app2 = create_test_app("erpnext", "ERPNext")
 		source2 = app2.add_source(
 			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
 		)
@@ -88,7 +88,7 @@ class TestReleaseGroup(unittest.TestCase):
 		self.assertEqual(group.apps[0].app, source1.app)
 
 	def test_create_release_group_fail_when_first_app_is_not_frappe(self):
-		app = new_app("erpnext", "ERPNext")
+		app = create_test_app("erpnext", "ERPNext")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/erpnext", "version-12", team=self.team
 		)
@@ -102,7 +102,7 @@ class TestReleaseGroup(unittest.TestCase):
 		)
 
 	def test_create_release_group_fail_when_duplicate_apps(self):
-		app = new_app("frappe", "Frappe Framework")
+		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
 		)
@@ -119,7 +119,7 @@ class TestReleaseGroup(unittest.TestCase):
 		)
 
 	def test_create_release_group_fail_when_version_mismatch(self):
-		app = new_app("frappe", "Frappe Framework")
+		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
 		)
@@ -133,7 +133,7 @@ class TestReleaseGroup(unittest.TestCase):
 		)
 
 	def test_create_release_group_fail_with_duplicate_titles(self):
-		app = new_app("frappe", "Frappe Framework")
+		app = create_test_app("frappe", "Frappe Framework")
 		source = app.add_source(
 			"Version 12", "https://github.com/frappe/frappe", "version-12", team=self.team
 		)
