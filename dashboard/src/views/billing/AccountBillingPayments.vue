@@ -4,6 +4,11 @@
 		:subtitle="subtitle"
 		v-if="!invoiceName && $resources.pastInvoices.data"
 	>
+		<template #actions>
+			<Dropdown :options="dropdownItems">
+				<Button icon-right="filter">Filter</Button>
+			</Dropdown>
+		</template>
 		<div
 			class="max-h-96 divide-y"
 			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
@@ -63,17 +68,20 @@
 						{{ invoice.status }}
 					</Badge>
 				</span>
-				<span
-					v-if="invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'"
-					class="hidden md:inline"
-				>
-					{{
-						$date(invoice.payment_date).toLocaleString({
-							month: 'long',
-							day: 'numeric',
-							year: 'numeric'
-						})
-					}}
+				<span class="hidden md:inline">
+					<span
+						v-if="
+							invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'
+						"
+					>
+						{{
+							$date(invoice.payment_date).toLocaleString({
+								month: 'long',
+								day: 'numeric',
+								year: 'numeric'
+							})
+						}}
+					</span>
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button
@@ -105,6 +113,26 @@ export default {
 	props: ['invoiceName'],
 	components: {
 		InvoiceUsageCard
+	},
+	data() {
+		return {
+			dropdownItems: [
+				{
+					label: 'All Invoices',
+					handler: () => this.$resources.pastInvoices.submit()
+				},
+				{
+					label: 'Unpaid Invoices',
+					handler: () =>
+						this.$resources.pastInvoices.submit({ invoice_status: 'unpaid' })
+				},
+				{
+					label: 'Paid Invoices',
+					handler: () =>
+						this.$resources.pastInvoices.submit({ invoice_status: 'paid' })
+				}
+			]
+		};
 	},
 	resources: {
 		pastInvoices: 'press.api.billing.invoices_and_payments'

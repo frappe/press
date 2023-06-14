@@ -53,9 +53,9 @@ def past_invoices():
 
 
 @frappe.whitelist()
-def invoices_and_payments():
+def invoices_and_payments(invoice_status=None):
 	team = get_current_team(True)
-	invoices = team.get_past_invoices()
+	invoices = team.get_past_invoices(invoice_status)
 	return invoices
 
 
