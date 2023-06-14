@@ -18,6 +18,10 @@ class Deploy(Document):
 		self.create_benches()
 
 	def create_benches(self):
+		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
+		environment_variables = [
+			{"key": v.key, "value": v.value} for v in candidate.environment_variables
+		]
 		for bench in self.benches:
 			new = frappe.get_doc(
 				{
@@ -27,6 +31,7 @@ class Deploy(Document):
 					"candidate": self.candidate,
 					"workers": 1,
 					"staging": self.staging,
+					"environment_variables": environment_variables,
 				}
 			).insert()
 			bench.bench = new.name

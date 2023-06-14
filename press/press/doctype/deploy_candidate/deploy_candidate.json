@@ -17,6 +17,7 @@
   "dependencies",
   "packages",
   "apt_packages",
+  "environment_variables",
   "section_break_6",
   "build_start",
   "build_end",
@@ -37,7 +38,9 @@
   "user_private_key",
   "user_certificate",
   "feature_flags_section",
-  "is_redisearch_enabled"
+  "is_redisearch_enabled",
+  "column_break_tkdd",
+  "multiple_rq_queues"
  ],
  "fields": [
   {
@@ -244,10 +247,29 @@
    "fieldtype": "Text",
    "label": "APT Packages",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tkdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.multiple_rq_queues",
+   "fieldname": "multiple_rq_queues",
+   "fieldtype": "Check",
+   "label": "Multiple RQ Queues",
+   "read_only": 1
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Deploy Candidate Variable",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-05-12 16:24:51.452853",
+ "modified": "2023-06-13 19:08:48.076264",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -26,7 +26,7 @@ class TestScheduledBackupJob(unittest.TestCase):
 
 	def setUp(self):
 		self.interval = 6
-		frappe.db.set_value("Press Settings", "Press Settings", "backup_interval", 6)
+		frappe.db.set_single_value("Press Settings", "backup_interval", 6)
 
 	def _interval_hrs_ago(self):
 		return datetime.now() - timedelta(hours=self.interval)

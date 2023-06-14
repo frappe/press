@@ -259,6 +259,7 @@ class DeployCandidate(Document):
 		self._generate_dockerfile()
 		self._copy_config_files()
 		self._generate_redis_cache_config()
+		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
 
@@ -293,6 +294,15 @@ class DeployCandidate(Document):
 			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
 			content = frappe.render_template(
 				redis_cache_conf_template, {"doc": self}, is_path=True
+			)
+			f.write(content)
+
+	def _generate_supervisor_config(self):
+		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
+		with open(supervisor_conf, "w") as f:
+			supervisor_conf_template = "press/docker/config/supervisor.conf"
+			content = frappe.render_template(
+				supervisor_conf_template, {"doc": self}, is_path=True
 			)
 			f.write(content)
 
