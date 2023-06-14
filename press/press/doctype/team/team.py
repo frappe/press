@@ -586,7 +586,7 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account:
+		if self.free_account or self.parent_team:
 			return allow
 
 		if self.payment_mode == "Partner Credits":
