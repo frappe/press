@@ -120,7 +120,7 @@ def monitor_storage():
 	active_subs = frappe.get_all(
 		"Storage Integration Subscription", fields=["site", "name"], filters={"enabled": 1}
 	)
-	access_key = frappe.db.get_single_value("Add On Settings", "aws_access_key")
+	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
 	secret_key = get_decrypted_password(
 		"Add On Settings", "Add On Settings", "aws_secret_key"
 	)
@@ -191,7 +191,7 @@ def get_analytics(**data):
 	site, available = frappe.db.get_value(
 		"Storage Integration Subscription", data["access_key"], ["site", "limit"]
 	)
-	access_key = frappe.db.get_single_value("Add On Settings", "aws_access_key")
+	access_key = frappe.db.get_value("Add On Settings", None, "aws_access_key")
 	secret_key = get_decrypted_password(
 		"Add On Settings", "Add On Settings", "aws_secret_key"
 	)

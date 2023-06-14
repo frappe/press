@@ -467,7 +467,7 @@ def options_for_new():
 		filters={"app": ("in", list(apps))},
 	)
 
-	domain = frappe.db.get_single_value("Press Settings", ["domain"])
+	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	return {
 		"domain": domain,
 		"plans": get_plans(),
@@ -478,7 +478,7 @@ def options_for_new():
 
 @frappe.whitelist()
 def get_domain():
-	return frappe.db.get_single_value("Press Settings", ["domain"])
+	return frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 
 
 @frappe.whitelist()

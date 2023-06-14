@@ -333,7 +333,7 @@ class Bench(Document):
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
-		plan = frappe.db.get_single_value("Press Settings", "staging_plan")
+		plan = frappe.db.get_value("Press Settings", None, "staging_plan")
 		if not plan:
 			frappe.throw("Staging plan not set in settings")
 			log_error(title="Staging plan not set in settings")

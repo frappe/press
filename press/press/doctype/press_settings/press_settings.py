@@ -76,7 +76,9 @@ class PressSettings(Document):
 	@classmethod
 	def is_offsite_setup(cls):
 		return any(
-			frappe.db.get_single_value(
-				"Press Settings", ["aws_s3_bucket", "offsite_backups_access_key_id"]
+			frappe.db.get_value(
+				"Press Settings",
+				"Press Settings",
+				["aws_s3_bucket", "offsite_backups_access_key_id"],
 			)
 		)

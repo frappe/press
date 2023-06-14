@@ -27,7 +27,9 @@ class RootDomain(Document):
 
 	def obtain_root_domain_tls_certificate(self):
 		try:
-			rsa_key_size = frappe.db.get_single_value("Press Settings", "rsa_key_size")
+			rsa_key_size = frappe.db.get_value(
+				"Press Settings", "Press Settings", "rsa_key_size"
+			)
 			frappe.get_doc(
 				{
 					"doctype": "TLS Certificate",
