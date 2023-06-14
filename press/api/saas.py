@@ -1,5 +1,4 @@
 import frappe
-import stripe
 import json
 from frappe.core.utils import find
 from frappe.core.doctype.user.user import test_password_strength
@@ -36,7 +35,6 @@ def account_request(
 	company=None,
 	phone_number=None,
 	url_args=None,
-	stripe_setup=False,
 ):
 	"""
 	return: Stripe setup intent and AR key if stripe flow, else None
@@ -56,53 +54,38 @@ def account_request(
 	if not country:
 		frappe.throw("Country field should be a valid country name")
 
-	account_request = frappe.get_doc(
-		{
-			"doctype": "Account Request",
-			"saas": True,
-			"saas_app": app,
-			"erpnext": False,
-			"subdomain": subdomain,
-			"email": email,
-			"password": password,
-			"role": "Press Admin",
-			"first_name": first_name,
-			"last_name": last_name,
-			"company": company,
-			"phone_number": phone_number,
-			"country": country,
-			"url_args": url_args or json.dumps({}),
-			"send_email": True,
-		}
-	)
-	site_name = account_request.get_site_name()
-	identify(
-		site_name,
-		app=account_request.saas_app,
-	)
-	capture("completed_server_account_request", "fc_saas", site_name)
-
-	account_request.insert(ignore_permissions=True)
-
-	if stripe_setup:
-		frappe.set_user("Administrator")
-		stripe.api_key = get_decrypted_password(
-			"Press Settings",
-			"Press Settings",
-			"stripe_secret_key",
-			raise_exception=False,
+	try:
+		account_request = frappe.get_doc(
+			{
+				"doctype": "Account Request",
+				"saas": True,
+				"saas_app": app,
+				"erpnext": False,
+				"subdomain": subdomain,
+				"email": email,
+				"password": password,
+				"role": "Press Admin",
+				"first_name": first_name,
+				"last_name": last_name,
+				"company": company,
+				"phone_number": phone_number,
+				"country": country,
+				"url_args": url_args or json.dumps({}),
+				"send_email": True,
+			}
 		)
-		customer_id = create_team(account_request, get_stripe_id=True)
+		site_name = account_request.get_site_name()
+		identify(
+			site_name,
+			app=account_request.saas_app,
+		)
+		account_request.insert(ignore_permissions=True)
+		capture("completed_server_account_request", "fc_saas", site_name)
+	except Exception as e:
+		log_error("Account Request Creation Failed", e)
+		raise
 
-		return {
-			"account_request_key": account_request.request_key,
-			"setup_intent": stripe.SetupIntent.create(
-				customer=customer_id, payment_method_types=["card"]
-			),
-		}
-	else:
-		create_or_rename_saas_site(app, account_request)
-		capture("completed_server_site_created", "fc_saas", site_name)
+	create_or_rename_saas_site(app, account_request)
 
 
 def create_or_rename_saas_site(app, account_request):
@@ -129,6 +112,7 @@ def create_or_rename_saas_site(app, account_request):
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
 			saas_site.create_subscription(get_saas_site_plan(app))
 
+		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
 	except Exception as e:
 		log_error("Saas Site Creation or Rename failed", data=e)
 		raise
