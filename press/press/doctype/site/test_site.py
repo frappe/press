@@ -41,7 +41,7 @@ def create_test_bench(
 
 	if not group:
 		app = create_test_app()
-		group = create_test_release_group(app, user)
+		group = create_test_release_group([app], user)
 
 	name = frappe.mock("name")
 	candidate = group.create_deploy_candidate()

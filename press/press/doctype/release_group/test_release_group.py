@@ -22,7 +22,7 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	app: App,
+	apps: list[App],
 	user: str = "Administrator",
 	public=False,
 	frappe_version=create_test_frappe_version().name,
@@ -42,8 +42,9 @@ def create_test_release_group(
 			"public": public,
 		}
 	)
-	app_source = create_test_app_source(release_group.version, app)
-	release_group.append("apps", {"app": app.name, "source": app_source.name})
+	for app in apps:
+		app_source = create_test_app_source(release_group.version, app)
+		release_group.append("apps", {"app": app.name, "source": app_source.name})
 
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()
