@@ -49,13 +49,13 @@
 				<Alert v-else title="Your last invoice payment has failed.">
 					Pay now for uninterrupted services.
 					<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
-						<Button
-							icon-left="external-link"
-							appearance="primary"
-							:link="'/dashboard/billing'"
+						<router-link
+							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
 						>
-							Go to Billing
-						</Button>
+							<Button icon-left="external-link" appearance="primary">
+								Go to Billing
+							</Button>
+						</router-link>
 					</template>
 				</Alert>
 

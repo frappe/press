@@ -129,6 +129,10 @@ export default {
 			]
 		};
 	},
+	created() {
+		if (this.$route.query.invoiceStatus)
+			this.invoiceStatus = this.$route.query.invoiceStatus;
+	},
 	resources: {
 		pastInvoices: 'press.api.billing.invoices_and_payments'
 	},
