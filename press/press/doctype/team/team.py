@@ -461,17 +461,12 @@ class Team(Document):
 			order_by="creation desc",
 		)
 
-	def get_past_invoices(self, invoice_status=None):
-		if invoice_status:
-			invoice_status_filter = invoice_status
-		else:
-			invoice_status_filter = ("not in", ("Draft", "Refunded"))
-
+	def get_past_invoices(self):
 		invoices = frappe.db.get_all(
 			"Invoice",
 			filters={
 				"team": self.name,
-				"status": invoice_status_filter,
+				"status": ("not in", ("Draft", "Refunded")),
 				"docstatus": ("!=", 2),
 			},
 			fields=[

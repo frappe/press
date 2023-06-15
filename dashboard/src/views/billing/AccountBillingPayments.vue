@@ -21,7 +21,7 @@
 			</div>
 			<div
 				:key="invoice.name"
-				v-for="invoice in $resources.pastInvoices.data"
+				v-for="invoice in filteredInvoices"
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
 			>
 				<div>
@@ -120,27 +120,28 @@ export default {
 				},
 				{
 					label: 'Unpaid Invoices',
-					value: 'unpaid'
+					value: 'Unpaid'
 				},
 				{
 					label: 'Paid Invoices',
-					value: 'paid'
+					value: 'Paid'
 				}
 			]
 		};
 	},
 	resources: {
-		pastInvoices() {
-			return {
-				method: 'press.api.billing.invoices_and_payments',
-				params: {
-					invoice_status: this.invoiceStatus
-				},
-				auto: true
-			};
-		}
+		pastInvoices: 'press.api.billing.invoices_and_payments',
 	},
 	computed: {
+		filteredInvoices() {
+			if (this.invoiceStatus === '') {
+				return this.$resources.pastInvoices.data;
+			} else {
+				return this.$resources.pastInvoices.data.filter(
+					invoice => invoice.status === this.invoiceStatus
+				);
+			}
+		},
 		subtitle() {
 			if (
 				this.$resources.pastInvoices.loading ||
