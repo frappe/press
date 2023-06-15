@@ -37,7 +37,7 @@
 						</div>
 
 						<CommitTag
-							class="hidden ml-2 group-hover:block"
+							class="ml-2 group-hover:block"
 							:tag="app.tag || app.hash.substr(0, 7)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
