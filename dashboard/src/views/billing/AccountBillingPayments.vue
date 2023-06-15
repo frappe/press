@@ -130,7 +130,7 @@ export default {
 		};
 	},
 	resources: {
-		pastInvoices: 'press.api.billing.invoices_and_payments',
+		pastInvoices: 'press.api.billing.invoices_and_payments'
 	},
 	computed: {
 		filteredInvoices() {
