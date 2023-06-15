@@ -830,7 +830,7 @@ class Server(BaseServer):
 		total_workload = sum(bench_workloads.values())
 
 		for bench_name, workload in bench_workloads.items():
-			bench = frappe.get_cached_doc("Bench", bench_name)
+			bench = frappe.get_doc("Bench", bench_name)
 			try:
 				gunicorn_workers = min(
 					24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
