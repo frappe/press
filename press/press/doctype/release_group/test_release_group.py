@@ -156,13 +156,13 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_branch_change_already_on_branch(self):
 		app = create_test_app()
-		rg = create_test_release_group(app)
+		rg = create_test_release_group([app])
 		with self.assertRaises(frappe.ValidationError):
 			rg.change_app_branch("frappe", "master")
 
 	def test_branch_change_app_source_exists(self):
 		app = create_test_app()
-		rg = create_test_release_group(app)
+		rg = create_test_release_group([app])
 
 		current_app_source = frappe.get_doc("App Source", rg.apps[0].source)
 		app_source = create_test_app_source(
@@ -180,7 +180,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_branch_change_app_source_does_not_exist(self):
 		app = create_test_app()
-		rg = create_test_release_group(app)
+		rg = create_test_release_group([app])
 		previous_app_source = frappe.get_doc("App Source", rg.apps[0].source)
 
 		rg.change_app_branch(app.name, "develop")

@@ -15,7 +15,7 @@ from press.press.doctype.release_group.test_release_group import (
 
 
 def create_test_saas_settings(
-	group: ReleaseGroup = create_test_release_group(create_test_app()),
+	group: ReleaseGroup = create_test_release_group([create_test_app()]),
 ):
 	"""Create a test saas_settings"""
 	return frappe.get_doc(

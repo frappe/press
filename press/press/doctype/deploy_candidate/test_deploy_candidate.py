@@ -54,7 +54,7 @@ class TestDeployCandidate(unittest.TestCase):
 		Checks permission. Make sure no PermissionError is raised
 		"""
 		app = create_test_app()
-		group = create_test_release_group(app, self.user)
+		group = create_test_release_group([app], self.user)
 		group.db_set("team", self.team.name)
 		frappe.set_user(self.user)
 		deploy_candidate = create_test_deploy_candidate(group)
@@ -72,7 +72,7 @@ class TestDeployCandidate(unittest.TestCase):
 		Checks permission. Make sure no PermissionError is raised
 		"""
 		app = create_test_app()
-		group = create_test_release_group(app, self.user)
+		group = create_test_release_group([app], self.user)
 		group.db_set("team", self.team.name)
 		frappe.rename_doc("Team", self.team.name, self.user)
 		frappe.set_user(self.user)
