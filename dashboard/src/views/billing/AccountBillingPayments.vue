@@ -1,13 +1,14 @@
 <template>
-	<Card
-		title="Billing history"
-		:subtitle="subtitle"
-		v-if="!invoiceName && $resources.pastInvoices.data"
-	>
-		<div
-			class="max-h-96 divide-y"
-			v-if="$resources.pastInvoices.data && $resources.pastInvoices.data.length"
-		>
+	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
+		<template #actions>
+			<Input
+				v-if="$resources.pastInvoices.data?.length"
+				type="select"
+				:options="selectItems"
+				v-model="invoiceStatus"
+			/>
+		</template>
+		<div class="max-h-96 divide-y" v-if="$resources.pastInvoices.data?.length">
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
@@ -20,7 +21,7 @@
 			</div>
 			<div
 				:key="invoice.name"
-				v-for="invoice in $resources.pastInvoices.data"
+				v-for="invoice in filteredInvoices"
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
 			>
 				<div>
@@ -63,17 +64,20 @@
 						{{ invoice.status }}
 					</Badge>
 				</span>
-				<span
-					v-if="invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'"
-					class="hidden md:inline"
-				>
-					{{
-						$date(invoice.payment_date).toLocaleString({
-							month: 'long',
-							day: 'numeric',
-							year: 'numeric'
-						})
-					}}
+				<span class="hidden md:inline">
+					<span
+						v-if="
+							invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'
+						"
+					>
+						{{
+							$date(invoice.payment_date).toLocaleString({
+								month: 'long',
+								day: 'numeric',
+								year: 'numeric'
+							})
+						}}
+					</span>
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button
@@ -106,10 +110,42 @@ export default {
 	components: {
 		InvoiceUsageCard
 	},
+	data() {
+		return {
+			invoiceStatus: '',
+			selectItems: [
+				{
+					label: 'All Invoices',
+					value: ''
+				},
+				{
+					label: 'Unpaid Invoices',
+					value: 'Unpaid'
+				},
+				{
+					label: 'Paid Invoices',
+					value: 'Paid'
+				}
+			]
+		};
+	},
+	created() {
+		if (this.$route.query.invoiceStatus)
+			this.invoiceStatus = this.$route.query.invoiceStatus;
+	},
 	resources: {
 		pastInvoices: 'press.api.billing.invoices_and_payments'
 	},
 	computed: {
+		filteredInvoices() {
+			if (this.invoiceStatus === '') {
+				return this.$resources.pastInvoices.data;
+			} else {
+				return this.$resources.pastInvoices.data.filter(
+					invoice => invoice.status === this.invoiceStatus
+				);
+			}
+		},
 		subtitle() {
 			if (
 				this.$resources.pastInvoices.loading ||

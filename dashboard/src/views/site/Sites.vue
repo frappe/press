@@ -48,14 +48,14 @@
 
 				<Alert v-else title="Your last invoice payment has failed.">
 					Pay now for uninterrupted services.
-					<template v-if="latestUnpaidInvoiceStripeUrl" #actions>
-						<Button
-							icon-left="external-link"
-							appearance="primary"
-							:link="latestUnpaidInvoiceStripeUrl"
+					<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
+						<router-link
+							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
 						>
-							Pay now
-						</Button>
+							<Button icon-left="external-link" appearance="primary">
+								Go to Billing
+							</Button>
+						</router-link>
 					</template>
 				</Alert>
 
@@ -232,11 +232,6 @@ export default {
 		latestUnpaidInvoice() {
 			if (this.$resources.latestUnpaidInvoice.data) {
 				return this.$resources.latestUnpaidInvoice.data;
-			}
-		},
-		latestUnpaidInvoiceStripeUrl() {
-			if (this.$resources.latestUnpaidInvoice.data) {
-				return this.$resources.latestUnpaidInvoice.data.stripe_invoice_url;
 			}
 		}
 	}
