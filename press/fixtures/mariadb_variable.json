@@ -2,23 +2,45 @@
  {
   "datatype": "Int",
   "default_value": null,
+  "doc_section": "innodb",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-05-30 15:14:51.543889",
+  "modified": "2023-06-15 14:41:36.038646",
   "name": "innodb_buffer_pool_size",
-  "replication_and_binary_log": 0,
   "skippable": 0
  },
  {
   "datatype": "Str",
   "default_value": "/var/lib/mysql/mysql-bin",
+  "doc_section": "replication-and-binary-log",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 0,
-  "modified": "2023-06-01 10:40:38.292454",
+  "modified": "2023-06-15 14:41:09.156699",
   "name": "log_bin",
-  "replication_and_binary_log": 1,
   "skippable": 1
+ },
+ {
+  "datatype": "Int",
+  "default_value": "16",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-06-15 14:41:28.376813",
+  "name": "max_allowed_packet",
+  "skippable": 0
+ },
+ {
+  "datatype": "Int",
+  "default_value": "5120",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-06-15 14:41:18.419011",
+  "name": "tmp_disk_table_size",
+  "skippable": 0
  }
 ]
