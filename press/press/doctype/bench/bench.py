@@ -109,7 +109,8 @@ class Bench(Document):
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
-			"multiple_rq_queues": bool(self.multiple_rq_queues),
+			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
+			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
 		}
 		if self.is_single_container:
