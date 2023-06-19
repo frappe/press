@@ -1,6 +1,6 @@
 name: Press Tests
 
-on: push
+on: [push, pull_request]
 
 env:
   DB_NAME: test_frappe
