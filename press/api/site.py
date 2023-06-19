@@ -634,8 +634,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-@frappe.whitelist()
-def all():
+def get_sites(all_sites, start=0):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -644,7 +643,7 @@ def all():
 		condition = f"= '{team}'"
 	else:
 		condition = f"in {tuple([team] + child_teams)}"
-	sites_data = frappe._dict()
+
 	sites = frappe.db.sql(
 		f"""
 			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
@@ -653,22 +652,34 @@ def all():
 			ON s.group = rg.name
 			WHERE s.status != 'Archived'
 			AND s.team {condition}
-			ORDER BY creation DESC""",
+			ORDER BY creation DESC
+			{"" if all_sites else f"LIMIT {start}, 10"}""",
 		as_dict=True,
 	)
+
+	return sites
+
+
+@frappe.whitelist()
+def all(start=0):
+	sites = get_sites(all_sites=False, start=start)
 
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
+	return sites
+
+
+@frappe.whitelist()
+def recent_sites():
+	sites = get_sites(all_sites=True)
+
 	site_names = [site.name for site in sites]
 	recents = sites_with_recent_activity(site_names)
 
-	sites_data.site_list = sites
-	sites_data.recents = recents
-
-	return sites_data
+	return [site for site in sites if site.name in recents]
 
 
 @frappe.whitelist()

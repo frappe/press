@@ -83,6 +83,15 @@
 					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="sites" />
 				</div>
+				<div class="py-3" v-if="!$resources.allSites.lastPageEmpty">
+					<Button
+						:loading="$resources.allSites.loading"
+						loadingText="Loading..."
+						@click="pageStart += 10"
+					>
+						Load more
+					</Button>
+				</div>
 			</div>
 			<Dialog
 				:options="{ title: 'Add card to create new sites' }"
@@ -128,15 +137,22 @@ export default {
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			pageStart: 0
 		};
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allSites: {
-			method: 'press.api.site.all',
-			auto: true
+		allSites() {
+			return {
+				method: 'press.api.site.all',
+				params: { start: this.pageStart },
+				paged: true,
+				keepData: true,
+				auto: true
+			};
 		},
+		recentSites: 'press.api.site.recent_sites',
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
@@ -204,7 +220,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allSites.data.site_list;
+			return this.$resources.allSites.data;
 		},
 
 		recentSitesVisible() {
@@ -212,14 +228,7 @@ export default {
 		},
 
 		recentlyCreatedSites() {
-			if (!this.$resources.allSites.data) {
-				return [];
-			}
-
-			const sitesWithRecentActivity = this.$resources.allSites.data.recents;
-			return this.sites.filter(site =>
-				sitesWithRecentActivity.includes(site.name)
-			);
+			return this.$resources.recentSites.data;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {
