@@ -33,7 +33,10 @@ from press.utils import (
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		if frappe.session.data.user_type == "System User":
+		if (
+			frappe.session.data.user_type == "System User"
+			or frappe.session.user == "Administrator"
+		):
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]
