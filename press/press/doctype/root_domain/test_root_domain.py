@@ -21,12 +21,14 @@ from press.press.doctype.server.test_server import create_test_server
 
 
 @patch.object(RootDomain, "after_insert", new=Mock())
-def create_test_root_domain(name: str):
+def create_test_root_domain(
+	name: str, default_cluster: str = create_test_cluster().name
+):
 	root_domain = frappe.get_doc(
 		{
 			"doctype": "Root Domain",
 			"name": name,
-			"default_cluster": create_test_cluster().name,
+			"default_cluster": default_cluster,
 			"aws_access_key_id": "a",
 			"aws_secret_access_key": "b",
 		}
