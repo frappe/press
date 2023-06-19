@@ -22,7 +22,7 @@ def create_test_virtual_machine_image(
 			"doctype": "Virtual Machine Image",
 			"virtual_machine": create_test_virtual_machine().name,
 			"series": "m",
-			"status": "Active",
+			"status": "Available",
 		}
 	).insert(ignore_if_duplicate=True)
 
