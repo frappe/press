@@ -78,7 +78,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None):
+def all(server=None, start=0):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -100,6 +100,7 @@ def all(server=None):
 			group.creation,
 		)
 		.orderby(group.title, order=frappe.qb.desc)
+		.limit(f"{start}, 10")
 	)
 	if server:
 		group_server = frappe.qb.DocType("Release Group Server")
@@ -109,6 +110,9 @@ def all(server=None):
 			.where(group_server.server == server)
 		)
 	private_groups = query.run(as_dict=True)
+
+	if not private_groups:
+		return []
 
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:

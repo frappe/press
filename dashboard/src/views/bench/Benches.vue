@@ -17,6 +17,15 @@
 			<LoadingText v-if="$resources.allBenches.loading" />
 			<BenchList v-else :benches="benches" />
 		</div>
+		<div class="py-3" v-if="!$resources.allBenches.lastPageEmpty">
+			<Button
+				:loading="$resources.allBenches.loading"
+				loadingText="Loading..."
+				@click="pageStart += 10"
+			>
+				Load more
+			</Button>
+		</div>
 
 		<Dialog
 			:options="{ title: 'Add card to create new benches' }"
@@ -44,7 +53,8 @@ export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			pageStart: 0
 		};
 	},
 	pageMeta() {
@@ -60,7 +70,15 @@ export default {
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allBenches: 'press.api.bench.all'
+		allBenches() {
+			return {
+				method: 'press.api.bench.all',
+				params: { start: this.pageStart },
+				paged: true,
+				keepData: true,
+				auto: true
+			};
+		},
 	},
 	computed: {
 		benches() {
