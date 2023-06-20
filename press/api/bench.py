@@ -78,7 +78,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, start=0):
+def all(server=None, start=0, status=None):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -102,6 +102,15 @@ def all(server=None, start=0):
 		.orderby(group.title, order=frappe.qb.desc)
 		.limit(f"{start}, 10")
 	)
+
+	bench = frappe.qb.DocType("Bench")
+	if status == "Active":
+		query = query.inner_join(bench).on(group.name == bench.group)
+	elif status == "Awaiting Deploy":
+		query = (
+			query.inner_join(bench).on(bench.group != group.name).where(bench.status != "Active")
+		)
+
 	if server:
 		group_server = frappe.qb.DocType("Release Group Server")
 		query = (

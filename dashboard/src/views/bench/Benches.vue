@@ -13,11 +13,28 @@
 			</template>
 		</PageHeader>
 
+		<SectionHeader :heading="`${this.benchStatus || 'All'} Benches`">
+			<template #actions>
+				<Input
+					type="select"
+					:options="benchStatusOptions"
+					v-model="benchStatus"
+					@change="
+						pageStart = 0;
+						$resources.allBenches.reset();
+					"
+				/>
+			</template>
+		</SectionHeader>
+
 		<div class="mt-3">
 			<LoadingText v-if="$resources.allBenches.loading && pageStart === 0" />
 			<BenchList v-else :benches="benches" />
 		</div>
-		<div class="py-3" v-if="!$resources.allBenches.lastPageEmpty && benches.length > 0">
+		<div
+			class="py-3"
+			v-if="!$resources.allBenches.lastPageEmpty && benches.length > 0"
+		>
 			<Button
 				:loading="$resources.allBenches.loading"
 				loadingText="Loading..."
@@ -53,7 +70,22 @@ export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
+			benchStatusOptions: [
+				{
+					label: 'All',
+					value: ''
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Awaiting Deploy',
+					value: 'Awaiting Deploy'
+				}
+			],
 			showAddCardDialog: false,
+			benchStatus: '',
 			pageStart: 0
 		};
 	},
@@ -73,12 +105,12 @@ export default {
 		allBenches() {
 			return {
 				method: 'press.api.bench.all',
-				params: { start: this.pageStart },
-				paged: true,
+				params: { start: this.pageStart, status: this.benchStatus },
+				paged: this.pagedBenches(),
 				keepData: true,
 				auto: true
 			};
-		},
+		}
 	},
 	computed: {
 		benches() {
@@ -90,6 +122,9 @@ export default {
 		}
 	},
 	methods: {
+		pagedBenches() {
+			return this.pageStart === 0 ? false : true;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
