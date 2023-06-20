@@ -634,7 +634,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(all_sites, start=0):
+def get_sites(all_sites, start=0, status=None):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -650,7 +650,7 @@ def get_sites(all_sites, start=0):
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
-			WHERE s.status != 'Archived'
+			WHERE s.status {f"= '{status}'" if status else "!= 'Archived'"}
 			AND s.team {condition}
 			ORDER BY creation DESC
 			{"" if all_sites else f"LIMIT {start}, 10"}""",
@@ -661,8 +661,8 @@ def get_sites(all_sites, start=0):
 
 
 @frappe.whitelist()
-def all(start=0):
-	sites = get_sites(all_sites=False, start=start)
+def all(start=0, status=None):
+	sites = get_sites(all_sites=False, start=start, status=status)
 
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:

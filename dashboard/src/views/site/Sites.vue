@@ -76,14 +76,29 @@
 				</div>
 			</div>
 
-			<div class="mb-6">
-				<SectionHeader heading="All Sites"> </SectionHeader>
+			<div class="my-6">
+				<SectionHeader :heading="`${this.siteStatus || 'All'} Sites`">
+					<template #actions>
+						<Input
+							type="select"
+							:options="siteStatusOptions"
+							v-model="siteStatus"
+							@change="
+								pageStart = 0;
+								$resources.allSites.reset();
+							"
+						/>
+					</template>
+				</SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading && pageStart === 0" />
 					<SiteList v-else :sites="sites" />
 				</div>
-				<div class="py-3" v-if="!$resources.allSites.lastPageEmpty && sites.length > 0">
+				<div
+					class="py-3"
+					v-if="!$resources.allSites.lastPageEmpty && sites.length > 0"
+				>
 					<Button
 						:loading="$resources.allSites.loading"
 						loadingText="Loading..."
@@ -136,8 +151,23 @@ export default {
 	},
 	data() {
 		return {
+			siteStatusOptions: [
+				{
+					label: 'All Sites',
+					value: ''
+				},
+				{
+					label: 'Active Sites',
+					value: 'Active'
+				},
+				{
+					label: 'Broken Sites',
+					value: 'Broken'
+				}
+			],
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
+			siteStatus: '',
 			pageStart: 0
 		};
 	},
@@ -146,8 +176,8 @@ export default {
 		allSites() {
 			return {
 				method: 'press.api.site.all',
-				params: { start: this.pageStart },
-				paged: true,
+				params: { start: this.pageStart, status: this.siteStatus },
+				paged: this.pagedSites(),
 				keepData: true,
 				auto: true
 			};
@@ -167,6 +197,9 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
+		pagedSites() {
+			return this.pageStart === 0 ? false : true;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
