@@ -14,10 +14,10 @@
 		</PageHeader>
 
 		<div class="mt-3">
-			<LoadingText v-if="$resources.allBenches.loading" />
+			<LoadingText v-if="$resources.allBenches.loading && pageStart === 0" />
 			<BenchList v-else :benches="benches" />
 		</div>
-		<div class="py-3" v-if="!$resources.allBenches.lastPageEmpty">
+		<div class="py-3" v-if="!$resources.allBenches.lastPageEmpty && benches.length > 0">
 			<Button
 				:loading="$resources.allBenches.loading"
 				loadingText="Loading..."

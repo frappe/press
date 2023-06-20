@@ -71,7 +71,7 @@
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
+					<LoadingText v-if="$resources.allSites.loading && pageStart === 0" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
@@ -80,10 +80,10 @@
 				<SectionHeader heading="All Sites"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
+					<LoadingText v-if="$resources.allSites.loading && pageStart === 0" />
 					<SiteList v-else :sites="sites" />
 				</div>
-				<div class="py-3" v-if="!$resources.allSites.lastPageEmpty">
+				<div class="py-3" v-if="!$resources.allSites.lastPageEmpty && sites.length > 0">
 					<Button
 						:loading="$resources.allSites.loading"
 						loadingText="Loading..."
