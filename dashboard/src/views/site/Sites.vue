@@ -76,7 +76,7 @@
 				</div>
 			</div>
 
-			<div class="my-6">
+			<div class="mb-6">
 				<SectionHeader :heading="`${this.siteStatus || 'All'} Sites`">
 					<template #actions>
 						<Input
