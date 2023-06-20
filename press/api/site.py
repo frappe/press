@@ -644,32 +644,36 @@ def get_sites(all_sites, start=0, status=None):
 	else:
 		condition = f"in {tuple([team] + child_teams)}"
 
+	benches_with_updates = tuple(benches_with_available_update())
+
+	if status == "Trial":
+		condition = f"{condition} AND s.trial_end_date != ''"
+	elif status == "Update Available":
+		condition = f"{condition} AND s.bench IN {benches_with_updates}"
+
 	sites = frappe.db.sql(
 		f"""
 			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
-			WHERE s.status {f"= '{status}'" if status else "!= 'Archived'"}
+			WHERE s.status != 'Archived'
 			AND s.team {condition}
 			ORDER BY creation DESC
 			{"" if all_sites else f"LIMIT {start}, 10"}""",
 		as_dict=True,
 	)
 
-	return sites
-
-
-@frappe.whitelist()
-def all(start=0, status=None):
-	sites = get_sites(all_sites=False, start=start, status=status)
-
-	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
 	return sites
+
+
+@frappe.whitelist()
+def all(start=0, status=None):
+	return get_sites(all_sites=False, start=start, status=status)
 
 
 @frappe.whitelist()

@@ -161,8 +161,12 @@ export default {
 					value: 'Active'
 				},
 				{
-					label: 'Broken Sites',
-					value: 'Broken'
+					label: 'Trial Sites',
+					value: 'Trial'
+				},
+				{
+					label: 'Update Available Sites',
+					value: 'Update Available'
 				}
 			],
 			showPrepaidCreditsDialog: false,
