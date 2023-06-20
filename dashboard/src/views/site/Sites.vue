@@ -77,7 +77,13 @@
 			</div>
 
 			<div class="mb-6">
-				<SectionHeader :heading="`${this.siteStatus || 'All'} Sites`">
+				<SectionHeader
+					:heading="
+						siteStatus === 'Update Available'
+							? 'Sites with Update Available'
+							: `${this.siteStatus || 'All'} Sites`
+					"
+				>
 					<template #actions>
 						<Input
 							type="select"
@@ -153,19 +159,19 @@ export default {
 		return {
 			siteStatusOptions: [
 				{
-					label: 'All Sites',
+					label: 'All',
 					value: ''
 				},
 				{
-					label: 'Active Sites',
+					label: 'Active',
 					value: 'Active'
 				},
 				{
-					label: 'Trial Sites',
+					label: 'Trial',
 					value: 'Trial'
 				},
 				{
-					label: 'Update Available Sites',
+					label: 'Update Available',
 					value: 'Update Available'
 				}
 			],

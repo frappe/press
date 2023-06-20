@@ -13,7 +13,13 @@
 			</template>
 		</PageHeader>
 
-		<SectionHeader :heading="`${this.benchStatus || 'All'} Benches`">
+		<SectionHeader
+			:heading="
+				benchStatus === 'Awaiting Deploy'
+					? 'Benches Awaiting Deploy'
+					: `${this.benchStatus || 'All'} Benches`
+			"
+		>
 			<template #actions>
 				<Input
 					type="select"
