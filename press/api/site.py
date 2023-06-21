@@ -646,7 +646,12 @@ def get_sites(all_sites, start=0, status=None):
 
 	benches_with_updates = tuple(benches_with_available_update())
 
-	if status == "Trial":
+	status_condition = "!= 'Archived'"
+	if status == "Active":
+		status_condition = "= 'Active'"
+	elif status == "Broken":
+		status_condition = "= 'Broken'"
+	elif status == "Trial":
 		condition = f"{condition} AND s.trial_end_date != ''"
 	elif status == "Update Available":
 		condition = f"{condition} AND s.bench IN {benches_with_updates}"
@@ -657,7 +662,7 @@ def get_sites(all_sites, start=0, status=None):
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
-			WHERE s.status != 'Archived'
+			WHERE s.status {status_condition}
 			AND s.team {condition}
 			ORDER BY creation DESC
 			{"" if all_sites else f"LIMIT {start}, 10"}""",
