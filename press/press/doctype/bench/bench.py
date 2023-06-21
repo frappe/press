@@ -393,7 +393,16 @@ def process_new_bench_job_update(job):
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
 			)
-			frappe.get_doc("Bench", job.bench).add_ssh_user()
+			bench = frappe.get_doc("Bench", job.bench)
+			bench.add_ssh_user()
+
+			bench_update = frappe.get_all(
+				"Bench Update",
+				{"candidate": bench.candidate, "status": "Build Successful"},
+				pluck="name",
+			)
+			if bench_update:
+				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(bench.server)
 
 
 def process_archive_bench_job_update(job):
