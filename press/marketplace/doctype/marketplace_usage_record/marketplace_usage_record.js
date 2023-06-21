@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Marketplace Usage Record', {
 	// refresh: function(frm) {
-
 	// }
 });

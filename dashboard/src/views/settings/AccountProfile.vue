@@ -56,17 +56,27 @@
 			</ListItem>
 			<ListItem
 				:title="teamEnabled ? 'Disable Account' : 'Enable Account'"
-				:subtitle="teamEnabled ? 'Disable your account and stop billing': 'Enable your account and resume billing'"
+				:subtitle="
+					teamEnabled
+						? 'Disable your account and stop billing'
+						: 'Enable your account and resume billing'
+				"
 			>
 				<template #actions>
-					<Button @click="() => {
-						if (teamEnabled) {
-							showDisableAccountDialog = true
-						} else {
-							showEnableAccountDialog = true
-						}
-					}">
-						<span :class="{ 'text-red-600': teamEnabled }">{{ teamEnabled ? 'Disable' : 'Enable' }}</span>
+					<Button
+						@click="
+							() => {
+								if (teamEnabled) {
+									showDisableAccountDialog = true;
+								} else {
+									showEnableAccountDialog = true;
+								}
+							}
+						"
+					>
+						<span :class="{ 'text-red-600': teamEnabled }">{{
+							teamEnabled ? 'Disable' : 'Enable'
+						}}</span>
 					</Button>
 				</template>
 			</ListItem>
@@ -106,25 +116,28 @@
 			</template>
 		</Dialog>
 
-		<Dialog :options="{title: 'Disable Account'}" v-model="showDisableAccountDialog">
+		<Dialog
+			:options="{ title: 'Disable Account' }"
+			v-model="showDisableAccountDialog"
+		>
 			<template v-slot:body-content>
-				<p class="text-base prose">
+				<div class="text-base prose">
 					By confirming this action:
 					<ul>
 						<li>Your account will be disabled</li>
-						<li>Your active sites will be suspended immediately and will be deleted after a week.</li>
+						<li>
+							Your active sites will be suspended immediately and will be
+							deleted after a week.
+						</li>
 						<li>Your account billing will be stopped</li>
 					</ul>
-					You can enable your account later anytime. Do you want to
-					continue?
-				</p>
-			<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
+					You can enable your account later anytime. Do you want to continue?
+				</div>
+				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
 
 			<template v-slot:actions>
-				<Button @click="showDisableAccountDialog = false">
-					Cancel
-				</Button>
+				<Button @click="showDisableAccountDialog = false"> Cancel </Button>
 				<Button
 					class="ml-3"
 					appearance="danger"
@@ -136,9 +149,12 @@
 			</template>
 		</Dialog>
 
-		<Dialog :options="{title: 'Enable Account'}" v-model="showEnableAccountDialog">
+		<Dialog
+			:options="{ title: 'Enable Account' }"
+			v-model="showEnableAccountDialog"
+		>
 			<template v-slot:body-content>
-				<p class="text-base prose">
+				<div class="text-base prose">
 					By confirming this action:
 					<ul>
 						<li>Your account will be enabled</li>
@@ -146,14 +162,12 @@
 						<li>Your account billing will be resumed</li>
 					</ul>
 					Do you want to continue?
-				</p>
+				</div>
 				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
 			</template>
 
 			<template v-slot:actions>
-				<Button @click="showEnableAccountDialog = false">
-					Cancel
-				</Button>
+				<Button @click="showEnableAccountDialog = false"> Cancel </Button>
 				<Button
 					class="ml-3"
 					appearance="primary"

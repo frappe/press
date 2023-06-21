@@ -14,18 +14,21 @@ from press.press.doctype.cluster.cluster import Cluster
 
 
 def create_test_virtual_machine(
-	ip: str = frappe.mock("ipv4"), cluster: Cluster = create_test_cluster()
+	ip: str = frappe.mock("ipv4"),
+	cluster: Cluster = create_test_cluster(),
+	series: str = "m",
 ) -> VirtualMachine:
 	"""Create test Virtual Machine doc"""
 	return frappe.get_doc(
 		{
 			"doctype": "Virtual Machine",
 			"domain": create_test_root_domain("fc.dev", cluster.name).name,
-			"series": "m",
+			"series": series,
 			"status": "Running",
 			"machine_type": "r5.xlarge",
 			"disk_size": 100,
 			"cluster": cluster.name,
+			"aws_instance_id": "i-1234567890",
 		}
 	).insert(ignore_if_duplicate=True)
 

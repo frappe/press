@@ -25,6 +25,8 @@ def create_test_plan(
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
+			"disk": 50,
+			"instance_type": "t2.micro",
 		}
 	).insert(ignore_if_duplicate=True)
 	plan.reload()

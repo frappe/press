@@ -22,7 +22,7 @@ frappe.ui.form.on('User SSH Certificate', {
 			frm.set_df_property(
 				'ssh_certificate',
 				'description',
-				`Save this certificate on your system under ~/.ssh/id_${key_type}-cert.pub`
+				`Save this certificate on your system under ~/.ssh/id_${key_type}-cert.pub`,
 			);
 		}
 	},

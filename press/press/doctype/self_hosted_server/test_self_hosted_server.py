@@ -3,6 +3,7 @@
 
 
 from unittest.mock import Mock, patch
+from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 
 from press.press.doctype.self_hosted_server.self_hosted_server import SelfHostedServer
 import frappe
@@ -42,7 +43,13 @@ class TestSelfHostedServer(FrappeTestCase):
 		pre_setup_count = frappe.db.count("TLS Certificate")
 		with patch(
 			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
-			new=lambda x: create_test_ansible_play(server.name, {"server": "ssl.fc.dev"}),
+			new=lambda x: create_test_ansible_play(
+				"Setup Self Hosted Nginx",
+				"self_hosted_nginx.yml",
+				server.doctype,
+				server.name,
+				{"server": "ssl.fc.dev"},
+			),
 		):
 			server.create_tls_certs()
 		post_setup_count = frappe.db.count("TLS Certificate")
@@ -62,20 +69,3 @@ def create_test_self_hosted_server(host) -> SelfHostedServer:
 	).insert(ignore_if_duplicate=True)
 	server.reload()
 	return server
-
-
-def create_test_ansible_play(server: str, vars: dict = {}):
-	play = frappe.get_doc(
-		{
-			"doctype": "Ansible Play",
-			"status": "Success",
-			"play": "Setup Self Hosted Nginx",
-			"playbook": "self_hosted_nginx.yml",
-			"server_type": "Self Hosted Server",
-			"server": server,
-			"variable": vars,
-		}
-	).insert()
-	play.db_set("status", "Success")
-	play.reload()
-	return play

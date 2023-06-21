@@ -5,11 +5,14 @@ frappe.ui.form.on('Release Group', {
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/benches/${frm.doc.name}`,
-			__('Visit Dashboard')
+			__('Visit Dashboard'),
 		);
 		[
-			[__('Create Deploy Candidate'), "create_deploy_candidate"],
-			[__('Create Duplicate Deploy Candidate'), "create_duplicate_deploy_candidate"],
+			[__('Create Deploy Candidate'), 'create_deploy_candidate'],
+			[
+				__('Create Duplicate Deploy Candidate'),
+				'create_duplicate_deploy_candidate',
+			],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,
@@ -18,14 +21,14 @@ frappe.ui.form.on('Release Group', {
 						frappe.msgprint({
 							title: __('New Deploy Candidate Created'),
 							indicator: 'green',
-							message: __(
-								`New {0} for this bench was created successfully.`, [`<a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a>`]
-							),
+							message: __(`New {0} for this bench was created successfully.`, [
+								`<a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a>`,
+							]),
 						});
 						frm.refresh();
 					});
 				},
-				__('Actions')
+				__('Actions'),
 			);
 		});
 
@@ -54,7 +57,7 @@ frappe.ui.form.on('Release Group', {
 				});
 				d.show();
 			},
-			__('Actions')
+			__('Actions'),
 		);
 		frm.add_custom_button(
 			'Add Server',
@@ -73,7 +76,9 @@ frappe.ui.form.on('Release Group', {
 					primary_action({ server }) {
 						frm.call('add_server', { server, deploy: true }).then((r) => {
 							if (!r.exc) {
-								frappe.show_alert(`Added ${server} and deployed last successful candidate`);
+								frappe.show_alert(
+									`Added ${server} and deployed last successful candidate`,
+								);
 							}
 							d.hide();
 						});
@@ -81,9 +86,8 @@ frappe.ui.form.on('Release Group', {
 				});
 				d.show();
 			},
-			__('Actions')
+			__('Actions'),
 		);
-
 
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},

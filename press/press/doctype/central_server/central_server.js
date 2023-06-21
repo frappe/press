@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Central Server', {
 	// refresh: function(frm) {
-
 	// }
 });

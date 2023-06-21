@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Mail Log', {
 	// refresh: function(frm) {
-
 	// }
 });

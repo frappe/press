@@ -9,19 +9,21 @@ frappe.ui.form.on('Press Settings', {
 		frm.call({
 			method: 'get_github_app_manifest',
 			doc: frm.doc,
-			callback: response => {
+			callback: (response) => {
 				window.location.href = response.message;
 				let $form = $('<form>', {
-					action: "https://github.com/settings/apps/new",
-					method: "post"
+					action: 'https://github.com/settings/apps/new',
+					method: 'post',
 				});
-				$('<input>').attr({
-					type: "hidden",
-					name: "manifest",
-					value: JSON.stringify(response.message),
-				}).appendTo($form);
+				$('<input>')
+					.attr({
+						type: 'hidden',
+						name: 'manifest',
+						value: JSON.stringify(response.message),
+					})
+					.appendTo($form);
 				$form.appendTo('body').submit();
-			}
+			},
 		});
-	}
+	},
 });

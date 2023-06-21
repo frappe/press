@@ -4,8 +4,8 @@
 frappe.ui.form.on('App Release', {
 	refresh: function (frm) {
 		[
-			[__("Clone"), "clone", true, !frm.doc.cloned],
-			[__("Cleanup"), "cleanup", true, frm.doc.cloned],
+			[__('Clone'), 'clone', true, !frm.doc.cloned],
+			[__('Cleanup'), 'cleanup', true, frm.doc.cloned],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -21,7 +21,7 @@ frappe.ui.form.on('App Release', {
 										} else {
 											frm.refresh();
 										}
-									})
+									}),
 							);
 						} else {
 							frm.call(method).then((r) => {
@@ -33,15 +33,12 @@ frappe.ui.form.on('App Release', {
 							});
 						}
 					},
-					__('Actions')
+					__('Actions'),
 				);
 			}
 		});
-		frm.add_custom_button(
-			__('View'),
-			() => {
-				window.open(frm.doc.code_server_url);
-			},
-		);
+		frm.add_custom_button(__('View'), () => {
+			window.open(frm.doc.code_server_url);
+		});
 	},
 });
