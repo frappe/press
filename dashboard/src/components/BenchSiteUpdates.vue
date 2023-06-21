@@ -2,11 +2,12 @@
 	<div class="mt-2 space-y-2 divide-y">
 		<SiteUpdateCard
 			v-for="site in sites"
-			:key="site"
+			:key="site.name"
 			@click.native.self="toggleSite(site)"
-			:site="site"
-			:selected="selectedSites.includes(site)"
+			:site="site.name"
+			:selected="selectedSites.map((s) => s.name).includes(site.name)"
 			:selectable="true"
+			v-model:selectedSites="selectedSites"
 		/>
 	</div>
 </template>
@@ -26,8 +27,7 @@ export default {
 	},
 	mounted() {
 		// Select all sites by default
-		this.selectedSites = this.sites;
-		this.$emit('update:selectedSites', this.selectedSites);
+		this.$emit('update:selectedSites', []);
 	},
 	methods: {
 		toggleSite(site) {
@@ -40,28 +40,5 @@ export default {
 			}
 		}
 	},
-	watch: {
-		selectedSites: {
-			handler(sites) {
-				// Hardcoded for now, need a better way
-				// to manage such dependencies (#TODO)
-				// If updating ERPNext, must update Frappe with it
-
-				let frappeUpdateAvailable =
-					this.sites.filter(app => app.update_available && app.app == 'frappe')
-						.length !== 0;
-
-				if (
-					sites.includes('erpnext') &&
-					!sites.includes('frappe') &&
-					frappeUpdateAvailable
-				) {
-					sites.push('frappe');
-				}
-			},
-			deep: true,
-			immediate: true
-		}
-	}
 };
 </script>
