@@ -33,6 +33,7 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "Pending\nRunning\nBuild Successful\nFailure\nSuccess"
   },
@@ -59,7 +60,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-19 21:43:27.227631",
+ "modified": "2023-06-21 19:11:56.737713",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Update",
