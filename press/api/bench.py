@@ -66,6 +66,7 @@ def get(name):
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
 		"public": group.public,
+		"no_sites": frappe.db.count("Site", {"group": group.name, "status": "Active"}),
 	}
 
 

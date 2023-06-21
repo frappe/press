@@ -1,6 +1,7 @@
 <template>
 	<div class="space-y-5">
-		<AlertUpdate :bench="bench" />
+		<AlertBenchUpdate v-if="bench.no_sites <= 0" :bench="bench" />
+		<AlertUpdate v-else :bench="bench" />
 		<Card
 			title="Apps"
 			subtitle="Apps available on your bench"
@@ -131,6 +132,7 @@
 </template>
 <script>
 import AlertUpdate from '@/components/AlertUpdate.vue';
+import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
@@ -139,6 +141,7 @@ export default {
 	name: 'BenchApps',
 	components: {
 		AlertUpdate,
+		AlertBenchUpdate,
 		AppSourceSelector,
 		ChangeAppBranchDialog
 	},
