@@ -536,6 +536,19 @@ def sync_benches():
 def sync_bench(name):
 	bench = frappe.get_doc("Bench", name)
 	try:
+		active_archival_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"job_type": "Archive Bench",
+				"bench": bench.name,
+				"status": ("in", ("Pending", "Running", "Success")),
+			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="job_type",
+		)
+		if active_archival_jobs:
+			return
 		bench.sync_info()
 		frappe.db.commit()
 	except Exception:
