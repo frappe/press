@@ -112,9 +112,8 @@ class Bench(Document):
 			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
+			"single_container": bool(self.is_single_container),
 		}
-		if self.is_single_container:
-			bench_config.update({"single_container": True})
 
 		release_group_bench_config = frappe.db.get_value(
 			"Release Group", self.group, "bench_config"
