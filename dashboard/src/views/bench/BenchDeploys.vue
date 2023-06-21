@@ -206,6 +206,18 @@ export default {
 					this.selectedCandidate.build_duration
 				);
 				return `Completed ${when} in ${duration}`;
+			} else if (this.selectedCandidate?.status === 'Running') {
+				const when = this.formatDate(
+					this.selectedCandidate.build_start,
+					'relative'
+				);
+				return `Started ${when}`;
+			} else if (this.selectedCandidate?.status === 'Failure') {
+				const when = this.formatDate(
+					this.selectedCandidate.build_end,
+					'relative'
+				);
+				return `Failed ${when}`;
 			}
 		},
 		candidates() {
