@@ -25,13 +25,14 @@
 					@change="toggleProperty($event, 'skip_failing_patches', site)"
 					type="checkbox"
 					label="Skip failing patches"
-					class="h-4 mr-2 rounded border-gray-300 text-gray-600 focus:ring-transparent"
+					class="h-4 rounded border-gray-300 text-gray-600 focus:ring-transparent"
 				/>
 				<Input
+					v-if="$account.team?.skip_backups"
 					@change="toggleProperty($event, 'skip_backups', site)"
 					type="checkbox"
 					label="Skip backup"
-					class="h-4 rounded border-gray-300 text-gray-600 focus:ring-transparent"
+					class="h-4 ml-2 rounded border-gray-300 text-gray-600 focus:ring-transparent"
 				/>
 			</div>
 		</div>
