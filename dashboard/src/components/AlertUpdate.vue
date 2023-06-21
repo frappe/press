@@ -18,16 +18,27 @@
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
-			<Button v-else appearance="primary" @click="() => {
-					showDeployDialog = true
-					step = 'Apps'
-				}">
+			<Button
+				v-else
+				appearance="primary"
+				@click="
+					() => {
+						showDeployDialog = true;
+						step = 'Apps';
+					}
+				"
+			>
 				Show updates
 			</Button>
 		</template>
 
 		<Dialog
-			:options="{ title: step == 'Apps'? 'Select the apps you want to update': 'Select the sites you want to update' }"
+			:options="{
+				title:
+					step == 'Apps'
+						? 'Select the apps you want to update'
+						: 'Select the sites you want to update'
+			}"
 			v-model="showDeployDialog"
 		>
 			<template v-slot:body-content>
@@ -51,19 +62,10 @@
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
-					Update
+					{{ selectedSites.length > 0 ? 'Update' : 'Deploy Bench' }}
 				</Button>
-				<Button
-					v-if="step == 'Sites'"
-					@click="step = 'Apps'"
-				>
-					Back
-				</Button>
-				<Button
-					v-else
-					appearance="primary"
-					@click="step = 'Sites'"
-				>
+				<Button v-if="step == 'Sites'" @click="step = 'Apps'"> Back </Button>
+				<Button v-else appearance="primary" @click="step = 'Sites'">
 					Next
 				</Button>
 			</template>
@@ -88,7 +90,7 @@ export default {
 			showTeamSwitcher: false,
 			selectedApps: [],
 			selectedSites: [],
-			step: "Apps"
+			step: 'Apps'
 		};
 	},
 	resources: {
