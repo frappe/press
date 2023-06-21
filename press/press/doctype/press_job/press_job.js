@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Press Job', {
 	// refresh: function(frm) {
-
 	// }
 });

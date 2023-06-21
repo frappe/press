@@ -2,44 +2,44 @@
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["MariaDB Slow Queries"] = {
-	"filters": [
+frappe.query_reports['MariaDB Slow Queries'] = {
+	filters: [
 		{
-			fieldname: "site",
-			label: __("Site"),
-			fieldtype: "Link",
-			options: "Site",
-			reqd: 1
-		},
-		{
-			fieldname: "start_datetime",
-			label: __("Start From"),
-			fieldtype: "Datetime",
+			fieldname: 'site',
+			label: __('Site'),
+			fieldtype: 'Link',
+			options: 'Site',
 			reqd: 1,
 		},
 		{
-			fieldname: "stop_datetime",
-			label: __("End At"),
-			fieldtype: "Datetime",
+			fieldname: 'start_datetime',
+			label: __('Start From'),
+			fieldtype: 'Datetime',
 			reqd: 1,
 		},
 		{
-			fieldname: "search_pattern",
-			label: __("Search Pattern"),
-			fieldtype: "Data",
-			default: ".*",
+			fieldname: 'stop_datetime',
+			label: __('End At'),
+			fieldtype: 'Datetime',
 			reqd: 1,
 		},
 		{
-			fieldname: "format_queries",
-			label: __("Format Queries"),
-			fieldtype: "Check",
+			fieldname: 'search_pattern',
+			label: __('Search Pattern'),
+			fieldtype: 'Data',
+			default: '.*',
+			reqd: 1,
 		},
 		{
-			fieldname: "max_lines",
-			label: __("Max Lines"),
+			fieldname: 'format_queries',
+			label: __('Format Queries'),
+			fieldtype: 'Check',
+		},
+		{
+			fieldname: 'max_lines',
+			label: __('Max Lines'),
 			default: 100,
-			fieldtype: "Int",
+			fieldtype: 'Int',
 		},
-	]
+	],
 };

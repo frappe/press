@@ -1,4 +1,6 @@
-let subscription_string = __('Your subscription will end soon and the site will be suspended. Please subscribe before that for uninterrupted services');
+let subscription_string = __(
+	'Your subscription will end soon and the site will be suspended. Please subscribe before that for uninterrupted services',
+);
 let $floatingBar = $(`
     <div class="flex justify-content-center" style="width: 100%;">
     <div class="flex justify-content-center flex-col shadow rounded p-2"
@@ -35,7 +37,7 @@ let $floatingBar = $(`
     </div>
     </div>
 `);
-let showFloatingBanner = localStorage.getItem("showFloatingBanner")
+let showFloatingBanner = localStorage.getItem('showFloatingBanner');
 let banner = true;
 
 if (showFloatingBanner != null) {
@@ -43,12 +45,13 @@ if (showFloatingBanner != null) {
 	let temp = new Date(showFloatingBanner);
 
 	if (temp.getTime() > now.getTime() && temp.getDate() <= now.getDate()) {
-		banner = false;	
+		banner = false;
 	}
 }
 
-if (frappe.boot.setup_complete === 1 && banner) { // check if setup complete
-		$('footer').append($floatingBar);
+if (frappe.boot.setup_complete === 1 && banner) {
+	// check if setup complete
+	$('footer').append($floatingBar);
 }
 
 const d = new frappe.ui.Dialog({
@@ -62,13 +65,12 @@ $('#show-dialog').on('click', function () {
 
 // dismiss banner and add 4 hour dismissal time
 $floatingBar.find('.dismiss-upgrade').on('click', () => {
-		const now = new Date();
-		const sixHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+	const now = new Date();
+	const sixHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
 
-		localStorage.setItem("showFloatingBanner", sixHoursLater)
-		$floatingBar.remove();
+	localStorage.setItem('showFloatingBanner', sixHoursLater);
+	$floatingBar.remove();
 });
-
 
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">
@@ -79,4 +81,3 @@ $(d.body).html(`
 		>
 	</div>
 `);
-

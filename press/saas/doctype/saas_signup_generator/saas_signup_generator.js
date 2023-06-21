@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Saas Signup Generator', {
 	// refresh: function(frm) {
-
 	// }
 });

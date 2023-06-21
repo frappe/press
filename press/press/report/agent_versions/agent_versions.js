@@ -11,7 +11,7 @@ frappe.query_reports['Agent Versions'] = {
 						team: frappe.query_report.get_filter_value('team'),
 						server_type: frappe.query_report.get_filter_value('server_type'),
 						exclude_self_hosted: frappe.query_report.get_filter_value(
-							'exclude_self_hosted'
+							'exclude_self_hosted',
 						),
 					},
 				})
