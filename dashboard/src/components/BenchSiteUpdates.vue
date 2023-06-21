@@ -1,11 +1,11 @@
 <template>
-	<div class="mt-2 space-y-2 divide-y">
+	<div class="mt-2 space-y-2 divide-y max-h-96 overflow-auto">
 		<SiteUpdateCard
 			v-for="site in sites"
 			:key="site.name"
 			@click.native.self="toggleSite(site)"
 			:site="site.name"
-			:selected="selectedSites.map((s) => s.name).includes(site.name)"
+			:selected="selectedSites.map(s => s.name).includes(site.name)"
 			:selectable="true"
 			v-model:selectedSites="selectedSites"
 		/>
@@ -39,6 +39,6 @@ export default {
 				this.$emit('update:selectedSites', this.selectedSites);
 			}
 		}
-	},
+	}
 };
 </script>
