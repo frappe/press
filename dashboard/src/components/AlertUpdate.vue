@@ -126,6 +126,14 @@ export default {
 						return 'You must select atleast 1 app to proceed with update.';
 					}
 				},
+				onSuccess() {
+					this.showDeployDialog = false;
+					this.$notify({
+						title: 'Updates scheduled successfully',
+						icon: 'check',
+						color: 'green'
+					});
+				}
 			};
 		}
 	},
