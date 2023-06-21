@@ -424,7 +424,7 @@ class Site(Document):
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
-		frappe.get_doc(
+		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
@@ -432,6 +432,7 @@ class Site(Document):
 				"skipped_backups": skip_backups,
 			}
 		).insert()
+		return doc.name
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
