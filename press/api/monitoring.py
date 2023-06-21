@@ -14,9 +14,8 @@ def targets(token):
 	if token != monitor_token:
 		return
 
-	sites = frappe.get_all(
-		"Site", ["name", "bench"], {"status": "Active"}, order_by="bench, name"
-	)
+	sites = frappe.get_all("Site", ["name", "bench"], {"status": "Active"})
+	sites.sort(key=lambda x: (x.bench, x.name))
 
 	benches = []
 	for bench_name, sites in groupby(sites, lambda x: x.bench):
