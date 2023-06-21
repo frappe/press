@@ -664,6 +664,7 @@ class Site(Document):
 			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
 			as_list=True,
 			order_by="creation desc",
+			ignore_ifnull=True,
 		):
 			sites_remote_files += backup_files
 
