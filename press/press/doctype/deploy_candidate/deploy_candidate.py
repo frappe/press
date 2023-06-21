@@ -126,9 +126,20 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
 			raise
 		else:
 			self.status = "Success"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
+
 		finally:
 			self.build_end = now()
 			self.build_duration = self.build_end - self.build_start
