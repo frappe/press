@@ -71,7 +71,9 @@
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading && pageStart === 0" />
+					<LoadingText
+						v-if="$resources.recentSites.loading && pageStart === 0"
+					/>
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
@@ -259,6 +261,9 @@ export default {
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
+		},
+		recentSitesVisible() {
+			return this.sites.length > 3;
 		}
 	},
 	computed: {
@@ -269,11 +274,6 @@ export default {
 
 			return this.$resources.allSites.data;
 		},
-
-		recentSitesVisible() {
-			return this.sites.length > 3;
-		},
-
 		recentlyCreatedSites() {
 			return this.$resources.recentSites.data;
 		},
