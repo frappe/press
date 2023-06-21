@@ -17,11 +17,18 @@ def targets(token):
 	sites = frappe.get_all("Site", ["name", "bench"], {"status": "Active"})
 	sites.sort(key=lambda x: (x.bench, x.name))
 
+	bench_map = {
+		bench.name: bench
+		for bench in frappe.get_all(
+			"Bench",
+			{"name": ("in", set(site.bench for site in sites))},
+			["name", "cluster", "server", "group"],
+			ignore_ifnull=True,
+		)
+	}
 	benches = []
 	for bench_name, sites in groupby(sites, lambda x: x.bench):
-		bench = frappe.db.get_value(
-			"Bench", bench_name, ["name", "cluster", "server", "group"], as_dict=True
-		)
+		bench = bench_map[bench_name]
 		bench.update({"sites": [site.name for site in sites]})
 		benches.append(bench)
 
