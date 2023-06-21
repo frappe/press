@@ -7,14 +7,12 @@ import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
 import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
-import AlertUpdate from '@/components/AlertUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 import SiteActivity from './SiteActivity.vue';
 
 const props = defineProps({ site: Object });
 const showPromotionalDialog = ref(false);
 const clickedPromotion = ref(null);
-const bench = {"name": props.site.group, "status": "Active", "team": props.site.team}
 
 const overview = useResource({
 	method: 'press.api.site.overview',
@@ -56,7 +54,6 @@ const marketplacePromotionalBanners = useResource({
 	<div class="space-y-5" v-if="site">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
-		<AlertUpdate :bench="bench"/>
 
 		<div
 			v-if="
