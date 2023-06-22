@@ -457,7 +457,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
-	frappe.get_doc(
+	bench_update = frappe.get_doc(
 		{
 			"doctype": "Bench Update",
 			"group": name,
@@ -474,6 +474,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 			"apps_to_ignore": str(apps_to_ignore),
 		}
 	).insert(ignore_permissions=True)
+	bench_update.deploy(apps_to_ignore=apps_to_ignore)
 
 
 @frappe.whitelist()

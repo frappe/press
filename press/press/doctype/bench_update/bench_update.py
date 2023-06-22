@@ -18,11 +18,13 @@ class BenchUpdate(Document):
 		self.validate_pending_site_updates()
 
 	def validate_pending_updates(self):
-		if frappe.db.exists("Bench Update", {"status": ("in", ("Pending", "Running"))}):
+		if frappe.db.exists("Bench Update", {"status": ("in", ("Running"))}):
 			frappe.throw("An update is already pending for this bench", frappe.ValidationError)
 
 		if frappe.get_doc("Release Group", self.group).deploy_in_progress:
-			frappe.throw("A deploy for this bench is already in progress")
+			frappe.throw(
+				"A deploy for this bench is already in progress", frappe.ValidationError
+			)
 
 	def validate_pending_site_updates(self):
 		for site in self.sites:
@@ -32,8 +34,8 @@ class BenchUpdate(Document):
 			):
 				frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
-	def after_insert(self):
-		if isinstance(self.apps_to_ignore, str):
+	def deploy(self, apps_to_ignore):
+		if isinstance(apps_to_ignore, str):
 			apps_to_ignore = json.loads(self.apps_to_ignore)
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
