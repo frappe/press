@@ -67,7 +67,9 @@
 				<span class="hidden md:inline">
 					<span
 						v-if="
-							invoice.status == 'Paid' && invoice.type !== 'Prepaid Credits'
+							invoice.status == 'Paid' &&
+							invoice.type !== 'Prepaid Credits' &&
+							invoice.payment_date
 						"
 					>
 						{{
