@@ -30,7 +30,7 @@ jobs:
         run: |
           sed -i '' '2i --platform=linux/amd64' frappe_docker/Dockerfile
 
-      - name: Build Docker Image
+      - name: Build
         run: |
           cd frappe_docker
           docker build \
