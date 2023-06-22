@@ -195,7 +195,7 @@ class Bench(Document):
 				if not frappe.db.exists("Site", site):
 					continue
 				try:
-					frappe.get_doc("Site", site).sync_info(info)
+					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
 				except Exception:
 					log_error("Site Sync Error", site=site, info=info)
