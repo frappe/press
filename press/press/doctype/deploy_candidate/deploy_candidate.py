@@ -714,6 +714,34 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 	)
 
 
+def delete_draft_candidates():
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{
+			"status": "Draft",
+			"creation": ("<=", frappe.utils.add_days(None, -1)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=1000,
+	)
+
+	for candidate in candidates:
+		if frappe.db.exists("Bench", {"candidate": candidate}):
+			frappe.db.set_value(
+				"Deploy Candidate", candidate, "status", "Success", update_modified=False
+			)
+			frappe.db.commit()
+			continue
+		else:
+			try:
+				frappe.delete_doc("Deploy Candidate", candidate, delete_permanently=True)
+				frappe.db.commit()
+			except Exception:
+				log_error("Draft Deploy Candidate Deletion Error", candidate=candidate)
+				frappe.db.rollback()
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Deploy Candidate"
 )
