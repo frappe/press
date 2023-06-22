@@ -41,6 +41,7 @@ def create_test_server(
 	).insert()
 
 
+@patch.object(BaseServer, "after_insert", new=Mock())
 class TestServer(unittest.TestCase):
 	def test_create_generic_server(self):
 		create_test_press_settings()
