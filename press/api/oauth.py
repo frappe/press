@@ -19,6 +19,11 @@ from press.api.saas import (
 from press.press.doctype.site.saas_site import get_saas_domain
 
 
+import os
+
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+
 def google_oauth_flow():
 	config = frappe.conf.get("google_oauth_config")
 	redirect_uri = config["web"].get("redirect_uris")[0]
@@ -78,18 +83,19 @@ def callback(code=None, state=None):
 	email = id_info.get("email")
 
 	# phone (this may return nothing if info doesn't exists)
-	credentials = Credentials.from_authorized_user_info(
-		json.loads(flow.credentials.to_json())
-	)
-	service = build("people", "v1", credentials=credentials)
-	person = (
-		service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-	)
 	number = ""
-	if person:
-		phone = person.get("phoneNumbers")
-		if phone:
-			number = phone[0].get("value")
+	if flow.credentials.refresh_token:  # returns only for the first authorization
+		credentials = Credentials.from_authorized_user_info(
+			json.loads(flow.credentials.to_json())
+		)
+		service = build("people", "v1", credentials=credentials)
+		person = (
+			service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
+		)
+		if person:
+			phone = person.get("phoneNumbers")
+			if phone:
+				number = phone[0].get("value")
 
 	# saas signup
 	if saas_app and cached_state:

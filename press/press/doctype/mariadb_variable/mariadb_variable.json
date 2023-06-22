@@ -10,7 +10,7 @@
  "field_order": [
   "dynamic",
   "datatype",
-  "replication_and_binary_log",
+  "doc_section",
   "default_value",
   "skippable"
  ],
@@ -31,12 +31,6 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "replication_and_binary_log",
-   "fieldtype": "Check",
-   "label": "Replication And Binary Log"
-  },
-  {
    "fieldname": "default_value",
    "fieldtype": "Data",
    "label": "Default Value"
@@ -46,11 +40,19 @@
    "fieldname": "skippable",
    "fieldtype": "Check",
    "label": "Skippable"
+  },
+  {
+   "default": "server",
+   "fieldname": "doc_section",
+   "fieldtype": "Select",
+   "label": "Doc Section",
+   "options": "server\nreplication-and-binary-log\ninnodb",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-01 10:40:30.671988",
+ "modified": "2023-06-15 14:40:46.598554",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

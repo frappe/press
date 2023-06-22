@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Cluster', {
 	// refresh: function(frm) {
-
 	// }
 });

@@ -10,7 +10,7 @@ from press.press.doctype.app_source.app_source import AppSource
 
 def create_test_app_release(app_source: AppSource):
 	"""Create test app release given App source."""
-	frappe.get_doc(
+	app_release = frappe.get_doc(
 		{
 			"doctype": "App Release",
 			"app": app_source.app,
@@ -21,6 +21,8 @@ def create_test_app_release(app_source: AppSource):
 			"deployable": True,
 		}
 	).insert(ignore_if_duplicate=True)
+	app_release.reload()
+	return app_release
 
 
 class TestAppRelease(unittest.TestCase):

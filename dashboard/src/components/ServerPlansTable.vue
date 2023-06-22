@@ -44,7 +44,7 @@
 			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.memory > 0 ? formatBytes(plan.memory, 0, 2) : 'Any' }}
-			</div>	
+			</div>
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ plan.instance_type }}
 			</div>

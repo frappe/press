@@ -119,7 +119,12 @@ class MarketplaceAppSubscription(Document):
 		if team.parent_team:
 			team = frappe.get_cached_doc("Team", team.name)
 
-		if not team.get_upcoming_invoice():
+		subscription_type = (
+			"Summary"
+			if frappe.db.get_value("Saas Settings", self.app, "billing_type") == "prepaid"
+			else "Subscription"
+		)
+		if not team.get_upcoming_invoice(type=subscription_type):
 			team.create_upcoming_invoice()
 
 		plan = frappe.get_cached_doc("Plan", self.plan)

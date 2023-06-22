@@ -10,6 +10,7 @@ def foreground_enqueue_doc(
 	queue="default",
 	timeout=None,
 	now=False,  # default args unused to avoid them from going to kwargs
+	enqueue_after_commit=False,
 	**kwargs
 ):
 	"""

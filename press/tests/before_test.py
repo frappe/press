@@ -6,6 +6,7 @@ import os
 
 import frappe
 from frappe.model.document import Document
+import press.utils
 
 
 def doc_equal(self: Document, other: Document) -> bool:
@@ -17,6 +18,10 @@ def doc_equal(self: Document, other: Document) -> bool:
 	return False
 
 
+def raise_error(title, **kwargs):
+	raise
+
+
 def execute():
 	settings = frappe.get_single("Press Settings")
 	if not (settings.stripe_secret_key and settings.stripe_publishable_key):
@@ -25,7 +30,10 @@ def execute():
 
 	# Silence the cssutils errors that are mostly pointless
 	cssutils.log.setLevel(50)
+
+	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
+	press.utils.log_error = raise_error
 
 
 def create_test_stripe_credentials():

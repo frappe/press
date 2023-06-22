@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Bench App', {
 	// refresh: function(frm) {
-
 	// }
 });
