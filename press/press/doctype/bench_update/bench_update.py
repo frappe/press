@@ -55,4 +55,5 @@ class BenchUpdate(Document):
 					self.save(ignore_permissions=True)
 					frappe.db.commit()
 				except Exception as e:
-					log_error("Bench Update: Failed to create Site Update", e)
+					log_error("Bench Update: Failed to create Site Update", exception=e)
+					frappe.db.rollback()
