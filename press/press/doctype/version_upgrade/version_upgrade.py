@@ -5,6 +5,7 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
+from press.utils import log_error
 
 
 class VersionUpgrade(Document):
@@ -133,4 +134,9 @@ def update_from_site_update():
 
 def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
-		upgrade.start()
+		try:
+			upgrade.start()
+			frappe.db.commit()
+		except Exception:
+			log_error("Scheduled Version Upgrade Error", upgrade=upgrade)
+			frappe.db.rollback()
