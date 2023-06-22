@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: |
           cd frappe_docker
-          docker build .
+          docker build --file images/custom/Containerfile .
 
       - name: Push Docker Image
         run: docker push registry-1.docker.io/brandimic/cloud:1.0
