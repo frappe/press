@@ -89,8 +89,8 @@ def delete_old_snapshots():
 	)
 	for snapshot in snapshots:
 		try:
-			frappe.get_doc("Virtual Disk Snapshot", snapshot.name).delete_snapshot()
+			frappe.get_doc("Virtual Disk Snapshot", snapshot).delete_snapshot()
 			frappe.db.commit()
 		except Exception:
-			log_error("Virtual Disk Snapshot Sync Error", snapshot=snapshot)
+			log_error("Virtual Disk Snapshot Delete Error", snapshot=snapshot)
 			frappe.db.rollback()
