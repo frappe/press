@@ -4,6 +4,7 @@
 
 from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 from press.press.doctype.tls_certificate.tls_certificate import (
+	BaseCA,
 	LetsEncrypt,
 	TLSCertificate,
 )
@@ -17,7 +18,7 @@ import unittest
 
 
 @patch.object(TLSCertificate, "obtain_certificate", new=Mock())
-def create_test_tls_certificate(domain: str, wildcard: bool = False):
+def create_test_tls_certificate(domain: str, wildcard: bool = False) -> TLSCertificate:
 	certificate = frappe.get_doc(
 		{
 			"doctype": "TLS Certificate",
@@ -30,7 +31,18 @@ def create_test_tls_certificate(domain: str, wildcard: bool = False):
 	return certificate
 
 
+def none_init(self, settings):
+	pass
+
+
+def fake_extract(self):
+	return "a", "b", "c", "d"
+
+
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch.object(LetsEncrypt, "_obtain", new=Mock())
+@patch.object(BaseCA, "_extract", new=fake_extract)
+@patch.object(TLSCertificate, "_extract_certificate_details", new=Mock())
 class TestTLSCertificate(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
@@ -44,9 +56,7 @@ class TestTLSCertificate(unittest.TestCase):
 
 		cert = create_test_tls_certificate(erpnext_domain.name, wildcard=True)
 
-		with patch.object(LetsEncrypt, "obtain", new=Mock()), patch.object(
-			LetsEncrypt, "__init__", new=Mock()
-		), patch.object(
+		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			ProxyServer, "setup_wildcard_hosts"
 		) as mock_setup_wildcard_hosts:
 			cert._obtain_certificate()
@@ -62,9 +72,7 @@ class TestTLSCertificate(unittest.TestCase):
 		cert = create_test_tls_certificate(fc_domain.name, wildcard=True)
 		cert.reload()  # already created with proxy server
 
-		with patch.object(LetsEncrypt, "obtain", new=Mock()), patch.object(
-			LetsEncrypt, "__init__", new=Mock()
-		), patch.object(
+		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			TLSCertificate, "trigger_server_tls_setup_callback", new=Mock()
 		), patch.object(
 			ProxyServer, "setup_wildcard_hosts"
@@ -76,9 +84,7 @@ class TestTLSCertificate(unittest.TestCase):
 	def test_renewal_of_primary_domain_calls_update_tls_certificates(self):
 		cert = create_test_tls_certificate("fc.dev", wildcard=True)
 		create_test_proxy_server("n1")
-		with patch.object(LetsEncrypt, "obtain", new=Mock()), patch.object(
-			LetsEncrypt, "__init__", new=Mock()
-		), patch.object(
+		with patch.object(LetsEncrypt, "__init__", new=none_init), patch.object(
 			TLSCertificate, "trigger_server_tls_setup_callback"
 		) as mock_trigger_server_tls_setup, patch.object(
 			ProxyServer, "setup_wildcard_hosts", new=Mock()
