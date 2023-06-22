@@ -4,7 +4,7 @@ name: Docker Build and Push
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-push:
