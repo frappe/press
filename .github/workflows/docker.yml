@@ -33,8 +33,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          cd frappe_docker
-          docker build \
+          cd frappe_docker && docker build \
             --build-arg FRAPPE_PATH=https://github.com/frappe/frappe \
             --build-arg FRAPPE_BRANCH=version-14 \
             --build-arg PYTHON_VERSION=3.10.5 \
