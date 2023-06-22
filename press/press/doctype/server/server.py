@@ -468,6 +468,10 @@ class BaseServer(Document):
 	def show_agent_password(self):
 		return self.get_password("agent_password")
 
+	@property
+	def agent(self):
+		return Agent(self.name, server_type=self.doctype)
+
 
 class Server(BaseServer):
 	def on_update(self):
