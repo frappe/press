@@ -33,14 +33,7 @@ jobs:
       - name: Build
         run: |
           cd frappe_docker
-          docker build \
-            --build-arg FRAPPE_PATH=https://github.com/frappe/frappe \
-            --build-arg FRAPPE_BRANCH=version-14 \
-            --build-arg PYTHON_VERSION=3.10.5 \
-            --build-arg NODE_VERSION=16.18.0 \
-            --build-arg APPS_JSON_BASE64=$(cat ../apps_json_base64.txt) \
-            --tag registry-1.docker.io/brandimic/cloud:1.0 \
-            --file images/custom/Containerfile .
+          docker build .
 
       - name: Push Docker Image
         run: docker push registry-1.docker.io/brandimic/cloud:1.0
