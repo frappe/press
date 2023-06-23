@@ -107,7 +107,9 @@ def all(server=None, start=0, status=None):
 	if status == "Active":
 		query = query.inner_join(bench).on(group.name == bench.group)
 	elif status == "Awaiting Deploy":
-		group_names = set(frappe.get_all("Bench", {"status": "Active"}, pluck="group"))
+		group_names = frappe.get_all(
+			"Bench", {"status": "Active"}, pluck="group", distinct=True
+		)
 		query = query.inner_join(bench).on(group.name.notin(group_names))
 
 	if server:
