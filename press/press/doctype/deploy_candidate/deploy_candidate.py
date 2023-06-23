@@ -376,9 +376,10 @@ class DeployCandidate(Document):
 
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
-
+		docker_image_latest = f"{self.docker_image_repository}:latest"
+		
 		result = self.run(
-			f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .",
+			f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} -t {docker_image_latest} .",
 			environment,
 		)
 		self._parse_docker_build_result(result)
@@ -539,6 +540,9 @@ class DeployCandidate(Document):
 					frappe.db.commit()
 					last_update = now()
 
+			client.images.push(
+				self.docker_image_repository, "latest", stream=True, decode=True
+			)
 			end_time = now()
 			step.output = "\n".join(ll["output"] for ll in output)
 			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
