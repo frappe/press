@@ -66,6 +66,7 @@ def get(name):
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
 		"public": group.public,
+		"no_sites": frappe.db.count("Site", {"group": group.name, "status": "Active"}),
 	}
 
 
@@ -455,6 +456,38 @@ def deploy(name, apps_to_ignore=[]):
 	candidate.build_and_deploy()
 
 	return candidate.name
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def deploy_and_update(name, apps_to_ignore=[], sites=[]):
+	if isinstance(apps_to_ignore, str):
+		apps_to_ignore = json.loads(apps_to_ignore)
+
+	team = get_current_team(True)
+	rg_team = frappe.db.get_value("Release Group", name, "team")
+
+	if rg_team != team.name:
+		frappe.throw(
+			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
+		)
+	bench_update = frappe.get_doc(
+		{
+			"doctype": "Bench Update",
+			"group": name,
+			"sites": [
+				{
+					"site": site["name"],
+					"server": site["server"],
+					"skip_failing_patches": site["skip_failing_patches"],
+					"skip_backups": site["skip_backups"],
+				}
+				for site in sites
+			],
+			"status": "Pending",
+		}
+	).insert(ignore_permissions=True)
+	bench_update.deploy(apps_to_ignore=apps_to_ignore)
 
 
 @frappe.whitelist()

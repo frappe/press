@@ -11,7 +11,6 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -22,7 +21,8 @@ from press.press.doctype.server.test_server import create_test_server
 
 @patch.object(RootDomain, "after_insert", new=Mock())
 def create_test_root_domain(
-	name: str, default_cluster: str = create_test_cluster().name
+	name: str,
+	default_cluster: str = "Default",
 ):
 	root_domain = frappe.get_doc(
 		{

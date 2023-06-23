@@ -112,9 +112,8 @@ class Bench(Document):
 			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
+			"single_container": bool(self.is_single_container),
 		}
-		if self.is_single_container:
-			bench_config.update({"single_container": True})
 
 		release_group_bench_config = frappe.db.get_value(
 			"Release Group", self.group, "bench_config"
@@ -196,7 +195,7 @@ class Bench(Document):
 				if not frappe.db.exists("Site", site):
 					continue
 				try:
-					frappe.get_doc("Site", site).sync_info(info)
+					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
 				except Exception:
 					log_error("Site Sync Error", site=site, info=info)
@@ -393,7 +392,16 @@ def process_new_bench_job_update(job):
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
 			)
-			frappe.get_doc("Bench", job.bench).add_ssh_user()
+			bench = frappe.get_doc("Bench", job.bench)
+			bench.add_ssh_user()
+
+			bench_update = frappe.get_all(
+				"Bench Update",
+				{"candidate": bench.candidate, "status": "Build Successful"},
+				pluck="name",
+			)
+			if bench_update:
+				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(bench.server)
 
 
 def process_archive_bench_job_update(job):
@@ -527,6 +535,19 @@ def sync_benches():
 def sync_bench(name):
 	bench = frappe.get_doc("Bench", name)
 	try:
+		active_archival_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"job_type": "Archive Bench",
+				"bench": bench.name,
+				"status": ("in", ("Pending", "Running", "Success")),
+			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="job_type",
+		)
+		if active_archival_jobs:
+			return
 		bench.sync_info()
 		frappe.db.commit()
 	except Exception:

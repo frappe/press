@@ -33,7 +33,10 @@ from press.utils import (
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		if frappe.session.data.user_type == "System User":
+		user_type = frappe.session.data.user_type or frappe.get_cached_value(
+			"User", frappe.session.user, "user_type"
+		)
+		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]
@@ -1594,8 +1597,8 @@ def change_team(team, name):
 	from press.press.doctype.team.team import get_child_team_members
 
 	current_team = get_current_team(True)
-	child_teams = [team.name for team in get_child_team_members(current_team.name)]
-	teams = [current_team.name] + child_teams
+	child_teams = [team.team_title for team in get_child_team_members(current_team.name)]
+	teams = [current_team.team_title] + child_teams
 
 	if team not in teams:
 		frappe.throw(f"{team} is not part of your organization.")

@@ -21,7 +21,7 @@ frappe.ui.form.on('Site Migration', {
 			frm.add_custom_button(__('Continue'), () => {
 				frappe.confirm(
 					'Are you sure you want to continue from next Pending step?',
-					() => frm.call('run_next_step')
+					() => frm.call('run_next_step'),
 				);
 			});
 		}

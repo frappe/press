@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Cookie Preference Log', {
 	// refresh: function(frm) {
-
 	// }
 });

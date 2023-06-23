@@ -47,11 +47,15 @@ class TestScheduledBackupJob(unittest.TestCase):
 	def test_offsite_taken_once_per_day(self):
 		site = self._create_site_requiring_backup()
 		job = ScheduledBackupJob()
+
 		offsite_count_before = self._offsite_count(site.name)
 		job.start()
+		frappe.get_last_doc("Site Backup", dict(site=site.name)).db_set("status", "Success")
 		offsite_count_after = self._offsite_count(site.name)
-		self.assertGreater(offsite_count_after, offsite_count_before)
+		self.assertEqual(offsite_count_after, offsite_count_before + 1)
+
 		offsite_count_before = self._offsite_count(site.name)
+		job = ScheduledBackupJob()
 		job.start()
 		offsite_count_after = self._offsite_count(site.name)
 		self.assertEqual(offsite_count_after, offsite_count_before)
@@ -62,11 +66,15 @@ class TestScheduledBackupJob(unittest.TestCase):
 	def test_with_files_taken_once_per_day(self):
 		site = self._create_site_requiring_backup()
 		job = ScheduledBackupJob()
+
 		offsite_count_before = self._with_files_count(site.name)
 		job.start()
+		frappe.get_last_doc("Site Backup", dict(site=site.name)).db_set("status", "Success")
 		offsite_count_after = self._with_files_count(site.name)
-		self.assertGreater(offsite_count_after, offsite_count_before)
+		self.assertEqual(offsite_count_after, offsite_count_before + 1)
+
 		offsite_count_before = self._with_files_count(site.name)
+		job = ScheduledBackupJob()
 		job.start()
 		offsite_count_after = self._with_files_count(site.name)
 		self.assertEqual(offsite_count_after, offsite_count_before)
