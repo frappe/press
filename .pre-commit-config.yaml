@@ -23,11 +23,16 @@ repos:
         types_or: [javascript, vue]
         # Ignore any files that might contain jinja / bundles
         exclude: |
-            (?x)^(
-                press/public/dist/.*|
-                .*node_modules.*|
-                .*boilerplate.*|
-                press/www/website_script.js|
-                press/templates/includes/.*|
-                press/public/js/.*min.js
-            )$
+          (?x)^(
+              press/public/dist/.*|
+              .*node_modules.*|
+              .*boilerplate.*|
+              press/www/website_script.js|
+              press/templates/includes/.*|
+              press/public/js/.*min.js
+          )$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: debug-statements
