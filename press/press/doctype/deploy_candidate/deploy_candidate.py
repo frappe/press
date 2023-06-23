@@ -680,7 +680,7 @@ def cleanup_build_directories():
 		{
 			"status": ("!=", "Draft"),
 			"build_directory": ("is", "set"),
-			"creation": ("<=", frappe.utils.add_days(None, -1)),
+			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
 		},
 		order_by="creation asc",
 		pluck="name",
