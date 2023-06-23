@@ -23,7 +23,7 @@ export default {
 				method: 'press.api.bench.jobs',
 				params: { name: this.bench?.name, start },
 				auto: true,
-				paged: true,
+				pageLength: 10,
 				keepData: true
 			};
 		},
