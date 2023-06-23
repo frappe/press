@@ -3,9 +3,73 @@
 # See license.txt
 
 
-# import frappe
-import unittest
+import json
+import frappe
+from frappe.tests.utils import FrappeTestCase
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
+from press.press.doctype.release_group.test_release_group import (
+	create_test_release_group,
+)
+
+from press.press.doctype.site.test_site import create_test_bench, create_test_site
+
+from unittest.mock import patch, Mock
 
 
-class TestSiteUpdate(unittest.TestCase):
-	pass
+@patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestSiteUpdate(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_update_of_v12_site_skips_search_index(self):
+		version = "Version 12"
+		app = create_test_app()
+		app_source = create_test_app_source(version=version, app=app)
+		group = create_test_release_group([app], frappe_version=version)
+		bench1 = create_test_bench(group=group)
+
+		create_test_app_release(
+			app_source=app_source
+		)  # creates pull type release diff only but args are same
+
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		self.assertNotEqual(bench1, bench2)
+
+		create_deploy_candidate_differences(bench2)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		site.schedule_update()
+
+		agent_job = frappe.get_last_doc("Agent Job", dict(job_type=("like", "Update Site %")))
+		self.assertLess(
+			dict(skip_search_index=False).items(), json.loads(agent_job.request_data).items()
+		)
+
+	def test_update_of_non_v12_site_doesnt_skip_search_index(self):
+		version = "Version 13"
+		app = create_test_app()
+		app_source = create_test_app_source(version=version, app=app)
+		group = create_test_release_group([app], frappe_version=version)
+		bench1 = create_test_bench(group=group)
+
+		create_test_app_release(
+			app_source=app_source
+		)  # creates pull type release diff only but args are same
+
+		bench2 = create_test_bench(group=group, server=bench1.server)
+		self.assertNotEqual(bench1, bench2)
+
+		create_deploy_candidate_differences(bench2)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+		site.schedule_update()
+
+		agent_job = frappe.get_last_doc("Agent Job", dict(job_type=("like", "Update Site %")))
+		self.assertLess(
+			dict(skip_search_index=True).items(), json.loads(agent_job.request_data).items()
+		)
