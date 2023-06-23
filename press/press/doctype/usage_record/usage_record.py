@@ -27,7 +27,6 @@ class UsageRecord(Document):
 			self.remove_usage_from_invoice()
 
 	def update_usage_in_invoice(self):
-		invoice_type = "Summary" if self.prepaid else "Subscription"
 		team = frappe.get_doc("Team", self.team)
 
 		if team.parent_team:
@@ -35,9 +34,9 @@ class UsageRecord(Document):
 
 		if team.free_account:
 			return
-		invoice = team.get_upcoming_invoice(invoice_type)
+		invoice = team.get_upcoming_invoice()
 		if not invoice:
-			invoice = team.create_upcoming_invoice(invoice_type)
+			invoice = team.create_upcoming_invoice()
 
 		invoice.add_usage_record(self)
 
