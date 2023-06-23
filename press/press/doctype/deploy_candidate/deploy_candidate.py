@@ -540,9 +540,10 @@ class DeployCandidate(Document):
 					frappe.db.commit()
 					last_update = now()
 
-			client.images.push(
+			for line in client.images.push(
 				self.docker_image_repository, "latest", stream=True, decode=True
-			)
+			):
+				continue
 			end_time = now()
 			step.output = "\n".join(ll["output"] for ll in output)
 			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
