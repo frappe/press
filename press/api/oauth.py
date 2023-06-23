@@ -33,9 +33,6 @@ def google_oauth_flow():
 			"https://www.googleapis.com/auth/userinfo.profile",
 			"openid",
 			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/user.addresses.read",
-			"https://www.googleapis.com/auth/user.phonenumbers.read",
-			"https://www.googleapis.com/auth/contacts.readonly",
 		],
 		redirect_uri=redirect_uri,
 	)
@@ -71,6 +68,8 @@ def callback(code=None, state=None):
 		flow.fetch_token(authorization_response=frappe.request.url)
 	except Exception as e:
 		frappe.throw(e)
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = "/dashboard/login"
 
 	# id_info
 	token_request = Request()
