@@ -664,7 +664,7 @@ class DeployCandidate(Document):
 	def on_update(self):
 		if self.status == "Running":
 			frappe.publish_realtime(
-				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps}
+				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
