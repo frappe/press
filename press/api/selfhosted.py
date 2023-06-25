@@ -26,6 +26,7 @@ def new(server):
 			"team": team.name,
 			"plan": server["plan"]["name"],
 			"server_url": server["url"],
+			"new_server": True,
 		}
 	).insert()
 	return self_hosted_server.name
@@ -67,6 +68,7 @@ def setup_nginx(server):
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	server_doc.start_setup = True
+	server_doc.create_subscription()
 	server_doc.create_tls_certs()
 	server_doc.save()
 	time.sleep(1)

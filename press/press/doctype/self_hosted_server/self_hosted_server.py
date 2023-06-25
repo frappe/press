@@ -480,3 +480,16 @@ class SelfHostedServer(Document):
 			server.setup_server()
 		else:
 			self.update_tls()
+
+	def create_subscription(self):
+		frappe.get_doc(
+			{
+				"doctype": "Plan Change",
+				"document_type": self.doctype,
+				"document_name": self.name,
+				"from_plan": "",
+				"to_plan": self.plan,
+				"type": "Initial Plan",
+				"timestamp": self.creation,
+			}
+		).insert(ignore_permissions=True)
