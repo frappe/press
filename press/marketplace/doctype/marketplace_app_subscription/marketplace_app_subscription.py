@@ -5,8 +5,8 @@ import frappe
 import json
 import requests
 
-from press.utils import log_error
 from frappe.model.document import Document
+from frappe.utils import get_datetime
 from press.press.doctype.site.site import Site
 
 
@@ -70,6 +70,17 @@ class MarketplaceAppSubscription(Document):
 		if not self.while_site_creation:
 			self.set_keys_in_site_config()
 
+		subscription = frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": self.team,
+				"document_type": "Marketplace App Subscription",
+				"document_name": self.name,
+				"plan": frappe.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan"),
+			}
+		).insert(ignore_permissions=True)
+		self.subscription = subscription.name
+
 		self.update_subscription_hook()
 
 	def set_keys_in_site_config(self):
@@ -109,61 +120,6 @@ class MarketplaceAppSubscription(Document):
 
 		site_doc.update_site_config(config)
 
-	def create_usage_record(self):
-		if self.is_usage_record_created():
-			return
-
-		team_name = frappe.db.get_value("Site", self.site, "team")
-		team = frappe.get_cached_doc("Team", team_name)
-
-		if team.parent_team:
-			team = frappe.get_cached_doc("Team", team.name)
-
-		if not team.get_upcoming_invoice():
-			team.create_upcoming_invoice()
-
-		plan = frappe.get_cached_doc("Plan", self.plan)
-		amount = plan.get_price_for_interval(self.interval, team.currency)
-
-		usage_record = frappe.get_doc(
-			doctype="Usage Record",
-			team=team.name,
-			document_type="Marketplace App",
-			document_name=self.app,
-			plan=self.plan,
-			amount=amount,
-			subscription=self.name,
-			interval=self.interval,
-			site=self.site,
-			prepaid=frappe.db.get_value("Saas Settings", self.app, "billing_type") == "prepaid",
-		)
-		usage_record.insert()
-		usage_record.submit()
-		return usage_record
-
-	def is_usage_record_created(self):
-		team = frappe.db.get_value("Site", self.site, "team")
-		filters = {
-			"team": team,
-			"document_type": "Marketplace App",
-			"document_name": self.app,
-			"subscription": self.name,
-			"interval": self.interval,
-			"plan": self.plan,
-		}
-
-		if self.interval == "Daily":
-			filters.update({"date": frappe.utils.today()})
-
-		if self.interval == "Monthly":
-			date = frappe.utils.getdate()
-			first_day = frappe.utils.get_first_day(date)
-			last_day = frappe.utils.get_last_day(date)
-			filters.update({"date": ("between", (first_day, last_day))})
-
-		result = frappe.db.get_all("Usage Record", filters=filters, limit=1)
-		return bool(result)
-
 	@frappe.whitelist()
 	def activate(self):
 		if self.status == "Active":
@@ -177,6 +133,7 @@ class MarketplaceAppSubscription(Document):
 			return
 		self.status = "Disabled"
 		self.save(ignore_permissions=True)
+		frappe.db.set_value("Subscription", self.subscription, "enabled", 0)
 
 	def update_subscription_hook(self):
 		# sends app name and plan whenever a subscription is created for other apps
@@ -198,46 +155,42 @@ class MarketplaceAppSubscription(Document):
 		else:
 			return
 
+	def can_charge_for_subscription(self):
+		# check whatever marketplace related stuff
+		return (
+			self.status == "Active"
+			and self.team
+			and self.team != "Administrator"
+			and self.should_create_usage_record()
+		)
 
-def create_usage_records():
-	subscriptions = frappe.db.get_all(
-		"Marketplace App Subscription", filters={"status": "Active"}, pluck="name"
-	)
-	for name in subscriptions:
-		subscription = frappe.get_doc("Marketplace App Subscription", name)
+	def should_create_usage_record(self):
+		# Don't create for free plans
+		is_free = frappe.db.get_value(
+			"Marketplace App Plan", self.marketplace_app_plan, "is_free"
+		)
 
-		if not should_create_usage_record(subscription):
-			continue
+		if is_free:
+			return False
 
-		try:
-			subscription.create_usage_record()
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			log_error(title="Marketplace App: Create Usage Record Error", name=name)
+		# For annual prepaid plans
+		plan_interval = frappe.db.get_value("Plan", self.plan, "interval")
 
+		if plan_interval == "Annually":
+			return False
 
-def should_create_usage_record(subscription: MarketplaceAppSubscription):
-	# Don't create for free plans
-	is_free = frappe.db.get_value(
-		"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-	)
+		# For non-active sites
+		site_status, trial_site = frappe.db.get_value(
+			"Site", self.site, ["status", "trial_end_date"]
+		)
+		print(site_status, trial_site)
+		if site_status not in ("Active", "Inactive"):
+			return False
 
-	if is_free:
-		return False
+		if trial_site and frappe.utils.getdate() > get_datetime(trial_site).date():
+			return False
 
-	# For annual prepaid plans
-	plan_interval = frappe.db.get_value("Plan", subscription.plan, "interval")
-
-	if plan_interval == "Annually":
-		return False
-
-	# For non-active sites
-	site_status = frappe.db.get_value("Site", subscription.site, "status")
-	if site_status not in ("Active", "Inactive"):
-		return False
-
-	return True
+		return True
 
 
 def process_prepaid_marketplace_payment(event):
