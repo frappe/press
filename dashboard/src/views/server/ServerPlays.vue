@@ -20,7 +20,7 @@ export default {
 			return {
 				method: 'press.api.server.plays',
 				params: { name: this.server?.name, start },
-				paged: true,
+				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
