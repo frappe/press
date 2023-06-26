@@ -25,10 +25,7 @@
 					type="select"
 					:options="benchStatusOptions"
 					v-model="benchStatus"
-					@change="
-						pageStart = 0;
-						$resources.allBenches.reset();
-					"
+					@change="handleChange"
 				/>
 			</template>
 		</SectionHeader>
@@ -112,7 +109,7 @@ export default {
 			return {
 				method: 'press.api.bench.all',
 				params: { start: this.pageStart, status: this.benchStatus },
-				pageLength: this.pageLength(),
+				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
@@ -128,8 +125,12 @@ export default {
 		}
 	},
 	methods: {
-		pageLength() {
-			return this.pageStart === 0 ? 0 : 10;
+		handleChange() {
+			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
+			setTimeout(() => {
+				this.pageStart = 0;
+				this.$resources.allBenches.reset();
+			}, 1);
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {

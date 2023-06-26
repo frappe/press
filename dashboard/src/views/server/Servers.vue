@@ -39,10 +39,7 @@
 						type="select"
 						:options="serverTypeOptions"
 						v-model="serverType"
-						@change="
-							pageStart = 0;
-							$resources.allServers.reset();
-						"
+						@change="handleChange"
 					/>
 				</template>
 			</SectionHeader>
@@ -132,15 +129,19 @@ export default {
 			return {
 				method: 'press.api.server.all',
 				params: { start: this.pageStart, server_type: this.serverType },
-				pageLength: this.pageLength(),
+				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
 		}
 	},
 	methods: {
-		pageLength() {
-			return this.pageStart === 0 ? 0 : 10;
+		handleChange() {
+			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
+			setTimeout(() => {
+				this.pageStart = 0;
+				this.$resources.allServers.reset();
+			}, 1);
 		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds

@@ -91,10 +91,7 @@
 							type="select"
 							:options="siteStatusOptions"
 							v-model="siteStatus"
-							@change="
-								pageStart = 0;
-								$resources.allSites.reset();
-							"
+							@change="handleChange"
 						/>
 					</template>
 				</SectionHeader>
@@ -193,7 +190,7 @@ export default {
 			return {
 				method: 'press.api.site.all',
 				params: { start: this.pageStart, status: this.siteStatus },
-				pageLength: this.pageLength(),
+				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
@@ -213,8 +210,12 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		pageLength() {
-			return this.pageStart === 0 ? 0 : 10;
+		handleChange() {
+			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
+			setTimeout(() => {
+				this.pageStart = 0;
+				this.$resources.allSites.reset();
+			}, 1);
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
