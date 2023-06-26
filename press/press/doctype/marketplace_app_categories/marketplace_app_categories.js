@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Marketplace App Categories', {
 	// refresh: function(frm) {
-
 	// }
 });

@@ -21,7 +21,7 @@ from press.saas.doctype.saas_settings.test_saas_settings import (
 class TestAPISaas(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
-		self.group = create_test_release_group(create_test_app())
+		self.group = create_test_release_group([create_test_app()])
 		create_test_bench(group=self.group)
 
 	def tearDown(self):

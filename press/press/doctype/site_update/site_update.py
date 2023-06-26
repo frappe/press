@@ -123,6 +123,11 @@ class SiteUpdate(Document):
 
 		return scripts
 
+	@property
+	def is_destination_above_v12(self):
+		version = frappe.get_cached_value("Release Group", self.destination_group, "version")
+		return frappe.get_cached_value("Frappe Version", version, "number") > 12
+
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		site = frappe.get_doc("Site", self.site)
@@ -133,6 +138,7 @@ class SiteUpdate(Document):
 			skip_failing_patches=self.skipped_failing_patches,
 			skip_backups=self.skipped_backups,
 			before_migrate_scripts=self.get_before_migrate_scripts(),
+			skip_search_index=self.is_destination_above_v12,
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 

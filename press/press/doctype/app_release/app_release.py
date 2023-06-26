@@ -179,6 +179,53 @@ class AppRelease(Document):
 				candidate.build_and_deploy()
 
 
+def cleanup_unused_releases():
+	sources = frappe.get_all(
+		"App Release",
+		fields=["source as name", "count(*) as count"],
+		filters={"cloned": True},
+		order_by="count desc",
+		group_by="source",
+	)
+	active_releases = set(
+		release.release
+		for release in frappe.get_all(
+			"Bench",
+			fields=["`tabBench App`.release"],
+			filters={"status": ("!=", "Archived")},
+		)
+	)
+
+	deleted = 0
+	for source in sources:
+		releases = frappe.get_all(
+			"App Release",
+			{"source": source.name, "cloned": True},
+			pluck="name",
+			order_by="creation ASC",
+		)
+		for index, release in enumerate(releases):
+
+			if deleted > 2000:
+				return
+
+			# Skip the most recent release
+			if index >= len(releases) - 1:
+				break
+
+			# Skip already deployed releases
+			if release in active_releases:
+				continue
+
+			try:
+				frappe.get_doc("App Release", release, for_update=True).cleanup()
+				deleted += 1
+				frappe.db.commit()
+			except Exception:
+				log_error("App Release Cleanup Error", release=release)
+				frappe.db.rollback()
+
+
 def get_permission_query_conditions(user):
 	from press.utils import get_current_team
 

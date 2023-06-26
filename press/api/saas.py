@@ -115,7 +115,6 @@ def create_or_rename_saas_site(app, account_request):
 		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
 	except Exception as e:
 		log_error("Saas Site Creation or Rename failed", data=e)
-		raise
 
 	finally:
 		frappe.set_user(current_user)

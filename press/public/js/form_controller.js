@@ -157,7 +157,7 @@ class FormController {
 				});
 			$('.form-alert-info').html(info).toggle(Boolean(info));
 			$('.form-alert-error').html(error).toggle(Boolean(error));
-			$('#accountRequestButton').prop('disabled', false)
+			$('#accountRequestButton').prop('disabled', false);
 			$('#accountRequestButton').html('Create Account');
 		};
 		$('.form-alert-info, .form-alert-error').toggle(false);
@@ -170,12 +170,12 @@ class FormController {
 		let $success_message = $input.parent().find('.valid-feedback');
 		if ($error_message.length === 0) {
 			$error_message = $('<div class="invalid-feedback">').appendTo(
-				$input.parent()
+				$input.parent(),
 			);
 		}
 		if ($success_message.length === 0) {
 			$success_message = $('<div class="valid-feedback">').appendTo(
-				$input.parent()
+				$input.parent(),
 			);
 		}
 		$input.addClass(is_error ? 'is-invalid' : 'is-valid');

@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Agent Job Step', {
 	// refresh: function(frm) {
-
 	// }
 });

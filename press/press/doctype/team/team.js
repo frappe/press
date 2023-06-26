@@ -16,9 +16,9 @@ frappe.ui.form.on('Team', {
 								title: 'Note: Payment mode changed to `Partner Credits`',
 								message:
 									'Please make sure existing prepaid credits are taken care of.',
-							})
-						)
-				)
+							}),
+						),
+				),
 			);
 		} else {
 			frm.add_custom_button('Disable Partner Privileges', () =>
@@ -34,8 +34,8 @@ frappe.ui.form.on('Team', {
 										: '',
 							});
 							frm.refresh();
-						})
-				)
+						}),
+				),
 			);
 		}
 
@@ -53,10 +53,10 @@ frappe.ui.form.on('Team', {
 							}
 							frappe.show_alert(`${how_many} sites were suspended.`);
 						});
-					}
+					},
 				);
 			},
-			'Actions'
+			'Actions',
 		);
 		frm.add_custom_button(
 			'Unsuspend Sites',
@@ -72,10 +72,10 @@ frappe.ui.form.on('Team', {
 							}
 							frappe.show_alert(`${how_many} sites were unsuspended.`);
 						});
-					}
+					},
 				);
 			},
-			'Actions'
+			'Actions',
 		);
 
 		frm.add_custom_button('Impersonate Team', () => {
@@ -91,7 +91,7 @@ frappe.ui.form.on('Team', {
 						message: `Available Credits on frappe.io: <strong>${frm.doc.currency} ${d.message}</strong>`,
 						indicator: 'green',
 					});
-				})
+				}),
 			);
 		}
 	},
@@ -117,7 +117,7 @@ frappe.ui.form.on('Team Member', {
 					location.href = '/dashboard';
 				});
 			},
-			'Impersonate User'
+			'Impersonate User',
 		);
 	},
 });

@@ -11,7 +11,6 @@ import frappe
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.model.document import Document
 from press.agent import Agent
-from press.press.doctype.site_activity.site_activity import log_site_activity
 
 
 class SiteBackup(Document):
@@ -30,7 +29,6 @@ class SiteBackup(Document):
 			raise Exception("Too many pending backups")
 
 	def after_insert(self):
-		log_site_activity(self.site, "Backup")
 		site = frappe.get_doc("Site", self.site)
 		agent = Agent(site.server)
 		job = agent.backup_site(site, self.with_files, self.offsite)

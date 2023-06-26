@@ -86,7 +86,7 @@ export default {
 					start: this.pageStart
 				},
 				auto: true,
-				paged: true,
+				pageLength: 10,
 				keepData: true,
 				default: []
 			};
@@ -124,7 +124,7 @@ export default {
 	},
 	methods: {
 		onSteps(data) {
-			if (this.$resources.selectedCandidate.data) {
+			if (this.$resources.selectedCandidate?.data.name === data.name) {
 				this.$resources.selectedCandidate.data.build_steps = data.steps;
 			}
 		},
@@ -206,6 +206,18 @@ export default {
 					this.selectedCandidate.build_duration
 				);
 				return `Completed ${when} in ${duration}`;
+			} else if (this.selectedCandidate?.status === 'Running') {
+				const when = this.formatDate(
+					this.selectedCandidate.build_start,
+					'relative'
+				);
+				return `Started ${when}`;
+			} else if (this.selectedCandidate?.status === 'Failure') {
+				const when = this.formatDate(
+					this.selectedCandidate.build_end,
+					'relative'
+				);
+				return `Failed ${when}`;
 			}
 		},
 		candidates() {

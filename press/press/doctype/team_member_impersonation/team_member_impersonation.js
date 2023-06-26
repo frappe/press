@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Team Member Impersonation', {
 	// refresh: function(frm) {
-
 	// }
 });

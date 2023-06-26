@@ -6,20 +6,20 @@ frappe.ui.form.on('Invoice', {
 		if (frm.doc.stripe_invoice_id) {
 			frm.add_web_link(
 				`https://dashboard.stripe.com/invoices/${frm.doc.stripe_invoice_id}`,
-				'View Stripe Invoice'
+				'View Stripe Invoice',
 			);
 		}
 		if (frm.doc.frappe_invoice) {
 			frm.add_web_link(
 				`https://frappe.io/app/sales-invoice/${frm.doc.frappe_invoice}`,
-				'View Frappe Invoice'
+				'View Frappe Invoice',
 			);
 		}
 
 		if (frm.doc.frappe_partner_order) {
 			frm.add_web_link(
 				`https://frappe.io/app/partner-order/${frm.doc.frappe_partner_order}`,
-				'View Frappe Partner Order'
+				'View Frappe Partner Order',
 			);
 		}
 
@@ -34,7 +34,7 @@ frappe.ui.form.on('Invoice', {
 					.then((r) => {
 						if (r.message) {
 							frappe.msgprint(
-								`Sales Invoice ${r.message} created successfully.`
+								`Sales Invoice ${r.message} created successfully.`,
 							);
 						}
 						frm.refresh();
@@ -58,8 +58,8 @@ frappe.ui.form.on('Invoice', {
 									frappe.msgprint(`Refunded successfully.`);
 								}
 								frm.refresh();
-							})
-				)
+							}),
+				),
 			);
 		}
 
@@ -77,10 +77,10 @@ frappe.ui.form.on('Invoice', {
 									btn,
 								})
 								.then((r) => frm.refresh());
-						}
+						},
 					);
 				},
-				'Stripe Invoice'
+				'Stripe Invoice',
 			);
 		}
 
@@ -104,7 +104,7 @@ frappe.ui.form.on('Invoice', {
 							});
 						});
 				},
-				'Stripe Invoice'
+				'Stripe Invoice',
 			);
 		}
 
@@ -137,7 +137,7 @@ frappe.ui.form.on('Invoice', {
 					});
 					d.show();
 				},
-				'Stripe Invoice'
+				'Stripe Invoice',
 			);
 		}
 
@@ -155,8 +155,8 @@ frappe.ui.form.on('Invoice', {
 							})
 							.then(() => {
 								frm.refresh();
-							})
-				)
+							}),
+				),
 			);
 		}
 	},

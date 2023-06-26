@@ -30,14 +30,14 @@
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
-				<div class="group w-2/6">
+				<div class="w-2/6">
 					<div class="flex flex-row items-center">
 						<div class="text-lg font-medium text-gray-900">
 							{{ app.title }}
 						</div>
 
 						<CommitTag
-							class="hidden ml-2 group-hover:block"
+							class="ml-2"
 							:tag="app.tag || app.hash.substr(0, 7)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>

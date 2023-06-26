@@ -40,7 +40,8 @@
   "feature_flags_section",
   "is_redisearch_enabled",
   "column_break_tkdd",
-  "multiple_rq_queues"
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues"
  ],
  "fields": [
   {
@@ -253,23 +254,31 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fetch_from": "group.multiple_rq_queues",
-   "fieldname": "multiple_rq_queues",
-   "fieldtype": "Check",
-   "label": "Multiple RQ Queues",
-   "read_only": 1
-  },
-  {
    "fieldname": "environment_variables",
    "fieldtype": "Table",
    "label": "Environment Variables",
    "options": "Deploy Candidate Variable",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.merge_all_rq_queues",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.merge_default_and_short_rq_queues",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-06-13 19:08:48.076264",
+ "modified": "2023-06-16 13:20:01.684522",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -59,23 +59,24 @@ function displayAllApps() {
 	}
 }
 
-
-const btns = document.querySelectorAll('#category-button')
-btns.forEach(btn => {
+const btns = document.querySelectorAll('#category-button');
+btns.forEach((btn) => {
 	btn.addEventListener('click', (e) => {
 		const category = e.target.value;
-		window.location.replace(location.origin + location.pathname + `?category=${category}`)
-	})
-})
+		window.location.replace(
+			location.origin + location.pathname + `?category=${category}`,
+		);
+	});
+});
 
 const removeCategoryBtn = document.getElementById('remove-category');
 removeCategoryBtn.addEventListener('click', (e) => {
 	removeCategoryBtn.classList.add('hidden');
-	window.location.replace(location.origin + location.pathname)
-})
+	window.location.replace(location.origin + location.pathname);
+});
 
 function updateCategories(category) {
-	let set = 0
+	let set = 0;
 	for (let node of allAppCardNodes) {
 		node.style.display = 'none';
 	}
@@ -83,7 +84,7 @@ function updateCategories(category) {
 	for (let app of allAppCardNodes) {
 		if (app.dataset.categories.includes(category)) {
 			app.style.display = '';
-			set = 1
+			set = 1;
 		}
 	}
 
@@ -94,7 +95,7 @@ function updateCategories(category) {
 	}
 
 	var button = document.querySelector(`button[value="${category}"]`);
-	button.classList.add('bg-gray-200')
+	button.classList.add('bg-gray-200');
 
 	removeCategoryBtn.classList.remove('hidden');
 	document.getElementById('remove-category-name').innerText = category;
@@ -102,7 +103,7 @@ function updateCategories(category) {
 
 var category = new URLSearchParams(window.location.search).get('category');
 if (category != null && category.length > 0) {
-	updateCategories(category)
+	updateCategories(category);
 } else if (category == null) {
-		updateCategories('')
+	updateCategories('');
 }
