@@ -1191,7 +1191,7 @@ def add_reply(name, message):
 			"communication_medium": "Email",
 			"reference_doctype": doctype,
 			"reference_name": name,
-			"subject": "Marketplace App Review: New message!",
+			"subject": f"Marketplace App Review: {name}, New message!",
 			"sender": team,
 			"content": message,
 			"is_notification": True,
