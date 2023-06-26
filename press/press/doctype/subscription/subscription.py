@@ -171,7 +171,7 @@ def paid_plans():
 	return frappe.db.get_all(
 		"Plan",
 		{
-			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
 			"is_trial_plan": 0,
 			"price_inr": (">", 0),
 		},

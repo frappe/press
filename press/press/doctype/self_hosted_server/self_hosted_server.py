@@ -305,6 +305,8 @@ class SelfHostedServer(Document):
 			server.cluster = self.cluster
 			server.agent_password = self.get_password("agent_password")
 			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
+			server.ram = self.ram
+			server.new_worker_allocation = True
 			new_server = server.insert()
 			new_server.create_subscription("Unlimited")
 			self.server = new_server.name
@@ -493,18 +495,22 @@ class SelfHostedServer(Document):
 				"timestamp": self.creation,
 			}
 		).insert(ignore_permissions=True)
-	
+
 	@frappe.whitelist()
-	def fetch_system_ram(self,play_id=None):
+	def fetch_system_ram(self, play_id=None):
 		"""
 		Fetch the RAM from the Ping Ansible Play
 		"""
 		if not play_id:
-			play_id = frappe.get_last_doc("Ansible Play",{"server":self.name,"play":"Ping Server"}).name
-		play = frappe.get_doc("Ansible Task",{"status":"Success","play":play_id,"task":"Gather Facts"})
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.name, "play": "Ping Server"}
+			).name
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
 		try:
 			result = json.loads(play.result)
 			self.ram = result["ansible_facts"]["memtotal_mb"]
 			self.save()
 		except Exception:
-			log_error("Fetching RAM failed",server=self.as_dict())
+			log_error("Fetching RAM failed", server=self.as_dict())
