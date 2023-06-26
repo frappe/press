@@ -104,3 +104,25 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 			# shouldn't create a usage record
 			usage_record = self.subscription.create_usage_record()
 			self.assertTrue(usage_record is None)
+
+	def test_subscription_on_trial_plan(self):
+		self.plan.price_usd = 0
+		self.plan.price_inr = 0
+		self.plan.save()
+
+		today = frappe.utils.getdate()
+		tomorrow = frappe.utils.add_days(today, 1)
+
+		with patch.object(frappe.utils, "today", return_value=today):
+			# shouldn't create a usage record as site is in trial
+			self.subscription.create_usage_record()
+
+		# time travel to tomorrow
+		with patch.object(frappe.utils, "today", return_value=tomorrow):
+			# shouldn't create a usage record as site is in trial
+			self.subscription.create_usage_record()
+
+		invoice = frappe.get_doc(
+			"Invoice", {"team": self.marketplace_subscription.team, "status": "Draft"}
+		)
+		self.assertEqual(invoice.total, 0)
