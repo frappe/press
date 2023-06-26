@@ -20,7 +20,7 @@ export default {
 			return {
 				method: 'press.api.site.jobs',
 				params: { name: this.site?.name, start },
-				paged: true,
+				pageLength: 10,
 				keepData: true,
 				auto: true
 			};

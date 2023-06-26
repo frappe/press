@@ -8,5 +8,5 @@ frappe.ui.form.on('SSH Certificate', {
 				filters: { user: frm.doc.user },
 			};
 		});
-	}
+	},
 });

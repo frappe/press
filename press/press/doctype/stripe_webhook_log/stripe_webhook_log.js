@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Stripe Webhook Log', {
 	// refresh: function(frm) {
-
 	// }
 });

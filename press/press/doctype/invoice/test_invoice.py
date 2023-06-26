@@ -4,7 +4,7 @@
 
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import frappe
 from frappe.utils.data import add_days, today
@@ -14,6 +14,7 @@ from press.press.doctype.team.test_team import create_test_team
 from .invoice import Invoice
 
 
+@patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
 class TestInvoice(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team()

@@ -29,11 +29,11 @@ class TestAPISite(unittest.TestCase):
 
 		app = create_test_app()
 
-		group12 = create_test_release_group(app, public=True, frappe_version="Version 12")
-		group13 = create_test_release_group(app, public=True, frappe_version="Version 13")
-		group14 = create_test_release_group(app, public=True, frappe_version="Version 14")
+		group12 = create_test_release_group([app], public=True, frappe_version="Version 12")
+		group13 = create_test_release_group([app], public=True, frappe_version="Version 13")
+		group14 = create_test_release_group([app], public=True, frappe_version="Version 14")
 		private_group = create_test_release_group(
-			app, public=False, frappe_version="Version 14"
+			[app], public=False, frappe_version="Version 14"
 		)
 
 		create_test_bench(group=group12)

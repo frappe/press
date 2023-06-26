@@ -126,9 +126,20 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
 			raise
 		else:
 			self.status = "Success"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
+
 		finally:
 			self.build_end = now()
 			self.build_duration = self.build_end - self.build_start
@@ -661,7 +672,7 @@ class DeployCandidate(Document):
 	def on_update(self):
 		if self.status == "Running":
 			frappe.publish_realtime(
-				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps}
+				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
@@ -677,7 +688,7 @@ def cleanup_build_directories():
 		{
 			"status": ("!=", "Draft"),
 			"build_directory": ("is", "set"),
-			"creation": ("<=", frappe.utils.add_days(None, -1)),
+			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
 		},
 		order_by="creation asc",
 		pluck="name",
@@ -709,6 +720,34 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 		fields=["app"],
 		as_list=True,
 	)
+
+
+def delete_draft_candidates():
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{
+			"status": "Draft",
+			"creation": ("<=", frappe.utils.add_days(None, -1)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=1000,
+	)
+
+	for candidate in candidates:
+		if frappe.db.exists("Bench", {"candidate": candidate}):
+			frappe.db.set_value(
+				"Deploy Candidate", candidate, "status", "Success", update_modified=False
+			)
+			frappe.db.commit()
+			continue
+		else:
+			try:
+				frappe.delete_doc("Deploy Candidate", candidate, delete_permanently=True)
+				frappe.db.commit()
+			except Exception:
+				log_error("Draft Deploy Candidate Deletion Error", candidate=candidate)
+				frappe.db.rollback()
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

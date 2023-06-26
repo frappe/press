@@ -387,7 +387,7 @@ class Team(Document):
 
 		previous_billing_name = previous_version.billing_name
 
-		if previous_billing_name:
+		if previous_billing_name and previous_billing_name != self.billing_name:
 			try:
 				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
 				frappe.msgprint(

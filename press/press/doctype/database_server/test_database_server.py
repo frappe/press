@@ -19,7 +19,7 @@ def create_test_database_server(
 	ip: str = frappe.mock("ipv4"), cluster="Default"
 ) -> DatabaseServer:
 	"""Create test Database Server doc"""
-	return frappe.get_doc(
+	server = frappe.get_doc(
 		{
 			"doctype": "Database Server",
 			"status": "Active",
@@ -30,6 +30,8 @@ def create_test_database_server(
 			"cluster": cluster,
 		}
 	).insert(ignore_if_duplicate=True)
+	server.reload()
+	return server
 
 
 @patch.object(Ansible, "run", new=Mock())

@@ -204,6 +204,9 @@ scheduler_events = {
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.marketplace.doctype.marketplace_consumption_record.marketplace_consumption_record.consume_credits_for_prepaid_records",
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
+		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
+		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 	],
 	"all": [
 		"press.auth.flush",

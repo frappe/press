@@ -3,11 +3,11 @@
 
 frappe.ui.form.on('Bench', {
 	onload: function (frm) {
-		frm.set_query("candidate", function () {
+		frm.set_query('candidate', function () {
 			return {
-				"filters": {
-					"group": frm.doc.group,
-				}
+				filters: {
+					group: frm.doc.group,
+				},
 			};
 		});
 	},
@@ -15,7 +15,7 @@ frappe.ui.form.on('Bench', {
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/benches/${frm.doc.group}/versions/${frm.doc.name}`,
-			__('Visit Dashboard')
+			__('Visit Dashboard'),
 		);
 
 		[
@@ -23,22 +23,34 @@ frappe.ui.form.on('Bench', {
 			[__('Sync Sites Info'), 'sync_info'],
 			[__('Sync Sites Analytics'), 'sync_analytics'],
 			[__('Update All Sites'), 'update_all_sites'],
-			[__('Generate NGINX Config'), 'generate_nginx_config', frm.doc.status === "Active"],
-			[__('Remove SSH User from Proxy'), 'remove_ssh_user', frm.doc.is_ssh_proxy_setup],
-			[__('Add SSH User to Proxy'), 'add_ssh_user', !frm.doc.is_ssh_proxy_setup],
-			[__('Restart'), 'restart', frm.doc.status === "Active"],
-			[__('Retry New Bench'), 'retry_bench', frm.doc.status === "Broken"]
+			[
+				__('Generate NGINX Config'),
+				'generate_nginx_config',
+				frm.doc.status === 'Active',
+			],
+			[
+				__('Remove SSH User from Proxy'),
+				'remove_ssh_user',
+				frm.doc.is_ssh_proxy_setup,
+			],
+			[
+				__('Add SSH User to Proxy'),
+				'add_ssh_user',
+				!frm.doc.is_ssh_proxy_setup,
+			],
+			[__('Restart'), 'restart', frm.doc.status === 'Active'],
+			[__('Retry New Bench'), 'retry_bench', frm.doc.status === 'Broken'],
 		].forEach(([label, method, condition]) => {
-			if (typeof condition === "undefined" || condition){	
+			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
 					() => {
 						frappe.confirm(
 							`Are you sure you want to ${label.toLowerCase()} this bench?`,
-							() => frm.call(method).then((r) => frm.refresh())
+							() => frm.call(method).then((r) => frm.refresh()),
 						);
 					},
-					__('Actions')
+					__('Actions'),
 				);
 			}
 		});
@@ -60,16 +72,17 @@ frappe.ui.form.on('Bench', {
 					primary_action({ server }) {
 						frm.call('move_sites', { server }).then((r) => {
 							if (!r.exc) {
-								frappe.show_alert(`Scheduled migrations for sites to ${server}`);
+								frappe.show_alert(
+									`Scheduled migrations for sites to ${server}`,
+								);
 							}
-							d.hide()
+							d.hide();
 						});
 					},
 				});
 				d.show();
 			},
-			__('Actions')
+			__('Actions'),
 		);
-
-	}
+	},
 });
