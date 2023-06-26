@@ -47,6 +47,7 @@ def verify(server):
 	)
 	play = ansible.run()
 	if play.status == "Success":
+		server_doc.fetch_system_ram(play.name)
 		server_doc.status = "Pending"
 		server_doc.save()
 		server_doc.create_db_server()

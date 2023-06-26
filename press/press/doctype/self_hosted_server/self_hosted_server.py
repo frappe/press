@@ -493,3 +493,18 @@ class SelfHostedServer(Document):
 				"timestamp": self.creation,
 			}
 		).insert(ignore_permissions=True)
+	
+	@frappe.whitelist()
+	def fetch_system_ram(self,play_id=None):
+		"""
+		Fetch the RAM from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = frappe.get_last_doc("Ansible Play",{"server":self.name,"play":"Ping Server"}).name
+		play = frappe.get_doc("Ansible Task",{"status":"Success","play":play_id,"task":"Gather Facts"})
+		try:
+			result = json.loads(play.result)
+			self.ram = result["ansible_facts"]["memtotal_mb"]
+			self.save()
+		except Exception:
+			log_error("Fetching RAM failed",server=self.as_dict())
