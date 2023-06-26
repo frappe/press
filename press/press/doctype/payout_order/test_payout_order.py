@@ -5,6 +5,7 @@ import frappe
 
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.invoice.invoice import Invoice
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
 )
@@ -14,7 +15,10 @@ from press.press.doctype.payout_order.payout_order import (
 )
 from press.press.doctype.team.test_team import create_test_team
 
+from unittest.mock import patch, Mock
 
+
+@patch.object(Invoice, "create_invoice_on_frappeio", new=Mock())
 class TestPayoutOrder(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

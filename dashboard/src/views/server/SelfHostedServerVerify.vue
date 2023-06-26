@@ -4,7 +4,8 @@
 			<span class="text-base">
 				Add this SSH Key to
 				<span class="font-mono text-blue-500">~/.ssh/known_hosts</span> of the
-				Server you are adding</span>
+				Server you are adding</span
+			>
 		</div>
 		<ClickToCopyField :textContent="ssh_key" />
 		<div class="my-2 grid place-items-center"></div>

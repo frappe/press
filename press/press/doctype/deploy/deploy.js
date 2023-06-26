@@ -2,16 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Deploy', {
-	onload: function(frm) {
-		frm.set_query("candidate", function() {
+	onload: function (frm) {
+		frm.set_query('candidate', function () {
 			return {
-				"filters": {
-					"group": frm.doc.group,
-				}
+				filters: {
+					group: frm.doc.group,
+				},
 			};
 		});
 	},
-// refresh: function(frm) {
-		
+	// refresh: function(frm) {
+
 	// }
 });

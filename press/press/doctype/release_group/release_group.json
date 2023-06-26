@@ -30,9 +30,10 @@
   "environment_variables",
   "feature_flags_tab",
   "is_redisearch_enabled",
-  "multiple_rq_queues",
-  "column_break_23",
   "is_push_to_deploy_enabled",
+  "column_break_9efq",
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues",
   "saas_tab",
   "saas_bench",
   "column_break_26",
@@ -164,10 +165,6 @@
    "label": "Feature Flags"
   },
   {
-   "fieldname": "column_break_23",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "is_push_to_deploy_enabled",
    "fieldtype": "Check",
@@ -204,20 +201,30 @@
    "options": "Release Group Package"
   },
   {
-   "default": "0",
-   "fieldname": "multiple_rq_queues",
-   "fieldtype": "Check",
-   "label": "Multiple RQ Queues"
-  },
-  {
    "fieldname": "environment_variables",
    "fieldtype": "Table",
    "label": "Environment Variables",
    "options": "Release Group Variable"
+  },
+  {
+   "fieldname": "column_break_9efq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues"
+  },
+  {
+   "default": "0",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues"
   }
  ],
  "links": [],
- "modified": "2023-06-13 16:16:18.973665",
+ "modified": "2023-06-16 13:20:20.891683",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

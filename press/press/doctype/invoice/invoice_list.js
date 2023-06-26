@@ -2,13 +2,13 @@
 // License: GNU General Public License v3. See license.txt
 
 frappe.listview_settings['Invoice'] = {
-	get_indicator: function(doc) {
+	get_indicator: function (doc) {
 		var status_color = {
-			"Draft": "darkgrey",
-			"Unpaid": "orange",
-			"Paid": "green",
-			"Invoice Created": "blue"
+			Draft: 'darkgrey',
+			Unpaid: 'orange',
+			Paid: 'green',
+			'Invoice Created': 'blue',
 		};
-		return [__(doc.status), status_color[doc.status], "status,=," + doc.status];
-	}
+		return [__(doc.status), status_color[doc.status], 'status,=,' + doc.status];
+	},
 };

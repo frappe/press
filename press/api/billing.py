@@ -468,7 +468,7 @@ def get_latest_unpaid_invoice():
 		unpaid_invoice = frappe.db.get_value(
 			"Invoice",
 			unpaid_invoices[0],
-			["amount_due", "stripe_invoice_url", "payment_mode", "amount_due", "currency"],
+			["amount_due", "payment_mode", "amount_due", "currency"],
 			as_dict=True,
 		)
 		if (

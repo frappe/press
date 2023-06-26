@@ -7,6 +7,7 @@ from typing import Dict, List
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.model.naming import make_autoname
 
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -25,18 +26,20 @@ def create_test_proxy_server(
 ):
 	"""Create test Proxy Server doc"""
 	create_test_press_settings()
-	return frappe.get_doc(
+	server = frappe.get_doc(
 		{
 			"doctype": "Proxy Server",
 			"status": "Active",
 			"ip": frappe.mock("ipv4"),
 			"private_ip": frappe.mock("ipv4_private"),
-			"hostname": hostname,
+			"hostname": make_autoname(hostname + ".######"),
 			"cluster": cluster,
 			"domain": domain,
 			"domains": domains,
 		}
 	).insert(ignore_if_duplicate=True)
+	server.reload()
+	return server
 
 
 class TestProxyServer(unittest.TestCase):

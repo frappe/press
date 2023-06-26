@@ -32,7 +32,9 @@
   "failures_section",
   "last_archive_failure",
   "feature_flags_section",
-  "multiple_rq_queues",
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues",
+  "column_break_mtyb",
   "environment_variables"
  ],
  "fields": [
@@ -231,22 +233,34 @@
    "label": "Feature Flags"
   },
   {
-   "default": "0",
-   "fetch_from": "candidate.multiple_rq_queues",
-   "fieldname": "multiple_rq_queues",
-   "fieldtype": "Check",
-   "label": "Multiple RQ Queues",
-   "read_only": 1
-  },
-  {
    "fieldname": "environment_variables",
    "fieldtype": "Table",
    "label": "Environment Variables",
    "options": "Bench Variable"
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.merge_all_rq_queues",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.merge_default_and_short_rq_queues",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mtyb",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2023-06-13 16:18:42.248340",
+ "modified": "2023-06-16 13:19:57.747257",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
