@@ -86,7 +86,7 @@ export default {
 					start: this.pageStart
 				},
 				auto: true,
-				paged: true,
+				pageLength: 10,
 				keepData: true,
 				default: []
 			};
@@ -124,7 +124,7 @@ export default {
 	},
 	methods: {
 		onSteps(data) {
-			if (this.$resources.selectedCandidate.data) {
+			if (this.$resources.selectedCandidate?.data.name === data.name) {
 				this.$resources.selectedCandidate.data.build_steps = data.steps;
 			}
 		},

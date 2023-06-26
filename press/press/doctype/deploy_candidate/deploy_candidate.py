@@ -664,7 +664,7 @@ class DeployCandidate(Document):
 	def on_update(self):
 		if self.status == "Running":
 			frappe.publish_realtime(
-				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps}
+				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
@@ -680,7 +680,7 @@ def cleanup_build_directories():
 		{
 			"status": ("!=", "Draft"),
 			"build_directory": ("is", "set"),
-			"creation": ("<=", frappe.utils.add_days(None, -1)),
+			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
 		},
 		order_by="creation asc",
 		pluck="name",

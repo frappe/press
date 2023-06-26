@@ -152,7 +152,7 @@ export default {
 					start: this.pageStart,
 					source: this.selectedSource
 				},
-				paged: true,
+				pageLength: 15,
 				keepData: true
 			};
 		},
