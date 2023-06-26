@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Saas Remote Login', {
 	// refresh: function(frm) {
+
 	// }
 });

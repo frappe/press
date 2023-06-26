@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Press Job Type Step', {
 	// refresh: function(frm) {
+
 	// }
 });

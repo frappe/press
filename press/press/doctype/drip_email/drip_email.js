@@ -2,5 +2,7 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Drip Email', {
-	refresh: function (frm) {},
+	refresh: function(frm) {
+
+	}
 });

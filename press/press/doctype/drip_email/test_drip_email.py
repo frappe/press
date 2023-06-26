@@ -20,7 +20,7 @@ from press.press.doctype.marketplace_app.test_marketplace_app import (
 
 
 def create_test_drip_email(send_after: int, saas_app: Optional[str] = None):
-	drip_email = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Drip Email",
 			"sender": "test@test.com",
@@ -31,8 +31,6 @@ def create_test_drip_email(send_after: int, saas_app: Optional[str] = None):
 			"saas_app": saas_app,
 		}
 	).insert(ignore_if_duplicate=True)
-	drip_email.reload()
-	return drip_email
 
 
 class TestDripEmail(unittest.TestCase):

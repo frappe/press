@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Team Member Deletion Request', {
 	// refresh: function(frm) {
+
 	// }
 });

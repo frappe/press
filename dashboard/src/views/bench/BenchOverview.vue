@@ -1,7 +1,6 @@
 <template>
 	<div class="space-y-5" v-if="bench">
-		<AlertBenchUpdate v-if="bench.no_sites <= 0" :bench="bench" />
-		<AlertUpdate v-else :bench="bench" />
+		<AlertBenchUpdate :bench="bench" />
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<BenchOverviewInfo :bench="bench" />
 			<BenchOverviewVersions :bench="bench" />
@@ -12,7 +11,6 @@
 </template>
 
 <script>
-import AlertUpdate from '@/components/AlertUpdate.vue';
 import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
 import BenchOverviewInfo from './BenchOverviewInfo.vue';
 import BenchOverviewRecentDeploys from './BenchOverviewRecentDeploys.vue';
@@ -23,7 +21,6 @@ export default {
 	name: 'BenchGeneral',
 	props: ['bench'],
 	components: {
-		AlertUpdate,
 		AlertBenchUpdate,
 		BenchOverviewInfo,
 		BenchOverviewRecentDeploys,

@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Marketplace Consumption Record', {
 	// refresh: function(frm) {
+
 	// }
 });

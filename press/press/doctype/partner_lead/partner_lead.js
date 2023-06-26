@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Partner Lead', {
 	// refresh: function(frm) {
+
 	// }
 });

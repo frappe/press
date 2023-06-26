@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Site Activity', {
 	// refresh: function(frm) {
+
 	// }
 });

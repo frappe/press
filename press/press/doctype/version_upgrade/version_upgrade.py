@@ -5,7 +5,6 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
-from press.utils import log_error
 
 
 class VersionUpgrade(Document):
@@ -34,9 +33,9 @@ class VersionUpgrade(Document):
 		bench_apps = [
 			app.app for app in frappe.get_doc("Release Group", self.destination_group).apps
 		]
-		if diff := set(site_apps) - set(bench_apps):
+		if set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Group {self.destination_group} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
 				frappe.ValidationError,
 			)
 
@@ -134,9 +133,4 @@ def update_from_site_update():
 
 def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
-		try:
-			upgrade.start()
-			frappe.db.commit()
-		except Exception:
-			log_error("Scheduled Version Upgrade Error", upgrade=upgrade)
-			frappe.db.rollback()
+		upgrade.start()

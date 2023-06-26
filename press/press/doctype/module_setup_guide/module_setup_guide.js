@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Module Setup Guide', {
 	// refresh: function(frm) {
+
 	// }
 });

@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Alertmanager Webhook Log', {
 	// refresh: function(frm) {
+
 	// }
 });

@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Certificate Authority', {
 	// refresh: function(frm) {
+
 	// }
 });

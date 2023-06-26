@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Ansible Task', {
 	// refresh: function(frm) {
+
 	// }
 });

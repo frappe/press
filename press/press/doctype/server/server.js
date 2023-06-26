@@ -5,7 +5,7 @@ frappe.ui.form.on('Server', {
 	refresh: function (frm) {
 		frm.add_web_link(
 			`/dashboard/servers/${frm.doc.name}`,
-			__('Visit Dashboard'),
+			__('Visit Dashboard')
 		);
 		[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
@@ -100,9 +100,7 @@ frappe.ui.form.on('Server', {
 				__('Setup Standalone'),
 				'setup_standalone',
 				false,
-				frm.doc.is_server_setup &&
-					frm.doc.is_standalone &&
-					!frm.doc.is_standalone_setup,
+				frm.doc.is_server_setup && frm.doc.is_standalone && ! frm.doc.is_standalone_setup,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
@@ -119,7 +117,7 @@ frappe.ui.form.on('Server', {
 										} else {
 											frm.refresh();
 										}
-									}),
+									})
 							);
 						} else {
 							frm.call(method).then((r) => {
@@ -131,7 +129,7 @@ frappe.ui.form.on('Server', {
 							});
 						}
 					},
-					__('Actions'),
+					__('Actions')
 				);
 			}
 		});

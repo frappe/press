@@ -30,7 +30,6 @@ class ReleaseGroup(Document):
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_dependencies()
-		self.validate_rq_queues()
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -95,13 +94,6 @@ class ReleaseGroup(Document):
 
 		if not hasattr(self, "dependencies") or not self.dependencies:
 			self.extend("dependencies", dependencies)
-
-	def validate_rq_queues(self):
-		if self.merge_all_rq_queues and self.merge_default_and_short_rq_queues:
-			frappe.throw(
-				"Can't set Merge All RQ Queues and Merge Short and Default RQ Queues at once",
-				frappe.ValidationError,
-			)
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
@@ -218,12 +210,6 @@ class ReleaseGroup(Document):
 		last_dc_info = self.get_last_deploy_candidate_info()
 		out.last_deploy = last_dc_info
 		out.deploy_in_progress = last_dc_info and last_dc_info.status == "Running"
-		out.sites = [
-			site.update({"skip_failing_patches": False, "skip_backups": False})
-			for site in frappe.get_all(
-				"Site", {"group": self.name, "status": "Active"}, ["name", "server"]
-			)
-		]
 
 		return out
 

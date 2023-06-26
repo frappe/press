@@ -16,7 +16,7 @@ def create_test_subscription(
 	document_name: str, plan: str, team: str, document_type: str = "Site"
 ):
 
-	subscription = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "Subscription",
 			"document_type": document_type,
@@ -25,8 +25,6 @@ def create_test_subscription(
 			"plan": plan,
 		}
 	).insert(ignore_if_duplicate=True)
-	subscription.reload()
-	return subscription
 
 
 class TestSubscription(unittest.TestCase):

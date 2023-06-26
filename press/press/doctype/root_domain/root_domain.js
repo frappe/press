@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Root Domain', {
 	// refresh: function(frm) {
+
 	// }
 });

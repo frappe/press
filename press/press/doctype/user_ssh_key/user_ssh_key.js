@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('User SSH Key', {
 	// refresh: function(frm) {
+
 	// }
 });

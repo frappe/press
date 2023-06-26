@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('App Tag', {
 	// refresh: function(frm) {
+
 	// }
 });
