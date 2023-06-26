@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Security Update Check', {
 	// refresh: function(frm) {
+
 	// }
 });

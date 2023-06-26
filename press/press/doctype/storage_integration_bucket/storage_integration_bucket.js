@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Storage Integration Bucket', {
 	// refresh: function(frm) {
+
 	// }
 });

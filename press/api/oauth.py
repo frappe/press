@@ -17,12 +17,6 @@ from press.api.saas import (
 	create_or_rename_saas_site,
 )
 from press.press.doctype.site.saas_site import get_saas_domain
-from press.utils import log_error
-
-
-import os
-
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 def google_oauth_flow():
@@ -34,6 +28,9 @@ def google_oauth_flow():
 			"https://www.googleapis.com/auth/userinfo.profile",
 			"openid",
 			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/user.addresses.read",
+			"https://www.googleapis.com/auth/user.phonenumbers.read",
+			"https://www.googleapis.com/auth/contacts.readonly",
 		],
 		redirect_uri=redirect_uri,
 	)
@@ -68,9 +65,7 @@ def callback(code=None, state=None):
 		flow = google_oauth_flow()
 		flow.fetch_token(authorization_response=frappe.request.url)
 	except Exception as e:
-		log_error("Google oauth Login failed", data=e)
-		frappe.local.response.type = "redirect"
-		frappe.local.response.location = "/dashboard/login"
+		frappe.throw(e)
 
 	# id_info
 	token_request = Request()
@@ -83,19 +78,18 @@ def callback(code=None, state=None):
 	email = id_info.get("email")
 
 	# phone (this may return nothing if info doesn't exists)
+	credentials = Credentials.from_authorized_user_info(
+		json.loads(flow.credentials.to_json())
+	)
+	service = build("people", "v1", credentials=credentials)
+	person = (
+		service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
+	)
 	number = ""
-	if flow.credentials.refresh_token:  # returns only for the first authorization
-		credentials = Credentials.from_authorized_user_info(
-			json.loads(flow.credentials.to_json())
-		)
-		service = build("people", "v1", credentials=credentials)
-		person = (
-			service.people().get(resourceName="people/me", personFields="phoneNumbers").execute()
-		)
-		if person:
-			phone = person.get("phoneNumbers")
-			if phone:
-				number = phone[0].get("value")
+	if person:
+		phone = person.get("phoneNumbers")
+		if phone:
+			number = phone[0].get("value")
 
 	# saas signup
 	if saas_app and cached_state:

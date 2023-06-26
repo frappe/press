@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Mail Setup', {
 	// refresh: function(frm) {
+
 	// }
 });

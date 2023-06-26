@@ -9,6 +9,7 @@ import SiteOverviewCPUUsage from './SiteOverviewCPUUsage.vue';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 import SiteActivity from './SiteActivity.vue';
+import SiteOverviewAppsAndSubscriptions from './SiteOverviewAppsAndSubscriptions.vue';
 
 const props = defineProps({ site: Object });
 const showPromotionalDialog = ref(false);

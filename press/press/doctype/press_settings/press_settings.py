@@ -9,7 +9,6 @@ from frappe.model.document import Document
 from frappe.utils import get_url
 
 from press.api.billing import get_stripe
-from press.telegram_utils import Telegram
 
 
 class PressSettings(Document):
@@ -83,7 +82,3 @@ class PressSettings(Document):
 				["aws_s3_bucket", "offsite_backups_access_key_id"],
 			)
 		)
-
-	@property
-	def telegram(self):
-		return Telegram

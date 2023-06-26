@@ -59,7 +59,7 @@ export default {
 					start: this.pageStart
 				},
 				auto: true,
-				pageLength: 20,
+				paged: true,
 				keepData: true
 			};
 		},

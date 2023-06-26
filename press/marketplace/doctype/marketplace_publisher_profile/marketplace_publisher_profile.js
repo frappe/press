@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Marketplace Publisher Profile', {
 	// refresh: function(frm) {
+
 	// }
 });

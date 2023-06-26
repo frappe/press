@@ -17,7 +17,7 @@ def create_test_plan(
 ):
 	"""Create test Plan doc."""
 	name = frappe.mock("name")
-	plan = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"name": f"Test 10 dollar plan {name}",
 			"doctype": "Plan",
@@ -25,12 +25,8 @@ def create_test_plan(
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,
-			"disk": 50,
-			"instance_type": "t2.micro",
 		}
 	).insert(ignore_if_duplicate=True)
-	plan.reload()
-	return plan
 
 
 class TestPlan(unittest.TestCase):

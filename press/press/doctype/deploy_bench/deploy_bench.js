@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Deploy Bench', {
 	// refresh: function(frm) {
+
 	// }
 });

@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Stripe Payment Event', {
 	// refresh: function(frm) {
+
 	// }
 });

@@ -15,7 +15,7 @@ def create_test_user_ssh_key(user: str):
 		key_size=2048,
 		backend=cryptography.hazmat.backends.default_backend(),
 	)
-	ssh_key = frappe.get_doc(
+	return frappe.get_doc(
 		{
 			"doctype": "User SSH Key",
 			"user": user,
@@ -25,8 +25,6 @@ def create_test_user_ssh_key(user: str):
 			),
 		}
 	).insert(ignore_if_duplicate=True)
-	ssh_key.reload()
-	return ssh_key
 
 
 class TestUserSSHKey(unittest.TestCase):

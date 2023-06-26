@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Payout Order', {
 	// refresh: function(frm) {
+
 	// }
 });

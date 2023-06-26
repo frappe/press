@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Scheduled Auto Update Log', {
 	// refresh: function(frm) {
+
 	// }
 });

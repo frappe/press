@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Blocked Domain', {
 	// refresh: function(frm) {
+
 	// }
 });

@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Plan', {
 	// refresh: function(frm) {
+
 	// }
 });

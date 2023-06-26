@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Site Migration Step', {
 	// refresh: function(frm) {
+
 	// }
 });

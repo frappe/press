@@ -3,5 +3,6 @@
 
 frappe.ui.form.on('Remote Operation Log', {
 	// refresh: function(frm) {
+
 	// }
 });
