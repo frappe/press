@@ -25,7 +25,7 @@
 				>
 					<ComboboxOption
 						v-for="option in filteredOptions"
-						:key="`${option.name}`"
+						:key="`${option.route}`"
 						v-slot="{ active }"
 						:value="option"
 					>
@@ -52,7 +52,6 @@ import {
 	ComboboxOptions,
 	ComboboxOption
 } from '@headlessui/vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { debounce } from 'lodash';
 
 export default {
@@ -71,43 +70,24 @@ export default {
 		ComboboxOptions,
 		ComboboxOption
 	},
-	mounted() {
-		this.makeFuse();
-	},
 	methods: {
-		onInput: debounce(function (e) {
-			let query = e.target.value;
+		onInput: debounce(async function (e) {
+			const query = e.target.value;
 			if (query) {
-				this.filteredOptions = this.fuse
-					.search(query)
-					.map(result => result.item);
+				const list = await this.$call('press.utils.search.search', {
+					text: query
+				});
+				this.filteredOptions = list.map(item => {
+					if (item.doctype === 'Release Group')
+						return { ...item, doctype: 'Bench' };
+					return item;
+				});
 			}
-		}, 200),
+		}, 400),
 		onSelection(value) {
 			if (value) {
 				this.$router.push(value.route);
 			}
-		},
-		async makeFuse() {
-			let list = await this.$call('press.api.account.fuse_list');
-			let fuse_list = list;
-			for (let item of fuse_list) {
-				item.route =
-					`/${
-						item.doctype.toLowerCase() + (item.doctype === 'Bench' ? 'es' : 's')
-					}/` +
-					item.route +
-					'/overview';
-			}
-
-			const options = {
-				limit: 20,
-				includeScore: true,
-				shouldSort: true,
-				minMatchCharLength: 3,
-				keys: ['title']
-			};
-			this.fuse = new Fuse(fuse_list, options);
 		}
 	}
 };

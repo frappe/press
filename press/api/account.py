@@ -663,30 +663,3 @@ def create_api_secret():
 @frappe.whitelist()
 def me():
 	return {"user": frappe.session.user, "team": get_current_team()}
-
-
-@frappe.whitelist()
-def fuse_list():
-	team = get_current_team(get_doc=True)
-	query = f"""
-		SELECT
-			'Site' as doctype, name as title, name as route
-		FROM
-			`tabSite`
-		WHERE
-			team = '{team.name}' AND status NOT IN ('Archived')
-		UNION ALL
-		SELECT 'Bench' as doctype, title as title, name as route
-		FROM
-			`tabRelease Group`
-		WHERE
-			team = '{team.name}' AND enabled = 1
-		UNION ALL
-		SELECT 'Server' as doctype, name as title, name as route
-		FROM
-			`tabServer`
-		WHERE
-			team = '{team.name}' AND status = 'Active'
-	"""
-
-	return frappe.db.sql(query, as_dict=True)

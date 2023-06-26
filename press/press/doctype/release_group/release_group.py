@@ -12,6 +12,7 @@ from press.press.doctype.server.server import Server
 from press.utils import get_last_doc, get_app_tag, get_current_team, log_error
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
+from press.utils.search import add_index_for_document, update_index_for_document
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -23,6 +24,12 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
+	def after_insert(self):
+		add_index_for_document(self)
+
+	def on_update(self):
+		update_index_for_document(self)
+
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()

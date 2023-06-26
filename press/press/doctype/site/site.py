@@ -17,6 +17,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, cstr, get_datetime
+from press.utils.search import add_index_for_document, update_index_for_document
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -139,6 +140,8 @@ class Site(Document):
 		):
 			self.rename(self._get_site_name(self.subdomain))
 
+		update_index_for_document(self)
+
 	def rename_upstream(self, new_name: str):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
@@ -251,6 +254,7 @@ class Site(Document):
 		self._create_default_site_domain()
 		self.create_dns_record()
 		self.create_agent_request()
+		add_index_for_document(self)
 
 	@frappe.whitelist()
 	def create_dns_record(self):

@@ -12,6 +12,7 @@ from press.utils import log_error
 from frappe.core.utils import find
 from press.overrides import get_permission_query_conditions_for_doctype
 from frappe.utils.user import is_system_user
+from press.utils.search import add_index_for_document, update_index_for_document
 
 from typing import List, Union
 import boto3
@@ -474,7 +475,12 @@ class BaseServer(Document):
 
 
 class Server(BaseServer):
+	def after_insert(self):
+		add_index_for_document(self)
+
 	def on_update(self):
+		update_index_for_document(self)
+
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):
 			benches = frappe.get_all(

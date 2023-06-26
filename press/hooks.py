@@ -88,7 +88,11 @@ jinja = {
 
 # before_install = "press.install.before_install"
 after_install = "press.install.after_install"
-after_migrate = ["press.api.account.clear_country_list_cache", "press.sanity.checks"]
+after_migrate = [
+	"press.api.account.clear_country_list_cache",
+	"press.sanity.checks",
+	"press.utils.search.rebuild_search_index",
+]
 
 # Desk Notifications
 # ------------------
