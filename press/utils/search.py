@@ -47,22 +47,14 @@ def add_index_for_document(doc):
 
 
 def update_index_for_document(doc):
+	delete_index_for_document(doc)
+
 	if (doc.doctype in ("Site", "Server") and doc.status == "Archived") or (
-		doc.doctype == "Release Group" and not doc.enabled
+		doc.doctype == "Release Group" and not cint(doc.enabled)
 	):
-		delete_index_for_document(doc)
 		return
 
-	press_search = frappe.qb.Table("__press_search")
-
-	route = get_route(doc)
-	title = get_title(doc)
-
-	frappe.qb.update(press_search).set(press_search.doctype, doc.doctype).set(
-		press_search.title, title
-	).set(press_search.route, route).set(press_search.team, doc.team).where(
-		press_search.name == doc.name
-	).run()
+	add_index_for_document(doc)
 
 
 def get_route(doc):
