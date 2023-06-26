@@ -17,6 +17,7 @@ from press.api.saas import (
 	create_or_rename_saas_site,
 )
 from press.press.doctype.site.saas_site import get_saas_domain
+from press.utils import log_error
 
 
 import os
@@ -33,9 +34,6 @@ def google_oauth_flow():
 			"https://www.googleapis.com/auth/userinfo.profile",
 			"openid",
 			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/user.addresses.read",
-			"https://www.googleapis.com/auth/user.phonenumbers.read",
-			"https://www.googleapis.com/auth/contacts.readonly",
 		],
 		redirect_uri=redirect_uri,
 	)
@@ -70,7 +68,9 @@ def callback(code=None, state=None):
 		flow = google_oauth_flow()
 		flow.fetch_token(authorization_response=frappe.request.url)
 	except Exception as e:
-		frappe.throw(e)
+		log_error("Google oauth Login failed", data=e)
+		frappe.local.response.type = "redirect"
+		frappe.local.response.location = "/dashboard/login"
 
 	# id_info
 	token_request = Request()

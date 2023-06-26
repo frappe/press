@@ -94,7 +94,7 @@ export default {
 					start: this.start
 				},
 				auto: Boolean(this.dateValue),
-				paged: true,
+				pageLength: 10,
 				keepData: true,
 				default: []
 			};
