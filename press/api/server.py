@@ -22,20 +22,36 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all():
+def all(start=0, server_type=None):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
-	app_servers = frappe.get_all(
-		"Server",
-		{"team": ("in", teams), "status": ("!=", "Archived")},
-		["name", "creation", "status", "title"],
-	)
-	database_servers = frappe.get_all(
-		"Database Server",
-		{"team": ("in", teams), "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
-		["name", "creation", "status", "title"],
-	)
+
+	app_servers = []
+	database_servers = []
+
+	if server_type != "Database Servers":
+		app_servers = frappe.get_all(
+			"Server",
+			{"team": ("in", teams), "status": ("!=", "Archived")},
+			["name", "creation", "status", "title"],
+			start=start if server_type == "App Servers" else start / 2,
+			limit=10 if server_type == "App Servers" else 5,
+		)
+
+	if server_type != "App Servers":
+		database_servers = frappe.get_all(
+			"Database Server",
+			{
+				"team": ("in", teams),
+				"status": ("!=", "Archived"),
+				"is_self_hosted": ("!=", True),
+			},
+			["name", "creation", "status", "title"],
+			start=start if server_type == "Database Servers" else start / 2,
+			limit=10 if server_type == "Database Servers" else 5,
+		)
+
 	all_servers = app_servers + database_servers
 	for server in all_servers:
 		server["app_server"] = f"f{server.name[1:]}"

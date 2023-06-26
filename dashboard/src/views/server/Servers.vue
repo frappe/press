@@ -33,9 +33,34 @@
 		</PageHeader>
 
 		<div>
+			<SectionHeader :heading="serverType">
+				<template #actions>
+					<Input
+						type="select"
+						:options="serverTypeOptions"
+						v-model="serverType"
+						@change="
+							pageStart = 0;
+							$resources.allServers.reset();
+						"
+					/>
+				</template>
+			</SectionHeader>
 			<div class="mt-3">
-				<LoadingText v-if="$resources.allServers.loading" />
+				<LoadingText v-if="$resources.allServers.loading && pageStart === 0" />
 				<ServerList v-else :servers="servers" />
+			</div>
+			<div
+				class="py-3"
+				v-if="!$resources.allServers.lastPageEmpty && servers.length > 0"
+			>
+				<Button
+					:loading="$resources.allServers.loading"
+					loadingText="Loading..."
+					@click="pageStart += 10"
+				>
+					Load more
+				</Button>
 			</div>
 		</div>
 		<Dialog
@@ -74,7 +99,22 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-
+			pageStart: 0,
+			serverType: 'All Servers',
+			serverTypeOptions: [
+				{
+					label: 'All Servers',
+					value: 'All Servers'
+				},
+				{
+					label: 'App Servers',
+					value: 'App Servers'
+				},
+				{
+					label: 'Database Servers',
+					value: 'Database Servers'
+				}
+			],
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -88,12 +128,20 @@ export default {
 		};
 	},
 	resources: {
-		allServers: {
-			method: 'press.api.server.all',
-			auto: true
+		allServers() {
+			return {
+				method: 'press.api.server.all',
+				params: { start: this.pageStart, server_type: this.serverType },
+				pageLength: this.pageLength(),
+				keepData: true,
+				auto: true
+			};
 		}
 	},
 	methods: {
+		pageLength() {
+			return this.pageStart === 0 ? 0 : 10;
+		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
