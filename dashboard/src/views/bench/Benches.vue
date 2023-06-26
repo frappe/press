@@ -112,7 +112,7 @@ export default {
 			return {
 				method: 'press.api.bench.all',
 				params: { start: this.pageStart, status: this.benchStatus },
-				paged: this.pagedBenches(),
+				pageLength: this.pageLength(),
 				keepData: true,
 				auto: true
 			};
@@ -128,8 +128,8 @@ export default {
 		}
 	},
 	methods: {
-		pagedBenches() {
-			return this.pageStart === 0 ? false : true;
+		pageLength() {
+			return this.pageStart === 0 ? 0 : 10;
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {

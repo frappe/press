@@ -193,7 +193,7 @@ export default {
 			return {
 				method: 'press.api.site.all',
 				params: { start: this.pageStart, status: this.siteStatus },
-				paged: this.pagedSites(),
+				pageLength: this.pageLength(),
 				keepData: true,
 				auto: true
 			};
@@ -213,8 +213,8 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		pagedSites() {
-			return this.pageStart === 0 ? false : true;
+		pageLength() {
+			return this.pageStart === 0 ? 0 : 10;
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
