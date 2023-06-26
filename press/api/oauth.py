@@ -17,6 +17,7 @@ from press.api.saas import (
 	create_or_rename_saas_site,
 )
 from press.press.doctype.site.saas_site import get_saas_domain
+from press.utils import log_error
 
 
 import os
@@ -67,7 +68,7 @@ def callback(code=None, state=None):
 		flow = google_oauth_flow()
 		flow.fetch_token(authorization_response=frappe.request.url)
 	except Exception as e:
-		frappe.throw(e)
+		log_error("Google oauth Login failed", data=e)
 		frappe.local.response.type = "redirect"
 		frappe.local.response.location = "/dashboard/login"
 

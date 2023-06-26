@@ -52,6 +52,13 @@ class BenchUpdate(Document):
 		for site in self.sites:
 			if site.server == server and site.status == "Pending" and not site.site_update:
 				try:
+					if frappe.get_all(
+						"Site Update",
+						{"site": site.site, "status": ("in", ("Pending", "Running", "Failure"))},
+						ignore_ifnull=True,
+						limit=1,
+					):
+						continue
 					site_update = frappe.get_doc("Site", site.site).schedule_update(
 						skip_failing_patches=site.skip_failing_patches, skip_backups=site.skip_backups
 					)
