@@ -90,7 +90,7 @@
 					>
 						<span class="text-sm">Download Invoice</span>
 					</Button>
-					<div class="flex-y space-y-1">
+					<div class="flex space-x-1">
 						<Button
 							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 							icon-left="external-link"
@@ -99,18 +99,19 @@
 						>
 							<span class="text-sm">Pay Now</span>
 						</Button>
-						<Button
-							v-if="
-								invoice.status != 'Paid' &&
-								invoice.stripe_invoice_url &&
-								invoice.stripe_link_expired
-							"
-							icon-left="refresh-cw"
-							class="shrink-0"
-							@click="refreshLink(invoice.name)"
-						>
-							<span class="text-sm">Refresh Link</span>
-						</Button>
+						<Tooltip text="Refresh Stripe Payment Link">
+							<Button
+								v-if="
+									invoice.status != 'Paid' &&
+									invoice.stripe_invoice_url &&
+									invoice.stripe_link_expired
+								"
+								icon-left="refresh-cw"
+								class="shrink-0 py-2"
+								@click="refreshLink(invoice.name)"
+							>
+							</Button>
+						</Tooltip>
 					</div>
 				</div>
 			</div>
