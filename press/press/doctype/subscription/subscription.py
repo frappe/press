@@ -171,7 +171,7 @@ def paid_plans():
 	return frappe.db.get_all(
 		"Plan",
 		{
-			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
 			"is_trial_plan": 0,
 			"price_inr": (">", 0),
 		},
@@ -204,7 +204,7 @@ def created_usage_records(free_sites, date=frappe.utils.today()):
 	return frappe.get_all(
 		"Usage Record",
 		filters={
-			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
 			"date": date,
 			"document_name": ("not in", free_sites),
 		},

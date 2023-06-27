@@ -1313,6 +1313,14 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
 
+	@frappe.whitelist()
+	def enable_read_write(self):
+		self.enable_database_access("read_write")
+
+	@frappe.whitelist()
+	def disable_read_write(self):
+		self.enable_database_access("read_only")
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
