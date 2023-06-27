@@ -225,7 +225,9 @@ export default {
 				},
 				onSuccess(data) {
 					this.playOutput = data;
-					this.$resources.setupNginx.submit();
+					if (data) {
+						this.$resources.setupNginx.submit();
+					}
 				}
 			};
 		},
