@@ -100,14 +100,13 @@
   },
   {
    "fieldname": "subscription",
-   "fieldtype": "Link",
-   "label": "Subscription",
-   "options": "Subscription"
+   "fieldtype": "Data",
+   "label": "Subscription"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-25 20:24:06.751607",
+ "modified": "2023-06-27 14:26:09.055778",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",
