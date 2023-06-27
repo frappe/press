@@ -243,12 +243,11 @@ def process_prepaid_marketplace_payment(event):
 			install_subscription_apps(site, app)
 		else:
 			# Update plan on subscription
-			frappe.db.set_value(
-				"Marketplace App Subscription",
-				subscription,
-				"marketplace_app_plan",
-				plan,
+			marketplace_subscription = frappe.get_doc(
+				"Marketplace App Subscription", subscription
 			)
+			marketplace_subscription.marketplace_app_plan = plan
+			marketplace_subscription.save(ignore_permissions=True)
 
 		hosting_amount = change_site_hosting_plan(site, plan, team)
 		invoice_line_items.append(
