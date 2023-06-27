@@ -80,8 +80,9 @@ class MarketplaceAppSubscription(Document):
 			{
 				"doctype": "Subscription",
 				"team": self.team,
-				"document_type": "Marketplace App Subscription",
-				"document_name": self.name,
+				"document_type": "Marketplace App",
+				"document_name": self.app,
+				"marketplace_app_subscription": self.name,
 				"plan": frappe.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan"),
 			}
 		).insert(ignore_permissions=True)
