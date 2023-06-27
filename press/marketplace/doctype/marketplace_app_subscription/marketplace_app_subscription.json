@@ -16,7 +16,8 @@
   "secret_key",
   "interval",
   "plan",
-  "while_site_creation"
+  "while_site_creation",
+  "subscription"
  ],
  "fields": [
   {
@@ -96,11 +97,17 @@
    "fieldtype": "Link",
    "label": "Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "subscription",
+   "fieldtype": "Link",
+   "label": "Subscription",
+   "options": "Subscription"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-25 21:03:14.868590",
+ "modified": "2023-06-25 20:24:06.751607",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",

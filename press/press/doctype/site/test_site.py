@@ -67,6 +67,7 @@ def create_test_site(
 	new: bool = False,
 	creation: datetime = datetime.now(),
 	bench: str = None,
+	team: str = None,
 	standby_for: Optional[str] = None,
 ) -> Site:
 	"""Create test Site doc.
@@ -91,7 +92,7 @@ def create_test_site(
 			"subdomain": subdomain,
 			"server": bench.server,
 			"bench": bench.name,
-			"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
+			"team": team or frappe.get_value("Team", {"user": "Administrator"}, "name"),
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,
