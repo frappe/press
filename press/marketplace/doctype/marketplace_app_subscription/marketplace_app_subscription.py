@@ -63,28 +63,9 @@ class MarketplaceAppSubscription(Document):
 			self.plan = frappe.db.get_value(
 				"Marketplace App Plan", self.marketplace_app_plan, "plan"
 			)
-			if not frappe.db.exists(
-				"Subscription",
-				{"document_type": "Marketplace App Subscription", "document_name": self.name},
-			) and not frappe.get_value(
-				"Marketplace App Plan", self.marketplace_app_plan, "is_free"
-			):
-				subscription = frappe.get_doc(
-					{
-						"doctype": "Subscription",
-						"team": self.team,
-						"document_type": "Marketplace App Subscription",
-						"document_name": self.name,
-						"plan": frappe.get_value(
-							"Marketplace App Plan", self.marketplace_app_plan, "plan"
-						),
-					}
-				).insert(ignore_permissions=True)
-				self.subscription = subscription.name
-
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
-		if self.has_value_changed("status") and self.subscription:
+		if self.has_value_changed("status"):
 			frappe.db.set_value(
 				"Subscription", self.subscription, "enabled", 1 if self.status == "Active" else 0
 			)
@@ -93,6 +74,18 @@ class MarketplaceAppSubscription(Document):
 		# TODO: Check if this key already exists
 		if not self.while_site_creation:
 			self.set_keys_in_site_config()
+
+		subscription = frappe.get_doc(
+			{
+				"doctype": "Subscription",
+				"team": self.team,
+				"document_type": "Marketplace App Subscription",
+				"document_name": self.name,
+				"plan": frappe.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan"),
+			}
+		).insert(ignore_permissions=True)
+		self.subscription = subscription.name
+		self.save()
 
 		self.update_subscription_hook()
 

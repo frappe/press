@@ -38,7 +38,12 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 	def setUp(self) -> None:
 		self.marketplace_subscription = create_test_marketplace_app_subscription()
 		self.subscription = frappe.get_doc(
-			"Subscription", self.marketplace_subscription.subscription
+			"Subscription",
+			{
+				"document_name": self.marketplace_subscription.name,
+				"document_type": "Marketplace App Subscription",
+				"enabled": 1,
+			},
 		)
 		self.plan = frappe.get_doc("Plan", self.subscription.plan)
 
