@@ -31,7 +31,6 @@ def create_test_marketplace_app_subscription():
 			"team": site.team,
 		}
 	).insert(ignore_if_duplicate=True)
-	subscription.reload()
 	return subscription
 
 

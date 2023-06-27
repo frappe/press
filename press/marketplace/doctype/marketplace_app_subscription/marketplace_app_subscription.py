@@ -63,7 +63,6 @@ class MarketplaceAppSubscription(Document):
 			self.plan = frappe.db.get_value(
 				"Marketplace App Plan", self.marketplace_app_plan, "plan"
 			)
-			self.save()
 			if not frappe.db.exists(
 				"Subscription",
 				{"document_type": "Marketplace App Subscription", "document_name": self.name},
@@ -197,7 +196,6 @@ class MarketplaceAppSubscription(Document):
 		site_status, trial_site = frappe.db.get_value(
 			"Site", self.site, ["status", "trial_end_date"]
 		)
-		print(site_status, trial_site)
 		if site_status not in ("Active", "Inactive"):
 			return False
 

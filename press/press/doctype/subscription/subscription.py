@@ -72,6 +72,9 @@ class Subscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
+			site=frappe.get_value("Marketplace App Subscription", self.document_name, "site")
+			if self.document_type == "Marketplace App Subscription"
+			else None,
 		)
 		usage_record.insert()
 		usage_record.submit()
