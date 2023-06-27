@@ -1118,7 +1118,7 @@ class Site(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def can_charge_for_subscription(self):
+	def can_charge_for_subscription(self, subscription=None):
 		today = frappe.utils.getdate()
 		return (
 			self.status not in ["Archived", "Suspended"]

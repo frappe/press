@@ -88,7 +88,7 @@ class Subscription(Document):
 			return False
 
 		if hasattr(doc, "can_charge_for_subscription"):
-			return doc.can_charge_for_subscription()
+			return doc.can_charge_for_subscription(self)
 
 		return True
 
