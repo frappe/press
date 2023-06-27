@@ -1283,6 +1283,7 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 			"marketplace_app_plan": plan_name,
 			"app": app_name,
 			"site": site_name,
+			"team": get_current_team(),
 		}
 	).insert(ignore_permissions=True)
 
