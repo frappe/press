@@ -11,7 +11,8 @@
   "document_type",
   "document_name",
   "plan",
-  "interval"
+  "interval",
+  "marketplace_app_subscription"
  ],
  "fields": [
   {
@@ -59,6 +60,12 @@
    "label": "Plan",
    "options": "Plan",
    "reqd": 1
+  },
+  {
+   "fieldname": "marketplace_app_subscription",
+   "fieldtype": "Link",
+   "label": "Marketplace App Subscription",
+   "options": "Marketplace App Subscription"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -68,10 +75,11 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2021-02-15 20:37:05.851885",
+ "modified": "2023-06-27 21:57:40.400786",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -102,6 +110,7 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "team",
  "track_changes": 1
 }

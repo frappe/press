@@ -522,7 +522,7 @@ class SelfHostedServer(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def can_charge_for_subscription(self):
+	def can_charge_for_subscription(self, subscription=None):
 		return (
 			self.status not in ["Archived", "Unreachable", "Pending"]
 			and self.team

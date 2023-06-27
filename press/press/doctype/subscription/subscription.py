@@ -72,8 +72,10 @@ class Subscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
-			site=frappe.get_value("Marketplace App Subscription", self.document_name, "site")
-			if self.document_type == "Marketplace App Subscription"
+			site=frappe.get_value(
+				"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+			)
+			if self.document_type == "Marketplace App"
 			else None,
 		)
 		usage_record.insert()
@@ -86,7 +88,7 @@ class Subscription(Document):
 			return False
 
 		if hasattr(doc, "can_charge_for_subscription"):
-			return doc.can_charge_for_subscription()
+			return doc.can_charge_for_subscription(self)
 
 		return True
 

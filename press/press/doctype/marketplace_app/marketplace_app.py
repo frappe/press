@@ -17,6 +17,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from frappe.utils.safe_exec import safe_exec
+from frappe.utils import get_datetime
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -366,6 +367,48 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def get_plans(self, frappe_version: str = None) -> List:
 		return get_plans_for_app(self.name, frappe_version)
+
+	def can_charge_for_subscription(self, subscription):
+		marketplace_app_plan, plan, site, team, status = frappe.get_value(
+			"Marketplace App Subscription",
+			subscription.marketplace_app_subscription,
+			["marketplace_app_plan", "plan", "site", "team", "status"],
+		)
+
+		return (
+			status == "Active"
+			and team
+			and team != "Administrator"
+			and self.should_create_usage_record(marketplace_app_plan, plan, site)
+		)
+
+	def should_create_usage_record(self, marketplace_app_plan, plan, site):
+		"""Check if the user can create a usage record for this app"""
+		is_free = frappe.db.get_value("Marketplace App Plan", marketplace_app_plan, "is_free")
+
+		if is_free:
+			return False
+
+		# For annual prepaid plans
+		plan_interval = frappe.db.get_value("Plan", plan, "interval")
+
+		if plan_interval == "Annually":
+			return False
+
+		# For non-active sites
+		site_status, trial_site, free = frappe.db.get_value(
+			"Site", site, ["status", "trial_end_date", "free"]
+		)
+		if site_status not in ("Active", "Inactive"):
+			return False
+
+		if free:
+			return False
+
+		if trial_site and frappe.utils.getdate() < get_datetime(trial_site).date():
+			return False
+
+		return True
 
 
 def get_plans_for_app(

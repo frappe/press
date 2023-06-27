@@ -6,7 +6,6 @@ import json
 import requests
 
 from frappe.model.document import Document
-from frappe.utils import get_datetime
 from press.press.doctype.site.site import Site
 
 
@@ -65,6 +64,9 @@ class MarketplaceAppSubscription(Document):
 			)
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
+		if self.has_value_changed("team"):
+			frappe.db.set_value("Subscription", self.subscription, "team", self.team)
+
 		if self.has_value_changed("status"):
 			frappe.db.set_value(
 				"Subscription", self.subscription, "enabled", 1 if self.status == "Active" else 0
@@ -79,8 +81,9 @@ class MarketplaceAppSubscription(Document):
 			{
 				"doctype": "Subscription",
 				"team": self.team,
-				"document_type": "Marketplace App Subscription",
-				"document_name": self.name,
+				"document_type": "Marketplace App",
+				"document_name": self.app,
+				"marketplace_app_subscription": self.name,
 				"plan": frappe.get_value("Marketplace App Plan", self.marketplace_app_plan, "plan"),
 			}
 		).insert(ignore_permissions=True)
@@ -160,42 +163,6 @@ class MarketplaceAppSubscription(Document):
 				pass
 		else:
 			return
-
-	def can_charge_for_subscription(self):
-		# check whatever marketplace related stuff
-		return (
-			self.status == "Active"
-			and self.team
-			and self.team != "Administrator"
-			and self.should_create_usage_record()
-		)
-
-	def should_create_usage_record(self):
-		# Don't create for free plans
-		is_free = frappe.db.get_value(
-			"Marketplace App Plan", self.marketplace_app_plan, "is_free"
-		)
-
-		if is_free:
-			return False
-
-		# For annual prepaid plans
-		plan_interval = frappe.db.get_value("Plan", self.plan, "interval")
-
-		if plan_interval == "Annually":
-			return False
-
-		# For non-active sites
-		site_status, trial_site = frappe.db.get_value(
-			"Site", self.site, ["status", "trial_end_date"]
-		)
-		if site_status not in ("Active", "Inactive"):
-			return False
-
-		if trial_site and frappe.utils.getdate() > get_datetime(trial_site).date():
-			return False
-
-		return True
 
 
 def process_prepaid_marketplace_payment(event):
