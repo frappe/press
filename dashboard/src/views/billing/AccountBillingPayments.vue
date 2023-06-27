@@ -90,29 +90,14 @@
 					>
 						<span class="text-sm">Download Invoice</span>
 					</Button>
-					<div class="flex space-x-1">
-						<Button
-							v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
-							icon-left="external-link"
-							class="shrink-0"
-							:link="invoice.stripe_invoice_url"
-						>
-							<span class="text-sm">Pay Now</span>
-						</Button>
-						<Tooltip text="Refresh Stripe Payment Link">
-							<Button
-								v-if="
-									invoice.status != 'Paid' &&
-									invoice.stripe_invoice_url &&
-									invoice.stripe_link_expired
-								"
-								icon-left="refresh-cw"
-								class="shrink-0 py-2"
-								@click="refreshLink(invoice.name)"
-							>
-							</Button>
-						</Tooltip>
-					</div>
+					<Button
+						v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
+						icon-left="external-link"
+						class="shrink-0"
+						@click="payNow(invoice)"
+					>
+						<span class="text-sm">Pay Now</span>
+					</Button>
 				</div>
 			</div>
 		</div>
@@ -184,8 +169,8 @@ export default {
 				}[invoice.status]
 			};
 		},
-		refreshLink(invoiceName) {
-			let refreshed_link = this.$call(
+		async refreshLink(invoiceName) {
+			let refreshed_link = await this.$call(
 				'press.api.billing.refresh_invoice_link',
 				{
 					invoice: invoiceName
@@ -193,6 +178,13 @@ export default {
 			);
 			if (refreshed_link) {
 				window.open(refreshed_link, '_blank');
+			}
+		},
+		payNow(invoice) {
+			if (invoice.stripe_link_expired) {
+				this.refreshLink(invoice.name);
+			} else {
+				window.open(invoice.stripe_invoice_url, '_blank');
 			}
 		}
 	}
