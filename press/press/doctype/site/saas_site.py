@@ -175,6 +175,7 @@ def get_app_subscriptions(apps=None, standby_for=None):
 					"app": app,
 					"while_site_creation": True,
 					"status": "Disabled",
+					"team": "Administrator",
 				}
 			).insert(ignore_permissions=True)
 

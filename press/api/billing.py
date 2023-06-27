@@ -60,6 +60,12 @@ def invoices_and_payments():
 
 
 @frappe.whitelist()
+def refresh_invoice_link(invoice):
+	doc = frappe.get_doc("Invoice", invoice)
+	return doc.refresh_stripe_payment_link()
+
+
+@frappe.whitelist()
 def balances():
 	team = get_current_team()
 	has_bought_credits = frappe.db.get_all(

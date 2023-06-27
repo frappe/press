@@ -31,7 +31,6 @@ def create_test_marketplace_app_subscription():
 			"team": site.team,
 		}
 	).insert(ignore_if_duplicate=True)
-	subscription.reload()
 	return subscription
 
 
@@ -41,9 +40,11 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		self.subscription = frappe.get_doc(
 			"Subscription",
 			{
+
 				"marketplace_app_subscription": self.marketplace_subscription.name,
 				"document_type": "Marketplace App",
 				"site": self.marketplace_subscription.site,
+				"document_name": self.marketplace_subscription.name,
 				"enabled": 1,
 			},
 		)

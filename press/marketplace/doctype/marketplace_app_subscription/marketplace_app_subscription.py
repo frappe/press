@@ -63,7 +63,6 @@ class MarketplaceAppSubscription(Document):
 			self.plan = frappe.db.get_value(
 				"Marketplace App Plan", self.marketplace_app_plan, "plan"
 			)
-			self.save()
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
 		if self.has_value_changed("status"):
@@ -87,6 +86,7 @@ class MarketplaceAppSubscription(Document):
 			}
 		).insert(ignore_permissions=True)
 		self.subscription = subscription.name
+		self.save()
 
 		self.update_subscription_hook()
 
@@ -190,7 +190,6 @@ class MarketplaceAppSubscription(Document):
 		site_status, trial_site = frappe.db.get_value(
 			"Site", self.site, ["status", "trial_end_date"]
 		)
-		print(site_status, trial_site)
 		if site_status not in ("Active", "Inactive"):
 			return False
 

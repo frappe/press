@@ -94,7 +94,7 @@
 						v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 						icon-left="external-link"
 						class="shrink-0"
-						:link="invoice.stripe_invoice_url"
+						@click="payNow(invoice)"
 					>
 						<span class="text-sm">Pay Now</span>
 					</Button>
@@ -168,6 +168,24 @@ export default {
 					'Invoice Created': 'blue'
 				}[invoice.status]
 			};
+		},
+		async refreshLink(invoiceName) {
+			let refreshed_link = await this.$call(
+				'press.api.billing.refresh_invoice_link',
+				{
+					invoice: invoiceName
+				}
+			);
+			if (refreshed_link) {
+				window.open(refreshed_link, '_blank');
+			}
+		},
+		payNow(invoice) {
+			if (invoice.stripe_link_expired) {
+				this.refreshLink(invoice.name);
+			} else {
+				window.open(invoice.stripe_invoice_url, '_blank');
+			}
 		}
 	}
 };
