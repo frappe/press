@@ -64,6 +64,9 @@ class MarketplaceAppSubscription(Document):
 			)
 			frappe.db.set_value("Subscription", self.subscription, "plan", self.plan)
 
+		if self.has_value_changed("team"):
+			frappe.db.set_value("Subscription", self.subscription, "team", self.team)
+
 		if self.has_value_changed("status"):
 			frappe.db.set_value(
 				"Subscription", self.subscription, "enabled", 1 if self.status == "Active" else 0
