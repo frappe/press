@@ -514,3 +514,17 @@ class SelfHostedServer(Document):
 			self.save()
 		except Exception:
 			log_error("Fetching RAM failed", server=self.as_dict())
+
+	@property
+	def subscription(self):
+		name = frappe.db.get_value(
+			"Subscription", {"document_type": self.doctype, "document_name": self.name}
+		)
+		return frappe.get_doc("Subscription", name) if name else None
+
+	def can_charge_for_subscription(self):
+		return (
+			self.status not in ["Archived", "Unreachable", "Pending"]
+			and self.team
+			and self.team != "Administrator"
+		)
