@@ -169,7 +169,7 @@ def _new(site, server: str = None):
 	)
 
 	if app_plans and len(app_plans) > 0:
-		subscription_docs = get_app_subscriptions(app_plans)
+		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
@@ -226,7 +226,7 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans):
+def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
@@ -243,6 +243,7 @@ def get_app_subscriptions(app_plans):
 				"doctype": "Marketplace App Subscription",
 				"marketplace_app_plan": plan_name,
 				"app": app_name,
+				"team": team,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
