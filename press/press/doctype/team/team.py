@@ -489,6 +489,11 @@ class Team(Document):
 
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+			invoice.stripe_link_expired = False
+			if invoice.status == "Unpaid":
+				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
+				if days_diff > 30:
+					invoice.stripe_link_expired = True
 		return invoices
 
 	def allocate_credit_amount(self, amount, source, remark=None):
