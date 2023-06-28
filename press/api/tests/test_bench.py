@@ -61,14 +61,8 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(get_res["status"], "Awaiting Deploy")
 		self.assertEqual(get_res["public"], False)
 
-	@patch(
-		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
-		new=foreground_enqueue_doc,
-	)
-	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
-	def test_deploy_fn_deploys_bench(self):
+	def _set_press_settings_for_docker_build(self):
 		press_settings = create_test_press_settings()
-
 		cwd = os.getcwd()
 		back = os.path.join(cwd, "..")
 		bench_dir = os.path.abspath(back)
@@ -78,6 +72,13 @@ class TestAPIBench(FrappeTestCase):
 		press_settings.db_set("clone_directory", clone_dir)
 		press_settings.db_set("docker_registry_url", "registry.local.frappe.dev")
 
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
+	def test_deploy_fn_deploys_bench(self):
+		self._set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
 		group = new(
 			{
@@ -89,14 +90,19 @@ class TestAPIBench(FrappeTestCase):
 				"server": None,
 			}
 		)
+
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
+		DeployCandidate.command += " --cache-from type=gha --cache-to type=gha,mode=max"
 		deploy(group)
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
 		self.assertEqual(dc_count_after, dc_count_before + 1)
 		self.assertEqual(d_count_after, d_count_before + 1)
 
+		self._check_if_docker_image_was_built(group)
+
+	def _check_if_docker_image_was_built(self, group: str):
 		client = docker.from_env()
 		dc = frappe.get_last_doc("Deploy Candidate")
 		image_name = f"registry.local.frappe.dev/fc.dev/{group}:{dc.name}"
