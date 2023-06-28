@@ -43,8 +43,7 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 
 				"marketplace_app_subscription": self.marketplace_subscription.name,
 				"document_type": "Marketplace App",
-				"site": self.marketplace_subscription.site,
-				"document_name": self.marketplace_subscription.name,
+				"document_name": self.marketplace_subscription.app,
 				"enabled": 1,
 			},
 		)
@@ -57,7 +56,7 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		"""
 		Check if subscription doc is created and linked after_insert of Marketplace App Subscription
 		"""
-		self.assertEqual(self.subscription.document_name, self.marketplace_subscription.name)
+		self.assertEqual(self.subscription.marketplace_app_subscription, self.marketplace_subscription.name)
 
 	def test_subscription_daily(self):
 		"""
