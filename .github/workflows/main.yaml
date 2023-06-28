@@ -110,6 +110,7 @@ jobs:
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
+        uses: satackey/action-docker-layer-caching@v0.0.11 # To cache docker images built in test
         run: |
           bench --site test_site set-config allow_tests true
           bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 4 --build-number ${{ matrix.container }}
