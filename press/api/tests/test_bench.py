@@ -107,5 +107,8 @@ class TestAPIBench(FrappeTestCase):
 		client = docker.from_env()
 		dc = frappe.get_last_doc("Deploy Candidate")
 		image_name = f"registry.local.frappe.dev/fc.dev/{group}:{dc.name}"
-		image = client.images.get(image_name)
+		try:
+			image = client.images.get(image_name)
+		except docker.errors.ImageNotFound:
+			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
