@@ -93,6 +93,7 @@ class TestAPIBench(FrappeTestCase):
 
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
+		DeployCandidate.command = "docker buildx build"
 		DeployCandidate.command += " --cache-from type=gha --cache-to type=gha,mode=max"
 		deploy(group)
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
