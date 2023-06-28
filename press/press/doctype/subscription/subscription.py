@@ -117,13 +117,17 @@ class Subscription(Document):
 	def validate_duplicate(self):
 		if not self.is_new():
 			return
+		filters = {
+			"team": self.team,
+			"document_type": self.document_type,
+			"document_name": self.document_name,
+		}
+		if self.document_type == "Marketplace App":
+			filters.update({"marketplace_app_subscription": self.marketplace_app_subscription})
+
 		results = frappe.db.get_all(
 			"Subscription",
-			{
-				"team": self.team,
-				"document_type": self.document_type,
-				"document_name": self.document_name,
-			},
+			filters,
 			pluck="name",
 			limit=1,
 		)
