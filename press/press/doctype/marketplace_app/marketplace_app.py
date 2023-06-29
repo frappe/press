@@ -246,6 +246,14 @@ class MarketplaceApp(WebsiteGenerator):
 		context.plans = self.get_plans()
 
 		user_reviews = self.get_user_reviews()
+		for review in user_reviews:
+			review["developer_reply"] = frappe.get_all(
+				"Developer Review Reply",
+				filters={"review": review.name},
+				pluck="description",
+				order_by="creation asc",
+			)
+
 		ratings_summary = self.get_user_ratings_summary(user_reviews)
 
 		context.user_reviews = user_reviews
@@ -260,6 +268,7 @@ class MarketplaceApp(WebsiteGenerator):
 			.join(user)
 			.on(user.name == app_user_review.reviewer)
 			.select(
+				app_user_review.name,
 				app_user_review.title,
 				Cast_(5 * app_user_review.rating, "INT").as_("rating"),
 				app_user_review.review,

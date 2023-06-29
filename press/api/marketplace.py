@@ -708,6 +708,18 @@ def submit_user_review(title, rating, app, review):
 
 
 @frappe.whitelist()
+def submit_developer_reply(review, reply):
+	return frappe.get_doc(
+		{
+			"doctype": "Developer Review Reply",
+			"review": review,
+			"description": reply,
+			"developer": frappe.session.user,
+		}
+	).insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
 def get_subscriptions_list(marketplace_app: str) -> List:
 	app_sub = frappe.qb.DocType("Marketplace App Subscription")
 	app_plan = frappe.qb.DocType("Marketplace App Plan")

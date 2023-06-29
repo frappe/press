@@ -24,7 +24,7 @@ five_star_rating -%}
 
 {% macro sidebar() %}
 <div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
-	{{ app_image(app, 'hidden md:block') }} 
+	{{ app_image(app, 'hidden md:block') }}
 
 {%- if app.frappe_approved -%}
 	<div class="flex">
@@ -188,6 +188,26 @@ five_star_rating -%}
 					</p>
 					<div class="text-base text-gray-600">
 						{{ review.user_name }} &bull; {{ frappe.utils.pretty_date(review.creation) }}
+						&bull; {{ link('Reply', url='/dashboard/developer-reply/' + app.name + '/' + review.name + '?title=' + app.title) }}
+						<div class="flex flex-col mt-2">
+							{% for reply in review.developer_reply %}
+							<div class="flex flex-row text-gray-900 mb-2">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#71717A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-corner-down-right mr-2 mt-2"><polyline points="15 10 20 15 15 20"></polyline><path d="M4 4v7a4 4 0 0 0 4 4h12"></path></svg>
+
+<div>
+							{% if reply[0] == ',' %}
+								{{ reply[1:] }}
+							{% else %}
+								{{ reply }}
+							{% endif %}
+							{% if reply %}
+							<span class="text-gray-600"></br>Developer
+							{% endif %}
+</div>
+							</div>
+							{% endfor %}
+						</div>
 					</div>
 				</div>
 				{% endfor %}
