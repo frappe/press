@@ -275,7 +275,6 @@ class MarketplaceApp(WebsiteGenerator):
 				app_user_review.creation,
 				app_user_review.reviewer,
 				user.full_name.as_("user_name"),
-				user.user_image,
 			)
 			.where(app_user_review.app == self.name)
 		)
