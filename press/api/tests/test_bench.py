@@ -77,7 +77,7 @@ class TestAPIBench(FrappeTestCase):
 		new=foreground_enqueue_doc,
 	)
 	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
-	def test_deploy_fn_deploys_bench(self):
+	def test_deploy_fn_deploys_bench_container(self):
 		self._set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
 		group = new(
@@ -94,7 +94,9 @@ class TestAPIBench(FrappeTestCase):
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
 		DeployCandidate.command = "docker buildx build"
-		DeployCandidate.command += " --cache-from type=gha --cache-to type=gha,mode=max"
+		DeployCandidate.command += (
+			" --cache-from type=gha --cache-to type=gha,mode=max --load"
+		)
 		deploy(group)
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
