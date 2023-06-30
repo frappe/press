@@ -151,11 +151,11 @@ export default {
 		subtitle() {
 			if (
 				this.$resources.pastInvoices.loading ||
-				this.$resources.pastInvoices.data.length > 0
+				this.filteredInvoices.length > 0
 			) {
-				return 'History of your invoice payments';
+				return `History of your ${this.invoiceStatus + ' '}invoice payments`;
 			}
-			return 'No invoices have been generated yet';
+			return `No ${this.invoiceStatus + ' '}invoices have been generated yet`;
 		}
 	},
 	methods: {
