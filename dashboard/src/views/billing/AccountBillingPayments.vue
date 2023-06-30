@@ -8,7 +8,7 @@
 				v-model="invoiceStatus"
 			/>
 		</template>
-		<div class="max-h-96 divide-y" v-if="$resources.pastInvoices.data?.length">
+		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
@@ -151,11 +151,11 @@ export default {
 		subtitle() {
 			if (
 				this.$resources.pastInvoices.loading ||
-				this.$resources.pastInvoices.data.length > 0
+				this.filteredInvoices.length > 0
 			) {
-				return 'History of your invoice payments';
+				return `History of your ${this.invoiceStatus + ' '}invoice payments`;
 			}
-			return 'No invoices have been generated yet';
+			return `No ${this.invoiceStatus + ' '}invoices have been generated yet`;
 		}
 	},
 	methods: {
