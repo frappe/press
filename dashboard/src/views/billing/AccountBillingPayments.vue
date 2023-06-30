@@ -8,7 +8,7 @@
 				v-model="invoiceStatus"
 			/>
 		</template>
-		<div class="max-h-96 divide-y" v-if="$resources.pastInvoices.data?.length">
+		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
