@@ -367,11 +367,31 @@ class MarketplaceApp(WebsiteGenerator):
 			(self.app,),
 		)[0][0]
 
+	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
+		"""Return the payout amount for this app"""
+		filters = {"recipient": self.team}
+		if status:
+			filters["status"] = status
+		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
+		payout = frappe.get_all(
+			"Payout Order Item",
+			filters={"parent": ("in", payout_orders)},
+			fields=[
+				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
+				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",
+			],
+		)
+		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
+
 	def get_analytics(self):
 		return {
 			"total_installs": self.total_installs(),
 			"num_installs_active_sites": self.total_active_sites(),
 			"num_installs_active_benches": self.total_active_benches(),
+			"total_payout": self.get_payout_amount(),
+			"paid_payout": self.get_payout_amount(status="Paid"),
+			"pending_payout": self.get_payout_amount(status="Draft"),
+			"commission": self.get_payout_amount(total_for="commission"),
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:

@@ -1,5 +1,76 @@
 <template>
-	<div class="sm:grid gap-5 sm:grid-cols-2">
+	<div
+		v-if="$resources.analytics.data"
+		class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+	>
+		<Card title="Earnings">
+			<template #actions>
+				<a
+					class="text-base text-blue-500 hover:text-blue-600"
+					href="/support/tickets"
+					target="_blank"
+				>
+					Contact Support →
+				</a>
+			</template>
+			<ListItem
+				title="Total Earnings"
+				:subtitle="`Total earnings for ${app.title}`"
+			>
+				<template #actions>
+					<span class="text-base font-semibold text-green-500">{{
+						'$' +
+						$resources.analytics.data.total_payout.usd_amount +
+						' + ' +
+						'₹' +
+						$resources.analytics.data.total_payout.inr_amount
+					}}</span>
+				</template>
+			</ListItem>
+			<ListItem
+				title="Pending Payout"
+				subtitle="Payout you are yet to receive from Frappe Cloud"
+			>
+				<template #actions>
+					<span class="text-base font-semibold">{{
+						'$' +
+						$resources.analytics.data.pending_payout.usd_amount +
+						' + ' +
+						'₹' +
+						$resources.analytics.data.pending_payout.inr_amount
+					}}</span>
+				</template>
+			</ListItem>
+			<ListItem
+				title="Commission"
+				subtitle="Payouts start once you have passed $500 threshold"
+			>
+				<template #actions>
+					<span class="text-base font-semibold">{{
+						'$' +
+						$resources.analytics.data.commission.usd_amount +
+						' + ' +
+						'₹' +
+						$resources.analytics.data.commission.inr_amount
+					}}</span>
+				</template>
+			</ListItem>
+		</Card>
+		<Card title="Installs">
+			<div class="divide-y" v-if="analytics">
+				<ListItem
+					v-for="stat in analytics"
+					:key="stat.title"
+					:title="stat.title"
+					:description="stat.value"
+				>
+				</ListItem>
+			</div>
+
+			<div class="py-10 text-center" v-if="$resources.analytics.loading">
+				<Button :loading="true">Loading</Button>
+			</div>
+		</Card>
 		<Card title="Pageviews">
 			<template #actions>
 				<a
@@ -33,21 +104,6 @@
 				:colors="[$theme.colors.green[500]]"
 			/>
 			<LoadingText v-if="$resources.plausible_analytics.loading" />
-		</Card>
-		<Card title="Installs">
-			<div class="divide-y" v-if="analytics">
-				<ListItem
-					v-for="stat in analytics"
-					:key="stat.title"
-					:title="stat.title"
-					:description="stat.value"
-				>
-				</ListItem>
-			</div>
-
-			<div class="py-10 text-center" v-if="$resources.analytics.loading">
-				<Button :loading="true">Loading</Button>
-			</div>
 		</Card>
 	</div>
 </template>
