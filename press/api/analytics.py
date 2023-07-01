@@ -70,7 +70,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": (
-			f'avg_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])'
+			f'sum(sum_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance) / sum(count_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance)'
 		),
 		"start": start.timestamp(),
 		"end": end.timestamp(),
