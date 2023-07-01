@@ -128,6 +128,10 @@
   "commission",
   "usd_rate",
   "app_include_script",
+  "plausible_column",
+  "plausible_url",
+  "plausible_site_id",
+  "plausible_api_key",
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
@@ -955,11 +959,31 @@
    "fieldname": "enable_google_oauth",
    "fieldtype": "Check",
    "label": "Enable Google Oauth "
+  },
+  {
+   "fieldname": "plausible_api_key",
+   "fieldtype": "Password",
+   "label": "Plausible API Key"
+  },
+  {
+   "fieldname": "plausible_column",
+   "fieldtype": "Column Break",
+   "label": "Plausible"
+  },
+  {
+   "fieldname": "plausible_url",
+   "fieldtype": "Data",
+   "label": "Plausible URL"
+  },
+  {
+   "fieldname": "plausible_site_id",
+   "fieldtype": "Data",
+   "label": "Plausible site id"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-05-25 10:24:13.787125",
+ "modified": "2023-07-01 13:06:23.438512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
