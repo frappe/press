@@ -929,7 +929,7 @@
   },
   {
    "fieldname": "commission",
-   "fieldtype": "Column Break",
+   "fieldtype": "Float",
    "label": "Marketplace Commission"
   },
   {
@@ -983,7 +983,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-06-30 18:54:37.061182",
+ "modified": "2023-07-01 13:06:23.438512",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
