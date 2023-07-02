@@ -57,6 +57,10 @@ export default [
 				component: () => import('../views/site/SiteConfig.vue')
 			},
 			{
+				path: 'setting',
+				component: () => import('../views/site/SiteSettings.vue')
+			},
+			{
 				path: 'console',
 				component: () => import('../views/site/SiteConsole.vue')
 			},

@@ -728,6 +728,10 @@ def get(name):
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
+		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
+		),
 	}
 
 
