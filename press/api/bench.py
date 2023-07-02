@@ -67,6 +67,10 @@ def get(name):
 		"saas_app": group.saas_app or "",
 		"public": group.public,
 		"no_sites": frappe.db.count("Site", {"group": group.name, "status": "Active"}),
+		"bench_tags": [{"name": x.tag, "tag": x.tag_name} for x in group.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": group.team, "doctype_name": "Release Group"}, ["name", "tag"]
+		),
 	}
 
 
