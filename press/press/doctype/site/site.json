@@ -79,7 +79,9 @@
   "column_break_63",
   "hybrid_saas_pool",
   "backups_section",
-  "skip_scheduled_backups"
+  "skip_scheduled_backups",
+  "tags_section",
+  "tags"
  ],
  "fields": [
   {
@@ -563,6 +565,18 @@
    "fieldname": "skip_scheduled_backups",
    "fieldtype": "Check",
    "label": "Skip Scheduled Backups"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "links": [
@@ -632,7 +646,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-05-25 17:40:59.662548",
+ "modified": "2023-07-02 00:08:36.031427",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
