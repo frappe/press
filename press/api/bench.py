@@ -113,10 +113,16 @@ def all(server=None):
 
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
+		group.tags = frappe.get_all("Resource Tag", {"parent": group.name}, pluck="tag_name")
 		group.number_of_apps = app_counts[group.name]
 		group.status = get_group_status(group.name)
 
-	return private_groups
+	return {
+		"groups": private_groups,
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
+		),
+	}
 
 
 def get_app_counts_for_groups(rg_names):
