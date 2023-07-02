@@ -17,7 +17,9 @@ def is_valid(keys):
 
 	invalid = []
 	blacklisted = get_client_blacklisted_keys()
-
+	frappe.log_error('blacklisted',blacklisted)
+	blacklisted.remove("developer_mode")
+ 
 	for key in keys:
 		if key in blacklisted:
 			invalid.append(key)
