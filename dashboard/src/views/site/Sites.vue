@@ -77,11 +77,21 @@
 			</div>
 
 			<div class="mb-6">
-				<SectionHeader heading="All Sites"> </SectionHeader>
+				<SectionHeader heading="All Sites">
+					<template #actions>
+						<Input
+							v-if="$resources.allSites.data"
+							type="select"
+							:options="['Filter by Tag', ...$resources.allSites.data.tags]"
+							v-model="selectedTag"
+							class="w-32"
+						/>
+					</template>
+				</SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
-					<SiteList v-else :sites="sites" />
+					<SiteList v-else :sites="filteredSites(sites)" />
 				</div>
 			</div>
 			<Dialog
@@ -128,7 +138,8 @@ export default {
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			selectedTag: ''
 		};
 	},
 	resources: {
@@ -196,6 +207,12 @@ export default {
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
+		},
+		filteredSites(sites) {
+			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
+				return sites;
+			}
+			return sites.filter(site => site.tags.includes(this.selectedTag));
 		}
 	},
 	computed: {

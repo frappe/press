@@ -34,8 +34,19 @@
 
 		<div>
 			<div class="mt-3">
+				<SectionHeader class="mb-2" heading="">
+					<template #actions>
+						<Input
+							v-if="$resources.allServers.data"
+							type="select"
+							:options="['Filter by Tag', ...$resources.allServers.data.tags]"
+							v-model="selectedTag"
+							class="w-32"
+						/>
+					</template>
+				</SectionHeader>
 				<LoadingText v-if="$resources.allServers.loading" />
-				<ServerList v-else :servers="servers" />
+				<ServerList v-else :servers="filteredServers(servers)" />
 			</div>
 		</div>
 		<Dialog
@@ -84,7 +95,8 @@ export default {
 					label: 'Self Hosted Server',
 					handler: () => this.$router.replace('/selfhosted/new')
 				}
-			]
+			],
+			selectedTag: ''
 		};
 	},
 	resources: {
@@ -112,6 +124,13 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
+		},
+		filteredServers(servers) {
+			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
+				return servers;
+			}
+
+			return servers.filter(server => server.tags.includes(this.selectedTag));
 		}
 	},
 	computed: {
@@ -119,7 +138,7 @@ export default {
 			if (!this.$resources.allServers.data) {
 				return [];
 			}
-			return this.$resources.allServers.data;
+			return this.$resources.allServers.data.servers;
 		}
 	}
 };

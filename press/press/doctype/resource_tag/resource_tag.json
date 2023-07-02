@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-07-02 00:07:18.322521",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tag",
+  "tag_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "tag",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tag",
+   "options": "Press Tag"
+  },
+  {
+   "fetch_from": "tag.tag",
+   "fieldname": "tag_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tag Name"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-07-02 00:37:51.667939",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Resource Tag",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

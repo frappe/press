@@ -14,8 +14,20 @@
 		</PageHeader>
 
 		<div class="mt-3">
+			<SectionHeader class="mb-2" heading="">
+				<template #actions>
+					<Input
+						v-if="$resources.allBenches.data"
+						type="select"
+						:options="['Filter by Tag', ...$resources.allBenches.data.tags]"
+						v-model="selectedTag"
+						class="w-32"
+					/>
+				</template>
+			</SectionHeader>
 			<LoadingText v-if="$resources.allBenches.loading" />
-			<BenchList v-else :benches="benches" />
+
+			<BenchList v-else :benches="filteredBenches(benches)" />
 		</div>
 
 		<Dialog
@@ -44,7 +56,8 @@ export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			selectedTag: ''
 		};
 	},
 	pageMeta() {
@@ -68,7 +81,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allBenches.data;
+			return this.$resources.allBenches.data.groups;
 		}
 	},
 	methods: {
@@ -78,6 +91,13 @@ export default {
 			} else {
 				this.$router.replace('/benches/new');
 			}
+		},
+		filteredBenches(benches) {
+			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
+				return benches;
+			}
+
+			return benches.filter(bench => bench.tags.includes(this.selectedTag));
 		}
 	}
 };

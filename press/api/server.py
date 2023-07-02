@@ -38,8 +38,17 @@ def all():
 	)
 	all_servers = app_servers + database_servers
 	for server in all_servers:
+		server["tags"] = frappe.get_all(
+			"Resource Tag", {"parent": server.name}, pluck="tag_name"
+		)
 		server["app_server"] = f"f{server.name[1:]}"
-	return all_servers
+
+	return {
+		"servers": all_servers,
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Server"}, pluck="tag"
+		),
+	}
 
 
 @frappe.whitelist()
@@ -56,6 +65,10 @@ def get(name):
 		else f"f{server.name[1:]}",  # Don't use `f` series if self hosted
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
+		),
+		"server_tags": [{"name": x.tag, "tag": x.tag_name} for x in server.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
 		),
 	}
 
