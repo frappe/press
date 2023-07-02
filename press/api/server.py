@@ -66,6 +66,10 @@ def get(name):
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
 		),
+		"server_tags": [{"name": x.tag, "tag": x.tag_name} for x in server.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
+		),
 	}
 
 
