@@ -320,7 +320,7 @@ def get():
 			[parent_teams],
 			as_dict=True,
 		)
-
+	teams = None
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
