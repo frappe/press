@@ -73,6 +73,7 @@ export default {
 				onSuccess(d) {
 					this.addedTags.push(this.tags.find(t => t.name == d));
 					this.showAddDialog = false;
+					this.newTag = '';
 				}
 			};
 		},
@@ -86,6 +87,7 @@ export default {
 				},
 				onSuccess(d) {
 					this.addedTags = this.addedTags.filter(t => t.name != d);
+					this.newTag = '';
 				}
 			};
 		},
@@ -100,6 +102,7 @@ export default {
 				onSuccess(d) {
 					this.addedTags.push({ name: d.name, tag: d.tag });
 					this.showNewDialog = false;
+					this.newTag = '';
 				}
 			};
 		}
