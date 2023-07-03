@@ -58,7 +58,8 @@ export default {
 			showAddDialog: false,
 			showNewDialog: false,
 			newTag: '',
-			addedTags: []
+			addedTags: [],
+			createErrorMessage: ''
 		};
 	},
 	resources: {
@@ -103,6 +104,14 @@ export default {
 					this.addedTags.push({ name: d.name, tag: d.tag });
 					this.showNewDialog = false;
 					this.newTag = '';
+				},
+				onError(e) {
+					this.showNewDialog = false;
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		}
