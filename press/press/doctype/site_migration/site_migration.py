@@ -68,6 +68,15 @@ class SiteMigration(Document):
 			self.add_steps_for_cluster_migration()
 			self.add_steps_for_domains()
 		elif self.migration_type == "Server":
+			source_db = frappe.db.get_value(
+				"Database Server", self.source_server, "database_server"
+			)
+			destination_db = frappe.db.get_value(
+				"Database Server", self.destination_server, "database_server"
+			)
+			if source_db == destination_db:
+				raise NotImplementedError
+				# TODO: switch order of steps here (archive before restore)
 			self.add_steps_for_server_migration()
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
@@ -238,6 +247,11 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
+				"step_title": self.restore_site_on_destination_server.__doc__,
+				"method_name": self.restore_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+			{
 				"step_title": self.archive_site_on_source.__doc__,
 				"method_name": self.archive_site_on_source.__name__,
 				"status": "Pending",
@@ -245,11 +259,6 @@ class SiteMigration(Document):
 			{
 				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
-				"status": "Pending",
-			},
-			{
-				"step_title": self.restore_site_on_destination_server.__doc__,
-				"method_name": self.restore_site_on_destination_server.__name__,
 				"status": "Pending",
 			},
 			{
