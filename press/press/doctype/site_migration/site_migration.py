@@ -68,11 +68,9 @@ class SiteMigration(Document):
 			self.add_steps_for_cluster_migration()
 			self.add_steps_for_domains()
 		elif self.migration_type == "Server":
-			source_db = frappe.db.get_value(
-				"Database Server", self.source_server, "database_server"
-			)
+			source_db = frappe.db.get_value("Server", self.source_server, "database_server")
 			destination_db = frappe.db.get_value(
-				"Database Server", self.destination_server, "database_server"
+				"Server", self.destination_server, "database_server"
 			)
 			if source_db == destination_db:
 				raise NotImplementedError
