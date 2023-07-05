@@ -19,7 +19,7 @@ class BenchUpdate(Document):
 
 	def validate_pending_updates(self):
 		if frappe.db.exists(
-			"Bench Update", {"status": ("in", ("Pending", "Running")), "group": self.group}
+			"Bench Update", {"status": ("in", ("Running")), "group": self.group}
 		):
 			frappe.throw("An update is already pending for this bench", frappe.ValidationError)
 
