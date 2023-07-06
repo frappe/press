@@ -4,7 +4,7 @@
 			<Button @click="showAddCardDialog = true"> Add Card </Button>
 			<Dialog :options="{ title: 'Add new card' }" v-model="showAddCardDialog">
 				<template v-slot:body-content>
-					<StripeCard
+					<MidTransCard
 						class="mb-1"
 						v-if="showAddCardDialog"
 						@complete="
@@ -49,18 +49,19 @@ import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'AccountBillingCards',
+	
 	resources: {
-		paymentMethods: 'press.api.billing.get_payment_methods',
+		paymentMethods: 'optibizpro.utils.get_payment_methods',
 		setAsDefault: {
-			method: 'press.api.billing.set_as_default'
+			method: 'optibizpro.utils.set_as_default'
 		},
 		remove: {
-			method: 'press.api.billing.remove_payment_method'
+			method: 'optibizpro.utils.remove_payment_method'
 		}
 	},
 	components: {
-		StripeCard: defineAsyncComponent(() =>
-			import('@/components/StripeCard.vue')
+		MidTransCard: defineAsyncComponent(() =>
+			import('@/components/MidtransCard.vue')
 		)
 	},
 	data() {

@@ -48,6 +48,39 @@
 					</div>
 				</div>
 			</div>
+			<div v-if="paymentGateway === 'midtrans'">
+				<Input
+					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					v-model.number="creditsToBuy"
+					name="amount"
+					autocomplete="off"
+					type="number"
+					:min="minimumAmount"
+				/>
+
+				<!-- <p class="mt-3 text-xs">
+					<span class="font-semibold">Note</span>: If you are using Net Banking,
+					it may take upto 5 days for balance to reflect.
+				</p> -->
+
+				<ErrorMessage
+					class="mt-3"
+					:message="$resources.createMidTransToken.error"
+				/>
+
+				<div class="mt-4 flex w-full justify-between">
+					<Button @click="paymentGateway = null">Go Back</Button>
+					<div>
+						<Button
+							appearance="primary"
+							:loading="$resources.createMidTransToken.loading"
+							@click="buyCreditsWithMidTrans"
+						>
+							Buy
+						</Button>
+					</div>
+				</div>
+			</div>
 
 			<div>
 				<div
@@ -74,6 +107,13 @@
 							alt="Stripe Logo"
 						/>
 					</Button>
+					<Button @click="paymentGateway = 'midtrans'">
+						<img
+							class="h-7 w-24"
+							src="../assets/midtrans_logo.svg"
+							alt="MidTrans Logo"
+						/>
+					</Button>
 				</div>
 			</div>
 		</template>
@@ -90,10 +130,14 @@ export default {
 	data() {
 		return {
 			paymentGateway: null,
-			creditsToBuy: 0
+			creditsToBuy: 0,
 		};
 	},
-	mounted() {
+	async mounted() {
+
+		let client_key = await this.$call(
+			'optibizpro.utils.get_client_key'
+		);
 		const razorpayCheckoutJS = document.createElement('script');
 		razorpayCheckoutJS.setAttribute(
 			'src',
@@ -102,9 +146,22 @@ export default {
 		razorpayCheckoutJS.async = true;
 		document.head.appendChild(razorpayCheckoutJS);
 
+		//get midtrans checkout
+		const midtransCheckoutJS = document.createElement('script');
+		midtransCheckoutJS.setAttribute(
+			'src',
+			'https://app.sandbox.midtrans.com/snap/snap.js'
+		);
+		midtransCheckoutJS.setAttribute(
+			'data-client-key',
+			client_key
+		);
+		midtransCheckoutJS.async = true;
+		document.head.appendChild(midtransCheckoutJS);
+
 		if (
 			this.$account.team.currency === 'USD' &&
-			!this.$account.team.razorpay_enabled
+			!this.$account.team.razorpay_enabled && !this.$account.team.midtrans_enabled
 		) {
 			this.paymentGateway = 'stripe';
 		}
@@ -115,7 +172,7 @@ export default {
 		},
 		minimumAmount: {
 			type: Number,
-			default: 0
+			default: 10
 		}
 	},
 	emits: ['update:modelValue', 'success'],
@@ -136,7 +193,7 @@ export default {
 				}
 			};
 		},
-		handlePaymentSuccess() {
+		handlePaymentSuccess(response) {
 			return {
 				method: 'press.api.billing.handle_razorpay_payment_success',
 				onSuccess() {
@@ -151,11 +208,75 @@ export default {
 					console.log('Payment Failed.');
 				}
 			};
-		}
+		},
+		createMidTransToken(){
+			return {
+				method: 'optibizpro.utils.create_midtrans_token',
+				params: {
+					amount: this.creditsToBuy
+				},
+				onSuccess(data) {
+					this.processMidTransOrder(data); //this initializes the midtrans snap.js inline checkout
+				},
+				validate() {
+					if (this.creditsToBuy < this.minimumAmount) {
+						return 'Amount less than minimum amount required';
+					}
+				}
+			};
+		},
+		MidTransPaymentSuccess() {
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_success',
+				
+				onSuccess() {
+					this.$emit('success');
+				}
+			};
+		},
+		MidTransPaymentFailed() {
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_failed',
+				onSuccess() {
+					console.log('Payment Failed.');
+				}
+			};
+		},
 	},
 	methods: {
 		buyCreditsWithRazorpay() {
 			this.$resources.createRazorpayOrder.submit();
+		},
+		buyCreditsWithMidTrans(){
+			this.$resources.createMidTransToken.submit();
+		},
+		processMidTransOrder(data){
+			var transaction_token = data.token
+			window.snap.pay(transaction_token, {
+				onSuccess: (result) => {
+					/* You may add your own implementation here */
+					
+					// alert("payment success!");
+					result["team"] = this.$account.team.name
+					this.$resources.MidTransPaymentSuccess.submit({result});
+
+				},
+				onPending: function(result){
+					/* You may add your own implementation here */
+					alert("awaiting  payment!"); console.log(result);
+				},
+				onError: function(result){
+					/* You may add your own implementation here */
+					result["team"] = this.$account.team.name
+					this.$resources.MidTransPaymentFailed.submit({result});
+
+					// alert("payment failed!"); console.log(result);
+				},
+				onClose: function(){
+					/* You may add your own implementation here */
+					alert('you closed the popup without finishing the payment');
+				}
+			})
 		},
 		processOrder(data) {
 			const options = {
@@ -185,7 +306,18 @@ export default {
 
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
-		}
+		},
+
+		// MidTransPaymentSuccess_b(response) {
+		// 	console.log("respppppppppp",response)
+		// 	this.$resources.MidTransPaymentSuccess.submit(response);
+		// 	this.$emit('success');
+		// },
+
+		// MidTransPaymentFailed(response) {
+		// 	this.$resources.MidTransPaymentFailed.submit({ response });
+		// }
+
 	},
 	watch: {
 		minimumAmount(amt) {

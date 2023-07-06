@@ -49,15 +49,20 @@ class Subscription(Document):
 		if cannot_charge:
 			return
 
+		print('reached here')
 		if self.is_usage_record_created():
 			return
 
+		print('reached here 2')
 		team = frappe.get_cached_doc("Team", self.team)
 
 		if team.parent_team:
 			team = frappe.get_cached_doc("Team", team.parent_team)
 
+		print('reached_here 3')
 		if not team.get_upcoming_invoice():
+			print('reached_here 4')
+			
 			team.create_upcoming_invoice()
 
 		plan = frappe.get_cached_doc("Plan", self.plan)
