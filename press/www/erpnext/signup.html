@@ -18,7 +18,7 @@
 						<input type="text" id="subdomain" name="subdomain" class="form-control"
 							placeholder="yourcompany" autocomplete="off" onchange="validate_subdomain(this)">
 						<div class="input-group-append">
-							<span class="input-group-text rounded-right">.erpnext.com</span>
+							<span class="input-group-text rounded-right">.optibizpro.com</span>
 						</div>
 					</div>
 					<small class="form-text"></small>
@@ -207,7 +207,7 @@
 			check_if_available(subdomain).then((available) => {
 				controller.show_input_feedback(
 					"subdomain",
-					!available ? `${subdomain}.erpnext.com is already taken` : `${subdomain}.erpnext.com is available`,
+					!available ? `${subdomain}.optibizpro.com is already taken` : `${subdomain}.optibizpro.com is available`,
 					!available
 				);
 			});
