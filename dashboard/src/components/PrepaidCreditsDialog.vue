@@ -131,10 +131,13 @@ export default {
 		return {
 			paymentGateway: null,
 			creditsToBuy: 0,
-			response_data: {'name':'odera'}
 		};
 	},
-	mounted() {
+	async mounted() {
+
+		let client_key = await this.$call(
+			'optibizpro.utils.get_client_key'
+		);
 		const razorpayCheckoutJS = document.createElement('script');
 		razorpayCheckoutJS.setAttribute(
 			'src',
@@ -151,7 +154,7 @@ export default {
 		);
 		midtransCheckoutJS.setAttribute(
 			'data-client-key',
-			this.$account.team.midtrans_client_id
+			client_key
 		);
 		midtransCheckoutJS.async = true;
 		document.head.appendChild(midtransCheckoutJS);
