@@ -183,7 +183,6 @@ export default {
 			showAddCardDialog: false,
 			siteFilter: '',
 			pageStart: 0
-			// selectedTage
 		};
 	},
 	resources: {
