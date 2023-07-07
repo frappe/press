@@ -360,6 +360,8 @@ class DeployCandidate(Document):
 
 		return app
 
+	command = "docker build"
+
 	def _run_docker_build(self, no_cache=False):
 		environment = os.environ
 		environment.update(
@@ -385,8 +387,14 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
+		if no_cache:
+			self.command += " --no-cache"
+
+		self.command += f" -t {self.docker_image}"
+		self.command += " ."
+
 		result = self.run(
-			f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .",
+			self.command,
 			environment,
 		)
 		self._parse_docker_build_result(result)

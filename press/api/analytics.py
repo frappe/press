@@ -70,7 +70,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": (
-			f'avg_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])'
+			f'sum(sum_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance) / sum(count_over_time(probe_success{{job="site", instance="{site}"}}[{timegrain}s])) by (instance)'
 		),
 		"start": start.timestamp(),
 		"end": end.timestamp(),
@@ -271,3 +271,37 @@ def request_logs(name, timezone, date, sort=None, start=0):
 		)
 		out.append(data)
 	return out
+
+
+# MARKETPLACE - Plausible
+@frappe.whitelist(allow_guest=True)
+@protected("Marketplace App")
+def plausible_analytics(name):
+	response = {}
+	settings = frappe.get_single("Press Settings")
+	api_endpoints = {
+		"aggregate": "/api/v1/stats/aggregate",
+		"timeseries": "/api/v1/stats/timeseries",
+	}
+	params = {
+		"site_id": settings.plausible_site_id,
+		"period": "30d",
+		"metrics": "visitors,pageviews",
+		"filters": f"visit:page==/marketplace/apps/{name}",
+	}
+	headers = {"Authorization": f'Bearer {settings.get_password("plausible_api_key")}'}
+
+	for api_type, endpoint in api_endpoints.items():
+		res = requests.get(settings.plausible_url + endpoint, params=params, headers=headers)
+		if res.status_code == 200 and res.json().get("results"):
+			res = res.json().get("results")
+			if api_type == "aggregate":
+				response.update(
+					{"agg_pageviews": res["pageviews"], "agg_visitors": res["visitors"]}
+				)
+			elif api_type == "timeseries":
+				pageviews = [{"value": d["pageviews"], "date": d["date"]} for d in res]
+				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
+				response.update({"pageviews": pageviews, "visitors": unique_visitors})
+
+	return response

@@ -169,7 +169,7 @@ def _new(site, server: str = None):
 	)
 
 	if app_plans and len(app_plans) > 0:
-		subscription_docs = get_app_subscriptions(app_plans)
+		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
@@ -226,7 +226,7 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans):
+def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
@@ -243,6 +243,7 @@ def get_app_subscriptions(app_plans):
 				"doctype": "Marketplace App Subscription",
 				"marketplace_app_plan": plan_name,
 				"app": app_name,
+				"team": team,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
@@ -637,7 +638,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(all_sites, start=0, status=None):
+def get_sites(all_sites, start=0, site_filter=''):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -650,14 +651,17 @@ def get_sites(all_sites, start=0, status=None):
 	benches_with_updates = tuple(benches_with_available_update())
 
 	status_condition = "!= 'Archived'"
-	if status == "Active":
+	if site_filter == "Active":
 		status_condition = "= 'Active'"
-	elif status == "Broken":
+	elif site_filter == "Broken":
 		status_condition = "= 'Broken'"
-	elif status == "Trial":
+	elif site_filter == "Trial":
 		condition = f"{condition} AND s.trial_end_date != ''"
-	elif status == "Update Available":
+	elif site_filter == "Update Available":
 		condition = f"{condition} AND s.bench IN {benches_with_updates}"
+	elif site_filter.startswith("tag:"):
+		tag = site_filter[4:]
+		condition = f"{condition} AND s.name IN (SELECT parent FROM `tabResource Tag` WHERE tag_name = '{tag}')"
 
 	sites = frappe.db.sql(
 		f"""
@@ -680,8 +684,8 @@ def get_sites(all_sites, start=0, status=None):
 
 
 @frappe.whitelist()
-def all(start=0, status=None):
-	return get_sites(all_sites=False, start=start, status=status)
+def all(start=0, site_filter=''):
+	return get_sites(all_sites=False, start=start, site_filter=site_filter)
 
 
 @frappe.whitelist()
@@ -693,6 +697,13 @@ def recent_sites():
 
 	return [site for site in sites if site.name in recents]
 
+@frappe.whitelist()
+def site_tags():
+	team = get_current_team()
+	return frappe.get_all(
+		"Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag"
+	)
+	
 
 @frappe.whitelist()
 @protected("Site")
@@ -743,6 +754,10 @@ def get(name):
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
+		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
+		),
 	}
 
 
@@ -1302,6 +1317,7 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 			"marketplace_app_plan": plan_name,
 			"app": app_name,
 			"site": site_name,
+			"team": get_current_team(),
 		}
 	).insert(ignore_permissions=True)
 

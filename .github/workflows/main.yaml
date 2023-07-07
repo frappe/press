@@ -1,6 +1,12 @@
 name: Press Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
 
 env:
   DB_NAME: test_frappe
@@ -101,6 +107,14 @@ jobs:
       - name: Add to Hosts
         run: |
           echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          install: true
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench

@@ -1,43 +1,43 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2022-01-02 00:12:06.191929",
+ "creation": "2023-07-02 00:06:18.990686",
+ "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "review",
-  "description",
-  "developer"
+  "team",
+  "tag",
+  "doctype_name"
  ],
  "fields": [
   {
-   "fieldname": "review",
+   "fieldname": "team",
    "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "tag",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Review",
-   "options": "App User Review",
-   "reqd": 1
+   "in_preview": 1,
+   "label": "Tag"
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Long Text",
-   "label": "Description"
-  },
-  {
-   "fieldname": "developer",
+   "fieldname": "doctype_name",
    "fieldtype": "Link",
-   "label": "Developer",
-   "options": "User",
-   "reqd": 1
+   "label": "Doctype Name",
+   "options": "DocType"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-29 11:27:59.229923",
+ "modified": "2023-07-02 14:47:42.775981",
  "modified_by": "Administrator",
- "module": "Marketplace",
- "name": "Developer Review Reply",
+ "module": "Press",
+ "name": "Press Tag",
  "owner": "Administrator",
  "permissions": [
   {
@@ -55,6 +55,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "review"
+ "states": []
 }

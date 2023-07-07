@@ -1118,7 +1118,7 @@ class Site(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def can_charge_for_subscription(self):
+	def can_charge_for_subscription(self, subscription=None):
 		today = frappe.utils.getdate()
 		return (
 			self.status not in ["Archived", "Suspended"]
@@ -1312,6 +1312,14 @@ class Site(Document):
 	def run_after_migrate_steps(self):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
+
+	@frappe.whitelist()
+	def enable_read_write(self):
+		self.enable_database_access("read_write")
+
+	@frappe.whitelist()
+	def disable_read_write(self):
+		self.enable_database_access("read_only")
 
 
 def site_cleanup_after_archive(site):

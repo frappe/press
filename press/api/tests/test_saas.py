@@ -1,3 +1,4 @@
+from unittest.mock import patch, Mock
 import frappe
 from press.api.saas import account_request
 from press.press.doctype.app.test_app import create_test_app
@@ -18,6 +19,9 @@ from press.saas.doctype.saas_settings.test_saas_settings import (
 )
 
 
+@patch(
+	"press.press.doctype.account_request.account_request.frappe.sendmail", new=Mock()
+)
 class TestAPISaas(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()

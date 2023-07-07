@@ -7,8 +7,13 @@ import frappe
 import unittest
 from press.press.doctype.team.test_team import create_test_team
 
+from typing import TYPE_CHECKING
 
-def create_test_app(name: str = "frappe", title: str = "Frappe Framework"):
+if TYPE_CHECKING:
+	from press.press.doctype.app.app import App
+
+
+def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> "App":
 	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(
 		ignore_if_duplicate=True
 	)

@@ -198,7 +198,6 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
-		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",

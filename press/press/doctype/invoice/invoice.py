@@ -39,7 +39,7 @@ class Invoice(Document):
 
 	@frappe.whitelist()
 	def finalize_invoice(self):
-		if self.type in ("Prepaid Credits", "Summary"):
+		if self.type == "Prepaid Credits":
 			return
 
 		if self.total == 0:
@@ -308,7 +308,7 @@ class Invoice(Document):
 				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 
 	def add_usage_record(self, usage_record):
-		if self.type not in ("Subscription", "Summary"):
+		if self.type != "Subscription":
 			return
 		# return if this usage_record is already accounted for in an invoice
 		if usage_record.invoice:
@@ -369,17 +369,12 @@ class Invoice(Document):
 	def get_invoice_item_for_usage_record(self, usage_record):
 		invoice_item = None
 		for row in self.items:
-			conditions = (
+			if (
 				row.document_type == usage_record.document_type
 				and row.document_name == usage_record.document_name
 				and row.plan == usage_record.plan
 				and row.rate == usage_record.amount
-			)
-
-			if self.type == "Summary":
-				conditions = conditions and (row.site == usage_record.site)
-
-			if conditions:
+			):
 				invoice_item = row
 		return invoice_item
 

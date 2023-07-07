@@ -120,7 +120,8 @@ export default {
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Versions', route: 'versions' },
 				{ label: 'Deploys', route: 'deploys' },
-				{ label: 'Jobs', route: 'jobs' }
+				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Settings', route: 'setting' }
 			];
 			if (this.bench) {
 				return tabs.map(tab => {

@@ -81,16 +81,16 @@
 			<div class="mb-6">
 				<SectionHeader
 					:heading="
-						siteStatus === 'Update Available'
+						siterFilter === 'Update Available'
 							? 'Sites with Update Available'
-							: `${this.siteStatus || 'All'} Sites`
+							: `${this.siterFilter || 'All'} Sites`
 					"
 				>
 					<template #actions>
 						<Input
 							type="select"
-							:options="siteStatusOptions"
-							v-model="siteStatus"
+							:options="[...siteStatusOptions, ...$resources.allSites.data.tags.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
+							v-model="siterFilter"
 							@change="handleChange"
 						/>
 					</template>
@@ -180,8 +180,9 @@ export default {
 			],
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			siteStatus: '',
-			pageStart: 0
+			siteFilter: '',
+			pageStart: 0,
+			// selectedTage
 		};
 	},
 	resources: {
@@ -189,7 +190,7 @@ export default {
 		allSites() {
 			return {
 				method: 'press.api.site.all',
-				params: { start: this.pageStart, status: this.siteStatus },
+				params: { start: this.pageStart, status: this.siterFilter },
 				pageLength: 10,
 				keepData: true,
 				auto: true

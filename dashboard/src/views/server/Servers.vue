@@ -33,12 +33,13 @@
 		</PageHeader>
 
 		<div>
-			<SectionHeader :heading="serverType">
+			<SectionHeader :heading="serverFilter">
 				<template #actions>
 					<Input
+						v-if="!$resources.serverTags.loading"
 						type="select"
-						:options="serverTypeOptions"
-						v-model="serverType"
+						:options="[...serverTypeOptions, ...$resources.serverTags.data.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
+						v-model="serverFilter"
 						@change="handleChange"
 					/>
 				</template>
@@ -97,7 +98,7 @@ export default {
 		return {
 			showAddCardDialog: false,
 			pageStart: 0,
-			serverType: 'All Servers',
+			serverFilter: 'All Servers',
 			serverTypeOptions: [
 				{
 					label: 'All Servers',
@@ -121,19 +122,20 @@ export default {
 					label: 'Self Hosted Server',
 					handler: () => this.$router.replace('/selfhosted/new')
 				}
-			]
+			],
 		};
 	},
 	resources: {
 		allServers() {
 			return {
 				method: 'press.api.server.all',
-				params: { start: this.pageStart, server_type: this.serverType },
+				params: { start: this.pageStart, server_filter: this.serverFilter },
 				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
-		}
+		},
+		serverTags: 'press.api.server.server_tags',
 	},
 	methods: {
 		handleChange() {
@@ -161,7 +163,7 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
-		}
+		},
 	},
 	computed: {
 		servers() {

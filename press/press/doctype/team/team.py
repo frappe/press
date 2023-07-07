@@ -239,7 +239,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 
-		if not self.is_new() and self.billing_name:
+		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
 
@@ -387,7 +387,7 @@ class Team(Document):
 
 		previous_billing_name = previous_version.billing_name
 
-		if previous_billing_name:
+		if previous_billing_name and previous_billing_name != self.billing_name:
 			try:
 				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
 				frappe.msgprint(
@@ -489,6 +489,11 @@ class Team(Document):
 
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+			invoice.stripe_link_expired = False
+			if invoice.status == "Unpaid":
+				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
+				if days_diff > 30:
+					invoice.stripe_link_expired = True
 		return invoices
 
 	def allocate_credit_amount(self, amount, source, remark=None):
@@ -682,7 +687,7 @@ class Team(Document):
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
 
-	def get_upcoming_invoice(self, type="Subscription"):
+	def get_upcoming_invoice(self):
 		# get the current period's invoice
 		today = frappe.utils.today()
 		result = frappe.db.get_all(
@@ -690,7 +695,7 @@ class Team(Document):
 			filters={
 				"status": "Draft",
 				"team": self.name,
-				"type": type,
+				"type": "Subscription",
 				"period_start": ("<=", today),
 				"period_end": (">=", today),
 			},
@@ -701,10 +706,10 @@ class Team(Document):
 		if result:
 			return frappe.get_doc("Invoice", result[0])
 
-	def create_upcoming_invoice(self, type="Subscription"):
+	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
 		return frappe.get_doc(
-			doctype="Invoice", team=self.name, period_start=today, type=type
+			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
 		).insert()
 
 	def notify_with_email(self, recipients: List[str], **kwargs):

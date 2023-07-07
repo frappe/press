@@ -15,16 +15,17 @@
 
 		<SectionHeader
 			:heading="
-				benchStatus === 'Awaiting Deploy'
+				benchFilter === 'Awaiting Deploy'
 					? 'Benches Awaiting Deploy'
-					: `${this.benchStatus || 'All'} Benches`
+					: `${this.benchFilter || 'All'} Benches`
 			"
 		>
 			<template #actions>
 				<Input
+					v-if="$resources.allBenches.data"
 					type="select"
-					:options="benchStatusOptions"
-					v-model="benchStatus"
+					:options="[...benchStatusOptions, ...$resources.allBenches.data.tags.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
+					v-model="benchFilter"
 					@change="handleChange"
 				/>
 			</template>
@@ -86,10 +87,11 @@ export default {
 					label: 'Awaiting Deploy',
 					value: 'Awaiting Deploy'
 				}
+				// TODO: rewrite this to use the tags from the API
 			],
 			showAddCardDialog: false,
-			benchStatus: '',
-			pageStart: 0
+			benchFilter: '',
+			pageStart: 0,
 		};
 	},
 	pageMeta() {
@@ -108,7 +110,7 @@ export default {
 		allBenches() {
 			return {
 				method: 'press.api.bench.all',
-				params: { start: this.pageStart, status: this.benchStatus },
+				params: { start: this.pageStart, bench_filter: this.benchFilter },
 				pageLength: 10,
 				keepData: true,
 				auto: true
@@ -121,7 +123,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allBenches.data;
+			return this.$resources.allBenches.data.groups;
 		}
 	},
 	methods: {

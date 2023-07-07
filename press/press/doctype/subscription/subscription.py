@@ -72,6 +72,11 @@ class Subscription(Document):
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
+			site=frappe.get_value(
+				"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+			)
+			if self.document_type == "Marketplace App"
+			else None,
 		)
 		usage_record.insert()
 		usage_record.submit()
@@ -83,7 +88,7 @@ class Subscription(Document):
 			return False
 
 		if hasattr(doc, "can_charge_for_subscription"):
-			return doc.can_charge_for_subscription()
+			return doc.can_charge_for_subscription(self)
 
 		return True
 
@@ -112,13 +117,17 @@ class Subscription(Document):
 	def validate_duplicate(self):
 		if not self.is_new():
 			return
+		filters = {
+			"team": self.team,
+			"document_type": self.document_type,
+			"document_name": self.document_name,
+		}
+		if self.document_type == "Marketplace App":
+			filters.update({"marketplace_app_subscription": self.marketplace_app_subscription})
+
 		results = frappe.db.get_all(
 			"Subscription",
-			{
-				"team": self.team,
-				"document_type": self.document_type,
-				"document_name": self.document_name,
-			},
+			filters,
 			pluck="name",
 			limit=1,
 		)
@@ -171,7 +180,10 @@ def paid_plans():
 	return frappe.db.get_all(
 		"Plan",
 		{
-			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"document_type": (
+				"in",
+				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
+			),
 			"is_trial_plan": 0,
 			"price_inr": (">", 0),
 		},
@@ -204,7 +216,7 @@ def created_usage_records(free_sites, date=frappe.utils.today()):
 	return frappe.get_all(
 		"Usage Record",
 		filters={
-			"document_type": ("in", ("Site", "Server", "Database Server")),
+			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
 			"date": date,
 			"document_name": ("not in", free_sites),
 		},

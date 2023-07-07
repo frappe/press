@@ -12,6 +12,10 @@ from press.press.doctype.server.server import Server
 from press.utils import get_last_doc, get_app_tag, get_current_team, log_error
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -108,7 +112,7 @@ class ReleaseGroup(Document):
 		return self.create_deploy_candidate([app.as_dict() for app in self.apps])
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_ignore=None):
+	def create_deploy_candidate(self, apps_to_ignore=None) -> "DeployCandidate":
 		if not self.enabled:
 			return
 

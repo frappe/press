@@ -17,6 +17,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from frappe.utils.safe_exec import safe_exec
+from frappe.utils import get_datetime
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -245,6 +246,14 @@ class MarketplaceApp(WebsiteGenerator):
 		context.plans = self.get_plans()
 
 		user_reviews = self.get_user_reviews()
+		for review in user_reviews:
+			review["developer_reply"] = frappe.get_all(
+				"Developer Review Reply",
+				filters={"review": review.name},
+				pluck="description",
+				order_by="creation asc",
+			)
+
 		ratings_summary = self.get_user_ratings_summary(user_reviews)
 
 		context.user_reviews = user_reviews
@@ -259,6 +268,7 @@ class MarketplaceApp(WebsiteGenerator):
 			.join(user)
 			.on(user.name == app_user_review.reviewer)
 			.select(
+				app_user_review.name,
 				app_user_review.title,
 				Cast_(5 * app_user_review.rating, "INT").as_("rating"),
 				app_user_review.review,
@@ -357,15 +367,77 @@ class MarketplaceApp(WebsiteGenerator):
 			(self.app,),
 		)[0][0]
 
+	def get_payout_amount(self, status: str = "", total_for: str = "net_amount"):
+		"""Return the payout amount for this app"""
+		filters = {"recipient": self.team}
+		if status:
+			filters["status"] = status
+		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
+		payout = frappe.get_all(
+			"Payout Order Item",
+			filters={"parent": ("in", payout_orders)},
+			fields=[
+				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
+				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",
+			],
+		)
+		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
+
 	def get_analytics(self):
 		return {
 			"total_installs": self.total_installs(),
 			"num_installs_active_sites": self.total_active_sites(),
 			"num_installs_active_benches": self.total_active_benches(),
+			"total_payout": self.get_payout_amount(),
+			"paid_payout": self.get_payout_amount(status="Paid"),
+			"pending_payout": self.get_payout_amount(status="Draft"),
+			"commission": self.get_payout_amount(total_for="commission"),
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:
 		return get_plans_for_app(self.name, frappe_version)
+
+	def can_charge_for_subscription(self, subscription):
+		marketplace_app_plan, plan, site, team, status = frappe.get_value(
+			"Marketplace App Subscription",
+			subscription.marketplace_app_subscription,
+			["marketplace_app_plan", "plan", "site", "team", "status"],
+		)
+
+		return (
+			status == "Active"
+			and team
+			and team != "Administrator"
+			and self.should_create_usage_record(marketplace_app_plan, plan, site)
+		)
+
+	def should_create_usage_record(self, marketplace_app_plan, plan, site):
+		"""Check if the user can create a usage record for this app"""
+		is_free = frappe.db.get_value("Marketplace App Plan", marketplace_app_plan, "is_free")
+
+		if is_free:
+			return False
+
+		# For annual prepaid plans
+		plan_interval = frappe.db.get_value("Plan", plan, "interval")
+
+		if plan_interval == "Annually":
+			return False
+
+		# For non-active sites
+		site_status, trial_site, free = frappe.db.get_value(
+			"Site", site, ["status", "trial_end_date", "free"]
+		)
+		if site_status not in ("Active", "Inactive"):
+			return False
+
+		if free:
+			return False
+
+		if trial_site and frappe.utils.getdate() < get_datetime(trial_site).date():
+			return False
+
+		return True
 
 
 def get_plans_for_app(
