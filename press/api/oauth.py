@@ -22,6 +22,8 @@ from press.utils import log_error
 
 import os
 
+from press.utils.telemetry import capture, identify
+
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
@@ -189,6 +191,13 @@ def saas_setup(key, app, country, subdomain):
 			"subdomain": subdomain,
 		}
 	).insert(ignore_permissions=True)
+	site_name = signup_ar.get_site_name()
+	identify(
+		site_name,
+		app=app,
+		oauth=True,
+	)
+	capture("completed_oauth_account_request", "fc_saas", site_name)
 	create_or_rename_saas_site(app, signup_ar)
 	frappe.set_user("Administrator")
 	create_marketplace_subscription(signup_ar)

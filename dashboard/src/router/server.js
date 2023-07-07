@@ -48,6 +48,12 @@ export default [
 				path: 'install',
 				component: () => import('../views/server/ServerInstall.vue'),
 				props: true
+			},
+			{
+				name: 'ServerSettings',
+				path: 'setting',
+				component: () => import('../views/server/ServerSettings.vue'),
+				props: true
 			}
 		]
 	},

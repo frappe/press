@@ -663,6 +663,7 @@ def all():
 
 	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
+		site.tags = frappe.get_all("Resource Tag", {"parent": site.name}, pluck="tag_name")
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
@@ -671,6 +672,9 @@ def all():
 
 	sites_data.site_list = sites
 	sites_data.recents = recents
+	sites_data.tags = frappe.get_all(
+		"Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag"
+	)
 
 	return sites_data
 
@@ -724,6 +728,10 @@ def get(name):
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
+		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
+		),
 	}
 
 

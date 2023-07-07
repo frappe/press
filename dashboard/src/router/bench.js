@@ -56,6 +56,11 @@ export default [
 				path: 'jobs/:jobName?',
 				component: () => import('../views/bench/BenchJobs.vue'),
 				props: true
+			},
+			{
+				path: 'setting',
+				component: () => import('../views/bench/BenchSettings.vue'),
+				props: true
 			}
 		]
 	},

@@ -37,7 +37,9 @@
   "saas_tab",
   "saas_bench",
   "column_break_26",
-  "saas_app"
+  "saas_app",
+  "miscellaneous_tab",
+  "tags"
  ],
  "fields": [
   {
@@ -221,10 +223,21 @@
    "fieldname": "merge_default_and_short_rq_queues",
    "fieldtype": "Check",
    "label": "Merge Default and Short RQ Queues"
+  },
+  {
+   "fieldname": "miscellaneous_tab",
+   "fieldtype": "Tab Break",
+   "label": "Miscellaneous"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "links": [],
- "modified": "2023-06-16 13:20:20.891683",
+ "modified": "2023-07-02 13:09:07.659314",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

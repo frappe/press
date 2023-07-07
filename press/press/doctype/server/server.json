@@ -60,7 +60,9 @@
   "standalone_section",
   "is_standalone",
   "column_break_edyf",
-  "is_standalone_setup"
+  "is_standalone_setup",
+  "tags_section",
+  "tags"
  ],
  "fields": [
   {
@@ -403,10 +405,21 @@
    "fieldtype": "Check",
    "label": "Is Standalone Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "links": [],
- "modified": "2023-05-26 20:15:54.580347",
+ "modified": "2023-07-02 14:59:31.104759",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

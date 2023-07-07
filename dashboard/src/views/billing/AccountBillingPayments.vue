@@ -153,9 +153,9 @@ export default {
 				this.$resources.pastInvoices.loading ||
 				this.filteredInvoices.length > 0
 			) {
-				return `History of your ${this.invoiceStatus + ' '}invoice payments`;
+				return `History of your ${this.invoiceStatus} invoice payments`;
 			}
-			return `No ${this.invoiceStatus + ' '}invoices have been generated yet`;
+			return `No ${this.invoiceStatus} invoices have been generated yet`;
 		}
 	},
 	methods: {
