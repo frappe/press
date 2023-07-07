@@ -27,64 +27,49 @@ def all(start=0, server_filter=""):
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
 
-	app_servers = []
-	database_servers = []
-
 	db_server = frappe.qb.DocType("Database Server")
 	app_server = frappe.qb.DocType("Server")
 	res_tag = frappe.qb.DocType("Resource Tag")
 
-	if server_filter.startswith("tag:"):
-		tag = server_filter[4:]
-		query = (
-			frappe.qb.from_(db_server)
-			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
-			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
-			.inner_join(res_tag)
-			.on((res_tag.parent == db_server.name) & (res_tag.tag_name == tag))
-			+ frappe.qb.from_(app_server)
+	if server_filter != "Database Servers":
+		app_server_query = (
+			frappe.qb.from_(app_server)
 			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
 			.where(
 				((app_server.team).isin(teams))
 				& (app_server.status != "Archived")
 				& (app_server.is_self_hosted == 0)
 			)
-			.inner_join(res_tag)
-			.on((res_tag.parent == app_server.name) & (res_tag.tag_name == tag))
-		).limit(f"{start}, 10")
-
-		return frappe.db.sql(query, as_dict=True)
-
-	if server_filter != "Database Servers":
-		app_servers = frappe.get_all(
-			"Server",
-			{"team": ("in", teams), "status": ("!=", "Archived")},
-			["name", "creation", "status", "title"],
-			start=start if server_filter == "App Servers" else start / 2,
-			limit=10 if server_filter == "App Servers" else 5,
 		)
 
 	if server_filter != "App Servers":
-		database_servers = frappe.get_all(
-			"Database Server",
-			{
-				"team": ("in", teams),
-				"status": ("!=", "Archived"),
-				"is_self_hosted": ("!=", True),
-			},
-			["name", "creation", "status", "title"],
-			start=start if server_filter == "Database Servers" else start / 2,
-			limit=10 if server_filter == "Database Servers" else 5,
+		database_server_query = (
+			frappe.qb.from_(db_server)
+			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
+			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
 		)
 
-	all_servers = app_servers + database_servers
-	for server in all_servers:
-		server["tags"] = frappe.get_all(
-			"Resource Tag", {"parent": server.name}, pluck="tag_name"
+	if server_filter.startswith("tag:"):
+		tag = server_filter[4:]
+
+		app_server_query = app_server_query.inner_join(res_tag).on(
+			(res_tag.parent == app_server.name) & (res_tag.tag_name == tag)
 		)
+		database_server_query = database_server_query.inner_join(res_tag).on(
+			(res_tag.parent == db_server.name) & (res_tag.tag_name == tag)
+		)
+
+	if server_filter == "All Servers" or server_filter.startswith("tag:"):
+		query = app_server_query + database_server_query
+	elif server_filter == "App Servers":
+		query = app_server_query
+	elif server_filter == "Database Servers":
+		query = database_server_query
+
+	servers = frappe.db.sql(query.limit(f"{start}, 10"), as_dict=True)
+	for server in servers:
 		server["app_server"] = f"f{server.name[1:]}"
-
-	return all_servers
+	return servers
 
 
 @frappe.whitelist()
