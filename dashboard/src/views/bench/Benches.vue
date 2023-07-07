@@ -15,19 +15,22 @@
 
 		<SectionHeader :heading="getBenchFilterHeading()">
 			<template #actions>
-				<Input
-					v-if="$resources.benchTags.data"
-					type="select"
-					:options="[
-						...benchStatusOptions,
-						...$resources.benchTags.data.map(tag => ({
-							label: tag,
-							value: `tag:${tag}`
-						}))
-					]"
+				<select
 					v-model="benchFilter"
+					class="form-select"
 					@change="handleChange"
-				/>
+				>
+					<optgroup v-for="group in benchFilterOptions" :label="group.group">
+						<option
+							v-for="option in group.items"
+							:key="option.value"
+							:value="option.value"
+							:selected="benchFilter === option.value"
+						>
+							{{ option.label }}
+						</option>
+					</optgroup>
+				</select>
 			</template>
 		</SectionHeader>
 
@@ -74,20 +77,6 @@ export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
-			benchStatusOptions: [
-				{
-					label: 'All',
-					value: ''
-				},
-				{
-					label: 'Active',
-					value: 'Active'
-				},
-				{
-					label: 'Awaiting Deploy',
-					value: 'Awaiting Deploy'
-				}
-			],
 			showAddCardDialog: false,
 			benchFilter: '',
 			pageStart: 0
@@ -124,6 +113,39 @@ export default {
 			}
 
 			return this.$resources.allBenches.data;
+		},
+		benchFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							value: ''
+						},
+						{
+							label: 'Active',
+							value: 'Active'
+						},
+						{
+							label: 'Awaiting Deploy',
+							value: 'Awaiting Deploy'
+						}
+					]
+				}
+			];
+			if (!this.$resources.benchTags?.data) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.benchTags.data.map(tag => ({
+						label: tag,
+						value: `tag:${tag}`
+					}))
+				}
+			];
 		}
 	},
 	methods: {

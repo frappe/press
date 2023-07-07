@@ -81,19 +81,22 @@
 			<div class="mb-6">
 				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
-						<Input
-							v-if="!$resources.siteTags.loading"
-							type="select"
-							:options="[
-								...siteStatusOptions,
-								...$resources.siteTags.data.map(tag => ({
-									label: tag,
-									value: `tag:${tag}`
-								}))
-							]"
+						<select
 							v-model="siteFilter"
+							class="form-select"
 							@change="handleChange"
-						/>
+						>
+							<optgroup v-for="group in siteFilterOptions" :label="group.group">
+								<option
+									v-for="option in group.items"
+									:key="option.value"
+									:value="option.value"
+									:selected="siteFilter === option.value"
+								>
+									{{ option.label }}
+								</option>
+							</optgroup>
+						</select>
 					</template>
 				</SectionHeader>
 
@@ -157,28 +160,6 @@ export default {
 	},
 	data() {
 		return {
-			siteStatusOptions: [
-				{
-					label: 'All',
-					value: ''
-				},
-				{
-					label: 'Active',
-					value: 'Active'
-				},
-				{
-					label: 'Broken',
-					value: 'Broken'
-				},
-				{
-					label: 'Trial',
-					value: 'Trial'
-				},
-				{
-					label: 'Update Available',
-					value: 'Update Available'
-				}
-			],
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
 			siteFilter: '',
@@ -277,6 +258,47 @@ export default {
 		}
 	},
 	computed: {
+		siteFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							value: ''
+						},
+						{
+							label: 'Active',
+							value: 'Active'
+						},
+						{
+							label: 'Broken',
+							value: 'Broken'
+						},
+						{
+							label: 'Trial',
+							value: 'Trial'
+						},
+						{
+							label: 'Update Available',
+							value: 'Update Available'
+						}
+					]
+				}
+			];
+			if (!this.$resources.siteTags?.data) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.siteTags.data.map(tag => ({
+						label: tag,
+						value: `tag:${tag}`
+					}))
+				}
+			];
+		},
 		sites() {
 			if (!this.$resources.allSites.data) {
 				return [];

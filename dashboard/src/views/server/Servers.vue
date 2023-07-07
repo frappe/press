@@ -35,19 +35,22 @@
 		<div>
 			<SectionHeader :heading="getServerFilterHeading()">
 				<template #actions>
-					<Input
-						v-if="!$resources.serverTags.loading"
-						type="select"
-						:options="[
-							...serverTypeOptions,
-							...$resources.serverTags.data.map(tag => ({
-								label: tag,
-								value: `tag:${tag}`
-							}))
-						]"
+					<select
 						v-model="serverFilter"
+						class="form-select"
 						@change="handleChange"
-					/>
+					>
+						<optgroup v-for="group in serverFilterOptions" :label="group.group">
+							<option
+								v-for="option in group.items"
+								:key="option.value"
+								:value="option.value"
+								:selected="serverFilter === option.value"
+							>
+								{{ option.label }}
+							</option>
+						</optgroup>
+					</select>
 				</template>
 			</SectionHeader>
 			<div class="mt-3">
@@ -105,20 +108,6 @@ export default {
 			showAddCardDialog: false,
 			pageStart: 0,
 			serverFilter: 'All Servers',
-			serverTypeOptions: [
-				{
-					label: 'All Servers',
-					value: 'All Servers'
-				},
-				{
-					label: 'App Servers',
-					value: 'App Servers'
-				},
-				{
-					label: 'Database Servers',
-					value: 'Database Servers'
-				}
-			],
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -182,6 +171,38 @@ export default {
 				return [];
 			}
 			return this.$resources.allServers.data;
+		},
+		serverFilterOptions() {
+			const options = [
+				{
+					group: 'Types',
+					items: [
+						{
+							label: 'All Servers',
+							value: 'All Servers'
+						},
+						{
+							label: 'App Servers',
+							value: 'App Servers'
+						},
+						{
+							label: 'Database Servers',
+							value: 'Database Servers'
+						}
+					]
+				}
+			];
+			if (!this.$resources.serverTags?.data) return options;
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.serverTags.data.map(tag => ({
+						label: tag,
+						value: `tag:${tag}`
+					}))
+				}
+			];
 		}
 	}
 };
