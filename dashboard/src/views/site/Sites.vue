@@ -79,18 +79,19 @@
 			</div>
 
 			<div class="mb-6">
-				<SectionHeader
-					:heading="
-						siterFilter === 'Update Available'
-							? 'Sites with Update Available'
-							: `${this.siterFilter || 'All'} Sites`
-					"
-				>
+				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
 						<Input
+							v-if="!$resources.siteTags.loading"
 							type="select"
-							:options="[...siteStatusOptions, ...$resources.allSites.data.tags.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
-							v-model="siterFilter"
+							:options="[
+								...siteStatusOptions,
+								...$resources.siteTags.data.map(tag => ({
+									label: tag,
+									value: `tag:${tag}`
+								}))
+							]"
+							v-model="siteFilter"
 							@change="handleChange"
 						/>
 					</template>
@@ -181,7 +182,7 @@ export default {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
 			siteFilter: '',
-			pageStart: 0,
+			pageStart: 0
 			// selectedTage
 		};
 	},
@@ -190,12 +191,13 @@ export default {
 		allSites() {
 			return {
 				method: 'press.api.site.all',
-				params: { start: this.pageStart, status: this.siterFilter },
+				params: { start: this.pageStart, site_filter: this.siteFilter },
 				pageLength: 10,
 				keepData: true,
 				auto: true
 			};
 		},
+		siteTags: 'press.api.site.site_tags',
 		recentSites: 'press.api.site.recent_sites',
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
@@ -211,6 +213,13 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
+		getSiteFilterHeading() {
+			if (this.siteFilter === 'Update Available')
+				return 'Sites with Update Available';
+			else if (this.siteFilter.startsWith('tag:'))
+				return `Sites with tag ${this.siteFilter.slice(4)}`;
+			return `${this.siteFilter || 'All'} Sites`;
+		},
 		handleChange() {
 			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
 			setTimeout(() => {

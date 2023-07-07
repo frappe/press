@@ -83,7 +83,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, start=0, bench_filter=''):
+def all(server=None, start=0, bench_filter=""):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -119,7 +119,9 @@ def all(server=None, start=0, bench_filter=''):
 	elif bench_filter.startswith("tag:"):
 		tag = bench_filter[4:]
 		press_tag = frappe.qb.DocType("Resource Tag")
-		query = query.inner_join(press_tag).on((press_tag.tag_name == tag) & (press_tag.parent == group.name))
+		query = query.inner_join(press_tag).on(
+			(press_tag.tag_name == tag) & (press_tag.parent == group.name)
+		)
 
 	if server:
 		group_server = frappe.qb.DocType("Release Group Server")
@@ -141,12 +143,14 @@ def all(server=None, start=0, bench_filter=''):
 
 	return private_groups
 
+
 @frappe.whitelist()
 def bench_tags():
 	team = get_current_team()
 	return frappe.get_all(
-			"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
+		"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
 	)
+
 
 def get_app_counts_for_groups(rg_names):
 	rg_app = frappe.qb.DocType("Release Group App")

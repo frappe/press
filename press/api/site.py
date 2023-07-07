@@ -638,7 +638,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(all_sites, start=0, site_filter=''):
+def get_sites(all_sites, start=0, site_filter=""):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -684,7 +684,7 @@ def get_sites(all_sites, start=0, site_filter=''):
 
 
 @frappe.whitelist()
-def all(start=0, site_filter=''):
+def all(start=0, site_filter=""):
 	return get_sites(all_sites=False, start=start, site_filter=site_filter)
 
 
@@ -697,13 +697,12 @@ def recent_sites():
 
 	return [site for site in sites if site.name in recents]
 
+
 @frappe.whitelist()
 def site_tags():
 	team = get_current_team()
-	return frappe.get_all(
-		"Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag"
-	)
-	
+	return frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag")
+
 
 @frappe.whitelist()
 @protected("Site")

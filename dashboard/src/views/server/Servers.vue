@@ -33,12 +33,18 @@
 		</PageHeader>
 
 		<div>
-			<SectionHeader :heading="serverFilter">
+			<SectionHeader :heading="getServerFilterHeading()">
 				<template #actions>
 					<Input
 						v-if="!$resources.serverTags.loading"
 						type="select"
-						:options="[...serverTypeOptions, ...$resources.serverTags.data.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
+						:options="[
+							...serverTypeOptions,
+							...$resources.serverTags.data.map(tag => ({
+								label: tag,
+								value: `tag:${tag}`
+							}))
+						]"
 						v-model="serverFilter"
 						@change="handleChange"
 					/>
@@ -122,7 +128,7 @@ export default {
 					label: 'Self Hosted Server',
 					handler: () => this.$router.replace('/selfhosted/new')
 				}
-			],
+			]
 		};
 	},
 	resources: {
@@ -135,9 +141,14 @@ export default {
 				auto: true
 			};
 		},
-		serverTags: 'press.api.server.server_tags',
+		serverTags: 'press.api.server.server_tags'
 	},
 	methods: {
+		getServerFilterHeading() {
+			if (this.serverFilter.startsWith('tag:'))
+				return `Servers with tag ${this.serverFilter.slice(4)}`;
+			return this.serverFilter;
+		},
 		handleChange() {
 			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
 			setTimeout(() => {
@@ -163,7 +174,7 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
-		},
+		}
 	},
 	computed: {
 		servers() {

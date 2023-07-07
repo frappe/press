@@ -13,18 +13,18 @@
 			</template>
 		</PageHeader>
 
-		<SectionHeader
-			:heading="
-				benchFilter === 'Awaiting Deploy'
-					? 'Benches Awaiting Deploy'
-					: `${this.benchFilter || 'All'} Benches`
-			"
-		>
+		<SectionHeader :heading="getBenchFilterHeading()">
 			<template #actions>
 				<Input
-					v-if="$resources.allBenches.data"
+					v-if="$resources.benchTags.data"
 					type="select"
-					:options="[...benchStatusOptions, ...$resources.allBenches.data.tags.map(tag => ({ label: tag, value: `tag:${tag}` }))]"
+					:options="[
+						...benchStatusOptions,
+						...$resources.benchTags.data.map(tag => ({
+							label: tag,
+							value: `tag:${tag}`
+						}))
+					]"
 					v-model="benchFilter"
 					@change="handleChange"
 				/>
@@ -87,11 +87,10 @@ export default {
 					label: 'Awaiting Deploy',
 					value: 'Awaiting Deploy'
 				}
-				// TODO: rewrite this to use the tags from the API
 			],
 			showAddCardDialog: false,
 			benchFilter: '',
-			pageStart: 0,
+			pageStart: 0
 		};
 	},
 	pageMeta() {
@@ -115,7 +114,8 @@ export default {
 				keepData: true,
 				auto: true
 			};
-		}
+		},
+		benchTags: 'press.api.bench.bench_tags'
 	},
 	computed: {
 		benches() {
@@ -123,7 +123,7 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allBenches.data.groups;
+			return this.$resources.allBenches.data;
 		}
 	},
 	methods: {
@@ -133,6 +133,13 @@ export default {
 				this.pageStart = 0;
 				this.$resources.allBenches.reset();
 			}, 1);
+		},
+		getBenchFilterHeading() {
+			if (this.benchFilter === 'Awaiting Deploy')
+				return 'Benches Awaiting Deploy';
+			else if (this.benchFilter.startsWith('tag:'))
+				return `Benches with tag ${this.benchFilter.slice(4)}`;
+			return `${this.benchFilter || 'All'} Benches`;
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
