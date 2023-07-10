@@ -63,22 +63,24 @@ class SaasSite(Site):
 
 
 def get_saas_bench(app):
+	"""
+	Select server with least cpu consumption
+	"""
 	domain = get_saas_domain(app)
-	cluster = get_saas_cluster(app)
 
 	proxy_servers = frappe.get_all(
 		"Proxy Server",
 		[
 			["status", "=", "Active"],
-			["cluster", "=", cluster],
 			["Proxy Server Domain", "domain", "=", domain],
 		],
 		pluck="name",
 	)
 	release_group = get_saas_group(app)
-	query = """
+	bench_servers = frappe.db.sql(
+		"""
 		SELECT
-			bench.name
+			bench.name, bench.server
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -89,9 +91,42 @@ def get_saas_bench(app):
 			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
-		LIMIT 1
-	"""
-	return frappe.db.sql(query, [proxy_servers, release_group], as_dict=True)[0].name
+	""",
+		[proxy_servers, release_group],
+		as_dict=True,
+	)
+
+	signup_servers = tuple([bs["server"] for bs in bench_servers])
+	signup_server_sub_str = (
+		tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
+	)
+	lowest_cpu_server = frappe.db.sql(
+		f"""
+		SELECT
+			site.server,
+		SUM(
+			CASE WHEN (site.status != "Archived" and site.status != "Suspended") or NOT NULL
+			THEN plan.cpu_time_per_day ELSE 0 END
+		) as cpu_time_per_month
+		FROM
+			tabSite site
+		LEFT JOIN
+			tabPlan plan
+		ON
+			site.plan = plan.name
+		WHERE
+			site.server in ({signup_server_sub_str})
+		GROUP by
+			site.server
+		ORDER by
+			cpu_time_per_month
+		LIMIT 1""",
+		as_dict=True,
+	)[0].server
+
+	for bs in bench_servers:
+		if bs["server"] == lowest_cpu_server:
+			return bs["name"]
 
 
 def get_saas_plan(app):
