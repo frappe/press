@@ -40,7 +40,6 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		self.subscription = frappe.get_doc(
 			"Subscription",
 			{
-
 				"marketplace_app_subscription": self.marketplace_subscription.name,
 				"document_type": "Marketplace App",
 				"document_name": self.marketplace_subscription.app,
@@ -56,7 +55,9 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		"""
 		Check if subscription doc is created and linked after_insert of Marketplace App Subscription
 		"""
-		self.assertEqual(self.subscription.marketplace_app_subscription, self.marketplace_subscription.name)
+		self.assertEqual(
+			self.subscription.marketplace_app_subscription, self.marketplace_subscription.name
+		)
 
 	def test_subscription_daily(self):
 		"""

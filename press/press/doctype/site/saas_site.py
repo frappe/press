@@ -122,7 +122,10 @@ def get_saas_bench(app):
 			cpu_time_per_month
 		LIMIT 1""",
 		as_dict=True,
-	)[0].server
+	)
+	lowest_cpu_server = (
+		lowest_cpu_server[0].server if lowest_cpu_server else signup_servers[0]
+	)
 
 	for bs in bench_servers:
 		if bs["server"] == lowest_cpu_server:
