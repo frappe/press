@@ -115,7 +115,7 @@ def get_saas_bench(app):
 		ON
 			site.plan = plan.name
 		WHERE
-			site.server in ({signup_server_sub_str})
+			site.server in {signup_server_sub_str}
 		GROUP by
 			site.server
 		ORDER by
