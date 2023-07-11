@@ -769,7 +769,7 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 
 	feature_list = plan_data.get("features")
 	reset_features_for_plan(app_plan_doc, feature_list)
-	app_plan_doc.insert(ignore_permissions=True)
+	return app_plan_doc.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
