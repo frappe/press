@@ -124,14 +124,24 @@ def process_backup_site_job_update(job):
 					"database_size": backup_data["database"]["size"],
 					"database_url": backup_data["database"]["url"],
 					"database_file": backup_data["database"]["file"],
-					"config_file_size": backup_data["site_config"]["size"],
-					"config_file_url": backup_data["site_config"]["url"],
-					"config_file": backup_data["site_config"]["file"],
 					"remote_database_file": remote_database,
-					"remote_config_file": remote_config_file,
 				},
 				for_update=False,
 			)
+
+			if "site_config" in backup_data:
+				frappe.db.set_value(
+					"Site Backup",
+					backup.name,
+					{
+						"config_file_size": backup_data["site_config"]["size"],
+						"config_file_url": backup_data["site_config"]["url"],
+						"config_file": backup_data["site_config"]["file"],
+						"remote_config_file": remote_config_file,
+					},
+					for_update=False,
+				)
+
 			if "private" in backup_data and "public" in backup_data:
 				frappe.db.set_value(
 					"Site Backup",
