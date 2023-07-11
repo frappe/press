@@ -478,7 +478,7 @@ class SelfHostedServer(Document):
 		db_server = frappe.get_doc("Database Server", self.name)
 		if not (server.is_server_setup and db_server.is_server_setup):
 			db_server.setup_server()
-			time.sleep(60)
+			time.sleep(90)
 			server.setup_server()
 		else:
 			self.update_tls()
