@@ -26,7 +26,7 @@ class SecurityUpdateCheck(Document):
 			ansible = Ansible(
 				playbook="security_update_check.yml",
 				server=_server,
-				user =_server.ssh_user or "root",
+				user=_server.ssh_user or "root",
 				port=_server.ssh_port or 22,
 			)
 			self.reload()
