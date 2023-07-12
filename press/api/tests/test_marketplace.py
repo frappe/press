@@ -8,7 +8,9 @@ from unittest.mock import Mock, patch
 
 import frappe
 from press.api.marketplace import (
+	add_app,
 	create_app_plan,
+	options_for_marketplace_app,
 	options_for_quick_install,
 	reset_features_for_plan,
 )
@@ -116,3 +118,11 @@ class TestAPIMarketplace(unittest.TestCase):
 		options = options_for_quick_install(self.app.name)
 
 		self.assertEqual(options["release_groups"][0]["name"], group1.name)
+
+	def test_add_app(self):
+		app = create_test_app('test_app', 'Test App')
+		app_source = create_test_app_source(version=self.version, app=app)
+
+		marketplace_app = add_app(source=app_source.name, app=app.name)
+
+		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
