@@ -74,9 +74,11 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			benchFilter: 'All',
 			pageStart: 0
 		};
+	},
+	created() {
+		this.benchFilter = 'All';
 	},
 	pageMeta() {
 		return {
@@ -147,13 +149,18 @@ export default {
 		},
 		handleFilterChange(filterValue) {
 			if (filterValue === this.benchFilter) return;
-			this.benchFilter = filterValue;
 
-			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
-			setTimeout(() => {
-				this.pageStart = 0;
-				this.$resources.allBenches.reset();
-			}, 1);
+			const oldPageStart = this.pageStart;
+			this.benchFilter = filterValue;
+			this.pageStart = 0;
+
+			this.$resources.allBenches.reset();
+			// fetch data when pageStart is 0 since it won't refetch due to no change in value
+			if (oldPageStart === 0)
+				this.$resources.allBenches.submit({
+					start: this.pageStart,
+					bench_filter: this.benchFilter
+				});
 		},
 		getBenchFilterHeading() {
 			if (this.benchFilter === 'Awaiting Deploy')

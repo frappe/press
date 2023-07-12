@@ -22,7 +22,7 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(start=0, server_filter=""):
+def all(start=0, server_filter="All Servers"):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams

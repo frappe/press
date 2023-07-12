@@ -158,9 +158,11 @@ export default {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			siteFilter: 'All',
 			pageStart: 0
 		};
+	},
+	created() {
+		this.siteFilter = 'All';
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
@@ -198,13 +200,18 @@ export default {
 		},
 		handleFilterChange(filterValue) {
 			if (filterValue === this.siteFilter) return;
-			this.siteFilter = filterValue;
 
-			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
-			setTimeout(() => {
-				this.pageStart = 0;
-				this.$resources.allSites.reset();
-			}, 1);
+			const oldPageStart = this.pageStart;
+			this.siteFilter = filterValue;
+			this.pageStart = 0;
+
+			this.$resources.allSites.reset();
+			// fetch data when pageStart is 0 since it won't refetch due to no change in value
+			if (oldPageStart === 0)
+				this.$resources.allSites.submit({
+					start: this.pageStart,
+					site_filter: this.siteFilter
+				});
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {

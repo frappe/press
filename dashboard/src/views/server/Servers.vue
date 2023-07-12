@@ -103,7 +103,6 @@ export default {
 		return {
 			showAddCardDialog: false,
 			pageStart: 0,
-			serverFilter: 'All Servers',
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -115,6 +114,9 @@ export default {
 				}
 			]
 		};
+	},
+	created() {
+		this.serverFilter = 'All Servers';
 	},
 	resources: {
 		allServers() {
@@ -136,13 +138,18 @@ export default {
 		},
 		handleFilterChange(filterValue) {
 			if (filterValue === this.serverFilter) return;
-			this.serverFilter = filterValue;
 
-			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
-			setTimeout(() => {
-				this.pageStart = 0;
-				this.$resources.allServers.reset();
-			}, 1);
+			const oldPageStart = this.pageStart;
+			this.serverFilter = filterValue;
+			this.pageStart = 0;
+
+			this.$resources.allServers.reset();
+			// fetch data when pageStart is 0 since it won't refetch due to no change in value
+			if (oldPageStart === 0)
+				this.$resources.allServers.submit({
+					start: this.pageStart,
+					server_filter: this.serverFilter
+				});
 		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
