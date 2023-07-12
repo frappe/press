@@ -420,26 +420,3 @@ def get_site_url_and_sid(key, app=None):
 		"url": f"https://{site.name}",
 		"sid": site.login(),
 	}
-
-
-# ------------------ Stripe setup ------------------- #
-
-
-@frappe.whitelist(allow_guest=True)
-def setup_intent_success(setup_intent, account_request_key):
-	"""
-	Create a team with card and create site
-	"""
-	account_request = get_account_request_from_key(account_request_key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	team = frappe.get_doc("Team", account_request.email)
-	frappe.set_user(account_request.email)
-	clear_setup_intent()
-
-	team.create_payment_method(
-		json.loads(setup_intent)["payment_method"], set_default=True
-	)
-	account_request.send_verification_email()
-	create_or_rename_saas_site(account_request.saas_app, account_request)
