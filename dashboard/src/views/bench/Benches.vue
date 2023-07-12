@@ -15,22 +15,18 @@
 
 		<SectionHeader :heading="getBenchFilterHeading()">
 			<template #actions>
-				<select
-					v-model="benchFilter"
-					class="form-select"
-					@change="handleChange"
-				>
-					<optgroup v-for="group in benchFilterOptions" :label="group.group">
-						<option
-							v-for="option in group.items"
-							:key="option.value"
-							:value="option.value"
-							:selected="benchFilter === option.value"
+				<Dropdown :options="benchFilterOptions()">
+					<template v-slot="{ open }">
+						<Button
+							:class="[
+								'rounded-md px-3 py-1 text-base font-medium',
+								open ? 'bg-gray-200' : 'bg-gray-100'
+							]"
+							icon-left="chevron-down"
+							>{{ benchFilter.replace('tag:', '') }}</Button
 						>
-							{{ option.label }}
-						</option>
-					</optgroup>
-				</select>
+					</template>
+				</Dropdown>
 			</template>
 		</SectionHeader>
 
@@ -78,7 +74,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			benchFilter: '',
+			benchFilter: 'All',
 			pageStart: 0
 		};
 	},
@@ -113,7 +109,9 @@ export default {
 			}
 
 			return this.$resources.allBenches.data;
-		},
+		}
+	},
+	methods: {
 		benchFilterOptions() {
 			const options = [
 				{
@@ -121,15 +119,15 @@ export default {
 					items: [
 						{
 							label: 'All',
-							value: ''
+							handler: () => this.handleFilterChange('All')
 						},
 						{
 							label: 'Active',
-							value: 'Active'
+							handler: () => this.handleFilterChange('Active')
 						},
 						{
 							label: 'Awaiting Deploy',
-							value: 'Awaiting Deploy'
+							handler: () => this.handleFilterChange('Awaiting Deploy')
 						}
 					]
 				}
@@ -142,14 +140,15 @@ export default {
 					group: 'Tags',
 					items: this.$resources.benchTags.data.map(tag => ({
 						label: tag,
-						value: `tag:${tag}`
+						handler: () => this.handleFilterChange(`tag:${tag}`)
 					}))
 				}
 			];
-		}
-	},
-	methods: {
-		handleChange() {
+		},
+		handleFilterChange(filterValue) {
+			if (filterValue === this.benchFilter) return;
+			this.benchFilter = filterValue;
+
 			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
 			setTimeout(() => {
 				this.pageStart = 0;

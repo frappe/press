@@ -35,22 +35,18 @@
 		<div>
 			<SectionHeader :heading="getServerFilterHeading()">
 				<template #actions>
-					<select
-						v-model="serverFilter"
-						class="form-select"
-						@change="handleChange"
-					>
-						<optgroup v-for="group in serverFilterOptions" :label="group.group">
-							<option
-								v-for="option in group.items"
-								:key="option.value"
-								:value="option.value"
-								:selected="serverFilter === option.value"
+					<Dropdown :options="serverFilterOptions()">
+						<template v-slot="{ open }">
+							<Button
+								:class="[
+									'rounded-md px-3 py-1 text-base font-medium',
+									open ? 'bg-gray-200' : 'bg-gray-100'
+								]"
+								icon-left="chevron-down"
+								>{{ serverFilter.replace('tag:', '') }}</Button
 							>
-								{{ option.label }}
-							</option>
-						</optgroup>
-					</select>
+						</template>
+					</Dropdown>
 				</template>
 			</SectionHeader>
 			<div class="mt-3">
@@ -138,7 +134,10 @@ export default {
 				return `Servers with tag ${this.serverFilter.slice(4)}`;
 			return this.serverFilter;
 		},
-		handleChange() {
+		handleFilterChange(filterValue) {
+			if (filterValue === this.serverFilter) return;
+			this.serverFilter = filterValue;
+
 			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
 			setTimeout(() => {
 				this.pageStart = 0;
@@ -163,14 +162,6 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
-		}
-	},
-	computed: {
-		servers() {
-			if (!this.$resources.allServers.data) {
-				return [];
-			}
-			return this.$resources.allServers.data;
 		},
 		serverFilterOptions() {
 			const options = [
@@ -179,15 +170,15 @@ export default {
 					items: [
 						{
 							label: 'All Servers',
-							value: 'All Servers'
+							handler: () => this.handleFilterChange('All Servers')
 						},
 						{
 							label: 'App Servers',
-							value: 'App Servers'
+							handler: () => this.handleFilterChange('App Servers')
 						},
 						{
 							label: 'Database Servers',
-							value: 'Database Servers'
+							handler: () => this.handleFilterChange('Database Servers')
 						}
 					]
 				}
@@ -199,10 +190,18 @@ export default {
 					group: 'Tags',
 					items: this.$resources.serverTags.data.map(tag => ({
 						label: tag,
-						value: `tag:${tag}`
+						handler: () => this.handleFilterChange(`tag:${tag}`)
 					}))
 				}
 			];
+		}
+	},
+	computed: {
+		servers() {
+			if (!this.$resources.allServers.data) {
+				return [];
+			}
+			return this.$resources.allServers.data;
 		}
 	}
 };

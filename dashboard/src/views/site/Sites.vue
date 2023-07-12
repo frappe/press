@@ -81,22 +81,18 @@
 			<div class="mb-6">
 				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
-						<select
-							v-model="siteFilter"
-							class="form-select"
-							@change="handleChange"
-						>
-							<optgroup v-for="group in siteFilterOptions" :label="group.group">
-								<option
-									v-for="option in group.items"
-									:key="option.value"
-									:value="option.value"
-									:selected="siteFilter === option.value"
+						<Dropdown :options="siteFilterOptions()">
+							<template v-slot="{ open }">
+								<Button
+									:class="[
+										'rounded-md px-3 py-1 text-base font-medium',
+										open ? 'bg-gray-200' : 'bg-gray-100'
+									]"
+									icon-left="chevron-down"
+									>{{ siteFilter.replace('tag:', '') }}</Button
 								>
-									{{ option.label }}
-								</option>
-							</optgroup>
-						</select>
+							</template>
+						</Dropdown>
 					</template>
 				</SectionHeader>
 
@@ -162,7 +158,7 @@ export default {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			siteFilter: '',
+			siteFilter: 'All',
 			pageStart: 0
 		};
 	},
@@ -200,7 +196,10 @@ export default {
 				return `Sites with tag ${this.siteFilter.slice(4)}`;
 			return `${this.siteFilter || 'All'} Sites`;
 		},
-		handleChange() {
+		handleFilterChange(filterValue) {
+			if (filterValue === this.siteFilter) return;
+			this.siteFilter = filterValue;
+
 			// wrapping in a timeout to avoid a bug where the previous filter's data is fetched again
 			setTimeout(() => {
 				this.pageStart = 0;
@@ -255,9 +254,7 @@ export default {
 		},
 		recentSitesVisible() {
 			return this.sites.length > 3;
-		}
-	},
-	computed: {
+		},
 		siteFilterOptions() {
 			const options = [
 				{
@@ -265,27 +262,28 @@ export default {
 					items: [
 						{
 							label: 'All',
-							value: ''
+							handler: () => this.handleFilterChange('All')
 						},
 						{
 							label: 'Active',
-							value: 'Active'
+							handler: () => this.handleFilterChange('Active')
 						},
 						{
 							label: 'Broken',
-							value: 'Broken'
+							handler: () => this.handleFilterChange('Broken')
 						},
 						{
 							label: 'Trial',
-							value: 'Trial'
+							handler: () => this.handleFilterChange('Trial')
 						},
 						{
 							label: 'Update Available',
-							value: 'Update Available'
+							handler: () => this.handleFilterChange('Update Available')
 						}
 					]
 				}
 			];
+
 			if (!this.$resources.siteTags?.data) return options;
 
 			return [
@@ -294,11 +292,13 @@ export default {
 					group: 'Tags',
 					items: this.$resources.siteTags.data.map(tag => ({
 						label: tag,
-						value: `tag:${tag}`
+						handler: () => this.handleFilterChange(`tag:${tag}`)
 					}))
 				}
 			];
-		},
+		}
+	},
+	computed: {
 		sites() {
 			if (!this.$resources.allSites.data) {
 				return [];
