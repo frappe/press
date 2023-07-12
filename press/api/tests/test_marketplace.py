@@ -9,7 +9,11 @@ from unittest.mock import Mock, patch
 import frappe
 from press.api.marketplace import (
 	add_app,
+	change_app_plan,
 	create_app_plan,
+	get_apps_with_plans,
+	get_marketplace_subscriptions_for_site,
+	new_app,
 	options_for_quick_install,
 	reset_features_for_plan,
 )
@@ -139,6 +143,12 @@ class TestAPIMarketplace(unittest.TestCase):
 			site=site.name, app=self.app.name, team=self.team.name, plan=plan.name
 		)
 
-		self.assertIsNotNone(
-			frappe.db.exists("Marketplace App Subscription", {"site": site.name})
-		)
+		self.assertIsNotNone(get_marketplace_subscriptions_for_site(site.name))
+
+	def test_change_app_plan(self):
+		subscription = create_test_marketplace_app_subscription()
+		new_plan = create_test_marketplace_app_plan()
+		change_app_plan(subscription.name, new_plan.name)
+
+		self.assertEqual(new_plan.name, frappe.db.get_value("Marketplace App Subscription", subscription.name, "marketplace_app_plan"))
+		self.assertEqual(new_plan.plan, frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"))
