@@ -8,9 +8,22 @@ from unittest.mock import Mock, patch
 
 import frappe
 from press.api.marketplace import (
+	add_app,
+	change_app_plan,
 	create_app_plan,
+	get_apps_with_plans,
+	get_marketplace_subscriptions_for_site,
+	get_subscriptions_list,
+	new_app,
 	options_for_quick_install,
 	reset_features_for_plan,
+	update_app_plan,
+)
+from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
+	create_test_marketplace_app_plan,
+)
+from press.marketplace.doctype.marketplace_app_subscription.test_marketplace_app_subscription import (
+	create_test_marketplace_app_subscription,
 )
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -116,3 +129,53 @@ class TestAPIMarketplace(unittest.TestCase):
 		options = options_for_quick_install(self.app.name)
 
 		self.assertEqual(options["release_groups"][0]["name"], group1.name)
+
+	def test_add_app(self):
+		app = create_test_app("test_app", "Test App")
+		app_source = create_test_app_source(version=self.version, app=app)
+
+		marketplace_app = add_app(source=app_source.name, app=app.name)
+
+		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
+
+	def test_get_marketplace_subscriptions_for_site(self):
+		site = create_test_site(subdomain="test1", team=self.team.name)
+		plan = create_test_marketplace_app_plan(self.marketplace_app.name)
+		create_test_marketplace_app_subscription(
+			site=site.name, app=self.app.name, team=self.team.name, plan=plan.name
+		)
+
+		self.assertIsNotNone(get_marketplace_subscriptions_for_site(site.name))
+
+	def test_change_app_plan(self):
+		subscription = create_test_marketplace_app_subscription()
+		new_plan = create_test_marketplace_app_plan()
+		change_app_plan(subscription.name, new_plan.name)
+
+		self.assertEqual(new_plan.name, frappe.db.get_value("Marketplace App Subscription", subscription.name, "marketplace_app_plan"))
+		self.assertEqual(new_plan.plan, frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"))
+
+	def test_get_subscription_list(self):
+		self.assertEqual([], get_subscriptions_list("frappe"))
+		create_test_marketplace_app_subscription(app="frappe")
+		self.assertIsNotNone(get_subscriptions_list("frappe"))
+
+	def test_update_app_plan(self):
+		m_plan = create_test_marketplace_app_plan()
+		plan = frappe.get_doc("Plan", m_plan.plan)
+
+		updated_plan_data = {
+			"price_inr": plan.price_inr + 100,
+			"price_usd": plan.price_usd + 1,
+			"plan_title": plan.plan_title + " updated",
+			"features": ["feature 3", "feature 4"],
+		}
+		update_app_plan(m_plan.name, updated_plan_data)
+		m_plan.reload()
+		plan.reload()
+
+		self.assertEqual(plan.price_inr, updated_plan_data["price_inr"])
+		self.assertEqual(plan.price_usd, updated_plan_data["price_usd"])
+		self.assertEqual(plan.plan_title, updated_plan_data["plan_title"])
+		self.assertEqual(m_plan.features[0].description, updated_plan_data["features"][0])
+		self.assertEqual(m_plan.features[1].description, updated_plan_data["features"][1])

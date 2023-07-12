@@ -35,7 +35,7 @@ class MarketplaceAppSubscription(Document):
 			)
 
 	def set_plan(self):
-		if not self.plan:
+		if not self.plan or self.has_value_changed("marketplace_app_plan"):
 			self.plan = frappe.db.get_value(
 				"Marketplace App Plan", self.marketplace_app_plan, "plan"
 			)
