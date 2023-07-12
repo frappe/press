@@ -10,9 +10,14 @@ import frappe
 from press.api.marketplace import (
 	add_app,
 	create_app_plan,
-	options_for_marketplace_app,
 	options_for_quick_install,
 	reset_features_for_plan,
+)
+from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
+	create_test_marketplace_app_plan,
+)
+from press.marketplace.doctype.marketplace_app_subscription.test_marketplace_app_subscription import (
+	create_test_marketplace_app_subscription,
 )
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
@@ -120,9 +125,20 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.assertEqual(options["release_groups"][0]["name"], group1.name)
 
 	def test_add_app(self):
-		app = create_test_app('test_app', 'Test App')
+		app = create_test_app("test_app", "Test App")
 		app_source = create_test_app_source(version=self.version, app=app)
 
 		marketplace_app = add_app(source=app_source.name, app=app.name)
 
 		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
+
+	def test_get_marketplace_subscriptions_for_site(self):
+		site = create_test_site(subdomain="test1", team=self.team.name)
+		plan = create_test_marketplace_app_plan(self.marketplace_app.name)
+		create_test_marketplace_app_subscription(
+			site=site.name, app=self.app.name, team=self.team.name, plan=plan.name
+		)
+
+		self.assertIsNotNone(
+			frappe.db.exists("Marketplace App Subscription", {"site": site.name})
+		)
