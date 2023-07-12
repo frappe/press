@@ -318,6 +318,12 @@ export default {
 						label: 'Update All Sites',
 						handler: () => {
 							this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message: `All sites in ${this.selectedVersion?.name} will be updated to the latest version`,
+								icon: 'check',
+								color: 'green'
+							});
 						}
 					},
 				this.selectedVersion.status == 'Active' && {

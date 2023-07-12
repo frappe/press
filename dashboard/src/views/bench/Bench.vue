@@ -171,6 +171,12 @@ export default {
 						icon: 'arrow-up-circle',
 						handler: async () => {
 							await this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message: 'All sites in this bench will be updated to the latest version',
+								icon: 'check',
+								color: 'green'
+							});
 						}
 					}
 			].filter(Boolean);
