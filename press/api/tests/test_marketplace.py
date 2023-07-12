@@ -13,9 +13,11 @@ from press.api.marketplace import (
 	create_app_plan,
 	get_apps_with_plans,
 	get_marketplace_subscriptions_for_site,
+	get_subscriptions_list,
 	new_app,
 	options_for_quick_install,
 	reset_features_for_plan,
+	update_app_plan,
 )
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
 	create_test_marketplace_app_plan,
@@ -152,3 +154,28 @@ class TestAPIMarketplace(unittest.TestCase):
 
 		self.assertEqual(new_plan.name, frappe.db.get_value("Marketplace App Subscription", subscription.name, "marketplace_app_plan"))
 		self.assertEqual(new_plan.plan, frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"))
+
+	def test_get_subscription_list(self):
+		self.assertEqual([], get_subscriptions_list("frappe"))
+		create_test_marketplace_app_subscription(app="frappe")
+		self.assertIsNotNone(get_subscriptions_list("frappe"))
+
+	def test_update_app_plan(self):
+		m_plan = create_test_marketplace_app_plan()
+		plan = frappe.get_doc("Plan", m_plan.plan)
+
+		updated_plan_data = {
+			"price_inr": plan.price_inr + 100,
+			"price_usd": plan.price_usd + 1,
+			"plan_title": plan.plan_title + " updated",
+			"features": ["feature 3", "feature 4"],
+		}
+		update_app_plan(m_plan.name, updated_plan_data)
+		m_plan.reload()
+		plan.reload()
+
+		self.assertEqual(plan.price_inr, updated_plan_data["price_inr"])
+		self.assertEqual(plan.price_usd, updated_plan_data["price_usd"])
+		self.assertEqual(plan.plan_title, updated_plan_data["plan_title"])
+		self.assertEqual(m_plan.features[0].description, updated_plan_data["features"][0])
+		self.assertEqual(m_plan.features[1].description, updated_plan_data["features"][1])
