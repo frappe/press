@@ -234,7 +234,6 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_get_app(self):
 		app = get_app("erpnext")
-		breakpoint()
 		self.assertEqual(app.name, "erpnext")
 
 	def test_update_app_title(self):
