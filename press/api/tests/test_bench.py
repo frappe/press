@@ -6,7 +6,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new
+from press.api.bench import deploy, get, new, all
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -114,3 +114,67 @@ class TestAPIBench(FrappeTestCase):
 		except docker.errors.ImageNotFound:
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
+
+	def create_test_benches_for_bench_list(self):
+		from press.press.doctype.bench.test_bench import create_test_bench
+		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+		from press.press.doctype.release_group.test_release_group import (
+			create_test_release_group,
+		)
+
+		group1 = create_test_release_group([self.app])
+		create_test_bench(group=group1)
+		self.bench1_dict = {
+			"number_of_sites": 0,
+			"name": group1.name,
+			"title": group1.title,
+			"version": group1.version,
+			"creation": group1.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Active",
+		}
+
+		group2 = create_test_release_group([self.app])
+		self.bench2_dict = {
+			"number_of_sites": 0,
+			"name": group2.name,
+			"title": group2.title,
+			"version": group2.version,
+			"creation": group2.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Awaiting Deploy",
+		}
+
+		group3 = create_test_release_group([self.app])
+		test_tag = create_and_add_test_tag(group3.name, "Release Group")
+		create_test_bench(group=group3)
+		self.bench3_dict = {
+			"number_of_sites": 0,
+			"name": group3.name,
+			"title": group3.title,
+			"version": group3.version,
+			"creation": group3.creation,
+			"tags": [test_tag.tag],
+			"number_of_apps": 1,
+			"status": "Active",
+		}
+
+	def test_list_all_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertCountEqual(all(), [self.bench1_dict, self.bench2_dict, self.bench3_dict])
+
+	def test_list_active_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertCountEqual(
+			all(bench_filter="Active"), [self.bench1_dict, self.bench3_dict]
+		)
+
+	def test_list_awaiting_deploy_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertEqual(all(bench_filter="Awaiting Deploy"), [self.bench2_dict])
+
+	def test_list_tagged_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench3_dict])
