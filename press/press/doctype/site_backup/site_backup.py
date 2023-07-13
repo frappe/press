@@ -116,26 +116,26 @@ def process_backup_site_job_update(job):
 				remote_private,
 			) = track_offsite_backups(job.site, backup_data, offsite_backup_data)
 
-			frappe.db.set_value(
-				"Site Backup",
-				backup.name,
-				{
-					"files_availability": "Available",
-					"database_size": backup_data["database"]["size"],
-					"database_url": backup_data["database"]["url"],
-					"database_file": backup_data["database"]["file"],
-					"config_file_size": backup_data["site_config"]["size"],
-					"config_file_url": backup_data["site_config"]["url"],
-					"config_file": backup_data["site_config"]["file"],
-					"remote_database_file": remote_database,
-					"remote_config_file": remote_config_file,
-				},
-				for_update=False,
-			)
+			site_backup_dict = {
+				"files_availability": "Available",
+				"database_size": backup_data["database"]["size"],
+				"database_url": backup_data["database"]["url"],
+				"database_file": backup_data["database"]["file"],
+				"remote_database_file": remote_database,
+			}
+
+			if "site_config" in backup_data:
+				site_backup_dict.update(
+					{
+						"config_file_size": backup_data["site_config"]["size"],
+						"config_file_url": backup_data["site_config"]["url"],
+						"config_file": backup_data["site_config"]["file"],
+						"remote_config_file": remote_config_file,
+					}
+				)
+
 			if "private" in backup_data and "public" in backup_data:
-				frappe.db.set_value(
-					"Site Backup",
-					backup.name,
+				site_backup_dict.update(
 					{
 						"private_size": backup_data["private"]["size"],
 						"private_url": backup_data["private"]["url"],
@@ -145,9 +145,10 @@ def process_backup_site_job_update(job):
 						"public_url": backup_data["public"]["url"],
 						"public_file": backup_data["public"]["file"],
 						"remote_private_file": remote_private,
-					},
-					for_update=False,
+					}
 				)
+
+			frappe.db.set_value("Site Backup", backup.name, site_backup_dict, for_update=False)
 
 
 def get_backup_bucket(cluster, region=False):

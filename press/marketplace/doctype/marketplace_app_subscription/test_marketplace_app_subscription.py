@@ -16,19 +16,21 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
 
-def create_test_marketplace_app_subscription():
-	app = create_test_app()
-	create_test_marketplace_app(app.name)
-	plan = create_test_marketplace_app_plan()
-	team = create_test_team()
-	site = create_test_site(team=team.name)
+def create_test_marketplace_app_subscription(
+	site: str = None, app: str = None, plan: str = None, team: str = None
+):
+	app = app if app else create_test_app().name
+	create_test_marketplace_app(app)
+	plan = plan if plan else create_test_marketplace_app_plan().name
+	team = team if team else create_test_team().name
+	site = site if site else create_test_site(team=team).name
 	subscription = frappe.get_doc(
 		{
 			"doctype": "Marketplace App Subscription",
-			"app": app.name,
-			"marketplace_app_plan": plan.name,
-			"site": site.name,
-			"team": site.team,
+			"app": app,
+			"marketplace_app_plan": plan,
+			"site": site,
+			"team": team,
 		}
 	).insert(ignore_if_duplicate=True)
 	return subscription
@@ -40,7 +42,6 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		self.subscription = frappe.get_doc(
 			"Subscription",
 			{
-
 				"marketplace_app_subscription": self.marketplace_subscription.name,
 				"document_type": "Marketplace App",
 				"document_name": self.marketplace_subscription.app,
@@ -56,7 +57,9 @@ class TestMarketplaceAppSubscription(unittest.TestCase):
 		"""
 		Check if subscription doc is created and linked after_insert of Marketplace App Subscription
 		"""
-		self.assertEqual(self.subscription.marketplace_app_subscription, self.marketplace_subscription.name)
+		self.assertEqual(
+			self.subscription.marketplace_app_subscription, self.marketplace_subscription.name
+		)
 
 	def test_subscription_daily(self):
 		"""

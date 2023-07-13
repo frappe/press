@@ -22,11 +22,14 @@ def all():
 @frappe.whitelist()
 @protected(["Site", "Release Group", "Server", "Database Server"])
 def create_new_tag(name, doctype, tag):
+	team = get_current_team()
+	if frappe.db.exists("Press Tag", {"tag": tag, "doctype_name": doctype, "team": team}):
+		frappe.throw(f"Tag '{tag}' already exists")
 	tag = frappe.get_doc(
 		{
 			"doctype": "Press Tag",
 			"doctype_name": doctype,
-			"team": get_current_team(),
+			"team": team,
 			"tag": tag,
 		}
 	).insert(ignore_permissions=True)

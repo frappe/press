@@ -26,31 +26,27 @@ def get_weekends(
 	return weekends
 
 
-def get_weekdays(
-	start_date: datetime.date,
-	end_date: datetime.date,
-) -> list[tuple[datetime.date, datetime.date]]:
-	"""Returns a list of weekdays till the given date"""
-	weekdays = []
-	dt = start_date
-	while dt <= end_date:
-		if dt.weekday() not in [5, 6]:  # 0 is monday, 6 is sunday
-			weekdays.append(dt)
+def next_weekdays(from_: datetime.date, till: datetime.date):
+	"""Returns the next weekday"""
+	dt = from_
+	while dt <= till:
 		dt += timedelta(days=1)
-	return weekdays
+		if dt.weekday() not in [5, 6]:  # 0 is monday, 6 is sunday
+			yield dt
 
 
 def main():
 	agent_cycle = cycle(agents)
 	weekday_cycle = agents
-	weekday_cycle.remove("aditya@erpnext.com")
+	# weekday_cycle.remove("aditya@erpnext.com")
 	weekday_cycle = cycle(weekday_cycle)
 
+	from_ = datetime.date.today()
 	till = datetime.date(2023, 7, 20)
 
-	for weekend in get_weekends(datetime.date.today(), till):
+	for weekend in get_weekends(from_, till):
 		agent = next(agent_cycle)
-		contact = frappe.get_last_doc("Contact", {"email_id": agent})
+		contact = frappe.get_doc("User", {"name": agent})
 		if frappe.db.exists(
 			"Event",
 			{
@@ -71,7 +67,7 @@ def main():
 			}
 		).insert()
 
-	for weekday in get_weekdays(datetime.date.today(), till):
+	for weekday in next_weekdays(from_, till):
 		agent = next(weekday_cycle)
 		contact = frappe.get_last_doc("Contact", {"email_id": agent})
 		if frappe.db.exists(
@@ -79,7 +75,7 @@ def main():
 			{
 				"subject": ("like", "%Dedicated Support"),
 				"starts_on": weekday,
-				"ends_on": weekday,
+				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 			},
 		):
 			continue
@@ -88,7 +84,7 @@ def main():
 				"doctype": "Event",
 				"subject": f"{contact.first_name} on Dedicated Support",
 				"starts_on": weekday,
-				"ends_on": weekday,
+				"ends_on": datetime.datetime.combine(weekday, datetime.time(23, 59)),
 				"all_day": 1,
 				"event_type": "Public",
 			}
