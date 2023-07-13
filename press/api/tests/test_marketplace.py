@@ -9,23 +9,32 @@ from unittest.mock import Mock, patch
 import frappe
 from press.api.marketplace import (
 	add_app,
+	add_version,
 	become_publisher,
 	change_app_plan,
 	create_app_plan,
 	create_approval_request,
 	developer_toggle_allowed,
 	get_apps,
+	get_app,
 	get_latest_approval_request,
 	get_marketplace_subscriptions_for_site,
+	get_publisher_profile_info,
 	get_subscriptions_list,
+	get_apps_with_plans,
+	new_app,
 	options_for_quick_install,
+	change_branch,
+	remove_version,
 	reset_features_for_plan,
+	subscriptions,
 	update_app_description,
 	update_app_links,
 	update_app_plan,
 	update_app_summary,
 	update_app_title,
 	releases,
+	update_publisher_profile,
 )
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
 	create_test_marketplace_app_plan,
@@ -139,9 +148,20 @@ class TestAPIMarketplace(unittest.TestCase):
 	def test_add_app(self):
 		app = create_test_app("test_app", "Test App")
 		app_source = create_test_app_source(version=self.version, app=app)
-
 		marketplace_app = add_app(source=app_source.name, app=app.name)
+		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
 
+	def test_add_app_already_added(self):
+		app = create_test_app("test_app3", "Test App 3")
+		app_source = create_test_app_source(version=self.version, app=app)
+		create_test_marketplace_app(
+			app=app.name,
+			team=self.team.name,
+			sources=[{"version": self.version, "source": app_source.name}],
+		)
+		new_source = create_test_app_source(version="Nightly", app=app)
+		frappe.set_user(self.team.user)
+		marketplace_app = add_app(source=new_source.name, app=app.name)
 		self.assertIsNotNone(frappe.db.exists("Marketplace App", marketplace_app))
 
 	def test_get_marketplace_subscriptions_for_site(self):
@@ -212,6 +232,11 @@ class TestAPIMarketplace(unittest.TestCase):
 		apps = get_apps()
 		self.assertEqual(apps[0].name, self.marketplace_app.name)
 
+	def test_get_app(self):
+		app = get_app("erpnext")
+		breakpoint()
+		self.assertEqual(app.name, "erpnext")
+
 	def test_update_app_title(self):
 		frappe.set_user(self.team.user)
 		update_app_title(self.marketplace_app.name, "New Title")
@@ -258,3 +283,72 @@ class TestAPIMarketplace(unittest.TestCase):
 		create_approval_request(self.marketplace_app.name, self.app_release.name)
 		latest_approval = get_latest_approval_request(self.app_release.name)
 		self.assertIsNotNone(latest_approval)
+
+	def test_new_app(self):
+		app = {
+			"name": "email_delivery_service",
+			"title": "Email Delivery Service",
+			"version": "Version 14",
+			"repository_url": "https://github.com/frappe/email_delivery_service",
+			"branch": "develop",
+			"github_installation_id": "",
+		}
+		name = new_app(app)
+		self.assertEqual(name, app["name"])
+
+	def test_get_apps_with_plans(self):
+		frappe_app = create_test_app()
+		group2 = create_test_release_group(
+			[frappe_app, self.app], frappe_version=self.version
+		)
+		create_test_marketplace_app(
+			app=frappe_app.name,
+			sources=[{"version": self.version, "source": group2.apps[0].source}],
+		)
+		create_app_plan(frappe_app.name, self.plan_data)
+		apps = get_apps_with_plans(["frappe", "erpnext"], group2.name)
+		self.assertEqual(apps[0].name, frappe_app.name)
+
+	def test_publisher_profile(self):
+		frappe.set_user(self.team.user)
+		publisher_info = {
+			"display_name": "Test Publisher",
+			"contact_email": self.team.user,
+			"website": "https://github.com",
+		}
+		update_publisher_profile(publisher_info)
+		updated_name = "Test Publisher 2"
+		update_publisher_profile({"display_name": updated_name})
+		info = get_publisher_profile_info()
+		self.assertEqual(info["profile_info"].contact_email, self.team.user)
+		self.assertEqual(info["profile_info"].display_name, updated_name)
+
+	def test_get_subscription(self):
+		site = create_test_site(subdomain="test1", team=self.team.name)
+		plan = create_test_marketplace_app_plan(self.marketplace_app.name)
+		create_test_marketplace_app_subscription(
+			site=site.name, app=self.app.name, team=self.team.name, plan=plan.name
+		)
+		frappe.set_user(self.team.user)
+		self.assertIsNotNone(subscriptions())
+
+	def test_change_branch(self):
+		old_branch = self.app_source.branch
+		change_branch(
+			self.marketplace_app.name, self.app_source.name, "Version 14", "develop"
+		)
+		self.app_source.reload()
+		self.assertNotEqual(old_branch, self.app_source.branch)
+
+	def test_add_version(self):
+		old_versions = len(self.marketplace_app.sources)
+		add_version(self.marketplace_app.name, "develop", "Nightly")
+		self.marketplace_app.reload()
+		self.assertEqual(old_versions + 1, len(self.marketplace_app.sources))
+
+	def test_remove_version(self):
+		old_versions = len(self.marketplace_app.sources)
+		add_version(self.marketplace_app.name, "develop", "Nightly")
+		remove_version(self.marketplace_app.name, "Nightly")
+		self.marketplace_app.reload()
+		self.assertEqual(old_versions, len(self.marketplace_app.sources))
