@@ -492,7 +492,7 @@ def add_app(source: str, app: str):
 			# App source contains version not yet in marketplace
 			for version in version_difference:
 				marketplace_app.append("sources", {"source": source, "version": version})
-				marketplace_app.save()
+				marketplace_app.save(ignore_permissions=True)
 		else:
 			frappe.throw("A marketplace app already exists with the given versions!")
 
@@ -656,7 +656,7 @@ def update_publisher_profile(profile_data=dict()):
 			"Marketplace Publisher Profile", publisher_profile_name, for_update=True
 		)
 		profile_doc.update(profile_data)
-		profile_doc.save()
+		profile_doc.save(ignore_permissions=True)
 	else:
 		profile_doc = frappe.get_doc({"doctype": "Marketplace Publisher Profile"})
 		profile_doc.team = team
