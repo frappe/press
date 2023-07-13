@@ -928,8 +928,11 @@ def has_permission(doc, ptype, user):
 	if user_type == "System User":
 		return True
 
-	team = get_current_team()
-	if doc.name == team:
+	team = get_current_team(True)
+	child_team_members = [
+		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
+	]
+	if doc.name == team.name or doc.name in child_team_members:
 		return True
 
 	return False
