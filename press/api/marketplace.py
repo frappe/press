@@ -176,28 +176,6 @@ def deploy_information(name: str):
 
 
 @frappe.whitelist()
-@protected("Marketplace App")
-def published_versions(name: str) -> List[Dict]:
-	"""Return a list of published versions of the app `name`"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-
-	versions = []
-	for source in app.sources:
-		app_source = frappe.get_doc("App Source", source.source)
-		version = {
-			"version": source.version,
-			"repository_url": app_source.repository_url,
-			"repository": app_source.repository,
-			"branch": app_source.branch,
-			"repository_owner": app_source.repository_owner,
-			"source": source.source,
-		}
-		versions.append(version)
-
-	return versions
-
-
-@frappe.whitelist()
 def profile_image_url(app: str) -> str:
 	return frappe.db.get_value("Marketplace App", app, "image")
 
@@ -299,13 +277,6 @@ def update_app_links(name: str, links: Dict) -> None:
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.update(links)
 	app.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def categories() -> List[str]:
-	"""Return a list of Marketplace App Categories"""
-	categories = frappe.get_all("Marketplace App Category", pluck="name")
-	return categories
 
 
 @frappe.whitelist()

@@ -9,15 +9,23 @@ from unittest.mock import Mock, patch
 import frappe
 from press.api.marketplace import (
 	add_app,
+	become_publisher,
 	change_app_plan,
 	create_app_plan,
-	get_apps_with_plans,
+	create_approval_request,
+	developer_toggle_allowed,
+	get_apps,
+	get_latest_approval_request,
 	get_marketplace_subscriptions_for_site,
 	get_subscriptions_list,
-	new_app,
 	options_for_quick_install,
 	reset_features_for_plan,
+	update_app_description,
+	update_app_links,
 	update_app_plan,
+	update_app_summary,
+	update_app_title,
+	releases,
 )
 from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
 	create_test_marketplace_app_plan,
@@ -45,13 +53,11 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.app = create_test_app("erpnext", "ERPNext")
 		self.team = create_test_press_admin_team()
 		self.version = "Version 14"
-		self.marketplace_app = create_test_marketplace_app(
-			app=self.app.name, team=self.team.name
-		)
 		self.app_source = create_test_app_source(version=self.version, app=self.app)
 		self.app_release = create_test_app_release(self.app_source)
-		create_test_marketplace_app(
+		self.marketplace_app = create_test_marketplace_app(
 			app=self.app.name,
+			team=self.team.name,
 			sources=[{"version": self.version, "source": self.app_source.name}],
 		)
 		self.plan_data = {
@@ -152,8 +158,16 @@ class TestAPIMarketplace(unittest.TestCase):
 		new_plan = create_test_marketplace_app_plan()
 		change_app_plan(subscription.name, new_plan.name)
 
-		self.assertEqual(new_plan.name, frappe.db.get_value("Marketplace App Subscription", subscription.name, "marketplace_app_plan"))
-		self.assertEqual(new_plan.plan, frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"))
+		self.assertEqual(
+			new_plan.name,
+			frappe.db.get_value(
+				"Marketplace App Subscription", subscription.name, "marketplace_app_plan"
+			),
+		)
+		self.assertEqual(
+			new_plan.plan,
+			frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"),
+		)
 
 	def test_get_subscription_list(self):
 		self.assertEqual([], get_subscriptions_list("frappe"))
@@ -179,3 +193,68 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.assertEqual(plan.plan_title, updated_plan_data["plan_title"])
 		self.assertEqual(m_plan.features[0].description, updated_plan_data["features"][0])
 		self.assertEqual(m_plan.features[1].description, updated_plan_data["features"][1])
+
+	def test_become_publisher(self):
+		frappe.set_user(self.team.user)
+		become_publisher()
+		self.team.reload()
+		self.assertTrue(self.team.is_developer)
+
+	def test_developer_toggle_allowed(self):
+		is_developer = self.team.is_developer
+
+		allowed = developer_toggle_allowed()
+		self.assertEqual(not allowed, is_developer == 0)
+
+	def test_get_apps(self):
+		frappe.set_user(self.team.user)
+		self.marketplace_app.db_set("team", self.team.name)
+		apps = get_apps()
+		self.assertEqual(apps[0].name, self.marketplace_app.name)
+
+	def test_update_app_title(self):
+		frappe.set_user(self.team.user)
+		update_app_title(self.marketplace_app.name, "New Title")
+		self.marketplace_app.reload()
+		self.assertEqual(self.marketplace_app.title, "New Title")
+
+	def test_update_app_links(self):
+		frappe.set_user(self.team.user)
+		update_app_links(
+			self.marketplace_app.name,
+			{
+				"website": "https://github.com",
+				"support": "https://github.com",
+				"documentation": "https://github.com",
+				"privacy_policy": "https://github.com",
+				"terms_of_service": "https://github.com",
+			},
+		)
+		self.marketplace_app.reload()
+		self.assertEqual(self.marketplace_app.website, "https://github.com")
+		self.assertEqual(self.marketplace_app.support, "https://github.com")
+
+	def test_update_app_summary(self):
+		frappe.set_user(self.team.user)
+		summary = frappe.mock("paragraph")
+		update_app_summary(self.marketplace_app.name, summary)
+		self.marketplace_app.reload()
+		self.assertEqual(self.marketplace_app.description, summary)
+
+	def test_update_app_description(self):
+		frappe.set_user(self.team.user)
+		desc = frappe.mock("paragraph")
+		update_app_description(self.marketplace_app.name, desc)
+		self.marketplace_app.reload()
+		self.assertEqual(self.marketplace_app.long_description, desc)
+
+	def test_releases(self):
+		frappe.set_user(self.team.user)
+		r = releases(app=self.marketplace_app.name, source=self.app_source.name)
+		self.assertEqual(r[0].name, self.app_release.name)
+
+	def test_app_release_approvals(self):
+		frappe.set_user(self.team.user)
+		create_approval_request(self.marketplace_app.name, self.app_release.name)
+		latest_approval = get_latest_approval_request(self.app_release.name)
+		self.assertIsNotNone(latest_approval)
