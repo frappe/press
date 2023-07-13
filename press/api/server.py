@@ -65,8 +65,12 @@ def all(start=0, server_filter="All Servers"):
 		query = app_server_query
 	elif server_filter == "Database Servers":
 		query = database_server_query
+	else:
+		return []
 
-	servers = frappe.db.sql(query.limit(f"{start}, 10"), as_dict=True)
+	# union isn't supported in qb for run method
+	# https://github.com/frappe/frappe/issues/15609
+	servers = frappe.db.sql(query.limit(f"{start}, 10").get_sql(), as_dict=True)
 	for server in servers:
 		server["app_server"] = f"f{server.name[1:]}"
 	return servers
