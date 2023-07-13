@@ -4,10 +4,10 @@
 
 
 import datetime
-import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -19,7 +19,7 @@ from press.press.doctype.release_group.test_release_group import (
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestAPISite(unittest.TestCase):
+class TestAPISite(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -48,7 +48,9 @@ class TestAPISite(unittest.TestCase):
 			if version["name"] == "Version 14":
 				self.assertEqual(version["group"]["name"], group14.name)
 
-	def create_test_sites_for_site_list(self):
+
+class TestAPISiteList(FrappeTestCase):
+	def setUp(self):
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.site.test_site import create_test_site
 
@@ -111,20 +113,19 @@ class TestAPISite(unittest.TestCase):
 			"version": group.version,
 		}
 
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_list_all_sites(self):
-		self.create_test_sites_for_site_list()
 		self.assertEqual(
 			all(), [self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict]
 		)
 
 	def test_list_broken_sites(self):
-		self.create_test_sites_for_site_list()
 		self.assertEqual(all(site_filter="Broken"), [self.broken_site_dict])
 
 	def test_list_trial_sites(self):
-		self.create_test_sites_for_site_list()
 		self.assertEqual(all(site_filter="Trial"), [self.trial_site_dict])
 
 	def test_list_tagged_sites(self):
-		self.create_test_sites_for_site_list()
 		self.assertEqual(all(site_filter="tag:test_tag"), [self.tagged_site_dict])
