@@ -6,7 +6,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new
+from press.api.bench import deploy, get, new, all
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -114,3 +114,72 @@ class TestAPIBench(FrappeTestCase):
 		except docker.errors.ImageNotFound:
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
+
+	def create_test_benches_for_bench_list(self):
+		from press.press.doctype.bench.test_bench import create_test_bench
+		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+		from press.press.doctype.release_group.test_release_group import (
+			create_test_release_group,
+		)
+
+		active_group = create_test_release_group([self.app])
+		create_test_bench(group=active_group)
+		self.active_bench_dict = {
+			"number_of_sites": 0,
+			"name": active_group.name,
+			"title": active_group.title,
+			"version": active_group.version,
+			"creation": active_group.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Active",
+		}
+
+		group_awaiting_deploy = create_test_release_group([self.app])
+		self.bench_awaiting_deploy_dict = {
+			"number_of_sites": 0,
+			"name": group_awaiting_deploy.name,
+			"title": group_awaiting_deploy.title,
+			"version": group_awaiting_deploy.version,
+			"creation": group_awaiting_deploy.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Awaiting Deploy",
+		}
+
+		group_with_tag = create_test_release_group([self.app])
+		test_tag = create_and_add_test_tag(group_with_tag.name, "Release Group")
+		create_test_bench(group=group_with_tag)
+		self.bench_with_tag_dict = {
+			"number_of_sites": 0,
+			"name": group_with_tag.name,
+			"title": group_with_tag.title,
+			"version": group_with_tag.version,
+			"creation": group_with_tag.creation,
+			"tags": [test_tag.tag],
+			"number_of_apps": 1,
+			"status": "Active",
+		}
+
+	def test_list_all_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertCountEqual(
+			all(),
+			[self.active_bench_dict, self.bench_awaiting_deploy_dict, self.bench_with_tag_dict],
+		)
+
+	def test_list_active_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertCountEqual(
+			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
+		)
+
+	def test_list_awaiting_deploy_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertEqual(
+			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
+		)
+
+	def test_list_tagged_benches(self):
+		self.create_test_benches_for_bench_list()
+		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])

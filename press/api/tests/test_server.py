@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.server import new
+from press.api.server import new, all
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.plan.test_plan import create_test_plan
@@ -116,3 +116,56 @@ class TestAPIServer(FrappeTestCase):
 
 		self.assertEqual(servers_before + 1, servers_after)
 		self.assertEqual(db_servers_before + 1, db_servers_after)
+
+	def create_test_servers_for_server_list(self):
+		from press.utils import get_current_team
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+		from press.press.doctype.database_server.test_database_server import (
+			create_test_database_server,
+		)
+
+		proxy_server = create_test_proxy_server()
+		database_server = create_test_database_server()
+		database_server.title = "Database Server"
+		database_server.team = get_current_team()
+		database_server.save()
+
+		self.db_server_dict = {
+			"name": database_server.name,
+			"title": "Database Server",
+			"status": database_server.status,
+			"creation": database_server.creation,
+			"app_server": f"f{database_server.name[1:]}",
+		}
+
+		app_server = create_test_server(proxy_server.name, database_server.name)
+		app_server.title = "App Server"
+		app_server.team = get_current_team()
+		app_server.save()
+
+		create_and_add_test_tag(app_server.name, "Server")
+
+		self.app_server_dict = {
+			"name": app_server.name,
+			"title": "App Server",
+			"status": app_server.status,
+			"creation": app_server.creation,
+			"app_server": f"f{app_server.name[1:]}",
+		}
+
+	def test_list_all_servers(self):
+		self.create_test_servers_for_server_list()
+		self.assertEqual(all(), [self.app_server_dict, self.db_server_dict])
+
+	def test_list_app_servers(self):
+		self.create_test_servers_for_server_list()
+		self.assertEqual(all(server_filter="App Servers"), [self.app_server_dict])
+
+	def test_list_db_servers(self):
+		self.create_test_servers_for_server_list()
+		self.assertEqual(all(server_filter="Database Servers"), [self.db_server_dict])
+
+	def test_list_tagged_servers(self):
+		self.create_test_servers_for_server_list()
+		self.assertEqual(all(server_filter="tag:test_tag"), [self.app_server_dict])

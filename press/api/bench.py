@@ -83,7 +83,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None):
+def all(server=None, start=0, bench_filter=""):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -105,7 +105,24 @@ def all(server=None):
 			group.creation,
 		)
 		.orderby(group.title, order=frappe.qb.desc)
+		.limit(f"{start}, 10")
 	)
+
+	bench = frappe.qb.DocType("Bench")
+	if bench_filter == "Active":
+		query = query.inner_join(bench).on(group.name == bench.group)
+	elif bench_filter == "Awaiting Deploy":
+		group_names = frappe.get_all(
+			"Bench", {"status": "Active"}, pluck="group", distinct=True
+		)
+		query = query.inner_join(bench).on(group.name.notin(group_names))
+	elif bench_filter.startswith("tag:"):
+		tag = bench_filter[4:]
+		press_tag = frappe.qb.DocType("Resource Tag")
+		query = query.inner_join(press_tag).on(
+			(press_tag.tag_name == tag) & (press_tag.parent == group.name)
+		)
+
 	if server:
 		group_server = frappe.qb.DocType("Release Group Server")
 		query = (
@@ -115,18 +132,24 @@ def all(server=None):
 		)
 	private_groups = query.run(as_dict=True)
 
+	if not private_groups:
+		return []
+
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
 		group.tags = frappe.get_all("Resource Tag", {"parent": group.name}, pluck="tag_name")
 		group.number_of_apps = app_counts[group.name]
 		group.status = get_group_status(group.name)
 
-	return {
-		"groups": private_groups,
-		"tags": frappe.get_all(
-			"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
-		),
-	}
+	return private_groups
+
+
+@frappe.whitelist()
+def bench_tags():
+	team = get_current_team()
+	return frappe.get_all(
+		"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
+	)
 
 
 def get_app_counts_for_groups(rg_names):

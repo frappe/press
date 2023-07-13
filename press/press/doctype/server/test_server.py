@@ -26,7 +26,7 @@ def create_test_server(
 	cluster: str = "Default",
 ):
 	"""Create test Server doc."""
-	return frappe.get_doc(
+	server = frappe.get_doc(
 		{
 			"doctype": "Server",
 			"status": "Active",
@@ -39,6 +39,8 @@ def create_test_server(
 			"cluster": cluster,
 		}
 	).insert()
+	server.reload()
+	return server
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())

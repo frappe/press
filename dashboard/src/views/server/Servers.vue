@@ -33,20 +33,37 @@
 		</PageHeader>
 
 		<div>
+			<SectionHeader :heading="getServerFilterHeading()">
+				<template #actions>
+					<Dropdown :options="serverFilterOptions()">
+						<template v-slot="{ open }">
+							<Button
+								:class="[
+									'rounded-md px-3 py-1 text-base font-medium',
+									open ? 'bg-gray-200' : 'bg-gray-100'
+								]"
+								icon-left="chevron-down"
+								>{{ serverFilter.replace('tag:', '') }}</Button
+							>
+						</template>
+					</Dropdown>
+				</template>
+			</SectionHeader>
 			<div class="mt-3">
-				<SectionHeader class="mb-2" heading="">
-					<template #actions>
-						<Input
-							v-if="$resources.allServers.data"
-							type="select"
-							:options="['Filter by Tag', ...$resources.allServers.data.tags]"
-							v-model="selectedTag"
-							class="w-32"
-						/>
-					</template>
-				</SectionHeader>
-				<LoadingText v-if="$resources.allServers.loading" />
-				<ServerList v-else :servers="filteredServers(servers)" />
+				<LoadingText v-if="$resources.allServers.loading && pageStart === 0" />
+				<ServerList v-else :servers="servers" />
+			</div>
+			<div
+				class="py-3"
+				v-if="!$resources.allServers.lastPageEmpty && servers.length > 0"
+			>
+				<Button
+					:loading="$resources.allServers.loading"
+					loadingText="Loading..."
+					@click="pageStart += 10"
+				>
+					Load more
+				</Button>
 			</div>
 		</div>
 		<Dialog
@@ -85,7 +102,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-
+			pageStart: 0,
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -95,17 +112,45 @@ export default {
 					label: 'Self Hosted Server',
 					handler: () => this.$router.replace('/selfhosted/new')
 				}
-			],
-			selectedTag: ''
+			]
 		};
 	},
+	created() {
+		this.serverFilter = 'All Servers';
+	},
 	resources: {
-		allServers: {
-			method: 'press.api.server.all',
-			auto: true
-		}
+		allServers() {
+			return {
+				method: 'press.api.server.all',
+				params: { start: this.pageStart, server_filter: this.serverFilter },
+				pageLength: 10,
+				keepData: true,
+				auto: true
+			};
+		},
+		serverTags: 'press.api.server.server_tags'
 	},
 	methods: {
+		getServerFilterHeading() {
+			if (this.serverFilter.startsWith('tag:'))
+				return `Servers with tag ${this.serverFilter.slice(4)}`;
+			return this.serverFilter;
+		},
+		handleFilterChange(filterValue) {
+			if (filterValue === this.serverFilter) return;
+
+			const oldPageStart = this.pageStart;
+			this.serverFilter = filterValue;
+			this.pageStart = 0;
+
+			this.$resources.allServers.reset();
+			// fetch data when pageStart is 0 since it won't refetch due to no change in value
+			if (oldPageStart === 0)
+				this.$resources.allServers.submit({
+					start: this.pageStart,
+					server_filter: this.serverFilter
+				});
+		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
@@ -125,12 +170,37 @@ export default {
 				this.showAddCardDialog = false;
 			}
 		},
-		filteredServers(servers) {
-			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
-				return servers;
-			}
-
-			return servers.filter(server => server.tags.includes(this.selectedTag));
+		serverFilterOptions() {
+			const options = [
+				{
+					group: 'Types',
+					items: [
+						{
+							label: 'All Servers',
+							handler: () => this.handleFilterChange('All Servers')
+						},
+						{
+							label: 'App Servers',
+							handler: () => this.handleFilterChange('App Servers')
+						},
+						{
+							label: 'Database Servers',
+							handler: () => this.handleFilterChange('Database Servers')
+						}
+					]
+				}
+			];
+			if (!this.$resources.serverTags?.data) return options;
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.serverTags.data.map(tag => ({
+						label: tag,
+						handler: () => this.handleFilterChange(`tag:${tag}`)
+					}))
+				}
+			];
 		}
 	},
 	computed: {
@@ -138,7 +208,7 @@ export default {
 			if (!this.$resources.allServers.data) {
 				return [];
 			}
-			return this.$resources.allServers.data.servers;
+			return this.$resources.allServers.data;
 		}
 	}
 };
