@@ -56,73 +56,75 @@ class TestAPISite(unittest.TestCase):
 		group = create_test_release_group([app])
 		bench = create_test_bench(group=group)
 
-		site1 = create_test_site(bench=bench)
-		site1.status = "Broken"
-		site1.save()
-		self.site1_dict = {
-			"name": site1.name,
-			"host_name": site1.host_name,
-			"status": site1.status,
-			"creation": site1.creation,
-			"bench": site1.bench,
-			"current_cpu_usage": site1.current_cpu_usage,
-			"current_database_usage": site1.current_database_usage,
-			"current_disk_usage": site1.current_disk_usage,
-			"trial_end_date": site1.trial_end_date,
-			"team": site1.team,
+		broken_site = create_test_site(bench=bench)
+		broken_site.status = "Broken"
+		broken_site.save()
+		self.broken_site_dict = {
+			"name": broken_site.name,
+			"host_name": broken_site.host_name,
+			"status": broken_site.status,
+			"creation": broken_site.creation,
+			"bench": broken_site.bench,
+			"current_cpu_usage": broken_site.current_cpu_usage,
+			"current_database_usage": broken_site.current_database_usage,
+			"current_disk_usage": broken_site.current_disk_usage,
+			"trial_end_date": broken_site.trial_end_date,
+			"team": broken_site.team,
 			"title": group.title,
 			"version": group.version,
 		}
 
-		site2 = create_test_site(bench=bench)
-		site2.trial_end_date = datetime.datetime.now()
-		site2.save()
+		trial_site = create_test_site(bench=bench)
+		trial_site.trial_end_date = datetime.datetime.now()
+		trial_site.save()
 
-		self.site2_dict = {
-			"name": site2.name,
-			"host_name": site2.host_name,
-			"status": site2.status,
-			"creation": site2.creation,
-			"bench": site2.bench,
-			"current_cpu_usage": site2.current_cpu_usage,
-			"current_database_usage": site2.current_database_usage,
-			"current_disk_usage": site2.current_disk_usage,
-			"trial_end_date": site2.trial_end_date.date(),
-			"team": site2.team,
+		self.trial_site_dict = {
+			"name": trial_site.name,
+			"host_name": trial_site.host_name,
+			"status": trial_site.status,
+			"creation": trial_site.creation,
+			"bench": trial_site.bench,
+			"current_cpu_usage": trial_site.current_cpu_usage,
+			"current_database_usage": trial_site.current_database_usage,
+			"current_disk_usage": trial_site.current_disk_usage,
+			"trial_end_date": trial_site.trial_end_date.date(),
+			"team": trial_site.team,
 			"title": group.title,
 			"version": group.version,
 		}
 
-		site3 = create_test_site(bench=bench)
-		create_and_add_test_tag(site3.name, "Site")
+		tagged_site = create_test_site(bench=bench)
+		create_and_add_test_tag(tagged_site.name, "Site")
 
-		self.site3_dict = {
-			"name": site3.name,
-			"host_name": site3.host_name,
-			"status": site3.status,
-			"creation": site3.creation,
-			"bench": site3.bench,
-			"current_cpu_usage": site3.current_cpu_usage,
-			"current_database_usage": site3.current_database_usage,
-			"current_disk_usage": site3.current_disk_usage,
-			"trial_end_date": site3.trial_end_date,
-			"team": site3.team,
+		self.tagged_site_dict = {
+			"name": tagged_site.name,
+			"host_name": tagged_site.host_name,
+			"status": tagged_site.status,
+			"creation": tagged_site.creation,
+			"bench": tagged_site.bench,
+			"current_cpu_usage": tagged_site.current_cpu_usage,
+			"current_database_usage": tagged_site.current_database_usage,
+			"current_disk_usage": tagged_site.current_disk_usage,
+			"trial_end_date": tagged_site.trial_end_date,
+			"team": tagged_site.team,
 			"title": group.title,
 			"version": group.version,
 		}
 
 	def test_list_all_sites(self):
 		self.create_test_sites_for_site_list()
-		self.assertEqual(all(), [self.site1_dict, self.site2_dict, self.site3_dict])
+		self.assertEqual(
+			all(), [self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict]
+		)
 
 	def test_list_broken_sites(self):
 		self.create_test_sites_for_site_list()
-		self.assertEqual(all(site_filter="Broken"), [self.site1_dict])
+		self.assertEqual(all(site_filter="Broken"), [self.broken_site_dict])
 
 	def test_list_trial_sites(self):
 		self.create_test_sites_for_site_list()
-		self.assertEqual(all(site_filter="Trial"), [self.site2_dict])
+		self.assertEqual(all(site_filter="Trial"), [self.trial_site_dict])
 
 	def test_list_tagged_sites(self):
 		self.create_test_sites_for_site_list()
-		self.assertEqual(all(site_filter="tag:test_tag"), [self.site3_dict])
+		self.assertEqual(all(site_filter="tag:test_tag"), [self.tagged_site_dict])

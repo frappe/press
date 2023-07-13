@@ -122,40 +122,40 @@ class TestAPIBench(FrappeTestCase):
 			create_test_release_group,
 		)
 
-		group1 = create_test_release_group([self.app])
-		create_test_bench(group=group1)
-		self.bench1_dict = {
+		active_group = create_test_release_group([self.app])
+		create_test_bench(group=active_group)
+		self.active_bench_dict = {
 			"number_of_sites": 0,
-			"name": group1.name,
-			"title": group1.title,
-			"version": group1.version,
-			"creation": group1.creation,
+			"name": active_group.name,
+			"title": active_group.title,
+			"version": active_group.version,
+			"creation": active_group.creation,
 			"tags": [],
 			"number_of_apps": 1,
 			"status": "Active",
 		}
 
-		group2 = create_test_release_group([self.app])
-		self.bench2_dict = {
+		group_awaiting_deploy = create_test_release_group([self.app])
+		self.bench_awaiting_deploy_dict = {
 			"number_of_sites": 0,
-			"name": group2.name,
-			"title": group2.title,
-			"version": group2.version,
-			"creation": group2.creation,
+			"name": group_awaiting_deploy.name,
+			"title": group_awaiting_deploy.title,
+			"version": group_awaiting_deploy.version,
+			"creation": group_awaiting_deploy.creation,
 			"tags": [],
 			"number_of_apps": 1,
 			"status": "Awaiting Deploy",
 		}
 
-		group3 = create_test_release_group([self.app])
-		test_tag = create_and_add_test_tag(group3.name, "Release Group")
-		create_test_bench(group=group3)
-		self.bench3_dict = {
+		group_with_tag = create_test_release_group([self.app])
+		test_tag = create_and_add_test_tag(group_with_tag.name, "Release Group")
+		create_test_bench(group=group_with_tag)
+		self.bench_with_tag_dict = {
 			"number_of_sites": 0,
-			"name": group3.name,
-			"title": group3.title,
-			"version": group3.version,
-			"creation": group3.creation,
+			"name": group_with_tag.name,
+			"title": group_with_tag.title,
+			"version": group_with_tag.version,
+			"creation": group_with_tag.creation,
 			"tags": [test_tag.tag],
 			"number_of_apps": 1,
 			"status": "Active",
@@ -163,18 +163,23 @@ class TestAPIBench(FrappeTestCase):
 
 	def test_list_all_benches(self):
 		self.create_test_benches_for_bench_list()
-		self.assertCountEqual(all(), [self.bench1_dict, self.bench2_dict, self.bench3_dict])
+		self.assertCountEqual(
+			all(),
+			[self.active_bench_dict, self.bench_awaiting_deploy_dict, self.bench_with_tag_dict],
+		)
 
 	def test_list_active_benches(self):
 		self.create_test_benches_for_bench_list()
 		self.assertCountEqual(
-			all(bench_filter="Active"), [self.bench1_dict, self.bench3_dict]
+			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
 		)
 
 	def test_list_awaiting_deploy_benches(self):
 		self.create_test_benches_for_bench_list()
-		self.assertEqual(all(bench_filter="Awaiting Deploy"), [self.bench2_dict])
+		self.assertEqual(
+			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
+		)
 
 	def test_list_tagged_benches(self):
 		self.create_test_benches_for_bench_list()
-		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench3_dict])
+		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])
