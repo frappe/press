@@ -20,7 +20,7 @@
 						Name your bench based on its purpose. For e.g., Personal Websites,
 						Staging Bench, etc.
 					</p>
-					<Input class="" type="text" v-model="benchTitle" />
+					<Input class="mt-2" type="text" v-model="benchTitle" />
 				</div>
 				<div v-if="regionOptions.length > 0">
 					<h2 class="text-lg font-semibold">Select Region</h2>
@@ -41,7 +41,7 @@
 						Select a Frappe version for your bench.
 					</p>
 					<Input
-						class=""
+						class="mt-2"
 						type="select"
 						v-model="selectedVersionName"
 						:options="versionOptions"
