@@ -134,7 +134,8 @@ export default {
 					]
 				}
 			];
-			if (!this.$resources.benchTags?.data) return options;
+
+			if (!this.$resources.benchTags?.data?.length) return options;
 
 			return [
 				...options,

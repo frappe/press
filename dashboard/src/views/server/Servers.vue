@@ -190,7 +190,9 @@ export default {
 					]
 				}
 			];
-			if (!this.$resources.serverTags?.data) return options;
+
+			if (!this.$resources.serverTags?.data?.length) return options;
+
 			return [
 				...options,
 				{

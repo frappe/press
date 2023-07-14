@@ -291,7 +291,7 @@ export default {
 				}
 			];
 
-			if (!this.$resources.siteTags?.data) return options;
+			if (!this.$resources.siteTags?.data?.length) return options;
 
 			return [
 				...options,
