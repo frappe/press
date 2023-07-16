@@ -62,6 +62,7 @@ class AccountRequest(Document):
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
+			frappe.log_error('url',url)
 			print(url)
 			print()
 			return
