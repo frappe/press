@@ -231,6 +231,13 @@ def validate_account_request(key):
 		frappe.throw("Request Key not provided")
 
 	app = frappe.db.get_value("Account Request", {"request_key": key}, "saas_app")
+
+	#saas generator uses app titla as its name
+	# so we need to get the app title
+   	
+	app_title = frappe.db.get_value("Saas App",app,"title")
+	app_title = "-".join(app_title.split(" ")).lower()
+	
 	headless, route = frappe.db.get_value(
 		"Saas Setup Account Generator", app, ["headless", "route"]
 	)
