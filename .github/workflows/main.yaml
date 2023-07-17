@@ -43,20 +43,20 @@ jobs:
           flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
 
   commit-lint:
-  name: Semantic Commits
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 200
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 16
-        check-latest: true
-    - name: Check commit titles
-      run: |
-        npm install @commitlint/cli @commitlint/config-conventional
-        npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+    name: Semantic Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 200
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          check-latest: true
+      - name: Check commit titles
+        run: |
+          npm install @commitlint/cli @commitlint/config-conventional
+          npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
 
   semgrep:
     name: Semgrep Rules
