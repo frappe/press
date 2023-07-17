@@ -50,6 +50,11 @@ function updateAppList(results) {
 	for (let result of results) {
 		allAppCardNodes[result.refIndex].style.display = '';
 	}
+
+	// For sorting according to score
+	for (let result of results) {
+		document.querySelector('#all-apps-list').appendChild(allAppCardNodes[result.refIndex])
+	}
 }
 
 function displayAllApps() {
