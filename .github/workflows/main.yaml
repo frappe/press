@@ -52,7 +52,7 @@ jobs:
           python-version: '3.10'
       - name: Run Semgrep rules
         run: |
-          pip install semgrep==0.97.0
+          pip install semgrep==1.32
           semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
 
   tests:
