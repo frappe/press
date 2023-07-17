@@ -1141,7 +1141,7 @@ def start_review(name):
 	# TODO: Start security check and auto deploy process here
 	app = frappe.get_doc("Marketplace App", name)
 	app.status = "In Review"
-	app.save()
+	app.save(ignore_permissions=True)
 
 
 @protected("Marketplace App")
@@ -1161,9 +1161,9 @@ def communication(name):
 	return res
 
 
+@protected("Marketplace App")
 @frappe.whitelist()
 def add_reply(name, message):
-	team = get_current_team()
 	doctype = "Marketplace App"
 	app = frappe.get_doc(doctype, name)
 	recipients = ", ".join(list(app.get_assigned_users()) or [])
@@ -1175,7 +1175,7 @@ def add_reply(name, message):
 			"reference_doctype": doctype,
 			"reference_name": name,
 			"subject": f"Marketplace App Review: {name}, New message!",
-			"sender": team,
+			"sender": frappe.session.user,
 			"content": message,
 			"is_notification": True,
 			"recipients": recipients,
