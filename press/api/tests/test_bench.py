@@ -6,13 +6,16 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new, all
+from press.api.bench import deploy, get, new, all, update_config
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.release_group.test_release_group import (
+	create_test_release_group,
+)
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
 import docker
@@ -115,12 +118,30 @@ class TestAPIBench(FrappeTestCase):
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
 
+	def test_bench_config_updation(self):
+		rg = create_test_release_group([self.app])
+
+		common_site_config = [
+			{"key": "mail_login", "value": "a@a.com", "type": "String"},
+			{"key": "paypal_password", "value": "sadfkj", "type": "String"},
+		]
+		bench_config = [{"key": "http_timeout", "value": 120, "type": "Number"}]
+
+		update_config(rg.name, common_site_config, bench_config)
+		rg.reload()
+
+		new_bench_config = frappe.parse_json(rg.bench_config)
+
+		self.assertEqual(
+			frappe.parse_json(rg.common_site_config),
+			{"mail_login": "a@a.com", "paypal_password": "sadfkj"},
+		)
+		self.assertIsNone(new_bench_config.get("invalid_key"))
+		self.assertEqual(new_bench_config, {"http_timeout": 120})
+
 	def create_test_benches_for_bench_list(self):
 		from press.press.doctype.bench.test_bench import create_test_bench
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
-		from press.press.doctype.release_group.test_release_group import (
-			create_test_release_group,
-		)
 
 		active_group = create_test_release_group([self.app])
 		create_test_bench(group=active_group)
