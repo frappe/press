@@ -36,3 +36,16 @@ repos:
     rev: v4.4.0
     hooks:
       - id: debug-statements
+      - id: trailing-whitespace
+        files: 'press.*'
+        exclude: '.*json$|.*txt$|.*csv|.*md|.*svg'
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
