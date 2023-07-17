@@ -1,5 +1,5 @@
 rules:
-  - id: Possible mutable default args found
+  - id: possible-mutable-default-args
     pattern-either:
       - pattern: |
           def $FUNC(..., $ARG = $FUNC2(...), ...):
