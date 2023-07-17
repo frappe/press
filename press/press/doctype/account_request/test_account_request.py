@@ -4,18 +4,18 @@
 
 
 import unittest
-import frappe
-
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 from unittest.mock import patch
+
+import frappe
 
 from press.press.doctype.account_request.account_request import AccountRequest
 
 
 def create_test_account_request(
 	subdomain: str,
-	email: str,
+	email: str = None,
 	erpnext: bool = True,
 	creation=None,
 	saas: bool = False,
