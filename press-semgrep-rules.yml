@@ -1,0 +1,17 @@
+rules:
+  - id: Possible mutable default args found
+    pattern: |
+      def $FUNC(..., $ARG = $FUNC2(...), ...):
+        ...
+
+    message: |
+      $ARG is a mutable default argument. Possible it won't work as expected when calling $FUNC without $ARG multiple times.
+    languages:
+      - python
+    severity: WARNING
+    metadata:
+      category: correctness
+      technology:
+        - python
+      references:
+        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
