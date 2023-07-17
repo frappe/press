@@ -1077,14 +1077,14 @@ def subscriptions():
 @protected("App Source")
 @frappe.whitelist()
 def branches(name):
-	from press.api.bench import branches
+	from press.api.github import branches as git_branches
 
 	app_source = frappe.get_doc("App Source", name)
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
 
-	return branches(installation_id, repo_owner, repo_name)
+	return git_branches(installation_id, repo_owner, repo_name)
 
 
 @protected("Marketplace App")

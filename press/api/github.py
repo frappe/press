@@ -267,8 +267,7 @@ def branches(installation, owner, name):
 	)
 
 	if response.ok:
-		branches = response.json()
+		return response.json()
 	else:
 		frappe.throw("Error fetching branch list from GitHub")
 
-	return branches
