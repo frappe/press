@@ -4,7 +4,7 @@
 
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
@@ -24,8 +24,12 @@ def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
 	return create_test_team(email)
 
 
-def create_test_team(email: str = frappe.mock("email"), country="India") -> Team:
+@patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
+@patch.object(Team, "create_stripe_customer", new=Mock())
+def create_test_team(email: str = None, country="India") -> Team:
 	"""Create test team doc."""
+	if not email:
+		email = frappe.mock("email")
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
 	team = frappe.get_doc(
