@@ -21,11 +21,15 @@ from press.press.doctype.server.server import BaseServer
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(
-	proxy_server=create_test_proxy_server().name,
-	database_server=create_test_database_server().name,
+	proxy_server=None,
+	database_server=None,
 	cluster: str = "Default",
 ):
 	"""Create test Server doc."""
+	if not proxy_server:
+		proxy_server = create_test_proxy_server().name
+	if not database_server:
+		database_server = create_test_database_server().name
 	server = frappe.get_doc(
 		{
 			"doctype": "Server",
