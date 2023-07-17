@@ -16,7 +16,7 @@ from press.press.doctype.team.test_team import create_test_team
 def create_test_app_source(
 	version: str,
 	app: App,
-	repository_url: str = frappe.mock("url"),
+	repository_url=None,
 	branch: str = "master",
 ) -> AppSource:
 	"""
@@ -24,6 +24,8 @@ def create_test_app_source(
 
 	Also creates app release without github api call.
 	"""
+	if not repository_url:
+		repository_url = frappe.mock("url")
 	return app.add_source(version, repository_url, branch, create_test_team().name)
 
 

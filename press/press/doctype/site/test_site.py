@@ -69,7 +69,7 @@ def create_test_bench(
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
-	creation: datetime = datetime.now(),
+	creation: datetime = None,
 	bench: str = None,
 	team: str = None,
 	standby_for: Optional[str] = None,
@@ -78,6 +78,8 @@ def create_test_site(
 
 	Installs all apps present in bench.
 	"""
+	if not creation:
+		creation = datetime.now()
 	if not subdomain:
 		subdomain = make_autoname("test-site-.#####")
 	if not bench:

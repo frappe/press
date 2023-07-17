@@ -42,7 +42,9 @@ class TestRootDomain(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _create_fake_rename_job(self, site_name: str, creation=datetime.now()):
+	def _create_fake_rename_job(self, site_name: str, creation=None):
+		if not creation:
+			creation = datetime.now()
 		server = create_test_server(
 			create_test_proxy_server().name, create_test_database_server().name
 		)

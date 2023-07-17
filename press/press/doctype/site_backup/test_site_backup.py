@@ -18,7 +18,7 @@ from press.press.doctype.site.test_site import create_test_site
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 def create_test_site_backup(
 	site: str,
-	creation: datetime = datetime.now(),
+	creation: datetime = None,
 	files_availability: str = "Available",
 	offsite: bool = True,
 	status: str = "Success",
@@ -28,6 +28,8 @@ def create_test_site_backup(
 
 	Makes offsite backups by default along with remote files.
 	"""
+	if not creation:
+		creation = datetime.now()
 	params_dict = {
 		"doctype": "Site Backup",
 		"status": status,

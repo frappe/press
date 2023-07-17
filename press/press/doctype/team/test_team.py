@@ -15,8 +15,10 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
+def create_test_press_admin_team(email: str = None) -> Team:
 	"""Create test press admin user."""
+	if not email:
+		email = frappe.mock("email")
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))

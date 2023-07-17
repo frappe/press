@@ -14,10 +14,10 @@ from press.press.doctype.release_group.test_release_group import (
 )
 
 
-def create_test_saas_settings(
-	group: ReleaseGroup = create_test_release_group([create_test_app()]),
-):
+def create_test_saas_settings(group: ReleaseGroup = None):
 	"""Create a test saas_settings"""
+	if not group:
+		group = (create_test_release_group([create_test_app()]),)
 	return frappe.get_doc(
 		{
 			"doctype": "Saas Settings",
