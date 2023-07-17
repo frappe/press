@@ -12,7 +12,7 @@ rules:
             ...
 
     message: |
-      $ARG is a mutable default argument. Possible it won't work as expected when calling $FUNC without $ARG multiple times.
+      `$ARG` is possibly a mutable default argument. May not work as expected during subsequent calls of `$FUNC` without $ARG.
     languages:
       - python
     severity: WARNING
