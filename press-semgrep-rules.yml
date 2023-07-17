@@ -1,8 +1,15 @@
 rules:
   - id: Possible mutable default args found
-    pattern: |
-      def $FUNC(..., $ARG = $FUNC2(...), ...):
-        ...
+    pattern-either:
+      - pattern: |
+          def $FUNC(..., $ARG = $FUNC2(...), ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = $FUNC2(...).$ATTR, ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = frappe.$ATTR, ...):
+            ...
 
     message: |
       $ARG is a mutable default argument. Possible it won't work as expected when calling $FUNC without $ARG multiple times.
