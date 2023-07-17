@@ -5,6 +5,7 @@
 
 import unittest
 from unittest.mock import Mock, patch
+import responses
 
 import frappe
 from press.api.marketplace import (
@@ -12,6 +13,7 @@ from press.api.marketplace import (
 	add_reply,
 	add_version,
 	become_publisher,
+	branches,
 	change_app_plan,
 	communication,
 	create_app_plan,
@@ -59,6 +61,25 @@ from press.press.doctype.release_group.test_release_group import (
 )
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
+PAYLOAD = [
+	{
+		"name": "develop",
+		"commit": {
+			"sha": "d11768d928ec7996810898cf627c4d57e8bb917d",
+			"url": "https://api.github.com/repos/frappe/frappe/commits/d11768d928ec7996810898cf627c4d57e8bb917d",
+		},
+		"protected": True,
+	},
+	{
+		"name": "enterprise-staging",
+		"commit": {
+			"sha": "3716ef769bbb45d5376c5d6f6ed9a2d52583ef1c",
+			"url": "https://api.github.com/repos/frappe/frappe/commits/3716ef769bbb45d5376c5d6f6ed9a2d52583ef1c",
+		},
+		"protected": False,
+	},
+]
+
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPIMarketplace(unittest.TestCase):
@@ -66,7 +87,9 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.app = create_test_app("erpnext", "ERPNext")
 		self.team = create_test_press_admin_team()
 		self.version = "Version 14"
-		self.app_source = create_test_app_source(version=self.version, app=self.app)
+		self.app_source = create_test_app_source(
+			version=self.version, app=self.app, team=self.team.name
+		)
 		self.app_release = create_test_app_release(self.app_source)
 		self.marketplace_app = create_test_marketplace_app(
 			app=self.app.name,
@@ -385,3 +408,15 @@ class TestAPIMarketplace(unittest.TestCase):
 		start_review(self.marketplace_app.name)
 		self.marketplace_app.reload()
 		self.assertEqual(self.marketplace_app.status, "In Review")
+
+	@responses.activate
+	def test_branches(self):
+		frappe.set_user(self.team.user)
+		responses.get(
+			url=f"https://api.github.com/repos/{self.app_source.repository_owner}/{self.app_source.repository}/branches?per_page=100",
+			json=PAYLOAD,
+			status=200,
+			headers={},
+		)
+		results = branches(self.app_source.name)
+		self.assertEqual(len(results), 2)

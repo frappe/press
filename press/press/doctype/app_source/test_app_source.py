@@ -18,6 +18,7 @@ def create_test_app_source(
 	app: App,
 	repository_url=None,
 	branch: str = "master",
+	team: str = None,
 ) -> AppSource:
 	"""
 	Create test app source for app with given version.
@@ -26,7 +27,8 @@ def create_test_app_source(
 	"""
 	if not repository_url:
 		repository_url = frappe.mock("url")
-	return app.add_source(version, repository_url, branch, create_test_team().name)
+	team = team if team else create_test_team().name
+	return app.add_source(version, repository_url, branch, team)
 
 
 class TestAppSource(unittest.TestCase):
