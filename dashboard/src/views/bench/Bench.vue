@@ -119,6 +119,7 @@ export default {
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Versions', route: 'versions' },
+				{ label: 'Bench Config', route: 'bench-config' },
 				{ label: 'Deploys', route: 'deploys' },
 				{ label: 'Jobs', route: 'jobs' },
 				{ label: 'Settings', route: 'setting' }
