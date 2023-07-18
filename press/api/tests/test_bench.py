@@ -77,6 +77,9 @@ class TestAPIBench(FrappeTestCase):
 		new=foreground_enqueue_doc,
 	)
 	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
 	def test_deploy_fn_deploys_bench_container(self):
 		self._set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
@@ -115,14 +118,18 @@ class TestAPIBench(FrappeTestCase):
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
 
-	def create_test_benches_for_bench_list(self):
+
+class TestAPIBenchList(FrappeTestCase):
+	def setUp(self):
 		from press.press.doctype.bench.test_bench import create_test_bench
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 		from press.press.doctype.release_group.test_release_group import (
 			create_test_release_group,
 		)
 
-		active_group = create_test_release_group([self.app])
+		app = create_test_app()
+
+		active_group = create_test_release_group([app])
 		create_test_bench(group=active_group)
 		self.active_bench_dict = {
 			"number_of_sites": 0,
@@ -135,7 +142,7 @@ class TestAPIBench(FrappeTestCase):
 			"status": "Active",
 		}
 
-		group_awaiting_deploy = create_test_release_group([self.app])
+		group_awaiting_deploy = create_test_release_group([app])
 		self.bench_awaiting_deploy_dict = {
 			"number_of_sites": 0,
 			"name": group_awaiting_deploy.name,
@@ -147,7 +154,7 @@ class TestAPIBench(FrappeTestCase):
 			"status": "Awaiting Deploy",
 		}
 
-		group_with_tag = create_test_release_group([self.app])
+		group_with_tag = create_test_release_group([app])
 		test_tag = create_and_add_test_tag(group_with_tag.name, "Release Group")
 		create_test_bench(group=group_with_tag)
 		self.bench_with_tag_dict = {
@@ -161,25 +168,24 @@ class TestAPIBench(FrappeTestCase):
 			"status": "Active",
 		}
 
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_list_all_benches(self):
-		self.create_test_benches_for_bench_list()
 		self.assertCountEqual(
 			all(),
 			[self.active_bench_dict, self.bench_awaiting_deploy_dict, self.bench_with_tag_dict],
 		)
 
 	def test_list_active_benches(self):
-		self.create_test_benches_for_bench_list()
 		self.assertCountEqual(
 			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
 		)
 
 	def test_list_awaiting_deploy_benches(self):
-		self.create_test_benches_for_bench_list()
 		self.assertEqual(
 			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
 		)
 
 	def test_list_tagged_benches(self):
-		self.create_test_benches_for_bench_list()
 		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])
