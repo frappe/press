@@ -51,14 +51,6 @@
 						</div>
 						<div class="ml-auto space-x-2">
 							<Button
-								v-if="$account.team.erpnext_partner"
-								link="https://frappe.io/partners/buy_credits"
-								appearance="white"
-							>
-								Buy Credits
-							</Button>
-							<Button
-								v-else
 								@click="showPrepaidCreditsDialog = true"
 								appearance="white"
 							>
