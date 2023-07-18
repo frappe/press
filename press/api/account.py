@@ -51,7 +51,7 @@ def signup(email, referrer=None):
 
 	# Telemetry: Verification email sent
 	identify(email)
-	capture("verification_email_sent", "fc_signup", ar.request_key)
+	capture("verification_email_sent", "fc_signup", ar.name)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -121,7 +121,7 @@ def setup_account(
 			doc.save()
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_signup", key)
+	capture("completed_signup", "fc_signup", account_request.name)
 	frappe.local.login_manager.login_as(email)
 
 
