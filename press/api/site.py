@@ -1535,9 +1535,9 @@ def get_auto_update_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def update_auto_update_info(name, info=dict()):
+def update_auto_update_info(name, info=None):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
-	site_doc.update(info)
+	site_doc.update(info or {})
 	site_doc.save()
 
 
