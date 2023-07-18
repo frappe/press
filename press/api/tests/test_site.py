@@ -118,15 +118,11 @@ class TestAPISiteList(FrappeTestCase):
 
 	def test_list_all_sites(self):
 		self.assertCountEqual(
-			all(),
-			[self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict],
+			all(), [self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict]
 		)
 
 	def test_list_broken_sites(self):
-		self.assertEqual(
-			all(site_filter="Broken"),
-			[self.broken_site_dict],
-		)
+		self.assertEqual(all(site_filter="Broken"), [self.broken_site_dict])
 
 	def test_list_trial_sites(self):
 		self.assertEqual(all(site_filter="Trial"), [self.trial_site_dict])
