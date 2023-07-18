@@ -89,7 +89,13 @@ class ReleaseGroup(Document):
 	def validate_dependencies(self):
 		# TODO: Move this to Frappe Version DocType
 		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
-		if self.version in ("Version 14", "Nightly"):
+		if self.version in ("Version 15", "Nightly"):
+			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
+			python["version"] = "3.11"
+			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
+			node["version"] = "18.16.0"
+
+		if self.version == "Version 14":
 			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
 			python["version"] = "3.10"
 
