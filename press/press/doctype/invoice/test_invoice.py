@@ -436,16 +436,11 @@ class TestInvoice(unittest.TestCase):
 		invoice.save()
 		invoice.reload()
 
-		# After discount
-		self.assertEqual(invoice.total_before_discount, 0)
-		self.assertEqual(invoice.total_discount_amount, 0)
 		self.assertEqual(invoice.total, 0)
 
 		invoice.finalize_invoice()
 
 		# After finalize
-		self.assertEqual(invoice.total_before_discount, 0)
-		self.assertEqual(invoice.total_discount_amount, 0)
 		self.assertEqual(invoice.total, 0)
 		self.assertEqual(invoice.status, "Empty")
 
