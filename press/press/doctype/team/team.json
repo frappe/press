@@ -10,6 +10,7 @@
   "enabled",
   "team_title",
   "user",
+  "account_request",
   "is_developer",
   "free_account",
   "via_erpnext",
@@ -322,6 +323,12 @@
    "fieldname": "self_hosted_servers_enabled",
    "fieldtype": "Check",
    "label": "Self Hosted Servers Enabled"
+  },
+  {
+   "fieldname": "account_request",
+   "fieldtype": "Link",
+   "label": "Account Request",
+   "options": "Account Request"
   }
  ],
  "links": [
@@ -371,7 +378,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-05-24 21:32:08.485322",
+ "modified": "2023-07-18 11:19:01.393975",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

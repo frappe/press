@@ -194,7 +194,7 @@ def _new(site, server: str = None):
 	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
 		from press.utils.telemetry import capture
 
-		capture("created_first_site", "fc_signup", team.user)
+		capture("created_first_site", "fc_signup", team.account_request)
 
 	return {
 		"site": site.name,

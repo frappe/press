@@ -37,7 +37,7 @@ def signup(email, referrer=None):
 	elif exists and enabled:
 		frappe.throw(_("Account {0} is already registered").format(email))
 	else:
-		frappe.get_doc(
+		ar = frappe.get_doc(
 			{
 				"doctype": "Account Request",
 				"email": email,
@@ -51,7 +51,7 @@ def signup(email, referrer=None):
 
 	# Telemetry: Verification email sent
 	identify(email)
-	capture("verification_email_sent", "fc_signup", email)
+	capture("verification_email_sent", "fc_signup", ar.request_key)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -121,7 +121,7 @@ def setup_account(
 			doc.save()
 
 	# Telemetry: Created account
-	capture("completed_signup", "fc_signup", email)
+	capture("completed_signup", "fc_signup", key)
 	frappe.local.login_manager.login_as(email)
 
 
