@@ -47,13 +47,11 @@ function updateAppList(results) {
 		noResultsMessage.style.display = 'none';
 	}
 
-	for (let result of results) {
-		allAppCardNodes[result.refIndex].style.display = '';
-	}
-
 	// For sorting according to score
 	for (let result of results) {
-		document.querySelector('#all-apps-list').appendChild(allAppCardNodes[result.refIndex])
+		let app = document.getElementById(result.item.name);
+		app.style.display = '';
+		document.querySelector('#all-apps-list').appendChild(app);
 	}
 }
 

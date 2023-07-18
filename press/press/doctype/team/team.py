@@ -110,6 +110,7 @@ class Team(Document):
 				"enabled": 1,
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
+				"account_request": account_request.name,
 			}
 		)
 
@@ -441,7 +442,7 @@ class Team(Document):
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
 		# Telemetry: Added card
-		capture("added_card_or_prepaid_credits", "fc_signup", self.user)
+		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
 
 		return doc
 
@@ -855,7 +856,7 @@ def process_stripe_webhook(doc, method):
 	team.allocate_free_credits()
 
 	# Telemetry: Added prepaid credits
-	capture("added_card_or_prepaid_credits", "fc_signup", team.user)
+	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,

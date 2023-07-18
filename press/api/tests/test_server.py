@@ -117,7 +117,9 @@ class TestAPIServer(FrappeTestCase):
 		self.assertEqual(servers_before + 1, servers_after)
 		self.assertEqual(db_servers_before + 1, db_servers_after)
 
-	def create_test_servers_for_server_list(self):
+
+class TestAPIServerList(FrappeTestCase):
+	def setUp(self):
 		from press.utils import get_current_team
 		from press.press.doctype.server.test_server import create_test_server
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
@@ -154,18 +156,17 @@ class TestAPIServer(FrappeTestCase):
 			"app_server": f"f{app_server.name[1:]}",
 		}
 
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_list_all_servers(self):
-		self.create_test_servers_for_server_list()
 		self.assertEqual(all(), [self.app_server_dict, self.db_server_dict])
 
 	def test_list_app_servers(self):
-		self.create_test_servers_for_server_list()
 		self.assertEqual(all(server_filter="App Servers"), [self.app_server_dict])
 
 	def test_list_db_servers(self):
-		self.create_test_servers_for_server_list()
 		self.assertEqual(all(server_filter="Database Servers"), [self.db_server_dict])
 
 	def test_list_tagged_servers(self):
-		self.create_test_servers_for_server_list()
 		self.assertEqual(all(server_filter="tag:test_tag"), [self.app_server_dict])
