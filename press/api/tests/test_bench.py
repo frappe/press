@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+import unittest
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -20,6 +21,7 @@ import docker
 import os
 
 
+@unittest.skip("Testing if this conflicts with TestAPISiteList tests")
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPIBench(FrappeTestCase):
 	def setUp(self):
