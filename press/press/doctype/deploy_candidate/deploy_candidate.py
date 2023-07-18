@@ -131,6 +131,7 @@ class DeployCandidate(Document):
 			)
 			if bench_update:
 				frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
+			frappe.db.commit()
 			raise
 		else:
 			self.status = "Success"
