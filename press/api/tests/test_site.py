@@ -117,17 +117,15 @@ class TestAPISiteList(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_list_all_sites(self):
-		self.assertEqual(
+		self.assertCountEqual(
 			all(),
 			[self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict],
-			frappe.get_all("Release Group", pluck="name"),
 		)
 
 	def test_list_broken_sites(self):
-		self.assertCountEqual(
+		self.assertEqual(
 			all(site_filter="Broken"),
 			[self.broken_site_dict],
-			frappe.get_all("Site", fields=["name", "group", "status"]),
 		)
 
 	def test_list_trial_sites(self):
