@@ -58,7 +58,7 @@ class TestAPISiteList(FrappeTestCase):
 		group = create_test_release_group([app])
 		bench = create_test_bench(group=group)
 
-		broken_site = create_test_site(bench=bench)
+		broken_site = create_test_site(bench=bench.name)
 		broken_site.status = "Broken"
 		broken_site.save()
 		self.broken_site_dict = {
@@ -76,7 +76,7 @@ class TestAPISiteList(FrappeTestCase):
 			"version": group.version,
 		}
 
-		trial_site = create_test_site(bench=bench)
+		trial_site = create_test_site(bench=bench.name)
 		trial_site.trial_end_date = datetime.datetime.now()
 		trial_site.save()
 
@@ -95,7 +95,7 @@ class TestAPISiteList(FrappeTestCase):
 			"version": group.version,
 		}
 
-		tagged_site = create_test_site(bench=bench)
+		tagged_site = create_test_site(bench=bench.name)
 		create_and_add_test_tag(tagged_site.name, "Site")
 
 		self.tagged_site_dict = {
@@ -117,7 +117,7 @@ class TestAPISiteList(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_list_all_sites(self):
-		self.assertEqual(
+		self.assertCountEqual(
 			all(), [self.broken_site_dict, self.trial_site_dict, self.tagged_site_dict]
 		)
 
