@@ -92,6 +92,6 @@ rules:
             ...
       - focus-metavariable: $ERR_HANDL_BLK
 
-    message: $ERR_HANDL_BLK has no db commit before raise. The db changes made won't persist assuming innodb tables.
+    message: except block has no db commit before raise. The db changes made won't persist assuming innodb tables.
     severity: ERROR
 
