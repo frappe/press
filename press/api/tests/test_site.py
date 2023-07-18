@@ -124,7 +124,7 @@ class TestAPISiteList(FrappeTestCase):
 		)
 
 	def test_list_broken_sites(self):
-		self.assertEqual(
+		self.assertCountEqual(
 			all(site_filter="Broken"),
 			[self.broken_site_dict],
 			frappe.get_all("Site", fields=["name", "group", "status"]),
