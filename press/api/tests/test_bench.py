@@ -77,6 +77,9 @@ class TestAPIBench(FrappeTestCase):
 		new=foreground_enqueue_doc,
 	)
 	@patch.object(DeployCandidate, "_push_docker_image", new=Mock())
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
 	def test_deploy_fn_deploys_bench_container(self):
 		self._set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
