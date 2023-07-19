@@ -11,6 +11,7 @@ from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidat
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.release_group.test_release_group import (
@@ -131,7 +132,10 @@ class TestAPIBenchConfig(FrappeTestCase):
 			{"key": "mail_login", "value": "a@a.com", "type": "String"},
 			{"key": "paypal_password", "value": "password", "type": "String"},
 		]
-		bench_config = [{"key": "http_timeout", "value": 120, "type": "Number"}]
+		bench_config = [
+			{"key": "http_timeout", "value": 120, "type": "Number"},
+			{"key": "invalid_key", "value": "invalid_value", "type": "String"},
+		]
 
 		update_config(self.rg.name, common_site_config, bench_config)
 		self.rg.reload()
@@ -167,10 +171,18 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.assertIsNone(new_bench_config.get("invalid_key"))
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
 
+	def test_bench_config_is_updated_in_subsequent_benches(self):
+		bench = create_test_bench(group=self.rg)
+		bench.reload()
+
+		self.assertIn(("http_timeout", 120), frappe.parse_json(bench.bench_config).items())
+
+		for key, value in frappe.parse_json(self.rg.common_site_config).items():
+			self.assertEqual(value, frappe.parse_json(bench.config).get(key))
+
 
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
-		from press.press.doctype.bench.test_bench import create_test_bench
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
 
 		app = create_test_app()
