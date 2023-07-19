@@ -128,16 +128,18 @@ class TestAPIBenchConfig(FrappeTestCase):
 		app = create_test_app()
 		self.rg = create_test_release_group([app])
 
-		common_site_config = [
+		self.common_site_config = [
+			{"key": "max_file_size", "value": "1234", "type": "Number"},
 			{"key": "mail_login", "value": "a@a.com", "type": "String"},
-			{"key": "paypal_password", "value": "password", "type": "String"},
+			{"key": "skip_setup_wizard", "value": "1", "type": "Boolean"},
+			{"key": "limits", "value": '{"limit": "val"}', "type": "JSON"},
 		]
 		bench_config = [
 			{"key": "http_timeout", "value": 120, "type": "Number"},
 			{"key": "invalid_key", "value": "invalid_value", "type": "String"},
 		]
 
-		update_config(self.rg.name, common_site_config, bench_config)
+		update_config(self.rg.name, self.common_site_config, bench_config)
 		self.rg.reload()
 
 	def tearDown(self):
@@ -153,20 +155,21 @@ class TestAPIBenchConfig(FrappeTestCase):
 		expected_bench_config = [
 			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False}
 		]
-		expected_common_site_config = [
-			{"key": "mail_login", "type": "String", "value": "a@a.com"},
-			{"key": "paypal_password", "type": "String", "value": "password"},
-		]
 
 		self.assertListEqual(bench_config_values, expected_bench_config)
-		self.assertListEqual(common_site_config, expected_common_site_config)
+		self.assertListEqual(common_site_config, self.common_site_config)
 
 	def test_bench_config_updation(self):
 		new_bench_config = frappe.parse_json(self.rg.bench_config)
 
 		self.assertEqual(
 			frappe.parse_json(self.rg.common_site_config),
-			{"mail_login": "a@a.com", "paypal_password": "password"},
+			{
+				"max_file_size": 1234,
+				"mail_login": "a@a.com",
+				"skip_setup_wizard": True,
+				"limits": {"limit": "val"},
+			},
 		)
 		self.assertIsNone(new_bench_config.get("invalid_key"))
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
