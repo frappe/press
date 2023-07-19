@@ -15,7 +15,8 @@
 						() => {
 							$resources.benchConfig.reload().then(() => {
 								editMode = false;
-								isDirty = false;
+								isCommonSiteConfigFormDirty = false;
+								isBenchConfigFormDirty = false;
 							});
 						}
 					"
@@ -45,7 +46,7 @@
 								placeholder="key"
 								v-model="config.key"
 								class="col-span-2"
-								@change="isDirty = true"
+								@change="isCommonSiteConfigFormDirty = true"
 							/>
 							<Input
 								type="select"
@@ -61,7 +62,7 @@
 									:input-class="{ 'font-mono': config.type === 'JSON' }"
 									placeholder="value"
 									v-model="config.value"
-									@change="isDirty = true"
+									@change="isCommonSiteConfigFormDirty = true"
 								/>
 								<button
 									class="ml-2 rounded-md p-1 hover:bg-gray-100"
@@ -72,7 +73,7 @@
 							</div>
 						</div>
 						<ErrorMessage :message="$resources.benchConfig.error" />
-						<Button @click="addCommonSiteConfig" v-if="!isDirty">
+						<Button @click="addCommonSiteConfig" v-if="editMode">
 							Add Key
 						</Button>
 					</div>
@@ -97,7 +98,7 @@
 					<div v-html="commonSiteConfigPreview"></div>
 				</div>
 			</div>
-			<div>
+			<div class="mt-4">
 				<h2 class="text-xl font-semibold">Bench Config</h2>
 				<p class="mt-1.5 mb-4 text-base text-gray-600">
 					Add and update key value pairs to your bench's bench_config.json
@@ -116,7 +117,6 @@
 									value="http_timeout"
 									v-model="config.key"
 									class="col-span-2"
-									@change="isDirty = true"
 									:disabled="true"
 								/>
 								<Input
@@ -124,7 +124,6 @@
 									placeholder="type"
 									v-model="config.type"
 									:options="['Number']"
-									@change="onTypeChange(config)"
 									:disabled="true"
 								/>
 								<div class="col-span-2 flex items-center">
@@ -132,7 +131,7 @@
 										type="number"
 										placeholder="value"
 										v-model="config.value"
-										@change="isDirty = true"
+										@change="isBenchConfigFormDirty = true"
 									/>
 									<button
 										class="ml-2 rounded-md p-1 hover:bg-gray-100"
@@ -146,7 +145,7 @@
 							<Button
 								@click="addBenchConfig"
 								v-if="
-									!isDirty &&
+									editMode &&
 									$resources.benchConfig.data.bench_config.length < 1
 								"
 							>
@@ -191,7 +190,8 @@ export default {
 	data() {
 		return {
 			editMode: false,
-			isDirty: false
+			isCommonSiteConfigFormDirty: false,
+			isBenchConfigFormDirty: false
 		};
 	},
 	resources: {
@@ -281,7 +281,8 @@ export default {
 				},
 				onSuccess() {
 					this.editMode = false;
-					this.isDirty = false;
+					this.isCommonSiteConfigFormDirty = false;
+					this.isBenchConfigFormDirty = false;
 				}
 			};
 		}
@@ -390,14 +391,14 @@ export default {
 				value: '',
 				type: 'String'
 			});
-			this.isDirty = true;
+			this.isCommonSiteConfigFormDirty = true;
 		},
 		removeCommonSiteConfig(config) {
 			this.$resources.benchConfig.data.common_site_config =
 				this.$resources.benchConfig.data.common_site_config.filter(
 					d => d !== config
 				);
-			this.isDirty = true;
+			this.isCommonSiteConfigFormDirty = true;
 		},
 		addBenchConfig() {
 			this.$resources.benchConfig.data.bench_config.push({
@@ -405,19 +406,20 @@ export default {
 				value: '',
 				type: 'String'
 			});
-			this.isDirty = true;
+			this.isBenchConfigFormDirty = true;
 		},
 		removeBenchConfig(config) {
 			this.$resources.benchConfig.data.bench_config =
 				this.$resources.benchConfig.data.bench_config.filter(d => d !== config);
-			this.isDirty = true;
+			this.isBenchConfigFormDirty = true;
 		},
 		updateBenchConfig() {
-			if (this.isDirty) {
+			if (this.isCommonSiteConfigFormDirty || this.isBenchConfigFormDirty) {
 				this.$resources.updateBenchConfig.submit();
 			} else {
 				this.editMode = false;
-				this.isDirty = false;
+				this.isCommonSiteConfigFormDirty = false;
+				this.isBenchConfigFormDirty = false;
 			}
 		},
 		onTypeChange(config) {
