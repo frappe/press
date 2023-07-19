@@ -251,13 +251,13 @@ def options(only_by_current_team=False):
 def bench_config(release_group_name):
 	rg = frappe.get_doc("Release Group", release_group_name)
 
-	common_site_config = rg.common_site_config_table
+	common_site_config = [
+		{"key": config.key, "value": config.value, "type": config.type}
+		for config in rg.common_site_config_table
+		if not config.internal
+	]
+
 	bench_config = frappe.parse_json(rg.bench_config)
-
-	common_site_config = list(
-		filter(lambda x: not x.internal, rg.common_site_config_table)
-	)
-
 	if bench_config.get("http_timeout"):
 		bench_config = [
 			frappe._dict(

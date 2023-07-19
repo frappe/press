@@ -6,7 +6,7 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new, all, update_config
+from press.api.bench import deploy, get, new, all, update_config, bench_config
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -121,26 +121,52 @@ class TestAPIBench(FrappeTestCase):
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
 
-	def test_bench_config_updation(self):
-		rg = create_test_release_group([self.app])
+
+class TestAPIBenchConfig(FrappeTestCase):
+	def setUp(self):
+		app = create_test_app()
+		self.rg = create_test_release_group([app])
 
 		common_site_config = [
 			{"key": "mail_login", "value": "a@a.com", "type": "String"},
-			{"key": "paypal_password", "value": "sadfkj", "type": "String"},
+			{"key": "paypal_password", "value": "password", "type": "String"},
 		]
 		bench_config = [{"key": "http_timeout", "value": 120, "type": "Number"}]
 
-		update_config(rg.name, common_site_config, bench_config)
-		rg.reload()
+		update_config(self.rg.name, common_site_config, bench_config)
+		self.rg.reload()
 
-		new_bench_config = frappe.parse_json(rg.bench_config)
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_bench_config_api(self):
+		configs = bench_config(self.rg.name)
+		bench_config_values, common_site_config = (
+			configs["bench_config"],
+			configs["common_site_config"],
+		)
+
+		expected_bench_config = [
+			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False}
+		]
+		expected_common_site_config = [
+			{"key": "mail_login", "type": "String", "value": "a@a.com"},
+			{"key": "paypal_password", "type": "String", "value": "password"},
+		]
+
+		self.assertListEqual(bench_config_values, expected_bench_config)
+		self.assertListEqual(common_site_config, expected_common_site_config)
+
+	def test_bench_config_updation(self):
+		new_bench_config = frappe.parse_json(self.rg.bench_config)
 
 		self.assertEqual(
-			frappe.parse_json(rg.common_site_config),
-			{"mail_login": "a@a.com", "paypal_password": "sadfkj"},
+			frappe.parse_json(self.rg.common_site_config),
+			{"mail_login": "a@a.com", "paypal_password": "password"},
 		)
 		self.assertIsNone(new_bench_config.get("invalid_key"))
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
+
 
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
