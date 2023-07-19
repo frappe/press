@@ -102,8 +102,8 @@ def get_groups_with_updates():
 	groups = frappe.get_all("Release Group", {"enabled": 1, "public": 0})
 	groups_with_updates = []
 	for group in groups:
-		deploy_info = get_group_status(group.name)
-		if deploy_info == "Update Available":
+		group_status = get_group_status(group.name)
+		if group_status == "Update Available":
 			groups_with_updates.append(group.name)
 	return groups_with_updates
 
@@ -113,8 +113,8 @@ def get_groups_with_deploy_in_progress():
 	groups = frappe.get_all("Release Group", {"enabled": 1, "public": 0})
 	groups_with_updates = []
 	for group in groups:
-		deploy_info = get_group_status(group.name)
-		if deploy_info == "Deploy in Progress":
+		group_status = get_group_status(group.name)
+		if group_status == "Deploy in Progress":
 			groups_with_updates.append(group.name)
 	return groups_with_updates
 
