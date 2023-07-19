@@ -87,39 +87,26 @@ class TestSelfHostedServer(FrappeTestCase):
 			server.ping_ansible()
 		self.assertEqual(server.status, "Unreachable")
 
-	def _create_test_ansible_play_and_task(
-		self, server: SelfHostedServer, playbook: str, play: str, task: str, task_output: str
-	):  # TODO: Move to AnsiblePlay and Make a generic one for AnsibleTask
-		play = create_test_ansible_play(
-			play,
-			playbook,
-			server.doctype,
-			server.name,
-			{"server": server.name},
-		)
-		task = frappe.get_doc(
-			{
-				"doctype": "Ansible Task",
-				"status": "Success",
-				"play": play.name,
-				"role": play.playbook.split(".")[0],
-				"task": task,
-				"output": task_output,
-			}
-		)
-		task.insert()
-		return play
-
 	def test_get_apps_populates_apps_child_table(self):
 		server = create_test_self_hosted_server("apps")
 		with patch(
 			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
-			new=lambda x: self._create_test_ansible_play_and_task(
-				server,
-				"get_apps.yml",
-				"Get Bench data from Self Hosted Server",
-				"Get Versions from Current Bench",
-				json.dumps([{'commit': '3672c9f', 'app': 'frappe', 'branch': 'version-14', 'version': '14.30.0'}]),
+			new=lambda x: _create_test_ansible_play_and_task(
+				server=server,
+				playbook="get_apps.yml",
+				_play="Get Bench data from Self Hosted Server",
+				task_1="Get Versions from Current Bench",
+				task_1_output=json.dumps(
+					[
+						{
+							"commit": "3672c9f",
+							"app": "frappe",
+							"branch": "version-14",
+							"version": "14.30.0",
+						}
+					]
+				),
+				task_1_result="",
 			),
 		):
 			server._get_apps()
@@ -129,6 +116,64 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertEqual(server.apps[0].app_name, "frappe")
 		self.assertEqual(server.apps[0].branch, "version-14")
 		self.assertEqual(server.apps[0].version, "14.30.0")
+
+	def test_get_sites_populates_site_table_with_config(self):
+		server = create_test_self_hosted_server("sites")
+		server.bench_path = "/home/frappe/frappe-bench"
+		with patch(
+			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
+			new=lambda x: _create_test_ansible_play_and_task(
+				server=server,
+				playbook="get_sites.yml",
+				_play="Sites from Current Bench",
+				task_1="Get Sites from Current Bench",
+				task_1_output=json.dumps({"site1.local": ["frappe", "erpnext"]}),
+				task_1_result="",
+				task_2="Get Site Configs from Existing Sites",
+				task_2_output=json.dumps(
+					[
+						{
+							"site": "site1.local",
+							"config": {
+								"activations_last_sync_date": "2023-05-07 00:00:49.152290",
+								"always_use_account_email_id_as_sender": 1,
+							},
+						}
+					]
+				),
+				task_2_result="",
+			),
+		):
+			server._get_sites()
+		server.reload()
+		self.assertTrue(server.sites)
+		self.assertTrue(server.sites[0].site_config)
+		self.assertEqual(len(server.sites), 1)
+		self.assertEqual(
+			server.sites[0].site_config,
+			json.dumps(
+				{
+					"activations_last_sync_date": "2023-05-07 00:00:49.152290",
+					"always_use_account_email_id_as_sender": 1,
+				}
+			),
+		)
+		self.assertEqual(server.sites[0].apps, "frappe,erpnext")
+
+	def test_fetch_system_ram_from_ansible_and_update_ram_field(self):
+		server = create_test_self_hosted_server("ram")
+		_create_test_ansible_play_and_task(
+			server=server,
+			playbook="ping.yml",
+			_play="Ping Server",
+			task_1="Gather Facts",
+			task_1_output="",
+			task_1_result='{"ansible_facts": {"memtotal_mb": 16384}}',
+		)
+		server.fetch_system_ram()
+		server.reload()
+		self.assertEqual(server.ram, "16384")
+
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
 	server = frappe.get_doc(
@@ -142,3 +187,33 @@ def create_test_self_hosted_server(host) -> SelfHostedServer:
 	).insert(ignore_if_duplicate=True)
 	server.reload()
 	return server
+
+
+def _create_test_ansible_play_and_task(
+	server: SelfHostedServer, playbook: str, _play: str, **kwargs
+):  # TODO: Move to AnsiblePlay and Make a generic one for AnsibleTask
+	play = create_test_ansible_play(
+		_play,
+		playbook,
+		server.doctype,
+		server.name,
+		{"server": server.name},
+	)
+
+	for i, _ in enumerate(kwargs):
+		try:
+			task = frappe.get_doc(
+				{
+					"doctype": "Ansible Task",
+					"status": "Success",
+					"play": play.name,
+					"role": play.playbook.split(".")[0],
+					"task": kwargs.get("task_" + str(i + 1)),
+					"output": kwargs.get("task_" + str(i + 1) + "_output"),
+					"result": kwargs.get("task_" + str(i + 1) + "_result"),
+				}
+			)
+			task.insert()
+		except:
+			pass
+	return play
