@@ -10,7 +10,7 @@ from typing import Dict, List
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import comma_and
+from frappe.utils import comma_and, flt
 
 from press.api.site import protected
 from press.api.github import branches
@@ -21,7 +21,12 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.utils import get_app_tag, get_current_team, unique
+from press.utils import (
+	get_app_tag,
+	get_current_team,
+	unique,
+	get_client_blacklisted_keys,
+)
 
 
 @frappe.whitelist()
@@ -239,6 +244,64 @@ def options(only_by_current_team=False):
 
 	options = {"versions": versions, "clusters": clusters}
 	return options
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def bench_config(release_group_name):
+	rg = frappe.get_doc("Release Group", release_group_name)
+
+	common_site_config = [
+		{"key": config.key, "value": config.value, "type": config.type}
+		for config in rg.common_site_config_table
+		if not config.internal
+	]
+
+	bench_config = frappe.parse_json(rg.bench_config)
+	if bench_config.get("http_timeout"):
+		bench_config = [
+			frappe._dict(
+				key="http_timeout",
+				value=bench_config.get("http_timeout"),
+				type="Number",
+				internal=False,
+			)
+		]
+	else:
+		bench_config = []
+
+	return {"bench_config": bench_config, "common_site_config": common_site_config}
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_config(name, common_site_config, bench_config):
+	sanitized_common_site_config, sanitized_bench_config = [], []
+
+	common_site_config = frappe.parse_json(common_site_config)
+	common_site_config = [frappe._dict(c) for c in common_site_config]
+
+	for c in common_site_config:
+		if c.key in get_client_blacklisted_keys():
+			continue
+		if c.type == "Number":
+			c.value = flt(c.value)
+		elif c.type in ("JSON", "Boolean"):
+			c.value = frappe.parse_json(c.value)
+		sanitized_common_site_config.append(c)
+
+	bench_config = frappe.parse_json(bench_config)
+	bench_config = [frappe._dict(c) for c in bench_config]
+
+	for c in bench_config:
+		if c.key == "http_timeout":
+			c.value = int(c.value)
+		if c.key == "http_timeout" or c == {}:
+			sanitized_bench_config.append(c)
+
+	rg = frappe.get_doc("Release Group", name)
+	rg.update_config_in_release_group(sanitized_common_site_config, bench_config)
+	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 
 @frappe.whitelist()

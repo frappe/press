@@ -6,13 +6,17 @@ from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new, all
+from press.api.bench import deploy, get, new, all, update_config, bench_config
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.release_group.test_release_group import (
+	create_test_release_group,
+)
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
 import docker
@@ -119,13 +123,70 @@ class TestAPIBench(FrappeTestCase):
 		self.assertIn(image_name, [tag for tag in image.tags])
 
 
+class TestAPIBenchConfig(FrappeTestCase):
+	def setUp(self):
+		app = create_test_app()
+		self.rg = create_test_release_group([app])
+
+		self.common_site_config = [
+			{"key": "max_file_size", "value": "1234", "type": "Number"},
+			{"key": "mail_login", "value": "a@a.com", "type": "String"},
+			{"key": "skip_setup_wizard", "value": "1", "type": "Boolean"},
+			{"key": "limits", "value": '{"limit": "val"}', "type": "JSON"},
+		]
+		bench_config = [
+			{"key": "http_timeout", "value": 120, "type": "Number"},
+			{"key": "invalid_key", "value": "invalid_value", "type": "String"},
+		]
+
+		update_config(self.rg.name, self.common_site_config, bench_config)
+		self.rg.reload()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_bench_config_api(self):
+		configs = bench_config(self.rg.name)
+		bench_config_values, common_site_config = (
+			configs["bench_config"],
+			configs["common_site_config"],
+		)
+
+		expected_bench_config = [
+			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False}
+		]
+
+		self.assertListEqual(bench_config_values, expected_bench_config)
+		self.assertListEqual(common_site_config, self.common_site_config)
+
+	def test_bench_config_updation(self):
+		new_bench_config = frappe.parse_json(self.rg.bench_config)
+
+		self.assertEqual(
+			frappe.parse_json(self.rg.common_site_config),
+			{
+				"max_file_size": 1234,
+				"mail_login": "a@a.com",
+				"skip_setup_wizard": True,
+				"limits": {"limit": "val"},
+			},
+		)
+		self.assertIsNone(new_bench_config.get("invalid_key"))
+		self.assertEqual(new_bench_config, {"http_timeout": 120})
+
+	def test_bench_config_is_updated_in_subsequent_benches(self):
+		bench = create_test_bench(group=self.rg)
+		bench.reload()
+
+		self.assertIn(("http_timeout", 120), frappe.parse_json(bench.bench_config).items())
+
+		for key, value in frappe.parse_json(self.rg.common_site_config).items():
+			self.assertEqual(value, frappe.parse_json(bench.config).get(key))
+
+
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
-		from press.press.doctype.bench.test_bench import create_test_bench
 		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
-		from press.press.doctype.release_group.test_release_group import (
-			create_test_release_group,
-		)
 
 		app = create_test_app()
 
