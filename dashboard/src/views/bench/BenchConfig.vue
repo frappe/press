@@ -333,11 +333,7 @@ export default {
 
 			let modelValue = {};
 			for (let d of this.$resources.benchConfig.data.common_site_config) {
-				let value = d.value;
-				if (['Boolean', 'Number'].includes(d.type)) {
-					value = Number(value);
-				}
-				modelValue[d.key] = value;
+				modelValue[d.key] = d.value;
 			}
 
 			return { fields, modelValue };
