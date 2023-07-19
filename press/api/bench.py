@@ -22,7 +22,6 @@ from press.press.doctype.release_group.release_group import (
 )
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
-	cache,
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
@@ -97,9 +96,10 @@ def get_group_status(name):
 	return "Active"
 
 
-@cache(seconds=180)
-def get_groups_with_updates():
-	groups = frappe.get_all("Release Group", {"enabled": 1, "public": 0})
+def get_groups_with_updates(teams):
+	groups = frappe.get_all(
+		"Release Group", {"enabled": 1, "public": 0, "team": ("in", teams)}
+	)
 	groups_with_updates = []
 	for group in groups:
 		group_status = get_group_status(group.name)
@@ -108,9 +108,10 @@ def get_groups_with_updates():
 	return groups_with_updates
 
 
-@cache(seconds=180)
-def get_groups_with_deploy_in_progress():
-	groups = frappe.get_all("Release Group", {"enabled": 1, "public": 0})
+def get_groups_with_deploy_in_progress(teams):
+	groups = frappe.get_all(
+		"Release Group", {"enabled": 1, "public": 0, "team": ("in", teams)}
+	)
 	groups_with_updates = []
 	for group in groups:
 		group_status = get_group_status(group.name)
@@ -154,10 +155,10 @@ def all(server=None, start=0, bench_filter=""):
 		)
 		query = query.inner_join(bench).on(group.name.notin(group_names))
 	elif bench_filter == "Update Available":
-		groups_with_updates = get_groups_with_updates()
+		groups_with_updates = get_groups_with_updates(teams)
 		query = query.inner_join(bench).on(group.name.isin(groups_with_updates))
 	elif bench_filter == "Deploy in Progress":
-		groups_deploying = get_groups_with_deploy_in_progress()
+		groups_deploying = get_groups_with_deploy_in_progress(teams)
 		query = query.inner_join(bench).on(group.name.isin(groups_deploying))
 	elif bench_filter.startswith("tag:"):
 		tag = bench_filter[4:]
