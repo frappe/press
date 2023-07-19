@@ -84,7 +84,16 @@ def get_group_status(name):
 		"Bench", {"group": name, "status": "Active"}, limit=1, order_by="creation desc"
 	)
 
-	return "Active" if active_benches else "Awaiting Deploy"
+	if not active_benches:
+		return "Awaiting Deploy"
+
+	deploy_info = deploy_information(name)
+
+	if deploy_info["deploy_in_progress"]:
+		return "Deploy in Progress"
+	if deploy_info["update_available"]:
+		return "Update Available"
+	return "Active"
 
 
 @frappe.whitelist()
