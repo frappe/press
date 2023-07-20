@@ -16,6 +16,7 @@ from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.api.account import create_child_team
 
 
 def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
@@ -76,6 +77,28 @@ class TestDeployCandidate(unittest.TestCase):
 		group.db_set("team", self.team.name)
 		frappe.rename_doc("Team", self.team.name, self.user)
 		frappe.set_user(self.user)
+		deploy_candidate = create_test_deploy_candidate(group)
+		try:
+			deploy_candidate.pre_build(method="_build")
+		except frappe.PermissionError:
+			self.fail("PermissionError raised in pre_build")
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_if_team_with_child_team_can_deploy_benches(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if team with child team can deploy benches
+
+		Checks permission. Make sure no PermissionError is raised
+		"""
+		app = create_test_app()
+		group = create_test_release_group([app], self.user)
+		group.db_set("team", self.team.name)
+		frappe.set_user(self.user)
+		frappe.utils.set_request(headers={"X-Press-Team": self.team.name})
+		create_child_team("Dev Team")
 		deploy_candidate = create_test_deploy_candidate(group)
 		try:
 			deploy_candidate.pre_build(method="_build")
