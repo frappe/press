@@ -174,13 +174,48 @@ class TestSelfHostedServer(FrappeTestCase):
 		server.reload()
 		self.assertEqual(server.ram, "16384")
 
+	def test_fetch_system_specifications_and_populate_fields_in_doc(self):
+		server = create_test_self_hosted_server("tester")
+		_create_test_ansible_play_and_task(
+			server=server,
+			playbook="ping.yml",
+			_play="Ping Server",
+			task_1="Gather Facts",
+			task_1_output="",
+			task_1_result="""{"ansible_facts": {"memtotal_mb": 16384,"system_vendor":"Amazon EC2","processor_vcpus":2,"swaptotal_mb":1024,"architecture":"x86_64","product_name":"c5a.6xLarge","processor":["0","GenuineIntel","Intel(R) Xeon(R) CPU @ 2.20GHz","1","GenuineIntel","Intel(R) Xeon(R) CPU @ 2.20GHz"],"lsb":{"description":"Debian GNU/Linux 11 (bullseye)"},"devices":{"nvme0n1":{"size":"25 GB"}}}}""",
+		)
+		server.fetch_system_specifications()
+		server.reload()
+		self.assertEqual(server.vendor, "Amazon EC2")
+		self.assertEqual(server.ram, "16384")
+		self.assertEqual(server.vcpus, "2")
+		self.assertEqual(server.processor, "Intel(R) Xeon(R) CPU @ 2.20GHz")
+		self.assertEqual(server.swap_total, "1024")
+		self.assertEqual(server.architecture, "x86_64")
+		self.assertEqual(server.instance_type, "c5a.6xLarge")
+		self.assertEqual(server.distribution, "Debian GNU/Linux 11 (bullseye)")
+		self.assertEqual(server.total_storage, "25 GB")
+
+	def test_fetch_private_ip_from_ansible_ping_and_populate_field(self):
+		server = create_test_self_hosted_server("tester")
+		_create_test_ansible_play_and_task(
+			server=server,
+			playbook="ping.yml",
+			_play="Ping Server",
+			task_1="Gather Facts",
+			task_1_output="",
+			task_1_result="""{"ansible_facts":{"default_ipv4":{"address":"192.168.1.1"},"system_vendor":"Hetzner"}}""",
+		)
+		server.fetch_private_ip()
+		server.reload()
+		self.assertEqual(server.private_ip, "192.168.1.1")
+
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
 	server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
 			"ip": frappe.mock("ipv4"),
-			"private_ip": frappe.mock("ipv4_private"),
 			"server_url": f"https://{host}.fc.dev",
 			"team": create_test_team().name,
 		}

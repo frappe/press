@@ -528,3 +528,70 @@ class SelfHostedServer(Document):
 			and self.team
 			and self.team != "Administrator"
 		)
+
+	def fetch_private_ip(self):
+		"""
+		Fetch the Private IP from the Ping Ansible Play
+		"""
+		play_id = frappe.get_last_doc(
+			"Ansible Play", {"server": self.name, "play": "Ping Server"}
+		).name
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
+		try:
+			breakpoint()
+			result = json.loads(play.result)
+			self.private_ip = fetch_private_ip_based_on_vendor(result)
+			self.save()
+		except Exception:
+			log_error("Fetching Private IP failed", server=self.as_dict())
+
+	@frappe.whitelist()
+	def fetch_system_specifications(self, play_id=None):
+		"""
+		Fetch the RAM from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.name, "play": "Ping Server"}
+			).name
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
+		try:
+			result = json.loads(play.result)
+			self.vendor = result["ansible_facts"]["system_vendor"]
+			self.ram = result["ansible_facts"]["memtotal_mb"]
+			self.vcpus = result["ansible_facts"]["processor_vcpus"]
+			self.swap_total = result["ansible_facts"]["swaptotal_mb"]
+			self.architecture = result["ansible_facts"]["architecture"]
+			self.instance_type = result["ansible_facts"]["product_name"]
+			self.processor = result["ansible_facts"]["processor"][2]
+			self.distribution = result["ansible_facts"]["lsb"]["description"]
+			match self.vendor:
+				case "DigitalOcean":
+					self.total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
+				case "Amazon EC2":
+					self.total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
+				case _:
+					self.total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+			self.save()
+		except Exception:
+			log_error("Fetching System Details Failed", server=self.as_dict())
+
+
+def fetch_private_ip_based_on_vendor(play_result: dict):
+	vendor = play_result["ansible_facts"]["system_vendor"]
+	print(vendor)
+	match vendor:
+		case "DigitalOcean":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
+		case "Amazon EC2":
+			return play_result["ansible_facts"]["default_ipv4"]["address"]
+		case "Microsoft Corporation":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][0]
+		case "Google":
+			return play_result["ansible_facts"]["default_ipv4"]["address"]
+		case _:
+			return play_result["ansible_facts"]["default_ipv4"]["address"]

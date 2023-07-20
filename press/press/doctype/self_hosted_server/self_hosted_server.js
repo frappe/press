@@ -11,6 +11,7 @@ frappe.ui.form.on('Self Hosted Server', {
 			[__('Ping Server'), 'ping_ansible', false],
 			[__('Fetch Ram'), 'fetch_system_ram', false, !frm.doc.ram],
 			[__('Setup Nginx'), '_setup_nginx', false],
+			[__('Fetch System Details'), 'fetch_system_specifications', false],
 			[__('Update TLS'), 'update_tls', false],
 			[__('Create Proxy Server'), 'create_proxy_server', false],
 			[

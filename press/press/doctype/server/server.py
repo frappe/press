@@ -335,7 +335,11 @@ class BaseServer(Document):
 			frappe.throw(_("Cannot archive server with benches"))
 		self.status = "Pending"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+		if self.is_self_hosted:
+			self.status = "Archived"
+			self.save()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
 	def _archive(self):
