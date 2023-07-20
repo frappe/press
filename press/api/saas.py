@@ -73,7 +73,7 @@ def account_request(
 		identify(
 			site_name,
 			app=account_request.saas_app,
-			source=url_args.get("source") if url_args else "fc",
+			source=json.loads(url_args).get("source") if url_args else "fc",
 		)
 		account_request.insert(ignore_permissions=True)
 		capture("completed_server_account_request", "fc_saas", site_name)
