@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - '*'
+  workflow_dispatch:
 
 env:
   DB_NAME: test_frappe
@@ -40,12 +41,26 @@ jobs:
       - name: Flake8 Test
         run: |
           flake8 --ignore W191,E501,W503 ${GITHUB_WORKSPACE}/press/press
+
+  semgrep:
+    name: Semgrep Rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Run Semgrep rules
+        run: |
+          pip install semgrep==1.32
+          semgrep ci --config ./press-semgrep-rules.yml --config r/python.lang.correctness
+
   tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        container: [1, 2, 3, 4]
+        container: [1, 2]
 
     name: Server
 
@@ -72,7 +87,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: 3.11
 
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -120,7 +135,7 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
-          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 4 --build-number ${{ matrix.container }}
+          bench --site test_site run-parallel-tests --app press --with-coverage --total-builds 2 --build-number ${{ matrix.container }}
           cd apps/press/dashboard && yarn run test
         env:
           TYPE: server

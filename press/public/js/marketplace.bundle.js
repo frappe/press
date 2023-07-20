@@ -47,8 +47,11 @@ function updateAppList(results) {
 		noResultsMessage.style.display = 'none';
 	}
 
+	// For sorting according to score
 	for (let result of results) {
-		allAppCardNodes[result.refIndex].style.display = '';
+		let app = document.getElementById(result.item.name);
+		app.style.display = '';
+		document.querySelector('#all-apps-list').appendChild(app);
 	}
 }
 

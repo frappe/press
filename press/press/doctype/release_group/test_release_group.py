@@ -3,12 +3,13 @@
 # See license.txt
 
 import unittest
+from unittest.mock import patch
+
 import frappe
 
-from unittest.mock import patch
+from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
-from press.press.doctype.app.app import App
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.frappe_version.test_frappe_version import (
@@ -22,16 +23,15 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App],
-	user: str = "Administrator",
-	public=False,
-	frappe_version=create_test_frappe_version().name,
+	apps: list[App], user: str = "Administrator", public=False, frappe_version=None
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
 	Also creates app source
 	"""
+	if not frappe_version:
+		frappe_version = create_test_frappe_version().name
 	release_group = frappe.get_doc(
 		{
 			"doctype": "Release Group",

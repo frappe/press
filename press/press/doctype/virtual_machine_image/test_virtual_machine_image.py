@@ -16,11 +16,15 @@ from unittest.mock import patch, MagicMock
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachineImage, "after_insert", new=MagicMock())
 def create_test_virtual_machine_image(
-	ip: str = frappe.mock("ipv4"),
-	cluster: Cluster = create_test_cluster(),
+	ip: str = None,
+	cluster: Cluster = None,
 	series: str = "m",
 ) -> VirtualMachineImage:
 	"""Create test Virtual Machine Image doc"""
+	if not ip:
+		ip = frappe.mock("ipv4")
+	if not cluster:
+		cluster = create_test_cluster()
 	from press.press.doctype.virtual_machine.test_virtual_machine import (
 		create_test_virtual_machine,
 	)

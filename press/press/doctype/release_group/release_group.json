@@ -21,6 +21,8 @@
   "apps",
   "config_tab",
   "bench_configuration_section",
+  "common_site_configuration_column",
+  "common_site_config_table",
   "common_site_config",
   "column_break_14",
   "bench_config",
@@ -114,7 +116,9 @@
    "default": "{}",
    "fieldname": "common_site_config",
    "fieldtype": "Code",
-   "label": "Common Site Config"
+   "label": "Configuration Preview",
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "default": "{}",
@@ -124,7 +128,8 @@
   },
   {
    "fieldname": "column_break_14",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Bench Config"
   },
   {
    "fieldname": "dependencies",
@@ -234,10 +239,22 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "fieldname": "common_site_configuration_column",
+   "fieldtype": "Column Break",
+   "label": "Common Site Config"
+  },
+  {
+   "default": "{}",
+   "fieldname": "common_site_config_table",
+   "fieldtype": "Table",
+   "label": "Configuration",
+   "options": "Common Site Config"
   }
  ],
  "links": [],
- "modified": "2023-07-02 13:09:07.659314",
+ "modified": "2023-07-17 17:44:39.805124",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

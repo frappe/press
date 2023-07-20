@@ -27,7 +27,10 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_bench(
-	user: str = "Administrator", group: ReleaseGroup = None, server: str = None
+	user: str = "Administrator",
+	group: ReleaseGroup = None,
+	server: str = None,
+	apps: Optional[list[dict]] = None,
 ):
 	"""
 	Create test Bench doc.
@@ -54,6 +57,7 @@ def create_test_bench(
 			"background_workers": 1,
 			"gunicorn_workers": 2,
 			"group": group.name,
+			"apps": apps,
 			"candidate": candidate.name,
 			"server": server,
 		}
@@ -65,7 +69,7 @@ def create_test_bench(
 def create_test_site(
 	subdomain: str = "",
 	new: bool = False,
-	creation: datetime = datetime.now(),
+	creation: datetime = None,
 	bench: str = None,
 	team: str = None,
 	standby_for: Optional[str] = None,
@@ -74,6 +78,8 @@ def create_test_site(
 
 	Installs all apps present in bench.
 	"""
+	if not creation:
+		creation = datetime.now()
 	if not subdomain:
 		subdomain = make_autoname("test-site-.#####")
 	if not bench:

@@ -16,7 +16,6 @@ from press.press.doctype.site.saas_site import (
 )
 from press.press.doctype.site.saas_pool import get as get_pooled_saas_site
 from press.press.doctype.site.erpnext_site import get_erpnext_domain
-from press.utils.billing import clear_setup_intent
 from press.utils.telemetry import capture, identify
 
 
@@ -32,8 +31,6 @@ def account_request(
 	last_name,
 	country,
 	app,
-	company=None,
-	phone_number=None,
 	url_args=None,
 ):
 	"""
@@ -67,8 +64,6 @@ def account_request(
 				"role": "Press Admin",
 				"first_name": first_name,
 				"last_name": last_name,
-				"company": company,
-				"phone_number": phone_number,
 				"country": country,
 				"url_args": url_args or json.dumps({}),
 				"send_email": True,
@@ -78,6 +73,7 @@ def account_request(
 		identify(
 			site_name,
 			app=account_request.saas_app,
+			source=url_args.get("source") if url_args else "fc",
 		)
 		account_request.insert(ignore_permissions=True)
 		capture("completed_server_account_request", "fc_saas", site_name)
@@ -420,26 +416,3 @@ def get_site_url_and_sid(key, app=None):
 		"url": f"https://{site.name}",
 		"sid": site.login(),
 	}
-
-
-# ------------------ Stripe setup ------------------- #
-
-
-@frappe.whitelist(allow_guest=True)
-def setup_intent_success(setup_intent, account_request_key):
-	"""
-	Create a team with card and create site
-	"""
-	account_request = get_account_request_from_key(account_request_key)
-	if not account_request:
-		frappe.throw("Invalid or Expired Key")
-
-	team = frappe.get_doc("Team", account_request.email)
-	frappe.set_user(account_request.email)
-	clear_setup_intent()
-
-	team.create_payment_method(
-		json.loads(setup_intent)["payment_method"], set_default=True
-	)
-	account_request.send_verification_email()
-	create_or_rename_saas_site(account_request.saas_app, account_request)

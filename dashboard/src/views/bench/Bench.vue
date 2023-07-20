@@ -119,6 +119,7 @@ export default {
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Versions', route: 'versions' },
+				{ label: 'Bench Config', route: 'bench-config' },
 				{ label: 'Deploys', route: 'deploys' },
 				{ label: 'Jobs', route: 'jobs' },
 				{ label: 'Settings', route: 'setting' }
@@ -171,6 +172,12 @@ export default {
 						icon: 'arrow-up-circle',
 						handler: async () => {
 							await this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message: 'All sites in this bench will be updated to the latest version',
+								icon: 'check',
+								color: 'green'
+							});
 						}
 					}
 			].filter(Boolean);

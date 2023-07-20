@@ -46,7 +46,7 @@ def google_oauth_flow():
 def google_login(saas_app=None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
-	minutes = 10
+	minutes = 5
 	frappe.cache().set_value(
 		f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60
 	)

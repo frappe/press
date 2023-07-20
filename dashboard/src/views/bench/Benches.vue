@@ -13,21 +13,38 @@
 			</template>
 		</PageHeader>
 
-		<div class="mt-3">
-			<SectionHeader class="mb-2" heading="">
-				<template #actions>
-					<Input
-						v-if="$resources.allBenches.data"
-						type="select"
-						:options="['Filter by Tag', ...$resources.allBenches.data.tags]"
-						v-model="selectedTag"
-						class="w-32"
-					/>
-				</template>
-			</SectionHeader>
-			<LoadingText v-if="$resources.allBenches.loading" />
+		<SectionHeader :heading="getBenchFilterHeading()">
+			<template #actions>
+				<Dropdown :options="benchFilterOptions()">
+					<template v-slot="{ open }">
+						<Button
+							:class="[
+								'rounded-md px-3 py-1 text-base font-medium',
+								open ? 'bg-gray-200' : 'bg-gray-100'
+							]"
+							icon-left="chevron-down"
+							>{{ benchFilter.replace('tag:', '') }}</Button
+						>
+					</template>
+				</Dropdown>
+			</template>
+		</SectionHeader>
 
-			<BenchList v-else :benches="filteredBenches(benches)" />
+		<div class="mt-3">
+			<LoadingText v-if="$resources.allBenches.loading && pageStart === 0" />
+			<BenchList v-else :benches="benches" />
+		</div>
+		<div
+			class="py-3"
+			v-if="!$resources.allBenches.lastPageEmpty && benches.length > 0"
+		>
+			<Button
+				:loading="$resources.allBenches.loading"
+				loadingText="Loading..."
+				@click="pageStart += 10"
+			>
+				Load more
+			</Button>
 		</div>
 
 		<Dialog
@@ -57,8 +74,11 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			selectedTag: ''
+			pageStart: 0
 		};
+	},
+	created() {
+		this.benchFilter = 'All';
 	},
 	pageMeta() {
 		return {
@@ -73,7 +93,16 @@ export default {
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allBenches: 'press.api.bench.all'
+		allBenches() {
+			return {
+				method: 'press.api.bench.all',
+				params: { start: this.pageStart, bench_filter: this.benchFilter },
+				pageLength: 10,
+				keepData: true,
+				auto: true
+			};
+		},
+		benchTags: 'press.api.bench.bench_tags'
 	},
 	computed: {
 		benches() {
@@ -81,23 +110,72 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allBenches.data.groups;
+			return this.$resources.allBenches.data;
 		}
 	},
 	methods: {
+		benchFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							handler: () => this.handleFilterChange('All')
+						},
+						{
+							label: 'Active',
+							handler: () => this.handleFilterChange('Active')
+						},
+						{
+							label: 'Awaiting Deploy',
+							handler: () => this.handleFilterChange('Awaiting Deploy')
+						}
+					]
+				}
+			];
+
+			if (!this.$resources.benchTags?.data?.length) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.benchTags.data.map(tag => ({
+						label: tag,
+						handler: () => this.handleFilterChange(`tag:${tag}`)
+					}))
+				}
+			];
+		},
+		handleFilterChange(filterValue) {
+			if (filterValue === this.benchFilter) return;
+
+			const oldPageStart = this.pageStart;
+			this.benchFilter = filterValue;
+			this.pageStart = 0;
+
+			this.$resources.allBenches.reset();
+			// fetch data when pageStart is 0 since it won't refetch due to no change in value
+			if (oldPageStart === 0)
+				this.$resources.allBenches.submit({
+					start: this.pageStart,
+					bench_filter: this.benchFilter
+				});
+		},
+		getBenchFilterHeading() {
+			if (this.benchFilter === 'Awaiting Deploy')
+				return 'Benches Awaiting Deploy';
+			else if (this.benchFilter.startsWith('tag:'))
+				return `Benches with tag ${this.benchFilter.slice(4)}`;
+			return `${this.benchFilter || 'All'} Benches`;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
 			} else {
 				this.$router.replace('/benches/new');
 			}
-		},
-		filteredBenches(benches) {
-			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
-				return benches;
-			}
-
-			return benches.filter(bench => bench.tags.includes(this.selectedTag));
 		}
 	}
 };
