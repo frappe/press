@@ -9,7 +9,8 @@ def execute():
 	for name in frappe.db.get_all("Release Group", pluck="name"):
 		release_group = frappe.get_doc("Release Group", name)
 		if (
-			release_group.common_site_config != "{}"
+			release_group.common_site_config
+			and release_group.common_site_config != "{}"
 			and release_group.common_site_config_table == []
 		):
 			common_site_config = frappe.parse_json(release_group.common_site_config)
