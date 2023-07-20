@@ -22,7 +22,7 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(start=0, server_filter="All Servers"):
+def all(server_filter="All Servers"):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -70,7 +70,7 @@ def all(start=0, server_filter="All Servers"):
 
 	# union isn't supported in qb for run method
 	# https://github.com/frappe/frappe/issues/15609
-	servers = frappe.db.sql(query.limit(f"{start}, 10").get_sql(), as_dict=True)
+	servers = frappe.db.sql(query.get_sql(), as_dict=True)
 	for server in servers:
 		server["app_server"] = f"f{server.name[1:]}"
 	return servers

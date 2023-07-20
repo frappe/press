@@ -71,9 +71,7 @@
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText
-						v-if="$resources.recentSites.loading && pageStart === 0"
-					/>
+					<LoadingText v-if="$resources.recentSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
@@ -97,20 +95,8 @@
 				</SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading && pageStart === 0" />
+					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="sites" />
-				</div>
-				<div
-					class="py-3"
-					v-if="!$resources.allSites.lastPageEmpty && sites.length > 0"
-				>
-					<Button
-						:loading="$resources.allSites.loading"
-						loadingText="Loading..."
-						@click="pageStart += 10"
-					>
-						Load more
-					</Button>
 				</div>
 			</div>
 			<Dialog
@@ -158,20 +144,15 @@ export default {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			pageStart: 0
+			siteFilter: 'All'
 		};
-	},
-	created() {
-		this.siteFilter = 'All';
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
 		allSites() {
 			return {
 				method: 'press.api.site.all',
-				params: { start: this.pageStart, site_filter: this.siteFilter },
-				pageLength: 10,
-				keepData: true,
+				params: { site_filter: this.siteFilter },
 				auto: true
 			};
 		},
@@ -197,21 +178,6 @@ export default {
 			else if (this.siteFilter.startsWith('tag:'))
 				return `Sites with tag ${this.siteFilter.slice(4)}`;
 			return `${this.siteFilter || 'All'} Sites`;
-		},
-		handleFilterChange(filterValue) {
-			if (filterValue === this.siteFilter) return;
-
-			const oldPageStart = this.pageStart;
-			this.siteFilter = filterValue;
-			this.pageStart = 0;
-
-			this.$resources.allSites.reset();
-			// fetch data when pageStart is 0 since it won't refetch due to no change in value
-			if (oldPageStart === 0)
-				this.$resources.allSites.submit({
-					start: this.pageStart,
-					site_filter: this.siteFilter
-				});
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
@@ -269,23 +235,23 @@ export default {
 					items: [
 						{
 							label: 'All',
-							handler: () => this.handleFilterChange('All')
+							handler: () => (this.siteFilter = 'All')
 						},
 						{
 							label: 'Active',
-							handler: () => this.handleFilterChange('Active')
+							handler: () => (this.siteFilter = 'Active')
 						},
 						{
 							label: 'Broken',
-							handler: () => this.handleFilterChange('Broken')
+							handler: () => (this.siteFilter = 'Broken')
 						},
 						{
 							label: 'Trial',
-							handler: () => this.handleFilterChange('Trial')
+							handler: () => (this.siteFilter = 'Trial')
 						},
 						{
 							label: 'Update Available',
-							handler: () => this.handleFilterChange('Update Available')
+							handler: () => (this.siteFilter = 'Update Available')
 						}
 					]
 				}
@@ -299,7 +265,7 @@ export default {
 					group: 'Tags',
 					items: this.$resources.siteTags.data.map(tag => ({
 						label: tag,
-						handler: () => this.handleFilterChange(`tag:${tag}`)
+						handler: () => (this.siteFilter = `tag:${tag}`)
 					}))
 				}
 			];

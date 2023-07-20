@@ -88,7 +88,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, start=0, bench_filter=""):
+def all(server=None, bench_filter=""):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -110,7 +110,6 @@ def all(server=None, start=0, bench_filter=""):
 			group.creation,
 		)
 		.orderby(group.title, order=frappe.qb.desc)
-		.limit(f"{start}, 10")
 	)
 
 	bench = frappe.qb.DocType("Bench")
