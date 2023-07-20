@@ -22,7 +22,7 @@ def execute():
 					{
 						"key": key,
 						"value": value,
-						"type": get_type(value),
+						"type": config_type,
 						"internal": frappe.db.get_value("Site Config Key", key, "internal"),
 					},
 				)
