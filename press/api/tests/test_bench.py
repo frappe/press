@@ -128,18 +128,15 @@ class TestAPIBenchConfig(FrappeTestCase):
 		app = create_test_app()
 		self.rg = create_test_release_group([app])
 
-		self.common_site_config = [
+		self.config = [
 			{"key": "max_file_size", "value": "1234", "type": "Number"},
 			{"key": "mail_login", "value": "a@a.com", "type": "String"},
 			{"key": "skip_setup_wizard", "value": "1", "type": "Boolean"},
 			{"key": "limits", "value": '{"limit": "val"}', "type": "JSON"},
-		]
-		bench_config = [
-			{"key": "http_timeout", "value": 120, "type": "Number"},
-			{"key": "invalid_key", "value": "invalid_value", "type": "String"},
+			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False},
 		]
 
-		update_config(self.rg.name, self.common_site_config, bench_config)
+		update_config(self.rg.name, self.config)
 		self.rg.reload()
 
 	def tearDown(self):
@@ -147,17 +144,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_bench_config_api(self):
 		configs = bench_config(self.rg.name)
-		bench_config_values, common_site_config = (
-			configs["bench_config"],
-			configs["common_site_config"],
-		)
-
-		expected_bench_config = [
-			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False}
-		]
-
-		self.assertListEqual(bench_config_values, expected_bench_config)
-		self.assertListEqual(common_site_config, self.common_site_config)
+		self.assertListEqual(configs, self.config)
 
 	def test_bench_config_updation(self):
 		new_bench_config = frappe.parse_json(self.rg.bench_config)
@@ -171,7 +158,6 @@ class TestAPIBenchConfig(FrappeTestCase):
 				"limits": {"limit": "val"},
 			},
 		)
-		self.assertIsNone(new_bench_config.get("invalid_key"))
 		self.assertEqual(new_bench_config, {"http_timeout": 120})
 
 	def test_bench_config_is_updated_in_subsequent_benches(self):
