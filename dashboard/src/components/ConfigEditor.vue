@@ -1,94 +1,92 @@
 <template>
-	<div>
-		<Card :title="title" :subtitle="subtitle">
-			<template #actions>
-				<Button icon-left="edit" v-if="!editMode" @click="editMode = true">
-					Edit Config
-				</Button>
-				<Button
-					v-if="editMode"
-					:loading="$resources.configData.loading"
-					@click="
-						() => {
-							$resources.configData.reload().then(() => {
-								editMode = false;
-								isDirty = false;
-							});
-						}
-					"
-				>
-					Discard changes
-				</Button>
-				<Button
-					appearance="primary"
-					v-if="editMode"
-					@click="updateConfig"
-					:loading="$resources.updateConfig.loading"
-				>
-					Save changes
-				</Button>
-			</template>
-			<div class="flex space-x-4">
-				<div class="w-full shrink-0 space-y-4 md:w-2/3">
-					<div class="space-y-4" v-if="editMode">
-						<div
-							class="grid grid-cols-5 gap-4"
-							v-for="(config, i) in $resources.configData.data"
-							:key="i"
-						>
+	<Card :title="title" :subtitle="subtitle">
+		<template #actions>
+			<Button icon-left="edit" v-if="!editMode" @click="editMode = true">
+				Edit Config
+			</Button>
+			<Button
+				v-if="editMode"
+				:loading="$resources.configData.loading"
+				@click="
+					() => {
+						$resources.configData.reload().then(() => {
+							editMode = false;
+							isDirty = false;
+						});
+					}
+				"
+			>
+				Discard changes
+			</Button>
+			<Button
+				appearance="primary"
+				v-if="editMode"
+				@click="updateConfig"
+				:loading="$resources.updateConfig.loading"
+			>
+				Save changes
+			</Button>
+		</template>
+		<div class="flex space-x-4">
+			<div class="w-full shrink-0 space-y-4 md:w-2/3">
+				<div class="space-y-4" v-if="editMode">
+					<div
+						class="grid grid-cols-5 gap-4"
+						v-for="(config, i) in $resources.configData.data"
+						:key="i"
+					>
+						<Input
+							type="text"
+							placeholder="key"
+							v-model="config.key"
+							class="col-span-2"
+							@change="isDirty = true"
+						/>
+						<Input
+							type="select"
+							placeholder="type"
+							v-model="config.type"
+							:options="['String', 'Number', 'JSON', 'Boolean']"
+							@change="onTypeChange(config)"
+						/>
+						<div class="col-span-2 flex items-center">
 							<Input
-								type="text"
-								placeholder="key"
-								v-model="config.key"
-								class="col-span-2"
+								class="w-full"
+								v-bind="configInputProps(config)"
+								:input-class="{ 'font-mono': config.type === 'JSON' }"
+								placeholder="value"
+								v-model="config.value"
 								@change="isDirty = true"
 							/>
-							<Input
-								type="select"
-								placeholder="type"
-								v-model="config.type"
-								:options="['String', 'Number', 'JSON', 'Boolean']"
-								@change="onTypeChange(config)"
-							/>
-							<div class="col-span-2 flex items-center">
-								<Input
-									class="w-full"
-									v-bind="configInputProps(config)"
-									:input-class="{ 'font-mono': config.type === 'JSON' }"
-									placeholder="value"
-									v-model="config.value"
-									@change="isDirty = true"
-								/>
-								<button
-									class="ml-2 rounded-md p-1 hover:bg-gray-100"
-									@click="removeConfig(config)"
-								>
-									<FeatherIcon name="x" class="h-5 w-5 text-gray-700" />
-								</button>
-							</div>
+							<button
+								class="ml-2 rounded-md p-1 hover:bg-gray-100"
+								@click="removeConfig(config)"
+							>
+								<FeatherIcon name="x" class="h-5 w-5 text-gray-700" />
+							</button>
 						</div>
-						<Button @click="addConfig()" v-if="editMode">Add Key</Button>
 					</div>
-					<div v-else>
-						<Form
-							v-if="readOnlyFormProps.fields?.length"
-							v-bind="readOnlyFormProps"
-							class="pointer-events-none"
-						/>
-						<span v-else class="text-base text-gray-600">
-							No keys added. Click on Edit Config to add one.
-						</span>
-					</div>
+					<Button @click="addConfig()" v-if="editMode">Add Key</Button>
 				</div>
-				<div
-					class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
-				>
-					<div v-if="configName" class="mb-4">{{ configName }}</div>
-					<div v-html="configPreview"></div>
+				<div v-else>
+					<Form
+						v-if="readOnlyFormProps.fields?.length"
+						v-bind="readOnlyFormProps"
+						class="pointer-events-none"
+					/>
+					<span v-else class="text-base text-gray-600">
+						No keys added. Click on Edit Config to add one.
+					</span>
 				</div>
 			</div>
-		</Card>
-	</div>
+			<div
+				class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
+			>
+				<div v-if="configName" class="mb-4">{{ configName }}</div>
+				<div v-html="configPreview"></div>
+			</div>
+		</div>
+	</Card>
 </template>
 
 <script>
