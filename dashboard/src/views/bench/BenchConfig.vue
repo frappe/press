@@ -1,9 +1,8 @@
 <template>
 	<div class="space-y-10" v-if="bench">
 		<ConfigEditor
-			title="Common Site Config"
-			subtitle="Add and update key value pairs to your bench's common_site_config.json"
-			configName="common_site_config.json"
+			title="Bench Config"
+			subtitle="Add and update key value pairs to your bench's common_site_config.json and bench_config.json"
 			:configData="benchConfig"
 			:updateConfigMethod="updateBenchConfigMethod"
 		/>
