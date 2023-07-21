@@ -100,11 +100,13 @@ def get_groups_with_updates(teams):
 	groups = frappe.get_all(
 		"Release Group", {"enabled": 1, "public": 0, "team": ("in", teams)}
 	)
+
 	groups_with_updates = []
 	for group in groups:
 		group_status = get_group_status(group.name)
 		if group_status == "Update Available":
 			groups_with_updates.append(group.name)
+
 	return groups_with_updates
 
 
@@ -112,11 +114,15 @@ def get_groups_with_deploy_in_progress(teams):
 	groups = frappe.get_all(
 		"Release Group", {"enabled": 1, "public": 0, "team": ("in", teams)}
 	)
+
 	groups_with_updates = []
 	for group in groups:
-		group_status = get_group_status(group.name)
-		if group_status == "Deploy in Progress":
+		last_dc_info = frappe.get_doc(
+			"Release Group", group.name
+		).get_last_deploy_candidate_info()
+		if last_dc_info and last_dc_info.status == "Running":
 			groups_with_updates.append(group.name)
+
 	return groups_with_updates
 
 
@@ -156,10 +162,10 @@ def all(server=None, start=0, bench_filter=""):
 		query = query.inner_join(bench).on(group.name.notin(group_names))
 	elif bench_filter == "Update Available":
 		groups_with_updates = get_groups_with_updates(teams)
-		query = query.inner_join(bench).on(group.name.isin(groups_with_updates))
+		query = query.inner_join(bench).on(group.name.isin(groups_with_updates or [""]))
 	elif bench_filter == "Deploy in Progress":
 		groups_deploying = get_groups_with_deploy_in_progress(teams)
-		query = query.inner_join(bench).on(group.name.isin(groups_deploying))
+		query = query.inner_join(bench).on(group.name.isin(groups_deploying or [""]))
 	elif bench_filter.startswith("tag:"):
 		tag = bench_filter[4:]
 		press_tag = frappe.qb.DocType("Resource Tag")
