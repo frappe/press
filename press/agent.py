@@ -348,7 +348,7 @@ class Agent:
 
 	def backup_site(self, site, with_files=False, offsite=False):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-		
+
 		data = {"with_files": with_files}
 
 		if offsite:
