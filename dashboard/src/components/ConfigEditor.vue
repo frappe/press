@@ -66,7 +66,7 @@
 							</button>
 						</div>
 					</div>
-					<ErrorMessage :message="$resources.upda.error" />
+					<ErrorMessage :message="$resources.updateConfig.error" />
 					<Button @click="addConfig()" v-if="editMode">Add Key</Button>
 				</div>
 				<div v-else>
