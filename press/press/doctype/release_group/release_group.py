@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 import frappe
-import copy
 
 from typing import List
 from frappe.core.utils import find
@@ -33,8 +32,10 @@ class ReleaseGroup(Document):
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
-		self.validate_dependencies()
 		self.validate_rq_queues()
+
+	def before_insert(self):
+		self.fetch_dependencies()
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -85,26 +86,11 @@ class ReleaseGroup(Document):
 			if server_for_new_bench:
 				self.append("servers", {"server": server_for_new_bench})
 
-	@frappe.whitelist()
-	def validate_dependencies(self):
-		# TODO: Move this to Frappe Version DocType
-		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
-		if self.version in ("Version 15", "Nightly"):
-			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
-			python["version"] = "3.11"
-			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
-			node["version"] = "18.16.0"
+	def fetch_dependencies(self):
+		frappe_version = frappe.get_doc("Frappe Version", self.version)
 
-		if self.version == "Version 14":
-			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
-			python["version"] = "3.10"
-
-		if self.version == "Version 12":
-			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
-			node["version"] = "12.19.0"
-
-		if not hasattr(self, "dependencies") or not self.dependencies:
-			self.extend("dependencies", dependencies)
+		for d in frappe_version.dependencies:
+			self.append("dependencies", {"dependency": d.dependency, "version": d.version})
 
 	def validate_rq_queues(self):
 		if self.merge_all_rq_queues and self.merge_default_and_short_rq_queues:
