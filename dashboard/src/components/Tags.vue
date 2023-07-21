@@ -48,7 +48,10 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Add',
-					handler: () => (this.showAddDialog = true)
+					handler: () =>
+						this.tags.length > 0
+							? (this.showAddDialog = true)
+							: (this.showNewDialog = true)
 				},
 				{
 					label: 'New',

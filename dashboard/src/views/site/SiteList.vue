@@ -2,7 +2,10 @@
 	<div
 		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
 	>
-		<div class="py-2 text-base text-gray-600 sm:px-2" v-if="sites.length === 0">
+		<div
+			class="py-2 text-base text-gray-600 sm:px-2"
+			v-if="sites && sites.length === 0"
+		>
 			No sites
 		</div>
 		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
