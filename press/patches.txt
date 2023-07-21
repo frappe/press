@@ -96,3 +96,4 @@ press.press.doctype.team.patches.set_team_title
 press.press.doctype.telegram_group.patches.create_groups_from_press_settings
 press.press.doctype.app_release.patches.set_clone_directory
 press.press.doctype.database_server_mariadb_variable.patches.add_unique_constraint
+press.press.doctype.release_group.patches.sync_common_site_config
