@@ -1,9 +1,9 @@
 <template>
-	<Alert :title="alertTitle" v-if="show">
+	<Alert :title="alertTitle" v-if="deployInformation?.update_available">
 		<span v-if="deployInformation.deploy_in_progress"
 			>A deploy for this bench is in progress</span
 		>
-		<span v-else-if="bench.status == 'Active'">
+		<span v-else-if="bench.status === 'Update Available'">
 			A new update is available for your bench. Would you like to deploy the
 			update now?
 		</span>
@@ -140,14 +140,6 @@ export default {
 		}
 	},
 	computed: {
-		show() {
-			if (this.deployInformation) {
-				return (
-					this.deployInformation.update_available &&
-					['Awaiting Deploy', 'Active'].includes(this.bench.status)
-				);
-			}
-		},
 		errorMessage() {
 			return (
 				this.$resources.deploy.error ||

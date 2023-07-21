@@ -110,6 +110,7 @@ let utils = {
 				Enabled: 'blue',
 				'Awaiting Approval': 'yellow',
 				'Awaiting Deploy': 'yellow',
+				'Deploy in Progress': 'grey', // not valid color so it'll turn grey
 				Deployed: 'green',
 				Expired: 'red',
 				Paid: 'green',

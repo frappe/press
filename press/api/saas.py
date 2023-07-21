@@ -73,12 +73,12 @@ def account_request(
 		identify(
 			site_name,
 			app=account_request.saas_app,
-			source=url_args.get("source") if url_args else "fc",
+			source=json.loads(url_args).get("source") if url_args else "fc",
 		)
 		account_request.insert(ignore_permissions=True)
 		capture("completed_server_account_request", "fc_saas", site_name)
 	except Exception as e:
-		log_error("Account Request Creation Failed", e)
+		log_error("Account Request Creation Failed", data=e)
 		raise
 
 	create_or_rename_saas_site(app, account_request)

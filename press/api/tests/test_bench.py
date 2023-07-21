@@ -1,23 +1,30 @@
+import os
 from unittest.mock import Mock, patch
 
+import docker
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
+from press.api.bench import all, bench_config, deploy, get, new, update_config
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
-
-
-from press.api.bench import deploy, get, new, all
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+from press.press.doctype.deploy_candidate.test_deploy_candidate import (
+	create_test_deploy_candidate,
+)
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
+)
+from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
+from press.press.doctype.release_group.test_release_group import (
+	create_test_release_group,
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
-import docker
-
-import os
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -119,14 +126,55 @@ class TestAPIBench(FrappeTestCase):
 		self.assertIn(image_name, [tag for tag in image.tags])
 
 
+class TestAPIBenchConfig(FrappeTestCase):
+	def setUp(self):
+		app = create_test_app()
+		self.rg = create_test_release_group([app])
+
+		self.config = [
+			{"key": "max_file_size", "value": "1234", "type": "Number"},
+			{"key": "mail_login", "value": "a@a.com", "type": "String"},
+			{"key": "skip_setup_wizard", "value": "1", "type": "Boolean"},
+			{"key": "limits", "value": '{"limit": "val"}', "type": "JSON"},
+			{"key": "http_timeout", "value": 120, "type": "Number", "internal": False},
+		]
+
+		update_config(self.rg.name, self.config)
+		self.rg.reload()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
+	def test_bench_config_api(self):
+		configs = bench_config(self.rg.name)
+		self.assertListEqual(configs, self.config)
+
+	def test_bench_config_updation(self):
+		new_bench_config = frappe.parse_json(self.rg.bench_config)
+
+		self.assertEqual(
+			frappe.parse_json(self.rg.common_site_config),
+			{
+				"max_file_size": 1234,
+				"mail_login": "a@a.com",
+				"skip_setup_wizard": True,
+				"limits": {"limit": "val"},
+			},
+		)
+		self.assertEqual(new_bench_config, {"http_timeout": 120})
+
+	def test_bench_config_is_updated_in_subsequent_benches(self):
+		bench = create_test_bench(group=self.rg)
+		bench.reload()
+
+		self.assertIn(("http_timeout", 120), frappe.parse_json(bench.bench_config).items())
+
+		for key, value in frappe.parse_json(self.rg.common_site_config).items():
+			self.assertEqual(value, frappe.parse_json(bench.config).get(key))
+
+
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
-		from press.press.doctype.bench.test_bench import create_test_bench
-		from press.press.doctype.press_tag.test_press_tag import create_and_add_test_tag
-		from press.press.doctype.release_group.test_release_group import (
-			create_test_release_group,
-		)
-
 		app = create_test_app()
 
 		active_group = create_test_release_group([app])
@@ -168,24 +216,75 @@ class TestAPIBenchList(FrappeTestCase):
 			"status": "Active",
 		}
 
+		group_with_updates = create_test_release_group([app])
+		create_test_bench(group=group_with_updates)
+		app_source = frappe.get_doc("App Source", group_with_updates.apps[0].source)
+		app_release = create_test_app_release(app_source)
+		app_release.hash = "asjfklsdk23"
+		app_release.save()
+		self.bench_with_updates_dict = {
+			"number_of_sites": 0,
+			"name": group_with_updates.name,
+			"title": group_with_updates.title,
+			"version": group_with_updates.version,
+			"creation": group_with_updates.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Update Available",
+		}
+
+		group_in_deploy = create_test_release_group([app])
+		create_test_bench(group=group_in_deploy)
+		deploy_candidate = create_test_deploy_candidate(group_in_deploy)
+		deploy_candidate.status = "Running"
+		deploy_candidate.save()
+		self.bench_in_deploy_dict = {
+			"number_of_sites": 0,
+			"name": group_in_deploy.name,
+			"title": group_in_deploy.title,
+			"version": group_in_deploy.version,
+			"creation": group_in_deploy.creation,
+			"tags": [],
+			"number_of_apps": 1,
+			"status": "Deploy in Progress",
+		}
+
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_list_all_benches(self):
 		self.assertCountEqual(
 			all(),
-			[self.active_bench_dict, self.bench_awaiting_deploy_dict, self.bench_with_tag_dict],
+			[
+				self.active_bench_dict,
+				self.bench_awaiting_deploy_dict,
+				self.bench_with_tag_dict,
+				self.bench_with_updates_dict,
+				self.bench_in_deploy_dict,
+			],
 		)
 
 	def test_list_active_benches(self):
 		self.assertCountEqual(
-			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
+			all(bench_filter="Active"),
+			[
+				self.active_bench_dict,
+				self.bench_with_tag_dict,
+				self.bench_with_updates_dict,
+				self.bench_in_deploy_dict,
+			],
 		)
 
 	def test_list_awaiting_deploy_benches(self):
 		self.assertEqual(
 			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
 		)
+
+	def test_list_benches_with_updates(self):
+		self.assertEqual(all(bench_filter="Update Available"), [self.bench_with_updates_dict])
+
+	def test_list_benches_in_deploy(self):
+		self.assertEqual(all(bench_filter="Deploy in Progress"), [self.bench_in_deploy_dict])
 
 	def test_list_tagged_benches(self):
 		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])

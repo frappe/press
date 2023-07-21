@@ -50,20 +50,8 @@
 				</template>
 			</SectionHeader>
 			<div class="mt-3">
-				<LoadingText v-if="$resources.allServers.loading && pageStart === 0" />
+				<LoadingText v-if="$resources.allServers.loading" />
 				<ServerList v-else :servers="servers" />
-			</div>
-			<div
-				class="py-3"
-				v-if="!$resources.allServers.lastPageEmpty && servers.length > 0"
-			>
-				<Button
-					:loading="$resources.allServers.loading"
-					loadingText="Loading..."
-					@click="pageStart += 10"
-				>
-					Load more
-				</Button>
 			</div>
 		</div>
 		<Dialog
@@ -102,7 +90,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			pageStart: 0,
+			serverFilter: 'All Servers',
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -115,16 +103,11 @@ export default {
 			]
 		};
 	},
-	created() {
-		this.serverFilter = 'All Servers';
-	},
 	resources: {
 		allServers() {
 			return {
 				method: 'press.api.server.all',
-				params: { start: this.pageStart, server_filter: this.serverFilter },
-				pageLength: 10,
-				keepData: true,
+				params: { server_filter: this.serverFilter },
 				auto: true
 			};
 		},
@@ -135,21 +118,6 @@ export default {
 			if (this.serverFilter.startsWith('tag:'))
 				return `Servers with tag ${this.serverFilter.slice(4)}`;
 			return this.serverFilter;
-		},
-		handleFilterChange(filterValue) {
-			if (filterValue === this.serverFilter) return;
-
-			const oldPageStart = this.pageStart;
-			this.serverFilter = filterValue;
-			this.pageStart = 0;
-
-			this.$resources.allServers.reset();
-			// fetch data when pageStart is 0 since it won't refetch due to no change in value
-			if (oldPageStart === 0)
-				this.$resources.allServers.submit({
-					start: this.pageStart,
-					server_filter: this.serverFilter
-				});
 		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
@@ -177,15 +145,15 @@ export default {
 					items: [
 						{
 							label: 'All Servers',
-							handler: () => this.handleFilterChange('All Servers')
+							handler: () => (this.serverFilter = 'All Servers')
 						},
 						{
 							label: 'App Servers',
-							handler: () => this.handleFilterChange('App Servers')
+							handler: () => (this.serverFilter = 'App Servers')
 						},
 						{
 							label: 'Database Servers',
-							handler: () => this.handleFilterChange('Database Servers')
+							handler: () => (this.serverFilter = 'Database Servers')
 						}
 					]
 				}
@@ -199,7 +167,7 @@ export default {
 					group: 'Tags',
 					items: this.$resources.serverTags.data.map(tag => ({
 						label: tag,
-						handler: () => this.handleFilterChange(`tag:${tag}`)
+						handler: () => (this.serverFilter = `tag:${tag}`)
 					}))
 				}
 			];
