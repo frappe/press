@@ -187,11 +187,7 @@ export default {
 
 			let modelValue = {};
 			for (let d of this.$resources.configData.data) {
-				let value = d.value;
-				if (['Boolean', 'Number'].includes(d.type)) {
-					value = Number(value);
-				}
-				modelValue[d.key] = value;
+				modelValue[d.key] = d.value;
 			}
 
 			return {
