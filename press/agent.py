@@ -348,7 +348,7 @@ class Agent:
 
 	def backup_site(self, site, with_files=False, offsite=False):
 		from press.press.doctype.site_backup.site_backup import get_backup_bucket
-		return
+
 		data = {"with_files": with_files}
 
 		if offsite:
@@ -670,6 +670,7 @@ class Agent:
 		return status
 
 	def get_site_sid(self, site):
+		frappe.log_error("site", site)
 		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
 
 	def get_site_info(self, site):
