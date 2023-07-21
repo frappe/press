@@ -71,27 +71,32 @@
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
+					<LoadingText v-if="$resources.recentSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
 
 			<div class="mb-6">
-				<SectionHeader heading="All Sites">
+				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
-						<Input
-							v-if="$resources.allSites.data"
-							type="select"
-							:options="['Filter by Tag', ...$resources.allSites.data.tags]"
-							v-model="selectedTag"
-							class="w-32"
-						/>
+						<Dropdown :options="siteFilterOptions()">
+							<template v-slot="{ open }">
+								<Button
+									:class="[
+										'rounded-md px-3 py-1 text-base font-medium',
+										open ? 'bg-gray-200' : 'bg-gray-100'
+									]"
+									icon-left="chevron-down"
+									>{{ siteFilter.replace('tag:', '') }}</Button
+								>
+							</template>
+						</Dropdown>
 					</template>
 				</SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
-					<SiteList v-else :sites="filteredSites(sites)" />
+					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
 			<Dialog
@@ -139,15 +144,20 @@ export default {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			selectedTag: ''
+			siteFilter: 'All'
 		};
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allSites: {
-			method: 'press.api.site.all',
-			auto: true
+		allSites() {
+			return {
+				method: 'press.api.site.all',
+				params: { site_filter: this.siteFilter },
+				auto: true
+			};
 		},
+		siteTags: 'press.api.site.site_tags',
+		recentSites: 'press.api.site.recent_sites',
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
@@ -162,6 +172,13 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
+		getSiteFilterHeading() {
+			if (this.siteFilter === 'Update Available')
+				return 'Sites with Update Available';
+			else if (this.siteFilter.startsWith('tag:'))
+				return `Sites with tag ${this.siteFilter.slice(4)}`;
+			return `${this.siteFilter || 'All'} Sites`;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
@@ -208,11 +225,50 @@ export default {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
 		},
-		filteredSites(sites) {
-			if (!this.selectedTag || this.selectedTag === 'Filter by Tag') {
-				return sites;
-			}
-			return sites.filter(site => site.tags.includes(this.selectedTag));
+		recentSitesVisible() {
+			return this.sites.length > 3;
+		},
+		siteFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							handler: () => (this.siteFilter = 'All')
+						},
+						{
+							label: 'Active',
+							handler: () => (this.siteFilter = 'Active')
+						},
+						{
+							label: 'Broken',
+							handler: () => (this.siteFilter = 'Broken')
+						},
+						{
+							label: 'Trial',
+							handler: () => (this.siteFilter = 'Trial')
+						},
+						{
+							label: 'Update Available',
+							handler: () => (this.siteFilter = 'Update Available')
+						}
+					]
+				}
+			];
+
+			if (!this.$resources.siteTags?.data?.length) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.siteTags.data.map(tag => ({
+						label: tag,
+						handler: () => (this.siteFilter = `tag:${tag}`)
+					}))
+				}
+			];
 		}
 	},
 	computed: {
@@ -221,22 +277,10 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allSites.data.site_list;
+			return this.$resources.allSites.data;
 		},
-
-		recentSitesVisible() {
-			return this.sites.length > 3;
-		},
-
 		recentlyCreatedSites() {
-			if (!this.$resources.allSites.data) {
-				return [];
-			}
-
-			const sitesWithRecentActivity = this.$resources.allSites.data.recents;
-			return this.sites.filter(site =>
-				sitesWithRecentActivity.includes(site.name)
-			);
+			return this.$resources.recentSites.data;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

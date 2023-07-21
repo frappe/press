@@ -176,28 +176,6 @@ def deploy_information(name: str):
 
 
 @frappe.whitelist()
-@protected("Marketplace App")
-def published_versions(name: str) -> List[Dict]:
-	"""Return a list of published versions of the app `name`"""
-	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
-
-	versions = []
-	for source in app.sources:
-		app_source = frappe.get_doc("App Source", source.source)
-		version = {
-			"version": source.version,
-			"repository_url": app_source.repository_url,
-			"repository": app_source.repository,
-			"branch": app_source.branch,
-			"repository_owner": app_source.repository_owner,
-			"source": source.source,
-		}
-		versions.append(version)
-
-	return versions
-
-
-@frappe.whitelist()
 def profile_image_url(app: str) -> str:
 	return frappe.db.get_value("Marketplace App", app, "image")
 
@@ -299,13 +277,6 @@ def update_app_links(name: str, links: Dict) -> None:
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.update(links)
 	app.save(ignore_permissions=True)
-
-
-@frappe.whitelist()
-def categories() -> List[str]:
-	"""Return a list of Marketplace App Categories"""
-	categories = frappe.get_all("Marketplace App Category", pluck="name")
-	return categories
 
 
 @frappe.whitelist()
@@ -521,7 +492,7 @@ def add_app(source: str, app: str):
 			# App source contains version not yet in marketplace
 			for version in version_difference:
 				marketplace_app.append("sources", {"source": source, "version": version})
-				marketplace_app.save()
+				marketplace_app.save(ignore_permissions=True)
 		else:
 			frappe.throw("A marketplace app already exists with the given versions!")
 
@@ -672,7 +643,7 @@ def get_publisher_profile_info():
 
 
 @frappe.whitelist()
-def update_publisher_profile(profile_data=dict()):
+def update_publisher_profile(profile_data=None):
 	"""Update if exists, otherwise create"""
 	team = get_current_team()
 
@@ -684,12 +655,12 @@ def update_publisher_profile(profile_data=dict()):
 		profile_doc = frappe.get_doc(
 			"Marketplace Publisher Profile", publisher_profile_name, for_update=True
 		)
-		profile_doc.update(profile_data)
-		profile_doc.save()
+		profile_doc.update(profile_data or {})
+		profile_doc.save(ignore_permissions=True)
 	else:
 		profile_doc = frappe.get_doc({"doctype": "Marketplace Publisher Profile"})
 		profile_doc.team = team
-		profile_doc.update(profile_data)
+		profile_doc.update(profile_data or {})
 		profile_doc.insert(ignore_permissions=True)
 
 
@@ -769,7 +740,7 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 
 	feature_list = plan_data.get("features")
 	reset_features_for_plan(app_plan_doc, feature_list)
-	app_plan_doc.insert(ignore_permissions=True)
+	return app_plan_doc.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -1106,14 +1077,14 @@ def subscriptions():
 @protected("App Source")
 @frappe.whitelist()
 def branches(name):
-	from press.api.bench import branches
+	from press.api.github import branches as git_branches
 
 	app_source = frappe.get_doc("App Source", name)
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
 
-	return branches(installation_id, repo_owner, repo_name)
+	return git_branches(installation_id, repo_owner, repo_name)
 
 
 @protected("Marketplace App")
@@ -1170,7 +1141,7 @@ def start_review(name):
 	# TODO: Start security check and auto deploy process here
 	app = frappe.get_doc("Marketplace App", name)
 	app.status = "In Review"
-	app.save()
+	app.save(ignore_permissions=True)
 
 
 @protected("Marketplace App")
@@ -1190,9 +1161,9 @@ def communication(name):
 	return res
 
 
+@protected("Marketplace App")
 @frappe.whitelist()
 def add_reply(name, message):
-	team = get_current_team()
 	doctype = "Marketplace App"
 	app = frappe.get_doc(doctype, name)
 	recipients = ", ".join(list(app.get_assigned_users()) or [])
@@ -1204,7 +1175,7 @@ def add_reply(name, message):
 			"reference_doctype": doctype,
 			"reference_name": name,
 			"subject": f"Marketplace App Review: {name}, New message!",
-			"sender": team,
+			"sender": frappe.session.user,
 			"content": message,
 			"is_notification": True,
 			"recipients": recipients,

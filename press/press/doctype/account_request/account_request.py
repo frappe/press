@@ -91,7 +91,7 @@ class AccountRequest(Document):
 			args.update(
 				{
 					"read_pixel_path": get_url(
-						f"/api/method/press.utils.telemetry.capture_read_event?name={self.email}"
+						f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
 					)
 				}
 			)

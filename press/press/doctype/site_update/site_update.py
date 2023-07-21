@@ -99,9 +99,9 @@ class SiteUpdate(Document):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
-		if set(site_apps) - set(bench_apps):
+		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
+				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
 				frappe.ValidationError,
 			)
 

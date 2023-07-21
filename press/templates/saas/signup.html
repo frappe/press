@@ -159,16 +159,6 @@
 				return 'Last Name is required'
 			}
 		},
-		phone_number: (value) => {
-			if (!value) {
-				return 'Phone Number is required'
-			}
-
-			let regExp = /[a-zA-Z]/g;
-			if (regExp.test(value)) {
-				return "Phone number cannot contain alphabets";
-			}
-		},
 		email: (value) => {
 			if (!valid_email(value)) {
 				return "Invalid email";

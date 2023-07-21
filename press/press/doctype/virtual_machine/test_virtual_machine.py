@@ -14,11 +14,15 @@ from press.press.doctype.cluster.cluster import Cluster
 
 
 def create_test_virtual_machine(
-	ip: str = frappe.mock("ipv4"),
-	cluster: Cluster = create_test_cluster(),
+	ip: str = None,
+	cluster: Cluster = None,
 	series: str = "m",
 ) -> VirtualMachine:
 	"""Create test Virtual Machine doc"""
+	if not ip:
+		ip = frappe.mock("ipv4")
+	if not cluster:
+		cluster = create_test_cluster()
 	return frappe.get_doc(
 		{
 			"doctype": "Virtual Machine",
