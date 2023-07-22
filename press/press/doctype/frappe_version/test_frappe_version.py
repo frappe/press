@@ -5,6 +5,7 @@
 
 import frappe
 import unittest
+import random
 
 
 def create_test_frappe_version(
@@ -39,5 +40,6 @@ def create_test_frappe_version(
 
 class TestFrappeVersion(unittest.TestCase):
 	def test_create_frappe_version_with_default_dependencies(self):
-		frappe_version = create_test_frappe_version(13)
+		version_number = random.randint(1, 100)
+		frappe_version = create_test_frappe_version(version_number)
 		self.assertEqual(len(frappe_version.dependencies), 5)
