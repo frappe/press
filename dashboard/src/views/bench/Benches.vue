@@ -113,14 +113,6 @@ export default {
 						{
 							label: 'Awaiting Deploy',
 							handler: () => (this.benchFilter = 'Awaiting Deploy')
-						},
-						{
-							label: 'Update Available',
-							handler: () => (this.benchFilter = 'Update Available')
-						},
-						{
-							label: 'Deploy in Progress',
-							handler: () => (this.benchFilter = 'Deploy in Progress')
 						}
 					]
 				}
@@ -142,10 +134,6 @@ export default {
 		getBenchFilterHeading() {
 			if (this.benchFilter === 'Awaiting Deploy')
 				return 'Benches Awaiting Deploy';
-			else if (
-				['Deploy in Progress', 'Update Available'].includes(this.benchFilter)
-			)
-				return `Benches with ${this.benchFilter}`;
 			else if (this.benchFilter.startsWith('tag:'))
 				return `Benches with tag ${this.benchFilter.slice(4)}`;
 			return `${this.benchFilter || 'All'} Benches`;
