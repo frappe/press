@@ -471,6 +471,24 @@ class Agent:
 			upstream=server,
 		)
 
+	def new_upstream_code_server(self, server, name):
+		_server = frappe.get_doc("Server", server)
+		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"name": name}
+		return self.create_agent_job(
+			"Add Code Server to Upstream",
+			f"proxy/upstreams/{ip}/sites",
+			data,
+			code_server=name,
+			upstream=server,
+		)
+
+	def setup_code_server(self, bench, name):
+		data = {"name": name}
+		return self.create_agent_job(
+			"Setup Code Server", f"benches/{bench}/codeserver", data, code_server=name
+		)
+
 	def remove_upstream_site(self, server, site: str, site_name=None):
 		site_name = site_name or site
 		_server = frappe.get_doc("Server", server)
@@ -638,6 +656,7 @@ class Agent:
 		method="POST",
 		bench=None,
 		site=None,
+		code_server=None,
 		upstream=None,
 		host=None,
 	):
@@ -649,6 +668,7 @@ class Agent:
 				"bench": bench,
 				"host": host,
 				"site": site,
+				"code_server": code_server,
 				"upstream": upstream,
 				"status": "Undelivered",
 				"request_method": method,
