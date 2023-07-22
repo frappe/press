@@ -38,4 +38,6 @@ def create_test_frappe_version(
 
 
 class TestFrappeVersion(unittest.TestCase):
-	pass
+	def test_create_frappe_version_with_default_dependencies(self):
+		frappe_version = create_test_frappe_version(13)
+		self.assertEqual(len(frappe_version.dependencies), 5)
