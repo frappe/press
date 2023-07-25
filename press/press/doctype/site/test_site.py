@@ -345,7 +345,7 @@ class TestSite(unittest.TestCase):
 
 	def test_suspend_without_skip_reload_creates_agent_job_without_skip_reload(self):
 		site = create_test_site("testsubdomain")
-		site.suspend(skip_reload=False)
+		site.suspend()
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
@@ -359,7 +359,7 @@ class TestSite(unittest.TestCase):
 
 	def test_archive_without_skip_reload_creates_agent_job_without_skip_reload(self):
 		site = create_test_site("testsubdomain")
-		site.archive(skip_reload=False)
+		site.archive()
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
