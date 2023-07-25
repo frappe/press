@@ -20,16 +20,20 @@ class CodeServer(Document):
 	def after_insert(self):
 		self.setup()
 
+	@frappe.whitelist()
 	def setup(self):
 		try:
 			agent = Agent(self.proxy_server, server_type="Proxy Server")
 			agent.new_upstream_file(server=self.server, code_server=self.name)
 
+			self.password = frappe.generate_hash(length=40)
 			agent = Agent(self.server, server_type="Server")
-			agent.setup_code_server(self.bench, self.name)
+			agent.setup_code_server(self.bench, self.name, self.password)
+			self.save(ignore_permissions=True)
 		except Exception as e:
 			log_error(title="Setup Code Server Failed", data=e)
 
+	@frappe.whitelist()
 	def stop(self):
 		try:
 			agent = Agent(self.server, server_type="Server")
@@ -37,10 +41,13 @@ class CodeServer(Document):
 		except Exception as e:
 			log_error(title="Stop Code Server Failed", data=e)
 
+	@frappe.whitelist()
 	def start(self):
 		try:
 			agent = Agent(self.server, server_type="Server")
-			agent.start_code_server(self.bench, self.name)
+			self.password = frappe.generate_hash(length=40)
+			agent.start_code_server(self.bench, self.name, self.password)
+			self.save(ignore_permissions=True)
 		except Exception as e:
 			log_error(title="Start Code Server Failed", data=e)
 

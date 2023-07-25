@@ -487,16 +487,18 @@ class Agent:
 			upstream=server,
 		)
 
-	def setup_code_server(self, bench, name):
-		data = {"name": name}
+	def setup_code_server(self, bench, name, password):
+		data = {"name": name, "password": password}
 		return self.create_agent_job(
 			"Setup Code Server", f"benches/{bench}/codeserver", data, code_server=name
 		)
 
-	def start_code_server(self, bench, name):
+	def start_code_server(self, bench, name, password):
+		data = {"password": password}
 		return self.create_agent_job(
 			"Start Code Server",
 			f"benches/{bench}/codeserver/start",
+			data,
 			code_server=name,
 		)
 

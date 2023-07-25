@@ -12,7 +12,8 @@
   "status",
   "proxy_server",
   "server",
-  "domain"
+  "domain",
+  "password"
  ],
  "fields": [
   {
@@ -60,6 +61,11 @@
    "label": "Subdomain",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -69,7 +75,7 @@
    "link_fieldname": "code_server"
   }
  ],
- "modified": "2023-07-22 14:49:58.623192",
+ "modified": "2023-07-25 17:46:55.652370",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Code Server",
