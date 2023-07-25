@@ -459,27 +459,31 @@ class Agent:
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
-	def new_upstream_site(self, server, site):
+	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": site}
+		data = {"name": site if site else code_server}
+		doctype = "Site" if site else "Code Server"
 		return self.create_agent_job(
-			"Add Site to Upstream",
+			f"Add {doctype} to Upstream",
 			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
+			code_server=code_server,
 			upstream=server,
 		)
 
-	def new_upstream_code_server(self, server, name):
+	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": name}
+		doctype = "Site" if site else "Code Server"
+		file_name = site_name or site if (site or site_name) else code_server
 		return self.create_agent_job(
-			"Add Code Server to Upstream",
-			f"proxy/upstreams/{ip}/sites",
-			data,
-			code_server=name,
+			f"Remove {doctype} from Upstream",
+			f"proxy/upstreams/{ip}/sites/{file_name}",
+			method="DELETE",
+			site=site,
+			code_server=code_server,
 			upstream=server,
 		)
 
@@ -506,18 +510,6 @@ class Agent:
 	def archive_code_server(self, bench, name):
 		# remove site file from upstream if archived after archiving bench
 		pass
-
-	def remove_upstream_site(self, server, site: str, site_name=None):
-		site_name = site_name or site
-		_server = frappe.get_doc("Server", server)
-		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		return self.create_agent_job(
-			"Remove Site from Upstream",
-			f"proxy/upstreams/{ip}/sites/{site_name}",
-			method="DELETE",
-			site=site,
-			upstream=server,
-		)
 
 	def add_ssh_user(self, bench):
 		private_ip = frappe.db.get_value("Server", bench.server, "private_ip")

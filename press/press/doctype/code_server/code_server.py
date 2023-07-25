@@ -23,7 +23,7 @@ class CodeServer(Document):
 	def setup(self):
 		try:
 			agent = Agent(self.proxy_server, server_type="Proxy Server")
-			agent.new_upstream_code_server(self.server, self.name)
+			agent.new_upstream_file(server=self.server, code_server=self.name)
 
 			agent = Agent(self.server, server_type="Server")
 			agent.setup_code_server(self.bench, self.name)

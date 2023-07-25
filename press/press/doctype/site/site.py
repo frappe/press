@@ -324,7 +324,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(self.server, self.name)
+		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
 	def reinstall(self):
@@ -627,7 +627,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name, site_name)
+		agent.remove_upstream_file(server=self.server, site=self.name, site_name=site_name)
 
 		self.db_set("host_name", None)
 
