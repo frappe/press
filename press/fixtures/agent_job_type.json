@@ -1538,5 +1538,21 @@
     "step_name": "Reset Site Usage"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-07-25 15:05:14.258079",
+  "name": "Reload NGINX Job",
+  "request_method": "POST",
+  "request_path": "/proxy/reload",
+  "steps": [
+   {
+    "parent": "Reload NGINX Job",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
  }
 ]
