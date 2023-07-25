@@ -62,7 +62,7 @@
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
-					{{ selectedSites.length > 0 ? 'Update' : 'Deploy Bench' }}
+					{{ selectedSites.length > 0 ? 'Update' : 'Skip and Deploy Bench' }}
 				</Button>
 				<Button v-if="step == 'Sites'" @click="step = 'Apps'"> Back </Button>
 				<Button v-else appearance="primary" @click="step = 'Sites'">
