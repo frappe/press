@@ -43,6 +43,11 @@ export default [
 				props: true
 			},
 			{
+				path: 'bench-config',
+				component: () => import('../views/bench/BenchConfig.vue'),
+				props: true
+			},
+			{
 				path: 'deploys/:candidateName?',
 				component: () => import('../views/bench/BenchDeploys.vue'),
 				props: true

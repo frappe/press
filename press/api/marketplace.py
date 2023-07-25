@@ -643,7 +643,7 @@ def get_publisher_profile_info():
 
 
 @frappe.whitelist()
-def update_publisher_profile(profile_data=dict()):
+def update_publisher_profile(profile_data=None):
 	"""Update if exists, otherwise create"""
 	team = get_current_team()
 
@@ -655,12 +655,12 @@ def update_publisher_profile(profile_data=dict()):
 		profile_doc = frappe.get_doc(
 			"Marketplace Publisher Profile", publisher_profile_name, for_update=True
 		)
-		profile_doc.update(profile_data)
+		profile_doc.update(profile_data or {})
 		profile_doc.save(ignore_permissions=True)
 	else:
 		profile_doc = frappe.get_doc({"doctype": "Marketplace Publisher Profile"})
 		profile_doc.team = team
-		profile_doc.update(profile_data)
+		profile_doc.update(profile_data or {})
 		profile_doc.insert(ignore_permissions=True)
 
 

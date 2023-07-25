@@ -423,3 +423,54 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total_before_discount, 1000)
 		self.assertEqual(invoice.total_discount_amount, 400)
 		self.assertEqual(invoice.total, 600)
+
+	def test_finalize_invoice_with_total_zero(self):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		invoice.append("items", {"quantity": 1, "rate": 0, "amount": 0})
+		invoice.save()
+		invoice.reload()
+
+		self.assertEqual(invoice.total, 0)
+
+		invoice.finalize_invoice()
+
+		# After finalize
+		self.assertEqual(invoice.total, 0)
+		self.assertEqual(invoice.status, "Empty")
+
+	def test_finalize_invoice_for_disabled_team(self):
+		self.team.enabled = 0
+		self.team.save()
+
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+
+		invoice.append("items", {"quantity": 1, "rate": 100, "amount": 100})
+		invoice.save()
+		invoice.reload()
+
+		invoice.finalize_invoice()
+
+		self.assertEqual(invoice.status, "Draft")
+
+	@patch("press.api.billing.get_stripe")
+	def test_create_stripe_invoice_with_prepaid_credits(self, mock_stripe):
+		invoice = frappe.get_doc(
+			doctype="Invoice",
+			team=self.team.name,
+			type="Prepaid Credits",
+			period_start=today(),
+			period_end=add_days(today(), 10),
+		).insert()
+		invoice.finalize_invoice()
+		self.assertEqual(invoice.stripe_invoice_id, None)

@@ -31,20 +31,8 @@
 		</SectionHeader>
 
 		<div class="mt-3">
-			<LoadingText v-if="$resources.allBenches.loading && pageStart === 0" />
+			<LoadingText v-if="$resources.allBenches.loading" />
 			<BenchList v-else :benches="benches" />
-		</div>
-		<div
-			class="py-3"
-			v-if="!$resources.allBenches.lastPageEmpty && benches.length > 0"
-		>
-			<Button
-				:loading="$resources.allBenches.loading"
-				loadingText="Loading..."
-				@click="pageStart += 10"
-			>
-				Load more
-			</Button>
 		</div>
 
 		<Dialog
@@ -74,11 +62,8 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			pageStart: 0
+			benchFilter: 'All'
 		};
-	},
-	created() {
-		this.benchFilter = 'All';
 	},
 	pageMeta() {
 		return {
@@ -96,9 +81,7 @@ export default {
 		allBenches() {
 			return {
 				method: 'press.api.bench.all',
-				params: { start: this.pageStart, bench_filter: this.benchFilter },
-				pageLength: 10,
-				keepData: true,
+				params: { bench_filter: this.benchFilter },
 				auto: true
 			};
 		},
@@ -121,15 +104,15 @@ export default {
 					items: [
 						{
 							label: 'All',
-							handler: () => this.handleFilterChange('All')
+							handler: () => (this.benchFilter = 'All')
 						},
 						{
 							label: 'Active',
-							handler: () => this.handleFilterChange('Active')
+							handler: () => (this.benchFilter = 'Active')
 						},
 						{
 							label: 'Awaiting Deploy',
-							handler: () => this.handleFilterChange('Awaiting Deploy')
+							handler: () => (this.benchFilter = 'Awaiting Deploy')
 						}
 					]
 				}
@@ -143,25 +126,10 @@ export default {
 					group: 'Tags',
 					items: this.$resources.benchTags.data.map(tag => ({
 						label: tag,
-						handler: () => this.handleFilterChange(`tag:${tag}`)
+						handler: () => (this.benchFilter = `tag:${tag}`)
 					}))
 				}
 			];
-		},
-		handleFilterChange(filterValue) {
-			if (filterValue === this.benchFilter) return;
-
-			const oldPageStart = this.pageStart;
-			this.benchFilter = filterValue;
-			this.pageStart = 0;
-
-			this.$resources.allBenches.reset();
-			// fetch data when pageStart is 0 since it won't refetch due to no change in value
-			if (oldPageStart === 0)
-				this.$resources.allBenches.submit({
-					start: this.pageStart,
-					bench_filter: this.benchFilter
-				});
 		},
 		getBenchFilterHeading() {
 			if (this.benchFilter === 'Awaiting Deploy')

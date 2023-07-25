@@ -211,7 +211,8 @@ def sites_with_free_hosting():
 	return sites_with_standard_hosting + free_sites
 
 
-def created_usage_records(free_sites, date=frappe.utils.today()):
+def created_usage_records(free_sites, date=None):
+	date = date or frappe.utils.today()
 	"""Returns created usage records for a particular date"""
 	return frappe.get_all(
 		"Usage Record",

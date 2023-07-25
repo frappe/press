@@ -116,13 +116,19 @@ export default {
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
-				{ label: 'Overview', route: 'overview' },
-				{ label: 'Apps', route: 'apps' },
-				{ label: 'Versions', route: 'versions' },
-				{ label: 'Deploys', route: 'deploys' },
-				{ label: 'Jobs', route: 'jobs' },
-				{ label: 'Settings', route: 'setting' }
-			];
+				{ label: 'Overview', route: 'overview', condition: () => true },
+				{ label: 'Apps', route: 'apps', condition: () => true },
+				{ label: 'Versions', route: 'versions', condition: () => true },
+				{
+					label: 'Bench Config',
+					route: 'bench-config',
+					condition: () => !this.bench?.public
+				},
+				{ label: 'Deploys', route: 'deploys', condition: () => true },
+				{ label: 'Jobs', route: 'jobs', condition: () => true },
+				{ label: 'Settings', route: 'setting', condition: () => true }
+			].filter(tab => tab.condition());
+
 			if (this.bench) {
 				return tabs.map(tab => {
 					return {
@@ -173,7 +179,8 @@ export default {
 							await this.$resources.updateAllSites.submit();
 							this.$notify({
 								title: 'Site update scheduled successfully',
-								message: 'All sites in this bench will be updated to the latest version',
+								message:
+									'All sites in this bench will be updated to the latest version',
 								icon: 'check',
 								color: 'green'
 							});

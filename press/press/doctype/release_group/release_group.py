@@ -3,16 +3,23 @@
 # For license information, please see license.txt
 
 import frappe
-import copy
+import json
 
 from typing import List
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
-from press.utils import get_last_doc, get_app_tag, get_current_team, log_error
+from press.utils import (
+	get_last_doc,
+	get_app_tag,
+	get_current_team,
+	log_error,
+	get_client_blacklisted_keys,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from typing import TYPE_CHECKING
+from frappe.utils import cstr
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -33,13 +40,84 @@ class ReleaseGroup(Document):
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()
-		self.validate_dependencies()
 		self.validate_rq_queues()
+
+	def before_insert(self):
+		self.fetch_dependencies()
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
 		for candidate in candidates:
 			frappe.delete_doc("Deploy Candidate", candidate.name)
+
+	def before_save(self):
+		self.update_common_site_config_preview()
+
+	def update_common_site_config_preview(self):
+		"""Regenerates rg.common_site_config on each rg.befor_save
+		from the rg.common_site_config child table data"""
+		new_config = {}
+
+		for row in self.common_site_config_table:
+			# update internal flag from master
+			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
+			key_type = row.type or row.get_type()
+			if key_type == "Password":
+				# we don't support password type yet!
+				key_type = "String"
+			row.type = key_type
+
+			if key_type == "Number":
+				key_value = (
+					int(row.value) if isinstance(row.value, (float, int)) else json.loads(row.value)
+				)
+			elif key_type == "Boolean":
+				key_value = (
+					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
+				)
+			elif key_type == "JSON":
+				key_value = json.loads(cstr(row.value))
+			else:
+				key_value = row.value
+
+			new_config[row.key] = key_value
+
+		self.common_site_config = json.dumps(new_config, indent=4)
+
+	def update_config_in_release_group(self, common_site_config, bench_config):
+		"""Updates bench_config and common_site_config in the Release Group
+
+		Args:
+		config (list): List of dicts with key, value, and type
+		"""
+		blacklisted_config = [
+			x for x in self.common_site_config_table if x.key in get_client_blacklisted_keys()
+		]
+		self.common_site_config_table = []
+
+		# Maintain keys that aren't accessible to Dashboard user
+		for i, _config in enumerate(blacklisted_config):
+			_config.idx = i + 1
+			self.common_site_config_table.append(_config)
+
+		for d in common_site_config:
+			d = frappe._dict(d)
+			if isinstance(d.value, (dict, list)):
+				value = json.dumps(d.value)
+			else:
+				value = d.value
+			self.append(
+				"common_site_config_table", {"key": d.key, "value": value, "type": d.type}
+			)
+
+		for d in bench_config:
+			if d.key == "http_timeout":
+				# http_timeout should be the only thing configurable in bench_config
+				self.bench_config = json.dumps({"http_timeout": int(d.value)}, indent=4)
+		if bench_config == []:
+			self.bench_config = json.dumps({})
+
+		self.save()
 
 	def validate_title(self):
 		if frappe.get_all(
@@ -85,20 +163,11 @@ class ReleaseGroup(Document):
 			if server_for_new_bench:
 				self.append("servers", {"server": server_for_new_bench})
 
-	@frappe.whitelist()
-	def validate_dependencies(self):
-		# TODO: Move this to Frappe Version DocType
-		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
-		if self.version in ("Version 14", "Nightly"):
-			python = find(dependencies, lambda x: x["dependency"] == "PYTHON_VERSION")
-			python["version"] = "3.10"
+	def fetch_dependencies(self):
+		frappe_version = frappe.get_doc("Frappe Version", self.version)
 
-		if self.version == "Version 12":
-			node = find(dependencies, lambda x: x["dependency"] == "NODE_VERSION")
-			node["version"] = "12.19.0"
-
-		if not hasattr(self, "dependencies") or not self.dependencies:
-			self.extend("dependencies", dependencies)
+		for d in frappe_version.dependencies:
+			self.append("dependencies", {"dependency": d.dependency, "version": d.version})
 
 	def validate_rq_queues(self):
 		if self.merge_all_rq_queues and self.merge_default_and_short_rq_queues:
