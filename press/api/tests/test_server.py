@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from press.api.server import new, all
+from press.api.server import change_plan, new, all
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.plan.test_plan import create_test_plan
@@ -116,6 +116,104 @@ class TestAPIServer(FrappeTestCase):
 
 		self.assertEqual(servers_before + 1, servers_after)
 		self.assertEqual(db_servers_before + 1, db_servers_after)
+
+	@patch(
+		"press.press.doctype.press_job.press_job.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(VirtualMachine, "provision", new=successful_provision)
+	@patch.object(VirtualMachine, "sync", new=successful_sync)
+	@patch.object(Ansible, "run", new=Mock())
+	@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
+	def test_new_fn_creates_server_with_active_subscription(self):
+		create_test_virtual_machine_image(cluster=self.cluster, series="m")
+		create_test_virtual_machine_image(
+			cluster=self.cluster, series="f"
+		)  # call from here and not setup, so mocks work
+		frappe.set_user(self.team.user)
+
+		new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+
+		server = frappe.get_last_doc("Server")
+		self.assertEqual(server.plan, self.app_plan.name)
+		app_subscription = frappe.get_doc(
+			"Subscription", {"document_type": "Server", "document_name": server.name}
+		)
+		self.assertTrue(app_subscription.enabled)
+		self.assertEqual(app_subscription.plan, self.app_plan.name)
+
+		db_server = frappe.get_last_doc("Database Server")
+		self.assertEqual(db_server.plan, self.db_plan.name)
+		db_subscription = frappe.get_doc(
+			"Subscription",
+			{"document_type": "Database Server", "document_name": db_server.name},
+		)
+		self.assertTrue(db_subscription.enabled)
+		self.assertEqual(db_subscription.plan, self.db_plan.name)
+
+	@patch.object(VirtualMachine, "provision", new=successful_provision)
+	@patch.object(VirtualMachine, "sync", new=successful_sync)
+	@patch.object(Ansible, "run", new=Mock())
+	@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
+	def test_change_plan_changes_plan_of_server_and_updates_subscription_doc(self):
+
+		create_test_virtual_machine_image(cluster=self.cluster, series="m")
+		create_test_virtual_machine_image(
+			cluster=self.cluster, series="f"
+		)  # call from here and not setup, so mocks work
+
+		app_plan_2 = create_test_plan("Server")
+		db_plan_2 = create_test_plan("Database Server")
+
+		self.team.allocate_credit_amount(
+			100000, source="Prepaid Credits", remark="Test Credits"
+		)
+		frappe.set_user(self.team.user)
+
+		new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+		server = frappe.get_last_doc("Server")
+		db_server = frappe.get_last_doc("Database Server")
+
+		change_plan(
+			server.name,
+			app_plan_2.name,
+		)
+
+		server.reload()
+		app_subscription = frappe.get_doc(
+			"Subscription", {"document_type": "Server", "document_name": server.name}
+		)
+		self.assertEqual(app_subscription.plan, app_plan_2.name)
+		self.assertTrue(app_subscription.enabled)
+		self.assertEqual(server.plan, app_plan_2.name)
+
+		change_plan(
+			db_server.name,
+			db_plan_2.name,
+		)
+
+		db_server.reload()
+		db_subscription = frappe.get_doc(
+			"Subscription",
+			{"document_type": "Database Server", "document_name": db_server.name},
+		)
+		self.assertEqual(db_subscription.plan, db_plan_2.name)
+		self.assertTrue(db_subscription.enabled)
+		self.assertEqual(db_server.plan, db_plan_2.name)
 
 
 class TestAPIServerList(FrappeTestCase):
