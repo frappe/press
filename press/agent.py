@@ -489,6 +489,24 @@ class Agent:
 			"Setup Code Server", f"benches/{bench}/codeserver", data, code_server=name
 		)
 
+	def start_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Start Code Server",
+			f"benches/{bench}/codeserver/start",
+			code_server=name,
+		)
+
+	def stop_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Stop Code Server",
+			f"benches/{bench}/codeserver/stop",
+			code_server=name,
+		)
+
+	def archive_code_server(self, bench, name):
+		# remove site file from upstream if archived after archiving bench
+		pass
+
 	def remove_upstream_site(self, server, site: str, site_name=None):
 		site_name = site_name or site
 		_server = frappe.get_doc("Server", server)

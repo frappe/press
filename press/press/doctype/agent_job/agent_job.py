@@ -359,6 +359,9 @@ def process_job_updates(job_name):
 		)
 		from press.press.doctype.code_server.code_server import (
 			process_new_code_server_job_update,
+			process_start_code_server_job_update,
+			process_stop_code_server_job_update,
+			process_archive_code_server_job_update,
 		)
 
 		site_migration = get_ongoing_migration(job.site)
@@ -390,6 +393,12 @@ def process_job_updates(job_name):
 			process_new_code_server_job_update(job)
 		elif job.job_type == "Setup Code Server":
 			process_new_code_server_job_update(job)
+		elif job.job_type == "Start Code Server":
+			process_start_code_server_job_update(job)
+		elif job.job_type == "Stop Code Server":
+			process_stop_code_server_job_update(job)
+		elif job.job_type == "Archive Code Server":
+			process_archive_code_server_job_update(job)
 		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site":
