@@ -569,8 +569,8 @@ class Agent:
 			upstream=server,
 		)
 
-	def reload_nginx(self, server):
-		return self.create_agent_job("Reload NGINX Job", "proxy/reload", upstream=server)
+	def reload_nginx(self):
+		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
 	def cleanup_unused_files(self):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
