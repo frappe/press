@@ -471,16 +471,18 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site: str, site_name=None):
+	def remove_upstream_site(self, server, site: str, site_name=None, skip_reload=False):
 		site_name = site_name or site
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
 			"Remove Site from Upstream",
 			f"proxy/upstreams/{ip}/sites/{site_name}",
 			method="DELETE",
 			site=site,
 			upstream=server,
+			data=data,
 		)
 
 	def add_ssh_user(self, bench):
