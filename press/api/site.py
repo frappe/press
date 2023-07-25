@@ -1398,6 +1398,7 @@ def get_upload_link(file, parts=1):
 		aws_secret_access_key=get_decrypted_password(
 			"Press Settings", "Press Settings", "remote_secret_access_key"
 		),
+		
 		region_name="ap-south-1",
 	)
 	try:
