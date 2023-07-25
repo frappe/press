@@ -311,7 +311,7 @@ def get():
 	parent_teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
-
+	teams = None
 	if parent_teams:
 		teams = frappe.db.sql(
 			"""
