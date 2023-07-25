@@ -1052,11 +1052,11 @@ class Site(Document):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended")
+		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
@@ -1086,10 +1086,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status)
+		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)

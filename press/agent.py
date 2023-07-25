@@ -555,8 +555,8 @@ class Agent:
 			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
 		)
 
-	def update_site_status(self, server, site, status):
-		data = {"status": status}
+	def update_site_status(self, server, site, status, skip_reload=False):
+		data = {"status": status, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
