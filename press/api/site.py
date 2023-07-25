@@ -1387,6 +1387,7 @@ def update_config(name, config):
 def get_upload_link(file, parts=1):
 	bucket_name = frappe.db.get_single_value("Press Settings", "remote_uploads_bucket")
 	expiration = frappe.db.get_single_value("Press Settings", "remote_link_expiry") or 3600
+	region_name = frappe.db.get_single_value("Press Settings", "bucket_region") or "us-east-1"
 	object_name = get_remote_key(file)
 	parts = int(parts)
 
@@ -1399,7 +1400,7 @@ def get_upload_link(file, parts=1):
 			"Press Settings", "Press Settings", "remote_secret_access_key"
 		),
 		
-		region_name="ap-south-1",
+		region_name=region_name,
 	)
 	try:
 		# The response contains the presigned URL and required fields

@@ -77,6 +77,7 @@
   "column_break_51",
   "remote_access_key_id",
   "remote_secret_access_key",
+  "bucket_region",
   "product_documentation_section",
   "publish_docs",
   "storage_and_disk_limits_section",
@@ -979,11 +980,17 @@
    "fieldname": "plausible_site_id",
    "fieldtype": "Data",
    "label": "Plausible site id"
+  },
+  {
+   "description": "region the bucket was created in.\ndefaults to <b>us-east-1</b>",
+   "fieldname": "bucket_region",
+   "fieldtype": "Data",
+   "label": "Bucket Region"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-07-01 13:06:23.438512",
+ "modified": "2023-07-25 21:08:52.808417",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
