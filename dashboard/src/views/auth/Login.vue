@@ -35,7 +35,7 @@
 				class="mt-4"
 				:disabled="state === 'RequestStarted'"
 				@click="loginOrResetPassword"
-				appearance="primary"
+				variant="solid"
 			>
 				Submit
 			</Button>
@@ -65,7 +65,6 @@
 						$resources.oauthLogin.submit();
 					}
 				"
-				appearance="secondary"
 			>
 				<div class="flex">
 					<GoogleIcon />
