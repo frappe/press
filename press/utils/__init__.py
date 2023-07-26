@@ -19,65 +19,83 @@ def log_error(title, **kwargs):
 
 
 def get_current_team(get_doc=False):
-	if frappe.session.user == "Guest":
-		frappe.throw("Not Permitted", frappe.PermissionError)
+	"""
+	Get the current team for the user.
+
+	:param get_doc: Return the Team document instead of the Team name
+
+	returns: Team document or Team name
+
+	"""
+
+	validate_permissions()
+
+	def _get_team(as_doc=False, team_name=None):
+		if team_name:
+			filters = {"name": team_name}
+		else:
+			filters = {"user": frappe.session.user, "enabled": 1}
+
+		team = frappe.get_value("Team", filters, "name")
+
+		if as_doc:
+			return frappe.get_cached_doc("Team", team)
+
+		return team
 
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
-		return (
-			frappe.get_doc("Team", {"user": frappe.session.user})
-			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user}, "name")
-		)
+		return _get_team(as_doc=get_doc)
 
-	user_is_system_user = frappe.session.data.user_type == "System User"
-	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
-	user_is_press_admin = frappe.db.exists(
+
+	if not team and is_press_admin():
+		# if user has_role of Press Admin then just return current user as default team
+		return _get_team(as_doc=get_doc)
+
+	if not team:
+		team_name = get_team_by_member_lookup()
+
+	return _get_team(as_doc=get_doc, team_name=team_name)
+
+
+def get_team_by_member_lookup() -> str:
+	team = frappe.qb.DocType("Team")
+	team_member = frappe.qb.DocType("Team Member")
+
+	team = (
+		frappe.qb.from_(team)
+		.join(team_member)
+		.on(team.name == team_member.parent)
+		.select(team.name)
+		.where(
+			(team_member.user == frappe.session.user)
+			& (team.enabled == 1)
+			& (team_member.parenttype == "Team")
+		)
+		.order_by(team.creation.asc())
+		.limit(1)
+	).run(as_dict=True)
+
+	if not team:
+		frappe.throw("Not Permitted", frappe.PermissionError)
+
+	return team[0].name
+
+
+def is_system_user() -> bool:
+	return frappe.session.data.user_type == "System User"
+
+
+def is_press_admin() -> bool:
+	return frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
 
-	if (
-		not team
-		and user_is_press_admin
-		and frappe.db.exists("Team", {"user": frappe.session.user})
-	):
-		# if user has_role of Press Admin then just return current user as default team
-		return (
-			frappe.get_doc("Team", {"user": frappe.session.user, "enabled": 1})
-			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user, "enabled": 1}, "name")
-		)
 
-	if not team:
-		# if team is not passed via header, get the first team that this user is part of
-		team_dict = frappe.db.sql(
-			"""select t.name from `tabTeam` t
-			inner join `tabTeam Member` tm on tm.parent = t.name
-			where tm.user = %s and tm.parenttype = 'Team' and t.enabled = 1
-			order by t.creation asc
-			limit 1""",
-			frappe.session.user,
-			as_dict=True,
-		)
-		team = team_dict[0].name
-
-	if not frappe.db.exists("Team", team):
-		frappe.throw("Invalid Team", frappe.PermissionError)
-
-	valid_team = frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": frappe.session.user}
-	)
-	if not valid_team and not user_is_system_user:
-		frappe.throw(
-			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
-			frappe.PermissionError,
-		)
-
-	if get_doc:
-		return frappe.get_doc("Team", team)
-
-	return team
+def validate_permissions():
+	if frappe.session.user == "Guest":
+		frappe.throw("Not Permitted", frappe.PermissionError)
 
 
 @functools.lru_cache(maxsize=1024)

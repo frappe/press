@@ -240,9 +240,13 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 
-		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
+		if not self.is_new() and self.billing_name \
+			and not frappe.conf.allow_tests and not self.is_team_owned_by_admin():
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
+
+	def is_team_owned_by_admin(self) -> bool:
+		return self.user == "Administrator"
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
