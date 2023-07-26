@@ -161,7 +161,14 @@
 			v-model="showPlanSelectionDialog"
 			:options="{
 				title: 'Select app plan',
-				size: '2xl'
+				size: '2xl',
+				actions: [
+					{
+						label: 'Proceed',
+						variant: 'solid',
+						onClick: handlePlanSelection
+					}
+				]
 			}"
 		>
 			<template v-slot:body-content>
@@ -180,22 +187,21 @@
 
 				<ErrorMessage :message="$resourceErrors" />
 			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.installApp.loading"
-					@click="handlePlanSelection"
-					>Proceed</Button
-				>
-			</template>
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
 		<Dialog
 			:options="{
 				title: 'Select Plan',
-				size: '2xl'
+				size: '2xl',
+				actions: [
+					{
+						label: 'Change Plan',
+						variant: 'solid',
+						onClick: handlePlanChange,
+						loading: $resources.changePlan.loading
+					}
+				]
 			}"
 			v-model="showAppPlanChangeDialog"
 		>
@@ -212,15 +218,6 @@
 					:currentPlan="appToChangePlan.plan"
 					:frappeVersion="site.frappe_version"
 				/>
-			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.changePlan.loading"
-					@click="handlePlanChange"
-					>Change Plan</Button
-				>
 			</template>
 		</Dialog>
 
@@ -466,11 +463,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					handler: () => this.confirmRemoveApp(app)
+					onClick: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					handler: () =>
+					onClick: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);
@@ -480,7 +477,7 @@ export default {
 				title: 'Remove App',
 				message: `Are you sure you want to uninstall app ${app.title} from site?`,
 				actionLabel: 'Remove App',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.uninstallApp.submit({
