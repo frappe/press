@@ -95,33 +95,35 @@ let utils = {
 					hash: this.$route.hash
 				});
 			}
+		},
+		$badgeStatusColorMap(val) {
+			const colorMap = {
+				Approved: 'green',
+				Broken: 'red',
+				Installing: 'orange',
+				'Update Available': 'blue',
+				Enabled: 'blue',
+				'Awaiting Approval': 'orange',
+				'Awaiting Deploy': 'orange',
+				Deployed: 'green',
+				Expired: 'red',
+				Paid: 'green',
+				Rejected: 'red',
+				'In Review': 'orange',
+				'Attention Required': 'red',
+				Active: 'green',
+				Trial: 'orange',
+				Published: 'green',
+				Owner: 'blue',
+				Primary: 'green'
+			};
+
+			return colorMap[val];
 		}
 	},
 	computed: {
 		$theme() {
 			return theme;
-		},
-		$badgeStatusColorMap() {
-			return {
-				Approved: 'green',
-				Broken: 'red',
-				Installing: 'yellow',
-				'Update Available': 'blue',
-				Enabled: 'blue',
-				'Awaiting Approval': 'yellow',
-				'Awaiting Deploy': 'yellow',
-				Deployed: 'green',
-				Expired: 'red',
-				Paid: 'green',
-				Rejected: 'red',
-				'In Review': 'yellow',
-				'Attention Required': 'red',
-				Active: 'green',
-				Trial: 'yellow',
-				Published: 'green',
-				Owner: 'blue',
-				Primary: 'green'
-			};
 		}
 	}
 };

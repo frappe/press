@@ -16,20 +16,21 @@
 				>
 					<div class="flex items-center justify-between">
 						<div
-							class="hover:text-ellipses truncate break-all text-base w-1/2 sm:w-4/12"
+							class="hover:text-ellipses w-1/2 truncate break-all text-base sm:w-4/12"
 						>
 							{{ site.host_name || site.name }}
 						</div>
-						<div class="text-base w-1/3 sm:w-3/12">
+						<div class="w-1/3 text-base sm:w-3/12">
 							<Badge
 								class="pointer-events-none"
-								:colorMap="$badgeStatusColorMap"
+								variant="subtle"
+								:theme="$badgeStatusColorMap(siteBadge(site))"
 								:label="siteBadge(site)"
 							/>
 						</div>
 						<div
 							v-if="showBenchInfo"
-							class="text-base sm:w-4/12 hidden sm:block"
+							class="hidden text-base sm:block sm:w-4/12"
 						>
 							<div class="hover:text-ellipses truncate break-all hover:w-full">
 								{{ site.title }}
@@ -37,7 +38,7 @@
 						</div>
 						<div
 							v-if="showBenchInfo"
-							class="text-base hidden sm:block sm:w-3/12"
+							class="hidden text-base sm:block sm:w-3/12"
 						>
 							<Badge>
 								{{ site.version }}
@@ -68,27 +69,26 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Login As Administrator' }"
+			:options="{
+				title: 'Login As Administrator',
+				actions: [
+					{
+						label: 'Proceed',
+						variant: 'solid',
+						onClick: proceedWithLoginAsAdmin
+					}
+				]
+			}"
 			v-model="showReasonForAdminLoginDialog"
 		>
-			<template v-slot:body-content>
+			<template #body-content>
 				<Input
 					label="Reason for logging in as Administrator"
 					type="textarea"
 					v-model="reasonForAdminLogin"
 					required
 				/>
-
 				<ErrorMessage class="mt-3" :message="errorMessage" />
-			</template>
-
-			<template #actions>
-				<Button
-					:loading="adminLoginInProcess"
-					@click="proceedWithLoginAsAdmin"
-					appearance="primary"
-					>Proceed</Button
-				>
 			</template>
 		</Dialog>
 	</div>
@@ -108,7 +108,6 @@ export default {
 	},
 	data() {
 		return {
-			adminLoginInProcess: false,
 			reasonForAdminLogin: '',
 			errorMessage: null,
 			showReasonForAdminLoginDialog: false,
@@ -144,14 +143,14 @@ export default {
 			return [
 				{
 					label: 'Visit Site',
-					handler: () => {
+					onClick: () => {
 						window.open(`https://${site.name}`, '_blank');
 					}
 				},
 				{
 					label: 'Login As Admin',
-					handler: () => {
-						if (this.$account.team.name == site.team) {
+					onClick: () => {
+						if (this.$account.team.name === site.team) {
 							return this.$resources.loginAsAdmin.submit({
 								name: site.name
 							});

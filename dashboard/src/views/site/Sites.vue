@@ -2,13 +2,9 @@
 	<div>
 		<div>
 			<PageHeader title="Sites" subtitle="Your Frappe instances">
-				<template v-if="this.$account.team.enabled" v-slot:actions>
-					<Button
-						appearance="primary"
-						iconLeft="plus"
-						class="ml-2"
-						@click="showBillingDialog"
-					>
+				<template v-if="this.$account.team.enabled" #actions>
+					<Button variant="solid" class="ml-2" @click="showBillingDialog">
+						<template #prefix><FeatherIcon name="plus" class="w-4" /></template>
 						New
 					</Button>
 				</template>
@@ -17,9 +13,8 @@
 			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
-
 					<template #actions>
-						<Button appearance="primary" route="/settings">
+						<Button variant="solid" theme="blue" route="/settings">
 							Enable Account
 						</Button>
 					</template>
@@ -27,7 +22,7 @@
 			</div>
 			<div class="mb-2" v-if="showUnpaidInvoiceAlert">
 				<Alert
-					v-if="latestUnpaidInvoice.payment_mode == 'Prepaid Credits'"
+					v-if="latestUnpaidInvoice.payment_mode === 'Prepaid Credits'"
 					title="Your last invoice payment has failed."
 				>
 					Please add
@@ -39,7 +34,8 @@
 					<template #actions>
 						<Button
 							@click="showPrepaidCreditsDialog = true"
-							appearance="primary"
+							variant="solid"
+							theme="blue"
 						>
 							Add Credits
 						</Button>
@@ -52,9 +48,7 @@
 						<router-link
 							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
 						>
-							<Button icon-left="external-link" appearance="primary">
-								Go to Billing
-							</Button>
+							<Button variant="solid" theme="blue"> Go to Billing </Button>
 						</router-link>
 					</template>
 				</Alert>
@@ -86,8 +80,11 @@
 										'rounded-md px-3 py-1 text-base font-medium',
 										open ? 'bg-gray-200' : 'bg-gray-100'
 									]"
-									icon-left="chevron-down"
-									>{{ siteFilter.replace('tag:', '') }}</Button
+								>
+									<template #prefix>
+										<FeatherIcon name="chevron-down" class="w-4" />
+									</template>
+									{{ siteFilter.replace('tag:', '') }}</Button
 								>
 							</template>
 						</Dropdown>
@@ -235,23 +232,23 @@ export default {
 					items: [
 						{
 							label: 'All',
-							handler: () => (this.siteFilter = 'All')
+							onClick: () => (this.siteFilter = 'All')
 						},
 						{
 							label: 'Active',
-							handler: () => (this.siteFilter = 'Active')
+							onClick: () => (this.siteFilter = 'Active')
 						},
 						{
 							label: 'Broken',
-							handler: () => (this.siteFilter = 'Broken')
+							onClick: () => (this.siteFilter = 'Broken')
 						},
 						{
 							label: 'Trial',
-							handler: () => (this.siteFilter = 'Trial')
+							onClick: () => (this.siteFilter = 'Trial')
 						},
 						{
 							label: 'Update Available',
-							handler: () => (this.siteFilter = 'Update Available')
+							onClick: () => (this.siteFilter = 'Update Available')
 						}
 					]
 				}
@@ -265,7 +262,7 @@ export default {
 					group: 'Tags',
 					items: this.$resources.siteTags.data.map(tag => ({
 						label: tag,
-						handler: () => (this.siteFilter = `tag:${tag}`)
+						onClick: () => (this.siteFilter = `tag:${tag}`)
 					}))
 				}
 			];
