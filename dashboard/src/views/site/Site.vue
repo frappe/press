@@ -15,9 +15,9 @@
 							{{ site.host_name || site.name }}
 						</h1>
 						<Badge
-							class="ml-4 hidden md:inline-block"
+							class="ml-4"
 							:label="site.status"
-							:colorMap="$badgeStatusColorMap"
+							:theme="$badgeStatusColorMap(site.status)"
 						/>
 
 						<div
@@ -36,7 +36,10 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :label="site.status" :colorMap="$badgeStatusColorMap" />
+							<Badge
+								:label="site.status"
+								:theme="$badgeStatusColorMap(site.status)"
+							/>
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
@@ -95,7 +98,16 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Login As Administrator' }"
+			:options="{
+				title: 'Login As Administrator',
+				actions: [
+					{
+						label: 'Proceed',
+						variant: 'solid',
+						onClick: proceedWithLoginAsAdmin
+					}
+				]
+			}"
 			v-model="showReasonForAdminLoginDialog"
 		>
 			<template v-slot:body-content>
@@ -105,22 +117,21 @@
 					v-model="reasonForAdminLogin"
 					required
 				/>
-
 				<ErrorMessage class="mt-3" :message="errorMessage" />
-			</template>
-
-			<template #actions>
-				<Button
-					:loading="$resources.loginAsAdmin.loading"
-					@click="proceedWithLoginAsAdmin"
-					appearance="primary"
-					>Proceed</Button
-				>
 			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Transfer Site to Team' }"
+			:options="{
+				title: 'Transfer Site to Team',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						onClick: transferSiteToTeam
+					}
+				]
+			}"
 			v-model="showTransferSiteDialog"
 		>
 			<template #body-content>
@@ -132,21 +143,6 @@
 				/>
 
 				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
-			</template>
-
-			<template #actions>
-				<Button
-					:loading="$resources.transferSite.loading"
-					@click="
-						$resources.transferSite.submit({
-							team: emailOfChildTeam,
-							name: siteName
-						})
-					"
-					appearance="primary"
-				>
-					Submit
-				</Button>
 			</template>
 		</Dialog>
 	</div>
@@ -173,6 +169,7 @@ export default {
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
 			showTransferSiteDialog: false,
+			emailOfChildTeam: null,
 			errorMessage: ''
 		};
 	},
@@ -285,6 +282,12 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		},
+		transferSiteToTeam() {
+			this.$resources.transferSite.submit({
+				team: this.emailOfChildTeam,
+				name: this.siteName
+			});
 		}
 	},
 	computed: {
@@ -303,14 +306,14 @@ export default {
 				['Active', 'Updating'].includes(this.site.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(`https://${this.site.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
 							'_blank'
@@ -321,7 +324,7 @@ export default {
 					label: 'Manage Bench',
 					icon: 'tool',
 					route: `/benches/${this.site.group}`,
-					handler: () => {
+					onClick: () => {
 						this.$router.push(`/benches/${this.site.group}`);
 					}
 				},
@@ -329,7 +332,7 @@ export default {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
-					handler: () => {
+					onClick: () => {
 						if (this.$account.team.name == this.site.notify_email) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
@@ -342,7 +345,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					handler: async () => {
+					onClick: async () => {
 						await this.$account.switchTeam(this.site.team);
 						this.$notify({
 							title: 'Switched Team',
@@ -356,7 +359,7 @@ export default {
 					label: 'Transfer Site',
 					icon: 'tool',
 					loading: this.$resources.transferSite.loading,
-					handler: () => {
+					onClick: () => {
 						this.showTransferSiteDialog = true;
 					},
 					condition: () => {

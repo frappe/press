@@ -71,7 +71,8 @@ const marketplacePromotionalBanners = useResource({
 				<template #actions>
 					<Button
 						class="whitespace-nowrap"
-						appearance="primary"
+						variant="solid"
+						theme="blue"
 						@click="
 							() => {
 								showPromotionalDialog = true;
@@ -89,7 +90,12 @@ const marketplacePromotionalBanners = useResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button class="whitespace-nowrap" route="/welcome" appearance="primary">
+				<Button
+					class="whitespace-nowrap"
+					route="/welcome"
+					variant="solid"
+					theme="blue"
+				>
 					Add Billing Information
 				</Button>
 			</template>
@@ -124,34 +130,37 @@ const marketplacePromotionalBanners = useResource({
 
 		<Dialog
 			v-model="showPromotionalDialog"
-			title="Frappe Cloud Marketplace"
 			@close="e => (clickedPromotion = null)"
+			:options="{
+				title: 'Frappe Cloud Marketplace',
+				actions: [
+					{
+						variant: 'solid',
+						route: `/install-app/${clickedPromotion?.app}`,
+						label: 'Install App'
+					}
+				]
+			}"
 		>
-			<div v-if="clickedPromotion" class="flex flex-row items-center">
-				<Avatar
-					class="mr-2"
-					size="lg"
-					shape="square"
-					:imageURL="clickedPromotion.image"
-					:label="clickedPromotion.title"
-				/>
+			<template #body-content>
+				<div v-if="clickedPromotion" class="flex flex-row items-center">
+					<Avatar
+						class="mr-2"
+						size="lg"
+						shape="square"
+						:imageURL="clickedPromotion.image"
+						:label="clickedPromotion.title"
+					/>
 
-				<div class="flex flex-col">
-					<h4 class="text-xl font-semibold text-gray-900">
-						{{ clickedPromotion.title }}
-					</h4>
-					<p class="text-base text-gray-600">
-						{{ clickedPromotion.description }}
-					</p>
+					<div class="flex flex-col">
+						<h4 class="text-xl font-semibold text-gray-900">
+							{{ clickedPromotion.title }}
+						</h4>
+						<p class="text-base text-gray-600">
+							{{ clickedPromotion.description }}
+						</p>
+					</div>
 				</div>
-			</div>
-
-			<template v-if="clickedPromotion" #actions>
-				<Button
-					appearance="primary"
-					:route="`/install-app/${clickedPromotion.app}`"
-					>Install App</Button
-				>
 			</template>
 		</Dialog>
 	</div>
