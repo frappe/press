@@ -11,7 +11,7 @@
 				>
 					<!-- <template v-slot="{ open }"> -->
 					<Button
-						appearance="primary"
+						variant="solid"
 						iconLeft="plus"
 						class="ml-2 hidden sm:inline-flex"
 						@click="showBillingDialog"
@@ -22,7 +22,7 @@
 				</Dropdown>
 				<Button
 					v-else
-					appearance="primary"
+					variant="solid"
 					iconLeft="plus"
 					class="ml-2 hidden sm:inline-flex"
 					@click="showBillingDialog"
@@ -74,7 +74,6 @@
 <script>
 import ServerList from '@/views/server/ServerList.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
-import Dropdown from 'frappe-ui/src/components/Dropdown.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
@@ -84,8 +83,7 @@ export default {
 		PageHeader,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
-		),
-		Dropdown
+		)
 	},
 	data() {
 		return {
@@ -94,11 +92,11 @@ export default {
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
-					handler: () => this.$router.replace('/servers/new')
+					onClick: () => this.$router.replace('/servers/new')
 				},
 				{
 					label: 'Self Hosted Server',
-					handler: () => this.$router.replace('/selfhosted/new')
+					onClick: () => this.$router.replace('/selfhosted/new')
 				}
 			]
 		};
@@ -145,15 +143,15 @@ export default {
 					items: [
 						{
 							label: 'All Servers',
-							handler: () => (this.serverFilter = 'All Servers')
+							onClick: () => (this.serverFilter = 'All Servers')
 						},
 						{
 							label: 'App Servers',
-							handler: () => (this.serverFilter = 'App Servers')
+							onClick: () => (this.serverFilter = 'App Servers')
 						},
 						{
 							label: 'Database Servers',
-							handler: () => (this.serverFilter = 'Database Servers')
+							onClick: () => (this.serverFilter = 'Database Servers')
 						}
 					]
 				}
@@ -167,7 +165,7 @@ export default {
 					group: 'Tags',
 					items: this.$resources.serverTags.data.map(tag => ({
 						label: tag,
-						handler: () => (this.serverFilter = `tag:${tag}`)
+						onClick: () => (this.serverFilter = `tag:${tag}`)
 					}))
 				}
 			];

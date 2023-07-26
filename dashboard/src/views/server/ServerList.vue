@@ -21,7 +21,7 @@
 						<div class="text-base sm:w-3/12">
 							<Badge
 								class="pointer-events-none"
-								:colorMap="$badgeStatusColorMap"
+								:theme="$badgeStatusColorMap(server.status)"
 								:label="server.status"
 							/>
 						</div>
@@ -74,13 +74,13 @@ export default {
 			return [
 				{
 					label: 'Visit Server',
-					action: () => {
+					onClick: () => {
 						window.open(`https://${server.name}`, '_blank');
 					}
 				},
 				{
 					label: 'New Bench',
-					action: () => {
+					onClick: () => {
 						this.$router.push(`/servers/${server.app_server}/bench/new`);
 					}
 				}
