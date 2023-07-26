@@ -36,6 +36,7 @@ class CodeServer(Document):
 	@frappe.whitelist()
 	def stop(self):
 		try:
+			self.status = "Pending"
 			agent = Agent(self.server, server_type="Server")
 			agent.stop_code_server(self.bench, self.name)
 		except Exception as e:
@@ -44,6 +45,7 @@ class CodeServer(Document):
 	@frappe.whitelist()
 	def start(self):
 		try:
+			self.status = "Pending"
 			agent = Agent(self.server, server_type="Server")
 			self.password = frappe.generate_hash(length=40)
 			agent.start_code_server(self.bench, self.name, self.password)

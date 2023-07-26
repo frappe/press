@@ -8,7 +8,9 @@
  "engine": "InnoDB",
  "field_order": [
   "subdomain",
+  "team",
   "bench",
+  "group",
   "status",
   "proxy_server",
   "server",
@@ -66,6 +68,21 @@
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password"
+  },
+  {
+   "fetch_from": "bench.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -75,7 +92,7 @@
    "link_fieldname": "code_server"
   }
  ],
- "modified": "2023-07-25 17:46:55.652370",
+ "modified": "2023-07-26 19:52:15.753212",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Code Server",
