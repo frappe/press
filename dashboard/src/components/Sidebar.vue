@@ -33,7 +33,7 @@
 				</a>
 			</router-link>
 		</div>
-		<Dropdown placement="center" :options="dropdownItems">
+		<Dropdown :options="dropdownItems">
 			<template v-slot="{ open }">
 				<div
 					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
@@ -79,22 +79,22 @@ export default {
 				{
 					label: 'Switch Team',
 					icon: 'command',
-					handler: () => (this.showTeamSwitcher = true)
+					onClick: () => (this.showTeamSwitcher = true)
 				},
 				{
 					label: 'Support & Docs',
 					icon: 'help-circle',
-					handler: () => (window.location.href = '/support')
+					onClick: () => (window.location.href = '/support')
 				},
 				{
 					label: 'Settings',
 					icon: 'settings',
-					handler: () => this.$router.push('/settings')
+					onClick: () => this.$router.push('/settings')
 				},
 				{
 					label: 'Logout',
 					icon: 'log-out',
-					handler: () => this.$auth.logout()
+					onClick: () => this.$auth.logout()
 				}
 			]
 		};
