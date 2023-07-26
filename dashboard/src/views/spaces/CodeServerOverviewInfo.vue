@@ -6,11 +6,13 @@
 		<div class="divide-y">
 			<ListItem
 				v-if="codeServer.status === 'Running'"
-				title="Show Password"
-				description="The password for your code server"
+				title="Copy Password"
+				description="Copy the password for your code server"
 			>
 				<template v-slot:actions>
-					<Button @click="" class="shrink-0"> Show </Button>
+					<Button @click="$resources.showPassword.submit()" class="shrink-0">
+						Copy
+					</Button>
 				</template>
 			</ListItem>
 
@@ -82,6 +84,24 @@ export default {
 				},
 				onSuccess(r) {
 					this.$router.push(`/codeservers/${this.codeServer.name}/jobs`);
+				}
+			};
+		},
+		showPassword() {
+			return {
+				method: 'press.api.spaces.code_server_password',
+				params: {
+					name: this.codeServer.name
+				},
+				onSuccess(r) {
+					const clipboard = window.navigator.clipboard;
+					clipboard.writeText(r).then(() => {
+						this.$notify({
+							title: 'Password copied to clipboard!',
+							icon: 'check',
+							color: 'green'
+						});
+					});
 				}
 			};
 		}
