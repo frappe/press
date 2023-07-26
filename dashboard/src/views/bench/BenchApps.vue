@@ -216,23 +216,23 @@ export default {
 			return [
 				{
 					label: 'Fetch Latest Update',
-					handler: () => this.fetchLatestUpdate(app)
+					onClick: () => this.fetchLatestUpdate(app)
 				},
 				{
 					label: 'Remove App',
-					handler: () => this.confirmRemoveApp(app),
+					onClick: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Change Branch',
-					handler: () => {
+					onClick: () => {
 						this.appToChangeBranchOf = app;
 					},
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
-					handler: () =>
+					onClick: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);

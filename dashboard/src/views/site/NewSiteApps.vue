@@ -61,7 +61,7 @@
 								<template #secondary-content>
 									<a
 										v-if="publicApp.marketplace"
-										class="inline-block text-sm leading-snug text-blue-600"
+										class="inline-block text-sm leading-snug text-gray-600"
 										:href="'/' + publicApp.marketplace.route"
 										target="_blank"
 										@click.stop

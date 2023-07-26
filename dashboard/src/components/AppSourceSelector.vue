@@ -70,7 +70,7 @@ export default {
 		dropdownItems(app) {
 			return app.sources.map(source => ({
 				label: `${source.repository_owner}/${source.repository}:${source.branch}`,
-				handler: () => this.selectSource(app, source)
+				onClick: () => this.selectSource(app, source)
 			}));
 		},
 		selectSource(app, source) {
