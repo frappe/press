@@ -82,7 +82,7 @@
 				<div>
 					<ErrorMessage class="mb-2" :message="$resources.createBench.error" />
 					<Button
-						appearance="primary"
+						variant="solid"
 						:loading="$resources.createBench.loading"
 						@click="$resources.createBench.submit()"
 					>
