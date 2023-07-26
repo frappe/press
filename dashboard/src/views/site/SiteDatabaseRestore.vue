@@ -75,7 +75,18 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Migrate Database' }"
+			:options="{
+				title: 'Migrate Database',
+				actions: [
+					{
+						label: 'Migrate',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.migrateDatabase.loading,
+						onClick: migrateDatabase
+					}
+				]
+			}"
 			v-model="showMigrateDialog"
 			@close="
 				() => {
@@ -107,18 +118,22 @@
 					</label>
 				</div>
 			</template>
-			<template #actions>
-				<Button
-					appearance="danger"
-					:loading="$resources.migrateDatabase.loading"
-					@click="migrateDatabase"
-				>
-					Migrate
-				</Button>
-			</template>
 		</Dialog>
 
-		<Dialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+		<Dialog
+			:options="{
+				title: 'Restore',
+				actions: [
+					{
+						label: 'Restore',
+						variant: 'solid',
+						loading: $resources.restoreBackup.loading,
+						onClick: restoreBackup
+					}
+				]
+			}"
+			v-model="showRestoreDialog"
+		>
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -139,16 +154,6 @@
 					</label>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.restoreBackup.error" />
-			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.restoreBackup.loading"
-					@click="$resources.restoreBackup.submit()"
-				>
-					Restore Database
-				</Button>
 			</template>
 		</Dialog>
 
@@ -265,7 +270,7 @@ export default {
 				message:
 					'All the data from your site will be lost. Are you sure you want to reset your database?',
 				actionLabel: 'Reset',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.resetDatabase.submit();
 					closeDialog();
@@ -286,12 +291,15 @@ export default {
 					you want to run these command?
 				`,
 				actionLabel: 'Clear Cache',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.clearCache.submit();
 					closeDialog();
 				}
 			});
+		},
+		restoreBackup() {
+			this.$resources.restoreBackup.submit();
 		}
 	},
 	computed: {
