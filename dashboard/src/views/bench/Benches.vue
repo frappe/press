@@ -2,8 +2,12 @@
 	<div>
 		<PageHeader title="Benches" subtitle="Private benches you own">
 			<template v-slot:actions>
-				<Button variant="solid" class="ml-2" @click="showBillingDialog">
-					<template #prefix><FeatherIcon name="plus" class="w-4" /></template>
+				<Button
+					variant="solid"
+					icon-left="plus"
+					class="ml-2"
+					@click="showBillingDialog"
+				>
 					New
 				</Button>
 			</template>
@@ -18,10 +22,8 @@
 								'rounded-md px-3 py-1 text-base font-medium',
 								open ? 'bg-gray-200' : 'bg-gray-100'
 							]"
+							icon-left="chevron-down"
 						>
-							<template #prefix
-								><FeatherIcon name="chevron-down" class="w-4"
-							/></template>
 							{{ benchFilter.replace('tag:', '') }}
 						</Button>
 					</template>
@@ -103,15 +105,15 @@ export default {
 					items: [
 						{
 							label: 'All',
-							handler: () => (this.benchFilter = 'All')
+							onClick: () => (this.benchFilter = 'All')
 						},
 						{
 							label: 'Active',
-							handler: () => (this.benchFilter = 'Active')
+							onClick: () => (this.benchFilter = 'Active')
 						},
 						{
 							label: 'Awaiting Deploy',
-							handler: () => (this.benchFilter = 'Awaiting Deploy')
+							onClick: () => (this.benchFilter = 'Awaiting Deploy')
 						}
 					]
 				}
@@ -125,7 +127,7 @@ export default {
 					group: 'Tags',
 					items: this.$resources.benchTags.data.map(tag => ({
 						label: tag,
-						handler: () => (this.benchFilter = `tag:${tag}`)
+						onClick: () => (this.benchFilter = `tag:${tag}`)
 					}))
 				}
 			];

@@ -3,8 +3,12 @@
 		<div>
 			<PageHeader title="Sites" subtitle="Your Frappe instances">
 				<template v-if="this.$account.team.enabled" #actions>
-					<Button variant="solid" class="ml-2" @click="showBillingDialog">
-						<template #prefix><FeatherIcon name="plus" class="w-4" /></template>
+					<Button
+						variant="solid"
+						icon-left="plus"
+						class="ml-2"
+						@click="showBillingDialog"
+					>
 						New
 					</Button>
 				</template>
@@ -80,10 +84,8 @@
 										'rounded-md px-3 py-1 text-base font-medium',
 										open ? 'bg-gray-200' : 'bg-gray-100'
 									]"
+									icon-left="chevron-down"
 								>
-									<template #prefix>
-										<FeatherIcon name="chevron-down" class="w-4" />
-									</template>
 									{{ siteFilter.replace('tag:', '') }}</Button
 								>
 							</template>
