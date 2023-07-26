@@ -19,7 +19,10 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base w-1/3 sm:w-4/12">
-							<Badge :label="bench.status" :colorMap="$badgeStatusColorMap" />
+							<Badge
+								:label="bench.status"
+								:theme="$badgeStatusColorMap(bench.status)"
+							/>
 						</div>
 						<div class="text-base hidden sm:block sm:w-4/12">
 							<Badge
@@ -69,13 +72,13 @@ export default {
 			return [
 				{
 					label: 'New Site',
-					handler: () => {
+					onClick: () => {
 						this.$router.push(`/${bench.name}/new`);
 					}
 				},
 				{
 					label: 'View Versions',
-					handler: () => {
+					onClick: () => {
 						this.$router.push(`/benches/${bench.name}/versions`);
 					}
 				}

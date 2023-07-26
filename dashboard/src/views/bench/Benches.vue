@@ -2,12 +2,8 @@
 	<div>
 		<PageHeader title="Benches" subtitle="Private benches you own">
 			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					iconLeft="plus"
-					class="ml-2"
-					@click="showBillingDialog"
-				>
+				<Button variant="solid" class="ml-2" @click="showBillingDialog">
+					<template #prefix><FeatherIcon name="plus" class="w-4" /></template>
 					New
 				</Button>
 			</template>
@@ -22,9 +18,12 @@
 								'rounded-md px-3 py-1 text-base font-medium',
 								open ? 'bg-gray-200' : 'bg-gray-100'
 							]"
-							icon-left="chevron-down"
-							>{{ benchFilter.replace('tag:', '') }}</Button
 						>
+							<template #prefix
+								><FeatherIcon name="chevron-down" class="w-4"
+							/></template>
+							{{ benchFilter.replace('tag:', '') }}
+						</Button>
 					</template>
 				</Dropdown>
 			</template>
