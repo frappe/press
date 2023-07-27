@@ -5,12 +5,21 @@
 			site now?
 		</span>
 		<template #actions>
-			<Button appearance="primary" @click="showUpdatesDialog = true">
+			<Button variant="solid" theme="blue" @click="showUpdatesDialog = true">
 				Show updates
 			</Button>
 		</template>
 		<Dialog
-			:options="{ title: 'Updates available' }"
+			:options="{
+				title: 'Updates available',
+				actions: [
+					{
+						label: 'Update Now',
+						variant: 'solid',
+						onClick: () => $resources.scheduleUpdate.fetch()
+					}
+				]
+			}"
 			v-model="showUpdatesDialog"
 		>
 			<template v-slot:body-content>
@@ -44,15 +53,6 @@
 					</div>
 				</div>
 				<ErrorMessage class="mt-1" :message="$resources.scheduleUpdate.error" />
-			</template>
-			<template #actions>
-				<Button
-					appearance="primary"
-					@click="$resources.scheduleUpdate.fetch()"
-					:loading="$resources.scheduleUpdate.loading"
-				>
-					Update now
-				</Button>
 			</template>
 		</Dialog>
 	</Alert>

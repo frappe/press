@@ -14,13 +14,15 @@
 		<template #actions>
 			<Button
 				v-if="deployInformation.deploy_in_progress"
-				appearance="primary"
+				variant="solid"
+				theme="blue"
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
 			<Button
 				v-else
-				appearance="primary"
+				variant="solid"
+				theme="blue"
 				@click="
 					() => {
 						showDeployDialog = true;
@@ -49,6 +51,7 @@
 					:removedApps="deployInformation.removed_apps"
 				/>
 				<BenchSiteUpdates
+					class="p-1"
 					v-if="step == 'Sites'"
 					:sites="deployInformation.sites"
 					v-model:selectedSites="selectedSites"
@@ -58,14 +61,21 @@
 			<template v-slot:actions>
 				<Button
 					v-if="step == 'Sites'"
-					appearance="primary"
+					variant="solid"
+					class="w-full"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
 					{{ selectedSites.length > 0 ? 'Update' : 'Deploy Bench' }}
 				</Button>
-				<Button v-if="step == 'Sites'" @click="step = 'Apps'"> Back </Button>
-				<Button v-else appearance="primary" @click="step = 'Sites'">
+				<Button
+					v-if="step == 'Sites'"
+					class="w-full mt-2"
+					@click="step = 'Apps'"
+				>
+					Back
+				</Button>
+				<Button v-else variant="solid" class="w-full" @click="step = 'Sites'">
 					Next
 				</Button>
 			</template>
