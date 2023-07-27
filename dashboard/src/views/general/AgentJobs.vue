@@ -17,7 +17,6 @@
 								runningJob.status !== 'Success'
 							"
 							:label="runningJob.status"
-							:colorMap="$badgeStatusColorMap"
 						>
 						</Badge>
 						<Badge
