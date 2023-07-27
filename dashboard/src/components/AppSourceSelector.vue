@@ -1,10 +1,10 @@
 <template>
 	<div class="space-y-3">
 		<button
-			class="block w-full cursor-pointer rounded-md border px-4 py-3 text-left shadow ring-inset focus:outline-none focus:ring-2 focus:ring-gray-400"
+			class="block w-full cursor-pointer rounded-md border px-4 py-3 text-left shadow ring-inset focus:outline-none"
 			:class="
 				isAppSelected(app)
-					? 'bg-gray-50 ring-2 ring-gray-500'
+					? 'bg-gray-50 ring-2 ring-gray-600'
 					: 'cursor-pointer hover:border-gray-300'
 			"
 			v-for="app in apps"
