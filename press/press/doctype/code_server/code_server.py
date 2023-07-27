@@ -15,6 +15,10 @@ class CodeServer(Document):
 		self.name = self.subdomain + "." + self.domain
 
 	def validate(self):
+		if frappe.db.exists("Code Server", self.name):
+			frappe.throw(
+				f"Code Server {self.name} already exists please choose a different name"
+			)
 		if not self.proxy_server and self.has_value_changed("server"):
 			self.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
