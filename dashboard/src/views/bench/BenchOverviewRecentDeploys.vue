@@ -7,7 +7,7 @@
 	>
 		<template #actions>
 			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
+				class="text-base text-gray-600 hover:text-gray-700"
 				:to="`/benches/${bench.name}/deploys`"
 			>
 				View deploys →

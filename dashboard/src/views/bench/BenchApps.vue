@@ -48,11 +48,11 @@
 									</a>
 								</Tooltip>
 
-								<Badge color="red"> Attention Required </Badge>
+								<Badge theme="red"> Attention Required </Badge>
 							</span>
 							<Badge
 								v-if="!app.last_github_poll_failed && !app.deployed"
-								color="yellow"
+								theme="orange"
 								>Not Deployed</Badge
 							>
 							<Badge
@@ -61,7 +61,7 @@
 									app.update_available &&
 									app.deployed
 								"
-								color="blue"
+								theme="blue"
 							>
 								Update Available
 							</Badge>
@@ -90,7 +90,7 @@
 					<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 					<AppSourceSelector
 						v-else
-						class="pt-1 max-h-96 overflow-auto"
+						class="p-1 max-h-96 overflow-auto"
 						:class="filteredOptions.length > 5 ? 'pr-2' : ''"
 						:apps="filteredOptions"
 						v-model="selectedApps"
@@ -105,7 +105,8 @@
 				</template>
 				<template v-slot:actions>
 					<Button
-						appearance="primary"
+						variant="solid"
+						class="w-full"
 						v-if="selectedApps.length > 0"
 						:loading="$resources.addApps.loading"
 						@click="

@@ -30,24 +30,27 @@
 				</template>
 			</ListItem>
 		</div>
-		<Dialog :options="{ title: 'Edit Title' }" v-model="showEditTitleDialog">
+		<Dialog
+			:options="{
+				title: 'Edit Title',
+				actions: [
+					{
+						label: 'Update',
+						variant: 'solid',
+						loading: $resources.editTitle.loading,
+						onClick: () => $resources.editTitle.submit()
+					},
+					{
+						label: 'Cancel',
+						onClick: () => (this.showEditTitleDialog = false)
+					}
+				]
+			}"
+			v-model="showEditTitleDialog"
+		>
 			<template v-slot:body-content>
 				<Input label="Title" type="text" v-model="benchTitle" />
 				<ErrorMessage class="mt-4" :message="$resources.editTitle.error" />
-			</template>
-
-			<template v-slot:actions>
-				<div class="space-x-2">
-					<Button @click="showEditTitleDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.editTitle.loading"
-						loadingText="Saving..."
-						@click="$resources.editTitle.submit()"
-					>
-						Update
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</Card>

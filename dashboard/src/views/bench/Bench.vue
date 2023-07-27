@@ -15,7 +15,7 @@
 						<Badge
 							class="ml-4"
 							:label="bench.status"
-							:colorMap="$badgeStatusColorMap"
+							:theme="$badgeStatusColorMap(bench.status)"
 						/>
 					</div>
 					<div class="flex-row space-x-3 md:flex">

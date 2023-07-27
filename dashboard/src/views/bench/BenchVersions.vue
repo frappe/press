@@ -33,9 +33,9 @@
 						<Badge
 							v-if="v.status != 'Active'"
 							:label="v.status"
-							:colorMap="$badgeStatusColorMap"
+							:theme="$badgeStatusColorMap(v.status)"
 						/>
-						<Badge v-else color="green">
+						<Badge v-else theme="green">
 							{{ v.sites.length }}
 							{{ $plural(v.sites.length, 'site', 'sites') }}
 						</Badge>
@@ -163,7 +163,8 @@
 				<Button
 					:loading="$resources.generateCertificate.loading"
 					@click="$resources.generateCertificate.fetch()"
-					appearance="primary"
+					variant="solid"
+					class="w-full"
 					>Generate SSH Certificate</Button
 				>
 			</template>
@@ -290,7 +291,7 @@ export default {
 			return [
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${this.selectedVersion.name}`,
 							'_blank'
@@ -301,13 +302,13 @@ export default {
 					this.$account.ssh_key &&
 					this.selectedVersion.is_ssh_proxy_setup && {
 						label: 'SSH Access',
-						handler: () => {
+						onClick: () => {
 							this.showSSHDialog = true;
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'View Logs',
-					handler: () => {
+					onClick: () => {
 						this.$router.push(
 							`/benches/${this.bench.name}/logs/${this.selectedVersion.name}/`
 						);
@@ -316,7 +317,7 @@ export default {
 				this.selectedVersion.status == 'Active' &&
 					this.selectedVersion.sites.length > 0 && {
 						label: 'Update All Sites',
-						handler: () => {
+						onClick: () => {
 							this.$resources.updateAllSites.submit();
 							this.$notify({
 								title: 'Site update scheduled successfully',
@@ -328,7 +329,7 @@ export default {
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'Restart Bench',
-					handler: () => {
+					onClick: () => {
 						this.confirmRestart();
 					}
 				}

@@ -1,7 +1,25 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<Dialog :options="{ title: 'Drop Bench' }" v-model="dialogOpen">
+		<Dialog
+			:options="{
+				title: 'Drop Bench',
+				actions: [
+					{
+						label: 'Drop Bench',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.dropBench.loading,
+						onClick: () => $resources.dropBench.submit()
+					},
+					{
+						label: 'Cancel',
+						onClick: () => (this.dialogOpen = false)
+					}
+				]
+			}"
+			v-model="dialogOpen"
+		>
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop this bench? All the sites on this bench
@@ -14,18 +32,6 @@
 				</p>
 				<Input type="text" class="mt-4 w-full" v-model="confirmBenchName" />
 				<ErrorMessage class="mt-2" :message="$resources.dropBench.error" />
-			</template>
-
-			<template v-slot:actions>
-				<Button @click="dialogOpen = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="danger"
-					@click="$resources.dropBench.submit()"
-					:loading="$resources.dropBench.loading"
-				>
-					Drop Bench
-				</Button>
 			</template>
 		</Dialog>
 	</div>

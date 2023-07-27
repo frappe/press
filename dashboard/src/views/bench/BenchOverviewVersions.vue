@@ -7,7 +7,7 @@
 	>
 		<template #actions>
 			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
+				class="text-base text-gray-600 hover:text-gray-700"
 				:to="`/benches/${bench.name}/versions`"
 			>
 				View versions →
@@ -32,14 +32,14 @@
 						<Badge
 							v-if="version.status != 'Active'"
 							:label="version.status"
-							:colorMap="$badgeStatusColorMap"
+							:theme="$badgeStatusColorMap(version.status)"
 						/>
 						<router-link
 							v-else
 							class="block"
 							:to="`/benches/${bench.name}/versions/${version.name}`"
 						>
-							<Badge class="cursor-pointer hover:text-green-600" color="green">
+							<Badge class="cursor-pointer hover:text-green-600" theme="green">
 								{{ version.sites.length }}
 								{{ $plural(version.sites.length, 'site', 'sites') }}
 							</Badge>
