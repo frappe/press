@@ -19,7 +19,7 @@
 				Discard changes
 			</Button>
 			<Button
-				appearance="primary"
+				variant="solid"
 				v-if="editMode"
 				@click="updateConfig"
 				:loading="$resources.updateConfig.loading"
