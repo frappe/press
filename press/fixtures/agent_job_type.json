@@ -446,19 +446,47 @@
   "request_path": "/proxy/upstreams/{upstream}/sites",
   "steps": [
    {
-    "parent": "Add Site to Upstream",
+    "parent": "Add Code Server to Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Add Site File to Upstream Directory"
    },
    {
-    "parent": "Add Site to Upstream",
+    "parent": "Add Code Server to Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Generate NGINX Configuration"
    },
    {
-    "parent": "Add Site to Upstream",
+    "parent": "Add Code Server to Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-07-21 23:20:14.208716",
+  "name": "Remove Code Server from Upstream",
+  "request_method": "POST",
+  "request_path": "/proxy/upstreams/{upstream}/sites",
+  "steps": [
+   {
+    "parent": "Remove Code Server from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "parent": "Remove Code Server from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Code Server from Upstream",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
@@ -493,6 +521,66 @@
    },
    {
     "parent": "Setup Code Server",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-07-21 23:20:14.208716",
+  "name": "Start Code Server",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/codeserver/start",
+  "steps": [
+   {
+    "parent": "Start Code Server",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Start Code Server"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-07-21 23:20:14.208716",
+  "name": "Stop Code Server",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/codeserver/stop",
+  "steps": [
+   {
+    "parent": "Stop Code Server",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Stop Code Server"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-07-21 23:20:14.208716",
+  "name": "Archive Code Server",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/codeserver/archive",
+  "steps": [
+   {
+    "parent": "Archive Code Server",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Code Server"
+   },
+   {
+    "parent": "Archive Code Server",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Archive Code Server",
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
