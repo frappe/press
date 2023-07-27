@@ -7,6 +7,7 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.agent import Agent
 from press.utils import log_error
+from press.utils.dns import create_dns_record
 
 
 class CodeServer(Document):
@@ -23,6 +24,7 @@ class CodeServer(Document):
 	@frappe.whitelist()
 	def setup(self):
 		try:
+			create_dns_record(doc=self, record_name=self.name)
 			agent = Agent(self.proxy_server, server_type="Proxy Server")
 			agent.new_upstream_file(server=self.server, code_server=self.name)
 

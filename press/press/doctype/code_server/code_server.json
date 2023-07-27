@@ -14,6 +14,7 @@
   "status",
   "proxy_server",
   "server",
+  "cluster",
   "domain",
   "password"
  ],
@@ -37,7 +38,8 @@
    "fieldname": "proxy_server",
    "fieldtype": "Link",
    "label": "Proxy Server",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "reqd": 1
   },
   {
    "fetch_from": "bench.server",
@@ -45,8 +47,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Server",
-   "options": "Server",
-   "reqd": 1
+   "options": "Server"
   },
   {
    "fieldname": "domain",
@@ -74,8 +75,7 @@
    "fieldname": "team",
    "fieldtype": "Link",
    "label": "Team",
-   "options": "Team",
-   "reqd": 1
+   "options": "Team"
   },
   {
    "fetch_from": "bench.group",
@@ -83,6 +83,13 @@
    "fieldtype": "Link",
    "label": "Release Group",
    "options": "Release Group"
+  },
+  {
+   "fetch_from": "server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -92,7 +99,7 @@
    "link_fieldname": "code_server"
   }
  ],
- "modified": "2023-07-26 19:52:15.753212",
+ "modified": "2023-07-27 10:54:22.647742",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Code Server",
