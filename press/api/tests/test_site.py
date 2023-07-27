@@ -13,15 +13,23 @@ from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.bench.test_bench import create_test_bench
+from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPISite(FrappeTestCase):
+	def setUp(self):
+		self.team = create_test_press_admin_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+
 	def tearDown(self):
 		frappe.db.rollback()
+		frappe.set_user("Administrator")
 
 	def test_options_contains_only_public_groups_when_private_group_is_not_given(
 		self,
@@ -33,20 +41,78 @@ class TestAPISite(FrappeTestCase):
 		group12 = create_test_release_group([app], public=True, frappe_version="Version 12")
 		group13 = create_test_release_group([app], public=True, frappe_version="Version 13")
 		group14 = create_test_release_group([app], public=True, frappe_version="Version 14")
+
+		server = create_test_server()
+		create_test_bench(group=group12, server=server.name)
+		create_test_bench(group=group13, server=server.name)
+		create_test_bench(group=group14, server=server.name)
+		frappe.set_user(self.team.user)
 		private_group = create_test_release_group(
 			[app], public=False, frappe_version="Version 14"
 		)
-
-		create_test_bench(group=group12)
-		create_test_bench(group=group13)
-		create_test_bench(group=group14)
-		create_test_bench(group=private_group)
+		create_test_bench(group=private_group, server=server.name)
 
 		options = get_new_site_options()
 
 		for version in options["versions"]:
 			if version["name"] == "Version 14":
 				self.assertEqual(version["group"]["name"], group14.name)
+
+	def test_new_fn_creates_site_and_subscription(self):
+		from press.api.site import new
+
+		app = create_test_app()
+		group = create_test_release_group([app])
+		bench = create_test_bench(group=group)
+		plan = create_test_plan("Site")
+
+		frappe.set_user(self.team.user)
+		new_site = new(
+			{"name": "testsite", "group": group.name, "plan": plan.name, "apps": [app.name]}
+		)
+
+		created_site = frappe.get_last_doc("Site")
+		subscription = frappe.get_last_doc("Subscription")
+		self.assertEqual(new_site["site"], created_site.name)
+		self.assertEqual(subscription.document_name, created_site.name)
+		self.assertEqual(subscription.plan, plan.name)
+		self.assertTrue(subscription.enabled)
+		self.assertEqual(created_site.team, self.team.name)
+		self.assertEqual(created_site.bench, bench.name)
+		self.assertEqual(created_site.status, "Pending")
+
+	def test_get_fn(self):
+		pass
+
+	def test_check_for_updates_fn(self):
+		pass
+
+	def test_get_installed_apps(self):
+		pass
+
+	def test_available_apps(self):
+		pass
+
+	def test_current_plan(self):
+		pass
+
+	def test_check_dns_cname_a(self):
+		pass
+
+	def test_install_app(self):
+		pass
+
+	def test_uninstall_app(self):
+		pass
+
+	def test_update_config(self):
+		pass
+
+	def test_get_upload_link(self):
+		pass
+
+	def test_change_team(self):
+		pass
 
 
 class TestAPISiteList(FrappeTestCase):

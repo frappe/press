@@ -88,7 +88,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, start=0, bench_filter=""):
+def all(server=None, bench_filter=""):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -110,7 +110,6 @@ def all(server=None, start=0, bench_filter=""):
 			group.creation,
 		)
 		.orderby(group.title, order=frappe.qb.desc)
-		.limit(f"{start}, 10")
 	)
 
 	bench = frappe.qb.DocType("Bench")
@@ -270,37 +269,33 @@ def bench_config(release_group_name):
 	else:
 		bench_config = []
 
-	return {"bench_config": bench_config, "common_site_config": common_site_config}
+	return common_site_config + bench_config
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update_config(name, common_site_config, bench_config):
+def update_config(name, config):
 	sanitized_common_site_config, sanitized_bench_config = [], []
+	bench_config_keys = ["http_timeout"]
 
-	common_site_config = frappe.parse_json(common_site_config)
-	common_site_config = [frappe._dict(c) for c in common_site_config]
+	config = frappe.parse_json(config)
+	config = [frappe._dict(c) for c in config]
 
-	for c in common_site_config:
+	for c in config:
 		if c.key in get_client_blacklisted_keys():
 			continue
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type in ("JSON", "Boolean"):
 			c.value = frappe.parse_json(c.value)
-		sanitized_common_site_config.append(c)
 
-	bench_config = frappe.parse_json(bench_config)
-	bench_config = [frappe._dict(c) for c in bench_config]
-
-	for c in bench_config:
-		if c.key == "http_timeout":
-			c.value = int(c.value)
-		if c.key == "http_timeout" or c == {}:
+		if c.key in bench_config_keys:
 			sanitized_bench_config.append(c)
+		else:
+			sanitized_common_site_config.append(c)
 
 	rg = frappe.get_doc("Release Group", name)
-	rg.update_config_in_release_group(sanitized_common_site_config, bench_config)
+	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
 	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 

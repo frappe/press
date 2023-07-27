@@ -9,6 +9,7 @@ from typing import Optional
 from unittest.mock import Mock, patch
 
 import frappe
+import json
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -27,7 +28,7 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_bench(
-	user: str = "Administrator",
+	user: str = None,
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
@@ -37,6 +38,7 @@ def create_test_bench(
 
 	API call to agent will be faked when creating the doc.
 	"""
+	user = user or frappe.session.user
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
@@ -334,3 +336,31 @@ class TestSite(unittest.TestCase):
 		if site.configuration[0].key == "host_name":
 			config_host = site.configuration[0].value
 		self.assertEqual(config_host, f"https://{site_domain1.name}")
+
+	def test_suspend_without_reload_creates_agent_job_with_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.suspend(skip_reload=True)
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
+
+	def test_suspend_without_skip_reload_creates_agent_job_without_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.suspend()
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
+
+	def test_archive_with_skip_reload_creates_agent_job_with_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.archive(skip_reload=True)
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertTrue(json.loads(job.request_data).get("skip_reload"))
+
+	def test_archive_without_skip_reload_creates_agent_job_without_skip_reload(self):
+		site = create_test_site("testsubdomain")
+		site.archive()
+
+		job = frappe.get_doc("Agent Job", {"site": site.name})
+		self.assertFalse(json.loads(job.request_data).get("skip_reload"))

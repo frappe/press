@@ -471,16 +471,18 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site: str, site_name=None):
+	def remove_upstream_site(self, server, site: str, site_name=None, skip_reload=False):
 		site_name = site_name or site
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
 			"Remove Site from Upstream",
 			f"proxy/upstreams/{ip}/sites/{site_name}",
 			method="DELETE",
 			site=site,
 			upstream=server,
+			data=data,
 		)
 
 	def add_ssh_user(self, bench):
@@ -555,8 +557,8 @@ class Agent:
 			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
 		)
 
-	def update_site_status(self, server, site, status):
-		data = {"status": status}
+	def update_site_status(self, server, site, status, skip_reload=False):
+		data = {"status": status, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -566,6 +568,9 @@ class Agent:
 			site=site,
 			upstream=server,
 		)
+
+	def reload_nginx(self):
+		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
 	def cleanup_unused_files(self):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})

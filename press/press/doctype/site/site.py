@@ -615,7 +615,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
@@ -627,7 +627,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name, site_name)
+		agent.remove_upstream_site(self.server, self.name, site_name, skip_reload)
 
 		self.db_set("host_name", None)
 
@@ -1052,11 +1052,11 @@ class Site(Document):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended")
+		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
@@ -1086,10 +1086,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status)
+		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)

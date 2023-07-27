@@ -91,10 +91,4 @@ frappe.ui.form.on('Release Group', {
 
 		frm.set_df_property('dependencies', 'cannot_add_rows', 1);
 	},
-	version: function (frm) {
-		if (frm.is_new()) {
-			frm.clear_table('dependencies');
-			frm.call('validate_dependencies');
-		}
-	},
 });

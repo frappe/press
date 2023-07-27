@@ -9,8 +9,11 @@
  "field_order": [
   "public",
   "number",
+  "column_break_ramy",
   "default",
-  "status"
+  "status",
+  "dependency_table_section",
+  "dependencies"
  ],
  "fields": [
   {
@@ -45,6 +48,21 @@
    "label": "Status",
    "options": "Develop\nBeta\nStable\nEnd of Life",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ramy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dependency_table_section",
+   "fieldtype": "Section Break",
+   "label": "Dependency Table"
+  },
+  {
+   "fieldname": "dependencies",
+   "fieldtype": "Table",
+   "label": "Version Dependencies",
+   "options": "Frappe Version Dependency"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -54,10 +72,11 @@
    "link_fieldname": "version"
   }
  ],
- "modified": "2021-01-12 09:55:49.348217",
+ "modified": "2023-07-19 16:24:24.727292",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Frappe Version",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -75,5 +94,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

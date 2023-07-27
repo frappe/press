@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 import frappe
-
+from frappe.core.utils import find
 from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -23,13 +23,14 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App], user: str = "Administrator", public=False, frappe_version=None
+	apps: list[App], user: str = None, public=False, frappe_version=None
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
 	Also creates app source
 	"""
+	user = user or frappe.session.user
 	if not frappe_version:
 		frappe_version = create_test_frappe_version().name
 	release_group = frappe.get_doc(
@@ -193,3 +194,25 @@ class TestReleaseGroup(unittest.TestCase):
 		)
 		self.assertEqual(new_app_source.repository_url, previous_app_source.repository_url)
 		self.assertEqual(new_app_source.app, app.name)
+
+	def test_new_release_group_loaded_with_correct_dependencies(self):
+		app = create_test_app("frappe", "Frappe Framework")
+		frappe_version = create_test_frappe_version(number=14, python="3.10")
+		group = frappe.get_doc(
+			{
+				"doctype": "Release Group",
+				"title": "Test Group",
+				"version": "Version 14",
+				"apps": [
+					{"app": app.name, "source": create_test_app_source("Version 14", app).name}
+				],
+				"team": self.team,
+			}
+		).insert()
+
+		self.assertEqual(
+			find(group.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
+			find(
+				frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION"
+			).version,
+		)
