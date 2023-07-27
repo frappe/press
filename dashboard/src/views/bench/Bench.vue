@@ -144,14 +144,14 @@ export default {
 				this.bench.status == 'Active' && {
 					label: 'New Site',
 					icon: 'plus',
-					handler: () => {
+					onClick: () => {
 						this.$router.push(`/${this.bench.name}/new`);
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
 							'_blank'
@@ -161,7 +161,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					handler: async () => {
+					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
 						this.$notify({
 							title: 'Switched Team',
@@ -175,7 +175,7 @@ export default {
 					!this.bench.public && {
 						label: 'Update All Sites to Latest Version',
 						icon: 'arrow-up-circle',
-						handler: async () => {
+						onClick: async () => {
 							await this.$resources.updateAllSites.submit();
 							this.$notify({
 								title: 'Site update scheduled successfully',
