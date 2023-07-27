@@ -7,7 +7,7 @@ from frappe.model.naming import append_number_if_name_exists
 
 from press.agent import Agent
 from press.utils import log_error
-from press.utils.dns import create_dns_record
+from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class CodeServer(Document):
@@ -15,10 +15,11 @@ class CodeServer(Document):
 		self.name = self.subdomain + "." + self.domain
 
 	def validate(self):
-		if frappe.db.exists("Code Server", self.name):
-			frappe.throw(
-				f"Code Server {self.name} already exists please choose a different name"
-			)
+		if self.has_value_changed("subdomain"):
+			if frappe.db.exists("Code Server", self.name):
+				frappe.throw(
+					f"Code Server {self.name} already exists please choose a different name"
+				)
 		if not self.proxy_server and self.has_value_changed("server"):
 			self.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
@@ -59,6 +60,24 @@ class CodeServer(Document):
 		except Exception as e:
 			log_error(title="Start Code Server Failed", data=e)
 
+	@frappe.whitelist()
+	def archive(self):
+		try:
+			self.status = "Pending"
+			_change_dns_record(
+				method="DELETE",
+				domain=self.domain,
+				proxy_server=self.proxy_server,
+				record_name=self.name,
+			)
+			agent = Agent(self.proxy_server, server_type="Proxy Server")
+			agent.remove_upstream_file(server=self.server, code_server=self.name)
+
+			agent = Agent(self.server, server_type="Server")
+			agent.archive_code_server(self.bench, self.name)
+		except Exception as e:
+			log_error(title="Archive Code Server Failed", data=e)
+
 
 def process_new_code_server_job_update(job):
 	other_job_types = {
@@ -94,7 +113,18 @@ def process_stop_code_server_job_update(job):
 
 
 def process_archive_code_server_job_update(job):
-	if job.status == "Success":
+	other_job_types = {
+		"Remove Code Server from Upstream": ("Archive Code Server"),
+		"Archive Code Server": ("Remove Code Server from Upstream"),
+	}[job.job_type]
+
+	first = job.status
+	second = frappe.get_all(
+		"Agent Job",
+		fields=["status"],
+		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
+	)[0].status
+	if first == second == "Success":
 		release_name(job.code_server)
 		frappe.db.set_value("Code Server", job.code_server, "status", "Archived")
 

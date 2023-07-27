@@ -510,8 +510,12 @@ class Agent:
 		)
 
 	def archive_code_server(self, bench, name):
-		# remove site file from upstream if archived after archiving bench
-		pass
+		return self.create_agent_job(
+			"Archive Code Server",
+			f"benches/{bench}/codeserver/archive",
+			method="POST",
+			code_server=name,
+		)
 
 	def add_ssh_user(self, bench):
 		private_ip = frappe.db.get_value("Server", bench.server, "private_ip")
