@@ -23,13 +23,14 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App], user: str = "Administrator", public=False, frappe_version=None
+	apps: list[App], user: str = None, public=False, frappe_version=None
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
 
 	Also creates app source
 	"""
+	user = user or frappe.session.user
 	if not frappe_version:
 		frappe_version = create_test_frappe_version().name
 	release_group = frappe.get_doc(

@@ -28,7 +28,7 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 def create_test_bench(
-	user: str = "Administrator",
+	user: str = None,
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
@@ -38,6 +38,7 @@ def create_test_bench(
 
 	API call to agent will be faked when creating the doc.
 	"""
+	user = user or frappe.session.user
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
