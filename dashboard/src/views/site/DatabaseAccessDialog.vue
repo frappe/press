@@ -38,7 +38,7 @@
 								label: 'Submit',
 								variant: 'solid',
 								loading: $resources.changePlan.loading,
-								onClick: changePlan
+								onClick: () => $resources.changePlan.submit()
 							}
 						]
 					}"
@@ -283,9 +283,6 @@ export default {
 					}, 1000);
 				}
 			});
-		},
-		changePlan() {
-			this.$resources.changePlan.submit();
 		}
 	}
 };

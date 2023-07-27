@@ -128,7 +128,11 @@
 					{
 						label: 'Submit',
 						variant: 'solid',
-						onClick: transferSiteToTeam
+						onClick: () =>
+							$resources.transferSite.submit({
+								team: emailOfChildTeam,
+								name: siteName
+							})
 					}
 				]
 			}"
@@ -282,12 +286,6 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
-		},
-		transferSiteToTeam() {
-			this.$resources.transferSite.submit({
-				team: this.emailOfChildTeam,
-				name: this.siteName
-			});
 		}
 	},
 	computed: {

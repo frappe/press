@@ -128,7 +128,7 @@
 						label: 'Restore',
 						variant: 'solid',
 						loading: $resources.restoreBackup.loading,
-						onClick: restoreBackup
+						onClick: () => $resources.restoreBackup.submit()
 					}
 				]
 			}"
@@ -297,9 +297,6 @@ export default {
 					closeDialog();
 				}
 			});
-		},
-		restoreBackup() {
-			this.$resources.restoreBackup.submit();
 		}
 	},
 	computed: {
