@@ -103,7 +103,6 @@ class DeployCandidate(Document):
 		self._build()
 		self._deploy(staging)
 
-	@frappe.whitelist()
 	def _deploy(self, staging=False):
 		try:
 			self.create_deploy(staging)
