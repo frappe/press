@@ -47,16 +47,10 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
-		self.set_partner_payment_mode()
-
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.user.encode())
 		self.referrer_id = h.hexdigest()
-
-	def set_partner_payment_mode(self):
-		if self.erpnext_partner:
-			self.payment_mode = "Partner Credits"
 
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
@@ -273,15 +267,12 @@ class Team(Document):
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.partner_email = self.user
-		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.save(ignore_permissions=True)
-		# TODO: Maybe check if the partner had enough credits
-		# for settlement and if not, change payment mode
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:
@@ -509,9 +500,7 @@ class Team(Document):
 		doc.insert(ignore_permissions=True)
 		doc.submit()
 		# change payment mode to prepaid credits if default is card or not set
-		self.payment_mode = (
-			"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
-		)
+		self.payment_mode = "Prepaid Credits"
 		self.save()
 		return doc
 
@@ -595,12 +584,6 @@ class Team(Document):
 		if self.free_account or self.parent_team:
 			return allow
 
-		if self.payment_mode == "Partner Credits":
-			if self.get_available_partner_credits() > 0:
-				return allow
-			else:
-				why = "Cannot create site due to insufficient partner credits"
-
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
@@ -616,7 +599,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.payment_mode == "Partner Credits":
+		if self.free_account:
 			return True
 
 		return bool(
@@ -626,14 +609,11 @@ class Team(Document):
 		)
 
 	def get_onboarding(self):
-		if self.payment_mode == "Partner Credits":
-			billing_setup = True
-		else:
-			billing_setup = bool(
-				self.payment_mode in ["Card", "Prepaid Credits"]
-				and (self.default_payment_method or self.get_balance() > 0)
-				and self.billing_address
-			)
+		billing_setup = bool(
+			self.payment_mode in ["Card", "Prepaid Credits"]
+			and (self.default_payment_method or self.get_balance() > 0)
+			and self.billing_address
+		)
 
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 

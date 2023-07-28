@@ -52,22 +52,10 @@ class Invoice(Document):
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
 
-		if self.partner_email:
-			self.apply_partner_discount()
-
 		# set as unpaid by default
 		self.status = "Unpaid"
 
 		self.amount_due = self.total
-
-		if self.payment_mode == "Partner Credits":
-			self.payment_attempt_count += 1
-			self.save()
-			frappe.db.commit()
-
-			self.cancel_applied_credits()
-			self.apply_partner_credits()
-			return
 
 		self.apply_credit_balance()
 		if self.amount_due == 0:
@@ -406,35 +394,6 @@ class Invoice(Document):
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
 
-	def apply_partner_discount(self):
-		# check if discount is already added
-		for discount in self.discounts:
-			if discount.note == "Flat Partner Discount":
-				return
-
-		# give 10% discount for partners
-		total_partner_discount = 0
-		for item in self.items:
-			if item.document_type in ("Site", "Server", "Database Server"):
-				item.discount = item.amount * 0.1
-				total_partner_discount += item.discount
-
-		if total_partner_discount > 0:
-			self.append(
-				"discounts",
-				{
-					"discount_type": "Flat On Total",
-					"based_on": "Amount",
-					"percent": 0,
-					"amount": total_partner_discount,
-					"note": "Flat Partner Discount",
-					"via_team": False,
-				},
-			)
-
-		self.save()
-		self.reload()
-
 	def set_total_and_discount(self):
 		total_discount_amount = 0
 
@@ -480,29 +439,6 @@ class Invoice(Document):
 			)
 			doc.insert()
 			doc.submit()
-
-	def apply_partner_credits(self):
-		client = self.get_frappeio_connection()
-		response = client.session.post(
-			f"{client.url}/api/method/consume_credits_against_fc_invoice",
-			headers=client.headers,
-			data={"invoice": self.as_json()},
-		)
-
-		if response.ok:
-			res = response.json()
-			partner_order = res.get("message")
-
-			if partner_order:
-				self.frappe_partner_order = partner_order
-				self.amount_paid = self.amount_due
-				self.status = "Paid"
-				self.save()
-				self.submit()
-		else:
-			self.add_comment(
-				text="Failed to pay via Partner credits" + "<br><br>" + response.text
-			)
 
 	def apply_credit_balance(self):
 		# cancel applied credits to re-apply available credits
@@ -870,14 +806,14 @@ def finalize_unpaid_prepaid_credit_invoices():
 	"""Should be run daily in contrast to `finalize_draft_invoices`, which runs hourly"""
 	today = frappe.utils.today()
 
-	# Invoices with `Prepaid Credits` or `Partner Credits` as mode and unpaid
+	# Invoices with `Prepaid Credits` as mode and unpaid
 	invoices = frappe.db.get_all(
 		"Invoice",
 		filters={
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
-			"payment_mode": ("in", ["Prepaid Credits", "Partner Credits"]),
+			"payment_mode": ("in", ["Prepaid Credits"]),
 		},
 		pluck="name",
 	)

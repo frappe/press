@@ -963,14 +963,7 @@ class Site(Document):
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
-		if team.payment_mode == "Partner Credits" and (
-			not team.get_available_partner_credits() > 0
-		):
-			frappe.throw("Cannot change plan because you don't have sufficient partner credits")
-
-		if team.payment_mode != "Partner Credits" and not (
-			team.default_payment_method or team.get_balance()
-		):
+		if not (team.default_payment_method or team.get_balance()):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
