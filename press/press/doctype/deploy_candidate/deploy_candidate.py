@@ -167,6 +167,7 @@ class DeployCandidate(Document):
 				else []
 			)
 			+ [
+				("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
 				("pre", "node", "Setup Prerequisites", "Install Node.js"),
 				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
 				("pre", "pip", "Setup Prerequisites", "Install pip"),
