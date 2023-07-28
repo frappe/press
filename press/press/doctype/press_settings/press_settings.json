@@ -64,6 +64,7 @@
   "docker_registry_username",
   "docker_registry_password",
   "docker_build_section",
+  "suspend_builds",
   "clone_directory",
   "build_directory",
   "column_break_66",
@@ -979,11 +980,18 @@
    "fieldname": "plausible_site_id",
    "fieldtype": "Data",
    "label": "Plausible site id"
+  },
+  {
+   "default": "0",
+   "fieldname": "suspend_builds",
+   "fieldtype": "Check",
+   "label": "Suspend Builds",
+   "read_only": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-07-01 13:06:23.438512",
+ "modified": "2023-07-28 15:18:24.030578",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
