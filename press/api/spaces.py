@@ -14,6 +14,7 @@ def spaces():
 				LEFT JOIN `tabRelease Group` rg
 				ON cs.group = rg.name
 				WHERE cs.team = '{get_current_team()}'
+				AND cs.status != 'Archived'
 				ORDER BY creation DESC""",
 			as_dict=True,
 		),
@@ -43,6 +44,12 @@ def code_server_password(name):
 	if get_current_team() != frappe.db.get_value("Code Server", name, "team"):
 		frappe.throw("Not allowed", frappe.PermissionError)
 	return frappe.utils.password.get_decrypted_password("Code Server", name, "password")
+
+
+@frappe.whitelist()
+@protected("Code Server")
+def drop_code_server(name):
+	frappe.get_doc("Code Server", name).archive()
 
 
 @frappe.whitelist()

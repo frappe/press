@@ -399,6 +399,8 @@ def process_job_updates(job_name):
 			process_stop_code_server_job_update(job)
 		elif job.job_type == "Archive Code Server":
 			process_archive_code_server_job_update(job)
+		elif job.job_type == "Remove Code Server from Upstream":
+			process_archive_code_server_job_update(job)
 		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site":

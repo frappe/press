@@ -46,11 +46,38 @@
 				description="Once you drop your code server, there is no going back"
 			>
 				<template v-slot:actions>
-					<Button @click="showDialog">
+					<Button @click="showDialog = true">
 						<span class="text-red-600">Drop</span>
 					</Button>
 				</template>
 			</ListItem>
+
+			<Dialog v-model="showDialog" :options="{ title: 'Drop Code Server' }">
+				<template v-slot:body-content>
+					<p class="text-base">
+						Are you sure you want to drop your code-server? Once you drop your
+						code-server, there is no going back.
+					</p>
+					<ErrorMessage
+						class="mt-2"
+						:message="$resources.dropCodeServer.error"
+					/>
+				</template>
+
+				<template v-slot:actions>
+					<div>
+						<Button @click="showDialog = false"> Cancel </Button>
+						<Button
+							class="ml-3"
+							appearance="danger"
+							@click="$resources.dropCodeServer.submit()"
+							:loading="$resources.dropCodeServer.loading"
+						>
+							Drop Code Server
+						</Button>
+					</div>
+				</template>
+			</Dialog>
 		</div>
 	</Card>
 </template>
@@ -63,6 +90,11 @@ export default {
 			type: Object,
 			default: () => {}
 		}
+	},
+	data() {
+		return {
+			showDialog: false
+		};
 	},
 	resources: {
 		stopCodeServer() {
@@ -102,6 +134,17 @@ export default {
 							color: 'green'
 						});
 					});
+				}
+			};
+		},
+		dropCodeServer() {
+			return {
+				method: 'press.api.spaces.drop_code_server',
+				params: {
+					name: this.codeServer.name
+				},
+				onSuccess() {
+					this.$router.push('/spaces');
 				}
 			};
 		}

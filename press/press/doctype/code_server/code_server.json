@@ -31,6 +31,9 @@
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "Status",
    "options": "Pending\nRunning\nStopped\nBroken\nArchived"
   },
@@ -62,8 +65,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Subdomain",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "password",
@@ -99,7 +101,7 @@
    "link_fieldname": "code_server"
   }
  ],
- "modified": "2023-07-28 11:27:09.607853",
+ "modified": "2023-07-28 15:51:07.083218",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Code Server",

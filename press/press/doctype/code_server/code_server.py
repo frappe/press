@@ -125,9 +125,17 @@ def process_archive_code_server_job_update(job):
 		fields=["status"],
 		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
 	)[0].status
-	if first == second == "Success":
+
+	if "Success" == first == second:
+		updated_status = "Archived"
+	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	else:
+		updated_status = "Pending"
+
+	frappe.db.set_value("Code Server", job.code_server, "status", updated_status)
+	if updated_status == "Archived":
 		release_name(job.code_server)
-		frappe.db.set_value("Code Server", job.code_server, "status", "Archived")
 
 
 def release_name(name):
