@@ -101,8 +101,13 @@ class DatabaseServer(BaseServer):
 	def _update_mariadb_system_variables(
 		self, variables: list[DatabaseServerMariaDBVariable] = []
 	):
+		restart = False
 		for variable in variables:
 			variable.update_on_server()
+			if not variable.dynamic:
+				restart = True
+		if restart:
+			self._restart_mariadb()
 
 	@frappe.whitelist()
 	def restart_mariadb(self):
