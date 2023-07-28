@@ -156,7 +156,9 @@
   "telegram_alerts_chat_group",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
-  "enable_google_oauth"
+  "enable_google_oauth",
+  "code_spaces_tab",
+  "spaces_domain"
  ],
  "fields": [
   {
@@ -979,11 +981,22 @@
    "fieldname": "plausible_site_id",
    "fieldtype": "Data",
    "label": "Plausible site id"
+  },
+  {
+   "fieldname": "code_spaces_tab",
+   "fieldtype": "Tab Break",
+   "label": "Code Spaces"
+  },
+  {
+   "fieldname": "spaces_domain",
+   "fieldtype": "Link",
+   "label": "Spaces Domain",
+   "options": "Root Domain"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-07-01 13:06:23.438512",
+ "modified": "2023-07-27 20:55:23.904263",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

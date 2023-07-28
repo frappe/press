@@ -1,6 +1,16 @@
 <template>
 	<div>
 		<PageHeader title="Spaces" subtitle="Your Frappe Spaces and Code Servers">
+			<template v-if="this.$account.team.enabled" v-slot:actions>
+				<Button
+					appearance="primary"
+					iconLeft="plus"
+					class="ml-2"
+					@click="showBillingDialog"
+				>
+					New
+				</Button>
+			</template>
 		</PageHeader>
 
 		<div class="mb-2" v-if="!$account.team.enabled">
@@ -54,6 +64,15 @@ export default {
 				method: 'press.api.spaces.spaces',
 				auto: true
 			};
+		}
+	},
+	methods: {
+		showBillingDialog() {
+			if (!this.$account.hasBillingInfo) {
+				this.showAddCardDialog = true;
+			} else {
+				this.$router.replace('/codeservers/new');
+			}
 		}
 	}
 };

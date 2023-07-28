@@ -5,6 +5,11 @@ export default [
 		component: () => import('../views/spaces/Spaces.vue')
 	},
 	{
+		path: '/codeservers/new',
+		name: 'NewCodeServer',
+		component: () => import('../views/spaces/NewCodeServer.vue')
+	},
+	{
 		path: '/codeservers/:serverName',
 		name: 'CodeServer',
 		component: () => import('../views/spaces/CodeServer.vue'),

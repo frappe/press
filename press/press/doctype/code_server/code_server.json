@@ -25,10 +25,10 @@
    "in_list_view": 1,
    "label": "Bench",
    "options": "Bench",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
+   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -99,7 +99,7 @@
    "link_fieldname": "code_server"
   }
  ],
- "modified": "2023-07-27 13:55:19.166297",
+ "modified": "2023-07-28 11:27:09.607853",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Code Server",

@@ -20,7 +20,9 @@
 							:colorMap="$badgeStatusColorMap"
 						/>
 					</div>
-					<div></div>
+					<div>
+						<Button icon-left="external-link" @click="open"> Open </Button>
+					</div>
 				</div>
 			</div>
 
@@ -45,6 +47,11 @@ export default {
 		Tabs
 	},
 	props: ['serverName'],
+	methods: {
+		open() {
+			window.open(`https://${this.serverName}`, '_blank');
+		}
+	},
 	resources: {
 		codeServer() {
 			return {
