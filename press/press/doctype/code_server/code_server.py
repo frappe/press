@@ -66,7 +66,7 @@ class CodeServer(Document):
 			self.status = "Pending"
 			_change_dns_record(
 				method="DELETE",
-				domain=self.domain,
+				domain=frappe.get_doc("Root Domain", self.domain),
 				proxy_server=self.proxy_server,
 				record_name=self.name,
 			)
@@ -75,6 +75,7 @@ class CodeServer(Document):
 
 			agent = Agent(self.server, server_type="Server")
 			agent.archive_code_server(self.bench, self.name)
+			self.save(ignore_permissions=True)
 		except Exception as e:
 			log_error(title="Archive Code Server Failed", data=e)
 
