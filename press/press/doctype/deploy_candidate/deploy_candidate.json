@@ -12,6 +12,7 @@
   "column_break_2",
   "group",
   "team",
+  "scheduled_time",
   "section_break_4",
   "apps",
   "dependencies",
@@ -60,7 +61,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending\nRunning\nSuccess\nFailure",
+   "options": "Draft\nScheduled\nPending\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -275,10 +276,16 @@
    "fieldtype": "Check",
    "label": "Merge Default and Short RQ Queues",
    "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-06-16 13:20:01.684522",
+ "modified": "2023-07-28 16:00:52.623701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
