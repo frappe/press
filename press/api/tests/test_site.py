@@ -4,7 +4,7 @@
 
 
 import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -12,12 +12,15 @@ from frappe.tests.utils import FrappeTestCase
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
+from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
@@ -81,11 +84,70 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(created_site.bench, bench.name)
 		self.assertEqual(created_site.status, "Pending")
 
-	def test_get_fn(self):
-		pass
+	def test_get_fn_returns_site_details(self):
+		from press.api.site import get
 
-	def test_check_for_updates_fn(self):
-		pass
+		bench = create_test_bench()
+		group = frappe.get_last_doc("Release Group", {"name": bench.group})
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name)
+		site.reload()
+		site_details = get(site.name)
+		self.assertEqual(site_details["name"], site.name)
+		self.assertDictEqual(
+			{
+				"name": site.name,
+				"host_name": site.host_name,
+				"status": site.status,
+				"archive_failed": bool(site.archive_failed),
+				"trial_end_date": site.trial_end_date,
+				"setup_wizard_complete": site.setup_wizard_complete,
+				"group": None,  # because group is public
+				"team": site.team,
+				"frappe_version": group.version,
+				"server_region_info": frappe.db.get_value(
+					"Cluster", site.cluster, ["title", "image"], as_dict=True
+				),
+				"can_change_plan": True,
+				"hide_config": site.hide_config,
+				"notify_email": site.notify_email,
+				"ip": frappe.get_last_doc("Proxy Server").ip,
+				"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+				"tags": frappe.get_all(
+					"Press Tag", {"team": self.team.name, "doctype_name": "Site"}, ["name", "tag"]
+				),
+			},
+			site_details,
+		)
+
+	@patch(
+		"press.press.doctype.app_release_difference.app_release_difference.Github",
+		new=MagicMock(),
+	)
+	def _setup_site_update(self):
+		version = "Version 13"
+		app = create_test_app()
+		group = create_test_release_group([app], frappe_version=version)
+		self.bench1 = create_test_bench(group=group)
+
+		create_test_app_release(
+			app_source=frappe.get_doc("App Source", group.apps[0].source),
+		)  # creates pull type release diff only but args are same
+
+		self.bench2 = create_test_bench(group=group, server=self.bench1.server)
+
+		self.assertNotEqual(self.bench1, self.bench2)
+		# No need to create app release differences as it'll get autofilled by geo.json
+		create_deploy_candidate_differences(self.bench2)  # for site update to be available
+
+	def test_check_for_updates_shows_update_available_when_site_update_available(self):
+		from press.api.site import check_for_updates
+
+		self._setup_site_update()
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=self.bench1.name)
+		out = check_for_updates(site.name)
+		self.assertEqual(out["update_available"], True)
 
 	def test_get_installed_apps(self):
 		pass
