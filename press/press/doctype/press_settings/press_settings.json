@@ -993,9 +993,9 @@
    "fieldtype": "Link",
    "label": "Spaces Domain",
    "options": "Root Domain"
-   "default": "0",
   },
   {
+   "default": "0",
    "fieldname": "suspend_builds",
    "fieldtype": "Check",
    "label": "Suspend Builds",
