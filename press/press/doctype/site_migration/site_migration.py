@@ -327,13 +327,13 @@ class SiteMigration(Document):
 		"""Restore site on destination proxy"""
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.new_upstream_site(self.destination_server, self.site)
+		return agent.new_upstream_file(server=self.destination_server, site=self.site)
 
 	def remove_site_from_source_proxy(self):
 		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_upstream_site(self.source_server, self.site)
+		return agent.remove_upstream_file(server=self.source_server, site=self.site)
 
 	def archive_site_on_source(self):
 		"""Archive site on source"""

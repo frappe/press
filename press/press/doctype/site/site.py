@@ -8,7 +8,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List
 
-import boto3
 import dateutil.parser
 import frappe
 import requests
@@ -34,6 +33,7 @@ from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
@@ -164,7 +164,7 @@ class Site(Document):
 		self.archive(site_name=site_name, reason="Retry Archive")
 
 	def rename(self, new_name: str):
-		self.create_dns_record()
+		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -249,68 +249,14 @@ class Site(Document):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
-		self.create_dns_record()
+		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
 		self.create_agent_request()
-
-	@frappe.whitelist()
-	def create_dns_record(self):
-		"""Check if site needs dns records and creates one."""
-		domain = frappe.get_doc("Root Domain", self.domain)
-		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
-		if self.cluster == domain.default_cluster and not is_standalone:
-			return
-		if is_standalone:
-			self._change_dns_record("UPSERT", domain, self.server)
-		else:
-			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			self._change_dns_record("UPSERT", domain, proxy_server)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._change_dns_record("DELETE", domain, proxy_server, site)
-
-	def _change_dns_record(
-		self, method: str, domain: Document, proxy_server: str, site: str = None
-	):
-		"""
-		Change dns record of site
-
-		method: CREATE | DELETE | UPSERT
-		"""
-		try:
-			site_name = self._get_site_name(self.subdomain) if not site else site
-			client = boto3.client(
-				"route53",
-				aws_access_key_id=domain.aws_access_key_id,
-				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-			)
-			zones = client.list_hosted_zones_by_name()["HostedZones"]
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
-			client.change_resource_record_sets(
-				ChangeBatch={
-					"Changes": [
-						{
-							"Action": method,
-							"ResourceRecordSet": {
-								"Name": site_name,
-								"Type": "CNAME",
-								"TTL": 600,
-								"ResourceRecords": [{"Value": proxy_server}],
-							},
-						}
-					]
-				},
-				HostedZoneId=hosted_zone,
-			)
-		except Exception:
-			log_error(
-				"Route 53 Record Creation Error",
-				domain=domain.name,
-				site=site_name,
-				proxy_server=proxy_server,
-			)
+		_change_dns_record(
+			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
+		)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -324,7 +270,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(self.server, self.name)
+		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
 	def reinstall(self):
@@ -627,7 +573,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name, site_name, skip_reload)
+		agent.remove_upstream_file(server=self.server, site=self.name, site_name=site_name)
 
 		self.db_set("host_name", None)
 
