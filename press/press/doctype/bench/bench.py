@@ -104,6 +104,7 @@ class Bench(Document):
 			"socketio_port": 19000 + self.port_offset,
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
+			"codeserver_port": 16000 + self.port_offset,
 			"is_ssh_enabled": bool(self.is_ssh_enabled),
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,

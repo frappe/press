@@ -106,6 +106,9 @@ let utils = {
 				Approved: 'green',
 				Broken: 'red',
 				Installing: 'yellow',
+				Running: 'green',
+				Pending: 'yellow',
+				Failure: 'red',
 				'Update Available': 'blue',
 				Enabled: 'blue',
 				'Awaiting Approval': 'yellow',
@@ -120,7 +123,8 @@ let utils = {
 				Trial: 'yellow',
 				Published: 'green',
 				Owner: 'blue',
-				Primary: 'green'
+				Primary: 'green',
+				'Latest Deployed': 'yellow'
 			};
 		}
 	}

@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   pv \
   ntp \
   wget \
+  curl \
   supervisor \
   # Dependencies for SSH access
   openssh-server \
@@ -90,6 +91,7 @@ RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTO
   && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
 
+RUN curl -fsSL https://code-server.dev/install.sh | sh `#stage-pre-code-server`
 
 # Install Fonts
 RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/fonts \
@@ -181,5 +183,5 @@ COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 
-EXPOSE 8000 9000 2200
+EXPOSE 8000 9000 2200 8088
 CMD ["supervisord"]
