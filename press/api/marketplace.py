@@ -4,7 +4,6 @@
 
 import json
 import frappe
-import datetime
 
 from typing import Dict, List
 from frappe.core.utils import find
@@ -32,7 +31,6 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
-from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
@@ -912,35 +910,9 @@ def get_plan(name):
 		"title": title,
 		"amount": amount,
 		"gst": gst,
-		"discount_percent": get_discount_percent(name, discount_percent),
+		"discount_percent": discount_percent,
 		"block_monthly": block_monthly,
 	}
-
-
-def get_discount_percent(plan, discount=0.0):
-	team = get_current_team(True)
-	partner_discount_percent = {
-		"Gold": 50.0,
-		"Silver": 40.0,
-		"Bronze": 30.0,
-	}
-
-	if team.erpnext_partner and frappe.get_value(
-		"Marketplace App Plan", plan, "partner_discount"
-	):
-		client = get_frappe_io_connection()
-		response = client.session.post(
-			f"{client.url}/api/method/partner_relationship_management.api.get_partner_type",
-			data={"email": team.partner_email},
-			headers=client.headers,
-		)
-		if response.ok:
-			res = response.json()
-			partner_type = res.get("message")
-			if partner_type is not None:
-				discount = partner_discount_percent.get(partner_type) or discount
-
-	return discount
 
 
 @frappe.whitelist(allow_guest=True)
@@ -968,57 +940,6 @@ def use_existing_credits(site, app, subscription, plan):
 		change_app_plan(subscription, plan)
 
 	return change_site_hosting_plan(site, plan, team)
-
-
-@frappe.whitelist()
-def use_partner_credits(name, app, site, plan, amount, credits):
-	"""
-	Consume partner credits on PRM and add Frappe Cloud credits
-	"""
-	team = get_current_team(True)
-	if amount < team.get_available_partner_credits():
-		try:
-			invoice = frappe.get_doc(
-				doctype="Invoice",
-				team=team.name,
-				type="Subscription",
-				status="Draft",
-				marketplace=1,
-				due_date=datetime.datetime.today(),
-				amount_paid=amount,
-				amount_due=amount,
-			)
-
-			invoice.append(
-				"items",
-				{
-					"description": f"Credits for {app}",
-					"document_type": "Marketplace App",
-					"document_name": app,
-					"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
-					"rate": amount,
-					"quantity": 1,
-					"site": site,
-				},
-			)
-
-			invoice.save()
-			invoice.finalize_invoice()
-			invoice.reload()
-
-			if invoice.status == "Paid":
-				team.allocate_credit_amount(
-					credits, source="Prepaid Credits", remark="Convert from Partner Credits"
-				)
-				change_app_plan(name, plan)
-				change_site_hosting_plan(site, plan, team)
-				frappe.get_cached_doc("Site", site).update_site_config({"app_include_js": []})
-		except Exception as e:
-			frappe.throw(e)
-	else:
-		frappe.throw(
-			"Not enough credits available for this purchase. Please use different method for payment."
-		)
 
 
 @frappe.whitelist(allow_guest=True)

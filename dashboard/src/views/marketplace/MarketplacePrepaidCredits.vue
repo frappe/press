@@ -95,27 +95,13 @@
 		</div>
 	</div>
 
-	<ErrorMessage
-		class="mt-2"
-		v-if="$resources.usePartnerCredits.error"
-		:message="$resources.usePartnerCredits.error"
-	/>
 	<div
 		class="float-right w-fit mt-4"
 		v-if="step == 'Confirm Checkout' && $account.team"
 	>
 		<Button
 			class="mr-2"
-			v-if="$account.team.erpnext_partner"
-			appearance="secondary"
-			@click="$resources.usePartnerCredits.submit()"
-			:loading="$resources.usePartnerCredits.loading"
-		>
-			Use Partner Credits
-		</Button>
-		<Button
-			class="mr-2"
-			v-if="!$account.team.erpnext_partner && $account.balance >= creditsToBuy"
+			v-if="$account.balance >= creditsToBuy"
 			appearance="secondary"
 			@click="step = 'Use Existing Credits'"
 		>
@@ -471,22 +457,6 @@ export default {
 				},
 				onSuccess(r) {
 					this.step = 'Confirm Checkout';
-					window.location.reload();
-				}
-			};
-		},
-		usePartnerCredits() {
-			return {
-				method: 'press.api.marketplace.use_partner_credits',
-				params: {
-					name: this.subscription,
-					app: this.app,
-					site: this.site,
-					plan: this.plan,
-					amount: this.totalAmount,
-					credits: this.creditsToBuy
-				},
-				onSuccess(r) {
 					window.location.reload();
 				}
 			};
