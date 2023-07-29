@@ -94,6 +94,14 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
+		if frappe.db.get_single_value("Press Settings", "suspend_builds"):
+			if self.status != "Scheduled":
+				# Schedule build to be run ASAP.
+				self.status = "Scheduled"
+				self.scheduled_time = frappe.utils.now_datetime()
+				self.save()
+				frappe.db.commit()
+			return
 		self.build_and_deploy()
 
 	def build_and_deploy(self, staging: bool = False):
@@ -103,7 +111,6 @@ class DeployCandidate(Document):
 		self._build()
 		self._deploy(staging)
 
-	@frappe.whitelist()
 	def _deploy(self, staging=False):
 		try:
 			self.create_deploy(staging)
@@ -755,3 +762,25 @@ def delete_draft_candidates():
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Deploy Candidate"
 )
+
+
+@frappe.whitelist()
+def toggle_builds(suspend):
+	frappe.only_for("System Manager")
+	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
+
+
+def run_scheduled_builds():
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{"status": "Scheduled", "scheduled_time": ("<=", frappe.utils.now_datetime())},
+		limit=1,
+	)
+	for candidate in candidates:
+		try:
+			candidate = frappe.get_doc("Deploy Candidate", candidate)
+			candidate.deploy_to_production()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)

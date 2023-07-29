@@ -290,7 +290,10 @@ class ReleaseGroup(Document):
 
 		last_dc_info = self.get_last_deploy_candidate_info()
 		out.last_deploy = last_dc_info
-		out.deploy_in_progress = last_dc_info and last_dc_info.status == "Running"
+		out.deploy_in_progress = last_dc_info and last_dc_info.status in (
+			"Running",
+			"Scheduled",
+		)
 		out.sites = [
 			site.update({"skip_failing_patches": False, "skip_backups": False})
 			for site in frappe.get_all(

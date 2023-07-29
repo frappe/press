@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "prompt",
  "creation": "2023-04-29 00:00:12.372588",
@@ -52,7 +53,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-15 14:40:46.598554",
+ "modified": "2023-07-27 17:35:06.034806",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

@@ -530,7 +530,7 @@ def deploy(name, apps_to_ignore=[]):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
-	candidate.build_and_deploy()
+	candidate.deploy_to_production()
 
 	return candidate.name
 

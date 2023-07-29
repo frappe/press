@@ -176,7 +176,7 @@ class AppRelease(Document):
 			apps_to_ignore = [app.as_dict() for app in group.apps if not app.enable_auto_deploy]
 			candidate = group.create_deploy_candidate(apps_to_ignore)
 			if candidate:
-				candidate.build_and_deploy()
+				candidate.deploy_to_production()
 
 
 def cleanup_unused_releases():

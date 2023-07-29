@@ -9,7 +9,7 @@ from unittest.mock import patch
 from press.press.doctype.app.app import App
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
-from press.press.doctype.team.test_team import create_test_team
+from press.utils import get_current_team
 
 
 @patch.object(AppSource, "create_release", create_test_app_release)
@@ -27,7 +27,7 @@ def create_test_app_source(
 	"""
 	if not repository_url:
 		repository_url = frappe.mock("url")
-	team = team if team else create_test_team().name
+	team = team or get_current_team()
 	return app.add_source(version, repository_url, branch, team)
 
 

@@ -37,7 +37,7 @@ class BenchUpdate(Document):
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(apps_to_ignore)
-		candidate.build_and_deploy()
+		candidate.deploy_to_production()
 
 		self.status = "Running"
 		self.candidate = candidate.name

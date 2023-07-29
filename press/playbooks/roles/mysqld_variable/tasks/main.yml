@@ -37,9 +37,3 @@
   when:
     - persist | default(false) | bool
     - not skip | default(true) | bool
-
-- name: Restart MariaDB Service
-  systemd:
-    name: mysql
-    state: restarted
-  when: restart | default(false) | bool

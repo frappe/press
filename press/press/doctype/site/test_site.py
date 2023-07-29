@@ -25,10 +25,11 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.utils import get_current_team
 
 
 def create_test_bench(
-	user: str = "Administrator",
+	user: str = None,
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
@@ -38,6 +39,7 @@ def create_test_bench(
 
 	API call to agent will be faked when creating the doc.
 	"""
+	user = user or frappe.session.user
 	if not server:
 		proxy_server = create_test_proxy_server()
 		database_server = create_test_database_server()
@@ -99,7 +101,7 @@ def create_test_site(
 			"subdomain": subdomain,
 			"server": bench.server,
 			"bench": bench.name,
-			"team": team or frappe.get_value("Team", {"user": "Administrator"}, "name"),
+			"team": team or get_current_team(),
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,
