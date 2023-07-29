@@ -33,7 +33,7 @@ def options_for_code_server() -> Dict:
 	"""
 	team = get_current_team()
 	groups = frappe.get_all(
-		"Release Group", filters={"team": team}, fields=["name", "title"]
+		"Release Group", filters={"team": team, "public": False}, fields=["name", "title"]
 	)
 	created = frappe.get_all(
 		"Code Server",

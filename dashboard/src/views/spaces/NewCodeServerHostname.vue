@@ -1,9 +1,9 @@
 <template>
 	<div>
-		<label class="text-lg font-semibold"> Choose a Bench </label>
+		<label class="text-lg font-semibold"> Choose a Hostname </label>
 		<p class="text-base text-gray-700">
-			Give your site a unique name. It can only contain alphanumeric characters
-			and dashes.
+			Give your code server a unique name. It can only contain alphanumeric
+			characters and dashes.
 		</p>
 		<div class="mt-4 flex">
 			<input

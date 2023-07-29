@@ -1,5 +1,11 @@
 <template>
 	<div>
+		<div class="ml-2">
+			<label class="text-lg font-semibold"> Choose a Bench </label>
+			<p class="text-base text-gray-700">
+				Choose a bench where you want to install the code server.
+			</p>
+		</div>
 		<ListItem
 			v-for="(bench, index) in benches"
 			:key="bench.name"
