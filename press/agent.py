@@ -473,11 +473,14 @@ class Agent:
 			upstream=server,
 		)
 
-	def remove_upstream_file(self, server, site=None, site_name=None, code_server=None):
+	def remove_upstream_file(
+		self, server, site=None, site_name=None, code_server=None, skip_reload=False
+	):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		doctype = "Site" if site else "Code Server"
 		file_name = site_name or site if (site or site_name) else code_server
+		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
 			f"Remove {doctype} from Upstream",
 			f"proxy/upstreams/{ip}/sites/{file_name}",
@@ -485,6 +488,7 @@ class Agent:
 			site=site,
 			code_server=code_server,
 			upstream=server,
+			data=data,
 		)
 
 	def setup_code_server(self, bench, name, password):

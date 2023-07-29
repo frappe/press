@@ -573,7 +573,9 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_file(server=self.server, site=self.name, site_name=site_name)
+		agent.remove_upstream_file(
+			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
+		)
 
 		self.db_set("host_name", None)
 
