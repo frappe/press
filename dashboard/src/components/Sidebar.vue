@@ -154,7 +154,7 @@ export default {
 						return this.$route.fullPath.indexOf('/spaces') >= 0;
 					},
 					icon: FCIcons.SpacesIcon,
-					condition: () => !this.$account.team?.parent_team
+					condition: () => this.$account.team?.code_servers_enabled
 				},
 				{
 					label: 'Billing',

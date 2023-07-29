@@ -48,6 +48,7 @@
   "database_access_enabled",
   "razorpay_enabled",
   "servers_enabled",
+  "code_servers_enabled",
   "self_hosted_servers_enabled",
   "section_break_28",
   "communication_emails",
@@ -329,6 +330,12 @@
    "fieldtype": "Link",
    "label": "Account Request",
    "options": "Account Request"
+  },
+  {
+   "default": "0",
+   "fieldname": "code_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Code Servers Enabled"
   }
  ],
  "links": [
@@ -378,7 +385,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-07-18 11:19:01.393975",
+ "modified": "2023-07-29 12:19:18.195316",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

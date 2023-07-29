@@ -129,7 +129,6 @@ export default {
 			};
 		}
 	},
-	computed: {},
 	methods: {
 		async nextStep(activeStep, next) {
 			next();
