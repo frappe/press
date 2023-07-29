@@ -44,7 +44,7 @@ except ImportError:
 	install_command = shlex.split(
 		"{} -m pip install {}".format(sys.executable, " ".join(dependencies))
 	)
-	subprocess.call(install_command, stdout=open(os.devnull, "w"))
+	subprocess.check_call(install_command, stdout=open(os.devnull, "w"))
 	import click
 	import html2text
 	import requests
