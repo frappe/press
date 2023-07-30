@@ -82,7 +82,16 @@
 			</ListItem>
 		</div>
 		<Dialog
-			:options="{ title: 'Update Profile Information' }"
+			:options="{
+				title: 'Update Profile Information',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						onClick: () => $resources.updateProfile.submit()
+					}
+				]
+			}"
 			v-model="showProfileEditDialog"
 		>
 			<template v-slot:body-content>
@@ -100,24 +109,21 @@
 				</div>
 				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
 			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showProfileEditDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updateProfile.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
-			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Disable Account' }"
+			:options="{
+				title: 'Disable Account',
+				actions: [
+					{
+						label: 'Disable Account',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.disableAccount.loading,
+						onClick: () => $resources.disableAccount.submit()
+					}
+				]
+			}"
 			v-model="showDisableAccountDialog"
 		>
 			<template v-slot:body-content>
@@ -134,18 +140,6 @@
 					You can enable your account later anytime. Do you want to continue?
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
-			</template>
-
-			<template v-slot:actions>
-				<Button @click="showDisableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="danger"
-					@click="$resources.disableAccount.submit()"
-					:loading="$resources.disableAccount.loading"
-				>
-					Disable Account
-				</Button>
 			</template>
 		</Dialog>
 

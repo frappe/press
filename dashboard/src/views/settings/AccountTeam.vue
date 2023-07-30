@@ -60,11 +60,13 @@
 					/>
 					<ErrorMessage :message="$resourceErrors" />
 
-					<div class="mt-5 flex flex-row justify-end">
-						<Button @click="showManageTeamForm = false"> Cancel </Button>
+					<div class="mt-5">
+						<Button class="w-full" @click="showManageTeamForm = false">
+							Cancel
+						</Button>
 						<Button
-							class="ml-2"
-							appearance="primary"
+							class="w-full mt-2"
+							variant="solid"
 							:loading="$resources.addChildTeam.loading"
 							@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
 						>
@@ -72,8 +74,12 @@
 						</Button>
 					</div>
 				</div>
-				<div v-else class="mt-5 flex flex-row justify-end">
-					<Button appearance="primary" @click="showManageTeamForm = true">
+				<div v-else class="mt-5">
+					<Button
+						class="w-full"
+						variant="solid"
+						@click="showManageTeamForm = true"
+					>
 						Add Child team
 					</Button>
 				</div>

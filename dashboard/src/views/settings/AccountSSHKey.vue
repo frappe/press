@@ -27,7 +27,19 @@
 				Change SSH Key
 			</Button>
 		</template>
-		<Dialog :options="{ title: 'New SSH Key' }" v-model="showAddNewKeyDialog">
+		<Dialog
+			:options="{
+				title: 'New SSH Key',
+				actions: [
+					{
+						label: 'Add Key',
+						variant: 'solid',
+						onClick: () => $resources.saveKey.submit()
+					}
+				]
+			}"
+			v-model="showAddNewKeyDialog"
+		>
 			<template v-slot:body-content>
 				<div class="mt-3">
 					<Input
@@ -39,12 +51,6 @@
 					/>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.saveKey.error" />
-			</template>
-
-			<template #actions>
-				<Button appearance="primary" @click="$resources.saveKey.submit()">
-					Add Key
-				</Button>
 			</template>
 		</Dialog>
 	</Card>

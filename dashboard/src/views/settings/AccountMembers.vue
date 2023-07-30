@@ -35,7 +35,17 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Add New Member' }"
+			:options="{
+				title: 'Add New Member',
+				actions: [
+					{
+						label: 'Send Invitation',
+						variant: 'solid',
+						loading: $resources.addMember.loading,
+						onClick: () => $resources.addMember.submit({ email: memberEmail })
+					}
+				]
+			}"
 			v-model="showManageMemberDialog"
 		>
 			<template v-slot:body-content>
@@ -47,17 +57,6 @@
 					required
 				/>
 				<ErrorMessage :message="$resourceErrors" />
-			</template>
-
-			<template v-slot:actions>
-				<Button
-					class="ml-2"
-					appearance="primary"
-					:loading="$resources.addMember.loading"
-					@click="$resources.addMember.submit({ email: memberEmail })"
-				>
-					Send Invitation
-				</Button>
 			</template>
 		</Dialog>
 	</Card>
