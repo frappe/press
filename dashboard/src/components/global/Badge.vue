@@ -17,6 +17,9 @@ export default {
 				Approved: 'green',
 				Broken: 'red',
 				Installing: 'orange',
+				Running: 'green',
+				Pending: 'orange',
+				Failure: 'red',
 				'Update Available': 'blue',
 				Enabled: 'blue',
 				'Awaiting Approval': 'orange',
@@ -33,7 +36,8 @@ export default {
 				Trial: 'orange',
 				Published: 'green',
 				Owner: 'blue',
-				Primary: 'green'
+				Primary: 'green',
+				'Latest Deployed': 'orange'
 			}[this.label];
 		}
 	}
