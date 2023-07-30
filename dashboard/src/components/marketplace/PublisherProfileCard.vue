@@ -25,7 +25,17 @@
 		</Card>
 
 		<Dialog
-			:options="{ title: 'Edit Publisher Profile' }"
+			:options="{
+				title: 'Edit Publisher Profile',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						loading: $resources.updatePublisherProfile.loading,
+						onClick: () => $resources.updatePublisherProfile.submit()
+					}
+				]
+			}"
 			v-model="showEditProfileDialog"
 		>
 			<template v-slot:body-content>
@@ -39,20 +49,6 @@
 					class="mt-4"
 					:message="$resources.updatePublisherProfile.error"
 				/>
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showEditProfileDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updatePublisherProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updatePublisherProfile.submit()"
-					>
-						Save
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</div>

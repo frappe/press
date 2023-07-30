@@ -1,7 +1,17 @@
 <template>
 	<Dialog
 		v-if="source"
-		:options="{ title: 'Add New App Release' }"
+		:options="{
+			title: 'Add New App Release',
+			actions: [
+				{
+					label: 'Change Branch',
+					variant: 'solid',
+					loading: $resources.changeBranch.loading,
+					onClick: () => $resources.changeBranch.submit()
+				}
+			]
+		}"
 		:modelValue="show"
 	>
 		<template v-slot:body-content>
@@ -10,16 +20,6 @@
 					{{ branch }}
 				</option>
 			</select>
-		</template>
-		<template v-slot:actions>
-			<Button
-				class="mt-3"
-				appearance="primary"
-				:loading="$resources.changeBranch.loading"
-				@click="changeBranch()"
-			>
-				Change Branch
-			</Button>
 		</template>
 	</Dialog>
 </template>

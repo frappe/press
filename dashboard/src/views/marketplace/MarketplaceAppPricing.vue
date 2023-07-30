@@ -99,8 +99,8 @@ function resetCurrentEditingPlan() {
 <template>
 	<div>
 		<Card title="Pricing Plans" subtitle="Set up pricing plans for this app">
-			<div class="mb-4">
-				<div v-if="appPlans.loading">
+			<div class="m-4">
+				<div class="flex justify-center" v-if="appPlans.loading">
 					<Button :loading="true">Loading</Button>
 				</div>
 
@@ -127,9 +127,7 @@ function resetCurrentEditingPlan() {
 							<p class="mb-3.5 text-base text-gray-700">
 								Looks like you haven't created any plans yet
 							</p>
-							<Button appearance="primary" @click="editPlan()"
-								>Create plan</Button
-							>
+							<Button variant="solid" @click="editPlan()">Create plan</Button>
 						</div>
 					</div>
 				</div>
@@ -220,7 +218,8 @@ function resetCurrentEditingPlan() {
 
 			<template #actions>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					:loading="updateAppPlan.loading || createAppPlan.loading"
 					@click="savePlan"
 					@close="resetCurrentEditingPlan"

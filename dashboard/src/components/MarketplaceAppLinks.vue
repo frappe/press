@@ -3,7 +3,20 @@
 		<template #actions>
 			<Button icon-left="edit" @click="showEditLinksDialog = true">Edit</Button>
 		</template>
-		<Dialog :options="{ title: 'Update Links' }" v-model="showEditLinksDialog">
+		<Dialog
+			:options="{
+				title: 'Update Links',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						loading: $resources.updateAppLinks.loading,
+						onClick: () => $resources.updateAppLinks.submit()
+					}
+				]
+			}"
+			v-model="showEditLinksDialog"
+		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Input label="Website" type="text" v-model="app.website" />
@@ -26,20 +39,6 @@
 				</div>
 
 				<ErrorMessage class="mt-4" :message="$resources.updateAppLinks.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showEditLinksDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateAppLinks.loading"
-						loadingText="Saving..."
-						@click="$resources.updateAppLinks.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 		<div class="divide-y" v-if="app">

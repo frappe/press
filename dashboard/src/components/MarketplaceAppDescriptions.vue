@@ -13,7 +13,17 @@
 				</template>
 			</ListItem>
 			<Dialog
-				:options="{ title: 'Update App Summary' }"
+				:options="{
+					title: 'Update App Summary',
+					actions: [
+						{
+							label: 'Save Changes',
+							variant: 'solid',
+							loading: $resources.updateAppSummary.loading,
+							onClick: () => $resources.updateAppSummary.submit()
+						}
+					]
+				}"
 				v-model="showEditSummaryDialog"
 			>
 				<template v-slot:body-content>
@@ -26,20 +36,6 @@
 						class="mt-4"
 						:message="$resources.updateAppSummary.error"
 					/>
-				</template>
-
-				<template #actions>
-					<div class="space-x-2">
-						<Button @click="showEditSummaryDialog = false">Cancel</Button>
-						<Button
-							appearance="primary"
-							:loading="$resources.updateAppSummary.loading"
-							loadingText="Saving..."
-							@click="$resources.updateAppSummary.submit()"
-						>
-							Save changes
-						</Button>
-					</div>
 				</template>
 			</Dialog>
 			<div class="py-3">
@@ -56,7 +52,18 @@
 					v-html="descriptionHTML"
 				></div>
 				<Dialog
-					:options="{ title: 'Update App Description', size: '5xl' }"
+					:options="{
+						title: 'Update App Description',
+						size: '5xl',
+						actions: [
+							{
+								label: 'Save Changes',
+								variant: 'solid',
+								loading: $resources.updateAppDescription.loading,
+								onClick: () => $resources.updateAppDescription.submit()
+							}
+						]
+					}"
 					:dismissable="true"
 					v-model="showEditDescriptionDialog"
 					width="full"
@@ -75,16 +82,6 @@
 							class="mt-4"
 							:message="$resources.updateAppDescription.error"
 						/>
-					</template>
-					<template v-slot:actions>
-						<Button
-							appearance="primary"
-							:loading="$resources.updateAppDescription.loading"
-							loadingText="Saving..."
-							@click="$resources.updateAppDescription.submit()"
-						>
-							Save Changes
-						</Button>
 					</template>
 				</Dialog>
 			</div>

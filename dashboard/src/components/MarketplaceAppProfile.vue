@@ -82,27 +82,23 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Update App Title' }"
+			:options="{
+				title: 'Update App Title',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						loading: $resources.updateAppTitle.loading,
+						onClick: () => $resources.updateAppTitle.submit()
+					}
+				]
+			}"
 			v-model="showAppProfileEditDialog"
 		>
 			<template v-slot:body-content>
 				<Input label="App Title" type="text" v-model="app.title" />
 
 				<ErrorMessage class="mt-4" :message="$resources.updateAppTitle.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateAppTitle.loading"
-						loadingText="Saving..."
-						@click="$resources.updateAppTitle.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 
@@ -210,7 +206,7 @@ export default {
 			return [
 				{
 					label: 'Change Branch',
-					handler: () => {
+					onClick: () => {
 						this.selectedSource = source.source;
 						this.selectedVersion = source.version;
 						this.activeBranch = source.source_information.branch;
@@ -219,7 +215,7 @@ export default {
 				},
 				{
 					label: 'Remove',
-					handler: () => {
+					onClick: () => {
 						this.$resources.removeVersion.submit({
 							name: this.app.name,
 							version: source.version

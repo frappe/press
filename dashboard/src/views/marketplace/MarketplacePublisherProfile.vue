@@ -3,9 +3,9 @@
 		<div v-if="publisherProfileInfo && !publisherProfileInfo.profile_created">
 			<Alert title="You have not created your profile yet.">
 				<template #actions>
-					<Button appearance="primary" @click="showEditDialog = true"
-						>Create</Button
-					>
+					<Button variant="solid" theme="blue" @click="showEditDialog = true">
+						Create
+					</Button>
 				</template>
 			</Alert>
 		</div>
