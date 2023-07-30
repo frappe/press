@@ -94,9 +94,6 @@ def get_files_in_timespan(
 ) -> list[str]:
 	files.sort(key=lambda f: f["modified"])
 
-	start = convert_user_timezone_to_utc(start)
-	stop = convert_user_timezone_to_utc(stop)
-
 	files_in_timespan = []
 
 	for file in files:

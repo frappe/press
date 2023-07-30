@@ -51,9 +51,8 @@
   "column_break_eiyu",
   "memory_max",
   "section_break_ladc",
-  "mariadb_system_variables",
-  "miscellaneous_section",
-  "tags"
+  "is_performance_schema_enabled",
+  "mariadb_system_variables"
  ],
  "fields": [
   {
@@ -347,20 +346,16 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "miscellaneous_section",
-   "fieldtype": "Tab Break",
-   "label": "Miscellaneous"
-  },
-  {
-   "fieldname": "tags",
-   "fieldtype": "Table",
-   "label": "Tags",
-   "options": "Resource Tag"
+   "default": "0",
+   "fieldname": "is_performance_schema_enabled",
+   "fieldtype": "Check",
+   "label": "Is Performance Schema Enabled",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-02 15:43:18.321208",
+ "modified": "2023-07-27 17:14:52.416436",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

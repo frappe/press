@@ -692,6 +692,8 @@ def recent_sites():
 	sites = get_sites()
 
 	site_names = [site.name for site in sites]
+	if not site_names:
+		return []
 	recents = sites_with_recent_activity(site_names)
 
 	return [site for site in sites if site.name in recents]

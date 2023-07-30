@@ -147,7 +147,15 @@ export default {
 					icon: FCIcons.AppsIcon,
 					condition: () => this.$account.team?.is_developer
 				},
-
+				{
+					label: 'Spaces',
+					route: '/spaces',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/spaces') >= 0;
+					},
+					icon: FCIcons.SpacesIcon,
+					condition: () => this.$account.team?.code_servers_enabled
+				},
 				{
 					label: 'Billing',
 					route: '/billing',

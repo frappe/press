@@ -238,6 +238,9 @@ scheduler_events = {
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
 		],
+		"* * * * *": [
+			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
+		],
 		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
