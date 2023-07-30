@@ -10,7 +10,6 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
-from press.utils.dns import create_dns_record
 
 
 def get_ongoing_migration(site: str, scheduled=False):
