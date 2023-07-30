@@ -2,7 +2,7 @@
 	<button
 		class="flex w-full flex-row items-center justify-between rounded-lg border border-gray-100 px-4 py-2 shadow focus:outline-none"
 		:class="[
-			selected ? 'ring-2 ring-inset ring-blue-500' : '',
+			selected ? 'ring-2 ring-inset ring-gray-600' : '',
 			selectable ? 'hover:border-gray-300' : 'cursor-default'
 		]"
 		ref="card"
@@ -17,7 +17,7 @@
 					v-if="selectable"
 					:checked="selected"
 					type="checkbox"
-					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-transparent"
+					class="h-4 w-4 rounded border-gray-300 text-gray-600 focus:ring-transparent"
 				/>
 				<h3 class="text-lg font-medium text-gray-900 group-select">
 					{{ site }}
