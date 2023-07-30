@@ -84,11 +84,11 @@ export default {
 			return [
 				!card.is_default && {
 					label: 'Set as default',
-					handler: () => this.confirmSetAsDefault(card)
+					onClick: () => this.confirmSetAsDefault(card)
 				},
 				{
 					label: 'Remove',
-					handler: () => this.confirmRemove(card)
+					onClick: () => this.confirmRemove(card)
 				}
 			];
 		},

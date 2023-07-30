@@ -299,12 +299,12 @@ export default {
 			return [
 				{
 					label: 'Remove',
-					handler: () => this.confirmRemoveDomain(domain.domain)
+					onClick: () => this.confirmRemoveDomain(domain.domain)
 				},
 				{
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
-					handler: () => this.confirmSetPrimary(domain.domain)
+					onClick: () => this.confirmSetPrimary(domain.domain)
 				},
 				{
 					label: 'Redirect to Primary',
@@ -312,7 +312,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						!domain.redirect_to_primary,
-					handler: () => this.confirmSetupRedirect(domain.domain)
+					onClick: () => this.confirmSetupRedirect(domain.domain)
 				},
 				{
 					label: 'Remove Redirect',
@@ -320,7 +320,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						domain.redirect_to_primary,
-					handler: () => this.confirmRemoveRedirect(domain.domain)
+					onClick: () => this.confirmRemoveRedirect(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},

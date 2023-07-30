@@ -161,11 +161,11 @@ export default {
 			return [
 				{
 					label: 'Switch to Team',
-					handler: () => this.$account.switchToTeam(team_name)
+					onClick: () => this.$account.switchToTeam(team_name)
 				},
 				{
 					label: 'Leave Team',
-					handler: () => this.confirmLeaveTeam(team_name)
+					onClick: () => this.confirmLeaveTeam(team_name)
 				}
 			];
 		},
