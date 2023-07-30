@@ -27,47 +27,39 @@ def spaces() -> Dict:
 
 
 @frappe.whitelist()
-def options_for_code_server() -> Dict:
+def code_server_domain():
 	"""
-	Options for creating new code servers
+	Returns the domain for code servers
 	"""
-	team = get_current_team()
-	groups = frappe.get_all(
+	return frappe.db.get_single_value("Press Settings", "spaces_domain")
+
+
+@frappe.whitelist()
+def code_server_group_options():
+	return frappe.get_all(
 		"Release Group",
-		filters={"team": team, "public": False, "enabled": True},
-		fields=["name", "title"],
-	)
-	created = frappe.get_all(
-		"Code Server",
-		filters={"team": team, "status": "Running"},
-		pluck="bench",
-		order_by="creation desc",
+		{"team": get_current_team(), "public": False, "enabled": True},
+		["name", "title"],
 	)
 
-	for group in groups:
-		# candidates where code server is deployed
-		valid_candidates = frappe.get_all(
-			"Deploy Candidate",
-			filters=[
-				["Deploy Candidate Build Step", "step", "like", "%Code Server%"],
-				["Deploy Candidate", "group", "=", group.name],
-			],
-			pluck="name",
-		)
-		group["benches"] = frappe.get_all(
-			"Bench",
-			filters={
-				"group": group.name,
-				"status": "Active",
-				"name": ("not in", created),
-				"candidate": ("in", valid_candidates),
-			},
-			fields=["name"],
-		)
-	return {
-		"groups": groups,
-		"domain": frappe.db.get_single_value("Press Settings", "spaces_domain"),
-	}
+
+@frappe.whitelist()
+def code_server_bench_options(group):
+	valid_candidates = frappe.get_all(
+		"Deploy Candidate",
+		filters=[
+			["Deploy Candidate Build Step", "step", "like", "%Code Server%"],
+			["Deploy Candidate", "group", "=", group],
+			["Deploy Candidate", "team", "=", get_current_team()],
+		],
+		pluck="name",
+	)
+	return frappe.get_all(
+		"Bench",
+		{"status": "Active", "group": group, "candidate": ("in", valid_candidates)},
+		pluck="name",
+		order_by="creation desc",
+	)
 
 
 @frappe.whitelist()

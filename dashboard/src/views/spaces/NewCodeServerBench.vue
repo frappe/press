@@ -7,12 +7,13 @@
 			</p>
 		</div>
 		<ListItem
+			v-if="benches.length > 0"
 			v-for="(bench, index) in benches"
-			:key="bench.name"
-			:title="bench.name"
+			:key="bench"
+			:title="bench"
 			class="border rounded-md m-2 px-2 shadow-sm hover:shadow-md hover:cursor-pointer"
 			:class="[
-				modelValue && modelValue == bench.name
+				modelValue && modelValue == bench
 					? 'relative ring-2 ring-inset ring-blue-500'
 					: ''
 			]"
@@ -26,17 +27,45 @@
 				></Badge>
 			</template>
 		</ListItem>
+		<div v-else class="mt-4 ml-2 text-sm">
+			No bench versions found with a code server. Click
+			<router-link
+				:to="`/benches/${selectedGroup}`"
+				class="text-blue-600 hover:underline"
+				>here</router-link
+			>
+			to deploy a new available version of your bench.
+		</div>
 	</div>
 </template>
 
 <script>
 export default {
 	name: 'NewCodeServerBench',
-	props: ['modelValue', 'benches'],
+	props: ['modelValue', 'selectedGroup'],
 	emits: ['update:modelValue', 'error'],
 	methods: {
 		selectBench(bench) {
-			this.$emit('update:modelValue', bench.name);
+			this.$emit('update:modelValue', bench);
+		}
+	},
+	resources: {
+		options() {
+			return {
+				method: 'press.api.spaces.code_server_bench_options',
+				params: {
+					group: this.selectedGroup
+				},
+				auto: true
+			};
+		}
+	},
+	computed: {
+		benches() {
+			if (!this.$resources.options.data) {
+				return [];
+			}
+			return this.$resources.options.data;
 		}
 	}
 };

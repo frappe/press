@@ -6,7 +6,7 @@
 				Choose a bench where you want to install the code server.
 			</p>
 		</div>
-		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<div
 				v-for="group in groups"
 				v-on:click="selectGroup(group)"
@@ -26,16 +26,24 @@
 <script>
 export default {
 	name: 'NewCodeServerBench',
-	props: ['modelValue', 'options'],
+	props: ['modelValue'],
 	emits: ['update:modelValue', 'error'],
 	methods: {
 		selectGroup(group) {
 			this.$emit('update:modelValue', group);
 		}
 	},
+	resources: {
+		options() {
+			return {
+				method: 'press.api.spaces.code_server_group_options',
+				auto: true
+			};
+		}
+	},
 	computed: {
 		groups() {
-			return this.options['groups'].filter(group => group.benches.length > 0);
+			return this.$resources.options.data;
 		}
 	}
 };
