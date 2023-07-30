@@ -12,7 +12,7 @@
 			<div class="flex items-center justify-between">
 				<router-link
 					:to="`/benches/${bench.name}/overview`"
-					class="block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
+					class="mr-1 block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
 				>
 					<div class="flex items-center justify-between">
 						<div class="text-base w-2/3 sm:w-4/12">
