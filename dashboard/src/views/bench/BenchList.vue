@@ -19,10 +19,7 @@
 							{{ bench.title }}
 						</div>
 						<div class="text-base w-1/3 sm:w-4/12">
-							<Badge
-								:label="bench.status"
-								:theme="$badgeStatusColorMap(bench.status)"
-							/>
+							<Badge :label="bench.status" />
 						</div>
 						<div class="text-base hidden sm:block sm:w-4/12">
 							<Badge

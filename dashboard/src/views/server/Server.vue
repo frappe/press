@@ -12,11 +12,7 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
-						<Badge
-							class="ml-4 hidden md:inline-block"
-							:label="server.status"
-							:colorMap="$badgeStatusColorMap"
-						></Badge>
+						<Badge class="ml-4 hidden md:inline-block" :label="server.status" />
 
 						<div
 							v-if="regionInfo"
@@ -34,7 +30,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :label="server.status" :colorMap="$badgeStatusColorMap" />
+							<Badge :label="server.status" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"

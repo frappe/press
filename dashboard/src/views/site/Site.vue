@@ -14,11 +14,7 @@
 						<h1 class="text-2xl font-bold">
 							{{ site.host_name || site.name }}
 						</h1>
-						<Badge
-							class="ml-4"
-							:label="site.status"
-							:theme="$badgeStatusColorMap(site.status)"
-						/>
+						<Badge class="ml-4" :label="site.status" />
 
 						<div
 							v-if="regionInfo"
@@ -36,10 +32,7 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge
-								:label="site.status"
-								:theme="$badgeStatusColorMap(site.status)"
-							/>
+							<Badge :label="site.status" />
 							<div
 								v-if="regionInfo"
 								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"

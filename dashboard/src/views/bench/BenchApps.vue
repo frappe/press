@@ -48,23 +48,22 @@
 									</a>
 								</Tooltip>
 
-								<Badge theme="red"> Attention Required </Badge>
+								<Badge label="Attention Required" theme="red" />
 							</span>
 							<Badge
 								v-if="!app.last_github_poll_failed && !app.deployed"
+								label="Not Deployed"
 								theme="orange"
-								>Not Deployed</Badge
-							>
+							/>
 							<Badge
 								v-if="
 									!app.last_github_poll_failed &&
 									app.update_available &&
 									app.deployed
 								"
+								label="Update Available"
 								theme="blue"
-							>
-								Update Available
-							</Badge>
+							/>
 							<Dropdown :options="dropdownItems(app)" right>
 								<template v-slot="{ open }">
 									<Button icon="more-horizontal" />

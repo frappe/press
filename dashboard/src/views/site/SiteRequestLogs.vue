@@ -22,7 +22,7 @@
 					{{ formatDate(log.timestamp, 'TIME_24_WITH_SHORT_OFFSET') }}
 				</div>
 				<div class="w-1/12">
-					<Badge>{{ log.request.method }}</Badge>
+					<Badge :label="log.request.method" />
 				</div>
 				<div class="w-5/12 break-words pr-2">{{ log.request.path }}</div>
 				<div class="w-2/12">{{ log.request.status_code }}</div>

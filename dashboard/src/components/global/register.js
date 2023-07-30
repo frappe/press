@@ -1,7 +1,6 @@
 import {
 	Button,
 	Alert,
-	Badge,
 	FeatherIcon,
 	Card,
 	Tooltip,
@@ -23,7 +22,6 @@ let globalFrappeUIComponents = {
 	Button,
 	Alert,
 	Avatar,
-	Badge,
 	FeatherIcon,
 	Card,
 	Tooltip,

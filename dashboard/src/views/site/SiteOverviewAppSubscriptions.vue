@@ -40,10 +40,7 @@
 						{{ subscription.plan }}
 					</p>
 					<span>
-						<Badge
-							:label="subscription.status"
-							:colorMap="$badgeStatusColorMap"
-						></Badge>
+						<Badge :label="subscription.status" />
 					</span>
 
 					<span class="hidden md:inline" v-if="subscription.is_free">Free</span>

@@ -62,11 +62,7 @@
 						{{ release.author }}
 					</span>
 					<span>
-						<Badge
-							v-if="release.status != 'Draft'"
-							:label="release.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
+						<Badge v-if="release.status != 'Draft'" :label="release.status" />
 					</span>
 					<span class="text-right">
 						<Button

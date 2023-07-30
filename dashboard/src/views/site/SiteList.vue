@@ -24,7 +24,6 @@
 							<Badge
 								class="pointer-events-none"
 								variant="subtle"
-								:theme="$badgeStatusColorMap(siteBadge(site))"
 								:label="siteBadge(site)"
 							/>
 						</div>
@@ -40,9 +39,7 @@
 							v-if="showBenchInfo"
 							class="hidden text-base sm:block sm:w-3/12"
 						>
-							<Badge>
-								{{ site.version }}
-							</Badge>
+							<Badge :label="site.version" />
 						</div>
 						<div class="hidden w-1/12 text-sm text-gray-600 sm:block">
 							{{ $dayjs.shortFormating($dayjs(site.creation).fromNow()) }}

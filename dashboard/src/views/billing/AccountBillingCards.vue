@@ -25,7 +25,7 @@
 					<div class="text-lg font-medium text-gray-900">
 						{{ card.name_on_card }} <span class="text-gray-500">••••</span>
 						{{ card.last_4 }}
-						<Badge v-if="card.is_default">Default</Badge>
+						<Badge v-if="card.is_default" label="Default" />
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
 						<span>

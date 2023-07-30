@@ -13,7 +13,7 @@
 				>
 					<template #actions>
 						<div v-if="$account.team.name === team.name">
-							<Badge theme="blue">Active</Badge>
+							<Badge label="Active" theme="blue" />
 						</div>
 						<div v-else class="flex flex-row justify-end">
 							<Button @click="$account.switchToTeam(team.name)">

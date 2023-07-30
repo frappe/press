@@ -19,11 +19,7 @@
 							{{ server.title }}
 						</div>
 						<div class="text-base sm:w-3/12">
-							<Badge
-								class="pointer-events-none"
-								:theme="$badgeStatusColorMap(server.status)"
-								:label="server.status"
-							/>
+							<Badge class="pointer-events-none" :label="server.status" />
 						</div>
 						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
 							Created {{ formatDate(server.creation, 'relative') }}

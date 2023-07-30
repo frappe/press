@@ -17,15 +17,8 @@
 								runningPlay.status !== 'Success'
 							"
 							:label="runningPlay.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
-						<Badge
-							v-else-if="play.status != 'Success'"
-							:label="play.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
+						/>
+						<Badge v-else-if="play.status != 'Success'" :label="play.status" />
 					</template>
 				</ListItem>
 				<div class="border-b"></div>

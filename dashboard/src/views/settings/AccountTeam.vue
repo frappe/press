@@ -16,7 +16,7 @@
 		>
 			<template #actions>
 				<div v-if="$account.team.name === team.name">
-					<Badge color="blue">Active</Badge>
+					<Badge label="Active" theme="blue" />
 				</div>
 				<div v-else class="flex flex-row justify-end">
 					<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>

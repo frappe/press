@@ -48,13 +48,8 @@
 							<Badge
 								v-if="d.status == 'Active' && d.primary"
 								:label="'Primary'"
-								:colorMap="$badgeStatusColorMap"
 							/>
-							<Badge
-								v-else-if="d.status != 'Active'"
-								:label="d.status"
-								:colorMap="$badgeStatusColorMap"
-							/>
+							<Badge v-else-if="d.status != 'Active'" :label="d.status" />
 							<Button
 								v-if="d.status == 'Broken' && d.retry_count <= 5"
 								:loading="$resources.retryAddDomain.loading"

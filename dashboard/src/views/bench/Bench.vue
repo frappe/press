@@ -12,11 +12,7 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-						<Badge
-							class="ml-4"
-							:label="bench.status"
-							:theme="$badgeStatusColorMap(bench.status)"
-						/>
+						<Badge class="ml-4" :label="bench.status" />
 					</div>
 					<div class="flex-row space-x-3 md:flex">
 						<Dropdown :options="benchActions">

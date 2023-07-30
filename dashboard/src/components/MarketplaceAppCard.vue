@@ -14,7 +14,7 @@
 				<h2 class="text-left text-xl font-bold">
 					{{ app.title }}
 				</h2>
-				<Badge :label="app.status" :colorMap="$badgeStatusColorMap" />
+				<Badge :label="app.status" />
 			</div>
 			<p class="pt-1 text-left text-base text-gray-600">
 				{{ app.description }}

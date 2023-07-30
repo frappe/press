@@ -29,20 +29,21 @@
 			>
 				<template #actions>
 					<div class="flex items-center space-x-2">
-						<Badge
-							v-if="version.status != 'Active'"
-							:label="version.status"
-							:theme="$badgeStatusColorMap(version.status)"
-						/>
+						<Badge v-if="version.status != 'Active'" :label="version.status" />
 						<router-link
 							v-else
 							class="block"
 							:to="`/benches/${bench.name}/versions/${version.name}`"
 						>
-							<Badge class="cursor-pointer hover:text-green-600" theme="green">
-								{{ version.sites.length }}
-								{{ $plural(version.sites.length, 'site', 'sites') }}
-							</Badge>
+							<Badge
+								class="cursor-pointer hover:text-green-600"
+								theme="green"
+								:label="`${version.sites.length} ${$plural(
+									version.sites.length,
+									'site',
+									'sites'
+								)}`"
+							/>
 						</router-link>
 					</div>
 				</template>

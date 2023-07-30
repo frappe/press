@@ -19,7 +19,7 @@
 				{{ app.title }}
 			</h3>
 		</div>
-		<Badge v-if="uninstall" theme="red"> Will Be Uninstalled </Badge>
+		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
 		<div v-else class="flex flex-row space-x-2">
 			<CommitTag
 				v-if="deployFrom(app)"
@@ -34,7 +34,7 @@
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
 			</a>
-			<Badge theme="green" v-else>First Deploy</Badge>
+			<Badge v-else label="First Deploy" theme="green" />
 			<CommitTag
 				:tag="deployTo(app)"
 				:link="`${app.repository_url}/commit/${app.next_hash}`"

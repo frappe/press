@@ -51,7 +51,7 @@
 					<span v-else> Performing Backup... </span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Badge v-if="backup.offsite" theme="green"> Offsite </Badge>
+					<Badge v-if="backup.offsite" label="Offsite" theme="green" />
 					<Dropdown :options="dropdownItems(backup)">
 						<template v-slot="{ open }">
 							<Button icon="more-horizontal" />

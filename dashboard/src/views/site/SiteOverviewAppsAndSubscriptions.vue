@@ -59,10 +59,7 @@
 
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
-						><Badge
-							:label="app.subscription.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
+						><Badge :label="app.subscription.status" />
 					</span>
 					<span v-else>-</span>
 				</div>

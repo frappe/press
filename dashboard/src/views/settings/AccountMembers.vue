@@ -22,7 +22,6 @@
 					<Badge
 						v-if="getRoleBadgeProps(member).status == 'Owner'"
 						:label="getRoleBadgeProps(member).status"
-						:colorMap="$badgeStatusColorMap"
 					/>
 					<Button
 						v-else

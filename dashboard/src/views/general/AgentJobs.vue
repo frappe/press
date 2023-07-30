@@ -17,14 +17,8 @@
 								runningJob.status !== 'Success'
 							"
 							:label="runningJob.status"
-						>
-						</Badge>
-						<Badge
-							v-else-if="job.status != 'Success'"
-							:label="job.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
+						/>
+						<Badge v-else-if="job.status != 'Success'" :label="job.status" />
 					</template>
 				</ListItem>
 				<div class="border-b"></div>

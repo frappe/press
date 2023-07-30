@@ -30,15 +30,16 @@
 					"
 				>
 					<template #actions>
+						<Badge v-if="v.status != 'Active'" :label="v.status" />
 						<Badge
-							v-if="v.status != 'Active'"
-							:label="v.status"
-							:theme="$badgeStatusColorMap(v.status)"
+							v-else
+							theme="green"
+							:label="`${v.sites.length} ${$plural(
+								v.sites.length,
+								'site',
+								'sites'
+							)}`"
 						/>
-						<Badge v-else theme="green">
-							{{ v.sites.length }}
-							{{ $plural(v.sites.length, 'site', 'sites') }}
-						</Badge>
 					</template>
 				</ListItem>
 				<div class="border-b"></div>
