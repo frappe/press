@@ -33,18 +33,19 @@ def options_for_code_server() -> Dict:
 	"""
 	team = get_current_team()
 	groups = frappe.get_all(
-		"Release Group", filters={"team": team, "public": False}, fields=["name", "title"]
+		"Release Group",
+		filters={"team": team, "public": False, "enabled": True},
+		fields=["name", "title"],
 	)
 	created = frappe.get_all(
 		"Code Server",
-		filters={"team": team, "status": "Active"},
+		filters={"team": team, "status": "Running"},
 		pluck="bench",
 		order_by="creation desc",
 	)
 
 	for group in groups:
 		# candidates where code server is deployed
-		print(group)
 		valid_candidates = frappe.get_all(
 			"Deploy Candidate",
 			filters=[
@@ -53,7 +54,6 @@ def options_for_code_server() -> Dict:
 			],
 			pluck="name",
 		)
-		print(valid_candidates)
 		group["benches"] = frappe.get_all(
 			"Bench",
 			filters={
@@ -64,7 +64,6 @@ def options_for_code_server() -> Dict:
 			},
 			fields=["name"],
 		)
-	print(groups)
 	return {
 		"groups": groups,
 		"domain": frappe.db.get_single_value("Press Settings", "spaces_domain"),
