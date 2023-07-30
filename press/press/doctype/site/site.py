@@ -249,8 +249,13 @@ class Site(Document):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
-		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
+		self._create_dns_record()
 		self.create_agent_request()
+
+	@frappe.whitelist()
+	def _create_dns_record(self):
+		"""Create dns record of site pointing to proxy."""
+		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
