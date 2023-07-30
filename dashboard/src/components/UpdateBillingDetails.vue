@@ -1,6 +1,16 @@
 <template>
 	<Dialog
-		:options="{ title: 'Update Billing Details' }"
+		:options="{
+			title: 'Update Billing Details',
+			actions: [
+				{
+					label: 'Submit',
+					variant: 'solid',
+					loading: $resources.updateBillingInformation.loading,
+					onClick: () => $resources.updateBillingInformation.submit()
+				}
+			]
+		}"
 		:modelValue="show"
 		@update:modelValue="$emit('update:show', $event)"
 	>
@@ -23,16 +33,6 @@
 				class="mt-2"
 				:message="$resources.updateBillingInformation.error"
 			/>
-		</template>
-
-		<template v-slot:actions>
-			<Button
-				appearance="primary"
-				@click="$resources.updateBillingInformation.submit()"
-				:loading="$resources.updateBillingInformation.loading"
-			>
-				Submit
-			</Button>
 		</template>
 	</Dialog>
 </template>

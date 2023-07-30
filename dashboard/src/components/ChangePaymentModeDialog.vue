@@ -1,6 +1,16 @@
 <template>
 	<Dialog
-		:options="{ title: 'Change Payment Mode' }"
+		:options="{
+			title: 'Change Payment Mode',
+			actions: [
+				{
+					label: 'Change',
+					variant: 'solid',
+					loading: $resources.changePaymentMode.loading,
+					onClick: () => $resources.changePaymentMode.submit()
+				}
+			]
+		}"
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
@@ -18,17 +28,6 @@
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
 			/>
-		</template>
-
-		<template #actions>
-			<Button
-				appearance="primary"
-				class="mt-2"
-				@click="$resources.changePaymentMode.submit()"
-				:loading="$resources.changePaymentMode.loading"
-			>
-				Change
-			</Button>
 		</template>
 	</Dialog>
 </template>

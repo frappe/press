@@ -52,7 +52,8 @@
 						<div class="ml-auto space-x-2">
 							<Button
 								@click="showPrepaidCreditsDialog = true"
-								appearance="white"
+								variant="outline"
+								theme="gray"
 							>
 								Add Balance
 							</Button>
@@ -73,7 +74,7 @@
 
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
-				v-model="showPrepaidCreditsDialog"
+				v-model:show="showPrepaidCreditsDialog"
 				:minimum-amount="minimumAmount"
 				@success="
 					() => {
