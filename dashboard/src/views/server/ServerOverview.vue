@@ -1,6 +1,4 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { utils } from '@/utils';
 import useResource from '@/composables/resource';
 import ServerOverviewPlan from './ServerOverviewPlan.vue';
 import ServerOverviewInfo from './ServerOverviewInfo.vue';

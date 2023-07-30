@@ -12,7 +12,7 @@
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
-						<Badge class="ml-4 hidden md:inline-block" :label="server.status" />
+						<Badge class="ml-4" :label="server.status" />
 
 						<div
 							v-if="regionInfo"
@@ -30,10 +30,9 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :label="server.status" />
 							<div
 								v-if="regionInfo"
-								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
+								class="flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
 							>
 								<img
 									v-if="regionInfo.image"
@@ -181,14 +180,14 @@ export default {
 				['Active', 'Updating'].includes(this.server.status) && {
 					label: 'Visit Server',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(`https://${this.server.name}`, '_blank');
 					}
 				},
 				this.server.status === 'Active' && {
 					label: 'New Bench',
 					icon: 'plus',
-					handler: () => {
+					onClick: () => {
 						this.$router.replace(
 							`/servers/${this.server.app_server}/bench/new`
 						);
@@ -197,7 +196,7 @@ export default {
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
 							'_blank'
@@ -208,14 +207,14 @@ export default {
 					label: 'Reboot',
 					icon: 'tool',
 					loading: this.$resources.reboot.loading,
-					handler: () => {
+					onClick: () => {
 						return this.$resources.reboot.submit();
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					handler: async () => {
+					onClick: async () => {
 						await this.$account.switchTeam(this.server.team);
 						this.$notify({
 							title: 'Switched Team',
