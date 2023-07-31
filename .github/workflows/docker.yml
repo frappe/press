@@ -1,0 +1,44 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Convert JSON to Base64
+        run: |
+          echo '[
+            {
+              "url": "https://github.com/abdosaeed95/press.git",
+              "branch": "production"
+            }
+          ]' | base64 > apps_json_base64.txt
+
+      - name: Clone Frappe Docker
+        run: git clone https://github.com/frappe/frappe_docker.git
+
+      - name: Modify Dockerfile for MACOS
+        if: runner.os == 'macOS'
+        run: |
+          sed -i '' '2i --platform=linux/amd64' frappe_docker/Dockerfile
+
+      - name: Build
+        run: |
+          cd frappe_docker
+          docker build --file images/custom/Containerfile .
+
+      - name: Push Docker Image
+        run: docker push registry-1.docker.io/brandimic/cloud:1.0
+
+      - name: Verify Repository on Docker Hub
+        run: |
+          # Add your own steps to verify the repository on Docker Hub
+          echo "Repository verification step"

@@ -407,14 +407,14 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		if self.is_self_hosted:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
-				"name",
-			)
-		else:
-			certificate_name = frappe.db.get_value(
+		# if self.is_self_hosted:
+		# 	certificate_name = frappe.db.get_value(
+		# 		"TLS Certificate",
+		# 		{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+		# 		"name",
+		# 	)
+		# else:
+		certificate_name = frappe.db.get_value(
 				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
 			)
 		return frappe.get_doc("TLS Certificate", certificate_name)

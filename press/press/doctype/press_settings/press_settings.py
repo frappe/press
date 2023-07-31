@@ -71,7 +71,7 @@ class PressSettings(Document):
 			aws_secret_access_key=self.get_password(
 				"offsite_backups_secret_access_key", raise_exception=False
 			),
-			region_name="ap-south-1",
+			region_name="eu-central-1",
 		)
 
 	@classmethod

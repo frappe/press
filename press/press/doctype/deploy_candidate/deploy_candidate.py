@@ -384,7 +384,10 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
-		if settings.docker_registry_namespace:
+		if "docker.io" in settings.docker_registry_url:
+			namespace = settings.docker_registry_namespace
+			
+		elif settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
 		else:
 			namespace = f"{settings.domain}"
@@ -400,8 +403,11 @@ class DeployCandidate(Document):
 			self.command += " --no-cache"
 
 		self.command += f" -t {self.docker_image}"
-		self.command += " ."
-
+		
+    docker_image_latest = f"{self.docker_image_repository}:latest"
+    self.command += f" -t {docker_image_latest}"
+    
+    self.command += " ."
 		result = self.run(
 			self.command,
 			environment,
@@ -564,6 +570,10 @@ class DeployCandidate(Document):
 					frappe.db.commit()
 					last_update = now()
 
+			for line in client.images.push(
+				self.docker_image_repository, "latest", stream=True, decode=True
+			):
+				continue
 			end_time = now()
 			step.output = "\n".join(ll["output"] for ll in output)
 			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
