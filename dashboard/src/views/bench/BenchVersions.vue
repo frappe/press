@@ -252,7 +252,7 @@ export default {
 					you want to run this command?
 				`,
 				actionLabel: 'Restart Bench',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.restartBench.submit();
 					closeDialog();

@@ -248,7 +248,7 @@ export default {
 				title: 'Remove App',
 				message: `Are you sure you want to remove app ${app.name} from this bench?`,
 				actionLabel: 'Remove App',
-				actionType: 'danger',
+				actionColor: 'red',
 				resource: this.$resources.removeApp,
 				action: closeDialog => {
 					this.$resources.removeApp.submit({

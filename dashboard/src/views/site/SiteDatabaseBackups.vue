@@ -197,7 +197,6 @@ export default {
 									// prettier-ignore
 									message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
 									actionLabel: 'Restore',
-									actionType: 'primary',
 									action: closeDialog => {
 										closeDialog();
 										this.restoreOffsiteBackup(backup);

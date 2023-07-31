@@ -272,7 +272,6 @@ export default {
 				message:
 					'You will be able to publish apps to our Marketplace upon confirmation.',
 				actionLabel: 'Yes',
-				actionType: 'primary',
 				action: closeDialog => {
 					this.$resources.becomePublisher.submit();
 					closeDialog();

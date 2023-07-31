@@ -236,7 +236,6 @@ export default {
 						? 'Please cancel the previous request before creating a new one.'
 						: this.$resources.createApprovalRequest.error,
 					actionLabel: 'OK',
-					actionType: 'primary',
 					action: closeDialog => {
 						closeDialog();
 					}
@@ -249,7 +248,6 @@ export default {
 				message:
 					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.createApprovalRequest(appRelease);
@@ -262,7 +260,7 @@ export default {
 				message:
 					'Are you sure you want to <strong>cancel</strong> the publish request for this release?',
 				actionLabel: 'Proceed',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.cancelApprovalRequest(appRelease);

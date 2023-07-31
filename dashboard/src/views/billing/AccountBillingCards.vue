@@ -111,7 +111,7 @@ export default {
 				title: 'Remove payment method',
 				message: 'Are you sure you want to remove this payment method?',
 				actionLabel: 'Remove',
-				actionType: 'danger',
+				actionColor: 'red',
 				resource: this.$resources.remove,
 				action: closeDialog => {
 					this.$resources.remove.submit({ name: card.name }).then(() => {

@@ -331,7 +331,7 @@ export default {
 				title: 'Remove Domain',
 				message: `Are you sure you want to remove the domain <b>${domain}</b>?`,
 				actionLabel: 'Remove',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.removeDomain.submit({
@@ -360,7 +360,6 @@ export default {
 					title: 'Set as Primary Domain',
 					message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
 					actionLabel: 'Set Primary',
-					actionType: 'primary',
 					action: closeDialog => {
 						closeDialog();
 						this.$resources.setHostName.submit({
@@ -376,7 +375,6 @@ export default {
 				title: 'Redirect to Primary Domain',
 				message: `Redirect to Primary will redirect <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
 				actionLabel: 'Redirect to Primary',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.setupRedirect.submit({
@@ -391,7 +389,6 @@ export default {
 				title: 'Remove Redirect',
 				message: `Remove Redirect will remove previously set up redirect from <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
 				actionLabel: 'Remove Redirect',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.removeRedirect.submit({

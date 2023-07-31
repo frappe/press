@@ -135,7 +135,7 @@ export default {
 					It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
 				`,
 				actionLabel: 'Deactivate',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: () => this.deactivate()
 			});
 		},
@@ -145,7 +145,6 @@ export default {
 				message: `Are you sure you want to activate this site?
 				<br><br><strong>Note: Use this as last resort if site is broken and inaccessible</strong>`,
 				actionLabel: 'Activate',
-				actionType: 'primary',
 				action: () => this.activate()
 			});
 		},
