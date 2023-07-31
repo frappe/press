@@ -9,34 +9,6 @@
 						</router-link>
 					</div>
 				</div>
-				<div class="hidden md:block">
-					<div class="flex items-center">
-						<Button icon-left="book-open" link="/docs">Docs</Button>
-						<Button class="ml-2" icon-left="life-buoy" link="/support"
-							>Support</Button
-						>
-						<div class="relative ml-3">
-							<div>
-								<Dropdown :options="dropdownItems" right>
-									<template v-slot="{ open }">
-										<button
-											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
-											id="user-menu"
-											aria-label="User menu"
-											aria-haspopup="true"
-										>
-											<Avatar
-												v-if="$account.user"
-												:label="$account.user.first_name"
-												:imageURL="$account.user.user_image"
-											/>
-										</button>
-									</template>
-								</Dropdown>
-							</div>
-						</div>
-					</div>
-				</div>
 				<div class="-mr-2 flex md:hidden">
 					<button
 						class="focus:shadow-outline-gray inline-flex items-center justify-center rounded-md p-2 text-gray-700 focus:outline-none"
@@ -125,17 +97,7 @@ export default {
 	},
 	data() {
 		return {
-			mobileMenuOpen: false,
-			dropdownItems: [
-				{
-					label: 'Settings',
-					handler: () => this.$router.push('/settings')
-				},
-				{
-					label: 'Logout',
-					handler: () => this.$auth.logout()
-				}
-			]
+			mobileMenuOpen: false
 		};
 	},
 	computed: {
