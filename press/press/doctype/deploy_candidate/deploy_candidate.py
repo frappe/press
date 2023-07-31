@@ -404,10 +404,10 @@ class DeployCandidate(Document):
 
 		self.command += f" -t {self.docker_image}"
 		
-    docker_image_latest = f"{self.docker_image_repository}:latest"
-    self.command += f" -t {docker_image_latest}"
+		docker_image_latest = f"{self.docker_image_repository}:latest"
+		self.command += f" -t {docker_image_latest}"
     
-    self.command += " ."
+		self.command += " ."
 		result = self.run(
 			self.command,
 			environment,
