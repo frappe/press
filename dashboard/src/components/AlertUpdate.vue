@@ -15,14 +15,12 @@
 			<Button
 				v-if="deployInformation.deploy_in_progress"
 				variant="solid"
-				theme="blue"
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
 			<Button
 				v-else
 				variant="solid"
-				theme="blue"
 				@click="
 					() => {
 						showDeployDialog = true;

@@ -1,6 +1,5 @@
 import {
 	Button,
-	Alert,
 	FeatherIcon,
 	Card,
 	Tooltip,
@@ -20,7 +19,6 @@ let components = import.meta.globEager('./*.vue'); // To get each component insi
 
 let globalFrappeUIComponents = {
 	Button,
-	Alert,
 	Avatar,
 	FeatherIcon,
 	Card,

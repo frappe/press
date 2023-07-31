@@ -5,7 +5,7 @@
 			site now?
 		</span>
 		<template #actions>
-			<Button variant="solid" theme="blue" @click="showUpdatesDialog = true">
+			<Button variant="solid" @click="showUpdatesDialog = true">
 				Show updates
 			</Button>
 		</template>

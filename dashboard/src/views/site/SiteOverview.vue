@@ -72,7 +72,6 @@ const marketplacePromotionalBanners = useResource({
 					<Button
 						class="whitespace-nowrap"
 						variant="solid"
-						theme="blue"
 						@click="
 							() => {
 								showPromotionalDialog = true;
@@ -90,12 +89,7 @@ const marketplacePromotionalBanners = useResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button
-					class="whitespace-nowrap"
-					route="/welcome"
-					variant="solid"
-					theme="blue"
-				>
+				<Button class="whitespace-nowrap" route="/welcome" variant="solid">
 					Add Billing Information
 				</Button>
 			</template>

@@ -18,9 +18,7 @@
 				<Alert title="Your account is disabled">
 					Enable your account to start creating sites
 					<template #actions>
-						<Button variant="solid" theme="blue" route="/settings">
-							Enable Account
-						</Button>
+						<Button variant="solid" route="/settings"> Enable Account </Button>
 					</template>
 				</Alert>
 			</div>
@@ -36,11 +34,7 @@
 					</strong>
 					more in credits.
 					<template #actions>
-						<Button
-							@click="showPrepaidCreditsDialog = true"
-							variant="solid"
-							theme="blue"
-						>
+						<Button @click="showPrepaidCreditsDialog = true" variant="solid">
 							Add Credits
 						</Button>
 					</template>
@@ -52,7 +46,7 @@
 						<router-link
 							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
 						>
-							<Button variant="solid" theme="blue"> Go to Billing </Button>
+							<Button variant="solid"> Go to Billing </Button>
 						</router-link>
 					</template>
 				</Alert>
