@@ -1,4 +1,3 @@
----
 - name: Add MariaDB Repository File
   template:
     src: mariadb.list
@@ -6,6 +5,21 @@
     owner: root
     group: root
     mode: 0644
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "focal"
+  
+- name: Add MariaDB Repository File
+  template:
+    src: mariadb-10.6.list
+    dest: /etc/apt/sources.list.d/mariadb.list
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
+
+- name: Show source file
+  shell: cat /etc/apt/sources.list.d/mariadb.list
+  register: mariadb_source_file
+  changed_when: false
 
 - name: Add MariaDB Repository Key
   apt_key:
