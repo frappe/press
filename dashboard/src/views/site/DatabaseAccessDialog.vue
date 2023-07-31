@@ -17,8 +17,8 @@
 					</p>
 
 					<Button
-						class="mt-4"
-						appearance="primary"
+						class="mt-4 w-full"
+						variant="solid"
 						@click="showChangePlanDialog = true"
 						>Upgrade Site Plan</Button
 					>

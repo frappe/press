@@ -3,7 +3,7 @@
 		<PageHeader title="Apps" subtitle="Manage your marketplace apps">
 			<template v-slot:actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					iconLeft="plus"
 					@click="
 						!$resources.appOptions.data ? $resources.appOptions.fetch() : null;
@@ -43,8 +43,8 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
-					class="ml-2"
+					variant="solid"
+					class="ml-2 w-full"
 					v-if="selectedApp"
 					:loading="$resources.addMarketplaceApp.loading"
 					@click="

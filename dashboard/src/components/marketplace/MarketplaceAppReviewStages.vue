@@ -62,14 +62,21 @@
 			</CardDetails>
 		</template>
 	</CardWithDetails>
-	<Dialog v-model="showReplyDialog" :options="{ title: 'Reply' }">
+	<Dialog
+		v-model="showReplyDialog"
+		:options="{
+			title: 'Reply',
+			actions: [
+				{
+					label: 'Send',
+					variant: 'solid',
+					onClick: () => $resources.addReply.submit()
+				}
+			]
+		}"
+	>
 		<template v-slot:body-content>
 			<Input label="Message" v-model="message" type="textarea" required />
-		</template>
-		<template #actions>
-			<Button appearance="primary" @click="$resources.addReply.submit()">
-				Send
-			</Button>
 		</template>
 	</Dialog>
 </template>

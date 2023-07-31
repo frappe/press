@@ -14,11 +14,7 @@
 				required
 			/>
 			<ErrorMessage class="mt-4" :message="$resources.signup.error" />
-			<Button
-				class="mt-6"
-				:loading="$resources.signup.loading"
-				appearance="primary"
-			>
+			<Button class="mt-6" :loading="$resources.signup.loading" variant="solid">
 				Submit
 			</Button>
 			<div class="mt-10 border-t text-center">
@@ -44,7 +40,6 @@
 						$resources.oauthLogin.submit();
 					}
 				"
-				appearance="secondary"
 			>
 				<div class="flex">
 					<GoogleIcon />

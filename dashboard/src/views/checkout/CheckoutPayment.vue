@@ -50,7 +50,7 @@
 			<Button
 				v-if="!stripePayment"
 				class="mt-4"
-				appearance="primary"
+				variant="solid"
 				:loading="$resources.handlePayment.loading"
 				@click="$resources.handlePayment.submit()"
 			>
@@ -76,7 +76,7 @@
 					<Button
 						v-if="card != null"
 						class="mt-4"
-						appearance="primary"
+						variant="solid"
 						:loading="$resources.handlePayment.loading"
 						@click="buy"
 					>

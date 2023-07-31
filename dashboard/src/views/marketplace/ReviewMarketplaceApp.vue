@@ -68,9 +68,9 @@ const submitReview = useResource({
 
 				<ErrorMessage class="mt-2" :message="submitReview.error" />
 				<Button
-					class="mt-4"
+					class="mt-4 w-full"
 					:loading="submitReview.loading"
-					appearance="primary"
+					variant="solid"
 					@click="submitReview.submit({ ...review })"
 					>Submit</Button
 				>

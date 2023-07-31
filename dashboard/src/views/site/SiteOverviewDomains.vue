@@ -178,11 +178,13 @@
 			</template>
 
 			<template v-slot:actions>
-				<Button @click="cancelAddDomainDialog()"> Cancel </Button>
+				<Button class="w-full" @click="cancelAddDomainDialog()">
+					Cancel
+				</Button>
 				<Button
 					v-if="!dnsVerified"
-					class="ml-3"
-					appearance="primary"
+					class="w-full mt-2"
+					variant="solid"
 					:loading="$resources.checkDNS.loading"
 					@click="
 						$resources.checkDNS.submit({
@@ -195,8 +197,8 @@
 				</Button>
 				<Button
 					v-if="dnsVerified"
-					class="ml-3"
-					appearance="primary"
+					class="w-full mt-2"
+					variant="solid"
 					:loading="$resources.addDomain.loading"
 					@click="
 						$resources.addDomain.submit({

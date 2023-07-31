@@ -1,7 +1,6 @@
 <script setup>
 import { reactive } from 'vue';
 import useResource from '@/composables/resource';
-import StarRatingInput from '@/components/StarRatingInput.vue';
 
 const props = defineProps({
 	marketplaceApp: String,
@@ -46,9 +45,9 @@ const submitReply = useResource({
 
 				<ErrorMessage class="mt-2" :message="submitReply.error" />
 				<Button
-					class="mt-4"
+					class="mt-4 w-full"
 					:loading="submitReply.loading"
-					appearance="primary"
+					variant="solid"
 					@click="submitReply.submit({ ...reply })"
 					>Submit</Button
 				>

@@ -14,7 +14,7 @@
 
 				<Button
 					v-if="requiresReAuth"
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					@click="$resources.clearAccessToken.submit()"
 					:loading="$resources.clearAccessToken.loading"
@@ -27,7 +27,7 @@
 
 			<div v-if="needsAuthorization">
 				<Button
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					:link="options.installation_url + '?state=' + state"
 				>
@@ -70,7 +70,8 @@
 				<div>
 					<ErrorMessage class="mb-2" :message="$resourceErrors" />
 					<Button
-						appearance="primary"
+						class="mt-2"
+						variant="solid"
 						v-if="selectedRepo && selectedBranch && !validatedApp"
 						@click="$resources.validateApp.submit()"
 						:loading="$resources.validateApp.loading"

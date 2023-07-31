@@ -3,7 +3,7 @@
 		You haven't added your billing information yet. Add it to start creating
 		sites.
 		<template #actions>
-			<Button appearance="primary" route="/welcome" class="whitespace-nowrap"
+			<Button variant="solid" route="/welcome" class="whitespace-nowrap"
 				>Add Billing Information</Button
 			>
 		</template>

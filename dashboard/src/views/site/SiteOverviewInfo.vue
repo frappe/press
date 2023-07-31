@@ -74,7 +74,7 @@
 					<Button
 						@click="onActivateClick"
 						class="shrink-0"
-						:appearance="site.status == 'Broken' ? 'primary' : 'secondary'"
+						:variant="site.status === 'Broken' ? 'solid' : 'subtle'"
 					>
 						Activate Site
 					</Button>

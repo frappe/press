@@ -28,7 +28,7 @@
 						v-model:error="ipInvalid"
 					/>
 					<Button
-						appearance="primary"
+						variant="solid"
 						v-show="
 							activeStep.name === 'ServerDetails' &&
 							!this.ipInvalid &&
@@ -54,14 +54,15 @@
 						v-if="$resources.verify.data === null"
 						@click="$resources.verify.submit()"
 						:loading="$resources.verify.loading"
-						appearance="primary"
+						variant="solid"
 					>
 						Verify Server
 					</Button>
 					<Button
 						v-else
 						:icon-left="playOutput ? 'check' : 'x'"
-						:appearance="playOutput ? 'primary' : 'warning'"
+						variant="solid"
+						:theme="playOutput ? 'gray' : 'red'"
 						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
@@ -89,29 +90,27 @@
 					</div>
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
-					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
+					<div>
+						<Button v-if="hasPrevious" @click="previous" class="w-full">
 							Back
 						</Button>
 
 						<Button
-							appearance="primary"
+							v-if="hasNext"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
 							:disabled="
 								activeStep.name === 'ServerDetails' ? !domainVerified : false
 							"
-							:class="{ 'pointer-events-none opacity-0': !hasNext }"
+							class="w-full"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							class="w-full"
+							variant="solid"
 							:disabled="
 								!playOutput || !nginxSetup || !this.agreedToRegionConsent
 							"

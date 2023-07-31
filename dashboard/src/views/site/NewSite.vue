@@ -71,13 +71,8 @@
 
 					<ErrorMessage class="mb-4" :message="$resources.newSite.error" />
 
-					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
+					<div>
+						<Button v-show="hasPrevious" class="w-full" @click="previous">
 							Back
 						</Button>
 						<Button
@@ -86,9 +81,8 @@
 							"
 							variant="solid"
 							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
+							class="w-full"
+							:class="{ 'mt-2': hasPrevious }"
 							:loading="loadingPlans"
 							loadingText="Loading"
 						>
@@ -99,6 +93,7 @@
 								!wantsToRestore && activeStep.name === 'Restore' && hasNext
 							"
 							variant="solid"
+							class="w-full"
 							@click="nextStep(activeStep, next)"
 						>
 							Skip
@@ -106,6 +101,8 @@
 						<Button
 							v-show="!hasNext"
 							variant="solid"
+							class="w-full"
+							:class="{ 'mt-2': hasPrevious }"
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"
 						>

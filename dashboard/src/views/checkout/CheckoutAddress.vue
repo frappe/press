@@ -81,7 +81,7 @@
 			</div>
 		</div>
 		<Button
-			appearance="primary"
+			variant="solid"
 			class="self-end mt-8"
 			:loading="$resources.updateBillingDetails.loading"
 			@click="$resources.updateBillingDetails.submit()"

@@ -100,29 +100,25 @@
 		v-if="$resources.usePartnerCredits.error"
 		:message="$resources.usePartnerCredits.error"
 	/>
-	<div
-		class="float-right w-fit mt-4"
-		v-if="step == 'Confirm Checkout' && $account.team"
-	>
+	<div class="mt-4" v-if="step == 'Confirm Checkout' && $account.team">
 		<Button
-			class="mr-2"
+			class="w-full"
 			v-if="$account.team.erpnext_partner"
-			appearance="secondary"
 			@click="$resources.usePartnerCredits.submit()"
 			:loading="$resources.usePartnerCredits.loading"
 		>
 			Use Partner Credits
 		</Button>
 		<Button
-			class="mr-2"
+			class="w-full"
 			v-if="!$account.team.erpnext_partner && $account.balance >= creditsToBuy"
-			appearance="secondary"
 			@click="step = 'Use Existing Credits'"
 		>
 			Use Existing Credits
 		</Button>
 		<Button
-			appearance="primary"
+			class="w-full mt-2"
+			variant="solid"
 			@click="$resources.changePlan.submit()"
 			:loading="$resources.changePlan.loading"
 		>
@@ -139,16 +135,17 @@
 			subscription. This might affect expiry of other active subscriptions. Are
 			you sure you want to proceed?
 		</p>
-		<div class="float-right mt-2">
+		<div class="mt-6">
 			<Button
-				class="mr-2"
+				class="w-full"
 				type="secondary"
 				@click="() => (this.step = 'Confirm Checkout')"
 			>
 				Back
 			</Button>
 			<Button
-				appearance="primary"
+				class="w-full mt-2"
+				variant="solid"
 				@click="$resources.useCredits.submit()"
 				:loading="$resources.useCredits.loading"
 			>
@@ -184,7 +181,7 @@
 			</Button>
 			<Button
 				class="ml-2"
-				appearance="primary"
+				variant="solid"
 				@click="onBuyClick"
 				:loading="paymentInProgress"
 			>
@@ -205,7 +202,7 @@
 			your purchase of {{ creditsToBuy }} credits.
 		</p>
 		<Button
-			appearance="primary"
+			variant="solid"
 			class="my-2"
 			@click="authenticateCard"
 			id="authenticate"
@@ -224,7 +221,6 @@
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
-import { utils } from '@/utils';
 
 export default {
 	name: 'MarketplacePrepaidCredits',

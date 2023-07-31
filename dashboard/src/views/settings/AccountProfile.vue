@@ -144,7 +144,17 @@
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Enable Account' }"
+			:options="{
+				title: 'Enable Account',
+				actions: [
+					{
+						label: 'Enable Account',
+						variant: 'solid',
+						loading: $resources.enableAccount.loading,
+						onClick: () => $resources.enableAccount.submit()
+					}
+				]
+			}"
 			v-model="showEnableAccountDialog"
 		>
 			<template v-slot:body-content>
@@ -158,18 +168,6 @@
 					Do you want to continue?
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
-			</template>
-
-			<template v-slot:actions>
-				<Button @click="showEnableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="primary"
-					@click="$resources.enableAccount.submit()"
-					:loading="$resources.enableAccount.loading"
-				>
-					Enable Account
-				</Button>
 			</template>
 		</Dialog>
 	</Card>

@@ -1,7 +1,20 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<Dialog :options="{ title: 'Drop Site' }" v-model="dialogOpen">
+		<Dialog
+			:options="{
+				title: 'Drop Site',
+				actions: [
+					{
+						label: site.archive_failed ? 'Force Drop Site' : 'Drop Site',
+						variant: 'solid',
+						loading: $resources.dropSite.loading,
+						onClick: () => $resources.dropSite.submit()
+					}
+				]
+			}"
+			v-model="dialogOpen"
+		>
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop your site? The site will be archived and
@@ -23,20 +36,6 @@
 					/>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.dropSite.error" />
-			</template>
-
-			<template v-slot:actions>
-				<div>
-					<Button @click="dialogOpen = false"> Cancel </Button>
-					<Button
-						class="ml-3"
-						appearance="danger"
-						@click="$resources.dropSite.submit()"
-						:loading="$resources.dropSite.loading"
-					>
-						{{ site.archive_failed ? 'Force Drop Site' : 'Drop Site' }}
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</div>

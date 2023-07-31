@@ -28,19 +28,21 @@
 			</Button>
 		</template>
 		<Dialog
-			:options="{ title: 'Change Notify Email' }"
+			:options="{
+				title: 'Change Notify Email',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						loading: $resources.changeNotifyEmail.loading,
+						onClick: () => $resources.changeNotifyEmail.submit()
+					}
+				]
+			}"
 			v-model="showChangeNotifyEmailDialog"
 		>
 			<template v-slot:body-content>
 				<Input v-model="site.notify_email" />
-			</template>
-			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					@click="$resources.changeNotifyEmail.submit()"
-				>
-					Save
-				</Button>
 			</template>
 		</Dialog>
 	</Card>

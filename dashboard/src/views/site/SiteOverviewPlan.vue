@@ -72,7 +72,20 @@
 			</div>
 		</div>
 
-		<Dialog :options="{ title: 'Change Plan' }" v-model="showChangePlanDialog">
+		<Dialog
+			:options="{
+				title: 'Change Plan',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						loading: $resources.changePlan.loading,
+						onClick: () => $resources.changePlan.submit()
+					}
+				]
+			}"
+			v-model="showChangePlanDialog"
+		>
 			<template v-slot:body-content>
 				<SitePlansTable
 					class="mt-6"
@@ -80,17 +93,6 @@
 					v-model:selectedPlan="selectedPlan"
 				/>
 				<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
-			</template>
-			<template #actions>
-				<Button @click="showChangePlanDialog = false"> Cancel </Button>
-				<Button
-					class="ml-2"
-					appearance="primary"
-					:loading="$resources.changePlan.loading"
-					@click="$resources.changePlan.submit()"
-				>
-					Submit
-				</Button>
 			</template>
 		</Dialog>
 	</Card>

@@ -57,7 +57,21 @@
 
 		<ErrorMessage :message="$resources.marketplaceSubscriptions.error" />
 
-		<Dialog v-model="showAppPlanChangeDialog" width="half" :dismissable="true">
+		<Dialog
+			:options="{
+				actions: [
+					{
+						label: 'Change Plan',
+						variant: 'solid',
+						loading: $resources.changePlan.loading,
+						onClick: handlePlanChange
+					}
+				]
+			}"
+			v-model="showAppPlanChangeDialog"
+			width="half"
+			:dismissable="true"
+		>
 			<ChangeAppPlanSelector
 				@change="
 					plan => {
@@ -70,15 +84,6 @@
 				:currentPlan="appToChangePlan.plan"
 				:frappeVersion="site.frappe_version"
 			/>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.changePlan.loading"
-					@click="handlePlanChange"
-					>Change Plan</Button
-				>
-			</template>
 		</Dialog>
 		<Dialog
 			v-model="showCheckoutDialog"

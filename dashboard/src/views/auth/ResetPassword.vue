@@ -29,7 +29,7 @@
 			<ErrorMessage class="mt-6" :message="$resourceErrors" />
 			<Button
 				class="mt-6"
-				appearance="primary"
+				variant="solid"
 				:disabled="!password"
 				:loading="$resources.resetPassword.loading"
 			>

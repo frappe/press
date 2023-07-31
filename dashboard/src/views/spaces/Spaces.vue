@@ -3,7 +3,7 @@
 		<PageHeader title="Spaces" subtitle="Your Frappe Spaces and Code Servers">
 			<template v-if="this.$account.team.enabled" v-slot:actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					iconLeft="plus"
 					class="ml-2"
 					@click="showBillingDialog"
@@ -18,9 +18,7 @@
 				Enable your account to start creating spaces
 
 				<template #actions>
-					<Button appearance="primary" route="/settings">
-						Enable Account
-					</Button>
+					<Button variant="solid" route="/settings"> Enable Account </Button>
 				</template>
 			</Alert>
 		</div>

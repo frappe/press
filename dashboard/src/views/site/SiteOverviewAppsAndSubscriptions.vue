@@ -72,14 +72,10 @@
 				</div>
 
 				<div class="ml-auto flex items-center space-x-2">
-					<Button
-						appearance="secondary"
-						v-if="app.plan_info"
-						@click="changeAppPlan(app)"
+					<Button v-if="app.plan_info" @click="changeAppPlan(app)"
 						>Change Plan</Button
 					>
 					<Button
-						appearance="secondary"
 						v-if="!app.plan_info && app.subscription_available"
 						@click="
 							() => {
