@@ -32,7 +32,7 @@
 <script>
 export default {
 	name: 'Hostname',
-	props: ['modelValue', 'options'],
+	props: ['modelValue', 'domain'],
 	emits: ['update:modelValue', 'error'],
 	data() {
 		return {
@@ -75,11 +75,6 @@ export default {
 				return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
 			}
 			return null;
-		}
-	},
-	computed: {
-		domain() {
-			return this.options.domain;
 		}
 	}
 };

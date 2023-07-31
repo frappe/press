@@ -1,5 +1,5 @@
 <template>
-	<WizardCard v-if="options">
+	<WizardCard v-if="domain">
 		<div class="mb-6 text-center">
 			<h1 class="text-2xl font-bold">Create a new code server</h1>
 		</div>
@@ -11,19 +11,15 @@
 				<Hostname
 					v-show="activeStep.name === 'Hostname'"
 					v-model="subdomain"
-					:options="options"
+					:domain="domain"
 					@error="error => (subdomainValid = !Boolean(error))"
 				/>
-				<Group
-					v-show="activeStep.name === 'Group'"
-					v-model="selectedGroup"
-					:options="options"
-				/>
+				<Group v-show="activeStep.name === 'Group'" v-model="selectedGroup" />
 				<Bench
 					v-if="selectedGroup"
 					v-show="activeStep.name === 'Bench'"
 					v-model="selectedBench"
-					:benches="selectedGroup.benches"
+					:selectedGroup="selectedGroup.name"
 				/>
 				<div class="mt-4">
 					<ErrorMessage
@@ -53,6 +49,7 @@
 							appearance="primary"
 							@click="$resources.newCodeServer.submit()"
 							:loading="$resources.newCodeServer.loading"
+							:disabled="selectedBench == null"
 						>
 							Create Servers
 						</Button>
@@ -83,10 +80,10 @@ export default {
 		return {
 			title: null,
 			subdomain: null,
+			domain: null,
 			subdomainValid: false,
 			selectedGroup: null,
 			selectedBench: null,
-			options: null,
 			steps: [
 				{
 					name: 'Hostname',
@@ -107,7 +104,7 @@ export default {
 		};
 	},
 	async mounted() {
-		this.options = await this.$call('press.api.spaces.options_for_code_server');
+		this.domain = await this.$call('press.api.spaces.code_server_domain');
 	},
 	resources: {
 		newCodeServer() {
@@ -116,7 +113,7 @@ export default {
 				params: {
 					subdomain: this.subdomain,
 					bench: this.selectedBench,
-					domain: this.options?.domain
+					domain: this.domain
 				},
 				onSuccess(r) {
 					this.$router.replace(`/codeservers/${r}/jobs`);

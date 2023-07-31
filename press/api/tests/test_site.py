@@ -149,16 +149,56 @@ class TestAPISite(FrappeTestCase):
 		out = check_for_updates(site.name)
 		self.assertEqual(out["update_available"], True)
 
-	def test_get_installed_apps(self):
-		pass
+	def test_check_for_updates_shows_update_unavailable_when_no_new_bench(self):
+		from press.api.site import check_for_updates
 
-	def test_available_apps(self):
-		pass
+		bench = create_test_bench()
 
-	def test_current_plan(self):
-		pass
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name)
+		out = check_for_updates(site.name)
+		self.assertEqual(out["update_available"], False)
 
-	def test_check_dns_cname_a(self):
+	def test_installed_apps_returns_installed_apps_of_site(self):
+		from press.api.site import installed_apps
+
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app1, app2])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name)
+		out = installed_apps(site.name)
+		self.assertEqual(len(out), 2)
+		self.assertEqual(out[0]["name"], group.apps[0].source)
+		self.assertEqual(out[1]["name"], group.apps[1].source)
+		self.assertEqual(out[0]["app"], group.apps[0].app)
+		self.assertEqual(out[1]["app"], group.apps[1].app)
+
+	def test_available_apps_shows_apps_installed_in_bench_but_not_in_site(self):
+		from press.api.site import available_apps
+
+		app1 = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		app3 = create_test_app("insights", "Insights")
+		group = create_test_release_group([app1, app2])
+		bench = create_test_bench(group=group)
+
+		group2 = create_test_release_group([app3])
+		create_test_bench(
+			group=group2, server=bench.server
+		)  # app3 shouldn't show in available_apps
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name)
+		site.uninstall_app(app2.name)
+		out = available_apps(site.name)
+		self.assertEqual(len(out), 1)
+		self.assertEqual(out[0]["name"], group.apps[1].source)
+		self.assertEqual(out[0]["app"], group.apps[1].app)
+
+	def test_check_dns_(self):
 		pass
 
 	def test_install_app(self):
@@ -171,9 +211,6 @@ class TestAPISite(FrappeTestCase):
 		pass
 
 	def test_get_upload_link(self):
-		pass
-
-	def test_change_team(self):
 		pass
 
 
