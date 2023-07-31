@@ -19,6 +19,9 @@ def log_error(title, **kwargs):
 
 
 def get_current_team(get_doc=False):
+	if frappe.session.user == "Guest":
+		frappe.throw("Not Permitted", frappe.PermissionError)
+
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
 		return (

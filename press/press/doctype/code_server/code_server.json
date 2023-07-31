@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-07-20 20:41:32.167249",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "subdomain",
+  "team",
+  "bench",
+  "group",
+  "status",
+  "proxy_server",
+  "server",
+  "cluster",
+  "domain",
+  "password"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nStopped\nBroken\nArchived"
+  },
+  {
+   "fieldname": "proxy_server",
+   "fieldtype": "Link",
+   "label": "Proxy Server",
+   "options": "Proxy Server",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.server",
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "domain",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Domain",
+   "options": "Root Domain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "subdomain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subdomain",
+   "reqd": 1
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fetch_from": "bench.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group"
+  },
+  {
+   "fetch_from": "server.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "code_server"
+  }
+ ],
+ "modified": "2023-07-28 15:51:07.083218",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Code Server",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

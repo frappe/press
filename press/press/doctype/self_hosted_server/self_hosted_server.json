@@ -21,7 +21,7 @@
   "plan",
   "release_group",
   "private_ip",
-  "start_setup",
+  "different_database_server",
   "existing_bench_present",
   "new_server",
   "section_break_0fky",
@@ -33,6 +33,7 @@
   "ssh_user",
   "column_break_smwr",
   "ssh_port",
+  "ram",
   "database_section",
   "database_server",
   "mariadb_ip",
@@ -287,13 +288,18 @@
   },
   {
    "default": "0",
-   "fieldname": "start_setup",
+   "fieldname": "different_database_server",
    "fieldtype": "Check",
-   "label": "Start Setup"
+   "label": "Different Database Server"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Data",
+   "label": "RAM"
   }
  ],
  "links": [],
- "modified": "2023-06-13 15:19:01.155391",
+ "modified": "2023-06-26 15:28:02.524473",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

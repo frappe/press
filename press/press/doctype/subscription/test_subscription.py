@@ -100,7 +100,7 @@ class TestSubscription(unittest.TestCase):
 			plan=plan.name,
 		).insert()
 
-		def method():
+		def method(subscription):
 			return False
 
 		# subscription calls this method when checking if it should create a usage record

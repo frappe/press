@@ -132,10 +132,9 @@ def process_backup_site_job_update(job):
 				},
 				for_update=False,
 			)
+
 			if "private" in backup_data and "public" in backup_data:
-				frappe.db.set_value(
-					"Site Backup",
-					backup.name,
+				site_backup_dict.update(
 					{
 						"private_size": backup_data["private"]["size"],
 						"private_url": backup_data["private"]["url"],
@@ -145,9 +144,10 @@ def process_backup_site_job_update(job):
 						"public_url": backup_data["public"]["url"],
 						"public_file": backup_data["public"]["file"],
 						"remote_private_file": remote_private,
-					},
-					for_update=False,
+					}
 				)
+
+			frappe.db.set_value("Site Backup", backup.name, site_backup_dict, for_update=False)
 
 
 def get_backup_bucket(cluster, region=False):

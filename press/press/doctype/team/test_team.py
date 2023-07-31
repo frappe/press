@@ -4,7 +4,7 @@
 
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.tests.ui_test_helpers import create_test_user
@@ -15,8 +15,10 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
+def create_test_press_admin_team(email: str = None) -> Team:
 	"""Create test press admin user."""
+	if not email:
+		email = frappe.mock("email")
 	create_test_user(email)
 	user = frappe.get_doc("User", {"email": email})
 	user.remove_roles(*frappe.get_all("Role", pluck="name"))
@@ -24,8 +26,12 @@ def create_test_press_admin_team(email: str = frappe.mock("email")) -> Team:
 	return create_test_team(email)
 
 
-def create_test_team(email: str = frappe.mock("email"), country="India") -> Team:
+@patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
+@patch.object(Team, "create_stripe_customer", new=Mock())
+def create_test_team(email: str = None, country="India") -> Team:
 	"""Create test team doc."""
+	if not email:
+		email = frappe.mock("email")
 	create_test_user(email)  # ignores if user already exists
 	user = frappe.get_value("User", {"email": email}, "name")
 	team = frappe.get_doc(

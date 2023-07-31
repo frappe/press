@@ -67,6 +67,18 @@ frappe.ui.form.on('Database Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Enable Performance Schema'),
+				'enable_performance_schema',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_performance_schema_enabled,
+			],
+			[
+				__('Disable Performance Schema'),
+				'disable_performance_schema',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_performance_schema_enabled,
+			],
 			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
 			[
 				__('Setup Deadlock Logger'),

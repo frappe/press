@@ -8,7 +8,7 @@
 				v-model="invoiceStatus"
 			/>
 		</template>
-		<div class="max-h-96 divide-y" v-if="$resources.pastInvoices.data?.length">
+		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
 				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 			>
@@ -94,7 +94,7 @@
 						v-if="invoice.status != 'Paid' && invoice.stripe_invoice_url"
 						icon-left="external-link"
 						class="shrink-0"
-						:link="invoice.stripe_invoice_url"
+						@click="payNow(invoice)"
 					>
 						<span class="text-sm">Pay Now</span>
 					</Button>
@@ -151,11 +151,11 @@ export default {
 		subtitle() {
 			if (
 				this.$resources.pastInvoices.loading ||
-				this.$resources.pastInvoices.data.length > 0
+				this.filteredInvoices.length > 0
 			) {
-				return 'History of your invoice payments';
+				return `History of your ${this.invoiceStatus} invoice payments`;
 			}
-			return 'No invoices have been generated yet';
+			return `No ${this.invoiceStatus} invoices have been generated yet`;
 		}
 	},
 	methods: {
@@ -168,6 +168,24 @@ export default {
 					'Invoice Created': 'blue'
 				}[invoice.status]
 			};
+		},
+		async refreshLink(invoiceName) {
+			let refreshed_link = await this.$call(
+				'press.api.billing.refresh_invoice_link',
+				{
+					invoice: invoiceName
+				}
+			);
+			if (refreshed_link) {
+				window.open(refreshed_link, '_blank');
+			}
+		},
+		payNow(invoice) {
+			if (invoice.stripe_link_expired) {
+				this.refreshLink(invoice.name);
+			} else {
+				window.open(invoice.stripe_invoice_url, '_blank');
+			}
 		}
 	}
 };

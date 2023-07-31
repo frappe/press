@@ -169,7 +169,7 @@ def _new(site, server: str = None):
 	)
 
 	if app_plans and len(app_plans) > 0:
-		subscription_docs = get_app_subscriptions(app_plans)
+		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
@@ -194,7 +194,7 @@ def _new(site, server: str = None):
 	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
 		from press.utils.telemetry import capture
 
-		capture("created_first_site", "fc_signup", team.user)
+		capture("created_first_site", "fc_signup", team.account_request)
 
 	return {
 		"site": site.name,
@@ -227,7 +227,7 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans):
+def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
@@ -244,6 +244,7 @@ def get_app_subscriptions(app_plans):
 				"doctype": "Marketplace App Subscription",
 				"marketplace_app_plan": plan_name,
 				"app": app_name,
+				"team": team,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
@@ -638,8 +639,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-@frappe.whitelist()
-def all():
+def get_sites(site_filter=""):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -648,31 +648,62 @@ def all():
 		condition = f"= '{team}'"
 	else:
 		condition = f"in {tuple([team] + child_teams)}"
-	sites_data = frappe._dict()
+
+	benches_with_updates = tuple(benches_with_available_update())
+
+	status_condition = "!= 'Archived'"
+	if site_filter == "Active":
+		status_condition = "= 'Active'"
+	elif site_filter == "Broken":
+		status_condition = "= 'Broken'"
+	elif site_filter == "Trial":
+		condition = f"{condition} AND s.trial_end_date != ''"
+	elif site_filter == "Update Available":
+		condition = f"{condition} AND s.bench IN {benches_with_updates}"
+	elif site_filter.startswith("tag:"):
+		tag = site_filter[4:]
+		condition = f"{condition} AND s.name IN (SELECT parent FROM `tabResource Tag` WHERE tag_name = '{tag}')"
+
 	sites = frappe.db.sql(
 		f"""
 			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
-			WHERE s.status != 'Archived'
+			WHERE s.status {status_condition}
 			AND s.team {condition}
 			ORDER BY creation DESC""",
 		as_dict=True,
 	)
 
-	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
+	return sites
+
+
+@frappe.whitelist()
+def all(site_filter=""):
+	return get_sites(site_filter=site_filter)
+
+
+@frappe.whitelist()
+def recent_sites():
+	sites = get_sites()
+
 	site_names = [site.name for site in sites]
+	if not site_names:
+		return []
 	recents = sites_with_recent_activity(site_names)
 
-	sites_data.site_list = sites
-	sites_data.recents = recents
+	return [site for site in sites if site.name in recents]
 
-	return sites_data
+
+@frappe.whitelist()
+def site_tags():
+	team = get_current_team()
+	return frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag")
 
 
 @frappe.whitelist()
@@ -724,6 +755,10 @@ def get(name):
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
+		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
+		),
 	}
 
 
@@ -1283,6 +1318,7 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 			"marketplace_app_plan": plan_name,
 			"app": app_name,
 			"site": site_name,
+			"team": get_current_team(),
 		}
 	).insert(ignore_permissions=True)
 
@@ -1501,9 +1537,9 @@ def get_auto_update_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def update_auto_update_info(name, info=dict()):
+def update_auto_update_info(name, info=None):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
-	site_doc.update(info)
+	site_doc.update(info or {})
 	site_doc.save()
 
 

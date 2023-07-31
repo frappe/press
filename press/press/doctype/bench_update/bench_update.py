@@ -18,11 +18,6 @@ class BenchUpdate(Document):
 		self.validate_pending_site_updates()
 
 	def validate_pending_updates(self):
-		if frappe.db.exists(
-			"Bench Update", {"status": ("in", ("Pending", "Running")), "group": self.group}
-		):
-			frappe.throw("An update is already pending for this bench", frappe.ValidationError)
-
 		if frappe.get_doc("Release Group", self.group).deploy_in_progress:
 			frappe.throw(
 				"A deploy for this bench is already in progress", frappe.ValidationError
@@ -42,7 +37,7 @@ class BenchUpdate(Document):
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(apps_to_ignore)
-		candidate.build_and_deploy()
+		candidate.deploy_to_production()
 
 		self.status = "Running"
 		self.candidate = candidate.name

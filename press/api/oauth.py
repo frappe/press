@@ -22,6 +22,8 @@ from press.utils import log_error
 
 import os
 
+from press.utils.telemetry import capture, identify
+
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
@@ -44,7 +46,7 @@ def google_oauth_flow():
 def google_login(saas_app=None):
 	flow = google_oauth_flow()
 	authorization_url, state = flow.authorization_url()
-	minutes = 10
+	minutes = 5
 	frappe.cache().set_value(
 		f"fc_oauth_state:{state}", saas_app or state, expires_in_sec=minutes * 60
 	)
@@ -189,6 +191,13 @@ def saas_setup(key, app, country, subdomain):
 			"subdomain": subdomain,
 		}
 	).insert(ignore_permissions=True)
+	site_name = signup_ar.get_site_name()
+	identify(
+		site_name,
+		app=app,
+		oauth=True,
+	)
+	capture("completed_oauth_account_request", "fc_saas", site_name)
 	create_or_rename_saas_site(app, signup_ar)
 	frappe.set_user("Administrator")
 	create_marketplace_subscription(signup_ar)

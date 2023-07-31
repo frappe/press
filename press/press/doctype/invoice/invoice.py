@@ -39,7 +39,7 @@ class Invoice(Document):
 
 	@frappe.whitelist()
 	def finalize_invoice(self):
-		if self.type in ("Prepaid Credits", "Summary"):
+		if self.type == "Prepaid Credits":
 			return
 
 		if self.total == 0:
@@ -51,9 +51,6 @@ class Invoice(Document):
 		if not team_enabled:
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
-
-		if self.partner_email:
-			self.apply_partner_discount()
 
 		# set as unpaid by default
 		self.status = "Unpaid"
@@ -308,7 +305,7 @@ class Invoice(Document):
 				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 
 	def add_usage_record(self, usage_record):
-		if self.type not in ("Subscription", "Summary"):
+		if self.type != "Subscription":
 			return
 		# return if this usage_record is already accounted for in an invoice
 		if usage_record.invoice:
@@ -369,17 +366,12 @@ class Invoice(Document):
 	def get_invoice_item_for_usage_record(self, usage_record):
 		invoice_item = None
 		for row in self.items:
-			conditions = (
+			if (
 				row.document_type == usage_record.document_type
 				and row.document_name == usage_record.document_name
 				and row.plan == usage_record.plan
 				and row.rate == usage_record.amount
-			)
-
-			if self.type == "Summary":
-				conditions = conditions and (row.site == usage_record.site)
-
-			if conditions:
+			):
 				invoice_item = row
 		return invoice_item
 
@@ -410,35 +402,6 @@ class Invoice(Document):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
-
-	def apply_partner_discount(self):
-		# check if discount is already added
-		for discount in self.discounts:
-			if discount.note == "Flat Partner Discount":
-				return
-
-		# give 10% discount for partners
-		total_partner_discount = 0
-		for item in self.items:
-			if item.document_type in ("Site", "Server", "Database Server"):
-				item.discount = item.amount * 0.1
-				total_partner_discount += item.discount
-
-		if total_partner_discount > 0:
-			self.append(
-				"discounts",
-				{
-					"discount_type": "Flat On Total",
-					"based_on": "Amount",
-					"percent": 0,
-					"amount": total_partner_discount,
-					"note": "Flat Partner Discount",
-					"via_team": False,
-				},
-			)
-
-		self.save()
-		self.reload()
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0

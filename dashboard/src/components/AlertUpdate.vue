@@ -9,7 +9,7 @@
 		</span>
 		<span v-else>
 			Your bench is not deployed yet. You can add more apps to your bench before
-			deploying. If you want to deploy now, click on Deploy.
+			deploying. If you want to deploy now, click on the Show Updates button.
 		</span>
 		<template #actions>
 			<Button
@@ -28,7 +28,7 @@
 					}
 				"
 			>
-				Show updates
+				Show Updates
 			</Button>
 		</template>
 
@@ -62,7 +62,7 @@
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
-					{{ selectedSites.length > 0 ? 'Update' : 'Deploy Bench' }}
+					{{ selectedSites.length > 0 ? 'Update' : 'Skip and Deploy' }}
 				</Button>
 				<Button v-if="step == 'Sites'" @click="step = 'Apps'"> Back </Button>
 				<Button v-else appearance="primary" @click="step = 'Sites'">

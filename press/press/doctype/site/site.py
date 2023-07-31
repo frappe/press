@@ -8,7 +8,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List
 
-import boto3
 import dateutil.parser
 import frappe
 import requests
@@ -34,6 +33,7 @@ from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
@@ -164,7 +164,7 @@ class Site(Document):
 		self.archive(site_name=site_name, reason="Retry Archive")
 
 	def rename(self, new_name: str):
-		self.create_dns_record()
+		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -249,8 +249,9 @@ class Site(Document):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
-		self.create_dns_record()
+		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
 		self.create_agent_request()
+
 
 	@frappe.whitelist()
 	def create_dns_record(self):
@@ -267,52 +268,12 @@ class Site(Document):
 			self._change_dns_record("UPSERT", domain, proxy_server)
 
 
+
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._change_dns_record("DELETE", domain, proxy_server, site)
-
-	def _change_dns_record(
-		self, method: str, domain: Document, proxy_server: str, site: str = None
-	):
-		"""
-		Change dns record of site
-
-		method: CREATE | DELETE | UPSERT
-		"""
-		try:
-			site_name = self._get_site_name(self.subdomain) if not site else site
-			client = boto3.client(
-				"route53",
-				aws_access_key_id=domain.aws_access_key_id,
-				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-			)
-			zones = client.list_hosted_zones_by_name()["HostedZones"]
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
-			client.change_resource_record_sets(
-				ChangeBatch={
-					"Changes": [
-						{
-							"Action": method,
-							"ResourceRecordSet": {
-								"Name": site_name,
-								"Type": "CNAME",
-								"TTL": 600,
-								"ResourceRecords": [{"Value": proxy_server}],
-							},
-						}
-					]
-				},
-				HostedZoneId=hosted_zone,
-			)
-		except Exception:
-			log_error(
-				"Route 53 Record Creation Error",
-				domain=domain.name,
-				site=site_name,
-				proxy_server=proxy_server,
-			)
+		_change_dns_record(
+			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
+		)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -326,7 +287,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(self.server, self.name)
+		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
 	def reinstall(self):
@@ -617,7 +578,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
@@ -629,7 +590,9 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name, site_name)
+		agent.remove_upstream_file(
+			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
+		)
 
 		self.db_set("host_name", None)
 
@@ -1054,11 +1017,11 @@ class Site(Document):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended")
+		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
@@ -1088,10 +1051,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status)
+		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
@@ -1120,7 +1083,7 @@ class Site(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def can_charge_for_subscription(self):
+	def can_charge_for_subscription(self, subscription=None):
 		today = frappe.utils.getdate()
 		return (
 			self.status not in ["Archived", "Suspended"]
@@ -1314,6 +1277,14 @@ class Site(Document):
 	def run_after_migrate_steps(self):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
+
+	@frappe.whitelist()
+	def enable_read_write(self):
+		self.enable_database_access("read_write")
+
+	@frappe.whitelist()
+	def disable_read_write(self):
+		self.enable_database_access("read_only")
 
 
 def site_cleanup_after_archive(site):

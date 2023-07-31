@@ -33,6 +33,22 @@
 		</PageHeader>
 
 		<div>
+			<SectionHeader :heading="getServerFilterHeading()">
+				<template #actions>
+					<Dropdown :options="serverFilterOptions()">
+						<template v-slot="{ open }">
+							<Button
+								:class="[
+									'rounded-md px-3 py-1 text-base font-medium',
+									open ? 'bg-gray-200' : 'bg-gray-100'
+								]"
+								icon-left="chevron-down"
+								>{{ serverFilter.replace('tag:', '') }}</Button
+							>
+						</template>
+					</Dropdown>
+				</template>
+			</SectionHeader>
 			<div class="mt-3">
 				<LoadingText v-if="$resources.allServers.loading" />
 				<ServerList v-else :servers="servers" />
@@ -74,7 +90,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-
+			serverFilter: 'All Servers',
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -88,12 +104,21 @@ export default {
 		};
 	},
 	resources: {
-		allServers: {
-			method: 'press.api.server.all',
-			auto: true
-		}
+		allServers() {
+			return {
+				method: 'press.api.server.all',
+				params: { server_filter: this.serverFilter },
+				auto: true
+			};
+		},
+		serverTags: 'press.api.server.server_tags'
 	},
 	methods: {
+		getServerFilterHeading() {
+			if (this.serverFilter.startsWith('tag:'))
+				return `Servers with tag ${this.serverFilter.slice(4)}`;
+			return this.serverFilter;
+		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
@@ -112,6 +137,40 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
+		},
+		serverFilterOptions() {
+			const options = [
+				{
+					group: 'Types',
+					items: [
+						{
+							label: 'All Servers',
+							handler: () => (this.serverFilter = 'All Servers')
+						},
+						{
+							label: 'App Servers',
+							handler: () => (this.serverFilter = 'App Servers')
+						},
+						{
+							label: 'Database Servers',
+							handler: () => (this.serverFilter = 'Database Servers')
+						}
+					]
+				}
+			];
+
+			if (!this.$resources.serverTags?.data?.length) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.serverTags.data.map(tag => ({
+						label: tag,
+						handler: () => (this.serverFilter = `tag:${tag}`)
+					}))
+				}
+			];
 		}
 	},
 	computed: {

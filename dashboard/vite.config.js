@@ -21,6 +21,7 @@ export default defineConfig({
 	build: {
 		outDir: '../press/public/dashboard',
 		emptyOutDir: true,
+		sourcemap: true,
 		target: 'es2015'
 	},
 	test: {

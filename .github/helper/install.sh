@@ -27,7 +27,7 @@ sed -i 's/schedule:/# schedule:/g' Procfile
 sed -i 's/socketio:/# socketio:/g' Procfile
 sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
 
-bench get-app press
+bench get-app press "${GITHUB_WORKSPACE}"
 
 bench setup requirements --dev
 

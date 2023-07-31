@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "review",
-  "description"
+  "description",
+  "developer"
  ],
  "fields": [
   {
@@ -22,11 +23,18 @@
    "fieldname": "description",
    "fieldtype": "Long Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "developer",
+   "fieldtype": "Link",
+   "label": "Developer",
+   "options": "User",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-01-02 00:18:02.595297",
+ "modified": "2023-06-29 11:27:59.229923",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Developer Review Reply",

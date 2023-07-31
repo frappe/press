@@ -73,3 +73,28 @@ class TestSiteUpdate(FrappeTestCase):
 		self.assertLess(
 			dict(skip_search_index=True).items(), json.loads(agent_job.request_data).items()
 		)
+
+	def test_site_update_throws_when_destination_doesnt_have_all_the_apps_in_the_site(
+		self,
+	):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+
+		group = create_test_release_group([app1, app2, app3])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+
+		bench2.apps.pop()
+		bench2.apps.pop()
+		bench2.save()
+
+		create_deploy_candidate_differences(bench2)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			f".*apps installed on {site.name}: app., app.$",
+			site.schedule_update,
+		)

@@ -10,6 +10,7 @@ from frappe.model.document import Document
 from press.agent import Agent
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
+from press.utils.dns import create_dns_record
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -68,6 +69,13 @@ class SiteMigration(Document):
 			self.add_steps_for_cluster_migration()
 			self.add_steps_for_domains()
 		elif self.migration_type == "Server":
+			source_db = frappe.db.get_value("Server", self.source_server, "database_server")
+			destination_db = frappe.db.get_value(
+				"Server", self.destination_server, "database_server"
+			)
+			if source_db == destination_db:
+				raise NotImplementedError
+				# TODO: switch order of steps here (archive before restore)
 			self.add_steps_for_server_migration()
 		else:
 			# TODO: Call site update for bench only migration with popup with link to site update job
@@ -238,6 +246,11 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
+				"step_title": self.restore_site_on_destination_server.__doc__,
+				"method_name": self.restore_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+			{
 				"step_title": self.archive_site_on_source.__doc__,
 				"method_name": self.archive_site_on_source.__name__,
 				"status": "Pending",
@@ -245,11 +258,6 @@ class SiteMigration(Document):
 			{
 				"step_title": self.remove_site_from_source_proxy.__doc__,
 				"method_name": self.remove_site_from_source_proxy.__name__,
-				"status": "Pending",
-			},
-			{
-				"step_title": self.restore_site_on_destination_server.__doc__,
-				"method_name": self.restore_site_on_destination_server.__name__,
 				"status": "Pending",
 			},
 			{
@@ -307,7 +315,7 @@ class SiteMigration(Document):
 		site.cluster = self.destination_cluster
 		site.server = self.destination_server
 		if self.migration_type == "Cluster":
-			site.create_dns_record()
+			create_dns_record(site, record_name=site._get_site_name(site.subdomain))
 			domain = frappe.get_doc("Root Domain", site.domain)
 			if self.destination_cluster == domain.default_cluster:
 				source_proxy = frappe.db.get_value("Server", self.source_server, "proxy_server")
@@ -320,13 +328,13 @@ class SiteMigration(Document):
 		"""Restore site on destination proxy"""
 		proxy_server = frappe.db.get_value("Server", self.destination_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.new_upstream_site(self.destination_server, self.site)
+		return agent.new_upstream_file(server=self.destination_server, site=self.site)
 
 	def remove_site_from_source_proxy(self):
 		"""Remove site from source proxy"""
 		proxy_server = frappe.db.get_value("Server", self.source_server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		return agent.remove_upstream_site(self.source_server, self.site)
+		return agent.remove_upstream_file(server=self.source_server, site=self.site)
 
 	def archive_site_on_source(self):
 		"""Archive site on source"""
