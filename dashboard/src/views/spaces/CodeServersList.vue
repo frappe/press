@@ -16,20 +16,20 @@
 				>
 					<div class="flex items-center justify-between">
 						<div
-							class="hover:text-ellipses truncate break-all text-base w-1/2 sm:w-4/12"
+							class="hover:text-ellipses truncate break-all text-base w-1/3 sm:w-4/12"
 						>
 							{{ server.name }}
 						</div>
-						<div class="text-base w-1/3 sm:w-3/12">
+						<div class="text-base w-1/3 sm:w-4/12">
 							<Badge
 								class="ml-4 hidden md:inline-block"
 								:label="server.status"
 								:colorMap="$badgeStatusColorMap"
 							></Badge>
 						</div>
-						<div class="text-base sm:w-4/12 hidden sm:block">
+						<div class="text-base w-1/3 sm:w-4/12 hidden sm:block">
 							<div class="hover:text-ellipses truncate break-all hover:w-full">
-								{{ server.group }}
+								{{ server.title }}
 							</div>
 						</div>
 					</div>
