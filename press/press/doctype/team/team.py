@@ -21,7 +21,6 @@ from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subs
 	process_prepaid_marketplace_payment,
 )
 from press.utils.billing import (
-	get_erpnext_com_connection,
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
@@ -137,9 +136,6 @@ class Team(Document):
 		if not team.via_erpnext:
 			if not account_request.invited_by_parent_team:
 				team.create_upcoming_invoice()
-			# TODO: Partner account moved to PRM
-			if team.has_partner_account_on_erpnext_com():
-				team.enable_erpnext_partner_privileges()
 
 		return team
 
@@ -564,18 +560,6 @@ class Team(Document):
 				response=response.text,
 			)
 			frappe.throw("Problem fetching partner credit balance.")
-
-	def is_partner_and_has_enough_credits(self):
-		return self.erpnext_partner and self.get_balance() > 0
-
-	def has_partner_account_on_erpnext_com(self):
-		if frappe.conf.developer_mode:
-			return False
-		erpnext_com = get_erpnext_com_connection()
-		res = erpnext_com.get_value(
-			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
-		)
-		return res["name"] if res else None
 
 	def can_create_site(self):
 		why = ""
