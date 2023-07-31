@@ -186,9 +186,6 @@ export default {
 				return `You will be charged from your account balance on ${this.paymentDate}.`;
 			}
 
-			if (payment_mode === 'Partner Credits') {
-				return `You will be charged from your Partner Credits on ${this.paymentDate}.`;
-			}
 			return '';
 		},
 		loading() {

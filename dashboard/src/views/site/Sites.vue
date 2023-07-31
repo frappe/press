@@ -286,9 +286,7 @@ export default {
 			if (!this.latestUnpaidInvoice) {
 				return;
 			}
-			return !(
-				this.$account.team.erpnext_partner || this.$account.team.free_account
-			);
+			return !this.$account.team.free_account;
 		},
 		latestUnpaidInvoice() {
 			if (this.$resources.latestUnpaidInvoice.data) {
