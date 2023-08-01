@@ -62,6 +62,19 @@
     dest: /etc/mysql/my.cnf
     line: "!includedir /etc/mysql/conf.d/"
     
+- name: Remove /etc/mysql/conf.d/ from the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    regexp: '^(!includedir /etc/mysql/conf.d/)$'
+    state: absent
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
+
+- name: Add /etc/mysql/conf.d/ to the end of the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    line: '!includedir /etc/mysql/conf.d/'
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy" 
+
 - name: Set Open Files Count Limit for MariaDB
   lineinfile:
     dest: /lib/systemd/system/mariadb.service

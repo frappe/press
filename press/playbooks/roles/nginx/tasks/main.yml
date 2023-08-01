@@ -85,6 +85,13 @@
     path: /etc/nginx/sites-available/default
     state: absent
 
+- name: Add www-data user to Frappe group
+  user:
+    name: www-data
+    groups: frappe
+    append: yes
+  when: ansible_distribution_release == 'jammy'
+
 - name: Restart NGINX and Enable at Boot
   service:
     name: nginx
