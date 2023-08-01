@@ -14,15 +14,7 @@
 			</Button>
 			<Dialog
 				:options="{
-					title: 'Cannot Backup Site',
-					actions: [
-						{
-							label: 'Cancel',
-							onClick: () => {
-								this.showBackupDialog = false;
-							}
-						}
-					]
+					title: 'Cannot Backup Site'
 				}"
 				v-model="showBackupDialog"
 			>

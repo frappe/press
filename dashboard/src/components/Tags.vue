@@ -32,10 +32,6 @@
 					label: 'Create',
 					variant: 'solid',
 					onClick: () => $resources.createTag.submit()
-				},
-				{
-					label: 'Cancel',
-					onClick: () => (showNewDialog = false)
 				}
 			]
 		}"

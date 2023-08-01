@@ -29,12 +29,6 @@
 						title: 'Upgrade Plan',
 						actions: [
 							{
-								label: 'Cancel',
-								onClick: () => {
-									showChangePlanDialog = false;
-								}
-							},
-							{
 								label: 'Submit',
 								variant: 'solid',
 								loading: $resources.changePlan.loading,

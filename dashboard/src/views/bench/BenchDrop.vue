@@ -11,10 +11,6 @@
 						theme: 'red',
 						loading: $resources.dropBench.loading,
 						onClick: () => $resources.dropBench.submit()
-					},
-					{
-						label: 'Cancel',
-						onClick: () => (this.dialogOpen = false)
 					}
 				]
 			}"

@@ -39,10 +39,6 @@
 						variant: 'solid',
 						loading: $resources.editTitle.loading,
 						onClick: () => $resources.editTitle.submit()
-					},
-					{
-						label: 'Cancel',
-						onClick: () => (this.showEditTitleDialog = false)
 					}
 				]
 			}"
