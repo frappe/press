@@ -45,6 +45,8 @@
   "ssh_user",
   "ssh_port",
   "root_public_key",
+  "tags_section",
+  "tags",
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
@@ -351,11 +353,22 @@
    "fieldtype": "Check",
    "label": "Is Performance Schema Enabled",
    "read_only": 1
+  },
+  {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-27 17:14:52.416436",
+ "modified": "2023-07-30 22:29:30.346012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

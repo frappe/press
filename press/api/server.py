@@ -115,7 +115,7 @@ def overview(name):
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				server.team,
+				frappe.get_value("Team", server.team, "user"),
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),

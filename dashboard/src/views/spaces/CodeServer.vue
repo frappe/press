@@ -47,9 +47,48 @@ export default {
 		Tabs
 	},
 	props: ['serverName'],
+	data() {
+		return {
+			runningJob: false
+		};
+	},
 	methods: {
 		open() {
 			window.open(`https://${this.serverName}`, '_blank');
+		},
+		onSocketUpdate({ doctype, name }) {
+			if (doctype === 'Code Server' && name === this.serverName) {
+				this.$resources.codeServer.reload();
+			}
+		},
+		setupAgentJobUpdate() {
+			if (this._agentJobUpdateSet) return;
+			this._agentJobUpdateSet = true;
+
+			this.$socket.on('agent_job_update', data => {
+				if (data.name === 'Setup Code Server') {
+					if (
+						data.status === 'Success' &&
+						data.code_server === this.serverName
+					) {
+						setTimeout(() => {
+							// running reload immediately doesn't work for some reason
+							this.$router.push(`/codeservers/${this.serverName}/overview`);
+							this.$resources.codeServer.reload();
+						}, 1000);
+					}
+				}
+				this.runningJob =
+					data.code_server === this.serverName && data.status !== 'Success';
+			});
+		},
+		routeToGeneral() {
+			if (this.$route.matched.length === 1) {
+				let tab = ['Pending'].includes(this.codeServer.status)
+					? 'jobs'
+					: 'overview';
+				this.$router.replace(`/codeservers/${this.serverName}/${tab}`);
+			}
 		}
 	},
 	resources: {
@@ -59,9 +98,27 @@ export default {
 				params: {
 					name: this.serverName
 				},
-				auto: true
+				auto: true,
+				onError: this.$routeTo404PageIfNotFound
 			};
 		}
+	},
+	activated() {
+		this.setupAgentJobUpdate();
+		if (this.codeServer) {
+			this.routeToGeneral();
+		} else {
+			this.$resources.codeServer.once('onSuccess', () => {
+				this.routeToGeneral();
+			});
+		}
+
+		if (this.codeServer?.status === 'Running') {
+			this.$socket.on('list_update', this.onSocketUpdate);
+		}
+	},
+	deactivated() {
+		this.$socket.off('list_update', this.onSocketUpdate);
 	},
 	computed: {
 		codeServer() {
