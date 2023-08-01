@@ -16,11 +16,6 @@
     mode: 0644
   when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
 
-- name: Show source file
-  shell: cat /etc/apt/sources.list.d/mariadb.list
-  register: mariadb_source_file
-  changed_when: false
-
 - name: Add MariaDB Repository Key
   apt_key:
     id: C74CD1D8
