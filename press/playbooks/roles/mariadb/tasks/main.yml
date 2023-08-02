@@ -56,7 +56,9 @@
   lineinfile:
     dest: /etc/mysql/my.cnf
     line: "!includedir /etc/mysql/conf.d/"
-    
+
+# In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
+# /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
 - name: Remove /etc/mysql/conf.d/ from the file
   lineinfile:
     path: /etc/mysql/my.cnf

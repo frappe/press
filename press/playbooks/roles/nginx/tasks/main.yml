@@ -90,7 +90,7 @@
     name: www-data
     groups: frappe
     append: yes
-  when: ansible_distribution_release == 'jammy'
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == 'jammy'
 
 - name: Restart NGINX and Enable at Boot
   service:
