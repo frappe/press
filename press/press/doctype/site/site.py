@@ -262,10 +262,10 @@ class Site(Document):
 		if self.cluster == domain.default_cluster and not is_standalone:
 			return
 		if is_standalone:
-			self._change_dns_record("UPSERT", domain, self.server)
+			_change_dns_record("UPSERT", domain, self.server)
 		else:
 			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			self._change_dns_record("UPSERT", domain, proxy_server)
+			_change_dns_record("UPSERT", domain, proxy_server)
 
 
 
