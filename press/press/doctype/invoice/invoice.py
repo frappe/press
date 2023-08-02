@@ -813,7 +813,7 @@ def finalize_unpaid_prepaid_credit_invoices():
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
-			"payment_mode": ("in", ["Prepaid Credits"]),
+			"payment_mode": "Prepaid Credits",
 		},
 		pluck="name",
 	)
