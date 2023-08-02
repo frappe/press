@@ -166,9 +166,19 @@ def suspend_sites():
 		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
 
+	issue_reload = False
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
+			frappe.get_doc("Site", site.name).suspend(
+				reason="Site Usage Exceeds Plan limits", skip_reload=True
+			)
+			issue_reload = True
+
+	if issue_reload:
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+		for proxy_name in proxies:
+			agent = Agent(proxy_name, server_type="Proxy Server")
+			agent.reload_nginx()
 
 
 def poll_pending_jobs_server(server):

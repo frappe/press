@@ -185,7 +185,7 @@ class TestAPISite(FrappeTestCase):
 		group = create_test_release_group([app1, app2])
 		bench = create_test_bench(group=group)
 
-		group2 = create_test_release_group([app3])
+		group2 = create_test_release_group([app1, app3])
 		create_test_bench(
 			group=group2, server=bench.server
 		)  # app3 shouldn't show in available_apps

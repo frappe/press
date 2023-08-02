@@ -43,7 +43,7 @@ class TestGFS(unittest.TestCase):
 	def test_only_daily_backups_longer_than_limit_deleted(self):
 		"""Ensure only daily backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
-		oldest_allowed_daily = date.today() - timedelta(days=GFS.daily)
+		oldest_allowed_daily = frappe.utils.getdate() - timedelta(days=GFS.daily)
 		older = oldest_allowed_daily - timedelta(days=1)
 		newer = oldest_allowed_daily + timedelta(days=1)
 		while (
@@ -80,7 +80,7 @@ class TestGFS(unittest.TestCase):
 		"""Ensure only weekly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
 		weekly_backup_day = self._sql_to_python(GFS.weekly_backup_day)
-		a_month_ago = date.today() - timedelta(weeks=4)
+		a_month_ago = frappe.utils.getdate() - timedelta(weeks=4)
 		oldest_allowed_weekly = (
 			a_month_ago
 			if a_month_ago.weekday() == weekly_backup_day
@@ -117,7 +117,7 @@ class TestGFS(unittest.TestCase):
 	def test_only_monthly_backups_longer_than_limit_deleted(self):
 		"""Ensure only monthly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
-		a_year_ago = date.today() - timedelta(days=366)
+		a_year_ago = frappe.utils.getdate() - timedelta(days=366)
 		oldest_allowed_monthly = (
 			a_year_ago
 			if a_year_ago.day == GFS.monthly_backup_day
@@ -156,7 +156,7 @@ class TestGFS(unittest.TestCase):
 	def test_only_yearly_backups_older_than_limit_deleted(self):
 		"""Ensure only yearly backups kept for longer than limit are deleted."""
 		site = create_test_site("testsubdomain")
-		_10_years_ago = date.today() - timedelta(3653)
+		_10_years_ago = frappe.utils.getdate() - timedelta(3653)
 		oldest_allowed_yearly = (
 			_10_years_ago
 			if _10_years_ago.timetuple().tm_yday == GFS.yearly_backup_day
@@ -192,7 +192,7 @@ class TestGFS(unittest.TestCase):
 		"""
 		site = create_test_site("testsubdomain")
 		site2 = create_test_site("testsubdomain2")
-		today = date.today()
+		today = frappe.utils.getdate()
 		oldest_allowed_daily = today - timedelta(GFS.daily)
 		older = oldest_allowed_daily - timedelta(days=1)
 		newer = oldest_allowed_daily + timedelta(days=1)
@@ -224,8 +224,8 @@ class TestFIFO(unittest.TestCase):
 		fifo = FIFO()
 		fifo.offsite_backups_count = 2
 		site = create_test_site("testsubdomain")
-		older = create_test_site_backup(site.name, date.today() - timedelta(2))
-		old = create_test_site_backup(site.name, date.today() - timedelta(1))
+		older = create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(2))
+		old = create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(1))
 		new = create_test_site_backup(site.name)
 
 		fifo.expire_offsite_backups()
@@ -254,9 +254,9 @@ class TestFIFO(unittest.TestCase):
 		fifo = FIFO()
 		fifo.offsite_backups_count = 1
 
-		create_test_site_backup(site.name, date.today() - timedelta(1))
+		create_test_site_backup(site.name, frappe.utils.getdate() - timedelta(1))
 		create_test_site_backup(site.name)
-		create_test_site_backup(site2.name, date.today() - timedelta(1))
+		create_test_site_backup(site2.name, frappe.utils.getdate() - timedelta(1))
 		create_test_site_backup(site2.name)
 
 		fifo.cleanup_offsite()
@@ -311,11 +311,11 @@ class TestBackupRotationScheme(unittest.TestCase):
 		site2 = create_test_site("testsubdomain2")
 
 		backup_1_1 = create_test_site_backup(
-			site.name, date.today() - timedelta(1), offsite=False
+			site.name, frappe.utils.getdate() - timedelta(1), offsite=False
 		)
 		backup_1_2 = create_test_site_backup(site.name)
 		backup_2_1 = create_test_site_backup(
-			site2.name, date.today() - timedelta(2), offsite=False
+			site2.name, frappe.utils.getdate() - timedelta(2), offsite=False
 		)
 		backup_2_2 = create_test_site_backup(site2.name)
 
@@ -344,11 +344,11 @@ class TestBackupRotationScheme(unittest.TestCase):
 		frappe.db.set_value("Bench", site.bench, "config", config)
 
 		backup_1_1 = create_test_site_backup(
-			site.name, date.today() - timedelta(1), offsite=False
+			site.name, frappe.utils.getdate() - timedelta(1), offsite=False
 		)
 		backup_1_2 = create_test_site_backup(site.name)
 		backup_2_1 = create_test_site_backup(
-			site2.name, date.today() - timedelta(2), offsite=False
+			site2.name, frappe.utils.getdate() - timedelta(2), offsite=False
 		)
 		backup_2_2 = create_test_site_backup(site2.name)
 
