@@ -359,7 +359,7 @@ class Team(Document):
 		self.save()
 		self.reload()
 
-		self.update_billing_details_on_stripe(address_doc)
+		#self.update_billing_details_on_stripe(address_doc)
 		self.update_billing_details_on_frappeio()
 		self.update_billing_details_on_draft_invoices()
 

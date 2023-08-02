@@ -60,12 +60,12 @@ class AccountRequest(Document):
 		sender = ""
 		args = {}
 
-		if frappe.conf.developer_mode:
-			print(f"\nSetup account URL for {self.email}:")
-			frappe.log_error('url',url)
-			print(url)
-			print()
-			return
+		# if frappe.conf.developer_mode:
+		# 	print(f"\nSetup account URL for {self.email}:")
+		# 	frappe.log_error('url',url)
+		# 	print(url)
+		# 	print()
+		# 	return
 
 		if self.saas_app and frappe.db.get_value(
 			"Marketplace App", self.saas_app, "custom_verify_template"

@@ -59,8 +59,8 @@
 						@success="onPrepaidCredits"
 						@cancel="paymentMode = null"
 					/>
-					<StripeCard
-						:withoutAddress="true"
+					<MidtransCard
+						
 						v-if="paymentMode === 'Card'"
 						@complete="onSuccess"
 					/>
@@ -96,6 +96,7 @@
 <script>
 import AddressForm from '@/components/AddressForm.vue';
 import StripeCard from '@/components/StripeCard.vue';
+import MidtransCard from '@/components/MidtransCard.vue';
 import BuyPrepaidCredits from '@/components/BuyPrepaidCredits.vue';
 
 export default {
@@ -104,7 +105,8 @@ export default {
 	components: {
 		AddressForm,
 		StripeCard,
-		BuyPrepaidCredits
+		BuyPrepaidCredits,
+		MidtransCard
 	},
 	data() {
 		return {
