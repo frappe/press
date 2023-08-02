@@ -169,14 +169,6 @@ export default {
 					},
 					icon: FCIcons.BillingIcon,
 					condition: () => !this.$account.team?.parent_team
-					// },
-					// {
-					// 	label: 'Settings',
-					// 	route: '/settings',
-					// 	highlight: route => {
-					// 		return this.$route.fullPath.indexOf('/settings') >= 0;
-					// 	},
-					// 	icon: FCIcons.SettingsIcon
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		}
