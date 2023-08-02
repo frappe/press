@@ -256,16 +256,9 @@ class Site(Document):
 	@frappe.whitelist()
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
-		domain = frappe.get_doc("Root Domain", self.domain)
-
-		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
-		if self.cluster == domain.default_cluster and not is_standalone:
-			return
-		if is_standalone:
-			_change_dns_record("UPSERT", domain, self.server)
-		else:
-			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			_change_dns_record("UPSERT", domain, proxy_server)
+		
+		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
+		
 
 
 
