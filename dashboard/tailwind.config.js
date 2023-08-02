@@ -12,18 +12,6 @@ module.exports = {
 	],
 	theme: {
 		extend: {
-			fontSize: {
-				xs: '11px',
-				sm: '12px',
-				base: '13px',
-				lg: '14px',
-				xl: '16px',
-				'2xl': '18px',
-				'3xl': '20px',
-				'4xl': '22px',
-				'5xl': '24px',
-				'6xl': '28px'
-			},
 			width: {
 				112: '28rem',
 				wizard: '650px'
