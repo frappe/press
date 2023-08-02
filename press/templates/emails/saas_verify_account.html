@@ -6,14 +6,16 @@
 
 <td class="text-base leading-6 text-gray-900">
     <div class="p-8 bg-white from-markdown">
-        <p class="mb-4">
-            {{ message|safe }}
-        </p>
-        <br>
+        <p><strong>You're almost done!</strong></p>
+        <p>Just one quick step left to get you started with Frappe products!
+        Please confirm your email address to complete your account setup.</p>
         {{ utils.button('Verify Account', link, true) }}
         {{ utils.separator() }}
-        {{ signature_text }}
+        <p class="my-0">Team Frappe</p>
     </div>
+    {% if read_pixel_path %}
+    <img src="{{ read_pixel_path }}">
+    {% endif %}
 </td>
 
 {% endblock %}

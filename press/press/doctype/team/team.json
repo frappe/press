@@ -12,6 +12,7 @@
   "user",
   "account_request",
   "is_developer",
+  "is_saas_user",
   "free_account",
   "via_erpnext",
   "column_break_6",
@@ -48,7 +49,6 @@
   "database_access_enabled",
   "razorpay_enabled",
   "servers_enabled",
-  "code_servers_enabled",
   "self_hosted_servers_enabled",
   "section_break_28",
   "communication_emails",
@@ -333,9 +333,10 @@
   },
   {
    "default": "0",
-   "fieldname": "code_servers_enabled",
+   "description": "SaaS user sees a simplified version of the dashboard",
+   "fieldname": "is_saas_user",
    "fieldtype": "Check",
-   "label": "Code Servers Enabled"
+   "label": "Is SaaS User"
   }
  ],
  "links": [
@@ -385,7 +386,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-07-29 12:19:18.195316",
+ "modified": "2023-08-01 21:28:32.943478",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

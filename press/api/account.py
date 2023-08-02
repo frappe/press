@@ -21,7 +21,7 @@ from press.utils.telemetry import capture, identify
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, referrer=None):
+def signup(email, product=None, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -43,6 +43,7 @@ def signup(email, referrer=None):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
+				"saas_product": product,
 				"send_email": True,
 			}
 		).insert()
@@ -107,7 +108,7 @@ def setup_account(
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		# Team doesn't exist, create it
-		Team.create_new(
+		team_doc = Team.create_new(
 			account_request=account_request,
 			first_name=first_name,
 			last_name=last_name,
@@ -119,6 +120,14 @@ def setup_account(
 			doc = frappe.get_doc("Team", account_request.invited_by)
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
+
+		if account_request.saas_product:
+			frappe.new_doc(
+				"SaaS Product Site Request",
+				saas_product=account_request.saas_product,
+				account_request=account_request.name,
+				team=team_doc.name,
+			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
 	capture("completed_signup", "fc_signup", account_request.name)
@@ -248,6 +257,7 @@ def get_email_from_request_key(key):
 	account_request = get_account_request_from_key(key)
 	if account_request:
 		data = get_country_info()
+		saas_product = frappe.db.get_value("SaaS Product", {"name": account_request.saas_product}, ["name", "title", "logo"], as_dict=1)
 		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
 			"email": account_request.email,
@@ -260,6 +270,7 @@ def get_email_from_request_key(key):
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
+			"saas_product": saas_product,
 		}
 
 
@@ -331,6 +342,7 @@ def get():
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
+		"saas_site_request": team_doc.get_pending_saas_site_request(),
 		"feature_flags": {
 			"verify_cards_with_micro_charge": frappe.db.get_single_value(
 				"Press Settings", "verify_cards_with_micro_charge"
@@ -340,11 +352,17 @@ def get():
 
 
 @frappe.whitelist(allow_guest=True)
-def guest_feature_flags():
+def signup_settings(product=None):
+	settings = frappe.get_single("Press Settings")
+
+	product = frappe.utils.cstr(product)
+	saas_product = None
+	if product:
+		saas_product = frappe.db.get_value("SaaS Product", {"name": product, "published": 1}, ['title', 'logo'], as_dict=1)
+
 	return {
-		"enable_google_oauth": frappe.db.get_single_value(
-			"Press Settings", "enable_google_oauth"
-		)
+		"enable_google_oauth": settings.enable_google_oauth,
+		"saas_product": saas_product
 	}
 
 

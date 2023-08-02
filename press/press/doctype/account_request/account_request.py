@@ -55,10 +55,6 @@ class AccountRequest(Document):
 	@frappe.whitelist()
 	def send_verification_email(self):
 		url = self.get_verification_url()
-		signature, message, image_path = "", "", ""
-		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
-		sender = ""
-		args = {}
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
@@ -66,34 +62,13 @@ class AccountRequest(Document):
 			print()
 			return
 
-		if self.saas_app and frappe.db.get_value(
-			"Marketplace App", self.saas_app, "custom_verify_template"
-		):
-			app_title, subject, message, signature = frappe.db.get_value(
-				"Marketplace App", self.saas_app, ["title", "subject", "message", "signature"]
-			)
-			message = frappe.render_template(message, {})
-			signature = frappe.render_template(signature, {})
-			image_path = frappe.db.get_value(
-				"Saas Signup Generator", self.saas_app, "image_path"
-			)
-			template = "saas_verify_account"
+		subject = "Verify your email for Frappe"
+		args = {}
 
-			outgoing_email, outgoing_sender_name = frappe.db.get_value(
-				"Marketplace App", self.saas_app, ["outgoing_email", "outgoing_sender_name"]
-			)
-			if outgoing_email:
-				sender = formataddr((outgoing_sender_name, outgoing_email))
+		if self.saas_product:
+			template = "saas_verify_account"
 		else:
-			subject = "Verify your account"
 			template = "verify_account"
-			args.update(
-				{
-					"read_pixel_path": get_url(
-						f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
-					)
-				}
-			)
 
 			if self.invited_by and self.role != "Press Admin":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
@@ -102,14 +77,14 @@ class AccountRequest(Document):
 		args.update(
 			{
 				"link": url,
-				"title": app_title,
-				"message": message,
-				"signature_text": signature,
-				"image_path": image_path,
+				# "image_path": "/assets/press/images/frappe-logo-black.png",
+				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
+				"read_pixel_path": get_url(
+					f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
+				)
 			}
 		)
 		frappe.sendmail(
-			sender=sender,
 			recipients=self.email,
 			subject=subject,
 			template=template,

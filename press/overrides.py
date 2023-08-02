@@ -57,7 +57,7 @@ def upload_file():
 
 
 def on_session_creation():
-	from press.utils import get_default_team_for_user
+	from press.utils import get_default_team_for_user, get_current_team
 
 	if (
 		not frappe.db.exists("Team", {"user": frappe.session.user})
@@ -65,17 +65,8 @@ def on_session_creation():
 	):
 		return
 
-	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
-	if not onboarding_complete:
-		team = get_default_team_for_user(frappe.session.user)
-		onboarding = frappe.get_doc("Team", team).get_onboarding()
-		onboarding_complete = onboarding["complete"]
-
-		if onboarding_complete:
-			# cache if onboarding is complete
-			frappe.cache().hset("onboarding_complete", frappe.session.user, True)
-
-	route = "/sites" if onboarding_complete else "/welcome"
+	team = get_current_team()
+	route = team.get_route_on_login()
 	frappe.local.response.update({"dashboard_route": route})
 
 

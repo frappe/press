@@ -1,5 +1,4 @@
 const plugin = require('tailwindcss/plugin');
-const colors = require('tailwindcss/colors');
 
 module.exports = {
 	presets: [require('frappe-ui/src/utils/tailwind.config')],
@@ -51,8 +50,6 @@ module.exports = {
 		}
 	},
 	plugins: [
-		require('@tailwindcss/forms'),
-		require('@tailwindcss/typography'),
 		plugin(function ({ addUtilities, theme }) {
 			// Add your custom styles here
 			addUtilities({

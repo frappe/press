@@ -4,8 +4,18 @@ export default function registerRouter(app, auth, account) {
 	app.use(router);
 
 	router.beforeEach(async (to, from, next) => {
+		await account.fetchIfRequired();
+
+		if (account.saas_site_request && to.name != 'App Site Setup') {
+			next({
+				name: 'App Site Setup',
+				params: { product: account.saas_site_request }
+			});
+			return;
+		}
+
 		if (to.name == 'Home') {
-			next({ name: 'Welcome' });
+			next({ name: 'Sites' });
 			return;
 		}
 
@@ -15,13 +25,10 @@ export default function registerRouter(app, auth, account) {
 			if (!auth.isLoggedIn) {
 				next({ name: 'Login', query: { route: to.path } });
 			} else {
-				if (!account.user) {
-					await account.fetchAccount();
-				}
 				next();
 			}
 		} else {
-			// if already logged in, route to /welcome
+			// if already logged in, route to /sites
 			if (auth.isLoggedIn) {
 				if (!account.user) {
 					await account.fetchAccount();
@@ -29,7 +36,7 @@ export default function registerRouter(app, auth, account) {
 				if (to?.query?.route) {
 					next({ path: to.query.route });
 				} else {
-					next({ name: 'Welcome' });
+					next({ name: 'Sites' });
 				}
 			} else {
 				next();
