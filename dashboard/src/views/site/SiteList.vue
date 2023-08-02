@@ -1,94 +1,89 @@
 <template>
-	<div
-		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
-	>
-		<div
-			class="py-2 text-base text-gray-600 sm:px-2"
-			v-if="sites && sites.length === 0"
-		>
-			No sites
-		</div>
-		<div class="py-2" v-for="(site, index) in sites" :key="site.name">
-			<div class="flex items-center justify-between">
-				<router-link
-					:to="`/sites/${site.name}/overview`"
-					class="mr-1 block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
+	<div class="space-y-8">
+		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
+			<h3 class="mb-3 text-base font-semibold text-gray-800">
+				{{ groupedSite.releaseGroup }}
+			</h3>
+			<div class="grid grid-cols-4 gap-4">
+				<div
+					class="rounded-md border border-gray-100 p-3"
+					v-for="site in groupedSite.sites"
+					:key="site.name"
 				>
-					<div class="flex items-center justify-between">
-						<div
-							class="hover:text-ellipses w-1/2 truncate break-all text-base sm:w-4/12"
-						>
-							{{ site.host_name || site.name }}
+					<div class="space-y-2" :to="`/sites/${site.name}/overview`">
+						<div class="flex items-center justify-center">
+							<div
+								class="hover:text-ellipses truncate break-all text-lg hover:w-full"
+								:title="site.name"
+							>
+								{{ site.name }}
+							</div>
+							<router-link
+								class="space-y-2"
+								:to="`/sites/${site.name}/overview`"
+							>
+								<Button
+									class="ml-auto h-4"
+									variant="ghost"
+									icon="external-link"
+								/>
+							</router-link>
+							<Dropdown
+								v-if="site.status === 'Active' || site.status === 'Updating'"
+								:options="dropdownItems(site)"
+							>
+								<template v-slot="{ open }">
+									<Button variant="ghost" class="ml-2" icon="more-horizontal" />
+								</template>
+							</Dropdown>
 						</div>
-						<div class="w-1/3 text-base sm:w-3/12">
+						<div class="flex space-x-3">
+							<Badge :label="site.version" />
 							<Badge
 								class="pointer-events-none"
 								variant="subtle"
 								:label="siteBadge(site)"
 							/>
+							<img
+								v-if="site.server_region_info.image"
+								class="mt-0.5 h-4"
+								:src="site.server_region_info.image"
+								:alt="`Flag of ${site.server_region_info.title}`"
+								:title="site.server_region_info.image"
+							/>
 						</div>
-						<div
-							v-if="showBenchInfo"
-							class="hidden text-base sm:block sm:w-4/12"
-						>
-							<div class="hover:text-ellipses truncate break-all hover:w-full">
-								{{ site.title }}
-							</div>
-						</div>
-						<div
-							v-if="showBenchInfo"
-							class="hidden text-base sm:block sm:w-3/12"
-						>
-							<Badge :label="site.version" />
-						</div>
-						<div class="hidden w-1/12 text-sm text-gray-600 sm:block">
-							{{ $dayjs.shortFormating($dayjs(site.creation).fromNow()) }}
+						<div class="hidden text-sm text-gray-600 sm:block">
+							{{ $dayjs(site.creation).fromNow() }}
 						</div>
 					</div>
-				</router-link>
-
-				<div class="text-right text-base">
-					<Dropdown
-						v-if="site.status === 'Active' || site.status === 'Updating'"
-						:options="dropdownItems(site)"
-					>
-						<template v-slot="{ open }">
-							<Button icon="more-horizontal" />
-						</template>
-					</Dropdown>
-					<div v-else class="h-[30px] w-[30px]"></div>
 				</div>
 			</div>
-			<div
-				class="translate-y-2 transform"
-				:class="{ 'border-b': index < sites.length - 1 }"
-			/>
 		</div>
-
-		<Dialog
-			:options="{
-				title: 'Login As Administrator',
-				actions: [
-					{
-						label: 'Proceed',
-						variant: 'solid',
-						onClick: proceedWithLoginAsAdmin
-					}
-				]
-			}"
-			v-model="showReasonForAdminLoginDialog"
-		>
-			<template #body-content>
-				<Input
-					label="Reason for logging in as Administrator"
-					type="textarea"
-					v-model="reasonForAdminLogin"
-					required
-				/>
-				<ErrorMessage class="mt-3" :message="errorMessage" />
-			</template>
-		</Dialog>
 	</div>
+
+	<Dialog
+		:options="{
+			title: 'Login As Administrator',
+			actions: [
+				{
+					label: 'Proceed',
+					variant: 'solid',
+					onClick: proceedWithLoginAsAdmin
+				}
+			]
+		}"
+		v-model="showReasonForAdminLoginDialog"
+	>
+		<template #body-content>
+			<Input
+				label="Reason for logging in as Administrator"
+				type="textarea"
+				v-model="reasonForAdminLogin"
+				required
+			/>
+			<ErrorMessage class="mt-3" :message="errorMessage" />
+		</template>
+	</Dialog>
 </template>
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
@@ -173,6 +168,19 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		}
+	},
+	computed: {
+		groupedSites() {
+			return this.sites.reduce((acc, curr) => {
+				const { title } = curr;
+				const existingGroup = acc.find(group => group.releaseGroup === title);
+
+				if (existingGroup) existingGroup.sites.push(curr);
+				else acc.push({ releaseGroup: title, sites: [curr] });
+
+				return acc;
+			}, []);
 		}
 	}
 };

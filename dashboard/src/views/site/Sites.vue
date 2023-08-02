@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div>
-			<PageHeader title="Sites" subtitle="Your Frappe instances">
+			<PageHeader>
 				<template v-if="this.$account.team.enabled" #actions>
 					<Button
 						variant="solid"
@@ -59,16 +59,16 @@
 				/>
 			</div>
 
-			<div v-if="recentSitesVisible" class="mb-6">
+			<!-- <div v-if="recentSitesVisible" class="mb-6">
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.recentSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
-			</div>
+			</div> -->
 
-			<div class="mb-6">
+			<div class="mt-2 mb-6">
 				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
 						<Dropdown :options="siteFilterOptions()">
@@ -78,7 +78,7 @@
 										'rounded-md px-3 py-1 text-base font-medium',
 										open ? 'bg-gray-200' : 'bg-gray-100'
 									]"
-									icon-left="chevron-down"
+									icon-right="chevron-down"
 								>
 									{{ siteFilter.replace('tag:', '') }}</Button
 								>
@@ -87,7 +87,7 @@
 					</template>
 				</SectionHeader>
 
-				<div class="mt-3">
+				<div class="mt-6">
 					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteList v-else :sites="sites" />
 				</div>
