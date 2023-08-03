@@ -51,7 +51,7 @@
 						]"
 						:href="href"
 						@click="navigate"
-						class="flex rounded-md px-2 py-1 pr-10 text-start text-sm focus:outline-none"
+						class="flex rounded-md px-2 py-1 pr-10 text-start text-sm focus:outline-none items-center"
 					>
 						<Component class="mr-1.5 text-gray-700" :is="item.icon" />
 						{{ item.label }}
