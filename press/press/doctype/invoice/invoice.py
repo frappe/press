@@ -366,12 +366,15 @@ class Invoice(Document):
 	def get_invoice_item_for_usage_record(self, usage_record):
 		invoice_item = None
 		for row in self.items:
-			if (
+			conditions = (
 				row.document_type == usage_record.document_type
 				and row.document_name == usage_record.document_name
 				and row.plan == usage_record.plan
 				and row.rate == usage_record.amount
-			):
+			)
+			if row.document_type == "Marketplace App":
+				conditions = conditions and row.site == usage_record.site
+			if conditions:
 				invoice_item = row
 		return invoice_item
 

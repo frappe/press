@@ -13,7 +13,7 @@ def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
-	cluster = "Mumbai"
+	cluster = "Hybrid"
 	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 	self_hosted_server = frappe.get_doc(
 		{
@@ -90,3 +90,4 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
+	
