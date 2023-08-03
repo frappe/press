@@ -112,6 +112,7 @@ export default {
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
+				{ label: 'Sites', route: 'sites', condition: () => true},
 				{ label: 'Overview', route: 'overview', condition: () => true },
 				{ label: 'Apps', route: 'apps', condition: () => true },
 				{ label: 'Versions', route: 'versions', condition: () => true },

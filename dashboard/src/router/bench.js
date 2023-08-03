@@ -29,6 +29,11 @@ export default [
 		},
 		children: [
 			{
+				path: 'sites',
+				component: () => import('../views/bench/BenchSites.vue'),
+				props: true
+			},
+			{
 				path: 'overview',
 				component: () => import('../views/bench/BenchOverview.vue')
 			},

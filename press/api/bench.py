@@ -449,6 +449,34 @@ def versions(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def benches_with_sites(name):
+	sites = frappe.get_all(
+		"Site",
+		{"status": ("!=", "Archived"), "group": name},
+		["name", "status", "bench", "cluster", "creation"],
+	)
+
+	server_region_info = frappe.db.get_value("Cluster", sites[0].cluster, ["title", "image"], as_dict=True)
+	rg_version = frappe.db.get_value("Release Group", name, "version")
+
+	benches = {}
+	for site in sites:
+		site.server_region_info = server_region_info
+		site.version = rg_version
+		bench = site.bench
+		if bench in benches:
+			benches[bench]["sites"].append(site)
+		else:
+			benches[bench] = {"bench": bench, "sites": [site]}
+
+	benches = list(benches.values())
+	for bench in benches:
+		bench["deployed_on"] = frappe.db.get_value("Bench", bench["bench"], "creation")
+
+	return benches
+
+@frappe.whitelist()
+@protected("Release Group")
 def candidates(name, start=0):
 	result = frappe.get_all(
 		"Deploy Candidate",
