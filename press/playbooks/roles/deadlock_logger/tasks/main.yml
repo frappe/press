@@ -11,6 +11,7 @@
 
 - name: Create Deadlock Logger Table
   mysql_db:
+    login_host: "{{ private_ip }}"
     name: percona
     state: import
     target: /tmp/deadlock_logger.sql

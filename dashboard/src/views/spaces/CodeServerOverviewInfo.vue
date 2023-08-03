@@ -5,6 +5,19 @@
 	>
 		<div class="divide-y">
 			<ListItem
+				title="Bench Version"
+				description="Bench version for which this code server is created"
+			>
+				<template v-slot:actions>
+					<router-link
+						:to="`/benches/${codeServer.group}/versions/${codeServer.bench}`"
+						class="text-base text-blue-600"
+					>
+						{{ codeServer.bench }} →
+					</router-link>
+				</template>
+			</ListItem>
+			<ListItem
 				v-if="codeServer.status === 'Running'"
 				title="Copy Password"
 				description="Copy the password for your code server"

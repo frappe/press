@@ -1,4 +1,3 @@
----
 - name: Add MariaDB Repository File
   template:
     src: mariadb.list
@@ -6,6 +5,16 @@
     owner: root
     group: root
     mode: 0644
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "focal"
+  
+- name: Add MariaDB Repository File
+  template:
+    src: mariadb-10.6.list
+    dest: /etc/apt/sources.list.d/mariadb.list
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
 
 - name: Add MariaDB Repository Key
   apt_key:
@@ -47,7 +56,22 @@
   lineinfile:
     dest: /etc/mysql/my.cnf
     line: "!includedir /etc/mysql/conf.d/"
-    
+
+# In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
+# /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
+- name: Remove /etc/mysql/conf.d/ from the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    regexp: '^(!includedir /etc/mysql/conf.d/)$'
+    state: absent
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
+
+- name: Add /etc/mysql/conf.d/ to the end of the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    line: '!includedir /etc/mysql/conf.d/'
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy" 
+
 - name: Set Open Files Count Limit for MariaDB
   lineinfile:
     dest: /lib/systemd/system/mariadb.service
