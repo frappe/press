@@ -41,7 +41,7 @@
 </template>
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
-import SiteCard from './SiteCard.vue';
+import SiteCard from '@/components/SiteCard.vue';
 
 export default {
 	name: 'SiteList',
