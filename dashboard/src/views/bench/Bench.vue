@@ -113,15 +113,15 @@ export default {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Sites', route: 'sites', condition: () => true},
-				{ label: 'Overview', route: 'overview', condition: () => true },
-				{ label: 'Apps', route: 'apps', condition: () => true },
-				{ label: 'Versions', route: 'versions', condition: () => true },
+				// { label: 'Overview', route: 'overview', condition: () => true },
+				// { label: 'Apps', route: 'apps', condition: () => true },
+				// { label: 'Versions', route: 'versions', condition: () => true },
+				{ label: 'Deploys', route: 'deploys', condition: () => true },
 				{
-					label: 'Bench Config',
+					label: 'Config',
 					route: 'bench-config',
 					condition: () => !this.bench?.public
 				},
-				{ label: 'Deploys', route: 'deploys', condition: () => true },
 				{ label: 'Jobs', route: 'jobs', condition: () => true },
 				{ label: 'Settings', route: 'setting', condition: () => true }
 			].filter(tab => tab.condition());
