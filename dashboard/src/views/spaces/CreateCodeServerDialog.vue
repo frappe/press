@@ -123,10 +123,8 @@ export default {
 				onSuccess(r) {
 					this.$router.replace(`/codeservers/${r}/jobs`);
 				},
-				validate() {
-					if (this.selectedBench === null) {
-						return 'Please select a bench version to deploy the code server on';
-					}
+				onError(e) {
+					this.errorMessage = e.message;
 				}
 			};
 		}
