@@ -372,6 +372,16 @@ class DeployCandidate(Document):
 	command = "docker build"
 
 	def _run_docker_build(self, no_cache=False):
+		import platform
+
+		# check if it's running on apple silicon mac
+		if (
+			platform.machine() == "arm64"
+			and platform.system() == "Darwin"
+			and platform.processor() == "arm"
+		):
+			self.command = f"{self.command}x build --platform linux/amd64"
+
 		environment = os.environ
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
