@@ -4,23 +4,28 @@
 			<Dropdown :options="dropdownItems">
 				<template v-slot="{ open }">
 					<div
-						class="mb-2 flex cursor-pointer items-center w-[15rem] gap-2 rounded-md px-1 py-2"
+						class="mb-2 flex w-[15rem] cursor-pointer items-center gap-2 rounded-md px-1 py-2"
 						:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
 					>
 						<FrappeCloudLogo />
 						<div>
 							<h3 class="text-base font-semibold">Frappe Cloud</h3>
-							<p v-if="$account.user" class="text-xs mt-1 break-all text-gray-600">{{ $account.user.full_name }}</p>
+							<p
+								v-if="$account.user"
+								class="mt-1 break-all text-xs text-gray-600"
+							>
+								{{ $account.user.full_name }}
+							</p>
 						</div>
-						<FeatherIcon name="chevron-down" class="ml-auto h-5 w-5 text-gray-700" />
+						<FeatherIcon
+							name="chevron-down"
+							class="ml-auto h-5 w-5 text-gray-700"
+						/>
 					</div>
 				</template>
 			</Dropdown>
 			<div class="flex flex-col space-y-0.5">
-				<button
-					class="rounded text-gray-800"
-					@click="show = true"
-				>
+				<button class="rounded text-gray-800" @click="show = true">
 					<div class="flex w-full items-center px-2 py-1">
 						<span class="mr-1.5">
 							<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
@@ -51,7 +56,7 @@
 						]"
 						:href="href"
 						@click="navigate"
-						class="flex rounded-md px-2 py-1 pr-10 text-start text-sm focus:outline-none items-center"
+						class="flex items-center rounded-md px-2 py-1 pr-10 text-start text-sm focus:outline-none"
 					>
 						<Component class="mr-1.5 text-gray-700" :is="item.icon" />
 						{{ item.label }}
@@ -121,15 +126,18 @@ export default {
 				{
 					label: 'Sites',
 					route: '/sites',
-					highlight: route => {
-						return this.$route.fullPath.indexOf('/sites') >= 0;
+					highlight: () => {
+						return (
+							this.$route.fullPath.indexOf('/sites') >= 0 &&
+							this.$route.fullPath.indexOf('/benches/') < 0
+						);
 					},
 					icon: FCIcons.SiteIcon
 				},
 				{
 					label: 'Benches',
 					route: '/benches',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/benches') >= 0;
 					},
 					icon: FCIcons.BenchIcon
@@ -137,7 +145,7 @@ export default {
 				{
 					label: 'Servers',
 					route: '/servers',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/servers') >= 0;
 					},
 					icon: FCIcons.ServerIcon,
@@ -146,7 +154,7 @@ export default {
 				{
 					label: 'Spaces',
 					route: '/spaces',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/spaces') >= 0;
 					},
 					icon: FCIcons.SpacesIcon,
@@ -155,7 +163,7 @@ export default {
 				{
 					label: 'Developer',
 					route: '/marketplace/apps',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/marketplace') >= 0;
 					},
 					icon: FCIcons.AppsIcon,
@@ -164,7 +172,7 @@ export default {
 				{
 					label: 'Billing',
 					route: '/billing',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/billing') >= 0;
 					},
 					icon: FCIcons.BillingIcon,
