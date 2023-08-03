@@ -25,7 +25,7 @@
 					:label="siteBadge(site)"
 				/>
 				<img
-					v-if="site.server_region_info.image"
+					v-if="site.server_region_info?.image"
 					class="h-4"
 					:src="site.server_region_info.image"
 					:alt="`Flag of ${site.server_region_info.title}`"
