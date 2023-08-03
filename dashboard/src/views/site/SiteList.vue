@@ -10,12 +10,9 @@
 					v-for="site in groupedSite.sites"
 					:key="site.name"
 				>
-					<div class="space-y-2" :to="`/sites/${site.name}/overview`">
+					<div class="space-y-2">
 						<div class="flex items-center justify-center">
-							<div
-								class="hover:text-ellipses truncate break-all text-lg hover:w-full"
-								:title="site.name"
-							>
+							<div class="w-full truncate text-lg" :title="site.name">
 								{{ site.name }}
 							</div>
 							<router-link
@@ -37,7 +34,7 @@
 								</template>
 							</Dropdown>
 						</div>
-						<div class="flex space-x-3">
+						<div class="flex items-center space-x-3">
 							<Badge :label="site.version" />
 							<Badge
 								class="pointer-events-none"
@@ -46,7 +43,7 @@
 							/>
 							<img
 								v-if="site.server_region_info.image"
-								class="mt-0.5 h-4"
+								class="h-4"
 								:src="site.server_region_info.image"
 								:alt="`Flag of ${site.server_region_info.title}`"
 								:title="site.server_region_info.image"
