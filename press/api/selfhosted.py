@@ -13,12 +13,15 @@ def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
-	cluster = "Mumbai"
+	if not team.self_hosted_servers_enabled:
+		frappe.throw(
+			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
+		)
+	cluster = "Hybrid"
 	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 	self_hosted_server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
-			"private_ip": server["privateIP"].strip(),
 			"ip": server["publicIP"].strip(),
 			"title": server["title"],
 			"proxy_server": proxy_server,
@@ -47,7 +50,10 @@ def verify(server):
 	)
 	play = ansible.run()
 	if play.status == "Success":
+		server_doc.fetch_private_ip()
 		server_doc.fetch_system_ram(play.name)
+		server_doc.fetch_system_specifications(play.name)
+		server_doc.check_minumum_specs()
 		server_doc.status = "Pending"
 		server_doc.save()
 		server_doc.create_db_server()

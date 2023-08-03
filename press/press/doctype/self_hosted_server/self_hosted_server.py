@@ -529,6 +529,7 @@ class SelfHostedServer(Document):
 			and self.team != "Administrator"
 		)
 
+	@frappe.whitelist()
 	def fetch_private_ip(self):
 		"""
 		Fetch the Private IP from the Ping Ansible Play
@@ -540,7 +541,6 @@ class SelfHostedServer(Document):
 			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
 		)
 		try:
-			breakpoint()
 			result = json.loads(play.result)
 			self.private_ip = fetch_private_ip_based_on_vendor(result)
 			self.save()
@@ -580,6 +580,26 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("Fetching System Details Failed", server=self.as_dict())
 
+	def check_minumum_specs(self):
+		"""
+		Check if the server meets the minimum requirements
+		ie: RAM >= 4GB,vCPUs >= 2,Storage >= 40GB
+		"""
+
+		if round(int(self.ram), -3) <= 4000:  # Round to nearest thousand
+			frappe.throw(
+				f"Minimum RAM requirement not met, Minumum is 4GB and available is {self.ram} MB"
+			)
+		if int(self.vcpus) <= 2:
+			frappe.throw(
+				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
+			)
+		if round(int(float(self.total_storage.split()[0])), -1) <= 40:
+			frappe.throw(
+				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
+			)
+		return True
+
 
 def fetch_private_ip_based_on_vendor(play_result: dict):
 	vendor = play_result["ansible_facts"]["system_vendor"]
@@ -587,6 +607,8 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 	match vendor:
 		case "DigitalOcean":
 			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
+		case "Hetzner":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][2]
 		case "Amazon EC2":
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
 		case "Microsoft Corporation":
