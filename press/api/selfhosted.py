@@ -90,8 +90,4 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
-
-@frappe.whitelist()
-def fetch_vendor_info(server):
-	server_doc = frappe.get_doc("Self Hosted Server", server)
 	
