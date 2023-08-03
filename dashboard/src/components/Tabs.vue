@@ -10,10 +10,10 @@
 				>
 					<li>
 						<a
-							class="relative mr-8 block truncate border-b border-transparent px-1 py-4 font-medium leading-none focus:outline-none"
+							class="font-base relative mb-1.5 mr-8 block truncate border-b border-transparent px-1 py-2 leading-none focus:outline-none"
 							:class="[
 								isTabSelected(tab)
-									? 'border-brand text-gray-900'
+									? 'border-brand border-gray-900 text-gray-900'
 									: 'text-gray-600 hover:text-gray-900'
 							]"
 							:href="href"
