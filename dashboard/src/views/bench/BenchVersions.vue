@@ -348,7 +348,7 @@ export default {
 				this.$account.team.code_servers_enabled &&
 					this.selectedVersion.status == 'Active' && {
 						label: 'Create Code Server',
-						handler: () => {
+						onClick: () => {
 							this.showCodeServerDialog = true;
 						}
 					}

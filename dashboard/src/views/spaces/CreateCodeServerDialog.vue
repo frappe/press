@@ -1,6 +1,11 @@
 <template>
 	<Dialog
-		:options="{ title: 'Create Code Server' }"
+		:options="{ title: 'Create Code Server', actions:[{
+			label: 'Create',
+			variant: 'solid',
+			loading: $resources.newCodeServer.loading,
+			onClick: () => $resources.newCodeServer.submit()
+		}] }"
 		:modelValue="show"
 		@after-leave="
 			() => {
@@ -34,27 +39,6 @@
 					{{ modelValue }}.{{ domain }} is available
 				</div>
 				<ErrorMessage :message="errorMessage" />
-			</div>
-		</template>
-		<template v-slot:actions>
-			<div>
-				<Button
-					@click="
-						() => {
-							$emit('close', true);
-						}
-					"
-				>
-					Cancel
-				</Button>
-				<Button
-					class="ml-3"
-					appearance="primary"
-					@click="$resources.newCodeServer.submit()"
-					:loading="$resources.newCodeServer.loading"
-				>
-					Create
-				</Button>
 			</div>
 		</template>
 	</Dialog>
