@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import AppPlanCard from '@/components/AppPlanCard.vue';
 import PrinterIcon from '@/components/PrinterIcon.vue';
 
@@ -17,8 +17,8 @@ const props = defineProps({
 	app: Object
 });
 
-const appPlans = useResource({
-	method: 'press.api.marketplace.get_app_plans',
+const appPlans = createResource({
+	url: 'press.api.marketplace.get_app_plans',
 	params: {
 		app: props.app?.name,
 		include_disabled: true
@@ -26,15 +26,15 @@ const appPlans = useResource({
 	auto: true
 });
 
-const updateAppPlan = useResource({
-	method: 'press.api.marketplace.update_app_plan',
+const updateAppPlan = createResource({
+	url: 'press.api.marketplace.update_app_plan',
 	onSuccess() {
 		refreshState();
 	}
 });
 
-const createAppPlan = useResource({
-	method: 'press.api.marketplace.create_app_plan',
+const createAppPlan = createResource({
+	url: 'press.api.marketplace.create_app_plan',
 	validate() {
 		if (!currentEditingPlan.plan_title) {
 			return 'Plan name is required';
