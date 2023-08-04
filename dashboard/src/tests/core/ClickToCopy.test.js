@@ -15,6 +15,13 @@ Object.assign(window.navigator, {
 	}
 });
 
+vi.mock('frappe-ui', () => {
+	return {
+		default: { myDefaultKey: vi.fn() },
+		usePageMeta: vi.fn()
+	};
+});
+
 describe('ClickToCopyField Component', () => {
 	test('displays the passed text content', () => {
 		expect(ClickToCopyField).toBeTruthy();
@@ -29,11 +36,17 @@ describe('ClickToCopyField Component', () => {
 	});
 
 	test("let's us copy with a button click", async () => {
+		const $notify = vi.fn(args => args);
 		expect(ClickToCopyField).toBeTruthy();
 
 		const wrapper = mount(ClickToCopyField, {
 			props: {
 				textContent: 'Test'
+			},
+			global: {
+				mocks: {
+					$notify
+				}
 			}
 		});
 
