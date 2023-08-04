@@ -83,6 +83,11 @@ export default [
 				path: 'auto-update',
 				component: () => import('../views/site/SiteAutoUpdate.vue'),
 				props: true
+			},
+			{
+				path: 'monitor',
+				component: () => import('../views/site/SiteMonitorsList.vue'),
+				props: true
 			}
 		]
 	}

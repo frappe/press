@@ -377,7 +377,8 @@ export default {
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Settings', route: 'setting' }
+				{ label: 'Settings', route: 'setting' },
+				{ label: 'Monitor', route: 'monitor' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -394,7 +395,8 @@ export default {
 					'Jobs',
 					'Logs',
 					'Request Logs',
-					'Settings'
+					'Settings',
+					'Monitor'
 				],
 				Inactive: [
 					'Overview',
