@@ -10,7 +10,7 @@
 				>
 					<li>
 						<a
-							class="font-base relative mb-1.5 mr-6 block truncate border-b border-transparent px-1 py-2 leading-none focus:outline-none"
+							class="font-base relative mb-1 mr-6 block truncate border-b border-transparent px-1 py-2 leading-none focus:outline-none"
 							:class="[
 								isTabSelected(tab)
 									? 'border-brand border-gray-900 text-gray-900'
