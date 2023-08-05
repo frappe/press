@@ -1,39 +1,38 @@
 <template>
 	<div>
-		<PageHeader title="Servers" subtitle="Your Servers">
-			<template v-if="this.$account.team.enabled" v-slot:actions>
-				<Dropdown
-					v-if="
-						$account.team.self_hosted_servers_enabled === 1 &&
-						!showAddCardDialog
-					"
-					:options="dropDownOptions"
-				>
-					<!-- <template v-slot="{ open }"> -->
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs :items="[{ label: 'Servers', route: '/servers' }]">
+				<template v-if="this.$account.team.enabled" #actions>
+					<Dropdown
+						v-if="
+							$account.team.self_hosted_servers_enabled === 1 &&
+							!showAddCardDialog
+						"
+						:options="dropDownOptions"
+					>
+						<Button
+							variant="solid"
+							iconLeft="plus"
+							label="Create"
+							class="ml-2 hidden sm:inline-flex"
+						/>
+					</Dropdown>
 					<Button
+						v-else
 						variant="solid"
 						iconLeft="plus"
+						label="Create"
 						class="ml-2 hidden sm:inline-flex"
 						@click="showBillingDialog"
-					>
-						New
-					</Button>
-					<!-- </template> -->
-				</Dropdown>
-				<Button
-					v-else
-					variant="solid"
-					iconLeft="plus"
-					class="ml-2 hidden sm:inline-flex"
-					@click="showBillingDialog"
-				>
-					New
-				</Button>
-			</template>
-		</PageHeader>
+					/>
+				</template>
+			</BreadCrumbs>
+		</header>
 
 		<div>
-			<SectionHeader :heading="getServerFilterHeading()">
+			<SectionHeader class="mx-5 mt-8" :heading="getServerFilterHeading()">
 				<template #actions>
 					<Dropdown :options="serverFilterOptions()">
 						<template v-slot="{ open }">
@@ -49,7 +48,7 @@
 					</Dropdown>
 				</template>
 			</SectionHeader>
-			<div class="mt-3">
+			<div class="mt-3 mx-5">
 				<LoadingText v-if="$resources.allServers.loading" />
 				<ServerList v-else :servers="servers" />
 			</div>
