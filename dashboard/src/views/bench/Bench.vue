@@ -1,12 +1,37 @@
 <template>
 	<div>
 		<div v-if="bench">
-			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/benches" class="hover:text-gray-800">
-						← Back to Benches
-					</router-link>
-				</div>
+			<header
+				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+			>
+				<BreadCrumbs
+					:items="[
+						{ label: 'Benches', route: '/benches' },
+						{
+							label: bench?.title,
+							route: `/benches/${bench?.name}/sites`
+						}
+					]"
+				>
+					<template #actions>
+						<div>
+							<Dropdown :options="benchActions">
+								<template v-slot="{ open }">
+									<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+								</template>
+							</Dropdown>
+							<Button
+								v-if="bench?.status === 'Active'"
+								variant="solid"
+								icon-left="plus"
+								label="New Site"
+								@click="$router.push(`/${this.bench.name}/new`)"
+							/>
+						</div>
+					</template>
+				</BreadCrumbs>
+			</header>
+			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -14,17 +39,10 @@
 						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
 						<Badge class="ml-4" :label="bench.status" />
 					</div>
-					<div class="flex-row space-x-3 md:flex">
-						<Dropdown :options="benchActions">
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
-					</div>
 				</div>
 			</div>
 		</div>
-		<div>
+		<div class="p-5 pt-1">
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component }">
 					<component v-if="bench" :is="Component" :bench="bench"></component>
@@ -105,14 +123,14 @@ export default {
 	},
 	computed: {
 		bench() {
-			if (this.$resources.bench.data && !this.$resources.bench.loading) {
+			if (this.$resources.bench?.data && !this.$resources.bench.loading) {
 				return this.$resources.bench.data;
 			}
 		},
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
-				{ label: 'Sites', route: 'sites', condition: () => true},
+				{ label: 'Sites', route: 'sites', condition: () => true },
 				// { label: 'Overview', route: 'overview', condition: () => true },
 				// { label: 'Apps', route: 'apps', condition: () => true },
 				// { label: 'Versions', route: 'versions', condition: () => true },
@@ -138,13 +156,6 @@ export default {
 		},
 		benchActions() {
 			return [
-				this.bench.status == 'Active' && {
-					label: 'New Site',
-					icon: 'plus',
-					onClick: () => {
-						this.$router.push(`/${this.bench.name}/new`);
-					}
-				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
