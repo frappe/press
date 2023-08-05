@@ -1,18 +1,22 @@
 <template>
 	<div>
 		<div>
-			<PageHeader>
-				<template v-if="this.$account.team.enabled" #actions>
-					<Button
-						variant="solid"
-						icon-left="plus"
-						class="ml-2"
-						@click="showBillingDialog"
-					>
-						New
-					</Button>
-				</template>
-			</PageHeader>
+			<header
+				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+			>
+				<BreadCrumbs :items="[{ label: 'Sites', route: '/sites' }]">
+					<template v-if="this.$account.team.enabled" #actions>
+						<Button
+							variant="solid"
+							icon-left="plus"
+							class="ml-2"
+							label="Create"
+							@click="showBillingDialog"
+						>
+						</Button>
+					</template>
+				</BreadCrumbs>
+			</header>
 
 			<div class="mb-2" v-if="!$account.team.enabled">
 				<Alert title="Your account is disabled">
@@ -68,7 +72,7 @@
 				</div>
 			</div> -->
 
-			<div class="mt-2 mb-6">
+			<div class="mx-5 my-8">
 				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
 						<Dropdown :options="siteFilterOptions()">
