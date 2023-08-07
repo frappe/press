@@ -27,7 +27,7 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m"].index(self.series)
+				offset = ["f", "m", "c", "p", "e"].index(self.series)
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
