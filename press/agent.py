@@ -67,6 +67,16 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
+	def new_container(self, container):
+		data = {
+			"name": container.name,
+			"config": json.loads(container.config),
+			"registry": None,
+		}
+		return self.create_agent_job(
+			"New Container", "containers", data, container=container.name
+		)
+
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
@@ -678,6 +688,7 @@ class Agent:
 		files=None,
 		method="POST",
 		bench=None,
+		container=None,
 		site=None,
 		code_server=None,
 		upstream=None,
@@ -689,6 +700,7 @@ class Agent:
 				"server_type": self.server_type,
 				"server": self.server,
 				"bench": bench,
+				"container": container,
 				"host": host,
 				"site": site,
 				"code_server": code_server,

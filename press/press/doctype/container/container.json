@@ -1,0 +1,101 @@
+{
+ "actions": [],
+ "creation": "2023-08-07 17:24:40.182949",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "node",
+  "cluster",
+  "status",
+  "column_break_fmyy",
+  "image",
+  "configuration_section",
+  "config"
+ ],
+ "fields": [
+  {
+   "fetch_from": "node.cluster",
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "node",
+   "fieldtype": "Link",
+   "label": "Node",
+   "options": "Node",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Pending\nInstalling\nActive\nBroken\nArchived",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Data",
+   "label": "Image",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Configuration"
+  },
+  {
+   "default": "{}",
+   "fieldname": "config",
+   "fieldtype": "Code",
+   "label": "Configuration",
+   "options": "JSON",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fmyy",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "container"
+  }
+ ],
+ "modified": "2023-08-07 17:58:51.875957",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Container",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
