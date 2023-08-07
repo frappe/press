@@ -23,7 +23,7 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if self.is_self_hosted:
+		if self.get_is_self_hosted():
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,7 +33,7 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not self.is_self_hosted:
+		if self.ip and not self.get_is_self_hosted():
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -407,7 +407,7 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		if self.is_self_hosted:
+		if self.get_is_self_hosted():
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate",
 				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
@@ -472,6 +472,9 @@ class BaseServer(Document):
 	def agent(self):
 		return Agent(self.name, server_type=self.doctype)
 
+	def get_is_self_hosted(self):
+		return hasattr(self, "is_self_hosted") and self.is_self_hosted
+
 
 class Server(BaseServer):
 	def on_update(self):
@@ -499,9 +502,7 @@ class Server(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="self_hosted.yml"
-				if getattr(self, "is_self_hosted", False)
-				else "server.yml",
+				playbook="self_hosted.yml" if self.get_is_self_hosted() else "server.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
