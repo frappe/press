@@ -1,36 +1,36 @@
 <template>
 	<div>
-		<div v-if="site">
-			<header
-				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		<header
+			class="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[
+					{ label: 'Sites', route: '/sites' },
+					{
+						label: site.host_name || site.name,
+						route: `/sites/${site?.name}/overview`
+					}
+				]"
 			>
-				<BreadCrumbs
-					:items="[
-						{ label: 'Sites', route: '/sites' },
-						{
-							label: site.host_name || site.name,
-							route: `/sites/${site?.name}/overview`
-						}
-					]"
-				>
-					<template #actions>
-						<div>
-							<Dropdown :options="siteActions">
-								<template v-slot="{ open }">
-									<Button variant="ghost" class="mr-2" icon="more-horizontal" />
-								</template>
-							</Dropdown>
-							<Button
-								v-if="site?.status === 'Active'"
-								variant="solid"
-								icon-left="external-link"
-								label="Visit Site"
-								@click="$router.push(`/${this.site.name}/new`)"
-							/>
-						</div>
-					</template>
-				</BreadCrumbs>
-			</header>
+				<template #actions>
+					<div>
+						<Dropdown :options="siteActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+						<Button
+							v-if="site?.status === 'Active'"
+							variant="solid"
+							icon-left="external-link"
+							label="Visit Site"
+							@click="$router.push(`/${this.site.name}/new`)"
+						/>
+					</div>
+				</template>
+			</BreadCrumbs>
+		</header>
+		<div v-if="site">
 			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"

@@ -1,36 +1,36 @@
 <template>
 	<div>
-		<div v-if="bench">
-			<header
-				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		<header
+			class="sticky top-0 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[
+					{ label: 'Benches', route: '/benches' },
+					{
+						label: bench?.title,
+						route: `/benches/${bench?.name}/sites`
+					}
+				]"
 			>
-				<BreadCrumbs
-					:items="[
-						{ label: 'Benches', route: '/benches' },
-						{
-							label: bench?.title,
-							route: `/benches/${bench?.name}/sites`
-						}
-					]"
-				>
-					<template #actions>
-						<div>
-							<Dropdown :options="benchActions">
-								<template v-slot="{ open }">
-									<Button variant="ghost" class="mr-2" icon="more-horizontal" />
-								</template>
-							</Dropdown>
-							<Button
-								v-if="bench?.status === 'Active'"
-								variant="solid"
-								icon-left="plus"
-								label="New Site"
-								@click="$router.push(`/${this.bench.name}/new`)"
-							/>
-						</div>
-					</template>
-				</BreadCrumbs>
-			</header>
+				<template #actions>
+					<div>
+						<Dropdown :options="benchActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+						<Button
+							v-if="bench?.status === 'Active'"
+							variant="solid"
+							icon-left="plus"
+							label="New Site"
+							@click="$router.push(`/${this.bench.name}/new`)"
+						/>
+					</div>
+				</template>
+			</BreadCrumbs>
+		</header>
+		<div v-if="bench">
 			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
