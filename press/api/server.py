@@ -148,30 +148,16 @@ def new(server):
 		frappe.throw("You cannot create a new server because your account is disabled")
 
 	domain = frappe.db.get_single_value("Press Settings", "domain")
-	cluster = server["cluster"]
+	cluster = frappe.get_doc("Cluster", server["cluster"])
 
-	app_image = db_image = None
-	db_images = frappe.get_all(
-		"Virtual Machine Image",
-		{"status": "Available", "series": "m", "cluster": cluster},
-		pluck="name",
-	)
-	if db_images:
-		db_image = db_images[0]
-
-	app_images = frappe.get_all(
-		"Virtual Machine Image",
-		{"status": "Available", "series": "f", "cluster": cluster},
-		pluck="name",
-	)
-	if app_images:
-		app_image = app_images[0]
+	app_image = cluster.get_available_vmi("f")
+	db_image = cluster.get_available_vmi("m")
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
 	db_machine = frappe.get_doc(
 		{
 			"doctype": "Virtual Machine",
-			"cluster": cluster,
+			"cluster": cluster.name,
 			"domain": domain,
 			"series": "m",
 			"disk_size": db_plan.disk,
@@ -188,14 +174,14 @@ def new(server):
 	db_server.run_press_job("Create Server")
 
 	proxy_server = frappe.get_all(
-		"Proxy Server", {"status": "Active", "cluster": cluster}, limit=1
+		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
 	)[0]
 
 	app_plan = frappe.get_doc("Plan", server["app_plan"])
 	app_machine = frappe.get_doc(
 		{
 			"doctype": "Virtual Machine",
-			"cluster": cluster,
+			"cluster": cluster.name,
 			"domain": domain,
 			"series": "f",
 			"disk_size": app_plan.disk,

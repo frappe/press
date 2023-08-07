@@ -4,13 +4,21 @@
 
 
 import ipaddress
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import boto3
 import frappe
 from frappe.model.document import Document
 
 from press.utils import unique
+
+server_doctypes = [
+	{"Proxy Server": "n"},
+	{"Server": "f"},
+	{"Database Server": "m"},
+	{"Monitor Server": "p"},
+	{"Log Server": "e"},
+]
 
 
 class Cluster(Document):
@@ -233,6 +241,29 @@ class Cluster(Document):
 				},
 			],
 		)
+
+	def get_available_vmi(self, series) -> Optional[str]:
+		images = frappe.get_all(
+			"Virtual Machine Image",
+			{"status": "Available", "series": series, "cluster": self.name},
+			pluck="name",
+		)
+		if not images:
+			return None
+		return images[0]
+
+	def create_server_vmis(self):
+		for doctype, series in server_doctypes.items():
+			last_vmi = frappe.get_doc(
+				"Virtual Machine Image", {"series": series}, order_by="creation desc"
+			)
+			frappe.new_doc(
+				"Virtual Machine Image",
+				{
+					"cluster": self.name,
+					"copied_from": last_vmi.name,
+				},
+			)
 
 	@classmethod
 	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
