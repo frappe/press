@@ -18,6 +18,9 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.press_user_permission.press_user_permission import (
+	has_user_permission,
+)
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -30,7 +33,7 @@ from press.utils import (
 )
 
 
-def protected(doctypes):
+def protected(doctypes, action=None):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
@@ -42,18 +45,37 @@ def protected(doctypes):
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
 
-		from press.press.doctype.team.team import get_child_team_members
-
-		child_teams = [team.name for team in get_child_team_members(team)]
-
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
 			doctypes = [doctypes]
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team or owner in child_teams:
-				return wrapped(*args, **kwargs)
+			if owner == team:
+				if frappe.get_value("Team", team, "user") != frappe.session.user:
+					# Logged in user is a team member
+					# Check if the user has permission to access the document
+					groups = frappe.get_all(
+						"Press Group User",
+						{
+							"user": frappe.session.user,
+						},
+						pluck="parent",
+					)
+					if (
+						frappe.db.exists("Press User Permission", frappe.session.user)
+						and action
+						and groups
+					):
+						# has restricted access
+						if has_user_permission(doctype, name, action, groups):
+							return wrapped(*args, **kwargs)
+					else:
+						# has access to everything
+						return wrapped(*args, **kwargs)
+				else:
+					# Logged in user is the team owner
+					return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
 
