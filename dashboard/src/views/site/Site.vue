@@ -1,12 +1,37 @@
 <template>
 	<div>
 		<div v-if="site">
+			<header
+				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+			>
+				<BreadCrumbs
+					:items="[
+						{ label: 'Sites', route: '/sites' },
+						{
+							label: site.host_name || site.name,
+							route: `/sites/${site?.name}/overview`
+						}
+					]"
+				>
+					<template #actions>
+						<div>
+							<Dropdown :options="siteActions">
+								<template v-slot="{ open }">
+									<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+								</template>
+							</Dropdown>
+							<Button
+								v-if="site?.status === 'Active'"
+								variant="solid"
+								icon-left="plus"
+								label="New Site"
+								@click="$router.push(`/${this.bench.name}/new`)"
+							/>
+						</div>
+					</template>
+				</BreadCrumbs>
+			</header>
 			<div class="pb-2">
-				<div class="text-base text-gray-700">
-					<router-link to="/sites" class="hover:text-gray-800">
-						← Back to Sites
-					</router-link>
-				</div>
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>

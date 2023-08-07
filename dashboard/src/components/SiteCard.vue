@@ -1,13 +1,18 @@
 <template>
-	<div class="rounded-md border border-gray-100 p-3">
+	<router-link
+		:to="{ name: 'SiteOverview', params: { siteName: site.name } }"
+		class="rounded-md border border-gray-200 p-3 hover:border-gray-300"
+	>
 		<div class="space-y-2">
 			<div class="flex items-center justify-center">
 				<div class="w-full truncate text-lg" :title="site.name">
 					{{ site.name }}
 				</div>
-				<router-link class="space-y-2" :to="`/sites/${site.name}/overview`">
-					<Button class="ml-auto h-4" variant="ghost" icon="external-link" />
-				</router-link>
+				<div>
+					<a :href="`http://${site.name}`" target="_blank" @click.stop>
+						<FeatherIcon class="h-4 w-4" name="external-link" />
+					</a>
+				</div>
 				<Dropdown
 					v-if="site.status === 'Active' || site.status === 'Updating'"
 					:options="dropdownItems(site)"
@@ -36,7 +41,7 @@
 				{{ $dayjs(site.creation).fromNow() }}
 			</div>
 		</div>
-	</div>
+	</router-link>
 </template>
 
 <script>
