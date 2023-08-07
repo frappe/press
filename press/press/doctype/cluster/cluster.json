@@ -200,9 +200,14 @@
    "group": "Servers",
    "link_doctype": "Proxy Server",
    "link_fieldname": "cluster"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Virtual Machine Image",
+   "link_fieldname": "cluster"
   }
  ],
- "modified": "2022-02-08 16:59:18.836427",
+ "modified": "2023-08-07 18:52:50.054113",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
