@@ -77,6 +77,14 @@ class Agent:
 			"New Container", "containers", data, container=container.name
 		)
 
+	def archive_container(self, container):
+		return self.create_agent_job(
+			"Archive Container",
+			f"containers/{container.name}",
+			method="DELETE",
+			container=container.name,
+		)
+
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")

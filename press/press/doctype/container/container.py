@@ -20,11 +20,15 @@ class Container(Document):
 		self.config = json.dumps(config, indent=4)
 
 	def after_insert(self):
-		self.create_agent_request()
+		self.agent.new_container(self)
 
-	def create_agent_request(self):
-		agent = Agent(self.node, "Node")
-		agent.new_container(self)
+	@frappe.whitelist()
+	def archive(self):
+		self.agent.archive_container(self)
+
+	@property
+	def agent(self):
+		return Agent(self.node, "Node")
 
 
 def process_new_container_job_update(job):

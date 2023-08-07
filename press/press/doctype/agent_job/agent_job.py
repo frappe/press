@@ -342,6 +342,10 @@ def process_job_updates(job_name):
 			process_add_ssh_user_job_update,
 			process_remove_ssh_user_job_update,
 		)
+		from press.press.doctype.container.container import (
+			process_archive_container_job_update,
+			process_new_container_job_update,
+		)
 		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
@@ -383,6 +387,10 @@ def process_job_updates(job_name):
 			process_new_bench_job_update(job)
 		elif job.job_type == "Archive Bench":
 			process_archive_bench_job_update(job)
+		elif job.job_type == "New Container":
+			process_new_container_job_update(job)
+		elif job.job_type == "Archive Container":
+			process_archive_container_job_update(job)
 		elif job.job_type == "New Site":
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
