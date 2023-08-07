@@ -52,7 +52,7 @@
 									: item.route == '/'
 							)
 								? 'bg-white shadow-sm'
-								: 'text-gray-900 hover:bg-gray-50'
+								: 'text-gray-900 hover:bg-gray-100'
 						]"
 						:href="href"
 						@click="navigate"
