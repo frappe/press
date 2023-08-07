@@ -81,7 +81,9 @@
   "backups_section",
   "skip_scheduled_backups",
   "tags_section",
-  "tags"
+  "tags",
+  "monitor_section",
+  "hide_monitor_tab"
  ],
  "fields": [
   {
@@ -577,6 +579,18 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "monitor_section",
+   "fieldtype": "Section Break",
+   "label": "Monitor"
+  },
+  {
+   "default": "1",
+   "fieldname": "hide_monitor_tab",
+   "fieldtype": "Check",
+   "label": "Hide Monitor Tab"
   }
  ],
  "links": [
@@ -646,7 +660,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-07-02 00:08:36.031427",
+ "modified": "2023-08-07 11:50:42.460161",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

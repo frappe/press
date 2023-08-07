@@ -368,6 +368,7 @@ export default {
 
 		tabs() {
 			let siteConfig = '';
+			let siteMonitorTab = '';
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
@@ -385,6 +386,10 @@ export default {
 				siteConfig = 'Site Config';
 			}
 
+			if (this.site && this.site.hide_monitor_tab !== 1) {
+				siteMonitorTab = 'Monitor';
+			}
+
 			let tabsByStatus = {
 				Active: [
 					'Overview',
@@ -396,7 +401,7 @@ export default {
 					'Logs',
 					'Request Logs',
 					'Settings',
-					'Monitor'
+					siteMonitorTab
 				],
 				Inactive: [
 					'Overview',
@@ -416,7 +421,8 @@ export default {
 					'Database',
 					'Jobs',
 					'Logs',
-					'Settings'
+					'Settings',
+					siteMonitorTab
 				],
 				Suspended: [
 					'Overview',
