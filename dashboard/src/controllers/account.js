@@ -10,6 +10,17 @@ export default class Account {
 		this.onboarding = null;
 		this.balance = 0;
 		this.feature_flags = {};
+		this._fetchAccountPromise = null;
+	}
+
+	async fetchIfRequired() {
+		if (!this.user) {
+			if (this._fetchAccountPromise) {
+				await this._fetchAccountPromise;
+			} else {
+				await this.fetchAccount();
+			}
+		}
 	}
 
 	async fetchAccount() {
@@ -17,7 +28,8 @@ export default class Account {
 			return;
 		}
 		try {
-			let result = await call('press.api.account.get');
+			this._fetchAccountPromise = call('press.api.account.get');
+			let result = await this._fetchAccountPromise;
 			this.user = result.user;
 			this.ssh_key = result.ssh_key;
 			this.team = result.team;
@@ -28,8 +40,11 @@ export default class Account {
 			this.balance = result.balance;
 			this.feature_flags = result.feature_flags;
 			this.parent_team = result.parent_team;
+			this.saas_site_request = result.saas_site_request;
 		} catch (e) {
 			localStorage.removeItem('current_team');
+		} finally {
+			this._fetchAccountPromise = null;
 		}
 	}
 

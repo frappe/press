@@ -481,6 +481,12 @@ def options_for_new():
 
 
 @frappe.whitelist()
+def saas_product_options(product):
+	saas_product = frappe.get_doc("SaaS Product", product)
+
+
+
+@frappe.whitelist()
 def get_domain():
 	return frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 

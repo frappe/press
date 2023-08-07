@@ -7,22 +7,34 @@
 				: `Invitation to join team: ${invitationToTeam}`
 		"
 	>
+		<template #logo v-if="saasProduct">
+			<div class="mx-auto flex flex-col items-center">
+				<img
+					class="mb-1"
+					v-if="saasProduct.logo"
+					:src="saasProduct.logo"
+					:alt="saasProduct.title"
+				/>
+				<div class="text-4xl font-semibold text-gray-900" v-else>
+					{{ saasProduct.title }}
+				</div>
+				<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
+			</div>
+		</template>
 		<form
 			class="flex flex-col"
 			@submit.prevent="$resources.setupAccount.submit()"
 		>
 			<div class="space-y-4">
-				<Input
+				<FormControl
 					v-if="oauthSignup == 0"
 					label="Email"
-					input-class="pointer-events-none"
 					type="text"
 					:modelValue="email"
-					autocomplete="off"
 					disabled
 				/>
 				<template v-if="oauthSignup == 0">
-					<Input
+					<FormControl
 						label="First Name"
 						type="text"
 						v-model="firstName"
@@ -30,7 +42,7 @@
 						autocomplete="given-name"
 						required
 					/>
-					<Input
+					<FormControl
 						label="Last Name"
 						type="text"
 						v-model="lastName"
@@ -38,7 +50,7 @@
 						autocomplete="family-name"
 						required
 					/>
-					<Input
+					<FormControl
 						label="Password"
 						type="password"
 						v-model="password"
@@ -47,37 +59,30 @@
 						required
 					/>
 				</template>
-				<Input
+				<FormControl
 					type="select"
 					:options="countries"
 					v-if="!isInvitation"
 					label="Country"
 					v-model="country"
-					:value="country"
 					required
 				/>
-				<div class="mt-4 flex">
-					<input
-						type="checkbox"
-						v-model="termsAccepted"
-						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-						required
-					/>
-					<label class="ml-1 text-sm text-gray-900">
-						By clicking on <span v-if="!isInvitation">Submit</span
-						><span v-else>Accept</span>, you accept our
-						<a href="https://frappecloud.com/terms" class="text-blue-600"
-							>Terms of Service</a
+				<div class="mt-4 flex items-start">
+					<label class="text-base text-gray-900">
+						<FormControl type="checkbox" v-model="termsAccepted" />
+						By clicking on
+						<span>{{ isInvitation ? 'Accept' : 'Submit' }}</span
+						>, you accept our
+						<Link href="https://frappecloud.com/terms" target="_blank"
+							>Terms of Service </Link
 						>,
-						<a href="https://frappecloud.com/privacy" class="text-blue-600"
-							>Privacy Policy</a
-						>
+						<Link href="https://frappecloud.com/privacy" target="_blank">
+							Privacy Policy
+						</Link>
 						&#38;
-						<a
-							href="https://frappecloud.com/cookie-policy"
-							class="text-blue-600"
-							>Cookie Policy</a
-						>
+						<Link href="https://frappecloud.com/cookie-policy" target="_blank">
+							Cookie Policy
+						</Link>
 					</label>
 				</div>
 			</div>
@@ -87,8 +92,7 @@
 				variant="solid"
 				:loading="$resources.setupAccount.loading"
 			>
-				<span v-if="!isInvitation"> Submit </span>
-				<span v-else> Accept </span>
+				{{ isInvitation ? 'Accept' : 'Create account' }}
 			</Button>
 		</form>
 	</LoginBox>
@@ -105,11 +109,15 @@
 
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
+import { FormControl } from 'frappe-ui';
+import Link from '@/components/Link.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
-		LoginBox
+		LoginBox,
+		FormControl,
+		Link
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -126,7 +134,8 @@ export default {
 			country: null,
 			termsAccepted: false,
 			invitedByParentTeam: false,
-			countries: []
+			countries: [],
+			saasProduct: null
 		};
 	},
 	resources: {
@@ -149,6 +158,7 @@ export default {
 						this.invitedByParentTeam = res.invited_by_parent_team;
 						this.oauthSignup = res.oauth_signup;
 						this.countries = res.countries;
+						this.saasProduct = res.saas_product;
 					}
 				}
 			};

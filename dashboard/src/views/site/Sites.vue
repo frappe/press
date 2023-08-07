@@ -26,6 +26,7 @@
 					</template>
 				</Alert>
 			</div>
+			<AlertBillingInformation class="mb-2" />
 			<div class="mb-2" v-if="showUnpaidInvoiceAlert">
 				<Alert
 					v-if="latestUnpaidInvoice.payment_mode === 'Prepaid Credits'"
@@ -96,21 +97,6 @@
 					<SiteList v-else :sites="sites" />
 				</div>
 			</div>
-			<Dialog
-				:options="{ title: 'Add card to create new sites' }"
-				v-model="showAddCardDialog"
-			>
-				<template v-slot:body-content>
-					<StripeCard
-						class="mb-1"
-						v-if="showAddCardDialog"
-						@complete="
-							showAddCardDialog = false;
-							$resources.paymentMethods.reload();
-						"
-					/>
-				</template>
-			</Dialog>
 		</div>
 	</div>
 </template>
@@ -118,6 +104,7 @@
 import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
 import PageHeader from '@/components/global/PageHeader.vue';
+import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
 	name: 'Sites',
@@ -129,13 +116,14 @@ export default {
 	props: ['bench'],
 	components: {
 		SiteList,
+		PageHeader,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		),
-		PageHeader
+		AlertBillingInformation
 	},
 	data() {
 		return {
@@ -145,7 +133,6 @@ export default {
 		};
 	},
 	resources: {
-		paymentMethods: 'press.api.billing.get_payment_methods',
 		allSites() {
 			return {
 				method: 'press.api.site.all',

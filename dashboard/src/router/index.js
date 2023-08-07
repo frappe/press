@@ -16,17 +16,21 @@ const routes = [
 		name: 'Home',
 		component: Home
 	},
-	{
-		path: '/welcome',
-		name: 'Welcome',
-		component: () => import('../views/onboarding/Welcome.vue')
-	},
 	...authRoutes,
 	...benchRoutes,
 	...siteRoutes,
 	...serverRoutes,
 	...marketplaceRoutes,
 	...spacesRoutes,
+	{
+		path: '/setup-site/:product',
+		name: 'App Site Setup',
+		component: () => import('../views/site/AppSiteSetup.vue'),
+		props: true,
+		meta: {
+			hideSidebar: true
+		}
+	},
 	billingRoute,
 	settingsRoute,
 	{
