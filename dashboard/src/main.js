@@ -9,10 +9,11 @@ import posthog from 'posthog-js';
 import { BrowserTracing } from '@sentry/tracing';
 import router from './router/index';
 import dayjs from 'dayjs';
-import { setConfig, frappeRequest } from 'frappe-ui';
+import { setConfig, frappeRequest, pageMetaPlugin } from 'frappe-ui';
 
 const app = createApp(App);
 setConfig('resourceFetcher', frappeRequest);
+app.use(pageMetaPlugin);
 
 registerPlugins(app);
 registerGlobalComponents(app);

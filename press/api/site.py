@@ -671,7 +671,7 @@ def get_sites(site_filter=""):
 
 	sites = frappe.db.sql(
 		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
+			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, s.cluster, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
@@ -682,6 +682,7 @@ def get_sites(site_filter=""):
 	)
 
 	for site in sites:
+		site.server_region_info = get_server_region_info(site)
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
@@ -1374,15 +1375,18 @@ def site_config(name):
 def update_config(name, config):
 	config = frappe.parse_json(config)
 	config = [frappe._dict(c) for c in config]
-	blacklisted_keys = get_client_blacklisted_keys()
 
 	sanitized_config = []
 	for c in config:
-		if c.key in blacklisted_keys:
+		if c.key in get_client_blacklisted_keys():
 			continue
+		if frappe.db.exists("Site Config Key", c.key):
+			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
 		if c.type == "Number":
 			c.value = flt(c.value)
-		elif c.type in ("JSON", "Boolean"):
+		elif c.type == "Boolean":
+			c.value = bool(c.value)
+		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		sanitized_config.append(c)
 

@@ -1,12 +1,37 @@
 <template>
 	<div>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[
+					{ label: 'Sites', route: '/sites' },
+					{
+						label: site?.host_name || site?.name,
+						route: `/sites/${site?.name}/overview`
+					}
+				]"
+			>
+				<template #actions>
+					<div>
+						<Dropdown :options="siteActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+						<Button
+							v-if="site?.status === 'Active'"
+							variant="solid"
+							icon-left="external-link"
+							label="Visit Site"
+							@click="$router.push(`/${this.site?.name}/new`)"
+						/>
+					</div>
+				</template>
+			</BreadCrumbs>
+		</header>
 		<div v-if="site">
-			<div class="pb-2">
-				<div class="text-base text-gray-700">
-					<router-link to="/sites" class="hover:text-gray-800">
-						← Back to Sites
-					</router-link>
-				</div>
+			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -46,42 +71,11 @@
 								<p>{{ regionInfo.title }}</p>
 							</div>
 						</div>
-
-						<!-- Only for mobile view -->
-						<Dropdown
-							v-if="siteActions.length > 0"
-							:options="siteActions"
-							right
-						>
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
-					</div>
-
-					<div class="hidden flex-row space-x-3 md:flex">
-						<Button
-							v-for="action in siteActions"
-							v-if="siteActions.length <= 2"
-							:key="action.label"
-							:icon-left="action.icon"
-							:loading="action.loading"
-							:route="action.route"
-							@click="action.handler"
-						>
-							{{ action.label }}
-						</Button>
-
-						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div>
+		<div class="p-5 pt-1">
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
@@ -257,10 +251,10 @@ export default {
 		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
-				let tab = ['Pending', 'Installing'].includes(this.site.status)
+				let tab = ['Pending', 'Installing'].includes(this.site?.status)
 					? 'jobs'
 					: 'overview';
-				this.$router.replace(`/sites/${this.site.name}/${tab}`);
+				this.$router.replace(`/sites/${this.site?.name}/${tab}`);
 			}
 		},
 		proceedWithLoginAsAdmin() {
@@ -293,11 +287,11 @@ export default {
 
 		siteActions() {
 			return [
-				['Active', 'Updating'].includes(this.site.status) && {
+				['Active', 'Updating'].includes(this.site?.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
 					onClick: () => {
-						window.open(`https://${this.site.name}`, '_blank');
+						window.open(`https://${this.site?.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
@@ -305,25 +299,25 @@ export default {
 					icon: 'external-link',
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
+							`${window.location.protocol}//${window.location.host}/app/site/${this.site?.name}`,
 							'_blank'
 						);
 					}
 				},
-				this.site.group && {
+				this.site?.group && {
 					label: 'Manage Bench',
 					icon: 'tool',
-					route: `/benches/${this.site.group}`,
+					route: `/benches/${this.site?.group}`,
 					onClick: () => {
-						this.$router.push(`/benches/${this.site.group}`);
+						this.$router.push(`/benches/${this.site?.group}`);
 					}
 				},
-				this.site.status == 'Active' && {
+				this.site?.status == 'Active' && {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
 					onClick: () => {
-						if (this.$account.team.name == this.site.notify_email) {
+						if (this.$account.team.name == this.site?.notify_email) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
 							});
@@ -336,16 +330,16 @@ export default {
 					label: 'Impersonate Team',
 					icon: 'tool',
 					onClick: async () => {
-						await this.$account.switchTeam(this.site.team);
+						await this.$account.switchTeam(this.site?.team);
 						this.$notify({
 							title: 'Switched Team',
-							message: `Switched to ${this.site.team}`,
+							message: `Switched to ${this.site?.team}`,
 							icon: 'check',
 							color: 'green'
 						});
 					}
 				},
-				this.site.status == 'Active' && {
+				this.site?.status == 'Active' && {
 					label: 'Transfer Site',
 					icon: 'tool',
 					loading: this.$resources.transferSite.loading,
@@ -373,7 +367,7 @@ export default {
 				{ label: 'Settings', route: 'setting' }
 			];
 
-			if (this.site && this.site.hide_config !== 1) {
+			if (this.site && this.site?.hide_config !== 1) {
 				siteConfig = 'Site Config';
 			}
 
@@ -420,7 +414,7 @@ export default {
 				]
 			};
 			if (this.site) {
-				let tabsToShow = tabsByStatus[this.site.status];
+				let tabsToShow = tabsByStatus[this.site?.status];
 				if (tabsToShow?.length) {
 					tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
 				}

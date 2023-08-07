@@ -163,5 +163,16 @@
   "modified": "2023-07-27 17:55:19.987419",
   "name": "performance-schema-consumer-events-waits-history-long",
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-08-03 14:20:47.702196",
+  "name": "expire_logs_days",
+  "skippable": 0
  }
 ]

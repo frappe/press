@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { utils } from '@/utils';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
@@ -19,10 +19,9 @@ const showPromotionalDialog = ref(false);
 const clickedPromotion = ref(null);
 const showBillingDialog = ref(false);
 
-const overview = useResource({
-	method: 'press.api.site.overview',
+const overview = createResource({
+	url: 'press.api.site.overview',
 	params: { name: props.site?.name },
-	keepData: true,
 	auto: true
 });
 
@@ -49,8 +48,8 @@ const trialEndsText = computed(() => {
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 
-const marketplacePromotionalBanners = useResource({
-	method: 'press.api.marketplace.get_promotional_banners',
+const marketplacePromotionalBanners =  createResource({
+	url: 'press.api.marketplace.get_promotional_banners',
 	auto: true
 });
 </script>

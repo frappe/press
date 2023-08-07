@@ -18,7 +18,6 @@
 						<router-view
 							v-slot="{ Component }"
 							class="w-full sm:mr-0"
-							:class="{ 'p-6 pb-8': $auth.isLoggedIn }"
 						>
 							<keep-alive
 								:include="[

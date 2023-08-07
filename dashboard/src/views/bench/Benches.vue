@@ -1,19 +1,22 @@
 <template>
 	<div>
-		<PageHeader title="Benches" subtitle="Private benches you own">
-			<template v-slot:actions>
-				<Button
-					variant="solid"
-					icon-left="plus"
-					class="ml-2"
-					@click="showBillingDialog"
-				>
-					New
-				</Button>
-			</template>
-		</PageHeader>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs :items="[{ label: 'Benches', route: '/benches' }]">
+				<template v-slot:actions>
+					<Button
+						variant="solid"
+						icon-left="plus"
+						label="Create"
+						class="ml-2"
+						@click="showBillingDialog"
+					/>
+				</template>
+			</BreadCrumbs>
+		</header>
 
-		<SectionHeader :heading="getBenchFilterHeading()">
+		<SectionHeader class="mx-5 mt-8" :heading="getBenchFilterHeading()">
 			<template #actions>
 				<Dropdown :options="benchFilterOptions()">
 					<template v-slot="{ open }">
@@ -31,7 +34,7 @@
 			</template>
 		</SectionHeader>
 
-		<div class="mt-3">
+		<div class="mt-3 mx-5">
 			<LoadingText v-if="$resources.allBenches.loading" />
 			<BenchList v-else :benches="benches" />
 		</div>

@@ -42,18 +42,10 @@
 							class="col-span-2"
 							@change="isDirty = true"
 						/>
-						<Input
-							type="select"
-							placeholder="type"
-							v-model="config.type"
-							:options="['String', 'Number', 'JSON', 'Boolean']"
-							@change="onTypeChange(config)"
-						/>
 						<div class="col-span-2 flex items-center">
 							<Input
+								type="text"
 								class="w-full"
-								v-bind="configInputProps(config)"
-								:input-class="{ 'font-mono': config.type === 'JSON' }"
 								placeholder="value"
 								v-model="config.value"
 								@change="isDirty = true"
@@ -103,8 +95,7 @@ export default {
 		'subtitle',
 		'configName',
 		'configData',
-		'updateConfigMethod',
-		'standardConfigKeys'
+		'updateConfigMethod'
 	],
 	data() {
 		return {
@@ -117,15 +108,20 @@ export default {
 			return this.configData();
 		},
 		updateConfig() {
-			const updatedConfig = this.$resources.configData.data.map(d => {
-				let value = d.value;
-				if (d.type === 'Number') {
-					value = Number(d.value);
-				} else if (d.type == 'JSON') {
-					try {
-						value = JSON.parse(d.value || '{}');
-					} catch (error) {}
+			function isValidJSON(str) {
+				try {
+					JSON.parse(str);
+					return true;
+				} catch (e) {
+					return false;
 				}
+			}
+			const updatedConfig = this.$resources.configData.data.map(d => {
+				const value = d.value;
+				if (!isNaN(value)) d.type = 'Number';
+				else if (isValidJSON(value)) d.type = 'JSON';
+				else d.type = 'String';
+
 				return {
 					key: d.key,
 					value,
@@ -216,18 +212,6 @@ export default {
 		}
 	},
 	methods: {
-		configInputProps(config) {
-			let type = {
-				String: 'text',
-				Number: 'number',
-				JSON: 'textarea',
-				Boolean: 'select'
-			}[config.type];
-			return {
-				type,
-				options: config.type === 'Boolean' ? ['1', '0'] : null
-			};
-		},
 		addConfig() {
 			this.$resources.configData.data.push({
 				key: '',
@@ -247,15 +231,6 @@ export default {
 			} else {
 				this.editMode = false;
 				this.isDirty = false;
-			}
-		},
-		onTypeChange(config) {
-			if (config.type === 'Boolean') {
-				config.value = '1';
-			} else if (config.type === 'Number') {
-				config.value = Number(config.value) || 0;
-			} else if (config.type === 'String') {
-				config.value = String(config.value);
 			}
 		}
 	}

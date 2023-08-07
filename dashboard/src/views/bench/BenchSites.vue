@@ -1,12 +1,16 @@
 <template>
 	<div class="space-y-8">
-		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
-			<h3 class="mb-3 text-base font-semibold text-gray-800">
-				{{ groupedSite.releaseGroup }}
+		<div v-for="bench in $resources.benchesWithSites.data" :key="bench.bench">
+			<h3 class="mb-1.5 text-base font-semibold text-gray-800">
+				{{ bench.bench }}
 			</h3>
+			<div class="mb-5 text-sm text-gray-500">
+				Deployed on
+				{{ formatDate(bench.deployed_on, 'DATETIME_SHORT', true) }}
+			</div>
 			<div class="grid grid-cols-4 gap-4">
 				<SiteCard
-					v-for="site in groupedSite.sites"
+					v-for="site in bench.sites"
 					:key="site.name"
 					:site="site"
 					:dropdownItems="dropdownItems"
@@ -44,15 +48,8 @@ import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteCard from '@/components/SiteCard.vue';
 
 export default {
-	name: 'SiteList',
-	props: {
-		sites: {
-			default: []
-		},
-		showBenchInfo: {
-			default: true
-		}
-	},
+	name: 'SitesList',
+	props: ['bench'],
 	components: {
 		SiteCard
 	},
@@ -65,6 +62,15 @@ export default {
 		};
 	},
 	resources: {
+		benchesWithSites() {
+			return {
+				method: 'press.api.bench.benches_with_sites',
+				params: {
+					name: this.bench?.name
+				},
+				auto: true
+			};
+		},
 		loginAsAdmin() {
 			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
 		}
@@ -107,19 +113,6 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
-		}
-	},
-	computed: {
-		groupedSites() {
-			return this.sites.reduce((acc, curr) => {
-				const { title } = curr;
-				const existingGroup = acc.find(group => group.releaseGroup === title);
-
-				if (existingGroup) existingGroup.sites.push(curr);
-				else acc.push({ releaseGroup: title, sites: [curr] });
-
-				return acc;
-			}, []);
 		}
 	}
 };

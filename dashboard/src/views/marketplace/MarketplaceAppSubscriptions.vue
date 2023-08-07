@@ -1,12 +1,12 @@
 <script setup>
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 
 const props = defineProps({
 	app: Object
 });
 
-const appSubscriptions = useResource({
-	method: 'press.api.marketplace.get_subscriptions_list',
+const appSubscriptions = createResource({
+	url: 'press.api.marketplace.get_subscriptions_list',
 	params: {
 		marketplace_app: props.app?.name
 	},

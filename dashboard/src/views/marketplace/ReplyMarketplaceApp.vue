@@ -1,6 +1,6 @@
 <script setup>
 import { reactive } from 'vue';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 
 const props = defineProps({
 	marketplaceApp: String,
@@ -17,8 +17,8 @@ const reply = reactive({
 	reply: ''
 });
 
-const submitReply = useResource({
-	method: 'press.api.marketplace.submit_developer_reply',
+const submitReply = createResource({
+	url: 'press.api.marketplace.submit_developer_reply',
 	validate() {
 		if (!reply.reply) {
 			return 'Reply cannot be empty';
