@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:peer_name",
+ "creation": "2023-08-07 17:54:33.377864",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "peer_name",
+  "status",
+  "peer_ip",
+  "peer_subnet",
+  "column_break_bsvs",
+  "private_key",
+  "public_key",
+  "allowed_ips",
+  "setup_wireguard",
+  "upstream_server"
+ ],
+ "fields": [
+  {
+   "fieldname": "peer_name",
+   "fieldtype": "Data",
+   "label": "Peer Name",
+   "unique": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nBroken\nArchived"
+  },
+  {
+   "fieldname": "peer_ip",
+   "fieldtype": "Data",
+   "label": "Peer IP"
+  },
+  {
+   "fieldname": "peer_subnet",
+   "fieldtype": "Data",
+   "label": "Peer Subnet",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bsvs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "private_key",
+   "fieldtype": "Password",
+   "label": "Private Key"
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Password",
+   "label": "Public Key"
+  },
+  {
+   "description": "Comma Seperated CIDR blocks. EG: 10.122.0.0/20,10.7.0.1/32",
+   "fieldname": "allowed_ips",
+   "fieldtype": "Data",
+   "label": "Allowed IPs"
+  },
+  {
+   "default": "0",
+   "fieldname": "setup_wireguard",
+   "fieldtype": "Check",
+   "label": "Setup Wireguard"
+  },
+  {
+   "fieldname": "upstream_server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Upstream Server",
+   "mandatory_depends_on": "eval:doc.setup_wireguard",
+   "options": "Proxy Server",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-08-07 17:59:13.251144",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Wireguard Peer",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
