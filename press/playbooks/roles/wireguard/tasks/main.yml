@@ -1,0 +1,23 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Wireguard
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - wireguard
+    - wireguard-tools
+
+- name: Generate Wireguard Private Key
+  shell: |
+    wg genkey | sudo tee /etc/wireguard/private.key
+  register: wg_private_key
+
+- name: Generate Wireguard Public Key
+  shell: |
+    echo "{{ wg_private_key.stdout }}" | wg pubkey | sudo tee /etc/wireguard/public.key
+  register: wg_public_key
+
