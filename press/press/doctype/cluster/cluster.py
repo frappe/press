@@ -12,16 +12,18 @@ from frappe.model.document import Document
 
 from press.utils import unique
 
-server_doctypes = [
-	{"Proxy Server": "n"},
-	{"Server": "f"},
-	{"Database Server": "m"},
-	{"Monitor Server": "p"},
-	{"Log Server": "e"},
-]
-
 
 class Cluster(Document):
+	base_doctypes = {
+		"Proxy Server": "n",
+		"Server": "f",
+		"Database Server": "m",
+	}
+	private_doctypes = {
+		"Monitor Server": "p",
+		"Log Server": "e",
+	}
+
 	def validate(self):
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
@@ -29,6 +31,7 @@ class Cluster(Document):
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
+			self.create_virtual_machine_images()
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -252,14 +255,17 @@ class Cluster(Document):
 			return None
 		return images[0]
 
-	def create_server_vmis(self):
+	def create_virtual_machine_images(self):
+		server_doctypes = {**self.base_doctypes}
+		if not self.public:
+			server_doctypes = {**server_doctypes, **self.private_doctypes}
 		for doctype, series in server_doctypes.items():
 			last_vmi = frappe.get_doc(
 				"Virtual Machine Image", {"series": series}, order_by="creation desc"
 			)
-			frappe.new_doc(
-				"Virtual Machine Image",
+			frappe.get_doc(
 				{
+					"doctype": "Virtual Machine Image",
 					"cluster": self.name,
 					"copied_from": last_vmi.name,
 				},
