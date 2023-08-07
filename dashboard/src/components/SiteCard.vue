@@ -5,7 +5,7 @@
 	>
 		<div class="space-y-2">
 			<div class="flex items-center justify-center">
-				<div class="w-full truncate text-lg" :title="site.name">
+				<div class="w-full truncate text-lg mr-2" :title="site.name">
 					{{ site.name }}
 				</div>
 				<div>
