@@ -23,15 +23,15 @@
 							<Button
 								v-if="site?.status === 'Active'"
 								variant="solid"
-								icon-left="plus"
-								label="New Site"
-								@click="$router.push(`/${this.bench.name}/new`)"
+								icon-left="external-link"
+								label="Visit Site"
+								@click="$router.push(`/${this.site.name}/new`)"
 							/>
 						</div>
 					</template>
 				</BreadCrumbs>
 			</header>
-			<div class="pb-2">
+			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -71,42 +71,11 @@
 								<p>{{ regionInfo.title }}</p>
 							</div>
 						</div>
-
-						<!-- Only for mobile view -->
-						<Dropdown
-							v-if="siteActions.length > 0"
-							:options="siteActions"
-							right
-						>
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
-					</div>
-
-					<div class="hidden flex-row space-x-3 md:flex">
-						<Button
-							v-for="action in siteActions"
-							v-if="siteActions.length <= 2"
-							:key="action.label"
-							:icon-left="action.icon"
-							:loading="action.loading"
-							:route="action.route"
-							@click="action.handler"
-						>
-							{{ action.label }}
-						</Button>
-
-						<Dropdown v-if="siteActions.length > 2" :options="siteActions">
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div>
+		<div class="p-5 pt-1">
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
