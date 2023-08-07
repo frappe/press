@@ -18,50 +18,54 @@
 				</BreadCrumbs>
 			</header>
 
-			<div class="mb-2" v-if="!$account.team.enabled">
-				<Alert title="Your account is disabled">
-					Enable your account to start creating sites
-					<template #actions>
-						<Button variant="solid" route="/settings"> Enable Account </Button>
-					</template>
-				</Alert>
-			</div>
-			<AlertBillingInformation class="mb-2" />
-			<div class="mb-2" v-if="showUnpaidInvoiceAlert">
-				<Alert
-					v-if="latestUnpaidInvoice.payment_mode === 'Prepaid Credits'"
-					title="Your last invoice payment has failed."
-				>
-					Please add
-					<strong>
-						{{ latestUnpaidInvoice.currency }}
-						{{ latestUnpaidInvoice.amount_due }}
-					</strong>
-					more in credits.
-					<template #actions>
-						<Button @click="showPrepaidCreditsDialog = true" variant="solid">
-							Add Credits
-						</Button>
-					</template>
-				</Alert>
+			<div class="mt-5 space-y-2 px-5">
+				<div v-if="!$account.team.enabled">
+					<Alert title="Your account is disabled">
+						Enable your account to start creating sites
+						<template #actions>
+							<Button variant="solid" route="/settings">
+								Enable Account
+							</Button>
+						</template>
+					</Alert>
+				</div>
+				<AlertBillingInformation />
+				<template v-if="showUnpaidInvoiceAlert">
+					<Alert
+						v-if="latestUnpaidInvoice.payment_mode === 'Prepaid Credits'"
+						title="Your last invoice payment has failed."
+					>
+						Please add
+						<strong>
+							{{ latestUnpaidInvoice.currency }}
+							{{ latestUnpaidInvoice.amount_due }}
+						</strong>
+						more in credits.
+						<template #actions>
+							<Button @click="showPrepaidCreditsDialog = true" variant="solid">
+								Add Credits
+							</Button>
+						</template>
+					</Alert>
 
-				<Alert v-else title="Your last invoice payment has failed.">
-					Pay now for uninterrupted services.
-					<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
-						<router-link
-							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
-						>
-							<Button variant="solid"> Go to Billing </Button>
-						</router-link>
-					</template>
-				</Alert>
+					<Alert v-else title="Your last invoice payment has failed.">
+						Pay now for uninterrupted services.
+						<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
+							<router-link
+								:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
+							>
+								<Button variant="solid"> Go to Billing </Button>
+							</router-link>
+						</template>
+					</Alert>
 
-				<PrepaidCreditsDialog
-					v-if="showPrepaidCreditsDialog"
-					v-model:show="showPrepaidCreditsDialog"
-					:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
-					@success="handleAddPrepaidCreditsSuccess"
-				/>
+					<PrepaidCreditsDialog
+						v-if="showPrepaidCreditsDialog"
+						v-model:show="showPrepaidCreditsDialog"
+						:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
+						@success="handleAddPrepaidCreditsSuccess"
+					/>
+				</template>
 			</div>
 
 			<!-- <div v-if="recentSitesVisible" class="mb-6">

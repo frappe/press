@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, defineAsyncComponent } from 'vue';
 import { utils } from '@/utils';
 import { createResource } from 'frappe-ui';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
