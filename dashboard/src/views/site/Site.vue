@@ -7,7 +7,7 @@
 				:items="[
 					{ label: 'Sites', route: '/sites' },
 					{
-						label: site.host_name || site.name,
+						label: site?.host_name || site?.name,
 						route: `/sites/${site?.name}/overview`
 					}
 				]"
@@ -24,7 +24,7 @@
 							variant="solid"
 							icon-left="external-link"
 							label="Visit Site"
-							@click="$router.push(`/${this.site.name}/new`)"
+							@click="$router.push(`/${this.site?.name}/new`)"
 						/>
 					</div>
 				</template>
@@ -251,10 +251,10 @@ export default {
 		},
 		routeToGeneral() {
 			if (this.$route.matched.length === 1) {
-				let tab = ['Pending', 'Installing'].includes(this.site.status)
+				let tab = ['Pending', 'Installing'].includes(this.site?.status)
 					? 'jobs'
 					: 'overview';
-				this.$router.replace(`/sites/${this.site.name}/${tab}`);
+				this.$router.replace(`/sites/${this.site?.name}/${tab}`);
 			}
 		},
 		proceedWithLoginAsAdmin() {
@@ -287,11 +287,11 @@ export default {
 
 		siteActions() {
 			return [
-				['Active', 'Updating'].includes(this.site.status) && {
+				['Active', 'Updating'].includes(this.site?.status) && {
 					label: 'Visit Site',
 					icon: 'external-link',
 					onClick: () => {
-						window.open(`https://${this.site.name}`, '_blank');
+						window.open(`https://${this.site?.name}`, '_blank');
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
@@ -299,25 +299,25 @@ export default {
 					icon: 'external-link',
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/site/${this.site.name}`,
+							`${window.location.protocol}//${window.location.host}/app/site/${this.site?.name}`,
 							'_blank'
 						);
 					}
 				},
-				this.site.group && {
+				this.site?.group && {
 					label: 'Manage Bench',
 					icon: 'tool',
-					route: `/benches/${this.site.group}`,
+					route: `/benches/${this.site?.group}`,
 					onClick: () => {
-						this.$router.push(`/benches/${this.site.group}`);
+						this.$router.push(`/benches/${this.site?.group}`);
 					}
 				},
-				this.site.status == 'Active' && {
+				this.site?.status == 'Active' && {
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
 					onClick: () => {
-						if (this.$account.team.name == this.site.notify_email) {
+						if (this.$account.team.name == this.site?.notify_email) {
 							return this.$resources.loginAsAdmin.submit({
 								name: this.siteName
 							});
@@ -330,16 +330,16 @@ export default {
 					label: 'Impersonate Team',
 					icon: 'tool',
 					onClick: async () => {
-						await this.$account.switchTeam(this.site.team);
+						await this.$account.switchTeam(this.site?.team);
 						this.$notify({
 							title: 'Switched Team',
-							message: `Switched to ${this.site.team}`,
+							message: `Switched to ${this.site?.team}`,
 							icon: 'check',
 							color: 'green'
 						});
 					}
 				},
-				this.site.status == 'Active' && {
+				this.site?.status == 'Active' && {
 					label: 'Transfer Site',
 					icon: 'tool',
 					loading: this.$resources.transferSite.loading,
@@ -367,7 +367,7 @@ export default {
 				{ label: 'Settings', route: 'setting' }
 			];
 
-			if (this.site && this.site.hide_config !== 1) {
+			if (this.site && this.site?.hide_config !== 1) {
 				siteConfig = 'Site Config';
 			}
 
@@ -414,7 +414,7 @@ export default {
 				]
 			};
 			if (this.site) {
-				let tabsToShow = tabsByStatus[this.site.status];
+				let tabsToShow = tabsByStatus[this.site?.status];
 				if (tabsToShow?.length) {
 					tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
 				}

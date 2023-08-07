@@ -5,7 +5,7 @@ from frappe.core.doctype.user.user import test_password_strength
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
-from press.utils import log_error
+from press.utils import get_current_team, log_error
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -416,3 +416,42 @@ def get_site_url_and_sid(key, app=None):
 		"url": f"https://{site.name}",
 		"sid": site.login(),
 	}
+
+@frappe.whitelist()
+def get_saas_product_info(product=None):
+	team = get_current_team()
+	product = frappe.utils.cstr(product)
+	site_request = frappe.db.get_value("SaaS Product Site Request",
+		filters={
+			"saas_product": product,
+			"team": team,
+			"status": ("in", ["Pending", "Wait for Site"])
+		},
+		fieldname=["name", "status", "site"],
+		as_dict=1
+	)
+	if site_request:
+		saas_product = frappe.db.get_value("SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True)
+		return {
+			"title": saas_product.title,
+			"logo": saas_product.logo,
+			"domain": saas_product.domain,
+			"site_request": site_request
+		}
+
+@frappe.whitelist()
+def create_site(subdomain, site_request):
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return site_request_doc.create_site(subdomain)
+
+@frappe.whitelist()
+def get_site_progress(site_request):
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return site_request_doc.get_progress()
+
+@frappe.whitelist()
+def login_to_site(site_request):
+	from press.api.site import login
+
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return login(site_request_doc.site)

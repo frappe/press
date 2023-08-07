@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, defineAsyncComponent } from 'vue';
 import { utils } from '@/utils';
 import { createResource } from 'frappe-ui';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
@@ -10,9 +10,14 @@ import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 import SiteActivity from './SiteActivity.vue';
 
+const BillingInformationDialog = defineAsyncComponent(() =>
+	import('@/components/BillingInformationDialog.vue')
+);
+
 const props = defineProps({ site: Object });
 const showPromotionalDialog = ref(false);
 const clickedPromotion = ref(null);
+const showBillingDialog = ref(false);
 
 const overview = createResource({
 	url: 'press.api.site.overview',
@@ -88,7 +93,11 @@ const marketplacePromotionalBanners =  createResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button class="whitespace-nowrap" route="/welcome" variant="solid">
+				<Button
+					class="whitespace-nowrap"
+					@click="showBillingDialog = true"
+					variant="solid"
+				>
 					Add Billing Information
 				</Button>
 			</template>
@@ -156,5 +165,10 @@ const marketplacePromotionalBanners =  createResource({
 				</div>
 			</template>
 		</Dialog>
+
+		<BillingInformationDialog
+			v-model="showBillingDialog"
+			v-if="showBillingDialog"
+		/>
 	</div>
 </template>
