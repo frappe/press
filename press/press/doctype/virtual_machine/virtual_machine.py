@@ -27,7 +27,7 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m"].index(self.series)
+				offset = ["f", "m", "c"].index(self.series)
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
@@ -335,6 +335,19 @@ class VirtualMachine(Document):
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
+
+	@frappe.whitelist()
+	def create_node(self):
+		document = {
+			"doctype": "Node",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+		}
+
+		return frappe.get_doc(document).insert()
 
 	@frappe.whitelist()
 	def create_server(self):

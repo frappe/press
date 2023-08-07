@@ -22,6 +22,7 @@ frappe.ui.form.on('Virtual Machine', {
 			],
 			[__('Create Image'), 'create_image', frm.doc.status == 'Stopped'],
 			[__('Create Snapshots'), 'create_snapshots', frm.doc.status == 'Running'],
+			[__('Create Node'), 'create_node', frm.doc.series === 'c'],
 			[__('Create Server'), 'create_server', frm.doc.series === 'f'],
 			[
 				__('Create Database Server'),
