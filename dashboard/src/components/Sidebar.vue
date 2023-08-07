@@ -4,15 +4,14 @@
 			<Dropdown :options="dropdownItems">
 				<template v-slot="{ open }">
 					<div
-						class="mb-2 flex w-[15rem] cursor-pointer items-center gap-2 rounded-md px-1 py-2"
-						:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
+						class="flex w-[15rem] cursor-pointer items-center gap-2 rounded-md px-2 py-2"
+						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<FrappeCloudLogo />
 						<div>
-							<h3 class="text-base font-semibold">Frappe Cloud</h3>
+							<FrappeCloudLogo class="h-5" />
 							<p
 								v-if="$account.user"
-								class="mt-1 break-all text-xs text-gray-600"
+								class="mt-1 break-all text-sm text-gray-600"
 							>
 								{{ $account.user.full_name }}
 							</p>
@@ -24,8 +23,11 @@
 					</div>
 				</template>
 			</Dropdown>
-			<div class="flex flex-col space-y-0.5">
-				<button class="rounded text-gray-900 hover:bg-gray-100" @click="show = true">
+			<div class="mt-2 flex flex-col space-y-0.5">
+				<button
+					class="rounded text-gray-900 hover:bg-gray-100"
+					@click="show = true"
+				>
 					<div class="flex w-full items-center px-2 py-1">
 						<span class="mr-1.5">
 							<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
@@ -71,7 +73,7 @@
 <script>
 import { FCIcons } from '@/components/icons';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
-import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 
 export default {

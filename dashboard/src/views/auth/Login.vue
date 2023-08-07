@@ -4,7 +4,7 @@
 		:title="!forgot ? 'Log in to your account' : 'Reset your password'"
 	>
 		<form class="flex flex-col" @submit.prevent="login">
-			<Input
+			<FormControl
 				label="Email"
 				placeholder="johndoe@mail.com"
 				v-model="email"
@@ -13,7 +13,7 @@
 				:type="email !== 'Administrator' ? 'email' : 'text'"
 				required
 			/>
-			<Input
+			<FormControl
 				class="mt-4"
 				v-if="!forgot"
 				label="Password"
@@ -28,7 +28,7 @@
 				<router-link v-if="forgot" to="/login">
 					I remember my password
 				</router-link>
-				<router-link v-else to="/login/forgot"> Forgot Password </router-link>
+				<router-link v-else to="/login/forgot"> Forgot Password? </router-link>
 			</div>
 			<ErrorMessage :message="errorMessage" class="mt-4" />
 			<Button
@@ -37,7 +37,7 @@
 				@click="loginOrResetPassword"
 				variant="solid"
 			>
-				Submit
+				{{ !forgot ? 'Log in with email' : 'Reset Password' }}
 			</Button>
 			<template v-if="!forgot">
 				<div class="mt-10 border-t text-center">
@@ -71,7 +71,7 @@
 					<span class="ml-2">Login with Google</span>
 				</div>
 			</Button>
-			<router-link class="text-center text-base mt-4" to="/signup">
+			<router-link class="mt-4 text-center text-base" to="/signup">
 				Sign up for a new account
 			</router-link>
 		</div>
@@ -88,6 +88,7 @@
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
+import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'Login',
@@ -98,7 +99,8 @@ export default {
 	},
 	components: {
 		LoginBox,
-		GoogleIcon
+		GoogleIcon,
+		FormControl
 	},
 	data() {
 		return {
