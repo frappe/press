@@ -25,7 +25,7 @@
 				</template>
 			</Dropdown>
 			<div class="flex flex-col space-y-0.5">
-				<button class="rounded text-gray-800" @click="show = true">
+				<button class="rounded text-gray-900 hover:bg-gray-100" @click="show = true">
 					<div class="flex w-full items-center px-2 py-1">
 						<span class="mr-1.5">
 							<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
