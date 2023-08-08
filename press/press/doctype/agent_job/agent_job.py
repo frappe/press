@@ -342,7 +342,7 @@ def process_job_updates(job_name):
 			process_add_ssh_user_job_update,
 			process_remove_ssh_user_job_update,
 		)
-		from press.press.doctype.container.container import (
+		from press.infrastructure.doctype.container.container import (
 			process_archive_container_job_update,
 			process_new_container_job_update,
 		)
