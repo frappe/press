@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import Optional
 import frappe
 from frappe.model.document import Document
 from frappe.core.utils import find
@@ -9,6 +10,8 @@ import boto3
 
 
 class VirtualMachineImage(Document):
+	DOCTYPE = "Virtual Machine Image"
+
 	def after_insert(self):
 		self.set_credentials()
 		if self.copied_from:
@@ -57,7 +60,7 @@ class VirtualMachineImage(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def copy_image(self, cluster):
+	def copy_image(self, cluster: str):
 		image = frappe.copy_doc(self)
 		image.copied_from = self.name
 		image.cluster = cluster
@@ -86,3 +89,24 @@ class VirtualMachineImage(Document):
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
+
+	@classmethod
+	def get_available(
+		cls, region: Optional[str] = None, series: Optional[str] = None
+	) -> Optional[str]:
+		images = frappe.qb.DocType(cls.DOCTYPE)
+		get_available_images = (
+			frappe.qb.from_(images)
+			.select("name")
+			.where(
+				images.status == "Available",
+			)
+		)
+		if series:
+			get_available_images = get_available_images.where(images.series == series)
+		if region:
+			get_available_images = get_available_images.where(images.region == region)
+		available_images = get_available_images.run(as_dict=True)
+		if not available_images:
+			return None
+		return available_images[0].name

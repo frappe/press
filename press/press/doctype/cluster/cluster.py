@@ -9,17 +9,20 @@ from typing import Dict, List, Optional
 import boto3
 import frappe
 from frappe.model.document import Document
+from press.press.doctype.virtual_machine_image.virtual_machine_image import (
+	VirtualMachineImage,
+)
 
 from press.utils import unique
 
 
 class Cluster(Document):
-	base_doctypes = {
+	base_servers = {
 		"Proxy Server": "n",
 		"Server": "f",
 		"Database Server": "m",
 	}
-	private_doctypes = {
+	private_servers = {
 		"Monitor Server": "p",
 		"Log Server": "e",
 	}
@@ -31,7 +34,7 @@ class Cluster(Document):
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
-			self.create_virtual_machine_images()
+			self.copy_virtual_machine_images()
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -246,30 +249,21 @@ class Cluster(Document):
 		)
 
 	def get_available_vmi(self, series) -> Optional[str]:
-		images = frappe.get_all(
-			"Virtual Machine Image",
-			{"status": "Available", "series": series, "cluster": self.name},
-			pluck="name",
-		)
-		if not images:
-			return None
-		return images[0]
+		return VirtualMachineImage.get_available(self.region, series)
 
-	def create_virtual_machine_images(self):
-		server_doctypes = {**self.base_doctypes}
+	def copy_virtual_machine_images(self):
+		"""Creates VMIs required for the cluster"""
+		server_doctypes = {**self.base_servers}
 		if not self.public:
-			server_doctypes = {**server_doctypes, **self.private_doctypes}
+			server_doctypes = {**server_doctypes, **self.private_servers}
 		for doctype, series in server_doctypes.items():
-			last_vmi = frappe.get_doc(
-				"Virtual Machine Image", {"series": series}, order_by="creation desc"
-			)
-			frappe.get_doc(
-				{
-					"doctype": "Virtual Machine Image",
-					"cluster": self.name,
-					"copied_from": last_vmi.name,
-				},
-			)
+			same_region_vmi = self.get_available_vmi(series=series)
+			if same_region_vmi:
+				continue
+			other_region_vmi = VirtualMachineImage.get_available(series=series)
+			if not other_region_vmi:
+				continue
+			frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
 
 	@classmethod
 	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
