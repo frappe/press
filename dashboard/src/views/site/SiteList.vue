@@ -24,11 +24,15 @@
 				</div>
 				<div class="w-2/12">
 					<img
+						v-if="site.server_region_info.image"
 						class="h-4"
 						:src="site.server_region_info.image"
 						:alt="`Flag of ${site.server_region_info.title}`"
 						:title="site.server_region_info.image"
 					/>
+					<span class="text-base text-gray-700" v-else>
+						{{ site.server_region_info.title }}
+					</span>
 				</div>
 				<div class="w-1/12">
 					<div class="text-base text-gray-700">
