@@ -1,0 +1,66 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:33:57.631284",
+  "name": "ap-south-1",
+  "provider": "AWS EC2",
+  "region_name": "ap-south-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:06.958325",
+  "name": "eu-west-2",
+  "provider": "AWS EC2",
+  "region_name": "eu-west-2"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:15.834702",
+  "name": "eu-central-2",
+  "provider": "AWS EC2",
+  "region_name": "eu-central-2"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:23.204769",
+  "name": "ap-southeast-1",
+  "provider": "AWS EC2",
+  "region_name": "ap-southeast-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:33.152010",
+  "name": "eu-central-1",
+  "provider": "AWS EC2",
+  "region_name": "eu-central-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:40.385001",
+  "name": "me-south-1",
+  "provider": "AWS EC2",
+  "region_name": "me-south-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:53.773228",
+  "name": "af-south-1",
+  "provider": "AWS EC2",
+  "region_name": "af-south-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:59.528123",
+  "name": "us-east-1",
+  "provider": "AWS EC2",
+  "region_name": "us-east-1"
+ }
+]
