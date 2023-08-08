@@ -1,5 +1,5 @@
 <template>
-	<div class="font-sans text-gray-900 antialiased">
+	<div class="text-gray-900 antialiased">
 		<div class="flex h-screen overflow-hidden">
 			<div
 				class="flex flex-1 overflow-y-auto"
@@ -15,10 +15,7 @@
 							class="sticky top-0 hidden w-64 flex-shrink-0 sm:flex"
 							v-if="$auth.isLoggedIn && !$route.meta.hideSidebar"
 						/>
-						<router-view
-							v-slot="{ Component }"
-							class="w-full sm:mr-0"
-						>
+						<router-view v-slot="{ Component }" class="w-full sm:mr-0">
 							<keep-alive
 								:include="[
 									'Sites',
