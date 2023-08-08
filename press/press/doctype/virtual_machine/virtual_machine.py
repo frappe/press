@@ -138,7 +138,7 @@ class VirtualMachine(Document):
 		return init
 
 	def get_server(self):
-		for doctype in ["Server", "Database Server"]:
+		for doctype in ["Proxy Server", "Server", "Database Server"]:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)

@@ -154,53 +154,18 @@ def new(server):
 	db_image = cluster.get_available_vmi("m")
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
-	db_machine = frappe.get_doc(
-		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster.name,
-			"domain": domain,
-			"series": "m",
-			"disk_size": db_plan.disk,
-			"machine_type": db_plan.instance_type,
-			"virtual_machine_image": db_image,
-			"team": team.name,
-		}
-	).insert()
-	db_server = db_machine.create_database_server()
-	db_server.plan = db_plan.name
-	db_server.title = f"{server['title']} - Database"
-	db_server.save()
-	db_server.create_subscription(db_plan.name)
-	db_server.run_press_job("Create Server")
+	db_server, job = cluster.create_server(
+		"Database Server", server["title"], domain, db_plan, db_image, team.name
+	)
 
-	proxy_server = frappe.get_all(
-		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
-	)[0]
+	# proxy_server = frappe.get_all(
+	# 	"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
+	# )[0]
 
 	app_plan = frappe.get_doc("Plan", server["app_plan"])
-	app_machine = frappe.get_doc(
-		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster.name,
-			"domain": domain,
-			"series": "f",
-			"disk_size": app_plan.disk,
-			"machine_type": app_plan.instance_type,
-			"virtual_machine_image": app_image,
-			"team": team.name,
-		}
-	).insert()
-	app_server = app_machine.create_server()
-	app_server.plan = app_plan.name
-	app_server.ram = app_plan.memory
-	app_server.new_worker_allocation = True
-	app_server.database_server = db_server.name
-	app_server.proxy_server = proxy_server.name
-	app_server.title = f"{server['title']} - Application"
-	app_server.save()
-	app_server.create_subscription(app_plan.name)
-
-	job = app_server.run_press_job("Create Server")
+	app_server, job = cluster.create_server(
+		"Server", server["title"], domain, app_plan, app_image, team.name
+	)
 
 	return {"server": app_server.name, "job": job.name}
 

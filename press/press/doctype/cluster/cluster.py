@@ -13,7 +13,12 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
 
-from press.utils import unique
+from press.utils import get_current_team, unique
+
+import typing
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.plan.plan import Plan
 
 
 class Cluster(Document):
@@ -35,6 +40,7 @@ class Cluster(Document):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
 			self.copy_virtual_machine_images()
+			self.create_servers()
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -264,6 +270,63 @@ class Cluster(Document):
 			if not other_region_vmi:
 				continue
 			frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
+
+	def create_servers(self):
+		"""Creates servers for the cluster"""
+		for doctype, series in self.base_servers.items():
+			self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series=series))
+		if not self.public:
+			return NotImplementedError
+			for doctype, series in self.private_servers.items():
+				self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series))
+
+	def create_server(
+		self,
+		doctype: str,
+		title: str,
+		vm_image: str,
+		domain: str = None,
+		plan: "Plan" = None,
+		team: str = None,
+	):
+		"""Creates a server for the cluster"""
+		domain = domain or frappe.db.get_value(
+			"Root Domain", {"default_cluster": "Default"}, "name"
+		)
+		server_series = {**self.base_servers, **self.private_servers}
+		team = team or get_current_team()
+		vm = frappe.get_doc(
+			{
+				"doctype": "Virtual Machine",
+				"cluster": self.name,
+				"domain": domain,
+				"series": server_series[doctype],
+				"disk_size": 8,
+				"machine_type": "t2.micro",
+				"virtual_machine_image": vm_image,
+				"team": team,
+			},
+		).insert()
+		server = None
+		if doctype == "Database Server":
+			server = vm.create_database_server()
+			server.title = f"{title} - Database"
+		elif doctype == "Server":
+			server = vm.create_server()
+			server.title = f"{title} - Application"
+			# server.ram = app_plan.memory
+			# app_server.database_server = db_server.name
+			# app_server.proxy_server = proxy_server.name
+			server.new_worker_allocation = True
+		# server.plan = plan.name
+		# server.create_subscription(plan.name)
+		elif doctype == "Proxy Server":
+			server = vm.create_proxy_server()
+			server.title = f"{title} - Proxy"
+		server.save()
+		job = server.run_press_job("Create Server")
+
+		return server, job
 
 	@classmethod
 	def get_all_for_new_bench(cls, extra_filters={}) -> List[Dict[str, str]]:
