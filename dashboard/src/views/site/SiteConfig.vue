@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-10" v-if="site">
+	<div class="space-y-6" v-if="site">
 		<ConfigEditor
 			title="Site Config"
 			subtitle="Add and update key value pairs to your site's site_config.json"

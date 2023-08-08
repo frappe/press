@@ -1,16 +1,19 @@
 <template>
-	<Card :title="title" :subtitle="subtitle">
-		<template #actions>
-			<Button icon-left="edit" v-if="!editMode" @click="editMode = true">
-				Edit Config
-			</Button>
+	<div class="flex mt-2 mx-2">
+		<div class="flex flex-col">
+			<h2 class="text-xl font-semibold">{{ title }}</h2>
+			<p class="mt-1.5 text-base text-gray-600" v-if="subtitle">
+				{{ subtitle }}
+			</p>
+		</div>
+		<div class="ml-auto">
 			<Button
-				v-if="editMode"
+				class="mr-2"
 				:loading="$resources.configData.loading"
+				v-if="isDirty"
 				@click="
 					() => {
 						$resources.configData.reload().then(() => {
-							editMode = false;
 							isDirty = false;
 						});
 					}
@@ -20,75 +23,110 @@
 			</Button>
 			<Button
 				variant="solid"
-				v-if="editMode"
+				v-if="isDirty"
 				@click="updateConfig"
 				:loading="$resources.updateConfig.loading"
 			>
 				Save changes
 			</Button>
-		</template>
-		<div class="flex space-x-4">
-			<div class="w-full shrink-0 space-y-4 md:w-2/3">
-				<div class="space-y-4" v-if="editMode">
-					<div
-						class="grid grid-cols-5 gap-4"
-						v-for="(config, i) in $resources.configData.data"
-						:key="i"
-					>
-						<Input
-							type="text"
-							placeholder="key"
-							v-model="config.key"
-							class="col-span-2"
-							@change="isDirty = true"
-						/>
-						<div class="col-span-2 flex items-center">
-							<Input
-								type="text"
-								class="w-full"
-								placeholder="value"
-								v-model="config.value"
-								@change="isDirty = true"
-							/>
-							<button
-								class="ml-2 rounded-md p-1 hover:bg-gray-100"
-								@click="removeConfig(config)"
-							>
-								<FeatherIcon name="x" class="h-5 w-5 text-gray-700" />
-							</button>
-						</div>
-					</div>
-					<ErrorMessage :message="$resources.updateConfig.error" />
-					<Button @click="addConfig()" v-if="editMode">Add Key</Button>
-				</div>
-				<div v-else>
-					<Form
-						v-if="readOnlyFormProps.fields?.length"
-						v-bind="readOnlyFormProps"
-						class="pointer-events-none"
+		</div>
+	</div>
+	<div class="flex space-x-4">
+		<div class="w-full shrink-0 space-y-4 md:w-1/2">
+			<div class="ml-2">
+				<ErrorMessage :message="$resources.updateConfig.error" />
+				<div
+					v-if="$resources.configData?.data?.length"
+					v-for="config in $resources.configData.data"
+					:key="config.key"
+					class="mt-2 flex"
+				>
+					<FormControl
+						:label="getStandardConfigTitle(config.key)"
+						v-model="config.value"
+						@input="isDirty = true"
+						class="flex-1"
 					/>
-					<span v-else class="text-base text-gray-600">
-						No keys added. Click on Edit Config to add one.
-					</span>
+					<Button
+						class="ml-2 mt-5"
+						icon="x"
+						variant="ghost"
+						@click="removeConfig(config)"
+					/>
 				</div>
-			</div>
-			<div
-				class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
-			>
-				<div v-if="configName" class="mb-4">{{ configName }}</div>
-				<div v-html="configPreview"></div>
+				<p v-else class="my-2 text-base text-gray-600">
+					No keys added. Click on Add Key to add one.
+				</p>
+				<Button class="mt-4" @click="showAddConfigKeyDialog = true"
+					>Add Key</Button
+				>
 			</div>
 		</div>
-	</Card>
+		<div
+			class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block h-fit"
+		>
+			<div v-if="configName" class="mb-4">{{ configName }}</div>
+			<div v-html="configPreview"></div>
+		</div>
+		<Dialog
+			:options="{
+				title: 'Add Config Key',
+				actions: [
+					{
+						label: 'Add Key',
+						variant: 'solid',
+						onClick: addConfig
+					}
+				]
+			}"
+			v-model="showAddConfigKeyDialog"
+		>
+			<template v-slot:body-content>
+				<div class="space-y-4">
+					<Autocomplete
+						placeholder="Key"
+						:options="getStandardConfigKeys"
+						v-model="chosenStandardConfig"
+						@update:modelValue="handleAutocompleteSelection"
+					/>
+					<FormControl
+						v-if="showCustomKeyInput"
+						v-model="newConfig.key"
+						label="Custom Key"
+						class="w-full"
+						@change="isDirty = true"
+					/>
+					<FormControl
+						label="Type"
+						v-model="newConfig.type"
+						type="select"
+						:disabled="chosenStandardConfig && !showCustomKeyInput"
+						:options="['String', 'Number', 'JSON', 'Boolean']"
+						@change="isDirty = true"
+					/>
+					<FormControl
+						v-bind="configInputProps()"
+						v-model="newConfig.value"
+						label="Value"
+						class="w-full"
+						@change="isDirty = true"
+					/>
+				</div>
+			</template>
+		</Dialog>
+	</div>
 </template>
 
 <script>
 import Form from '@/components/Form.vue';
+import { Autocomplete, FormControl } from 'frappe-ui';
 
 export default {
 	name: 'ConfigEditor',
 	components: {
-		Form
+		FormControl,
+		Form,
+		Autocomplete
 	},
 	props: [
 		'title',
@@ -100,7 +138,17 @@ export default {
 	data() {
 		return {
 			isDirty: false,
-			editMode: false
+			showCustomKeyInput: false,
+			showAddConfigKeyDialog: false,
+			chosenStandardConfig: {
+				title: '',
+				key: ''
+			},
+			newConfig: {
+				key: '',
+				value: '',
+				type: 'String'
+			}
 		};
 	},
 	resources: {
@@ -159,7 +207,6 @@ export default {
 					}
 				},
 				onSuccess() {
-					this.editMode = false;
 					this.isDirty = false;
 				}
 			};
@@ -167,31 +214,6 @@ export default {
 		standardConfigKeys: 'press.api.config.standard_keys'
 	},
 	computed: {
-		readOnlyFormProps() {
-			if (!this.$resources.standardConfigKeys.data) {
-				return {};
-			}
-
-			let fields = this.$resources.configData.data.map(config => {
-				let standardKey = this.$resources.standardConfigKeys.data.find(
-					d => d.key === config.key
-				);
-				return {
-					label: standardKey?.title || config.key,
-					fieldname: standardKey?.key || config.key
-				};
-			});
-
-			let modelValue = {};
-			for (let d of this.$resources.configData.data) {
-				modelValue[d.key] = d.value;
-			}
-
-			return {
-				fields,
-				modelValue
-			};
-		},
 		configPreview() {
 			let obj = {};
 
@@ -209,16 +231,76 @@ export default {
 				obj[d.key] = value;
 			}
 			return JSON.stringify(obj, null, '&nbsp; ');
+		},
+		getStandardConfigKeys() {
+			return [
+				{
+					group: 'Custom',
+					items: [{ label: 'Create a custom key', value: 'custom_key' }]
+				},
+				{
+					group: 'Standard',
+					items: this.$resources.standardConfigKeys.data.map(d => ({
+						label: d.title,
+						value: d.key
+					}))
+				}
+			];
 		}
 	},
 	methods: {
+		configInputProps() {
+			let type = {
+				String: 'text',
+				Number: 'number',
+				JSON: 'textarea',
+				Boolean: 'select'
+			}[this.newConfig.type];
+
+			return {
+				type,
+				options: this.newConfig.type === 'Boolean' ? ['1', '0'] : null
+			};
+		},
 		addConfig() {
 			this.$resources.configData.data.push({
-				key: '',
-				value: '',
-				type: 'String'
+				key: this.getStandardConfigKey(this.newConfig.key),
+				value: this.newConfig.value,
+				type: this.newConfig.type
 			});
 			this.isDirty = true;
+			this.showAddConfigKeyDialog = false;
+		},
+		handleAutocompleteSelection() {
+			if (this.chosenStandardConfig?.value === 'custom_key') {
+				this.showCustomKeyInput = true;
+			} else {
+				this.showCustomKeyInput = false;
+				this.newConfig.type = this.getStandardConfigType(
+					this.chosenStandardConfig?.value
+				);
+			}
+
+			this.newConfig.key = this.chosenStandardConfig?.value || '';
+		},
+		getStandardConfigType(key) {
+			const type =
+				this.$resources.standardConfigKeys.data.find(d => d.key === key)
+					?.type || 'String';
+
+			return type === 'Password' ? 'String' : type;
+		},
+		getStandardConfigKey(key) {
+			return (
+				this.$resources.standardConfigKeys.data.find(d => d.title === key)
+					?.key || key
+			);
+		},
+		getStandardConfigTitle(key) {
+			return (
+				this.$resources.standardConfigKeys.data.find(d => d.key === key)
+					?.title || key
+			);
 		},
 		removeConfig(config) {
 			const index = this.$resources.configData.data.indexOf(config);
@@ -229,7 +311,6 @@ export default {
 			if (this.isDirty) {
 				this.$resources.updateConfig.submit();
 			} else {
-				this.editMode = false;
 				this.isDirty = false;
 			}
 		}

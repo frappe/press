@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-10" v-if="bench && !bench?.public">
+	<div class="space-y-6" v-if="bench && !bench?.public">
 		<ConfigEditor
 			title="Bench Config"
 			subtitle="Add and update key value pairs to your bench's common_site_config.json and bench_config.json"
