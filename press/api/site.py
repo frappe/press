@@ -625,37 +625,43 @@ def get_sites(site_filter=""):
 
 	team = get_current_team()
 	child_teams = [x.name for x in get_child_team_members(team)]
-	if not child_teams:
-		condition = f"= '{team}'"
-	else:
-		condition = f"in {tuple([team] + child_teams)}"
-
 	benches_with_updates = tuple(benches_with_available_update())
 
-	status_condition = "!= 'Archived'"
-	if site_filter == "Active":
-		status_condition = "= 'Active'"
-	elif site_filter == "Broken":
-		status_condition = "= 'Broken'"
-	elif site_filter == "Trial":
-		condition = f"{condition} AND s.trial_end_date != ''"
-	elif site_filter == "Update Available":
-		condition = f"{condition} AND s.bench IN {benches_with_updates}"
-	elif site_filter.startswith("tag:"):
-		tag = site_filter[4:]
-		condition = f"{condition} AND s.name IN (SELECT parent FROM `tabResource Tag` WHERE tag_name = '{tag}')"
-
-	sites = frappe.db.sql(
-		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.group, s.trial_end_date, s.team, s.cluster, rg.title, rg.version
-			FROM `tabSite` s
-			LEFT JOIN `tabRelease Group` rg
-			ON s.group = rg.name
-			WHERE s.status {status_condition}
-			AND s.team {condition}
-			ORDER BY creation DESC""",
-		as_dict=True,
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	sites_query = (
+		frappe.qb.from_(Site)
+	  	.select(
+			Site.name, Site.host_name, Site.status, Site.creation, Site.bench,
+			Site.current_cpu_usage, Site.current_database_usage, Site.current_disk_usage,
+			Site.trial_end_date, Site.team, Site.cluster, ReleaseGroup.title, ReleaseGroup.version
+		)
+		.left_join(ReleaseGroup)
+		.on(Site.group == ReleaseGroup.name)
+		.orderby(Site.creation, order=frappe.qb.desc)
 	)
+	if child_teams:
+		sites_query = sites_query.where(Site.team.isin([team] + child_teams))
+	else:
+		sites_query = sites_query.where(Site.team == team)
+
+	if site_filter == "Active":
+		sites_query = sites_query.where(Site.status == "Active")
+	elif site_filter == "Broken":
+		sites_query = sites_query.where(Site.status == "Broken")
+	elif site_filter == "Trial":
+		sites_query = sites_query.where(Site.trial_end_date != "")
+	elif site_filter == "Update Available":
+		sites_query = sites_query.where(Site.bench.isin(benches_with_updates))
+	elif site_filter.startswith("tag:"):
+		Tag = frappe.qb.DocType("Resource Tag")
+		tag = site_filter[4:]
+		sites_with_tag = frappe.qb.from_(Tag).select(Tag.parent).where(Tag.tag_name == tag)
+		sites_query = sites_query.where(Site.name.isin(sites_with_tag))
+	else:
+		sites_query = sites_query.where(Site.status != "Archived")
+
+	sites = sites_query.run(as_dict=True)
 
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
