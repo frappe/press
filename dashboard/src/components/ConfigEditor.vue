@@ -1,5 +1,5 @@
 <template>
-	<div class="flex mt-2 mx-2">
+	<div class="mx-2 mt-2 flex">
 		<div class="flex flex-col">
 			<h2 class="text-xl font-semibold">{{ title }}</h2>
 			<p class="mt-1.5 text-base text-gray-600" v-if="subtitle">
@@ -63,7 +63,7 @@
 			</div>
 		</div>
 		<div
-			class="hidden max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block h-fit"
+			class="hidden h-fit max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
 		>
 			<div v-if="configName" class="mb-4">{{ configName }}</div>
 			<div v-html="configPreview"></div>
@@ -83,12 +83,15 @@
 		>
 			<template v-slot:body-content>
 				<div class="space-y-4">
-					<Autocomplete
-						placeholder="Key"
-						:options="getStandardConfigKeys"
-						v-model="chosenStandardConfig"
-						@update:modelValue="handleAutocompleteSelection"
-					/>
+					<div>
+						<span class="mb-1 block text-xs text-gray-600">Key</span>
+						<Autocomplete
+							placeholder="Key"
+							:options="getStandardConfigKeys"
+							v-model="chosenStandardConfig"
+							@update:modelValue="handleAutocompleteSelection"
+						/>
+					</div>
 					<FormControl
 						v-if="showCustomKeyInput"
 						v-model="newConfig.key"
