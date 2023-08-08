@@ -1,6 +1,6 @@
 <template>
 	<div class="min-h-screen bg-gray-50" v-if="saasProduct.data">
-		<LoginBox :title="state == 'create' ? 'Create your site' : ''">
+		<LoginBox :title="state == 'Pending' ? 'Create your site' : ''">
 			<template #logo>
 				<div class="mx-auto flex flex-col items-center">
 					<img
@@ -15,7 +15,7 @@
 					<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
 				</div>
 			</template>
-			<div class="space-y-3" v-if="state == 'create'">
+			<div class="space-y-3" v-if="state == 'Pending'">
 				<FormControl
 					label="Your Email"
 					:modelValue="$account.user.email"
@@ -46,7 +46,7 @@
 					Create
 				</Button>
 			</div>
-			<div v-else-if="state == 'wait_for_site'">
+			<div v-else-if="state == 'Wait for Site'">
 				<Progress
 					label="Creating site"
 					:value="siteProgress.data?.progress || 0"
@@ -56,7 +56,7 @@
 					:message="siteProgress.data?.error ? 'An error occurred' : null"
 				/>
 			</div>
-			<div v-else-if="state == 'site_ready'">
+			<div v-else-if="state == 'Site Created'">
 				<div class="text-center text-base text-gray-900">
 					Your site is ready. Logging in...
 				</div>
@@ -72,7 +72,7 @@ import { useElementSize } from '@vueuse/core';
 import { validateSubdomain } from '@/utils';
 
 const props = defineProps(['product']);
-const state = ref('create'); // create, wait_for_site, site_ready
+const state = ref('Pending'); // Pending, Wait for Site, Site Created
 
 const saasProduct = createResource({
 	url: 'press.api.saas.get_saas_product_info',
@@ -81,11 +81,11 @@ const saasProduct = createResource({
 	},
 	auto: true,
 	onSuccess(data) {
-		if (data?.site_request.status === 'Wait for Site') {
-			state.value = 'wait_for_site';
-			siteProgress.reload();
-		} else if (data?.site_request.status === 'Site Created') {
-			state.value = 'site_ready';
+		if (data?.site_request) {
+			state.value = data.site_request.status;
+			if (state.value === 'Wait for Site') {
+				siteProgress.reload();
+			}
 		}
 	}
 });
@@ -104,7 +104,7 @@ const createSite = createResource({
 		return validateSubdomain(subdomain.value);
 	},
 	onSuccess() {
-		state.value = 'wait_for_site';
+		state.value = 'Wait for Site';
 		siteProgress.reload();
 	}
 });
@@ -118,7 +118,7 @@ const siteProgress = createResource({
 	},
 	onSuccess(data) {
 		if (data.progress == 100) {
-			state.value = 'site_ready';
+			state.value = 'Site Created';
 			loginToSite.submit();
 		} else {
 			setTimeout(() => {

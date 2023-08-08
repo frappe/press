@@ -56,6 +56,8 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
+		if not self.bench and self.group:
+			self._set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
@@ -1084,6 +1086,44 @@ class Site(Document):
 		if not plan:
 			return {}
 		return get_plan_config(plan)
+
+	def _set_latest_bench(self):
+		from pypika.terms import PseudoColumn
+
+		if not (self.domain and self.cluster and self.group):
+			frappe.throw("domain, cluster and group are required to create site")
+
+		proxy_servers_names = frappe.db.get_all(
+			"Proxy Server Domain", {"domain": self.domain}, pluck="parent"
+		)
+		proxy_servers = frappe.db.get_all(
+			"Proxy Server",
+			{"status": "Active", "name": ("in", proxy_servers_names)},
+			pluck="name",
+		)
+
+		Bench = frappe.qb.DocType("Bench")
+		Server = frappe.qb.DocType("Server")
+
+		bench_query = (frappe.qb.from_(Bench)
+			.select(Bench.name, Bench.server, PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"))
+			.left_join(Server)
+			.on(Bench.server == Server.name)
+			.where(Server.proxy_server.isin(proxy_servers))
+			.where(Bench.status == "Active")
+			.where(Bench.group == self.group)
+			.orderby(PseudoColumn('in_primary_cluster'), order=frappe.qb.desc)
+			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
+			.orderby(Bench.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		if self.server:
+			bench_query = bench_query.where(Server.name == self.server)
+
+		result = bench_query.run(as_dict=True)
+		if result:
+			self.bench = result[0].name
+			self.server = result[0].server
 
 	def _create_initial_site_plan_change(self, plan):
 		frappe.get_doc(

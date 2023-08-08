@@ -65,7 +65,7 @@ def on_session_creation():
 	):
 		return
 
-	team = get_current_team()
+	team = get_current_team(get_doc=True)
 	route = team.get_route_on_login()
 	frappe.local.response.update({"dashboard_route": route})
 

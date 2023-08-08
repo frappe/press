@@ -20,7 +20,11 @@
   "cluster",
   "release_group",
   "section_break_ipmu",
-  "apps"
+  "apps",
+  "site_pool_section",
+  "enable_pooling",
+  "standby_pool_size",
+  "standby_queue_size"
  ],
  "fields": [
   {
@@ -101,11 +105,34 @@
    "label": "Release Group",
    "options": "Release Group",
    "reqd": 1
+  },
+  {
+   "fieldname": "site_pool_section",
+   "fieldtype": "Section Break",
+   "label": "Site Pool"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_pooling",
+   "fieldtype": "Check",
+   "label": "Enable Pooling"
+  },
+  {
+   "default": "10",
+   "fieldname": "standby_pool_size",
+   "fieldtype": "Int",
+   "label": "Standby Pool Size"
+  },
+  {
+   "default": "2",
+   "fieldname": "standby_queue_size",
+   "fieldtype": "Int",
+   "label": "Standby Queue Size"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-02 20:20:04.759651",
+ "modified": "2023-08-07 17:15:16.337664",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",
