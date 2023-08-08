@@ -472,6 +472,13 @@ const routes = [
 		]
 	},
 	{
+		path: '/security-updates',
+		name: 'Security Updates',
+		component: () => import('../views/security/SecurityUpdates.vue')
+	},
+	billingRoute,
+	settingsRoute,
+	{
 		name: 'NotFound',
 		path: '/:pathMatch(.*)*',
 		component: () => import('../views/general/404.vue')

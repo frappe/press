@@ -472,6 +472,12 @@ class BaseServer(Document):
 	def agent(self):
 		return Agent(self.name, server_type=self.doctype)
 
+	@frappe.whitelist()
+	def fetch_security_updates(self):
+		from press.press.doctype.security_update.security_update import SecurityUpdate
+
+		frappe.enqueue(SecurityUpdate._fetch_security_updates, server_obj=self)
+
 
 class Server(BaseServer):
 	def on_update(self):
