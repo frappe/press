@@ -11,10 +11,12 @@ from press.agent import Agent
 class Container(Document):
 	def validate(self):
 		config = json.loads(self.config)
-		self.config = json.dumps(config, indent=4)
 		config.update(
 			{
 				"image": self.image,
+				"environment_variables": self.get_environment_variables(),
+				"ports": self.get_ports(),
+				"mounts": self.get_mounts(),
 			}
 		)
 		self.config = json.dumps(config, indent=4)
@@ -29,6 +31,30 @@ class Container(Document):
 	@property
 	def agent(self):
 		return Agent(self.node, "Node")
+
+	def get_environment_variables(self):
+		return {v.key: v.value for v in self.environment_variables}
+
+	def get_mounts(self):
+		return [
+			{
+				"source": mount.source,
+				"destination": mount.destination,
+				"options": mount.options,
+			}
+			for mount in self.mounts
+		]
+
+	def get_ports(self):
+		return [
+			{
+				"host_ip": port.host_ip,
+				"host_port": port.host_port,
+				"container_port": port.container_port,
+				"protocol": port.protocol,
+			}
+			for port in self.ports
+		]
 
 
 def process_new_container_job_update(job):

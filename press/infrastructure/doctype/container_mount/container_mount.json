@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "creation": "2023-08-08 14:45:41.578099",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "source",
+  "column_break_zbth",
+  "destination",
+  "section_break_yr50",
+  "options"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_zbth",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_yr50",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "default": "rw",
+   "fieldname": "options",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Options",
+   "reqd": 1
+  },
+  {
+   "columns": 5,
+   "fieldname": "source",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Source",
+   "reqd": 1
+  },
+  {
+   "columns": 4,
+   "fieldname": "destination",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Destination",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-08-08 16:17:58.213608",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Container Mount",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
