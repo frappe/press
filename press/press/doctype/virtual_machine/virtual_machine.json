@@ -55,8 +55,9 @@
   {
    "fetch_from": "cluster.region",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Region",
+   "options": "Cloud Region",
    "read_only": 1,
    "reqd": 1
   },
@@ -73,6 +74,7 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -288,7 +290,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-08-07 18:00:24.976799",
+ "modified": "2023-08-08 12:24:39.699485",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
