@@ -1,7 +1,7 @@
 <template>
 	<router-link
 		:to="{ name: 'SiteOverview', params: { siteName: site.name } }"
-		class="rounded-md border border-gray-200 p-3 hover:border-gray-300"
+		class="rounded-md border border-gray-200 p-3 hover:border-gray-400"
 	>
 		<div class="space-y-2">
 			<div class="flex items-center justify-center">
@@ -14,7 +14,6 @@
 					</a>
 				</div>
 				<Dropdown
-					v-if="site.status === 'Active' || site.status === 'Updating'"
 					:options="dropdownItems(site)"
 				>
 					<template v-slot="{ open }">
@@ -23,7 +22,6 @@
 				</Dropdown>
 			</div>
 			<div class="flex items-center space-x-3">
-				<Badge :label="site.version" />
 				<Badge
 					class="pointer-events-none"
 					variant="subtle"

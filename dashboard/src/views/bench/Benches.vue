@@ -16,7 +16,7 @@
 			</BreadCrumbs>
 		</header>
 
-		<SectionHeader class="mx-5 mt-8" :heading="getBenchFilterHeading()">
+		<SectionHeader class="mx-5 mt-6" :heading="getBenchFilterHeading()">
 			<template #actions>
 				<Dropdown :options="benchFilterOptions()">
 					<template v-slot="{ open }">

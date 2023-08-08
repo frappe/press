@@ -1,125 +1,83 @@
 <template>
-	<div class="space-y-8">
-		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
-			<h3 class="mb-3 text-base font-semibold text-gray-800">
-				{{ groupedSite.releaseGroup }}
-			</h3>
-			<div class="grid grid-cols-4 gap-4">
-				<SiteCard
-					v-for="site in groupedSite.sites"
-					:key="site.name"
-					:site="site"
-					:dropdownItems="dropdownItems"
+	<router-link
+		:to="{ name: 'SiteOverview', params: { siteName: site.name } }"
+		class="rounded px-3 py-3 hover:bg-gray-100"
+	>
+		<div class="flex items-center">
+			<div class="w-4/12">
+				<div class="flex items-center space-x-2">
+					<div class="truncate text-base font-medium" :title="site.name">
+						{{ site.name }}
+					</div>
+				</div>
+				<div class="mt-1 hidden text-base text-gray-600 sm:block">
+					Created on {{ formatDate(site.creation, 'DATE_MED') }}
+				</div>
+			</div>
+			<div class="w-2/12">
+				<Badge
+					class="pointer-events-none"
+					variant="subtle"
+					:label="siteBadge(site)"
 				/>
 			</div>
+			<div class="w-2/12">
+				<img
+					class="h-4"
+					:src="site.server_region_info.image"
+					:alt="`Flag of ${site.server_region_info.title}`"
+					:title="site.server_region_info.image"
+				/>
+			</div>
+			<div class="w-1/12">
+				<div class="text-base text-gray-700">
+					{{ site.plan ? `${$planTitle(site.plan)}/mo` : 'No Plan Set' }}
+				</div>
+			</div>
+
+			<div class="ml-auto flex items-center">
+				<Dropdown :options="dropdownItems(site)">
+					<template v-slot="{ open }">
+						<Button variant="ghost" class="ml-2" icon="more-horizontal" />
+					</template>
+				</Dropdown>
+			</div>
 		</div>
-	</div>
-
-	<Dialog
-		:options="{
-			title: 'Login As Administrator',
-			actions: [
-				{
-					label: 'Proceed',
-					variant: 'solid',
-					onClick: proceedWithLoginAsAdmin
-				}
-			]
-		}"
-		v-model="showReasonForAdminLoginDialog"
-	>
-		<template #body-content>
-			<Input
-				label="Reason for logging in as Administrator"
-				type="textarea"
-				v-model="reasonForAdminLogin"
-				required
-			/>
-			<ErrorMessage class="mt-3" :message="errorMessage" />
-		</template>
-	</Dialog>
+	</router-link>
 </template>
-<script>
-import { loginAsAdmin } from '@/controllers/loginAsAdmin';
-import SiteCard from '@/components/SiteCard.vue';
 
+<script>
 export default {
 	name: 'SiteList',
 	props: {
-		sites: {
-			default: []
+		site: {
+			type: Object,
+			required: true
 		},
-		showBenchInfo: {
-			default: true
-		}
-	},
-	components: {
-		SiteCard
-	},
-	data() {
-		return {
-			reasonForAdminLogin: '',
-			errorMessage: null,
-			showReasonForAdminLoginDialog: false,
-			siteForLogin: null
-		};
-	},
-	resources: {
-		loginAsAdmin() {
-			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
+		dropdownItems: {
+			type: Function,
+			required: true
 		}
 	},
 	methods: {
-		dropdownItems(site) {
-			return [
-				{
-					label: 'Visit Site',
-					onClick: () => {
-						window.open(`https://${site.name}`, '_blank');
-					}
-				},
-				{
-					label: 'Login As Admin',
-					onClick: () => {
-						if (this.$account.team.name === site.team) {
-							return this.$resources.loginAsAdmin.submit({
-								name: site.name
-							});
-						}
-
-						this.siteForLogin = site.name;
-						this.showReasonForAdminLoginDialog = true;
-					}
-				}
-			];
-		},
-		proceedWithLoginAsAdmin() {
-			this.errorMessage = '';
-
-			if (!this.reasonForAdminLogin.trim()) {
-				this.errorMessage = 'Reason is required';
-				return;
+		siteBadge(site) {
+			let status = site.status;
+			if (site.update_available && site.status == 'Active') {
+				status = 'Update Available';
 			}
 
-			this.$resources.loginAsAdmin.submit({
-				name: this.siteForLogin,
-				reason: this.reasonForAdminLogin
-			});
-
-			this.showReasonForAdminLoginDialog = false;
-		}
-	},
-	computed: {
-		groupedSites() {
-			return this.sites.reduce((acc, curr) => {
-				const { title } = curr;
-				const existingGroup = acc.find(group => group.releaseGroup === title);
-
-				if (existingGroup) existingGroup.sites.push(curr);
-				else acc.push({ releaseGroup: title, sites: [curr] });
-
-				return acc;
-			}, []);
+			let usage = Math.max(
+				site.current_cpu_usage,
+				site.current_database_usage,
+				site.current_disk_usage
+			);
+			if (usage && usage >= 80 && status == 'Active') {
+				status = 'Attention Required';
+			}
+			if (site.trial_end_date) {
+				status = 'Trial';
+			}
+			return status;
 		}
 	}
 };

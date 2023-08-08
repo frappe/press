@@ -32,7 +32,7 @@
 		</header>
 
 		<div>
-			<SectionHeader class="mx-5 mt-8" :heading="getServerFilterHeading()">
+			<SectionHeader class="mx-5 mt-6" :heading="getServerFilterHeading()">
 				<template #actions>
 					<Dropdown :options="serverFilterOptions()">
 						<template v-slot="{ open }">

@@ -73,42 +73,45 @@
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.recentSites.loading" />
-					<SiteList v-else :sites="recentlyCreatedSites" />
+					<SiteGroups v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div> -->
 
-			<div class="mx-5 my-8">
+			<div class="mx-5 my-6">
 				<SectionHeader :heading="getSiteFilterHeading()">
 					<template #actions>
-						<Dropdown :options="siteFilterOptions()">
-							<template v-slot="{ open }">
-								<Button
-									:class="[
-										'rounded-md px-3 py-1 text-base font-medium',
-										open ? 'bg-gray-200' : 'bg-gray-100'
-									]"
-									icon-right="chevron-down"
-								>
-									{{ siteFilter.replace('tag:', '') }}</Button
-								>
-							</template>
-						</Dropdown>
+						<div class="flex space-x-2">
+							<Dropdown :options="siteFilterOptions()">
+								<template v-slot="{ open }">
+									<Button
+										:class="[
+											'rounded-md px-3 py-1 text-base font-medium',
+											open ? 'bg-gray-200' : 'bg-gray-100'
+										]"
+										icon-right="chevron-down"
+									>
+										{{ siteFilter.replace('tag:', '') }}</Button
+									>
+								</template>
+							</Dropdown>
+						</div>
 					</template>
 				</SectionHeader>
 
 				<div class="mt-6">
 					<LoadingText v-if="$resources.allSites.loading" />
-					<SiteList v-else :sites="sites" />
+					<SiteGroups :sites="sites" />
 				</div>
 			</div>
 		</div>
 	</div>
 </template>
 <script>
-import SiteList from './SiteList.vue';
+import SiteGroups from './SiteGroups.vue';
 import { defineAsyncComponent } from 'vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
+import { TabButtons } from 'frappe-ui';
 
 export default {
 	name: 'Sites',
@@ -119,7 +122,8 @@ export default {
 	},
 	props: ['bench'],
 	components: {
-		SiteList,
+		SiteGroups,
+		TabButtons,
 		PageHeader,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')

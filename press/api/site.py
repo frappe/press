@@ -671,7 +671,7 @@ def get_sites(site_filter=""):
 
 	sites = frappe.db.sql(
 		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, s.cluster, rg.title, rg.version
+			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.group, s.trial_end_date, s.team, s.cluster, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
@@ -683,6 +683,8 @@ def get_sites(site_filter=""):
 
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
+		site_plan_name = frappe.get_value("Site", site.name, 'plan')
+		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
