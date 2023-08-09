@@ -81,11 +81,7 @@
 				<div>
 					<div class="flex">
 						<div class="flex w-full space-x-2 pb-4">
-							<FormControl
-								label="Search sites"
-								@blur="showSearch = false"
-								v-model="searchTerm"
-							>
+							<FormControl label="Search Sites" v-model="searchTerm">
 								<template #prefix>
 									<FeatherIcon name="search" class="w-4 text-gray-600" />
 								</template>

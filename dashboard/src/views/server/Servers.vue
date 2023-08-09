@@ -32,23 +32,24 @@
 		</header>
 
 		<div>
-			<SectionHeader class="mx-5 mt-6" :heading="getServerFilterHeading()">
-				<template #actions>
-					<Dropdown :options="serverFilterOptions()">
-						<template v-slot="{ open }">
-							<Button
-								:class="[
-									'rounded-md px-3 py-1 text-base font-medium',
-									open ? 'bg-gray-200' : 'bg-gray-100'
-								]"
-								icon-right="chevron-down"
-								>{{ serverFilter.replace('tag:', '') }}</Button
-							>
-						</template>
-					</Dropdown>
-				</template>
-			</SectionHeader>
-			<div class="mx-5 mt-3">
+			<div class="mx-5 mt-5">
+				<div class="flex">
+					<div class="flex w-full space-x-2 pb-4">
+						<FormControl label="Search Servers" v-model="searchTerm">
+							<template #prefix>
+								<FeatherIcon name="search" class="w-4 text-gray-600" />
+							</template>
+						</FormControl>
+						<FormControl
+							label="Status"
+							class="mr-8"
+							type="select"
+							:options="serverStatusFilterOptions()"
+							v-model="serverFilter"
+						/>
+					</div>
+					<div class="w-8"></div>
+				</div>
 				<LoadingText v-if="$resources.allServers.loading" />
 				<div v-else>
 					<div class="flex">
@@ -90,14 +91,14 @@
 </template>
 <script>
 import ListView from '@/components/ListView.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
 import { defineAsyncComponent } from 'vue';
+import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'Servers',
 	components: {
 		ListView,
-		PageHeader,
+		FormControl,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -110,6 +111,7 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
+			searchTerm: '',
 			serverFilter: 'All Servers',
 			dropDownOptions: [
 				{
@@ -174,37 +176,19 @@ export default {
 				this.showAddCardDialog = false;
 			}
 		},
-		serverFilterOptions() {
-			const options = [
-				{
-					group: 'Types',
-					items: [
-						{
-							label: 'All Servers',
-							onClick: () => (this.serverFilter = 'All Servers')
-						},
-						{
-							label: 'App Servers',
-							onClick: () => (this.serverFilter = 'App Servers')
-						},
-						{
-							label: 'Database Servers',
-							onClick: () => (this.serverFilter = 'Database Servers')
-						}
-					]
-				}
-			];
-
-			if (!this.$resources.serverTags?.data?.length) return options;
-
+		serverStatusFilterOptions() {
 			return [
-				...options,
 				{
-					group: 'Tags',
-					items: this.$resources.serverTags.data.map(tag => ({
-						label: tag,
-						onClick: () => (this.serverFilter = `tag:${tag}`)
-					}))
+					label: 'All Servers',
+					value: 'All Servers'
+				},
+				{
+					label: 'App Servers',
+					value: 'App Servers'
+				},
+				{
+					label: 'Database Servers',
+					value: 'Database Servers'
 				}
 			];
 		}
@@ -215,7 +199,13 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allServers.data.map(server => ({
+			let servers = this.$resources.allServers.data;
+			if (this.searchTerm)
+				servers = servers.filter(server =>
+					server.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
+
+			return servers.map(server => ({
 				name: server.name,
 				status: server.status,
 				server_region_info: server.region_info,

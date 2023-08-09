@@ -18,25 +18,24 @@
 			</BreadCrumbs>
 		</header>
 
-		<SectionHeader class="mx-5 mt-6" :heading="getBenchFilterHeading()">
-			<template #actions>
-				<Dropdown :options="benchFilterOptions()">
-					<template v-slot="{ open }">
-						<Button
-							:class="[
-								'rounded-md px-3 py-1 text-base font-medium',
-								open ? 'bg-gray-200' : 'bg-gray-100'
-							]"
-							icon-right="chevron-down"
-						>
-							{{ benchFilter.replace('tag:', '') }}
-						</Button>
-					</template>
-				</Dropdown>
-			</template>
-		</SectionHeader>
-
-		<div class="mx-5 mt-3">
+		<div class="mx-5 mt-5">
+			<div class="flex">
+				<div class="flex w-full space-x-2 pb-4">
+					<FormControl label="Search Benches" v-model="searchTerm">
+						<template #prefix>
+							<FeatherIcon name="search" class="w-4 text-gray-600" />
+						</template>
+					</FormControl>
+					<FormControl
+						label="Status"
+						class="mr-8"
+						type="select"
+						:options="benchStatusFilterOptions()"
+						v-model="benchFilter"
+					/>
+				</div>
+				<div class="w-8"></div>
+			</div>
 			<LoadingText v-if="$resources.allBenches.loading" />
 			<div v-else>
 				<div class="flex">
@@ -78,12 +77,14 @@
 <script>
 import ListView from '@/components/ListView.vue';
 import { defineAsyncComponent } from 'vue';
+import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
 			showAddCardDialog: false,
+			searchTerm: '',
 			benchFilter: 'All'
 		};
 	},
@@ -94,6 +95,7 @@ export default {
 	},
 	components: {
 		ListView,
+		FormControl,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -114,8 +116,13 @@ export default {
 			if (!this.$resources.allBenches.data) {
 				return [];
 			}
+			let benches = this.$resources.allBenches.data;
+			if (this.searchTerm)
+				benches = benches.filter(bench =>
+					bench.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
-			return this.$resources.allBenches.data.map(bench => ({
+			return benches.map(bench => ({
 				name: bench.name,
 				status: bench.status,
 				version: bench.version,
@@ -126,37 +133,19 @@ export default {
 		}
 	},
 	methods: {
-		benchFilterOptions() {
-			const options = [
-				{
-					group: 'Status',
-					items: [
-						{
-							label: 'All',
-							onClick: () => (this.benchFilter = 'All')
-						},
-						{
-							label: 'Active',
-							onClick: () => (this.benchFilter = 'Active')
-						},
-						{
-							label: 'Awaiting Deploy',
-							onClick: () => (this.benchFilter = 'Awaiting Deploy')
-						}
-					]
-				}
-			];
-
-			if (!this.$resources.benchTags?.data?.length) return options;
-
+		benchStatusFilterOptions() {
 			return [
-				...options,
 				{
-					group: 'Tags',
-					items: this.$resources.benchTags.data.map(tag => ({
-						label: tag,
-						onClick: () => (this.benchFilter = `tag:${tag}`)
-					}))
+					label: 'All',
+					value: 'All'
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Awaiting Deploy',
+					value: 'Awaiting Deploy'
 				}
 			];
 		},
