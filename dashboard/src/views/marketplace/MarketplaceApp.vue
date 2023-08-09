@@ -1,12 +1,43 @@
 <template>
-	<div>
-		<div v-if="app">
-			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/marketplace/apps" class="hover:text-gray-800">
-						← Back to Apps
-					</router-link>
-				</div>
+	<div v-if="app">
+		<div>
+			<header
+				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+			>
+				<BreadCrumbs
+					:items="[
+						{
+							label: 'Apps',
+							route: {
+								name: 'Marketplace',
+								params: { appName: app.name }
+							}
+						},
+						{
+							label: app.title,
+							route: {
+								name: 'MarketplaceAppOverview',
+								params: { appName: app.name }
+							}
+						}
+					]"
+				>
+					<template v-slot:actions>
+						<Button
+							v-if="app.status === 'Published'"
+							variant="solid"
+							icon-left="external-link"
+							label="View in Marketplace"
+							class="ml-2"
+							:link="`/marketplace/apps/${app.name}`"
+							@click="showBillingDialog"
+						/>
+					</template>
+				</BreadCrumbs>
+			</header>
+		</div>
+		<div>
+			<div class="px-5 pt-6">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -14,22 +45,13 @@
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 						<Badge class="ml-4" :label="app.status" />
 					</div>
-					<div class="space-x-3">
-						<Button
-							v-if="app.status == 'Published'"
-							:link="`/marketplace/apps/${app.name}`"
-							icon-left="external-link"
-						>
-							View in Marketplace
-						</Button>
-					</div>
 				</div>
 			</div>
-		</div>
-		<div v-if="app">
-			<Tabs :tabs="tabs">
-				<router-view v-bind="{ app }"></router-view>
-			</Tabs>
+			<div class="p-5 pt-1">
+				<Tabs :tabs="tabs">
+					<router-view v-bind="{ app }"></router-view>
+				</Tabs>
+			</div>
 		</div>
 	</div>
 </template>
