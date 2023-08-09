@@ -22,7 +22,7 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(server_filter="All Servers"):
+def all(server_filter={"status": "All Servers", "tag": ""}):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -31,7 +31,7 @@ def all(server_filter="All Servers"):
 	app_server = frappe.qb.DocType("Server")
 	res_tag = frappe.qb.DocType("Resource Tag")
 
-	if server_filter != "Database Servers":
+	if server_filter["status"] != "Database Servers":
 		app_server_query = (
 			frappe.qb.from_(app_server)
 			.select(
@@ -48,7 +48,12 @@ def all(server_filter="All Servers"):
 			)
 		)
 
-	if server_filter != "App Servers":
+		if server_filter["tag"]:
+			app_server_query = app_server_query.inner_join(res_tag).on(
+				(res_tag.parent == app_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
+
+	if server_filter["status"] != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
 			.select(
@@ -61,21 +66,16 @@ def all(server_filter="All Servers"):
 			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
 		)
 
-	if server_filter.startswith("tag:"):
-		tag = server_filter[4:]
+		if server_filter["tag"]:
+			database_server_query = database_server_query.inner_join(res_tag).on(
+				(res_tag.parent == db_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
 
-		app_server_query = app_server_query.inner_join(res_tag).on(
-			(res_tag.parent == app_server.name) & (res_tag.tag_name == tag)
-		)
-		database_server_query = database_server_query.inner_join(res_tag).on(
-			(res_tag.parent == db_server.name) & (res_tag.tag_name == tag)
-		)
-
-	if server_filter == "All Servers" or server_filter.startswith("tag:"):
+	if server_filter["status"] == "All Servers":
 		query = app_server_query + database_server_query
-	elif server_filter == "App Servers":
+	elif server_filter["status"] == "App Servers":
 		query = app_server_query
-	elif server_filter == "Database Servers":
+	elif server_filter["status"] == "Database Servers":
 		query = database_server_query
 	else:
 		return []

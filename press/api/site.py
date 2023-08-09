@@ -614,7 +614,7 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(site_filter=""):
+def get_sites(site_filter={"status": "Active", "tag": ""}):
 	from press.press.doctype.team.team import get_child_team_members
 
 	team = get_current_team()
@@ -649,21 +649,23 @@ def get_sites(site_filter=""):
 	else:
 		sites_query = sites_query.where(Site.team == team)
 
-	if site_filter == "Active":
+	if site_filter["status"] == "Active":
 		sites_query = sites_query.where(Site.status == "Active")
-	elif site_filter == "Broken":
+	elif site_filter["status"] == "Broken":
 		sites_query = sites_query.where(Site.status == "Broken")
-	elif site_filter == "Trial":
+	elif site_filter["status"] == "Trial":
 		sites_query = sites_query.where(Site.trial_end_date != "")
-	elif site_filter == "Update Available":
+	elif site_filter["status"] == "Update Available":
 		sites_query = sites_query.where(Site.bench.isin(benches_with_updates))
-	elif site_filter.startswith("tag:"):
-		Tag = frappe.qb.DocType("Resource Tag")
-		tag = site_filter[4:]
-		sites_with_tag = frappe.qb.from_(Tag).select(Tag.parent).where(Tag.tag_name == tag)
-		sites_query = sites_query.where(Site.name.isin(sites_with_tag))
 	else:
 		sites_query = sites_query.where(Site.status != "Archived")
+
+	if site_filter["tag"]:
+		Tag = frappe.qb.DocType("Resource Tag")
+		sites_with_tag = (
+			frappe.qb.from_(Tag).select(Tag.parent).where(Tag.tag_name == site_filter["tag"])
+		)
+		sites_query = sites_query.where(Site.name.isin(sites_with_tag))
 
 	sites = sites_query.run(as_dict=True)
 

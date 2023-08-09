@@ -45,7 +45,14 @@
 							class="mr-8"
 							type="select"
 							:options="serverStatusFilterOptions()"
-							v-model="serverFilter"
+							v-model="serverFilter.status"
+						/>
+						<FormControl
+							label="Tag"
+							class="mr-8"
+							type="select"
+							:options="serverTagFilterOptions()"
+							v-model="serverFilter.tag"
 						/>
 					</div>
 					<div class="w-8"></div>
@@ -113,7 +120,10 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			serverFilter: 'All Servers',
+			serverFilter: {
+				status: 'All Servers',
+				tag: ''
+			},
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -153,11 +163,6 @@ export default {
 				}
 			];
 		},
-		getServerFilterHeading() {
-			if (this.serverFilter.startsWith('tag:'))
-				return `Servers with tag ${this.serverFilter.slice(4)}`;
-			return this.serverFilter;
-		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
 			if (
@@ -191,6 +196,24 @@ export default {
 					label: 'Database Servers',
 					value: 'Database Servers'
 				}
+			];
+		},
+		serverTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
+				}
+			];
+
+			if (!this.$resources.serverTags.data) return defaultOptions;
+
+			return [
+				...defaultOptions,
+				...this.$resources.serverTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
 			];
 		}
 	},

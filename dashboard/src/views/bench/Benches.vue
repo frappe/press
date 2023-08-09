@@ -31,7 +31,14 @@
 						class="mr-8"
 						type="select"
 						:options="benchStatusFilterOptions()"
-						v-model="benchFilter"
+						v-model="benchFilter.status"
+					/>
+					<FormControl
+						label="Tag"
+						class="mr-8"
+						type="select"
+						:options="benchTagFilterOptions()"
+						v-model="benchFilter.tag"
 					/>
 				</div>
 				<div class="w-8"></div>
@@ -86,7 +93,10 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			benchFilter: 'All'
+			benchFilter: {
+				status: 'All',
+				tag: ''
+			}
 		};
 	},
 	pageMeta() {
@@ -151,12 +161,23 @@ export default {
 				}
 			];
 		},
-		getBenchFilterHeading() {
-			if (this.benchFilter === 'Awaiting Deploy')
-				return 'Benches Awaiting Deploy';
-			else if (this.benchFilter.startsWith('tag:'))
-				return `Benches with tag ${this.benchFilter.slice(4)}`;
-			return `${this.benchFilter || 'All'} Benches`;
+		benchTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
+				}
+			];
+
+			if (!this.$resources.benchTags.data) return defaultOptions;
+
+			return [
+				...defaultOptions,
+				...this.$resources.benchTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
+			];
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {

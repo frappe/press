@@ -88,7 +88,7 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, bench_filter=""):
+def all(server=None, bench_filter={"status": "Active", "tag": ""}):
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -113,18 +113,17 @@ def all(server=None, bench_filter=""):
 	)
 
 	bench = frappe.qb.DocType("Bench")
-	if bench_filter == "Active":
+	if bench_filter["status"] == "Active":
 		query = query.inner_join(bench).on(group.name == bench.group)
-	elif bench_filter == "Awaiting Deploy":
+	elif bench_filter["status"] == "Awaiting Deploy":
 		group_names = frappe.get_all(
 			"Bench", {"status": "Active"}, pluck="group", distinct=True
 		)
 		query = query.inner_join(bench).on(group.name.notin(group_names))
-	elif bench_filter.startswith("tag:"):
-		tag = bench_filter[4:]
+	if bench_filter["tag"]:
 		press_tag = frappe.qb.DocType("Resource Tag")
 		query = query.inner_join(press_tag).on(
-			(press_tag.tag_name == tag) & (press_tag.parent == group.name)
+			(press_tag.tag_name == bench_filter["tag"]) & (press_tag.parent == group.name)
 		)
 
 	if server:
@@ -460,7 +459,9 @@ def benches_with_sites(name):
 		["name", "status", "bench", "cluster", "creation"],
 	)
 
-	server_region_info = frappe.db.get_value("Cluster", sites[0].cluster, ["title", "image"], as_dict=True)
+	server_region_info = frappe.db.get_value(
+		"Cluster", sites[0].cluster, ["title", "image"], as_dict=True
+	)
 	rg_version = frappe.db.get_value("Release Group", name, "version")
 
 	benches = {}
@@ -478,6 +479,7 @@ def benches_with_sites(name):
 		bench["deployed_on"] = frappe.db.get_value("Bench", bench["bench"], "creation")
 
 	return benches
+
 
 @frappe.whitelist()
 @protected("Release Group")

@@ -91,7 +91,14 @@
 								class="mr-8"
 								type="select"
 								:options="siteStatusFilterOptions()"
-								v-model="siteFilter"
+								v-model="siteFilter.status"
+							/>
+							<FormControl
+								label="Tag"
+								class="mr-8"
+								type="select"
+								:options="siteTagFilterOptions()"
+								v-model="siteFilter.tag"
 							/>
 						</div>
 						<div class="w-8"></div>
@@ -135,7 +142,10 @@ export default {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
 			searchTerm: '',
-			siteFilter: 'All'
+			siteFilter: {
+				status: 'All',
+				tag: ''
+			}
 		};
 	},
 	resources: {
@@ -162,13 +172,6 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		getSiteFilterHeading() {
-			if (this.siteFilter === 'Update Available')
-				return 'Sites with Update Available';
-			else if (this.siteFilter.startsWith('tag:'))
-				return `Sites with tag ${this.siteFilter.slice(4)}`;
-			return `${this.siteFilter || 'All'} Sites`;
-		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
@@ -241,6 +244,14 @@ export default {
 					value: 'Update Available'
 				}
 			];
+		},
+		siteTagFilterOptions() {
+			if (!this.$resources.siteTags.data) return [];
+
+			return this.$resources.siteTags.data.map(tag => ({
+				label: tag,
+				value: tag
+			}));
 		}
 	},
 	computed: {
