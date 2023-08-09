@@ -175,9 +175,27 @@ export default {
 					condition: () => this.$account.team?.is_developer
 				},
 				{
-					label: 'Settings',
-					route: '/settings/profile',
+					label: 'Security',
+					route: '/security',
 					highlight: () => {
+						return this.$route.fullPath.indexOf('/security') >= 0;
+					},
+					icon: FCIcons.SecurityIcon,
+					condition: () => this.$account.team?.security_portal_enabled
+				},
+				{
+					label: 'Billing',
+					route: '/billing',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/billing') >= 0;
+					},
+					icon: FCIcons.BillingIcon,
+					condition: () => !this.$account.team?.parent_team
+				},
+				{
+					label: 'Settings',
+					route: '/settings',
+					highlight: route => {
 						return this.$route.fullPath.indexOf('/settings') >= 0;
 					},
 					icon: FCIcons.SettingsIcon

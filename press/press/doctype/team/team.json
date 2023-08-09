@@ -50,6 +50,7 @@
   "razorpay_enabled",
   "servers_enabled",
   "self_hosted_servers_enabled",
+  "security_portal_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -337,6 +338,12 @@
    "fieldname": "is_saas_user",
    "fieldtype": "Check",
    "label": "Is SaaS User"
+  },
+  {
+   "default": "0",
+   "fieldname": "security_portal_enabled",
+   "fieldtype": "Check",
+   "label": "Security Portal Enabled"
   }
  ],
  "links": [
@@ -386,7 +393,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-08-01 21:28:32.943478",
+ "modified": "2023-08-09 17:32:30.628298",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
