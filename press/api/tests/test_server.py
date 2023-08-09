@@ -10,6 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import change_plan, new, all
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
@@ -41,9 +42,11 @@ def successful_ping_ansible(self: BaseServer):
 	create_test_ansible_play("Ping Server", "ping.yml", self.doctype, self.name)
 
 
+@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachine, "client", new=MagicMock())
 class TestAPIServer(FrappeTestCase):
+	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 

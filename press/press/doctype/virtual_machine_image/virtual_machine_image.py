@@ -91,19 +91,18 @@ class VirtualMachineImage(Document):
 		)
 
 	@classmethod
-	def get_available(
-		cls, region: Optional[str] = None, series: Optional[str] = None
+	def get_available_for_series(
+		cls, series: str, region: Optional[str] = None
 	) -> Optional[str]:
 		images = frappe.qb.DocType(cls.DOCTYPE)
 		get_available_images = (
 			frappe.qb.from_(images)
 			.select("name")
+			.where(images.status == "Available")
 			.where(
-				images.status == "Available",
+				images.series == series,
 			)
 		)
-		if series:
-			get_available_images = get_available_images.where(images.series == series)
 		if region:
 			get_available_images = get_available_images.where(images.region == region)
 		available_images = get_available_images.run(as_dict=True)

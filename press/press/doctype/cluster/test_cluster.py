@@ -20,7 +20,10 @@ from unittest.mock import MagicMock, patch
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
 def create_test_cluster(
-	name: str = "Mumbai", region: str = "ap-south-1", public: bool = False
+	name: str = "Mumbai",
+	region: str = "ap-south-1",
+	public: bool = False,
+	add_default_servers: bool = False,
 ) -> "Cluster":
 	"""Create test Cluster doc"""
 	doc = frappe.get_doc(
@@ -35,6 +38,7 @@ def create_test_cluster(
 			"aws_access_key_id": "test",
 			"aws_secret_access_key": "test",
 			"public": public,
+			"add_default_servers": add_default_servers,
 		}
 	).insert(ignore_if_duplicate=True)
 	doc.reload()
