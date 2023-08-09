@@ -6,19 +6,14 @@
 			v-show="field.condition ? field.condition() : true"
 		>
 			<div class="flex space-x-4" v-if="Array.isArray(field)">
-				<Input
+				<FormControl
 					v-bind="getBindProps(subfield)"
 					:key="subfield.fieldname"
 					class="w-full"
 					v-for="subfield in field"
-					v-on="getBindListeners(subfield)"
 				/>
 			</div>
-			<Input
-				v-else
-				v-bind="getBindProps(field)"
-				v-on="getBindListeners(field)"
-			/>
+			<FormControl v-else v-bind="getBindProps(field)" />
 			<ErrorMessage
 				class="mt-1"
 				v-if="requiredFieldNotSet.includes(field)"
@@ -29,6 +24,8 @@
 </template>
 
 <script>
+import { FormControl } from 'frappe-ui';
+
 export default {
 	name: 'Form',
 	props: ['fields', 'modelValue'],
@@ -72,13 +69,9 @@ export default {
 				disabled: field.disabled,
 				required: field.required || false,
 				rows: field.rows,
-				placeholder: field.placeholder
-			};
-		},
-		getBindListeners(field) {
-			return {
-				change: e => this.onChange(e, field),
-				blur: e => this.checkRequired(field, e)
+				placeholder: field.placeholder,
+				'onUpdate:modelValue': value => this.onChange(value, field),
+				onBlur: e => this.checkRequired(field, e)
 			};
 		},
 		getInputType(field) {
@@ -91,6 +84,7 @@ export default {
 				Text: 'textarea'
 			}[field.fieldtype || 'Data'];
 		}
-	}
+	},
+	components: { FormControl }
 };
 </script>

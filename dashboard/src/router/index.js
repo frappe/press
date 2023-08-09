@@ -31,6 +31,15 @@ const routes = [
 			hideSidebar: true
 		}
 	},
+	{
+		path: '/subscription/:site?',
+		name: 'Subscription',
+		component: () => import('../views/checkout/Subscription.vue'),
+		props: true,
+		meta: {
+			hideSidebar: true
+		}
+	},
 	billingRoute,
 	settingsRoute,
 	{

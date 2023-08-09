@@ -139,7 +139,7 @@ class Team(Document):
 
 		team.save(ignore_permissions=True)
 
-		# team.create_stripe_customer()
+		team.create_stripe_customer()
 
 		if account_request.referrer_id:
 			team.create_referral_bonus(account_request.referrer_id)
@@ -288,7 +288,7 @@ class Team(Document):
 		# for settlement and if not, change payment mode
 
 	def allocate_free_credits(self):
-		if self.via_erpnext:
+		if self.via_erpnext or self.is_saas_user:
 			# dont allocate free credits for signups via erpnext
 			# since they get a 14 day free trial site
 			return

@@ -555,12 +555,20 @@ def leave_team(team):
 
 
 @frappe.whitelist()
-def get_billing_information():
+def get_billing_information(timezone=None):
+	from press.utils.country_timezone import get_country_from_timezone
+
 	team = get_current_team(True)
+
+	billing_details = frappe._dict()
 	if team.billing_address:
 		billing_details = frappe.get_doc("Address", team.billing_address).as_dict()
 		billing_details.billing_name = team.billing_name
-		return billing_details
+
+	if not billing_details.country and timezone:
+		billing_details.country = get_country_from_timezone(timezone)
+
+	return billing_details
 
 
 @frappe.whitelist()

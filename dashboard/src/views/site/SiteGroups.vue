@@ -1,10 +1,6 @@
 <template>
 	<div>
-		<div
-			:class="{ '': sitesViewType === 'List' }"
-			v-for="groupedSite in groupedSites"
-			:key="groupedSite.releaseGroup"
-		>
+		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
 			<div class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5">
 				<h3 class="text-base font-medium text-gray-800">
 					{{ groupedSite.releaseGroup }}
@@ -63,7 +59,7 @@ export default {
 		}
 	},
 	components: {
-		SiteList,
+		SiteList
 	},
 	data() {
 		return {
