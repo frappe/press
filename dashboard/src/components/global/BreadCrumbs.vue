@@ -31,8 +31,6 @@
 </template>
 <script setup>
 import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Dropdown } from 'frappe-ui';
 
 const props = defineProps({
 	items: {
@@ -41,20 +39,8 @@ const props = defineProps({
 	}
 });
 
-const router = useRouter();
-
 const items = computed(() => {
 	return (props.items || []).filter(Boolean);
-});
-
-const dropdownItems = computed(() => {
-	let allExceptLastTwo = items.value.slice(0, -2);
-	return allExceptLastTwo.map(item => ({
-		...item,
-		icon: null,
-		label: item.label,
-		onClick: () => router.push(item.route)
-	}));
 });
 
 const linkItems = computed(() => {
