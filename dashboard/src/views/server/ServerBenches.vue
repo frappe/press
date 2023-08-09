@@ -23,7 +23,7 @@ export default {
 			if (!this.$resources.benches.data) {
 				return [];
 			}
-			console.log(this.$resources.benches.data);
+
 			return this.$resources.benches.data.map(bench => ({
 				name: bench.name,
 				status: bench.status,
