@@ -9,7 +9,11 @@
 				v-for="a in securityUpdates.data"
 				:title="`Package: ${a.package}`"
 				:description="getDescription(a)"
-			/>
+			>
+				<template v-slot:actions>
+					<Badge :label="a.priority" :theme="getColor(a.priority)" />
+				</template>
+			</ListItem>
 		</div>
 
 		<template #actions>
@@ -17,7 +21,7 @@
 				class="text-base text-blue-500 hover:text-blue-600"
 				:to="`/servers/${server.name}/security_updates`"
 			>
-				All security updates →
+				View details →
 			</router-link>
 		</template>
 	</Card>
@@ -49,7 +53,19 @@ export default {
 	},
 	methods: {
 		getDescription(a) {
-			return `Version: ${a.version} <br> Priority: ${a.priority} <br> Created on: ${a.datetime}`;
+			return `Version: ${a.version} <br> ${this.formatDate(a.datetime)}`;
+		},
+		getColor(priority) {
+			switch (priority) {
+				case 'High':
+					return 'red';
+				case 'Medium':
+					return 'orange';
+				case 'Low':
+					return 'green';
+				default:
+					return 'gray';
+			}
 		}
 	}
 };

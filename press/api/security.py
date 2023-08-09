@@ -23,11 +23,12 @@ def fetch_security_updates(server, start=0, limit=10):
 	security_updates = frappe.get_all(
 		"Security Update",
 		filters={"server": server},
-		fields=["name", "package", "version", "priority", "datetime"],
-		order_by="datetime desc",
+		fields=["name", "package", "version", "priority", "priority_level", "datetime"],
+		order_by="priority_level asc",
 		start=start,
 		limit=limit,
 	)
+	print(security_updates)
 	return security_updates
 
 

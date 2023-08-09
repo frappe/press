@@ -65,7 +65,7 @@ class SecurityUpdate(Document):
 		package_meta = SecurityUpdate.get_package_meta_from_log(play)
 		package_change_log = SecurityUpdate.get_package_change_log(play)
 		version = SecurityUpdate.get_package_version(package_meta)
-		priority = SecurityUpdate.get_package_priority(package_meta)
+		priority, level = SecurityUpdate.get_package_priority(package_meta)
 
 		if frappe.db.exists(
 			"Security Update",
@@ -85,6 +85,7 @@ class SecurityUpdate(Document):
 					"version": version,
 					"priority": priority,
 					"datetime": now_datetime(),
+					"priority_level": level,
 				}
 			)
 			security_update.insert(ignore_permissions=True)
@@ -124,13 +125,17 @@ class SecurityUpdate(Document):
 		return None
 
 	@staticmethod
-	def get_package_priority(package_meta):
-		priority_mapper = {" required": "High", " standard": "Medium", " optional": "Low"}
+	def get_package_priority_and_level(package_meta):
+		priority_mapper = {"required": "High", "standard": "Medium", "optional": "Low"}
+		priority_level_mapper = {"High": 1, "Medium": 2, "Low": 3}
 		priority = re.search("Priority:(.*)", package_meta)
 
 		try:
-			return priority_mapper.get(priority.group(1), "Low")
+			priority = priority_mapper.get(priority.group(1).strip(), "Low")
+			priority_level = priority_level_mapper.get(priority, 3)
+
+			return priority, priority_level
 		except Exception:
 			pass
 
-		return "Low"
+		return "Low", 3

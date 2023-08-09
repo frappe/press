@@ -11,6 +11,12 @@
 					:title="sec_update.package"
 					:description="formatDate(sec_update.datetime)"
 				>
+					<template v-slot:actions>
+						<Badge
+							:label="sec_update.priority"
+							:theme="getColor(sec_update.priority)"
+						/>
+					</template>
 				</ListItem>
 				<div class="border-b"></div>
 			</router-link>
@@ -32,6 +38,7 @@
 <script>
 import CardWithDetails from '@/components/CardWithDetails.vue';
 import SecurityUpdateInfo from './SecurityUpdateInfo.vue';
+import { formatDate } from '@vueuse/core';
 
 export default {
 	name: 'SecurityUpdates',
@@ -71,6 +78,30 @@ export default {
 
 		getSubTitle() {
 			return 'Pending security updates';
+		},
+		getColor(priority) {
+			switch (priority) {
+				case 'High':
+					return 'red';
+				case 'Medium':
+					return 'orange';
+				case 'Low':
+					return 'green';
+				default:
+					return 'gray';
+			}
+		},
+		getDescription(priority) {
+			switch (priority) {
+				case 'High':
+					return 'Critical';
+				case 'Medium':
+					return 'Important';
+				case 'Low':
+					return 'Minor';
+				default:
+					return 'Unknown';
+			}
 		}
 	},
 	computed: {

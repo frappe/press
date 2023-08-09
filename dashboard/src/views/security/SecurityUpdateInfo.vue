@@ -5,7 +5,7 @@
 				<div class="flex justify-between items-center">
 					<div>
 						<h4 class="text-lg font-medium">
-							Package Name: {{ secUpdateInfo.package }}
+							Package: {{ secUpdateInfo.package }}
 						</h4>
 						<p class="mt-1 text-sm text-gray-600">
 							Version: {{ secUpdateInfo.version }}
@@ -72,7 +72,7 @@ export default {
 				case 'High':
 					return 'red';
 				case 'Medium':
-					return 'yellow';
+					return 'orange';
 				case 'Low':
 					return 'green';
 				default:
