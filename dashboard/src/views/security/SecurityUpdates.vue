@@ -4,6 +4,9 @@
 			<router-link
 				v-for="sec_update in $resources.updates.data"
 				class="block cursor-pointer rounded-md px-2.5"
+				:class="
+					updateId === sec_update.name ? 'bg-gray-100' : 'hover:bg-gray-50'
+				"
 				:key="sec_update.name"
 				:to="updateRoute(sec_update.name)"
 			>

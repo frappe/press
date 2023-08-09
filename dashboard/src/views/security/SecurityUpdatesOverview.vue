@@ -5,15 +5,24 @@
 		:subtitle="'Pedning security updates'"
 	>
 		<div class="divide-y">
-			<ListItem
-				v-for="a in securityUpdates.data"
-				:title="`Package: ${a.package}`"
-				:description="getDescription(a)"
+			<router-link
+				v-for="sec_update in securityUpdates.data"
+				class="block cursor-pointer rounded-md px-2.5"
+				:key="sec_update.name"
+				:to="updateRoute(sec_update.name)"
 			>
-				<template v-slot:actions>
-					<Badge :label="a.priority" :theme="getColor(a.priority)" />
-				</template>
-			</ListItem>
+				<ListItem
+					:title="`Package: ${sec_update.package}`"
+					:description="getDescription(sec_update)"
+				>
+					<template v-slot:actions>
+						<Badge
+							:label="sec_update.priority"
+							:theme="getColor(sec_update.priority)"
+						/>
+					</template>
+				</ListItem>
+			</router-link>
 		</div>
 
 		<template #actions>
@@ -66,6 +75,9 @@ export default {
 				default:
 					return 'gray';
 			}
+		},
+		updateRoute(sec_update) {
+			return `/servers/${this.server.name}/security_updates/${sec_update}`;
 		}
 	}
 };
