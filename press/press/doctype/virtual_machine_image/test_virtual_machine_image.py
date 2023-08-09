@@ -29,10 +29,13 @@ def create_test_virtual_machine_image(
 		create_test_virtual_machine,
 	)
 
+	vm = create_test_virtual_machine(cluster=cluster, series=series)
+
 	return frappe.get_doc(
 		{
 			"doctype": "Virtual Machine Image",
-			"virtual_machine": create_test_virtual_machine(cluster=cluster, series=series).name,
+			"virtual_machine": vm.name,
+			"region": vm.region,
 			"status": "Available",
 			"aws_ami_id": "ami-1234567890",
 			"mariadb_root_password": "password",
