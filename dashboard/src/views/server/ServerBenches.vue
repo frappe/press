@@ -1,14 +1,11 @@
 <template>
-	<BenchList
-		v-if="$resources.benches.data"
-		:benches="$resources.benches.data"
-	></BenchList>
+	<ListView :items="benches" :dropdownItems="dropdownItems" />
 </template>
 <script>
-import BenchList from '../bench/BenchList.vue';
+import ListView from '@/components/ListView.vue';
 export default {
 	name: 'ServerBenches',
-	components: { BenchList },
+	components: { ListView },
 	props: ['server'],
 	resources: {
 		benches() {
@@ -19,6 +16,40 @@ export default {
 				},
 				auto: true
 			};
+		}
+	},
+	computed: {
+		benches() {
+			if (!this.$resources.benches.data) {
+				return [];
+			}
+			console.log(this.$resources.benches.data);
+			return this.$resources.benches.data.map(bench => ({
+				name: bench.name,
+				status: bench.status,
+				version: bench.version,
+				number_of_sites: bench.number_of_sites,
+				number_of_apps: bench.number_of_apps,
+				link: { name: 'BenchOverview', params: { benchName: bench.name } }
+			}));
+		}
+	},
+	methods: {
+		dropdownItems(bench) {
+			return [
+				{
+					label: 'New Site',
+					onClick: () => {
+						this.$router.push(`/${bench.name}/new`);
+					}
+				},
+				{
+					label: 'View Versions',
+					onClick: () => {
+						this.$router.push(`/benches/${bench.name}/versions`);
+					}
+				}
+			];
 		}
 	}
 };

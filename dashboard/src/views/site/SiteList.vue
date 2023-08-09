@@ -55,26 +55,6 @@ export default {
 			required: true
 		}
 	},
-	methods: {
-		siteBadge(site) {
-			let status = site.status;
-			if (site.update_available && site.status == 'Active') {
-				status = 'Update Available';
-			}
-
-			let usage = Math.max(
-				site.current_cpu_usage,
-				site.current_database_usage,
-				site.current_disk_usage
-			);
-			if (usage && usage >= 80 && status == 'Active') {
-				status = 'Attention Required';
-			}
-			if (site.trial_end_date) {
-				status = 'Trial';
-			}
-			return status;
-		}
-	}
+	methods: {}
 };
 </script>

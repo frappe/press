@@ -3,7 +3,7 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs :items="[{ label: 'Servers', route: '/servers' }]">
+			<BreadCrumbs :items="[{ label: 'Servers', route: { name: 'Servers' } }]">
 				<template v-if="this.$account.team.enabled" #actions>
 					<Dropdown
 						v-if="
@@ -67,7 +67,7 @@
 						<div class="w-8" />
 					</div>
 					<div class="mx-2.5 border-b" />
-					<ServerList :servers="servers" />
+					<ListView :items="servers" :dropdownItems="dropdownItems" />
 				</div>
 			</div>
 		</div>
@@ -89,14 +89,14 @@
 	</div>
 </template>
 <script>
-import ServerList from '@/views/server/ServerList.vue';
+import ListView from '@/components/ListView.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'Servers',
 	components: {
-		ServerList,
+		ListView,
 		PageHeader,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
@@ -134,6 +134,22 @@ export default {
 		serverTags: 'press.api.server.server_tags'
 	},
 	methods: {
+		dropdownItems(server) {
+			return [
+				{
+					label: 'Visit Server',
+					onClick: () => {
+						window.open(`https://${server.name}`, '_blank');
+					}
+				},
+				{
+					label: 'New Bench',
+					onClick: () => {
+						this.$router.push(`/servers/${server.app_server}/bench/new`);
+					}
+				}
+			];
+		},
 		getServerFilterHeading() {
 			if (this.serverFilter.startsWith('tag:'))
 				return `Servers with tag ${this.serverFilter.slice(4)}`;
@@ -198,7 +214,14 @@ export default {
 			if (!this.$resources.allServers.data) {
 				return [];
 			}
-			return this.$resources.allServers.data;
+
+			return this.$resources.allServers.data.map(server => ({
+				name: server.name,
+				status: server.status,
+				server_region_info: server.region_info,
+				plan: server.plan,
+				link: { name: 'ServerOverview', params: { serverName: server.name } }
+			}));
 		}
 	}
 };

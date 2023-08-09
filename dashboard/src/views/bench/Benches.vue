@@ -42,9 +42,9 @@
 				<div class="flex">
 					<div class="flex w-full px-3 py-4">
 						<div class="w-4/12 text-base font-medium text-gray-900">
-							Site Name
+							Bench Name
 						</div>
-						<div class="w-4/12 text-base font-medium text-gray-900">Status</div>
+						<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
 						<div class="w-4/12 text-base font-medium text-gray-900">
 							Version
 						</div>
@@ -53,7 +53,7 @@
 					<div class="w-10" />
 				</div>
 				<div class="mx-2.5 border-b" />
-				<BenchList :benches="benches" />
+				<ListView :items="benches" :dropdownItems="dropdownItems" />
 			</div>
 		</div>
 
@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import BenchList from './BenchList.vue';
+import ListView from '@/components/ListView.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
@@ -93,7 +93,7 @@ export default {
 		};
 	},
 	components: {
-		BenchList,
+		ListView,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -115,7 +115,14 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allBenches.data;
+			return this.$resources.allBenches.data.map(bench => ({
+				name: bench.name,
+				status: bench.status,
+				version: bench.version,
+				number_of_sites: bench.number_of_sites,
+				number_of_apps: bench.number_of_apps,
+				link: { name: 'BenchOverview', params: { benchName: bench.name } }
+			}));
 		}
 	},
 	methods: {
@@ -166,6 +173,22 @@ export default {
 			} else {
 				this.$router.replace('/benches/new');
 			}
+		},
+		dropdownItems(bench) {
+			return [
+				{
+					label: 'New Site',
+					onClick: () => {
+						this.$router.push(`/${bench.name}/new`);
+					}
+				},
+				{
+					label: 'View Versions',
+					onClick: () => {
+						this.$router.push(`/benches/${bench.name}/versions`);
+					}
+				}
+			];
 		}
 	}
 };

@@ -9,24 +9,7 @@
 			</div>
 			<div class="w-8" />
 		</div>
-		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
-			<div class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5">
-				<h3 class="text-base font-medium text-gray-800">
-					{{ groupedSite.releaseGroup }}
-				</h3>
-				<div class="text-sm text-gray-600">
-					{{ groupedSite.sites[0].version }}
-				</div>
-			</div>
-			<div v-for="(site, i) in groupedSite.sites" class="flex flex-col">
-				<SiteList
-					:key="site.name"
-					:site="site"
-					:dropdownItems="dropdownItems"
-				/>
-				<div v-if="i < groupedSite.sites.length - 1" class="mx-2.5 border-b" />
-			</div>
-		</div>
+		<ListView :items="groupedSites" :dropdownItems="dropdownItems" />
 	</div>
 
 	<Dialog
@@ -56,6 +39,7 @@
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteList from './SiteList.vue';
+import ListView from '@/components/ListView.vue';
 
 export default {
 	name: 'SiteGroups',
@@ -68,7 +52,8 @@ export default {
 		}
 	},
 	components: {
-		SiteList
+		SiteList,
+		ListView
 	},
 	data() {
 		return {
@@ -135,16 +120,43 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		},
+		siteBadge(site) {
+			let status = site.status;
+			if (site.update_available && site.status == 'Active') {
+				status = 'Update Available';
+			}
+
+			let usage = Math.max(
+				site.current_cpu_usage,
+				site.current_database_usage,
+				site.current_disk_usage
+			);
+			if (usage && usage >= 80 && status == 'Active') {
+				status = 'Attention Required';
+			}
+			if (site.trial_end_date) {
+				status = 'Trial';
+			}
+			return status;
 		}
 	},
 	computed: {
 		groupedSites() {
 			return this.sites.reduce((acc, curr) => {
-				const { title } = curr;
-				const existingGroup = acc.find(group => group.releaseGroup === title);
+				const { title, version } = curr;
+				const newCurr = {
+					name: curr.host_name || curr.name,
+					status: this.siteBadge(curr),
+					server_region_info: curr.server_region_info,
+					link: { name: 'SiteOverview', params: { siteName: curr.name } },
+					plan: curr.plan
+				};
 
-				if (existingGroup) existingGroup.sites.push(curr);
-				else acc.push({ releaseGroup: title, sites: [curr] });
+				const existingGroup = acc.find(group => group.group === title);
+
+				if (existingGroup) existingGroup.items.push(newCurr);
+				else acc.push({ group: title, version, items: [newCurr] });
 
 				return acc;
 			}, []);
