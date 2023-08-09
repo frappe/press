@@ -1,8 +1,19 @@
 <template>
 	<div>
-		<PageHeader title="Billing" subtitle="Manage your invoices and payments" />
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[{ label: 'Billings', route: { name: 'BillingScreen' } }]"
+			/>
+		</header>
+		<PageHeader
+			class="mx-5 mt-3"
+			title="Billing"
+			subtitle="Manage your invoices and payments"
+		/>
 
-		<div class="space-y-5">
+		<div class="mx-5 mt-3 space-y-5">
 			<AlertBillingInformation />
 			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 				<AccountBillingUsage class="col-span-1 md:col-span-2" />
