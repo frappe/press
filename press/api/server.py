@@ -147,24 +147,24 @@ def new(server):
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
 
-	domain = frappe.db.get_single_value("Press Settings", "domain")
 	cluster = frappe.get_doc("Cluster", server["cluster"])
-
-	app_image = cluster.get_available_vmi("f")
-	db_image = cluster.get_available_vmi("m")
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
 	db_server, job = cluster.create_server(
-		"Database Server", server["title"], domain, db_plan, db_image, team.name
+		"Database Server", server["title"], db_plan, team=team.name
 	)
 
-	# proxy_server = frappe.get_all(
-	# 	"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
-	# )[0]
+	proxy_server = frappe.get_all(
+		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
+	)[0]
+
+	# to be used by app server
+	cluster.database_server = db_server.name
+	cluster.proxy_server = proxy_server.name
 
 	app_plan = frappe.get_doc("Plan", server["app_plan"])
 	app_server, job = cluster.create_server(
-		"Server", server["title"], domain, app_plan, app_image, team.name
+		"Server", server["title"], app_plan, team=team.name
 	)
 
 	return {"server": app_server.name, "job": job.name}
