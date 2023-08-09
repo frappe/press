@@ -1,5 +1,5 @@
 <template>
-	<Card class="min-h-full h-full max-h-96" title="Firewall Configurations">
+	<Card class="min-h-full h-full max-h-96" title="Firewall">
 		<div class="divide-y"></div>
 	</Card>
 </template>

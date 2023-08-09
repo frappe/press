@@ -1,45 +1,39 @@
 <template>
-	<div
-		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
-	>
-		<div
-			class="py-2 text-base text-gray-600 sm:px-2"
-			v-if="servers.length === 0"
-		>
-			No servers
-		</div>
-		<div class="py-2" v-for="(server, index) in servers" :key="server.name">
-			<div class="flex items-center justify-between">
-				<router-link
-					:to="`/servers/${server.name}/security_overview`"
-					class="mr-1 block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
-				>
-					<div class="flex items-center justify-between">
-						<div class="text-base sm:w-4/12">
-							{{ server.title }}
-						</div>
-						<div class="text-base sm:w-3/12">
-							<Badge class="pointer-events-none" :label="server.status" />
-						</div>
-						<div class="text-base sm:w-3/12">
-							<Badge
-								class="pointer-events-none"
-								variant="ghost"
-								:label="server.security_updates_status"
-								:theme="getColor(server.security_updates_status)"
-							/>
-						</div>
-						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-							Created {{ formatDate(server.creation, 'relative') }}
+	<div class="py-2 text-base text-gray-600 sm:px-2" v-if="servers.length === 0">
+		No servers
+	</div>
+	<div v-for="(server, index) in servers" :key="server.name">
+		<div class="flex items-center rounded hover:bg-gray-100">
+			<router-link
+				:to="{ name: 'SecurityOverview', params: { serverName: server.name } }"
+				class="w-full px-3 py-4"
+			>
+				<div class="flex items-center">
+					<div class="sm:w-4/12">
+						<div class="truncate text-base font-medium" :title="server.name">
+							{{ server.name }}
 						</div>
 					</div>
-				</router-link>
-			</div>
-			<div
-				class="translate-y-2 transform"
-				:class="{ 'border-b': index < servers.length - 1 }"
-			/>
+					<div class="w-2/12">
+						<Badge
+							class="pointer-events-none"
+							variant="subtle"
+							:label="server.security_updates_status"
+							:theme="getColor(server.security_updates_status)"
+						/>
+					</div>
+				</div>
+			</router-link>
+			<Dropdown :options="dropdownItems(server)">
+				<template v-slot="{ open }">
+					<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+				</template>
+			</Dropdown>
 		</div>
+		<div
+			class="translate-y-2 transform"
+			:class="{ 'border-b': index < servers.length - 1 }"
+		/>
 	</div>
 </template>
 <script>
@@ -54,6 +48,28 @@ export default {
 			}
 
 			return 'red';
+		},
+		dropdownItems(server) {
+			return [
+				{
+					label: 'View Security Updates',
+					onClick: () => {
+						this.$router.push(`/servers/${server.name}/security_updates`);
+					}
+				},
+				{
+					label: 'Manage Firewall',
+					onClick: () => {
+						this.$router.push(`/servers/${server.app_server}/firewall`);
+					}
+				},
+				{
+					label: 'SSH Sessions',
+					onClick: () => {
+						this.$router.push(`/servers/${server.app_server}/ssh_session`);
+					}
+				}
+			];
 		}
 	}
 };

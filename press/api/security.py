@@ -3,7 +3,7 @@ from press.api.server import all as get_all_servers
 
 
 @frappe.whitelist()
-def get_servers(server_filter="All Servers"):
+def get_servers(server_filter):
 	servers = get_all_servers(server_filter=server_filter)
 
 	for server in servers:
@@ -33,3 +33,15 @@ def fetch_security_updates(server, start=0, limit=10):
 @frappe.whitelist()
 def get_security_update_details(update_id):
 	return frappe.get_doc("Security Update", update_id).as_dict()
+
+
+@frappe.whitelist()
+def fetch_ssh_sessions(server, start=0, limit=10):
+	return frappe.get_all(
+		"SSH Session",
+		filters={"server": server},
+		fields=["name", "user", "datetime"],
+		order_by="datetime desc",
+		start=start,
+		limit=limit,
+	)

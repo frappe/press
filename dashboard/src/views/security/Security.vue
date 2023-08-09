@@ -1,24 +1,46 @@
 <template>
 	<div>
-		<SectionHeader class="mx-5 mt-8" :heading="getServerFilterHeading()">
-			<template #actions>
-				<Dropdown :options="serverFilterOptions()">
-					<template v-slot="{ open }">
-						<Button
-							:class="[
-								'rounded-md px-3 py-1 text-base font-medium',
-								open ? 'bg-gray-200' : 'bg-gray-100'
-							]"
-							icon-left="chevron-down"
-							>{{ serverFilter.replace('tag:', '') }}</Button
-						>
-					</template>
-				</Dropdown>
-			</template>
-		</SectionHeader>
-		<div class="mt-3 mx-5">
-			<LoadingText v-if="$resources.allServers.loading" />
-			<ServerList v-else :servers="servers" />
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs :items="[{ label: 'Security', route: '/security' }]">
+			</BreadCrumbs>
+		</header>
+		<div>
+			<div class="mx-5 mt-5">
+				<div class="flex">
+					<div class="flex w-full space-x-2 pb-4">
+						<FormControl label="Search Servers" v-model="searchTerm">
+							<template #prefix>
+								<FeatherIcon name="search" class="w-4 text-gray-600" />
+							</template>
+						</FormControl>
+						<FormControl
+							label="Server Type"
+							class="mr-8"
+							type="select"
+							:options="serverTypeFilterOptions()"
+							v-model="serverFilter.server_type"
+						/>
+					</div>
+				</div>
+				<LoadingText v-if="$resources.allServers.loading" />
+				<div v-else>
+					<div class="flex">
+						<div class="flex w-full px-3 py-4">
+							<div class="w-4/12 text-base font-medium text-gray-900">
+								Server Name
+							</div>
+							<div class="w-2/12 text-base font-medium text-gray-900">
+								Security Updates
+							</div>
+						</div>
+					</div>
+					<div class="w-8" />
+				</div>
+				<div class="mx-2.5 border-b" />
+				<ServerList :servers="servers" />
+			</div>
 		</div>
 	</div>
 </template>
@@ -32,7 +54,11 @@ export default {
 	},
 	data() {
 		return {
-			serverFilter: 'All Servers'
+			searchTerm: '',
+			serverFilter: {
+				server_type: 'All Servers',
+				tag: ''
+			}
 		};
 	},
 	resources: {
@@ -78,6 +104,22 @@ export default {
 			];
 
 			return options;
+		},
+		serverTypeFilterOptions() {
+			return [
+				{
+					label: 'All Servers',
+					value: 'All Servers'
+				},
+				{
+					label: 'App Servers',
+					value: 'App Servers'
+				},
+				{
+					label: 'Database Servers',
+					value: 'Database Servers'
+				}
+			];
 		}
 	}
 };
