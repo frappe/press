@@ -1,14 +1,51 @@
 <template>
 	<div>
 		<div v-if="server">
-			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/servers" class="hover:text-gray-800">
-						← Back to Servers
-					</router-link>
-				</div>
+			<div>
+				<header
+					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+				>
+					<BreadCrumbs
+						:items="[
+							{ label: 'Servers', route: { name: 'Servers' } },
+							{
+								label: server?.title,
+								route: {
+									name: 'ServerOverview',
+									params: { serverName: server?.name }
+								}
+							}
+						]"
+					>
+						<template #actions>
+							<div>
+								<Dropdown :options="serverActions">
+									<template v-slot="{ open }">
+										<Button
+											variant="ghost"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
+								<Button
+									v-if="server?.status === 'Active'"
+									variant="solid"
+									icon-left="plus"
+									label="New Bench"
+									@click="
+										$router.push({
+											name: 'NewServerBench',
+											params: { server: server?.name }
+										})
+									"
+								/>
+							</div>
+						</template>
+					</BreadCrumbs>
+				</header>
 				<div
-					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+					class="flex flex-col space-y-3 px-5 pt-6 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
@@ -44,43 +81,12 @@
 								<p>{{ regionInfo.title }}</p>
 							</div>
 						</div>
-
-						<!-- Only for mobile view -->
-						<Dropdown
-							v-if="serverActions.length > 0"
-							:options="serverActions"
-							right
-						>
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
-					</div>
-
-					<div class="hidden flex-row space-x-3 md:flex">
-						<Button
-							v-for="action in serverActions"
-							v-if="serverActions.length <= 2"
-							:key="action.label"
-							:icon-left="action.icon"
-							:loading="action.loading"
-							:route="action.route"
-							@click="action.action"
-						>
-							{{ action.label }}
-						</Button>
-
-						<Dropdown v-if="serverActions.length > 2" :options="serverActions">
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div>
-			<Tabs class="pb-8" :tabs="tabs">
+		<div class="p-5 pt-1">
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="server" :is="Component" :server="server"></component>
 				</router-view>
@@ -182,15 +188,6 @@ export default {
 					icon: 'external-link',
 					onClick: () => {
 						window.open(`https://${this.server.name}`, '_blank');
-					}
-				},
-				this.server.status === 'Active' && {
-					label: 'New Bench',
-					icon: 'plus',
-					onClick: () => {
-						this.$router.replace(
-							`/servers/${this.server.app_server}/bench/new`
-						);
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
