@@ -637,6 +637,7 @@ def get_sites(site_filter={"status": "Active", "tag": ""}):
 			Site.trial_end_date,
 			Site.team,
 			Site.cluster,
+			Site.group,
 			ReleaseGroup.title,
 			ReleaseGroup.version,
 		)

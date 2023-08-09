@@ -10,9 +10,9 @@
 			v-if="group.group"
 			class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5"
 		>
-			<h3 class="text-base font-medium text-gray-800">
+			<router-link :to="group.link" class="text-base font-medium text-gray-800">
 				{{ group.group }}
-			</h3>
+			</router-link>
 			<div class="text-sm text-gray-600">
 				{{ group.version }}
 			</div>

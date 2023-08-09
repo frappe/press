@@ -145,7 +145,7 @@ export default {
 	computed: {
 		groupedSites() {
 			return this.sites.reduce((acc, curr) => {
-				const { title, version } = curr;
+				const { title, version, group } = curr;
 				const newCurr = {
 					name: curr.host_name || curr.name,
 					status: this.siteBadge(curr),
@@ -158,7 +158,16 @@ export default {
 				const existingGroup = acc.find(group => group.group === title);
 
 				if (existingGroup) existingGroup.items.push(newCurr);
-				else acc.push({ group: title, version, items: [newCurr] });
+				else
+					acc.push({
+						group: title,
+						version,
+						link: {
+							name: 'BenchOverview',
+							params: { benchName: group }
+						},
+						items: [newCurr]
+					});
 
 				return acc;
 			}, []);
