@@ -472,9 +472,9 @@ const routes = [
 		]
 	},
 	{
-		path: '/security-updates',
+		path: '/security',
 		name: 'Security Updates',
-		component: () => import('../views/security/SecurityUpdates.vue')
+		component: () => import('../views/security/Security.vue')
 	},
 	billingRoute,
 	settingsRoute,

@@ -45,10 +45,8 @@ class SecurityUpdate(Document):
 
 	@staticmethod
 	def _fetch_package_meta(package_list, server_obj):
-		print(package_list)
-		package_list = package_list[:1]
+		package_list = package_list[:6]
 
-		print(package_list)
 		for package in package_list:
 			try:
 				ansible = Ansible(
@@ -57,7 +55,6 @@ class SecurityUpdate(Document):
 					variables={"fetch_package_meta": True, "package": package},
 				)
 				play = ansible.run()
-				print(play.__dict__)
 				if play.status == "Success":
 					SecurityUpdate._create_security_update(package, ansible.play, server_obj)
 			except Exception:
