@@ -40,13 +40,16 @@
 								{{ item.server_region_info.title }}
 							</span>
 						</div>
+						<div v-if="item.version" class="w-2/12">
+							<Badge :label="item.version" />
+						</div>
+						<div class="w-2/12 space-x-2" v-if="item.tags">
+							<Badge v-for="tag in item.tags" :key="tag" :label="tag" />
+						</div>
 						<div v-if="item.plan" class="w-1/12">
 							<div class="text-base text-gray-700">
 								{{ item.plan ? `${$planTitle(item.plan)}/mo` : 'No Plan Set' }}
 							</div>
-						</div>
-						<div v-if="item.version" class="w-4/12">
-							<Badge :label="item.version" />
 						</div>
 						<div
 							v-if="

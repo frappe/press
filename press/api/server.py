@@ -89,6 +89,9 @@ def all(server_filter="All Servers"):
 			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
 		)
 		server["app_server"] = f"f{server.name[1:]}"
+		server["tags"] = frappe.get_all(
+			"Resource Tag", {"parent": server.name}, pluck="tag_name"
+		)
 		server["region_info"] = frappe.db.get_value(
 			"Cluster", server.cluster, ["title", "image"], as_dict=True
 		)

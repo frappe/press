@@ -5,6 +5,7 @@
 				<div class="w-4/12 text-base font-medium text-gray-900">Site Name</div>
 				<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
 				<div class="w-2/12 text-base font-medium text-gray-900">Region</div>
+				<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
 				<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
 			</div>
 			<div class="w-8" />
@@ -150,6 +151,7 @@ export default {
 					status: this.siteBadge(curr),
 					server_region_info: curr.server_region_info,
 					link: { name: 'SiteOverview', params: { siteName: curr.name } },
+					tags: curr.tags,
 					plan: curr.plan
 				};
 

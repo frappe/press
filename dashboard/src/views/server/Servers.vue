@@ -63,6 +63,7 @@
 							<div class="w-2/12 text-base font-medium text-gray-900">
 								Region
 							</div>
+							<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
 							<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
 						</div>
 						<div class="w-8" />
@@ -210,6 +211,7 @@ export default {
 				status: server.status,
 				server_region_info: server.region_info,
 				plan: server.plan,
+				tags: server.tags,
 				link: { name: 'ServerOverview', params: { serverName: server.name } }
 			}));
 		}

@@ -457,12 +457,6 @@ def options_for_new():
 
 
 @frappe.whitelist()
-def saas_product_options(product):
-	saas_product = frappe.get_doc("SaaS Product", product)
-
-
-
-@frappe.whitelist()
 def get_domain():
 	return frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 
@@ -631,10 +625,20 @@ def get_sites(site_filter=""):
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	sites_query = (
 		frappe.qb.from_(Site)
-	  	.select(
-			Site.name, Site.host_name, Site.status, Site.creation, Site.bench,
-			Site.current_cpu_usage, Site.current_database_usage, Site.current_disk_usage,
-			Site.trial_end_date, Site.team, Site.cluster, ReleaseGroup.title, ReleaseGroup.version
+		.select(
+			Site.name,
+			Site.host_name,
+			Site.status,
+			Site.creation,
+			Site.bench,
+			Site.current_cpu_usage,
+			Site.current_database_usage,
+			Site.current_disk_usage,
+			Site.trial_end_date,
+			Site.team,
+			Site.cluster,
+			ReleaseGroup.title,
+			ReleaseGroup.version,
 		)
 		.left_join(ReleaseGroup)
 		.on(Site.group == ReleaseGroup.name)
@@ -665,8 +669,13 @@ def get_sites(site_filter=""):
 
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
-		site_plan_name = frappe.get_value("Site", site.name, 'plan')
+		site_plan_name = frappe.get_value("Site", site.name, "plan")
 		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.tags = frappe.get_all(
+			"Resource Tag",
+			{"parent": site.name},
+			pluck="tag_name",
+		)
 		if site.bench in benches_with_updates:
 			site.update_available = True
 

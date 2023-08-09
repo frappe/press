@@ -44,9 +44,10 @@
 							Bench Name
 						</div>
 						<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
-						<div class="w-4/12 text-base font-medium text-gray-900">
+						<div class="w-2/12 text-base font-medium text-gray-900">
 							Version
 						</div>
+						<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
 						<div class="w-2/12 text-base font-medium text-gray-900">Stats</div>
 					</div>
 					<div class="w-10" />
@@ -128,6 +129,7 @@ export default {
 				version: bench.version,
 				number_of_sites: bench.number_of_sites,
 				number_of_apps: bench.number_of_apps,
+				tags: bench.tags,
 				link: { name: 'BenchOverview', params: { benchName: bench.name } }
 			}));
 		}
