@@ -1,53 +1,65 @@
 <template>
-	<div
-		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
-	>
+	<div class="sm:px-2 sm:py-1">
 		<div
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="benches.length === 0"
 		>
-			No benches to show. Go ahead, add a new one 🚀
+			No benches to show. Go ahead, create a new one 🚀
 		</div>
-		<div class="py-2" v-for="(bench, index) in benches" :key="bench.name">
-			<div class="flex items-center justify-between">
-				<router-link
-					:to="`/benches/${bench.name}/overview`"
-					class="mr-1 block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
-				>
-					<div class="flex items-center justify-between">
-						<div class="text-base w-2/3 sm:w-4/12">
-							{{ bench.title }}
+		<div
+			v-else
+			class="rounded-md hover:bg-gray-50"
+			v-for="(bench, index) in benches"
+			:key="bench.name"
+		>
+			<div class="flex items-center">
+				<div class="flex w-full items-center justify-between">
+					<router-link
+						:to="`/benches/${bench.name}/overview`"
+						class="mr-1 block w-full py-3 sm:px-2"
+					>
+						<div class="flex items-center justify-between">
+							<div class="flex w-1/3 flex-col">
+								<div class="text-base font-medium">
+									{{ bench.title }}
+								</div>
+								<div class="mt-1 hidden text-base text-gray-600 sm:block">
+									Created on {{ formatDate(bench.creation, 'DATE_MED') }}
+								</div>
+							</div>
+							<div class="w-1/3 text-base sm:w-4/12">
+								<Badge :label="bench.status" />
+							</div>
+							<div class="hidden text-base sm:block sm:w-4/12">
+								<Badge :label="bench.version" />
+							</div>
+							<div class="mt-1 hidden w-1/6 text-sm text-gray-600 sm:block">
+								{{
+									`${bench.number_of_sites} ${$plural(
+										bench.number_of_sites,
+										'Site',
+										'Sites'
+									)}`
+								}}
+								&middot;
+								{{
+									`${bench.number_of_apps} ${$plural(
+										bench.number_of_apps,
+										'App',
+										'Apps'
+									)}`
+								}}
+							</div>
 						</div>
-						<div class="text-base w-1/3 sm:w-4/12">
-							<Badge :label="bench.status" />
-						</div>
-						<div class="text-base hidden sm:block sm:w-4/12">
-							<Badge
-								:label="`${bench.number_of_apps} ${
-									bench.number_of_apps == 1 ? 'App' : 'Apps'
-								}`"
-							/>
-						</div>
-						<div
-							class="hidden w-2/12 text-right text-sm text-gray-600 sm:block"
-						>
-							{{ bench.version }} &middot; {{ bench.number_of_sites }} Sites
-						</div>
-					</div>
-				</router-link>
-
-				<div class="text-right text-base">
-					<Dropdown :options="dropdownItems(bench)" right>
-						<template v-slot="{ open }">
-							<Button icon="more-horizontal" />
-						</template>
-					</Dropdown>
+					</router-link>
 				</div>
+				<Dropdown class="mr-2" :options="dropdownItems(bench)">
+					<template v-slot="{ open }">
+						<Button variant="ghost" icon="more-horizontal" />
+					</template>
+				</Dropdown>
 			</div>
-			<div
-				class="translate-y-2 transform"
-				:class="{ 'border-b': index < benches.length - 1 }"
-			/>
+			<div v-if="index < benches.length - 1" class="mx-2.5 border-b" />
 		</div>
 	</div>
 </template>
