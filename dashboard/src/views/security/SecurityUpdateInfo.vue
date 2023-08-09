@@ -2,10 +2,7 @@
 	<CardDetails :showDetails="showDetails">
 		<div class="px-6 py-5">
 			<template v-if="showDetails">
-				<!-- <summary
-					class="inline-flex w-full items-center py-2 focus:outline-none"
-				> -->
-				<div class="flex items-center">
+				<div class="flex justify-between items-center">
 					<div>
 						<h4 class="text-lg font-medium">
 							Package Name: {{ secUpdateInfo.package }}
@@ -14,42 +11,45 @@
 							Version: {{ secUpdateInfo.version }}
 						</p>
 					</div>
-				</div>
-
-				<div class="mt-10">
-					<div>
-						<h4 class="text-lg font-medium">Package Meta</h4>
-
-						<div
-							class="rounded-md bg-gray-100 px-2 py-2.5 font-mono text-xs text-gray-900 overflow-auto mt-2"
-							:style="{
-								width: viewportWidth < 768 ? 'calc(100vw - 6rem)' : ''
-							}"
-						>
-							<div class="max-w-md">
-								<pre>{{ secUpdateInfo.package_meta || 'No output' }}</pre>
-							</div>
-						</div>
+					<div class="justify-end">
+						<Badge
+							class="pointer-events-none"
+							variant="subtle"
+							size="lg"
+							:label="secUpdateInfo.priority"
+							:theme="getColor(secUpdateInfo.priority)"
+						/>
 					</div>
 				</div>
-				<!-- </summary> -->
 			</template>
 			<div v-else>
 				<LoadingText v-if="loading" />
 				<span v-else class="text-base text-gray-600"> No item selected </span>
 			</div>
 		</div>
+		<div class="flex-auto px-6 overflow-auto" v-if="showDetails">
+			<InfoSection
+				sectionName="Package Meta"
+				:sectionData="secUpdateInfo.package_meta"
+			/>
+			<InfoSection
+				sectionName="Change Log"
+				:sectionData="secUpdateInfo.change_log"
+			/>
+		</div>
 	</CardDetails>
 </template>
 <script>
 import CardDetails from '@/components/CardDetails.vue';
+import InfoSection from './InfoSection.vue';
 
 export default {
 	name: 'SecurityUpdateInfo',
 	props: ['updateId', 'showDetails'],
 	inject: ['viewportWidth'],
 	components: {
-		CardDetails
+		CardDetails,
+		InfoSection
 	},
 	resources: {
 		secUpdateInfo() {
@@ -64,6 +64,20 @@ export default {
 	computed: {
 		secUpdateInfo() {
 			return this.$resources.secUpdateInfo.data;
+		}
+	},
+	methods: {
+		getColor(priority) {
+			switch (priority) {
+				case 'High':
+					return 'red';
+				case 'Medium':
+					return 'yellow';
+				case 'Low':
+					return 'green';
+				default:
+					return 'gray';
+			}
 		}
 	}
 };
