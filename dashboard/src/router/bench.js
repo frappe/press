@@ -34,6 +34,7 @@ export default [
 				props: true
 			},
 			{
+				name: 'BenchOverview',
 				path: 'overview',
 				component: () => import('../views/bench/BenchOverview.vue')
 			},

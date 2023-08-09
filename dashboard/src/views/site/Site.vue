@@ -5,10 +5,10 @@
 		>
 			<BreadCrumbs
 				:items="[
-					{ label: 'Sites', route: '/sites' },
+					{ label: 'Sites', route: { name: 'Sites' } },
 					{
 						label: site?.host_name || site?.name,
-						route: `/sites/${site?.name}/overview`
+						route: { name: 'SiteOverview', params: { siteName: site?.name } }
 					}
 				]"
 			>

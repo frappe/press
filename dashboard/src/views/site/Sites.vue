@@ -4,7 +4,7 @@
 			<header
 				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 			>
-				<BreadCrumbs :items="[{ label: 'Sites', route: '/sites' }]">
+				<BreadCrumbs :items="[{ label: 'Sites', route: { name: 'Sites' } }]">
 					<template v-if="this.$account.team.enabled" #actions>
 						<Button
 							variant="solid"
