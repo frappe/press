@@ -1,4 +1,10 @@
 <template>
+	<div
+		class="flex h-[16rem] items-center justify-center"
+		v-if="groups[0].items.length === 0"
+	>
+		<div class="text-base text-gray-700">No Items</div>
+	</div>
 	<div v-for="group in groups" :key="group.group">
 		<div
 			v-if="group.group"
