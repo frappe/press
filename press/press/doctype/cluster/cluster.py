@@ -51,7 +51,7 @@ class Cluster(Document):
 				"Cluster", ["cidr_block"], pluck="cidr_block"
 			)
 			for block in blocks:
-				cidr_block = str(block)
+				cidr_block = "10.133.0.0/16"
 				if cidr_block not in existing_blocks:
 					self.cidr_block = cidr_block
 					self.subnet_cidr_block = cidr_block
@@ -280,7 +280,6 @@ class Cluster(Document):
 			server, _ = self.create_server(
 				doctype,
 				"Test",
-				vm_image=self.get_available_vmi(series=series),
 			)
 			match doctype:  # for populating Server doc's fields; assume the trio is created together
 				case "Database Server":
@@ -292,19 +291,38 @@ class Cluster(Document):
 			for doctype, series in self.private_servers.items():
 				self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series))
 
-	def create_vm(self, domain: str, series: str, team: str):
+	def create_vm(
+		self, machine_type: str, disk_size: int, domain: str, series: str, team: str
+	):
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
 				"cluster": self.name,
 				"domain": domain,
 				"series": series,
-				"disk_size": 8,
-				"machine_type": "t2.micro",
+				"disk_size": disk_size,
+				"machine_type": machine_type,
 				"virtual_machine_image": self.get_available_vmi(series),
 				"team": team,
 			},
 		).insert()
+
+	def get_or_create_basic_plan(self, server_type):
+		plan = frappe.get_doc(
+			{
+				"doctype": "Plan",
+				"document_type": server_type,
+				"price_usd": 0,
+				"price_inr": 0,
+				"instance_type": "t2.micro",
+				"disk_size": 10,
+				"ram": 1,
+				"cluster": self.name,
+				"name": f"Basic {server_type} Plan",
+			},
+		)
+		plan.insert(ignore_if_duplicate=True)
+		return plan
 
 	def create_server(
 		self,
@@ -318,8 +336,10 @@ class Cluster(Document):
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
 		server_series = {**self.base_servers, **self.private_servers}
 		team = team or get_current_team()
-		plan = plan or frappe._dict()
-		vm = self.create_vm(domain, server_series[doctype], team)
+		plan = plan or self.get_or_create_basic_plan(doctype)
+		vm = self.create_vm(
+			plan.instance_type, plan.disk_size, domain, server_series[doctype], team
+		)
 		server = None
 		if doctype == "Database Server":
 			server = vm.create_database_server()
