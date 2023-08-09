@@ -18,7 +18,7 @@
 				</BreadCrumbs>
 			</header>
 
-			<div class="mt-5 space-y-2 px-5">
+			<div class="my-5 space-y-2 px-5">
 				<div v-if="!$account.team.enabled">
 					<Alert title="Your account is disabled">
 						Enable your account to start creating sites
@@ -77,28 +77,29 @@
 				</div>
 			</div> -->
 
-			<div class="mx-5 my-6">
-				<SectionHeader :heading="getSiteFilterHeading()">
-					<template #actions>
-						<div class="flex space-x-2">
-							<Dropdown :options="siteFilterOptions()">
-								<template v-slot="{ open }">
-									<Button
-										:class="[
-											'rounded-md px-3 py-1 text-base font-medium',
-											open ? 'bg-gray-200' : 'bg-gray-100'
-										]"
-										icon-right="chevron-down"
-									>
-										{{ siteFilter.replace('tag:', '') }}</Button
-									>
+			<div class="mx-5">
+				<div>
+					<div class="flex">
+						<div class="flex w-full space-x-2 pb-4">
+							<FormControl
+								label="Search sites"
+								@blur="showSearch = false"
+								v-model="searchTerm"
+							>
+								<template #prefix>
+									<FeatherIcon name="search" class="w-4 text-gray-600" />
 								</template>
-							</Dropdown>
+							</FormControl>
+							<FormControl
+								label="Status"
+								class="mr-8"
+								type="select"
+								:options="siteStatusFilterOptions()"
+								v-model="siteFilter"
+							/>
 						</div>
-					</template>
-				</SectionHeader>
-
-				<div class="mt-6">
+						<div class="w-8"></div>
+					</div>
 					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteGroups :sites="sites" />
 				</div>
@@ -111,7 +112,7 @@ import SiteGroups from './SiteGroups.vue';
 import { defineAsyncComponent } from 'vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import { TabButtons } from 'frappe-ui';
+import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'Sites',
@@ -123,7 +124,7 @@ export default {
 	props: ['bench'],
 	components: {
 		SiteGroups,
-		TabButtons,
+		FormControl,
 		PageHeader,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
@@ -137,6 +138,7 @@ export default {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
+			searchTerm: '',
 			siteFilter: 'All'
 		};
 	},
@@ -220,45 +222,27 @@ export default {
 		recentSitesVisible() {
 			return this.sites.length > 3;
 		},
-		siteFilterOptions() {
-			const options = [
-				{
-					group: 'Status',
-					items: [
-						{
-							label: 'All',
-							onClick: () => (this.siteFilter = 'All')
-						},
-						{
-							label: 'Active',
-							onClick: () => (this.siteFilter = 'Active')
-						},
-						{
-							label: 'Broken',
-							onClick: () => (this.siteFilter = 'Broken')
-						},
-						{
-							label: 'Trial',
-							onClick: () => (this.siteFilter = 'Trial')
-						},
-						{
-							label: 'Update Available',
-							onClick: () => (this.siteFilter = 'Update Available')
-						}
-					]
-				}
-			];
-
-			if (!this.$resources.siteTags?.data?.length) return options;
-
+		siteStatusFilterOptions() {
 			return [
-				...options,
 				{
-					group: 'Tags',
-					items: this.$resources.siteTags.data.map(tag => ({
-						label: tag,
-						onClick: () => (this.siteFilter = `tag:${tag}`)
-					}))
+					label: 'All',
+					value: 'All'
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Broken',
+					value: 'Broken'
+				},
+				{
+					label: 'Trial',
+					value: 'Trial'
+				},
+				{
+					label: 'Update Available',
+					value: 'Update Available'
 				}
 			];
 		}
@@ -268,7 +252,11 @@ export default {
 			if (!this.$resources.allSites.data) {
 				return [];
 			}
-
+			if (this.searchTerm) {
+				return this.$resources.allSites.data.filter(site =>
+					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
+			}
 			return this.$resources.allSites.data;
 		},
 		recentlyCreatedSites() {
