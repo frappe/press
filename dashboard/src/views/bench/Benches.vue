@@ -134,7 +134,7 @@ export default {
 				);
 
 			return benches.map(bench => ({
-				name: bench.name,
+				name: bench.title,
 				status: bench.status,
 				version: bench.version,
 				number_of_sites: bench.number_of_sites,
