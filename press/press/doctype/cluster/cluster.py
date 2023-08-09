@@ -24,8 +24,8 @@ if typing.TYPE_CHECKING:
 class Cluster(Document):
 	base_servers = {
 		"Proxy Server": "n",
-		"Server": "f",
 		"Database Server": "m",
+		"Server": "f",  # App server is last as it needs both proxy and db server
 	}
 	private_servers = {
 		"Monitor Server": "p",
@@ -40,6 +40,8 @@ class Cluster(Document):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
 			self.copy_virtual_machine_images()
+			if not self.add_default_servers:
+				return
 			self.create_servers()
 
 	def validate_cidr_block(self):
@@ -255,18 +257,18 @@ class Cluster(Document):
 		)
 
 	def get_available_vmi(self, series) -> Optional[str]:
-		return VirtualMachineImage.get_available(self.region, series)
+		return VirtualMachineImage.get_available_for_series(series, self.region)
 
 	def copy_virtual_machine_images(self):
 		"""Creates VMIs required for the cluster"""
 		server_doctypes = {**self.base_servers}
 		if not self.public:
 			server_doctypes = {**server_doctypes, **self.private_servers}
-		for doctype, series in server_doctypes.items():
+		for _, series in server_doctypes.items():
 			same_region_vmi = self.get_available_vmi(series=series)
 			if same_region_vmi:
 				continue
-			other_region_vmi = VirtualMachineImage.get_available(series=series)
+			other_region_vmi = VirtualMachineImage.get_available_for_series(series)
 			if not other_region_vmi:
 				continue
 			frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)

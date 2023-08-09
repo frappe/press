@@ -10,6 +10,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import change_plan, new, all
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
@@ -56,6 +57,7 @@ def successful_update_agent_ansible(self: BaseServer):
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 class TestAPIServer(FrappeTestCase):
+	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 
