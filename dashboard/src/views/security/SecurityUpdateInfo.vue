@@ -12,6 +12,13 @@
 						</p>
 					</div>
 					<div class="justify-end">
+						<button
+							class="mr-4"
+							@click="redirectToUbuntuPage(secUpdateInfo.package)"
+						>
+							<span class="text-blue-600 text-base">More Info</span>
+						</button>
+
 						<Badge
 							class="pointer-events-none"
 							variant="subtle"
@@ -78,6 +85,9 @@ export default {
 				default:
 					return 'gray';
 			}
+		},
+		redirectToUbuntuPage(packageName) {
+			window.open(`https://launchpad.net/ubuntu/+source/${packageName}`);
 		}
 	}
 };
