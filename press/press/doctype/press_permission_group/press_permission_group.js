@@ -1,7 +1,7 @@
 // Copyright (c) 2023, Frappe and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Press User Group Permission", {
+// frappe.ui.form.on("Press Permission Group", {
 // 	refresh(frm) {
 
 // 	},

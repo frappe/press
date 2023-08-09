@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class PressUserGroupPermission(Document):
+class PressPermissionGroupUser(Document):
 	pass

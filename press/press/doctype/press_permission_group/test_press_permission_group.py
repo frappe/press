@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestPressUserGroupPermission(FrappeTestCase):
+class TestPressPermissionGroup(FrappeTestCase):
 	pass
