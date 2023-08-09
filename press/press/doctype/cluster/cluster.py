@@ -276,39 +276,50 @@ class Cluster(Document):
 	def create_servers(self):
 		"""Creates servers for the cluster"""
 		for doctype, series in self.base_servers.items():
-			self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series=series))
+			# TODO: remove Test title #
+			server, _ = self.create_server(
+				doctype,
+				"Test",
+				vm_image=self.get_available_vmi(series=series),
+			)
+			match doctype:  # for populating Server doc's fields; assume the trio is created together
+				case "Database Server":
+					self.database_server = server.name
+				case "Proxy Server":
+					self.proxy_server = server.name
 		if not self.public:
 			return NotImplementedError
 			for doctype, series in self.private_servers.items():
 				self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series))
 
-	def create_server(
-		self,
-		doctype: str,
-		title: str,
-		vm_image: str,
-		domain: str = None,
-		plan: "Plan" = None,
-		team: str = None,
-	):
-		"""Creates a server for the cluster"""
-		domain = domain or frappe.db.get_value(
-			"Root Domain", {"default_cluster": "Default"}, "name"
-		)
-		server_series = {**self.base_servers, **self.private_servers}
-		team = team or get_current_team()
-		vm = frappe.get_doc(
+	def create_vm(self, domain: str, series: str, team: str):
+		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
 				"cluster": self.name,
 				"domain": domain,
-				"series": server_series[doctype],
+				"series": series,
 				"disk_size": 8,
 				"machine_type": "t2.micro",
-				"virtual_machine_image": vm_image,
+				"virtual_machine_image": self.get_available_vmi(series),
 				"team": team,
 			},
 		).insert()
+
+	def create_server(
+		self,
+		doctype: str,
+		title: str,
+		plan: "Plan" = None,
+		domain: str = None,
+		team: str = None,
+	):
+		"""Creates a server for the cluster"""
+		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
+		server_series = {**self.base_servers, **self.private_servers}
+		team = team or get_current_team()
+		plan = plan or frappe._dict()
+		vm = self.create_vm(domain, server_series[doctype], team)
 		server = None
 		if doctype == "Database Server":
 			server = vm.create_database_server()
@@ -316,16 +327,16 @@ class Cluster(Document):
 		elif doctype == "Server":
 			server = vm.create_server()
 			server.title = f"{title} - Application"
-			# server.ram = app_plan.memory
-			# app_server.database_server = db_server.name
-			# app_server.proxy_server = proxy_server.name
+			server.ram = plan.memory
+			server.database_server = self.database_server
+			server.proxy_server = self.proxy_server
 			server.new_worker_allocation = True
-		# server.plan = plan.name
-		# server.create_subscription(plan.name)
 		elif doctype == "Proxy Server":
 			server = vm.create_proxy_server()
 			server.title = f"{title} - Proxy"
+		server.plan = plan.name
 		server.save()
+		server.create_subscription(plan.name)
 		job = server.run_press_job("Create Server")
 
 		return server, job
