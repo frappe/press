@@ -1,49 +1,70 @@
 <template>
-	<div
-		class="sm:rounded-md sm:border sm:border-gray-100 sm:py-1 sm:px-2 sm:shadow"
-	>
+	<div class="sm:px-2 sm:py-1">
 		<div
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="servers.length === 0"
 		>
 			No servers
 		</div>
-		<div class="py-2" v-for="(server, index) in servers" :key="server.name">
-			<div class="flex items-center justify-between">
+		<div v-for="(server, index) in servers" :key="server.name">
+			<div class="flex items-center rounded hover:bg-gray-100">
 				<router-link
-					:to="`/servers/${server.name}/overview`"
-					class="mr-1 block w-full rounded-md py-2 hover:bg-gray-50 sm:px-2"
+					:to="{ name: 'ServerOverview', params: { serverName: server.name } }"
+					class="w-full px-3 py-3"
 				>
-					<div class="flex items-center justify-between">
-						<div class="text-base sm:w-4/12">
-							{{ server.title }}
+					<div class="flex items-center">
+						<div class="w-4/12">
+							<div class="flex items-center space-x-2">
+								<div
+									class="truncate text-base font-medium"
+									:title="server.name"
+								>
+									{{ server.name }}
+								</div>
+							</div>
+							<div class="mt-1 hidden text-base text-gray-600 sm:block">
+								Created on {{ formatDate(server.creation, 'DATE_MED') }}
+							</div>
 						</div>
-						<div class="text-base sm:w-3/12">
-							<Badge class="pointer-events-none" :label="server.status" />
+						<div class="w-2/12">
+							<Badge
+								class="pointer-events-none"
+								variant="subtle"
+								:label="server.status"
+							/>
 						</div>
-						<div class="hidden w-2/12 text-sm text-gray-600 sm:block">
-							Created {{ formatDate(server.creation, 'relative') }}
+						<div class="w-2/12">
+							<img
+								v-if="server.region_info.image"
+								class="h-4"
+								:src="server.region_info.image"
+								:alt="`Flag of ${server.region_info.title}`"
+								:title="server.region_info.image"
+							/>
+							<span class="text-base text-gray-700" v-else>
+								{{ server.region_info.title }}
+							</span>
+						</div>
+						<div class="w-1/12">
+							<div class="text-base text-gray-700">
+								{{
+									server.plan
+										? `${$planTitle(server.plan)}${
+												server.plan.price_usd > 0 ? '/mo' : ''
+										  }`
+										: 'No Plan Set'
+								}}
+							</div>
 						</div>
 					</div>
 				</router-link>
-
-				<div class="text-right text-base">
-					<Dropdown
-						v-if="server.status === 'Active' || server.status === 'Updating'"
-						:options="dropdownItems(server)"
-						right
-					>
-						<template v-slot="{ open }">
-							<Button icon="more-horizontal" />
-						</template>
-					</Dropdown>
-					<div v-else class="h-[30px] w-[30px]"></div>
-				</div>
+				<Dropdown :options="dropdownItems(server)">
+					<template v-slot="{ open }">
+						<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+					</template>
+				</Dropdown>
 			</div>
-			<div
-				class="translate-y-2 transform"
-				:class="{ 'border-b': index < servers.length - 1 }"
-			/>
+			<div v-if="index < servers.length - 1" class="mx-2.5 border-b" />
 		</div>
 	</div>
 </template>
@@ -58,14 +79,6 @@ export default {
 	},
 	resources: {},
 	methods: {
-		serverBadge(server) {
-			let status = server.status;
-			let color = null;
-			return {
-				color,
-				status
-			};
-		},
 		dropdownItems(server) {
 			return [
 				{

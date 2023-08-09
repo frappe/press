@@ -41,14 +41,14 @@
 									'rounded-md px-3 py-1 text-base font-medium',
 									open ? 'bg-gray-200' : 'bg-gray-100'
 								]"
-								icon-left="chevron-down"
+								icon-right="chevron-down"
 								>{{ serverFilter.replace('tag:', '') }}</Button
 							>
 						</template>
 					</Dropdown>
 				</template>
 			</SectionHeader>
-			<div class="mt-3 mx-5">
+			<div class="mx-5 mt-3">
 				<LoadingText v-if="$resources.allServers.loading" />
 				<ServerList v-else :servers="servers" />
 			</div>

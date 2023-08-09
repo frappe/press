@@ -34,7 +34,13 @@ def all(server_filter="All Servers"):
 	if server_filter != "Database Servers":
 		app_server_query = (
 			frappe.qb.from_(app_server)
-			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
+			.select(
+				app_server.name,
+				app_server.title,
+				app_server.status,
+				app_server.creation,
+				app_server.cluster,
+			)
 			.where(
 				((app_server.team).isin(teams))
 				& (app_server.status != "Archived")
@@ -45,7 +51,13 @@ def all(server_filter="All Servers"):
 	if server_filter != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
-			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
+			.select(
+				db_server.name,
+				db_server.title,
+				db_server.status,
+				db_server.creation,
+				db_server.cluster,
+			)
 			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
 		)
 
@@ -72,7 +84,14 @@ def all(server_filter="All Servers"):
 	# https://github.com/frappe/frappe/issues/15609
 	servers = frappe.db.sql(query.get_sql(), as_dict=True)
 	for server in servers:
+		server_plan_name = frappe.get_value("Server", server.name, "plan")
+		server["plan"] = (
+			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
+		)
 		server["app_server"] = f"f{server.name[1:]}"
+		server["region_info"] = frappe.db.get_value(
+			"Cluster", server.cluster, ["title", "image"], as_dict=True
+		)
 	return servers
 
 
