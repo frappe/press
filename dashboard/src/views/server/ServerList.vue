@@ -1,5 +1,5 @@
 <template>
-	<div class="sm:px-2 sm:py-1">
+	<div>
 		<div
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="servers.length === 0"
@@ -10,20 +10,12 @@
 			<div class="flex items-center rounded hover:bg-gray-100">
 				<router-link
 					:to="{ name: 'ServerOverview', params: { serverName: server.name } }"
-					class="w-full px-3 py-3"
+					class="w-full px-3 py-4"
 				>
 					<div class="flex items-center">
 						<div class="w-4/12">
-							<div class="flex items-center space-x-2">
-								<div
-									class="truncate text-base font-medium"
-									:title="server.name"
-								>
-									{{ server.name }}
-								</div>
-							</div>
-							<div class="mt-1 hidden text-base text-gray-600 sm:block">
-								Created on {{ formatDate(server.creation, 'DATE_MED') }}
+							<div class="truncate text-base font-medium" :title="server.name">
+								{{ server.name }}
 							</div>
 						</div>
 						<div class="w-2/12">

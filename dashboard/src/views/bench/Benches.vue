@@ -38,7 +38,23 @@
 
 		<div class="mx-5 mt-3">
 			<LoadingText v-if="$resources.allBenches.loading" />
-			<BenchList v-else :benches="benches" />
+			<div v-else>
+				<div class="flex">
+					<div class="flex w-full px-3 py-4">
+						<div class="w-4/12 text-base font-medium text-gray-900">
+							Site Name
+						</div>
+						<div class="w-4/12 text-base font-medium text-gray-900">Status</div>
+						<div class="w-4/12 text-base font-medium text-gray-900">
+							Version
+						</div>
+						<div class="w-2/12 text-base font-medium text-gray-900">Stats</div>
+					</div>
+					<div class="w-10" />
+				</div>
+				<div class="mx-2.5 border-b" />
+				<BenchList :benches="benches" />
+			</div>
 		</div>
 
 		<Dialog

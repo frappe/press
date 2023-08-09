@@ -1,5 +1,5 @@
 <template>
-	<div class="sm:px-2 sm:py-1">
+	<div>
 		<div
 			class="py-2 text-base text-gray-600 sm:px-2"
 			v-if="benches.length === 0"
@@ -16,21 +16,16 @@
 				<div class="flex w-full items-center justify-between">
 					<router-link
 						:to="`/benches/${bench.name}/overview`"
-						class="mr-1 block w-full py-3 sm:px-2"
+						class="mr-1 block w-full px-3 py-4"
 					>
 						<div class="flex items-center justify-between">
-							<div class="flex w-1/3 flex-col">
-								<div class="text-base font-medium">
-									{{ bench.title }}
-								</div>
-								<div class="mt-1 hidden text-base text-gray-600 sm:block">
-									Created on {{ formatDate(bench.creation, 'DATE_MED') }}
-								</div>
+							<div class="w-1/3 text-base font-medium">
+								{{ bench.title }}
 							</div>
-							<div class="w-1/3 text-base sm:w-4/12">
+							<div class="w-1/3 text-base">
 								<Badge :label="bench.status" />
 							</div>
-							<div class="hidden text-base sm:block sm:w-4/12">
+							<div class="hidden w-4/12 text-base sm:block">
 								<Badge :label="bench.version" />
 							</div>
 							<div class="mt-1 hidden w-1/6 text-sm text-gray-600 sm:block">

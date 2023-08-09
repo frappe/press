@@ -2,18 +2,11 @@
 	<div class="flex items-center rounded hover:bg-gray-100">
 		<router-link
 			:to="{ name: 'SiteOverview', params: { siteName: site.name } }"
-			class="w-full px-3 py-3"
+			class="w-full px-3 py-4"
 		>
 			<div class="flex items-center">
-				<div class="w-4/12">
-					<div class="flex items-center space-x-2">
-						<div class="truncate text-base font-medium" :title="site.name">
-							{{ site.name }}
-						</div>
-					</div>
-					<div class="mt-1 hidden text-base text-gray-600 sm:block">
-						Created on {{ formatDate(site.creation, 'DATE_MED') }}
-					</div>
+				<div class="w-4/12 truncate text-base font-medium" :title="site.name">
+					{{ site.name }}
 				</div>
 				<div class="w-2/12">
 					<Badge

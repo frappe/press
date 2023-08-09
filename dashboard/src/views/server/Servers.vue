@@ -50,7 +50,25 @@
 			</SectionHeader>
 			<div class="mx-5 mt-3">
 				<LoadingText v-if="$resources.allServers.loading" />
-				<ServerList v-else :servers="servers" />
+				<div v-else>
+					<div class="flex">
+						<div class="flex w-full px-3 py-4">
+							<div class="w-4/12 text-base font-medium text-gray-900">
+								Server Name
+							</div>
+							<div class="w-2/12 text-base font-medium text-gray-900">
+								Status
+							</div>
+							<div class="w-2/12 text-base font-medium text-gray-900">
+								Region
+							</div>
+							<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
+						</div>
+						<div class="w-8" />
+					</div>
+					<div class="mx-2.5 border-b" />
+					<ServerList :servers="servers" />
+				</div>
 			</div>
 		</div>
 		<Dialog
@@ -83,6 +101,11 @@ export default {
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
+	},
+	pageMeta() {
+		return {
+			title: 'Servers - Frappe Cloud'
+		};
 	},
 	data() {
 		return {

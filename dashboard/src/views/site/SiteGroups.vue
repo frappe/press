@@ -1,5 +1,14 @@
 <template>
 	<div>
+		<div class="flex">
+			<div class="flex w-full px-3 py-4">
+				<div class="w-4/12 text-base font-medium text-gray-900">Site Name</div>
+				<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
+				<div class="w-2/12 text-base font-medium text-gray-900">Region</div>
+				<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
+			</div>
+			<div class="w-8" />
+		</div>
 		<div v-for="groupedSite in groupedSites" :key="groupedSite.releaseGroup">
 			<div class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5">
 				<h3 class="text-base font-medium text-gray-800">
