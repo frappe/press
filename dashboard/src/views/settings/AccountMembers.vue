@@ -135,7 +135,7 @@ export default {
 		dropdownItems(member) {
 			return [
 				{
-					label: 'Edit',
+					label: 'Edit Permissions',
 					icon: 'edit',
 					onClick: () => {
 						this.memberName = member.name;

@@ -9,8 +9,8 @@
 				<AccountAPI />
 				<AccountSSHKey />
 			</div>
-			<AccountMembers />
-			<AccountGroups />
+			<AccountMembers v-if="$account.user.name === $account.team.user" />
+			<AccountGroups v-if="$account.user.name === $account.team.user" />
 		</div>
 	</div>
 </template>
