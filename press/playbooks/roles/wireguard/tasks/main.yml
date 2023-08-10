@@ -13,11 +13,38 @@
 
 - name: Generate Wireguard Private Key
   shell: |
-    wg genkey | sudo tee /etc/wireguard/private.key
+    wg genkey | sudo tee /etc/wireguard/wg-private.key
   register: wg_private_key
+  when: wireguard_private_key == "False"
 
 - name: Generate Wireguard Public Key
   shell: |
-    echo "{{ wg_private_key.stdout }}" | wg pubkey | sudo tee /etc/wireguard/public.key
+    echo "{{ wg_private_key.stdout }}" | wg pubkey | sudo tee /etc/wireguard/wg-public.key
   register: wg_public_key
+  when: wireguard_public_key == "False"
 
+- name: Debug Wireguard wg_private_key.stdout
+  debug:
+    msg: "{{ wg_private_key }} and {{wg_public_key }} and {{ wireguard_public_key }}"
+
+- name: Copy Wireguard Config
+  template:
+    src: wg.conf
+    dest: /etc/wireguard/wg0.conf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Wireguard Quick up
+  shell: |
+    wg-quick up wg0
+
+- name: Wireguard Quick down
+  shell: |
+    wg-quick down wg0
+
+- name: Enable Wireguard
+  systemd:
+    name: wg-quick@wg0
+    state: started
+    enabled: yes
