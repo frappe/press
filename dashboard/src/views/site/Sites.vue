@@ -102,7 +102,6 @@
 							/>
 						</div>
 					</div>
-					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteGroups :sites="sites" />
 				</div>
 			</div>

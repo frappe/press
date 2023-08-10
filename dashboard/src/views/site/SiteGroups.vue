@@ -1,17 +1,86 @@
 <template>
-	<div>
-		<div class="flex">
-			<div class="flex w-full px-3 py-4">
-				<div class="w-4/12 text-base font-medium text-gray-900">Site Name</div>
-				<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
-				<div class="w-2/12 text-base font-medium text-gray-900">Region</div>
-				<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
-				<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
+	<Table
+		:columns="[
+			{ label: 'Site Name', name: 'name', width: 2 },
+			{ label: 'Status', name: 'status' },
+			{ label: 'Region', name: 'region' },
+			{ label: 'Tags', name: 'tags' },
+			{ label: 'Plan', name: 'plan' },
+			{ label: '', name: 'actions', width: 0.5 }
+		]"
+		:rows="sites"
+		v-slot="{ columns }"
+	>
+		<TableHeader />
+
+		<div v-for="group in groups" :key="group.group">
+			<div
+				class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
+			>
+				<span class="font-semibold text-gray-900">
+					{{ group.title }}
+				</span>
+				<span class="ml-2 text-gray-600">{{ group.version }}</span>
+				<Button
+					variant="ghost"
+					class="ml-auto"
+					:route="{ name: 'Bench', params: { benchName: group.group } }"
+				>
+					View Bench
+				</Button>
 			</div>
-			<div class="w-10" />
+
+			<TableRow
+				v-for="row in sitesByGroup[group.group]"
+				:key="row.name"
+				:row="row"
+			>
+				<TableCell v-for="column in columns">
+					<Badge v-if="column.name === 'status'" :label="siteBadge(row)" />
+					<div v-else-if="column.name === 'tags'" class="-space-x-5">
+						<Badge
+							class="ring-2 ring-white"
+							v-for="(tag, i) in row.tags.slice(0, 2)"
+							:theme="getColorBasedOnString(i)"
+							:label="tag"
+						/>
+						<Badge
+							class="ring-2 ring-white"
+							v-if="row.tags.length > 2"
+							:label="`+${row.tags.length - 2}`"
+						/>
+					</div>
+					<span v-else-if="column.name === 'plan'">
+						{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
+					</span>
+					<div v-else-if="column.name === 'region'">
+						<img
+							v-if="row.server_region_info.image"
+							class="h-4"
+							:src="row.server_region_info.image"
+							:alt="`Flag of ${row.server_region_info.title}`"
+							:title="row.server_region_info.image"
+						/>
+						<span class="text-base text-gray-700" v-else>
+							{{ row.server_region_info.title }}
+						</span>
+					</div>
+					<div class="w-full text-right" v-else-if="column.name == 'actions'">
+						<Dropdown @click.prevent :options="dropdownItems(row)">
+							<template v-slot="{ open }">
+								<Button
+									:variant="open ? 'subtle' : 'ghost'"
+									class="mr-2"
+									icon="more-horizontal"
+								/>
+							</template>
+						</Dropdown>
+					</div>
+					<span v-else>{{ row[column.name] || '' }}</span>
+				</TableCell>
+			</TableRow>
 		</div>
-		<ListView :items="groupedSites" :dropdownItems="dropdownItems" />
-	</div>
+	</Table>
 
 	<Dialog
 		:options="{
@@ -41,6 +110,11 @@
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteList from './SiteList.vue';
 import ListView from '@/components/ListView.vue';
+import Table from '@/components/Table/Table.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableBody from '@/components/Table/TableBody.vue';
+import TableRow from '@/components/Table/TableRow.vue';
+import TableCell from '@/components/Table/TableCell.vue';
 
 export default {
 	name: 'SiteGroups',
@@ -54,7 +128,12 @@ export default {
 	},
 	components: {
 		SiteList,
-		ListView
+		ListView,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
+		TableBody
 	},
 	data() {
 		return {
@@ -70,6 +149,9 @@ export default {
 		}
 	},
 	methods: {
+		getColorBasedOnString(i) {
+			return ['blue', 'green', 'red', 'orange'][i];
+		},
 		dropdownItems(site) {
 			return [
 				{
@@ -143,34 +225,40 @@ export default {
 		}
 	},
 	computed: {
-		groupedSites() {
-			return this.sites.reduce((acc, curr) => {
-				const { title, version, group } = curr;
-				const newCurr = {
-					name: curr.host_name || curr.name,
-					status: this.siteBadge(curr),
-					server_region_info: curr.server_region_info,
-					link: { name: 'SiteOverview', params: { siteName: curr.name } },
-					tags: curr.tags,
-					plan: curr.plan
+		sitesByGroup() {
+			let sitesByGroup = {};
+
+			for (let site of this.sites) {
+				let group = site.group;
+				if (!sitesByGroup[group]) {
+					sitesByGroup[group] = [];
+				}
+				site.route = {
+					name: 'SiteOverview',
+					params: {
+						siteName: site.name
+					}
 				};
+				sitesByGroup[group].push(site);
+			}
 
-				const existingGroup = acc.find(group => group.group === title);
-
-				if (existingGroup) existingGroup.items.push(newCurr);
-				else
-					acc.push({
-						group: title,
-						version,
-						link: {
-							name: 'BenchOverview',
-							params: { benchName: group }
-						},
-						items: [newCurr]
+			return sitesByGroup;
+		},
+		groups() {
+			let seen = [];
+			let groups = [];
+			for (let site of this.sites) {
+				console.log(site);
+				if (!seen.includes(site.group)) {
+					seen.push(site.group);
+					groups.push({
+						title: site.title,
+						group: site.group,
+						version: site.version
 					});
-
-				return acc;
-			}, []);
+				}
+			}
+			return groups;
 		}
 	}
 };

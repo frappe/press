@@ -141,21 +141,19 @@ export default {
 			let tabs = [
 				{
 					label: 'Sites',
-					route: 'sites',
-					condition: () => !!this.bench?.no_sites
+					route: 'sites'
 				},
-				// { label: 'Overview', route: 'overview', condition: () => true },
-				{ label: 'Apps', route: 'apps', condition: () => true },
-				// { label: 'Versions', route: 'versions', condition: () => true },
-				{ label: 'Deploys', route: 'deploys', condition: () => true },
+				{ label: 'Overview', route: 'overview' },
+				{ label: 'Apps', route: 'apps' },
+				{ label: 'Versions', route: 'versions' },
+				{ label: 'Deploys', route: 'deploys' },
 				{
 					label: 'Config',
-					route: 'bench-config',
-					condition: () => !this.bench?.public
+					route: 'bench-config'
 				},
-				{ label: 'Jobs', route: 'jobs', condition: () => true },
-				{ label: 'Settings', route: 'setting', condition: () => true }
-			].filter(tab => tab.condition());
+				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Settings', route: 'setting' }
+			];
 
 			if (this.bench) {
 				return tabs.map(tab => {
