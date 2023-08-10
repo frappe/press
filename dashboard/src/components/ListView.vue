@@ -49,8 +49,18 @@
 						<div v-if="item.version" class="w-2/12">
 							<Badge :label="item.version" />
 						</div>
-						<div class="w-2/12 space-x-2" v-if="item.tags">
-							<Badge v-for="tag in item.tags" :key="tag" :label="tag" />
+						<div class="w-2/12 -space-x-5" v-if="item.tags">
+							<Badge
+								class="ring-2 ring-white"
+								v-for="tag in item.tags.slice(0, 3)"
+								:key="tag"
+								:label="tag"
+							/>
+							<Badge
+								class="ring-2 ring-white"
+								v-if="item.tags.length > 3"
+								:label="`+${item.tags.length - 3}`"
+							/>
 						</div>
 						<div v-if="item.plan" class="w-1/12">
 							<div class="text-base text-gray-700">
