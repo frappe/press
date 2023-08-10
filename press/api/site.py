@@ -637,8 +637,12 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(site_filter={"status": "Active", "tag": ""}):
+@frappe.whitelist()
+def all(site_filter=None):
 	from press.press.doctype.team.team import get_child_team_members
+
+	if site_filter is None:
+		site_filter = {"status": "Active", "tag": ""}
 
 	team = get_current_team()
 	child_teams = [x.name for x in get_child_team_members(team)]
@@ -707,23 +711,6 @@ def get_sites(site_filter={"status": "Active", "tag": ""}):
 			site.update_available = True
 
 	return sites
-
-
-@frappe.whitelist()
-def all(site_filter=""):
-	return get_sites(site_filter=site_filter)
-
-
-@frappe.whitelist()
-def recent_sites():
-	sites = get_sites()
-
-	site_names = [site.name for site in sites]
-	if not site_names:
-		return []
-	recents = sites_with_recent_activity(site_names)
-
-	return [site for site in sites if site.name in recents]
 
 
 @frappe.whitelist()

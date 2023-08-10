@@ -88,7 +88,10 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, bench_filter={"status": "Active", "tag": ""}):
+def all(server=None, bench_filter=None):
+	if bench_filter is None:
+		bench_filter = {"status": "", "tag": ""}
+
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams

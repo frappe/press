@@ -22,7 +22,9 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(server_filter={"status": "All Servers", "tag": ""}):
+def all(server_filter=None):
+	if server_filter is None:
+		server_filter = {"status": "", "tag": ""}
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -71,14 +73,12 @@ def all(server_filter={"status": "All Servers", "tag": ""}):
 				(res_tag.parent == db_server.name) & (res_tag.tag_name == server_filter["tag"])
 			)
 
-	if server_filter["status"] == "All Servers":
-		query = app_server_query + database_server_query
-	elif server_filter["status"] == "App Servers":
+	if server_filter["status"] == "App Servers":
 		query = app_server_query
-	elif server_filter["status"] == "Database Servers":
+	if server_filter["status"] == "Database Servers":
 		query = database_server_query
 	else:
-		return []
+		query = app_server_query + database_server_query
 
 	# union isn't supported in qb for run method
 	# https://github.com/frappe/frappe/issues/15609
