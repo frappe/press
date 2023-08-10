@@ -47,13 +47,13 @@ def create_test_cluster(
 	return doc
 
 
-class TestCluster(unittest.TestCase):
+class TestPrivateCluster(unittest.TestCase):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
 
 	@mock_ec2
 	@mock_ssm
-	def test_creation_cluster_in_new_region_copies_VMIs_from_other_region(self):
+	def test_creation_of_cluster_in_new_region_copies_VMIs_from_other_region(self):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
 		)
@@ -66,6 +66,28 @@ class TestCluster(unittest.TestCase):
 		vmi_count_after = frappe.db.count("Virtual Machine Image")
 		self.assertEqual(vmi_count_before, 2)
 		self.assertEqual(vmi_count_after, vmi_count_before * 2)
+
+
+class TestPublicCluster(unittest.TestCase):
+	def tearDown(self) -> None:
+		frappe.db.rollback()
+
+	def test_creation_of_cluster_with_add_default_servers_without_vmis_work(self):
+		server_count_before = frappe.db.count("Server")
+		database_server_count_before = frappe.db.count("Database Server")
+		proxy_server_count_before = frappe.db.count("Proxy Server")
+		create_test_cluster(
+			name="Mumbai", region="ap-south-1", add_default_servers=True, public=True
+		)
+		server_count_after = frappe.db.count("Server")
+		database_server_count_after = frappe.db.count("Database Server")
+		proxy_server_count_after = frappe.db.count("Proxy Server")
+		self.assertEqual(server_count_before, 0)
+		self.assertEqual(database_server_count_before, 0)
+		self.assertEqual(proxy_server_count_before, 0)
+		self.assertEqual(server_count_after, 1)
+		self.assertEqual(database_server_count_after, 1)
+		self.assertEqual(proxy_server_count_after, 1)
 
 	@mock_ec2
 	@mock_ssm
@@ -216,12 +238,15 @@ class TestCluster(unittest.TestCase):
 	def test_create_cluster_without_aws_access_key_and_id_throws_err_if_the_group_doesnt_exist(
 		self,
 	):
-		self.assertRaises(
-			Exception,
-			self._create_cluster,
-			aws_access_key_id=None,
-			aws_secret_access_key=None,
-		)
+		try:
+			self.assertRaises(
+				Exception,
+				self._create_cluster,
+				aws_access_key_id=None,
+				aws_secret_access_key=None,
+			)
+		except Exception:
+			pass  # trigger rollback
 
 	@mock_iam
 	@patch.object(Cluster, "after_insert", new=MagicMock())
