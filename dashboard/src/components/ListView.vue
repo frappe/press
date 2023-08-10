@@ -53,7 +53,8 @@
 						<div class="w-2/12 -space-x-5" v-if="item.tags">
 							<Badge
 								class="ring-2 ring-white"
-								v-for="tag in item.tags.slice(0, 3)"
+								v-for="(tag, i) in item.tags.slice(0, 3)"
+								:theme="getColorBasedOnString(i)"
 								:key="tag"
 								:label="tag"
 							/>
@@ -120,6 +121,11 @@ export default {
 			return this.items[0]?.group
 				? this.items
 				: [{ group: '', items: this.items }];
+		}
+	},
+	methods: {
+		getColorBasedOnString(i) {
+			return ['blue', 'green', 'red', 'orange'][i];
 		}
 	}
 };

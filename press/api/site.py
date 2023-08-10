@@ -678,6 +678,7 @@ def get_sites(site_filter={"status": "Active", "tag": ""}):
 			"Resource Tag",
 			{"parent": site.name},
 			pluck="tag_name",
+			limit=4,
 		)
 		if site.bench in benches_with_updates:
 			site.update_available = True
