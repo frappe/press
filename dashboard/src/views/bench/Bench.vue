@@ -33,19 +33,22 @@
 				</template>
 			</BreadCrumbs>
 		</header>
-		<div>
-			<div class="px-5 pt-6">
-				<div
-					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
-				>
-					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-						<Badge class="ml-4" :label="bench.status" />
-					</div>
+
+		<EditBenchTitleDialog v-model="showEditTitleDialog" :bench="bench" />
+
+		<div class="p-5">
+			<div
+				class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+			>
+				<div class="flex items-center">
+					<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
+					<Badge class="ml-4" :label="bench.status" />
 				</div>
 			</div>
-		</div>
-		<div class="p-5 pt-1">
+			<div class="mb-2 mt-4">
+				<AlertBenchUpdate v-if="bench?.no_sites <= 0" :bench="bench" />
+				<AlertUpdate v-else :bench="bench" />
+			</div>
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component }">
 					<component v-if="bench" :is="Component" :bench="bench"></component>
@@ -57,6 +60,9 @@
 
 <script>
 import Tabs from '@/components/Tabs.vue';
+import AlertUpdate from '@/components/AlertUpdate.vue';
+import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
+import EditBenchTitleDialog from './EditBenchTitleDialog.vue';
 
 export default {
 	name: 'Bench',
@@ -67,7 +73,15 @@ export default {
 	},
 	props: ['benchName'],
 	components: {
-		Tabs
+		Tabs,
+		AlertUpdate,
+		AlertBenchUpdate,
+		EditBenchTitleDialog
+	},
+	data() {
+		return {
+			showEditTitleDialog: false
+		};
 	},
 	resources: {
 		bench() {
@@ -90,7 +104,6 @@ export default {
 		}
 	},
 	activated() {
-		this.routeToGeneral();
 		this.$socket.on('list_update', this.onSocketUpdate);
 	},
 	deactivated() {
@@ -100,13 +113,6 @@ export default {
 		onSocketUpdate({ doctype, name }) {
 			if (doctype == 'Release Group' && name == this.bench.name) {
 				this.reloadBench();
-			}
-		},
-		routeToGeneral() {
-			if (this.$route.matched.length === 1) {
-				let path = this.$route.fullPath;
-				let tab = 'overview';
-				this.$router.replace(`${path}/${tab}`);
 			}
 		},
 		reloadBench() {
@@ -139,7 +145,7 @@ export default {
 					condition: () => !!this.bench?.no_sites
 				},
 				// { label: 'Overview', route: 'overview', condition: () => true },
-				// { label: 'Apps', route: 'apps', condition: () => true },
+				{ label: 'Apps', route: 'apps', condition: () => true },
 				// { label: 'Versions', route: 'versions', condition: () => true },
 				{ label: 'Deploys', route: 'deploys', condition: () => true },
 				{
@@ -163,9 +169,15 @@ export default {
 		},
 		benchActions() {
 			return [
-				this.$account.user.user_type == 'System User' && {
+				{
+					label: 'Edit Title',
+					icon: 'edit',
+					onClick: () => (this.showEditTitleDialog = true)
+				},
+				{
 					label: 'View in Desk',
 					icon: 'external-link',
+					condition: () => this.$account.user.user_type == 'System User',
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
@@ -173,9 +185,10 @@ export default {
 						);
 					}
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'Impersonate Team',
 					icon: 'tool',
+					condition: () => this.$account.user.user_type == 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
 						this.$notify({
@@ -186,22 +199,22 @@ export default {
 						});
 					}
 				},
-				this.bench.status == 'Active' &&
-					!this.bench.public && {
-						label: 'Update All Sites to Latest Version',
-						icon: 'arrow-up-circle',
-						onClick: async () => {
-							await this.$resources.updateAllSites.submit();
-							this.$notify({
-								title: 'Site update scheduled successfully',
-								message:
-									'All sites in this bench will be updated to the latest version',
-								icon: 'check',
-								color: 'green'
-							});
-						}
+				{
+					label: 'Update All Sites to Latest Version',
+					icon: 'arrow-up-circle',
+					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					onClick: async () => {
+						await this.$resources.updateAllSites.submit();
+						this.$notify({
+							title: 'Site update scheduled successfully',
+							message:
+								'All sites in this bench will be updated to the latest version',
+							icon: 'check',
+							color: 'green'
+						});
 					}
-			].filter(Boolean);
+				}
+			];
 		}
 	}
 };

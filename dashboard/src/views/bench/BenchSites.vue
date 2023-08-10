@@ -17,6 +17,12 @@
 				/>
 			</div>
 		</div>
+		<div
+			class="text-base text-gray-600"
+			v-if="$resources.benchesWithSites.data?.length === 0"
+		>
+			No deployments
+		</div>
 	</div>
 
 	<Dialog
@@ -48,8 +54,8 @@ import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteCard from '@/components/SiteCard.vue';
 
 export default {
-	name: 'SitesList',
-	props: ['bench'],
+	name: 'BenchSites',
+	props: ['bench', 'benchName'],
 	components: {
 		SiteCard
 	},
@@ -67,6 +73,15 @@ export default {
 				method: 'press.api.bench.benches_with_sites',
 				params: {
 					name: this.bench?.name
+				},
+				auto: true
+			};
+		},
+		versions() {
+			return {
+				method: 'press.api.bench.versions',
+				params: {
+					name: this.benchName
 				},
 				auto: true
 			};

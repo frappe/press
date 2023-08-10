@@ -94,8 +94,10 @@ const routes = [
 		meta: {
 			isSaasPage: true
 		},
+		redirect: { name: 'BenchSiteList' },
 		children: [
 			{
+				name: 'BenchSiteList',
 				path: 'sites',
 				component: () => import('../views/bench/BenchSites.vue'),
 				props: true
