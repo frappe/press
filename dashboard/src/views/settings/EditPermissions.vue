@@ -19,7 +19,8 @@
 				placeholder="Search"
 				v-on:input="e => updateSearchTerm(e)"
 			/>
-			<div class="flex flex-col mb-8">
+			<LoadingText v-if="$resources.options.loading" />
+			<div v-else class="flex flex-col mb-8">
 				<div v-for="(option, index) in filteredList" class="border-b pt-2">
 					<span class="text-lg text-gray-600 mt-4 mr-2 pb-2 w-full">
 						{{ option.doctype }}
@@ -104,8 +105,7 @@ export default {
 						color: 'green',
 						icon: 'check'
 					});
-					this.show = false;
-					this.$emit('update:show', false);
+					this.$emit('close', true);
 				}
 			};
 		}
