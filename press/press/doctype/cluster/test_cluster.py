@@ -29,7 +29,7 @@ def create_test_cluster(
 	"""Create test Cluster doc"""
 	if frappe.db.exists("Cluster", name):
 		return frappe.get_doc("Cluster", name)
-	return frappe.get_doc(
+	doc = frappe.get_doc(
 		{
 			"doctype": "Cluster",
 			"name": name,
@@ -44,6 +44,8 @@ def create_test_cluster(
 			"add_default_servers": add_default_servers,
 		}
 	).insert(ignore_if_duplicate=True)
+	doc.reload()
+	return doc
 
 
 class TestCluster(unittest.TestCase):
