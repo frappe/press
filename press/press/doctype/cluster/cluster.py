@@ -51,21 +51,17 @@ class Cluster(Document):
 			)
 		elif not self.aws_access_key_id or not self.aws_secret_access_key:
 			root_client = settings.boto3_offsite_backup_session.client("iam")
-			group = (
-				root_client.get_group(GroupName="fc-vpc-customers")
-				.get("Group", {})
-				.get("GroupName")
+			group = (  # make sure group exists
+				root_client.get_group(GroupName="fc-vpc-customer").get("Group", {}).get("GroupName")
 			)
 			root_client.create_user(
-				UserName=self.name,
+				UserName=frappe.scrub(self.name),
 			)
-			root_client.add_user_to_group(
-				GroupName=group,
-				UserName=self.name,
-			)
+			root_client.add_user_to_group(GroupName=group, UserName=frappe.scrub(self.name))
 			access_key_pair = root_client.create_access_key(
-				UserName=self.name,
+				UserName=frappe.scrub(self.name),
 			)["AccessKey"]
+
 			self.aws_access_key_id = access_key_pair["AccessKeyId"]
 			self.aws_secret_access_key = access_key_pair["SecretAccessKey"]
 
