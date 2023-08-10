@@ -33,9 +33,10 @@ from press.utils import (
 )
 
 
-def protected(doctypes, action=None):
+def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
+		request_path = frappe.local.request.path.rsplit("/", 1)[-1]
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
@@ -56,19 +57,19 @@ def protected(doctypes, action=None):
 					# Logged in user is a team member
 					# Check if the user has permission to access the document
 					groups = frappe.get_all(
-						"Press Group User",
+						"Press Permission Group User",
 						{
 							"user": frappe.session.user,
 						},
 						pluck="parent",
 					)
 					if (
-						frappe.db.exists("Press User Permission", frappe.session.user)
-						and action
-						and groups
+						frappe.db.exists("Press User Permission", {"user": frappe.session.user}) or groups
+					) and frappe.db.exists(
+						"Press Method Permission", {"document_type": doctype, "method": request_path}
 					):
 						# has restricted access
-						if has_user_permission(doctype, name, action, groups):
+						if has_user_permission(doctype, name, request_path, groups):
 							return wrapped(*args, **kwargs)
 					else:
 						# has access to everything
@@ -500,12 +501,6 @@ def options_for_new():
 		"marketplace_apps": {row.app: row for row in marketplace_apps},
 		"versions": deployed_versions,
 	}
-
-
-@frappe.whitelist()
-def saas_product_options(product):
-	saas_product = frappe.get_doc("SaaS Product", product)
-
 
 
 @frappe.whitelist()

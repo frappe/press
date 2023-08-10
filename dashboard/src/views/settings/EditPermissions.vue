@@ -106,6 +106,7 @@ export default {
 						icon: 'check'
 					});
 					this.$emit('close', true);
+					this.$resources.options.fetch();
 				}
 			};
 		}
