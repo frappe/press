@@ -6,16 +6,17 @@
 import typing
 import frappe
 import unittest
+from press.press.doctype.proxy_server.proxy_server import ProxyServer
+from press.press.doctype.root_domain.test_root_domain import create_test_root_domain
 
 from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
-from press.press.doctype.virtual_machine_image.virtual_machine_image import (
-	VirtualMachineImage,
-)
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.cluster.cluster import Cluster
 
 from unittest.mock import MagicMock, patch
+
+from moto import mock_ec2, mock_ssm
 
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
@@ -45,18 +46,12 @@ def create_test_cluster(
 	return doc
 
 
-def successful_sync(self: VirtualMachineImage):
-	self.aws_instance_id = "ami-1234567890"
-	self.status = "Available"
-	self.save()
-
-
 class TestCluster(unittest.TestCase):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
 
-	@patch.object(VirtualMachineImage, "create_image", new=successful_sync)
-	@patch.object(VirtualMachineImage, "create_image_from_copy", new=successful_sync)
+	@mock_ec2
+	@mock_ssm
 	def test_creation_cluster_in_new_region_copies_VMIs_from_other_region(self):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
@@ -71,8 +66,8 @@ class TestCluster(unittest.TestCase):
 		self.assertEqual(vmi_count_before, 2)
 		self.assertEqual(vmi_count_after, vmi_count_before * 2)
 
-	@patch.object(VirtualMachineImage, "create_image", new=successful_sync)
-	@patch.object(VirtualMachineImage, "create_image_from_copy", new=successful_sync)
+	@mock_ec2
+	@mock_ssm
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
@@ -87,8 +82,8 @@ class TestCluster(unittest.TestCase):
 		self.assertEqual(vmi_count_before, 2)
 		self.assertEqual(vmi_count_after, vmi_count_before)
 
-	@patch.object(VirtualMachineImage, "create_image", new=successful_sync)
-	@patch.object(VirtualMachineImage, "create_image_from_copy", new=successful_sync)
+	@mock_ec2
+	@mock_ssm
 	def test_creation_of_public_cluster_only_adds_3_vms(self):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
@@ -105,3 +100,49 @@ class TestCluster(unittest.TestCase):
 		vm_count_after = frappe.db.count("Virtual Machine Image")
 		self.assertEqual(vm_count_before, 5)
 		self.assertEqual(vm_count_after, vm_count_before + 3)
+
+	@mock_ec2
+	@patch.object(ProxyServer, "validate", new=MagicMock())
+	def test_creation_of_public_cluster_with_servers_creates_3(self):
+		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
+			create_test_virtual_machine_image,
+		)
+
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+		cluster = create_test_cluster(
+			name="Mumbai", region="ap-south-1", public=True, add_default_servers=False
+		)
+		create_test_virtual_machine_image(cluster=cluster, series="m")
+		create_test_virtual_machine_image(cluster=cluster, series="f")
+		create_test_virtual_machine_image(cluster=cluster, series="n")
+
+		server_count_before = frappe.db.count("Server")
+		database_server_count_before = frappe.db.count("Database Server")
+		proxy_server_count_before = frappe.db.count("Proxy Server")
+
+		cluster = frappe.get_doc(
+			{
+				"doctype": "Cluster",
+				"name": "Mumbai 2",
+				"region": "ap-south-1",
+				"availability_zone": "ap-south-1a",
+				"cloud_provider": "AWS EC2",
+				"ssh_key": create_test_ssh_key().name,
+				"subnet_cidr_block": "10.3.0.0/16",
+				"aws_access_key_id": "test",
+				"aws_secret_access_key": "test",
+				"public": True,
+				"add_default_servers": True,
+			}
+		)
+		cluster.insert()
+		server_count_after = frappe.db.count("Server")
+		database_server_count_after = frappe.db.count("Database Server")
+		proxy_server_count_after = frappe.db.count("Proxy Server")
+		self.assertEqual(server_count_before, 0)
+		self.assertEqual(database_server_count_before, 0)
+		self.assertEqual(proxy_server_count_before, 0)
+		self.assertEqual(server_count_after, 1)
+		self.assertEqual(database_server_count_after, 1)
+		self.assertEqual(proxy_server_count_after, 1)
