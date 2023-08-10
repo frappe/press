@@ -112,7 +112,6 @@ import SiteList from './SiteList.vue';
 import ListView from '@/components/ListView.vue';
 import Table from '@/components/Table/Table.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
-import TableBody from '@/components/Table/TableBody.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 
@@ -132,8 +131,7 @@ export default {
 		Table,
 		TableHeader,
 		TableRow,
-		TableCell,
-		TableBody
+		TableCell
 	},
 	data() {
 		return {
@@ -248,7 +246,6 @@ export default {
 			let seen = [];
 			let groups = [];
 			for (let site of this.sites) {
-				console.log(site);
 				if (!seen.includes(site.group)) {
 					seen.push(site.group);
 					groups.push({
