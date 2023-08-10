@@ -9,7 +9,7 @@
 					{
 						label: bench?.title,
 						route: {
-							name: 'BenchOverview',
+							name: 'BenchSiteList',
 							params: { benchName: bench?.name }
 						}
 					}
@@ -143,9 +143,7 @@ export default {
 					label: 'Sites',
 					route: 'sites'
 				},
-				{ label: 'Overview', route: 'overview' },
 				{ label: 'Apps', route: 'apps' },
-				{ label: 'Versions', route: 'versions' },
 				{ label: 'Deploys', route: 'deploys' },
 				{
 					label: 'Config',

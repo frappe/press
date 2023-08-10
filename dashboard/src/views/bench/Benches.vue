@@ -196,7 +196,7 @@ export default {
 					number_of_apps: bench.number_of_apps
 				},
 				tags: bench.tags,
-				route: { name: 'BenchOverview', params: { benchName: bench.name } }
+				route: { name: 'BenchSiteList', params: { benchName: bench.name } }
 			}));
 		}
 	},
