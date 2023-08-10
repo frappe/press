@@ -41,7 +41,7 @@
 						v-model="benchFilter.tag"
 					/>
 				</div>
-				<div class="w-8"></div>
+				<div class="w-10"></div>
 			</div>
 			<LoadingText v-if="$resources.allBenches.loading" />
 			<div v-else>

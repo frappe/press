@@ -8,7 +8,7 @@
 				<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
 				<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
 			</div>
-			<div class="w-8" />
+			<div class="w-10" />
 		</div>
 		<ListView :items="groupedSites" :dropdownItems="dropdownItems" />
 	</div>

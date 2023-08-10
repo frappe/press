@@ -101,7 +101,6 @@
 								v-model="siteFilter.tag"
 							/>
 						</div>
-						<div class="w-8"></div>
 					</div>
 					<LoadingText v-if="$resources.allSites.loading" />
 					<SiteGroups :sites="sites" />

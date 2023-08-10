@@ -55,7 +55,6 @@
 							v-model="serverFilter.tag"
 						/>
 					</div>
-					<div class="w-8"></div>
 				</div>
 				<LoadingText v-if="$resources.allServers.loading" />
 				<div v-else>
@@ -73,7 +72,7 @@
 							<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
 							<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
 						</div>
-						<div class="w-8" />
+						<div class="w-10" />
 					</div>
 					<div class="mx-2.5 border-b" />
 					<ListView :items="servers" :dropdownItems="dropdownItems" />
