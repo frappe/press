@@ -1,6 +1,6 @@
 <template>
 	<Card
-		title="Team Members"
+		title="Team Members and Permissions"
 		subtitle="Team members can access your account on your behalf."
 	>
 		<template #actions>
@@ -19,17 +19,11 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge
-						v-if="getRoleBadgeProps(member).status == 'Owner'"
-						:label="getRoleBadgeProps(member).status"
-					/>
-					<Button
-						v-else
-						icon="trash-2"
-						@click="removeMember(member)"
-						:loading="$resources.removeMember.loading"
-					>
-					</Button>
+					<Dropdown :options="dropdownItems(member)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
+						</template>
+					</Dropdown>
 				</template>
 			</ListItem>
 		</div>
@@ -59,14 +53,27 @@
 				<ErrorMessage :message="$resourceErrors" />
 			</template>
 		</Dialog>
+		<EditPermissions
+			:type="'user'"
+			:show="showEditMemberDialog"
+			:name="memberName"
+			@close="showEditMemberDialog = false"
+		/>
 	</Card>
 </template>
 <script>
+import EditPermissions from './EditPermissions.vue';
+
 export default {
 	name: 'AccountMembers',
+	components: {
+		EditPermissions
+	},
 	data() {
 		return {
 			showManageMemberDialog: false,
+			showEditMemberDialog: false,
+			memberName: '',
 			showAddMemberForm: false,
 			memberEmail: null
 		};
@@ -124,6 +131,23 @@ export default {
 					closeDialog();
 				}
 			});
+		},
+		dropdownItems(member) {
+			return [
+				{
+					label: 'Edit',
+					icon: 'edit',
+					onClick: () => {
+						this.memberName = member.name;
+						this.showEditMemberDialog = true;
+					}
+				},
+				{
+					label: 'Remove',
+					icon: 'trash-2',
+					onClick: () => this.removeMember(member)
+				}
+			];
 		}
 	},
 	computed: {

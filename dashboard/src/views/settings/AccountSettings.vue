@@ -1,22 +1,24 @@
 <template>
 	<div>
 		<PageHeader title="Settings" :subtitle="pageSubtitle" />
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<AccountProfile />
-			<AccountTeam />
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-1">
+			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+				<AccountProfile />
+				<AccountReferral />
+				<AccountEmails />
+				<AccountAPI />
+				<AccountSSHKey />
+			</div>
 			<AccountMembers />
-			<AccountReferral />
-			<AccountEmails />
-			<AccountAPI />
-			<AccountSSHKey />
+			<AccountGroups />
 		</div>
 	</div>
 </template>
 
 <script>
 import AccountProfile from './AccountProfile.vue';
-import AccountTeam from './AccountTeam.vue';
 import AccountMembers from './AccountMembers.vue';
+import AccountGroups from './AccountGroups.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountEmails from './AccountEmails.vue';
 import AccountAPI from './AccountAPI.vue';
@@ -32,8 +34,8 @@ export default {
 	},
 	components: {
 		AccountProfile,
-		AccountTeam,
 		AccountMembers,
+		AccountGroups,
 		AccountReferral,
 		AccountEmails,
 		AccountAPI,
