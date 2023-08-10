@@ -47,7 +47,35 @@ def create_test_cluster(
 	return doc
 
 
-class TestPrivateCluster(unittest.TestCase):
+class TestCluster(unittest.TestCase):
+	@patch.object(
+		ProxyServer, "validate", new=MagicMock()
+	)  # avoid TLSCertificate validation
+	def _create_cluster(
+		self,
+		aws_access_key_id,
+		aws_secret_access_key,
+		public=False,
+	):
+		cluster = frappe.get_doc(
+			{
+				"doctype": "Cluster",
+				"name": "Mumbai 2",
+				"region": "ap-south-1",
+				"availability_zone": "ap-south-1a",
+				"cloud_provider": "AWS EC2",
+				"ssh_key": create_test_ssh_key().name,
+				"subnet_cidr_block": "10.3.0.0/16",
+				"aws_access_key_id": aws_access_key_id,
+				"aws_secret_access_key": aws_secret_access_key,
+				"public": public,
+				"add_default_servers": True,
+			}
+		)
+		return cluster.insert()
+
+
+class TestPrivateCluster(TestCluster):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
 
@@ -67,28 +95,6 @@ class TestPrivateCluster(unittest.TestCase):
 		self.assertEqual(vmi_count_before, 2)
 		self.assertEqual(vmi_count_after, vmi_count_before * 2)
 
-
-class TestPublicCluster(unittest.TestCase):
-	def tearDown(self) -> None:
-		frappe.db.rollback()
-
-	def test_creation_of_cluster_with_add_default_servers_without_vmis_work(self):
-		server_count_before = frappe.db.count("Server")
-		database_server_count_before = frappe.db.count("Database Server")
-		proxy_server_count_before = frappe.db.count("Proxy Server")
-		create_test_cluster(
-			name="Mumbai", region="ap-south-1", add_default_servers=True, public=True
-		)
-		server_count_after = frappe.db.count("Server")
-		database_server_count_after = frappe.db.count("Database Server")
-		proxy_server_count_after = frappe.db.count("Proxy Server")
-		self.assertEqual(server_count_before, 0)
-		self.assertEqual(database_server_count_before, 0)
-		self.assertEqual(proxy_server_count_before, 0)
-		self.assertEqual(server_count_after, 1)
-		self.assertEqual(database_server_count_after, 1)
-		self.assertEqual(proxy_server_count_after, 1)
-
 	@mock_ec2
 	@mock_ssm
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
@@ -104,6 +110,85 @@ class TestPublicCluster(unittest.TestCase):
 		vmi_count_after = frappe.db.count("Virtual Machine Image")
 		self.assertEqual(vmi_count_before, 2)
 		self.assertEqual(vmi_count_after, vmi_count_before)
+
+	@mock_ec2
+	@mock_ssm
+	@mock_iam
+	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
+		self,
+	):
+		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
+			create_test_virtual_machine_image,
+		)
+
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+		cluster = create_test_cluster(
+			name="Mumbai", region="ap-south-1", public=True, add_default_servers=False
+		)
+		create_test_virtual_machine_image(cluster=cluster, series="m")
+		create_test_virtual_machine_image(cluster=cluster, series="f")
+		create_test_virtual_machine_image(cluster=cluster, series="n")
+
+		# above is to facilate copy of imgs
+		server_count_before = frappe.db.count("Server")
+		database_server_count_before = frappe.db.count("Database Server")
+		proxy_server_count_before = frappe.db.count("Proxy Server")
+
+		boto3.client("iam").create_group(GroupName="fc-vpc-customer")
+
+		cluster = self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None)
+
+		server_count_after = frappe.db.count("Server")
+		database_server_count_after = frappe.db.count("Database Server")
+		proxy_server_count_after = frappe.db.count("Proxy Server")
+		self.assertEqual(server_count_before, 0)
+		self.assertEqual(database_server_count_before, 0)
+		self.assertEqual(proxy_server_count_before, 0)
+		self.assertEqual(server_count_after, 1)
+		self.assertEqual(database_server_count_after, 1)
+		self.assertEqual(proxy_server_count_after, 1)
+
+	def test_create_cluster_without_aws_access_key_and_id_throws_err_if_the_group_doesnt_exist(
+		self,
+	):
+		try:
+			self.assertRaises(
+				Exception,
+				self._create_cluster,
+				aws_access_key_id=None,
+				aws_secret_access_key=None,
+			)
+		except Exception:
+			pass  # trigger rollback
+
+
+class TestPublicCluster(TestCluster):
+	def tearDown(self) -> None:
+		frappe.db.rollback()
+
+	@mock_ec2
+	@mock_ssm
+	@patch.object(ProxyServer, "validate", new=MagicMock())
+	def test_creation_of_cluster_with_add_default_servers_without_vmis_work(self):
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+
+		server_count_before = frappe.db.count("Server")
+		database_server_count_before = frappe.db.count("Database Server")
+		proxy_server_count_before = frappe.db.count("Proxy Server")
+		create_test_cluster(
+			name="Mumbai", region="ap-south-1", add_default_servers=True, public=True
+		)
+		server_count_after = frappe.db.count("Server")
+		database_server_count_after = frappe.db.count("Database Server")
+		proxy_server_count_after = frappe.db.count("Proxy Server")
+		self.assertEqual(server_count_before, 0)
+		self.assertEqual(database_server_count_before, 0)
+		self.assertEqual(proxy_server_count_before, 0)
+		self.assertEqual(server_count_after, 1)
+		self.assertEqual(database_server_count_after, 1)
+		self.assertEqual(proxy_server_count_after, 1)
 
 	@mock_ec2
 	@mock_ssm
@@ -170,83 +255,6 @@ class TestPublicCluster(unittest.TestCase):
 		self.assertEqual(server_count_after, 1)
 		self.assertEqual(database_server_count_after, 1)
 		self.assertEqual(proxy_server_count_after, 1)
-
-	@patch.object(
-		ProxyServer, "validate", new=MagicMock()
-	)  # avoid TLSCertificate validation
-	def _create_cluster(
-		self,
-		aws_access_key_id,
-		aws_secret_access_key,
-		public=False,
-	):
-		cluster = frappe.get_doc(
-			{
-				"doctype": "Cluster",
-				"name": "Mumbai 2",
-				"region": "ap-south-1",
-				"availability_zone": "ap-south-1a",
-				"cloud_provider": "AWS EC2",
-				"ssh_key": create_test_ssh_key().name,
-				"subnet_cidr_block": "10.3.0.0/16",
-				"aws_access_key_id": aws_access_key_id,
-				"aws_secret_access_key": aws_secret_access_key,
-				"public": public,
-				"add_default_servers": True,
-			}
-		)
-		return cluster.insert()
-
-	@mock_ec2
-	@mock_ssm
-	@mock_iam
-	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
-		self,
-	):
-		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
-			create_test_virtual_machine_image,
-		)
-
-		root_domain = create_test_root_domain("local.fc.frappe.dev")
-		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
-		cluster = create_test_cluster(
-			name="Mumbai", region="ap-south-1", public=True, add_default_servers=False
-		)
-		create_test_virtual_machine_image(cluster=cluster, series="m")
-		create_test_virtual_machine_image(cluster=cluster, series="f")
-		create_test_virtual_machine_image(cluster=cluster, series="n")
-
-		# above is to facilate copy of imgs
-		server_count_before = frappe.db.count("Server")
-		database_server_count_before = frappe.db.count("Database Server")
-		proxy_server_count_before = frappe.db.count("Proxy Server")
-
-		boto3.client("iam").create_group(GroupName="fc-vpc-customer")
-
-		cluster = self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None)
-
-		server_count_after = frappe.db.count("Server")
-		database_server_count_after = frappe.db.count("Database Server")
-		proxy_server_count_after = frappe.db.count("Proxy Server")
-		self.assertEqual(server_count_before, 0)
-		self.assertEqual(database_server_count_before, 0)
-		self.assertEqual(proxy_server_count_before, 0)
-		self.assertEqual(server_count_after, 1)
-		self.assertEqual(database_server_count_after, 1)
-		self.assertEqual(proxy_server_count_after, 1)
-
-	def test_create_cluster_without_aws_access_key_and_id_throws_err_if_the_group_doesnt_exist(
-		self,
-	):
-		try:
-			self.assertRaises(
-				Exception,
-				self._create_cluster,
-				aws_access_key_id=None,
-				aws_secret_access_key=None,
-			)
-		except Exception:
-			pass  # trigger rollback
 
 	@mock_iam
 	@patch.object(Cluster, "after_insert", new=MagicMock())
