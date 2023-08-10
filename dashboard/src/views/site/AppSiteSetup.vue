@@ -66,7 +66,7 @@
 </template>
 <script setup>
 import { ref, computed } from 'vue';
-import { ErrorMessage, FormControl, Progress, createResource } from 'frappe-ui';
+import { ErrorMessage, Progress, createResource } from 'frappe-ui';
 import LoginBox from '../partials/LoginBox.vue';
 import { useElementSize } from '@vueuse/core';
 import { validateSubdomain } from '@/utils';
