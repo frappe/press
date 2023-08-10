@@ -93,7 +93,7 @@ export default {
 					this.autoCompleteList = this.$account.team_members
 						.filter(user => {
 							return (
-								!r.includes(user.name) || user.name == this.$account.team.user
+								!r.includes(user.name) && user.name != this.$account.team.user
 							);
 						})
 						.map(user => {
