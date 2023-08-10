@@ -46,11 +46,13 @@
   "proxysql_monitor_password",
   "is_proxysql_setup",
   "vpn_tab",
-  "wireguard_setup",
-  "wireguard_ip_block",
+  "is_wireguard_setup",
+  "wireguard_network",
+  "wireguard_network_ip",
   "wireguard_port",
   "wireguard_private_key",
   "wireguard_public_key",
+  "private_ip_interface_id",
   "wireguard_interface_id"
  ],
  "fields": [
@@ -315,17 +317,6 @@
    "label": "VPN"
   },
   {
-   "default": "0",
-   "fieldname": "wireguard_setup",
-   "fieldtype": "Check",
-   "label": "Wireguard Setup"
-  },
-  {
-   "fieldname": "wireguard_ip_block",
-   "fieldtype": "Data",
-   "label": "Wireguard IP Block"
-  },
-  {
    "default": "51820",
    "fieldname": "wireguard_port",
    "fieldtype": "Int",
@@ -345,10 +336,31 @@
    "fieldname": "wireguard_interface_id",
    "fieldtype": "Data",
    "label": "Wireguard Interface ID"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is Wireguard Setup"
+  },
+  {
+   "fieldname": "private_ip_interface_id",
+   "fieldtype": "Data",
+   "label": "Private IP Interface ID"
+  },
+  {
+   "fieldname": "wireguard_network",
+   "fieldtype": "Data",
+   "label": "Wireguard Network"
+  },
+  {
+   "fieldname": "wireguard_network_ip",
+   "fieldtype": "Data",
+   "label": "Wireguard Network IP"
   }
  ],
  "links": [],
- "modified": "2023-08-07 18:17:53.957085",
+ "modified": "2023-08-08 14:38:01.077307",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",
