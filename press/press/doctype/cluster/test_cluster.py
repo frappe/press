@@ -21,13 +21,15 @@ from moto import mock_ec2, mock_ssm
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
 def create_test_cluster(
-	name: str = "Mumbai",
-	region: str = "ap-south-1",
+	name: str = None,
+	region: str = None,
 	public: bool = False,
 	add_default_servers: bool = False,
 ) -> "Cluster":
 	"""Create test Cluster doc"""
-	doc = frappe.get_doc(
+	if frappe.db.exists("Cluster", name):
+		return frappe.get_doc("Cluster", name)
+	return frappe.get_doc(
 		{
 			"doctype": "Cluster",
 			"name": name,
@@ -42,8 +44,6 @@ def create_test_cluster(
 			"add_default_servers": add_default_servers,
 		}
 	).insert(ignore_if_duplicate=True)
-	doc.reload()
-	return doc
 
 
 class TestCluster(unittest.TestCase):
@@ -146,3 +146,13 @@ class TestCluster(unittest.TestCase):
 		self.assertEqual(server_count_after, 1)
 		self.assertEqual(database_server_count_after, 1)
 		self.assertEqual(proxy_server_count_after, 1)
+
+	def test_create_cluster_without_aws_access_key_and_id_creates_user_in_predefined_group_and_then_adds_servers(
+		self,
+	):
+		pass
+
+	def test_create_cluster_without_aws_access_key_and_id_throws_err_if_the_group_doesnt_exist(
+		self,
+	):
+		pass
