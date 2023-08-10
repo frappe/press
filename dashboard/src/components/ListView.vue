@@ -6,17 +6,18 @@
 		<div class="text-base text-gray-700">No Items</div>
 	</div>
 	<div v-for="group in groups" :key="group.group">
-		<div
+		<router-link
+			:to="group.link"
 			v-if="group.group"
-			class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5"
+			class="flex space-x-2 rounded-sm bg-gray-50 px-3 py-1.5 hover:bg-gray-100"
 		>
-			<router-link :to="group.link" class="text-base font-medium text-gray-800">
+			<div class="text-base font-medium text-gray-800">
 				{{ group.group }}
-			</router-link>
+			</div>
 			<div class="text-sm text-gray-600">
 				{{ group.version }}
 			</div>
-		</div>
+		</router-link>
 		<div v-for="(item, i) in group.items" class="flex flex-col">
 			<div class="flex items-center rounded hover:bg-gray-100">
 				<router-link :to="item.link" class="w-full px-3 py-4">
