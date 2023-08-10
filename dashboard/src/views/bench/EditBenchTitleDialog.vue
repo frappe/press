@@ -20,8 +20,6 @@
 	</Dialog>
 </template>
 <script>
-import { FormControl } from 'frappe-ui';
-
 export default {
 	name: 'EditBenchTitleDialog',
 	props: ['modelValue', 'bench'],
@@ -60,7 +58,6 @@ export default {
 				this.$emit('update:modelValue', value);
 			}
 		}
-	},
-	components: { FormControl }
+	}
 };
 </script>

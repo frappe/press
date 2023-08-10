@@ -121,14 +121,11 @@
 </template>
 
 <script>
-import Form from '@/components/Form.vue';
-import { Autocomplete, FormControl } from 'frappe-ui';
+import { Autocomplete } from 'frappe-ui';
 
 export default {
 	name: 'ConfigEditor',
 	components: {
-		FormControl,
-		Form,
 		Autocomplete
 	},
 	props: [
