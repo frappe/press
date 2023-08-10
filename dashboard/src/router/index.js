@@ -454,7 +454,7 @@ const routes = [
 	},
 	{
 		path: '/settings',
-		name: 'SettingsPage',
+		name: 'SettingsScreen',
 		component: () =>
 			import(
 				/* webpackChunkName: "account" */ '../views/settings/AccountSettings.vue'

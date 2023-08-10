@@ -1,7 +1,14 @@
 <template>
 	<div>
-		<PageHeader title="Settings" :subtitle="pageSubtitle" />
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-1">
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[{ label: 'Settings', route: { name: 'SettingsScreen' } }]"
+			/>
+		</header>
+		<PageHeader class="mx-5 mt-3" title="Settings" :subtitle="pageSubtitle" />
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-1 mx-5 mt-3">
 			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 				<AccountProfile />
 				<AccountReferral />
