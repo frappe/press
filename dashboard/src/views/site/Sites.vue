@@ -246,12 +246,22 @@ export default {
 			];
 		},
 		siteTagFilterOptions() {
-			if (!this.$resources.siteTags.data) return [];
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
+				}
+			];
 
-			return this.$resources.siteTags.data.map(tag => ({
-				label: tag,
-				value: tag
-			}));
+			if (!this.$resources.siteTags.data) return defaultOptions;
+
+			return [
+				...defaultOptions,
+				...this.$resources.siteTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
+			];
 		}
 	},
 	computed: {
