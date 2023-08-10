@@ -7,7 +7,12 @@ class SitePool:
 	def __init__(self, product):
 		self.product = product
 		self.site_count = frappe.db.count(
-			"Site", filters={"is_standby": True, "status": "Active", "standby_for_product": self.product}
+			"Site",
+			filters={
+				"is_standby": True,
+				"status": "Active",
+				"standby_for_product": self.product,
+			},
 		)
 		self.saas_product = frappe.get_doc("SaaS Product", product)
 
@@ -77,12 +82,14 @@ class SitePool:
 			"standby_for_product": self.product,
 			"status": "Active",
 		}
-		sites = frappe.db.get_all("Site", filters, pluck="name", order_by="creation asc", limit=1)
+		sites = frappe.db.get_all(
+			"Site", filters, pluck="name", order_by="creation asc", limit=1
+		)
 		return sites[0] if sites else None
 
 
 def create():
-	'''Create standby sites for all products with pooling enabled. This is called by the scheduler.'''
+	"""Create standby sites for all products with pooling enabled. This is called by the scheduler."""
 	products = frappe.get_all("SaaS Product", {"enable_pooling": 1}, pluck="name")
 	for product in products:
 		try:

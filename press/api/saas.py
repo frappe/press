@@ -417,37 +417,44 @@ def get_site_url_and_sid(key, app=None):
 		"sid": site.login(),
 	}
 
+
 @frappe.whitelist()
 def get_saas_product_info(product=None):
 	team = get_current_team()
 	product = frappe.utils.cstr(product)
-	site_request = frappe.db.get_value("SaaS Product Site Request",
+	site_request = frappe.db.get_value(
+		"SaaS Product Site Request",
 		filters={
 			"saas_product": product,
 			"team": team,
-			"status": ("in", ["Pending", "Wait for Site"])
+			"status": ("in", ["Pending", "Wait for Site"]),
 		},
 		fieldname=["name", "status", "site"],
-		as_dict=1
+		as_dict=1,
 	)
 	if site_request:
-		saas_product = frappe.db.get_value("SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True)
+		saas_product = frappe.db.get_value(
+			"SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
+		)
 		return {
 			"title": saas_product.title,
 			"logo": saas_product.logo,
 			"domain": saas_product.domain,
-			"site_request": site_request
+			"site_request": site_request,
 		}
+
 
 @frappe.whitelist()
 def create_site(subdomain, site_request):
 	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
 	return site_request_doc.create_site(subdomain)
 
+
 @frappe.whitelist()
 def get_site_progress(site_request):
 	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
 	return site_request_doc.get_progress()
+
 
 @frappe.whitelist()
 def login_to_site(site_request):
@@ -495,12 +502,15 @@ def subscription(site):
 			plan.pop("roles", "")
 			filtered_plans.append(plan)
 
-	trial_end_date, current_plan = frappe.db.get_value("Site", site, ["trial_end_date", "plan"])
+	trial_end_date, current_plan = frappe.db.get_value(
+		"Site", site, ["trial_end_date", "plan"]
+	)
 	return {
 		"trial_end_date": trial_end_date,
 		"current_plan": current_plan,
 		"plans": filtered_plans,
 	}
+
 
 @frappe.whitelist()
 def set_subscription_plan(site, plan):

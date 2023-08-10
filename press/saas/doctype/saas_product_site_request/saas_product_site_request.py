@@ -3,8 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
-from press.api.site import _new
 from press.saas.doctype.saas_product.pooling import SitePool
+
 
 class SaaSProductSiteRequest(Document):
 	def create_site(self, subdomain):
@@ -16,17 +16,26 @@ class SaaSProductSiteRequest(Document):
 		return self.get_progress()
 
 	def get_progress(self):
-		job_name, status = frappe.db.get_value("Agent Job", {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}, ["name", "status"])
+		job_name, status = frappe.db.get_value(
+			"Agent Job",
+			{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
+			["name", "status"],
+		)
 		if status == "Success":
 			self.status = "Site Created"
 			self.save(ignore_permissions=True)
-			return {'progress': 100}
+			return {"progress": 100}
 		elif status == "Running":
-			steps = frappe.db.get_all("Agent Job Step", filters={"agent_job": job_name}, fields=["step_name", "status"], order_by="creation asc")
+			steps = frappe.db.get_all(
+				"Agent Job Step",
+				filters={"agent_job": job_name},
+				fields=["step_name", "status"],
+				order_by="creation asc",
+			)
 			done = [s for s in steps if s.status in ("Success", "Skipped", "Failure")]
 			progress = len(done) / len(steps) * 100
-			return {'progress': progress}
+			return {"progress": progress}
 		elif status in ("Failure", "Undelivered"):
-			return {'progress': 0, 'error': True}
+			return {"progress": 0, "error": True}
 
-		return {'progress': 0}
+		return {"progress": 0}

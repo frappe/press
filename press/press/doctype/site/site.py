@@ -1105,14 +1105,19 @@ class Site(Document):
 		Bench = frappe.qb.DocType("Bench")
 		Server = frappe.qb.DocType("Server")
 
-		bench_query = (frappe.qb.from_(Bench)
-			.select(Bench.name, Bench.server, PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"))
+		bench_query = (
+			frappe.qb.from_(Bench)
+			.select(
+				Bench.name,
+				Bench.server,
+				PseudoColumn(f"`tabBench`.`cluster` = '{self.cluster}' `in_primary_cluster`"),
+			)
 			.left_join(Server)
 			.on(Bench.server == Server.name)
 			.where(Server.proxy_server.isin(proxy_servers))
 			.where(Bench.status == "Active")
 			.where(Bench.group == self.group)
-			.orderby(PseudoColumn('in_primary_cluster'), order=frappe.qb.desc)
+			.orderby(PseudoColumn("in_primary_cluster"), order=frappe.qb.desc)
 			.orderby(Server.use_for_new_sites, order=frappe.qb.desc)
 			.orderby(Bench.creation, order=frappe.qb.desc)
 			.limit(1)

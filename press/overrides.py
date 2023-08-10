@@ -57,7 +57,7 @@ def upload_file():
 
 
 def on_session_creation():
-	from press.utils import get_default_team_for_user, get_current_team
+	from press.utils import get_current_team
 
 	if (
 		not frappe.db.exists("Team", {"user": frappe.session.user})

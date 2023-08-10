@@ -6,7 +6,7 @@
 import frappe
 import json
 from frappe.model.document import Document
-from frappe.utils import formataddr, random_string, get_url
+from frappe.utils import random_string, get_url
 from press.utils import get_country_info
 
 
@@ -81,7 +81,7 @@ class AccountRequest(Document):
 				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
 				"read_pixel_path": get_url(
 					f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
-				)
+				),
 			}
 		)
 		frappe.sendmail(

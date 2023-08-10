@@ -667,25 +667,35 @@ class Team(Document):
 			erpnext_site = None
 			erpnext_site_plan_set = True
 
-		return frappe._dict({
-			"account_created": True,
-			"billing_setup": billing_setup,
-			"erpnext_site": erpnext_site,
-			"erpnext_site_plan_set": erpnext_site_plan_set,
-			"site_created": site_created,
-			"complete": billing_setup and site_created and erpnext_site_plan_set,
-		})
+		return frappe._dict(
+			{
+				"account_created": True,
+				"billing_setup": billing_setup,
+				"erpnext_site": erpnext_site,
+				"erpnext_site_plan_set": erpnext_site_plan_set,
+				"site_created": site_created,
+				"complete": billing_setup and site_created and erpnext_site_plan_set,
+			}
+		)
 
 	def get_route_on_login(self):
 		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-			saas_product = frappe.db.get_value("SaaS Product Site Request", {"team": self.name, "status": "Pending"}, "saas_product")
+			saas_product = frappe.db.get_value(
+				"SaaS Product Site Request",
+				{"team": self.name, "status": "Pending"},
+				"saas_product",
+			)
 			return f"/setup-site/{saas_product}"
 
 		return "/sites"
 
 	def get_pending_saas_site_request(self):
 		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-			return frappe.db.get_value("SaaS Product Site Request", {"team": self.name, "status": "Pending"}, "saas_product")
+			return frappe.db.get_value(
+				"SaaS Product Site Request",
+				{"team": self.name, "status": "Pending"},
+				"saas_product",
+			)
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
