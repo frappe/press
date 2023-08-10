@@ -1,125 +1,125 @@
 <template>
 	<div>
-		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
-		>
-			<BreadCrumbs :items="[{ label: 'Security', route: '/security' }]">
-			</BreadCrumbs>
-		</header>
-		<div>
-			<div class="mx-5 mt-5">
-				<div class="flex">
-					<div class="flex w-full space-x-2 pb-4">
-						<FormControl label="Search Servers" v-model="searchTerm">
-							<template #prefix>
-								<FeatherIcon name="search" class="w-4 text-gray-600" />
-							</template>
-						</FormControl>
-						<FormControl
-							label="Server Type"
-							class="mr-8"
-							type="select"
-							:options="serverTypeFilterOptions()"
-							v-model="serverFilter.server_type"
-						/>
+		<div v-if="server">
+			<div>
+				<!-- <header
+					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+				>
+					<BreadCrumbs
+						:items="[
+							{ label: 'Servers', route: { name: 'Security' } },
+							{
+								label: server?.title,
+								route: {
+									name: 'SecurityOverview',
+									params: { serverName: server?.name }
+								}
+							}
+						]"
+					>
+					</BreadCrumbs>
+				</header> -->
+				<div
+					class="flex flex-col space-y-3 px-5 pt-6 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+				>
+					<div class="mt-2 flex items-center">
+						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
+						<Badge class="ml-4" :label="server.status" />
 					</div>
 				</div>
-				<LoadingText v-if="$resources.allServers.loading" />
-				<div v-else>
-					<div class="flex">
-						<div class="flex w-full px-3 py-4">
-							<div class="w-4/12 text-base font-medium text-gray-900">
-								Server Name
-							</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">
-								Security Updates
-							</div>
-						</div>
-					</div>
-					<div class="w-8" />
-				</div>
-				<div class="mx-2.5 border-b" />
-				<ServerList :servers="servers" />
 			</div>
+		</div>
+		<div class="p-5 pt-1">
+			<Tabs :tabs="tabs">
+				<router-view v-slot="{ Component, route }">
+					<component v-if="server" :is="Component" :server="server"></component>
+				</router-view>
+			</Tabs>
 		</div>
 	</div>
 </template>
 
 <script>
-import ServerList from '@/views/security/ServerList.vue';
+import Tabs from '@/components/Tabs.vue';
+
 export default {
-	name: 'SecurityUpdates',
-	components: {
-		ServerList
-	},
-	data() {
+	name: 'SecurityOverview',
+	pageMeta() {
 		return {
-			searchTerm: '',
-			serverFilter: {
-				server_type: 'All Servers',
-				tag: ''
-			}
+			title: `Server - ${this.serverName} - Frappe Cloud`
 		};
 	},
+	props: ['serverName'],
+	components: {
+		Tabs
+	},
 	resources: {
-		allServers() {
+		server() {
 			return {
-				method: 'press.api.security.get_servers',
-				params: { server_filter: this.serverFilter },
-				auto: true
+				method: 'press.api.server.get',
+				params: {
+					name: this.serverName
+				},
+				auto: true,
+				onSuccess() {},
+				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},
-	computed: {
-		servers() {
-			if (!this.$resources.allServers.data) {
-				return [];
-			}
-			return this.$resources.allServers.data;
+	activated() {
+		if (this.server) {
+			this.routeToGeneral();
+		} else {
+			this.$resources.server.once('onSuccess', () => {
+				this.routeToGeneral();
+			});
 		}
 	},
 	methods: {
-		getServerFilterHeading() {
-			return this.serverFilter;
+		routeToGeneral() {
+			if (this.$route.matched.length === 1) {
+				let path = this.$route.fullPath;
+				this.$router.replace(`${path}/overview`);
+			}
+		}
+	},
+	computed: {
+		server() {
+			return this.$resources.server.data;
 		},
-		serverFilterOptions() {
-			const options = [
-				{
-					group: 'Types',
-					items: [
-						{
-							label: 'All Servers',
-							onClick: () => (this.serverFilter = 'All Servers')
-						},
-						{
-							label: 'App Servers',
-							onClick: () => (this.serverFilter = 'App Servers')
-						},
-						{
-							label: 'Database Servers',
-							onClick: () => (this.serverFilter = 'Database Servers')
-						}
-					]
-				}
+
+		tabs() {
+			let tabRoute = subRoute => `/security/${this.serverName}/${subRoute}`;
+			let tabs = [
+				{ label: 'Overview', route: 'overview' },
+				{ label: 'Security Updates', route: 'security_update' },
+				{ label: 'Firewall Configuration', route: 'firewall' },
+				{ label: 'SSH Log', route: 'ssh_logs' },
+				{ label: 'Nginx Overview', route: 'nginx_overview' }
 			];
 
-			return options;
-		},
-		serverTypeFilterOptions() {
-			return [
-				{
-					label: 'All Servers',
-					value: 'All Servers'
-				},
-				{
-					label: 'App Servers',
-					value: 'App Servers'
-				},
-				{
-					label: 'Database Servers',
-					value: 'Database Servers'
+			let tabsByStatus = {
+				Active: [
+					'Overview',
+					'Security Updates',
+					'Firewall Configuration',
+					'SSH Log',
+					'Nginx Overview'
+				]
+			};
+			if (this.server) {
+				let tabsToShow = tabsByStatus[this.server.status];
+				if (tabsToShow?.length) {
+					tabs = tabs.filter(tab => tabsToShow.includes(tab.label));
 				}
-			];
+				return tabs.map(tab => {
+					return {
+						...tab,
+						route: tabRoute(tab.route)
+					};
+				});
+			}
+			return [];
 		}
 	}
 };

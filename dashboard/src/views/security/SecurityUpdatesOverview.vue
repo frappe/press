@@ -28,7 +28,7 @@
 		<template #actions>
 			<router-link
 				class="text-base text-blue-500 hover:text-blue-600"
-				:to="`/servers/${server.name}/security_updates`"
+				:to="`/security/${server.name}/security_update`"
 			>
 				View details →
 			</router-link>
@@ -77,7 +77,7 @@ export default {
 			}
 		},
 		updateRoute(sec_update) {
-			return `/servers/${this.server.name}/security_updates/${sec_update}`;
+			return `/security/${this.server.name}/security_update/${sec_update}`;
 		}
 	}
 };

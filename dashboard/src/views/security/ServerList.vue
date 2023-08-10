@@ -54,19 +54,19 @@ export default {
 				{
 					label: 'View Security Updates',
 					onClick: () => {
-						this.$router.push(`/servers/${server.name}/security_updates`);
+						this.$router.push(`/security/${server.name}/security_update`);
 					}
 				},
 				{
 					label: 'Manage Firewall',
 					onClick: () => {
-						this.$router.push(`/servers/${server.app_server}/firewall`);
+						this.$router.push(`/security/${server.app_server}/firewall`);
 					}
 				},
 				{
 					label: 'SSH Sessions',
 					onClick: () => {
-						this.$router.push(`/servers/${server.app_server}/ssh_session`);
+						this.$router.push(`/security/${server.app_server}/ssh_session`);
 					}
 				}
 			];

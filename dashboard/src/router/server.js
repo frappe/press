@@ -54,23 +54,6 @@ export default [
 				path: 'setting',
 				component: () => import('../views/server/ServerSettings.vue'),
 				props: true
-			},
-			{
-				name: 'SecurityOverview',
-				path: 'security_overview',
-				component: () => import('../views/security/SecurityOverview.vue')
-			},
-			{
-				name: 'SecurityUpdates',
-				path: 'security_updates/:updateId?',
-				component: () => import('../views/security/SecurityUpdates.vue'),
-				props: true
-			},
-			{
-				name: 'SecurityUpdateDetails',
-				path: 'security/:updateId?',
-				component: () => import('../views/security/SecurityUpdateInfo.vue'),
-				props: true
 			}
 		]
 	},

@@ -1,5 +1,4 @@
 import Home from '../views/general/Home.vue';
-
 import { createRouter, createWebHistory } from 'vue-router';
 
 const routes = [
@@ -476,8 +475,6 @@ const routes = [
 		name: 'Security Updates',
 		component: () => import('../views/security/Security.vue')
 	},
-	billingRoute,
-	settingsRoute,
 	{
 		name: 'NotFound',
 		path: '/:pathMatch(.*)*',

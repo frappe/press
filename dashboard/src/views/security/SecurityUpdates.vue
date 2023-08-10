@@ -72,7 +72,7 @@ export default {
 			};
 		},
 		updateRoute(sec_update) {
-			return `/servers/${this.server.name}/security_updates/${sec_update}`;
+			return `/security/${this.server.name}/security_update/${sec_update}`;
 		},
 
 		getTitle() {

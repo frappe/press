@@ -233,7 +233,6 @@ export default {
 				{ label: 'Benches', route: 'benches' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Plays', route: 'plays', showRedDot: this.runningPlay },
-				{ label: 'Security Overview', route: 'security_overview' },
 				{ label: 'Settings', route: 'setting' }
 			];
 
@@ -244,7 +243,6 @@ export default {
 					'Benches',
 					'Jobs',
 					'Plays',
-					'Security Overview',
 					'Settings'
 				],
 				Pending: ['Installing'],
