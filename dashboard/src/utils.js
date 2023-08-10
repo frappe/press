@@ -9,6 +9,9 @@ let utils = {
 			}
 			return plural;
 		},
+		$getColorBasedOnString(i) {
+			return ['blue', 'green', 'red', 'orange'][i];
+		},
 		$date(date, serverDatesTimezone = 'Asia/Kolkata') {
 			// assuming all dates on the server are stored in our timezone
 
@@ -102,14 +105,14 @@ let utils = {
 			return theme;
 		},
 		$platform() {
-			const ua = navigator.userAgent.toLowerCase()
-		
+			const ua = navigator.userAgent.toLowerCase();
+
 			if (ua.indexOf('win') > -1) {
-			  return 'win'
+				return 'win';
 			} else if (ua.indexOf('mac') > -1) {
-			  return 'mac'
+				return 'mac';
 			} else if (ua.indexOf('x11') > -1 || ua.indexOf('linux') > -1) {
-			  return 'linux'
+				return 'linux';
 			}
 		}
 	}

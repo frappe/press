@@ -41,7 +41,7 @@
 						<Badge
 							class="ring-2 ring-white"
 							v-for="(tag, i) in row.tags.slice(0, 2)"
-							:theme="getColorBasedOnString(i)"
+							:theme="$getColorBasedOnString(i)"
 							:label="tag"
 						/>
 						<Badge
@@ -109,7 +109,6 @@
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteList from './SiteList.vue';
-import ListView from '@/components/ListView.vue';
 import Table from '@/components/Table/Table.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
@@ -127,7 +126,6 @@ export default {
 	},
 	components: {
 		SiteList,
-		ListView,
 		Table,
 		TableHeader,
 		TableRow,
@@ -147,9 +145,6 @@ export default {
 		}
 	},
 	methods: {
-		getColorBasedOnString(i) {
-			return ['blue', 'green', 'red', 'orange'][i];
-		},
 		dropdownItems(site) {
 			return [
 				{

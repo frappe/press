@@ -44,24 +44,70 @@
 				<div class="w-10"></div>
 			</div>
 			<LoadingText v-if="$resources.allBenches.loading" />
-			<div v-else>
-				<div class="flex">
-					<div class="flex w-full px-3 py-4">
-						<div class="w-4/12 text-base font-medium text-gray-900">
-							Bench Name
+			<Table
+				:columns="[
+					{ label: 'Bench Name', name: 'name', width: 2 },
+					{ label: 'Status', name: 'status' },
+					{ label: 'Version', name: 'version' },
+					{ label: 'Tags', name: 'tags' },
+					{ label: 'Stats', name: 'stats' },
+					{ label: '', name: 'actions', width: 0.5 }
+				]"
+				:rows="benches"
+				v-slot="{ rows, columns }"
+			>
+				<TableHeader />
+				<TableRow v-for="row in rows" :key="row.name" :row="row">
+					<TableCell v-for="column in columns">
+						<Badge v-if="column.name === 'status'" :label="row.status" />
+						<div v-else-if="column.name === 'tags'" class="-space-x-5">
+							<Badge
+								class="ring-2 ring-white"
+								v-for="(tag, i) in row.tags.slice(0, 2)"
+								:theme="$getColorBasedOnString(i)"
+								:label="tag"
+							/>
+							<Badge
+								class="ring-2 ring-white"
+								v-if="row.tags.length > 2"
+								:label="`+${row.tags.length - 2}`"
+							/>
 						</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">Status</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">
-							Version
+						<div
+							v-else-if="column.name === 'stats'"
+							class="text-sm text-gray-600"
+						>
+							{{
+								`${row.stats.number_of_sites} ${$plural(
+									row.stats.number_of_sites,
+									'Site',
+									'Sites'
+								)}`
+							}}
+							&middot;
+							{{
+								`${row.stats.number_of_apps} ${$plural(
+									row.stats.number_of_apps,
+									'App',
+									'Apps'
+								)}`
+							}}
 						</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">Stats</div>
-					</div>
-					<div class="w-10" />
-				</div>
-				<div class="mx-2.5 border-b" />
-				<ListView :items="benches" :dropdownItems="dropdownItems" />
-			</div>
+						<div v-else-if="column.name == 'actions'" class="w-full text-right">
+							<Dropdown @click.prevent :options="dropdownItems(row)">
+								<template v-slot="{ open }">
+									<Button
+										:variant="open ? 'subtle' : 'ghost'"
+										class="mr-2"
+										icon="more-horizontal"
+									/>
+								</template>
+							</Dropdown>
+						</div>
+						<span v-else>{{ row[column.name] || '' }}</span>
+					</TableCell>
+				</TableRow>
+			</Table>
 		</div>
 
 		<Dialog
@@ -83,7 +129,10 @@
 </template>
 
 <script>
-import ListView from '@/components/ListView.vue';
+import Table from '@/components/Table/Table.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
@@ -104,7 +153,10 @@ export default {
 		};
 	},
 	components: {
-		ListView,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -135,10 +187,12 @@ export default {
 				name: bench.title,
 				status: bench.status,
 				version: bench.version,
-				number_of_sites: bench.number_of_sites,
-				number_of_apps: bench.number_of_apps,
+				stats: {
+					number_of_sites: bench.number_of_sites,
+					number_of_apps: bench.number_of_apps
+				},
 				tags: bench.tags,
-				link: { name: 'BenchOverview', params: { benchName: bench.name } }
+				route: { name: 'BenchOverview', params: { benchName: bench.name } }
 			}));
 		}
 	},

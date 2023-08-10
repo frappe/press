@@ -57,26 +57,68 @@
 					</div>
 				</div>
 				<LoadingText v-if="$resources.allServers.loading" />
-				<div v-else>
-					<div class="flex">
-						<div class="flex w-full px-3 py-4">
-							<div class="w-4/12 text-base font-medium text-gray-900">
-								Server Name
+				<Table
+					:columns="[
+						{ label: 'Server Name', name: 'name', width: 2 },
+						{ label: 'Status', name: 'status' },
+						{ label: 'Region', name: 'region' },
+						{ label: 'Tags', name: 'tags' },
+						{ label: 'Plan', name: 'plan' },
+						{ label: '', name: 'actions', width: 0.5 }
+					]"
+					:rows="servers"
+					v-slot="{ rows, columns }"
+				>
+					<TableHeader />
+					<TableRow v-for="row in rows" :key="row.name" :row="row">
+						<TableCell v-for="column in columns">
+							<Badge v-if="column.name === 'status'" :label="row.status" />
+							<div v-else-if="column.name === 'tags'" class="-space-x-5">
+								<Badge
+									class="ring-2 ring-white"
+									v-for="(tag, i) in row.tags.slice(0, 2)"
+									:theme="$getColorBasedOnString(i)"
+									:label="tag"
+								/>
+								<Badge
+									class="ring-2 ring-white"
+									v-if="row.tags.length > 2"
+									:label="`+${row.tags.length - 2}`"
+								/>
 							</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">
-								Status
+							<span v-else-if="column.name === 'plan'">
+								{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
+							</span>
+							<div v-else-if="column.name === 'region'">
+								<img
+									v-if="row.server_region_info.image"
+									class="h-4"
+									:src="row.server_region_info.image"
+									:alt="`Flag of ${row.server_region_info.title}`"
+									:title="row.server_region_info.image"
+								/>
+								<span class="text-base text-gray-700" v-else>
+									{{ row.server_region_info.title }}
+								</span>
 							</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">
-								Region
+							<div
+								v-else-if="column.name == 'actions'"
+								class="w-full text-right"
+							>
+								<Dropdown @click.prevent :options="dropdownItems(row)">
+									<template v-slot="{ open }">
+										<Button
+											:variant="open ? 'subtle' : 'ghost'"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
 							</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">Tags</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">Plan</div>
-						</div>
-						<div class="w-10" />
-					</div>
-					<div class="mx-2.5 border-b" />
-					<ListView :items="servers" :dropdownItems="dropdownItems" />
-				</div>
+							<span v-else>{{ row[column.name] || '' }}</span>
+						</TableCell>
+					</TableRow>
+				</Table>
 			</div>
 		</div>
 		<Dialog
@@ -97,13 +139,19 @@
 	</div>
 </template>
 <script>
-import ListView from '@/components/ListView.vue';
+import Table from '@/components/Table/Table.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'Servers',
 	components: {
-		ListView,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -232,7 +280,7 @@ export default {
 				server_region_info: server.region_info,
 				plan: server.plan,
 				tags: server.tags,
-				link: { name: 'ServerOverview', params: { serverName: server.name } }
+				route: { name: 'ServerOverview', params: { serverName: server.name } }
 			}));
 		}
 	}
