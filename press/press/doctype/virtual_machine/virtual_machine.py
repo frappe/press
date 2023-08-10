@@ -19,6 +19,14 @@ class VirtualMachine(Document):
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
 	def validate(self):
+		if self.virtual_machine_image:
+			self.disk_size = max(
+				self.disk_size,
+				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
+			)
+			self.machine_image = frappe.db.get_value(
+				"Virtual Machine Image", self.virtual_machine_image, "aws_ami_id"
+			)
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		if not self.private_ip_address:
@@ -31,11 +39,6 @@ class VirtualMachine(Document):
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
-		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
 
 	@frappe.whitelist()
 	def provision(self):
