@@ -175,13 +175,12 @@ export default {
 					condition: () => this.$account.team?.is_developer
 				},
 				{
-					label: 'Billing',
-					route: '/billing',
+					label: 'Settings',
+					route: '/settings/profile',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/billing') >= 0;
+						return this.$route.fullPath.indexOf('/settings') >= 0;
 					},
-					icon: FCIcons.BillingIcon,
-					condition: () => !this.$account.team?.parent_team
+					icon: FCIcons.SettingsIcon
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		}

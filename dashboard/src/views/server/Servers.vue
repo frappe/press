@@ -272,7 +272,7 @@ export default {
 				return [];
 			}
 
-			let servers = this.$resources.allServers.data..filter(bench =>
+			let servers = this.$resources.allServers.data.filter(bench =>
 				this.$account.hasPermission(server.name, '', true)
 			);
 

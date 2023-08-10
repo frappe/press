@@ -17,14 +17,6 @@
 </template>
 
 <script>
-import AccountProfile from './AccountProfile.vue';
-import AccountMembers from './AccountMembers.vue';
-import AccountGroups from './AccountGroups.vue';
-import AccountReferral from './AccountReferral.vue';
-import AccountEmails from './AccountEmails.vue';
-import AccountAPI from './AccountAPI.vue';
-import AccountSSHKey from './AccountSSHKey.vue';
-
 import PageHeader from '@/components/global/PageHeader.vue';
 import Tabs from '@/components/Tabs.vue';
 
@@ -37,13 +29,6 @@ export default {
 	},
 	components: {
 		Tabs,
-		AccountProfile,
-		AccountMembers,
-		AccountGroups,
-		AccountReferral,
-		AccountEmails,
-		AccountAPI,
-		AccountSSHKey,
 		PageHeader
 	},
 	computed: {
@@ -51,7 +36,8 @@ export default {
 			let tabRoute = subRoute => `/settings/${subRoute}`;
 			let tabs = [
 				{ label: 'Profile', route: 'profile' },
-				{ label: 'Team', route: 'team' }
+				{ label: 'Team', route: 'team' },
+				{ label: 'Billing', route: 'billing' }
 			];
 
 			return tabs.map(tab => {

@@ -449,12 +449,6 @@ const routes = [
 		}
 	},
 	{
-		path: '/billing/:invoiceName?',
-		name: 'BillingScreen',
-		component: () => import('../views/billing/AccountBilling.vue'),
-		props: true
-	},
-	{
 		path: '/settings',
 		name: 'SettingsScreen',
 		component: () => import('../views/settings/AccountSettings.vue'),
@@ -468,6 +462,12 @@ const routes = [
 				name: 'TeamSettings',
 				path: 'team',
 				component: () => import('../views/settings/TeamSettings.vue')
+			},
+			{
+				name: 'BillingScreen',
+				path: 'billing',
+				component: () => import('../views/billing/AccountBilling.vue')
+				//props: true
 			}
 		]
 	},
