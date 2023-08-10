@@ -371,7 +371,7 @@ class Cluster(Document):
 		team = team or get_current_team()
 		plan = plan or self.get_or_create_basic_plan(doctype)
 		vm = self.create_vm(
-			plan.instance_type, plan.disk_size, domain, server_series[doctype], team
+			plan.instance_type, plan.disk, domain, server_series[doctype], team
 		)
 		server = None
 		if doctype == "Database Server":
