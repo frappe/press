@@ -72,16 +72,20 @@
 					<TableHeader />
 					<TableRow v-for="row in rows" :key="row.name" :row="row">
 						<TableCell v-for="column in columns">
-							<Badge v-if="column.name === 'status'" :label="row.status" />
+							<Badge
+								class="ring-1 ring-white"
+								v-if="column.name === 'status'"
+								:label="row.status"
+							/>
 							<div v-else-if="column.name === 'tags'" class="-space-x-5">
 								<Badge
-									class="ring-2 ring-white"
+									class="ring-1 ring-white"
 									v-for="(tag, i) in row.tags.slice(0, 2)"
 									:theme="$getColorBasedOnString(i)"
 									:label="tag"
 								/>
 								<Badge
-									class="ring-2 ring-white"
+									class="ring-1 ring-white"
 									v-if="row.tags.length > 2"
 									:label="`+${row.tags.length - 2}`"
 								/>
