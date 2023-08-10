@@ -35,6 +35,7 @@
 		</header>
 
 		<EditBenchTitleDialog v-model="showEditTitleDialog" :bench="bench" />
+		<BenchDropDialog v-model="showDropBenchDialog" :bench="bench" />
 
 		<div class="p-5">
 			<div
@@ -59,6 +60,7 @@
 </template>
 
 <script>
+import BenchDropDialog from './BenchDropDialog.vue';
 import Tabs from '@/components/Tabs.vue';
 import AlertUpdate from '@/components/AlertUpdate.vue';
 import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
@@ -74,12 +76,14 @@ export default {
 	props: ['benchName'],
 	components: {
 		Tabs,
+		BenchDropDialog,
 		AlertUpdate,
 		AlertBenchUpdate,
 		EditBenchTitleDialog
 	},
 	data() {
 		return {
+			showDropBenchDialog: false,
 			showEditTitleDialog: false
 		};
 	},
@@ -209,6 +213,12 @@ export default {
 							color: 'green'
 						});
 					}
+				},
+				{
+					label: 'Drop Bench',
+					icon: 'trash',
+					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					onClick: () => (this.showDropBenchDialog = true)
 				}
 			];
 		}
