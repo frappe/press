@@ -67,16 +67,6 @@
 					/>
 				</template>
 			</div>
-
-			<!-- <div v-if="recentSitesVisible" class="mb-6">
-				<SectionHeader heading="Recents"> </SectionHeader>
-
-				<div class="mt-3">
-					<LoadingText v-if="$resources.recentSites.loading" />
-					<SiteGroups v-else :sites="recentlyCreatedSites" />
-				</div>
-			</div> -->
-
 			<div class="mx-5">
 				<div>
 					<div class="flex">
@@ -153,7 +143,6 @@ export default {
 			};
 		},
 		siteTags: 'press.api.site.site_tags',
-		recentSites: 'press.api.site.recent_sites',
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
@@ -214,9 +203,6 @@ export default {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
 		},
-		recentSitesVisible() {
-			return this.sites.length > 3;
-		},
 		siteStatusFilterOptions() {
 			return [
 				{
@@ -271,9 +257,6 @@ export default {
 				);
 			}
 			return this.$resources.allSites.data;
-		},
-		recentlyCreatedSites() {
-			return this.$resources.recentSites.data;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {
