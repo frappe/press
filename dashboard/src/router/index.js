@@ -457,10 +457,19 @@ const routes = [
 	{
 		path: '/settings',
 		name: 'SettingsScreen',
-		component: () =>
-			import(
-				/* webpackChunkName: "account" */ '../views/settings/AccountSettings.vue'
-			)
+		component: () => import('../views/settings/AccountSettings.vue'),
+		children: [
+			{
+				name: 'ProfileSettings',
+				path: 'profile',
+				component: () => import('../views/settings/ProfileSettings.vue')
+			},
+			{
+				name: 'TeamSettings',
+				path: 'team',
+				component: () => import('../views/settings/TeamSettings.vue')
+			}
+		]
 	},
 	{
 		name: 'NotFound',

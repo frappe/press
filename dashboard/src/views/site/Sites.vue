@@ -23,7 +23,7 @@
 					<Alert title="Your account is disabled">
 						Enable your account to start creating sites
 						<template #actions>
-							<Button variant="solid" route="/settings">
+							<Button variant="solid" route="/settings/profile">
 								Enable Account
 							</Button>
 						</template>

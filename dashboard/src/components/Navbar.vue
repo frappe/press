@@ -134,7 +134,7 @@ export default {
 				},
 				{
 					label: 'Settings',
-					route: '/settings'
+					route: '/settings/profile'
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		}

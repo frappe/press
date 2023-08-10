@@ -101,7 +101,7 @@ export default {
 				{
 					label: 'Settings',
 					icon: 'settings',
-					onClick: () => this.$router.push('/settings')
+					onClick: () => this.$router.push('/settings/profile')
 				},
 				{
 					label: 'Logout',
