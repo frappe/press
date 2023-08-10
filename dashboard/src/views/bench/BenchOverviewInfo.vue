@@ -45,7 +45,7 @@
 			v-model="showEditTitleDialog"
 		>
 			<template v-slot:body-content>
-				<Input label="Title" type="text" v-model="benchTitle" />
+				<FormControl label="Title" v-model="benchTitle" />
 				<ErrorMessage class="mt-4" :message="$resources.editTitle.error" />
 			</template>
 		</Dialog>

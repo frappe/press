@@ -24,8 +24,6 @@
 </template>
 
 <script>
-import { FormControl } from 'frappe-ui';
-
 export default {
 	name: 'Form',
 	props: ['fields', 'modelValue'],
@@ -84,7 +82,6 @@ export default {
 				Text: 'textarea'
 			}[field.fieldtype || 'Data'];
 		}
-	},
-	components: { FormControl }
+	}
 };
 </script>

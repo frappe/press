@@ -1,7 +1,7 @@
 <template>
 	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
 		<template #actions>
-			<Input
+			<FormControl
 				v-if="$resources.pastInvoices.data?.length"
 				type="select"
 				:options="selectItems"
@@ -104,6 +104,7 @@
 </template>
 <script>
 import InvoiceUsageCard from '@/components/InvoiceUsageCard.vue';
+
 export default {
 	name: 'AccountBillingPayments',
 	props: ['invoiceName'],

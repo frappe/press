@@ -85,7 +85,6 @@
 <script>
 import ListView from '@/components/ListView.vue';
 import { defineAsyncComponent } from 'vue';
-import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'BenchesScreen',
@@ -106,7 +105,6 @@ export default {
 	},
 	components: {
 		ListView,
-		FormControl,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)

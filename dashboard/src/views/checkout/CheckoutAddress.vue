@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="text-sm cursor-pointer w-fit mb-4"
+		class="mb-4 w-fit cursor-pointer text-sm"
 		v-on:click="$emit('update:step', 2)"
 	>
 		← Back to Plans
@@ -8,15 +8,14 @@
 
 	<div class="flex flex-col justify-between px-6">
 		<div>
-			<Input
+			<FormControl
 				class="mb-2"
-				type="text"
 				label="Billing Name"
 				v-model="billingName"
 				required
 			/>
-			<Input class="mb-2" label="Address" type="text" v-model="address" />
-			<Input
+			<FormControl class="mb-2" label="Address" v-model="address" />
+			<FormControl
 				class="mb-2"
 				label="Country"
 				type="select"
@@ -24,7 +23,7 @@
 				:options="countries"
 			/>
 			<div class="flex flex-col justify-between sm:flex-row">
-				<Input
+				<FormControl
 					v-if="country === 'India'"
 					class="mb-2 w-1/3"
 					label="State/Province/Region"
@@ -32,29 +31,22 @@
 					v-model="state"
 					:options="indianStates"
 				/>
-				<Input
+				<FormControl
 					v-else
 					class="mb-2"
 					label="State/Province/Region"
-					type="text"
 					v-model="state"
 				/>
-				<Input class="mb-2" label="City" type="text" v-model="city" />
-				<Input
-					class="mb-2"
-					label="Postal Code"
-					type="text"
-					v-model="postalCode"
-				/>
+				<FormControl class="mb-2" label="City" type="text" v-model="city" />
+				<FormControl class="mb-2" label="Postal Code" v-model="postalCode" />
 			</div>
 
 			<div v-show="currency === 'INR'">
 				<span class="mb-2 block text-sm leading-4 text-gray-700">
 					GSTIN(only for Indian customers)
 				</span>
-				<Input
+				<FormControl
 					v-if="gstApplicable"
-					type="text"
 					v-model="gstin"
 					:disabled="!gstApplicable"
 				/>
@@ -82,7 +74,7 @@
 		</div>
 		<Button
 			variant="solid"
-			class="self-end mt-8"
+			class="mt-8 self-end"
 			:loading="$resources.updateBillingDetails.loading"
 			@click="$resources.updateBillingDetails.submit()"
 		>

@@ -88,7 +88,6 @@
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
-import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'Login',
@@ -99,8 +98,7 @@ export default {
 	},
 	components: {
 		LoginBox,
-		GoogleIcon,
-		FormControl
+		GoogleIcon
 	},
 	data() {
 		return {

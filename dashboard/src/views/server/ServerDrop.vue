@@ -26,7 +26,7 @@
 					Please type
 					<span class="font-semibold">{{ server.name }}</span> to confirm.
 				</p>
-				<Input type="text" class="mt-4 w-full" v-model="confirmServerName" />
+				<FormControl class="mt-4 w-full" v-model="confirmServerName" />
 				<ErrorMessage class="mt-2" :message="$resources.dropServer.error" />
 			</template>
 		</Dialog>

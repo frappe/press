@@ -114,7 +114,6 @@ import SiteGroups from './SiteGroups.vue';
 import { defineAsyncComponent } from 'vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'Sites',
@@ -126,7 +125,6 @@ export default {
 	props: ['bench'],
 	components: {
 		SiteGroups,
-		FormControl,
 		PageHeader,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')

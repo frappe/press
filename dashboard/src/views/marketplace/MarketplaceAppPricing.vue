@@ -153,26 +153,23 @@ function resetCurrentEditingPlan() {
 						</label>
 					</div>
 					<div class="mb-4">
-						<Input
+						<FormControl
 							placeholder="My Pro Plan"
-							type="text"
 							label="Name"
 							v-model="currentEditingPlan.plan_title"
-						></Input>
+						></FormControl>
 					</div>
 					<div class="mb-8">
 						<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
 						<div class="grid grid-cols-2 gap-2">
-							<Input
+							<FormControl
 								label="Price INR"
-								type="text"
 								v-model="currentEditingPlan.price_inr"
-							></Input>
-							<Input
+							></FormControl>
+							<FormControl
 								label="Price USD"
-								type="text"
 								v-model="currentEditingPlan.price_usd"
-							></Input>
+							></FormControl>
 						</div>
 					</div>
 					<div>
@@ -189,11 +186,10 @@ function resetCurrentEditingPlan() {
 								</div>
 
 								<div class="w-full">
-									<Input
+									<FormControl
 										class="w-full"
-										type="text"
 										v-model="currentEditingPlan.features[idx]"
-									></Input>
+									></FormControl>
 								</div>
 
 								<Button

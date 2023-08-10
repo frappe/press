@@ -31,9 +31,8 @@
 		>
 			<template v-slot:body-content>
 				<div class="mt-3" v-for="email in emailData" :key="email.type">
-					<Input
+					<FormControl
 						:label="fieldLabelMap[email.type] || email.type"
-						type="text"
 						v-model="email.value"
 					/>
 				</div>

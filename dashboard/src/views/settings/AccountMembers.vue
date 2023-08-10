@@ -49,9 +49,8 @@
 			v-model="showManageMemberDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					label="Enter the email address of your teammate to invite them."
-					type="text"
 					class="mt-2"
 					v-model="memberEmail"
 					required

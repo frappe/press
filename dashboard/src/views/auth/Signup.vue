@@ -77,15 +77,13 @@
 
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
-import { FormControl } from 'frappe-ui';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
-		GoogleIcon,
-		FormControl
+		GoogleIcon
 	},
 	data() {
 		return {

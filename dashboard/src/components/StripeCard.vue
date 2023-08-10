@@ -59,7 +59,6 @@
 import AddressForm from '@/components/AddressForm.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
-import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'StripeCard',
@@ -67,8 +66,7 @@ export default {
 	emits: ['complete'],
 	components: {
 		AddressForm,
-		StripeLogo,
-		FormControl
+		StripeLogo
 	},
 	data() {
 		return {

@@ -18,9 +18,8 @@
 			<p class="text-base" v-if="message">
 				{{ message }}
 			</p>
-			<Input
+			<FormControl
 				class="mt-4"
-				type="text"
 				v-model="billingInformation.billing_name"
 				label="Billing Name"
 			/>

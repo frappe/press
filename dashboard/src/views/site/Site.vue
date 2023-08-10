@@ -97,7 +97,7 @@
 			v-model="showReasonForAdminLoginDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					label="Reason for logging in as Administrator"
 					type="textarea"
 					v-model="reasonForAdminLogin"
@@ -125,9 +125,8 @@
 			v-model="showTransferSiteDialog"
 		>
 			<template #body-content>
-				<Input
+				<FormControl
 					label="Enter title of the child team"
-					type="text"
 					v-model="emailOfChildTeam"
 					required
 				/>

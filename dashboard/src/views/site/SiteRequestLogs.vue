@@ -1,9 +1,9 @@
 <template>
 	<Card title="Request Logs">
 		<template #actions>
-			<Input type="select" :options="sortOptions" v-model="sort" />
-			<Input type="select" :options="dateOptions" v-model="whichDate" />
-			<Input type="date" v-if="whichDate === 'Custom'" v-model="date" />
+			<FormControl type="select" :options="sortOptions" v-model="sort" />
+			<FormControl type="select" :options="dateOptions" v-model="whichDate" />
+			<FormControl type="date" v-if="whichDate === 'Custom'" v-model="date" />
 		</template>
 		<div class="divide-y">
 			<div class="flex items-center py-2 text-base text-gray-600">

@@ -109,14 +109,12 @@
 
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
-import { FormControl } from 'frappe-ui';
 import Link from '@/components/Link.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
 		LoginBox,
-		FormControl,
 		Link
 	},
 	props: ['requestKey', 'joinRequest'],

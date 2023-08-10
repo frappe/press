@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<Input
+		<FormControl
 			v-if="step == 'Get Amount'"
 			:label="`Amount (Minimum Amount: ${minimumAmount})`"
 			v-model.number="creditsToBuy"

@@ -16,9 +16,9 @@
 
 		<div class="flex text-base text-gray-600">
 			<span class="w-2/6">App</span>
-			<span class="w-1/6 hidden md:inline">Plan</span>
+			<span class="hidden w-1/6 md:inline">Plan</span>
 			<span class="w-1/6">Status</span>
-			<span class="w-1/6 hidden md:inline">Price</span>
+			<span class="hidden w-1/6 md:inline">Price</span>
 			<span></span>
 		</div>
 
@@ -26,7 +26,7 @@
 
 		<div v-else class="divide-y">
 			<div
-				class="flex py-4 items-center text-base text-gray-600"
+				class="flex items-center py-4 text-base text-gray-600"
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
@@ -44,7 +44,7 @@
 					</div>
 
 					<div
-						class="truncate hover:text-clip mt-[2px] text-base text-gray-600"
+						class="mt-[2px] truncate text-base text-gray-600 hover:text-clip"
 					>
 						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
 					</div>
@@ -103,14 +103,14 @@
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					class="mb-2"
 					placeholder="Search for Apps"
 					v-on:input="e => updateSearchTerm(e)"
 				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="divide-y max-h-96 overflow-auto"
+					class="max-h-96 divide-y overflow-auto"
 					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div

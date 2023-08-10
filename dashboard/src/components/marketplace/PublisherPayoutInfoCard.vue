@@ -53,42 +53,38 @@
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
+					<FormControl
 						label="Preferred Payment Method"
 						type="select"
 						:options="['Frappe Cloud Credits', 'Bank Transfer', 'PayPal']"
 						v-model="payoutMethod"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'PayPal'"
 						label="PayPal ID"
-						type="text"
 						v-model="payPalId"
 					/>
 
-					<Input
+					<FormControl
 						label="GSTIN (if applicable)"
 						v-if="payoutMethod != 'Frappe Cloud Credits'"
-						type="text"
 						v-model="gstin"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'Bank Transfer'"
 						label="Account Number"
-						type="text"
 						v-model="acNumber"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'Bank Transfer'"
 						label="Account Holder Name"
-						type="text"
 						v-model="acName"
 					/>
 
-					<Input
+					<FormControl
 						label="Bank Name, Branch, IFS Code"
 						v-if="payoutMethod == 'Bank Transfer'"
 						type="textarea"

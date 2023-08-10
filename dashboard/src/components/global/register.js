@@ -11,6 +11,7 @@ import {
 	Avatar,
 	GreenCheckIcon,
 	Dropdown,
+	FormControl,
 	ErrorMessage
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
@@ -30,6 +31,7 @@ let globalFrappeUIComponents = {
 	Input,
 	GreenCheckIcon,
 	Dropdown,
+	FormControl,
 	ErrorMessage
 };
 

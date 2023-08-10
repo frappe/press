@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="min-h-full h-full max-h-96"
+		class="h-full max-h-96 min-h-full"
 		title="Site Activity"
 		subtitle="Log of activities performed on your site"
 	>
@@ -42,7 +42,7 @@
 			v-model="showChangeNotifyEmailDialog"
 		>
 			<template v-slot:body-content>
-				<Input v-model="site.notify_email" />
+				<FormControl v-model="site.notify_email" />
 			</template>
 		</Dialog>
 	</Card>

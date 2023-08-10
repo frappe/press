@@ -40,9 +40,13 @@
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="Display Name" type="text" v-model="displayName" />
-					<Input label="Contact Email" type="email" v-model="contactEmail" />
-					<Input label="Website" type="text" v-model="website" />
+					<FormControl label="Display Name" v-model="displayName" />
+					<FormControl
+						label="Contact Email"
+						type="email"
+						v-model="contactEmail"
+					/>
+					<FormControl label="Website" v-model="website" />
 				</div>
 
 				<ErrorMessage

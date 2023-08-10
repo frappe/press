@@ -27,7 +27,7 @@
 				v-model="showEditSummaryDialog"
 			>
 				<template v-slot:body-content>
-					<Input
+					<FormControl
 						label="Summary of the app"
 						type="textarea"
 						v-model="app.description"
@@ -70,11 +70,11 @@
 				>
 					<template v-slot:body-content>
 						<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-							<Input
+							<FormControl
 								:rows="30"
 								type="textarea"
 								v-model="app.long_description"
-							></Input>
+							/>
 							<div class="prose" v-html="descriptionHTML"></div>
 						</div>
 
@@ -168,7 +168,6 @@ export default {
 			if (this.app && this.app.long_description) {
 				return MarkdownIt().render(this.app.long_description);
 			}
-
 			return '';
 		}
 	},

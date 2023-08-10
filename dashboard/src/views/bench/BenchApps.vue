@@ -81,7 +81,7 @@
 				v-model="showAddAppDialog"
 			>
 				<template v-slot:body-content>
-					<Input
+					<FormControl
 						class="mb-2"
 						placeholder="Search for Apps"
 						v-on:input="e => updateSearchTerm(e)"
@@ -89,7 +89,7 @@
 					<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 					<AppSourceSelector
 						v-else
-						class="p-1 max-h-96 overflow-auto"
+						class="max-h-96 overflow-auto p-1"
 						:class="filteredOptions.length > 5 ? 'pr-2' : ''"
 						:apps="filteredOptions"
 						v-model="selectedApps"

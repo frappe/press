@@ -33,7 +33,7 @@
 								class="flex"
 								v-if="d.redirect_to_primary == 1 && d.status == 'Active'"
 							>
-								<FeatherIcon name="arrow-right" class="w-4 mx-1" />
+								<FeatherIcon name="arrow-right" class="mx-1 w-4" />
 								<a
 									class="text-blue-500"
 									:href="'https://' + d.domain"
@@ -94,14 +94,13 @@
 						To add a custom domain, you must already own it. If you don't have
 						one, buy it and come back here.
 					</p>
-					<Input
-						type="text"
+					<FormControl
 						placeholder="www.example.com"
 						v-model="newDomain"
 						:readonly="dnsVerified"
 					/>
 
-					<div v-if="newDomain && !dnsVerified" class="text-base space-y-2">
+					<div v-if="newDomain && !dnsVerified" class="space-y-2 text-base">
 						<p>Create one of the following DNS records</p>
 						<p class="px-2">
 							<span class="font-semibold text-gray-700">CNAME</span> record from
@@ -183,7 +182,7 @@
 				</Button>
 				<Button
 					v-if="!dnsVerified"
-					class="w-full mt-2"
+					class="mt-2 w-full"
 					variant="solid"
 					:loading="$resources.checkDNS.loading"
 					@click="
@@ -197,7 +196,7 @@
 				</Button>
 				<Button
 					v-if="dnsVerified"
-					class="w-full mt-2"
+					class="mt-2 w-full"
 					variant="solid"
 					:loading="$resources.addDomain.loading"
 					@click="

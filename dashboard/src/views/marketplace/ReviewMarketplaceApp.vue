@@ -51,15 +51,14 @@ const submitReview = createResource({
 					<StarRatingInput v-model="review.rating" />
 				</div>
 
-				<Input
+				<FormControl
 					class="mb-3"
 					v-model="review.title"
-					type="text"
 					label="Title"
 					placeholder="Review Title"
 				/>
 
-				<Input
+				<FormControl
 					v-model="review.review"
 					type="textarea"
 					label="Review this product"

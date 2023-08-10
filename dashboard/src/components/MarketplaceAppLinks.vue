@@ -19,21 +19,12 @@
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="Website" type="text" v-model="app.website" />
-					<Input label="Support" type="text" v-model="app.support" />
-					<Input
-						label="Documentation"
-						type="text"
-						v-model="app.documentation"
-					/>
-					<Input
-						label="Privacy Policy"
-						type="text"
-						v-model="app.privacy_policy"
-					/>
-					<Input
+					<FormControl label="Website" v-model="app.website" />
+					<FormControl label="Support" v-model="app.support" />
+					<FormControl label="Documentation" v-model="app.documentation" />
+					<FormControl label="Privacy Policy" v-model="app.privacy_policy" />
+					<FormControl
 						label="Terms of Service"
-						type="text"
 						v-model="app.terms_of_service"
 					/>
 				</div>

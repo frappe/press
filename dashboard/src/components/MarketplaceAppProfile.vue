@@ -96,7 +96,7 @@
 			v-model="showAppProfileEditDialog"
 		>
 			<template v-slot:body-content>
-				<Input label="App Title" type="text" v-model="app.title" />
+				<FormControl label="App Title" v-model="app.title" />
 
 				<ErrorMessage class="mt-4" :message="$resources.updateAppTitle.error" />
 			</template>

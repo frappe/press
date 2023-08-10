@@ -38,7 +38,7 @@
 		v-model="showNewDialog"
 	>
 		<template v-slot:body-content>
-			<Input label="Enter Tag name" v-model="newTag" />
+			<FormControl label="Enter Tag name" v-model="newTag" />
 		</template>
 	</Dialog>
 </template>

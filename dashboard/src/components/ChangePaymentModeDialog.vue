@@ -15,7 +15,7 @@
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<template v-slot:body-content>
-			<Input
+			<FormControl
 				label="Select Payment Mode"
 				type="select"
 				:options="paymentModeOptions"

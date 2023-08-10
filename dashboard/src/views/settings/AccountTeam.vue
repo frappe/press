@@ -50,9 +50,8 @@
 				</ListItem>
 				<div v-if="showManageTeamForm">
 					<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
-					<Input
+					<FormControl
 						label="Enter name to create a new child team for shared access."
-						type="text"
 						class="mt-2"
 						placeholder="e.g Accounts Team"
 						v-model="childTeamTitle"
@@ -65,7 +64,7 @@
 							Cancel
 						</Button>
 						<Button
-							class="w-full mt-2"
+							class="mt-2 w-full"
 							variant="solid"
 							:loading="$resources.addChildTeam.loading"
 							@click="$resources.addChildTeam.submit({ title: childTeamTitle })"

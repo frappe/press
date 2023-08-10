@@ -41,7 +41,11 @@ const submitReply = createResource({
 
 		<div class="mt-2 sm:grid sm:grid-cols-2">
 			<div>
-				<Input v-model="reply.reply" type="textarea" label="Write Reply" />
+				<FormControl
+					v-model="reply.reply"
+					type="textarea"
+					label="Write Reply"
+				/>
 
 				<ErrorMessage class="mt-2" :message="submitReply.error" />
 				<Button

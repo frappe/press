@@ -1,8 +1,12 @@
 <template>
 	<div v-if="step == 'Confirm Checkout'" class="flex-row text-sm">
-		<div class="flex justify-between mb-4">
+		<div class="mb-4 flex justify-between">
 			<p class="my-auto">Billing</p>
-			<Input type="select" :options="paymentOptions" v-model="selectedOption" />
+			<FormControl
+				type="select"
+				:options="paymentOptions"
+				v-model="selectedOption"
+			/>
 		</div>
 
 		<table v-if="$account.team" class="text w-full text-sm">
@@ -30,10 +34,10 @@
 						<ListItem :title="row.app" :subtitle="row.site" />
 					</td>
 					<td class="border-b border-r text-center">
-						<p class="text-base self-center">{{ row.selected_plan.plan }}</p>
+						<p class="self-center text-base">{{ row.selected_plan.plan }}</p>
 					</td>
 					<td class="border-b text-right font-semibold">
-						<p class="text-base self-center">
+						<p class="self-center text-base">
 							{{ getCurrencySymbol() + row.selected_plan.amount }}
 						</p>
 					</td>
@@ -45,10 +49,10 @@
 						<ListItem :title="app" :subtitle="site" />
 					</td>
 					<td class="border-b border-r text-center">
-						<p class="text-base self-center">{{ planData.title }}</p>
+						<p class="self-center text-base">{{ planData.title }}</p>
 					</td>
 					<td class="border-b text-right font-semibold">
-						<p class="text-base self-center">
+						<p class="self-center text-base">
 							{{ getCurrencySymbol() + planData.amount }}
 						</p>
 					</td>
@@ -56,24 +60,24 @@
 			</tbody>
 		</table>
 
-		<div class="flex-row mt-4" v-if="$account.team">
-			<div class="flex justify-between mb-3">
+		<div class="mt-4 flex-row" v-if="$account.team">
+			<div class="mb-3 flex justify-between">
 				<p>Subtotal</p>
 				<p class="text-lg">
 					{{ getCurrencySymbol() + subtotal }}
 				</p>
 			</div>
 
-			<div class="flex justify-between mb-3">
+			<div class="mb-3 flex justify-between">
 				<p>Discount</p>
-				<p class="text-green-500 text-lg">
+				<p class="text-lg text-green-500">
 					{{ discount_percent == 0 ? '-' : discount_percent + '%' }}
 				</p>
 			</div>
 
 			<div class="flex justify-between">
 				GST (if applicable)
-				<p class="text-red-500 text-lg">{{ gstApplicable() ? '18%' : '-' }}</p>
+				<p class="text-lg text-red-500">{{ gstApplicable() ? '18%' : '-' }}</p>
 			</div>
 
 			<hr class="my-4" />
@@ -117,7 +121,7 @@
 			Use Existing Credits
 		</Button>
 		<Button
-			class="w-full mt-2"
+			class="mt-2 w-full"
 			variant="solid"
 			@click="$resources.changePlan.submit()"
 			:loading="$resources.changePlan.loading"
@@ -144,7 +148,7 @@
 				Back
 			</Button>
 			<Button
-				class="w-full mt-2"
+				class="mt-2 w-full"
 				variant="solid"
 				@click="$resources.useCredits.submit()"
 				:loading="$resources.useCredits.loading"
@@ -193,7 +197,7 @@
 	<!-- Confirm Card Authentication -->
 	<div
 		v-if="step == 'Stripe Intermediate Step'"
-		class="form-input sr-result requires-auth my-2 block w-full py-2 pl-3"
+		class="sr-result requires-auth form-input my-2 block w-full py-2 pl-3"
 	>
 		<p>
 			Please authenticate your

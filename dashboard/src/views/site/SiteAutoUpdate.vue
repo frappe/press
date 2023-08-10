@@ -127,21 +127,21 @@
 					<!-- Edit From -->
 					<template v-slot:body-content>
 						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<Input
+							<FormControl
 								type="select"
 								label="Update Frequency"
 								:options="frequencyOptions"
 								v-model="updateFrequency"
 							/>
 
-							<Input
+							<FormControl
 								type="select"
 								:options="timeOptions"
 								label="Update time"
 								v-model="updateTime"
 							/>
 
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Weekly'"
 								type="select"
 								label="Day of the week"
@@ -149,14 +149,14 @@
 								v-model="weekDay"
 							/>
 
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Monthly'"
 								type="select"
 								:options="monthDayOptions"
 								label="Day of the month"
 								v-model.number="monthDay"
 							/>
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Monthly'"
 								type="checkbox"
 								label="Update end of month"

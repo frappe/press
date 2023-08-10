@@ -25,9 +25,9 @@
 					Please type
 					<span class="font-semibold">{{ site.name }}</span> to confirm.
 				</p>
-				<Input type="text" class="mt-4 w-full" v-model="confirmSiteName" />
+				<FormControl class="mt-4 w-full" v-model="confirmSiteName" />
 				<div class="mt-4">
-					<Input
+					<FormControl
 						v-show="!site.archive_failed"
 						id="auto-update-checkbox"
 						v-model="forceDrop"

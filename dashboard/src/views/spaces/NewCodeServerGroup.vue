@@ -6,7 +6,7 @@
 				Choose a bench where you want to install the code server.
 			</p>
 		</div>
-		<Input
+		<FormControl
 			class="my-2"
 			placeholder="Search for Bench"
 			v-on:input="e => updateSearchTerm(e)"
@@ -15,7 +15,7 @@
 			<div
 				v-for="group in filteredOptions"
 				v-on:click="selectGroup(group)"
-				class="border rounded-md m-2 px-6 py-5 text-lg shadow-sm hover:shadow-md hover:cursor-pointer"
+				class="m-2 rounded-md border px-6 py-5 text-lg shadow-sm hover:cursor-pointer hover:shadow-md"
 				:class="[
 					modelValue && modelValue.name == group.name
 						? 'relative ring-2 ring-inset ring-blue-500'

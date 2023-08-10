@@ -96,16 +96,8 @@
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
-						label="First Name"
-						type="text"
-						v-model="$account.user.first_name"
-					/>
-					<Input
-						label="Last Name"
-						type="text"
-						v-model="$account.user.last_name"
-					/>
+					<FormControl label="First Name" v-model="$account.user.first_name" />
+					<FormControl label="Last Name" v-model="$account.user.last_name" />
 				</div>
 				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
 			</template>
@@ -127,7 +119,7 @@
 			v-model="showDisableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be disabled</li>
@@ -158,7 +150,7 @@
 			v-model="showEnableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be enabled</li>

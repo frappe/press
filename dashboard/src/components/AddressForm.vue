@@ -40,15 +40,13 @@
 
 <script>
 import Form from '@/components/Form.vue';
-import { FormControl } from 'frappe-ui';
 
 export default {
 	name: 'AddressForm',
 	props: ['address'],
 	emits: ['update:address'],
 	components: {
-		Form,
-		FormControl
+		Form
 	},
 	data() {
 		return {

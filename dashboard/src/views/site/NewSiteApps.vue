@@ -10,7 +10,7 @@
 					Select the Frappe version for your site
 				</p>
 				<div class="mt-4">
-					<Input
+					<FormControl
 						type="select"
 						v-model="selectedVersion"
 						:options="versionOptions"
@@ -98,7 +98,7 @@
 				</div>
 			</div>
 			<div v-if="selectedApps.includes('erpnext')">
-				<Input
+				<FormControl
 					type="checkbox"
 					label="I am okay if my details are shared with local partner"
 					@change="val => $emit('update:shareDetailsConsent', val)"

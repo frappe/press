@@ -79,7 +79,7 @@
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<Input
+						<FormControl
 							id="region-consent"
 							type="checkbox"
 							label="I agree that the laws of the region selected by me shall stand

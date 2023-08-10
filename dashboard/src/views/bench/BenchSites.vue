@@ -33,7 +33,7 @@
 		v-model="showReasonForAdminLoginDialog"
 	>
 		<template #body-content>
-			<Input
+			<FormControl
 				label="Reason for logging in as Administrator"
 				type="textarea"
 				v-model="reasonForAdminLogin"

@@ -8,16 +8,15 @@
 			@submit.prevent="$resources.resetPassword.submit()"
 		>
 			<div class="space-y-4">
-				<Input
+				<FormControl
 					label="Email"
 					class="pointer-events-none"
-					type="text"
 					:modelValue="email"
 					name="email"
 					autocomplete="off"
 					disabled
 				/>
-				<Input
+				<FormControl
 					label="Password"
 					type="password"
 					v-model="password"

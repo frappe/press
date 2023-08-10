@@ -1,46 +1,46 @@
 <template>
-	<div v-if="plan" class="grid grid-cols-1 gap-0 sm:grid-cols-2 h-screen">
+	<div v-if="plan" class="grid h-screen grid-cols-1 gap-0 sm:grid-cols-2">
 		<div
-			class="flex flex-col w-full px-10 mx-auto justify-center bg-gray-50 max-h-full"
+			class="mx-auto flex max-h-full w-full flex-col justify-center bg-gray-50 px-10"
 		>
 			<div
-				class="text-sm cursor-pointer w-fit absolute top-1 left-1"
+				class="absolute left-1 top-1 w-fit cursor-pointer text-sm"
 				v-on:click="$emit('update:step', 2)"
 			>
 				← Back to Plans
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">Plan</span>
 				<span class="text-base font-semibold">{{ plan.plan }}</span>
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">Amount</span>
 				<span class="text-base font-semibold">{{
 					currency == 'INR' ? '₹' + amount() : '$' + amount()
 				}}</span>
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">Billing</span>
-				<Input
+				<FormControl
 					:disabled="stripePayment"
 					type="select"
 					:options="['Monthly', 'Annual']"
 					v-model="billing"
 				/>
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">Discount</span>
 				<span class="text-base font-semibold text-green-500">{{
 					discount() ? plan.discount_percent + '%' : '-'
 				}}</span>
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">GST(if applicable)</span>
 				<span class="text-base font-semibold text-red-500">{{
 					gst() ? '18%' : '-'
 				}}</span>
 			</div>
-			<div class="flex justify-between my-2">
+			<div class="my-2 flex justify-between">
 				<span class="text-base">Total</span>
 				<span class="text-base font-semibold">{{
 					currency == 'INR' ? '₹' + getTotal() : '$' + getTotal()
@@ -59,8 +59,8 @@
 		</div>
 
 		<!-- Stripe -->
-		<div class="flex justify-center h-full w-full">
-			<div class="flex flex-col my-auto w-64 h-20">
+		<div class="flex h-full w-full justify-center">
+			<div class="my-auto flex h-20 w-64 flex-col">
 				<div
 					id="card"
 					class="form-input mt-2 block w-full py-2 pl-3"
