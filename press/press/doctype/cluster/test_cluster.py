@@ -14,7 +14,6 @@ from press.press.doctype.ssh_key.test_ssh_key import create_test_ssh_key
 from press.press.doctype.cluster.cluster import Cluster
 
 from unittest.mock import MagicMock, patch
-
 from moto import mock_ec2, mock_ssm, mock_iam
 
 
@@ -200,7 +199,8 @@ class TestCluster(unittest.TestCase):
 		database_server_count_before = frappe.db.count("Database Server")
 		proxy_server_count_before = frappe.db.count("Proxy Server")
 
-		boto3.client("iam").create_group(GroupName="fc-vpc-customers")
+		boto3.client("iam").create_group(GroupName="fc-vpc-customer")
+
 		cluster = self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None)
 
 		server_count_after = frappe.db.count("Server")
