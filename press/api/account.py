@@ -356,6 +356,27 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+		"permissions": get_permissions(),
+	}
+
+
+def get_permissions():
+	user = frappe.session.user
+	groups = tuple(
+		frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent")
+		+ ["1", "2"]
+	)  # [1, 2] is for avoiding singleton tuples
+	docperms = frappe.db.sql(
+		f"""
+			SELECT `document_name`, GROUP_CONCAT(`action`) as `actions`
+			FROM `tabPress User Permission`
+			WHERE user='{user}' or `group` in {groups}
+			GROUP BY `document_name`
+		""",
+		as_dict=True,
+	)
+	return {
+		perm.document_name: perm.actions.split(",") for perm in docperms if perm.actions
 	}
 
 

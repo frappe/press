@@ -181,7 +181,9 @@ export default {
 			if (!this.$resources.allBenches.data) {
 				return [];
 			}
-			let benches = this.$resources.allBenches.data;
+			let benches = this.$resources.allBenches.data.filter(bench =>
+				this.$account.hasPermission(bench.name, '', true)
+			);
 			if (this.searchTerm)
 				benches = benches.filter(bench =>
 					bench.name.toLowerCase().includes(this.searchTerm.toLowerCase())

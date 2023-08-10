@@ -251,12 +251,15 @@ export default {
 			if (!this.$resources.allSites.data) {
 				return [];
 			}
+			let sites = this.$resources.allSites.data.filter(site =>
+				this.$account.hasPermission(site.name, '', true)
+			);
 			if (this.searchTerm) {
-				return this.$resources.allSites.data.filter(site =>
+				return sites.filter(site =>
 					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
 				);
 			}
-			return this.$resources.allSites.data;
+			return sites;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

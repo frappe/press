@@ -41,6 +41,7 @@ export default class Account {
 			this.feature_flags = result.feature_flags;
 			this.parent_team = result.parent_team;
 			this.saas_site_request = result.saas_site_request;
+			this.permissions = result.permissions;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		} finally {
@@ -90,6 +91,28 @@ export default class Account {
 		}
 		if (this.team.payment_mode == 'Prepaid Credits') {
 			return this.balance > 0;
+		}
+		return false;
+	}
+
+	hasPermission(docname, action = '', list = false) {
+		// logged in user is site owner or
+		// has no granular permissions set, so has all permissions
+		if (
+			this.team.user === this.user.name ||
+			Object.keys(this.permissions).length === 0
+		) {
+			return true;
+		}
+		// if any permission is set for resource, show list view
+		if (Object.keys(this.permissions).includes(docname) && list) {
+			return true;
+		}
+		// check for granular restricted access
+		if (Object.keys(this.permissions).includes(docname)) {
+			if (this.permissions[docname].includes(action)) {
+				return true;
+			}
 		}
 		return false;
 	}
