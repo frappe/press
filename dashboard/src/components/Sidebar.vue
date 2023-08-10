@@ -140,7 +140,10 @@ export default {
 					label: 'Benches',
 					route: '/benches',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/benches') >= 0;
+						return (
+							this.$route.fullPath.indexOf('/benches') >= 0 &&
+							this.$route.fullPath.indexOf('/servers/') < 0
+						);
 					},
 					icon: FCIcons.BenchIcon
 				},
