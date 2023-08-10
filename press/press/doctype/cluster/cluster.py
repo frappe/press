@@ -19,6 +19,7 @@ import typing
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.plan.plan import Plan
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class Cluster(Document):
@@ -35,6 +36,38 @@ class Cluster(Document):
 	def validate(self):
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
+		if self.cloud_provider == "AWS EC2":
+			self.validate_aws_credentials()
+
+	def client(self):
+		pass
+
+	def validate_aws_credentials(self):
+		settings: "PressSettings" = frappe.get_single("Press Settings")
+		if self.public and not self.aws_access_key_id:
+			self.aws_access_key_id = settings.offsite_backups_access_key_id
+			self.aws_secret_access_key = settings.get_password(
+				"offsite_backups_secret_access_key"
+			)
+		elif not self.aws_access_key_id or not self.aws_secret_access_key:
+			root_client = settings.boto3_offsite_backup_session.client("iam")
+			group = (
+				root_client.get_group(GroupName="fc-vpc-customers")
+				.get("Group", {})
+				.get("GroupName")
+			)
+			root_client.create_user(
+				UserName=self.name,
+			)
+			root_client.add_user_to_group(
+				GroupName=group,
+				UserName=self.name,
+			)
+			access_key_pair = root_client.create_access_key(
+				UserName=self.name,
+			)["AccessKey"]
+			self.aws_access_key_id = access_key_pair["AccessKeyId"]
+			self.aws_secret_access_key = access_key_pair["SecretAccessKey"]
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
