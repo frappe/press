@@ -88,9 +88,21 @@
 			>
 				<template v-slot:actions>
 					<SiteDrop :site="site" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Site</span>
-						</Button>
+						<Tooltip
+							:text="
+								!permissions.drop
+									? `You don't have enough permissions to perform this action`
+									: 'Drop Site'
+							"
+						>
+							<Button
+								theme="red"
+								:disabled="!permissions.drop"
+								@click="showDialog"
+							>
+								Drop Site
+							</Button>
+						</Tooltip>
 					</SiteDrop>
 				</template>
 			</ListItem>
@@ -166,6 +178,16 @@ export default {
 				color: 'green'
 			});
 			setTimeout(() => window.location.reload(), 1000);
+		}
+	},
+	computed: {
+		permissions() {
+			return {
+				drop: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.archive'
+				)
+			};
 		}
 	}
 };

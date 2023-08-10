@@ -16,12 +16,21 @@
 						Restore your database using a previous backup
 					</p>
 				</div>
-				<Button
-					:disabled="site.status === 'Suspended'"
-					@click="showRestoreDialog = true"
+				<Tooltip
+					:text="
+						!permissions.restore
+							? `You don't have enough permissions to perform this action`
+							: 'Restore Database'
+					"
 				>
-					<span class="text-red-600">Restore</span>
-				</Button>
+					<Button
+						theme="red"
+						:disabled="site.status === 'Suspended' || !permissions.restore"
+						@click="showRestoreDialog = true"
+					>
+						Restore
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -30,12 +39,20 @@
 						Run bench migrate command on your database
 					</p>
 				</div>
-				<Button
-					:disabled="site.status === 'Suspended'"
-					@click="showMigrateDialog = true"
+				<Tooltip
+					:text="
+						!permissions.migrate
+							? `You don't have enough permissions to perform this action`
+							: 'Migrate Database'
+					"
 				>
-					Migrate
-				</Button>
+					<Button
+						:disabled="site.status === 'Suspended' || !permissions.migrate"
+						@click="showMigrateDialog = true"
+					>
+						Migrate
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -44,9 +61,21 @@
 						Reset your database to a clean state
 					</p>
 				</div>
-				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
-					<span class="text-red-600"> Reset </span>
-				</Button>
+				<Tooltip
+					:text="
+						!permissions.reset
+							? `You don't have enough permissions to perform this action`
+							: 'Reset Database'
+					"
+				>
+					<Button
+						theme="red"
+						:disabled="site.status === 'Suspended' || !permissions.reset"
+						@click="confirmReset"
+					>
+						Reset
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -57,7 +86,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="confirmClearCache"
 				>
-					<span class="text-red-600"> Clear </span>
+					Clear
 				</Button>
 			</div>
 			<div
@@ -300,6 +329,22 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				migrate: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.migrate'
+				),
+				restore: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.migrate'
+				),
+				reset: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.migrate'
+				)
+			};
+		},
 		filesUploaded() {
 			return this.selectedFiles.database;
 		}
