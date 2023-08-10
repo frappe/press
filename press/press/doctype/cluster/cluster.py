@@ -64,6 +64,9 @@ class Cluster(Document):
 
 			self.aws_access_key_id = access_key_pair["AccessKeyId"]
 			self.aws_secret_access_key = access_key_pair["SecretAccessKey"]
+			from time import sleep
+
+			sleep(20)  # wait for key to be valid
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
