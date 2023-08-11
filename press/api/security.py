@@ -40,25 +40,31 @@ def get_security_update_details(update_id):
 
 
 @frappe.whitelist()
-def fetch_ssh_sessions(server, start=0, limit=10):
+def fetch_ssh_sessions_from_db(server):
 	return frappe.get_all(
-		"SSH Session",
+		"SSH Session Log",
 		filters={"server": server},
-		fields=["name", "user", "datetime"],
-		order_by="datetime desc",
-		start=start,
-		limit=limit,
+		fields=[
+			"name",
+			"ssh_user as user",
+			"created_at",
+			"session_id",
+			"filename",
+		],
+		order_by="created_at desc",
 	)
 
 
 @frappe.whitelist()
-def fetch_ssh_session_logs(server):
+def fetch_ssh_session_logs(server, server_type):
+	from press.press.doctype.ssh_session_log.ssh_session_log import SSHSessionLog
+
 	logs_to_display = []
 	ssh_logs = Agent(server=server).get("security/ssh_session_logs")
 
 	for log in ssh_logs.get("logs", []):
 		if not log["name"].endswith(".timing"):
-			log["created_at"] = get_datetime(log["created"]).strftime("%Y-%m-%d %H-%M")
+			log["created_at"] = get_datetime(log["created"]).strftime("%Y-%m-%d %H:%M")
 
 			splited_log = log["name"].split(".")
 			log["user"] = splited_log[1]
@@ -66,15 +72,37 @@ def fetch_ssh_session_logs(server):
 
 			logs_to_display.append(log)
 
+			SSHSessionLog.create_ssh_session_log(log, server, server_type)
+
 	return logs_to_display
 
 
 @frappe.whitelist()
 def fetch_ssh_session_activity(server, filename):
+	from press.press.doctype.ssh_session_log.ssh_session_log import (
+		SSHSessionLog,
+		get_activity_log_from_db,
+	)
+
+	if not filename or not server:
+		return {}
+
+	log = get_activity_log_from_db(filename)
+
+	if log:
+		return log
+
 	content = Agent(server=server).get(f"security/retrieve_ssh_session_log/{filename}")
 	splited_filename = filename.split(".")
 	session_user = splited_filename[1]
 	session_id = splited_filename[2]
+
+	try:
+		SSHSessionLog.update_ssh_session_log(filename, content.get("log_details"))
+	except frappe.DoesNotExistError:
+		pass
+	except Exception:
+		pass
 
 	return {
 		"session_user": session_user,

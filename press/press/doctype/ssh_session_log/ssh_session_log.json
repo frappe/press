@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:filename",
+ "creation": "2023-08-11 13:09:47.923066",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "server",
+  "filename",
+  "column_break_hg63",
+  "created_at",
+  "session_id",
+  "ssh_user",
+  "ssh_certificate",
+  "section_break_on08",
+  "ssh_activity_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Server Type",
+   "options": "Server\nDatabase Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "server_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "filename",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Filename",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "ssh_user",
+   "fieldtype": "Data",
+   "label": "SSH User"
+  },
+  {
+   "fieldname": "ssh_certificate",
+   "fieldtype": "Data",
+   "label": "SSH Certificate"
+  },
+  {
+   "fieldname": "section_break_on08",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ssh_activity_log",
+   "fieldtype": "Code",
+   "label": "SSH Activity Log"
+  },
+  {
+   "fieldname": "column_break_hg63",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "created_at",
+   "fieldtype": "Datetime",
+   "label": "Created At"
+  },
+  {
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session Id"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-08-11 14:25:23.807028",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "SSH Session Log",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "All",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -58,7 +58,7 @@ export default {
 			return `SSH Session: ${log.session_id}`;
 		},
 		getDescription(log) {
-			return `Created On: ${log.created_at} <br> Size: ${log.size} Kb`;
+			return `${log.created_at}`;
 		},
 		updateRoute(name) {
 			return `/security/${this.server.name}/ssh_session_logs/${name}`;

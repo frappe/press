@@ -37,7 +37,8 @@ export default {
 			return {
 				url: 'press.api.security.fetch_ssh_session_logs',
 				params: {
-					server: this.server?.name
+					server: this.server?.name,
+					server_type: this.server?.server_type
 				},
 				auto: true
 			};
@@ -53,9 +54,7 @@ export default {
 			return `SSH Session Id: ${log.session_id}`;
 		},
 		getDescription(log) {
-			return `Created On: ${this.formatDate(log.created)} <br> Size: ${
-				log.size
-			} Kb`;
+			return `${this.formatDate(log.created)}`;
 		},
 		updateRoute(name) {
 			return `/security/${this.server.name}/ssh_session_logs/${name}`;

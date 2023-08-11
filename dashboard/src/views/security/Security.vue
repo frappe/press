@@ -2,23 +2,6 @@
 	<div>
 		<div v-if="server">
 			<div>
-				<header
-					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
-				>
-					<Breadcrumbs
-						:items="[
-							{ label: 'Security', route: { name: 'Security' } },
-							{
-								label: server?.title,
-								route: {
-									name: 'SecurityOverview',
-									params: { serverName: server?.name }
-								}
-							}
-						]"
-					>
-					</Breadcrumbs>
-				</header>
 				<div
 					class="flex flex-col space-y-3 px-5 py-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>

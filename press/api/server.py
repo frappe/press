@@ -127,6 +127,7 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
 		),
+		"server_type": server.doctype,
 	}
 
 
