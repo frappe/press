@@ -1,16 +1,16 @@
 # Copyright (c) 2022, Frappe and Contributors
 # See license.txt
 
+from unittest.mock import MagicMock, patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
-
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 	VirtualMachineImage,
 )
-
-from unittest.mock import patch, MagicMock
 
 
 @patch.object(VirtualMachineImage, "client", new=MagicMock())

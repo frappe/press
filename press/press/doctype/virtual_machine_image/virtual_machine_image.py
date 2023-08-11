@@ -2,11 +2,13 @@
 # For license information, please see license.txt
 
 from typing import Optional
-import frappe
-from frappe.model.document import Document
-from frappe.core.utils import find
 
 import boto3
+import frappe
+from frappe.core.utils import find
+from frappe.model.document import Document
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_result
 
 
 class VirtualMachineImage(Document):
@@ -58,14 +60,23 @@ class VirtualMachineImage(Document):
 		else:
 			self.status = "Unavailable"
 		self.save()
+		return self.status
+
+	@retry(
+		retry=retry_if_result(lambda result: result != "Available"),
+		wait=wait_fixed(2),
+		stop=stop_after_attempt(10),
+	)
+	def wait_for_availability(self):
+		"""Retries sync until the image is available"""
+		return self.sync()
 
 	@frappe.whitelist()
 	def copy_image(self, cluster: str):
 		image = frappe.copy_doc(self)
 		image.copied_from = self.name
 		image.cluster = cluster
-		image.insert()
-		return image.name
+		return image.insert()
 
 	@frappe.whitelist()
 	def delete_image(self):

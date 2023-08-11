@@ -13,6 +13,7 @@
   "status",
   "size",
   "column_break_5",
+  "cluster",
   "region",
   "platform",
   "series",
@@ -111,11 +112,21 @@
    "label": "Copied From",
    "options": "Virtual Machine Image",
    "read_only": 1
+  },
+  {
+   "fetch_from": "virtual_machine.cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-08 12:22:15.835990",
+ "modified": "2023-08-11 14:45:46.002804",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

@@ -4,7 +4,7 @@
 
 
 import ipaddress
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 import boto3
 import frappe
@@ -70,7 +70,8 @@ class Cluster(Document):
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
-			self.copy_virtual_machine_images()
+			for vmi in self.copy_virtual_machine_images():
+				vmi.wait_for_availability()
 			if not self.add_default_servers:
 				return
 			self.create_servers()
@@ -290,7 +291,7 @@ class Cluster(Document):
 	def get_available_vmi(self, series) -> Optional[str]:
 		return VirtualMachineImage.get_available_for_series(series, self.region)
 
-	def copy_virtual_machine_images(self):
+	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""
 		server_doctypes = {**self.base_servers}
 		if not self.public:
@@ -301,7 +302,9 @@ class Cluster(Document):
 				continue
 			other_region_vmi = VirtualMachineImage.get_available_for_series(series)
 			if other_region_vmi:
-				frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
+				yield frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(
+					self.name
+				)
 
 	def create_servers(self):
 		"""Creates servers for the cluster"""
