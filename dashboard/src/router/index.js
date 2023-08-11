@@ -234,6 +234,35 @@ const routes = [
 				path: 'auto-update',
 				component: () => import('../views/site/SiteAutoUpdate.vue'),
 				props: true
+			},
+			{
+				path: 'monitor',
+				component: () => import('../views/site/SiteMonitorsList.vue'),
+				props: true
+			},
+			{
+				name: 'SiteBinaryLogs',
+				path: 'binary-logs',
+				component: () => import('../views/site/SiteBinaryLogs.vue'),
+				props: true
+			},
+			{
+				name: 'MariaDBProcessList',
+				path: 'mariadb-process-list',
+				component: () => import('../views/site/SiteMariaDBProcessList.vue'),
+				props: true
+			},
+			{
+				name: 'SiteMariaDBSlowQueries',
+				path: 'mariadb-slow-queries',
+				component: () => import('../views/site/SiteMariaDBSlowQueries.vue'),
+				props: true
+			},
+			{
+				name: 'SiteDeadlockReport',
+				path: 'deadlock-report',
+				component: () => import('../views/site/SiteDeadlockReport.vue'),
+				props: true
 			}
 		]
 	},
