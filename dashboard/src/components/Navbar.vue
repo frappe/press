@@ -1,11 +1,11 @@
 <template>
-	<nav class="px-4 border-b bg-gray-50">
+	<nav class="border-b bg-gray-50 px-4">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center">
 					<div class="shrink-0">
 						<router-link to="/">
-							<FrappeCloudLogo class="w-auto ml-2" />
+							<FrappeCloudLogo class="h-6" />
 						</router-link>
 					</div>
 				</div>
@@ -42,7 +42,7 @@
 					</a>
 				</router-link>
 			</div>
-			<div class="border-t pt-4 pb-3">
+			<div class="border-t pb-3 pt-4">
 				<div class="flex items-center px-4">
 					<div class="shrink-0">
 						<Avatar
@@ -89,7 +89,7 @@
 </template>
 
 <script>
-import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 
 export default {
 	components: {
