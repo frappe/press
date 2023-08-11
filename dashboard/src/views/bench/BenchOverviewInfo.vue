@@ -21,13 +21,7 @@
 				title="Drop Bench"
 				description="Permanently delete the bench and related data"
 			>
-				<template v-slot:actions>
-					<BenchDrop :bench="bench" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Bench</span>
-						</Button>
-					</BenchDrop>
-				</template>
+				<template v-slot:actions> </template>
 			</ListItem>
 		</div>
 		<Dialog
@@ -52,13 +46,8 @@
 	</Card>
 </template>
 <script>
-import BenchDrop from './BenchDrop.vue';
-
 export default {
 	name: 'BenchOverviewInfo',
-	components: {
-		BenchDrop
-	},
 	props: ['bench'],
 	data() {
 		return {
