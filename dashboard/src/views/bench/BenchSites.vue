@@ -1,28 +1,91 @@
 <template>
 	<div class="space-y-8">
-		<div v-for="bench in $resources.benchesWithSites.data" :key="bench.bench">
-			<h3 class="mb-1.5 text-base font-semibold text-gray-800">
-				{{ bench.bench }}
-			</h3>
-			<div class="mb-5 text-sm text-gray-500">
-				Deployed on
-				{{ formatDate(bench.deployed_on, 'DATETIME_SHORT', true) }}
-			</div>
-			<div class="grid grid-cols-4 gap-4">
-				<SiteCard
-					v-for="site in bench.sites"
-					:key="site.name"
-					:site="site"
-					:dropdownItems="dropdownItems"
-				/>
-			</div>
-		</div>
-		<div
-			class="text-base text-gray-600"
-			v-if="$resources.benchesWithSites.data?.length === 0"
+		<Table
+			:columns="[
+				{ label: 'Site Name', name: 'name', width: 2 },
+				{ label: 'Status', name: 'status' },
+				{ label: 'Region', name: 'region' },
+				{ label: 'Tags', name: 'tags' },
+				{ label: 'Plan', name: 'plan' },
+				{ label: '', name: 'actions', width: 0.5 }
+			]"
+			:rows="sites"
+			v-slot="{ rows, columns }"
 		>
-			No deployments
-		</div>
+			<TableHeader />
+			<div class="flex items-center justify-center">
+				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
+				<div v-else-if="rows.length === 0" class="mt-8">
+					<div class="text-base text-gray-700">No Items</div>
+				</div>
+			</div>
+			<div v-for="group in groups" :key="group.name">
+				<div
+					class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
+				>
+					<span class="font-semibold text-gray-900">
+						{{ group.name }}
+					</span>
+				</div>
+
+				<TableRow
+					v-for="row in sitesByGroup[group.name]"
+					:key="row.name"
+					:row="row"
+				>
+					<TableCell v-for="column in columns">
+						<Badge
+							class="ring-1 ring-white"
+							v-if="column.name === 'status'"
+							:label="siteBadge(row)"
+						/>
+						<div
+							v-else-if="column.name === 'tags' && row.tags"
+							class="-space-x-5"
+						>
+							<Badge
+								class="ring-1 ring-white"
+								v-for="(tag, i) in row.tags.slice(0, 2)"
+								:theme="$getColorBasedOnString(i)"
+								:label="tag"
+							/>
+							<Badge
+								class="ring-1 ring-white"
+								v-if="row.tags.length > 2"
+								:label="`+${row.tags.length - 2}`"
+							/>
+						</div>
+						<span v-else-if="column.name === 'plan'">
+							{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
+						</span>
+						<div v-else-if="column.name === 'region'">
+							<img
+								v-if="row.server_region_info?.image"
+								class="h-4"
+								:src="row.server_region_info.image"
+								:alt="`Flag of ${row.server_region_info.title}`"
+								:title="row.server_region_info.image"
+							/>
+							<span class="text-base text-gray-700" v-else>
+								{{ row.server_region_info?.title }}
+							</span>
+						</div>
+						<div class="w-full text-right" v-else-if="column.name == 'actions'">
+							<Dropdown @click.prevent :options="dropdownItems(row)">
+								<template v-slot="{ open }">
+									<Button
+										:variant="open ? 'subtle' : 'ghost'"
+										class="mr-2"
+										icon="more-horizontal"
+									/>
+								</template>
+							</Dropdown>
+						</div>
+						<span v-else>{{ row[column.name] || '' }}</span>
+					</TableCell>
+				</TableRow>
+			</div>
+		</Table>
 	</div>
 
 	<Dialog
@@ -51,13 +114,19 @@
 </template>
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
-import SiteCard from '@/components/SiteCard.vue';
+import Table from '@/components/Table/Table.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
+import TableCell from '@/components/Table/TableCell.vue';
 
 export default {
 	name: 'BenchSites',
 	props: ['bench', 'benchName'],
 	components: {
-		SiteCard
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell
 	},
 	data() {
 		return {
@@ -128,6 +197,71 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		},
+		siteBadge(site) {
+			let status = site.status;
+			if (site.update_available && site.status == 'Active') {
+				status = 'Update Available';
+			}
+
+			let usage = Math.max(
+				site.current_cpu_usage,
+				site.current_database_usage,
+				site.current_disk_usage
+			);
+			if (usage && usage >= 80 && status == 'Active') {
+				status = 'Attention Required';
+			}
+			if (site.trial_end_date) {
+				status = 'Trial';
+			}
+			return status;
+		}
+	},
+	computed: {
+		sites() {
+			if (!this.$resources.benchesWithSites.data) return [];
+
+			return this.$resources.benchesWithSites.data
+				.map(bench => {
+					return bench.sites.map(site => {
+						site.bench = bench.bench;
+						return site;
+					});
+				})
+				.flat();
+		},
+		sitesByGroup() {
+			let sitesByGroup = {};
+
+			for (let site of this.sites) {
+				let bench = site.bench;
+				if (!sitesByGroup[bench]) {
+					sitesByGroup[bench] = [];
+				}
+				site.route = {
+					name: 'SiteOverview',
+					params: {
+						siteName: site.name
+					}
+				};
+				sitesByGroup[bench].push(site);
+			}
+
+			return sitesByGroup;
+		},
+		groups() {
+			let seen = [];
+			let groups = [];
+			for (let site of this.sites) {
+				if (!seen.includes(site.bench)) {
+					seen.push(site.bench);
+					groups.push({
+						name: site.bench
+					});
+				}
+			}
+			return groups;
 		}
 	}
 };

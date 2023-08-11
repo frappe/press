@@ -459,18 +459,24 @@ def benches_with_sites(name):
 	sites = frappe.get_all(
 		"Site",
 		{"status": ("!=", "Archived"), "group": name},
-		["name", "status", "bench", "cluster", "creation"],
+		["name", "status", "bench", "cluster", "plan", "creation"],
 	)
 
-	server_region_info = frappe.db.get_value(
-		"Cluster", sites[0].cluster, ["title", "image"], as_dict=True
-	)
 	rg_version = frappe.db.get_value("Release Group", name, "version")
 
 	benches = {}
 	for site in sites:
-		site.server_region_info = server_region_info
 		site.version = rg_version
+		site.server_region_info = frappe.db.get_value(
+			"Cluster", site.cluster, ["title", "image"], as_dict=True
+		)
+		site_plan_name = frappe.get_value("Site", site.name, "plan")
+		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.tags = frappe.get_all(
+			"Resource Tag",
+			{"parent": site.name},
+			pluck="tag_name",
+		)
 		bench = site.bench
 		if bench in benches:
 			benches[bench]["sites"].append(site)
