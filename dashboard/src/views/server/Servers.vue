@@ -41,11 +41,11 @@
 							</template>
 						</FormControl>
 						<FormControl
-							label="Status"
+							label="Server Type"
 							class="mr-8"
 							type="select"
 							:options="serverStatusFilterOptions()"
-							v-model="serverFilter.status"
+							v-model="serverFilter.server_type"
 						/>
 						<FormControl
 							label="Tag"
@@ -175,7 +175,7 @@ export default {
 			showAddCardDialog: false,
 			searchTerm: '',
 			serverFilter: {
-				status: 'All Servers',
+				server_type: 'All Servers',
 				tag: ''
 			},
 			dropDownOptions: [

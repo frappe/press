@@ -1,0 +1,10 @@
+---
+- name: Fetch package details
+  block:
+    - name: Fetch package meta
+      command: apt show {{ package }}
+      register: package_meta
+
+    - name: Fetch package change log
+      command: apt changelog {{ package }}
+      register: change_log

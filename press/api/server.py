@@ -24,7 +24,8 @@ def poly_get_doc(doctypes, name):
 @frappe.whitelist()
 def all(server_filter=None):
 	if server_filter is None:
-		server_filter = {"status": "", "tag": ""}
+		server_filter = {"server_type": "", "tag": ""}
+
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -33,7 +34,7 @@ def all(server_filter=None):
 	app_server = frappe.qb.DocType("Server")
 	res_tag = frappe.qb.DocType("Resource Tag")
 
-	if server_filter["status"] != "Database Servers":
+	if server_filter["server_type"] != "Database Servers":
 		app_server_query = (
 			frappe.qb.from_(app_server)
 			.select(
@@ -55,7 +56,7 @@ def all(server_filter=None):
 				(res_tag.parent == app_server.name) & (res_tag.tag_name == server_filter["tag"])
 			)
 
-	if server_filter["status"] != "App Servers":
+	if server_filter["server_type"] != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
 			.select(
@@ -73,9 +74,9 @@ def all(server_filter=None):
 				(res_tag.parent == db_server.name) & (res_tag.tag_name == server_filter["tag"])
 			)
 
-	if server_filter["status"] == "App Servers":
+	if server_filter["server_type"] == "App Servers":
 		query = app_server_query
-	if server_filter["status"] == "Database Servers":
+	elif server_filter["server_type"] == "Database Servers":
 		query = database_server_query
 	else:
 		query = app_server_query + database_server_query
