@@ -17,6 +17,7 @@ class SecurityUpdate(Document):
 			ansible = Ansible(
 				playbook="security_update.yml",
 				server=server_obj,
+				variables={"validate_pending_security_updates": False},
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -45,14 +46,12 @@ class SecurityUpdate(Document):
 
 	@staticmethod
 	def _fetch_package_meta(package_list, server_obj):
-		package_list = package_list[:6]
-
 		for package in package_list:
 			try:
 				ansible = Ansible(
-					playbook="security_update.yml",
+					playbook="fetch_package_details.yml",
 					server=server_obj,
-					variables={"fetch_package_meta": True, "package": package},
+					variables={"package": package},
 				)
 				play = ansible.run()
 				if play.status == "Success":
@@ -65,7 +64,7 @@ class SecurityUpdate(Document):
 		package_meta = SecurityUpdate.get_package_meta_from_log(play)
 		package_change_log = SecurityUpdate.get_package_change_log(play)
 		version = SecurityUpdate.get_package_version(package_meta)
-		priority, level = SecurityUpdate.get_package_priority(package_meta)
+		priority, level = SecurityUpdate.get_package_priority_and_level(package_meta)
 
 		if frappe.db.exists(
 			"Security Update",

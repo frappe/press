@@ -3,8 +3,3 @@
   hosts: all
   roles:
     - role: security_update
-      when: fetch_package_meta is not defined
-
-    - role: fetch_package_meta
-      when: fetch_package_meta | default(false) | bool
-
