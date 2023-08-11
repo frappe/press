@@ -771,6 +771,7 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
 		),
+		"hide_monitor_tab": site.hide_monitor_tab,
 	}
 
 
@@ -1061,6 +1062,7 @@ def current_plan(name):
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"database_access": plan.database_access if plan else None,
+		"monitor_access": plan.monitor_access if plan else None,
 		"usage_in_percent": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,

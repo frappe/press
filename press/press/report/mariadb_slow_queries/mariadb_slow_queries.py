@@ -2,12 +2,10 @@
 # For license information, please see license.txt
 
 import frappe
-import pytz
 import requests
 import sqlparse
 
 from frappe.utils import (
-	get_datetime,
 	convert_utc_to_timezone,
 	get_system_timezone,
 )
@@ -65,10 +63,7 @@ def execute(filters=None):
 
 
 def get_data(filters):
-	def convert_user_timezone_to_utc(datetime_obj):
-		timezone = pytz.timezone(get_system_timezone())
-		datetime_obj = get_datetime(datetime_obj)
-		return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
+	from press.utils import convert_user_timezone_to_utc
 
 	rows = get_slow_query_logs(
 		filters.database,

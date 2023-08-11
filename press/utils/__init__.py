@@ -6,9 +6,11 @@ import frappe
 import functools
 import json
 import requests
+import pytz
 
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
+from frappe.utils import get_system_timezone, get_datetime
 
 
 def log_error(title, **kwargs):
@@ -430,3 +432,9 @@ def group_children_in_result(result, child_field_map):
 			out[d.name][target].append(d.get(child_field))
 			out[d.name].pop(child_field, "")
 	return out.values()
+
+
+def convert_user_timezone_to_utc(datetime):
+	timezone = pytz.timezone(get_system_timezone())
+	datetime_obj = get_datetime(datetime)
+	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
