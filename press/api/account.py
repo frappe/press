@@ -781,7 +781,11 @@ def get_permission_options(name, ptype):
 				doc.name,
 				GROUP_CONCAT(subtable.action, alias="perms"),
 			)
-			.where(doc.team == get_current_team())
+			.where(
+				(doc.team == get_current_team()) & (doc.enabled == 1)
+				if doctype == "Release Group"
+				else (doc.status != "Archived")
+			)
 			.groupby(doc.name)
 		)
 		options += query.run(as_dict=True)
