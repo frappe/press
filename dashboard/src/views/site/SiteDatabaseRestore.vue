@@ -337,11 +337,11 @@ export default {
 				),
 				restore: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.migrate'
+					'press.api.site.restore'
 				),
 				reset: this.$account.hasPermission(
 					this.site.name,
-					'press.api.site.migrate'
+					'press.api.site.reset'
 				)
 			};
 		},
