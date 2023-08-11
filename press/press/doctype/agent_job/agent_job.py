@@ -284,6 +284,7 @@ def update_job(job_name, job):
 			"output": job["data"].get("output"),
 			"traceback": job["data"].get("traceback"),
 		},
+		for_update=True,
 	)
 
 
@@ -318,6 +319,7 @@ def update_step(step_name, step):
 			"output": step["data"].get("output"),
 			"traceback": step["data"].get("traceback"),
 		},
+		for_update=True,
 	)
 
 
