@@ -13,7 +13,7 @@
 						:src="saasProduct.logo"
 						:alt="saasProduct.title"
 					/>
-					<div class="text-4xl font-semibold text-gray-900" v-else>
+					<div class="text-5xl font-semibold text-gray-900" v-else>
 						{{ saasProduct.title }}
 					</div>
 					<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
