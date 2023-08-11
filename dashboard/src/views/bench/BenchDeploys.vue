@@ -30,7 +30,6 @@
 							<Badge
 								v-if="candidate.status != 'Success'"
 								:label="candidate.status"
-								:colorMap="$badgeStatusColorMap"
 							>
 							</Badge>
 						</template>

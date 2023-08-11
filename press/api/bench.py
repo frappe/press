@@ -88,7 +88,10 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None, bench_filter=""):
+def all(server=None, bench_filter=None):
+	if bench_filter is None:
+		bench_filter = {"status": "", "tag": ""}
+
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -113,18 +116,17 @@ def all(server=None, bench_filter=""):
 	)
 
 	bench = frappe.qb.DocType("Bench")
-	if bench_filter == "Active":
+	if bench_filter["status"] == "Active":
 		query = query.inner_join(bench).on(group.name == bench.group)
-	elif bench_filter == "Awaiting Deploy":
+	elif bench_filter["status"] == "Awaiting Deploy":
 		group_names = frappe.get_all(
 			"Bench", {"status": "Active"}, pluck="group", distinct=True
 		)
 		query = query.inner_join(bench).on(group.name.notin(group_names))
-	elif bench_filter.startswith("tag:"):
-		tag = bench_filter[4:]
+	if bench_filter["tag"]:
 		press_tag = frappe.qb.DocType("Resource Tag")
 		query = query.inner_join(press_tag).on(
-			(press_tag.tag_name == tag) & (press_tag.parent == group.name)
+			(press_tag.tag_name == bench_filter["tag"]) & (press_tag.parent == group.name)
 		)
 
 	if server:
@@ -284,9 +286,13 @@ def update_config(name, config):
 	for c in config:
 		if c.key in get_client_blacklisted_keys():
 			continue
+		if frappe.db.exists("Site Config Key", c.key):
+			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
 		if c.type == "Number":
 			c.value = flt(c.value)
-		elif c.type in ("JSON", "Boolean"):
+		elif c.type == "Boolean":
+			c.value = bool(c.value)
+		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 
 		if c.key in bench_config_keys:
@@ -445,6 +451,59 @@ def versions(name):
 		)
 
 	return deployed_versions
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def benches_with_sites(name):
+	sites = frappe.get_all(
+		"Site",
+		{"status": ("!=", "Archived"), "group": name},
+		["name", "status", "bench", "cluster", "plan", "creation"],
+	)
+
+	rg_version = frappe.db.get_value("Release Group", name, "version")
+
+	benches = {}
+	for site in sites:
+		site.version = rg_version
+		site.server_region_info = frappe.db.get_value(
+			"Cluster", site.cluster, ["title", "image"], as_dict=True
+		)
+		site_plan_name = frappe.get_value("Site", site.name, "plan")
+		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.tags = frappe.get_all(
+			"Resource Tag",
+			{"parent": site.name},
+			pluck="tag_name",
+		)
+		bench = site.bench
+		if bench in benches:
+			benches[bench]["sites"].append(site)
+		else:
+			benches[bench] = {"bench": bench, "sites": [site]}
+
+	benches = list(benches.values())
+	for bench in benches:
+		bench["apps"] = frappe.get_all(
+			"Bench App",
+			{"parent": bench["bench"]},
+			["name", "app", "hash", "source"],
+			order_by="idx",
+		)
+		for app in bench["apps"]:
+			app.update(
+				frappe.db.get_value(
+					"App Source",
+					app.source,
+					("branch", "repository", "repository_owner", "repository_url"),
+					as_dict=1,
+					cache=True,
+				)
+			)
+		bench["deployed_on"] = frappe.db.get_value("Bench", bench["bench"], "creation")
+
+	return benches
 
 
 @frappe.whitelist()

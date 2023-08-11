@@ -1,46 +1,52 @@
 <template>
 	<div>
-		<PageHeader title="Settings" :subtitle="pageSubtitle" />
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<AccountProfile />
-			<AccountTeam />
-			<AccountMembers />
-			<AccountReferral />
-			<AccountEmails />
-			<AccountAPI />
-			<AccountSSHKey />
-		</div>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[{ label: 'Settings', route: { name: 'SettingsScreen' } }]"
+			/>
+		</header>
+		<PageHeader class="mx-5 mt-3" title="Settings" :subtitle="pageSubtitle" />
+		<Tabs class="mx-5" :tabs="tabs">
+			<router-view v-slot="{ Component, route }">
+				<component :is="Component"></component>
+			</router-view>
+		</Tabs>
 	</div>
 </template>
 
 <script>
-import AccountProfile from './AccountProfile.vue';
-import AccountTeam from './AccountTeam.vue';
-import AccountMembers from './AccountMembers.vue';
-import AccountReferral from './AccountReferral.vue';
-import AccountEmails from './AccountEmails.vue';
-import AccountAPI from './AccountAPI.vue';
-import AccountSSHKey from './AccountSSHKey.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
+import Tabs from '@/components/Tabs.vue';
 
 export default {
 	name: 'AccountSettings',
 	pageMeta() {
 		return {
-			title: 'Settings - Frappe Cloud'
+			title: 'Settings - Profile'
 		};
 	},
 	components: {
-		AccountProfile,
-		AccountTeam,
-		AccountMembers,
-		AccountReferral,
-		AccountEmails,
-		AccountAPI,
-		AccountSSHKey,
+		Tabs,
 		PageHeader
 	},
 	computed: {
+		tabs() {
+			let tabRoute = subRoute => `/settings/${subRoute}`;
+			let tabs = [
+				{ label: 'Profile', route: 'profile' },
+				{ label: 'Team', route: 'team' },
+				{ label: 'Billing', route: 'billing' }
+			];
+
+			return tabs.map(tab => {
+				return {
+					...tab,
+					route: tabRoute(tab.route)
+				};
+			});
+		},
 		pageSubtitle() {
 			const { user, team } = this.$account;
 			let subtitle = '';

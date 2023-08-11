@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="min-h-full h-full max-h-96"
+		class="h-full max-h-96 min-h-full"
 		title="Site Activity"
 		subtitle="Log of activities performed on your site"
 	>
@@ -28,19 +28,21 @@
 			</Button>
 		</template>
 		<Dialog
-			:options="{ title: 'Change Notify Email' }"
+			:options="{
+				title: 'Change Notify Email',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						loading: $resources.changeNotifyEmail.loading,
+						onClick: () => $resources.changeNotifyEmail.submit()
+					}
+				]
+			}"
 			v-model="showChangeNotifyEmailDialog"
 		>
 			<template v-slot:body-content>
-				<Input v-model="site.notify_email" />
-			</template>
-			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					@click="$resources.changeNotifyEmail.submit()"
-				>
-					Save
-				</Button>
+				<FormControl v-model="site.notify_email" />
 			</template>
 		</Dialog>
 	</Card>

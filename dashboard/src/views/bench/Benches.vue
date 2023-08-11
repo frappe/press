@@ -1,38 +1,123 @@
 <template>
 	<div>
-		<PageHeader title="Benches" subtitle="Private benches you own">
-			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					iconLeft="plus"
-					class="ml-2"
-					@click="showBillingDialog"
-				>
-					New
-				</Button>
-			</template>
-		</PageHeader>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[{ label: 'Benches', route: { name: 'BenchesScreen' } }]"
+			>
+				<template v-slot:actions>
+					<Button
+						variant="solid"
+						icon-left="plus"
+						label="Create"
+						class="ml-2"
+						@click="showBillingDialog"
+					/>
+				</template>
+			</BreadCrumbs>
+		</header>
 
-		<SectionHeader :heading="getBenchFilterHeading()">
-			<template #actions>
-				<Dropdown :options="benchFilterOptions()">
-					<template v-slot="{ open }">
-						<Button
-							:class="[
-								'rounded-md px-3 py-1 text-base font-medium',
-								open ? 'bg-gray-200' : 'bg-gray-100'
-							]"
-							icon-left="chevron-down"
-							>{{ benchFilter.replace('tag:', '') }}</Button
-						>
-					</template>
-				</Dropdown>
-			</template>
-		</SectionHeader>
-
-		<div class="mt-3">
+		<div class="mx-5 mt-5">
+			<div class="flex">
+				<div class="flex w-full space-x-2 pb-4">
+					<FormControl label="Search Benches" v-model="searchTerm">
+						<template #prefix>
+							<FeatherIcon name="search" class="w-4 text-gray-600" />
+						</template>
+					</FormControl>
+					<FormControl
+						label="Status"
+						class="mr-8"
+						type="select"
+						:options="benchStatusFilterOptions()"
+						v-model="benchFilter.status"
+					/>
+					<FormControl
+						label="Tag"
+						class="mr-8"
+						type="select"
+						:options="benchTagFilterOptions()"
+						v-model="benchFilter.tag"
+					/>
+				</div>
+				<div class="w-10"></div>
+			</div>
 			<LoadingText v-if="$resources.allBenches.loading" />
-			<BenchList v-else :benches="benches" />
+			<Table
+				:columns="[
+					{ label: 'Bench Name', name: 'name', width: 2 },
+					{ label: 'Status', name: 'status' },
+					{ label: 'Version', name: 'version' },
+					{ label: 'Tags', name: 'tags' },
+					{ label: 'Stats', name: 'stats' },
+					{ label: '', name: 'actions', width: 0.5 }
+				]"
+				:rows="benches"
+				v-slot="{ rows, columns }"
+			>
+				<TableHeader />
+				<div class="flex items-center justify-center">
+					<LoadingText v-if="$resources.allBenches.loading" class="mt-8" />
+					<div v-else-if="rows.length === 0" class="mt-8">
+						<div class="text-base text-gray-700">No Items</div>
+					</div>
+				</div>
+				<TableRow v-for="row in rows" :key="row.name" :row="row">
+					<TableCell v-for="column in columns">
+						<Badge
+							class="ring-1 ring-white"
+							v-if="column.name === 'status'"
+							:label="row.status"
+						/>
+						<div v-else-if="column.name === 'tags'" class="-space-x-5">
+							<Badge
+								class="ring-1 ring-white"
+								v-for="(tag, i) in row.tags.slice(0, 2)"
+								:theme="$getColorBasedOnString(i)"
+								:label="tag"
+							/>
+							<Badge
+								class="ring-1 ring-white"
+								v-if="row.tags.length > 2"
+								:label="`+${row.tags.length - 2}`"
+							/>
+						</div>
+						<div
+							v-else-if="column.name === 'stats'"
+							class="text-sm text-gray-600"
+						>
+							{{
+								`${row.stats.number_of_sites} ${$plural(
+									row.stats.number_of_sites,
+									'Site',
+									'Sites'
+								)}`
+							}}
+							&middot;
+							{{
+								`${row.stats.number_of_apps} ${$plural(
+									row.stats.number_of_apps,
+									'App',
+									'Apps'
+								)}`
+							}}
+						</div>
+						<div v-else-if="column.name == 'actions'" class="w-full text-right">
+							<Dropdown @click.prevent :options="dropdownItems(row)">
+								<template v-slot="{ open }">
+									<Button
+										:variant="open ? 'subtle' : 'ghost'"
+										class="mr-2"
+										icon="more-horizontal"
+									/>
+								</template>
+							</Dropdown>
+						</div>
+						<span v-else>{{ row[column.name] || '' }}</span>
+					</TableCell>
+				</TableRow>
+			</Table>
 		</div>
 
 		<Dialog
@@ -54,7 +139,10 @@
 </template>
 
 <script>
-import BenchList from './BenchList.vue';
+import Table from '@/components/Table/Table.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
@@ -62,7 +150,11 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			benchFilter: 'All'
+			searchTerm: '',
+			benchFilter: {
+				status: 'All',
+				tag: ''
+			}
 		};
 	},
 	pageMeta() {
@@ -71,7 +163,10 @@ export default {
 		};
 	},
 	components: {
-		BenchList,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		)
@@ -92,51 +187,61 @@ export default {
 			if (!this.$resources.allBenches.data) {
 				return [];
 			}
+			let benches = this.$resources.allBenches.data.filter(bench =>
+				this.$account.hasPermission(bench.name, '', true)
+			);
+			if (this.searchTerm)
+				benches = benches.filter(bench =>
+					bench.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
-			return this.$resources.allBenches.data;
+			return benches.map(bench => ({
+				name: bench.title,
+				status: bench.status,
+				version: bench.version,
+				stats: {
+					number_of_sites: bench.number_of_sites,
+					number_of_apps: bench.number_of_apps
+				},
+				tags: bench.tags,
+				route: { name: 'BenchSiteList', params: { benchName: bench.name } }
+			}));
 		}
 	},
 	methods: {
-		benchFilterOptions() {
-			const options = [
-				{
-					group: 'Status',
-					items: [
-						{
-							label: 'All',
-							handler: () => (this.benchFilter = 'All')
-						},
-						{
-							label: 'Active',
-							handler: () => (this.benchFilter = 'Active')
-						},
-						{
-							label: 'Awaiting Deploy',
-							handler: () => (this.benchFilter = 'Awaiting Deploy')
-						}
-					]
-				}
-			];
-
-			if (!this.$resources.benchTags?.data?.length) return options;
-
+		benchStatusFilterOptions() {
 			return [
-				...options,
 				{
-					group: 'Tags',
-					items: this.$resources.benchTags.data.map(tag => ({
-						label: tag,
-						handler: () => (this.benchFilter = `tag:${tag}`)
-					}))
+					label: 'All',
+					value: 'All'
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Awaiting Deploy',
+					value: 'Awaiting Deploy'
 				}
 			];
 		},
-		getBenchFilterHeading() {
-			if (this.benchFilter === 'Awaiting Deploy')
-				return 'Benches Awaiting Deploy';
-			else if (this.benchFilter.startsWith('tag:'))
-				return `Benches with tag ${this.benchFilter.slice(4)}`;
-			return `${this.benchFilter || 'All'} Benches`;
+		benchTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
+				}
+			];
+
+			if (!this.$resources.benchTags.data) return defaultOptions;
+
+			return [
+				...defaultOptions,
+				...this.$resources.benchTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
+			];
 		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
@@ -144,6 +249,22 @@ export default {
 			} else {
 				this.$router.replace('/benches/new');
 			}
+		},
+		dropdownItems(bench) {
+			return [
+				{
+					label: 'New Site',
+					onClick: () => {
+						this.$router.push(`/${bench.name}/new`);
+					}
+				},
+				{
+					label: 'View Versions',
+					onClick: () => {
+						this.$router.push(`/benches/${bench.name}/versions`);
+					}
+				}
+			];
 		}
 	}
 };

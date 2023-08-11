@@ -26,7 +26,8 @@
 			<Button
 				:loading="$resources.addApp.loading"
 				@click="$resources.addApp.submit()"
-				appearance="primary"
+				variant="solid"
+				class="w-full"
 				>Add to marketplace</Button
 			>
 		</div>

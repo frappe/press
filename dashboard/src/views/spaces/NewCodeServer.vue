@@ -26,27 +26,23 @@
 						class="mb-4"
 						:message="$resources.newCodeServer.error"
 					/>
-					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
+					<div>
+						<Button v-if="hasPrevious" class="w-full" @click="previous">
 							Back
 						</Button>
 						<Button
-							appearance="primary"
+							v-if="hasNext"
+							class="w-full"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							class="w-full"
+							variant="solid"
 							@click="$resources.newCodeServer.submit()"
 							:loading="$resources.newCodeServer.loading"
 							:disabled="selectedBench == null"

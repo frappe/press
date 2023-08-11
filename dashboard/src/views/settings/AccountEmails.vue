@@ -16,25 +16,27 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<Dialog :options="{ title: 'Edit Emails' }" v-model="showEmailsEditDialog">
+		<Dialog
+			:options="{
+				title: 'Edit Emails',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						onClick: () => $resources.changeEmail.submit()
+					}
+				]
+			}"
+			v-model="showEmailsEditDialog"
+		>
 			<template v-slot:body-content>
 				<div class="mt-3" v-for="email in emailData" :key="email.type">
-					<Input
+					<FormControl
 						:label="fieldLabelMap[email.type] || email.type"
-						type="text"
 						v-model="email.value"
 					/>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.changeEmail.error" />
-			</template>
-
-			<template #actions>
-				<Button class="mr-3" @click="showEmailsEditDialog = false"
-					>Cancel</Button
-				>
-				<Button appearance="primary" @click="$resources.changeEmail.submit()">
-					Save Changes
-				</Button>
 			</template>
 		</Dialog>
 	</Card>

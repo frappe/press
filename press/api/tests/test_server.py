@@ -233,6 +233,10 @@ class TestAPIServerList(FrappeTestCase):
 
 		self.db_server_dict = {
 			"name": database_server.name,
+			"cluster": database_server.cluster,
+			"plan": None,
+			"region_info": {"image": None, "title": None},
+			"tags": [],
 			"title": "Database Server",
 			"status": database_server.status,
 			"creation": database_server.creation,
@@ -248,6 +252,10 @@ class TestAPIServerList(FrappeTestCase):
 
 		self.app_server_dict = {
 			"name": app_server.name,
+			"cluster": app_server.cluster,
+			"plan": None,
+			"region_info": {"image": None, "title": None},
+			"tags": ["test_tag"],
 			"title": "App Server",
 			"status": app_server.status,
 			"creation": app_server.creation,
@@ -261,10 +269,17 @@ class TestAPIServerList(FrappeTestCase):
 		self.assertEqual(all(), [self.app_server_dict, self.db_server_dict])
 
 	def test_list_app_servers(self):
-		self.assertEqual(all(server_filter="App Servers"), [self.app_server_dict])
+		self.assertEqual(
+			all(server_filter={"status": "App Servers", "tag": ""}), [self.app_server_dict]
+		)
 
 	def test_list_db_servers(self):
-		self.assertEqual(all(server_filter="Database Servers"), [self.db_server_dict])
+		self.assertEqual(
+			all(server_filter={"status": "Database Servers", "tag": ""}), [self.db_server_dict]
+		)
 
 	def test_list_tagged_servers(self):
-		self.assertEqual(all(server_filter="tag:test_tag"), [self.app_server_dict])
+		self.assertEqual(
+			all(server_filter={"status": "", "tag": "test_tag"}),
+			[self.app_server_dict],
+		)

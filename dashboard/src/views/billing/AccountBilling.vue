@@ -1,7 +1,5 @@
 <template>
 	<div>
-		<PageHeader title="Billing" subtitle="Manage your invoices and payments" />
-
 		<div class="space-y-5">
 			<AlertBillingInformation />
 			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -28,7 +26,7 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
-	name: 'AccountBilling',
+	name: 'BillingScreen',
 	pageMeta() {
 		return {
 			title: 'Billing - Frappe Cloud'

@@ -1,57 +1,133 @@
 <template>
 	<div>
-		<PageHeader title="Servers" subtitle="Your Servers">
-			<template v-if="this.$account.team.enabled" v-slot:actions>
-				<Dropdown
-					v-if="
-						$account.team.self_hosted_servers_enabled === 1 &&
-						!showAddCardDialog
-					"
-					:options="dropDownOptions"
-				>
-					<!-- <template v-slot="{ open }"> -->
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs :items="[{ label: 'Servers', route: { name: 'Servers' } }]">
+				<template v-if="this.$account.team.enabled" #actions>
+					<Dropdown
+						v-if="
+							$account.team.self_hosted_servers_enabled === 1 &&
+							!showAddCardDialog
+						"
+						:options="dropDownOptions"
+					>
+						<Button
+							variant="solid"
+							iconLeft="plus"
+							label="Create"
+							class="ml-2 hidden sm:inline-flex"
+						/>
+					</Dropdown>
 					<Button
-						appearance="primary"
+						v-else
+						variant="solid"
 						iconLeft="plus"
+						label="Create"
 						class="ml-2 hidden sm:inline-flex"
 						@click="showBillingDialog"
-					>
-						New
-					</Button>
-					<!-- </template> -->
-				</Dropdown>
-				<Button
-					v-else
-					appearance="primary"
-					iconLeft="plus"
-					class="ml-2 hidden sm:inline-flex"
-					@click="showBillingDialog"
-				>
-					New
-				</Button>
-			</template>
-		</PageHeader>
+					/>
+				</template>
+			</BreadCrumbs>
+		</header>
 
 		<div>
-			<SectionHeader :heading="getServerFilterHeading()">
-				<template #actions>
-					<Dropdown :options="serverFilterOptions()">
-						<template v-slot="{ open }">
-							<Button
-								:class="[
-									'rounded-md px-3 py-1 text-base font-medium',
-									open ? 'bg-gray-200' : 'bg-gray-100'
-								]"
-								icon-left="chevron-down"
-								>{{ serverFilter.replace('tag:', '') }}</Button
+			<div class="mx-5 mt-5">
+				<div class="flex">
+					<div class="flex w-full space-x-2 pb-4">
+						<FormControl label="Search Servers" v-model="searchTerm">
+							<template #prefix>
+								<FeatherIcon name="search" class="w-4 text-gray-600" />
+							</template>
+						</FormControl>
+						<FormControl
+							label="Server Type"
+							class="mr-8"
+							type="select"
+							:options="serverStatusFilterOptions()"
+							v-model="serverFilter.server_type"
+						/>
+						<FormControl
+							label="Tag"
+							class="mr-8"
+							type="select"
+							:options="serverTagFilterOptions()"
+							v-model="serverFilter.tag"
+						/>
+					</div>
+				</div>
+				<Table
+					:columns="[
+						{ label: 'Server Name', name: 'name', width: 2 },
+						{ label: 'Status', name: 'status' },
+						{ label: 'Region', name: 'region' },
+						{ label: 'Tags', name: 'tags' },
+						{ label: 'Plan', name: 'plan' },
+						{ label: '', name: 'actions', width: 0.5 }
+					]"
+					:rows="servers"
+					v-slot="{ rows, columns }"
+				>
+					<TableHeader />
+					<div class="flex items-center justify-center">
+						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
+						<div v-else-if="rows.length === 0" class="mt-8">
+							<div class="text-base text-gray-700">No Items</div>
+						</div>
+					</div>
+					<TableRow v-for="row in rows" :key="row.name" :row="row">
+						<TableCell v-for="column in columns">
+							<Badge
+								class="ring-1 ring-white"
+								v-if="column.name === 'status'"
+								:label="row.status"
+							/>
+							<div v-else-if="column.name === 'tags'" class="-space-x-5">
+								<Badge
+									class="ring-1 ring-white"
+									v-for="(tag, i) in row.tags.slice(0, 2)"
+									:theme="$getColorBasedOnString(i)"
+									:label="tag"
+								/>
+								<Badge
+									class="ring-1 ring-white"
+									v-if="row.tags.length > 2"
+									:label="`+${row.tags.length - 2}`"
+								/>
+							</div>
+							<span v-else-if="column.name === 'plan'">
+								{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
+							</span>
+							<div v-else-if="column.name === 'region'">
+								<img
+									v-if="row.server_region_info.image"
+									class="h-4"
+									:src="row.server_region_info.image"
+									:alt="`Flag of ${row.server_region_info.title}`"
+									:title="row.server_region_info.image"
+								/>
+								<span class="text-base text-gray-700" v-else>
+									{{ row.server_region_info.title }}
+								</span>
+							</div>
+							<div
+								v-else-if="column.name == 'actions'"
+								class="w-full text-right"
 							>
-						</template>
-					</Dropdown>
-				</template>
-			</SectionHeader>
-			<div class="mt-3">
-				<LoadingText v-if="$resources.allServers.loading" />
-				<ServerList v-else :servers="servers" />
+								<Dropdown @click.prevent :options="dropdownItems(row)">
+									<template v-slot="{ open }">
+										<Button
+											:variant="open ? 'subtle' : 'ghost'"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
+							</div>
+							<span v-else>{{ row[column.name] || '' }}</span>
+						</TableCell>
+					</TableRow>
+				</Table>
 			</div>
 		</div>
 		<Dialog
@@ -72,33 +148,44 @@
 	</div>
 </template>
 <script>
-import ServerList from '@/views/server/ServerList.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
-import Dropdown from 'frappe-ui/src/components/Dropdown.vue';
+import Table from '@/components/Table/Table.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
 
 export default {
 	name: 'Servers',
 	components: {
-		ServerList,
-		PageHeader,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
-		),
-		Dropdown
+		)
+	},
+	pageMeta() {
+		return {
+			title: 'Servers - Frappe Cloud'
+		};
 	},
 	data() {
 		return {
 			showAddCardDialog: false,
-			serverFilter: 'All Servers',
+			searchTerm: '',
+			serverFilter: {
+				server_type: 'All Servers',
+				tag: ''
+			},
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
-					handler: () => this.$router.replace('/servers/new')
+					onClick: () => this.$router.replace('/servers/new')
 				},
 				{
 					label: 'Self Hosted Server',
-					handler: () => this.$router.replace('/selfhosted/new')
+					onClick: () => this.$router.replace('/selfhosted/new')
 				}
 			]
 		};
@@ -114,10 +201,21 @@ export default {
 		serverTags: 'press.api.server.server_tags'
 	},
 	methods: {
-		getServerFilterHeading() {
-			if (this.serverFilter.startsWith('tag:'))
-				return `Servers with tag ${this.serverFilter.slice(4)}`;
-			return this.serverFilter;
+		dropdownItems(server) {
+			return [
+				{
+					label: 'Visit Server',
+					onClick: () => {
+						window.open(`https://${server.name}`, '_blank');
+					}
+				},
+				{
+					label: 'New Bench',
+					onClick: () => {
+						this.$router.push(`/servers/${server.app_server}/bench/new`);
+					}
+				}
+			];
 		},
 		reload() {
 			// refresh if currently not loading and have not reloaded in the last 5 seconds
@@ -138,38 +236,38 @@ export default {
 				this.showAddCardDialog = false;
 			}
 		},
-		serverFilterOptions() {
-			const options = [
+		serverStatusFilterOptions() {
+			return [
 				{
-					group: 'Types',
-					items: [
-						{
-							label: 'All Servers',
-							handler: () => (this.serverFilter = 'All Servers')
-						},
-						{
-							label: 'App Servers',
-							handler: () => (this.serverFilter = 'App Servers')
-						},
-						{
-							label: 'Database Servers',
-							handler: () => (this.serverFilter = 'Database Servers')
-						}
-					]
+					label: 'All Servers',
+					value: 'All Servers'
+				},
+				{
+					label: 'App Servers',
+					value: 'App Servers'
+				},
+				{
+					label: 'Database Servers',
+					value: 'Database Servers'
+				}
+			];
+		},
+		serverTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
 				}
 			];
 
-			if (!this.$resources.serverTags?.data?.length) return options;
+			if (!this.$resources.serverTags.data) return defaultOptions;
 
 			return [
-				...options,
-				{
-					group: 'Tags',
-					items: this.$resources.serverTags.data.map(tag => ({
-						label: tag,
-						handler: () => (this.serverFilter = `tag:${tag}`)
-					}))
-				}
+				...defaultOptions,
+				...this.$resources.serverTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
 			];
 		}
 	},
@@ -178,7 +276,24 @@ export default {
 			if (!this.$resources.allServers.data) {
 				return [];
 			}
-			return this.$resources.allServers.data;
+
+			let servers = this.$resources.allServers.data.filter(server =>
+				this.$account.hasPermission(server.name, '', true)
+			);
+
+			if (this.searchTerm)
+				servers = servers.filter(server =>
+					server.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
+
+			return servers.map(server => ({
+				name: server.name,
+				status: server.status,
+				server_region_info: server.region_info,
+				plan: server.plan,
+				tags: server.tags,
+				route: { name: 'ServerOverview', params: { serverName: server.name } }
+			}));
 		}
 	}
 };

@@ -25,17 +25,20 @@
 		</template>
 	</Dialog>
 	<Dialog
-		:options="{ title: `Create a new tag for ${doctype}` }"
+		:options="{
+			title: `Create a new tag for ${doctype}`,
+			actions: [
+				{
+					label: 'Create',
+					variant: 'solid',
+					onClick: () => $resources.createTag.submit()
+				}
+			]
+		}"
 		v-model="showNewDialog"
 	>
 		<template v-slot:body-content>
-			<Input label="Enter Tag name" v-model="newTag" />
-		</template>
-		<template #actions>
-			<Button @click="showNewDialog = false"> Cancel </Button>
-			<Button appearance="primary" @click="$resources.createTag.submit()">
-				Create
-			</Button>
+			<FormControl label="Enter Tag name" v-model="newTag" />
 		</template>
 	</Dialog>
 </template>
@@ -48,14 +51,14 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Add',
-					handler: () =>
+					onClick: () =>
 						this.tags.length > 0
 							? (this.showAddDialog = true)
 							: (this.showNewDialog = true)
 				},
 				{
 					label: 'New',
-					handler: () => (this.showNewDialog = true)
+					onClick: () => (this.showNewDialog = true)
 				}
 			],
 			showAddDialog: false,

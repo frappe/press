@@ -28,7 +28,7 @@
 						v-model:error="ipInvalid"
 					/>
 					<Button
-						appearance="primary"
+						variant="solid"
 						v-show="
 							activeStep.name === 'ServerDetails' &&
 							!this.ipInvalid &&
@@ -54,14 +54,15 @@
 						v-if="$resources.verify.data === null"
 						@click="$resources.verify.submit()"
 						:loading="$resources.verify.loading"
-						appearance="primary"
+						variant="solid"
 					>
 						Verify Server
 					</Button>
 					<Button
 						v-else
 						:icon-left="playOutput ? 'check' : 'x'"
-						:appearance="playOutput ? 'primary' : 'warning'"
+						variant="solid"
+						:theme="playOutput ? 'gray' : 'red'"
 						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
@@ -78,7 +79,7 @@
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<Input
+						<FormControl
 							id="region-consent"
 							type="checkbox"
 							label="I agree that the laws of the region selected by me shall stand
@@ -90,28 +91,24 @@
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
-							Back
-						</Button>
+						<Button v-if="hasPrevious" @click="previous"> Back </Button>
 
 						<Button
-							appearance="primary"
+							v-if="hasNext"
+							class="ml-auto"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
 							:disabled="
 								activeStep.name === 'ServerDetails' ? !domainVerified : false
 							"
-							:class="{ 'pointer-events-none opacity-0': !hasNext }"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							class="ml-auto"
+							variant="solid"
 							:disabled="
 								!playOutput || !nginxSetup || !this.agreedToRegionConsent
 							"

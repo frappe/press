@@ -65,7 +65,20 @@
 				</template>
 			</ListItem>
 
-			<Dialog v-model="showDialog" :options="{ title: 'Drop Code Server' }">
+			<Dialog
+				v-model="showDialog"
+				:options="{
+					title: 'Drop Code Server',
+					actions: [
+						{
+							label: 'Drop Code Server',
+							variant: 'solid',
+							theme: 'red',
+							onClick: () => $resources.dropCodeServer.submit()
+						}
+					]
+				}"
+			>
 				<template v-slot:body-content>
 					<p class="text-base">
 						Are you sure you want to drop your code-server? Once you drop your
@@ -75,20 +88,6 @@
 						class="mt-2"
 						:message="$resources.dropCodeServer.error"
 					/>
-				</template>
-
-				<template v-slot:actions>
-					<div>
-						<Button @click="showDialog = false"> Cancel </Button>
-						<Button
-							class="ml-3"
-							appearance="danger"
-							@click="$resources.dropCodeServer.submit()"
-							:loading="$resources.dropCodeServer.loading"
-						>
-							Drop Code Server
-						</Button>
-					</div>
 				</template>
 			</Dialog>
 		</div>

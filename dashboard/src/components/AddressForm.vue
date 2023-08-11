@@ -7,8 +7,8 @@
 			@update:modelValue="$emit('update:address', $event)"
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
-			<span class="mb-2 block text-sm leading-4 text-gray-700"> GSTIN </span>
-			<Input
+			<FormControl
+				label="GSTIN"
 				v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
@@ -137,27 +137,25 @@ export default {
 					fieldname: 'address',
 					required: 1
 				},
-				[
-					{
-						fieldtype: 'Data',
-						label: 'City',
-						fieldname: 'city',
-						required: 1
-					},
-					{
-						fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
-						label: 'State / Province / Region',
-						fieldname: 'state',
-						required: 1,
-						options: this.address.country === 'India' ? this.indianStates : null
-					},
-					{
-						fieldtype: 'Data',
-						label: 'Postal Code',
-						fieldname: 'postal_code',
-						required: 1
-					}
-				]
+				{
+					fieldtype: 'Data',
+					label: 'City',
+					fieldname: 'city',
+					required: 1
+				},
+				{
+					fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
+					label: 'State / Province / Region',
+					fieldname: 'state',
+					required: 1,
+					options: this.address.country === 'India' ? this.indianStates : null
+				},
+				{
+					fieldtype: 'Data',
+					label: 'Postal Code',
+					fieldname: 'postal_code',
+					required: 1
+				}
 			];
 		}
 	}

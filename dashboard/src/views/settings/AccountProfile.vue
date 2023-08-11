@@ -82,46 +82,44 @@
 			</ListItem>
 		</div>
 		<Dialog
-			:options="{ title: 'Update Profile Information' }"
+			:options="{
+				title: 'Update Profile Information',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						onClick: () => $resources.updateProfile.submit()
+					}
+				]
+			}"
 			v-model="showProfileEditDialog"
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
-						label="First Name"
-						type="text"
-						v-model="$account.user.first_name"
-					/>
-					<Input
-						label="Last Name"
-						type="text"
-						v-model="$account.user.last_name"
-					/>
+					<FormControl label="First Name" v-model="$account.user.first_name" />
+					<FormControl label="Last Name" v-model="$account.user.last_name" />
 				</div>
 				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showProfileEditDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updateProfile.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Disable Account' }"
+			:options="{
+				title: 'Disable Account',
+				actions: [
+					{
+						label: 'Disable Account',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.disableAccount.loading,
+						onClick: () => $resources.disableAccount.submit()
+					}
+				]
+			}"
 			v-model="showDisableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be disabled</li>
@@ -135,26 +133,24 @@
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
-
-			<template v-slot:actions>
-				<Button @click="showDisableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="danger"
-					@click="$resources.disableAccount.submit()"
-					:loading="$resources.disableAccount.loading"
-				>
-					Disable Account
-				</Button>
-			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Enable Account' }"
+			:options="{
+				title: 'Enable Account',
+				actions: [
+					{
+						label: 'Enable Account',
+						variant: 'solid',
+						loading: $resources.enableAccount.loading,
+						onClick: () => $resources.enableAccount.submit()
+					}
+				]
+			}"
 			v-model="showEnableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be enabled</li>
@@ -164,18 +160,6 @@
 					Do you want to continue?
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
-			</template>
-
-			<template v-slot:actions>
-				<Button @click="showEnableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="primary"
-					@click="$resources.enableAccount.submit()"
-					:loading="$resources.enableAccount.loading"
-				>
-					Enable Account
-				</Button>
 			</template>
 		</Dialog>
 	</Card>
@@ -280,7 +264,6 @@ export default {
 				message:
 					'You will be able to publish apps to our Marketplace upon confirmation.',
 				actionLabel: 'Yes',
-				actionType: 'primary',
 				action: closeDialog => {
 					this.$resources.becomePublisher.submit();
 					closeDialog();

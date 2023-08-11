@@ -30,15 +30,16 @@
 					"
 				>
 					<template #actions>
+						<Badge v-if="v.status != 'Active'" :label="v.status" />
 						<Badge
-							v-if="v.status != 'Active'"
-							:label="v.status"
-							:colorMap="$badgeStatusColorMap"
+							v-else
+							theme="green"
+							:label="`${v.sites.length} ${$plural(
+								v.sites.length,
+								'site',
+								'sites'
+							)}`"
 						/>
-						<Badge v-else color="green">
-							{{ v.sites.length }}
-							{{ $plural(v.sites.length, 'site', 'sites') }}
-						</Badge>
 					</template>
 				</ListItem>
 				<div class="border-b"></div>
@@ -163,7 +164,8 @@
 				<Button
 					:loading="$resources.generateCertificate.loading"
 					@click="$resources.generateCertificate.fetch()"
-					appearance="primary"
+					variant="solid"
+					class="w-full"
 					>Generate SSH Certificate</Button
 				>
 			</template>
@@ -261,7 +263,7 @@ export default {
 					you want to run this command?
 				`,
 				actionLabel: 'Restart Bench',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.restartBench.submit();
 					closeDialog();
@@ -301,7 +303,7 @@ export default {
 			return [
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${this.selectedVersion.name}`,
 							'_blank'
@@ -312,13 +314,13 @@ export default {
 					this.$account.ssh_key &&
 					this.selectedVersion.is_ssh_proxy_setup && {
 						label: 'SSH Access',
-						handler: () => {
+						onClick: () => {
 							this.showSSHDialog = true;
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'View Logs',
-					handler: () => {
+					onClick: () => {
 						this.$router.push(
 							`/benches/${this.bench.name}/logs/${this.selectedVersion.name}/`
 						);
@@ -327,7 +329,7 @@ export default {
 				this.selectedVersion.status == 'Active' &&
 					this.selectedVersion.sites.length > 0 && {
 						label: 'Update All Sites',
-						handler: () => {
+						onClick: () => {
 							this.$resources.updateAllSites.submit();
 							this.$notify({
 								title: 'Site update scheduled successfully',
@@ -339,14 +341,14 @@ export default {
 					},
 				this.selectedVersion.status == 'Active' && {
 					label: 'Restart Bench',
-					handler: () => {
+					onClick: () => {
 						this.confirmRestart();
 					}
 				},
 				this.$account.team.code_servers_enabled &&
 					this.selectedVersion.status == 'Active' && {
 						label: 'Create Code Server',
-						handler: () => {
+						onClick: () => {
 							this.showCodeServerDialog = true;
 						}
 					}

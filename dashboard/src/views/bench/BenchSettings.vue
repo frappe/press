@@ -6,17 +6,20 @@
 			:resourceTags="bench.bench_tags"
 			:tags="bench.tags"
 		/>
+		<BenchOverviewRegions :bench="bench" />
 	</div>
 </template>
 
 <script>
 import Tags from '@/components/Tags.vue';
+import BenchOverviewRegions from './BenchOverviewRegions.vue';
 
 export default {
 	name: 'BenchSettings',
 	props: ['bench'],
 	components: {
-		Tags
+		Tags,
+		BenchOverviewRegions
 	}
 };
 </script>

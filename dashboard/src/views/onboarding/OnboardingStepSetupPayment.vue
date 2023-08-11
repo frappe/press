@@ -19,7 +19,7 @@
 			</Button>
 			<div
 				style="width: 1px; height: 95%"
-				class="absolute top-0 left-2.5 border-r border-gray-300"
+				class="absolute left-2.5 top-0 border-r border-gray-300"
 			></div>
 		</div>
 
@@ -39,7 +39,7 @@
 
 				<div class="space-y-4" v-if="$account.team.billing_address">
 					<div>
-						<Input
+						<FormControl
 							label="Select payment mode"
 							type="select"
 							:options="paymentModeOptions"
@@ -65,8 +65,9 @@
 						@complete="onSuccess"
 					/>
 					<Button
-						appearance="primary"
-						v-if="paymentMode == 'Partner Credits'"
+						class="w-full"
+						variant="solid"
+						v-if="paymentMode === 'Partner Credits'"
 						@click="onSuccess"
 						>Save</Button
 					>
@@ -83,7 +84,8 @@
 			<template v-slot:actions v-if="!$account.team.billing_address">
 				<Button
 					v-if="!$account.team.billing_address"
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					@click="updateAddress"
 					:loading="$resources.updateBillingInformation.loading"
 				>

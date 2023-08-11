@@ -1,8 +1,12 @@
 <template>
 	<div v-if="step == 'Confirm Checkout'" class="flex-row text-sm">
-		<div class="flex justify-between mb-4">
+		<div class="mb-4 flex justify-between">
 			<p class="my-auto">Billing</p>
-			<Input type="select" :options="paymentOptions" v-model="selectedOption" />
+			<FormControl
+				type="select"
+				:options="paymentOptions"
+				v-model="selectedOption"
+			/>
 		</div>
 
 		<table v-if="$account.team" class="text w-full text-sm">
@@ -30,10 +34,10 @@
 						<ListItem :title="row.app" :subtitle="row.site" />
 					</td>
 					<td class="border-b border-r text-center">
-						<p class="text-base self-center">{{ row.selected_plan.plan }}</p>
+						<p class="self-center text-base">{{ row.selected_plan.plan }}</p>
 					</td>
 					<td class="border-b text-right font-semibold">
-						<p class="text-base self-center">
+						<p class="self-center text-base">
 							{{ getCurrencySymbol() + row.selected_plan.amount }}
 						</p>
 					</td>
@@ -45,10 +49,10 @@
 						<ListItem :title="app" :subtitle="site" />
 					</td>
 					<td class="border-b border-r text-center">
-						<p class="text-base self-center">{{ planData.title }}</p>
+						<p class="self-center text-base">{{ planData.title }}</p>
 					</td>
 					<td class="border-b text-right font-semibold">
-						<p class="text-base self-center">
+						<p class="self-center text-base">
 							{{ getCurrencySymbol() + planData.amount }}
 						</p>
 					</td>
@@ -56,24 +60,24 @@
 			</tbody>
 		</table>
 
-		<div class="flex-row mt-4" v-if="$account.team">
-			<div class="flex justify-between mb-3">
+		<div class="mt-4 flex-row" v-if="$account.team">
+			<div class="mb-3 flex justify-between">
 				<p>Subtotal</p>
 				<p class="text-lg">
 					{{ getCurrencySymbol() + subtotal }}
 				</p>
 			</div>
 
-			<div class="flex justify-between mb-3">
+			<div class="mb-3 flex justify-between">
 				<p>Discount</p>
-				<p class="text-green-500 text-lg">
+				<p class="text-lg text-green-500">
 					{{ discount_percent == 0 ? '-' : discount_percent + '%' }}
 				</p>
 			</div>
 
 			<div class="flex justify-between">
 				GST (if applicable)
-				<p class="text-red-500 text-lg">{{ gstApplicable() ? '18%' : '-' }}</p>
+				<p class="text-lg text-red-500">{{ gstApplicable() ? '18%' : '-' }}</p>
 			</div>
 
 			<hr class="my-4" />
@@ -100,29 +104,25 @@
 		v-if="$resources.usePartnerCredits.error"
 		:message="$resources.usePartnerCredits.error"
 	/>
-	<div
-		class="float-right w-fit mt-4"
-		v-if="step == 'Confirm Checkout' && $account.team"
-	>
+	<div class="mt-4" v-if="step == 'Confirm Checkout' && $account.team">
 		<Button
-			class="mr-2"
+			class="w-full"
 			v-if="$account.team.erpnext_partner"
-			appearance="secondary"
 			@click="$resources.usePartnerCredits.submit()"
 			:loading="$resources.usePartnerCredits.loading"
 		>
 			Use Partner Credits
 		</Button>
 		<Button
-			class="mr-2"
+			class="w-full"
 			v-if="!$account.team.erpnext_partner && $account.balance >= creditsToBuy"
-			appearance="secondary"
 			@click="step = 'Use Existing Credits'"
 		>
 			Use Existing Credits
 		</Button>
 		<Button
-			appearance="primary"
+			class="mt-2 w-full"
+			variant="solid"
 			@click="$resources.changePlan.submit()"
 			:loading="$resources.changePlan.loading"
 		>
@@ -139,16 +139,17 @@
 			subscription. This might affect expiry of other active subscriptions. Are
 			you sure you want to proceed?
 		</p>
-		<div class="float-right mt-2">
+		<div class="mt-6">
 			<Button
-				class="mr-2"
+				class="w-full"
 				type="secondary"
 				@click="() => (this.step = 'Confirm Checkout')"
 			>
 				Back
 			</Button>
 			<Button
-				appearance="primary"
+				class="mt-2 w-full"
+				variant="solid"
 				@click="$resources.useCredits.submit()"
 				:loading="$resources.useCredits.loading"
 			>
@@ -184,7 +185,7 @@
 			</Button>
 			<Button
 				class="ml-2"
-				appearance="primary"
+				variant="solid"
 				@click="onBuyClick"
 				:loading="paymentInProgress"
 			>
@@ -196,7 +197,7 @@
 	<!-- Confirm Card Authentication -->
 	<div
 		v-if="step == 'Stripe Intermediate Step'"
-		class="form-input sr-result requires-auth my-2 block w-full py-2 pl-3"
+		class="sr-result requires-auth form-input my-2 block w-full py-2 pl-3"
 	>
 		<p>
 			Please authenticate your
@@ -205,7 +206,7 @@
 			your purchase of {{ creditsToBuy }} credits.
 		</p>
 		<Button
-			appearance="primary"
+			variant="solid"
 			class="my-2"
 			@click="authenticateCard"
 			id="authenticate"
@@ -224,7 +225,6 @@
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
-import { utils } from '@/utils';
 
 export default {
 	name: 'MarketplacePrepaidCredits',

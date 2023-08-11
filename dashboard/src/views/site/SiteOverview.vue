@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, defineAsyncComponent } from 'vue';
 import { utils } from '@/utils';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import SiteOverviewPlan from './SiteOverviewPlan.vue';
 import SiteOverviewInfo from './SiteOverviewInfo.vue';
 import SiteOverviewDomains from './SiteOverviewDomains.vue';
@@ -10,14 +10,18 @@ import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 import SiteActivity from './SiteActivity.vue';
 
+const BillingInformationDialog = defineAsyncComponent(() =>
+	import('@/components/BillingInformationDialog.vue')
+);
+
 const props = defineProps({ site: Object });
 const showPromotionalDialog = ref(false);
 const clickedPromotion = ref(null);
+const showBillingDialog = ref(false);
 
-const overview = useResource({
-	method: 'press.api.site.overview',
+const overview = createResource({
+	url: 'press.api.site.overview',
 	params: { name: props.site?.name },
-	keepData: true,
 	auto: true
 });
 
@@ -44,8 +48,8 @@ const trialEndsText = computed(() => {
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 
-const marketplacePromotionalBanners = useResource({
-	method: 'press.api.marketplace.get_promotional_banners',
+const marketplacePromotionalBanners =  createResource({
+	url: 'press.api.marketplace.get_promotional_banners',
 	auto: true
 });
 </script>
@@ -71,7 +75,7 @@ const marketplacePromotionalBanners = useResource({
 				<template #actions>
 					<Button
 						class="whitespace-nowrap"
-						appearance="primary"
+						variant="solid"
 						@click="
 							() => {
 								showPromotionalDialog = true;
@@ -89,7 +93,11 @@ const marketplacePromotionalBanners = useResource({
 			suspended. Add your billing information to avoid suspension.
 
 			<template #actions>
-				<Button class="whitespace-nowrap" route="/welcome" appearance="primary">
+				<Button
+					class="whitespace-nowrap"
+					@click="showBillingDialog = true"
+					variant="solid"
+				>
 					Add Billing Information
 				</Button>
 			</template>
@@ -124,35 +132,43 @@ const marketplacePromotionalBanners = useResource({
 
 		<Dialog
 			v-model="showPromotionalDialog"
-			title="Frappe Cloud Marketplace"
 			@close="e => (clickedPromotion = null)"
+			:options="{
+				title: 'Frappe Cloud Marketplace',
+				actions: [
+					{
+						variant: 'solid',
+						route: `/install-app/${clickedPromotion?.app}`,
+						label: 'Install App'
+					}
+				]
+			}"
 		>
-			<div v-if="clickedPromotion" class="flex flex-row items-center">
-				<Avatar
-					class="mr-2"
-					size="lg"
-					shape="square"
-					:imageURL="clickedPromotion.image"
-					:label="clickedPromotion.title"
-				/>
+			<template #body-content>
+				<div v-if="clickedPromotion" class="flex flex-row items-center">
+					<Avatar
+						class="mr-2"
+						size="lg"
+						shape="square"
+						:imageURL="clickedPromotion.image"
+						:label="clickedPromotion.title"
+					/>
 
-				<div class="flex flex-col">
-					<h4 class="text-xl font-semibold text-gray-900">
-						{{ clickedPromotion.title }}
-					</h4>
-					<p class="text-base text-gray-600">
-						{{ clickedPromotion.description }}
-					</p>
+					<div class="flex flex-col">
+						<h4 class="text-xl font-semibold text-gray-900">
+							{{ clickedPromotion.title }}
+						</h4>
+						<p class="text-base text-gray-600">
+							{{ clickedPromotion.description }}
+						</p>
+					</div>
 				</div>
-			</div>
-
-			<template v-if="clickedPromotion" #actions>
-				<Button
-					appearance="primary"
-					:route="`/install-app/${clickedPromotion.app}`"
-					>Install App</Button
-				>
 			</template>
 		</Dialog>
+
+		<BillingInformationDialog
+			v-model="showBillingDialog"
+			v-if="showBillingDialog"
+		/>
 	</div>
 </template>

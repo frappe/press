@@ -16,9 +16,9 @@
 
 		<div class="flex text-base text-gray-600">
 			<span class="w-2/6">App</span>
-			<span class="w-1/6 hidden md:inline">Plan</span>
+			<span class="hidden w-1/6 md:inline">Plan</span>
 			<span class="w-1/6">Status</span>
-			<span class="w-1/6 hidden md:inline">Price</span>
+			<span class="hidden w-1/6 md:inline">Price</span>
 			<span></span>
 		</div>
 
@@ -26,7 +26,7 @@
 
 		<div v-else class="divide-y">
 			<div
-				class="flex py-4 items-center text-base text-gray-600"
+				class="flex items-center py-4 text-base text-gray-600"
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
@@ -44,7 +44,7 @@
 					</div>
 
 					<div
-						class="truncate hover:text-clip mt-[2px] text-base text-gray-600"
+						class="mt-[2px] truncate text-base text-gray-600 hover:text-clip"
 					>
 						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
 					</div>
@@ -59,10 +59,7 @@
 
 				<div class="w-1/6">
 					<span v-if="app.subscription.status"
-						><Badge
-							:label="app.subscription.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
+						><Badge :label="app.subscription.status" />
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -75,14 +72,10 @@
 				</div>
 
 				<div class="ml-auto flex items-center space-x-2">
-					<Button
-						appearance="secondary"
-						v-if="app.plan_info"
-						@click="changeAppPlan(app)"
+					<Button v-if="app.plan_info" @click="changeAppPlan(app)"
 						>Change Plan</Button
 					>
 					<Button
-						appearance="secondary"
 						v-if="!app.plan_info && app.subscription_available"
 						@click="
 							() => {
@@ -110,14 +103,14 @@
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					class="mb-2"
 					placeholder="Search for Apps"
 					v-on:input="e => updateSearchTerm(e)"
 				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="divide-y max-h-96 overflow-auto"
+					class="max-h-96 divide-y overflow-auto"
 					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div
@@ -161,7 +154,14 @@
 			v-model="showPlanSelectionDialog"
 			:options="{
 				title: 'Select app plan',
-				size: '2xl'
+				size: '2xl',
+				actions: [
+					{
+						label: 'Proceed',
+						variant: 'solid',
+						onClick: handlePlanSelection
+					}
+				]
 			}"
 		>
 			<template v-slot:body-content>
@@ -180,22 +180,21 @@
 
 				<ErrorMessage :message="$resourceErrors" />
 			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.installApp.loading"
-					@click="handlePlanSelection"
-					>Proceed</Button
-				>
-			</template>
 		</Dialog>
 
 		<!-- Plan Change Dialog -->
 		<Dialog
 			:options="{
 				title: 'Select Plan',
-				size: '2xl'
+				size: '2xl',
+				actions: [
+					{
+						label: 'Change Plan',
+						variant: 'solid',
+						onClick: handlePlanChange,
+						loading: $resources.changePlan.loading
+					}
+				]
 			}"
 			v-model="showAppPlanChangeDialog"
 		>
@@ -212,15 +211,6 @@
 					:currentPlan="appToChangePlan.plan"
 					:frappeVersion="site.frappe_version"
 				/>
-			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.changePlan.loading"
-					@click="handlePlanChange"
-					>Change Plan</Button
-				>
 			</template>
 		</Dialog>
 
@@ -466,11 +456,11 @@ export default {
 			return [
 				app.app != 'frappe' && {
 					label: 'Remove App',
-					handler: () => this.confirmRemoveApp(app)
+					onClick: () => this.confirmRemoveApp(app)
 				},
 				{
 					label: 'Visit Repo',
-					handler: () =>
+					onClick: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);
@@ -480,7 +470,7 @@ export default {
 				title: 'Remove App',
 				message: `Are you sure you want to uninstall app ${app.title} from site?`,
 				actionLabel: 'Remove App',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.uninstallApp.submit({

@@ -3,8 +3,8 @@
 		class="cursor-pointer rounded-lg border border-gray-100 px-4 py-2 text-left shadow focus:outline-none"
 		:class="
 			selected
-				? 'bg-blue-50 ring-2 ring-inset ring-blue-500'
-				: 'hover:border-gray-300'
+				? 'bg-gray-50 ring-2 ring-inset ring-gray-600'
+				: 'hover:border-gray-400'
 		"
 	>
 		<div class="flex items-center">

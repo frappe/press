@@ -14,11 +14,11 @@
 		<template #actions>
 			<Button
 				v-if="deployInformation.deploy_in_progress"
-				appearance="primary"
+				variant="solid"
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
-			<Button v-else appearance="primary" @click="showDeployDialog = true">
+			<Button v-else variant="solid" @click="showDeployDialog = true">
 				Show updates
 			</Button>
 		</template>
@@ -37,14 +37,20 @@
 			</template>
 			<template v-slot:actions>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 					v-if="this.bench.team === $account.team.name"
 				>
 					Deploy
 				</Button>
-				<Button appearance="primary" @click="showTeamSwitcher = true" v-else>
+				<Button
+					class="w-full"
+					variant="solid"
+					@click="showTeamSwitcher = true"
+					v-else
+				>
 					Switch Team
 				</Button>
 				<SwitchTeamDialog v-model="showTeamSwitcher" />

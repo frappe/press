@@ -74,7 +74,7 @@
 					<Button
 						@click="onActivateClick"
 						class="shrink-0"
-						:appearance="site.status == 'Broken' ? 'primary' : 'secondary'"
+						:variant="site.status === 'Broken' ? 'solid' : 'subtle'"
 					>
 						Activate Site
 					</Button>
@@ -88,9 +88,21 @@
 			>
 				<template v-slot:actions>
 					<SiteDrop :site="site" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Site</span>
-						</Button>
+						<Tooltip
+							:text="
+								!permissions.drop
+									? `You don't have enough permissions to perform this action`
+									: 'Drop Site'
+							"
+						>
+							<Button
+								theme="red"
+								:disabled="!permissions.drop"
+								@click="showDialog"
+							>
+								Drop Site
+							</Button>
+						</Tooltip>
 					</SiteDrop>
 				</template>
 			</ListItem>
@@ -135,7 +147,7 @@ export default {
 					It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
 				`,
 				actionLabel: 'Deactivate',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: () => this.deactivate()
 			});
 		},
@@ -145,7 +157,6 @@ export default {
 				message: `Are you sure you want to activate this site?
 				<br><br><strong>Note: Use this as last resort if site is broken and inaccessible</strong>`,
 				actionLabel: 'Activate',
-				actionType: 'primary',
 				action: () => this.activate()
 			});
 		},
@@ -167,6 +178,16 @@ export default {
 				color: 'green'
 			});
 			setTimeout(() => window.location.reload(), 1000);
+		}
+	},
+	computed: {
+		permissions() {
+			return {
+				drop: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.archive'
+				)
+			};
 		}
 	}
 };

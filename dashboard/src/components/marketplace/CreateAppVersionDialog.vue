@@ -1,7 +1,17 @@
 <template>
 	<Dialog
 		:modelValue="show"
-		:options="{ title: 'Add a New App Version' }"
+		:options="{
+			title: 'Add a New App Version',
+			actions: [
+				{
+					label: 'Add New Version',
+					variant: 'solid',
+					loading: $resources.addVersion.loading,
+					onClick: () => $resources.addVersion.submit()
+				}
+			]
+		}"
 		@close="
 			() => {
 				$emit('close', true);
@@ -31,15 +41,6 @@
 					</select>
 				</div>
 			</div>
-		</template>
-		<template v-slot:actions>
-			<Button
-				class="mt-3"
-				appearance="primary"
-				:loading="$resources.addVersion.loading"
-				@click="$resources.addVersion.submit()"
-				>Add New Version</Button
-			>
 		</template>
 	</Dialog>
 </template>

@@ -22,11 +22,7 @@
 				v-on:click="selectBench(bench)"
 			>
 				<template #actions>
-					<Badge
-						v-if="index === 0"
-						label="Latest Deployed"
-						:colorMap="$badgeStatusColorMap"
-					></Badge>
+					<Badge v-if="index === 0" label="Latest Deployed"></Badge>
 				</template>
 			</ListItem>
 			<div v-else class="mt-4 ml-2 text-sm">

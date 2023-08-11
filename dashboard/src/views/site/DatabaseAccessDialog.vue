@@ -17,15 +17,25 @@
 					</p>
 
 					<Button
-						class="mt-4"
-						appearance="primary"
+						class="mt-4 w-full"
+						variant="solid"
 						@click="showChangePlanDialog = true"
 						>Upgrade Site Plan</Button
 					>
 				</div>
 
 				<Dialog
-					:options="{ title: 'Upgrade Plan' }"
+					:options="{
+						title: 'Upgrade Plan',
+						actions: [
+							{
+								label: 'Submit',
+								variant: 'solid',
+								loading: $resources.changePlan.loading,
+								onClick: () => $resources.changePlan.submit()
+							}
+						]
+					}"
 					v-model="showChangePlanDialog"
 				>
 					<template v-slot:body-content>
@@ -35,17 +45,6 @@
 							v-model:selectedPlan="selectedPlan"
 						/>
 						<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
-					</template>
-					<template #actions>
-						<Button @click="showChangePlanDialog = false"> Cancel </Button>
-						<Button
-							class="ml-2"
-							appearance="primary"
-							:loading="$resources.changePlan.loading"
-							@click="$resources.changePlan.submit()"
-						>
-							Submit
-						</Button>
 					</template>
 				</Dialog>
 			</div>
@@ -105,7 +104,7 @@
 
 				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
 
-				<div class="mt-2">
+				<div class="mt-4">
 					<Button
 						v-if="
 							databaseAccessInfo &&
@@ -115,7 +114,8 @@
 						:loading="
 							$resources.enableDatabaseAccess.loading || pollingAgentJob
 						"
-						appearance="primary"
+						variant="solid"
+						class="w-full"
 						>Enable Access</Button
 					>
 
@@ -128,6 +128,7 @@
 						:loading="
 							$resources.disableDatabaseAccess.loading || pollingAgentJob
 						"
+						class="w-full"
 						>Disable Access</Button
 					>
 				</div>

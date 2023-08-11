@@ -1,6 +1,6 @@
 <template>
 	<Card
-		title="Team Members"
+		title="Team Members and Permissions"
 		subtitle="Team members can access your account on your behalf."
 	>
 		<template #actions>
@@ -19,56 +19,60 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Badge
-						v-if="getRoleBadgeProps(member).status == 'Owner'"
-						:label="getRoleBadgeProps(member).status"
-						:colorMap="$badgeStatusColorMap"
-					/>
-					<Button
-						v-else
-						icon="trash-2"
-						@click="removeMember(member)"
-						:loading="$resources.removeMember.loading"
-					>
-					</Button>
+					<Dropdown :options="dropdownItems(member)" right>
+						<template v-slot="{ open }">
+							<Button icon="more-horizontal" />
+						</template>
+					</Dropdown>
 				</template>
 			</ListItem>
 		</div>
 
 		<Dialog
-			:options="{ title: 'Add New Member' }"
+			:options="{
+				title: 'Add New Member',
+				actions: [
+					{
+						label: 'Send Invitation',
+						variant: 'solid',
+						loading: $resources.addMember.loading,
+						onClick: () => $resources.addMember.submit({ email: memberEmail })
+					}
+				]
+			}"
 			v-model="showManageMemberDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					label="Enter the email address of your teammate to invite them."
-					type="text"
 					class="mt-2"
 					v-model="memberEmail"
 					required
 				/>
 				<ErrorMessage :message="$resourceErrors" />
 			</template>
-
-			<template v-slot:actions>
-				<Button
-					class="ml-2"
-					appearance="primary"
-					:loading="$resources.addMember.loading"
-					@click="$resources.addMember.submit({ email: memberEmail })"
-				>
-					Send Invitation
-				</Button>
-			</template>
 		</Dialog>
+		<EditPermissions
+			:type="'user'"
+			:show="showEditMemberDialog"
+			:name="memberName"
+			@close="showEditMemberDialog = false"
+		/>
 	</Card>
 </template>
 <script>
+import EditPermissions from './EditPermissions.vue';
+
 export default {
 	name: 'AccountMembers',
+	components: {
+		EditPermissions
+	},
 	data() {
 		return {
 			showManageMemberDialog: false,
+			showEditMemberDialog: false,
+			memberName: '',
 			showAddMemberForm: false,
 			memberEmail: null
 		};
@@ -120,12 +124,29 @@ export default {
 				title: 'Remove Member',
 				message: `Are you sure you want to remove ${member.first_name} ?`,
 				actionLabel: 'Remove',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.removeMember.submit({ user_email: member.name });
 					closeDialog();
 				}
 			});
+		},
+		dropdownItems(member) {
+			return [
+				{
+					label: 'Edit Permissions',
+					icon: 'edit',
+					onClick: () => {
+						this.memberName = member.name;
+						this.showEditMemberDialog = true;
+					}
+				},
+				{
+					label: 'Remove',
+					icon: 'trash-2',
+					onClick: () => this.removeMember(member)
+				}
+			];
 		}
 	},
 	computed: {

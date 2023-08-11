@@ -9,6 +9,9 @@ let utils = {
 			}
 			return plural;
 		},
+		$getColorBasedOnString(i) {
+			return ['blue', 'green', 'red', 'orange'][i];
+		},
 		$date(date, serverDatesTimezone = 'Asia/Kolkata') {
 			// assuming all dates on the server are stored in our timezone
 
@@ -101,31 +104,16 @@ let utils = {
 		$theme() {
 			return theme;
 		},
-		$badgeStatusColorMap() {
-			return {
-				Approved: 'green',
-				Broken: 'red',
-				Installing: 'yellow',
-				Running: 'green',
-				Pending: 'yellow',
-				Failure: 'red',
-				'Update Available': 'blue',
-				Enabled: 'blue',
-				'Awaiting Approval': 'yellow',
-				'Awaiting Deploy': 'yellow',
-				Deployed: 'green',
-				Expired: 'red',
-				Paid: 'green',
-				Rejected: 'red',
-				'In Review': 'yellow',
-				'Attention Required': 'red',
-				Active: 'green',
-				Trial: 'yellow',
-				Published: 'green',
-				Owner: 'blue',
-				Primary: 'green',
-				'Latest Deployed': 'yellow'
-			};
+		$platform() {
+			const ua = navigator.userAgent.toLowerCase();
+
+			if (ua.indexOf('win') > -1) {
+				return 'win';
+			} else if (ua.indexOf('mac') > -1) {
+				return 'mac';
+			} else if (ua.indexOf('x11') > -1 || ua.indexOf('linux') > -1) {
+				return 'linux';
+			}
 		}
 	}
 };
@@ -171,6 +159,22 @@ export async function trypromise(promise) {
 	} catch (error) {
 		return [error, null];
 	}
+}
+
+export function validateSubdomain(subdomain) {
+	if (!subdomain) {
+		return 'Subdomain cannot be empty';
+	}
+	if (subdomain.length < 5) {
+		return 'Subdomain too short. Use 5 or more characters';
+	}
+	if (subdomain.length > 32) {
+		return 'Subdomain too long. Use 32 or less characters';
+	}
+	if (!subdomain.match(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/)) {
+		return 'Subdomain contains invalid characters. Use lowercase characters, numbers and hyphens';
+	}
+	return null;
 }
 
 export { utils };

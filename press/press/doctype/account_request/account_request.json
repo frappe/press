@@ -35,7 +35,7 @@
   "saas_sign_up_section",
   "send_email",
   "saas",
-  "saas_app",
+  "saas_product",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -195,12 +195,6 @@
    "label": "Saas Sign Up"
   },
   {
-   "fieldname": "saas_app",
-   "fieldtype": "Link",
-   "label": "Saas App",
-   "options": "Marketplace App"
-  },
-  {
    "fieldname": "password",
    "fieldtype": "Password",
    "label": "Password",
@@ -245,11 +239,17 @@
    "fieldname": "oauth_signup",
    "fieldtype": "Check",
    "label": "Oauth Signup"
+  },
+  {
+   "fieldname": "saas_product",
+   "fieldtype": "Link",
+   "label": "SaaS Product",
+   "options": "SaaS Product"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-16 21:34:40.064604",
+ "modified": "2023-08-01 13:47:51.962202",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

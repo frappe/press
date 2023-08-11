@@ -13,7 +13,6 @@
 			>
 		</span>
 		<Button
-			appearance="secondary"
 			@click="$resources.sendLoginLink.submit()"
 			:loading="$resources.sendLoginLink.loading"
 		>
@@ -40,7 +39,7 @@
 			</h4>
 
 			<FeatureList class="my-5" :features="plan.features" />
-			<Button appearance="primary" @click="selectPlan(plan)"> Buy Now </Button>
+			<Button variant="solid" @click="selectPlan(plan)"> Buy Now </Button>
 		</div>
 	</div>
 </template>

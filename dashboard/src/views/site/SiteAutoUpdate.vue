@@ -4,7 +4,7 @@
 			<Alert title="Auto updates are disabled for this site.">
 				<template #actions>
 					<Button
-						appearance="primary"
+						variant="solid"
 						@click="enableAutoUpdate"
 						:loading="$resources.enableAutoUpdate.loading"
 						loadingText="Enabling"
@@ -94,7 +94,7 @@
 					</h3>
 					<Button
 						class="mt-3"
-						appearance="primary"
+						variant="solid"
 						@click="enableAutoUpdate"
 						:loading="this.$resources.enableAutoUpdate.loading"
 						loadingText="Enabling"
@@ -111,27 +111,37 @@
 				</div>
 
 				<Dialog
-					:options="{ title: 'Schedule Auto Updates' }"
+					:options="{
+						title: 'Schedule Auto Updates',
+						actions: [
+							{
+								label: 'Save Changes',
+								variant: 'solid',
+								loading: $resources.updateAutoUpdateInfo.loading,
+								onClick: () => $resources.updateAutoUpdateInfo.submit()
+							}
+						]
+					}"
 					v-model="showEditDialog"
 				>
 					<!-- Edit From -->
 					<template v-slot:body-content>
 						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<Input
+							<FormControl
 								type="select"
 								label="Update Frequency"
 								:options="frequencyOptions"
 								v-model="updateFrequency"
 							/>
 
-							<Input
+							<FormControl
 								type="select"
 								:options="timeOptions"
 								label="Update time"
 								v-model="updateTime"
 							/>
 
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Weekly'"
 								type="select"
 								label="Day of the week"
@@ -139,14 +149,14 @@
 								v-model="weekDay"
 							/>
 
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Monthly'"
 								type="select"
 								:options="monthDayOptions"
 								label="Day of the month"
 								v-model.number="monthDay"
 							/>
-							<Input
+							<FormControl
 								v-if="updateFrequency === 'Monthly'"
 								type="checkbox"
 								label="Update end of month"
@@ -163,16 +173,6 @@
 							class="mt-4"
 							:message="$resources.updateAutoUpdateInfo.error"
 						/>
-					</template>
-					<template #actions>
-						<Button
-							appearance="primary"
-							:loading="$resources.updateAutoUpdateInfo.loading"
-							loadingText="Saving..."
-							@click="$resources.updateAutoUpdateInfo.submit()"
-						>
-							Save changes
-						</Button>
 					</template>
 				</Dialog>
 

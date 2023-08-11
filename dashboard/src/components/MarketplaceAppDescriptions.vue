@@ -13,11 +13,21 @@
 				</template>
 			</ListItem>
 			<Dialog
-				:options="{ title: 'Update App Summary' }"
+				:options="{
+					title: 'Update App Summary',
+					actions: [
+						{
+							label: 'Save Changes',
+							variant: 'solid',
+							loading: $resources.updateAppSummary.loading,
+							onClick: () => $resources.updateAppSummary.submit()
+						}
+					]
+				}"
 				v-model="showEditSummaryDialog"
 			>
 				<template v-slot:body-content>
-					<Input
+					<FormControl
 						label="Summary of the app"
 						type="textarea"
 						v-model="app.description"
@@ -26,20 +36,6 @@
 						class="mt-4"
 						:message="$resources.updateAppSummary.error"
 					/>
-				</template>
-
-				<template #actions>
-					<div class="space-x-2">
-						<Button @click="showEditSummaryDialog = false">Cancel</Button>
-						<Button
-							appearance="primary"
-							:loading="$resources.updateAppSummary.loading"
-							loadingText="Saving..."
-							@click="$resources.updateAppSummary.submit()"
-						>
-							Save changes
-						</Button>
-					</div>
 				</template>
 			</Dialog>
 			<div class="py-3">
@@ -56,18 +52,29 @@
 					v-html="descriptionHTML"
 				></div>
 				<Dialog
-					:options="{ title: 'Update App Description', size: '5xl' }"
+					:options="{
+						title: 'Update App Description',
+						size: '5xl',
+						actions: [
+							{
+								label: 'Save Changes',
+								variant: 'solid',
+								loading: $resources.updateAppDescription.loading,
+								onClick: () => $resources.updateAppDescription.submit()
+							}
+						]
+					}"
 					:dismissable="true"
 					v-model="showEditDescriptionDialog"
 					width="full"
 				>
 					<template v-slot:body-content>
 						<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-							<Input
+							<FormControl
 								:rows="30"
 								type="textarea"
 								v-model="app.long_description"
-							></Input>
+							/>
 							<div class="prose" v-html="descriptionHTML"></div>
 						</div>
 
@@ -75,16 +82,6 @@
 							class="mt-4"
 							:message="$resources.updateAppDescription.error"
 						/>
-					</template>
-					<template v-slot:actions>
-						<Button
-							appearance="primary"
-							:loading="$resources.updateAppDescription.loading"
-							loadingText="Saving..."
-							@click="$resources.updateAppDescription.submit()"
-						>
-							Save Changes
-						</Button>
 					</template>
 				</Dialog>
 			</div>
@@ -171,7 +168,6 @@ export default {
 			if (this.app && this.app.long_description) {
 				return MarkdownIt().render(this.app.long_description);
 			}
-
 			return '';
 		}
 	},

@@ -16,7 +16,7 @@
 		>
 			<template #actions>
 				<div v-if="$account.team.name === team.name">
-					<Badge color="blue">Active</Badge>
+					<Badge label="Active" theme="blue" />
 				</div>
 				<div v-else class="flex flex-row justify-end">
 					<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>
@@ -50,9 +50,8 @@
 				</ListItem>
 				<div v-if="showManageTeamForm">
 					<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
-					<Input
+					<FormControl
 						label="Enter name to create a new child team for shared access."
-						type="text"
 						class="mt-2"
 						placeholder="e.g Accounts Team"
 						v-model="childTeamTitle"
@@ -60,11 +59,13 @@
 					/>
 					<ErrorMessage :message="$resourceErrors" />
 
-					<div class="mt-5 flex flex-row justify-end">
-						<Button @click="showManageTeamForm = false"> Cancel </Button>
+					<div class="mt-5">
+						<Button class="w-full" @click="showManageTeamForm = false">
+							Cancel
+						</Button>
 						<Button
-							class="ml-2"
-							appearance="primary"
+							class="mt-2 w-full"
+							variant="solid"
 							:loading="$resources.addChildTeam.loading"
 							@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
 						>
@@ -72,8 +73,12 @@
 						</Button>
 					</div>
 				</div>
-				<div v-else class="mt-5 flex flex-row justify-end">
-					<Button appearance="primary" @click="showManageTeamForm = true">
+				<div v-else class="mt-5">
+					<Button
+						class="w-full"
+						variant="solid"
+						@click="showManageTeamForm = true"
+					>
 						Add Child team
 					</Button>
 				</div>
@@ -155,11 +160,11 @@ export default {
 			return [
 				{
 					label: 'Switch to Team',
-					handler: () => this.$account.switchToTeam(team_name)
+					onClick: () => this.$account.switchToTeam(team_name)
 				},
 				{
 					label: 'Leave Team',
-					handler: () => this.confirmLeaveTeam(team_name)
+					onClick: () => this.confirmLeaveTeam(team_name)
 				}
 			];
 		},
@@ -168,7 +173,7 @@ export default {
 				title: 'Leave Team',
 				message: `Are you sure you want to leave team <strong>${team_name}</strong>?`,
 				actionLabel: 'Leave Team',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.leaveTeam.submit({ team: team_name });

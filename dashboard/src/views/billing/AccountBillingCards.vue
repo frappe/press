@@ -25,7 +25,7 @@
 					<div class="text-lg font-medium text-gray-900">
 						{{ card.name_on_card }} <span class="text-gray-500">••••</span>
 						{{ card.last_4 }}
-						<Badge v-if="card.is_default">Default</Badge>
+						<Badge v-if="card.is_default" label="Default" />
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
 						<span>
@@ -84,11 +84,11 @@ export default {
 			return [
 				!card.is_default && {
 					label: 'Set as default',
-					handler: () => this.confirmSetAsDefault(card)
+					onClick: () => this.confirmSetAsDefault(card)
 				},
 				{
 					label: 'Remove',
-					handler: () => this.confirmRemove(card)
+					onClick: () => this.confirmRemove(card)
 				}
 			];
 		},
@@ -111,7 +111,7 @@ export default {
 				title: 'Remove payment method',
 				message: 'Are you sure you want to remove this payment method?',
 				actionLabel: 'Remove',
-				actionType: 'danger',
+				actionColor: 'red',
 				resource: this.$resources.remove,
 				action: closeDialog => {
 					this.$resources.remove.submit({ name: card.name }).then(() => {

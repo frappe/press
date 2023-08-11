@@ -1,59 +1,71 @@
 <template>
 	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
 		<div>
-			<div class="flex justify-between">
-				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
-				<div class="self-center">
-					<Button icon="search" @click="show = true"> </Button>
-				</div>
-			</div>
-			<CommandPalette :show="show" @close="show = false" />
-			<router-link
-				v-for="item in items"
-				:key="item.label"
-				:to="item.route"
-				v-slot="{ href, route, navigate }"
-			>
-				<a
-					:class="[
-						(
-							Boolean(item.highlight)
-								? item.highlight(route)
-								: item.route == '/'
-						)
-							? 'bg-gray-200'
-							: 'text-gray-900 hover:bg-gray-50'
-					]"
-					:href="href"
-					@click="navigate"
-					class="text-start mb-2 flex rounded-md py-2 pl-2 pr-10 text-sm font-medium focus:outline-none"
-				>
-					<Component class="mr-1.5" :is="item.icon" />
-					{{ item.label }}
-				</a>
-			</router-link>
-		</div>
-		<Dropdown placement="center" :options="dropdownItems">
-			<template v-slot="{ open }">
-				<div
-					class="m-2 flex cursor-pointer items-center gap-2 rounded-md p-2 truncate break-all"
-					:class="open ? 'bg-gray-300' : 'hover:bg-gray-200'"
-				>
-					<Avatar
-						v-if="$account.user"
-						:label="$account.user.first_name"
-						:imageURL="$account.user.user_image"
-					/>
-
-					<div v-if="$account.user">
-						<h3 class="text-base font-semibold">
-							{{ $account.user.full_name }}
-						</h3>
-						<p class="text-xs text-gray-600">{{ $account.user.email }}</p>
+			<Dropdown :options="dropdownItems">
+				<template v-slot="{ open }">
+					<div
+						class="flex w-[15rem] cursor-pointer items-center gap-2 rounded-md px-2 py-2"
+						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
+					>
+						<div>
+							<FrappeCloudLogo class="h-5" />
+							<p
+								v-if="$account.user"
+								class="mt-1 break-all text-sm text-gray-600"
+							>
+								{{ $account.user.full_name }}
+							</p>
+						</div>
+						<FeatherIcon
+							name="chevron-down"
+							class="ml-auto h-5 w-5 text-gray-700"
+						/>
 					</div>
-				</div>
-			</template>
-		</Dropdown>
+				</template>
+			</Dropdown>
+			<div class="mt-2 flex flex-col space-y-0.5">
+				<button
+					class="rounded text-gray-900 hover:bg-gray-100"
+					@click="show = true"
+				>
+					<div class="flex w-full items-center px-2 py-1">
+						<span class="mr-1.5">
+							<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
+						</span>
+						<span class="text-sm">Search</span>
+						<span class="ml-auto text-sm text-gray-500">
+							<template v-if="$platform === 'mac'">⌘K</template>
+							<template v-else>Ctrl+K</template>
+						</span>
+					</div>
+				</button>
+				<CommandPalette :show="show" @close="show = false" />
+				<router-link
+					v-for="item in items"
+					:key="item.label"
+					:to="item.route"
+					v-slot="{ href, route, navigate }"
+				>
+					<a
+						:class="[
+							(
+								Boolean(item.highlight)
+									? item.highlight(route)
+									: item.route == '/'
+							)
+								? 'bg-white shadow-sm'
+								: 'text-gray-900 hover:bg-gray-100'
+						]"
+						:href="href"
+						@click="navigate"
+						class="flex items-center rounded-md px-2 py-1 pr-10 text-start text-sm focus:outline-none"
+					>
+						<Component class="mr-1.5 text-gray-700" :is="item.icon" />
+						{{ item.label }}
+					</a>
+				</router-link>
+			</div>
+		</div>
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
 </template>
@@ -61,7 +73,7 @@
 <script>
 import { FCIcons } from '@/components/icons';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
-import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 
 export default {
@@ -79,22 +91,22 @@ export default {
 				{
 					label: 'Switch Team',
 					icon: 'command',
-					handler: () => (this.showTeamSwitcher = true)
+					onClick: () => (this.showTeamSwitcher = true)
 				},
 				{
 					label: 'Support & Docs',
 					icon: 'help-circle',
-					handler: () => (window.location.href = '/support')
+					onClick: () => (window.location.href = '/support')
 				},
 				{
 					label: 'Settings',
 					icon: 'settings',
-					handler: () => this.$router.push('/settings')
+					onClick: () => this.$router.push('/settings/profile')
 				},
 				{
 					label: 'Logout',
 					icon: 'log-out',
-					handler: () => this.$auth.logout()
+					onClick: () => this.$auth.logout()
 				}
 			]
 		};
@@ -116,23 +128,29 @@ export default {
 				{
 					label: 'Sites',
 					route: '/sites',
-					highlight: route => {
-						return this.$route.fullPath.indexOf('/sites') >= 0;
+					highlight: () => {
+						return (
+							this.$route.fullPath.indexOf('/sites') >= 0 &&
+							this.$route.fullPath.indexOf('/benches/') < 0
+						);
 					},
 					icon: FCIcons.SiteIcon
 				},
 				{
 					label: 'Benches',
 					route: '/benches',
-					highlight: route => {
-						return this.$route.fullPath.indexOf('/benches') >= 0;
+					highlight: () => {
+						return (
+							this.$route.fullPath.indexOf('/benches') >= 0 &&
+							this.$route.fullPath.indexOf('/servers/') < 0
+						);
 					},
 					icon: FCIcons.BenchIcon
 				},
 				{
 					label: 'Servers',
 					route: '/servers',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/servers') >= 0;
 					},
 					icon: FCIcons.ServerIcon,
@@ -141,7 +159,7 @@ export default {
 				{
 					label: 'Spaces',
 					route: '/spaces',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/spaces') >= 0;
 					},
 					icon: FCIcons.SpacesIcon,
@@ -150,11 +168,20 @@ export default {
 				{
 					label: 'Developer',
 					route: '/marketplace/apps',
-					highlight: route => {
+					highlight: () => {
 						return this.$route.fullPath.indexOf('/marketplace') >= 0;
 					},
 					icon: FCIcons.AppsIcon,
 					condition: () => this.$account.team?.is_developer
+				},
+				{
+					label: 'Security',
+					route: '/security',
+					highlight: () => {
+						return this.$route.fullPath.indexOf('/security') >= 0;
+					},
+					icon: FCIcons.SecurityIcon,
+					condition: () => this.$account.team?.security_portal_enabled
 				},
 				{
 					label: 'Billing',
