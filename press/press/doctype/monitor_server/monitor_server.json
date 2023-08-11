@@ -87,7 +87,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -194,7 +193,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-06-16 22:28:16.543575",
+ "modified": "2023-08-11 12:23:59.121396",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
