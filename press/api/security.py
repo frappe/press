@@ -1,6 +1,7 @@
 import frappe
 from press.api.server import all as get_all_servers
 from press.agent import Agent
+from frappe.utils import get_datetime
 
 
 @frappe.whitelist()
@@ -55,14 +56,26 @@ def fetch_ssh_session_logs(server):
 
 	for log in ssh_logs.get("logs", []):
 		if not log["name"].endswith(".timing"):
+			log["created_at"] = get_datetime(log["created"]).strftime("%Y-%m-%d %H-%M")
+
 			splited_log = log["name"].split(".")
 			log["user"] = splited_log[1]
 			log["session_id"] = splited_log[2]
+
 			logs_to_display.append(log)
 
 	return logs_to_display
 
 
 @frappe.whitelist()
-def fetch_ssh_session_log(server, filename):
-	return Agent(server=server).get(f"security/retrieve_ssh_session_log/{filename}")
+def fetch_ssh_session_activity(server, filename):
+	content = Agent(server=server).get(f"security/retrieve_ssh_session_log/{filename}")
+	splited_filename = filename.split(".")
+	session_user = splited_filename[1]
+	session_id = splited_filename[2]
+
+	return {
+		"session_user": session_user,
+		"session_id": session_id,
+		"content": content.get("log_details", "Not Found"),
+	}

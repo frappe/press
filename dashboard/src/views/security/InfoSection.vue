@@ -1,10 +1,6 @@
 <template>
 	<div class="mt-4">
-		<details
-			class="cursor-pointer px-6"
-			:key="sectionName"
-			:open="sectionName === 'Package Meta'"
-		>
+		<details class="cursor-pointer px-6" :key="sectionName" :open="defaultOpen">
 			<summary class="inline-flex w-full items-center py-2 focus:outline-none">
 				<span class="ml-1">
 					<div
@@ -51,7 +47,7 @@
 <script>
 export default {
 	name: 'InfoSection',
-	props: ['sectionName', 'sectionData']
+	props: ['sectionName', 'sectionData', 'defaultOpen']
 };
 </script>
 

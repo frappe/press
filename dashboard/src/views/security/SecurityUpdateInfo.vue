@@ -31,13 +31,16 @@
 			</template>
 			<div v-else>
 				<LoadingText v-if="loading" />
-				<span v-else class="text-base text-gray-600"> No item selected </span>
+				<span v-else class="text-base text-gray-600 text-center">
+					No item selected
+				</span>
 			</div>
 		</div>
 		<div class="flex-auto px-6 overflow-auto" v-if="showDetails">
 			<InfoSection
 				sectionName="Package Meta"
 				:sectionData="secUpdateInfo.package_meta"
+				:defaultOpen="true"
 			/>
 			<InfoSection
 				sectionName="Change Log"

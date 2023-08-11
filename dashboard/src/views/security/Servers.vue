@@ -48,7 +48,7 @@
 <script>
 import ServerList from '@/views/security/ServerList.vue';
 export default {
-	name: 'SecurityUpdates',
+	name: 'Servers',
 	components: {
 		ServerList
 	},

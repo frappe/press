@@ -1,9 +1,13 @@
 <template>
-	<Card class="min-h-full h-full max-h-96" title="SSH Activity Log">
-		<div class="divide-y">
+	<CardWithDetails
+		title="Server SSH Session Logs"
+		subtitle="Log of commands executed in session"
+	>
+		<div>
 			<router-link
 				v-for="log in $resources.sshLogs.data"
 				class="block cursor-pointer rounded-md px-2.5"
+				:class="logId === log.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				:key="log.name"
 				:to="updateRoute(log.name)"
 			>
@@ -12,26 +16,27 @@
 						<Badge :label="getLabel(log.user)" :theme="getColor(log.user)" />
 					</template>
 				</ListItem>
+				<div class="border-b"></div>
 			</router-link>
 		</div>
-		<template #actions>
-			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
-				:to="`/security/${server.name}/ssh_session_logs`"
-			>
-				View details →
-			</router-link>
+		<template #details>
+			<SSHSessionActivity
+				:showDetails="logId"
+				:logId="logId"
+				:server="server"
+			/>
 		</template>
-	</Card>
+	</CardWithDetails>
 </template>
 
 <script>
-import { Card } from 'frappe-ui';
+import CardWithDetails from '@/components/CardWithDetails.vue';
+import SSHSessionActivity from './SSHSessionActivity.vue';
 
 export default {
-	name: 'SSHSessionsOverview',
-	props: ['server'],
-	components: { Card },
+	name: 'SSHSession',
+	props: ['server', 'logId'],
+	components: { CardWithDetails, SSHSessionActivity },
 	resources: {
 		sshLogs() {
 			return {
@@ -51,12 +56,10 @@ export default {
 	},
 	methods: {
 		getTitle(log) {
-			return `SSH Session Id: ${log.session_id}`;
+			return `SSH Session: ${log.session_id}`;
 		},
 		getDescription(log) {
-			return `Created On: ${this.formatDate(log.created)} <br> Size: ${
-				log.size
-			} Kb`;
+			return `Created On: ${log.created_at} <br> Size: ${log.size} Kb`;
 		},
 		updateRoute(name) {
 			return `/security/${this.server.name}/ssh_session_logs/${name}`;

@@ -37,7 +37,7 @@
 </template>
 <script>
 export default {
-	name: 'SecurityUpdates',
+	name: 'SecurityUpdatesOverview',
 	props: ['server'],
 	inject: ['viewportWidth'],
 	resources: {
