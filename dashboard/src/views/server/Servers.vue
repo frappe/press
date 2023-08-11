@@ -56,7 +56,6 @@
 						/>
 					</div>
 				</div>
-				<LoadingText v-if="$resources.allServers.loading" />
 				<Table
 					:columns="[
 						{ label: 'Server Name', name: 'name', width: 2 },
@@ -70,6 +69,12 @@
 					v-slot="{ rows, columns }"
 				>
 					<TableHeader />
+					<div class="flex items-center justify-center">
+						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
+						<div v-else-if="rows.length === 0" class="mt-8">
+							<div class="text-base text-gray-700">No Items</div>
+						</div>
+					</div>
 					<TableRow v-for="row in rows" :key="row.name" :row="row">
 						<TableCell v-for="column in columns">
 							<Badge
@@ -272,7 +277,7 @@ export default {
 				return [];
 			}
 
-			let servers = this.$resources.allServers.data.filter(bench =>
+			let servers = this.$resources.allServers.data.filter(server =>
 				this.$account.hasPermission(server.name, '', true)
 			);
 
