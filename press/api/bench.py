@@ -485,6 +485,22 @@ def benches_with_sites(name):
 
 	benches = list(benches.values())
 	for bench in benches:
+		bench["apps"] = frappe.get_all(
+			"Bench App",
+			{"parent": bench["bench"]},
+			["name", "app", "hash", "source"],
+			order_by="idx",
+		)
+		for app in bench["apps"]:
+			app.update(
+				frappe.db.get_value(
+					"App Source",
+					app.source,
+					("branch", "repository", "repository_owner", "repository_url"),
+					as_dict=1,
+					cache=True,
+				)
+			)
 		bench["deployed_on"] = frappe.db.get_value("Bench", bench["bench"], "creation")
 
 	return benches

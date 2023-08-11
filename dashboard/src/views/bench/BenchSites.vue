@@ -19,14 +19,18 @@
 					<div class="text-base text-gray-700">No Items</div>
 				</div>
 			</div>
-			<div v-for="group in groups" :key="group.name">
-				<div
+			<div v-for="(group, i) in groups" :key="group.name">
+				<button
 					class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
+					@click="
+						showAppsDialog = true;
+						selectedGroupIndex = i;
+					"
 				>
 					<span class="font-semibold text-gray-900">
 						{{ group.name }}
 					</span>
-				</div>
+				</button>
 
 				<TableRow
 					v-for="row in sitesByGroup[group.name]"
@@ -88,6 +92,25 @@
 		</Table>
 	</div>
 
+	<Dialog :options="{ title: 'Apps' }" v-model="showAppsDialog">
+		<template #body-content>
+			<ListItem
+				v-for="app in groups[selectedGroupIndex].apps"
+				:key="app.app"
+				:title="app.app"
+				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
+			>
+				<template #actions>
+					<CommitTag
+						:tag="app.tag || app.hash.substr(0, 7)"
+						class="ml-2"
+						:link="`${app.repository_url}/commit/${app.hash}`"
+					/>
+				</template>
+			</ListItem>
+		</template>
+	</Dialog>
+
 	<Dialog
 		:options="{
 			title: 'Login As Administrator',
@@ -118,6 +141,7 @@ import Table from '@/components/Table/Table.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
+import CommitTag from '@/components/utils/CommitTag.vue';
 
 export default {
 	name: 'BenchSites',
@@ -126,12 +150,15 @@ export default {
 		Table,
 		TableHeader,
 		TableRow,
-		TableCell
+		TableCell,
+		CommitTag
 	},
 	data() {
 		return {
 			reasonForAdminLogin: '',
 			errorMessage: null,
+			selectedGroupIndex: 0,
+			showAppsDialog: false,
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null
 		};
@@ -221,15 +248,13 @@ export default {
 	computed: {
 		sites() {
 			if (!this.$resources.benchesWithSites.data) return [];
-
-			return this.$resources.benchesWithSites.data
-				.map(bench => {
-					return bench.sites.map(site => {
-						site.bench = bench.bench;
-						return site;
-					});
-				})
-				.flat();
+			return this.$resources.benchesWithSites.data.flatMap(bench => {
+				return bench.sites.map(site => {
+					site.bench = bench.bench;
+					site.apps = bench.apps;
+					return site;
+				});
+			});
 		},
 		sitesByGroup() {
 			let sitesByGroup = {};
@@ -257,7 +282,8 @@ export default {
 				if (!seen.includes(site.bench)) {
 					seen.push(site.bench);
 					groups.push({
-						name: site.bench
+						name: site.bench,
+						apps: site.apps
 					});
 				}
 			}
