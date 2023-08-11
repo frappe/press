@@ -16,6 +16,8 @@ from press.press.doctype.cluster.cluster import Cluster
 from unittest.mock import MagicMock, patch
 from moto import mock_ec2, mock_ssm, mock_iam
 
+from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
+
 
 @patch("press.press.doctype.cluster.cluster.boto3.client", new=MagicMock())
 def create_test_cluster(
@@ -56,7 +58,9 @@ class TestCluster(unittest.TestCase):
 		aws_access_key_id,
 		aws_secret_access_key,
 		public=False,
+		add_default_servers=False,
 	):
+		"""Simulate creation of cluster without AWS credentials"""
 		cluster = frappe.get_doc(
 			{
 				"doctype": "Cluster",
@@ -69,12 +73,13 @@ class TestCluster(unittest.TestCase):
 				"aws_access_key_id": aws_access_key_id,
 				"aws_secret_access_key": aws_secret_access_key,
 				"public": public,
-				"add_default_servers": True,
+				"add_default_servers": add_default_servers,
 			}
 		)
 		return cluster.insert()
 
 
+@patch.object(VirtualMachine, "get_latest_ubuntu_image", new=lambda x: "ami-123")
 class TestPrivateCluster(TestCluster):
 	def tearDown(self) -> None:
 		frappe.db.rollback()
@@ -137,7 +142,10 @@ class TestPrivateCluster(TestCluster):
 
 		boto3.client("iam").create_group(GroupName="fc-vpc-customer")
 
-		cluster = self._create_cluster(aws_access_key_id=None, aws_secret_access_key=None)
+		Cluster.wait_for_aws_creds_seconds = 0
+		cluster = self._create_cluster(
+			aws_access_key_id=None, aws_secret_access_key=None, add_default_servers=True
+		)
 
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
@@ -161,6 +169,28 @@ class TestPrivateCluster(TestCluster):
 			)
 		except Exception:
 			pass  # trigger rollback
+
+	@mock_ec2
+	@mock_ssm
+	def test_create_private_cluster_creates_monitor_and_log_servers_with_no_existing_vmis(
+		self,
+	):
+		root_domain = create_test_root_domain("local.fc.frappe.dev")
+		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+		monitor_server_count_before = frappe.db.count("Monitor Server")
+		log_server_count_before = frappe.db.count("Log Server")
+		self._create_cluster(
+			aws_access_key_id="test",
+			aws_secret_access_key="test",
+			public=False,
+			add_default_servers=True,
+		)
+		monitor_server_count_after = frappe.db.count("Monitor Server")
+		log_server_count_after = frappe.db.count("Log Server")
+		self.assertEqual(monitor_server_count_before, 0)
+		self.assertEqual(log_server_count_before, 0)
+		self.assertEqual(monitor_server_count_after, 1)
+		self.assertEqual(log_server_count_after, 1)
 
 
 class TestPublicCluster(TestCluster):
@@ -257,7 +287,7 @@ class TestPublicCluster(TestCluster):
 		self.assertEqual(proxy_server_count_after, 1)
 
 	@mock_iam
-	@patch.object(Cluster, "after_insert", new=MagicMock())
+	@patch.object(Cluster, "after_insert", new=MagicMock())  # don't create vms/servers
 	def test_creation_of_public_cluster_uses_keys_from_press_settings(self):
 		from press.press.doctype.press_settings.test_press_settings import (
 			create_test_press_settings,

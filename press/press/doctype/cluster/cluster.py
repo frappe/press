@@ -20,6 +20,7 @@ import typing
 if typing.TYPE_CHECKING:
 	from press.press.doctype.plan.plan import Plan
 	from press.press.doctype.press_settings.press_settings import PressSettings
+	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
 
 class Cluster(Document):
@@ -32,15 +33,13 @@ class Cluster(Document):
 		"Monitor Server": "p",
 		"Log Server": "e",
 	}
+	wait_for_aws_creds_seconds = 20
 
 	def validate(self):
 		self.validate_monitoring_password()
 		self.validate_cidr_block()
 		if self.cloud_provider == "AWS EC2":
 			self.validate_aws_credentials()
-
-	def client(self):
-		pass
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
@@ -66,7 +65,7 @@ class Cluster(Document):
 			self.aws_secret_access_key = access_key_pair["SecretAccessKey"]
 			from time import sleep
 
-			sleep(20)  # wait for key to be valid
+			sleep(self.wait_for_aws_creds_seconds)  # wait for key to be valid
 
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
@@ -301,13 +300,12 @@ class Cluster(Document):
 			if same_region_vmi:
 				continue
 			other_region_vmi = VirtualMachineImage.get_available_for_series(series)
-			if not other_region_vmi:
-				continue
-			frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
+			if other_region_vmi:
+				frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
 
 	def create_servers(self):
 		"""Creates servers for the cluster"""
-		for doctype, series in self.base_servers.items():
+		for doctype, _ in self.base_servers.items():
 			# TODO: remove Test title #
 			server, _ = self.create_server(
 				doctype,
@@ -318,14 +316,16 @@ class Cluster(Document):
 					self.database_server = server.name
 				case "Proxy Server":
 					self.proxy_server = server.name
-		if not self.public:
-			return NotImplementedError
-			for doctype, series in self.private_servers.items():
-				self.create_server(doctype, "Test", vm_image=self.get_available_vmi(series))
+		for doctype, _ in self.private_servers.items():
+			self.create_server(
+				doctype,
+				"Test",
+				create_subscription=False,
+			)
 
 	def create_vm(
 		self, machine_type: str, disk_size: int, domain: str, series: str, team: str
-	):
+	) -> "VirtualMachine":
 		return frappe.get_doc(
 			{
 				"doctype": "Virtual Machine",
@@ -363,6 +363,7 @@ class Cluster(Document):
 		plan: "Plan" = None,
 		domain: str = None,
 		team: str = None,
+		create_subscription=True,
 	):
 		"""Creates a server for the cluster"""
 		domain = domain or frappe.db.get_single_value("Press Settings", "domain")
@@ -373,22 +374,31 @@ class Cluster(Document):
 			plan.instance_type, plan.disk, domain, server_series[doctype], team
 		)
 		server = None
-		if doctype == "Database Server":
-			server = vm.create_database_server()
-			server.title = f"{title} - Database"
-		elif doctype == "Server":
-			server = vm.create_server()
-			server.title = f"{title} - Application"
-			server.ram = plan.memory
-			server.database_server = self.database_server
-			server.proxy_server = self.proxy_server
-			server.new_worker_allocation = True
-		elif doctype == "Proxy Server":
-			server = vm.create_proxy_server()
-			server.title = f"{title} - Proxy"
-		server.plan = plan.name
-		server.save()
-		server.create_subscription(plan.name)
+		match doctype:
+			case "Database Server":
+				server = vm.create_database_server()
+				server.title = f"{title} - Database"
+			case "Server":
+				server = vm.create_server()
+				server.title = f"{title} - Application"
+				server.ram = plan.memory
+				server.database_server = self.database_server
+				server.proxy_server = self.proxy_server
+				server.new_worker_allocation = True
+			case "Proxy Server":
+				server = vm.create_proxy_server()
+				server.title = f"{title} - Proxy"
+			case "Monitor Server":
+				server = vm.create_monitor_server()
+				server.title = f"{title} - Monitor"
+			case "Log Server":
+				server = vm.create_log_server()
+				server.title = f"{title} - Log"
+
+		if create_subscription:
+			server.plan = plan.name
+			server.save()
+			server.create_subscription(plan.name)
 		job = server.run_press_job("Create Server")
 
 		return server, job
