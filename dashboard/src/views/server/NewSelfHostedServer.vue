@@ -90,26 +90,24 @@
 					</div>
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
-					<div>
-						<Button v-if="hasPrevious" @click="previous" class="w-full">
-							Back
-						</Button>
+					<div class="flex justify-between">
+						<Button v-if="hasPrevious" @click="previous"> Back </Button>
 
 						<Button
 							v-if="hasNext"
+							class="ml-auto"
 							variant="solid"
 							@click="nextStep(activeStep, next)"
 							:disabled="
 								activeStep.name === 'ServerDetails' ? !domainVerified : false
 							"
-							class="w-full"
 							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							class="w-full"
+							class="ml-auto"
 							variant="solid"
 							:disabled="
 								!playOutput || !nginxSetup || !this.agreedToRegionConsent

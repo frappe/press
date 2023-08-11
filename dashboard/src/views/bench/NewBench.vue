@@ -79,10 +79,11 @@
 					</label>
 				</div>
 
-				<div>
+				<div class="flex justify-between">
 					<ErrorMessage class="mb-2" :message="$resources.createBench.error" />
 					<Button
 						variant="solid"
+						class="ml-auto"
 						:loading="$resources.createBench.loading"
 						@click="$resources.createBench.submit()"
 					>

@@ -71,17 +71,15 @@
 
 					<ErrorMessage class="mb-4" :message="$resources.newSite.error" />
 
-					<div>
-						<Button v-show="hasPrevious" class="w-full" @click="previous">
-							Back
-						</Button>
+					<div class="flex justify-between">
+						<Button v-show="hasPrevious" @click="previous"> Back </Button>
 						<Button
 							v-show="
 								(activeStep.name !== 'Restore' || wantsToRestore) && hasNext
 							"
+							class="ml-auto"
 							variant="solid"
 							@click="nextStep(activeStep, next)"
-							class="w-full"
 							:class="{ 'mt-2': hasPrevious }"
 							:loading="loadingPlans"
 							loadingText="Loading"
@@ -92,16 +90,16 @@
 							v-show="
 								!wantsToRestore && activeStep.name === 'Restore' && hasNext
 							"
+							class="ml-auto"
 							variant="solid"
-							class="w-full"
 							@click="nextStep(activeStep, next)"
 						>
 							Skip
 						</Button>
 						<Button
 							v-show="!hasNext"
+							class="ml-auto"
 							variant="solid"
-							class="w-full"
 							:class="{ 'mt-2': hasPrevious }"
 							@click="$resources.newSite.submit()"
 							:loading="$resources.newSite.loading"

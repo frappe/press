@@ -53,13 +53,11 @@
 
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
-					<div>
-						<Button v-if="hasPrevious" class="w-full" @click="previous">
-							Back
-						</Button>
+					<div class="flex justify-between">
+						<Button v-if="hasPrevious" @click="previous"> Back </Button>
 						<Button
 							v-if="hasNext"
-							class="w-full"
+							class="ml-auto"
 							variant="solid"
 							@click="nextStep(activeStep, next)"
 							:class="{ 'mt-2': hasPrevious }"
@@ -68,8 +66,8 @@
 						</Button>
 						<Button
 							v-show="!hasNext"
-							class="w-full"
 							variant="solid"
+							class="ml-auto"
 							@click="$resources.newServer.submit()"
 							:loading="$resources.newServer.loading"
 						>
