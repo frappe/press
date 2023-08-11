@@ -642,7 +642,7 @@ def all(site_filter=None):
 	from press.press.doctype.team.team import get_child_team_members
 
 	if site_filter is None:
-		site_filter = {"status": "Active", "tag": ""}
+		site_filter = {"status": "", "tag": ""}
 
 	team = get_current_team()
 	child_teams = [x.name for x in get_child_team_members(team)]
