@@ -270,16 +270,17 @@ class TestAPIServerList(FrappeTestCase):
 
 	def test_list_app_servers(self):
 		self.assertEqual(
-			all(server_filter={"status": "App Servers", "tag": ""}), [self.app_server_dict]
+			all(server_filter={"server_type": "App Servers", "tag": ""}), [self.app_server_dict]
 		)
 
 	def test_list_db_servers(self):
 		self.assertEqual(
-			all(server_filter={"status": "Database Servers", "tag": ""}), [self.db_server_dict]
+			all(server_filter={"server_type": "Database Servers", "tag": ""}),
+			[self.db_server_dict],
 		)
 
 	def test_list_tagged_servers(self):
 		self.assertEqual(
-			all(server_filter={"status": "", "tag": "test_tag"}),
+			all(server_filter={"server_type": "", "tag": "test_tag"}),
 			[self.app_server_dict],
 		)
