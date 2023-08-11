@@ -705,7 +705,6 @@ def all(site_filter=None):
 			"Resource Tag",
 			{"parent": site.name},
 			pluck="tag_name",
-			limit=4,
 		)
 		if site.bench in benches_with_updates:
 			site.update_available = True
