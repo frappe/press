@@ -20,17 +20,32 @@
 				</div>
 			</div>
 			<div v-for="(group, i) in groups" :key="group.name">
-				<button
-					class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
-					@click="
-						showAppsDialog = true;
-						selectedGroupIndex = i;
-					"
+				<div
+					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
 				>
 					<span class="font-semibold text-gray-900">
 						{{ group.name }}
 					</span>
-				</button>
+					<Dropdown
+						:options="[
+							{
+								label: 'Show app versions',
+								onClick: () => {
+									showAppsDialog = true;
+									selectedGroupIndex = i;
+								}
+							}
+						]"
+					>
+						<template v-slot="{ open }">
+							<Button variant="ghost">
+								<template #icon>
+									<FeatherIcon name="more-horizontal" class="h-4 w-4" />
+								</template>
+							</Button>
+						</template>
+					</Dropdown>
+				</div>
 
 				<TableRow
 					v-for="row in sitesByGroup[group.name]"
@@ -79,7 +94,6 @@
 								<template v-slot="{ open }">
 									<Button
 										:variant="open ? 'subtle' : 'ghost'"
-										class="mr-2"
 										icon="more-horizontal"
 									/>
 								</template>
@@ -142,6 +156,7 @@ import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
+import { FeatherIcon } from 'frappe-ui';
 
 export default {
 	name: 'BenchSites',
@@ -151,7 +166,8 @@ export default {
 		TableHeader,
 		TableRow,
 		TableCell,
-		CommitTag
+		CommitTag,
+		FeatherIcon
 	},
 	data() {
 		return {
