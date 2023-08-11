@@ -69,8 +69,8 @@ export default {
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Security Updates', route: 'security_update' },
-				{ label: 'Firewall Configuration', route: 'firewall' },
 				{ label: 'SSH Session Log', route: 'ssh_session_logs' },
+				{ label: 'Firewall Configuration', route: 'firewall' },
 				{ label: 'Nginx Overview', route: 'nginx_overview' }
 			];
 

@@ -1,0 +1,6 @@
+---
+- name: Fetch package details
+  hosts: all
+  roles:
+    - role: fetch_package_meta
+

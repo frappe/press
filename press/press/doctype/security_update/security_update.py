@@ -17,6 +17,7 @@ class SecurityUpdate(Document):
 			ansible = Ansible(
 				playbook="security_update.yml",
 				server=server_obj,
+				variables={"validate_pending_security_updates": False},
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -45,14 +46,12 @@ class SecurityUpdate(Document):
 
 	@staticmethod
 	def _fetch_package_meta(package_list, server_obj):
-		package_list = package_list[:6]
-
 		for package in package_list:
 			try:
 				ansible = Ansible(
-					playbook="security_update.yml",
+					playbook="fetch_package_details.yml",
 					server=server_obj,
-					variables={"fetch_package_meta": True, "package": package},
+					variables={"package": package},
 				)
 				play = ansible.run()
 				if play.status == "Success":
