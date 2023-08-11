@@ -7,34 +7,38 @@ from press.runner import Ansible
 from press.utils import log_error
 import ipaddress
 import json
+import subprocess
 
 
 class WireguardPeer(Document):
-	def after_insert(self):
-		self.next_ip_address()
-		self.peer_config = self.generate_config()
-
 	def validate(self):
-		self.allowed_ips = f"{self.peer_ip},{self.peer_private_network}"
+		self.next_ip_address()
+		if not self.private_ip:
+			self.allowed_ips = self.peer_ip
+		else:
+			self.allowed_ips = f"{self.peer_ip},{self.peer_private_network}"
 
 	def next_ip_address(self):
-		if self.is_new() and not self.peer_ip:
-			network_address = ipaddress.ip_network(self.wireguard_network)
-			ips = frappe.get_list(
-				"Wireguard Peer",
-				filters={"wireguard_network": self.wireguard_network},
-				pluck="peer_ip",
-				fields=["peer_ip"],
-			)
-			if not ips:
-				self.peer_ip = str(network_address[2])
-				self.save()
-				return
-			last_ip_address = ipaddress.ip_address(max(ips))
-			next_ip_addr = last_ip_address + 1
-			while next_ip_addr not in network_address:
-				next_ip_addr += 1
-			self.peer_ip = next_ip_addr
+		try:
+			if self.is_new() and not self.peer_ip:
+				network_address = ipaddress.ip_network(self.wireguard_network)
+				ips = frappe.get_list(
+					"Wireguard Peer",
+					filters={"wireguard_network": self.wireguard_network},
+					pluck="peer_ip",
+					fields=["peer_ip"],
+				)
+				if not ips:
+					self.peer_ip = str(network_address[2])
+					return
+				last_ip_address = ipaddress.ip_address(max(ips))
+				next_ip_addr = last_ip_address + 1
+				while next_ip_addr not in network_address:
+					next_ip_addr += 1
+				self.peer_ip = str(next_ip_addr)
+		except Exception:
+			log_error("Wireguard Peer IP Exception", server=self.as_dict())
+			frappe.throw("Invalid Wireguard Network")
 
 	@frappe.whitelist()
 	def setup_wireguard(self):
@@ -125,14 +129,23 @@ class WireguardPeer(Document):
 
 	@frappe.whitelist()
 	def generate_config(self):
+		if not self.private_key or not self.public_key:
+			self.private_key = subprocess.check_output(["wg", "genkey"]).decode().strip()
+			self.public_key = (
+				subprocess.check_output([f"echo '{self.private_key}' | wg pubkey"], shell=True)
+				.decode()
+				.strip()
+			)
+			self.save()
 		proxy = frappe.get_doc("Proxy Server", self.upstream_proxy)
 		variables = {
 			"wireguard_network": self.peer_ip + "/" + self.wireguard_network.split("/")[1],
-			"wireguard_private_key": "",
+			"wireguard_private_key": self.get_password("private_key"),
 			"wireguard_port": proxy.wireguard_port,
 			"peers": [
 				{
 					"public_key": proxy.get_password("wireguard_public_key"),
+					"endpoint": proxy.name + ":" + str(proxy.wireguard_port),
 					"allowed_ips": self.wireguard_network,
 					"peer_ip": proxy.name,
 				}
@@ -141,7 +154,9 @@ class WireguardPeer(Document):
 		outputText = frappe.render_template(
 			"press/doctype/wireguard_peer/templates/wg0.conf", variables, is_path=True
 		)
-		return outputText
+		self.peer_config = outputText
+		self.save()
+		proxy.reload_wireguard()
 
 	@frappe.whitelist()
 	def download_config(self):

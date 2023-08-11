@@ -8,6 +8,7 @@ frappe.ui.form.on('Wireguard Peer', {
 			[__('Ping Peer'), 'ping_peer', false],
 			[__('Fetch Private Network'), 'fetch_peer_private_network', false],
 			[__('Generate Config'), 'generate_config', false],
+			[__('Generate QR'), 'generate_qr_code', false],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
