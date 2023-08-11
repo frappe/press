@@ -81,7 +81,9 @@
   "backups_section",
   "skip_scheduled_backups",
   "tags_section",
-  "tags"
+  "tags",
+  "monitor_section",
+  "hide_monitor_tab"
  ],
  "fields": [
   {

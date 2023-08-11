@@ -225,6 +225,7 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'SiteRequestLogs',
 				path: 'request-logs',
 				component: () => import('../views/site/SiteRequestLogs.vue'),
 				props: true

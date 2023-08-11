@@ -205,6 +205,15 @@ export default {
 					});
 				}
 			};
+		},
+		plan() {
+			return {
+				method: 'press.api.site.current_plan',
+				params: {
+					name: this.siteName
+				},
+				auto: true
+			};
 		}
 	},
 	activated() {
@@ -352,8 +361,13 @@ export default {
 			].filter(Boolean);
 		},
 
+		hasMonitorAccess() {
+			return this.$resources.plan.data?.monitor_access;
+		},
+
 		tabs() {
 			let siteConfig = '';
+			let siteMonitorTab = '';
 			let tabRoute = subRoute => `/sites/${this.siteName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
@@ -363,11 +377,16 @@ export default {
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Settings', route: 'setting' }
+				{ label: 'Settings', route: 'setting' },
+				{ label: 'Monitor', route: 'monitor' }
 			];
 
 			if (this.site && this.site?.hide_config !== 1) {
 				siteConfig = 'Site Config';
+			}
+
+			if (this.site && this.hasMonitorAccess) {
+				siteMonitorTab = 'Monitor';
 			}
 
 			let tabsByStatus = {
@@ -380,7 +399,8 @@ export default {
 					'Jobs',
 					'Logs',
 					'Request Logs',
-					'Settings'
+					'Settings',
+					siteMonitorTab
 				],
 				Inactive: [
 					'Overview',
@@ -400,7 +420,8 @@ export default {
 					'Database',
 					'Jobs',
 					'Logs',
-					'Settings'
+					'Settings',
+					siteMonitorTab
 				],
 				Suspended: [
 					'Overview',
