@@ -7,26 +7,26 @@ let $floatingBar = $(`
 			style="
 				width: 80%;
 				background-color: #e0f2fe;
-				position: fixed; 
-				bottom: 20px; 
+				position: fixed;
+				bottom: 20px;
 				z-index: 1;">
     <p style="margin: auto 0; margin-right: 20px; padding-left: 10px; font-size: 15px;">
 			${subscription_string}
 		</p>
-    <button id="show-dialog" type="button" 
+    <button id="show-dialog" type="button"
 			class="
-				button-renew 
-				px-4 
-				py-2 
-				border 
+				button-renew
+				px-4
+				py-2
+				border
 				border-transparent
 				text-white
-			" 
+			"
 			style="
 				margin: auto;
 				height: fit-content;
-				background-color: #007bff; 
-				border-radius: 5px; 
+				background-color: #007bff;
+				border-radius: 5px;
 				margin-right: 10px
 			"
 		>
@@ -43,8 +43,13 @@ let banner = true;
 if (showFloatingBanner != null) {
 	let now = new Date();
 	let temp = new Date(showFloatingBanner);
+	let siteAge = frappe.boot.telemetry_site_age || 7;
 
-	if (temp.getTime() > now.getTime() && temp.getDate() <= now.getDate()) {
+	if (
+		temp.getTime() > now.getTime() &&
+		temp.getDate() <= now.getDate() &&
+		siteAge > 3
+	) {
 		banner = false;
 	}
 }
@@ -74,9 +79,9 @@ $floatingBar.find('.dismiss-upgrade').on('click', () => {
 
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">
-		<iframe 
+		<iframe
 			src="https://frappecloud.com/dashboard/checkout?secret_key=${frappe.boot.subscription_conf.secret_key}"
-			style="position: relative; top: 0px; width: 100%; height: 60vh;" 
+			style="position: relative; top: 0px; width: 100%; height: 60vh;"
 			frameborder="0"
 		>
 	</div>
