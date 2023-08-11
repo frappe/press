@@ -183,7 +183,7 @@ def validate_password(password, first_name, last_name, email):
 
 	if feedback and not feedback.get("password_policy_validation_passed", False):
 		passed = False
-		suggestion = feedback.get("suggestions")
+		suggestion = feedback.get("suggestions") or ["Your password is too weak, please pick a stronger password by adding more words."]
 
 	return {"validation_passed": passed, "suggestion": suggestion}
 
