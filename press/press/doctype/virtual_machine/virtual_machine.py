@@ -399,6 +399,38 @@ class VirtualMachine(Document):
 
 		return frappe.get_doc(document).insert()
 
+	@frappe.whitelist()
+	def create_monitor_server(self):
+		document = {
+			"doctype": "Monitor Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
+	@frappe.whitelist()
+	def create_log_server(self):
+		document = {
+			"doctype": "Log Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
 	def get_security_groups(self):
 		groups = [self.aws_security_group_id]
 		if self.series == "n":
