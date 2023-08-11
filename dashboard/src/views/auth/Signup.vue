@@ -1,8 +1,7 @@
 <template>
 	<div>
 		<LoginBox
-			v-if="!emailSent"
-			title="Create your account"
+			:title="emailSent ? 'Verification email sent!' : 'Create your account'"
 			:class="{ 'pointer-events-none': $resources.signup.loading }"
 		>
 			<template #logo v-if="saasProduct">
@@ -13,65 +12,66 @@
 						:src="saasProduct.logo"
 						:alt="saasProduct.title"
 					/>
-					<div class="text-5xl font-semibold text-gray-900" v-else>
+					<div class="mb-1 text-2xl font-semibold text-gray-900" v-else>
 						{{ saasProduct.title }}
 					</div>
 					<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
 				</div>
 			</template>
-			<form class="flex flex-col" @submit.prevent="$resources.signup.submit()">
-				<FormControl
-					label="Email"
-					type="email"
-					placeholder="johndoe@mail.com"
-					autocomplete="email"
-					v-model="email"
-					required
-				/>
-				<ErrorMessage class="mt-2" :message="$resources.signup.error" />
-				<Button
-					class="mt-2"
-					:loading="$resources.signup.loading"
-					variant="solid"
+			<div v-if="!emailSent">
+				<form
+					class="flex flex-col"
+					@submit.prevent="$resources.signup.submit()"
 				>
-					Sign up with email
-				</Button>
-				<div class="-mb-2 mt-6 border-t text-center">
-					<div class="-translate-y-1/2 transform">
-						<span
-							class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800"
-						>
-							Or
-						</span>
+					<FormControl
+						label="Email"
+						type="email"
+						placeholder="johndoe@mail.com"
+						autocomplete="email"
+						v-model="email"
+						required
+					/>
+					<ErrorMessage class="mt-2" :message="$resources.signup.error" />
+					<Button
+						class="mt-2"
+						:loading="$resources.signup.loading"
+						variant="solid"
+					>
+						Sign up with email
+					</Button>
+					<div class="-mb-2 mt-6 border-t text-center">
+						<div class="-translate-y-1/2 transform">
+							<span
+								class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800"
+							>
+								Or
+							</span>
+						</div>
 					</div>
+				</form>
+				<div class="flex flex-col">
+					<Button
+						v-if="$resources.signupSettings.data?.enable_google_oauth === 1"
+						:loading="$resources.oauthLogin.loading"
+						@click="$resources.oauthLogin.submit()"
+					>
+						<div class="flex">
+							<GoogleIcon />
+							<span class="ml-2">Sign up with Google</span>
+						</div>
+					</Button>
+					<router-link class="mt-10 text-center text-base" to="/login">
+						Already have an account? Log in.
+					</router-link>
 				</div>
-			</form>
-			<div class="flex flex-col">
-				<Button
-					v-if="$resources.signupSettings.data?.enable_google_oauth === 1"
-					:loading="$resources.oauthLogin.loading"
-					@click="$resources.oauthLogin.submit()"
-				>
-					<div class="flex">
-						<GoogleIcon />
-						<span class="ml-2">Sign up with Google</span>
-					</div>
-				</Button>
-				<router-link class="mt-10 text-center text-base" to="/login">
-					Already have an account? Log in.
-				</router-link>
+			</div>
+			<div class="text-p-base text-gray-700" v-else>
+				We have sent an email to
+				<span class="font-semibold">{{ email }}</span
+				>. Please click on the link received to verify your email and set up
+				your account.
 			</div>
 		</LoginBox>
-		<SuccessCard
-			class="mx-auto mt-20 w-96 shadow-md"
-			title="Verification Email Sent!"
-			v-else
-		>
-			We have sent an email to
-			<span class="font-semibold">{{ email }}</span
-			>. Please click on the link received to verify your email and set up your
-			account.
-		</SuccessCard>
 	</div>
 </template>
 

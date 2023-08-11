@@ -15,7 +15,7 @@
 					:src="saasProduct.logo"
 					:alt="saasProduct.title"
 				/>
-				<div class="text-4xl font-semibold text-gray-900" v-else>
+				<div class="mb-1 text-2xl font-semibold text-gray-900" v-else>
 					{{ saasProduct.title }}
 				</div>
 				<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
@@ -67,6 +67,11 @@
 					v-model="country"
 					required
 				/>
+				<Form
+					v-if="signupFields.length > 0"
+					:fields="signupFields"
+					v-model="signupValues"
+				/>
 				<div class="mt-4 flex items-start">
 					<label class="text-base text-gray-900">
 						<FormControl type="checkbox" v-model="termsAccepted" />
@@ -110,12 +115,14 @@
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
 import Link from '@/components/Link.vue';
+import Form from '@/components/Form.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
 		LoginBox,
-		Link
+		Link,
+		Form
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -133,7 +140,8 @@ export default {
 			termsAccepted: false,
 			invitedByParentTeam: false,
 			countries: [],
-			saasProduct: null
+			saasProduct: null,
+			signupValues: {}
 		};
 	},
 	resources: {
@@ -174,7 +182,8 @@ export default {
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
-					oauth_signup: this.oauthSignup
+					oauth_signup: this.oauthSignup,
+					signup_values: this.signupValues
 				},
 				onSuccess(res) {
 					if (res) {
@@ -191,6 +200,21 @@ export default {
 			show = !this.userExists;
 			show = this.oauthSignup == 0;
 			return show;
+		}
+	},
+	computed: {
+		signupFields() {
+			let fields = this.saasProduct?.signup_fields || [];
+			return fields.map(df => {
+				if (df.fieldtype == 'Select') {
+					df.options = df.options
+						.split('\n')
+						.map(o => o.trim())
+						.filter(Boolean);
+				}
+				df.required = true;
+				return df;
+			});
 		}
 	}
 };

@@ -21,10 +21,13 @@
   "release_group",
   "section_break_ipmu",
   "apps",
+  "pooling_tab",
   "site_pool_section",
   "enable_pooling",
   "standby_pool_size",
-  "standby_queue_size"
+  "standby_queue_size",
+  "signup_details_tab",
+  "signup_fields"
  ],
  "fields": [
   {
@@ -128,11 +131,27 @@
    "fieldname": "standby_queue_size",
    "fieldtype": "Int",
    "label": "Standby Queue Size"
+  },
+  {
+   "fieldname": "pooling_tab",
+   "fieldtype": "Tab Break",
+   "label": "Pooling"
+  },
+  {
+   "fieldname": "signup_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Signup Details"
+  },
+  {
+   "fieldname": "signup_fields",
+   "fieldtype": "Table",
+   "label": "Signup Fields",
+   "options": "SaaS Product Signup Field"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-07 17:15:16.337664",
+ "modified": "2023-08-11 16:08:25.559870",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",

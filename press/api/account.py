@@ -70,6 +70,7 @@ def setup_account(
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
+	signup_values=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -95,7 +96,7 @@ def setup_account(
 				frappe.throw("Please provide a valid country name")
 
 	if not accepted_user_terms:
-		frappe.throw("Please accept our Terms of Service & Privary Policy to continue")
+		frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
@@ -103,6 +104,11 @@ def setup_account(
 	team = account_request.team
 	email = account_request.email
 	role = account_request.role
+
+	if signup_values:
+		account_request.saas_signup_values = json.dumps(signup_values, separators=(",", ":"))
+		account_request.save(ignore_permissions=True)
+		account_request.reload()
 
 	if is_invitation:
 		# if this is a request from an invitation
@@ -263,8 +269,10 @@ def get_email_from_request_key(key):
 		saas_product = frappe.db.get_value(
 			"SaaS Product",
 			{"name": account_request.saas_product},
-			["name", "title", "logo"],
-			as_dict=1,
+			pluck="name",
+		)
+		saas_product_doc = (
+			frappe.get_doc("SaaS Product", saas_product) if saas_product else None
 		)
 		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
@@ -278,7 +286,14 @@ def get_email_from_request_key(key):
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
-			"saas_product": saas_product,
+			"saas_product": {
+				"name": saas_product_doc.name,
+				"title": saas_product_doc.title,
+				"logo": saas_product_doc.logo,
+				"signup_fields": saas_product_doc.signup_fields,
+			}
+			if saas_product_doc
+			else None,
 		}
 
 
@@ -394,6 +409,15 @@ def signup_settings(product=None):
 	return {
 		"enable_google_oauth": settings.enable_google_oauth,
 		"saas_product": saas_product,
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def guest_feature_flags():
+	return {
+		"enable_google_oauth": frappe.db.get_single_value(
+			"Press Settings", "enable_google_oauth"
+		),
 	}
 
 

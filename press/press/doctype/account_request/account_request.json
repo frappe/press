@@ -36,6 +36,7 @@
   "send_email",
   "saas",
   "saas_product",
+  "saas_signup_values",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -245,11 +246,16 @@
    "fieldtype": "Link",
    "label": "SaaS Product",
    "options": "SaaS Product"
+  },
+  {
+   "fieldname": "saas_signup_values",
+   "fieldtype": "Small Text",
+   "label": "SaaS Signup Values"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-01 13:47:51.962202",
+ "modified": "2023-08-11 17:19:31.031700",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

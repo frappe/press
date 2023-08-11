@@ -40,7 +40,7 @@
 				{{ !forgot ? 'Log in with email' : 'Reset Password' }}
 			</Button>
 			<template v-if="!forgot">
-				<div class="mt-10 border-t text-center">
+				<div class="-mb-2 mt-6 border-t text-center">
 					<div class="-translate-y-1/2 transform">
 						<span
 							class="bg-white px-2 text-xs uppercase leading-8 tracking-wider text-gray-800"
@@ -54,36 +54,26 @@
 
 		<div class="flex flex-col">
 			<Button
-				v-if="
-					$resources.guestFeatureFlags.data &&
-					$resources.guestFeatureFlags.data.enable_google_oauth === 1
-				"
-				:disabled="state === 'RequestStarted'"
-				@click="
-					() => {
-						state = 'RequestStarted';
-						$resources.oauthLogin.submit();
-					}
-				"
+				v-if="$resources.guestFeatureFlags.data?.enable_google_oauth === 1"
+				@click="$resources.oauthLogin.submit()"
+				:loading="$resources.oauthLogin.loading"
 			>
 				<div class="flex">
 					<GoogleIcon />
-					<span class="ml-2">Login with Google</span>
+					<span class="ml-2">Log in with Google</span>
 				</div>
 			</Button>
-			<router-link class="mt-4 text-center text-base" to="/signup">
+			<router-link class="mt-10 text-center text-base" to="/signup">
 				Sign up for a new account
 			</router-link>
 		</div>
 	</LoginBox>
-	<SuccessCard
-		v-else
-		class="mx-auto mt-20 w-96 shadow-md sm:ml-auto sm:mr-auto"
-		title="Password Reset Link Sent."
-	>
-		We have sent an email to <span class="font-semibold">{{ email }}</span
-		>. Please click on the link received to reset your password.
-	</SuccessCard>
+	<div class="mx-auto mt-20 w-96 sm:ml-auto sm:mr-auto" v-else>
+		<SuccessCard title="Password Reset Link Sent.">
+			We have sent an email to <span class="font-semibold">{{ email }}</span
+			>. Please click on the link received to reset your password.
+		</SuccessCard>
+	</div>
 </template>
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
@@ -156,9 +146,6 @@ export default {
 				auto: true
 			};
 		}
-	},
-	mounted() {
-		this.$resources.guestFeatureFlags.submit();
 	},
 	methods: {
 		async loginOrResetPassword() {
