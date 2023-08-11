@@ -240,7 +240,10 @@ scheduler_events = {
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
-		"*/10 * * * *": ["press.saas.doctype.saas_product.pooling.create"],
+		"*/10 * * * *": [
+			"press.saas.doctype.saas_product.pooling.create",
+			"press.press.doctype.site.saas_pool.create",
+		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
