@@ -441,7 +441,7 @@ class ProxyServer(BaseServer):
 	@frappe.whitelist()
 	def reload_wireguard(self):
 		frappe.enqueue_doc(
-			"Proxy Server", self.name, "_reload_wireguard", queue="long", timeout=1200
+			"Proxy Server", self.name, "_reload_wireguard", queue="default", timeout=1200
 		)
 
 	def _reload_wireguard(self):
@@ -449,8 +449,9 @@ class ProxyServer(BaseServer):
 
 		peers = frappe.get_list(
 			"Wireguard Peer",
-			filters={"upstream_proxy": self.name},
-			fields=["public_key", "ip as peer_ip", "allowed_ips"],
+			filters={"upstream_proxy": self.name, "status": "Active"},
+			fields=["peer_name as name", "public_key", "ip as peer_ip", "allowed_ips"],
+			order_by="creation asc",
 		)
 		try:
 			ansible = Ansible(
