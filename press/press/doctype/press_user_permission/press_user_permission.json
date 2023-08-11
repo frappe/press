@@ -67,7 +67,7 @@
    "fieldname": "group",
    "fieldtype": "Link",
    "label": "Group",
-   "options": "Press User Group Permission"
+   "options": "Press Permission Group"
   }
  ],
  "index_web_pages_for_search": 1,
