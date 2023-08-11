@@ -184,15 +184,6 @@ export default {
 					condition: () => this.$account.team?.security_portal_enabled
 				},
 				{
-					label: 'Billing',
-					route: '/billing',
-					highlight: route => {
-						return this.$route.fullPath.indexOf('/billing') >= 0;
-					},
-					icon: FCIcons.BillingIcon,
-					condition: () => !this.$account.team?.parent_team
-				},
-				{
 					label: 'Settings',
 					route: '/settings',
 					highlight: route => {

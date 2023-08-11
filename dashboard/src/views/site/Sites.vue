@@ -68,7 +68,7 @@
 				</template>
 			</div>
 			<div class="mx-5">
-				<div>
+				<div class="pb-20">
 					<div class="flex">
 						<div class="flex w-full space-x-2 pb-4">
 							<FormControl label="Search Sites" v-model="searchTerm">
@@ -108,7 +108,7 @@
 						<div class="flex items-center justify-center">
 							<LoadingText class="mt-8" v-if="$resources.allSites.loading" />
 							<div v-else-if="rows.length === 0" class="mt-8">
-								<div class="text-base text-gray-700">No Items</div>
+								<div class="text-base text-gray-700">No sites</div>
 							</div>
 						</div>
 
@@ -176,7 +176,6 @@
 											<template v-slot="{ open }">
 												<Button
 													:variant="open ? 'subtle' : 'ghost'"
-													class="mr-2"
 													icon="more-horizontal"
 												/>
 											</template>

@@ -450,6 +450,7 @@ const routes = [
 	{
 		path: '/settings',
 		name: 'SettingsScreen',
+		redirect: { name: 'ProfileSettings' },
 		component: () => import('../views/settings/AccountSettings.vue'),
 		children: [
 			{

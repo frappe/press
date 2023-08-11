@@ -60,7 +60,7 @@
 				<div class="flex items-center justify-center">
 					<LoadingText v-if="$resources.allBenches.loading" class="mt-8" />
 					<div v-else-if="rows.length === 0" class="mt-8">
-						<div class="text-base text-gray-700">No Items</div>
+						<div class="text-base text-gray-700">No benches</div>
 					</div>
 				</div>
 				<TableRow v-for="row in rows" :key="row.name" :row="row">
