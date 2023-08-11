@@ -586,7 +586,11 @@ class Team(Document):
 	def has_partner_account_on_erpnext_com(self):
 		if frappe.conf.developer_mode:
 			return False
-		erpnext_com = get_erpnext_com_connection()
+		try:
+			erpnext_com = get_erpnext_com_connection()
+		except Exception:
+			self.log_error("Cannot connect to erpnext.com to check partner account")
+			return False
 		res = erpnext_com.get_value(
 			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
 		)
