@@ -43,7 +43,7 @@
 import Tabs from '@/components/Tabs.vue';
 
 export default {
-	name: 'SecurityOverview',
+	name: 'Security',
 	pageMeta() {
 		return {
 			title: `Server - ${this.serverName} - Frappe Cloud`
@@ -94,7 +94,7 @@ export default {
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Security Updates', route: 'security_update' },
 				{ label: 'Firewall Configuration', route: 'firewall' },
-				{ label: 'SSH Log', route: 'ssh_logs' },
+				{ label: 'SSH Session Log', route: 'ssh_session_logs' },
 				{ label: 'Nginx Overview', route: 'nginx_overview' }
 			];
 
@@ -103,7 +103,7 @@ export default {
 					'Overview',
 					'Security Updates',
 					'Firewall Configuration',
-					'SSH Log',
+					'SSH Session Log',
 					'Nginx Overview'
 				]
 			};

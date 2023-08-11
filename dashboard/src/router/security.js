@@ -29,8 +29,8 @@ export default [
 				props: true
 			},
 			{
-				name: 'SSH Logs',
-				path: 'ssh_logs/',
+				name: 'SSH Session Logs',
+				path: 'ssh_session_logs/:logId?',
 				// component: () => import('../views/security/SecurityUpdateInfo.vue'),
 				props: true
 			},

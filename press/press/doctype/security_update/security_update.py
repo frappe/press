@@ -11,7 +11,7 @@ from frappe.utils import now_datetime
 
 class SecurityUpdate(Document):
 	@staticmethod
-	def _fetch_security_updates(server_obj):
+	def fetch_security_updates(server_obj):
 		"""Fetch security updates"""
 		try:
 			ansible = Ansible(

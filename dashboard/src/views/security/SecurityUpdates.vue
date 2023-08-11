@@ -1,5 +1,5 @@
 <template>
-	<CardWithDetails :title="getTitle()" :subtitle="getSubTitle()">
+	<CardWithDetails title="Security Updates" subtitle="Pending security updates">
 		<div>
 			<router-link
 				v-for="sec_update in $resources.updates.data"
@@ -73,14 +73,6 @@ export default {
 		},
 		updateRoute(sec_update) {
 			return `/security/${this.server.name}/security_update/${sec_update}`;
-		},
-
-		getTitle() {
-			return 'Security Updates';
-		},
-
-		getSubTitle() {
-			return 'Pending security updates';
 		},
 		getColor(priority) {
 			switch (priority) {

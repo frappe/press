@@ -2,7 +2,7 @@
 	<Card
 		class="min-h-full h-full max-h-96"
 		title="Security Updates"
-		:subtitle="'Pedning security updates'"
+		subtitle="Pedning security updates"
 	>
 		<div class="divide-y">
 			<router-link
@@ -62,7 +62,7 @@ export default {
 	},
 	methods: {
 		getDescription(a) {
-			return `Version: ${a.version} <br> ${this.formatDate(a.datetime)}`;
+			return `Version: ${a.version} | ${this.formatDate(a.datetime)}`;
 		},
 		getColor(priority) {
 			switch (priority) {
