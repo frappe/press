@@ -43,15 +43,15 @@ let banner = true;
 if (showFloatingBanner != null) {
 	let now = new Date();
 	let temp = new Date(showFloatingBanner);
-	let siteAge = frappe.boot.telemetry_site_age || 7;
 
-	if (
-		temp.getTime() > now.getTime() &&
-		temp.getDate() <= now.getDate() &&
-		siteAge > 3
-	) {
+	if (temp.getTime() > now.getTime() && temp.getDate() <= now.getDate()) {
 		banner = false;
 	}
+}
+
+let siteAge = frappe.boot.telemetry_site_age || 7;
+if (siteAge < 3) {
+	banner = false;
 }
 
 if (frappe.boot.setup_complete === 1 && banner) {
