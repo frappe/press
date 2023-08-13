@@ -72,7 +72,10 @@
 			</div>
 		</div>
 
-		<Dialog :options="{ title: 'Change Plan' }" v-model="showChangePlanDialog">
+		<Dialog
+			:options="{ title: 'Change Plan', size: '2xl' }"
+			v-model="showChangePlanDialog"
+		>
 			<template v-slot:body-content>
 				<Alert v-if="validationMessage" class="mt-4" type="warning" icon="info">
 					{{ validationMessage }}
