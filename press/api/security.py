@@ -109,3 +109,8 @@ def fetch_ssh_session_activity(server, filename):
 		"session_id": session_id,
 		"content": content.get("log_details", "Not Found"),
 	}
+
+
+@frappe.whitelist()
+def get_firewall_rules(server):
+	pass

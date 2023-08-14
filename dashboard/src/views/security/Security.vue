@@ -71,7 +71,7 @@ export default {
 				{ label: 'Security Updates', route: 'security_update' },
 				{ label: 'SSH Session Log', route: 'ssh_session_logs' },
 				{ label: 'Firewall Configuration', route: 'firewall' },
-				{ label: 'Nginx Overview', route: 'nginx_overview' }
+				{ label: 'Nginx Overview', route: 'nginx' }
 			];
 
 			let tabsByStatus = {
