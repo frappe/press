@@ -495,21 +495,21 @@ const routes = [
 				props: true
 			},
 			{
-				name: 'Firewall',
-				path: 'firewall/',
-				// component: () => import('../views/security/SecurityUpdateInfo.vue'),
-				props: true
-			},
-			{
 				name: 'SSH Session Logs',
 				path: 'ssh_session_logs/:logId?',
 				component: () => import('../views/security/SSHSession.vue'),
 				props: true
 			},
 			{
-				name: 'Nginx Overview',
-				path: 'nginx_overview/',
-				// component: () => import('../views/security/SecurityUpdateInfo.vue'),
+				name: 'Firewall',
+				path: 'firewall/',
+				component: () => import('../views/security/Firewall.vue'),
+				props: true
+			},
+			{
+				name: 'Nginx',
+				path: 'nginx/',
+				component: () => import('../views/security/Nginx.vue'),
 				props: true
 			}
 		]
