@@ -73,7 +73,7 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Change Plan', size: '2xl' }"
+			:options="{ title: 'Change Plan', size: '3xl' }"
 			v-model="showChangePlanDialog"
 		>
 			<template v-slot:body-content>
