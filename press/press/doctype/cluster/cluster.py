@@ -319,6 +319,8 @@ class Cluster(Document):
 					self.database_server = server.name
 				case "Proxy Server":
 					self.proxy_server = server.name
+		if self.public:
+			return
 		for doctype, _ in self.private_servers.items():
 			self.create_server(
 				doctype,
