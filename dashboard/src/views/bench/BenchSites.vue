@@ -9,7 +9,7 @@
 				{ label: 'Plan', name: 'plan' },
 				{ label: '', name: 'actions', width: 0.5 }
 			]"
-			:rows="sites"
+			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
 			<TableHeader />
@@ -19,8 +19,9 @@
 					<div class="text-base text-gray-700">No Items</div>
 				</div>
 			</div>
-			<div v-for="(group, i) in groups" :key="group.name">
+			<div v-for="(group, i) in rows" :key="group.name">
 				<div
+					v-if="group.sites?.length"
 					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
 				>
 					<span class="font-semibold text-gray-900">
@@ -47,11 +48,7 @@
 					</Dropdown>
 				</div>
 
-				<TableRow
-					v-for="row in sitesByGroup[group.name]"
-					:key="row.name"
-					:row="row"
-				>
+				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
 					<TableCell v-for="column in columns">
 						<Badge
 							class="ring-1 ring-white"
@@ -109,7 +106,7 @@
 	<Dialog :options="{ title: 'Apps' }" v-model="showAppsDialog">
 		<template #body-content>
 			<ListItem
-				v-for="app in groups[selectedGroupIndex].apps"
+				v-for="app in versions[selectedGroupIndex].apps"
 				:key="app.app"
 				:title="app.app"
 				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
@@ -180,15 +177,6 @@ export default {
 		};
 	},
 	resources: {
-		benchesWithSites() {
-			return {
-				method: 'press.api.bench.benches_with_sites',
-				params: {
-					name: this.bench?.name
-				},
-				auto: true
-			};
-		},
 		versions() {
 			return {
 				method: 'press.api.bench.versions',
@@ -243,48 +231,21 @@ export default {
 		}
 	},
 	computed: {
-		sites() {
-			if (!this.$resources.benchesWithSites.data) return [];
-			return this.$resources.benchesWithSites.data.flatMap(bench => {
-				return bench.sites.map(site => {
-					site.bench = bench.bench;
-					site.apps = bench.apps;
-					return site;
-				});
-			});
-		},
-		sitesByGroup() {
-			let sitesByGroup = {};
+		versions() {
+			if (!this.$resources.versions.data) return [];
 
-			for (let site of this.sites) {
-				let bench = site.bench;
-				if (!sitesByGroup[bench]) {
-					sitesByGroup[bench] = [];
-				}
-				site.route = {
-					name: 'SiteOverview',
-					params: {
-						siteName: site.name
-					}
-				};
-				sitesByGroup[bench].push(site);
-			}
-
-			return sitesByGroup;
-		},
-		groups() {
-			let seen = [];
-			let groups = [];
-			for (let site of this.sites) {
-				if (!seen.includes(site.bench)) {
-					seen.push(site.bench);
-					groups.push({
-						name: site.bench,
-						apps: site.apps
-					});
+			for (let version of this.$resources.versions.data) {
+				for (let site of version.sites) {
+					site.route = {
+						name: 'SiteOverview',
+						params: {
+							siteName: site.name
+						}
+					};
 				}
 			}
-			return groups;
+
+			return this.$resources.versions.data;
 		}
 	}
 };

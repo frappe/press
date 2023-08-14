@@ -409,23 +409,40 @@ def remove_app(name, app):
 @frappe.whitelist()
 @protected("Release Group")
 def versions(name):
-	deployed_versions = frappe.db.sql(
-		"""SELECT bench.name, bench.status, bench.is_ssh_proxy_setup, server.proxy_server
-		FROM tabBench bench
-		LEFT JOIN tabServer server
-		ON server.name = bench.server
-		WHERE bench.group = %s AND bench.status != "Archived"
-		ORDER BY bench.creation DESC
-		LIMIT 100""",
-		(name),
-		as_dict=True,
+	Bench = frappe.qb.DocType("Bench")
+	Server = frappe.qb.DocType("Server")
+	deployed_versions = (
+		frappe.qb.from_(Bench)
+		.left_join(Server)
+		.on((Server.name == Bench.server) & (Bench.status != "Archived"))
+		.where(Bench.group == name)
+		.groupby(Bench.name)
+		.select(Bench.name, Bench.status, Bench.is_ssh_proxy_setup, Server.proxy_server)
+		.orderby(Bench.creation, order=frappe.qb.desc)
+		.run(as_dict=True)
 	)
+
+	rg_version = frappe.db.get_value("Release Group", name, "version")
+
 	for version in deployed_versions:
 		version.sites = frappe.db.get_all(
 			"Site",
 			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
-			["name", "status", "creation"],
+			["name", "status", "cluster", "creation"],
 		)
+		for site in version.sites:
+			site.version = rg_version
+			site.server_region_info = frappe.db.get_value(
+				"Cluster", site.cluster, ["title", "image"], as_dict=True
+			)
+			site_plan_name = frappe.get_value("Site", site.name, "plan")
+			site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+			site.tags = frappe.get_all(
+				"Resource Tag",
+				{"parent": site.name},
+				pluck="tag_name",
+			)
+
 		version.apps = frappe.db.get_all(
 			"Bench App",
 			{"parent": version.name},
@@ -451,59 +468,6 @@ def versions(name):
 		)
 
 	return deployed_versions
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def benches_with_sites(name):
-	sites = frappe.get_all(
-		"Site",
-		{"status": ("!=", "Archived"), "group": name},
-		["name", "status", "bench", "cluster", "plan", "creation"],
-	)
-
-	rg_version = frappe.db.get_value("Release Group", name, "version")
-
-	benches = {}
-	for site in sites:
-		site.version = rg_version
-		site.server_region_info = frappe.db.get_value(
-			"Cluster", site.cluster, ["title", "image"], as_dict=True
-		)
-		site_plan_name = frappe.get_value("Site", site.name, "plan")
-		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
-		site.tags = frappe.get_all(
-			"Resource Tag",
-			{"parent": site.name},
-			pluck="tag_name",
-		)
-		bench = site.bench
-		if bench in benches:
-			benches[bench]["sites"].append(site)
-		else:
-			benches[bench] = {"bench": bench, "sites": [site]}
-
-	benches = list(benches.values())
-	for bench in benches:
-		bench["apps"] = frappe.get_all(
-			"Bench App",
-			{"parent": bench["bench"]},
-			["name", "app", "hash", "source"],
-			order_by="idx",
-		)
-		for app in bench["apps"]:
-			app.update(
-				frappe.db.get_value(
-					"App Source",
-					app.source,
-					("branch", "repository", "repository_owner", "repository_url"),
-					as_dict=1,
-					cache=True,
-				)
-			)
-		bench["deployed_on"] = frappe.db.get_value("Bench", bench["bench"], "creation")
-
-	return benches
 
 
 @frappe.whitelist()
