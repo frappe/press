@@ -63,7 +63,7 @@
 				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
 		</div>
-		<div v-else class="mt-4 ml-2 grid grid-cols-3 gap-12">
+		<div v-else class="ml-2 mt-4 grid grid-cols-3 gap-12">
 			<div v-for="d in usage" :key="d.label">
 				<div class="text-base font-medium text-gray-900">
 					{{ d.label }}
@@ -75,7 +75,7 @@
 		<Dialog
 			:options="{
 				title: 'Change Plan',
-        size: '3xl',
+				size: '3xl',
 				actions: [
 					{
 						label: 'Submit',
@@ -85,7 +85,6 @@
 					}
 				]
 			}"
-			:options="{ title: 'Change Plan',  }"
 			v-model="showChangePlanDialog"
 		>
 			<template v-slot:body-content>
