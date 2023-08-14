@@ -461,12 +461,6 @@ def versions(name):
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 
-		version.deployed_on = frappe.db.get_value(
-			"Agent Job",
-			{"bench": version.name, "job_type": "New Bench", "status": "Success"},
-			"end",
-		)
-
 	return deployed_versions
 
 
@@ -761,13 +755,13 @@ def archive(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def restart(name, bench):
+def restart(bench):
 	frappe.get_doc("Bench", bench).restart()
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update(name, bench):
+def update(bench):
 	frappe.get_doc("Bench", bench).update_all_sites()
 
 

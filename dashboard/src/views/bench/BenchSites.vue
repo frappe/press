@@ -27,17 +27,7 @@
 					<span class="font-semibold text-gray-900">
 						{{ group.name }}
 					</span>
-					<Dropdown
-						:options="[
-							{
-								label: 'Show app versions',
-								onClick: () => {
-									showAppsDialog = true;
-									selectedGroupIndex = i;
-								}
-							}
-						]"
-					>
+					<Dropdown :options="benchDropdownItems(i)">
 						<template v-slot="{ open }">
 							<Button variant="ghost">
 								<template #icon>
@@ -145,6 +135,65 @@
 			<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
+
+	<Dialog :options="{ title: 'SSH Access' }" v-model="showSSHDialog">
+		<template v-slot:body-content>
+			<div v-if="certificate" class="space-y-4" style="max-width: 29rem">
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
+					<div class="space-y-1">
+						<p class="text-base">
+							Execute the following shell command to store the SSH certificate
+							locally.
+						</p>
+						<ClickToCopyField :textContent="certificateCommand" />
+					</div>
+				</div>
+
+				<div class="space-y-2">
+					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
+					<div class="space-y-1">
+						<p class="text-base">
+							Execute the following shell command to SSH into your bench
+						</p>
+						<ClickToCopyField :textContent="sshCommand" />
+					</div>
+				</div>
+			</div>
+			<div v-if="!certificate">
+				<p class="mb-4 text-base">
+					You will need an SSH certificate to get SSH access to your bench. This
+					certificate will work only with your public-private key pair and will
+					be valid for 6 hours.
+				</p>
+				<p class="text-base">
+					Please refer to the
+					<a href="/docs/benches/ssh" class="underline"
+						>SSH Access documentation</a
+					>
+					for more details.
+				</p>
+			</div>
+		</template>
+		<template #actions v-if="!certificate">
+			<Button
+				:loading="$resources.generateCertificate.loading"
+				@click="$resources.generateCertificate.fetch()"
+				variant="solid"
+				class="w-full"
+				>Generate SSH Certificate</Button
+			>
+		</template>
+		<ErrorMessage
+			class="mt-3"
+			:message="$resources.generateCertificate.error"
+		/>
+	</Dialog>
+	<CodeServer
+		:show="showCodeServerDialog"
+		@close="showCodeServerDialog = false"
+		:version="version"
+	/>
 </template>
 <script>
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
@@ -153,7 +202,8 @@ import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
-import { FeatherIcon } from 'frappe-ui';
+import CodeServer from '@/views/spaces/CreateCodeServerDialog.vue';
+import ClickToCopyField from '@/components/ClickToCopyField.vue';
 
 export default {
 	name: 'BenchSites',
@@ -163,14 +213,17 @@ export default {
 		TableHeader,
 		TableRow,
 		TableCell,
+		ClickToCopyField,
 		CommitTag,
-		FeatherIcon
+		CodeServer
 	},
 	data() {
 		return {
 			reasonForAdminLogin: '',
 			errorMessage: null,
 			selectedGroupIndex: 0,
+			showSSHDialog: false,
+			showCodeServerDialog: false,
 			showAppsDialog: false,
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null
@@ -188,6 +241,38 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
+		},
+		getCertificate() {
+			return {
+				method: 'press.api.bench.certificate',
+				params: { name: this.bench?.name },
+				auto: true
+			};
+		},
+		generateCertificate() {
+			return {
+				method: 'press.api.bench.generate_certificate',
+				params: { name: this.bench?.name },
+				onSuccess() {
+					this.$resources.getCertificate.reload();
+				}
+			};
+		},
+		restartBench() {
+			return {
+				method: 'press.api.bench.restart',
+				params: {
+					bench: this.versions[this.selectedGroupIndex]?.name
+				}
+			};
+		},
+		updateAllSites() {
+			return {
+				method: 'press.api.bench.update',
+				params: {
+					bench: this.versions[this.selectedGroupIndex]?.name
+				}
+			};
 		}
 	},
 	methods: {
@@ -214,6 +299,67 @@ export default {
 				}
 			];
 		},
+		benchDropdownItems(i) {
+			return [
+				{
+					label: 'Show App Versions',
+					onClick: () => {
+						this.showAppsDialog = true;
+						this.selectedGroupIndex = i;
+					}
+				},
+				this.$account.user.user_type === 'System User' && {
+					label: 'View in Desk',
+					onClick: () => {
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/bench/${this.versions[i].name}`,
+							'_blank'
+						);
+					}
+				},
+				this.versions[i].status === 'Active' &&
+					this.$account.ssh_key &&
+					this.versions[i].is_ssh_proxy_setup && {
+						label: 'SSH Access',
+						onClick: () => {
+							this.showSSHDialog = true;
+						}
+					},
+				this.versions[i].status === 'Active' && {
+					label: 'View Logs',
+					onClick: () => {
+						this.$router.push(
+							`/benches/${this.bench.name}/logs/${this.versions[i].name}/`
+						);
+					}
+				},
+				this.versions[i].status === 'Active' &&
+					this.versions[i].sites.length > 0 && {
+						label: 'Update All Sites',
+						onClick: () => {
+							this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message: `All sites in ${this.versions[i]?.name} will be updated to the latest version`,
+								icon: 'check',
+								color: 'green'
+							});
+						}
+					},
+				this.versions[i].status === 'Active' && {
+					label: 'Restart Bench',
+					onClick: () => {
+						this.confirmRestart();
+					}
+				},
+				this.$account.team.code_servers_enabled && {
+					label: 'Create Code Server',
+					onClick: () => {
+						this.showCodeServerDialog = true;
+					}
+				}
+			];
+		},
 		proceedWithLoginAsAdmin() {
 			this.errorMessage = '';
 
@@ -228,6 +374,21 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		},
+		confirmRestart() {
+			this.$confirm({
+				title: 'Restart Bench',
+				message: `
+					<b>bench restart</b> command will be executed on your bench. This will temporarily stop all web and backgound workers. Are you sure
+					you want to run this command?
+				`,
+				actionLabel: 'Restart Bench',
+				actionColor: 'red',
+				action: closeDialog => {
+					this.$resources.restartBench.submit();
+					closeDialog();
+				}
+			});
 		}
 	},
 	computed: {
@@ -246,6 +407,15 @@ export default {
 			}
 
 			return this.$resources.versions.data;
+		},
+		certificate() {
+			return this.$resources.getCertificate.data;
+		},
+		sshCommand() {
+			if (this.selectedVersion) {
+				return `ssh ${this.selectedVersion?.name}@${this.selectedVersion?.proxy_server} -p 2222`;
+			}
+			return null;
 		}
 	}
 };
