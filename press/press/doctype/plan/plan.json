@@ -25,6 +25,7 @@
   "private_benches",
   "database_access",
   "monitor_access",
+  "support_included",
   "servers",
   "cluster",
   "instance_type",
@@ -186,11 +187,17 @@
    "fieldname": "monitor_access",
    "fieldtype": "Check",
    "label": "Monitor Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "support_included",
+   "fieldtype": "Check",
+   "label": "Support Included"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-11 15:31:01.974289",
+ "modified": "2023-08-14 11:07:21.911136",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

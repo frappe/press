@@ -585,6 +585,7 @@ def get_plans(name=None, rg=None):
 			"max_storage_usage",
 			"max_database_usage",
 			"database_access",
+			"support_included",
 			"`tabHas Role`.role",
 		],
 		filters=filters,

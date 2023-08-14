@@ -344,10 +344,10 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-15 14:59:02.613798",
+  "modified": "2023-08-14 16:44:10.920737",
   "name": "New Site",
-  "request_method": null,
-  "request_path": null,
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites",
   "steps": [
    {
     "parent": "New Site",
@@ -366,6 +366,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Update Site Configuration"
+   },
+   {
+    "parent": "New Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Enable Scheduler"
    },
    {
     "parent": "New Site",

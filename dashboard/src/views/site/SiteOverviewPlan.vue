@@ -75,6 +75,7 @@
 		<Dialog
 			:options="{
 				title: 'Change Plan',
+        size: '3xl',
 				actions: [
 					{
 						label: 'Submit',
@@ -84,9 +85,13 @@
 					}
 				]
 			}"
+			:options="{ title: 'Change Plan',  }"
 			v-model="showChangePlanDialog"
 		>
 			<template v-slot:body-content>
+				<Alert v-if="validationMessage" class="mt-4" type="warning" icon="info">
+					{{ validationMessage }}
+				</Alert>
 				<SitePlansTable
 					class="mt-6"
 					:plans="plans"
@@ -113,8 +118,24 @@ export default {
 	data() {
 		return {
 			showChangePlanDialog: false,
-			selectedPlan: null
+			selectedPlan: null,
+			validationMessage: null
 		};
+	},
+	watch: {
+		async selectedPlan(value) {
+			try {
+				// custom plan validation for frappe support
+				let result = await this.$call('validate_plan_change', {
+					current_plan: this.plan.current_plan,
+					new_plan: value,
+					currency: this.$account.team.currency
+				});
+				this.validationMessage = result;
+			} catch (e) {
+				this.validationMessage = null;
+			}
+		}
 	},
 	resources: {
 		plans() {

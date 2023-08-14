@@ -8,6 +8,7 @@
 			<div class="w-1/4">CPU Time</div>
 			<div class="w-1/4">Database</div>
 			<div class="w-1/4">Disk</div>
+			<div class="w-1/4">Support</div>
 		</div>
 		<div
 			class="focus-within:shadow-outline flex cursor-pointer border px-4 py-3 text-left text-base"
@@ -47,6 +48,17 @@
 			<div class="w-1/4 text-gray-900" :class="{ 'opacity-25': plan.disabled }">
 				{{ formatBytes(plan.max_storage_usage, 0, 2) }}
 			</div>
+			<a
+				v-if="plan.support_included"
+				href="https://support.frappe.io"
+				target="_blank"
+				class="w-1/4"
+			>
+				<Tooltip text="ERPNext/HR product warranty and support" placement="top">
+					<Badge class="hover:cursor-pointer" color="blue" label="Included" />
+				</Tooltip>
+			</a>
+			<div v-else class="w-1/4"></div>
 		</div>
 	</div>
 	<div class="text-center" v-else>
