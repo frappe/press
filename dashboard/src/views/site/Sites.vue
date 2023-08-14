@@ -119,7 +119,9 @@
 								<span class="font-semibold text-gray-900">
 									{{ group.title }}
 								</span>
-								<span class="ml-2 text-gray-600">{{ group.version }}</span>
+								<span v-if="!group.public" class="ml-2 text-gray-600">{{
+									group.version
+								}}</span>
 								<Button
 									variant="ghost"
 									class="ml-auto"
@@ -467,11 +469,16 @@ export default {
 			let seen = [];
 			let groups = [];
 			for (let site of this.sites) {
+				if (site.public) {
+					site.title = 'Shared';
+					site.group = 'Shared';
+				}
 				if (!seen.includes(site.group)) {
 					seen.push(site.group);
 					groups.push({
 						title: site.title,
 						group: site.group,
+						public: site.public,
 						version: site.version
 					});
 				}

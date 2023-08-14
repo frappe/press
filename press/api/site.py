@@ -668,6 +668,7 @@ def all(site_filter=None):
 			Site.group,
 			ReleaseGroup.title,
 			ReleaseGroup.version,
+			ReleaseGroup.public,
 		)
 		.left_join(ReleaseGroup)
 		.on(Site.group == ReleaseGroup.name)
