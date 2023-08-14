@@ -427,7 +427,12 @@ def versions(name):
 	for version in deployed_versions:
 		version.sites = frappe.db.get_all(
 			"Site",
-			{"status": ("!=", "Archived"), "group": name, "bench": version.name},
+			{
+				"status": ("!=", "Archived"),
+				"group": name,
+				"bench": version.name,
+				"is_standby": 0,
+			},
 			["name", "status", "cluster", "creation"],
 		)
 		for site in version.sites:
