@@ -123,12 +123,14 @@
 									group.version
 								}}</span>
 								<Button
+									v-if="!group.public"
 									variant="ghost"
 									class="ml-auto"
 									:route="{ name: 'Bench', params: { benchName: group.group } }"
 								>
 									View Bench
 								</Button>
+								<div v-else class="h-7" />
 							</div>
 
 							<TableRow
