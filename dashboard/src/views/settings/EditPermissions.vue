@@ -32,18 +32,17 @@
 						class="pt-4"
 						type="checkbox"
 						label="Select All"
-						@change="val => toggleSelect(option, index, val)"
+						@change="val => toggleSelectAll(option, index, val)"
 					/>
 					<div class="grid grid-cols-4 gap-4 py-4">
 						<Input
 							v-for="[label, action] in Object.entries(actions[option.doctype])"
 							type="checkbox"
-							:checked="
-								option.perms === null ? false : option.perms.includes(action)
-							"
+							:checked="isSelected(option, action)"
 							:label="label"
 							@change="() => updateAction(option, index, action)"
-						/>
+						>
+						</Input>
 					</div>
 				</div>
 			</div>
@@ -112,6 +111,16 @@ export default {
 		}
 	},
 	methods: {
+		isSelected(option, action) {
+			let alreadyAdded = false;
+			if (option.perms !== null) {
+				alreadyAdded = option.perms.includes(action);
+			}
+			return (
+				alreadyAdded ||
+				(this.updated?.[option.doctype]?.[option.name] || []).includes(action)
+			);
+		},
 		updateSearchTerm(value) {
 			if (value) {
 				this.filteredList = this.fuse.search(value).map(result => result.item);
@@ -140,7 +149,7 @@ export default {
 				this.updated[option.doctype][option.name].push(action);
 			}
 		},
-		toggleSelect(option, index, selected) {
+		toggleSelectAll(option, index, selected) {
 			if (!this.updated[option.doctype]) {
 				this.updated[option.doctype] = {};
 			}
