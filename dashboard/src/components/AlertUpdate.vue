@@ -57,21 +57,17 @@
 				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</template>
 			<template v-slot:actions>
+				<Button v-if="step == 'Sites'" class="w-full" @click="step = 'Apps'">
+					Back
+				</Button>
 				<Button
 					v-if="step == 'Sites'"
 					variant="solid"
-					class="w-full"
+					class="mt-2 w-full"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
 					{{ selectedSites.length > 0 ? 'Update' : 'Skip and Deploy' }}
-				</Button>
-				<Button
-					v-if="step == 'Sites'"
-					class="w-full mt-2"
-					@click="step = 'Apps'"
-				>
-					Back
 				</Button>
 				<Button v-else variant="solid" class="w-full" @click="step = 'Sites'">
 					Next
