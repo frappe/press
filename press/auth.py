@@ -30,6 +30,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.client.get",
 	"/api/method/frappe.client.get_count",
 	"/api/method/press.utils.telemetry.capture_read_event",
+    
 ]
 
 ALLOWED_WILDCARD_PATHS = [
@@ -37,6 +38,7 @@ ALLOWED_WILDCARD_PATHS = [
 	"/api/method/press.api.",
     "/api/method/optibizpro.utils.",
 	"/api/method/wiki.",
+    "/api/method/frappe.translate."
 ]
 
 DENIED_WILDCARD_PATHS = [
@@ -62,8 +64,8 @@ def hook():
 					return
 			if path in ALLOWED_PATHS:
 				return
-
 			log(path, user_type)
+			
 			frappe.throw("Access not allowed for this URL", frappe.AuthenticationError)
 
 	return

@@ -1,10 +1,8 @@
-<svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 900 160"
-    fill="none"
-    class="w-auto h-4"
-    style="height: 1rem;">
-    <style type="text/css">
+<template>
+
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 838.26 163.85" style="enable-background:new 0 0 838.26 163.85;" xml:space="preserve">
+<component is="style" scoped>
 	.st0{fill:#333333;}
 	.st1{fill:#4094D0;}
 	.st2{fill:url(#SVGID_1_);}
@@ -18,7 +16,7 @@
 	.st10{fill:url(#SVGID_00000062180627048363141400000011263995280110895551_);}
 	.st11{fill:url(#SVGID_00000067941379929840300770000007163435161780249791_);}
 	.st12{fill:#FFFFFF;}
-</style>
+</component>
 <g>
 	<g>
 		<g>
@@ -77,4 +75,4 @@
 	</g>
 </g>
 </svg>
-
+</template>
