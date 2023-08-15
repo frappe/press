@@ -96,7 +96,7 @@
 	<Dialog :options="{ title: 'Apps' }" v-model="showAppsDialog">
 		<template #body-content>
 			<ListItem
-				v-for="app in versions[selectedGroupIndex].apps"
+				v-for="app in versions[selectedVersionIndex].apps"
 				:key="app.app"
 				:title="app.app"
 				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
@@ -192,7 +192,7 @@
 	<CodeServer
 		:show="showCodeServerDialog"
 		@close="showCodeServerDialog = false"
-		:version="version"
+		:version="versions[selectedVersionIndex]?.name"
 	/>
 </template>
 <script>
@@ -221,7 +221,7 @@ export default {
 		return {
 			reasonForAdminLogin: '',
 			errorMessage: null,
-			selectedGroupIndex: 0,
+			selectedVersionIndex: 0,
 			showSSHDialog: false,
 			showCodeServerDialog: false,
 			showAppsDialog: false,
@@ -262,7 +262,7 @@ export default {
 			return {
 				method: 'press.api.bench.restart',
 				params: {
-					bench: this.versions[this.selectedGroupIndex]?.name
+					bench: this.versions[this.selectedVersionIndex]?.name
 				}
 			};
 		},
@@ -270,7 +270,7 @@ export default {
 			return {
 				method: 'press.api.bench.update',
 				params: {
-					bench: this.versions[this.selectedGroupIndex]?.name
+					bench: this.versions[this.selectedVersionIndex]?.name
 				}
 			};
 		}
@@ -304,8 +304,8 @@ export default {
 				{
 					label: 'Show App Versions',
 					onClick: () => {
+						this.selectedVersionIndex = i;
 						this.showAppsDialog = true;
-						this.selectedGroupIndex = i;
 					}
 				},
 				this.$account.user.user_type === 'System User' && {
@@ -322,6 +322,7 @@ export default {
 					this.versions[i].is_ssh_proxy_setup && {
 						label: 'SSH Access',
 						onClick: () => {
+							this.selectedVersionIndex = i;
 							this.showSSHDialog = true;
 						}
 					},
@@ -338,6 +339,7 @@ export default {
 					this.versions[i].sites.length > 0 && {
 						label: 'Update All Sites',
 						onClick: () => {
+							this.selectedVersionIndex = i;
 							this.$resources.updateAllSites.submit();
 							this.$notify({
 								title: 'Site update scheduled successfully',
@@ -350,12 +352,14 @@ export default {
 				this.versions[i].status === 'Active' && {
 					label: 'Restart Bench',
 					onClick: () => {
+						this.selectedVersionIndex = i;
 						this.confirmRestart();
 					}
 				},
 				this.$account.team.code_servers_enabled && {
 					label: 'Create Code Server',
 					onClick: () => {
+						this.selectedVersionIndex = i;
 						this.showCodeServerDialog = true;
 					}
 				}
@@ -413,8 +417,10 @@ export default {
 			return this.$resources.getCertificate.data;
 		},
 		sshCommand() {
-			if (this.selectedVersion) {
-				return `ssh ${this.selectedVersion?.name}@${this.selectedVersion?.proxy_server} -p 2222`;
+			if (this.versions[this.selectedVersionIndex]) {
+				return `ssh ${this.versions[this.selectedVersionIndex]?.name}@${
+					this.versions[this.selectedVersionIndex]?.proxy_server
+				} -p 2222`;
 			}
 			return null;
 		}
