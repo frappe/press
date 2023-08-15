@@ -192,7 +192,7 @@ export default {
 			);
 			if (this.searchTerm)
 				benches = benches.filter(bench =>
-					bench.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+					bench.title.toLowerCase().includes(this.searchTerm.toLowerCase())
 				);
 
 			return benches.map(bench => ({
