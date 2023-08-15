@@ -44,7 +44,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="w-full pt-5">
+		<div class="w-full p-5">
 			<slot></slot>
 		</div>
 	</div>
