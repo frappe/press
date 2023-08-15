@@ -773,7 +773,6 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
 		),
-		"hide_monitor_tab": site.hide_monitor_tab,
 	}
 
 
