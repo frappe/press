@@ -219,7 +219,7 @@ class Team(Document):
 
 		if self.has_value_changed("payment_mode"):
 			if self.payment_mode == "Card":
-				if frappe.db.count("Stripe Payment Method", {"team": self.name}) == 0:
+				if frappe.db.count("Midtrans Payment Method", {"team": self.name}) == 0:
 					frappe.throw("No card added")
 			if self.payment_mode == "Prepaid Credits":
 				if self.get_balance() <= 0:

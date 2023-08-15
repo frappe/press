@@ -35,7 +35,7 @@ ALLOWED_PATHS = [
 ALLOWED_WILDCARD_PATHS = [
 	"/api/method/helpdesk.",
 	"/api/method/press.api.",
-    "/api/method/optibizpro."
+    "/api/method/optibizpro.utils.",
 	"/api/method/wiki.",
 ]
 
@@ -55,7 +55,6 @@ def hook():
 	# Allow unchecked access to System Users
 	if user_type == "System User":
 		return
-
 	for denied in DENIED_WILDCARD_PATHS:
 		if path.startswith(denied):
 			for allowed in ALLOWED_WILDCARD_PATHS:

@@ -121,7 +121,8 @@
 		<div class="card-form__inner">
 			<div class="card-input">
 			<label for="cardNumber" class="card-input__label">Card Number</label>
-			<input type="text" id="cardNumber" class="card-input__input" v-mask="generateCardNumberMask" v-model="cardNumber" v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardNumber" autocomplete="off">
+			<input type="text" id="cardNumber" class="card-input__input" v-mask="generateCardNumberMask" v-model="cardNumber" 
+			v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardNumber" autocomplete="off" v-cardformat:formatCardNumber>
 			
 			</div>
 			<div class="card-input">
@@ -168,11 +169,11 @@
 	/*
 See on github: https://github.com/muhammederdem/credit-card-form
 */
-
+import VueCardFormat from 'vue-credit-card-validation';
 export default {
 	name: 'MidTransCard',
 	props: ['withoutAddress'],
-	emits: ['complete'],
+	emits: ['complete','success'],
 	data() {
 		return {
 		currentCardBackground: Math.floor(Math.random()* 25 + 1), // just for fun :D
@@ -314,7 +315,6 @@ export default {
 					// what causing failure on this transaction.
 					}
 			};
-			console.log(cardData)
 			MidtransNew3ds.getCardToken(cardData, options);
 
 		},
@@ -331,6 +331,8 @@ export default {
 				method: 'optibizpro.utils.create_midtrans_payment_method',
 				onSuccess() {
 					this.$emit('success');
+					this.$emit('complete');
+
 				}
 			};
 		},

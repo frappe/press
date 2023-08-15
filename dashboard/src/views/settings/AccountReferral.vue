@@ -10,7 +10,7 @@
 				When someone sign's up using the above link and spends at least
 				{{ minimumSpentAmount }} on Frappe Cloud, you
 				<strong
-					>get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits</strong
+					>get {{ creditAmountInTeamCurrency }} in OptiBizPro Cloud Credits</strong
 				>!
 			</h3>
 		</div>

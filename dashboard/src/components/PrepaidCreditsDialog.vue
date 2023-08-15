@@ -163,7 +163,7 @@ export default {
 			this.$account.team.currency === 'USD' &&
 			!this.$account.team.razorpay_enabled && !this.$account.team.midtrans_enabled
 		) {
-			this.paymentGateway = 'stripe';
+			this.paymentGateway = null; //default to null not stripe
 		}
 	},
 	props: {

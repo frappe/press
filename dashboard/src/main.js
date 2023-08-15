@@ -9,6 +9,7 @@ import posthog from 'posthog-js';
 import { BrowserTracing } from '@sentry/tracing';
 import router from './router/index';
 import dayjs from 'dayjs';
+import VueCreditCardValidation from 'vue-credit-card-validation';
 
 const app = createApp(App);
 
@@ -16,7 +17,7 @@ registerPlugins(app);
 registerGlobalComponents(app);
 const { auth, account } = registerControllers(app);
 registerRouter(app, auth, account);
-
+app.use(VueCreditCardValidation);
 // sentry
 if (window.press_frontend_sentry_dsn.includes('https://')) {
 	Sentry.init({

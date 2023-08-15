@@ -319,8 +319,10 @@ def remove_payment_method(name):
 @frappe.whitelist()
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
+	team.reload()
 	team.payment_mode = mode
 	team.save()
+	
 
 
 @frappe.whitelist()

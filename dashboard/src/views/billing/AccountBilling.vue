@@ -31,7 +31,7 @@ export default {
 	name: 'AccountBilling',
 	pageMeta() {
 		return {
-			title: 'Billing - Frappe Cloud'
+			title: 'Billing - OptiBizPro Cloud'
 		};
 	},
 	props: ['invoiceName'],

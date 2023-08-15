@@ -49,7 +49,7 @@
 							{{ paymentModeDescription }}
 						</p>
 					</div>
-					<BuyPrepaidCredits
+					<MidtransCard
 						v-if="
 							paymentMode == 'Prepaid Credits' &&
 							buyCreditsFrom == 'Card Payment' &&

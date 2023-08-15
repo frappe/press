@@ -311,6 +311,7 @@ def get():
 	parent_teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
+	teams = None
 
 	if parent_teams:
 		teams = frappe.db.sql(
@@ -320,7 +321,7 @@ def get():
 			[parent_teams],
 			as_dict=True,
 		)
-	teams = None
+	
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
