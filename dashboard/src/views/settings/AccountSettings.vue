@@ -55,8 +55,11 @@ export default {
 				return subtitle;
 			}
 
-			if (team.name != user.name) {
-				subtitle += `Team: ${team.name} &middot; Member: ${user.name} `;
+			if (team.name !== user.name) {
+				if (team.team_title)
+					subtitle += `Team: ${team.team_title} (${team.name})`;
+				else subtitle += `Team: ${team.name}`;
+				subtitle += ` &middot; Member: ${user.name} `;
 			} else {
 				subtitle += `<span>${team.name}</span> `;
 			}
