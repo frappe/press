@@ -423,6 +423,14 @@ export default {
 				} -p 2222`;
 			}
 			return null;
+		},
+		certificateCommand() {
+			if (this.certificate) {
+				return `echo '${this.certificate.ssh_certificate?.trim()}' > ~/.ssh/id_${
+					this.certificate.key_type
+				}-cert.pub`;
+			}
+			return null;
 		}
 	}
 };
