@@ -334,6 +334,7 @@ export default {
 					}
 				},
 				this.versions[i].status === 'Active' &&
+					i > 0 &&
 					this.versions[i].sites.length > 0 && {
 						label: 'Update All Sites',
 						onClick: () => {
