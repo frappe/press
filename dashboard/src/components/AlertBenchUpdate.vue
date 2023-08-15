@@ -18,9 +18,22 @@
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
-			<Button v-else variant="solid" @click="showDeployDialog = true">
-				Show updates
-			</Button>
+			<Tooltip
+				v-else
+				:text="
+					!permissions.update
+						? `You don't have enough permissions to perform this action`
+						: 'Show Updates'
+				"
+			>
+				<Button
+					variant="solid"
+					:disabled="!permissions.update"
+					@click="showDeployDialog = true"
+				>
+					Show updates
+				</Button>
+			</Tooltip>
 		</template>
 
 		<Dialog
@@ -111,11 +124,20 @@ export default {
 				},
 				onSuccess(candidate) {
 					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
+					this.showDeployDialog = false;
 				}
 			};
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				update: this.$account.hasPermission(
+					this.bench.name,
+					'press.api.bench.deploy_and_update'
+				)
+			};
+		},
 		show() {
 			if (this.deployInformation) {
 				return (

@@ -61,5 +61,14 @@
   "method": "press.api.site.update",
   "modified": "2023-08-11 11:14:41.597516",
   "name": "1807bf655e"
+ },
+ {
+  "checkbox_label": "Deploy",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Release Group",
+  "method": "press.api.bench.deploy_and_update",
+  "modified": "2023-08-16 00:02:26.396406",
+  "name": "7cb4ecfd3a"
  }
 ]

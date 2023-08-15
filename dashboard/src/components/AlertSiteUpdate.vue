@@ -1,13 +1,25 @@
 <template>
-	<Alert title="Update Available" v-if="show">
+	<Alert title="Update Available" v-if="!show">
 		<span>
 			A new update is available for your site. Would you like to update your
 			site now?
 		</span>
 		<template #actions>
-			<Button variant="solid" @click="showUpdatesDialog = true">
-				Show updates
-			</Button>
+			<Tooltip
+				:text="
+					!permissions.update
+						? `You don't have enough permissions to perform this action`
+						: 'Show Updates'
+				"
+			>
+				<Button
+					:disabled="!permissions.update"
+					variant="solid"
+					@click="showUpdatesDialog = true"
+				>
+					Show updates
+				</Button>
+			</Tooltip>
 		</template>
 		<Dialog
 			:options="{
@@ -111,6 +123,14 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				update: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.update'
+				)
+			};
+		},
 		show() {
 			if (this.updateInformation) {
 				return (
