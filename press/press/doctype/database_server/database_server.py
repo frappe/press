@@ -39,6 +39,21 @@ class DatabaseServer(BaseServer):
 		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
 			self.update_memory_limits()
 
+		if self.has_value_changed("team"):
+			if self.subscription and self.subscription.team != self.team:
+				self.subscription.team = self.team
+				self.subscription.save()
+			else:
+				# create new subscription
+				frappe.get_doc(
+					{
+						"doctype": "Subscription",
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"plan": self.plan,
+					}
+				).insert()
+
 	def update_memory_limits(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
 

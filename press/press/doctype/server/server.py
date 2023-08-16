@@ -43,6 +43,22 @@ class BaseServer(Document):
 				self.create_dns_record()
 				self.update_virtual_machine_name()
 
+	def on_update(self):
+		if not self.is_new() and self.has_value_changed("team"):
+			if self.subscription and self.subscription.team != self.team:
+				self.subscription.team = self.team
+				self.subscription.save()
+			else:
+				# create new subscription
+				frappe.get_doc(
+					{
+						"doctype": "Subscription",
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"plan": self.plan,
+					}
+				).insert()
+
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
