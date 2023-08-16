@@ -308,7 +308,7 @@ class SelfHostedServer(Document):
 			server.ram = self.ram
 			server.new_worker_allocation = True
 			new_server = server.insert()
-			new_server.create_subscription("Unlimited")
+			new_server.create_subscription("Self Hosted Server")
 			self.server = new_server.name
 			self.status = "Active"
 			self.server_created = True
@@ -580,7 +580,7 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("Fetching System Details Failed", server=self.as_dict())
 
-	def check_minumum_specs(self):
+	def check_minimum_specs(self):
 		"""
 		Check if the server meets the minimum requirements
 		ie: RAM >= 4GB,vCPUs >= 2,Storage >= 40GB

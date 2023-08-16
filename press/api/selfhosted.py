@@ -27,7 +27,7 @@ def new(server):
 			"proxy_server": proxy_server,
 			"proxy_created": True,
 			"team": team.name,
-			"plan": server["plan"]["name"],
+			"plan": "Unlimited",
 			"server_url": server["url"],
 			"new_server": True,
 		}
@@ -53,7 +53,7 @@ def verify(server):
 		server_doc.fetch_private_ip()
 		server_doc.fetch_system_ram(play.name)
 		server_doc.fetch_system_specifications(play.name)
-		server_doc.check_minumum_specs()
+		server_doc.check_minimum_specs()
 		server_doc.status = "Pending"
 		server_doc.save()
 		server_doc.create_db_server()

@@ -815,20 +815,9 @@ class Server(BaseServer):
 			self._auto_scale_workers_old()
 
 	def _auto_scale_workers_new(self):
-		if self.ram < 8000:
-			usable_ram = self.ram - 2000  # in MB (leaving some for disk cache + others)
-		elif self.ram < 4000:
-			usable_ram = self.ram - 1500  # in MB (leaving some for disk cache + others)
-		else:
-			usable_ram = max(
-				self.ram - 3000, self.ram * 0.75
-			)  # in MB (leaving some for disk cache + others)
-		if self.is_self_hosted and (
-			self.name == self.database_server
-		):  # if app and database server are on same machine
-			usable_ram = (
-				self.ram - round(self.ram * 0.685)
-			) * 0.75  # [Current RAM - InnoDB Bufferpool Size] More ram for DB, use 75% of remaining ram for app
+		usable_ram = max(
+			self.ram - 3000, self.ram * 0.75
+		)  # in MB (leaving some for disk cache + others)
 		usable_ram_for_gunicorn = 0.6 * usable_ram  # 60% of usable ram
 		usable_ram_for_bg = 0.4 * usable_ram  # 40% of usable ram
 		max_gunicorn_workers = (
