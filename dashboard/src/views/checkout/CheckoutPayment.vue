@@ -60,7 +60,7 @@
 
 		<!-- Stripe -->
 		<div class="flex justify-center h-full w-full">
-			<div class="flex flex-col my-auto w-64 h-20">
+			<div class="flex flex-col my-auto w-72 h-20">
 				<div
 					id="card"
 					class="form-input mt-2 block w-full py-2 pl-3"

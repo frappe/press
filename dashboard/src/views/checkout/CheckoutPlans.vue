@@ -25,21 +25,22 @@
 			v-for="plan in $resources.plans.data"
 			class="m-2 flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow"
 		>
-			<h4 class="flex justify-between text-xl font-semibold text-gray-900">
-				<div>
-					<span v-if="plan.is_free"> Free </span>
-					<span v-else>
-						{{
-							currency === 'INR' ? '₹' + plan.price_inr : '$' + plan.price_usd
-						}}
-						<span class="text-base font-normal text-gray-600">
-							{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+			<div>
+				<h4 class="flex justify-between text-xl font-semibold text-gray-900">
+					<div>
+						<span v-if="plan.is_free"> Free </span>
+						<span v-else>
+							{{
+								currency === 'INR' ? '₹' + plan.price_inr : '$' + plan.price_usd
+							}}
+							<span class="text-base font-normal text-gray-600">
+								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
+							</span>
 						</span>
-					</span>
-				</div>
-			</h4>
-
-			<FeatureList class="my-5" :features="plan.features" />
+					</div>
+				</h4>
+				<FeatureList class="my-5" :features="plan.features" />
+			</div>
 			<Button appearance="primary" @click="selectPlan(plan)"> Buy Now </Button>
 		</div>
 	</div>
