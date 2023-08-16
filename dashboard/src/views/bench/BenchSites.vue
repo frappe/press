@@ -24,7 +24,13 @@
 					v-if="group.sites?.length"
 					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
 				>
-					<span class="font-semibold text-gray-900">
+					<span
+						class="cursor-default font-semibold text-gray-900"
+						:title="
+							'Deployed on ' +
+							formatDate(group.deployed_on, 'DATETIME_SHORT', true)
+						"
+					>
 						{{ group.name }}
 					</span>
 					<Dropdown :options="benchDropdownItems(i)">

@@ -466,6 +466,12 @@ def versions(name):
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 
+		version.deployed_on = frappe.db.get_value(
+			"Agent Job",
+			{"bench": version.name, "job_type": "New Bench", "status": "Success"},
+			"end",
+		)
+
 	return deployed_versions
 
 
