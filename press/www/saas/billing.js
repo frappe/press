@@ -13,8 +13,7 @@ let $floatingBar = $(`
     <p style="margin: auto 0; margin-right: 20px; padding-left: 10px; font-size: 15px;">
 			${subscription_string}
 		</p>
-		<a
-			type="button"
+    <button id="show-dialog" type="button"
 			class="
 				button-renew
 				px-4
@@ -28,15 +27,13 @@ let $floatingBar = $(`
 				height: fit-content;
 				background-color: #007bff;
 				border-radius: 5px;
-				margin-right: 10px;
-				text-decoration: none;
+				margin-right: 10px
 			"
-			href="https://frappecloud.com/api/method/press.api.developer.marketplace.login?secret_key=${frappe.boot.subscription_conf.secret_key}"
-			target="_blank"
 		>
-			Subscribe
-		</a>
-		<a type="button" class="dismiss-upgrade text-muted" data-dismiss="modal" aria-hidden="true" style="font-size:30px; margin-bottom: 5px; margin-right: 10px">×</a>
+		Subscribe
+		</button>
+				<a type="button" class="dismiss-upgrade text-muted" data-dismiss="modal" aria-hidden="true" style="font-size:30px; margin-bottom: 5px; margin-right: 10px">×</a>
+
     </div>
     </div>
 `);
@@ -83,7 +80,7 @@ $floatingBar.find('.dismiss-upgrade').on('click', () => {
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">
 		<iframe
-			src="https://frappecloud.com/dashboard/checkout?secret_key=${frappe.boot.subscription_conf.secret_key}"
+		src="http://p.site:8080/dashboard/checkout?secret_key=${frappe.boot.subscription_conf.secret_key}"
 			style="position: relative; top: 0px; width: 100%; height: 60vh;"
 			frameborder="0"
 		>
