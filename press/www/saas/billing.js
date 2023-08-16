@@ -2,10 +2,9 @@ let subscription_string = __(
 	'Your subscription will end soon and the site will be suspended. Please subscribe before that for uninterrupted services',
 );
 let $floatingBar = $(`
-    <div class="flex justify-content-center" style="width: 100%;">
+    <div class="flex justify-content-center">
     <div class="flex justify-content-center flex-col shadow rounded p-2"
 			style="
-				width: 80%;
 				background-color: #e0f2fe;
 				position: fixed;
 				bottom: 20px;
