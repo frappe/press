@@ -70,11 +70,30 @@ class Cluster(Document):
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
-			for vmi in self.copy_virtual_machine_images():
-				vmi.wait_for_availability()
-			if not self.add_default_servers:
-				return
-			self.create_servers()
+
+	@frappe.whitelist()
+	def add_images(self):
+		if self.images_available:
+			frappe.throw("Images are already available", frappe.ValidationError)
+		frappe.enqueue_doc(self.doctype, self.name, "_add_images")
+
+	def _add_images(self):
+		"""Copies VMIs required for the cluster"""
+		self.db_set("status", "Copying Images")
+		frappe.db.commit()
+		for vmi in self.copy_virtual_machine_images():
+			vmi.wait_for_availability()
+		self.reload()
+		self.db_set("status", "Active")
+
+	@property
+	def images_available(self) -> float:
+		images_available = 0
+		for _, series in self.server_doctypes.items():
+			same_region_vmi = self.get_available_vmi(series=series)
+			if same_region_vmi:
+				images_available += 1
+		return images_available / len(self.server_doctypes)
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -291,23 +310,39 @@ class Cluster(Document):
 	def get_available_vmi(self, series) -> Optional[str]:
 		return VirtualMachineImage.get_available_for_series(series, self.region)
 
-	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
-		"""Creates VMIs required for the cluster"""
+	@property
+	def server_doctypes(self):
 		server_doctypes = {**self.base_servers}
 		if not self.public:
 			server_doctypes = {**server_doctypes, **self.private_servers}
-		for _, series in server_doctypes.items():
+		return server_doctypes
+
+	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
+		"""Creates VMIs required for the cluster"""
+		copies = []
+		for _, series in self.server_doctypes.items():
 			same_region_vmi = self.get_available_vmi(series=series)
 			if same_region_vmi:
 				continue
 			other_region_vmi = VirtualMachineImage.get_available_for_series(series)
 			if other_region_vmi:
-				yield frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(
-					self.name
+				copies.append(
+					frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
 				)
+		for copy in copies:
+			yield copy
 
+	@frappe.whitelist()
 	def create_servers(self):
 		"""Creates servers for the cluster"""
+		if self.images_available < 1:
+			frappe.throw(
+				"Images are not available. Add them or wait for copy to complete",
+				frappe.ValidationError,
+			)
+		if self.status != "Active":
+			frappe.throw("Cluster is not active", frappe.ValidationError)
+
 		for doctype, _ in self.base_servers.items():
 			# TODO: remove Test title #
 			server, _ = self.create_server(
@@ -351,7 +386,7 @@ class Cluster(Document):
 				"document_type": server_type,
 				"price_usd": 0,
 				"price_inr": 0,
-				"instance_type": "t2.micro",
+				"instance_type": "t3.medium",
 				"disk_size": 10,
 				"ram": 1,
 				"cluster": self.name,
