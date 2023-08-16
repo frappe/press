@@ -110,19 +110,21 @@
 				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
-					class="max-h-96 divide-y overflow-auto"
+					class="max-h-96 space-y-3 divide-y overflow-auto p-1"
 					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div
-						class="flex items-center py-3"
+						class="flex items-center rounded-md border px-4 py-3 shadow ring-1 ring-gray-300"
 						v-for="app in filteredOptions"
 						:key="app.name"
 					>
-						<div class="w-2/4 text-base font-medium">
-							{{ app.title }}
-						</div>
-						<div class="w-1/4 text-base text-gray-700">
-							{{ app.repository_owner }}:{{ app.branch }}
+						<div class="flex flex-col">
+							<div class="w-2/4 text-base font-semibold">
+								{{ app.title }}
+							</div>
+							<div class="w-1/4 text-base text-gray-700">
+								{{ app.repository_owner }}:{{ app.branch }}
+							</div>
 						</div>
 						<Button
 							class="ml-auto"
