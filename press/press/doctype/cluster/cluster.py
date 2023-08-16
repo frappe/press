@@ -210,48 +210,7 @@ class Cluster(Document):
 
 		client.authorize_security_group_ingress(
 			GroupId=self.aws_security_group_id,
-			IpPermissions=[
-				{
-					"FromPort": 80,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTP from anywhere"}],
-					"ToPort": 80,
-				},
-				{
-					"FromPort": 443,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTPS from anywhere"}],
-					"ToPort": 443,
-				},
-				{
-					"FromPort": 22,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH from anywhere"}],
-					"ToPort": 22,
-				},
-				{
-					"FromPort": 3306,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "MariaDB from private network"}
-					],
-					"ToPort": 3306,
-				},
-				{
-					"FromPort": 22000,
-					"IpProtocol": "tcp",
-					"IpRanges": [
-						{"CidrIp": self.subnet_cidr_block, "Description": "SSH from private network"}
-					],
-					"ToPort": 22999,
-				},
-				{
-					"FromPort": -1,
-					"IpProtocol": "icmp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "ICMP from anywhere"}],
-					"ToPort": -1,
-				},
-			],
+			IpPermissions=self.get_ip_permissions(),
 		)
 		self.create_proxy_security_group()
 
@@ -292,20 +251,7 @@ class Cluster(Document):
 
 		client.authorize_security_group_ingress(
 			GroupId=self.aws_proxy_security_group_id,
-			IpPermissions=[
-				{
-					"FromPort": 2222,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
-					"ToPort": 2222,
-				},
-				{
-					"FromPort": 3306,
-					"IpProtocol": "tcp",
-					"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "MariaDB from anywhere"}],
-					"ToPort": 3306,
-				},
-			],
+			IpPermissions=self.get_proxy_ip_permissions(),
 		)
 
 	def get_available_vmi(self, series) -> Optional[str]:
@@ -462,3 +408,63 @@ class Cluster(Document):
 		return frappe.db.get_all(
 			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"]
 		)
+
+	def get_ip_permissions(self):
+		return [
+			{
+				"FromPort": 80,
+				"IpProtocol": "tcp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTP from anywhere"}],
+				"ToPort": 80,
+			},
+			{
+				"FromPort": 443,
+				"IpProtocol": "tcp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "HTTPS from anywhere"}],
+				"ToPort": 443,
+			},
+			{
+				"FromPort": 22,
+				"IpProtocol": "tcp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH from anywhere"}],
+				"ToPort": 22,
+			},
+			{
+				"FromPort": 3306,
+				"IpProtocol": "tcp",
+				"IpRanges": [
+					{"CidrIp": self.subnet_cidr_block, "Description": "MariaDB from private network"}
+				],
+				"ToPort": 3306,
+			},
+			{
+				"FromPort": 22000,
+				"IpProtocol": "tcp",
+				"IpRanges": [
+					{"CidrIp": self.subnet_cidr_block, "Description": "SSH from private network"}
+				],
+				"ToPort": 22999,
+			},
+			{
+				"FromPort": -1,
+				"IpProtocol": "icmp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "ICMP from anywhere"}],
+				"ToPort": -1,
+			},
+		]
+
+	def get_proxy_ip_permissions(self):
+		return [
+			{
+				"FromPort": 2222,
+				"IpProtocol": "tcp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH proxy from anywhere"}],
+				"ToPort": 2222,
+			},
+			{
+				"FromPort": 3306,
+				"IpProtocol": "tcp",
+				"IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "MariaDB from anywhere"}],
+				"ToPort": 3306,
+			},
+		]
