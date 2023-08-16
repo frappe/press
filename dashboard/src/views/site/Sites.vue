@@ -228,6 +228,7 @@ import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import PageHeader from '@/components/global/PageHeader.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'Sites',
@@ -271,7 +272,12 @@ export default {
 			return {
 				method: 'press.api.site.all',
 				params: { site_filter: this.siteFilter },
-				auto: true
+				auto: true,
+				onSuccess: data => {
+					this.fuse = new Fuse(data, {
+						keys: ['name', 'tags']
+					});
+				}
 			};
 		},
 		siteTags: 'press.api.site.site_tags',
@@ -442,9 +448,7 @@ export default {
 				this.$account.hasPermission(site.name, '', true)
 			);
 			if (this.searchTerm) {
-				return sites.filter(site =>
-					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-				);
+				return this.fuse.search(this.searchTerm).map(result => result.item);
 			}
 			return sites;
 		},
