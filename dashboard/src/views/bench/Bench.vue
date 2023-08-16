@@ -154,7 +154,7 @@ export default {
 					route: 'bench-config'
 				},
 				{ label: 'Jobs', route: 'jobs' },
-				{ label: 'Settings', route: 'setting' }
+				{ label: 'Settings', route: 'settings' }
 			];
 
 			if (this.bench) {

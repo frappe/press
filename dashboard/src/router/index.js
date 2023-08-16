@@ -137,7 +137,7 @@ const routes = [
 				props: true
 			},
 			{
-				path: 'setting',
+				path: 'settings',
 				component: () => import('../views/bench/BenchSettings.vue'),
 				props: true
 			}
@@ -207,7 +207,7 @@ const routes = [
 				component: () => import('../views/site/SiteConfig.vue')
 			},
 			{
-				path: 'setting',
+				path: 'settings',
 				component: () => import('../views/site/SiteSettings.vue')
 			},
 			{
@@ -318,7 +318,7 @@ const routes = [
 			},
 			{
 				name: 'ServerSettings',
-				path: 'setting',
+				path: 'settings',
 				component: () => import('../views/server/ServerSettings.vue'),
 				props: true
 			}

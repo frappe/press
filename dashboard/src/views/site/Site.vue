@@ -376,7 +376,7 @@ export default {
 				{ label: 'Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Settings', route: 'setting' },
+				{ label: 'Settings', route: 'settings' },
 				{ label: 'Monitor', route: 'monitor' }
 			];
 
