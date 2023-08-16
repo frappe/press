@@ -30,20 +30,35 @@
 				</template>
 			</BreadCrumbs>
 		</header>
-		<div v-if="site">
-			<div class="px-5 pt-6">
-				<div
-					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
-				>
-					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">
-							{{ site.host_name || site.name }}
-						</h1>
-						<Badge class="ml-4" :label="site.status" />
+		<div class="p-5" v-if="site">
+			<div
+				class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+			>
+				<div class="flex items-center">
+					<h1 class="text-2xl font-bold">
+						{{ site.host_name || site.name }}
+					</h1>
+					<Badge class="ml-4" :label="site.status" />
 
+					<div
+						v-if="regionInfo"
+						class="ml-2 hidden cursor-default flex-row items-center self-end rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700 md:flex"
+					>
+						<img
+							v-if="regionInfo.image"
+							class="mr-2 h-4"
+							:src="regionInfo.image"
+							:alt="`Flag of ${regionInfo.title}`"
+							:title="regionInfo.image"
+						/>
+						<p>{{ regionInfo.title }}</p>
+					</div>
+				</div>
+				<div class="mb-10 flex flex-row justify-between md:hidden">
+					<div class="flex flex-row">
 						<div
 							v-if="regionInfo"
-							class="ml-2 hidden cursor-default flex-row items-center self-end rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700 md:flex"
+							class="flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
 						>
 							<img
 								v-if="regionInfo.image"
@@ -55,27 +70,9 @@
 							<p>{{ regionInfo.title }}</p>
 						</div>
 					</div>
-					<div class="mb-10 flex flex-row justify-between md:hidden">
-						<div class="flex flex-row">
-							<div
-								v-if="regionInfo"
-								class="flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
-							>
-								<img
-									v-if="regionInfo.image"
-									class="mr-2 h-4"
-									:src="regionInfo.image"
-									:alt="`Flag of ${regionInfo.title}`"
-									:title="regionInfo.image"
-								/>
-								<p>{{ regionInfo.title }}</p>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
-		</div>
-		<div class="p-5 pt-1">
+			<SiteAlerts :site="site" />
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
@@ -140,6 +137,7 @@
 <script>
 import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
+import SiteAlerts from './SiteAlerts.vue';
 
 export default {
 	name: 'Site',
@@ -150,6 +148,7 @@ export default {
 	},
 	props: ['siteName'],
 	components: {
+		SiteAlerts,
 		Tabs
 	},
 	data() {
