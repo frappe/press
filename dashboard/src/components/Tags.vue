@@ -14,7 +14,7 @@
 				</template>
 			</ListItem>
 		</div>
-		<div v-else class="mt-4 text-center">
+		<div v-else class="m-4 text-center">
 			<p class="text-base text-gray-500">No tags added yet</p>
 		</div>
 	</Card>
