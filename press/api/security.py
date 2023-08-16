@@ -112,5 +112,7 @@ def fetch_ssh_session_activity(server, filename):
 
 
 @frappe.whitelist()
-def get_firewall_rules(server):
-	pass
+def get_firewall_rules(server, server_type):
+	from press.press.doctype.firewall_rule.firewall_rule import FirewallRule
+
+	return FirewallRule.fetch_firewall_rules(server, server_type)
