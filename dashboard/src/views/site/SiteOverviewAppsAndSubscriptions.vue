@@ -106,7 +106,7 @@
 				<FormControl
 					class="mb-2"
 					placeholder="Search for Apps"
-					v-on:input="e => updateSearchTerm(e)"
+					v-on:input="e => updateSearchTerm(e.data)"
 				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
