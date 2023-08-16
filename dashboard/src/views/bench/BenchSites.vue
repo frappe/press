@@ -102,6 +102,7 @@
 	<Dialog :options="{ title: 'Apps' }" v-model="showAppsDialog">
 		<template #body-content>
 			<ListItem
+				class="mb-3 flex items-center rounded-md border px-4 py-3 shadow ring-1 ring-gray-300"
 				v-for="app in versions[selectedVersionIndex].apps"
 				:key="app.app"
 				:title="app.app"
