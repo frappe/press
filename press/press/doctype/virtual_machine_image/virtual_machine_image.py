@@ -64,7 +64,7 @@ class VirtualMachineImage(Document):
 
 	@retry(
 		retry=retry_if_result(lambda result: result != "Available"),
-		wait=wait_fixed(2),
+		wait=wait_fixed(60),
 		stop=stop_after_attempt(10),
 	)
 	def wait_for_availability(self):
