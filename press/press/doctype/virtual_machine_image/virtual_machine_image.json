@@ -120,13 +120,12 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
-   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-11 14:45:46.002804",
+ "modified": "2023-08-14 13:26:57.794274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

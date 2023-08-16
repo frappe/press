@@ -9,6 +9,7 @@
   "hostname",
   "domain",
   "column_break_4",
+  "cluster",
   "provider",
   "virtual_machine",
   "is_server_setup",
@@ -183,6 +184,12 @@
    "label": "Virtual Machine",
    "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "links": [
@@ -191,7 +198,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-08-11 12:24:33.186432",
+ "modified": "2023-08-16 17:19:21.978545",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",
