@@ -68,7 +68,7 @@
 					ref="card-element"
 				></div>
 				<ErrorMessage class="mt-2" :message="errorMessage" />
-				<div class="flex justify-between">
+				<div class="flex flex-col justify-between">
 					<StripeLogo
 						class="mt-4 justify-self-end"
 						:loading="$resources.handlePayment.loading"
