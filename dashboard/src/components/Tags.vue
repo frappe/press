@@ -7,12 +7,15 @@
 				</template>
 			</Dropdown>
 		</template>
-		<div class="divide-y">
+		<div class="divide-y" v-if="addedTags?.length">
 			<ListItem v-for="tag in addedTags" :key="tag.name" :title="tag.tag">
 				<template #actions>
 					<Button icon="trash-2" @click="removeTag(tag.name)" />
 				</template>
 			</ListItem>
+		</div>
+		<div v-else class="mt-4 text-center">
+			<p class="text-base text-gray-500">No tags added yet</p>
 		</div>
 	</Card>
 	<Dialog :options="{ title: `Add a new tag` }" v-model="showAddDialog">
