@@ -373,7 +373,7 @@ export default {
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
 				{ label: 'Database', route: 'database' },
-				{ label: 'Site Config', route: 'site-config' },
+				{ label: 'Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
 				{ label: 'Settings', route: 'setting' },
@@ -381,7 +381,7 @@ export default {
 			];
 
 			if (this.site && this.site?.hide_config !== 1) {
-				siteConfig = 'Site Config';
+				siteConfig = 'Config';
 			}
 
 			if (this.site && this.hasMonitorAccess) {
