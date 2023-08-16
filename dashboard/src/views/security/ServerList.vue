@@ -14,7 +14,7 @@
 							{{ server.name }}
 						</div>
 					</div>
-					<div class="w-2/12">
+					<div class="w-3/12">
 						<Badge
 							class="pointer-events-none"
 							variant="subtle"
