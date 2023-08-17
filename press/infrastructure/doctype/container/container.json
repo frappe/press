@@ -14,6 +14,10 @@
   "service",
   "image",
   "section_break_zsky",
+  "ip_address",
+  "column_break_6yji",
+  "mac_address",
+  "section_break_9omp",
   "mounts",
   "ports",
   "environment_variables",
@@ -103,7 +107,8 @@
   },
   {
    "fieldname": "section_break_zsky",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Networking"
   },
   {
    "fieldname": "stack",
@@ -118,6 +123,26 @@
    "label": "Service",
    "options": "Service",
    "reqd": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6yji",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mac_address",
+   "fieldtype": "Data",
+   "label": "Mac Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_9omp",
+   "fieldtype": "Section Break"
   }
  ],
  "links": [
@@ -126,7 +151,7 @@
    "link_fieldname": "container"
   }
  ],
- "modified": "2023-08-17 12:25:26.640956",
+ "modified": "2023-08-17 14:04:53.213690",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container",

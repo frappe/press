@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+import ipaddress
 
 
 class Deployment(Document):
@@ -15,5 +16,17 @@ class Deployment(Document):
 			pod.stack = self.stack
 			pod.service = service.service
 			pod.node = node
+
+			subnet_cidr_block = "10.0.0.0/8"
+			network_address = ipaddress.IPv4Interface(subnet_cidr_block).ip
+
+			# Start addresses from .2
+			pod.ip_address = str(network_address + index + 2)
+			decimals = pod.ip_address.split(".")
+			hexes = [f"{int(d):02x}" for d in decimals]
+
+			# This is the same mac address that docker uses for containers
+			pod.mac_address = "02:42:" + ":".join(hexes)
+
 			pod.insert()
 			self.append("pods", {"node": node, "service": service.service, "pod": pod.name})

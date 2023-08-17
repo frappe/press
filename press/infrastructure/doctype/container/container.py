@@ -17,6 +17,9 @@ class Container(Document):
 				"environment_variables": self.get_environment_variables(),
 				"ports": self.get_ports(),
 				"mounts": self.get_mounts(),
+				"ip_address": self.ip_address,
+				"mac_address": self.mac_address,
+				"peers": self.get_peers(),
 			}
 		)
 		self.config = json.dumps(config, indent=4)
@@ -56,6 +59,22 @@ class Container(Document):
 			}
 			for port in self.ports
 		]
+
+	def get_peers(self):
+		pod = frappe.get_all("Pod Container", {"container": self.name}, pluck="parent")[0]
+		deployment = frappe.get_all("Deployment Pod", {"pod": pod}, pluck="parent")[0]
+		pods_on_other_nodes = frappe.get_all(
+			"Deployment Pod", {"parent": deployment, "node": ("!=", self.node)}, pluck="pod"
+		)
+		peers = []
+		for pod in pods_on_other_nodes:
+			peer = frappe.get_value(
+				"Pod", pod, ["ip_address", "mac_address", "node"], as_dict=True
+			)
+			peer["node_ip_address"] = frappe.db.get_value("Node", peer.node, "private_ip")
+			peers.append(peer)
+
+		return peers
 
 
 def process_new_container_job_update(job):

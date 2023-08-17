@@ -11,6 +11,10 @@
   "column_break_jpc1",
   "node",
   "cluster",
+  "networking_section",
+  "ip_address",
+  "column_break_9roy",
+  "mac_address",
   "section_break_l62o",
   "containers"
  ],
@@ -59,12 +63,33 @@
    "label": "Service",
    "options": "Service",
    "reqd": 1
+  },
+  {
+   "fieldname": "networking_section",
+   "fieldtype": "Section Break",
+   "label": "Networking"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_9roy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mac_address",
+   "fieldtype": "Data",
+   "label": "Mac Address",
+   "reqd": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-17 11:58:01.762089",
+ "modified": "2023-08-17 14:02:21.880059",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Pod",

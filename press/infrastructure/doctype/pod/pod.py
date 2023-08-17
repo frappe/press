@@ -11,5 +11,7 @@ class Pod(Document):
 		container.node = self.node
 		container.stack = self.stack
 		container.service = self.service
+		container.ip_address = self.ip_address
+		container.mac_address = self.mac_address
 		container.insert()
 		self.append("containers", {"container": container.name})
