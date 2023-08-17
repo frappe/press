@@ -180,9 +180,13 @@
   {
    "link_doctype": "Agent Job",
    "link_fieldname": "server"
+  },
+  {
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
   }
  ],
- "modified": "2023-08-07 17:59:02.130141",
+ "modified": "2023-08-09 13:46:38.367024",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Node",
