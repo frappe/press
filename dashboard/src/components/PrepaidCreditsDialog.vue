@@ -100,13 +100,13 @@
 							alt="Razorpay Logo"
 						/>
 					</Button>
-					<Button @click="paymentGateway = 'stripe'">
+					<!-- <Button @click="paymentGateway = 'stripe'">
 						<img
 							class="h-7 w-24"
 							src="../assets/stripe.svg"
 							alt="Stripe Logo"
 						/>
-					</Button>
+					</Button> -->
 					<Button @click="paymentGateway = 'midtrans'">
 						<img
 							class="h-7 w-24"
