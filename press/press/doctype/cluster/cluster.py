@@ -73,8 +73,15 @@ class Cluster(Document):
 
 	@frappe.whitelist()
 	def add_images(self):
-		if self.images_available:
+		if self.images_available == 1:
 			frappe.throw("Images are already available", frappe.ValidationError)
+		if not set(self.get_other_region_vmis(get_series=True)) - set(
+			self.get_same_region_vmis(get_series=True)
+		):
+			frappe.throw(
+				"Images for required series not available in other regions. Create Images from server docs.",
+				frappe.ValidationError,
+			)
 		frappe.enqueue_doc(self.doctype, self.name, "_add_images")
 
 	def _add_images(self):
@@ -88,12 +95,7 @@ class Cluster(Document):
 
 	@property
 	def images_available(self) -> float:
-		images_available = 0
-		for _, series in self.server_doctypes.items():
-			same_region_vmi = self.get_available_vmi(series=series)
-			if same_region_vmi:
-				images_available += 1
-		return images_available / len(self.server_doctypes)
+		return len(self.get_same_region_vmis()) / len(self.server_doctypes)
 
 	def validate_cidr_block(self):
 		if not self.cidr_block:
@@ -308,6 +310,7 @@ class Cluster(Document):
 		)
 
 	def get_available_vmi(self, series) -> Optional[str]:
+		"""Virtual Machine Image available in region for given series"""
 		return VirtualMachineImage.get_available_for_series(series, self.region)
 
 	@property
@@ -317,18 +320,36 @@ class Cluster(Document):
 			server_doctypes = {**server_doctypes, **self.private_servers}
 		return server_doctypes
 
+	def get_same_region_vmis(self, get_series=False):
+		return frappe.get_all(
+			"Virtual Machine Image",
+			filters={
+				"region": self.region,
+				"series": ("in", list(self.server_doctypes.values())),
+			},
+			pluck="name" if not get_series else "series",
+		)
+
+	def get_other_region_vmis(self, get_series=False):
+		return frappe.get_all(
+			"Virtual Machine Image",
+			filters={
+				"region": ("!=", self.region),
+				"series": ("in", list(self.server_doctypes.values())),
+			},
+			pluck="name" if not get_series else "series",
+		)
+
 	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""
 		copies = []
-		for _, series in self.server_doctypes.items():
-			same_region_vmi = self.get_available_vmi(series=series)
-			if same_region_vmi:
-				continue
-			other_region_vmi = VirtualMachineImage.get_available_for_series(series)
-			if other_region_vmi:
-				copies.append(
-					frappe.get_doc("Virtual Machine Image", other_region_vmi).copy_image(self.name)
-				)
+		for vmi in self.get_other_region_vmis():
+			copies.append(
+				frappe.get_doc(
+					"Virtual Machine Image",
+					vmi,
+				).copy_image(self.name)
+			)
 		for copy in copies:
 			yield copy
 

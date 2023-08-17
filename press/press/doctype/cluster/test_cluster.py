@@ -58,7 +58,7 @@ def create_test_cluster(
 class TestCluster(unittest.TestCase):
 	@mock_ec2
 	@mock_ssm
-	def _setup_fake_vms(self, series: list[str], cluster: Cluster = None):
+	def _setup_fake_vmis(self, series: list[str], cluster: Cluster = None):
 		from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
 			create_test_virtual_machine_image,
 		)
@@ -113,7 +113,7 @@ class TestPrivateCluster(TestCluster):
 	@mock_ssm
 	def test_add_images_copies_VMIs_from_other_region(self):
 
-		self._setup_fake_vms(["m", "f"])  # mumbai
+		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
 		cluster.add_images()
@@ -121,15 +121,20 @@ class TestPrivateCluster(TestCluster):
 		self.assertEqual(vmi_count_after, vmi_count_before + 2)
 
 	def test_add_images_throws_err_if_no_vmis_to_copy(self):
-		pass
+		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1")
+		self.assertRaises(Exception, cluster.add_images)
 
-	def test_settings_of_vmis_available(self):
-		pass
+	def test_add_images_throws_err_if_some_vmis_are_unavailable(self):
+		self._setup_fake_vmis(["m", "f"])  # another cluster with n missing
+
+		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1", public=True)
+		self._setup_fake_vmis(["m", "f"], cluster=cluster)  # n is missing
+		self.assertRaises(Exception, cluster.add_images)
 
 	@mock_ec2
 	@mock_ssm
 	def test_creation_of_cluster_in_same_region_reuses_VMIs(self):
-		self._setup_fake_vms(["m", "f"])  # mumbai
+		self._setup_fake_vmis(["m", "f"])  # mumbai
 		vmi_count_before = frappe.db.count("Virtual Machine Image")
 		create_test_cluster(name="Mumbai 2", region="ap-south-1")
 		vmi_count_after = frappe.db.count("Virtual Machine Image")
@@ -142,7 +147,7 @@ class TestPrivateCluster(TestCluster):
 	def test_create_private_cluster_without_aws_access_key_and_secret_creates_user_in_predefined_group_and_adds_servers(
 		self,
 	):
-		self._setup_fake_vms(["m", "f", "n", "p", "e"])
+		self._setup_fake_vmis(["m", "f", "n", "p", "e"])
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
@@ -205,7 +210,7 @@ class TestPublicCluster(TestCluster):
 	@mock_ec2
 	@mock_ssm
 	def test_add_images_in_public_cluster_only_adds_3_vms(self):
-		self._setup_fake_vms(["m", "f", "n", "p", "e"])
+		self._setup_fake_vmis(["m", "f", "n", "p", "e"])
 		vm_count_before = frappe.db.count("Virtual Machine Image")
 		cluster = create_test_cluster(name="Frankfurt", region="eu-central-1", public=True)
 		cluster.add_images()
@@ -219,7 +224,7 @@ class TestPublicCluster(TestCluster):
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
-		self._setup_fake_vms(["m", "f", "n"])
+		self._setup_fake_vmis(["m", "f", "n"])
 
 		server_count_before = frappe.db.count("Server")
 		database_server_count_before = frappe.db.count("Database Server")
