@@ -24,10 +24,18 @@ def get_current_team(get_doc=False):
 
 	if not hasattr(frappe.local, "request"):
 		# if this is not a request, send the current user as default team
+		# always use parent_team for background jobs
 		return (
-			frappe.get_doc("Team", {"user": frappe.session.user})
+			frappe.get_doc(
+				"Team",
+				{"user": frappe.session.user, "enabled": 1, "parent_team": ("is", "not set")},
+			)
 			if get_doc
-			else frappe.get_value("Team", {"user": frappe.session.user}, "name")
+			else frappe.get_value(
+				"Team",
+				{"user": frappe.session.user, "enabled": 1, "parent_team": ("is", "not set")},
+				"name",
+			)
 		)
 
 	user_is_system_user = frappe.session.data.user_type == "System User"

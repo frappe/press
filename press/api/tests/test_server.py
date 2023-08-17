@@ -42,9 +42,21 @@ def successful_ping_ansible(self: BaseServer):
 	create_test_ansible_play("Ping Server", "ping.yml", self.doctype, self.name)
 
 
+def successful_tls_certificate(self: BaseServer):
+	create_test_ansible_play("Setup TLS Certificates", "tls.yml", self.doctype, self.name)
+
+
+def successful_update_agent_ansible(self: BaseServer):
+	create_test_ansible_play("Update Agent", "update_agent.yml", self.doctype, self.name)
+
+
 @patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachine, "client", new=MagicMock())
+@patch.object(Ansible, "run", new=Mock())
+@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
+@patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
+@patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 class TestAPIServer(FrappeTestCase):
 	@patch.object(Cluster, "provision_on_aws_ec2", new=Mock())
 	def setUp(self):
@@ -93,8 +105,6 @@ class TestAPIServer(FrappeTestCase):
 	)
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
-	@patch.object(Ansible, "run", new=Mock())
-	@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
 	def test_new_fn_creates_active_server_and_db_server_once_press_job_succeeds(self):
 		create_test_virtual_machine_image(cluster=self.cluster, series="m")
 		create_test_virtual_machine_image(
@@ -126,8 +136,6 @@ class TestAPIServer(FrappeTestCase):
 	)
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
-	@patch.object(Ansible, "run", new=Mock())
-	@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
 	def test_new_fn_creates_server_with_active_subscription(self):
 		create_test_virtual_machine_image(cluster=self.cluster, series="m")
 		create_test_virtual_machine_image(
@@ -163,8 +171,6 @@ class TestAPIServer(FrappeTestCase):
 
 	@patch.object(VirtualMachine, "provision", new=successful_provision)
 	@patch.object(VirtualMachine, "sync", new=successful_sync)
-	@patch.object(Ansible, "run", new=Mock())
-	@patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
 	def test_change_plan_changes_plan_of_server_and_updates_subscription_doc(self):
 
 		create_test_virtual_machine_image(cluster=self.cluster, series="m")
