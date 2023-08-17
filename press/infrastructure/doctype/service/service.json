@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-08-09 18:29:41.007794",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "image",
+  "command",
+  "healthcheck",
+  "column_break_8exj",
+  "dockerfile",
+  "section_break_jynb",
+  "ports",
+  "mounts",
+  "environment_variables"
+ ],
+ "fields": [
+  {
+   "fieldname": "image",
+   "fieldtype": "Data",
+   "in_preview": 1,
+   "label": "Image"
+  },
+  {
+   "fieldname": "column_break_8exj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dockerfile",
+   "fieldtype": "Code",
+   "label": "Dockerfile"
+  },
+  {
+   "fieldname": "section_break_jynb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ports",
+   "fieldtype": "Table",
+   "label": "Ports",
+   "options": "Service Port"
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Service Mount"
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Service Environment Variable"
+  },
+  {
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "label": "Command"
+  },
+  {
+   "fieldname": "healthcheck",
+   "fieldtype": "Code",
+   "label": "Healthcheck"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-08-09 18:53:13.978308",
+ "modified_by": "Administrator",
+ "module": "Infrastructure",
+ "name": "Service",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "show_title_field_in_link": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "image"
+}
