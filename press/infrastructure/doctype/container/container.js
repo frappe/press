@@ -3,7 +3,10 @@
 
 frappe.ui.form.on('Container', {
 	refresh(frm) {
-		[[__('Archive'), 'archive']].forEach(([label, method, condition]) => {
+		[
+			[__('Deploy'), 'deploy', frm.doc.status === 'Draft'],
+			[__('Archive'), 'archive', frm.doc.status !== 'Archived'],
+		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,

@@ -77,7 +77,7 @@ def process_archive_container_job_update(job):
 
 	updated_status = {
 		"Pending": "Pending",
-		"Running": "Pending",
+		"Running": "Installing",
 		"Success": "Archived",
 		"Failure": "Broken",
 	}[job.status]
