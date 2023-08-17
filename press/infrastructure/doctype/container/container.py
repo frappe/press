@@ -21,7 +21,8 @@ class Container(Document):
 		)
 		self.config = json.dumps(config, indent=4)
 
-	def after_insert(self):
+	@frappe.whitelist()
+	def deploy(self):
 		self.agent.new_container(self)
 
 	@frappe.whitelist()
