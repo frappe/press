@@ -237,12 +237,9 @@ class TestPublicCluster(TestCluster):
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
 		proxy_server_count_after = frappe.db.count("Proxy Server")
-		self.assertEqual(server_count_before, 0)
-		self.assertEqual(database_server_count_before, 0)
-		self.assertEqual(proxy_server_count_before, 0)
-		self.assertEqual(server_count_after, 1)
-		self.assertEqual(database_server_count_after, 1)
-		self.assertEqual(proxy_server_count_after, 1)
+		self.assertEqual(server_count_after, server_count_before + 1)
+		self.assertEqual(database_server_count_after, database_server_count_before + 1)
+		self.assertEqual(proxy_server_count_after, proxy_server_count_before + 1)
 
 	@mock_iam
 	@patch.object(Cluster, "after_insert", new=MagicMock())  # don't create vms/servers
