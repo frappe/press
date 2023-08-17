@@ -30,6 +30,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "stack.cluster",
    "fieldname": "cluster",
    "fieldtype": "Link",
    "in_filter": 1,
@@ -37,7 +38,7 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Cluster",
-   "options": "Stack",
+   "options": "Cluster",
    "reqd": 1
   },
   {
@@ -48,13 +49,13 @@
    "fieldname": "pods",
    "fieldtype": "Table",
    "label": "Pods",
-   "options": "Deployment Pod",
-   "reqd": 1
+   "options": "Deployment Pod"
   }
  ],
+ "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-17 11:07:15.738483",
+ "modified": "2023-08-17 11:54:56.589572",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Deployment",
