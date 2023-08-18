@@ -402,21 +402,7 @@ class Cluster(Document):
 		).insert()
 
 	def get_or_create_basic_plan(self, server_type):
-		plan = frappe.get_doc(
-			{
-				"doctype": "Plan",
-				"document_type": server_type,
-				"price_usd": 0,
-				"price_inr": 0,
-				"instance_type": "t3.medium",
-				"disk_size": 10,
-				"ram": 1,
-				"cluster": self.name,
-				"name": f"Basic {server_type} Plan",
-			},
-		)
-		plan.insert(ignore_if_duplicate=True)
-		return plan
+		return frappe.get_doc("Plan", f"Basic Cluster - {server_type}")
 
 	def create_server(
 		self,
