@@ -30,8 +30,9 @@ class Cluster(Document):
 		"Server": "f",  # App server is last as it needs both proxy and db server
 	}
 	private_servers = {
-		"Monitor Server": "p",
-		"Log Server": "e",
+		# TODO: Uncomment these when they are implemented
+		# "Monitor Server": "p",
+		# "Log Server": "e",
 	}
 	wait_for_aws_creds_seconds = 20
 
