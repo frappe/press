@@ -258,7 +258,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: doc.erpnext_partner",
    "fieldname": "partner_email",
    "fieldtype": "Data",
    "label": "Partner Email"
@@ -385,7 +384,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-07-29 12:19:18.195316",
+ "modified": "2023-08-17 14:32:08.485322",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
