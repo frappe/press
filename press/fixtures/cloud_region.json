@@ -34,14 +34,6 @@
  {
   "docstatus": 0,
   "doctype": "Cloud Region",
-  "modified": "2023-08-08 12:34:33.152010",
-  "name": "eu-central-1",
-  "provider": "AWS EC2",
-  "region_name": "eu-central-1"
- },
- {
-  "docstatus": 0,
-  "doctype": "Cloud Region",
   "modified": "2023-08-08 12:34:40.385001",
   "name": "me-south-1",
   "provider": "AWS EC2",
@@ -62,5 +54,13 @@
   "name": "us-east-1",
   "provider": "AWS EC2",
   "region_name": "us-east-1"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Cloud Region",
+  "modified": "2023-08-08 12:34:33.152010",
+  "name": "eu-central-1",
+  "provider": "AWS EC2",
+  "region_name": "eu-central-1"
  }
 ]
