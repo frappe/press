@@ -13,6 +13,15 @@ from press.utils import log_error
 
 
 class VirtualMachine(Document):
+	server_doctypes = [
+		"Server",
+		"Database Server",
+		"Proxy Server",
+		# TODO: Add these doctypes when enabling them in private cluster
+		# "Monitor Server",
+		# "Log Server",
+	]
+
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
@@ -141,7 +150,7 @@ class VirtualMachine(Document):
 		return init
 
 	def get_server(self):
-		for doctype in ["Proxy Server", "Server", "Database Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
@@ -243,7 +252,7 @@ class VirtualMachine(Document):
 			"Terminated": "Archived",
 			"Stopped": "Archived",
 		}
-		for doctype in ["Server", "Database Server", "Proxy Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]

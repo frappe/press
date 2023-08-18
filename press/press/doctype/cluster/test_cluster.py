@@ -166,6 +166,7 @@ class TestPrivateCluster(TestCluster):
 		server_count_after = frappe.db.count("Server")
 		database_server_count_after = frappe.db.count("Database Server")
 		proxy_server_count_after = frappe.db.count("Proxy Server")
+
 		self.assertEqual(server_count_before + 1, server_count_after)
 		self.assertEqual(database_server_count_before + 1, database_server_count_after)
 		self.assertEqual(proxy_server_count_before + 1, proxy_server_count_after)
