@@ -20,6 +20,7 @@ class Container(Document):
 				"ip_address": self.ip_address,
 				"mac_address": self.mac_address,
 				"peers": self.get_peers(),
+				"network": self.stack,
 			}
 		)
 		self.config = json.dumps(config, indent=4)
