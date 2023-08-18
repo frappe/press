@@ -62,6 +62,7 @@ class TestAPIServer(FrappeTestCase):
 		self.team = create_test_press_admin_team()
 
 		self.app_plan = create_test_plan("Server")
+		self.app_plan.db_set("memory", 1024)
 		self.db_plan = create_test_plan("Database Server")
 		self.cluster = create_test_cluster()
 		create_test_proxy_server(cluster=self.cluster.name)
@@ -153,6 +154,7 @@ class TestAPIServer(FrappeTestCase):
 
 		server = frappe.get_last_doc("Server")
 		self.assertEqual(server.plan, self.app_plan.name)
+		self.assertEqual(server.ram, self.app_plan.memory)
 		app_subscription = frappe.get_doc(
 			"Subscription", {"document_type": "Server", "document_name": server.name}
 		)
@@ -178,6 +180,7 @@ class TestAPIServer(FrappeTestCase):
 		)  # call from here and not setup, so mocks work
 
 		app_plan_2 = create_test_plan("Server")
+		app_plan_2.db_set("memory", 2048)
 		db_plan_2 = create_test_plan("Database Server")
 
 		self.team.allocate_credit_amount(
@@ -208,6 +211,7 @@ class TestAPIServer(FrappeTestCase):
 		self.assertEqual(app_subscription.plan, app_plan_2.name)
 		self.assertTrue(app_subscription.enabled)
 		self.assertEqual(server.plan, app_plan_2.name)
+		self.assertEqual(server.ram, app_plan_2.memory)
 
 		change_plan(
 			db_server.name,
