@@ -62,7 +62,10 @@ class Container(Document):
 		]
 
 	def get_peers(self):
-		pod = frappe.get_all("Pod Container", {"container": self.name}, pluck="parent")[0]
+		pod = frappe.get_all("Pod Container", {"container": self.name}, pluck="parent")
+		if not pod:
+			return []
+		pod = pod[0]
 		deployment = frappe.get_all("Deployment Pod", {"pod": pod}, pluck="parent")[0]
 		pods_on_other_nodes = frappe.get_all(
 			"Deployment Pod", {"parent": deployment, "node": ("!=", self.node)}, pluck="pod"
