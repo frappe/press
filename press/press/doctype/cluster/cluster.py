@@ -83,7 +83,7 @@ class Cluster(Document):
 				"Images for required series not available in other regions. Create Images from server docs.",
 				frappe.ValidationError,
 			)
-		frappe.enqueue_doc(self.doctype, self.name, "_add_images")
+		frappe.enqueue_doc(self.doctype, self.name, "_add_images", queue="long")
 
 	def _add_images(self):
 		"""Copies VMIs required for the cluster"""
@@ -327,6 +327,7 @@ class Cluster(Document):
 			filters={
 				"region": self.region,
 				"series": ("in", list(self.server_doctypes.values())),
+				"status": "Available",
 			},
 			pluck="name" if not get_series else "series",
 		)
@@ -337,6 +338,7 @@ class Cluster(Document):
 			filters={
 				"region": ("!=", self.region),
 				"series": ("in", list(self.server_doctypes.values())),
+				"status": "Available",
 			},
 			pluck="name" if not get_series else "series",
 		)
@@ -351,6 +353,7 @@ class Cluster(Document):
 					vmi,
 				).copy_image(self.name)
 			)
+			frappe.db.commit()
 		for copy in copies:
 			yield copy
 
