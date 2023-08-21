@@ -138,6 +138,14 @@ export default {
 			let price = plan.current_plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.current_plan.plan_title;
 		},
+
+		belowCurrentUsage(plan) {
+			return (
+				this.plan.total_storage_usage > plan.max_storage_usage ||
+				this.plan.total_database_usage > plan.max_database_usage
+			);
+		},
+
 		getCurrentFormattedUsage() {
 			let f = value => {
 				return this.formatBytes(value, 0, 2);
