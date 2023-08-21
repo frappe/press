@@ -109,7 +109,7 @@
 									class="h-4"
 									:src="row.server_region_info.image"
 									:alt="`Flag of ${row.server_region_info.title}`"
-									:title="row.server_region_info.image"
+									:title="row.server_region_info.title"
 								/>
 								<span class="text-base text-gray-700" v-else>
 									{{ row.server_region_info.title }}
