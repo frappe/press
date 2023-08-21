@@ -33,15 +33,25 @@
 					>
 						{{ group.name }}
 					</span>
-					<Dropdown :options="benchDropdownItems(i)">
-						<template v-slot="{ open }">
-							<Button variant="ghost">
-								<template #icon>
-									<FeatherIcon name="more-horizontal" class="h-4 w-4" />
-								</template>
-							</Button>
-						</template>
-					</Dropdown>
+					<div class="flex items-center space-x-2">
+						<Button
+							variant="ghost"
+							label="Show Apps"
+							@click="
+								selectedVersionIndex = i;
+								showAppsDialog = true;
+							"
+						/>
+						<Dropdown :options="benchDropdownItems(i)">
+							<template v-slot="{ open }">
+								<Button variant="ghost">
+									<template #icon>
+										<FeatherIcon name="more-horizontal" class="h-4 w-4" />
+									</template>
+								</Button>
+							</template>
+						</Dropdown>
+					</div>
 				</div>
 
 				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
@@ -308,13 +318,6 @@ export default {
 		},
 		benchDropdownItems(i) {
 			return [
-				{
-					label: 'Show App Versions',
-					onClick: () => {
-						this.selectedVersionIndex = i;
-						this.showAppsDialog = true;
-					}
-				},
 				this.$account.user.user_type === 'System User' && {
 					label: 'View in Desk',
 					onClick: () => {
