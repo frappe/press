@@ -106,7 +106,13 @@
 				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
 
 				<div class="mt-2">
-					<div class="mb-2">
+					<div
+						v-if="
+							databaseAccessInfo &&
+							!databaseAccessInfo.is_database_access_enabled
+						"
+						class="mb-2"
+					>
 						<!-- Enable Read-Write Access -->
 						<input
 							id="enable-read-write-access"
