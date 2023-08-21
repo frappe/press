@@ -166,7 +166,7 @@ export default {
 					condition: () => this.$account.team?.code_servers_enabled
 				},
 				{
-					label: 'Developer',
+					label: 'Apps',
 					route: '/marketplace/apps',
 					highlight: () => {
 						return this.$route.fullPath.indexOf('/marketplace') >= 0;

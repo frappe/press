@@ -118,7 +118,7 @@ export default {
 					}
 				},
 				{
-					label: 'Developer',
+					label: 'Apps',
 					route: '/marketplace',
 					highlight: () => {
 						return this.$route.fullPath.includes('/marketplace');
