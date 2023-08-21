@@ -151,11 +151,12 @@ export default {
 				{ label: 'Deploys', route: 'deploys' },
 				{
 					label: 'Config',
-					route: 'bench-config'
+					route: 'bench-config',
+					condition: () => !this.bench?.public
 				},
 				{ label: 'Jobs', route: 'jobs' },
 				{ label: 'Settings', route: 'settings' }
-			];
+			].filter(tab => (tab.condition ? tab.condition() : true));
 
 			if (this.bench) {
 				return tabs.map(tab => {
