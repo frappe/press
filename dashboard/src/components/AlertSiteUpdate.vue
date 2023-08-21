@@ -1,5 +1,5 @@
 <template>
-	<Alert title="Update Available" v-if="!show">
+	<Alert title="Update Available" v-if="show">
 		<span>
 			A new update is available for your site. Would you like to update your
 			site now?
@@ -60,7 +60,7 @@
 					<label for="skip-backup" class="ml-1 text-sm text-gray-900">
 						Update without site backup?
 					</label>
-					<div class="mt-1 text-red-600 text-sm" v-if="wantToSkipBackups">
+					<div class="mt-1 text-sm text-red-600" v-if="wantToSkipBackups">
 						In case of failure, you won't be able to restore the site.
 					</div>
 				</div>
