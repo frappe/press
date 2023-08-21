@@ -1574,9 +1574,9 @@ def get_database_access_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def enable_database_access(name):
+def enable_database_access(name, mode="read_only"):
 	site_doc = frappe.get_doc("Site", name)
-	enable_access_job = site_doc.enable_database_access()
+	enable_access_job = site_doc.enable_database_access(mode)
 	return enable_access_job.name
 
 
