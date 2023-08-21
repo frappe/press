@@ -13,7 +13,7 @@
 				@click.self="$refs['card'].click()"
 				:checked="selected"
 				type="checkbox"
-				class="h-4 w-4 rounded border-gray-300 text-gray-600 focus:ring-transparent"
+				class="h-4 w-4 cursor-pointer rounded border-gray-300 text-gray-600 focus:ring-transparent"
 			/>
 			<h3 class="text-lg font-medium text-gray-900">
 				{{ app.title }}
