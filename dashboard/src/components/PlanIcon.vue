@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow"
+		class="m-2 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow"
 	>
 		<svg
 			width="21"
