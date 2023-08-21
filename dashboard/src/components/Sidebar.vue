@@ -186,8 +186,13 @@ export default {
 				{
 					label: 'Settings',
 					route: '/settings',
-					highlight: route => {
-						return this.$route.fullPath.indexOf('/settings') >= 0;
+					highlight: () => {
+						return (
+							this.$route.fullPath.indexOf('/settings') >= 0 &&
+							this.$route.fullPath.indexOf('/sites/') < 0 &&
+							this.$route.fullPath.indexOf('/benches/') < 0 &&
+							this.$route.fullPath.indexOf('/servers/') < 0
+						);
 					},
 					icon: FCIcons.SettingsIcon
 				}
