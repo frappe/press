@@ -3,8 +3,6 @@
 		<AccountProfile />
 		<AccountEmails />
 		<AccountReferral />
-		<AccountAPI />
-		<AccountSSHKey />
 	</div>
 </template>
 
@@ -12,8 +10,6 @@
 import AccountProfile from './AccountProfile.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountEmails from './AccountEmails.vue';
-import AccountAPI from './AccountAPI.vue';
-import AccountSSHKey from './AccountSSHKey.vue';
 
 export default {
 	name: 'AccountSettings',
@@ -25,9 +21,7 @@ export default {
 	components: {
 		AccountProfile,
 		AccountReferral,
-		AccountEmails,
-		AccountAPI,
-		AccountSSHKey
+		AccountEmails
 	}
 };
 </script>

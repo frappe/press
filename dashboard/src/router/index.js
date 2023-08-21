@@ -498,6 +498,11 @@ const routes = [
 				path: 'billing',
 				component: () => import('../views/billing/AccountBilling.vue')
 				//props: true
+			},
+			{
+				name: 'DeveloperSettings',
+				path: 'developer',
+				component: () => import('../views/settings/DeveloperSettings.vue')
 			}
 		]
 	},
