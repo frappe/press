@@ -1,5 +1,5 @@
 <template>
-	<Card title="Bench info" subtitle="General information about your bench">
+	<Card title="Bench Info" subtitle="General information about your bench">
 		<div class="divide-y">
 			<div class="flex items-center justify-between py-3">
 				<div>

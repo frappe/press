@@ -1,6 +1,6 @@
 <template>
 	<Card
-		title="Code Server info"
+		title="Code Server Info"
 		subtitle="General information about your code server"
 	>
 		<div class="divide-y">
