@@ -23,7 +23,9 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if self.is_self_hosted:
+		if (
+			self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted
+		):
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,9 +35,13 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not self.is_self_hosted:
-			self.create_dns_record()
-			self.update_virtual_machine_name()
+		if self.ip:
+			if (
+				self.doctype not in ["Database Server", "Server", "Proxy Server"]
+				or not self.is_self_hosted
+			):
+				self.create_dns_record()
+				self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:

@@ -35,18 +35,18 @@ def all(server_filter="All Servers"):
 		app_server_query = (
 			frappe.qb.from_(app_server)
 			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
-			.where(
-				((app_server.team).isin(teams))
-				& (app_server.status != "Archived")
-				& (app_server.is_self_hosted == 0)
-			)
+			.where(((app_server.team).isin(teams)) & (app_server.status != "Archived"))
 		)
 
 	if server_filter != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
 			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
-			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
+			.where(
+				((db_server.team).isin(teams))
+				& (db_server.status != "Archived")
+				& (db_server.is_self_hosted == 0)
+			)
 		)
 
 	if server_filter.startswith("tag:"):
@@ -110,8 +110,14 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
+	plan = frappe.get_doc("Plan", server.plan)
+	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
+		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
+		plan.vcpu = self_hosted_server.vcpu
+		plan.memory = self_hosted_server.ram
+		plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
 	return {
-		"plan": frappe.get_doc("Plan", server.plan).as_dict(),
+		"plan": plan.as_dict(),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",

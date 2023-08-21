@@ -1,15 +1,14 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 
 import frappe
 from frappe.model.document import Document
 from press.runner import Ansible
 from press.utils import log_error
 
+import json
 from tldextract import extract as sdext
-import time
 
 
 class SelfHostedServer(Document):
@@ -474,12 +473,9 @@ class SelfHostedServer(Document):
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		server = frappe.get_doc("Server", self.name)
 		db_server = frappe.get_doc("Database Server", self.name)
-		if not (server.is_server_setup and db_server.is_server_setup):
+		if not db_server.is_server_setup:
 			db_server.setup_server()
-			time.sleep(90)
-			server.setup_server()
 		else:
 			self.update_tls()
 
@@ -586,15 +582,15 @@ class SelfHostedServer(Document):
 		ie: RAM >= 4GB,vCPUs >= 2,Storage >= 40GB
 		"""
 
-		if round(int(self.ram), -3) <= 4000:  # Round to nearest thousand
+		if round(int(self.ram), -3) < 4000:  # Round to nearest thousand
 			frappe.throw(
 				f"Minimum RAM requirement not met, Minumum is 4GB and available is {self.ram} MB"
 			)
-		if int(self.vcpus) <= 2:
+		if int(self.vcpus) < 2:
 			frappe.throw(
 				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
 			)
-		if round(int(float(self.total_storage.split()[0])), -1) <= 40:
+		if round(int(float(self.total_storage.split()[0])), -1) < 40:
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)
