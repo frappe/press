@@ -75,7 +75,6 @@
 <script>
 import Tabs from '@/components/Tabs.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Marketplace',
@@ -86,8 +85,7 @@ export default {
 	},
 	components: {
 		Tabs,
-		AppSourceSelector,
-		PageHeader
+		AppSourceSelector
 	},
 	data: () => ({
 		tabs: [

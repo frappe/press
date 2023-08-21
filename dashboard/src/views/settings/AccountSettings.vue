@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import PageHeader from '@/components/global/PageHeader.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import Tabs from '@/components/Tabs.vue';
 
 export default {

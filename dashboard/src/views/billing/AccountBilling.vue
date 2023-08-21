@@ -23,7 +23,6 @@ import AccountBillingCards from './AccountBillingCards.vue';
 import AccountBillingPayments from './AccountBillingPayments.vue';
 import AccountBillingCreditBalance from './AccountBillingCreditBalance.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'BillingScreen',
@@ -39,8 +38,7 @@ export default {
 		AccountBillingCards,
 		AccountBillingPayments,
 		AccountBillingCreditBalance,
-		AlertBillingInformation,
-		PageHeader
+		AlertBillingInformation
 	}
 };
 </script>

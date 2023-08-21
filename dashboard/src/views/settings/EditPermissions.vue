@@ -20,12 +20,12 @@
 				v-on:input="e => updateSearchTerm(e)"
 			/>
 			<LoadingText v-if="$resources.options.loading" />
-			<div v-else class="flex flex-col mb-8">
+			<div v-else class="mb-8 flex flex-col">
 				<div v-for="(option, index) in filteredList" class="border-b pt-2">
-					<span class="text-lg text-gray-600 mt-4 mr-2 pb-2 w-full">
+					<span class="mr-2 mt-4 w-full pb-2 text-lg text-gray-600">
 						{{ option.doctype }}
 					</span>
-					<span class="text-base font-bold inline-block align-middle">
+					<span class="inline-block align-middle text-base font-bold">
 						{{ option.name }}
 					</span>
 					<Input
@@ -60,7 +60,6 @@
 </template>
 
 <script>
-import PageHeader from '@/components/global/PageHeader.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {

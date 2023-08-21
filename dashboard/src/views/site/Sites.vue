@@ -232,7 +232,6 @@ import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
-import PageHeader from '@/components/global/PageHeader.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
@@ -249,7 +248,6 @@ export default {
 		TableHeader,
 		TableRow,
 		TableCell,
-		PageHeader,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),
