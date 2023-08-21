@@ -56,26 +56,25 @@
 
 				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
 					<TableCell v-for="column in columns">
-						<Badge
-							class="ring-1 ring-white"
-							v-if="column.name === 'status'"
-							:label="$siteStatus(row)"
-						/>
+						<Badge v-if="column.name === 'status'" :label="$siteStatus(row)" />
 						<div
 							v-else-if="column.name === 'tags' && row.tags"
-							class="-space-x-5"
+							class="flex space-x-1"
 						>
 							<Badge
-								class="ring-1 ring-white"
-								v-for="(tag, i) in row.tags.slice(0, 2)"
+								v-for="(tag, i) in row.tags.slice(0, 1)"
 								:theme="$getColorBasedOnString(i)"
 								:label="tag"
 							/>
-							<Badge
-								class="ring-1 ring-white"
-								v-if="row.tags.length > 2"
-								:label="`+${row.tags.length - 2}`"
-							/>
+							<Tooltip
+								v-if="row.tags.length > 1"
+								:text="row.tags.slice(1).join(', ')"
+							>
+								<Badge
+									v-if="row.tags.length > 1"
+									:label="`+${row.tags.length - 1}`"
+								/>
+							</Tooltip>
 						</div>
 						<span v-else-if="column.name === 'plan'">
 							{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
