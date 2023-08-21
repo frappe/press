@@ -72,36 +72,16 @@
 			</div>
 		</div>
 
-		<Dialog
-			:options="{
-				title: 'Change Plan',
-				size: '3xl',
-				actions: [
-					{
-						label: 'Submit',
-						variant: 'solid',
-						loading: $resources.changePlan.loading,
-						onClick: () => $resources.changePlan.submit()
-					}
-				]
-			}"
+		<SitePlansDialog
+			:site="site"
+			:plan="plan"
 			v-model="showChangePlanDialog"
-		>
-			<template v-slot:body-content>
-				<Alert v-if="validationMessage" class="mt-4" type="warning" icon="info">
-					{{ validationMessage }}
-				</Alert>
-				<SitePlansTable
-					class="mt-6"
-					:plans="plans"
-					v-model:selectedPlan="selectedPlan"
-				/>
-				<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
-			</template>
-		</Dialog>
+			@plan-change="() => $emit('plan-change')"
+		/>
 	</Card>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
 import SitePlansTable from '@/components/SitePlansTable.vue';
 import ProgressArc from '@/components/ProgressArc.vue';
 import PlanIcon from '@/components/PlanIcon.vue';
@@ -112,6 +92,9 @@ export default {
 	components: {
 		SitePlansTable,
 		ProgressArc,
+		SitePlansDialog: defineAsyncComponent(() =>
+			import('./SitePlansDialog.vue')
+		),
 		PlanIcon
 	},
 	data() {
@@ -145,34 +128,6 @@ export default {
 				},
 				default: []
 			};
-		},
-		changePlan() {
-			return {
-				method: 'press.api.site.change_plan',
-				params: {
-					name: this.site?.name,
-					plan: this.selectedPlan?.name
-				},
-				onSuccess() {
-					this.$notify({
-						title: `Plan changed to ${this.selectedPlan.plan_title}`,
-						icon: 'check',
-						color: 'green'
-					});
-					this.showChangePlanDialog = false;
-					this.selectedPlan = null;
-					this.$emit('plan-change');
-					this.$resources.plans.reset();
-				},
-				onError(error) {
-					this.showChangePlanDialog = false;
-					this.$notify({
-						title: error,
-						icon: 'x',
-						color: 'red'
-					});
-				}
-			};
 		}
 	},
 	methods: {
@@ -183,14 +138,6 @@ export default {
 			let price = plan.current_plan[price_field];
 			return price > 0 ? `${currency}${price}` : plan.current_plan.plan_title;
 		},
-
-		belowCurrentUsage(plan) {
-			return (
-				this.plan.total_storage_usage > plan.max_storage_usage ||
-				this.plan.total_database_usage > plan.max_database_usage
-			);
-		},
-
 		getCurrentFormattedUsage() {
 			let f = value => {
 				return this.formatBytes(value, 0, 2);

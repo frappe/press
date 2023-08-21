@@ -5,30 +5,28 @@ import { createResource } from 'frappe-ui';
 import AlertSiteUpdate from '@/components/AlertSiteUpdate.vue';
 import AlertSiteActivation from '@/components/AlertSiteActivation.vue';
 
+const SitePlansDialog = defineAsyncComponent(() =>
+	import('./SitePlansDialog.vue')
+);
 const BillingInformationDialog = defineAsyncComponent(() =>
 	import('@/components/BillingInformationDialog.vue')
 );
 
-const props = defineProps({ site: Object });
+const props = defineProps({ site: Object, plan: Object });
 const showPromotionalDialog = ref(false);
 const clickedPromotion = ref(null);
 const showBillingDialog = ref(false);
-
-const current_plan = createResource({
-	url: 'press.api.site.current_plan',
-	params: { name: props.site?.name },
-	auto: true
-});
+const showChangePlanDialog = ref(false);
 
 const closeToLimits = computed(() => {
-	if (!(props.site && current_plan.data)) return false;
-	let usage = current_plan.data.usage_in_percent;
+	if (!(props.site && props.plan.data)) return false;
+	let usage = props.plan.data.usage_in_percent;
 	return [usage.cpu, usage.database, usage.disk].some(x => 100 >= x && x > 80);
 });
 
 const limitExceeded = computed(() => {
-	if (!(props.site && current_plan.data)) return false;
-	let usage = current_plan.data.usage_in_percent;
+	if (!(props.site && props.plan.data)) return false;
+	let usage = props.plan.data.usage_in_percent;
 	return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
 });
 
@@ -99,7 +97,17 @@ const marketplacePromotionalBanners = createResource({
 		</Alert>
 		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
 			Your trial ends {{ trialEndsText }} after which your site will get
-			suspended. Select a plan from the Plan section below to avoid suspension.
+			suspended. Select a plan to avoid suspension.
+
+			<template #actions>
+				<Button
+					class="whitespace-nowrap"
+					@click="showChangePlanDialog = true"
+					variant="solid"
+				>
+					Select Plan
+				</Button>
+			</template>
 		</Alert>
 		<Alert title="Attention Required" v-if="limitExceeded">
 			Your site has exceeded the allowed usage for your plan. Upgrade your plan
@@ -149,6 +157,13 @@ const marketplacePromotionalBanners = createResource({
 		<BillingInformationDialog
 			v-model="showBillingDialog"
 			v-if="showBillingDialog"
+		/>
+
+		<SitePlansDialog
+			v-model="showChangePlanDialog"
+			:site="site"
+			:plan="plan"
+			@plan-change="() => $emit('plan-change')"
 		/>
 	</div>
 </template>

@@ -72,7 +72,12 @@
 					</div>
 				</div>
 			</div>
-			<SiteAlerts :site="site" />
+			<SiteAlerts
+				v-if="site && $resources.plan?.data"
+				:site="site"
+				:plan="$resources.plan.data"
+				@plan-change="() => $router.go()"
+			/>
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="site" :is="Component" :site="site"></component>
