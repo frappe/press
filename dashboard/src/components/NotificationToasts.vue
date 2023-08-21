@@ -23,7 +23,7 @@ app.appContext.config.globalProperties.$notify = notify;
 	<div
 		class="pointer-events-none fixed inset-0 flex items-start justify-end px-4 py-6 sm:p-6"
 	>
-		<div>
+		<div class="fixed top-15">
 			<Notification
 				v-bind="props"
 				class="mb-4"
