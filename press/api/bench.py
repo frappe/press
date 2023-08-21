@@ -428,7 +428,7 @@ def versions(name):
 		version.sites = frappe.db.get_all(
 			"Site",
 			{
-				"status": ("!=", "Archived"),
+				"status": ("not in", ("Archived", "Suspended")),
 				"group": name,
 				"bench": version.name,
 				"is_standby": 0,
