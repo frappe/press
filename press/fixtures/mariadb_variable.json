@@ -42,5 +42,137 @@
   "modified": "2023-06-15 14:41:18.419011",
   "name": "tmp_disk_table_size",
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "0",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 18:21:51.984252",
+  "name": "performance_schema",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "\"\"",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.751992",
+  "name": "performance-schema-instrument",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.766945",
+  "name": "performance-schema-consumer-events-stages-current",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.784028",
+  "name": "performance-schema-consumer-events-stages-history",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.809367",
+  "name": "performance-schema-consumer-events-stages-history-long",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.833060",
+  "name": "performance-schema-consumer-events-statements-current",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.851892",
+  "name": "performance-schema-consumer-events-statements-history",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.870716",
+  "name": "performance-schema-consumer-events-statements-history-long",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.951921",
+  "name": "performance-schema-consumer-events-waits-current",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.971205",
+  "name": "performance-schema-consumer-events-waits-history",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "OFF",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 0,
+  "modified": "2023-07-27 17:55:19.987419",
+  "name": "performance-schema-consumer-events-waits-history-long",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "",
+  "doc_section": "replication-and-binary-log",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-08-03 14:20:47.702196",
+  "name": "expire_logs_days",
+  "skippable": 0
  }
 ]

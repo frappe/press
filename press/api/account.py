@@ -305,8 +305,7 @@ def get():
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
 
-	team = get_current_team()
-	team_doc = frappe.get_doc("Team", team)
+	team_doc = get_current_team(get_doc=True)
 
 	parent_teams = [
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
@@ -583,8 +582,7 @@ def user_prompts():
 	if country == "India" and not gstin:
 		return [
 			"UpdateBillingDetails",
-			"If you have a registered GSTIN number, you are required to update it, so"
-			" that we can generate a GST Invoice.",
+			"If you have a registered GSTIN number, you are required to update it, so that we can generate a GST Invoice.",
 		]
 
 

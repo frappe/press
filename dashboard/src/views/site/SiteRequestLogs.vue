@@ -24,7 +24,7 @@
 				<div class="w-1/12">
 					<Badge>{{ log.request.method }}</Badge>
 				</div>
-				<div class="w-5/12 break-words pr-2">{{ log.request.path }}</div>
+				<div class="w-5/12 break-all pr-2">{{ log.request.path }}</div>
 				<div class="w-2/12">{{ log.request.status_code }}</div>
 				<div class="w-2/12">{{ $formatCPUTime(log.duration) }}</div>
 			</div>

@@ -102,8 +102,11 @@ class TLSCertificate(Document):
 				server_doctype, {"status": "Active", "name": ("like", f"%.{self.domain}")}
 			)
 			for server in servers:
-				server_doc = frappe.get_doc(server_doctype, server)
-				update_server_tls_certifcate(server_doc, self)
+				frappe.enqueue(
+					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+					server=frappe.get_doc(server_doctype, server),
+					certificate=self.name,
+				)
 
 	def trigger_site_domain_callback(self):
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")

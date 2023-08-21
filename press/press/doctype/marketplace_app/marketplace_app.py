@@ -375,7 +375,7 @@ class MarketplaceApp(WebsiteGenerator):
 		payout_orders = frappe.get_all("Payout Order", filters=filters, pluck="name")
 		payout = frappe.get_all(
 			"Payout Order Item",
-			filters={"parent": ("in", payout_orders)},
+			filters={"parent": ("in", payout_orders), "document_name": self.name},
 			fields=[
 				f"SUM(CASE WHEN currency = 'USD' THEN {total_for} ELSE 0 END) AS usd_amount",
 				f"SUM(CASE WHEN currency = 'INR' THEN {total_for} ELSE 0 END) AS inr_amount",

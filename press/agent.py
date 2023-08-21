@@ -459,30 +459,66 @@ class Agent:
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
-	def new_upstream_site(self, server, site):
+	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": site}
+		data = {"name": site if site else code_server}
+		doctype = "Site" if site else "Code Server"
 		return self.create_agent_job(
-			"Add Site to Upstream",
+			f"Add {doctype} to Upstream",
 			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
+			code_server=code_server,
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site: str, site_name=None, skip_reload=False):
-		site_name = site_name or site
+	def remove_upstream_file(
+		self, server, site=None, site_name=None, code_server=None, skip_reload=False
+	):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		doctype = "Site" if site else "Code Server"
+		file_name = site_name or site if (site or site_name) else code_server
 		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
-			"Remove Site from Upstream",
-			f"proxy/upstreams/{ip}/sites/{site_name}",
+			f"Remove {doctype} from Upstream",
+			f"proxy/upstreams/{ip}/sites/{file_name}",
 			method="DELETE",
 			site=site,
+			code_server=code_server,
 			upstream=server,
 			data=data,
+		)
+
+	def setup_code_server(self, bench, name, password):
+		data = {"name": name, "password": password}
+		return self.create_agent_job(
+			"Setup Code Server", f"benches/{bench}/codeserver", data, code_server=name
+		)
+
+	def start_code_server(self, bench, name, password):
+		data = {"password": password}
+		return self.create_agent_job(
+			"Start Code Server",
+			f"benches/{bench}/codeserver/start",
+			data,
+			code_server=name,
+		)
+
+	def stop_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Stop Code Server",
+			f"benches/{bench}/codeserver/stop",
+			code_server=name,
+		)
+
+	def archive_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Archive Code Server",
+			f"benches/{bench}/codeserver/archive",
+			method="POST",
+			code_server=name,
 		)
 
 	def add_ssh_user(self, bench):
@@ -643,6 +679,7 @@ class Agent:
 		method="POST",
 		bench=None,
 		site=None,
+		code_server=None,
 		upstream=None,
 		host=None,
 	):
@@ -654,6 +691,7 @@ class Agent:
 				"bench": bench,
 				"host": host,
 				"site": site,
+				"code_server": code_server,
 				"upstream": upstream,
 				"status": "Undelivered",
 				"request_method": method,

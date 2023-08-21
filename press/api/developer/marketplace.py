@@ -177,6 +177,14 @@ class DeveloperApiHandler:
 			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
 		)
 
+	def login(self):
+		team = self.app_subscription_doc.team
+		frappe.local.login_manager.login_as(frappe.db.get_value("Team", team, "user"))
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response[
+			"location"
+		] = f"/dashboard/sites/{self.app_subscription_doc.site}/overview"
+
 
 class SessionManager:
 	# set user for authenticated requests and then switch to guest once completed
@@ -235,3 +243,9 @@ def saas_payment(secret_key: str, data) -> str:
 def send_login_link(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.send_login_link()
+
+
+@frappe.whitelist(allow_guest=True)
+def login(secret_key: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.login()

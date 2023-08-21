@@ -13,6 +13,7 @@ from press.press.doctype.database_server_mariadb_variable.database_server_mariad
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
@@ -100,8 +101,13 @@ class DatabaseServer(BaseServer):
 	def _update_mariadb_system_variables(
 		self, variables: list[DatabaseServerMariaDBVariable] = []
 	):
+		restart = False
 		for variable in variables:
 			variable.update_on_server()
+			if not variable.dynamic:
+				restart = True
+		if restart:
+			self._restart_mariadb()
 
 	@frappe.whitelist()
 	def restart_mariadb(self):
@@ -375,6 +381,45 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
+	@frappe.whitelist()
+	def enable_performance_schema(self):
+		for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
+			if isinstance(value, int):
+				type_key = "value_int"
+			elif isinstance(value, str):
+				type_key = "value_str"
+
+			existing_variable = find(
+				self.mariadb_system_variables, lambda x: x.mariadb_variable == key
+			)
+
+			if existing_variable:
+				existing_variable.set(type_key, value)
+			else:
+				self.append(
+					"mariadb_system_variables",
+					{"mariadb_variable": key, type_key: value, "persist": True},
+				)
+
+		self.is_performance_schema_enabled = True
+		self.save()
+
+	@frappe.whitelist()
+	def disable_performance_schema(self):
+		existing_variable = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "performance_schema"
+		)
+		if existing_variable:
+			existing_variable.value_str = "OFF"
+		else:
+			self.append(
+				"mariadb_system_variables",
+				{"mariadb_variable": "performance_schema", "value_str": "OFF", "persist": True},
+			)
+
+		self.is_performance_schema_enabled = False
+		self.save()
+
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		self.mariadb_root_password = primary.get_password("mariadb_root_password")
@@ -468,3 +513,17 @@ class DatabaseServer(BaseServer):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"
 )
+
+PERFORMANCE_SCHEMA_VARIABLES = {
+	"performance_schema": "1",
+	"performance-schema-instrument": "'%=ON'",
+	"performance-schema-consumer-events-stages-current": "ON",
+	"performance-schema-consumer-events-stages-history": "ON",
+	"performance-schema-consumer-events-stages-history-long": "ON",
+	"performance-schema-consumer-events-statements-current": "ON",
+	"performance-schema-consumer-events-statements-history": "ON",
+	"performance-schema-consumer-events-statements-history-long": "ON",
+	"performance-schema-consumer-events-waits-current": "ON",
+	"performance-schema-consumer-events-waits-history": "ON",
+	"performance-schema-consumer-events-waits-history-long": "ON",
+}

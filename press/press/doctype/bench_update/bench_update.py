@@ -37,7 +37,7 @@ class BenchUpdate(Document):
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(apps_to_ignore)
-		candidate.build_and_deploy()
+		candidate.deploy_to_production()
 
 		self.status = "Running"
 		self.candidate = candidate.name
@@ -45,6 +45,19 @@ class BenchUpdate(Document):
 
 	def update_sites_on_server(self, server):
 		for site in self.sites:
+
+			# Don't try to update if the site is already on another bench
+			# It already could be on newest bench and Site Update couldn't be scheduled
+			# In any case our job was to move site to a newer than this, which is already done
+			current_site_bench = frappe.get_value("Site", site.site, "bench")
+			if site.source_candidate != frappe.get_value(
+				"Bench", current_site_bench, "candidate"
+			):
+				site.status = "Success"
+				self.save(ignore_permissions=True)
+				frappe.db.commit()
+				continue
+
 			if site.server == server and site.status == "Pending" and not site.site_update:
 				try:
 					if frappe.get_all(

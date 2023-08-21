@@ -270,4 +270,3 @@ def branches(installation, owner, name):
 		return response.json()
 	else:
 		frappe.throw("Error fetching branch list from GitHub")
-

@@ -139,6 +139,15 @@ export default {
 					condition: () => this.$account.team?.servers_enabled
 				},
 				{
+					label: 'Spaces',
+					route: '/spaces',
+					highlight: route => {
+						return this.$route.fullPath.indexOf('/spaces') >= 0;
+					},
+					icon: FCIcons.SpacesIcon,
+					condition: () => this.$account.team?.code_servers_enabled
+				},
+				{
 					label: 'Developer',
 					route: '/marketplace/apps',
 					highlight: route => {
@@ -147,7 +156,6 @@ export default {
 					icon: FCIcons.AppsIcon,
 					condition: () => this.$account.team?.is_developer
 				},
-
 				{
 					label: 'Billing',
 					route: '/billing',

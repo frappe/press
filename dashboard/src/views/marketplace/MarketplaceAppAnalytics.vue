@@ -20,10 +20,10 @@
 				<template #actions>
 					<span class="text-base font-semibold text-green-500">{{
 						'$' +
-						$resources.analytics.data.total_payout.usd_amount +
+						paymentAnalytics.total_payout.usd +
 						' + ' +
 						'₹' +
-						$resources.analytics.data.total_payout.inr_amount
+						paymentAnalytics.total_payout.inr
 					}}</span>
 				</template>
 			</ListItem>
@@ -34,10 +34,10 @@
 				<template #actions>
 					<span class="text-base font-semibold">{{
 						'$' +
-						$resources.analytics.data.pending_payout.usd_amount +
+						paymentAnalytics.pending_payout.usd +
 						' + ' +
 						'₹' +
-						$resources.analytics.data.pending_payout.inr_amount
+						paymentAnalytics.pending_payout.inr
 					}}</span>
 				</template>
 			</ListItem>
@@ -48,10 +48,10 @@
 				<template #actions>
 					<span class="text-base font-semibold">{{
 						'$' +
-						$resources.analytics.data.commission.usd_amount +
+						paymentAnalytics.commission.usd +
 						' + ' +
 						'₹' +
-						$resources.analytics.data.commission.inr_amount
+						paymentAnalytics.commission.inr
 					}}</span>
 				</template>
 			</ListItem>
@@ -222,6 +222,40 @@ export default {
 				labels: this.formatDate(visitorsData),
 				datasets: [{ values }]
 			};
+		},
+		paymentAnalytics() {
+			if (
+				!this.$resources.analytics.loading &&
+				this.$resources.analytics.data
+			) {
+				let data = this.$resources.analytics.data;
+				return {
+					total_payout: {
+						usd: data.total_payout.usd_amount
+							? data.total_payout.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.total_payout.inr_amount
+							? data.total_payout.inr_amount.toFixed(2)
+							: 0.0
+					},
+					pending_payout: {
+						usd: data.pending_payout.usd_amount
+							? data.pending_payout.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.pending_payout.inr_amount
+							? data.pending_payout.inr_amount.toFixed(2)
+							: 0.0
+					},
+					commission: {
+						usd: data.commission.usd_amount
+							? data.commission.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.commission.inr_amount
+							? data.commission.inr_amount.toFixed(2)
+							: 0.0
+					}
+				};
+			}
 		}
 	}
 };

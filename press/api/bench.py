@@ -530,7 +530,7 @@ def deploy(name, apps_to_ignore=[]):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
-	candidate.build_and_deploy()
+	candidate.deploy_to_production()
 
 	return candidate.name
 
@@ -558,6 +558,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 					"server": site["server"],
 					"skip_failing_patches": site["skip_failing_patches"],
 					"skip_backups": site["skip_backups"],
+					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
 				}
 				for site in sites
 			],

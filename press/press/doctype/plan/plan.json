@@ -24,6 +24,7 @@
   "offsite_backups",
   "private_benches",
   "database_access",
+  "support_included",
   "servers",
   "cluster",
   "instance_type",
@@ -179,11 +180,17 @@
    "fieldname": "disk",
    "fieldtype": "Int",
    "label": "Disk"
+  },
+  {
+   "default": "0",
+   "fieldname": "support_included",
+   "fieldtype": "Check",
+   "label": "Support Included"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-21 11:07:49.585270",
+ "modified": "2023-08-14 11:07:21.911136",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

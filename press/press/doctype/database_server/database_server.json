@@ -45,15 +45,16 @@
   "ssh_user",
   "ssh_port",
   "root_public_key",
+  "tags_section",
+  "tags",
   "mariadb_settings_tab",
   "memory_limits_section",
   "memory_high",
   "column_break_eiyu",
   "memory_max",
   "section_break_ladc",
-  "mariadb_system_variables",
-  "miscellaneous_section",
-  "tags"
+  "is_performance_schema_enabled",
+  "mariadb_system_variables"
  ],
  "fields": [
   {
@@ -347,9 +348,16 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "miscellaneous_section",
-   "fieldtype": "Tab Break",
-   "label": "Miscellaneous"
+   "default": "0",
+   "fieldname": "is_performance_schema_enabled",
+   "fieldtype": "Check",
+   "label": "Is Performance Schema Enabled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
   },
   {
    "fieldname": "tags",
@@ -360,7 +368,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-02 15:43:18.321208",
+ "modified": "2023-07-30 22:29:30.346012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

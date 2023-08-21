@@ -25,6 +25,7 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
 from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.utils import get_current_team
 
 
 def create_test_bench(
@@ -100,7 +101,7 @@ def create_test_site(
 			"subdomain": subdomain,
 			"server": bench.server,
 			"bench": bench.name,
-			"team": team or frappe.get_value("Team", {"user": "Administrator"}, "name"),
+			"team": team or get_current_team(),
 			"apps": [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,

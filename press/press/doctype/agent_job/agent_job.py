@@ -166,9 +166,19 @@ def suspend_sites():
 		fields=["name", "team", "current_database_usage", "current_disk_usage"],
 	)
 
+	issue_reload = False
 	for site in active_sites:
 		if site.current_database_usage > 100 or site.current_disk_usage > 100:
-			frappe.get_doc("Site", site.name).suspend(reason="Site Usage Exceeds Plan limits")
+			frappe.get_doc("Site", site.name).suspend(
+				reason="Site Usage Exceeds Plan limits", skip_reload=True
+			)
+			issue_reload = True
+
+	if issue_reload:
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
+		for proxy_name in proxies:
+			agent = Agent(proxy_name, server_type="Proxy Server")
+			agent.reload_nginx()
 
 
 def poll_pending_jobs_server(server):
@@ -357,6 +367,12 @@ def process_job_updates(job_name):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
+		from press.press.doctype.code_server.code_server import (
+			process_new_code_server_job_update,
+			process_start_code_server_job_update,
+			process_stop_code_server_job_update,
+			process_archive_code_server_job_update,
+		)
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -383,6 +399,18 @@ def process_job_updates(job_name):
 			process_install_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
+		elif job.job_type == "Add Code Server to Upstream":
+			process_new_code_server_job_update(job)
+		elif job.job_type == "Setup Code Server":
+			process_new_code_server_job_update(job)
+		elif job.job_type == "Start Code Server":
+			process_start_code_server_job_update(job)
+		elif job.job_type == "Stop Code Server":
+			process_stop_code_server_job_update(job)
+		elif job.job_type == "Archive Code Server":
+			process_archive_code_server_job_update(job)
+		elif job.job_type == "Remove Code Server from Upstream":
+			process_archive_code_server_job_update(job)
 		elif job.job_type == "Backup Site":
 			process_backup_site_job_update(job)
 		elif job.job_type == "Archive Site":
