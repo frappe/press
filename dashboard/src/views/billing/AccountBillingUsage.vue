@@ -14,7 +14,7 @@
 				class="flex h-full flex-col"
 				v-if="!$resources.upcomingInvoice.loading"
 			>
-				<div class="mt-3 flex">
+				<div class="mt-3 flex items-center">
 					<PlanIcon />
 					<div class="ml-4">
 						<div class="text-4xl font-semibold">

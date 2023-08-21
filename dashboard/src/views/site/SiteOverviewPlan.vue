@@ -22,7 +22,10 @@
 			</Button>
 		</template>
 
-		<div v-if="plan.current_plan" class="flex rounded-lg bg-gray-50 p-5">
+		<div
+			v-if="plan.current_plan"
+			class="flex items-center rounded-lg bg-gray-50 p-5"
+		>
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
