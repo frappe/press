@@ -217,7 +217,7 @@ export default {
 				{
 					label: 'Visit Server',
 					onClick: () => {
-						window.open(`https://${server.name}`, '_blank');
+						window.open(`https://${server.route.params.serverName}`, '_blank');
 					}
 				},
 				{
@@ -301,6 +301,7 @@ export default {
 				server_region_info: server.region_info,
 				plan: server.plan,
 				tags: server.tags,
+				app_server: server.app_server,
 				route: { name: 'ServerOverview', params: { serverName: server.name } }
 			}));
 		}
