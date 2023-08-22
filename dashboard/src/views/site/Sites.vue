@@ -419,16 +419,6 @@ export default {
 					},
 					condition: () =>
 						site.status === 'Active' || site.status === 'Updating'
-				},
-				{
-					label: 'Manage Bench',
-					onClick: () => {
-						this.$router.push({
-							name: 'Bench',
-							params: { benchName: site.group }
-						});
-					},
-					condition: () => true
 				}
 			].filter(item => item.condition());
 		},
