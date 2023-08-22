@@ -414,8 +414,8 @@ def versions(name):
 	deployed_versions = (
 		frappe.qb.from_(Bench)
 		.left_join(Server)
-		.on((Server.name == Bench.server) & (Bench.status != "Archived"))
-		.where(Bench.group == name)
+		.on(Server.name == Bench.server)
+		.where((Bench.group == name) & (Bench.status != "Archived"))
 		.groupby(Bench.name)
 		.select(Bench.name, Bench.status, Bench.is_ssh_proxy_setup, Server.proxy_server)
 		.orderby(Bench.creation, order=frappe.qb.desc)
