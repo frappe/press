@@ -55,7 +55,7 @@
 				</div>
 				<div
 					v-if="!group.sites?.length"
-					class="my-4.5 flex items-center justify-center"
+					class="flex items-center justify-center border-b py-4.5"
 				>
 					<div class="text-base text-gray-600">No Sites</div>
 				</div>
