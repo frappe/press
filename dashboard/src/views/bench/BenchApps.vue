@@ -192,7 +192,15 @@ export default {
 		},
 		removeApp() {
 			return {
-				method: 'press.api.bench.remove_app'
+				method: 'press.api.bench.remove_app',
+				onError(e) {
+					this.$notify({
+						title: 'Error',
+						message: e,
+						icon: 'x',
+						color: 'red'
+					});
+				}
 			};
 		}
 	},
