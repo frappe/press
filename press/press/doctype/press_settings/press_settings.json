@@ -70,6 +70,7 @@
   "column_break_66",
   "code_server",
   "code_server_password",
+  "arm_build_server",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1000,11 +1001,16 @@
    "fieldtype": "Check",
    "label": "Suspend Builds",
    "read_only": 1
+  },
+  {
+   "fieldname": "arm_build_server",
+   "fieldtype": "Data",
+   "label": "ARM Build Server"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-07-28 15:18:24.030578",
+ "modified": "2023-08-22 13:19:08.002372",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

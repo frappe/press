@@ -57,6 +57,7 @@
   "staging",
   "new_worker_allocation",
   "ram",
+  "architecture",
   "standalone_section",
   "is_standalone",
   "column_break_edyf",
@@ -416,10 +417,17 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "default": "x86",
+   "fieldname": "architecture",
+   "fieldtype": "Select",
+   "label": "Architecture",
+   "options": "x86\narm"
   }
  ],
  "links": [],
- "modified": "2023-07-02 14:59:31.104759",
+ "modified": "2023-08-22 11:45:29.186998",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
