@@ -258,16 +258,23 @@ export default {
 				{
 					label: 'New Site',
 					onClick: () => {
-						this.$router.push(`/${bench.name}/new`);
-					}
+						this.$router.push({
+							name: 'NewBenchSite',
+							params: { bench: bench.route.params.benchName }
+						});
+					},
+					condition: () => bench.status === 'Active'
 				},
 				{
-					label: 'View Versions',
+					label: 'View Sites',
 					onClick: () => {
-						this.$router.push(`/benches/${bench.name}/versions`);
+						this.$router.push({
+							name: 'BenchSiteList',
+							params: { benchName: bench.route.params.benchName }
+						});
 					}
 				}
-			];
+			].filter(item => (item.condition ? item.condition() : true));
 		}
 	}
 };
