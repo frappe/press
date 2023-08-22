@@ -30,7 +30,7 @@
 					/>
 				</div>
 			</div>
-			<div v-if="publicApps.length || privateApps.length">
+			<div v-if="publicApps.length > 1 || privateApps.length">
 				<h2 class="text-lg font-semibold">Select apps to install</h2>
 				<p class="text-base text-gray-700">
 					Choose apps to install on your site. You can select apps published on
