@@ -12,16 +12,15 @@
 			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
-			<TableHeader />
+			<TableHeader v-if="rows.length !== 0" />
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
-					<div class="text-base text-gray-700">No Items</div>
+					<div class="text-base text-gray-700">No Benches</div>
 				</div>
 			</div>
 			<div v-for="(group, i) in rows" :key="group.name">
 				<div
-					v-if="group.sites?.length"
 					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
 				>
 					<span
@@ -32,6 +31,7 @@
 						"
 					>
 						{{ group.name }}
+						<Badge :label="group.status" class="ml-2" />
 					</span>
 					<div class="flex items-center space-x-2">
 						<Button
@@ -53,7 +53,12 @@
 						</Dropdown>
 					</div>
 				</div>
-
+				<div
+					v-if="!group.sites?.length"
+					class="my-4.5 flex items-center justify-center"
+				>
+					<div class="text-base text-gray-600">No Sites</div>
+				</div>
 				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
 					<TableCell v-for="column in columns">
 						<Badge v-if="column.name === 'status'" :label="$siteStatus(row)" />
