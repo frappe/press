@@ -30,7 +30,6 @@
 							label="View in Marketplace"
 							class="ml-2"
 							:link="`/marketplace/apps/${app.name}`"
-							@click="showBillingDialog"
 						/>
 					</template>
 				</BreadCrumbs>
