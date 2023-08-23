@@ -6,23 +6,40 @@ from typing import Dict, List
 
 
 @frappe.whitelist()
-def spaces() -> Dict:
+def spaces(space_filter: Dict | None) -> Dict:
 	"""
 	Returns all spaces and code servers for the current team
 	"""
+	if space_filter is None:
+		space_filter = {"status": ""}
+
+	CodeServer = frappe.qb.DocType("Code Server")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+
+	servers_query = (
+		frappe.qb.from_(CodeServer)
+		.select(
+			CodeServer.name,
+			CodeServer.status,
+			CodeServer.creation,
+			CodeServer.bench,
+			ReleaseGroup.title,
+		)
+		.left_join(ReleaseGroup)
+		.on(CodeServer.group == ReleaseGroup.name)
+		.orderby(CodeServer.creation, order=frappe.qb.desc)
+	)
+
+	if space_filter["status"] == "Active":
+		servers_query = servers_query.where(CodeServer.status == "Active")
+	elif space_filter["status"] == "Broken":
+		servers_query = servers_query.where(CodeServer.status == "Broken")
+	else:
+		servers_query = servers_query.where(CodeServer.status != "Archived")
+
 	return {
 		"spaces": {},
-		"servers": frappe.db.sql(
-			f"""
-				SELECT cs.name, cs.status, cs.creation, cs.bench, rg.title
-				FROM `tabCode Server` cs
-				LEFT JOIN `tabRelease Group` rg
-				ON cs.group = rg.name
-				WHERE cs.team = '{get_current_team()}'
-				AND cs.status != 'Archived'
-				ORDER BY creation DESC""",
-			as_dict=True,
-		),
+		"servers": servers_query.run(as_dict=True),
 	}
 
 

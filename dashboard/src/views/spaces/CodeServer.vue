@@ -1,12 +1,41 @@
 <template>
 	<div>
-		<div v-if="codeServer">
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[
+					{ label: 'Spaces', route: { name: 'Spaces' } },
+					{
+						label: serverName,
+						route: {
+							name: 'CodeServerOverview',
+							params: { serverName: serverName }
+						}
+					}
+				]"
+			>
+				<template #actions>
+					<div>
+						<Dropdown :options="codeServerActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+						<Button
+							v-if="site?.status === 'Active'"
+							variant="solid"
+							icon-left="external-link"
+							label="Visit Site"
+							@click="$router.push(`/${this.site?.name}/new`)"
+						/>
+					</div>
+				</template>
+			</BreadCrumbs>
+		</header>
+
+		<div v-if="codeServer" class="p-5">
 			<div class="pb-2">
-				<div class="text-base text-gray-700">
-					<router-link to="/spaces" class="hover:text-gray-800">
-						← Back to Code Servers
-					</router-link>
-				</div>
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -19,9 +48,6 @@
 							:label="codeServer.status"
 							:colorMap="$badgeStatusColorMap"
 						/>
-					</div>
-					<div>
-						<Button icon-left="external-link" @click="open"> Open </Button>
 					</div>
 				</div>
 			</div>
@@ -148,6 +174,17 @@ export default {
 				});
 			}
 			return [];
+		},
+		codeServerActions() {
+			return [
+				{
+					label: 'Open',
+					icon: 'external-link',
+					onClick: () => {
+						window.open(`https://${this.serverName}`, '_blank');
+					}
+				}
+			];
 		}
 	}
 };
