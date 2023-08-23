@@ -10,6 +10,14 @@
     src: https://github.com/prometheus/node_exporter/releases/download/v1.1.2/node_exporter-1.1.2.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
+  when: ansible_architecture == "x86_64"
+
+- name: Download Node Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus/node_exporter/releases/download/v1.1.2/node_exporter-1.1.2.linux-arm64.tar.gz
+    dest: /tmp
+    remote_src: yes
+  when: ansible_architecture == "aarch64"
 
 - name: Copy Node Exporter Binary
   copy:
@@ -19,6 +27,17 @@
     mode: 0755
     owner: root
     group: root
+  when: ansible_architecture == "x86_64"
+
+- name: Copy Node Exporter Binary
+  copy:
+    src: /tmp/node_exporter-1.1.2.linux-arm64/node_exporter
+    dest: /opt/node_exporter/node_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+  when: ansible_architecture == "aarch64"
 
 - name: Create Node Exporter Systemd Service File
   template:

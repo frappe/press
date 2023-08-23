@@ -10,6 +10,14 @@
     src: https://github.com/prometheus/statsd_exporter/releases/download/v0.20.1/statsd_exporter-0.20.1.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
+  when: ansible_architecture == "x86_64"
+
+- name: Download StatsD Exporter Archive
+  unarchive:
+    src: https://github.com/prometheus/statsd_exporter/releases/download/v0.20.1/statsd_exporter-0.20.1.linux-arm64.tar.gz
+    dest: /tmp
+    remote_src: yes
+  when: ansible_architecture == "aarch64"
 
 - name: Copy StatsD Exporter Binary
   copy:
@@ -19,6 +27,17 @@
     mode: 0755
     owner: root
     group: root
+  when: ansible_architecture == "x86_64"
+
+- name: Copy StatsD Exporter Binary
+  copy:
+    src: /tmp/statsd_exporter-0.20.1.linux-arm64/statsd_exporter
+    dest: /opt/statsd_exporter/statsd_exporter
+    remote_src: yes
+    mode: 0755
+    owner: root
+    group: root
+  when: ansible_architecture == "aarch64"
 
 - name: Create StatsD Mapping Config File
   template:
