@@ -478,6 +478,11 @@ const routes = [
 		}
 	},
 	{
+		name: 'BillingScreen',
+		path: '/billing',
+		component: () => import('../views/billing/AccountBilling.vue')
+	},
+	{
 		path: '/settings',
 		name: 'SettingsScreen',
 		redirect: { name: 'ProfileSettings' },
@@ -492,12 +497,6 @@ const routes = [
 				name: 'TeamSettings',
 				path: 'team',
 				component: () => import('../views/settings/TeamSettings.vue')
-			},
-			{
-				name: 'BillingScreen',
-				path: 'billing',
-				component: () => import('../views/billing/AccountBilling.vue')
-				//props: true
 			},
 			{
 				name: 'DeveloperSettings',

@@ -3,7 +3,11 @@
 		You haven't added your billing information yet. Add it to start creating
 		sites.
 		<template #actions>
-			<Button variant="solid" @click="showDialog" class="whitespace-nowrap">
+			<Button
+				variant="solid"
+				@click="showDialog = true"
+				class="whitespace-nowrap"
+			>
 				Add Billing Information
 			</Button>
 		</template>

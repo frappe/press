@@ -38,7 +38,7 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			paymentMode: this.$account.team.payment_mode || 'Card'
+			paymentMode: this.$account.team.payment_mode
 		};
 	},
 	watch: {

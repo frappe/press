@@ -184,6 +184,12 @@ export default {
 					condition: () => this.$account.team?.security_portal_enabled
 				},
 				{
+					label: 'Billing',
+					route: '/billing',
+					highlight: () => this.$route.name === 'BillingScreen',
+					icon: FCIcons.BillingIcon
+				},
+				{
 					label: 'Settings',
 					route: '/settings',
 					highlight: () => {

@@ -1,9 +1,17 @@
 <template>
 	<div>
-		<div class="space-y-5">
-			<AlertBillingInformation />
-			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-				<AccountBillingUsage class="col-span-1 md:col-span-2" />
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<BreadCrumbs
+				:items="[{ label: 'Billing', route: { name: 'BillingScreen' } }]"
+			>
+			</BreadCrumbs>
+		</header>
+		<div class="p-5">
+			<div class="mx-auto max-w-4xl space-y-5">
+				<AlertBillingInformation />
+				<AccountBillingUsage />
 				<AccountBillingDetails />
 				<AccountBillingCards />
 				<AccountBillingPayments
