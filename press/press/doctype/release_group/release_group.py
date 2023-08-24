@@ -158,13 +158,6 @@ class ReleaseGroup(Document):
 			servers = set(server.server for server in self.servers)
 			if len(servers) != len(self.servers):
 				frappe.throw("Servers can be added only once", frappe.ValidationError)
-			archs = []
-			for server in servers:
-				archs.append(frappe.get_value("Server", server, "architecture"))
-			if len(set(archs)) > 1:
-				frappe.throw(
-					"Cannot deploy to servers with different architectures. Please check the servers in the release group."
-				)
 		elif self.is_new():
 			server_for_new_bench = Server.get_prod_for_new_bench()
 			if server_for_new_bench:
@@ -252,17 +245,34 @@ class ReleaseGroup(Document):
 
 		apps = self.get_sorted_based_on_rg_apps(apps)
 
-		# Create and deploy the DC
-		candidate = frappe.get_doc(
-			{
-				"doctype": "Deploy Candidate",
-				"group": self.name,
-				"apps": apps,
-				"dependencies": dependencies,
-				"packages": packages,
-				"environment_variables": environment_variables,
-			}
-		).insert()
+		platforms = []
+		for server in set(server.server for server in self.servers):
+			platforms.append(frappe.get_value("Server", server, "architecture"))
+		if "arm" in platforms:
+			candidate = frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate",
+					"group": self.name,
+					"apps": apps,
+					"dependencies": dependencies,
+					"packages": packages,
+					"environment_variables": environment_variables,
+					"architecture": "arm",
+				}
+			).insert()
+
+		if "x86" in platforms:
+			candidate = frappe.get_doc(
+				{
+					"doctype": "Deploy Candidate",
+					"group": self.name,
+					"apps": apps,
+					"dependencies": dependencies,
+					"packages": packages,
+					"environment_variables": environment_variables,
+					"architecture": "x86",
+				}
+			).insert()
 
 		return candidate
 

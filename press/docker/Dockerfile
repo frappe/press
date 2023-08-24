@@ -87,8 +87,8 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 # Install wkhtmltopdf
 
-{% if doc.arch == "arm" %}
-{% set WKHTMLTOPDF_VERSION="0.12.6" %}
+{% if doc.architecture == "arm" %}
+ENV WKHTMLTOPDF_VERSION 0.12.6
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}-1/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_arm64.deb \
   && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_arm64.deb \
   && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_arm64.deb \
@@ -96,7 +96,7 @@ RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPD
 
 {% else %}
 
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}-1/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`

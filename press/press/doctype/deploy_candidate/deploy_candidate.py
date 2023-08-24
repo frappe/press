@@ -291,14 +291,6 @@ class DeployCandidate(Document):
 			for d in self.dependencies:
 				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
 					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
-			servers = [
-				server.server for server in frappe.get_doc("Release Group", self.group).servers
-			]
-			architecture = []
-			for server in servers:
-				architecture.append(frappe.get_value("Server", server, "architecture"))
-			if "arm" in set(architecture):
-				self.arch = "arm"
 
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
@@ -390,18 +382,11 @@ class DeployCandidate(Document):
 		):
 			self.command = f"{self.command}x build --platform linux/amd64"
 
-		servers = [
-			server.server for server in frappe.get_doc("Release Group", self.group).servers
-		]
-		architecture = []
-		for server in servers:
-			architecture.append(frappe.get_value("Server", server, "architecture"))
-
 		environment = os.environ
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
-		if "arm" in architecture:
+		if self.architecture == "arm":
 			build_server = frappe.get_value("Press Settings", None, "arm_build_server")
 			environment.update({"DOCKER_HOST": f"ssh://root@{build_server}"})
 
@@ -421,7 +406,9 @@ class DeployCandidate(Document):
 			f"{settings.docker_registry_url}/{namespace}/{self.group}"
 		)
 
-		self.docker_image_tag = self.name
+		self.docker_image_tag = (
+			self.name + "-arm" if "arm" in self.architecture else self.name
+		)
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
 		if no_cache:
