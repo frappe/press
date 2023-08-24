@@ -4,7 +4,7 @@
 			<header
 				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 			>
-				<BreadCrumbs
+				<Breadcrumbs
 					:items="[
 						{
 							label: 'Apps',
@@ -32,7 +32,7 @@
 							:link="`/marketplace/apps/${app.name}`"
 						/>
 					</template>
-				</BreadCrumbs>
+				</Breadcrumbs>
 			</header>
 		</div>
 		<div>

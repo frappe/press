@@ -5,7 +5,7 @@
 				<header
 					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 				>
-					<BreadCrumbs
+					<Breadcrumbs
 						:items="[
 							{ label: 'Servers', route: { name: 'Servers' } },
 							{
@@ -42,7 +42,7 @@
 								/>
 							</div>
 						</template>
-					</BreadCrumbs>
+					</Breadcrumbs>
 				</header>
 				<div
 					class="flex flex-col space-y-3 px-5 pt-6 md:flex-row md:items-baseline md:justify-between md:space-y-0"

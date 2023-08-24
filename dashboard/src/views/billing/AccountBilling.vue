@@ -3,10 +3,10 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs
+			<Breadcrumbs
 				:items="[{ label: 'Billing', route: { name: 'BillingScreen' } }]"
 			>
-			</BreadCrumbs>
+			</Breadcrumbs>
 		</header>
 		<div class="p-5">
 			<div class="mx-auto max-w-4xl space-y-5">

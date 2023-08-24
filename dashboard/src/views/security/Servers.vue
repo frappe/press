@@ -3,8 +3,8 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs :items="[{ label: 'Security', route: '/security' }]">
-			</BreadCrumbs>
+			<Breadcrumbs :items="[{ label: 'Security', route: '/security' }]">
+			</Breadcrumbs>
 		</header>
 		<div>
 			<div class="mx-5 mt-5">

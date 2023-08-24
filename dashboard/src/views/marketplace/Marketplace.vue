@@ -3,7 +3,7 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs :items="[{ label: 'Apps', route: '/marketplace' }]">
+			<Breadcrumbs :items="[{ label: 'Apps', route: '/marketplace' }]">
 				<template #actions>
 					<Button
 						variant="solid"
@@ -18,7 +18,7 @@
 						"
 					/>
 				</template>
-			</BreadCrumbs>
+			</Breadcrumbs>
 		</header>
 		<SectionHeader class="mx-5 mt-6" heading="Apps" />
 

@@ -3,7 +3,7 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs
+			<Breadcrumbs
 				:items="[{ label: 'Benches', route: { name: 'BenchesScreen' } }]"
 			>
 				<template v-slot:actions>
@@ -15,7 +15,7 @@
 						@click="showBillingDialog"
 					/>
 				</template>
-			</BreadCrumbs>
+			</Breadcrumbs>
 		</header>
 
 		<div class="mx-5 mt-5">

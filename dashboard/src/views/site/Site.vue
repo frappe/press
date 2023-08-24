@@ -3,7 +3,7 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs
+			<Breadcrumbs
 				:items="[
 					{ label: 'Sites', route: { name: 'Sites' } },
 					{
@@ -28,7 +28,7 @@
 						/>
 					</div>
 				</template>
-			</BreadCrumbs>
+			</Breadcrumbs>
 		</header>
 		<div class="p-5" v-if="site">
 			<div
