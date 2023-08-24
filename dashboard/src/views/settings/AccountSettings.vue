@@ -27,7 +27,7 @@ export default {
 	name: 'AccountSettings',
 	pageMeta() {
 		return {
-			title: 'Settings - Frappe Cloud'
+			title: 'Settings - NexTash Cloud'
 		};
 	},
 	components: {

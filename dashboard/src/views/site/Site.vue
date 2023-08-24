@@ -160,7 +160,7 @@ export default {
 	name: 'Site',
 	pageMeta() {
 		return {
-			title: `Site - ${this.siteName} - Frappe Cloud`
+			title: `Site - ${this.siteName} - NexTash Cloud`
 		};
 	},
 	props: ['siteName'],

@@ -109,7 +109,9 @@ class TLSCertificate(Document):
 				)
 
 	def trigger_site_domain_callback(self):
+
 		domain = frappe.db.get_value("Site Domain", {"tls_certificate": self.name}, "name")
+		frappe.msgprint(f"triggering {domain}")
 		if domain:
 			frappe.get_doc("Site Domain", domain).process_tls_certificate_update()
 

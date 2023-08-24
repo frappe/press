@@ -101,7 +101,7 @@ export default {
 	name: 'Server',
 	pageMeta() {
 		return {
-			title: `Server - ${this.serverName} - Frappe Cloud`
+			title: `Server - ${this.serverName} - NexTash Cloud`
 		};
 	},
 	props: ['serverName'],

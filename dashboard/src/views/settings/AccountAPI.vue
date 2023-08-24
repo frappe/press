@@ -28,7 +28,7 @@
 				<div v-if="!$resources.createSecret.data">
 					<p class="text-base">
 						API key and API secret pairs can be used to access the
-						<a href="/docs/api" class="underline">Frappe Cloud API</a>.
+						<a href="/docs/api" class="underline">NexTash Cloud API</a>.
 					</p>
 				</div>
 				<div v-if="$resources.createSecret.data">

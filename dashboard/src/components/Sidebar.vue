@@ -1,7 +1,11 @@
 <template>
 	<div class="flex h-screen flex-col justify-between bg-gray-50 p-2">
 		<div>
+			
+		
 			<div class="flex justify-between">
+        <!-- <FrappeCloudLogo class="my-6 mx-auto" style="width: 70px;"/> -->
+        
 				<FrappeCloudLogo class="my-8 ml-2 h-4 w-auto" />
 				<div class="self-center">
 					<Button icon="search" @click="show = true"> </Button>
@@ -76,21 +80,6 @@ export default {
 			show: false,
 			showTeamSwitcher: false,
 			dropdownItems: [
-				{
-					label: 'Switch Team',
-					icon: 'command',
-					handler: () => (this.showTeamSwitcher = true)
-				},
-				{
-					label: 'Support & Docs',
-					icon: 'help-circle',
-					handler: () => (window.location.href = '/support')
-				},
-				{
-					label: 'Settings',
-					icon: 'settings',
-					handler: () => this.$router.push('/settings')
-				},
 				{
 					label: 'Logout',
 					icon: 'log-out',

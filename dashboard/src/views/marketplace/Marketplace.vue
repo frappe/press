@@ -74,7 +74,7 @@ export default {
 	name: 'Marketplace',
 	pageMeta() {
 		return {
-			title: 'Developer - Frappe Cloud'
+			title: 'Developer - NexTash Cloud'
 		};
 	},
 	components: {

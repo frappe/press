@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div>
-			<PageHeader title="Sites" subtitle="Your Frappe instances">
+			<PageHeader title="Sites" subtitle="Your NexTash instances">
 				<template v-if="this.$account.team.enabled" v-slot:actions>
 					<Button
 						appearance="primary"
@@ -126,7 +126,7 @@ export default {
 	name: 'Sites',
 	pageMeta() {
 		return {
-			title: 'Sites - Frappe Cloud'
+			title: 'Sites - NexTash Cloud'
 		};
 	},
 	props: ['bench'],

@@ -124,7 +124,7 @@ const marketplacePromotionalBanners = useResource({
 
 		<Dialog
 			v-model="showPromotionalDialog"
-			title="Frappe Cloud Marketplace"
+			title="NexTash Cloud Marketplace"
 			@close="e => (clickedPromotion = null)"
 		>
 			<div v-if="clickedPromotion" class="flex flex-row items-center">

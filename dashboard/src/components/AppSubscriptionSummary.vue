@@ -8,7 +8,7 @@
 					<!-- Replace with app icon -->
 					<div class="mr-3 h-10 w-10 self-center rounded-lg bg-red-400"></div>
 					<div class="flex flex-col">
-						<h4 class="text-lg font-medium text-gray-900">Frappe Mail</h4>
+						<h4 class="text-lg font-medium text-gray-900">NexTash Mail</h4>
 						<p class="mt-1 text-base text-gray-600">Best open source ERP.</p>
 					</div>
 				</div>
@@ -49,7 +49,7 @@
 						class="mr-3 h-10 w-10 self-center rounded-lg bg-indigo-400"
 					></div>
 					<div class="flex flex-col">
-						<h4 class="text-lg font-medium text-gray-900">Frappe Healthcare</h4>
+						<h4 class="text-lg font-medium text-gray-900">NexTash Healthcare</h4>
 						<p class="mt-1 text-base text-gray-600">Best open source ERP.</p>
 					</div>
 				</div>
