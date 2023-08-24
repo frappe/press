@@ -61,7 +61,7 @@ class SitePool:
 		site = frappe.get_doc(
 			{
 				"doctype": "Site",
-				"subdomain": self.get_subdomain(),
+				"subdomain": make_autoname("standby-.########"),
 				"domain": self.saas_product.domain,
 				"group": self.saas_product.release_group,
 				"cluster": self.saas_product.cluster,
@@ -72,9 +72,6 @@ class SitePool:
 			}
 		)
 		site.insert()
-
-	def get_subdomain(self):
-		return make_autoname("standby-.########")
 
 	def get_standby_site(self):
 		filters = {
