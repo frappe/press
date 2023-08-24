@@ -213,7 +213,6 @@ class Site(Document):
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
-			self.append("apps", {"app": app})
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
 			self.status = "Pending"
@@ -1406,6 +1405,10 @@ def process_install_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
+		if job.status == "Success":
+			site = frappe.get_doc("Site", job.site)
+			site.append("apps", {"app": json.loads(job.request_data).get("name")})
+			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
