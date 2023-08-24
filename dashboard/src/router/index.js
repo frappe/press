@@ -17,20 +17,17 @@ const routes = [
 		}
 	},
 	{
-		path: '/login/:forgot?',
+		path: '/login',
 		name: 'Login',
-		component: () =>
-			import(/* webpackChunkName: "login" */ '../views/auth/Login.vue'),
+		component: () => import('../views/auth/Auth.vue'),
 		meta: {
 			isLoginPage: true
-		},
-		props: true
+		}
 	},
 	{
 		path: '/signup',
 		name: 'Signup',
-		component: () =>
-			import(/* webpackChunkName: "signup" */ '../views/auth/Signup.vue'),
+		component: () => import('../views/auth/Auth.vue'),
 		meta: {
 			isLoginPage: true
 		}
