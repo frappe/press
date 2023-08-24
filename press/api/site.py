@@ -1135,7 +1135,8 @@ def backup(name, with_files=False):
 
 		if (
 			frappe.db.count(
-				"Site Backup", filters=dict(site=name, creation=(">=", suspension_time))
+				"Site Backup",
+				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
 			)
 			> 3
 		):
@@ -1592,9 +1593,9 @@ def get_database_access_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def enable_database_access(name):
+def enable_database_access(name, mode="read_only"):
 	site_doc = frappe.get_doc("Site", name)
-	enable_access_job = site_doc.enable_database_access()
+	enable_access_job = site_doc.enable_database_access(mode)
 	return enable_access_job.name
 
 

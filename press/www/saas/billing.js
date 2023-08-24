@@ -2,10 +2,9 @@ let subscription_string = __(
 	'Your subscription will end soon and the site will be suspended. Please subscribe before that for uninterrupted services',
 );
 let $floatingBar = $(`
-    <div class="flex justify-content-center" style="width: 100%;">
+    <div class="flex justify-content-center">
     <div class="flex justify-content-center flex-col shadow rounded p-2"
 			style="
-				width: 80%;
 				background-color: #e0f2fe;
 				position: fixed;
 				bottom: 20px;
@@ -13,8 +12,7 @@ let $floatingBar = $(`
     <p style="margin: auto 0; margin-right: 20px; padding-left: 10px; font-size: 15px;">
 			${subscription_string}
 		</p>
-		<a
-			type="button"
+    <button id="show-dialog" type="button"
 			class="
 				button-renew
 				px-4
@@ -28,15 +26,13 @@ let $floatingBar = $(`
 				height: fit-content;
 				background-color: #007bff;
 				border-radius: 5px;
-				margin-right: 10px;
-				text-decoration: none;
+				margin-right: 10px
 			"
-			href="https://frappecloud.com/api/method/press.api.developer.marketplace.login?secret_key=${frappe.boot.subscription_conf.secret_key}"
-			target="_blank"
 		>
-			Subscribe
-		</a>
-		<a type="button" class="dismiss-upgrade text-muted" data-dismiss="modal" aria-hidden="true" style="font-size:30px; margin-bottom: 5px; margin-right: 10px">×</a>
+		Subscribe
+		</button>
+				<a type="button" class="dismiss-upgrade text-muted" data-dismiss="modal" aria-hidden="true" style="font-size:30px; margin-bottom: 5px; margin-right: 10px">×</a>
+
     </div>
     </div>
 `);

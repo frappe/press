@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Environment="DATA_SOURCE_NAME=root:{{ mariadb_root_password }}@({{ private_ip }}:3306)/"
 Type=simple
-ExecStart=/opt/mysqld_exporter/mysqld_exporter --web.listen-address=127.0.0.1:9104
+ExecStart=/opt/mysqld_exporter/mysqld_exporter --web.listen-address=127.0.0.1:9104 --collect.binlog_size
 
 SyslogIdentifier=mysqld_exporter
 Restart=always

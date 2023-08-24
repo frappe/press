@@ -183,7 +183,9 @@ def validate_password(password, first_name, last_name, email):
 
 	if feedback and not feedback.get("password_policy_validation_passed", False):
 		passed = False
-		suggestion = feedback.get("suggestions") or ["Your password is too weak, please pick a stronger password by adding more words."]
+		suggestion = feedback.get("suggestions") or [
+			"Your password is too weak, please pick a stronger password by adding more words."
+		]
 
 	return {"validation_passed": passed, "suggestion": suggestion}
 
@@ -319,32 +321,27 @@ def create_marketplace_subscription(account_request):
 	"""
 	team_doc = create_team(account_request)
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
-	site = frappe.get_doc("Site", site_name)
-	site.team = team_doc.name
-	site.save()
+	frappe.db.set_value("Site", site_name, "team", team_doc.name)
+	subscription = frappe.db.exists("Subscription", {"document_name": site_name})
+	if subscription:
+		frappe.db.set_value("Subscription", subscription, "team", team_doc.name)
 
-	if not frappe.db.exists("Subscription", {"document_name": site_name}):
-		subscription = site.subscription
-		if subscription:
-			subscription.team = team_doc.name
-			subscription.save()
-
-	subscriptions = frappe.get_all(
+	marketplace_subscriptions = frappe.get_all(
 		"Marketplace App Subscription",
 		{"site": site_name, "status": "Disabled"},
 		pluck="name",
 	)
-	for subscription in subscriptions:
+	for subscription in marketplace_subscriptions:
 		frappe.db.set_value(
 			"Marketplace App Subscription",
 			subscription,
-			{"status": "Active", "team": site.team},
+			{"status": "Active", "team": team_doc.name},
 		)
 
 	frappe.set_user(team_doc.user)
 	frappe.local.login_manager.login_as(team_doc.user)
 
-	return site.name
+	return site_name
 
 
 def create_team(account_request, get_stripe_id=False):

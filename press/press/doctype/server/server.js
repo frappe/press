@@ -79,6 +79,12 @@ frappe.ui.form.on('Server', {
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
 			[
+				__('Setup MySQLdump'),
+				'setup_mysqldump',
+				true,
+				frm.doc.is_server_setup && frm.doc.status == 'Active',
+			],
+			[
 				__('Whitelist Server'),
 				'whitelist_ipaddress',
 				false,

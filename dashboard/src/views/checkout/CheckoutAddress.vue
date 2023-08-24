@@ -6,6 +6,10 @@
 		← Back to Plans
 	</div>
 
+	<ErrorMessage
+		class="my-3 ml-6"
+		:message="$resources.updateBillingDetails.error"
+	/>
 	<div class="flex flex-col justify-between px-6">
 		<div>
 			<FormControl
@@ -21,6 +25,7 @@
 				type="select"
 				v-model="country"
 				:options="countries"
+				required
 			/>
 			<div class="flex flex-col justify-between sm:flex-row">
 				<FormControl
@@ -30,15 +35,22 @@
 					type="select"
 					v-model="state"
 					:options="indianStates"
+					required
 				/>
 				<FormControl
 					v-else
 					class="mb-2"
 					label="State/Province/Region"
 					v-model="state"
+					required
 				/>
 				<FormControl class="mb-2" label="City" type="text" v-model="city" />
-				<FormControl class="mb-2" label="Postal Code" v-model="postalCode" />
+				<FormControl
+					class="mb-2"
+					label="Postal Code"
+					v-model="postalCode"
+					required
+				/>
 			</div>
 
 			<div v-show="currency === 'INR'">

@@ -60,7 +60,7 @@
 
 		<!-- Stripe -->
 		<div class="flex h-full w-full justify-center">
-			<div class="my-auto flex h-20 w-64 flex-col">
+			<div class="my-auto flex h-20 w-72 flex-col">
 				<div
 					id="card"
 					class="form-input mt-2 block w-full py-2 pl-3"
@@ -68,7 +68,7 @@
 					ref="card-element"
 				></div>
 				<ErrorMessage class="mt-2" :message="errorMessage" />
-				<div class="flex justify-between">
+				<div class="flex flex-col justify-between">
 					<StripeLogo
 						class="mt-4 justify-self-end"
 						:loading="$resources.handlePayment.loading"

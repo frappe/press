@@ -453,6 +453,22 @@ class BaseServer(Document):
 			log_error("Increase swap exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_mysqldump(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
+		)
+
+	def _setup_mysqldump(self):
+		try:
+			ansible = Ansible(
+				playbook="mysqldump.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MySQLdump Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
