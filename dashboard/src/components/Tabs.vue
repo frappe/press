@@ -10,7 +10,7 @@
 				>
 					<li>
 						<a
-							class="font-base relative mr-6 block truncate border-b px-1 py-4 leading-none focus:outline-none"
+							class="font-base relative mr-4 block truncate border-b py-2 leading-none focus:outline-none"
 							:class="[
 								isTabSelected(tab)
 									? 'border-brand border-gray-900 text-gray-900'
@@ -44,7 +44,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="w-full py-5">
+		<div class="w-full py-5" v-if="$slots.default">
 			<slot></slot>
 		</div>
 	</div>

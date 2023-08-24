@@ -3,7 +3,7 @@
 		<header
 			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 		>
-			<BreadCrumbs :items="[{ label: 'Spaces', route: '/spaces' }]">
+			<Breadcrumbs :items="[{ label: 'Spaces', route: '/spaces' }]">
 				<template v-if="this.$account.team.enabled" v-slot:actions>
 					<Button
 						variant="solid"
@@ -13,7 +13,7 @@
 						@click="showBillingDialog"
 					/>
 				</template>
-			</BreadCrumbs>
+			</Breadcrumbs>
 		</header>
 
 		<div class="mb-2" v-if="!$account.team.enabled">

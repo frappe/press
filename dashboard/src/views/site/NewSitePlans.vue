@@ -4,7 +4,6 @@
 		<p class="text-base text-gray-700">
 			Select a plan based on the type of usage you are expecting on your site.
 		</p>
-		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
 			<div v-if="$resources.plans.loading" class="flex justify-center">
 				<LoadingText />
@@ -20,15 +19,13 @@
 </template>
 <script>
 import SitePlansTable from '@/components/SitePlansTable.vue';
-import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
 	name: 'Plans',
 	emits: ['update:selectedPlan'],
 	props: ['bench', 'selectedPlan', 'benchTeam'],
 	components: {
-		SitePlansTable,
-		AlertBillingInformation
+		SitePlansTable
 	},
 	data() {
 		return {

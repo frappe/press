@@ -1,9 +1,9 @@
 <template>
-	<Card title="Profile" subtitle="Your profile information">
-		<div class="flex items-center border-b pb-5">
+	<Card title="Profile">
+		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar
-					size="lg"
+					size="xl"
 					:label="$account.user.first_name"
 					:imageURL="$account.user.user_image"
 				/>
@@ -20,7 +20,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-semibold text-white opacity-0 hover:opacity-50 focus:opacity-50 focus:outline-none"
+								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
@@ -31,10 +31,10 @@
 				</FileUploader>
 			</div>
 			<div class="ml-4">
-				<h3 class="text-lg font-semibold">
+				<h3 class="text-base font-semibold">
 					{{ $account.user.first_name }} {{ $account.user.last_name }}
 				</h3>
-				<p class="text-sm text-gray-600">{{ $account.user.email }}</p>
+				<p class="mt-1 text-base text-gray-600">{{ $account.user.email }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showProfileEditDialog = true">

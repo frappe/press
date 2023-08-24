@@ -5,9 +5,9 @@
 	>
 		<template #body-title>
 			<h3 class="text-2xl font-semibold leading-6 text-gray-900">
-				Buy Credits
+				Add money to your account
 			</h3>
-			<p class="mt-0.5 text-sm text-gray-600">
+			<p class="mt-1 text-base text-gray-600">
 				{{ paymentGateway ? '' : 'Choose your payment gateway' }}
 			</p>
 		</template>

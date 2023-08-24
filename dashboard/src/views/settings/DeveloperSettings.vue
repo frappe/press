@@ -1,13 +1,15 @@
 <template>
-	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+	<div class="space-y-5">
 		<AccountAPI />
 		<AccountSSHKey />
+		<FeatureFlags />
 	</div>
 </template>
 
 <script>
 import AccountAPI from './AccountAPI.vue';
 import AccountSSHKey from './AccountSSHKey.vue';
+import FeatureFlags from './FeatureFlags.vue';
 
 export default {
 	name: 'DeveloperSettings',
@@ -18,7 +20,8 @@ export default {
 	},
 	components: {
 		AccountAPI,
-		AccountSSHKey
+		AccountSSHKey,
+		FeatureFlags
 	}
 };
 </script>

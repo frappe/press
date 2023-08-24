@@ -25,6 +25,7 @@
 			</Dropdown>
 			<div class="mt-2 flex flex-col space-y-0.5">
 				<button
+					v-if="$account.number_of_sites > 3"
 					class="rounded text-gray-900 hover:bg-gray-100"
 					@click="show = true"
 				>
@@ -145,7 +146,8 @@ export default {
 							this.$route.fullPath.indexOf('/servers/') < 0
 						);
 					},
-					icon: FCIcons.BenchIcon
+					icon: FCIcons.BenchIcon,
+					condition: () => this.$account.team?.benches_enabled
 				},
 				{
 					label: 'Servers',

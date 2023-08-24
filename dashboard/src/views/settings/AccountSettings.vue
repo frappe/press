@@ -1,18 +1,14 @@
 <template>
 	<div>
-		<header
-			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
-		>
+		<header class="sticky top-0 z-10 border-b bg-white px-5 pt-2.5">
 			<Breadcrumbs
 				:items="[{ label: 'Settings', route: { name: 'SettingsScreen' } }]"
 			/>
+			<Tabs :tabs="tabs" class="-mb-px pl-0.5" />
 		</header>
-		<PageHeader class="mx-5 mt-3" title="Settings" :subtitle="pageSubtitle" />
-		<Tabs class="mx-5" :tabs="tabs">
-			<router-view v-slot="{ Component, route }">
-				<component :is="Component"></component>
-			</router-view>
-		</Tabs>
+		<div class="mx-auto max-w-4xl py-5">
+			<router-view />
+		</div>
 	</div>
 </template>
 

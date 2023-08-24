@@ -357,6 +357,10 @@ def get():
 			as_dict=True,
 		)
 
+	number_of_sites = frappe.db.count(
+		"Site", {"team": team_doc.name, "status": ("!=", "Archived")}
+	)
+
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
@@ -373,6 +377,7 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+		"number_of_sites": number_of_sites,
 		"permissions": get_permissions(),
 	}
 
@@ -513,6 +518,23 @@ def update_profile_picture():
 	)
 	_file.save(ignore_permissions=True)
 	frappe.db.set_value("User", user, "user_image", _file.file_url)
+
+
+@frappe.whitelist()
+def update_feature_flags(values=None):
+	frappe.only_for("Press Admin")
+	team = get_current_team(get_doc=True)
+	values = frappe.parse_json(values)
+	fields = [
+		"benches_enabled",
+		"servers_enabled",
+		"self_hosted_servers_enabled",
+		"security_portal_enabled",
+	]
+	for field in fields:
+		if field in values:
+			team.set(field, values[field])
+	team.save()
 
 
 @frappe.whitelist(allow_guest=True)

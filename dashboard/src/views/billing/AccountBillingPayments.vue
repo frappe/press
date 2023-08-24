@@ -1,5 +1,9 @@
 <template>
-	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
+	<Card
+		title="Billing history"
+		:subtitle="subtitle"
+		v-if="$resources.pastInvoices.data?.length && !invoiceName"
+	>
 		<template #actions>
 			<FormControl
 				v-if="$resources.pastInvoices.data?.length"

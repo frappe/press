@@ -1,8 +1,5 @@
 <template>
-	<div
-		v-if="$account.user.name === $account.team.user"
-		class="grid grid-cols-1 gap-5 md:grid-cols-2"
-	>
+	<div v-if="$account.user.name === $account.team.user" class="space-y-5">
 		<AccountMembers />
 		<AccountGroups />
 	</div>

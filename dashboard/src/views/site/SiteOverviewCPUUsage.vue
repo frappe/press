@@ -70,7 +70,7 @@ export default {
 					datasets: [{ values }],
 					// show daily limit marker if usage crosses 50%
 					yMarkers: values.some(value => value > plan_limit / 2)
-						? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+						? [{ label: 'Daily Compute Limit', value: plan_limit }]
 						: null
 				},
 				type: 'line',

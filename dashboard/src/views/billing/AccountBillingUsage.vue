@@ -33,7 +33,7 @@
 								@click="showPrepaidCreditsDialog = true"
 								theme="gray"
 							>
-								Add Balance
+								Add money
 							</Button>
 						</div>
 					</div>
@@ -80,7 +80,10 @@
 				"
 			/>
 		</Card>
-		<AccountBillingUpcomingInvoice :invoice-doc="upcomingInvoice" />
+		<AccountBillingUpcomingInvoice
+			:invoice-doc="upcomingInvoice"
+			v-if="upcomingInvoice?.items.length"
+		/>
 	</div>
 </template>
 <script>

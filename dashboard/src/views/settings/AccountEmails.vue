@@ -1,8 +1,5 @@
 <template>
-	<Card
-		title="Email Notifications"
-		subtitle="Email preferences for your account"
-	>
+	<Card title="Email Notifications">
 		<template #actions>
 			<Button icon-left="edit" @click="showEmailsEditDialog = true">
 				Edit
@@ -75,8 +72,8 @@ export default {
 	computed: {
 		fieldLabelMap() {
 			return {
-				invoices: 'Email To Receive Invoices',
-				marketplace_notifications: 'Marketplace Notifications'
+				invoices: 'Send invoices to',
+				marketplace_notifications: 'Send marketplace emails to'
 			};
 		}
 	}
