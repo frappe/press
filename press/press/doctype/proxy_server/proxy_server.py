@@ -141,15 +141,6 @@ class ProxyServer(BaseServer):
 			log_error("Exporters Install Exception", server=self.as_dict())
 
 	@frappe.whitelist()
-	def archive(self):
-		self.status = "Pending"
-		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
-
-	def _archive(self):
-		self.run_press_job("Archive Server")
-
-	@frappe.whitelist()
 	def setup_ssh_proxy(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_ssh_proxy", queue="long", timeout=1200

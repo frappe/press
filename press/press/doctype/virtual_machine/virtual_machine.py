@@ -17,9 +17,8 @@ class VirtualMachine(Document):
 		"Server",
 		"Database Server",
 		"Proxy Server",
-		# TODO: Add these doctypes when enabling them in private cluster
-		# "Monitor Server",
-		# "Log Server",
+		"Monitor Server",
+		"Log Server",
 	]
 
 	def autoname(self):
