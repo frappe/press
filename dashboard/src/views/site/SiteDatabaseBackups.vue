@@ -9,8 +9,9 @@
 				v-if="site?.status === 'Active' || site?.status === 'Suspended'"
 				@click="$resources.scheduleBackup.fetch()"
 				:loading="$resources.scheduleBackup.loading"
+				class="py-5"
 			>
-				Schedule a backup now
+				Create Backup
 			</Button>
 			<Dialog
 				:options="{
@@ -53,16 +54,14 @@
 						:message="restoreOnAnotherSiteErrorMessage"
 					/>
 				</template>
-				<template v-slot:actions>
+				<template #actions>
 					<Button
-						appearance="primary"
+						variant="solid"
+						class="w-full"
 						v-if="selectedSite"
 						@click="restoreOffsiteBackupOnAnotherSite(backupToRestore)"
 					>
 						Restore
-					</Button>
-					<Button @click="showRestoreOnAnotherSiteDialog = false">
-						Cancel
 					</Button>
 				</template>
 			</Dialog>
@@ -255,7 +254,7 @@ export default {
 						},
 						{
 							label: 'Restore Backup on Another Site',
-							handler: () => {
+							onClick: () => {
 								this.showRestoreOnAnotherSiteDialog = true;
 								this.backupToRestore = backup;
 							}
