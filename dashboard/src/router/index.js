@@ -10,8 +10,7 @@ const routes = [
 	{
 		path: '/checkout',
 		name: 'Checkout',
-		component: () =>
-			import(/* webpackChunkName: "signup" */ '../views/checkout/Checkout.vue'),
+		component: () => import('../views/checkout/Checkout.vue'),
 		meta: {
 			isLoginPage: true
 		}
@@ -35,10 +34,7 @@ const routes = [
 	{
 		path: '/setup-account/:requestKey/:joinRequest?',
 		name: 'Setup Account',
-		component: () =>
-			import(
-				/* webpackChunkName: "setup-account" */ '../views/auth/SetupAccount.vue'
-			),
+		component: () => import('../views/auth/SetupAccount.vue'),
 		props: true,
 		meta: {
 			isLoginPage: true
@@ -47,10 +43,7 @@ const routes = [
 	{
 		path: '/reset-password/:requestKey',
 		name: 'Reset Password',
-		component: () =>
-			import(
-				/* webpackChunkName: "reset-password" */ '../views/auth/ResetPassword.vue'
-			),
+		component: () => import('../views/auth/ResetPassword.vue'),
 		props: true,
 		meta: {
 			isLoginPage: true
@@ -348,31 +341,20 @@ const routes = [
 	{
 		path: '/marketplace',
 		name: 'Marketplace',
-		component: () =>
-			import(
-				/* webpackChunkName: "marketplace" */ '../views/marketplace/Marketplace.vue'
-			),
+		component: () => import('../views/marketplace/Marketplace.vue'),
 		children: [
 			{
 				path: 'publisher-profile',
 				component: () =>
-					import(
-						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplacePublisherProfile.vue'
-					)
+					import('../views/marketplace/MarketplacePublisherProfile.vue')
 			},
 			{
 				path: 'apps',
-				component: () =>
-					import(
-						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplaceApps.vue'
-					)
+				component: () => import('../views/marketplace/MarketplaceApps.vue')
 			},
 			{
 				path: 'payouts/:payoutOrderName?',
-				component: () =>
-					import(
-						/* webpackChunkName: "marketplace" */ '../views/marketplace/MarketplacePayouts.vue'
-					),
+				component: () => import('../views/marketplace/MarketplacePayouts.vue'),
 				props: true
 			}
 		]
