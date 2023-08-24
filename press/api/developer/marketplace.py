@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import get_url
-from typing import Dict
+from typing import Dict, List
 
 from press.api.developer import raise_invalid_key_error
 from press.api.marketplace import prepaid_saas_payment
@@ -57,6 +57,7 @@ class DeveloperApiHandler:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
 			from press.api.marketplace import get_plans_for_app
+			from press.utils.telemetry import capture
 
 			currency, address = frappe.db.get_value(
 				"Team", team, ["currency", "billing_address"]
@@ -65,6 +66,7 @@ class DeveloperApiHandler:
 				"currency": currency,
 				"address": True if address else False,
 				"team": self.app_subscription_doc.team,
+				"countries": frappe.db.get_all("Country", pluck="name"),
 			}
 			response["subscriptions"] = [
 				s.update(
@@ -81,12 +83,28 @@ class DeveloperApiHandler:
 						"team": self.app_subscription_doc.team,
 						"status": "Active",
 						"site": self.app_subscription_doc.site,
+						"app": (
+							"in",
+							frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"),
+						),
 					},
 					fields=["name", "app", "site", "plan"],
 				)
 			]
 
+			capture("clicked_subscribe_button", "fc_signup", team)
+
 			return response
+
+	def get_plans(self, subscription):
+		team = self.app_subscription_doc.team
+		with SessionManager(team) as _:
+			from press.api.marketplace import get_plans_for_app
+
+			return get_plans_for_app(
+				frappe.db.get_value("Marketplace App Subscription", subscription, "app"),
+				include_free=False,
+			)
 
 	def update_billing_info(self, data: Dict) -> str:
 		team = self.app_subscription_doc.team
@@ -112,9 +130,10 @@ class DeveloperApiHandler:
 	def send_login_link(self):
 		try:
 			login_url = self.get_login_url()
+			users = frappe.get_doc("Team", self.app_subscription_doc.team).user
 			frappe.sendmail(
 				subject="Login Verification Email",
-				recipients=[self.app_subscription_doc.team],
+				recipients=[users],
 				template="remote_login",
 				args={"login_url": login_url, "site": self.app_subscription_doc.site},
 				now=True,
@@ -125,7 +144,7 @@ class DeveloperApiHandler:
 
 	def get_login_url(self):
 		# check for active tokens
-		team = frappe.db.get_value("Site", self.app_subscription_doc.site, "team")
+		team = self.app_subscription_doc.team
 		if frappe.db.exists(
 			"Saas Remote Login",
 			{
@@ -158,11 +177,19 @@ class DeveloperApiHandler:
 			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
 		)
 
+	def login(self):
+		team = self.app_subscription_doc.team
+		frappe.local.login_manager.login_as(frappe.db.get_value("Team", team, "user"))
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response[
+			"location"
+		] = f"/dashboard/sites/{self.app_subscription_doc.site}/overview"
+
 
 class SessionManager:
 	# set user for authenticated requests and then switch to guest once completed
-	def __init__(self, team):
-		frappe.set_user(team)
+	def __init__(self, team: str):
+		frappe.set_user(frappe.db.get_value("Team", team, "user"))
 
 	def __enter__(self):
 		return self
@@ -193,6 +220,12 @@ def get_subscriptions(secret_key: str) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
+def get_plans(secret_key: str, subscription: str) -> List:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.get_plans(subscription)
+
+
+@frappe.whitelist(allow_guest=True)
 def update_billing_info(secret_key: str, data) -> str:
 	data = frappe.parse_json(data)
 	api_handler = DeveloperApiHandler(secret_key)
@@ -210,3 +243,9 @@ def saas_payment(secret_key: str, data) -> str:
 def send_login_link(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.send_login_link()
+
+
+@frappe.whitelist(allow_guest=True)
+def login(secret_key: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.login()

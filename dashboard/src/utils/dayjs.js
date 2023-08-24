@@ -50,7 +50,7 @@ dayjs.shortFormating = (s, ago = false) => {
 			newPostfix = 'Y';
 			break;
 	}
-	return `${prefix === 'a' ? '1' : prefix} ${newPostfix}${
+	return `${['a', 'an'].includes(prefix) ? '1' : prefix} ${newPostfix}${
 		isPast ? (ago ? ' ago' : '') : ''
 	}`;
 };

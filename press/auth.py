@@ -18,6 +18,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.core.doctype.communication.email.mark_email_as_seen",
 	"/api/method/frappe.realtime.get_user_info",
 	"/api/method/frappe.www.login.login_via_frappe",
+	"/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log",
 	"/api/method/get-user-sites-list-for-new-ticket",
 	"/api/method/login",
 	"/api/method/logout",
@@ -28,11 +29,16 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.email.queue.unsubscribe",
 	"/api/method/frappe.client.get",
 	"/api/method/frappe.client.get_count",
+	"/api/method/press.utils.telemetry.capture_read_event",
+	"/api/method/validate_plan_change",
+	"/api/method/marketplace-apps",
+
 ]
 
 ALLOWED_WILDCARD_PATHS = [
-	"/api/method/frappedesk.",
+	"/api/method/helpdesk.",
 	"/api/method/press.api.",
+	"/api/method/wiki.",
 ]
 
 DENIED_WILDCARD_PATHS = [

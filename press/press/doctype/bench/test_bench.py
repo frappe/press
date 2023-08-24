@@ -4,27 +4,27 @@
 
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.bench.bench import Bench, StagingSite
-from press.press.doctype.server.server import scale_workers
 from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.server.server import scale_workers
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
-@patch.object(AgentJob, "after_insert", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestStagingSite(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
 	def test_create_staging_site(self):
 		bench = create_test_bench()  # also creates press settings
-		frappe.db.set_value(
-			"Press Settings", None, "staging_plan", create_test_plan("Site").name
+		frappe.db.set_single_value(
+			"Press Settings", "staging_plan", create_test_plan("Site").name
 		)
 		count_before = frappe.db.count("Site")
 
@@ -36,6 +36,7 @@ class TestStagingSite(unittest.TestCase):
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 class TestBench(unittest.TestCase):
 	def setUp(self):
 		self.bench_count = 0  # to uniquely name sites in benches

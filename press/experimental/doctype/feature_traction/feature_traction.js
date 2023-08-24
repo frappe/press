@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Feature Traction', {
 	// refresh: function(frm) {
-
 	// }
 });

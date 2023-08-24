@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Marketplace Promotional Banner', {
 	// refresh: function(frm) {
-
 	// }
 });

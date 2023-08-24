@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2020-02-03 19:31:01.120166",
+ "creation": "2023-06-06 19:43:02.419970",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -19,6 +19,11 @@
   "database_url",
   "remote_database_file",
   "database_size",
+  "column_break_wiuq",
+  "config_file",
+  "config_file_url",
+  "remote_config_file",
+  "config_file_size",
   "data_12",
   "public_file",
   "public_url",
@@ -202,10 +207,39 @@
    "label": "Files Availability",
    "options": "\nAvailable\nUnavailable",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wiuq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "config_file",
+   "fieldtype": "Data",
+   "label": "Config File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "config_file_url",
+   "fieldtype": "Text",
+   "label": "Config File URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "config_file_size",
+   "fieldtype": "Data",
+   "label": "Config File Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remote_config_file",
+   "fieldtype": "Link",
+   "label": "Remote File",
+   "options": "Remote File",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2021-11-18 09:39:30.384739",
+ "modified": "2023-06-08 23:47:51.315930",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
@@ -234,5 +268,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

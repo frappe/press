@@ -104,14 +104,17 @@ class Bench(Document):
 			"socketio_port": 19000 + self.port_offset,
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
+			"codeserver_port": 16000 + self.port_offset,
 			"is_ssh_enabled": bool(self.is_ssh_enabled),
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
 			"statsd_host": f"{server_private_ip}:9125",
+			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
+			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
+			"environment_variables": self.get_environment_variables(),
+			"single_container": bool(self.is_single_container),
 		}
-		if self.is_single_container:
-			bench_config.update({"single_container": True})
 
 		release_group_bench_config = frappe.db.get_value(
 			"Release Group", self.group, "bench_config"
@@ -193,7 +196,7 @@ class Bench(Document):
 				if not frappe.db.exists("Site", site):
 					continue
 				try:
-					frappe.get_doc("Site", site).sync_info(info)
+					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
 				except Exception:
 					log_error("Site Sync Error", site=site, info=info)
@@ -204,6 +207,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
 		for site, analytics in data.items():
+			if not frappe.db.exists("Site", site):
+				return
 			try:
 				frappe.get_doc("Site", site).sync_analytics(analytics)
 				frappe.db.commit()
@@ -323,6 +328,9 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
 
+	def get_environment_variables(self):
+		return {v.key: v.value for v in self.environment_variables}
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -337,7 +345,7 @@ class StagingSite(Site):
 				"staging": True,
 				"bench": bench.name,
 				"apps": [{"app": app.app} for app in bench.apps],
-				"team": "Administrator",
+				"team": frappe.db.get_value("Team", {"user": "Administrator"}, "name"),
 				"subscription_plan": plan,
 			}
 		)
@@ -385,7 +393,18 @@ def process_new_bench_job_update(job):
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
 			)
-			frappe.get_doc("Bench", job.bench).add_ssh_user()
+			bench = frappe.get_doc("Bench", job.bench)
+			bench.add_ssh_user()
+
+			bench_update = frappe.get_all(
+				"Bench Update",
+				{"candidate": bench.candidate, "status": "Build Successful"},
+				pluck="name",
+			)
+			if bench_update:
+				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(
+					job.bench, bench.server
+				)
 
 
 def process_archive_bench_job_update(job):
@@ -399,8 +418,13 @@ def process_archive_bench_job_update(job):
 	}[job.status]
 
 	if job.status == "Failure":
-		if "Bench has sites" in job.traceback:  # custom exception hardcoded in agent
+		if (
+			job.traceback and "Bench has sites" in job.traceback
+		):  # custom exception hardcoded in agent
 			updated_status = "Active"
+		frappe.db.set_value(
+			"Bench", job.bench, "last_archive_failure", frappe.utils.now_datetime()
+		)
 
 	if updated_status != bench_status:
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
@@ -421,9 +445,16 @@ def process_remove_ssh_user_job_update(job):
 
 def archive_obsolete_benches():
 	benches = frappe.get_all(
-		"Bench", fields=["name", "candidate"], filters={"status": "Active"}
+		"Bench",
+		fields=["name", "candidate", "last_archive_failure"],
+		filters={"status": "Active"},
 	)
 	for bench in benches:
+		if (
+			bench.last_archive_failure
+			and bench.last_archive_failure > frappe.utils.add_to_date(None, hours=-24)
+		):
+			continue
 		# If this bench is already being archived then don't do anything.
 		active_archival_jobs = frappe.get_all(
 			"Agent Job",
@@ -437,6 +468,12 @@ def archive_obsolete_benches():
 			order_by="job_type",
 		)
 		if active_archival_jobs:
+			continue
+
+		ongoing_jobs = frappe.db.exists(
+			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
+		)
+		if ongoing_jobs:
 			continue
 
 		active_site_updates = frappe.get_all(
@@ -501,6 +538,19 @@ def sync_benches():
 def sync_bench(name):
 	bench = frappe.get_doc("Bench", name)
 	try:
+		active_archival_jobs = frappe.get_all(
+			"Agent Job",
+			{
+				"job_type": "Archive Bench",
+				"bench": bench.name,
+				"status": ("in", ("Pending", "Running", "Success")),
+			},
+			limit=1,
+			ignore_ifnull=True,
+			order_by="job_type",
+		)
+		if active_archival_jobs:
+			return
 		bench.sync_info()
 		frappe.db.commit()
 	except Exception:

@@ -15,6 +15,10 @@ from press.press.doctype.app_source.app_source import AppSource
 
 
 class AppRelease(Document):
+	def validate(self):
+		if not self.clone_directory:
+			self.set_clone_directory()
+
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all(
@@ -52,7 +56,7 @@ class AppRelease(Document):
 			self._prepare_clone_directory()
 			self._clone_repo()
 			self.cloned = True
-			self.save()
+			self.save(ignore_permissions=True)
 		except Exception:
 			log_error("App Release Clone Exception", release=self.name)
 
@@ -62,9 +66,15 @@ class AppRelease(Document):
 				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
 			).decode()
 		except Exception as e:
-			self.on_trash()
-			log_error("App Release Clone Exception", command=command, output=e.output.decode())
+			self.cleanup()
+			log_error("App Release Command Exception", command=command, output=e.output.decode())
 			raise e
+
+	def set_clone_directory(self):
+		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+		self.clone_directory = os.path.join(
+			clone_directory, self.app, self.source, self.hash[:10]
+		)
 
 	def _prepare_clone_directory(self):
 		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
@@ -98,8 +108,12 @@ class AppRelease(Document):
 			url = source.repository_url
 		self.output = ""
 		self.output += self.run("git init")
-		self.output += self.run(f"git checkout -b {source.branch}")
-		self.output += self.run(f"git remote add origin {url}")
+		self.output += self.run(f"git checkout -B {source.branch}")
+		origin_exists = self.run("git remote").strip() == "origin"
+		if origin_exists:
+			self.output += self.run(f"git remote set-url origin {url}")
+		else:
+			self.output += self.run(f"git remote add origin {url}")
 		self.output += self.run("git config credential.helper ''")
 		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
 		self.output += self.run(f"git checkout {self.hash}")
@@ -108,6 +122,12 @@ class AppRelease(Document):
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):
 			shutil.rmtree(self.clone_directory)
+
+	@frappe.whitelist()
+	def cleanup(self):
+		self.on_trash()
+		self.cloned = False
+		self.save(ignore_permissions=True)
 
 	def create_release_differences(self):
 		releases = frappe.db.sql(
@@ -156,7 +176,54 @@ class AppRelease(Document):
 			apps_to_ignore = [app.as_dict() for app in group.apps if not app.enable_auto_deploy]
 			candidate = group.create_deploy_candidate(apps_to_ignore)
 			if candidate:
-				candidate.build_and_deploy()
+				candidate.deploy_to_production()
+
+
+def cleanup_unused_releases():
+	sources = frappe.get_all(
+		"App Release",
+		fields=["source as name", "count(*) as count"],
+		filters={"cloned": True},
+		order_by="count desc",
+		group_by="source",
+	)
+	active_releases = set(
+		release.release
+		for release in frappe.get_all(
+			"Bench",
+			fields=["`tabBench App`.release"],
+			filters={"status": ("!=", "Archived")},
+		)
+	)
+
+	deleted = 0
+	for source in sources:
+		releases = frappe.get_all(
+			"App Release",
+			{"source": source.name, "cloned": True},
+			pluck="name",
+			order_by="creation ASC",
+		)
+		for index, release in enumerate(releases):
+
+			if deleted > 2000:
+				return
+
+			# Skip the most recent release
+			if index >= len(releases) - 1:
+				break
+
+			# Skip already deployed releases
+			if release in active_releases:
+				continue
+
+			try:
+				frappe.get_doc("App Release", release, for_update=True).cleanup()
+				deleted += 1
+				frappe.db.commit()
+			except Exception:
+				log_error("App Release Cleanup Error", release=release)
+				frappe.db.rollback()
 
 
 def get_permission_query_conditions(user):

@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-06-16 18:29:22.245007",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "group",
+  "apps_to_ignore",
+  "column_break_wff5",
+  "status",
+  "candidate",
+  "section_break_nfd1",
+  "sites"
+ ],
+ "fields": [
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Group",
+   "options": "Release Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sites",
+   "fieldtype": "Table",
+   "label": "Sites",
+   "options": "Bench Site Update"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nRunning\nBuild Successful\nFailure\nSuccess"
+  },
+  {
+   "fieldname": "apps_to_ignore",
+   "fieldtype": "Data",
+   "label": "Apps to Ignore"
+  },
+  {
+   "fieldname": "column_break_wff5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "candidate",
+   "fieldtype": "Link",
+   "label": "Candidate",
+   "options": "Deploy Candidate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_nfd1",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-06-21 19:11:56.737713",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Update",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

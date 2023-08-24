@@ -6,8 +6,12 @@
 		</p>
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
+			<div v-if="$resources.plans.loading" class="flex justify-center">
+				<LoadingText />
+			</div>
 			<SitePlansTable
-				:plans="options.plans"
+				v-if="plans"
+				:plans="plans"
 				:selectedPlan="selectedPlan"
 				@update:selectedPlan="plan => $emit('update:selectedPlan', plan)"
 			/>
@@ -21,10 +25,32 @@ import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 export default {
 	name: 'Plans',
 	emits: ['update:selectedPlan'],
-	props: ['options', 'selectedPlan'],
+	props: ['bench', 'selectedPlan', 'benchTeam'],
 	components: {
 		SitePlansTable,
 		AlertBillingInformation
+	},
+	data() {
+		return {
+			plans: null
+		};
+	},
+	resources: {
+		plans() {
+			return {
+				method: 'press.api.site.get_plans',
+				params: {
+					rg: this.bench
+				},
+				auto: true,
+				onSuccess(r) {
+					this.plans = r.map(plan => {
+						plan.disabled = !this.$account.hasBillingInfo;
+						return plan;
+					});
+				}
+			};
+		}
 	}
 };
 </script>

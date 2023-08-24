@@ -98,6 +98,7 @@ export default {
 				'Attention Required': [
 					'Overview',
 					'Releases',
+					'Review',
 					'Analytics',
 					'Subscriptions',
 					'Pricing'

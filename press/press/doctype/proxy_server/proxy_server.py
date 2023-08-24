@@ -22,16 +22,17 @@ class ProxyServer(BaseServer):
 
 	def validate_domains(self):
 		domains = [row.domain for row in self.domains]
+		code_servers = [row.code_server for row in self.domains]
 		# Always include self.domain in the domains child table
 		# Remove duplicates
 		domains = unique([self.domain] + domains)
 		self.domains = []
-		for domain in domains:
+		for i, domain in enumerate(domains):
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
 				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
-			self.append("domains", {"domain": domain})
+			self.append("domains", {"domain": domain, "code_server": code_servers[i]})
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
@@ -55,6 +56,7 @@ class ProxyServer(BaseServer):
 						"fullchain.pem": certificate.full_chain,
 						"chain.pem": certificate.intermediate_chain,
 					},
+					"code_server": domain.code_server,
 				}
 			)
 		return wildcard_domains

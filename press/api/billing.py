@@ -60,6 +60,12 @@ def invoices_and_payments():
 
 
 @frappe.whitelist()
+def refresh_invoice_link(invoice):
+	doc = frappe.get_doc("Invoice", invoice)
+	return doc.refresh_stripe_payment_link()
+
+
+@frappe.whitelist()
 def balances():
 	team = get_current_team()
 	has_bought_credits = frappe.db.get_all(
@@ -468,7 +474,7 @@ def get_latest_unpaid_invoice():
 		unpaid_invoice = frappe.db.get_value(
 			"Invoice",
 			unpaid_invoices[0],
-			["amount_due", "stripe_invoice_url", "payment_mode", "amount_due", "currency"],
+			["amount_due", "payment_mode", "amount_due", "currency"],
 			as_dict=True,
 		)
 		if (

@@ -5,9 +5,9 @@
 import json
 import re
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Dict, List
 
-import boto3
 import dateutil.parser
 import frappe
 import requests
@@ -28,11 +28,12 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.site import check_dns
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
-from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
+from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
+from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
@@ -163,7 +164,7 @@ class Site(Document):
 		self.archive(site_name=site_name, reason="Retry Archive")
 
 	def rename(self, new_name: str):
-		self.create_dns_record()
+		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
 		agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -212,7 +213,6 @@ class Site(Document):
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
-			self.append("apps", {"app": app})
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
 			self.status = "Pending"
@@ -248,64 +248,14 @@ class Site(Document):
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
-		self.create_dns_record()
+		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
 		self.create_agent_request()
-
-	@frappe.whitelist()
-	def create_dns_record(self):
-		"""Check if site needs dns records and creates one."""
-		domain = frappe.get_doc("Root Domain", self.domain)
-		if self.cluster == domain.default_cluster:
-			return
-		proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-		self._change_dns_record("UPSERT", domain, proxy_server)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
-		self._change_dns_record("DELETE", domain, proxy_server, site)
-
-	def _change_dns_record(
-		self, method: str, domain: Document, proxy_server: str, site: str = None
-	):
-		"""
-		Change dns record of site
-
-		method: CREATE | DELETE | UPSERT
-		"""
-		try:
-			site_name = self._get_site_name(self.subdomain) if not site else site
-			client = boto3.client(
-				"route53",
-				aws_access_key_id=domain.aws_access_key_id,
-				aws_secret_access_key=domain.get_password("aws_secret_access_key"),
-			)
-			zones = client.list_hosted_zones_by_name()["HostedZones"]
-			hosted_zone = find(reversed(zones), lambda x: domain.name.endswith(x["Name"][:-1]))[
-				"Id"
-			]
-			client.change_resource_record_sets(
-				ChangeBatch={
-					"Changes": [
-						{
-							"Action": method,
-							"ResourceRecordSet": {
-								"Name": site_name,
-								"Type": "CNAME",
-								"TTL": 600,
-								"ResourceRecords": [{"Value": proxy_server}],
-							},
-						}
-					]
-				},
-				HostedZoneId=hosted_zone,
-			)
-		except Exception:
-			log_error(
-				"Route 53 Record Creation Error",
-				domain=domain.name,
-				site=site_name,
-				proxy_server=proxy_server,
-			)
+		_change_dns_record(
+			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
+		)
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -319,7 +269,7 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.new_upstream_site(self.server, self.name)
+		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
 	def reinstall(self):
@@ -419,7 +369,7 @@ class Site(Document):
 		self.status_before_update = self.status
 		self.status = "Pending"
 		self.save()
-		frappe.get_doc(
+		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
@@ -427,6 +377,7 @@ class Site(Document):
 				"skipped_backups": skip_backups,
 			}
 		).insert()
+		return doc.name
 
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
@@ -481,7 +432,7 @@ class Site(Document):
 	@frappe.whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower()
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
 				{
@@ -528,7 +479,7 @@ class Site(Document):
 		site_domain = frappe.delete_doc("Site Domain", site_domain.name)
 
 	def retry_add_domain(self, domain):
-		if check_dns(self.name, domain):
+		if check_dns(self.name, domain)["matched"]:
 			site_domain = frappe.get_all(
 				"Site Domain",
 				filters={
@@ -609,7 +560,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	def archive(self, site_name=None, reason=None, force=False):
+	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
 		self.status = "Pending"
@@ -621,7 +572,9 @@ class Site(Document):
 		)[0]
 
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
-		agent.remove_upstream_site(self.server, self.name, site_name)
+		agent.remove_upstream_file(
+			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
+		)
 
 		self.db_set("host_name", None)
 
@@ -659,6 +612,7 @@ class Site(Document):
 			fields=["remote_database_file", "remote_public_file", "remote_private_file"],
 			as_list=True,
 			order_by="creation desc",
+			ignore_ifnull=True,
 		):
 			sites_remote_files += backup_files
 
@@ -878,7 +832,9 @@ class Site(Document):
 				self.configuration[keys[key]].value = convert(value)
 				self.configuration[keys[key]].type = guess_type(value)
 			else:
-				self.append("configuration", {"key": key, "value": convert(value)})
+				self.append(
+					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
+				)
 
 		if save:
 			self.save()
@@ -918,7 +874,7 @@ class Site(Document):
 			subscription = self.subscription
 			if subscription:
 				subscription.team = self.team
-				subscription.save()
+				subscription.save(ignore_permissions=True)
 
 	def enable_subscription(self):
 		subscription = self.subscription
@@ -1043,11 +999,11 @@ class Site(Document):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	def suspend(self, reason=None):
+	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
 		self.update_site_config({"maintenance_mode": 1})
-		self.update_site_status_on_proxy("suspended")
+		self.update_site_status_on_proxy("suspended", skip_reload=skip_reload)
 		self.deactivate_app_subscriptions()
 
 	def deactivate_app_subscriptions(self):
@@ -1077,10 +1033,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.reset_site_usage(self)
 
-	def update_site_status_on_proxy(self, status):
+	def update_site_status_on_proxy(self, status, skip_reload=False):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
-		agent.update_site_status(self.server, self.name, status)
+		agent.update_site_status(self.server, self.name, status, skip_reload)
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
@@ -1109,7 +1065,7 @@ class Site(Document):
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
-	def can_charge_for_subscription(self):
+	def can_charge_for_subscription(self, subscription=None):
 		today = frappe.utils.getdate()
 		return (
 			self.status not in ["Archived", "Suspended"]
@@ -1232,7 +1188,7 @@ class Site(Document):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites)},
+			{"name": ("in", sites), "skip_scheduled_backups": False},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1254,8 +1210,23 @@ class Site(Document):
 				pluck="name",
 			)
 		)
-		return list(all_sites - set(cls.get_sites_with_backup_in_interval(interval_hrs_ago)))
+		return list(
+			all_sites
+			- set(cls.get_sites_with_backup_in_interval(interval_hrs_ago))
+			- set(cls.get_sites_with_pending_backups(interval_hrs_ago))
+		)
 		# TODO: query using creation time of account request for actual new sites <03-09-21, Balamurali M> #
+
+	@classmethod
+	def get_sites_with_pending_backups(cls, interval_hrs_ago: datetime) -> List[str]:
+		return frappe.get_all(
+			"Site Backup",
+			{
+				"status": ("in", ["Running", "Pending"]),
+				"creation": (">=", interval_hrs_ago),
+			},
+			pluck="site",
+		)
 
 	@classmethod
 	def get_sites_with_backup_in_interval(cls, interval_hrs_ago) -> List[str]:
@@ -1289,6 +1260,14 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.run_after_migrate_steps(self)
 
+	@frappe.whitelist()
+	def enable_read_write(self):
+		self.enable_database_access("read_write")
+
+	@frappe.whitelist()
+	def disable_read_write(self):
+		self.enable_database_access("read_only")
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
@@ -1299,7 +1278,11 @@ def site_cleanup_after_archive(site):
 def delete_site_subdomain(site):
 	site_doc = frappe.get_doc("Site", site)
 	domain = frappe.get_doc("Root Domain", site_doc.domain)
-	proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
+	is_standalone = frappe.get_value("Server", site_doc.server, "is_standalone")
+	if is_standalone:
+		proxy_server = site_doc.server
+	else:
+		proxy_server = frappe.get_value("Server", site_doc.server, "proxy_server")
 	site_doc.remove_dns_record(domain, proxy_server, site)
 
 
@@ -1422,6 +1405,10 @@ def process_install_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
+		if job.status == "Success":
+			site = frappe.get_doc("Site", job.site)
+			site.append("apps", {"app": json.loads(job.request_data).get("name")})
+			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 

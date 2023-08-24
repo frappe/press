@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "prompt",
+ "creation": "2023-05-11 17:40:05.778395",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "chat_id",
+  "topics"
+ ],
+ "fields": [
+  {
+   "fieldname": "chat_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Chat ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "topics",
+   "fieldtype": "Table",
+   "label": "Topics",
+   "options": "Telegram Group Topic"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-05-11 17:40:05.778395",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Telegram Group",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

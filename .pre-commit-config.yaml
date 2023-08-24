@@ -3,12 +3,6 @@ default_stages: [commit]
 fail_fast: false
 
 repos:
-  - repo: https://github.com/adityahase/black
-    rev: 9cb0a69f4d0030cdf687eddf314468b39ed54119
-    hooks:
-      - id: black
-        additional_dependencies: ['click==8.0.4']
-
   - repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
@@ -16,3 +10,37 @@ repos:
         args: [--ignore, 'W191,E501,W503']
         additional_dependencies: ['flake8==3.9.2']
 
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.9-for-vscode
+    hooks:
+      - id: prettier
+        types_or: [javascript, vue]
+        # Ignore any files that might contain jinja / bundles
+        exclude: |
+          (?x)^(
+              press/public/dist/.*|
+              .*node_modules.*|
+              .*boilerplate.*|
+              press/www/website_script.js|
+              press/templates/includes/.*|
+              press/public/js/.*min.js
+          )$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: debug-statements
+      - id: trailing-whitespace
+        files: 'press.*'
+        exclude: '.*json$|.*txt$|.*csv|.*md|.*svg'
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+
+  - repo: https://github.com/adityahase/black
+    rev: 9cb0a69f4d0030cdf687eddf314468b39ed54119
+    hooks:
+      - id: black
+        additional_dependencies: ['click==8.0.4']

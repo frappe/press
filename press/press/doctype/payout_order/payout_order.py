@@ -10,6 +10,8 @@ from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
+from datetime import date
+
 
 class PayoutOrder(Document):
 	def validate(self):
@@ -63,12 +65,11 @@ class PayoutOrder(Document):
 			row.net_amount = row.total_amount - row.commission
 
 			if row.currency == "INR":
-				app_payment.total_inr += row.net_amount
+				app_payment.total_inr += row.net_amount if row.net_amount > 0 else row.commission
 			else:
-				app_payment.total_usd += row.net_amount
+				app_payment.total_usd += row.net_amount if row.net_amount > 0 else row.commission
 
 			app_payment.save(ignore_permissions=True)
-			self.ignore_commission = True
 
 	def validate_net_totals(self):
 		self.net_total_usd = 0
@@ -79,6 +80,9 @@ class PayoutOrder(Document):
 				self.net_total_inr += row.net_amount
 			else:
 				self.net_total_usd += row.net_amount
+
+		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
+			self.status = "Commissioned"
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
@@ -201,8 +205,8 @@ def get_unaccounted_marketplace_invoice_items():
 def create_payout_order_from_invoice_items(
 	invoice_items: List[InvoiceItem],
 	recipient: str,
-	period_start: str,
-	period_end: str,
+	period_start: date,
+	period_end: date,
 	mode_of_payment: str = "Cash",
 	notes: str = "",
 	type: str = "Marketplace",

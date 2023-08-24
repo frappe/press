@@ -102,7 +102,7 @@ export default {
 				onSuccess() {
 					this.showUpdatesDialog = false;
 					this.$notify({
-						title: 'Site update scheduled successfully!',
+						title: 'Site update scheduled successfully',
 						icon: 'check',
 						color: 'green'
 					});

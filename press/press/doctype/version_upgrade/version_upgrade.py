@@ -5,6 +5,7 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
+from press.utils import log_error
 
 
 class VersionUpgrade(Document):
@@ -33,9 +34,9 @@ class VersionUpgrade(Document):
 		bench_apps = [
 			app.app for app in frappe.get_doc("Release Group", self.destination_group).apps
 		]
-		if set(site_apps) - set(bench_apps):
+		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Release Group {self.destination_group} doesn't have some of the apps installed on {self.site}",
+				f"Destination Group {self.destination_group} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
 				frappe.ValidationError,
 			)
 
@@ -100,32 +101,42 @@ class VersionUpgrade(Document):
 def update_from_site_update():
 	ongoing_version_upgrades = VersionUpgrade.get_all_ongoing_version_upgrades()
 	for version_upgrade in ongoing_version_upgrades:
-		site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
-		version_upgrade.status = site_update.status
-		if site_update.status in ["Failure", "Recovered", "Fatal"]:
-			last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
-			last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
-			version_upgrade.last_traceback = last_traceback
-			version_upgrade.last_output = last_output
-			version_upgrade.status = "Failure"
-			site = frappe.get_doc("Site", version_upgrade.site)
-			recipient = site.notify_email or site.team
+		try:
+			site_update = frappe.get_doc("Site Update", version_upgrade.site_update)
+			version_upgrade.status = site_update.status
+			if site_update.status in ["Failure", "Recovered", "Fatal"]:
+				last_traceback = frappe.get_value("Agent Job", site_update.update_job, "traceback")
+				last_output = frappe.get_value("Agent Job", site_update.update_job, "output")
+				version_upgrade.last_traceback = last_traceback
+				version_upgrade.last_output = last_output
+				version_upgrade.status = "Failure"
+				site = frappe.get_doc("Site", version_upgrade.site)
+				recipient = site.notify_email or frappe.get_doc("Team", site.team).user
 
-			frappe.sendmail(
-				recipients=[recipient],
-				subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
-				reference_doctype="Version Upgrade",
-				reference_name=version_upgrade.name,
-				template="version_upgrade_failed",
-				args={
-					"site": version_upgrade.site,
-					"traceback": last_traceback,
-					"output": last_output,
-				},
-			)
-		version_upgrade.save()
+				frappe.sendmail(
+					recipients=[recipient],
+					subject=f"Automated Version Upgrade Failed for {version_upgrade.site}",
+					reference_doctype="Version Upgrade",
+					reference_name=version_upgrade.name,
+					template="version_upgrade_failed",
+					args={
+						"site": version_upgrade.site,
+						"traceback": last_traceback,
+						"output": last_output,
+					},
+				)
+			version_upgrade.save()
+			frappe.db.commit()
+		except Exception as e:
+			frappe.log_error(f"Error while updating Version Upgrade {version_upgrade.name}", e)
+			frappe.db.rollback()
 
 
 def run_scheduled_upgrades():
 	for upgrade in VersionUpgrade.get_all_scheduled_before_now():
-		upgrade.start()
+		try:
+			upgrade.start()
+			frappe.db.commit()
+		except Exception:
+			log_error("Scheduled Version Upgrade Error", upgrade=upgrade)
+			frappe.db.rollback()

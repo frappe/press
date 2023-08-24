@@ -16,7 +16,7 @@
 - name: Get All Users 
   mysql_query:
     login_user: root
-    login_password: 1123
+    login_password: "{{ mariadb_root_password }}"
     login_db: mysql
     query:
       - "select user from mysql.user where user != 'root' or user!= 'debian-sys-maint' and host = 'localhost';"

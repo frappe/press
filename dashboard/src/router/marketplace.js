@@ -12,6 +12,12 @@ export default [
 		props: true
 	},
 	{
+		path: '/developer-reply/:marketplaceApp/:reviewId',
+		name: 'ReplyMarketplaceApp',
+		component: () => import('@/views/marketplace/ReplyMarketplaceApp.vue'),
+		props: true
+	},
+	{
 		path: '/marketplace',
 		name: 'Marketplace',
 		component: () =>

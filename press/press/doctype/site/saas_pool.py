@@ -6,6 +6,8 @@ from press.press.doctype.site.saas_site import (
 	get_saas_apps,
 	get_saas_domain,
 	get_pool_apps,
+	create_app_subscriptions,
+	set_site_in_subscription_docs,
 )
 
 
@@ -37,7 +39,7 @@ class SaasSitePool:
 			bench = get_saas_bench(self.app)
 			subdomain = self.get_subdomain()
 			apps = get_saas_apps(self.app)
-			frappe.get_doc(
+			site = frappe.get_doc(
 				{
 					"doctype": "Site",
 					"subdomain": subdomain,
@@ -48,7 +50,10 @@ class SaasSitePool:
 					"bench": bench,
 					"apps": [{"app": app} for app in apps],
 				}
-			).insert()
+			)
+			subscription_docs = create_app_subscriptions(site, self.app)
+			site.insert()
+			set_site_in_subscription_docs(subscription_docs, site.name)
 		except Exception:
 			log_error(
 				"Pool Site Creation Error",
@@ -69,7 +74,7 @@ class SaasSitePool:
 			subdomain = self.get_subdomain()
 			apps = get_saas_apps(self.app)
 			apps.extend(pool_apps)
-			frappe.get_doc(
+			site = frappe.get_doc(
 				{
 					"doctype": "Site",
 					"subdomain": subdomain,
@@ -81,7 +86,10 @@ class SaasSitePool:
 					"bench": bench,
 					"apps": [{"app": app} for app in apps],
 				}
-			).insert()
+			)
+			subscription_docs = create_app_subscriptions(site, self.app)
+			site.insert()
+			set_site_in_subscription_docs(subscription_docs, site.name)
 
 	def get_subdomain(self):
 		return make_autoname("standby-.########")

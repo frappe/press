@@ -11,6 +11,7 @@ from frappe.utils import convert_utc_to_timezone
 from frappe.utils.password import get_decrypted_password
 from datetime import datetime, timezone as tz
 from frappe.utils import flt
+from press.press.doctype.team.team import get_child_team_members
 
 
 def poly_get_doc(doctypes, name):
@@ -21,22 +22,66 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all():
+def all(server_filter="All Servers"):
 	team = get_current_team()
-	app_servers = frappe.get_all(
-		"Server",
-		{"team": team, "status": ("!=", "Archived")},
-		["name", "creation", "status", "title"],
-	)
-	database_servers = frappe.get_all(
-		"Database Server",
-		{"team": team, "status": ("!=", "Archived"), "is_self_hosted": ("!=", True)},
-		["name", "creation", "status", "title"],
-	)
-	all_servers = app_servers + database_servers
-	for server in all_servers:
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
+
+	db_server = frappe.qb.DocType("Database Server")
+	app_server = frappe.qb.DocType("Server")
+	res_tag = frappe.qb.DocType("Resource Tag")
+
+	if server_filter != "Database Servers":
+		app_server_query = (
+			frappe.qb.from_(app_server)
+			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
+			.where(
+				((app_server.team).isin(teams))
+				& (app_server.status != "Archived")
+				& (app_server.is_self_hosted == 0)
+			)
+		)
+
+	if server_filter != "App Servers":
+		database_server_query = (
+			frappe.qb.from_(db_server)
+			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
+			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
+		)
+
+	if server_filter.startswith("tag:"):
+		tag = server_filter[4:]
+
+		app_server_query = app_server_query.inner_join(res_tag).on(
+			(res_tag.parent == app_server.name) & (res_tag.tag_name == tag)
+		)
+		database_server_query = database_server_query.inner_join(res_tag).on(
+			(res_tag.parent == db_server.name) & (res_tag.tag_name == tag)
+		)
+
+	if server_filter == "All Servers" or server_filter.startswith("tag:"):
+		query = app_server_query + database_server_query
+	elif server_filter == "App Servers":
+		query = app_server_query
+	elif server_filter == "Database Servers":
+		query = database_server_query
+	else:
+		return []
+
+	# union isn't supported in qb for run method
+	# https://github.com/frappe/frappe/issues/15609
+	servers = frappe.db.sql(query.get_sql(), as_dict=True)
+	for server in servers:
 		server["app_server"] = f"f{server.name[1:]}"
-	return all_servers
+	return servers
+
+
+@frappe.whitelist()
+def server_tags():
+	team = get_current_team()
+	return frappe.get_all(
+		"Press Tag", {"team": team, "doctype_name": "Server"}, pluck="tag"
+	)
 
 
 @frappe.whitelist()
@@ -48,9 +93,15 @@ def get(name):
 		"title": server.title,
 		"status": server.status,
 		"team": server.team,
-		"app_server": f"f{server.name[1:]}",
+		"app_server": server.name
+		if server.is_self_hosted
+		else f"f{server.name[1:]}",  # Don't use `f` series if self hosted
 		"region_info": frappe.db.get_value(
 			"Cluster", server.cluster, ["name", "title", "image"], as_dict=True
+		),
+		"server_tags": [{"name": x.tag, "tag": x.tag_name} for x in server.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
 		),
 	}
 
@@ -64,7 +115,7 @@ def overview(name):
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				server.team,
+				frappe.get_value("Team", server.team, "user"),
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),
@@ -345,7 +396,6 @@ def prometheus_query(query, function, timezone, timespan, timegrain):
 def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
-
 	regions = frappe.get_all(
 		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
 	)

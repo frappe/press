@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Site Config Key Blacklist', {
 	// refresh: function(frm) {
-
 	// }
 });

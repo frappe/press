@@ -48,7 +48,19 @@ export default [
 				path: 'install',
 				component: () => import('../views/server/ServerInstall.vue'),
 				props: true
+			},
+			{
+				name: 'ServerSettings',
+				path: 'setting',
+				component: () => import('../views/server/ServerSettings.vue'),
+				props: true
 			}
 		]
+	},
+	{
+		name: 'New SelfHosted Server',
+		path: '/selfhosted/new',
+		component: () => import('../views/server/NewSelfHostedServer.vue'),
+		props: true
 	}
 ];

@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Balance Transaction', {
 	// refresh: function(frm) {
-
 	// }
 });

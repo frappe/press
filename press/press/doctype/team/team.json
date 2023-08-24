@@ -1,22 +1,27 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Prompt",
+ "autoname": "hash",
  "creation": "2022-01-28 20:07:37.989538",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "enabled",
+  "team_title",
   "user",
+  "account_request",
   "is_developer",
   "free_account",
   "via_erpnext",
   "column_break_6",
   "erpnext_partner",
   "partner_email",
+  "parent_team",
   "section_break_6",
   "team_members",
+  "section_break_tdm9",
+  "child_team_members",
   "section_break_9",
   "send_notifications",
   "column_break_9",
@@ -43,6 +48,8 @@
   "database_access_enabled",
   "razorpay_enabled",
   "servers_enabled",
+  "code_servers_enabled",
+  "self_hosted_servers_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -54,8 +61,7 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User",
-   "unique": 1
+   "options": "User"
   },
   {
    "fieldname": "team_members",
@@ -291,6 +297,45 @@
    "fieldname": "skip_backups",
    "fieldtype": "Check",
    "label": "Allow to skip Backups"
+  },
+  {
+   "fieldname": "parent_team",
+   "fieldtype": "Link",
+   "label": "Parent Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "section_break_tdm9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "child_team_members",
+   "fieldtype": "Table",
+   "label": "Child Team Members",
+   "options": "Child Team Member"
+  },
+  {
+   "fieldname": "team_title",
+   "fieldtype": "Data",
+   "label": "Team Title"
+  },
+  {
+   "default": "0",
+   "fieldname": "self_hosted_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Self Hosted Servers Enabled"
+  },
+  {
+   "fieldname": "account_request",
+   "fieldtype": "Link",
+   "label": "Account Request",
+   "options": "Account Request"
+  },
+  {
+   "default": "0",
+   "fieldname": "code_servers_enabled",
+   "fieldtype": "Check",
+   "label": "Code Servers Enabled"
   }
  ],
  "links": [
@@ -307,11 +352,6 @@
   {
    "group": "General",
    "link_doctype": "App",
-   "link_fieldname": "team"
-  },
-  {
-   "group": "General",
-   "link_doctype": "Feedback",
    "link_fieldname": "team"
   },
   {
@@ -345,11 +385,11 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-03-21 16:51:49.538848",
+ "modified": "2023-07-29 12:19:18.195316",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
- "naming_rule": "Set by user",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
@@ -372,8 +412,10 @@
   }
  ],
  "quick_entry": 1,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "user",
  "track_changes": 1
 }

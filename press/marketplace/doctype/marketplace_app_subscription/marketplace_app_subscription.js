@@ -15,7 +15,7 @@ frappe.ui.form.on('Marketplace App Subscription', {
 						frm.refresh();
 					});
 				},
-				'Actions'
+				'Actions',
 			);
 		}
 	},

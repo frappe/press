@@ -12,9 +12,13 @@
   "column_break_2",
   "group",
   "team",
+  "scheduled_time",
   "section_break_4",
   "apps",
   "dependencies",
+  "packages",
+  "apt_packages",
+  "environment_variables",
   "section_break_6",
   "build_start",
   "build_end",
@@ -35,7 +39,10 @@
   "user_private_key",
   "user_certificate",
   "feature_flags_section",
-  "is_redisearch_enabled"
+  "is_redisearch_enabled",
+  "column_break_tkdd",
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues"
  ],
  "fields": [
   {
@@ -54,7 +61,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending\nRunning\nSuccess\nFailure",
+   "options": "Draft\nScheduled\nPending\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -229,10 +236,56 @@
    "fieldname": "is_redisearch_enabled",
    "fieldtype": "Check",
    "label": "Is RediSearch Enabled"
+  },
+  {
+   "fieldname": "packages",
+   "fieldtype": "Table",
+   "label": "Packages",
+   "options": "Deploy Candidate Package",
+   "read_only": 1
+  },
+  {
+   "fieldname": "apt_packages",
+   "fieldtype": "Text",
+   "label": "APT Packages",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tkdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Deploy Candidate Variable",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.merge_all_rq_queues",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.merge_default_and_short_rq_queues",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2022-04-01 17:11:40.188553",
+ "modified": "2023-07-28 16:00:52.623701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

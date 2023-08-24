@@ -64,6 +64,7 @@
   "docker_registry_username",
   "docker_registry_password",
   "docker_build_section",
+  "suspend_builds",
   "clone_directory",
   "build_directory",
   "column_break_66",
@@ -128,6 +129,10 @@
   "commission",
   "usd_rate",
   "app_include_script",
+  "plausible_column",
+  "plausible_url",
+  "plausible_site_id",
+  "plausible_api_key",
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
@@ -149,8 +154,12 @@
   "column_break_100",
   "log_server",
   "telegram_alert_chat_id",
+  "telegram_alerts_chat_group",
   "feature_flags_tab",
-  "verify_cards_with_micro_charge"
+  "verify_cards_with_micro_charge",
+  "enable_google_oauth",
+  "code_spaces_tab",
+  "spaces_domain"
  ],
  "fields": [
   {
@@ -941,11 +950,61 @@
    "fieldname": "app_include_script",
    "fieldtype": "Data",
    "label": "App Include Script"
+  },
+  {
+   "fieldname": "telegram_alerts_chat_group",
+   "fieldtype": "Link",
+   "label": "Telegram Alerts Chat Group",
+   "options": "Telegram Group"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_google_oauth",
+   "fieldtype": "Check",
+   "label": "Enable Google Oauth "
+  },
+  {
+   "fieldname": "plausible_api_key",
+   "fieldtype": "Password",
+   "label": "Plausible API Key"
+  },
+  {
+   "fieldname": "plausible_column",
+   "fieldtype": "Column Break",
+   "label": "Plausible"
+  },
+  {
+   "fieldname": "plausible_url",
+   "fieldtype": "Data",
+   "label": "Plausible URL"
+  },
+  {
+   "fieldname": "plausible_site_id",
+   "fieldtype": "Data",
+   "label": "Plausible site id"
+  },
+  {
+   "fieldname": "code_spaces_tab",
+   "fieldtype": "Tab Break",
+   "label": "Code Spaces"
+  },
+  {
+   "fieldname": "spaces_domain",
+   "fieldtype": "Link",
+   "label": "Spaces Domain",
+   "options": "Root Domain"
+  },
+  {
+   "default": "0",
+   "fieldname": "suspend_builds",
+   "fieldtype": "Check",
+   "label": "Suspend Builds",
+   "read_only": 1
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-02-22 12:18:22.115183",
+ "modified": "2023-07-28 15:18:24.030578",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

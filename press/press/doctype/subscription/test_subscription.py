@@ -9,13 +9,14 @@ from unittest.mock import patch
 import frappe
 
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_subscription(
 	document_name: str, plan: str, team: str, document_type: str = "Site"
 ):
 
-	return frappe.get_doc(
+	subscription = frappe.get_doc(
 		{
 			"doctype": "Subscription",
 			"document_type": document_type,
@@ -24,12 +25,18 @@ def create_test_subscription(
 			"plan": plan,
 		}
 	).insert(ignore_if_duplicate=True)
+	subscription.reload()
+	return subscription
 
 
 class TestSubscription(unittest.TestCase):
+	def setUp(self):
+		self.team = create_test_team()
+
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_subscription_daily(self):
-		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
 			doctype="Plan",
@@ -42,7 +49,7 @@ class TestSubscription(unittest.TestCase):
 
 		subscription = frappe.get_doc(
 			doctype="Subscription",
-			team=team.name,
+			team=self.team.name,
 			document_type="ToDo",
 			document_name=todo.name,
 			plan=plan.name,
@@ -71,12 +78,10 @@ class TestSubscription(unittest.TestCase):
 		with patch.object(frappe.utils, "today", return_value=tomorrow):
 			subscription.create_usage_record()
 
-		invoice = frappe.get_doc("Invoice", {"team": email, "status": "Draft"})
+		invoice = frappe.get_doc("Invoice", {"team": self.team.name, "status": "Draft"})
 		self.assertEqual(invoice.total, desired_value)
 
 	def test_subscription_for_non_chargeable_document(self):
-		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
 			doctype="Plan",
@@ -89,13 +94,13 @@ class TestSubscription(unittest.TestCase):
 
 		subscription = frappe.get_doc(
 			doctype="Subscription",
-			team=team.name,
+			team=self.team.name,
 			document_type="ToDo",
 			document_name=todo.name,
 			plan=plan.name,
 		).insert()
 
-		def method():
+		def method(subscription):
 			return False
 
 		# subscription calls this method when checking if it should create a usage record
@@ -107,9 +112,7 @@ class TestSubscription(unittest.TestCase):
 			self.assertTrue(usage_record is None)
 
 	def test_site_in_trial(self):
-		email = "testuser@example.com"
-		team = frappe.get_doc(doctype="Team", name=email, country="India", enabled=1).insert()
-		team.create_upcoming_invoice()
+		self.team.create_upcoming_invoice()
 
 		two_days_after = frappe.utils.add_days(None, 2)
 		site = create_test_site()
@@ -128,7 +131,7 @@ class TestSubscription(unittest.TestCase):
 
 		subscription = frappe.get_doc(
 			doctype="Subscription",
-			team=team.name,
+			team=self.team.name,
 			document_type="Site",
 			document_name=site.name,
 			plan=plan.name,
@@ -146,8 +149,5 @@ class TestSubscription(unittest.TestCase):
 			# shouldn't create a usage record as site is in trial
 			subscription.create_usage_record()
 
-		invoice = frappe.get_doc("Invoice", {"team": email, "status": "Draft"})
+		invoice = frappe.get_doc("Invoice", {"team": self.team.name, "status": "Draft"})
 		self.assertEqual(invoice.total, 0)
-
-	def tearDown(self):
-		frappe.db.rollback()

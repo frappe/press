@@ -8,6 +8,7 @@ from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_ap
 import wrapt
 import frappe
 import dns.resolver
+import dns.exception
 
 from typing import Dict
 from boto3 import client
@@ -32,11 +33,18 @@ from press.utils import (
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		if frappe.session.data.user_type == "System User":
+		user_type = frappe.session.data.user_type or frappe.get_cached_value(
+			"User", frappe.session.user, "user_type"
+		)
+		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
 		name = kwargs.get("name") or args[0]
 		team = get_current_team()
+
+		from press.press.doctype.team.team import get_child_team_members
+
+		child_teams = [team.name for team in get_child_team_members(team)]
 
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
@@ -44,7 +52,7 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team:
+			if owner == team or owner in child_teams:
 				return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
@@ -161,7 +169,7 @@ def _new(site, server: str = None):
 	)
 
 	if app_plans and len(app_plans) > 0:
-		subscription_docs = get_app_subscriptions(app_plans)
+		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
 		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
@@ -181,6 +189,12 @@ def _new(site, server: str = None):
 		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
 			ignore_permissions=True
 		)
+
+	# Telemetry: Send event if first site
+	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
+		from press.utils.telemetry import capture
+
+		capture("created_first_site", "fc_signup", team.account_request)
 
 	return {
 		"site": site.name,
@@ -212,7 +226,7 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans):
+def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
@@ -229,6 +243,7 @@ def get_app_subscriptions(app_plans):
 				"doctype": "Marketplace App Subscription",
 				"marketplace_app_plan": plan_name,
 				"app": app_name,
+				"team": team,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
@@ -299,6 +314,9 @@ def backups(name):
 		"database_file",
 		"database_size",
 		"database_url",
+		"config_file_size",
+		"config_file_url",
+		"config_file",
 		"private_file",
 		"private_size",
 		"private_url",
@@ -311,6 +329,7 @@ def backups(name):
 		"remote_database_file",
 		"remote_public_file",
 		"remote_private_file",
+		"remote_config_file",
 	]
 	latest_backups = frappe.get_all(
 		"Site Backup",
@@ -462,7 +481,98 @@ def options_for_new():
 
 
 @frappe.whitelist()
-def get_plans(name=None):
+def get_domain():
+	return frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
+
+
+@frappe.whitelist()
+def get_new_site_options(group: str = None):
+	team = get_current_team()
+	versions = frappe.get_all(
+		"Frappe Version",
+		["name", "number", "default", "status"],
+		{"public": True},
+		order_by="`default` desc, number desc",
+	)
+	apps = set()
+	filters = {"enabled": True}
+	if group:  # private bench
+		filters.update({"name": group, "team": team})
+	else:
+		filters.update({"public": True})
+
+	for version in versions:
+		filters.update({"version": version.name})
+		rg = frappe.get_all(
+			"Release Group",
+			fields=["name", "`default`", "title"],
+			filters=filters,
+			limit=1,
+		)
+		if not rg:
+			continue
+		else:
+			rg = rg[0]
+
+		benches = frappe.get_all(
+			"Bench",
+			filters={"status": "Active", "group": rg.name},
+			order_by="creation desc",
+			limit=1,
+		)
+		if not benches:
+			continue
+
+		bench_name = benches[0].name
+		bench_apps = frappe.get_all("Bench App", {"parent": bench_name}, pluck="source")
+		app_sources = frappe.get_all(
+			"App Source",
+			[
+				"name",
+				"app",
+				"repository_url",
+				"repository",
+				"repository_owner",
+				"branch",
+				"team",
+				"public",
+				"app_title",
+				"frappe",
+			],
+			filters={"name": ("in", bench_apps)},
+			or_filters={"public": True, "team": team},
+		)
+		rg["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+
+		# Regions with latest update
+		cluster_names = unique(
+			frappe.db.get_all(
+				"Bench",
+				filters={"candidate": frappe.db.get_value("Bench", bench_name, "candidate")},
+				pluck="cluster",
+			)
+		)
+		rg["clusters"] = frappe.db.get_all(
+			"Cluster",
+			filters={"name": ("in", cluster_names), "public": True},
+			fields=["name", "title", "image"],
+		)
+		version["group"] = rg
+		apps.update([source.app for source in app_sources])
+
+	marketplace_apps = frappe.db.get_all(
+		"Marketplace App",
+		fields=["title", "image", "description", "app", "route"],
+		filters={"app": ("in", list(apps))},
+	)
+	return {
+		"versions": versions,
+		"marketplace_apps": {row.app: row for row in marketplace_apps},
+	}
+
+
+@frappe.whitelist()
+def get_plans(name=None, rg=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
@@ -476,6 +586,7 @@ def get_plans(name=None):
 			"max_storage_usage",
 			"max_database_usage",
 			"database_access",
+			"support_included",
 			"`tabHas Role`.role",
 		],
 		filters=filters,
@@ -483,17 +594,22 @@ def get_plans(name=None):
 	)
 	plans = group_children_in_result(plans, {"role": "roles"})
 
-	if name:
+	if name or rg:
 		team = get_current_team()
-		release_group_name = frappe.db.get_value("Site", name, "group")
+		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
+		is_system_user = (
+			frappe.db.get_value("User", frappe.session.user, "user_type") == "System User"
+		)
 		# poor man's bench paywall
 		# this will not allow creation of $10 sites on private benches
 		# wanted to avoid adding a new field, so doing this with a date check :)
 		# TODO: find a better way to do paywalls
 		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
-		is_paywalled_bench = is_private_bench and release_group.creation > paywall_date
+		is_paywalled_bench = (
+			is_private_bench and release_group.creation > paywall_date and not is_system_user
+		)
 	else:
 		is_paywalled_bench = False
 
@@ -523,34 +639,71 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-@frappe.whitelist()
-def all():
+def get_sites(site_filter=""):
+	from press.press.doctype.team.team import get_child_team_members
+
 	team = get_current_team()
-	sites_data = frappe._dict()
+	child_teams = [x.name for x in get_child_team_members(team)]
+	if not child_teams:
+		condition = f"= '{team}'"
+	else:
+		condition = f"in {tuple([team] + child_teams)}"
+
+	benches_with_updates = tuple(benches_with_available_update())
+
+	status_condition = "!= 'Archived'"
+	if site_filter == "Active":
+		status_condition = "= 'Active'"
+	elif site_filter == "Broken":
+		status_condition = "= 'Broken'"
+	elif site_filter == "Trial":
+		condition = f"{condition} AND s.trial_end_date != ''"
+	elif site_filter == "Update Available":
+		condition = f"{condition} AND s.bench IN {benches_with_updates}"
+	elif site_filter.startswith("tag:"):
+		tag = site_filter[4:]
+		condition = f"{condition} AND s.name IN (SELECT parent FROM `tabResource Tag` WHERE tag_name = '{tag}')"
+
 	sites = frappe.db.sql(
 		f"""
 			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
 			FROM `tabSite` s
 			LEFT JOIN `tabRelease Group` rg
 			ON s.group = rg.name
-			WHERE s.status != 'Archived'
-			AND s.team = '{team}'
+			WHERE s.status {status_condition}
+			AND s.team {condition}
 			ORDER BY creation DESC""",
 		as_dict=True,
 	)
 
-	benches_with_updates = set(benches_with_available_update())
 	for site in sites:
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
+	return sites
+
+
+@frappe.whitelist()
+def all(site_filter=""):
+	return get_sites(site_filter=site_filter)
+
+
+@frappe.whitelist()
+def recent_sites():
+	sites = get_sites()
+
 	site_names = [site.name for site in sites]
+	if not site_names:
+		return []
 	recents = sites_with_recent_activity(site_names)
 
-	sites_data.site_list = sites
-	sites_data.recents = recents
+	return [site for site in sites if site.name in recents]
 
-	return sites_data
+
+@frappe.whitelist()
+def site_tags():
+	team = get_current_team()
+	return frappe.get_all("Press Tag", {"team": team, "doctype_name": "Site"}, pluck="tag")
 
 
 @frappe.whitelist()
@@ -579,6 +732,14 @@ def get(name):
 		site.group if group_team == team or is_system_user(frappe.session.user) else None
 	)
 
+	server = frappe.db.get_value(
+		"Server", site.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
+	)
+	if server.is_standalone:
+		ip = server.ip
+	else:
+		ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
+
 	return {
 		"name": site.name,
 		"host_name": site.host_name,
@@ -590,9 +751,14 @@ def get(name):
 		"team": site.team,
 		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
-		"can_change_plan": frappe.db.get_value("Server", site.server, "team") != team,
+		"can_change_plan": server.team != team,
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
+		"ip": ip,
+		"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
+		),
 	}
 
 
@@ -674,13 +840,14 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 @protected("Site")
 def overview(name):
 	site = frappe.get_cached_doc("Site", name)
+	team = frappe.get_cached_doc("Team", site.team)
 
 	return {
 		"plan": current_plan(name),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
-				site.team,
+				team.user,
 				["first_name", "last_name", "user_image"],
 				as_dict=True,
 			),
@@ -953,7 +1120,8 @@ def backup(name, with_files=False):
 
 		if (
 			frappe.db.count(
-				"Site Backup", filters=dict(site=name, creation=(">=", suspension_time))
+				"Site Backup",
+				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
 			)
 			> 3
 		):
@@ -1013,26 +1181,50 @@ def setup_wizard_complete(name):
 
 def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
+		result = {"type": "CNAME", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "CNAME")[0].to_text()
-			mapped_domain = answer.rsplit(".", 1)[0]
+			answer = dns.resolver.query(domain, "CNAME")
+			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
+			result["answer"] = answer.rrset.to_text()
 			if mapped_domain == name:
-				return True
-		except Exception:
-			log_error("DNS Query Exception - CNAME", site=name, domain=domain)
-		return False
+				result["matched"] = True
+		except dns.exception.DNSException as e:
+			result["answer"] = str(e)
+		except Exception as e:
+			result["answer"] = str(e)
+			log_error("DNS Query Exception - CNAME", site=name, domain=domain, exception=e)
+		finally:
+			return result
 
 	def check_dns_a(name, domain):
+		result = {"type": "A", "matched": False, "answer": ""}
 		try:
-			domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+			answer = dns.resolver.query(domain, "A")
+			domain_ip = answer[0].to_text()
 			site_ip = dns.resolver.query(name, "A")[0].to_text()
+			result["answer"] = answer.rrset.to_text()
 			if domain_ip == site_ip:
-				return True
-		except Exception:
-			log_error("DNS Query Exception - A", site=name, domain=domain)
-		return False
+				result["matched"] = True
+		except dns.exception.DNSException as e:
+			result["answer"] = str(e)
+		except Exception as e:
+			result["answer"] = str(e)
+			log_error("DNS Query Exception - A", site=name, domain=domain, exception=e)
+		finally:
+			return result
 
-	return check_dns_cname(name, domain) or check_dns_a(name, domain)
+	cname = check_dns_cname(name, domain)
+	result = {"CNAME": cname}
+	result.update(cname)
+
+	if result["matched"]:
+		return result
+
+	a = check_dns_a(name, domain)
+	result.update({"A": a})
+	result.update(a)
+
+	return result
 
 
 @frappe.whitelist()
@@ -1127,6 +1319,7 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 			"marketplace_app_plan": plan_name,
 			"app": app_name,
 			"site": site_name,
+			"team": get_current_team(),
 		}
 	).insert(ignore_permissions=True)
 
@@ -1345,9 +1538,9 @@ def get_auto_update_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def update_auto_update_info(name, info=dict()):
+def update_auto_update_info(name, info=None):
 	site_doc = frappe.get_doc("Site", name, for_update=True)
-	site_doc.update(info)
+	site_doc.update(info or {})
 	site_doc.save()
 
 
@@ -1382,9 +1575,9 @@ def get_database_access_info(name):
 
 @frappe.whitelist()
 @protected("Site")
-def enable_database_access(name):
+def enable_database_access(name, mode="read_only"):
 	site_doc = frappe.get_doc("Site", name)
-	enable_access_job = site_doc.enable_database_access()
+	enable_access_job = site_doc.enable_database_access(mode)
 	return enable_access_job.name
 
 
@@ -1406,4 +1599,29 @@ def get_job_status(job_name):
 def change_notify_email(name, email):
 	site_doc = frappe.get_doc("Site", name)
 	site_doc.notify_email = email
+	site_doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_team(team, name):
+
+	if not (
+		frappe.db.exists("Team", {"team_title": team})
+		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
+	):
+		frappe.throw("No Active Team record found.")
+
+	from press.press.doctype.team.team import get_child_team_members
+
+	current_team = get_current_team(True)
+	child_teams = [team.team_title for team in get_child_team_members(current_team.name)]
+	teams = [current_team.team_title] + child_teams
+
+	if team not in teams:
+		frappe.throw(f"{team} is not part of your organization.")
+
+	child_team = frappe.get_doc("Team", {"team_title": team})
+	site_doc = frappe.get_doc("Site", name)
+	site_doc.team = child_team.name
 	site_doc.save(ignore_permissions=True)

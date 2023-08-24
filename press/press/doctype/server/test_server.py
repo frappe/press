@@ -4,9 +4,11 @@
 
 
 import unittest
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.model.naming import make_autoname
+
 from press.press.doctype.database_server.test_database_server import (
 	create_test_database_server,
 )
@@ -14,11 +16,21 @@ from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
+from press.press.doctype.server.server import BaseServer
 
 
-def create_test_server(proxy_server, database_server):
+@patch.object(BaseServer, "after_insert", new=Mock())
+def create_test_server(
+	proxy_server=None,
+	database_server=None,
+	cluster: str = "Default",
+):
 	"""Create test Server doc."""
-	return frappe.get_doc(
+	if not proxy_server:
+		proxy_server = create_test_proxy_server().name
+	if not database_server:
+		database_server = create_test_database_server().name
+	server = frappe.get_doc(
 		{
 			"doctype": "Server",
 			"status": "Active",
@@ -28,10 +40,14 @@ def create_test_server(proxy_server, database_server):
 			"private_ip": frappe.mock("ipv4_private"),
 			"domain": "fc.dev",
 			"hostname": make_autoname("f-.####"),
+			"cluster": cluster,
 		}
 	).insert()
+	server.reload()
+	return server
 
 
+@patch.object(BaseServer, "after_insert", new=Mock())
 class TestServer(unittest.TestCase):
 	def test_create_generic_server(self):
 		create_test_press_settings()

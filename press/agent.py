@@ -256,6 +256,7 @@ class Agent:
 		skip_failing_patches=False,
 		skip_backups=False,
 		before_migrate_scripts=None,
+		skip_search_index=True,
 	):
 		activate = site.status_before_update in ("Active", "Broken")
 		data = {
@@ -264,6 +265,7 @@ class Agent:
 			"skip_failing_patches": skip_failing_patches,
 			"skip_backups": skip_backups,
 			"before_migrate_scripts": before_migrate_scripts,
+			"skip_search_index": skip_search_index,
 		}
 		return self.create_agent_job(
 			f"Update Site {deploy_type}",
@@ -284,8 +286,10 @@ class Agent:
 			site=site.name,
 		)
 
-	def update_site_recover_move(self, site, target, deploy_type, activate):
-		data = {"target": target, "activate": activate}
+	def update_site_recover_move(
+		self, site, target, deploy_type, activate, rollback_scripts=None
+	):
+		data = {"target": target, "activate": activate, "rollback_scripts": rollback_scripts}
 		return self.create_agent_job(
 			f"Recover Failed Site {deploy_type}",
 			f"benches/{site.bench}/sites/{site.name}/update/{deploy_type.lower()}/recover",
@@ -455,28 +459,66 @@ class Agent:
 			"Rename Upstream", f"proxy/upstreams/{ip}/rename", data, upstream=server
 		)
 
-	def new_upstream_site(self, server, site):
+	def new_upstream_file(self, server, site=None, code_server=None):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
-		data = {"name": site}
+		data = {"name": site if site else code_server}
+		doctype = "Site" if site else "Code Server"
 		return self.create_agent_job(
-			"Add Site to Upstream",
+			f"Add {doctype} to Upstream",
 			f"proxy/upstreams/{ip}/sites",
 			data,
 			site=site,
+			code_server=code_server,
 			upstream=server,
 		)
 
-	def remove_upstream_site(self, server, site: str, site_name=None):
-		site_name = site_name or site
+	def remove_upstream_file(
+		self, server, site=None, site_name=None, code_server=None, skip_reload=False
+	):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
+		doctype = "Site" if site else "Code Server"
+		file_name = site_name or site if (site or site_name) else code_server
+		data = {"skip_reload": skip_reload}
 		return self.create_agent_job(
-			"Remove Site from Upstream",
-			f"proxy/upstreams/{ip}/sites/{site_name}",
+			f"Remove {doctype} from Upstream",
+			f"proxy/upstreams/{ip}/sites/{file_name}",
 			method="DELETE",
 			site=site,
+			code_server=code_server,
 			upstream=server,
+			data=data,
+		)
+
+	def setup_code_server(self, bench, name, password):
+		data = {"name": name, "password": password}
+		return self.create_agent_job(
+			"Setup Code Server", f"benches/{bench}/codeserver", data, code_server=name
+		)
+
+	def start_code_server(self, bench, name, password):
+		data = {"password": password}
+		return self.create_agent_job(
+			"Start Code Server",
+			f"benches/{bench}/codeserver/start",
+			data,
+			code_server=name,
+		)
+
+	def stop_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Stop Code Server",
+			f"benches/{bench}/codeserver/stop",
+			code_server=name,
+		)
+
+	def archive_code_server(self, bench, name):
+		return self.create_agent_job(
+			"Archive Code Server",
+			f"benches/{bench}/codeserver/archive",
+			method="POST",
+			code_server=name,
 		)
 
 	def add_ssh_user(self, bench):
@@ -551,8 +593,8 @@ class Agent:
 			f"benches/{site.bench}/sites/{site.name}/credentials/revoke", data=data
 		)
 
-	def update_site_status(self, server, site, status):
-		data = {"status": status}
+	def update_site_status(self, server, site, status, skip_reload=False):
+		data = {"status": status, "skip_reload": skip_reload}
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
 		return self.create_agent_job(
@@ -562,6 +604,9 @@ class Agent:
 			site=site,
 			upstream=server,
 		)
+
+	def reload_nginx(self):
+		return self.create_agent_job("Reload NGINX Job", "proxy/reload")
 
 	def cleanup_unused_files(self):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
@@ -634,6 +679,7 @@ class Agent:
 		method="POST",
 		bench=None,
 		site=None,
+		code_server=None,
 		upstream=None,
 		host=None,
 	):
@@ -645,6 +691,7 @@ class Agent:
 				"bench": bench,
 				"host": host,
 				"site": site,
+				"code_server": code_server,
 				"upstream": upstream,
 				"status": "Undelivered",
 				"request_method": method,

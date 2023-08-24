@@ -23,7 +23,7 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if getattr(self, "is_self_hosted", False):
+		if self.is_self_hosted:
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,7 +33,7 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip:
+		if self.ip and not self.is_self_hosted:
 			self.create_dns_record()
 			self.update_virtual_machine_name()
 
@@ -407,9 +407,16 @@ class BaseServer(Document):
 		).insert()
 
 	def get_certificate(self):
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
+		if self.is_self_hosted:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate",
+				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				"name",
+			)
+		else:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+			)
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):
@@ -446,6 +453,22 @@ class BaseServer(Document):
 			log_error("Increase swap exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_mysqldump(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
+		)
+
+	def _setup_mysqldump(self):
+		try:
+			ansible = Ansible(
+				playbook="mysqldump.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MySQLdump Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
@@ -460,6 +483,10 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def show_agent_password(self):
 		return self.get_password("agent_password")
+
+	@property
+	def agent(self):
+		return Agent(self.name, server_type=self.doctype)
 
 
 class Server(BaseServer):
@@ -484,6 +511,7 @@ class Server(BaseServer):
 		agent_repository_url = self.get_agent_repository_url()
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
 
 		try:
 			ansible = Ansible(
@@ -496,6 +524,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -517,6 +546,32 @@ class Server(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def setup_standalone(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_standalone", queue="short", timeout=1200
+		)
+
+	def _setup_standalone(self):
+		try:
+			ansible = Ansible(
+				playbook="standalone.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"domain": self.domain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_standalone_setup = True
+		except Exception:
+			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	@frappe.whitelist()
@@ -545,6 +600,34 @@ class Server(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Proxy IP Whitelist Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
+	def agent_set_proxy_ip(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_agent_set_proxy_ip", queue="short", timeout=1200
+		)
+
+	def _agent_set_proxy_ip(self):
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		agent_password = self.get_password("agent_password")
+
+		try:
+			ansible = Ansible(
+				playbook="agent_set_proxy_ip.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"proxy_ip": proxy_ip,
+					"workers": "2",
+					"agent_password": agent_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Proxy IP Setup Exception", server=self.as_dict())
 		self.save()
 
 	@frappe.whitelist()
@@ -701,6 +784,8 @@ class Server(BaseServer):
 		else:
 			kibana_password = None
 
+		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+
 		try:
 			ansible = Ansible(
 				playbook="rename.yml",
@@ -710,6 +795,7 @@ class Server(BaseServer):
 				variables={
 					"server": self.name,
 					"private_ip": self.private_ip,
+					"proxy_ip": proxy_ip,
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
@@ -764,20 +850,26 @@ class Server(BaseServer):
 		total_workload = sum(bench_workloads.values())
 
 		for bench_name, workload in bench_workloads.items():
-			bench = frappe.get_cached_doc("Bench", bench_name)
 			try:
-				gunicorn_workers = min(
-					24, max(2, round(workload / total_workload * max_gunicorn_workers))  # min 2 max 24
-				)
-				background_workers = min(
-					8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
-				)
-			except ZeroDivisionError:  # when total_workload is 0
-				gunicorn_workers = 2
-				background_workers = 1
-			bench.gunicorn_workers = gunicorn_workers
-			bench.background_workers = background_workers
-			bench.save()
+				bench = frappe.get_doc("Bench", bench_name, for_update=True)
+				try:
+					gunicorn_workers = min(
+						24,
+						max(2, round(workload / total_workload * max_gunicorn_workers)),  # min 2 max 24
+					)
+					background_workers = min(
+						8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+					)
+				except ZeroDivisionError:  # when total_workload is 0
+					gunicorn_workers = 2
+					background_workers = 1
+				bench.gunicorn_workers = gunicorn_workers
+				bench.background_workers = background_workers
+				bench.save()
+				frappe.db.commit()
+			except Exception:
+				log_error("Bench Auto Scale Worker Error", bench=bench, workload=workload)
+				frappe.db.rollback()
 
 	def _auto_scale_workers_old(self):
 		benches = frappe.get_all(

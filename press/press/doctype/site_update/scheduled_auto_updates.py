@@ -83,8 +83,9 @@ def should_update_trigger(doc):
 	return False
 
 
-def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
+def should_update_trigger_for_daily(doc, current_datetime=None):
 	"""Takes `current_datetime` to make testing easier."""
+	current_datetime = current_datetime or get_datetime()
 	auto_update_last_triggered_on = doc.auto_update_last_triggered_on
 
 	if (
@@ -99,8 +100,9 @@ def should_update_trigger_for_daily(doc, current_datetime=get_datetime()):
 	return False
 
 
-def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
+def should_update_trigger_for_weekly(doc, current_datetime=None):
 	"""Takes `current_datetime` to make testing easier."""
+	current_datetime = current_datetime or get_datetime()
 	if doc.update_on_weekday != current_datetime.strftime("%A"):
 		return False
 
@@ -120,8 +122,9 @@ def should_update_trigger_for_weekly(doc, current_datetime=get_datetime()):
 	return False
 
 
-def should_update_trigger_for_monthly(doc, current_datetime=get_datetime()):
+def should_update_trigger_for_monthly(doc, current_datetime=None):
 	"""Takes `current_datetime` to make testing easier."""
+	current_datetime = current_datetime or get_datetime()
 	if doc.update_end_of_month:
 		on_day_of_month = get_last_day_of_month(current_datetime.year, current_datetime.month)
 	else:

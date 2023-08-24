@@ -28,7 +28,14 @@
   "config",
   "bench_config",
   "ssh_section",
-  "is_ssh_proxy_setup"
+  "is_ssh_proxy_setup",
+  "failures_section",
+  "last_archive_failure",
+  "feature_flags_section",
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues",
+  "column_break_mtyb",
+  "environment_variables"
  ],
  "fields": [
   {
@@ -195,6 +202,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "ssh_section",
    "fieldtype": "Section Break",
    "label": "SSH"
@@ -205,10 +213,54 @@
    "fieldtype": "Check",
    "label": "Is SSH Proxy Setup",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "failures_section",
+   "fieldtype": "Section Break",
+   "label": "Failures"
+  },
+  {
+   "fieldname": "last_archive_failure",
+   "fieldtype": "Datetime",
+   "label": "Last Archive Failure",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "feature_flags_section",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Bench Variable"
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.merge_all_rq_queues",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.merge_default_and_short_rq_queues",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mtyb",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2022-10-29 00:57:45.295828",
+ "modified": "2023-06-16 13:19:57.747257",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

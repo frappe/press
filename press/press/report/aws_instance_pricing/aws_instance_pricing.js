@@ -2,5 +2,4 @@
 // For license information, please see license.txt
 /* eslint-disable */
 
-frappe.query_reports["AWS Instance Pricing"] = {
-};
+frappe.query_reports['AWS Instance Pricing'] = {};

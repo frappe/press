@@ -1,0 +1,28 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2023-05-18 21:37:22.195557",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "modified": "2023-05-18 21:38:03.790092",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "MariaDB Deadlock Browser",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Site",
+ "report_name": "MariaDB Deadlock Browser",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Site Manager"
+  }
+ ]
+}

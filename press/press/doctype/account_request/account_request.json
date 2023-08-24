@@ -9,10 +9,12 @@
   "team",
   "email",
   "password",
+  "oauth_signup",
   "column_break_4",
   "role",
   "invited_by",
   "ip_address",
+  "invited_by_parent_team",
   "section_break_8",
   "erpnext",
   "subdomain",
@@ -231,12 +233,23 @@
    "fieldname": "is_us_eu",
    "fieldtype": "Check",
    "label": "Is State or Europe"
+  },
+  {
+   "default": "0",
+   "fieldname": "invited_by_parent_team",
+   "fieldtype": "Check",
+   "label": "Invited By Parent Team"
+  },
+  {
+   "default": "0",
+   "fieldname": "oauth_signup",
+   "fieldtype": "Check",
+   "label": "Oauth Signup"
   }
  ],
- "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 16:24:52.009703",
+ "modified": "2023-05-16 21:34:40.064604",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

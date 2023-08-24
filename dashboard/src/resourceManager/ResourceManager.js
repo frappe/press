@@ -103,7 +103,7 @@ export class Resource {
 		this.auto = options.auto || false;
 		this.keepData = options.keepData || false;
 		this.condition = options.condition || (() => true);
-		this.paged = options.paged || false;
+		this.pageLength = options.pageLength || 0;
 		this.validate = options.validate || null;
 		if (this.validate) {
 			this.validate = this.validate.bind(this._vm);
@@ -143,8 +143,8 @@ export class Resource {
 				// artificial delay
 				await new Promise(resolve => setTimeout(resolve, this.delay * 1000));
 			}
-			if (Array.isArray(data) && this.paged) {
-				this.lastPageEmpty = data.length === 0;
+			if (Array.isArray(data) && this.pageLength) {
+				this.lastPageEmpty = this.pageLength > data.length;
 				this.data = [].concat(this.data || [], data);
 			} else {
 				this.data = data;

@@ -45,6 +45,6 @@ def execute():
 			account_request.insert()
 
 		# update team in sites
-		frappe.db.update("Site", {"owner": d.user}, "team", team.name)
+		frappe.db.set_value("Site", {"owner": d.user}, "team", team.name)
 
 	frappe.delete_doc_if_exists("DocType", "User Account")

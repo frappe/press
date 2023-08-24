@@ -21,19 +21,27 @@
   "apps",
   "config_tab",
   "bench_configuration_section",
+  "common_site_configuration_column",
+  "common_site_config_table",
   "common_site_config",
   "column_break_14",
   "bench_config",
   "dependencies_tab",
   "dependencies",
+  "packages",
+  "environment_variables",
   "feature_flags_tab",
   "is_redisearch_enabled",
-  "column_break_23",
   "is_push_to_deploy_enabled",
+  "column_break_9efq",
+  "merge_all_rq_queues",
+  "merge_default_and_short_rq_queues",
   "saas_tab",
   "saas_bench",
   "column_break_26",
-  "saas_app"
+  "saas_app",
+  "miscellaneous_tab",
+  "tags"
  ],
  "fields": [
   {
@@ -108,7 +116,9 @@
    "default": "{}",
    "fieldname": "common_site_config",
    "fieldtype": "Code",
-   "label": "Common Site Config"
+   "label": "Configuration Preview",
+   "options": "JSON",
+   "read_only": 1
   },
   {
    "default": "{}",
@@ -118,7 +128,8 @@
   },
   {
    "fieldname": "column_break_14",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Bench Config"
   },
   {
    "fieldname": "dependencies",
@@ -161,10 +172,6 @@
    "label": "Feature Flags"
   },
   {
-   "fieldname": "column_break_23",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "is_push_to_deploy_enabled",
    "fieldtype": "Check",
@@ -193,10 +200,61 @@
    "fieldname": "apps_tab",
    "fieldtype": "Tab Break",
    "label": "Apps"
+  },
+  {
+   "fieldname": "packages",
+   "fieldtype": "Table",
+   "label": "Packages",
+   "options": "Release Group Package"
+  },
+  {
+   "fieldname": "environment_variables",
+   "fieldtype": "Table",
+   "label": "Environment Variables",
+   "options": "Release Group Variable"
+  },
+  {
+   "fieldname": "column_break_9efq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "merge_all_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge All RQ Queues"
+  },
+  {
+   "default": "0",
+   "fieldname": "merge_default_and_short_rq_queues",
+   "fieldtype": "Check",
+   "label": "Merge Default and Short RQ Queues"
+  },
+  {
+   "fieldname": "miscellaneous_tab",
+   "fieldtype": "Tab Break",
+   "label": "Miscellaneous"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
+  },
+  {
+   "fieldname": "common_site_configuration_column",
+   "fieldtype": "Column Break",
+   "label": "Common Site Config"
+  },
+  {
+   "default": "{}",
+   "fieldname": "common_site_config_table",
+   "fieldtype": "Table",
+   "label": "Configuration",
+   "options": "Common Site Config"
   }
  ],
  "links": [],
- "modified": "2022-09-30 14:48:01.414156",
+ "modified": "2023-07-17 17:44:39.805124",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

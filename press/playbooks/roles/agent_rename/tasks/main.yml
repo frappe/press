@@ -2,14 +2,14 @@
 - name: Generate Agent Configuration File
   become: yes
   become_user: frappe
-  command: "/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }}"
+  command: '/home/frappe/agent/env/bin/agent setup config --name {{ server }} --workers {{ workers }} {% if proxy_ip is defined %}--proxy-ip {{ proxy_ip }}{% endif %}'
   args:
     chdir: /home/frappe/agent
 
 - name: Setup Agent Authentication
   become: yes
   become_user: frappe
-  command: "/home/frappe/agent/env/bin/agent setup authentication --password {{ agent_password }}"
+  command: '/home/frappe/agent/env/bin/agent setup authentication --password {{ agent_password }}'
   args:
     chdir: /home/frappe/agent
 
@@ -24,21 +24,21 @@
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_private_key }}"
+    content: '{{ certificate_private_key }}'
     dest: /home/frappe/agent/tls/privkey.pem
 
 - name: Setup Agent TLS (Full Chain)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_full_chain }}"
+    content: '{{ certificate_full_chain }}'
     dest: /home/frappe/agent/tls/fullchain.pem
 
 - name: Setup Agent TLS (Intermediate Chain)
   become: yes
   become_user: frappe
   copy:
-    content: "{{ certificate_intermediate_chain }}"
+    content: '{{ certificate_intermediate_chain }}'
     dest: /home/frappe/agent/tls/chain.pem
 
 - name: Setup Agent NGINX
@@ -51,4 +51,4 @@
 - name: Setup Monitoring Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}"
+  command: 'htpasswd -Bbc /home/frappe/agent/nginx/monitoring.htpasswd frappe {{ monitoring_password }}'

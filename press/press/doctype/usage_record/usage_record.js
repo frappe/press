@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Usage Record', {
 	// refresh: function(frm) {
-
 	// }
 });

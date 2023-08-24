@@ -1,4 +1,6 @@
 {
+ "_comments": "[]",
+ "_liked_by": "[]",
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:app",
@@ -14,6 +16,7 @@
   "group",
   "column_break_9",
   "apps",
+  "multi_subscription",
   "whitelisted_apps",
   "section_break_5",
   "plan",
@@ -142,11 +145,18 @@
    "fieldtype": "Link",
    "label": "Default Team",
    "options": "Team"
+  },
+  {
+   "default": "0",
+   "description": "Create marketplace subscription(doc and keys in config) for all the above apps that are on marketplace",
+   "fieldname": "multi_subscription",
+   "fieldtype": "Check",
+   "label": "Multi Subscription"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-01 14:38:38.937893",
+ "modified": "2023-05-31 12:25:49.138663",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
