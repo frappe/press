@@ -7,20 +7,6 @@
 				: `Invitation to join team: ${invitationToTeam}`
 		"
 	>
-		<template #logo v-if="saasProduct">
-			<div class="mx-auto flex flex-col items-center">
-				<img
-					class="mb-1"
-					v-if="saasProduct.logo"
-					:src="saasProduct.logo"
-					:alt="saasProduct.title"
-				/>
-				<div class="mb-1 text-2xl font-semibold text-gray-900" v-else>
-					{{ saasProduct.title }}
-				</div>
-				<div class="text-base text-gray-700">Powered by Frappe Cloud</div>
-			</div>
-		</template>
 		<form
 			class="flex flex-col"
 			@submit.prevent="$resources.setupAccount.submit()"
@@ -147,9 +133,12 @@ export default {
 	resources: {
 		validateRequestKey() {
 			return {
-				method: 'press.api.account.get_email_from_request_key',
+				method: 'press.api.account.validate_request_key',
 				params: {
-					key: this.requestKey
+					key: this.requestKey,
+					timezone: window.Intl
+						? Intl.DateTimeFormat().resolvedOptions().timeZone
+						: null
 				},
 				auto: true,
 				onSuccess(res) {

@@ -262,10 +262,13 @@ def delete_team(team):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_email_from_request_key(key):
+def validate_request_key(key, timezone=None):
+	from press.utils.country_timezone import get_country_from_timezone
+
 	account_request = get_account_request_from_key(key)
 	if account_request:
 		data = get_country_info()
+		possible_country = data.get("country") or get_country_from_timezone(timezone)
 		saas_product = frappe.db.get_value(
 			"SaaS Product",
 			{"name": account_request.saas_product},
@@ -279,7 +282,7 @@ def get_email_from_request_key(key):
 			"email": account_request.email,
 			"first_name": account_request.first_name,
 			"last_name": account_request.last_name,
-			"country": data.get("country"),
+			"country": possible_country,
 			"countries": frappe.db.get_all("Country", pluck="name"),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
