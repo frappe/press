@@ -37,7 +37,6 @@ export default {
 			let tabs = [
 				{ label: 'Profile', route: 'profile' },
 				{ label: 'Team', route: 'team' },
-				{ label: 'Billing', route: 'billing' },
 				{ label: 'Developer', route: 'developer' }
 			];
 
