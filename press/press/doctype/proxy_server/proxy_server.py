@@ -87,6 +87,7 @@ class ProxyServer(BaseServer):
 		else:
 			kibana_password = None
 
+		# to remove
 		# try:
 		ansible = Ansible(
 			playbook="self_hosted_proxy.yml"
@@ -116,6 +117,8 @@ class ProxyServer(BaseServer):
 			self.is_server_setup = True
 		else:
 			self.status = "Broken"
+		
+		log_error("Proxy Server Setup Exception", server=self.as_dict())
 		# except Exception:
 		# 	self.status = "Broken"
 		# 	log_error("Proxy Server Setup Exception", server=self.as_dict())
