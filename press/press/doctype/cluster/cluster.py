@@ -103,7 +103,7 @@ class Cluster(Document):
 				"Cluster", ["cidr_block"], pluck="cidr_block"
 			)
 			for block in blocks:
-				cidr_block = str("10.126.0.0/16")
+				cidr_block = str(block)
 				if cidr_block not in existing_blocks:
 					self.cidr_block = cidr_block
 					self.subnet_cidr_block = cidr_block
