@@ -521,8 +521,14 @@ const routes = [
 			},
 			{
 				name: 'Firewall',
-				path: 'firewall/',
+				path: 'firewall/:firewallName?',
 				component: () => import('../views/security/Firewall.vue'),
+				props: true
+			},
+			{
+				name: 'Create Firewall',
+				path: 'firewall/new',
+				component: () => import('../views/security/CreateNewFirewall.vue'),
 				props: true
 			},
 			{

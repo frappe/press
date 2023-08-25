@@ -1,48 +1,63 @@
 <template>
 	<div>
-		<div class="mx-5 mt-5">
-			<div class="flex">
-				<div class="flex w-full space-x-2 pb-4">
-					<FormControl v-model="searchTerm">
-						<template #prefix>
-							<FeatherIcon name="search" class="w-4 text-gray-600" />
-						</template>
-					</FormControl>
+		<div class="mx-5 mt-5" v-if="firewall.disabled">
+			<Alert>
+				<div>
+					<span>
+						Before activating systems firewall, disable firewall rules (if
+						configured on cloud service provider console)
+					</span>
 				</div>
-			</div>
+				<template #actions>
+					<Button
+						variant="outline"
+						theme="gray"
+						appearance="primary"
+						@click="$router.push(`/security/${this.server.name}/firewall/new`)"
+					>
+						Create Firewall</Button
+					>
+				</template>
+				<FirewallRuleDialog
+					:server="server"
+					v-model="enableFirewall"
+					v-if="enableFirewall"
+				/>
+			</Alert>
+		</div>
+		<div class="mx-5 mt-5" v-else>
 			<LoadingText v-if="$resources.FirewallRules.loading" />
-			<div v-else>
-				<div class="flex">
-					<div class="flex w-full px-3 py-4">
-						<div class="w-2/12 text-base font-medium text-gray-900">
-							Protocol
-						</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">
-							Port Range
-						</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">Source</div>
-						<div class="w-2/12 text-base font-medium text-gray-900">Action</div>
-						<div class="w-4/12 text-base font-medium text-gray-900">
-							Description
-						</div>
-					</div>
-				</div>
-				<div class="w-8" />
-			</div>
+			<FirewallRuleView :rules="rules" v-else />
 			<div class="mx-2.5 border-b" />
-			<FirewallRule :rules="rules" />
+		</div>
+		<div class="mx-5 mt-15">
+			<div class="block w-full">
+				<div
+					class="items-start rounded-md px-4 py-3.5 text-base md:px-5 text-gray-700 bg-gray-50"
+				>
+					Example:
+					<div class="mt-5">
+						<FirewallRuleView
+							:rules="this.getExmpleRule()"
+							:disableSearch="true"
+							:disableAction="true"
+						/>
+					</div>
+					<div class="mx-2.5 border-b" />
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import FirewallRule from './FirewallRule.vue';
+import FirewallRuleView from './FirewallRuleView.vue';
 
 export default {
 	name: 'Firewall',
-	props: ['server'],
+	props: ['server', 'firewallName'],
 	components: {
-		FirewallRule
+		FirewallRuleView
 	},
 	resources: {
 		FirewallRules() {
@@ -57,10 +72,51 @@ export default {
 			};
 		}
 	},
+	methods: {
+		getExmpleRule() {
+			return [
+				{
+					action: 'Allow',
+					description: 'HTTP from anywhere',
+					from_port: 80,
+					port_range: '80',
+					protocol: 'TCP',
+					service: 'HTTP',
+					source: '0.0.0.0/0',
+					source_type: 'Custom',
+					to_port: 80
+				},
+				{
+					action: 'Allow',
+					description: 'SSH from 127.0.1.2',
+					from_port: 22,
+					port_range: '22',
+					protocol: 'TCP',
+					service: 'HTTP',
+					source: '127.0.1.2',
+					source_type: 'Custom',
+					to_port: 22
+				}
+			];
+		},
+		updateRoute() {
+			return `/security/${this.server.name}/firewall/create`;
+		}
+	},
 	computed: {
 		rules() {
 			return this.$resources.FirewallRules.data;
+		},
+		firewall() {
+			return {
+				disabled: true
+			};
 		}
+	},
+	data() {
+		return {
+			enableFirewall: false
+		};
 	}
 };
 </script>

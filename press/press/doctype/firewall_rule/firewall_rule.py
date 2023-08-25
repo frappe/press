@@ -56,9 +56,12 @@ class FirewallRule(Document):
 
 			simplified_rule.action = rule.get("action") or "Allow"
 			simplified_rule.protocol = rule.get("protocol") or rule.get("IpProtocol")
+			simplified_rule.protocol = simplified_rule.protocol.upper()
+
 			simplified_rule.from_port = rule.get("from_port") or rule.get("FromPort")
 			simplified_rule.to_port = rule.get("to_port") or rule.get("ToPort")
 			simplified_rule.service = port_mapper(simplified_rule.from_port)
+
 			simplified_rule.description = (
 				rule.get("description") or rule["IpRanges"][0]["Description"]
 			)

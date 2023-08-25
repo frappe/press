@@ -116,3 +116,18 @@ def get_firewall_rules(server, server_type):
 	from press.press.doctype.firewall_rule.firewall_rule import FirewallRule
 
 	return FirewallRule.fetch_firewall_rules(server, server_type)
+
+
+@frappe.whitelist()
+def create_firewall(firewall_name, server, server_type):
+	try:
+		return frappe.get_doc(
+			{
+				"doctype": "Firewall",
+				"firewall_name": firewall_name,
+				"server": server,
+				"server_type": server_type,
+			}
+		).insert(ignore_permissions=True)
+	except frappe.DuplicateEntryError:
+		return frappe.get_doc("Firewall", firewall_name)

@@ -7,9 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "server_type",
-  "column_break_9thp",
-  "server",
+  "firewall",
   "section_break_yjgw",
   "action",
   "protocol",
@@ -69,22 +67,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "server_type",
-   "fieldtype": "Select",
-   "label": "Server Type",
-   "options": "Server\nDatabase Server\nProxy Server"
-  },
-  {
-   "fieldname": "column_break_9thp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "server",
-   "fieldtype": "Dynamic Link",
-   "label": "Server",
-   "options": "server_type"
-  },
-  {
    "fieldname": "section_break_yjgw",
    "fieldtype": "Section Break"
   },
@@ -97,12 +79,18 @@
    "fieldname": "source_type",
    "fieldtype": "Select",
    "label": "Source Type",
-   "options": "\nCustom\nAnywhere-IPv4\nAnywhere-IPv6"
+   "options": "\nCustom\nAll IPv4\nAll IPv6\nAll IPv4 & IPv6"
+  },
+  {
+   "fieldname": "firewall",
+   "fieldtype": "Link",
+   "label": "Firewall",
+   "options": "Firewall"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-16 16:25:16.169059",
+ "modified": "2023-08-25 19:18:12.185023",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Firewall Rule",
