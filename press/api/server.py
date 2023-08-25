@@ -3,6 +3,7 @@
 
 import frappe
 import requests
+from press.press.doctype.cluster.cluster import Cluster
 
 from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
@@ -147,7 +148,7 @@ def new(server):
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
 
-	cluster = frappe.get_doc("Cluster", server["cluster"])
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
 	db_server, job = cluster.create_server(
