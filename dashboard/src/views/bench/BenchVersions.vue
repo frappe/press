@@ -21,7 +21,11 @@
 					:title="v.name"
 					:subtitle="
 						v.deployed_on
-							? `Deployed on ${formatDate(v.deployed_on, 'DATETIME_SHORT')}`
+							? `Deployed on ${formatDate(
+									v.deployed_on,
+									'DATETIME_SHORT',
+									true
+							  )}`
 							: ''
 					"
 				>
@@ -64,7 +68,8 @@
 									selectedVersion.deployed_on
 										? `Deployed on ${formatDate(
 												selectedVersion.deployed_on,
-												'DATETIME_SHORT'
+												'DATETIME_SHORT',
+												true
 										  )}`
 										: ''
 								}}
@@ -168,24 +173,35 @@
 			/>
 		</Dialog>
 	</CardWithDetails>
+	<CodeServer
+		:show="showCodeServerDialog"
+		@close="showCodeServerDialog = false"
+		:version="version"
+	/>
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import CardWithDetails from '@/components/CardWithDetails.vue';
 import SiteList from '@/views/site/SiteList.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
+import CodeServer from '@/views/spaces/CreateCodeServerDialog.vue';
+
 export default {
-	name: 'BenchApps',
+	name: 'BenchVersions',
 	props: ['bench', 'version'],
 	components: {
 		SiteList,
 		CardWithDetails,
 		ClickToCopyField,
-		CommitTag
+		CommitTag,
+		CodeServer
 	},
 	inject: ['viewportWidth'],
 	data() {
-		return { showSSHDialog: false };
+		return {
+			showSSHDialog: false,
+			showCodeServerDialog: false
+		};
 	},
 	resources: {
 		versions() {
@@ -313,6 +329,12 @@ export default {
 						label: 'Update All Sites',
 						handler: () => {
 							this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message: `All sites in ${this.selectedVersion?.name} will be updated to the latest version`,
+								icon: 'check',
+								color: 'green'
+							});
 						}
 					},
 				this.selectedVersion.status == 'Active' && {
@@ -320,7 +342,14 @@ export default {
 					handler: () => {
 						this.confirmRestart();
 					}
-				}
+				},
+				this.$account.team.code_servers_enabled &&
+					this.selectedVersion.status == 'Active' && {
+						label: 'Create Code Server',
+						handler: () => {
+							this.showCodeServerDialog = true;
+						}
+					}
 			].filter(Boolean);
 		}
 	}

@@ -6,3 +6,5 @@
   gather_facts: true
   roles:
     - role: convert
+    - role: mysqld_exporter
+    - role: deadlock_logger

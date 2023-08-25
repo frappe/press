@@ -62,6 +62,14 @@ export default {
 				auto: true,
 				onError: this.$routeTo404PageIfNotFound
 			};
+		},
+		updateAllSites() {
+			return {
+				method: 'press.api.bench.update_all_sites',
+				params: {
+					bench_name: this.benchName
+				}
+			};
 		}
 	},
 	activated() {
@@ -108,12 +116,19 @@ export default {
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
-				{ label: 'Overview', route: 'overview' },
-				{ label: 'Apps', route: 'apps' },
-				{ label: 'Versions', route: 'versions' },
-				{ label: 'Deploys', route: 'deploys' },
-				{ label: 'Jobs', route: 'jobs' }
-			];
+				{ label: 'Overview', route: 'overview', condition: () => true },
+				{ label: 'Apps', route: 'apps', condition: () => true },
+				{ label: 'Versions', route: 'versions', condition: () => true },
+				{
+					label: 'Bench Config',
+					route: 'bench-config',
+					condition: () => !this.bench?.public
+				},
+				{ label: 'Deploys', route: 'deploys', condition: () => true },
+				{ label: 'Jobs', route: 'jobs', condition: () => true },
+				{ label: 'Settings', route: 'setting', condition: () => true }
+			].filter(tab => tab.condition());
+
 			if (this.bench) {
 				return tabs.map(tab => {
 					return {
@@ -155,7 +170,22 @@ export default {
 							color: 'green'
 						});
 					}
-				}
+				},
+				this.bench.status == 'Active' &&
+					!this.bench.public && {
+						label: 'Update All Sites to Latest Version',
+						icon: 'arrow-up-circle',
+						handler: async () => {
+							await this.$resources.updateAllSites.submit();
+							this.$notify({
+								title: 'Site update scheduled successfully',
+								message:
+									'All sites in this bench will be updated to the latest version',
+								icon: 'check',
+								color: 'green'
+							});
+						}
+					}
 			].filter(Boolean);
 		}
 	}

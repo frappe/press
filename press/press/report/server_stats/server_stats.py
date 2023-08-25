@@ -202,6 +202,8 @@ def get_servers(filters):
 	server_filters = {"status": "Active"}
 	if filters.team:
 		server_filters["team"] = filters.team
+	if filters.exclude_self_hosted:
+		server_filters["is_self_hosted"] = False
 	server_types = (
 		[filters.server_type]
 		if filters.server_type

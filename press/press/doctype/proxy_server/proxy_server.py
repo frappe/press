@@ -22,16 +22,17 @@ class ProxyServer(BaseServer):
 
 	def validate_domains(self):
 		domains = [row.domain for row in self.domains]
+		code_servers = [row.code_server for row in self.domains]
 		# Always include self.domain in the domains child table
 		# Remove duplicates
 		domains = unique([self.domain] + domains)
 		self.domains = []
-		for domain in domains:
+		for i, domain in enumerate(domains):
 			if not frappe.db.exists(
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
 				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
-			self.append("domains", {"domain": domain})
+			self.append("domains", {"domain": domain, "code_server": code_servers[i]})
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:
@@ -55,6 +56,7 @@ class ProxyServer(BaseServer):
 						"fullchain.pem": certificate.full_chain,
 						"chain.pem": certificate.intermediate_chain,
 					},
+					"code_server": domain.code_server,
 				}
 			)
 		return wildcard_domains
@@ -86,8 +88,12 @@ class ProxyServer(BaseServer):
 
 		# try:
 		ansible = Ansible(
-			playbook="proxy.yml",
+			playbook="self_hosted_proxy.yml"
+			if getattr(self, "is_self_hosted", False)
+			else "proxy.yml",
 			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
 			variables={
 				"server": self.name,
 				"workers": 1,
@@ -122,6 +128,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="proxy_exporters.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"private_ip": self.private_ip,
 					"monitoring_password": monitoring_password,
@@ -149,6 +157,8 @@ class ProxyServer(BaseServer):
 			ansible = Ansible(
 				playbook="ssh_proxy.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"registry_url": settings.docker_registry_url,
 					"registry_username": settings.docker_registry_username,

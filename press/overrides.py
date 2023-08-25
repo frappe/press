@@ -60,7 +60,7 @@ def on_session_creation():
 	from press.utils import get_default_team_for_user
 
 	if (
-		not frappe.db.exists("Team", frappe.session.user)
+		not frappe.db.exists("Team", {"user": frappe.session.user})
 		and frappe.session.data.user_type == "System User"
 	):
 		return
@@ -99,8 +99,11 @@ def has_permission(doc, ptype, user):
 	if ptype == "create":
 		return True
 
-	team = get_current_team()
-	if doc.team == team:
+	team = get_current_team(True)
+	child_team_members = [
+		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
+	]
+	if doc.team == team.name or doc.team in child_team_members:
 		return True
 
 	return False

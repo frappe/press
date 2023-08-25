@@ -415,12 +415,7 @@ def sync_virtual_machines():
 		"Virtual Machine", {"status": ("not in", ("Terminated", "Draft"))}
 	)
 	for machine in machines:
-		try:
-			frappe.get_doc("Virtual Machine", machine.name).sync()
-			frappe.db.commit()
-		except Exception:
-			frappe.db.rollback()
-			log_error(title="Virtual Machine Sync Error", virtual_machine=machine.name)
+		frappe.enqueue_doc("Virtual Machine", machine.name, "sync")
 
 
 def snapshot_virtual_machines():

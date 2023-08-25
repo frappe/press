@@ -30,14 +30,14 @@
 				v-for="app in $resources.installedApps.data"
 				:key="app.name"
 			>
-				<div class="group w-2/6">
+				<div class="w-2/6">
 					<div class="flex flex-row items-center">
 						<div class="text-lg font-medium text-gray-900">
 							{{ app.title }}
 						</div>
 
 						<CommitTag
-							class="hidden ml-2 group-hover:block"
+							class="ml-2"
 							:tag="app.tag || app.hash.substr(0, 7)"
 							:link="`${app.repository_url}/commit/${app.hash}`"
 						/>
@@ -102,7 +102,11 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Install an app on your site', position: 'top', size: 'lg' }"
+			:options="{
+				title: 'Install an app on your site',
+				position: 'top',
+				size: 'lg'
+			}"
 			v-model="showInstallAppsDialog"
 		>
 			<template v-slot:body-content>
@@ -114,7 +118,7 @@
 				<div
 					v-if="availableApps.data && availableApps.data.length"
 					class="divide-y max-h-96 overflow-auto"
-					:class="filteredOptions.length > 7 ? 'pr-2': ''"
+					:class="filteredOptions.length > 7 ? 'pr-2' : ''"
 				>
 					<div
 						class="flex items-center py-3"
@@ -155,7 +159,7 @@
 		<!-- New App Install -->
 		<Dialog
 			v-model="showPlanSelectionDialog"
-			:options="{ 
+			:options="{
 				title: 'Select app plan',
 				size: '2xl'
 			}"
@@ -267,7 +271,7 @@ export default {
 			appToInstall: null,
 			selectedPlan: null,
 			selectedPlanIsFree: null,
-			searchTerm: "",
+			searchTerm: '',
 			filteredOptions: []
 		};
 	},
@@ -294,6 +298,14 @@ export default {
 				onSuccess() {
 					this.showAppPlanChangeDialog = false;
 					this.$resources.marketplaceSubscriptions.fetch();
+				},
+				onError(e) {
+					this.showAppPlanChangeDialog = false;
+					this.$notify({
+						title: e,
+						color: 'red',
+						icon: 'x'
+					});
 				}
 			};
 		},
@@ -347,7 +359,7 @@ export default {
 				this.fuse = new Fuse(this.$resources.availableApps.data, {
 					limit: 20,
 					keys: ['title']
-				})
+				});
 				this.filteredOptions = this.$resources.availableApps.data;
 			}
 			return this.$resources.availableApps;
@@ -370,7 +382,7 @@ export default {
 					.search(value)
 					.map(result => result.item);
 			} else {
-				this.filteredOptions = this.$resources.availableApps.data
+				this.filteredOptions = this.$resources.availableApps.data;
 			}
 		},
 		subscribe(app) {

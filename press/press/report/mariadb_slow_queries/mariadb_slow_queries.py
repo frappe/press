@@ -9,14 +9,14 @@ import sqlparse
 from frappe.utils import (
 	get_datetime,
 	convert_utc_to_timezone,
-	get_time_zone,
+	get_system_timezone,
 )
 from frappe.core.doctype.access_log.access_log import make_access_log
 from frappe.utils.password import get_decrypted_password
 
 
 def execute(filters=None):
-	frappe.only_for("System Manager")
+	frappe.only_for(["System Manager", "Site Manager"])
 	filters.database = frappe.db.get_value("Site", filters.site, "database_name")
 
 	make_access_log(
@@ -66,7 +66,7 @@ def execute(filters=None):
 
 def get_data(filters):
 	def convert_user_timezone_to_utc(datetime_obj):
-		timezone = pytz.timezone(get_time_zone())
+		timezone = pytz.timezone(get_system_timezone())
 		datetime_obj = get_datetime(datetime_obj)
 		return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
 
@@ -83,7 +83,8 @@ def get_data(filters):
 				row["query"].strip(), keyword_case="upper", reindent=True
 			)
 		row["timestamp"] = convert_utc_to_timezone(
-			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None), get_time_zone()
+			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
+			get_system_timezone(),
 		)
 	return rows
 

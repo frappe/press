@@ -1,16 +1,16 @@
 <template>
-	<Card 
+	<Card
 		class="md:col-span-2"
 		title="Screenshots"
 		subtitle="Add screenshots to show on the marketplace website"
 	>
 		<div>
-		<div class="flex flex-row">
+			<div class="flex flex-row">
 				<Avatar
 					size="lg"
 					class="mx-1 cursor-pointer hover:bg-red-100 hover:opacity-20"
 					shape="square"
-					:imageURL="image.image" 
+					:imageURL="image.image"
 					v-for="(image, index) in app.screenshots"
 					@click="removeScreenshot(image.image, index)"
 				>
@@ -25,13 +25,13 @@
 						method: 'press.api.marketplace.add_app_screenshot'
 					}"
 				>
-						<template v-slot="{ openFileSelector, uploading, progress, error }">
-							<Button 
-								class="ml-1 w-12 h-12"
-								@click="openFileSelector()"
-								icon="plus"
-							>
-							</Button>
+					<template v-slot="{ openFileSelector, uploading, progress, error }">
+						<Button
+							class="ml-1 w-12 h-12"
+							@click="openFileSelector()"
+							icon="plus"
+						>
+						</Button>
 					</template>
 				</FileUploader>
 			</div>
@@ -48,11 +48,11 @@ export default {
 		app: Object
 	},
 	components: {
-		FileUploader,
+		FileUploader
 	},
 	methods: {
 		onAppImageAdd(file) {
-			this.app.screenshots.push({image: file})
+			this.app.screenshots.push({ image: file });
 			this.$notify({
 				title: 'Screenshot was added successfully!',
 				icon: 'check',
@@ -63,8 +63,8 @@ export default {
 			this.$resources.removeScreenshot.submit({
 				name: this.app.name,
 				file: file
-			})
-			this.app.screenshots.splice(index, 1)
+			});
+			this.app.screenshots.splice(index, 1);
 		},
 		onAppImageUploadError(errorMessage) {
 			this.$notify({
@@ -72,17 +72,15 @@ export default {
 				color: 'red',
 				icon: 'x'
 			});
-		},
+		}
 	},
 	resources: {
 		removeScreenshot(file) {
 			return {
 				method: 'press.api.marketplace.remove_app_screenshot',
-				onSuccess() {
-
-				}
-			}
+				onSuccess() {}
+			};
 		}
 	}
-}
+};
 </script>

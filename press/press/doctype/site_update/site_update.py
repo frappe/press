@@ -99,14 +99,34 @@ class SiteUpdate(Document):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
-		if set(site_apps) - set(bench_apps):
+		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
-				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}",
+				f"Destination Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
 				frappe.ValidationError,
 			)
 
 	def after_insert(self):
 		self.create_agent_request()
+
+	def get_before_migrate_scripts(self, rollback=False):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+
+		script_field = "before_migrate_script"
+		if rollback:
+			script_field = "rollback_script"
+
+		scripts = {}
+		for app_rename in frappe.get_all(
+			"App Rename", {"new_name": ["in", site_apps]}, ["old_name", "new_name", script_field]
+		):
+			scripts[app_rename.old_name] = app_rename.get(script_field)
+
+		return scripts
+
+	@property
+	def is_destination_above_v12(self):
+		version = frappe.get_cached_value("Release Group", self.destination_group, "version")
+		return frappe.get_cached_value("Frappe Version", version, "number") > 12
 
 	def create_agent_request(self):
 		agent = Agent(self.server)
@@ -117,6 +137,8 @@ class SiteUpdate(Document):
 			self.deploy_type,
 			skip_failing_patches=self.skipped_failing_patches,
 			skip_backups=self.skipped_backups,
+			before_migrate_scripts=self.get_before_migrate_scripts(),
+			skip_search_index=self.is_destination_above_v12,
 		)
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
@@ -179,7 +201,11 @@ def trigger_recovery_job(site_update_name):
 		# Disable maintenance mode for active sites
 		activate = site.status_before_update == "Active"
 		job = agent.update_site_recover_move(
-			site, site_update.source_bench, site_update.deploy_type, activate
+			site,
+			site_update.source_bench,
+			site_update.deploy_type,
+			activate,
+			rollback_scripts=site_update.get_before_migrate_scripts(rollback=True),
 		)
 	else:
 		# Site is already on the source bench

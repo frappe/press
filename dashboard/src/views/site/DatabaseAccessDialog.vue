@@ -106,6 +106,31 @@
 				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
 
 				<div class="mt-2">
+					<div
+						v-if="
+							databaseAccessInfo &&
+							!databaseAccessInfo.is_database_access_enabled
+						"
+						class="mb-2"
+					>
+						<!-- Enable Read-Write Access -->
+						<input
+							id="enable-read-write-access"
+							type="checkbox"
+							class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+							v-model="enableReadWriteAccess"
+						/>
+						<label for="skip-failing" class="ml-1 text-sm text-gray-900">
+							Enable Read-Write Access
+						</label>
+						<ErrorMessage
+							class="mt-2"
+							:message="
+								enableReadWriteAccess &&
+								'Your credentials can be used to modify or wipe your database'
+							"
+						/>
+					</div>
 					<Button
 						v-if="
 							databaseAccessInfo &&
@@ -116,7 +141,9 @@
 							$resources.enableDatabaseAccess.loading || pollingAgentJob
 						"
 						appearance="primary"
-						>Enable Access</Button
+						>Enable
+						{{ enableReadWriteAccess ? 'Read-Write' : 'Read-Only' }}
+						Access</Button
 					>
 
 					<Button
@@ -147,6 +174,7 @@ export default {
 			pollingAgentJob: false,
 			showChangePlanDialog: false,
 			selectedPlan: null,
+			enableReadWriteAccess: false,
 			error: null
 		};
 	},
@@ -168,7 +196,8 @@ export default {
 			return {
 				method: 'press.api.site.enable_database_access',
 				params: {
-					name: this.site
+					name: this.site,
+					mode: this.enableReadWriteAccess ? 'read_write' : 'read_only'
 				},
 				onSuccess(d) {
 					this.pollDatabaseAccessJob(d);
@@ -214,7 +243,7 @@ export default {
 					this.$resources.plans.reset();
 					this.$resources.fetchDatabaseAccessInfo.fetch();
 				},
-				onError(error) {	
+				onError(error) {
 					this.showChangePlanDialog = false;
 					this.$notify({
 						title: error,
@@ -267,9 +296,7 @@ export default {
 				if (message.status === 'Success') {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();
-				} else if (
-					message.status === 'Failure'
-				) {
+				} else if (message.status === 'Failure') {
 					this.pollingAgentJob = false;
 					this.error = 'Something went wrong. Please try again.';
 				} else {

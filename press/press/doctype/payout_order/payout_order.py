@@ -10,12 +10,13 @@ from frappe.model.document import Document
 from press.press.doctype.invoice_item.invoice_item import InvoiceItem
 from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
 
+from datetime import date
+
 
 class PayoutOrder(Document):
 	def validate(self):
 		self.validate_items()
 		self.validate_net_totals()
-		self.validate_commission()
 
 	def validate_items(self):
 		for row in self.items:
@@ -39,20 +40,36 @@ class PayoutOrder(Document):
 			invoice_item = get_invoice_item_for_po_item(invoice_name, row)
 
 			row.tax = row.tax or 0.0
-			row.commission = row.commission or 0.0
 			row.total_amount = invoice_item.amount
 			row.site = invoice_item.site
 			row.currency = invoice.currency
 			row.gateway_fee = 0.0
 
-			if invoice.transaction_fee > 0:
-				row.gateway_fee = (invoice.transaction_fee) * (
-					invoice_item.amount / invoice.amount_paid
-				)
-				if invoice.exchange_rate > 0:
-					row.gateway_fee = row.gateway_fee / invoice.exchange_rate
+			# validate commissions and thresholds
+			app_payment = (
+				frappe.get_cached_doc("Marketplace App Payment", row.document_name)
+				if frappe.db.exists("Marketplace App Payment", row.document_name)
+				else frappe.get_doc(
+					{
+						"doctype": "Marketplace App Payment",
+						"app": row.document_name,
+						"team": self.recipient,
+					}
+				).insert(ignore_permissions=True)
+			)
 
-			row.net_amount = row.total_amount - row.tax - row.gateway_fee - row.commission
+			row.commission = (
+				app_payment.get_commission(row.total_amount) if not self.ignore_commission else 0.0
+			)
+
+			row.net_amount = row.total_amount - row.commission
+
+			if row.currency == "INR":
+				app_payment.total_inr += row.net_amount if row.net_amount > 0 else row.commission
+			else:
+				app_payment.total_usd += row.net_amount if row.net_amount > 0 else row.commission
+
+			app_payment.save(ignore_permissions=True)
 
 	def validate_net_totals(self):
 		self.net_total_usd = 0
@@ -64,44 +81,8 @@ class PayoutOrder(Document):
 			else:
 				self.net_total_usd += row.net_amount
 
-		usd_rate = frappe.db.get_single_value("Press Settings", "usd_rate")
-
-		# in recipient's currency
-		self.overall_net_total = (
-			self.net_total_usd + self.net_total_inr / usd_rate
-			if self.recipient_currency == "USD"
-			else self.net_total_usd * usd_rate + self.net_total_inr
-		)
-
-	def validate_commission(self):
-		payout_data = frappe.db.get_value(
-			"Press Settings", None, ["threshold", "commission", "usd_rate"], as_dict=1
-		)
-		commission = float(payout_data["commission"])
-		po = frappe.get_all(
-			"Payout Order",
-			{"recipient": self.recipient},
-			["sum(overall_net_total) as total"],
-		)
-		if po and po[0]["total"] is not None:
-			total = (
-				po[0]["total"]
-				if self.recipient_currency == "USD"
-				else po[0]["total"] / float(payout_data["usd_rate"])
-			)
-		else:
-			total = 0
-
-		if total <= float(payout_data["threshold"]) and not frappe.db.exists(
-			"Payout Order", {"recipient": self.recipient, "status": "Paid"}
-		):
-			commission = 1.0
-
-		self.set_commission_and_final_payout(commission)
-
-	def set_commission_and_final_payout(self, commission):
-		self.commission = commission
-		self.final_payout = self.overall_net_total - self.overall_net_total * commission
+		if self.net_total_usd <= 0 and self.net_total_inr <= 0:
+			self.status = "Commissioned"
 
 	def before_submit(self):
 		if self.mode_of_payment == "Cash" and (not self.frappe_purchase_order):
@@ -224,8 +205,8 @@ def get_unaccounted_marketplace_invoice_items():
 def create_payout_order_from_invoice_items(
 	invoice_items: List[InvoiceItem],
 	recipient: str,
-	period_start: str,
-	period_end: str,
+	period_start: date,
+	period_end: date,
 	mode_of_payment: str = "Cash",
 	notes: str = "",
 	type: str = "Marketplace",

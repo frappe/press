@@ -4,10 +4,16 @@
 
 
 import frappe
+from frappe.core.doctype.version.version import get_diff
+
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
+	DatabaseServerMariaDBVariable,
+)
 from press.press.doctype.server.server import BaseServer
 from press.runner import Ansible
 from press.utils import log_error
-from press.overrides import get_permission_query_conditions_for_doctype
+from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
@@ -15,10 +21,111 @@ class DatabaseServer(BaseServer):
 		super().validate()
 		self.validate_mariadb_root_password()
 		self.validate_server_id()
+		self.validate_mariadb_system_variables()
 
 	def validate_mariadb_root_password(self):
 		if not self.mariadb_root_password:
 			self.mariadb_root_password = frappe.generate_hash(length=32)
+
+	def validate_mariadb_system_variables(self):
+		variable: DatabaseServerMariaDBVariable
+		for variable in self.mariadb_system_variables:
+			variable.validate()
+
+	def on_update(self):
+		if self.flags.in_insert or self.is_new():
+			return
+		self.update_mariadb_system_variables()
+		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+			self.update_memory_limits()
+
+	def update_memory_limits(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
+
+	def _update_memory_limits(self):
+		if not self.memory_high or not self.memory_max:
+			return
+		ansible = Ansible(
+			playbook="database_memory_limits.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+				"memory_high": self.memory_high,
+				"memory_max": self.memory_max,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("Database Server Update Memory Limits Error", server=self.name)
+
+	def update_mariadb_system_variables(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_update_mariadb_system_variables",
+			queue="long",
+			variables=self.get_variables_to_update(),
+		)
+
+	def get_changed_variables(
+		self, row_changed: list[tuple[str, int, str, list[tuple]]]
+	) -> list[DatabaseServerMariaDBVariable]:
+		res = []
+		for li in row_changed:
+			if li[0] == "mariadb_system_variables":
+				values = li[3]
+				for value in values:
+					if value[1] or value[2]:  # Either value is truthy
+						res.append(frappe.get_doc("Database Server MariaDB Variable", li[2]))
+
+		return res
+
+	def get_newly_added_variables(self, added) -> list[DatabaseServerMariaDBVariable]:
+		return [
+			DatabaseServerMariaDBVariable(row[1].doctype, row[1].name)
+			for row in added
+			if row[0] == "mariadb_system_variables"
+		]
+
+	def get_variables_to_update(self) -> list[DatabaseServerMariaDBVariable]:
+		old_doc = self.get_doc_before_save()
+		if not old_doc:
+			return self.mariadb_system_variables
+		diff = get_diff(old_doc, self) or {}
+		return self.get_changed_variables(
+			diff.get("row_changed", {})
+		) + self.get_newly_added_variables(diff.get("added", []))
+
+	def _update_mariadb_system_variables(
+		self, variables: list[DatabaseServerMariaDBVariable] = []
+	):
+		restart = False
+		for variable in variables:
+			variable.update_on_server()
+			if not variable.dynamic:
+				restart = True
+		if restart:
+			self._restart_mariadb()
+
+	@frappe.whitelist()
+	def restart_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_restart_mariadb")
+
+	def _restart_mariadb(self):
+		ansible = Ansible(
+			playbook="restart_mysql.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Restart Error", server=self.name)
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
@@ -34,16 +141,9 @@ class DatabaseServer(BaseServer):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		mariadb_root_password = self.get_password("mariadb_root_password")
-		if self.is_self_hosted:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
-				"name",
-			)
-		else:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-			)
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
 		certificate = frappe.get_doc("TLS Certificate", certificate_name)
 		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
 			"monitoring_password"
@@ -59,8 +159,12 @@ class DatabaseServer(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="database.yml",
+				playbook="self_hosted_db.yml"
+				if getattr(self, "is_self_hosted", False)
+				else "database.yml",
 				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
 					"workers": "2",
@@ -152,7 +256,7 @@ class DatabaseServer(BaseServer):
 		self.status = "Installing"
 		self.save()
 		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_replication", queue="long", timeout=7200
+			self.doctype, self.name, "_setup_replication", queue="long", timeout=18000
 		)
 
 	def _trigger_failover(self):
@@ -273,6 +377,45 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Password Reset Exception", server=self.as_dict())
 			raise
 
+	@frappe.whitelist()
+	def enable_performance_schema(self):
+		for key, value in PERFORMANCE_SCHEMA_VARIABLES.items():
+			if isinstance(value, int):
+				type_key = "value_int"
+			elif isinstance(value, str):
+				type_key = "value_str"
+
+			existing_variable = find(
+				self.mariadb_system_variables, lambda x: x.mariadb_variable == key
+			)
+
+			if existing_variable:
+				existing_variable.set(type_key, value)
+			else:
+				self.append(
+					"mariadb_system_variables",
+					{"mariadb_variable": key, type_key: value, "persist": True},
+				)
+
+		self.is_performance_schema_enabled = True
+		self.save()
+
+	@frappe.whitelist()
+	def disable_performance_schema(self):
+		existing_variable = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "performance_schema"
+		)
+		if existing_variable:
+			existing_variable.value_str = "OFF"
+		else:
+			self.append(
+				"mariadb_system_variables",
+				{"mariadb_variable": "performance_schema", "value_str": "OFF", "persist": True},
+			)
+
+		self.is_performance_schema_enabled = False
+		self.save()
+
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		self.mariadb_root_password = primary.get_password("mariadb_root_password")
@@ -366,3 +509,17 @@ class DatabaseServer(BaseServer):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"
 )
+
+PERFORMANCE_SCHEMA_VARIABLES = {
+	"performance_schema": "1",
+	"performance-schema-instrument": "'%=ON'",
+	"performance-schema-consumer-events-stages-current": "ON",
+	"performance-schema-consumer-events-stages-history": "ON",
+	"performance-schema-consumer-events-stages-history-long": "ON",
+	"performance-schema-consumer-events-statements-current": "ON",
+	"performance-schema-consumer-events-statements-history": "ON",
+	"performance-schema-consumer-events-statements-history-long": "ON",
+	"performance-schema-consumer-events-waits-current": "ON",
+	"performance-schema-consumer-events-waits-history": "ON",
+	"performance-schema-consumer-events-waits-history-long": "ON",
+}

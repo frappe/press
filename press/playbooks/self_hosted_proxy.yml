@@ -1,0 +1,13 @@
+---
+- name: Setup Self Hosted Proxy Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: essentials
+    - role: user
+    - role: nginx
+    - role: agent
+    - role: proxy
+    - role: docker

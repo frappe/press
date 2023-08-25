@@ -118,6 +118,37 @@
 				>
 			</template>
 		</Dialog>
+
+		<Dialog
+			:options="{ title: 'Transfer Site to Team' }"
+			v-model="showTransferSiteDialog"
+		>
+			<template #body-content>
+				<Input
+					label="Enter title of the child team"
+					type="text"
+					v-model="emailOfChildTeam"
+					required
+				/>
+
+				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
+			</template>
+
+			<template #actions>
+				<Button
+					:loading="$resources.transferSite.loading"
+					@click="
+						$resources.transferSite.submit({
+							team: emailOfChildTeam,
+							name: siteName
+						})
+					"
+					appearance="primary"
+				>
+					Submit
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
@@ -141,6 +172,7 @@ export default {
 			runningJob: false,
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
+			showTransferSiteDialog: false,
 			errorMessage: ''
 		};
 	},
@@ -172,6 +204,21 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin(this.siteName);
+		},
+		transferSite() {
+			return {
+				method: 'press.api.site.change_team',
+				onSuccess() {
+					this.showTransferSiteDialog = false;
+					this.emailOfChildTeam = null;
+					this.$notify({
+						title: 'Site Transferred to Child Team',
+						message: 'Site Transferred to Child Team',
+						color: 'green',
+						icon: 'check'
+					});
+				}
+			};
 		}
 	},
 	activated() {
@@ -304,6 +351,17 @@ export default {
 							color: 'green'
 						});
 					}
+				},
+				this.site.status == 'Active' && {
+					label: 'Transfer Site',
+					icon: 'tool',
+					loading: this.$resources.transferSite.loading,
+					handler: () => {
+						this.showTransferSiteDialog = true;
+					},
+					condition: () => {
+						return !this.$account.parent_team;
+					}
 				}
 			].filter(Boolean);
 		},
@@ -318,7 +376,8 @@ export default {
 				{ label: 'Database', route: 'database' },
 				{ label: 'Site Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
-				{ label: 'Logs', route: 'logs' }
+				{ label: 'Logs', route: 'logs' },
+				{ label: 'Settings', route: 'setting' }
 			];
 
 			if (this.site && this.site.hide_config !== 1) {
@@ -334,13 +393,38 @@ export default {
 					siteConfig,
 					'Jobs',
 					'Logs',
-					'Request Logs'
+					'Request Logs',
+					'Settings'
 				],
-				Inactive: ['Overview', 'Apps', 'Database', siteConfig, 'Jobs', 'Logs'],
+				Inactive: [
+					'Overview',
+					'Apps',
+					'Database',
+					siteConfig,
+					'Jobs',
+					'Logs',
+					'Settings'
+				],
 				Installing: ['Jobs'],
 				Pending: ['Jobs'],
-				Broken: ['Overview', 'Apps', siteConfig, 'Database', 'Jobs', 'Logs'],
-				Suspended: ['Overview', 'Apps', 'Database', 'Jobs', 'Plan']
+				Broken: [
+					'Overview',
+					'Apps',
+					siteConfig,
+					'Database',
+					'Jobs',
+					'Logs',
+					'Settings'
+				],
+				Suspended: [
+					'Overview',
+					'Apps',
+					'Database',
+					'Jobs',
+					'Plan',
+					'Logs',
+					'Settings'
+				]
 			};
 			if (this.site) {
 				let tabsToShow = tabsByStatus[this.site.status];

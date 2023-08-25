@@ -108,7 +108,7 @@ class AppReleaseApprovalRequest(Document):
 			"Marketplace App", self.marketplace_app
 		)
 		app_release: AppRelease = frappe.get_doc("App Release", self.app_release)
-		publisher_email = marketplace_app.team
+		publisher_email = frappe.get_doc("Team", marketplace_app.team).user
 
 		frappe.sendmail(
 			[publisher_email],
@@ -125,7 +125,7 @@ class AppReleaseApprovalRequest(Document):
 
 	@frappe.whitelist()
 	def start_screening(self):
-		self.release = frappe.get_doc("App Release", self.app_release)
+		self.release = frappe.get_doc("App Release", self.app_release, for_update=True)
 		self._set_baseline()
 
 		# Clone the release, if not already

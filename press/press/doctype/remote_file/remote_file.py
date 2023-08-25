@@ -27,6 +27,8 @@ def get_remote_key(file):
 
 
 def poll_file_statuses():
+	from press.utils import chunk
+
 	available_files = {}
 	doctype = "Remote File"
 	aws_access_key = frappe.db.get_single_value(
@@ -37,15 +39,12 @@ def poll_file_statuses():
 	)
 	default_region = frappe.db.get_single_value("Press Settings", "backup_region")
 	buckets = {
-		"backups": {
-			"bucket": frappe.db.get_single_value("Press Settings", "aws_s3_bucket"),
+		frappe.db.get_single_value("Press Settings", "aws_s3_bucket"): {
 			"region": default_region,
 			"access_key_id": aws_access_key,
 			"secret_access_key": aws_secret_key,
-			"tag": "Offsite Backup",
 		},
-		"uploads": {
-			"bucket": frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"),
+		frappe.db.get_single_value("Press Settings", "remote_uploads_bucket"): {
 			"region": default_region,
 			"access_key_id": frappe.db.get_single_value(
 				"Press Settings", "remote_access_key_id"
@@ -53,28 +52,24 @@ def poll_file_statuses():
 			"secret_access_key": get_decrypted_password(
 				"Press Settings", "Press Settings", "remote_secret_access_key"
 			),
-			"tag": "Site Upload",
 		},
 	}
 
 	[
 		buckets.update(
 			{
-				f"backups_{b['cluster'].lower()}": {
-					"bucket": b["bucket_name"],
+				b["bucket_name"]: {
 					"region": b["region"],
 					"access_key_id": aws_access_key,
 					"secret_access_key": aws_secret_key,
-					"tag": "Offsite Backup",
 				},
 			}
 		)
 		for b in frappe.get_all("Backup Bucket", ["bucket_name", "cluster", "region"])
 	]
 
-	for bucket in buckets:
-		current_bucket = buckets[bucket]
-		available_files[current_bucket["bucket"]] = []
+	for bucket_name, current_bucket in buckets.items():
+		available_files[bucket_name] = []
 
 		s3 = resource(
 			"s3",
@@ -83,17 +78,19 @@ def poll_file_statuses():
 			region_name=current_bucket["region"],
 		)
 
-		for s3_object in s3.Bucket(current_bucket["bucket"]).objects.all():
-			available_files[current_bucket["bucket"]].append(s3_object.key)
+		for s3_object in s3.Bucket(bucket_name).objects.all():
+			available_files[bucket_name].append(s3_object.key)
 
-		all_files = tuple(available_files[current_bucket["bucket"]])
+		all_files = set(available_files[bucket_name])
 
 		remote_files = frappe.get_all(
 			doctype,
 			fields=["name", "file_path", "status"],
-			filters={"_user_tags": ("like", f"%{current_bucket['tag']}%")},
+			filters={"bucket": bucket_name},
 		)
 
+		set_to_available = []
+		set_to_unavailable = []
 		for remote_file in remote_files:
 			name, file_path, status = (
 				remote_file["name"],
@@ -102,10 +99,16 @@ def poll_file_statuses():
 			)
 			if file_path not in all_files:
 				if status == "Available":
-					frappe.db.set_value(doctype, name, "status", "Unavailable")
+					set_to_unavailable.append(name)
 			else:
 				if status == "Unavailable":
-					frappe.db.set_value(doctype, name, "status", "Available")
+					set_to_available.append(name)
+
+		for files in chunk(set_to_unavailable, 1000):
+			frappe.db.set_value(doctype, {"name": ("in", files)}, "status", "Unavailable")
+
+		for files in chunk(set_to_available, 1000):
+			frappe.db.set_value(doctype, {"name": ("in", files)}, "status", "Available")
 
 		frappe.db.commit()
 

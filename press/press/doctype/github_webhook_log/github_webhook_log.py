@@ -73,6 +73,10 @@ class GitHubWebhookLog(Document):
 			)
 			if source:
 				commit = payload.head_commit
+				if frappe.db.exists(
+					"App Release", {"app": source.app, "source": source.name, "hash": commit["id"]}
+				):
+					return
 				release = frappe.get_doc(
 					{
 						"doctype": "App Release",

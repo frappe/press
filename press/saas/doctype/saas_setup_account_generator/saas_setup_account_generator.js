@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Saas Setup Account Generator', {
 	// refresh: function(frm) {
-
 	// }
 });

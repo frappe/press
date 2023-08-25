@@ -6,7 +6,7 @@
 					<Button
 						appearance="primary"
 						iconLeft="plus"
-						class="ml-2 hidden sm:inline-flex"
+						class="ml-2"
 						@click="showBillingDialog"
 					>
 						New
@@ -48,14 +48,14 @@
 
 				<Alert v-else title="Your last invoice payment has failed.">
 					Pay now for uninterrupted services.
-					<template v-if="latestUnpaidInvoiceStripeUrl" #actions>
-						<Button
-							icon-left="external-link"
-							appearance="primary"
-							:link="latestUnpaidInvoiceStripeUrl"
+					<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
+						<router-link
+							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
 						>
-							Pay now
-						</Button>
+							<Button icon-left="external-link" appearance="primary">
+								Go to Billing
+							</Button>
+						</router-link>
 					</template>
 				</Alert>
 
@@ -71,13 +71,28 @@
 				<SectionHeader heading="Recents"> </SectionHeader>
 
 				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
+					<LoadingText v-if="$resources.recentSites.loading" />
 					<SiteList v-else :sites="recentlyCreatedSites" />
 				</div>
 			</div>
 
 			<div class="mb-6">
-				<SectionHeader heading="All Sites"> </SectionHeader>
+				<SectionHeader :heading="getSiteFilterHeading()">
+					<template #actions>
+						<Dropdown :options="siteFilterOptions()">
+							<template v-slot="{ open }">
+								<Button
+									:class="[
+										'rounded-md px-3 py-1 text-base font-medium',
+										open ? 'bg-gray-200' : 'bg-gray-100'
+									]"
+									icon-left="chevron-down"
+									>{{ siteFilter.replace('tag:', '') }}</Button
+								>
+							</template>
+						</Dropdown>
+					</template>
+				</SectionHeader>
 
 				<div class="mt-3">
 					<LoadingText v-if="$resources.allSites.loading" />
@@ -128,15 +143,21 @@ export default {
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			siteFilter: 'All'
 		};
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allSites: {
-			method: 'press.api.site.all',
-			auto: true
+		allSites() {
+			return {
+				method: 'press.api.site.all',
+				params: { site_filter: this.siteFilter },
+				auto: true
+			};
 		},
+		siteTags: 'press.api.site.site_tags',
+		recentSites: 'press.api.site.recent_sites',
 		latestUnpaidInvoice: {
 			method: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
@@ -151,6 +172,13 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
+		getSiteFilterHeading() {
+			if (this.siteFilter === 'Update Available')
+				return 'Sites with Update Available';
+			else if (this.siteFilter.startsWith('tag:'))
+				return `Sites with tag ${this.siteFilter.slice(4)}`;
+			return `${this.siteFilter || 'All'} Sites`;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
@@ -196,6 +224,51 @@ export default {
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
+		},
+		recentSitesVisible() {
+			return this.sites.length > 3;
+		},
+		siteFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							handler: () => (this.siteFilter = 'All')
+						},
+						{
+							label: 'Active',
+							handler: () => (this.siteFilter = 'Active')
+						},
+						{
+							label: 'Broken',
+							handler: () => (this.siteFilter = 'Broken')
+						},
+						{
+							label: 'Trial',
+							handler: () => (this.siteFilter = 'Trial')
+						},
+						{
+							label: 'Update Available',
+							handler: () => (this.siteFilter = 'Update Available')
+						}
+					]
+				}
+			];
+
+			if (!this.$resources.siteTags?.data?.length) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.siteTags.data.map(tag => ({
+						label: tag,
+						handler: () => (this.siteFilter = `tag:${tag}`)
+					}))
+				}
+			];
 		}
 	},
 	computed: {
@@ -204,22 +277,10 @@ export default {
 				return [];
 			}
 
-			return this.$resources.allSites.data.site_list;
+			return this.$resources.allSites.data;
 		},
-
-		recentSitesVisible() {
-			return this.sites.length > 3;
-		},
-
 		recentlyCreatedSites() {
-			if (!this.$resources.allSites.data) {
-				return [];
-			}
-
-			const sitesWithRecentActivity = this.$resources.allSites.data.recents;
-			return this.sites.filter(site =>
-				sitesWithRecentActivity.includes(site.name)
-			);
+			return this.$resources.recentSites.data;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {
@@ -232,11 +293,6 @@ export default {
 		latestUnpaidInvoice() {
 			if (this.$resources.latestUnpaidInvoice.data) {
 				return this.$resources.latestUnpaidInvoice.data;
-			}
-		},
-		latestUnpaidInvoiceStripeUrl() {
-			if (this.$resources.latestUnpaidInvoice.data) {
-				return this.$resources.latestUnpaidInvoice.data.stripe_invoice_url;
 			}
 		}
 	}

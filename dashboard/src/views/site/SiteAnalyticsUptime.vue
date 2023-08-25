@@ -15,19 +15,27 @@
 							? 'bg-red-500'
 							: 'bg-yellow-500'
 					]"
-					:title="`${d.date} Uptime: ${(d.value * 100).toFixed(2)}%`"
+					:title="`${formatDate(d.date)} | Uptime: ${(d.value * 100).toFixed(
+						2
+					)}%`"
 				></div>
 			</div>
 		</div>
 	</Card>
 </template>
 <script>
+import { DateTime } from 'luxon';
 export default {
 	name: 'SiteAnalyticsUptime',
 	props: ['data'],
 	computed: {
 		uptimeTypes() {
 			return [{ key: 'value', label: 'Web' }];
+		}
+	},
+	methods: {
+		formatDate(date) {
+			return DateTime.fromSQL(date).toLocaleString(DateTime.DATETIME_FULL);
 		}
 	}
 };

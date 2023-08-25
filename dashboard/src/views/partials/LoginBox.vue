@@ -27,6 +27,17 @@ export default {
 	components: {
 		FrappeCloudLogo
 	},
+	mounted() {
+		const params = new URLSearchParams(window.location.search);
+
+		if (params.get('showRemoteLoginError')) {
+			this.$notify({
+				title: 'Token Invalid or Expired',
+				color: 'red',
+				icon: 'x'
+			});
+		}
+	},
 	methods: {
 		redirectForFrappeioAuth() {
 			window.location = '/f-login';

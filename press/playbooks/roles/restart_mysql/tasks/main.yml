@@ -1,0 +1,5 @@
+---
+- name: Restart MariaDB Service
+  systemd:
+    name: mysql
+    state: restarted

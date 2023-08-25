@@ -5,13 +5,30 @@
 				<Button
 					appearance="primary"
 					iconLeft="plus"
-					class="ml-2 hidden sm:inline-flex"
+					class="ml-2"
 					@click="showBillingDialog"
 				>
 					New
 				</Button>
 			</template>
 		</PageHeader>
+
+		<SectionHeader :heading="getBenchFilterHeading()">
+			<template #actions>
+				<Dropdown :options="benchFilterOptions()">
+					<template v-slot="{ open }">
+						<Button
+							:class="[
+								'rounded-md px-3 py-1 text-base font-medium',
+								open ? 'bg-gray-200' : 'bg-gray-100'
+							]"
+							icon-left="chevron-down"
+							>{{ benchFilter.replace('tag:', '') }}</Button
+						>
+					</template>
+				</Dropdown>
+			</template>
+		</SectionHeader>
 
 		<div class="mt-3">
 			<LoadingText v-if="$resources.allBenches.loading" />
@@ -44,7 +61,8 @@ export default {
 	name: 'BenchesScreen',
 	data() {
 		return {
-			showAddCardDialog: false
+			showAddCardDialog: false,
+			benchFilter: 'All'
 		};
 	},
 	pageMeta() {
@@ -60,7 +78,14 @@ export default {
 	},
 	resources: {
 		paymentMethods: 'press.api.billing.get_payment_methods',
-		allBenches: 'press.api.bench.all'
+		allBenches() {
+			return {
+				method: 'press.api.bench.all',
+				params: { bench_filter: this.benchFilter },
+				auto: true
+			};
+		},
+		benchTags: 'press.api.bench.bench_tags'
 	},
 	computed: {
 		benches() {
@@ -72,6 +97,47 @@ export default {
 		}
 	},
 	methods: {
+		benchFilterOptions() {
+			const options = [
+				{
+					group: 'Status',
+					items: [
+						{
+							label: 'All',
+							handler: () => (this.benchFilter = 'All')
+						},
+						{
+							label: 'Active',
+							handler: () => (this.benchFilter = 'Active')
+						},
+						{
+							label: 'Awaiting Deploy',
+							handler: () => (this.benchFilter = 'Awaiting Deploy')
+						}
+					]
+				}
+			];
+
+			if (!this.$resources.benchTags?.data?.length) return options;
+
+			return [
+				...options,
+				{
+					group: 'Tags',
+					items: this.$resources.benchTags.data.map(tag => ({
+						label: tag,
+						handler: () => (this.benchFilter = `tag:${tag}`)
+					}))
+				}
+			];
+		},
+		getBenchFilterHeading() {
+			if (this.benchFilter === 'Awaiting Deploy')
+				return 'Benches Awaiting Deploy';
+			else if (this.benchFilter.startsWith('tag:'))
+				return `Benches with tag ${this.benchFilter.slice(4)}`;
+			return `${this.benchFilter || 'All'} Benches`;
+		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;

@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-04-22 10:27:26.970665",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "child_team",
+  "impersonate_team"
+ ],
+ "fields": [
+  {
+   "fieldname": "child_team",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Child Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "impersonate_team",
+   "fieldtype": "Button",
+   "label": "Impersonate Team"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-04-22 10:27:26.970665",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Child Team Member",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

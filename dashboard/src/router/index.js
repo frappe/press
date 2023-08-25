@@ -1,11 +1,12 @@
+import Home from '../views/general/Home.vue';
 import authRoutes from './auth';
 import siteRoutes from './site';
 import benchRoutes from './bench';
 import serverRoutes from './server';
 import settingsRoute from './settings';
 import billingRoute from './billing';
-import Home from '../views/general/Home.vue';
 import marketplaceRoutes from './marketplace';
+import spacesRoutes from './spaces';
 
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -25,6 +26,7 @@ const routes = [
 	...siteRoutes,
 	...serverRoutes,
 	...marketplaceRoutes,
+	...spacesRoutes,
 	billingRoute,
 	settingsRoute,
 	{

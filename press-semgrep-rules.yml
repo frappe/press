@@ -1,0 +1,97 @@
+rules:
+  - id: possible-mutable-default-args
+    pattern-either:
+      - pattern: |
+          def $FUNC(..., $ARG = $FUNC2(...), ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = $FUNC2(...).$ATTR, ...):
+            ...
+      - pattern: |
+          def $FUNC(..., $ARG = frappe.$ATTR, ...):
+            ...
+
+    message: |
+      `$ARG` is possibly a mutable default argument. May not work as expected during subsequent calls of `$FUNC` without $ARG.
+    languages:
+      - python
+    severity: WARNING
+    metadata:
+      category: correctness
+      technology:
+        - python
+      references:
+        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
+  - id: except-with-db-code
+    languages:
+      - python
+    patterns:
+      - pattern-inside: |
+          try:
+            ...
+          except ...:
+            $ERR_HANDL_BLK
+      - pattern-either:
+        - pattern: |
+            try:
+              ...
+            except ...:
+              ...
+              $DOC.save(...)
+              ...
+              raise
+              ...
+        - pattern: |
+            try:
+              ...
+            except ...:
+              ...
+              frappe. ... .set_value(...)
+              ...
+              raise
+              ...
+        - pattern: |
+            try:
+              ...
+            except ...:
+              ...
+              $DOC.db_set(...)
+              ...
+              raise
+              ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            $DOC.save(...)
+            ...
+            frappe.db.commit(...)
+            raise
+          ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            frappe. ... .set_value(...)
+            ...
+            frappe.db.commit(...)
+            raise
+            ...
+      - pattern-not: |
+          try:
+            ...
+          except ...:
+            ...
+            $DOC.db_set(...)
+            ...
+            frappe.db.commit(...)
+            ...
+            raise
+            ...
+      - focus-metavariable: $ERR_HANDL_BLK
+
+    message: except block has no db commit before raise. The db changes made won't persist assuming innodb tables.
+    severity: ERROR
+

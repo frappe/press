@@ -23,9 +23,11 @@ export default class Account {
 			this.team = result.team;
 			this.teams = result.teams;
 			this.team_members = result.team_members;
+			this.child_team_members = result.child_team_members;
 			this.onboarding = result.onboarding;
 			this.balance = result.balance;
 			this.feature_flags = result.feature_flags;
+			this.parent_team = result.parent_team;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		}
@@ -59,7 +61,7 @@ export default class Account {
 		if (!this.team) {
 			return true;
 		}
-		if (this.team.free_account) {
+		if (this.team.free_account || this.team.parent_team) {
 			return true;
 		}
 		if (

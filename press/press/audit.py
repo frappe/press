@@ -72,6 +72,8 @@ class BenchFieldCheck(Audit):
 		servers = Server.get_all_primary_prod()
 		for server in servers:
 			benches = get_benches_in_server(server)
+			if not benches:
+				continue
 			for bench_name, bench_desc in benches.items():
 				for site in bench_desc["sites"]:
 					self.server_map.setdefault(site, []).append(bench_name)
@@ -180,27 +182,31 @@ class BackupRecordCheck(Audit):
 			"""
 		)
 		sites_with_backup_in_interval = set([t[0] for t in tuples])
+		filters = {
+			"status": "Active",
+			"creation": ("<=", interval_hrs_ago),
+			"is_standby": False,
+		}
+		if trial_plans:
+			filters.update({"plan": ("not in", trial_plans)})
 		all_sites = set(
 			frappe.get_all(
 				"Site",
-				{
-					"status": "Active",
-					"creation": ("<=", interval_hrs_ago),
-					"is_standby": False,
-					"plan": ("not in", trial_plans),
-				},
+				filters=filters,
 				pluck="name",
 			)
 		)
 		sites_without_backups = all_sites.difference(sites_with_backup_in_interval)
 
+		try:
+			success_rate = (len(sites_with_backup_in_interval) / len(all_sites)) * 100
+		except ZeroDivisionError:
+			success_rate = 0
 		summary = {
 			"Successful Backups": len(sites_with_backup_in_interval),
 			"Failed Backups": len(sites_without_backups),
 			"Total Active Sites": len(all_sites),
-			"Success Rate": rounded(
-				(len(sites_with_backup_in_interval) / len(all_sites)) * 100, 1
-			),
+			"Success Rate": rounded(success_rate, 1),
 		}
 		log[self.backup_summary] = summary
 

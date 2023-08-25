@@ -4,12 +4,13 @@
 
 import json
 from collections import OrderedDict
+from press.press.doctype.team.team import get_child_team_members
 from typing import Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import comma_and
+from frappe.utils import comma_and, flt
 
 from press.api.site import protected
 from press.api.github import branches
@@ -20,7 +21,12 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.utils import get_app_tag, get_current_team, unique
+from press.utils import (
+	get_app_tag,
+	get_current_team,
+	unique,
+	get_client_blacklisted_keys,
+)
 
 
 @frappe.whitelist()
@@ -64,6 +70,12 @@ def get(name):
 		"last_updated": group.modified,
 		"creation": group.creation,
 		"saas_app": group.saas_app or "",
+		"public": group.public,
+		"no_sites": frappe.db.count("Site", {"group": group.name, "status": "Active"}),
+		"bench_tags": [{"name": x.tag, "tag": x.tag_name} for x in group.tags],
+		"tags": frappe.get_all(
+			"Press Tag", {"team": group.team, "doctype_name": "Release Group"}, ["name", "tag"]
+		),
 	}
 
 
@@ -76,8 +88,10 @@ def get_group_status(name):
 
 
 @frappe.whitelist()
-def all(server=None):
+def all(server=None, bench_filter=""):
 	team = get_current_team()
+	child_teams = [team.name for team in get_child_team_members(team)]
+	teams = [team] + child_teams
 
 	group = frappe.qb.DocType("Release Group")
 	site = frappe.qb.DocType("Site")
@@ -86,7 +100,7 @@ def all(server=None):
 		.left_join(site)
 		.on((site.group == group.name) & (site.status != "Archived"))
 		.where((group.enabled == 1) & (group.public == 0))
-		.where(group.team == team)
+		.where((group.team).isin(teams))
 		.groupby(group.name)
 		.select(
 			frappe.query_builder.functions.Count(site.name).as_("number_of_sites"),
@@ -97,6 +111,22 @@ def all(server=None):
 		)
 		.orderby(group.title, order=frappe.qb.desc)
 	)
+
+	bench = frappe.qb.DocType("Bench")
+	if bench_filter == "Active":
+		query = query.inner_join(bench).on(group.name == bench.group)
+	elif bench_filter == "Awaiting Deploy":
+		group_names = frappe.get_all(
+			"Bench", {"status": "Active"}, pluck="group", distinct=True
+		)
+		query = query.inner_join(bench).on(group.name.notin(group_names))
+	elif bench_filter.startswith("tag:"):
+		tag = bench_filter[4:]
+		press_tag = frappe.qb.DocType("Resource Tag")
+		query = query.inner_join(press_tag).on(
+			(press_tag.tag_name == tag) & (press_tag.parent == group.name)
+		)
+
 	if server:
 		group_server = frappe.qb.DocType("Release Group Server")
 		query = (
@@ -106,12 +136,24 @@ def all(server=None):
 		)
 	private_groups = query.run(as_dict=True)
 
+	if not private_groups:
+		return []
+
 	app_counts = get_app_counts_for_groups([rg.name for rg in private_groups])
 	for group in private_groups:
+		group.tags = frappe.get_all("Resource Tag", {"parent": group.name}, pluck="tag_name")
 		group.number_of_apps = app_counts[group.name]
 		group.status = get_group_status(group.name)
 
 	return private_groups
+
+
+@frappe.whitelist()
+def bench_tags():
+	team = get_current_team()
+	return frappe.get_all(
+		"Press Tag", {"team": team, "doctype_name": "Release Group"}, pluck="tag"
+	)
 
 
 def get_app_counts_for_groups(rg_names):
@@ -205,6 +247,60 @@ def options(only_by_current_team=False):
 
 @frappe.whitelist()
 @protected("Release Group")
+def bench_config(release_group_name):
+	rg = frappe.get_doc("Release Group", release_group_name)
+
+	common_site_config = [
+		{"key": config.key, "value": config.value, "type": config.type}
+		for config in rg.common_site_config_table
+		if not config.internal
+	]
+
+	bench_config = frappe.parse_json(rg.bench_config)
+	if bench_config.get("http_timeout"):
+		bench_config = [
+			frappe._dict(
+				key="http_timeout",
+				value=bench_config.get("http_timeout"),
+				type="Number",
+				internal=False,
+			)
+		]
+	else:
+		bench_config = []
+
+	return common_site_config + bench_config
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_config(name, config):
+	sanitized_common_site_config, sanitized_bench_config = [], []
+	bench_config_keys = ["http_timeout"]
+
+	config = frappe.parse_json(config)
+	config = [frappe._dict(c) for c in config]
+
+	for c in config:
+		if c.key in get_client_blacklisted_keys():
+			continue
+		if c.type == "Number":
+			c.value = flt(c.value)
+		elif c.type in ("JSON", "Boolean"):
+			c.value = frappe.parse_json(c.value)
+
+		if c.key in bench_config_keys:
+			sanitized_bench_config.append(c)
+		else:
+			sanitized_common_site_config.append(c)
+
+	rg = frappe.get_doc("Release Group", name)
+	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
+	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def apps(name):
 	group = frappe.get_doc("Release Group", name)
 	apps = []
@@ -262,8 +358,16 @@ def fetch_latest_app_update(name, app):
 @frappe.whitelist()
 @protected("Release Group")
 def add_app(name, source, app):
+	add_apps(name, [{"app": app, "source": source}])
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def add_apps(name, apps):
 	release_group = frappe.get_doc("Release Group", name)
-	release_group.add_app(frappe._dict(name=source, app=app))
+	for app in apps:
+		app_name, source = app.values()
+		release_group.add_app(frappe._dict(name=source, app=app_name))
 
 
 @frappe.whitelist()
@@ -414,10 +518,10 @@ def deploy(name, apps_to_ignore=[]):
 	if isinstance(apps_to_ignore, str):
 		apps_to_ignore = json.loads(apps_to_ignore)
 
-	team = get_current_team()
+	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
-	if rg.team != team:
+	if rg.team != team.name:
 		frappe.throw(
 			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
 		)
@@ -426,9 +530,42 @@ def deploy(name, apps_to_ignore=[]):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
-	candidate.build_and_deploy()
+	candidate.deploy_to_production()
 
 	return candidate.name
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def deploy_and_update(name, apps_to_ignore=[], sites=[]):
+	if isinstance(apps_to_ignore, str):
+		apps_to_ignore = json.loads(apps_to_ignore)
+
+	team = get_current_team(True)
+	rg_team = frappe.db.get_value("Release Group", name, "team")
+
+	if rg_team != team.name:
+		frappe.throw(
+			"Bench can only be deployed by the bench owner", exc=frappe.PermissionError
+		)
+	bench_update = frappe.get_doc(
+		{
+			"doctype": "Bench Update",
+			"group": name,
+			"sites": [
+				{
+					"site": site["name"],
+					"server": site["server"],
+					"skip_failing_patches": site["skip_failing_patches"],
+					"skip_backups": site["skip_backups"],
+					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
+				}
+				for site in sites
+			],
+			"status": "Pending",
+		}
+	).insert(ignore_permissions=True)
+	bench_update.deploy(apps_to_ignore=apps_to_ignore)
 
 
 @frappe.whitelist()
@@ -610,6 +747,14 @@ def restart(name, bench):
 @protected("Release Group")
 def update(name, bench):
 	frappe.get_doc("Bench", bench).update_all_sites()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_all_sites(bench_name):
+	benches = frappe.get_all("Bench", {"group": bench_name, "status": "Active"})
+	for bench in benches:
+		frappe.get_cached_doc("Bench", bench).update_all_sites()
 
 
 @frappe.whitelist()

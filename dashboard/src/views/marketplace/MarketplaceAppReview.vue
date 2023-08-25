@@ -1,10 +1,10 @@
 <template>
-		<MarketplaceAppReviewStages 
-			v-if="$resources.reviewStages"
-			:appName="appName"
-			:app="app"
-			:reviewStages="$resources.reviewStages.data"
-		/>
+	<MarketplaceAppReviewStages
+		v-if="$resources.reviewStages"
+		:appName="appName"
+		:app="app"
+		:reviewStages="$resources.reviewStages.data"
+	/>
 </template>
 
 <script>
@@ -14,18 +14,18 @@ export default {
 	name: 'MarketpalceAppReview',
 	props: ['appName', 'app'],
 	components: {
-		MarketplaceAppReviewStages,
+		MarketplaceAppReviewStages
 	},
 	resources: {
 		reviewStages() {
 			return {
 				method: 'press.api.marketplace.review_stages',
 				params: {
-					name: this.appName,
+					name: this.appName
 				},
-				auto: true,
-			}
+				auto: true
+			};
 		}
 	}
-}
+};
 </script>

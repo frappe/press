@@ -4,9 +4,10 @@
 
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.ui_test_helpers import create_test_user
 
 from press.press.doctype.account_request.test_account_request import (
 	create_test_account_request,
@@ -14,11 +15,30 @@ from press.press.doctype.account_request.test_account_request import (
 from press.press.doctype.team.team import Team
 
 
-def create_test_team(email: str = frappe.mock("email")):
+def create_test_press_admin_team(email: str = None) -> Team:
+	"""Create test press admin user."""
+	if not email:
+		email = frappe.mock("email")
+	create_test_user(email)
+	user = frappe.get_doc("User", {"email": email})
+	user.remove_roles(*frappe.get_all("Role", pluck="name"))
+	user.add_roles("Press Admin")
+	return create_test_team(email)
+
+
+@patch.object(Team, "update_billing_details_on_frappeio", new=Mock())
+@patch.object(Team, "create_stripe_customer", new=Mock())
+def create_test_team(email: str = None, country="India") -> Team:
 	"""Create test team doc."""
-	return frappe.get_doc({"doctype": "Team", "name": email}).insert(
-		ignore_if_duplicate=True
-	)
+	if not email:
+		email = frappe.mock("email")
+	create_test_user(email)  # ignores if user already exists
+	user = frappe.get_value("User", {"email": email}, "name")
+	team = frappe.get_doc(
+		{"doctype": "Team", "user": user, "enabled": 1, "country": country}
+	).insert(ignore_if_duplicate=True)
+	team.reload()
+	return team
 
 
 class TestTeam(unittest.TestCase):

@@ -90,7 +90,10 @@
 					you sure you want to run this command? We recommend that you download
 					a database backup before continuing.
 				</p>
-				<ErrorMessage class="mt-2" :message="$resources.migrateDatabase.error" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.migrateDatabase.error"
+				/>
 				<div class="mt-2">
 					<!-- Skip Failing Checkbox -->
 					<input

@@ -26,6 +26,7 @@ from press.utils.billing import (
 	get_stripe,
 	process_micro_debit_test_charge,
 )
+from press.utils.telemetry import capture
 
 
 class Team(Document):
@@ -41,7 +42,7 @@ class Team(Document):
 
 	def before_insert(self):
 		if not self.notify_email:
-			self.notify_email = self.name
+			self.notify_email = self.user
 
 		if not self.referrer_id:
 			self.set_referrer_id()
@@ -50,7 +51,7 @@ class Team(Document):
 
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
-		h.update(self.name.encode())
+		h.update(self.user.encode())
 		self.referrer_id = h.hexdigest()
 
 	def set_partner_payment_mode(self):
@@ -59,7 +60,7 @@ class Team(Document):
 
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
-			self.partner_email = self.name
+			self.partner_email = self.user
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -104,12 +105,12 @@ class Team(Document):
 		team = frappe.get_doc(
 			{
 				"doctype": "Team",
-				"name": account_request.team,
 				"user": account_request.email,
 				"country": country,
 				"enabled": 1,
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
+				"account_request": account_request.name,
 			}
 		)
 
@@ -122,12 +123,16 @@ class Team(Document):
 			user.append_roles(account_request.role)
 			user.save(ignore_permissions=True)
 
+		team.team_title = "Parent Team"
 		team.insert(ignore_permissions=True, ignore_links=True)
 		team.append("team_members", {"user": user.name})
-		team.append("communication_emails", {"type": "invoices", "value": user.name})
-		team.append(
-			"communication_emails", {"type": "marketplace_notifications", "value": user.name}
-		)
+		if not account_request.invited_by_parent_team:
+			team.append("communication_emails", {"type": "invoices", "value": user.name})
+			team.append(
+				"communication_emails", {"type": "marketplace_notifications", "value": user.name}
+			)
+		else:
+			team.parent_team = account_request.invited_by
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
@@ -136,7 +141,8 @@ class Team(Document):
 			team.create_referral_bonus(account_request.referrer_id)
 
 		if not team.via_erpnext:
-			team.create_upcoming_invoice()
+			if not account_request.invited_by_parent_team:
+				team.create_upcoming_invoice()
 			# TODO: Partner account moved to PRM
 			if team.has_partner_account_on_erpnext_com():
 				team.enable_erpnext_partner_privileges()
@@ -177,7 +183,7 @@ class Team(Document):
 
 	def set_billing_name(self):
 		if not self.billing_name:
-			self.billing_name = frappe.utils.get_fullname(self.name)
+			self.billing_name = frappe.utils.get_fullname(self.user)
 
 	def set_default_user(self):
 		if not self.user and self.team_members:
@@ -234,7 +240,7 @@ class Team(Document):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
 
-		if not self.is_new() and self.billing_name:
+		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
 
@@ -266,7 +272,7 @@ class Team(Document):
 	@frappe.whitelist()
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
-		self.partner_email = self.name
+		self.partner_email = self.user
 		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
 
@@ -382,7 +388,7 @@ class Team(Document):
 
 		previous_billing_name = previous_version.billing_name
 
-		if previous_billing_name:
+		if previous_billing_name and previous_billing_name != self.billing_name:
 			try:
 				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
 				frappe.msgprint(
@@ -435,6 +441,8 @@ class Team(Document):
 
 		# allocate credits if not already allocated
 		self.allocate_free_credits()
+		# Telemetry: Added card
+		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
 
 		return doc
 
@@ -482,6 +490,11 @@ class Team(Document):
 
 		for invoice in invoices:
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
+			invoice.stripe_link_expired = False
+			if invoice.status == "Unpaid":
+				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
+				if days_diff > 30:
+					invoice.stripe_link_expired = True
 		return invoices
 
 	def allocate_credit_amount(self, amount, source, remark=None):
@@ -571,7 +584,7 @@ class Team(Document):
 			return False
 		erpnext_com = get_erpnext_com_connection()
 		res = erpnext_com.get_value(
-			"ERPNext Partner", "name", filters={"email": self.name, "status": "Approved"}
+			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
 		)
 		return res["name"] if res else None
 
@@ -579,7 +592,7 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account:
+		if self.free_account or self.parent_team:
 			return allow
 
 		if self.payment_mode == "Partner Credits":
@@ -675,15 +688,15 @@ class Team(Document):
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
 
-	def get_upcoming_invoice(self, type="Subscription"):
+	def get_upcoming_invoice(self):
 		# get the current period's invoice
-		today = frappe.utils.datetime.datetime.today()
+		today = frappe.utils.today()
 		result = frappe.db.get_all(
 			"Invoice",
 			filters={
 				"status": "Draft",
 				"team": self.name,
-				"type": type,
+				"type": "Subscription",
 				"period_start": ("<=", today),
 				"period_end": (">=", today),
 			},
@@ -694,10 +707,10 @@ class Team(Document):
 		if result:
 			return frappe.get_doc("Invoice", result[0])
 
-	def create_upcoming_invoice(self, type="Subscription"):
+	def create_upcoming_invoice(self):
 		today = frappe.utils.today()
 		return frappe.get_doc(
-			doctype="Invoice", team=self.name, period_start=today, type=type
+			doctype="Invoice", team=self.name, period_start=today, type="Subscription"
 		).insert()
 
 	def notify_with_email(self, recipients: List[str], **kwargs):
@@ -776,6 +789,34 @@ def get_team_members(team):
 	return users
 
 
+def get_child_team_members(team):
+	if not frappe.db.exists("Team", team):
+		return []
+
+	# a child team cannot be parent to another child team
+	if frappe.get_value("Team", team, "parent_team"):
+		return []
+
+	child_team_members = [
+		d.name for d in frappe.db.get_all("Team", {"parent_team": team}, ["name"])
+	]
+
+	child_teams = []
+	if child_team_members:
+		child_teams = frappe.db.sql(
+			"""
+				select t.name, t.team_title, t.parent_team, t.user
+				from `tabTeam` t
+				where ifnull(t.name, '') in %s
+				and t.enabled = 1
+			""",
+			[child_team_members],
+			as_dict=True,
+		)
+
+	return child_teams
+
+
 def get_default_team(user):
 	if frappe.db.exists("Team", user):
 		return user
@@ -814,6 +855,8 @@ def process_stripe_webhook(doc, method):
 	# Give them free credits too (only first time)
 	team.allocate_free_credits()
 
+	# Telemetry: Added prepaid credits
+	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
@@ -886,8 +929,11 @@ def has_permission(doc, ptype, user):
 	if user_type == "System User":
 		return True
 
-	team = get_current_team()
-	if doc.name == team:
+	team = get_current_team(True)
+	child_team_members = [
+		d.name for d in frappe.db.get_all("Team", {"parent_team": team.name}, ["name"])
+	]
+	if doc.name == team.name or doc.name in child_team_members:
 		return True
 
 	return False

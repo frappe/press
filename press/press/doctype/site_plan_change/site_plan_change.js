@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('Site Plan Change', {
 	// refresh: function(frm) {
-
 	// }
 });

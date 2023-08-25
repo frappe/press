@@ -56,7 +56,13 @@
   "use_for_new_sites",
   "staging",
   "new_worker_allocation",
-  "ram"
+  "ram",
+  "standalone_section",
+  "is_standalone",
+  "column_break_edyf",
+  "is_standalone_setup",
+  "tags_section",
+  "tags"
  ],
  "fields": [
   {
@@ -342,6 +348,8 @@
    "label": "Is Self Hosted"
   },
   {
+   "default": "root",
+   "depends_on": "eval:doc.is_self_hosted",
    "fieldname": "ssh_user",
    "fieldtype": "Data",
    "label": "SSH User"
@@ -374,10 +382,44 @@
    "fieldname": "ssh_port",
    "fieldtype": "Int",
    "label": "SSH Port"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "standalone_section",
+   "fieldtype": "Section Break",
+   "label": "Standalone"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standalone",
+   "fieldtype": "Check",
+   "label": "Is Standalone"
+  },
+  {
+   "fieldname": "column_break_edyf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standalone_setup",
+   "fieldtype": "Check",
+   "label": "Is Standalone Setup",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "links": [],
- "modified": "2023-03-27 12:35:48.699367",
+ "modified": "2023-07-02 14:59:31.104759",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

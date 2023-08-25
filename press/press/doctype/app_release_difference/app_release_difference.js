@@ -3,6 +3,5 @@
 
 frappe.ui.form.on('App Release Difference', {
 	// refresh: function(frm) {
-
 	// }
 });

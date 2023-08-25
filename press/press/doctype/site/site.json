@@ -77,7 +77,11 @@
   "is_standby",
   "standby_for",
   "column_break_63",
-  "hybrid_saas_pool"
+  "hybrid_saas_pool",
+  "backups_section",
+  "skip_scheduled_backups",
+  "tags_section",
+  "tags"
  ],
  "fields": [
   {
@@ -469,6 +473,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "saas_section",
    "fieldtype": "Section Break",
    "label": "SaaS"
@@ -548,6 +553,30 @@
    "fieldtype": "Data",
    "label": "Database Access User",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_scheduled_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Backups"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "tags_section",
+   "fieldtype": "Section Break",
+   "label": "Tags"
+  },
+  {
+   "fieldname": "tags",
+   "fieldtype": "Table",
+   "label": "Tags",
+   "options": "Resource Tag"
   }
  ],
  "links": [
@@ -617,7 +646,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-04-14 23:05:28.545699",
+ "modified": "2023-07-02 00:08:36.031427",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

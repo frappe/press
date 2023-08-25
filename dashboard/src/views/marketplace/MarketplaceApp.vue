@@ -88,9 +88,22 @@ export default {
 				Draft: ['Overview', 'Releases', 'Review'],
 				'In Review': ['Overview', 'Releases', 'Review'],
 				Rejected: ['Overview', 'Releases', 'Review'],
-				Published: ['Overview', 'Releases', 'Analytics', 'Subscriptions', 'Pricing'],
-				'Attention Required': ['Overview', 'Releases', 'Analytics', 'Subscriptions', 'Pricing']
-			}
+				Published: [
+					'Overview',
+					'Releases',
+					'Analytics',
+					'Subscriptions',
+					'Pricing'
+				],
+				'Attention Required': [
+					'Overview',
+					'Releases',
+					'Review',
+					'Analytics',
+					'Subscriptions',
+					'Pricing'
+				]
+			};
 			let tabRoute = subRoute =>
 				`/marketplace/apps/${this.appName}/${subRoute}`;
 			let tabs = [

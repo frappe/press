@@ -198,11 +198,14 @@ scheduler_events = {
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
-		"press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription.create_usage_records",
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
 		"press.marketplace.doctype.marketplace_consumption_record.marketplace_consumption_record.consume_credits_for_prepaid_records",
+		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
+		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
+		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
+		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
 	],
 	"all": [
 		"press.auth.flush",
@@ -214,7 +217,10 @@ scheduler_events = {
 			"press.press.audit.check_unbilled_subscriptions",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
-		"0 */6 * * *": ["press.press.doctype.server.server.cleanup_unused_files"],
+		"0 */6 * * *": [
+			"press.press.doctype.server.server.cleanup_unused_files",
+			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
+		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
@@ -231,6 +237,9 @@ scheduler_events = {
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
+		],
+		"* * * * *": [
+			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
 		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
@@ -250,6 +259,7 @@ fixtures = [
 	"Agent Job Type",
 	"Press Job Type",
 	"Frappe Version",
+	"MariaDB Variable",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 ]

@@ -9,7 +9,7 @@ from typing import List
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
-from press.utils import log_error, get_current_team
+from press.utils import get_current_team
 from press.overrides import get_permission_query_conditions_for_doctype
 
 
@@ -126,9 +126,6 @@ class AppSource(Document):
 					"last_github_poll_failed": True,
 					"last_synced": frappe.utils.now(),
 				},
-			)
-			log_error(
-				"App Release Creation Error", app=self.name, github_response=github_response
 			)
 
 

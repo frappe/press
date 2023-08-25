@@ -10,9 +10,11 @@ import frappe
 
 
 def create_test_remote_file(
-	site: str, creation: datetime = datetime.now(), file_path: str = None
+	site: str, creation: datetime = None, file_path: str = None
 ):
 	"""Create test remote file doc for required timestamp."""
+	if not creation:
+		creation = datetime.now()
 	remote_file = frappe.get_doc(
 		{
 			"doctype": "Remote File",

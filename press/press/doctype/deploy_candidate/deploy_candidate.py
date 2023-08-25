@@ -63,9 +63,9 @@ class DeployCandidate(Document):
 		user, session_data, team, = (
 			frappe.session.user,
 			frappe.session.data,
-			get_current_team(),
+			get_current_team(True),
 		)
-		frappe.set_user(team)
+		frappe.set_user(frappe.get_value("Team", team.name, "user"))
 		frappe.enqueue_doc(
 			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
 		)
@@ -94,6 +94,14 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
+		if frappe.db.get_single_value("Press Settings", "suspend_builds"):
+			if self.status != "Scheduled":
+				# Schedule build to be run ASAP.
+				self.status = "Scheduled"
+				self.scheduled_time = frappe.utils.now_datetime()
+				self.save()
+				frappe.db.commit()
+			return
 		self.build_and_deploy()
 
 	def build_and_deploy(self, staging: bool = False):
@@ -103,7 +111,6 @@ class DeployCandidate(Document):
 		self._build()
 		self._deploy(staging)
 
-	@frappe.whitelist()
 	def _deploy(self, staging=False):
 		try:
 			self.create_deploy(staging)
@@ -126,9 +133,21 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
+			frappe.db.commit()
 			raise
 		else:
 			self.status = "Success"
+			bench_update = frappe.get_all(
+				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+			)
+			if bench_update:
+				frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
+
 		finally:
 			self.build_end = now()
 			self.build_duration = self.build_end - self.build_start
@@ -139,18 +158,30 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		preparation_steps = [
-			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
-			("pre", "redis", "Setup Prerequisites", "Install Redis"),
-			("pre", "python", "Setup Prerequisites", "Install Python"),
-			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
-			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
-			("pre", "node", "Setup Prerequisites", "Install Node.js"),
-			("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
-			("pre", "pip", "Setup Prerequisites", "Install pip"),
-			("bench", "bench", "Setup Bench", "Install Bench"),
-			("bench", "env", "Setup Bench", "Setup Virtual Environment"),
-		]
+		self.apt_packages = self.get_apt_packages()
+
+		preparation_steps = (
+			[
+				("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
+				("pre", "redis", "Setup Prerequisites", "Install Redis"),
+				("pre", "python", "Setup Prerequisites", "Install Python"),
+				("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
+				("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
+			]
+			+ (
+				[("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages")]
+				if self.apt_packages
+				else []
+			)
+			+ [
+				("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
+				("pre", "node", "Setup Prerequisites", "Install Node.js"),
+				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
+				("pre", "pip", "Setup Prerequisites", "Install pip"),
+				("bench", "bench", "Setup Bench", "Install Bench"),
+				("bench", "env", "Setup Bench", "Setup Virtual Environment"),
+			]
+		)
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
@@ -197,6 +228,14 @@ class DeployCandidate(Document):
 
 		os.mkdir(self.build_directory)
 
+	@frappe.whitelist()
+	def cleanup_build_directory(self):
+		if self.build_directory:
+			if os.path.exists(self.build_directory):
+				shutil.rmtree(self.build_directory)
+			self.build_directory = None
+			self.save()
+
 	def _prepare_build_context(self):
 		# Create apps directory
 		apps_directory = os.path.join(self.build_directory, "apps")
@@ -221,7 +260,7 @@ class DeployCandidate(Document):
 				self.save(ignore_version=True)
 				frappe.db.commit()
 
-				release = frappe.get_doc("App Release", app.release)
+				release = frappe.get_doc("App Release", app.release, for_update=True)
 				release._clone()
 				source = release.clone_directory
 
@@ -240,6 +279,7 @@ class DeployCandidate(Document):
 		self._generate_dockerfile()
 		self._copy_config_files()
 		self._generate_redis_cache_config()
+		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
 
@@ -249,8 +289,8 @@ class DeployCandidate(Document):
 			dockerfile_template = "press/docker/Dockerfile"
 
 			for d in self.dependencies:
-				if d.dependency == "BENCH_VERSION" and d.version != "5.2.1":
-					dockerfile_template = "press/docker/Dockerfile_Bench_5_15_2"
+				if d.dependency == "BENCH_VERSION" and d.version == "5.2.1":
+					dockerfile_template = "press/docker/Dockerfile_Bench_5_2_1"
 
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
@@ -274,6 +314,15 @@ class DeployCandidate(Document):
 			redis_cache_conf_template = "press/docker/config/redis-cache.conf"
 			content = frappe.render_template(
 				redis_cache_conf_template, {"doc": self}, is_path=True
+			)
+			f.write(content)
+
+	def _generate_supervisor_config(self):
+		supervisor_conf = os.path.join(self.build_directory, "config", "supervisor.conf")
+		with open(supervisor_conf, "w") as f:
+			supervisor_conf_template = "press/docker/config/supervisor.conf"
+			content = frappe.render_template(
+				supervisor_conf_template, {"doc": self}, is_path=True
 			)
 			f.write(content)
 
@@ -320,7 +369,19 @@ class DeployCandidate(Document):
 
 		return app
 
+	command = "docker build"
+
 	def _run_docker_build(self, no_cache=False):
+		import platform
+
+		# check if it's running on apple silicon mac
+		if (
+			platform.machine() == "arm64"
+			and platform.system() == "Darwin"
+			and platform.processor() == "arm"
+		):
+			self.command = f"{self.command}x build --platform linux/amd64"
+
 		environment = os.environ
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
@@ -345,8 +406,14 @@ class DeployCandidate(Document):
 		self.docker_image_tag = self.name
 		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 
+		if no_cache:
+			self.command += " --no-cache"
+
+		self.command += f" -t {self.docker_image}"
+		self.command += " ."
+
 		result = self.run(
-			f"docker build {'--no-cache' if no_cache else ''} -t {self.docker_image} .",
+			self.command,
 			environment,
 		)
 		self._parse_docker_build_result(result)
@@ -624,10 +691,37 @@ class DeployCandidate(Document):
 	def on_update(self):
 		if self.status == "Running":
 			frappe.publish_realtime(
-				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps}
+				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
+
+	def get_apt_packages(self):
+		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
+
+
+def cleanup_build_directories():
+	# Cleanup Build Directories for Deploy Candidates older than a day
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{
+			"status": ("!=", "Draft"),
+			"build_directory": ("is", "set"),
+			"creation": ("<=", frappe.utils.add_to_date(None, hours=-6)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=100,
+	)
+	for candidate in candidates:
+		try:
+			frappe.get_doc("Deploy Candidate", candidate).cleanup_build_directory()
+			frappe.db.commit()
+		except Exception as e:
+			frappe.db.rollback()
+			log_error(
+				title="Deploy Candidate Build Cleanup Error", exception=e, candidate=candidate
+			)
 
 
 def ansi_escape(text):
@@ -647,6 +741,56 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 	)
 
 
+def delete_draft_candidates():
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{
+			"status": "Draft",
+			"creation": ("<=", frappe.utils.add_days(None, -1)),
+		},
+		order_by="creation asc",
+		pluck="name",
+		limit=1000,
+	)
+
+	for candidate in candidates:
+		if frappe.db.exists("Bench", {"candidate": candidate}):
+			frappe.db.set_value(
+				"Deploy Candidate", candidate, "status", "Success", update_modified=False
+			)
+			frappe.db.commit()
+			continue
+		else:
+			try:
+				frappe.delete_doc("Deploy Candidate", candidate, delete_permanently=True)
+				frappe.db.commit()
+			except Exception:
+				log_error("Draft Deploy Candidate Deletion Error", candidate=candidate)
+				frappe.db.rollback()
+
+
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Deploy Candidate"
 )
+
+
+@frappe.whitelist()
+def toggle_builds(suspend):
+	frappe.only_for("System Manager")
+	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
+
+
+def run_scheduled_builds():
+	candidates = frappe.get_all(
+		"Deploy Candidate",
+		{"status": "Scheduled", "scheduled_time": ("<=", frappe.utils.now_datetime())},
+		limit=1,
+	)
+	for candidate in candidates:
+		try:
+			candidate = frappe.get_doc("Deploy Candidate", candidate)
+			candidate.deploy_to_production()
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)

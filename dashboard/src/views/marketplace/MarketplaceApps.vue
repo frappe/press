@@ -48,7 +48,7 @@ export default {
 	},
 	methods: {
 		routeToAppPage(appName, status) {
-			if (status === "Draft") {
+			if (status === 'Draft') {
 				this.$router.push(`/marketplace/apps/${appName}/review`);
 			} else {
 				this.$router.push(`/marketplace/apps/${appName}`);
