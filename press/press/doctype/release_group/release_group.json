@@ -26,6 +26,8 @@
   "common_site_config",
   "column_break_14",
   "bench_config",
+  "gunicorn_workers",
+  "background_workers",
   "dependencies_tab",
   "dependencies",
   "packages",
@@ -251,10 +253,22 @@
    "fieldtype": "Table",
    "label": "Configuration",
    "options": "Common Site Config"
+  },
+  {
+   "description": "Setting these will override the auto scaled worker count set in benches",
+   "fieldname": "gunicorn_workers",
+   "fieldtype": "Int",
+   "label": "Gunicorn Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "background_workers",
+   "fieldtype": "Int",
+   "label": "Background Workers"
   }
  ],
  "links": [],
- "modified": "2023-07-17 17:44:39.805124",
+ "modified": "2023-08-24 23:02:22.195587",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
