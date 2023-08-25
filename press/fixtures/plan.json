@@ -22,6 +22,7 @@
   "price_usd": 0.0,
   "private_benches": 0,
   "roles": [],
+  "support_included": 0,
   "vcpu": 2
  },
  {
@@ -47,10 +48,11 @@
   "price_usd": 0.0,
   "private_benches": 0,
   "roles": [],
+  "support_included": 0,
   "vcpu": 2
  },
  {
-  "cluster": "Balu London 2",
+  "cluster": "",
   "cpu_time_per_day": 0,
   "database_access": 0,
   "disk": 50,
@@ -64,7 +66,7 @@
   "max_database_usage": 0,
   "max_storage_usage": 0,
   "memory": 4096,
-  "modified": "2023-08-18 07:06:14.791377",
+  "modified": "2023-08-25 17:11:24.106967",
   "name": "Basic Cluster - Server",
   "offsite_backups": 0,
   "plan_title": "Basic Cluster - Server",
@@ -72,6 +74,7 @@
   "price_usd": 0.0,
   "private_benches": 0,
   "roles": [],
+  "support_included": 0,
   "vcpu": 2
  }
 ]
