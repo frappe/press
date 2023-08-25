@@ -21,7 +21,7 @@ class DripEmail(Document):
 		if self.email_type == "Drip" and site.status in ["Pending", "Broken"]:
 			return
 
-		if not self.send_after_payment and site.has_paid:
+		if site.has_paid and not self.send_after_payment:
 			return
 
 		account_request = frappe.get_doc("Account Request", site.account_request)
