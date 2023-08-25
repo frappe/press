@@ -84,34 +84,34 @@ class ProxyServer(BaseServer):
 		else:
 			kibana_password = None
 
-		try:
-			ansible = Ansible(
-				playbook="proxy.yml",
-				server=self,
-				variables={
-					"server": self.name,
-					"workers": 1,
-					"domain": self.domain,
-					"agent_password": agent_password,
-					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
-					"log_server": log_server,
-					"kibana_password": kibana_password,
-					"certificate_private_key": certificate.private_key,
-					"certificate_full_chain": certificate.full_chain,
-					"certificate_intermediate_chain": certificate.intermediate_chain,
-				},
-			)
-			play = ansible.run()
-			self.reload()
-			if play.status == "Success":
-				self.status = "Active"
-				self.is_server_setup = True
-			else:
-				self.status = "Broken"
-		except Exception:
+		# try:
+		ansible = Ansible(
+			playbook="proxy.yml",
+			server=self,
+			variables={
+				"server": self.name,
+				"workers": 1,
+				"domain": self.domain,
+				"agent_password": agent_password,
+				"agent_repository_url": agent_repository_url,
+				"monitoring_password": monitoring_password,
+				"log_server": log_server,
+				"kibana_password": kibana_password,
+				"certificate_private_key": certificate.private_key,
+				"certificate_full_chain": certificate.full_chain,
+				"certificate_intermediate_chain": certificate.intermediate_chain,
+			},
+		)
+		play = ansible.run()
+		self.reload()
+		if play.status == "Success":
+			self.status = "Active"
+			self.is_server_setup = True
+		else:
 			self.status = "Broken"
-			log_error("Proxy Server Setup Exception", server=self.as_dict())
+		# except Exception:
+		# 	self.status = "Broken"
+		# 	log_error("Proxy Server Setup Exception", server=self.as_dict())
 		self.save()
 
 	def _install_exporters(self):
