@@ -25,6 +25,48 @@
 					<Button @click="showBackupDialog = false"> Cancel </Button>
 				</template>
 			</Dialog>
+			<Dialog
+				:options="{ title: 'Restore Backup on Another Site' }"
+				v-model="showRestoreOnAnotherSiteDialog"
+			>
+				<template v-slot:body-content>
+					<p class="text-base">
+						Select the site where you want to restore the backup
+					</p>
+					<SiteRestoreSelector
+						:sites="
+							$resources.sites.data.filter(site => site.name !== this.site.name)
+						"
+						:selectedSite="selectedSite"
+						@update:selectedSite="value => (selectedSite = value)"
+					/>
+					<div v-if="selectedSite" class="mt-4">
+						<p class="text-base">
+							Are you sure you want to restore the backup from
+							<b>{{ site?.name }}</b> taken on
+							<b>{{ formatDate(backupToRestore.creation) }}</b> to your site
+							<b>{{ selectedSite.name }}</b
+							>?
+						</p>
+					</div>
+					<ErrorMessage
+						class="mt-2"
+						:message="restoreOnAnotherSiteErrorMessage"
+					/>
+				</template>
+				<template v-slot:actions>
+					<Button
+						appearance="primary"
+						v-if="selectedSite"
+						@click="restoreOffsiteBackupOnAnotherSite(backupToRestore)"
+					>
+						Restore
+					</Button>
+					<Button @click="showRestoreOnAnotherSiteDialog = false">
+						Cancel
+					</Button>
+				</template>
+			</Dialog>
 		</template>
 		<div class="divide-y" v-if="backups.data.length">
 			<div
@@ -64,17 +106,32 @@
 	</Card>
 </template>
 <script>
+import SiteRestoreSelector from '@/components/SiteRestoreSelector.vue';
+
 export default {
 	name: 'SiteDatabaseBackups',
 	props: ['site'],
+	components: {
+		SiteRestoreSelector
+	},
 	data() {
 		return {
 			isRestorePending: false,
 			backupToRestore: null,
-			showBackupDialog: false
+			showBackupDialog: false,
+			showRestoreOnAnotherSiteDialog: false,
+			restoreOnAnotherSiteErrorMessage: null,
+			selectedSite: null
 		};
 	},
 	resources: {
+		sites() {
+			return {
+				method: 'press.api.site.all',
+				default: [],
+				auto: true
+			};
+		},
 		backups() {
 			return {
 				method: 'press.api.site.backups',
@@ -197,6 +254,13 @@ export default {
 									}
 								});
 							}
+						},
+						{
+							label: 'Restore Backup on Another Site',
+							handler: () => {
+								this.showRestoreOnAnotherSiteDialog = true;
+								this.backupToRestore = backup;
+							}
 						}
 					]
 				}
@@ -228,6 +292,28 @@ export default {
 					window.location.reload();
 				}, 1000);
 			});
+		},
+		async restoreOffsiteBackupOnAnotherSite(backup) {
+			this.isRestorePending = true;
+			this.$call('press.api.site.restore', {
+				name: this.selectedSite.name,
+				files: {
+					database: backup.remote_database_file,
+					public: backup.remote_public_file,
+					private: backup.remote_private_file
+				}
+			})
+				.then(() => {
+					this.isRestorePending = false;
+					this.showRestoreOnAnotherSiteDialog = false;
+					this.$router.push(`/sites/${this.selectedSite.name}/jobs`);
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				})
+				.catch(error => {
+					this.restoreOnAnotherSiteErrorMessage = error;
+				});
 		},
 		showDialog() {
 			this.showBackupDialog = true;

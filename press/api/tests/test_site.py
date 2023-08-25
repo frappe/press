@@ -2,7 +2,6 @@
 # Copyright (c) 2019, Frappe and Contributors
 # See license.txt
 
-
 import datetime
 from unittest.mock import MagicMock, Mock, patch
 
@@ -10,7 +9,10 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
-from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
+from press.press.doctype.agent_job.test_agent_job import (
+	fake_agent_job,
+)
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
@@ -24,7 +26,6 @@ from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestAPISite(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
@@ -34,6 +35,7 @@ class TestAPISite(FrappeTestCase):
 		frappe.db.rollback()
 		frappe.set_user("Administrator")
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_options_contains_only_public_groups_when_private_group_is_not_given(
 		self,
 	):
@@ -61,6 +63,7 @@ class TestAPISite(FrappeTestCase):
 			if version["name"] == "Version 14":
 				self.assertEqual(version["group"]["name"], group14.name)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_new_fn_creates_site_and_subscription(self):
 		from press.api.site import new
 
@@ -71,7 +74,12 @@ class TestAPISite(FrappeTestCase):
 
 		frappe.set_user(self.team.user)
 		new_site = new(
-			{"name": "testsite", "group": group.name, "plan": plan.name, "apps": [app.name]}
+			{
+				"name": "testsite",
+				"group": group.name,
+				"plan": plan.name,
+				"apps": [app.name],
+			}
 		)
 
 		created_site = frappe.get_last_doc("Site")
@@ -84,6 +92,7 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(created_site.bench, bench.name)
 		self.assertEqual(created_site.status, "Pending")
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_get_fn_returns_site_details(self):
 		from press.api.site import get
 
@@ -114,7 +123,9 @@ class TestAPISite(FrappeTestCase):
 				"ip": frappe.get_last_doc("Proxy Server").ip,
 				"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 				"tags": frappe.get_all(
-					"Press Tag", {"team": self.team.name, "doctype_name": "Site"}, ["name", "tag"]
+					"Press Tag",
+					{"team": self.team.name, "doctype_name": "Site"},
+					["name", "tag"],
 				),
 			},
 			site_details,
@@ -124,6 +135,7 @@ class TestAPISite(FrappeTestCase):
 		"press.press.doctype.app_release_difference.app_release_difference.Github",
 		new=MagicMock(),
 	)
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def _setup_site_update(self):
 		version = "Version 13"
 		app = create_test_app()
@@ -140,6 +152,7 @@ class TestAPISite(FrappeTestCase):
 		# No need to create app release differences as it'll get autofilled by geo.json
 		create_deploy_candidate_differences(self.bench2)  # for site update to be available
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_check_for_updates_shows_update_available_when_site_update_available(self):
 		from press.api.site import check_for_updates
 
@@ -149,6 +162,7 @@ class TestAPISite(FrappeTestCase):
 		out = check_for_updates(site.name)
 		self.assertEqual(out["update_available"], True)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_check_for_updates_shows_update_unavailable_when_no_new_bench(self):
 		from press.api.site import check_for_updates
 
@@ -159,6 +173,7 @@ class TestAPISite(FrappeTestCase):
 		out = check_for_updates(site.name)
 		self.assertEqual(out["update_available"], False)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_installed_apps_returns_installed_apps_of_site(self):
 		from press.api.site import installed_apps
 
@@ -176,6 +191,7 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(out[0]["app"], group.apps[0].app)
 		self.assertEqual(out[1]["app"], group.apps[1].app)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_available_apps_shows_apps_installed_in_bench_but_not_in_site(self):
 		from press.api.site import available_apps
 
@@ -201,8 +217,30 @@ class TestAPISite(FrappeTestCase):
 	def test_check_dns_(self):
 		pass
 
-	def test_install_app(self):
-		pass
+	def test_install_app_adds_to_app_list_only_on_successful_job(self):
+		from press.api.site import install_app
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name])
+		with fake_agent_job("Success"):
+			install_app(site.name, app2.name)
+			poll_pending_jobs()
+		site.reload()
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.status, "Active")
+
+		site = create_test_site(bench=bench.name, apps=[app.name])
+		with fake_agent_job("Failure"):
+			install_app(site.name, app2.name)
+			poll_pending_jobs()
+		site.reload()
+		self.assertEqual(len(site.apps), 1)
+		self.assertEqual(site.status, "Active")
 
 	def test_uninstall_app(self):
 		pass
