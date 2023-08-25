@@ -45,12 +45,10 @@ class Cluster(Document):
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
 		if self.public and not self.aws_access_key_id:
-			self.aws_access_key_id = settings.offsite_backups_access_key_id
-			self.aws_secret_access_key = settings.get_password(
-				"offsite_backups_secret_access_key"
-			)
+			self.aws_access_key_id = settings.aws_access_key_id
+			self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
 		elif not self.aws_access_key_id or not self.aws_secret_access_key:
-			root_client = settings.boto3_offsite_backup_session.client("iam")
+			root_client = settings.boto3_iam_client
 			group = (  # make sure group exists
 				root_client.get_group(GroupName="fc-vpc-customer").get("Group", {}).get("GroupName")
 			)
@@ -105,7 +103,7 @@ class Cluster(Document):
 				"Cluster", ["cidr_block"], pluck="cidr_block"
 			)
 			for block in blocks:
-				cidr_block = str(block)
+				cidr_block = str("10.126.0.0/16")
 				if cidr_block not in existing_blocks:
 					self.cidr_block = cidr_block
 					self.subnet_cidr_block = cidr_block

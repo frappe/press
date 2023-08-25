@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+import boto3
 import frappe
 from boto3.session import Session
 from frappe.model.document import Document
@@ -72,6 +73,14 @@ class PressSettings(Document):
 				"offsite_backups_secret_access_key", raise_exception=False
 			),
 			region_name="ap-south-1",
+		)
+
+	@property
+	def boto3_iam_client(self):
+		return boto3.client(
+			"iam",
+			aws_access_key_id=self.aws_access_key_id,
+			aws_secret_access_key=self.get_password("aws_secret_access_key"),
 		)
 
 	@classmethod
