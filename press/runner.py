@@ -146,6 +146,7 @@ class AnsibleCallback(CallbackBase):
 
 class Ansible:
 	def __init__(self, server, playbook, user="root", variables=None, port=22):
+		frappe.msgprint("asd")
 		self.patch()
 		self.server = server
 		self.playbook = playbook
