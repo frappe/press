@@ -67,7 +67,7 @@ class ProxyServer(BaseServer):
 		wildcards = self.get_wildcard_domains()
 		agent.setup_wildcard_hosts(wildcards)
 
-	def _setup_server(self):
+	def setup_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
 		certificate_name = frappe.db.get_value(
