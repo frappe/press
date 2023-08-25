@@ -32,7 +32,8 @@ class ProxyServer(BaseServer):
 				"TLS Certificate", {"wildcard": True, "status": "Active", "domain": domain}
 			):
 				frappe.throw(f"Valid wildcard TLS Certificate not found for {domain}")
-			self.append("domains", {"domain": domain, "code_server": code_servers[i]})
+			if code_servers:
+				self.append("domains", {"domain": domain, "code_server": code_servers[i]})
 
 	def validate_proxysql_admin_password(self):
 		if not self.proxysql_admin_password:

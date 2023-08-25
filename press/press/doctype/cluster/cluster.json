@@ -8,10 +8,12 @@
  "field_order": [
   "title",
   "image",
-  "public",
   "description",
   "column_break_2",
   "monitoring_password",
+  "public",
+  "column_break_fsht",
+  "status",
   "provisioning_section",
   "cloud_provider",
   "region",
@@ -59,7 +61,6 @@
    "fieldname": "aws_access_key_id",
    "fieldtype": "Data",
    "label": "AWS Access Key ID",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "set_only_once": 1
   },
   {
@@ -67,7 +68,6 @@
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "set_only_once": 1
   },
   {
@@ -82,9 +82,10 @@
   {
    "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Region",
    "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "options": "Cloud Region",
    "set_only_once": 1
   },
   {
@@ -181,6 +182,19 @@
    "fieldtype": "Data",
    "label": "AWS Proxy Security Group ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fsht",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Active\nCopying Images\nArchived"
   }
  ],
  "image_field": "image",
@@ -200,9 +214,19 @@
    "group": "Servers",
    "link_doctype": "Proxy Server",
    "link_fieldname": "cluster"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Log Server",
+   "link_fieldname": "cluster"
+  },
+  {
+   "group": "Servers",
+   "link_doctype": "Monitor Server",
+   "link_fieldname": "cluster"
   }
  ],
- "modified": "2022-02-08 16:59:18.836427",
+ "modified": "2023-08-18 05:46:14.895927",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

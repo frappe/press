@@ -260,6 +260,8 @@ fixtures = [
 	"Press Job Type",
 	"Frappe Version",
 	"MariaDB Variable",
+	"Cloud Region",
+	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 ]

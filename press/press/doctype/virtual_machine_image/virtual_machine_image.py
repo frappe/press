@@ -1,14 +1,19 @@
 # Copyright (c) 2022, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
-from frappe.model.document import Document
-from frappe.core.utils import find
+from typing import Optional
 
 import boto3
+import frappe
+from frappe.core.utils import find
+from frappe.model.document import Document
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_result
 
 
 class VirtualMachineImage(Document):
+	DOCTYPE = "Virtual Machine Image"
+
 	def after_insert(self):
 		self.set_credentials()
 		if self.copied_from:
@@ -55,14 +60,23 @@ class VirtualMachineImage(Document):
 		else:
 			self.status = "Unavailable"
 		self.save()
+		return self.status
+
+	@retry(
+		retry=retry_if_result(lambda result: result != "Available"),
+		wait=wait_fixed(60),
+		stop=stop_after_attempt(10),
+	)
+	def wait_for_availability(self):
+		"""Retries sync until the image is available"""
+		return self.sync()
 
 	@frappe.whitelist()
-	def copy_image(self, cluster):
+	def copy_image(self, cluster: str):
 		image = frappe.copy_doc(self)
 		image.copied_from = self.name
 		image.cluster = cluster
-		image.insert()
-		return image.name
+		return image.insert()
 
 	@frappe.whitelist()
 	def delete_image(self):
@@ -86,3 +100,23 @@ class VirtualMachineImage(Document):
 			aws_access_key_id=cluster.aws_access_key_id,
 			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 		)
+
+	@classmethod
+	def get_available_for_series(
+		cls, series: str, region: Optional[str] = None
+	) -> Optional[str]:
+		images = frappe.qb.DocType(cls.DOCTYPE)
+		get_available_images = (
+			frappe.qb.from_(images)
+			.select("name")
+			.where(images.status == "Available")
+			.where(
+				images.series == series,
+			)
+		)
+		if region:
+			get_available_images = get_available_images.where(images.region == region)
+		available_images = get_available_images.run(as_dict=True)
+		if not available_images:
+			return None
+		return available_images[0].name
