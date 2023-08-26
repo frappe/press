@@ -11,12 +11,7 @@ from unittest.mock import Mock, patch
 import frappe
 
 from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.database_server.test_database_server import (
-	create_test_database_server,
-)
-from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.root_domain.root_domain import RootDomain
-from press.press.doctype.server.test_server import create_test_server
 
 
 @patch.object(RootDomain, "after_insert", new=Mock())
@@ -43,6 +38,14 @@ class TestRootDomain(unittest.TestCase):
 		frappe.db.rollback()
 
 	def _create_fake_rename_job(self, site_name: str, creation=None):
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.server.test_server import create_test_server
+		from press.press.doctype.database_server.test_database_server import (
+			create_test_database_server,
+		)
+
 		if not creation:
 			creation = datetime.now()
 		server = create_test_server(

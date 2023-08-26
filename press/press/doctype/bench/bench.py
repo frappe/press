@@ -402,7 +402,9 @@ def process_new_bench_job_update(job):
 				pluck="name",
 			)
 			if bench_update:
-				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(bench.server)
+				frappe.get_doc("Bench Update", bench_update[0]).update_sites_on_server(
+					job.bench, bench.server
+				)
 
 
 def process_archive_bench_job_update(job):
