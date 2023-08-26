@@ -453,6 +453,22 @@ class BaseServer(Document):
 			log_error("Increase swap exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_mysqldump(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
+		)
+
+	def _setup_mysqldump(self):
+		try:
+			ansible = Ansible(
+				playbook="mysqldump.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MySQLdump Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
@@ -838,11 +854,12 @@ class Server(BaseServer):
 				bench = frappe.get_doc("Bench", bench_name, for_update=True)
 				try:
 					gunicorn_workers = min(
-						24,
+						frappe.get_value("Release Group", bench.group, "gunicorn_workers") or 24,
 						max(2, round(workload / total_workload * max_gunicorn_workers)),  # min 2 max 24
 					)
 					background_workers = min(
-						8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+						frappe.get_value("Release Group", bench.group, "background_workers") or 8,
+						max(1, round(workload / total_workload * max_bg_workers)),  # min 1 max 8
 					)
 				except ZeroDivisionError:  # when total_workload is 0
 					gunicorn_workers = 2

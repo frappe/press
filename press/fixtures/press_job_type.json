@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-10 16:43:54.861788",
+  "modified": "2023-08-14 15:59:21.127979",
   "name": "Create Server",
   "steps": [
    {
@@ -27,6 +27,38 @@
     "parenttype": "Press Job Type",
     "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
     "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_tls_certificate()",
+    "step_name": "Update TLS Certificate",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "step_name": "Wait for TLS Certificate to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.update_agent_ansible()",
+    "step_name": "Update Agent Ansible",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "step_name": "Wait for Agent to be updated",
     "wait_until_true": 1
    }
   ]

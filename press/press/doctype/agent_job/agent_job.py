@@ -352,6 +352,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.site.site import (
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
+			process_uninstall_app_site_job_update,
 			process_migrate_site_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
@@ -396,7 +397,7 @@ def process_job_updates(job_name):
 		elif job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		elif job.job_type == "Uninstall App from Site":
-			process_install_app_site_job_update(job)
+			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
 		elif job.job_type == "Add Code Server to Upstream":

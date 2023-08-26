@@ -90,4 +90,3 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
-	

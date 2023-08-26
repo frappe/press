@@ -558,6 +558,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 					"server": site["server"],
 					"skip_failing_patches": site["skip_failing_patches"],
 					"skip_backups": site["skip_backups"],
+					"source_candidate": frappe.get_value("Bench", site["bench"], "candidate"),
 				}
 				for site in sites
 			],

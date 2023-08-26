@@ -6,6 +6,10 @@
 		← Back to Plans
 	</div>
 
+	<ErrorMessage
+		class="my-3 ml-6"
+		:message="$resources.updateBillingDetails.error"
+	/>
 	<div class="flex flex-col justify-between px-6">
 		<div>
 			<Input
@@ -22,6 +26,7 @@
 				type="select"
 				v-model="country"
 				:options="countries"
+				required
 			/>
 			<div class="flex flex-col justify-between sm:flex-row">
 				<Input
@@ -31,6 +36,7 @@
 					type="select"
 					v-model="state"
 					:options="indianStates"
+					required
 				/>
 				<Input
 					v-else
@@ -38,6 +44,7 @@
 					label="State/Province/Region"
 					type="text"
 					v-model="state"
+					required
 				/>
 				<Input class="mb-2" label="City" type="text" v-model="city" />
 				<Input
@@ -45,6 +52,7 @@
 					label="Postal Code"
 					type="text"
 					v-model="postalCode"
+					required
 				/>
 			</div>
 

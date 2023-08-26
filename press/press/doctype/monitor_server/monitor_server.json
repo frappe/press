@@ -9,6 +9,7 @@
   "hostname",
   "domain",
   "column_break_4",
+  "cluster",
   "provider",
   "virtual_machine",
   "is_server_setup",
@@ -87,7 +88,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP",
-   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -186,6 +186,12 @@
    "label": "Virtual Machine",
    "mandatory_depends_on": "eval:doc.provider === \"AWS EC2\"",
    "options": "Virtual Machine"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
   }
  ],
  "links": [
@@ -194,7 +200,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-06-16 22:28:16.543575",
+ "modified": "2023-08-16 17:20:05.594416",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",
