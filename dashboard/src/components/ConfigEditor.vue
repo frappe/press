@@ -281,6 +281,14 @@ export default {
 				);
 			}
 
+			if (this.newConfig.type === 'Boolean') {
+				this.newConfig.value = 0;
+			} else if (this.newConfig.type === 'JSON') {
+				this.newConfig.value = '{}';
+			} else {
+				this.newConfig.value = '';
+			}
+
 			this.newConfig.key = this.chosenStandardConfig?.value || '';
 		},
 		getStandardConfigType(key) {
