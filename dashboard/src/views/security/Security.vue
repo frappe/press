@@ -2,12 +2,12 @@
 	<div>
 		<div v-if="server">
 			<div>
-				<!-- <header
+				<header
 					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 				>
 					<Breadcrumbs
 						:items="[
-							{ label: 'Servers', route: { name: 'Security' } },
+							{ label: 'Security', route: { name: 'Security' } },
 							{
 								label: server?.title,
 								route: {
@@ -18,7 +18,7 @@
 						]"
 					>
 					</Breadcrumbs>
-				</header> -->
+				</header>
 				<div
 					class="flex flex-col space-y-3 px-5 pt-6 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -46,7 +46,7 @@ export default {
 	name: 'Security',
 	pageMeta() {
 		return {
-			title: `Server - ${this.serverName} - Frappe Cloud`
+			title: `Security - ${this.serverName} - Frappe Cloud`
 		};
 	},
 	props: ['serverName'],

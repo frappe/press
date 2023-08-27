@@ -24,33 +24,73 @@
 						/>
 					</div>
 				</div>
-				<LoadingText v-if="$resources.allServers.loading" />
-				<div v-else>
-					<div class="flex">
-						<div class="flex w-full px-3 py-4">
-							<div class="w-4/12 text-base font-medium text-gray-900">
-								Server Name
-							</div>
-							<div class="w-2/12 text-base font-medium text-gray-900">
-								Security Updates
-							</div>
+				<Table
+					:columns="[
+						{ label: 'Server Name', name: 'name' },
+						{ label: 'Security Updates', name: 'security_updates_status' },
+						{ label: '', name: 'actions', width: 0.5 }
+					]"
+					:rows="servers"
+					v-slot="{ rows, columns }"
+				>
+					<TableHeader />
+					<div class="flex items-center justify-center">
+						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
+						<div v-else-if="rows.length === 0" class="mt-8">
+							<div class="text-base text-gray-700">No Items</div>
 						</div>
 					</div>
-					<div class="w-8" />
-				</div>
-				<div class="mx-2.5 border-b" />
-				<ServerList :servers="servers" />
+					<TableRow v-for="row in rows" :key="row.name" :row="row">
+						<TableCell v-for="column in columns">
+							<Badge
+								v-if="column.name === 'security_updates_status'"
+								:label="row[column.name]"
+								:theme="row[column.name] === 'Up to date' ? 'green' : 'red'"
+							/>
+							<div
+								v-else-if="column.name == 'actions'"
+								class="w-full text-right"
+							>
+								<Dropdown @click.prevent :options="dropdownItems(row)">
+									<template v-slot="{ open }">
+										<Button
+											:variant="open ? 'subtle' : 'ghost'"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
+							</div>
+							<span v-else>
+								{{ row[column.name] || '' }}
+							</span>
+						</TableCell>
+					</TableRow>
+				</Table>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
-import ServerList from '@/views/security/ServerList.vue';
+import Table from '@/components/Table/Table.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
+
 export default {
 	name: 'Servers',
 	components: {
-		ServerList
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell
+	},
+	pageMeta() {
+		return {
+			title: 'Security - Frappe Cloud'
+		};
 	},
 	data() {
 		return {
@@ -66,7 +106,12 @@ export default {
 			return {
 				method: 'press.api.security.get_servers',
 				params: { server_filter: this.serverFilter },
-				auto: true
+				auto: true,
+				onSuccess: data => {
+					this.fuse = new Fuse(data, {
+						keys: ['name', 'title']
+					});
+				}
 			};
 		}
 	},
@@ -75,7 +120,19 @@ export default {
 			if (!this.$resources.allServers.data) {
 				return [];
 			}
-			return this.$resources.allServers.data;
+
+			let servers = this.$resources.allServers.data.filter(server =>
+				this.$account.hasPermission(server.name, '', true)
+			);
+
+			if (this.searchTerm)
+				servers = this.fuse.search(this.searchTerm).map(result => result.item);
+
+			return servers.map(server => ({
+				...server,
+				name: server.title || server.name,
+				route: { name: 'SecurityOverview', params: { serverName: server.name } }
+			}));
 		}
 	},
 	methods: {
@@ -118,6 +175,30 @@ export default {
 				{
 					label: 'Database Servers',
 					value: 'Database Servers'
+				}
+			];
+		},
+		dropdownItems(server) {
+			return [
+				{
+					label: 'View Security Updates',
+					onClick: () => {
+						this.$router.push(
+							`/security/${server.route.params.serverName}/security_update`
+						);
+					}
+				},
+				{
+					label: 'Manage Firewall',
+					onClick: () => {
+						this.$router.push(`/security/${server.app_server}/firewall`);
+					}
+				},
+				{
+					label: 'SSH Sessions',
+					onClick: () => {
+						this.$router.push(`/security/${server.app_server}/ssh_session_log`);
+					}
 				}
 			];
 		}
