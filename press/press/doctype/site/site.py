@@ -1424,8 +1424,9 @@ def process_uninstall_app_site_job_update(job):
 			site = frappe.get_doc("Site", job.site)
 			app = job.request_path.rsplit("/", 1)[-1]
 			app_doc = find(site.apps, lambda x: x.app == app)
-			site.remove(app_doc)
-			site.save()
+			if app_doc:
+				site.remove(app_doc)
+				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
