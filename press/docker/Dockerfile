@@ -1,16 +1,6 @@
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:20.04
 
-{% for d in doc.dependencies %}
-ENV {{ d.dependency }} {{ d.version }}
-{% else %}
-ENV NVM_VERSION 0.36.0
-ENV NODE_VERSION 14.19.0
-ENV PYTHON_VERSION 3.10
-ENV WKHTMLTOPDF_VERSION 0.12.5
-ENV BENCH_VERSION 5.15.2
-{% endfor %}
-
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -74,6 +64,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/re
   && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
 # Install Python from DeadSnakes PPA
+ENV {{ doc.get_dependency_version("PYTHON_VERSION") }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -86,6 +77,7 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 
 # Install wkhtmltopdf
+ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
@@ -121,6 +113,9 @@ WORKDIR /home/frappe
 
 # Install Node using NVM
 ENV NVM_DIR /home/frappe/.nvm
+ENV {{ doc.get_dependency_version("NVM_VERSION") }}
+ENV {{ doc.get_dependency_version("NODE_VERSION") }}
+
 RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh \
   && bash install.sh \
   && . "/home/frappe/.nvm/nvm.sh" \
@@ -141,6 +136,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+ENV {{ doc.get_dependency_version("BENCH_VERSION") }}
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
