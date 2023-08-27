@@ -45,7 +45,7 @@
 					</Breadcrumbs>
 				</header>
 				<div
-					class="flex flex-col space-y-3 px-5 pt-6 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+					class="flex flex-col space-y-3 px-5 py-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
