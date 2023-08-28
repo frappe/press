@@ -66,6 +66,21 @@
     force: yes
     follow: no
 
+- name: Create Directory for Quadlet Container Files
+  become: yes
+  become_user: frappe
+  file:
+    dest: /home/frappe/agent/systemd
+    state: directory
+
+- name: Symlink Agent Quadlet Directory
+  file:
+    src: /home/frappe/agent/systemd
+    dest: /etc/containers/systemd
+    state: link
+    force: yes
+    follow: no
+
 - name: Create Logs Directory for Supervisor
   become: yes
   become_user: frappe
