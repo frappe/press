@@ -25,18 +25,21 @@
 					v-if="column.name === 'status'"
 					:label="row.status"
 				/>
-				<div v-else-if="column.name === 'tags'" class="hidden sm:block">
+				<div v-else-if="column.name === 'tags'" class="hidden sm:flex">
 					<Badge
-						class="ring-1 ring-white"
-						v-for="(tag, i) in row.tags.slice(0, 2)"
+						v-for="(tag, i) in row.tags.slice(0, 1)"
 						:theme="$getColorBasedOnString(i)"
 						:label="tag"
 					/>
-					<Badge
-						class="ring-1 ring-white"
-						v-if="row.tags.length > 2"
-						:label="`+${row.tags.length - 2}`"
-					/>
+					<Tooltip
+						v-if="row.tags.length > 1"
+						:text="row.tags.slice(1).join(', ')"
+					>
+						<Badge
+							v-if="row.tags.length > 1"
+							:label="`+${row.tags.length - 1}`"
+						/>
+					</Tooltip>
 				</div>
 				<div
 					v-else-if="column.name === 'stats'"
