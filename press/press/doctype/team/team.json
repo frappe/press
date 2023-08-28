@@ -17,6 +17,7 @@
   "column_break_6",
   "erpnext_partner",
   "partner_email",
+  "billing_team",
   "parent_team",
   "section_break_6",
   "team_members",
@@ -336,6 +337,13 @@
    "fieldname": "code_servers_enabled",
    "fieldtype": "Check",
    "label": "Code Servers Enabled"
+  },
+  {
+   "depends_on": "eval: !doc.erpnext_partner",
+   "fieldname": "billing_team",
+   "fieldtype": "Link",
+   "label": "Billing Team",
+   "options": "Team"
   }
  ],
  "links": [
@@ -385,7 +393,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-07-29 12:19:18.195316",
+ "modified": "2023-08-28 18:32:41.976955",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
