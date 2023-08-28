@@ -72,7 +72,7 @@
 						>
 							<Badge
 								v-for="(tag, i) in row.tags.slice(0, 1)"
-								:theme="$getColorBasedOnString(i)"
+								theme="blue"
 								:label="tag"
 							/>
 							<Tooltip

@@ -9,9 +9,6 @@ let utils = {
 			}
 			return plural;
 		},
-		$getColorBasedOnString(i) {
-			return ['blue', 'green', 'red', 'orange'][i];
-		},
 		$date(date, serverDatesTimezone = 'Asia/Kolkata') {
 			// assuming all dates on the server are stored in our timezone
 
