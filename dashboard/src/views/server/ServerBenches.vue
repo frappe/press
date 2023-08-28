@@ -11,7 +11,7 @@
 		:rows="benches"
 		v-slot="{ rows, columns }"
 	>
-		<TableHeader />
+		<TableHeader class="hidden sm:grid" />
 		<div class="flex items-center justify-center">
 			<LoadingText class="mt-8" v-if="$resources.benches.loading" />
 			<div v-else-if="rows.length === 0" class="mt-8">
@@ -25,7 +25,7 @@
 					v-if="column.name === 'status'"
 					:label="row.status"
 				/>
-				<div v-else-if="column.name === 'tags'" class="-space-x-5">
+				<div v-else-if="column.name === 'tags'" class="hidden sm:block">
 					<Badge
 						class="ring-1 ring-white"
 						v-for="(tag, i) in row.tags.slice(0, 2)"
@@ -38,7 +38,10 @@
 						:label="`+${row.tags.length - 2}`"
 					/>
 				</div>
-				<div v-else-if="column.name === 'stats'" class="text-sm text-gray-600">
+				<div
+					v-else-if="column.name === 'stats'"
+					class="hidden text-sm text-gray-600 sm:block"
+				>
 					{{
 						`${row.stats.number_of_sites} ${$plural(
 							row.stats.number_of_sites,
@@ -66,7 +69,9 @@
 						</template>
 					</Dropdown>
 				</div>
-				<span v-else>{{ row[column.name] || '' }}</span>
+				<span v-else :class="{ 'hidden sm:block': column.name === 'version' }"
+					>{{ row[column.name] || '' }}
+				</span>
 			</TableCell>
 		</TableRow>
 	</Table>

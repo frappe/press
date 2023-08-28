@@ -33,7 +33,7 @@
 					:rows="servers"
 					v-slot="{ rows, columns }"
 				>
-					<TableHeader />
+					<TableHeader class="hidden sm:grid" />
 					<div class="flex items-center justify-center">
 						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
 						<div v-else-if="rows.length === 0" class="mt-8">

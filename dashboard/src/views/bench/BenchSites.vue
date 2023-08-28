@@ -12,7 +12,7 @@
 			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
-			<TableHeader v-if="rows.length !== 0" />
+			<TableHeader v-if="rows.length !== 0" class="hidden sm:grid" />
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
@@ -64,7 +64,7 @@
 						<Badge v-if="column.name === 'status'" :label="$siteStatus(row)" />
 						<div
 							v-else-if="column.name === 'tags' && row.tags"
-							class="flex space-x-1"
+							class="hidden space-x-1 sm:flex"
 						>
 							<Badge
 								v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -81,10 +81,10 @@
 								/>
 							</Tooltip>
 						</div>
-						<span v-else-if="column.name === 'plan'">
+						<span v-else-if="column.name === 'plan'" class="hidden sm:block">
 							{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
 						</span>
-						<div v-else-if="column.name === 'region'">
+						<div v-else-if="column.name === 'region'" class="hidden sm:block">
 							<img
 								v-if="row.server_region_info?.image"
 								class="h-4"

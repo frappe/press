@@ -52,7 +52,7 @@
 					:rows="servers"
 					v-slot="{ rows, columns }"
 				>
-					<TableHeader />
+					<TableHeader class="hidden sm:grid" />
 					<div class="flex items-center justify-center">
 						<LoadingText class="mt-8" v-if="$resources.spaces.loading" />
 						<div v-else-if="rows.length === 0" class="mt-8">
@@ -65,7 +65,7 @@
 								v-if="column.name === 'status'"
 								:label="$siteStatus(row)"
 							/>
-							<span v-else-if="column.name === 'plan'">
+							<span v-else-if="column.name === 'plan'" class="hidden sm:block">
 								{{
 									row.plan
 										? `${$planTitle(row.plan)}${
@@ -74,7 +74,7 @@
 										: ''
 								}}
 							</span>
-							<div v-else-if="column.name === 'region'">
+							<div v-else-if="column.name === 'region'" class="hidden sm:block">
 								<img
 									v-if="row.server_region_info.image"
 									class="h-4"
