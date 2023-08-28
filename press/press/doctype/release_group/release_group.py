@@ -248,6 +248,7 @@ class ReleaseGroup(Document):
 		platforms = []
 		for server in set(server.server for server in self.servers):
 			platforms.append(frappe.get_value("Server", server, "architecture"))
+		candidates = []
 		if "arm" in platforms:
 			candidate = frappe.get_doc(
 				{
@@ -260,6 +261,7 @@ class ReleaseGroup(Document):
 					"architecture": "arm",
 				}
 			).insert()
+			candidates.append(candidate)
 
 		if "x86" in platforms:
 			candidate = frappe.get_doc(
@@ -273,8 +275,9 @@ class ReleaseGroup(Document):
 					"architecture": "x86",
 				}
 			).insert()
+			candidates.append(candidate)
 
-		return candidate
+		return candidates
 
 	def get_sorted_based_on_rg_apps(self, apps):
 		# Rearrange Apps to match release group ordering

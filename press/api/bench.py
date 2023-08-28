@@ -529,10 +529,11 @@ def deploy(name, apps_to_ignore=[]):
 	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
 
-	candidate = rg.create_deploy_candidate(apps_to_ignore)
-	candidate.deploy_to_production()
+	candidates = rg.create_deploy_candidate(apps_to_ignore)
+	for candidate in candidates:
+		candidate.deploy_to_production()
 
-	return candidate.name
+	return candidates[0].name
 
 
 @frappe.whitelist()
@@ -573,8 +574,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 def create_deploy_candidate(name, apps_to_ignore=[]):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	candidate = rg.create_deploy_candidate(apps_to_ignore)
-
-	return candidate
+	return candidate[0]
 
 
 @frappe.whitelist()

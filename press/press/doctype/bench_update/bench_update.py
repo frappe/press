@@ -36,11 +36,12 @@ class BenchUpdate(Document):
 			apps_to_ignore = json.loads(self.apps_to_ignore)
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(apps_to_ignore)
-		candidate.deploy_to_production()
+		candidates = rg.create_deploy_candidate(apps_to_ignore)
+		for candidate in candidates:
+			candidate.deploy_to_production()
 
 		self.status = "Running"
-		self.candidate = candidate.name
+		self.candidate = candidates[0].name
 		self.save()
 
 	def update_sites_on_server(self, server):
