@@ -592,7 +592,7 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account or self.parent_team:
+		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
 		if self.payment_mode == "Partner Credits":
@@ -616,7 +616,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.payment_mode == "Partner Credits":
+		if self.free_account or self.payment_mode == "Partner Credits" or self.billing_team:
 			return True
 
 		return bool(
