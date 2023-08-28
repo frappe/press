@@ -1,4 +1,4 @@
-frappe ALL = (root) /bin/systemctl
+frappe ALL = (root) NOPASSWD: /bin/systemctl
 frappe ALL = (root) NOPASSWD: /bin/systemctl * nginx
 frappe ALL = (root) NOPASSWD: /bin/systemctl * supervisord
 frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
