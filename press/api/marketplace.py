@@ -710,7 +710,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.join(site)
 		.on(site.name == app_sub.site)
 		.join(usage_record)
-		.on(usage_record.subscription == app_sub.name)
+		.on(usage_record.subscription == app_sub.subscription)
 		.where(conditions)
 		.groupby(usage_record.subscription)
 		.select(
