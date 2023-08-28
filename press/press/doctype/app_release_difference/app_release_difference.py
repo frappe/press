@@ -36,7 +36,15 @@ class AppReleaseDifference(Document):
 		try:
 			repo = client.get_repo(f"{source.repository_owner}/{source.repository}")
 		except Exception:
-			frappe.throw("Could not get repository {0}".format(source.repository))
+			self.add_comment(
+				"Info",
+				"Could not get repository {0}, so assuming migrate required".format(
+					source.repository
+				),
+			)
+			self.deploy_type = "Migrate"  # fallback to migrate
+			self.save()
+			return
 		try:
 			diff = repo.compare(self.source_hash, self.destination_hash)
 			self.github_diff_url = diff.html_url
