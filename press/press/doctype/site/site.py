@@ -1405,8 +1405,11 @@ def process_install_app_site_job_update(job):
 	if updated_status != site_status:
 		if job.status == "Success":
 			site = frappe.get_doc("Site", job.site)
-			site.append("apps", {"app": json.loads(job.request_data).get("name")})
-			site.save()
+			app = json.loads(job.request_data).get("name")
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if not app_doc:
+				site.append("apps", {"app": app})
+				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
