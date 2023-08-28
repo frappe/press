@@ -1,0 +1,31 @@
+---
+- name: Install Podman Dependencies
+  apt:
+    state: present
+    force: yes
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+
+- name: Add Podman Repository Key
+  get_url:
+    url: https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_22.04/Release.key
+    dest: /etc/apt/keyrings/libcontainers.asc
+    checksum: sha256:01ab26439324cb058f4214370535297989b28f743efcfa2b93bb780f2e2aa22d
+
+- name: Add Podman Repository
+  apt_repository:
+    repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/libcontainers.asc] https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_22.04 /
+    filename: libcontainers
+    update_cache: true
+    state: present
+
+- name: Install Podman
+  apt:
+    name: podman
+    state: present
+
+- name: Get Podman Info
+  command: podman info
