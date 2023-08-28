@@ -1,7 +1,5 @@
 <template>
-	<div
-		class="flex items-center whitespace-nowrap px-3 py-3 text-base text-gray-800"
-	>
+	<div class="flex items-center whitespace-nowrap p-2 text-base text-gray-800">
 		<slot />
 	</div>
 </template>
