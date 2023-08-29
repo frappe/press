@@ -8,7 +8,6 @@ frappe.ui.form.on('Stack', {
 				label,
 				() => {
 					frm.call(method).then(({ response }) => {
-						frappe.msgprint(response.message);
 						frm.refresh();
 					});
 				},
