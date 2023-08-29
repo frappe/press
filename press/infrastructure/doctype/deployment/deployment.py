@@ -72,3 +72,4 @@ class Deployment(Document):
 					)
 
 			container.insert()
+			container.deploy()
