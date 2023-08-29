@@ -10,7 +10,9 @@
   "cluster",
   "status",
   "column_break_fmyy",
+  "deployment",
   "stack",
+  "column_break_zh7s",
   "service",
   "image",
   "section_break_zsky",
@@ -113,6 +115,7 @@
    "label": "Networking"
   },
   {
+   "fetch_from": "deployment.stack",
    "fieldname": "stack",
    "fieldtype": "Link",
    "label": "Stack",
@@ -159,6 +162,17 @@
    "fieldtype": "Data",
    "label": "Subnet CIDR Block",
    "reqd": 1
+  },
+  {
+   "fieldname": "deployment",
+   "fieldtype": "Link",
+   "label": "Deployment",
+   "options": "Deployment",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_zh7s",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -167,7 +181,7 @@
    "link_fieldname": "container"
   }
  ],
- "modified": "2023-08-29 13:36:29.648562",
+ "modified": "2023-08-29 14:29:02.782697",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container",

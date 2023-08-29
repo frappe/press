@@ -10,22 +10,34 @@ class Deployment(Document):
 	def before_insert(self):
 		active_nodes = frappe.get_all("Node", filters={"status": "Active"}, pluck="name")
 		stack = frappe.get_doc("Stack", self.stack)
-		for index, stack_service in enumerate(stack.services):
+		for index, service in enumerate(stack.services):
 			node = active_nodes[index % len(active_nodes)]
-			container = frappe.new_doc("Container")
-			container.stack = self.stack
-			container.service = stack_service.service
-			container.node = node
-
 			network_address = ipaddress.IPv4Interface(stack.subnet_cidr_block).ip
 
 			# Start addresses from .2
-			container.ip_address = str(network_address + index + 2)
-			decimals = container.ip_address.split(".")
+			ip_address = str(network_address + index + 2)
+			decimals = ip_address.split(".")
 			hexes = [f"{int(d):02x}" for d in decimals]
-
 			# This is the same mac address that docker uses for containers
-			container.mac_address = "02:42:" + ":".join(hexes)
+			mac_address = "02:42:" + ":".join(hexes)
+			self.append(
+				"containers",
+				{
+					"node": node,
+					"service": service.service,
+					"ip_address": ip_address,
+					"mac_address": mac_address,
+				},
+			)
+
+	def after_insert(self):
+		for deployment_container in self.containers:
+			container = frappe.new_doc("Container")
+			container.deployment = self.name
+			container.service = deployment_container.service
+			container.node = deployment_container.node
+			container.ip_address = deployment_container.ip_address
+			container.mac_address = deployment_container.mac_address
 
 			service = frappe.get_doc("Service", container.service)
 			for row in service.ports:
@@ -63,7 +75,3 @@ class Deployment(Document):
 			for row in container.mounts:
 				row.source = f"/home/frappe/containers/{container.name}/{row.destination}"
 			container.save()
-			self.append(
-				"containers",
-				{"node": node, "service": container.service, "container": container.name},
-			)

@@ -54,8 +54,13 @@
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2023-08-29 13:05:42.693835",
+ "links": [
+  {
+   "link_doctype": "Container",
+   "link_fieldname": "deployment"
+  }
+ ],
+ "modified": "2023-08-29 14:28:10.432051",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Deployment",
