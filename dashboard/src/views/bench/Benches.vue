@@ -43,7 +43,6 @@
 				</div>
 				<div class="w-10"></div>
 			</div>
-			<LoadingText v-if="$resources.allBenches.loading" />
 			<Table
 				:columns="[
 					{ label: 'Bench Name', name: 'name', width: 2 },
