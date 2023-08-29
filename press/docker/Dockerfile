@@ -78,10 +78,18 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
+{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[0] == '0.12.5' %}
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.4' %}
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz \
+  && tar -xvf wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz \
+  && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
+  && rm -rf wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz wkhtmltox \
+  `#stage-pre-wkhtmltopdf`
+{% endif %}
 
 RUN curl -fsSL https://code-server.dev/install.sh | sh `#stage-pre-code-server`
 
