@@ -65,11 +65,11 @@
    "link_fieldname": "stack"
   },
   {
-   "link_doctype": "Pod",
+   "link_doctype": "Container",
    "link_fieldname": "stack"
   }
  ],
- "modified": "2023-08-18 16:18:47.763324",
+ "modified": "2023-08-29 13:12:33.965899",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Stack",

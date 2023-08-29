@@ -11,7 +11,7 @@
   "column_break_tj57",
   "cluster",
   "section_break_fdmw",
-  "pods"
+  "containers"
  ],
  "fields": [
   {
@@ -46,16 +46,16 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "pods",
+   "fieldname": "containers",
    "fieldtype": "Table",
-   "label": "Pods",
-   "options": "Deployment Pod"
+   "label": "Containers",
+   "options": "Deployment Container"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-17 11:54:56.589572",
+ "modified": "2023-08-29 13:05:42.693835",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Deployment",

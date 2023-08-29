@@ -9,7 +9,7 @@
   "service",
   "column_break_rwol",
   "node",
-  "pod"
+  "container"
  ],
  "fields": [
   {
@@ -25,29 +25,29 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "pod",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Pod",
-   "options": "Pod",
-   "reqd": 1
-  },
-  {
    "fieldname": "service",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Service",
    "options": "Service",
    "reqd": 1
+  },
+  {
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Container",
+   "options": "Container",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-08-17 11:35:39.132492",
+ "modified": "2023-08-29 13:04:53.923655",
  "modified_by": "Administrator",
  "module": "Infrastructure",
- "name": "Deployment Pod",
+ "name": "Deployment Container",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

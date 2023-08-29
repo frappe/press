@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DeploymentPod(Document):
+class DeploymentContainer(Document):
 	pass
