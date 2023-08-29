@@ -267,6 +267,19 @@ class TestSelfHostedServer(FrappeTestCase):
 		server.total_storage = "100 GB"
 		self.assertTrue(server.check_minimum_specs())
 
+	def test_create_subscription_add_plan_change_and_check_for_new_subscription(self):
+		from press.press.doctype.plan.test_plan import create_test_plan
+		plan = create_test_plan("Self Hosted Server", plan_title="Unlimited", plan_name="Unlimited")
+		pre_plan_change_count = frappe.db.count("Plan Change")
+		pre_subscription_count = frappe.db.count("Subscription")
+		server = create_test_self_hosted_server("tester")
+		server.plan = plan.name
+		server.create_subscription()
+		server.reload()
+		post_plan_change_count = frappe.db.count("Plan Change")
+		post_subscription_count = frappe.db.count("Subscription")
+		self.assertEqual(pre_plan_change_count, post_plan_change_count - 1)
+		self.assertEqual(pre_subscription_count, post_subscription_count - 1)
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
 	server = frappe.get_doc(
