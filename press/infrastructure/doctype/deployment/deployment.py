@@ -40,6 +40,7 @@ class Deployment(Document):
 			container.mac_address = deployment_container.mac_address
 
 			service = frappe.get_doc("Service", container.service)
+			container.image = f"{service.image}:{service.tag}"
 			for row in service.ports:
 				container.append(
 					"ports",

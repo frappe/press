@@ -8,6 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "image",
+  "column_break_r20a",
+  "tag",
   "section_break_jynb",
   "ports",
   "mounts",
@@ -22,8 +24,10 @@
   {
    "fieldname": "image",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "in_preview": 1,
-   "label": "Image"
+   "label": "Image",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_8exj",
@@ -71,11 +75,23 @@
    "fieldname": "section_break_a7a1",
    "fieldtype": "Section Break",
    "label": "Image Options"
+  },
+  {
+   "fieldname": "column_break_r20a",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "latest",
+   "fieldname": "tag",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tag",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-29 21:12:21.422376",
+ "modified": "2023-08-29 22:58:30.975248",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Service",
