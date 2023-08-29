@@ -3,7 +3,6 @@
  "creation": "2023-08-08 14:45:41.578099",
  "default_view": "List",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "source",
@@ -28,6 +27,7 @@
    "fieldtype": "Text",
    "in_list_view": 1,
    "label": "Options",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -36,6 +36,7 @@
    "fieldtype": "Text",
    "in_list_view": 1,
    "label": "Source",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -44,13 +45,14 @@
    "fieldtype": "Text",
    "in_list_view": 1,
    "label": "Destination",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-08-08 16:17:58.213608",
+ "modified": "2023-08-29 22:52:25.712424",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container Mount",

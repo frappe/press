@@ -49,6 +49,7 @@
    "in_standard_filter": 1,
    "label": "Node",
    "options": "Node",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -95,19 +96,22 @@
    "fieldname": "environment_variables",
    "fieldtype": "Table",
    "label": "Environment Variables",
-   "options": "Container Environment Variable"
+   "options": "Container Environment Variable",
+   "read_only": 1
   },
   {
    "fieldname": "ports",
    "fieldtype": "Table",
    "label": "Ports",
-   "options": "Container Port"
+   "options": "Container Port",
+   "read_only": 1
   },
   {
    "fieldname": "mounts",
    "fieldtype": "Table",
    "label": "Mounts",
-   "options": "Container Mount"
+   "options": "Container Mount",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_zsky",
@@ -127,12 +131,14 @@
    "fieldtype": "Link",
    "label": "Service",
    "options": "Service",
+   "read_only": 1,
    "reqd": 1
   },
   {
    "fieldname": "ip_address",
    "fieldtype": "Data",
    "label": "IP Address",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -143,6 +149,7 @@
    "fieldname": "mac_address",
    "fieldtype": "Data",
    "label": "Mac Address",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -168,6 +175,7 @@
    "fieldtype": "Link",
    "label": "Deployment",
    "options": "Deployment",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -181,7 +189,7 @@
    "link_fieldname": "container"
   }
  ],
- "modified": "2023-08-29 14:29:02.782697",
+ "modified": "2023-08-29 22:53:40.583786",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container",

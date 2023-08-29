@@ -3,7 +3,6 @@
  "creation": "2023-08-08 14:36:52.540136",
  "default_view": "List",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "host_ip",
@@ -18,7 +17,8 @@
    "fieldname": "host_port",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Host Port"
+   "label": "Host Port",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_bmpy",
@@ -30,6 +30,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Container Port",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -40,6 +41,7 @@
    "in_list_view": 1,
    "label": "Protocol",
    "options": "tcp\nudp",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -47,13 +49,14 @@
    "fieldname": "host_ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Host IP"
+   "label": "Host IP",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-08-08 16:01:10.365091",
+ "modified": "2023-08-29 22:52:04.642617",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container Port",
