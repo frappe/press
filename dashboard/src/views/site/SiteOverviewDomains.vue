@@ -176,10 +176,7 @@
 				</div>
 			</template>
 
-			<template v-slot:actions>
-				<Button class="w-full" @click="cancelAddDomainDialog()">
-					Cancel
-				</Button>
+			<template #actions>
 				<Button
 					v-if="!dnsVerified"
 					class="mt-2 w-full"
@@ -396,11 +393,6 @@ export default {
 					});
 				}
 			});
-		},
-		cancelAddDomainDialog() {
-			this.showDialog = false;
-			this.newDomain = null;
-			this.$resources.checkDNS.reset();
 		}
 	}
 };
