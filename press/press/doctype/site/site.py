@@ -1422,8 +1422,11 @@ def process_install_app_site_job_update(job):
 	if updated_status != site_status:
 		if job.status == "Success":
 			site = frappe.get_doc("Site", job.site)
-			site.append("apps", {"app": json.loads(job.request_data).get("name")})
-			site.save()
+			app = json.loads(job.request_data).get("name")
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if not app_doc:
+				site.append("apps", {"app": app})
+				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
@@ -1441,8 +1444,9 @@ def process_uninstall_app_site_job_update(job):
 			site = frappe.get_doc("Site", job.site)
 			app = job.request_path.rsplit("/", 1)[-1]
 			app_doc = find(site.apps, lambda x: x.app == app)
-			site.remove(app_doc)
-			site.save()
+			if app_doc:
+				site.remove(app_doc)
+				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
