@@ -63,7 +63,8 @@ export default {
 			return {
 				method: 'press.api.billing.change_payment_mode',
 				params: {
-					mode: this.paymentMode
+					mode: this.paymentMode,
+					partner: this.frappePartner
 				},
 				onSuccess() {
 					this.$emit('update:modelValue', false);
@@ -84,7 +85,8 @@ export default {
 				method: 'press.api.billing.get_frappe_partners',
 				onSuccess(data) {
 					this.frappePartners = data;
-				}
+				},
+				auto: true
 			};
 		}
 	},
@@ -104,10 +106,7 @@ export default {
 			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
 		},
 		frappePartners() {
-			let partners = [];
-			let data = this.$resources.partners.data;
-			partners = data.forEach(d => d.billing_name);
-			return partners;
+			return this.$resources.partners.data.map(d => d.billing_name);
 		}
 	}
 };
