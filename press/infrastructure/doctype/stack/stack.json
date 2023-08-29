@@ -57,6 +57,7 @@
    "in_standard_filter": 1,
    "label": "VXLAN ID",
    "non_negative": 1,
+   "read_only": 1,
    "unique": 1
   },
   {
@@ -71,8 +72,7 @@
    "fieldtype": "Table",
    "label": "Volumes",
    "options": "Stack Volume",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -86,7 +86,7 @@
    "link_fieldname": "stack"
   }
  ],
- "modified": "2023-08-29 22:20:50.879993",
+ "modified": "2023-08-29 22:31:26.570984",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Stack",

@@ -54,7 +54,7 @@ class Deployment(Document):
 				container.append(
 					"mounts",
 					{
-						"source": row.destination,
+						"source": f"/home/frappe/stacks/{self.stack}/volumes/{row.volume}/{row.source}",
 						"destination": row.destination,
 						"options": row.options,
 					},
@@ -71,7 +71,3 @@ class Deployment(Document):
 					)
 
 			container.insert()
-			container.reload()
-			for row in container.mounts:
-				row.source = f"/home/frappe/containers/{container.name}/{row.destination}"
-			container.save()
