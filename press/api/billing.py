@@ -565,3 +565,10 @@ def total_unpaid_amount():
 		["sum(total) as total"],
 		pluck="total",
 	)[0]
+
+
+@frappe.whitelist()
+def get_frappe_partners():
+	return frappe.get_all(
+		"Team", {"enabled": 1, "erpnext_partner": 1}, ["name", "billing_name"]
+	)

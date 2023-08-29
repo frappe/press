@@ -11,9 +11,17 @@
 				:options="paymentModeOptions"
 				v-model="paymentMode"
 			/>
-			<p class="mt-2 text-base text-gray-600">
+			<p class="mt-2 text-base text-gray-600 mb-5">
 				{{ paymentModeDescription }}
 			</p>
+
+			<Input
+				v-if="paymentMode == 'Paid By Partner'"
+				label="Select Frappe Partner"
+				type="select"
+				:options="frappePartners"
+				v-model="frappePartner"
+			/>
 			<ErrorMessage
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
@@ -39,7 +47,8 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			paymentMode: this.$account.team.payment_mode || 'Card'
+			paymentMode: this.$account.team.payment_mode || 'Card',
+			frappePartner: ''
 		};
 	},
 	watch: {
@@ -69,6 +78,14 @@ export default {
 					}
 				}
 			};
+		},
+		partners() {
+			return {
+				method: 'press.api.billing.get_frappe_partners',
+				onSuccess(data) {
+					this.frappePartners = data;
+				}
+			};
 		}
 	},
 	computed: {
@@ -85,6 +102,12 @@ export default {
 				return ['Card', 'Prepaid Credits', 'Partner Credits'];
 			}
 			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
+		},
+		frappePartners() {
+			let partners = [];
+			let data = this.$resources.partners.data;
+			partners = data.forEach(d => d.billing_name);
+			return partners;
 		}
 	}
 };
