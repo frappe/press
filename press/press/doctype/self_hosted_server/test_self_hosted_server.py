@@ -210,6 +210,46 @@ class TestSelfHostedServer(FrappeTestCase):
 		server.reload()
 		self.assertEqual(server.private_ip, "192.168.1.1")
 
+	def test_create_server_and_check_total_records(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.plan.test_plan import create_test_plan
+
+		server = create_test_self_hosted_server("tester")
+		create_test_cluster(name="Default")
+		create_test_proxy_server()
+		create_test_plan(
+			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
+		)
+		pre_server_count = frappe.db.count("Server")
+		server.create_server()
+		server.reload()
+		post_server_count = frappe.db.count("Server")
+		new_server = frappe.get_last_doc("Server")
+		self.assertEqual(pre_server_count, post_server_count - 1)
+		self.assertEqual(server.name, new_server.name)
+
+	def test_create_db_server_and_check_total_records(self):
+		from press.press.doctype.cluster.test_cluster import create_test_cluster
+		from press.press.doctype.proxy_server.test_proxy_server import (
+			create_test_proxy_server,
+		)
+		from press.press.doctype.plan.test_plan import create_test_plan
+
+		server = create_test_self_hosted_server("tester")
+		create_test_cluster(name="Default")
+		create_test_proxy_server()
+		create_test_plan("Database Server", plan_title="Unlimited", plan_name="Unlimited")
+		pre_server_count = frappe.db.count("Database Server")
+		server.create_db_server()
+		server.reload()
+		post_server_count = frappe.db.count("Database Server")
+		new_server = frappe.get_last_doc("Database Server")
+		self.assertEqual(pre_server_count, post_server_count - 1)
+		self.assertEqual(server.name, new_server.name)
+
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
 	server = frappe.get_doc(

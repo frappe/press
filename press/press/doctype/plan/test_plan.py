@@ -14,15 +14,17 @@ def create_test_plan(
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
 	cpu_time: int = 1,
+	plan_title: str = "Test 10 dollar plan",
+	plan_name: str = "Test Plan",
 ):
 	"""Create test Plan doc."""
-	name = frappe.mock("name")
+	# name = frappe.mock("name")
 	plan = frappe.get_doc(
 		{
 			"doctype": "Plan",
 			"document_type": document_type,
-			"name": f"Test 10 dollar plan {name}",
-			"plan_title": name,
+			"name": plan_name,
+			"plan_title": plan_title,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,

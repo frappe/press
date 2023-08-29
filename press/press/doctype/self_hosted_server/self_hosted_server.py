@@ -599,7 +599,6 @@ class SelfHostedServer(Document):
 
 def fetch_private_ip_based_on_vendor(play_result: dict):
 	vendor = play_result["ansible_facts"]["system_vendor"]
-	print(vendor)
 	match vendor:
 		case "DigitalOcean":
 			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
