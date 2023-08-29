@@ -250,6 +250,23 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertEqual(pre_server_count, post_server_count - 1)
 		self.assertEqual(server.name, new_server.name)
 
+	def test_check_minimum_specs(self):
+		server = create_test_self_hosted_server("tester")
+		server.ram = 2500
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			server.check_minimum_specs()
+		server.ram = 3853
+		server.vcpus = 1
+		server.total_storage = "100 GB"
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			server.check_minimum_specs()
+		server.vcpus = 2
+		server.total_storage = "20 GB"
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			server.check_minimum_specs()
+		server.total_storage = "100 GB"
+		self.assertTrue(server.check_minimum_specs())
+
 
 def create_test_self_hosted_server(host) -> SelfHostedServer:
 	server = frappe.get_doc(
@@ -289,6 +306,6 @@ def _create_test_ansible_play_and_task(
 				}
 			)
 			task.insert()
-		except:
+		except Exception:
 			pass
 	return play
