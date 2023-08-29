@@ -17,8 +17,7 @@ class Deployment(Document):
 			container.service = stack_service.service
 			container.node = node
 
-			subnet_cidr_block = "10.0.0.0/8"
-			network_address = ipaddress.IPv4Interface(subnet_cidr_block).ip
+			network_address = ipaddress.IPv4Interface(stack.subnet_cidr_block).ip
 
 			# Start addresses from .2
 			container.ip_address = str(network_address + index + 2)
@@ -28,9 +27,6 @@ class Deployment(Document):
 			# This is the same mac address that docker uses for containers
 			container.mac_address = "02:42:" + ":".join(hexes)
 
-			container.insert()
-
-			##
 			service = frappe.get_doc("Service", container.service)
 			for row in service.ports:
 				container.append(
@@ -62,6 +58,7 @@ class Deployment(Document):
 						},
 					)
 
+			container.insert()
 			container.reload()
 			for row in container.mounts:
 				row.source = f"/home/frappe/containers/{container.name}/{row.destination}"

@@ -19,6 +19,8 @@ class Container(Document):
 				"mounts": self.get_mounts(),
 				"ip_address": self.ip_address,
 				"mac_address": self.mac_address,
+				"vxlan_id": self.vxlan_id,
+				"subnet_cidr_block": self.subnet_cidr_block,
 				"peers": self.get_peers(),
 				"network": self.stack,
 			}

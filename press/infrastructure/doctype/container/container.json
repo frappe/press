@@ -15,8 +15,10 @@
   "image",
   "section_break_zsky",
   "ip_address",
-  "column_break_6yji",
   "mac_address",
+  "column_break_6yji",
+  "vxlan_id",
+  "subnet_cidr_block",
   "section_break_9omp",
   "mounts",
   "ports",
@@ -143,6 +145,20 @@
   {
    "fieldname": "section_break_9omp",
    "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "stack.vxlan_id",
+   "fieldname": "vxlan_id",
+   "fieldtype": "Data",
+   "label": "VXLAN ID",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "stack.subnet_cidr_block",
+   "fieldname": "subnet_cidr_block",
+   "fieldtype": "Data",
+   "label": "Subnet CIDR Block",
+   "reqd": 1
   }
  ],
  "links": [
@@ -151,7 +167,7 @@
    "link_fieldname": "container"
   }
  ],
- "modified": "2023-08-17 16:28:50.872105",
+ "modified": "2023-08-29 13:36:29.648562",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container",
