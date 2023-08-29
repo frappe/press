@@ -207,8 +207,7 @@ class TestAPISite(FrappeTestCase):
 		)  # app3 shouldn't show in available_apps
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
-		site.uninstall_app(app2.name)
+		site = create_test_site(bench=bench.name, apps=[app1.name])
 		out = available_apps(site.name)
 		self.assertEqual(len(out), 1)
 		self.assertEqual(out[0]["name"], group.apps[1].source)
