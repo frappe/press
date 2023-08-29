@@ -44,7 +44,7 @@ class Deployment(Document):
 				container.append(
 					"ports",
 					{
-						"host_ip": "",
+						"host_ip": "127.0.0.1",
 						"host_port": "",
 						"container_port": row.port,
 						"protocol": row.protocol,
