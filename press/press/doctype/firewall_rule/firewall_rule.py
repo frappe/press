@@ -6,14 +6,38 @@ from frappe.model.document import Document
 
 
 class FirewallRule(Document):
+	def validate(self):
+		self.validate_duplicate_record()
+
+	def validate_duplicate_record(self):
+		_duplicate_record = frappe.db.get_value(
+			"Firewall Rule",
+			filters={
+				"firewall": self.firewall,
+				"action": self.action,
+				"protocol": self.protocol,
+				"from_port": self.from_port,
+				"to_port": self.to_port,
+				"source_type": self.source_type,
+				"source": self.source,
+			},
+		)
+
+		if _duplicate_record:
+			frappe.flags.firewall_rule = _duplicate_record
+			frappe.throw(
+				frappe._(
+					"Firewall Rule with same Action, Protocol, Port Range, Source Type and Source already exists."
+				),
+				exc=frappe.DuplicateEntryError,
+			)
+
 	@staticmethod
-	def fetch_firewall_rules(server, server_type):
+	def fetch_firewall_rules(firewall_name, server, server_type):
 		rules = frappe.db.get_all(
 			"Firewall Rule",
 			fields=[
 				"name",
-				"server",
-				"server_type",
 				"action",
 				"protocol",
 				"service",
@@ -23,7 +47,7 @@ class FirewallRule(Document):
 				"source_type",
 				"source",
 			],
-			filters={"server": server, "server_type": server_type},
+			filters={"firewall": firewall_name},
 		)
 
 		if not rules:
@@ -78,6 +102,53 @@ class FirewallRule(Document):
 			simplified_rules.append(simplified_rule)
 
 		return simplified_rules
+
+	@staticmethod
+	def create_firewall_rule(rule, firewall):
+		from_port, to_port = eval_port_range(rule.get("port_range"))
+
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Firewall Rule",
+					"firewall": firewall.name,
+					"action": rule.get("action"),
+					"description": rule.get("description"),
+					"protocol": "TCP",
+					"port_range": rule.get("port_range"),
+					"from_port": from_port,
+					"to_port": to_port,
+					"source_type": rule.get("source_type"),
+					"source": rule.get("source"),
+				}
+			).insert(ignore_permissions=True)
+
+			return doc.name
+
+		except frappe.DuplicateEntryError:
+			print("Duplicate Entry")
+			pass
+
+		return frappe.flags.firewall_rule
+
+	@staticmethod
+	def delete_firewall_rule(rule):
+		try:
+			frappe.delete_doc("Firewall Rule", rule, ignore_permissions=True)
+		except frappe.DoesNotExistError:
+			pass
+
+
+def eval_port_range(port_range):
+	if port_range:
+		from_port = to_port = port_range
+
+		if "-" in port_range:
+			from_port, to_port = port_range.split("-")
+
+		return int(from_port), int(to_port)
+
+	return None, None
 
 
 def port_mapper(port):

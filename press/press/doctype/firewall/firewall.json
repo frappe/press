@@ -44,8 +44,13 @@
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2023-08-24 19:06:07.620527",
+ "links": [
+  {
+   "link_doctype": "Firewall Rule",
+   "link_fieldname": "firewall"
+  }
+ ],
+ "modified": "2023-08-29 18:23:21.939417",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Firewall",

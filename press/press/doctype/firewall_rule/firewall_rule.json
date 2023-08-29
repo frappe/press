@@ -25,14 +25,17 @@
   {
    "fieldname": "protocol",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Protocol",
-   "options": "TCP\nUDP"
+   "options": "TCP\nUDP",
+   "search_index": 1
   },
   {
    "fieldname": "action",
    "fieldtype": "Select",
    "label": "Action",
-   "options": "Allow\nDeny"
+   "options": "Allow\nDeny",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_uvqr",
@@ -55,12 +58,16 @@
   {
    "fieldname": "from_port",
    "fieldtype": "Int",
-   "label": "From Port"
+   "in_list_view": 1,
+   "label": "From Port",
+   "search_index": 1
   },
   {
    "fieldname": "to_port",
    "fieldtype": "Int",
-   "label": "To Port"
+   "in_list_view": 1,
+   "label": "To Port",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_ucq7",
@@ -72,25 +79,30 @@
   },
   {
    "fieldname": "source",
-   "fieldtype": "Code",
-   "label": "Source"
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source",
+   "search_index": 1
   },
   {
    "fieldname": "source_type",
    "fieldtype": "Select",
    "label": "Source Type",
-   "options": "\nCustom\nAll IPv4\nAll IPv6\nAll IPv4 & IPv6"
+   "options": "\nCustom\nAll IPv4\nAll IPv6\nAll IPv4 & IPv6",
+   "search_index": 1
   },
   {
    "fieldname": "firewall",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Firewall",
-   "options": "Firewall"
+   "options": "Firewall",
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-25 19:18:12.185023",
+ "modified": "2023-08-29 19:40:55.916213",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Firewall Rule",

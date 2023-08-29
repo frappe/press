@@ -1,5 +1,5 @@
 <template>
-	<div class="mx-5">
+	<div class="mx-5 mt-2">
 		<div class="pb-20">
 			<div class="flex">
 				<div class="flex w-full space-x-2 pb-4">
@@ -59,7 +59,7 @@ import TableCell from '@/components/Table/TableCell.vue';
 
 export default {
 	name: 'FirewallRuleView',
-	props: ['servers', 'rules', 'disableAction', 'disableSearch'],
+	props: ['servers', 'rules', 'firewallName', 'disableAction', 'disableSearch'],
 	components: {
 		Table,
 		TableHeader,
@@ -77,6 +77,34 @@ export default {
 				}
 			];
 		}
+	},
+	computed: {
+		rules() {
+			let rules = this.rules;
+
+			if (this.searchTerm) {
+				return rules.filter(
+					rule =>
+						rule.description
+							.toLowerCase()
+							.includes(this.searchTerm.toLowerCase()) ||
+						rule.protocol
+							.toLowerCase()
+							.includes(this.searchTerm.toLowerCase()) ||
+						rule.port_range
+							.toLowerCase()
+							.includes(this.searchTerm.toLowerCase()) ||
+						rule.source.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
+			}
+
+			return rules;
+		}
+	},
+	data() {
+		return {
+			searchTerm: ''
+		};
 	}
 };
 </script>

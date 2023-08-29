@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="mx-5 mt-5" v-if="firewall.disabled">
+		<div class="mx-5 mt-5" v-if="!firewallName">
 			<Alert>
 				<div>
 					<span>
@@ -15,8 +15,8 @@
 						appearance="primary"
 						@click="$router.push(`/security/${this.server.name}/firewall/new`)"
 					>
-						Create Firewall</Button
-					>
+						Create Firewall
+					</Button>
 				</template>
 				<FirewallRuleDialog
 					:server="server"
@@ -27,10 +27,41 @@
 		</div>
 		<div class="mx-5 mt-5" v-else>
 			<LoadingText v-if="$resources.FirewallRules.loading" />
-			<FirewallRuleView :rules="rules" v-else />
+			<div v-else>
+				<div class="fles">
+					<div
+						class="flex w-full justify-between space-x-2 pb-4 border-b bg-white px-5 py-2.5"
+					>
+						<header
+							class="sticky top-0 z-10 flex items-center justify-between text-lg font-semibold"
+						>
+							{{ firewallName }}
+						</header>
+						<Button
+							variant="outline"
+							theme="gray"
+							class="justify-end"
+							appearance="primary"
+							@click="
+								$router.push({
+									path: `/security/${this.server.name}/firewall/edit/${this.firewallName}`
+								})
+							"
+						>
+							Edit
+						</Button>
+					</div>
+				</div>
+				<FirewallRuleView
+					:firewallName="firewallName"
+					:rules="rules"
+					:disableAction="true"
+				/>
+			</div>
+
 			<div class="mx-2.5 border-b" />
 		</div>
-		<div class="mx-5 mt-15">
+		<div class="mx-5 mt-15" v-if="!firewallName">
 			<div class="block w-full">
 				<div
 					class="items-start rounded-md px-4 py-3.5 text-base md:px-5 text-gray-700 bg-gray-50"
@@ -38,6 +69,7 @@
 					Example:
 					<div class="mt-5">
 						<FirewallRuleView
+							:firewallName="firewallName"
 							:rules="this.getExmpleRule()"
 							:disableSearch="true"
 							:disableAction="true"
@@ -62,13 +94,16 @@ export default {
 	resources: {
 		FirewallRules() {
 			return {
-				method: 'press.api.security.get_firewall_rules',
+				method: 'press.api.security.fetch_firewall_and_rules',
 				params: {
 					server: this.server?.name,
 					server_type: this.server?.server_type
 				},
 				auto: true,
-				onError: this.$routeTo404PageIfNotFound
+				onError: this.$routeTo404PageIfNotFound,
+				onSuccess: () => {
+					this.firewallName = this.$resources.FirewallRules.data.firewall_name;
+				}
 			};
 		}
 	},
@@ -98,14 +133,11 @@ export default {
 					to_port: 22
 				}
 			];
-		},
-		updateRoute() {
-			return `/security/${this.server.name}/firewall/create`;
 		}
 	},
 	computed: {
 		rules() {
-			return this.$resources.FirewallRules.data;
+			return this.$resources.FirewallRules.data.rules;
 		},
 		firewall() {
 			return {
@@ -115,7 +147,8 @@ export default {
 	},
 	data() {
 		return {
-			enableFirewall: false
+			enableFirewall: false,
+			firewallName: ''
 		};
 	}
 };

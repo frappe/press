@@ -112,22 +112,36 @@ def fetch_ssh_session_activity(server, filename):
 
 
 @frappe.whitelist()
-def get_firewall_rules(server, server_type):
-	from press.press.doctype.firewall_rule.firewall_rule import FirewallRule
+def fetch_firewall_and_rules(server, server_type):
+	from press.press.doctype.firewall.firewall import Firewall
 
-	return FirewallRule.fetch_firewall_rules(server, server_type)
+	return Firewall.fetch_firewall_rules(server, server_type)
 
 
 @frappe.whitelist()
-def create_firewall(firewall_name, server, server_type):
+def create_firewall(server, server_type, firewall_name, firewall_rules):
+	from press.press.doctype.firewall.firewall import Firewall
+
 	try:
-		return frappe.get_doc(
-			{
-				"doctype": "Firewall",
-				"firewall_name": firewall_name,
-				"server": server,
-				"server_type": server_type,
-			}
-		).insert(ignore_permissions=True)
+		firewall = Firewall.create_firewall(server, server_type, firewall_name)
+		firewall.update_firewall_rules(firewall_rules)
+
 	except frappe.DuplicateEntryError:
-		return frappe.get_doc("Firewall", firewall_name)
+		firewall = frappe.get_doc("Firewall", firewall_name)
+
+	return firewall.get_details()
+
+
+@frappe.whitelist()
+def update_firewall(firewall_name, firewall_rules):
+	from press.press.doctype.firewall.firewall import Firewall
+
+	try:
+		firewall = frappe.get_doc("Firewall", firewall_name)
+		Firewall.update_firewall(firewall, firewall_rules)
+		return firewall.get_details()
+	except frappe.DoesNotExistError as e:
+		print(e)
+		pass
+
+	return {}
