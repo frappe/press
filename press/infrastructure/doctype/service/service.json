@@ -8,14 +8,15 @@
  "engine": "InnoDB",
  "field_order": [
   "image",
-  "command",
-  "healthcheck",
-  "column_break_8exj",
-  "dockerfile",
   "section_break_jynb",
   "ports",
   "mounts",
-  "environment_variables"
+  "environment_variables",
+  "section_break_a7a1",
+  "command",
+  "healthcheck",
+  "column_break_8exj",
+  "dockerfile"
  ],
  "fields": [
   {
@@ -64,11 +65,17 @@
    "fieldname": "healthcheck",
    "fieldtype": "Code",
    "label": "Healthcheck"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_a7a1",
+   "fieldtype": "Section Break",
+   "label": "Image Options"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-09 18:53:13.978308",
+ "modified": "2023-08-29 21:12:21.422376",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Service",
