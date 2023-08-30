@@ -11,9 +11,9 @@ class Deployment(Document):
 		active_nodes = frappe.get_all("Node", filters={"status": "Active"}, pluck="name")
 		stack = frappe.get_doc("Stack", self.stack)
 		for index, service in enumerate(stack.services):
+			service = frappe.get_doc("Service", service.service)
 			node = active_nodes[index % len(active_nodes)]
 			network_address = ipaddress.IPv4Interface(stack.subnet_cidr_block).ip
-
 			# Start addresses from .2
 			ip_address = str(network_address + index + 2)
 			decimals = ip_address.split(".")
@@ -24,7 +24,8 @@ class Deployment(Document):
 				"containers",
 				{
 					"node": node,
-					"service": service.service,
+					"service": service.name,
+					"image": f"{service.image}:{service.tag}",
 					"ip_address": ip_address,
 					"mac_address": mac_address,
 				},
@@ -35,12 +36,12 @@ class Deployment(Document):
 			container = frappe.new_doc("Container")
 			container.deployment = self.name
 			container.service = deployment_container.service
+			container.image = deployment_container.image
 			container.node = deployment_container.node
 			container.ip_address = deployment_container.ip_address
 			container.mac_address = deployment_container.mac_address
 
 			service = frappe.get_doc("Service", container.service)
-			container.image = f"{service.image}:{service.tag}"
 			for row in service.ports:
 				container.append(
 					"ports",

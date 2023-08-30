@@ -3,12 +3,12 @@
  "allow_rename": 1,
  "creation": "2023-08-17 11:06:38.000159",
  "doctype": "DocType",
- "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "service",
-  "node",
+  "image",
   "column_break_rwol",
+  "node",
   "ip_address",
   "mac_address"
  ],
@@ -20,6 +20,7 @@
    "in_list_view": 1,
    "label": "Node",
    "options": "Node",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -27,12 +28,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "columns": 4,
+   "columns": 3,
    "fieldname": "service",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Service",
    "options": "Service",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -41,6 +43,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "IP Address",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -49,13 +52,23 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Mac Address",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 3,
+   "fieldname": "image",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Image",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-08-29 14:45:06.661771",
+ "modified": "2023-08-30 09:50:02.548787",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Deployment Container",
