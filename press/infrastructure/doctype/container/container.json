@@ -6,9 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "status",
   "node",
   "cluster",
-  "status",
   "column_break_fmyy",
   "deployment",
   "stack",
@@ -33,7 +33,6 @@
    "fetch_from": "node.cluster",
    "fieldname": "cluster",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Cluster",
@@ -68,7 +67,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_preview": 1,
-   "in_standard_filter": 1,
    "label": "Image",
    "read_only": 1,
    "reqd": 1
@@ -189,7 +187,7 @@
    "link_fieldname": "container"
   }
  ],
- "modified": "2023-08-29 23:03:16.655776",
+ "modified": "2023-08-30 10:22:08.690871",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Container",
