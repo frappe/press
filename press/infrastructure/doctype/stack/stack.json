@@ -44,7 +44,8 @@
    "in_standard_filter": 1,
    "label": "Cluster",
    "options": "Cluster",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_krco",
@@ -65,7 +66,8 @@
    "fieldname": "subnet_cidr_block",
    "fieldtype": "Data",
    "label": "Subnet CIDR Block",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "volumes",
@@ -86,7 +88,7 @@
    "link_fieldname": "stack"
   }
  ],
- "modified": "2023-08-29 22:31:26.570984",
+ "modified": "2023-08-30 10:05:10.144900",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Stack",
