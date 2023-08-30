@@ -77,6 +77,11 @@ class Container(Document):
 
 		return peers
 
+	def on_trash(self):
+		jobs = frappe.get_all("Agent Job", filters={"container": self.name})
+		for job in jobs:
+			frappe.get_doc("Agent Job", job.name).delete()
+
 
 def process_new_container_job_update(job):
 	container = frappe.get_doc("Container", job.container)

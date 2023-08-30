@@ -26,3 +26,8 @@ class Stack(Document):
 		deployment = frappe.new_doc("Deployment")
 		deployment.stack = self.name
 		deployment.insert()
+
+	def on_trash(self):
+		deployments = frappe.get_all("Deployment", filters={"stack": self.name})
+		for deployment in deployments:
+			frappe.get_doc("Deployment", deployment.name).delete()

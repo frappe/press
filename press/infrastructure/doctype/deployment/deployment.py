@@ -73,3 +73,8 @@ class Deployment(Document):
 
 			container.insert()
 			container.deploy()
+
+	def on_trash(self):
+		containers = frappe.get_all("Container", filters={"deployment": self.name})
+		for container in containers:
+			frappe.get_doc("Container", container.name).delete()
