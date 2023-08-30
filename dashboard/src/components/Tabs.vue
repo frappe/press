@@ -23,7 +23,7 @@
 								{{ tab.label }}
 							</span>
 							<div
-								class="absolute right-0 top-2 h-2 w-2 rounded-full bg-red-500"
+								class="absolute right-0 top-1 h-1.5 w-1.5 rounded-full bg-red-500"
 								v-if="tab.showRedDot && !isActive"
 							></div>
 						</a>
