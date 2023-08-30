@@ -773,6 +773,26 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
 		),
+		"info": {
+			"owner": frappe.db.get_value(
+				"User",
+				frappe.get_cached_doc("Team", site.team).user,
+				["first_name", "last_name", "user_image"],
+				as_dict=True,
+			),
+			"created_on": site.creation,
+			"last_deployed": (
+				frappe.db.get_all(
+					"Site Activity",
+					filters={"site": name, "action": "Update"},
+					order_by="creation desc",
+					limit=1,
+					pluck="creation",
+				)
+				or [None]
+			)[0],
+			"auto_updates_enabled": not site.skip_auto_updates,
+		},
 	}
 
 
@@ -848,38 +868,6 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 			}
 		)
 	return apps
-
-
-@frappe.whitelist()
-@protected("Site")
-def overview(name):
-	site = frappe.get_cached_doc("Site", name)
-	team = frappe.get_cached_doc("Team", site.team)
-
-	return {
-		"plan": current_plan(name),
-		"info": {
-			"owner": frappe.db.get_value(
-				"User",
-				team.user,
-				["first_name", "last_name", "user_image"],
-				as_dict=True,
-			),
-			"created_on": site.creation,
-			"last_deployed": (
-				frappe.db.get_all(
-					"Site Activity",
-					filters={"site": name, "action": "Update"},
-					order_by="creation desc",
-					limit=1,
-					pluck="creation",
-				)
-				or [None]
-			)[0],
-			"auto_updates_enabled": not site.skip_auto_updates,
-		},
-		"domains": domains(name),
-	}
 
 
 @frappe.whitelist()

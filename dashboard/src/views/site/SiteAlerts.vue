@@ -19,14 +19,14 @@ const showBillingDialog = ref(false);
 const showChangePlanDialog = ref(false);
 
 const closeToLimits = computed(() => {
-	if (!(props.site && props.plan.data)) return false;
-	let usage = props.plan.data.usage_in_percent;
+	if (!(props.site && props.plan)) return false;
+	let usage = props.plan.usage_in_percent;
 	return [usage.cpu, usage.database, usage.disk].some(x => 100 >= x && x > 80);
 });
 
 const limitExceeded = computed(() => {
-	if (!(props.site && props.plan.data)) return false;
-	let usage = props.plan.data.usage_in_percent;
+	if (!(props.site && props.plan)) return false;
+	let usage = props.plan.usage_in_percent;
 	return [usage.cpu, usage.database, usage.disk].some(x => x > 100);
 });
 
@@ -48,7 +48,7 @@ const marketplacePromotionalBanners = createResource({
 </script>
 
 <template>
-	<div class="mb-2 mt-4 space-y-2">
+	<div class="space-y-2">
 		<AlertSiteActivation :site="site" />
 		<AlertSiteUpdate :site="site" />
 

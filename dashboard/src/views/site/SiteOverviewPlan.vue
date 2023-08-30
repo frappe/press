@@ -22,65 +22,70 @@
 			</Button>
 		</template>
 
-		<div
-			v-if="plan.current_plan"
-			class="flex items-center rounded-lg bg-gray-50 p-5"
-		>
-			<PlanIcon />
-			<div class="ml-4">
-				<h4 class="text-4xl font-semibold text-gray-900">
-					{{ $planTitle(plan.current_plan) }}
-					<span v-if="plan.current_plan.price_usd > 0" class="text-lg">
-						/mo
-					</span>
-				</h4>
-				<p
-					class="text-base text-gray-700"
-					v-if="plan.current_plan.name != 'Unlimited'"
-				>
-					{{ plan.current_plan.cpu_time_per_day }}
-					{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }} of
-					CPU / day
-				</p>
-			</div>
+		<div v-if="!plan" class="flex items-center justify-center py-20">
+			<Button :loading="true" loading-text="Loading" />
 		</div>
-		<div v-else class="flex rounded-lg bg-gray-50 p-5">
-			<div>
-				<h4 class="font-semibold text-gray-600">No Plan Set</h4>
-			</div>
-		</div>
-
-		<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
+		<div v-else>
 			<div
-				v-if="plan.current_plan.name != 'Unlimited'"
-				v-for="d in usage"
-				:key="d.label"
+				v-if="plan.current_plan"
+				class="flex items-center rounded-lg bg-gray-50 p-5"
 			>
-				<ProgressArc :percentage="d.percentage" />
-				<div class="mt-2 text-base font-medium text-gray-900">
-					{{ d.label }}
-					{{
-						isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
-					}}
+				<PlanIcon />
+				<div class="ml-4">
+					<h4 class="text-4xl font-semibold text-gray-900">
+						{{ $planTitle(plan.current_plan) }}
+						<span v-if="plan.current_plan.price_usd > 0" class="text-lg">
+							/mo
+						</span>
+					</h4>
+					<p
+						class="text-base text-gray-700"
+						v-if="plan.current_plan.name != 'Unlimited'"
+					>
+						{{ plan.current_plan.cpu_time_per_day }}
+						{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }}
+						of CPU / day
+					</p>
 				</div>
-				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
-		</div>
-		<div v-else class="ml-2 mt-4 grid grid-cols-3 gap-12">
-			<div v-for="d in usage" :key="d.label">
-				<div class="text-base font-medium text-gray-900">
-					{{ d.label }}
+			<div v-else class="flex rounded-lg bg-gray-50 p-5">
+				<div>
+					<h4 class="font-semibold text-gray-600">No Plan Set</h4>
 				</div>
-				<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
 			</div>
-		</div>
 
-		<SitePlansDialog
-			:site="site"
-			:plan="plan"
-			v-model="showChangePlanDialog"
-			@plan-change="() => $emit('plan-change')"
-		/>
+			<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
+				<div
+					v-if="plan.current_plan.name != 'Unlimited'"
+					v-for="d in usage"
+					:key="d.label"
+				>
+					<ProgressArc :percentage="d.percentage" />
+					<div class="mt-2 text-base font-medium text-gray-900">
+						{{ d.label }}
+						{{
+							isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
+						}}
+					</div>
+					<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+				</div>
+			</div>
+			<div v-else class="ml-2 mt-4 grid grid-cols-3 gap-12">
+				<div v-for="d in usage" :key="d.label">
+					<div class="text-base font-medium text-gray-900">
+						{{ d.label }}
+					</div>
+					<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
+				</div>
+			</div>
+
+			<SitePlansDialog
+				:site="site"
+				:plan="plan"
+				v-model="showChangePlanDialog"
+				@plan-change="() => $emit('plan-change')"
+			/>
+		</div>
 	</Card>
 </template>
 <script>

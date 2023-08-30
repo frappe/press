@@ -72,15 +72,23 @@
 					</div>
 				</div>
 			</div>
-			<SiteAlerts
-				v-if="site && $resources.plan?.data"
-				:site="site"
-				:plan="$resources.plan.data"
-				@plan-change="() => $router.go()"
-			/>
+			<div class="mb-2 mt-4">
+				<SiteAlerts
+					v-if="site && $resources.plan?.data && !$resources.site.loading"
+					:site="site"
+					:plan="$resources.plan.data"
+					@plan-change="handlePlanChange"
+				/>
+			</div>
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
-					<component v-if="site" :is="Component" :site="site"></component>
+					<component
+						v-if="site"
+						:is="Component"
+						:site="site"
+						:plan="$resources.plan.data"
+						@plan-change="handlePlanChange"
+					/>
 				</router-view>
 			</Tabs>
 		</div>
@@ -284,6 +292,10 @@ export default {
 			});
 
 			this.showReasonForAdminLoginDialog = false;
+		},
+		handlePlanChange() {
+			$resources.site.reload();
+			$resources.plan.reload();
 		}
 	},
 	computed: {

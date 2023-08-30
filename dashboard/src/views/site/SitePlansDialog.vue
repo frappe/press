@@ -86,9 +86,10 @@ export default {
 						color: 'green'
 					});
 					this.showChangePlanDialog = false;
+					this.plan.current_plan = this.selectedPlan;
 					this.selectedPlan = null;
+					this.$resources.plans.reload();
 					this.$emit('plan-change');
-					this.$resources.plans.reset();
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
