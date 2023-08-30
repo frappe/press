@@ -204,7 +204,7 @@ class TestSelfHostedServer(FrappeTestCase):
 			_play="Ping Server",
 			task_1="Gather Facts",
 			task_1_output="",
-			task_1_result="""{"ansible_facts":{"default_ipv4":{"address":"192.168.1.1"},"system_vendor":"Hetzner"}}""",
+			task_1_result="""{"ansible_facts":{"default_ipv4":{"address":"192.168.1.1"},"system_vendor":"AWS EC2"}}""",
 		)
 		server.fetch_private_ip()
 		server.reload()
