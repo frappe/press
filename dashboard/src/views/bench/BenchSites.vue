@@ -82,7 +82,13 @@
 							</Tooltip>
 						</div>
 						<span v-else-if="column.name === 'plan'" class="hidden sm:block">
-							{{ row.plan ? `${$planTitle(row.plan)}/mo` : '' }}
+							{{
+								row.plan
+									? `${$planTitle(row.plan)}${
+											row.plan.price_usd > 0 ? '/mo' : ''
+									  }`
+									: ''
+							}}
 						</span>
 						<div v-else-if="column.name === 'region'" class="hidden sm:block">
 							<img
