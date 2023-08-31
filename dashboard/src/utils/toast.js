@@ -7,7 +7,6 @@ export const hideNotification = id => {
 };
 
 export const notify = props => {
-	console.log(props.id);
 	props.id = Math.floor(Math.random() * 1000 + Date.now());
 	notifications.value.push(props);
 	setTimeout(() => hideNotification(props.id), props.timeout || 5000);
