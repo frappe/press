@@ -36,7 +36,7 @@ export default {
 			return {
 				method: 'press.api.bench.bench_config',
 				params: {
-					release_group_name: this.bench?.name
+					name: this.bench?.name
 				},
 				auto: true,
 				default: []
@@ -65,7 +65,7 @@ export default {
 			return {
 				method: 'press.api.bench.update_dependencies',
 				params: {
-					release_group_name: this.bench?.name,
+					name: this.bench?.name,
 					dependencies: JSON.stringify(updatedConfig)
 				}
 			};

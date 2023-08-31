@@ -248,8 +248,8 @@ def options(only_by_current_team=False):
 
 @frappe.whitelist()
 @protected("Release Group")
-def bench_config(release_group_name):
-	rg = frappe.get_doc("Release Group", release_group_name)
+def bench_config(name):
+	rg = frappe.get_doc("Release Group", name)
 
 	common_site_config = [
 		{"key": config.key, "value": config.value, "type": config.type}
@@ -312,7 +312,8 @@ def dependencies(name: str):
 
 @frappe.whitelist()
 @protected("Release Group")
-def update_dependencies(name: str, dependencies: list[dict]):
+def update_dependencies(name: str, dependencies: str):
+	dependencies = frappe.parse_json(dependencies)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	if len(rg.dependencies) != len(dependencies):
 		frappe.throw("Need all required dependencies")
