@@ -299,6 +299,24 @@ export default {
 				url: 'press.api.bench.update',
 				params: {
 					bench: this.versions[this.selectedVersionIndex]?.name
+				},
+				onSuccess() {
+					notify({
+						title: 'Site update scheduled successfully',
+						message: `All sites in ${
+							this.versions[this.selectedVersionIndex]?.name
+						} will be updated to the latest version`,
+						icon: 'check',
+						color: 'green'
+					});
+				},
+				onError(e) {
+					notify({
+						title: 'Error',
+						message: e.messages.join(', '),
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}
@@ -362,12 +380,6 @@ export default {
 						onClick: () => {
 							this.selectedVersionIndex = i;
 							this.$resources.updateAllSites.submit();
-							notify({
-								title: 'Site update scheduled successfully',
-								message: `All sites in ${this.versions[i]?.name} will be updated to the latest version`,
-								icon: 'check',
-								color: 'green'
-							});
 						}
 					},
 				this.versions[i].status === 'Active' && {
