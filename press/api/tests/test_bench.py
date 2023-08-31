@@ -1,12 +1,21 @@
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new, all, update_config, bench_config
+from press.api.bench import (
+	deploy,
+	get,
+	new,
+	all,
+	update_config,
+	bench_config,
+	update_dependencies,
+)
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -168,6 +177,86 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 		for key, value in frappe.parse_json(self.rg.common_site_config).items():
 			self.assertEqual(value, frappe.parse_json(bench.config).get(key))
+
+	def test_update_dependencies_set_dependencies_correctly(self):
+		update_dependencies(
+			self.rg.name,
+			[
+				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+			],
+		)
+		self.rg.reload()
+		self.assertEqual(
+			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
+		)
+		self.assertEqual(
+			find(self.rg.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
+			"3.6",
+		)
+
+	def test_update_dependencies_throws_error_for_invalid_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Invalid dependency.*",
+			update_dependencies,
+			self.rg.name,
+			[
+				{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},  # invalid dependency
+				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+			],
+		)
+
+	def test_update_dependencies_throws_error_for_invalid_version(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Invalid version.*",
+			update_dependencies,
+			self.rg.name,
+			[
+				{"key": "NODE_VERSION", "value": "v16.11", "type": "String"},  # v is invalid
+				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+			],
+		)
+
+	def test_cannot_remove_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Need all required dependencies",
+			update_dependencies,
+			self.rg.name,
+			[
+				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+			],
+		)
+
+	def test_cannot_add_additional_invalid_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Need all required dependencies",
+			update_dependencies,
+			self.rg.name,
+			[
+				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},  # invalid dependency
+			],
+		)
 
 
 class TestAPIBenchList(FrappeTestCase):
