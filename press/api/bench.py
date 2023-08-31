@@ -482,7 +482,7 @@ def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=
 		"Deploy Candidate",
 		["name", "creation", "status"],
 		{"group": filters["group"], "status": ("!=", "Draft")},
-		order_by="creation desc",
+		order_by=order_by or "creation desc",
 		start=limit_start,
 		limit=limit_page_length,
 	)
@@ -614,7 +614,7 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 			"Agent Job",
 			fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 			filters={"bench": ("in", benches)},
-			order_by=order_by,
+			order_by=order_by or "creation desc",
 			start=limit_start,
 			limit=limit_page_length,
 			ignore_ifnull=True,

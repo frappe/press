@@ -1119,8 +1119,6 @@ def add_version(name, branch, version):
 @protected("Marketplace App")
 @frappe.whitelist()
 def remove_version(name, version):
-	frappe.throw("Not Implemented")
-	return
 	app = frappe.get_doc("Marketplace App", name)
 	app.remove_version(version)
 
