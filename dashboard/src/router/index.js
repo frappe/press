@@ -102,11 +102,6 @@ const routes = [
 				props: true
 			},
 			{
-				path: 'versions/:version?',
-				component: () => import('../views/bench/BenchVersions.vue'),
-				props: true
-			},
-			{
 				path: 'bench-config',
 				component: () => import('../views/bench/BenchConfig.vue'),
 				props: true
