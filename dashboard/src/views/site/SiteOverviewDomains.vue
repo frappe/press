@@ -211,6 +211,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteOverviewDomains',
 	props: ['site'],
@@ -346,7 +348,7 @@ export default {
 			});
 
 			if (workingRedirects) {
-				this.$notify({
+				notify({
 					title: 'Please Remove all Active Redirects',
 					color: 'red',
 					icon: 'x'

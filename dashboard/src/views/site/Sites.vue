@@ -245,6 +245,7 @@ import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Sites',
@@ -325,7 +326,7 @@ export default {
 				return;
 			if (data.status === 'Success' && data.user === this.$account.user.name) {
 				this.reload();
-				this.$notify({
+				notify({
 					title: 'Site creation complete!',
 					message: 'Login to your site and complete the setup wizard',
 					icon: 'check',

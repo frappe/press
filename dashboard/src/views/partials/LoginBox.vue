@@ -27,6 +27,8 @@
 <script>
 import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
@@ -38,7 +40,7 @@ export default {
 		const params = new URLSearchParams(window.location.search);
 
 		if (params.get('showRemoteLoginError')) {
-			this.$notify({
+			notify({
 				title: 'Token Invalid or Expired',
 				color: 'red',
 				icon: 'x'
