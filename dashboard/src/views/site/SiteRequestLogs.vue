@@ -1,5 +1,11 @@
 <template>
-	<div v-if="$resources.getPlan.data.monitor_access">
+	<div
+		class="flex items-center justify-center"
+		v-if="$resources.getPlan?.loading"
+	>
+		<LoadingText />
+	</div>
+	<div v-else-if="$resources.getPlan?.data?.monitor_access">
 		<Card>
 			<Report
 				title="Request Logs"
@@ -89,7 +95,7 @@ export default {
 	resources: {
 		requestLogs() {
 			return {
-				method: 'press.api.analytics.request_logs',
+				url: 'press.api.analytics.request_logs',
 				params: {
 					name: this.site?.name,
 					timezone: DateTime.local().zoneName,
@@ -100,12 +106,12 @@ export default {
 				auto: Boolean(this.today),
 				pageLength: 10,
 				keepData: true,
-				default: []
+				initialData: []
 			};
 		},
 		getPlan() {
 			return {
-				method: 'press.api.site.current_plan',
+				url: 'press.api.site.current_plan',
 				params: {
 					name: this.site?.name
 				},

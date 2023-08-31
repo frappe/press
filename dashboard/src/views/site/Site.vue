@@ -151,6 +151,7 @@
 import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Site',
@@ -177,12 +178,14 @@ export default {
 	resources: {
 		site() {
 			return {
-				method: 'press.api.site.get',
+				url: 'press.api.site.get',
 				params: {
 					name: this.siteName
 				},
 				auto: true,
 				onSuccess() {
+					this.routeToGeneral();
+
 					if (this.siteName !== this.site.name) {
 						this.$router.replace({ params: { siteName: this.site.name } });
 					}
@@ -205,11 +208,11 @@ export default {
 		},
 		transferSite() {
 			return {
-				method: 'press.api.site.change_team',
+				url: 'press.api.site.change_team',
 				onSuccess() {
 					this.showTransferSiteDialog = false;
 					this.emailOfChildTeam = null;
-					this.$notify({
+					notify({
 						title: 'Site Transferred to Child Team',
 						message: 'Site Transferred to Child Team',
 						color: 'green',
@@ -220,7 +223,7 @@ export default {
 		},
 		plan() {
 			return {
-				method: 'press.api.site.current_plan',
+				url: 'press.api.site.current_plan',
 				params: {
 					name: this.siteName
 				},
@@ -230,13 +233,6 @@ export default {
 	},
 	activated() {
 		this.setupAgentJobUpdate();
-		if (this.site) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.site.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
-		}
 
 		if (this.site?.status === 'Active') {
 			this.$socket.on('list_update', this.onSocketUpdate);
@@ -355,7 +351,7 @@ export default {
 					icon: 'tool',
 					onClick: async () => {
 						await this.$account.switchTeam(this.site?.team);
-						this.$notify({
+						notify({
 							title: 'Switched Team',
 							message: `Switched to ${this.site?.team}`,
 							icon: 'check',

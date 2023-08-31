@@ -71,6 +71,7 @@
 </template>
 <script>
 import SiteAppUpdates from './SiteAppUpdates.vue';
+import { notify } from '@/utils/toast';
 export default {
 	name: 'AlertSiteUpdate',
 	props: ['site'],
@@ -87,7 +88,7 @@ export default {
 	resources: {
 		updateInformation() {
 			return {
-				method: 'press.api.site.check_for_updates',
+				url: 'press.api.site.check_for_updates',
 				params: {
 					name: this.site?.name
 				},
@@ -96,7 +97,7 @@ export default {
 		},
 		lastMigrateFailed() {
 			return {
-				method: 'press.api.site.last_migrate_failed',
+				url: 'press.api.site.last_migrate_failed',
 				params: {
 					name: this.site?.name
 				},
@@ -105,7 +106,7 @@ export default {
 		},
 		scheduleUpdate() {
 			return {
-				method: 'press.api.site.update',
+				url: 'press.api.site.update',
 				params: {
 					name: this.site?.name,
 					skip_failing_patches: this.wantToSkipFailingPatches,
@@ -113,7 +114,7 @@ export default {
 				},
 				onSuccess() {
 					this.showUpdatesDialog = false;
-					this.$notify({
+					notify({
 						title: 'Site update scheduled successfully',
 						icon: 'check',
 						color: 'green'

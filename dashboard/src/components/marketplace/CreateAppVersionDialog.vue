@@ -46,6 +46,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'CreateMarketplaceAppVersion.vue',
 	data() {
@@ -60,7 +62,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.marketplace.options_for_version',
+				url: 'press.api.marketplace.options_for_version',
 				auto: true,
 				params: {
 					name: this.app.name,
@@ -74,7 +76,7 @@ export default {
 		},
 		addVersion() {
 			return {
-				method: 'press.api.marketplace.add_version',
+				url: 'press.api.marketplace.add_version',
 				params: {
 					name: this.app.name,
 					branch: this.selectedBranch,
@@ -84,7 +86,7 @@ export default {
 					window.location.reload();
 				},
 				onError(e) {
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'

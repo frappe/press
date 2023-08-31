@@ -223,19 +223,19 @@ export default {
 	resources: {
 		domains() {
 			return {
-				method: 'press.api.site.domains',
+				url: 'press.api.site.domains',
 				params: { name: this.site?.name },
 				auto: true
 			};
 		},
 		checkDNS: {
-			method: 'press.api.site.check_dns',
+			url: 'press.api.site.check_dns',
 			validate() {
 				if (!this.newDomain) return 'Domain cannot be empty';
 			}
 		},
 		addDomain: {
-			method: 'press.api.site.add_domain',
+			url: 'press.api.site.add_domain',
 			onSuccess() {
 				this.$resources.checkDNS.reset();
 				this.$resources.domains.reload();
@@ -243,31 +243,31 @@ export default {
 			}
 		},
 		removeDomain: {
-			method: 'press.api.site.remove_domain',
+			url: 'press.api.site.remove_domain',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		retryAddDomain: {
-			method: 'press.api.site.retry_add_domain',
+			url: 'press.api.site.retry_add_domain',
 			onSuccess() {
 				this.$resources.domains.fetch();
 			}
 		},
 		setHostName: {
-			method: 'press.api.site.set_host_name',
+			url: 'press.api.site.set_host_name',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		setupRedirect: {
-			method: 'press.api.site.set_redirect',
+			url: 'press.api.site.set_redirect',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		removeRedirect: {
-			method: 'press.api.site.unset_redirect',
+			url: 'press.api.site.unset_redirect',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}

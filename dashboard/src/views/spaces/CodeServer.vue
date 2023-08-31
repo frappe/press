@@ -120,24 +120,18 @@ export default {
 	resources: {
 		codeServer() {
 			return {
-				method: 'press.api.spaces.code_server',
+				url: 'press.api.spaces.code_server',
 				params: {
 					name: this.serverName
 				},
 				auto: true,
+				onSuccess: this.routeToGeneral,
 				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},
 	activated() {
 		this.setupAgentJobUpdate();
-		if (this.codeServer) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.codeServer.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
-		}
 
 		if (this.codeServer?.status === 'Running') {
 			this.$socket.on('list_update', this.onSocketUpdate);

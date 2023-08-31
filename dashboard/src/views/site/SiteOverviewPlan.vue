@@ -130,11 +130,11 @@ export default {
 	resources: {
 		plans() {
 			return {
-				method: 'press.api.site.get_plans',
+				url: 'press.api.site.get_plans',
 				params: {
 					name: this.site?.name
 				},
-				default: []
+				initialData: []
 			};
 		}
 	},

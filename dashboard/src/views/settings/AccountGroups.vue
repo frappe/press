@@ -61,6 +61,7 @@
 <script>
 import EditPermissions from './EditPermissions.vue';
 import ManageGroupMembers from './ManageGroupMembers.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'AccountGroups',
@@ -82,15 +83,15 @@ export default {
 	},
 	resources: {
 		groups: {
-			method: 'press.api.account.groups',
+			url: 'press.api.account.groups',
 			auto: true
 		},
 		addMember: {
-			method: 'press.api.account.add_team_member',
+			url: 'press.api.account.add_team_member',
 			onSuccess() {
 				this.showManageMemberDialog = false;
 				this.memberEmail = null;
-				this.$notify({
+				notify({
 					title: 'Invite Sent!',
 					message: 'They will receive an email shortly to join your team.',
 					color: 'green',
@@ -99,7 +100,7 @@ export default {
 			}
 		},
 		addGroup: {
-			method: 'press.api.account.add_permission_group',
+			url: 'press.api.account.add_permission_group',
 			validate() {
 				if (this.groupName.length == 0) {
 					return 'Group name is required.';
@@ -107,7 +108,7 @@ export default {
 			},
 			onSuccess(r) {
 				this.$resources.groups.fetch();
-				this.$notify({
+				notify({
 					title: 'Group Created!',
 					message: 'You can now assign this group to your team members',
 					color: 'green',
@@ -117,10 +118,10 @@ export default {
 			}
 		},
 		removeGroup: {
-			method: 'press.api.account.remove_permission_group',
+			url: 'press.api.account.remove_permission_group',
 			onSuccess() {
 				this.$resources.groups.fetch();
-				this.$notify({
+				notify({
 					title: 'Group Removed!',
 					message: 'Permissions have been removed from all team members',
 					color: 'green',

@@ -99,12 +99,12 @@ export default {
 	resources: {
 		appOptions() {
 			return {
-				method: 'press.api.marketplace.options_for_marketplace_app'
+				url: 'press.api.marketplace.options_for_marketplace_app'
 			};
 		},
 		addMarketplaceApp() {
 			return {
-				method: 'press.api.marketplace.add_app',
+				url: 'press.api.marketplace.add_app',
 				onSuccess() {
 					this.showAddAppDialog = false;
 					window.location.reload();

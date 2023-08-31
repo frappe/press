@@ -46,6 +46,8 @@
 	</Dialog>
 </template>
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'Tags',
 	props: ['name', 'doctype', 'resourceTags', 'tags'],
@@ -74,7 +76,7 @@ export default {
 	resources: {
 		addTag() {
 			return {
-				method: 'press.api.dashboard.add_tag',
+				url: 'press.api.dashboard.add_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -89,7 +91,7 @@ export default {
 		},
 		removeTag() {
 			return {
-				method: 'press.api.dashboard.remove_tag',
+				url: 'press.api.dashboard.remove_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -103,7 +105,7 @@ export default {
 		},
 		createTag() {
 			return {
-				method: 'press.api.dashboard.create_new_tag',
+				url: 'press.api.dashboard.create_new_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -116,7 +118,7 @@ export default {
 				},
 				onError(e) {
 					this.showNewDialog = false;
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'

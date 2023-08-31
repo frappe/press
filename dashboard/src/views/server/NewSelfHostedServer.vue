@@ -199,7 +199,7 @@ export default {
 	resources: {
 		newServer() {
 			return {
-				method: 'press.api.selfhosted.new',
+				url: 'press.api.selfhosted.new',
 				params: {
 					server: {
 						title: this.title,
@@ -216,7 +216,7 @@ export default {
 		},
 		verify() {
 			return {
-				method: 'press.api.selfhosted.verify',
+				url: 'press.api.selfhosted.verify',
 				params: {
 					server: this.serverDoc
 				},
@@ -230,7 +230,7 @@ export default {
 		},
 		setupServer() {
 			return {
-				method: 'press.api.selfhosted.setup',
+				url: 'press.api.selfhosted.setup',
 				params: {
 					server: this.serverDoc
 				},
@@ -248,7 +248,7 @@ export default {
 		},
 		verifyDNS() {
 			return {
-				method: 'press.api.selfhosted.check_dns',
+				url: 'press.api.selfhosted.check_dns',
 				params: {
 					domain: this.domain,
 					ip: this.publicIP
@@ -263,7 +263,7 @@ export default {
 		},
 		setupNginx() {
 			return {
-				method: 'press.api.selfhosted.setup_nginx',
+				url: 'press.api.selfhosted.setup_nginx',
 				params: {
 					server: this.serverDoc
 				},

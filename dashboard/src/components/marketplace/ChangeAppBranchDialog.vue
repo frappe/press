@@ -36,7 +36,7 @@ export default {
 	resources: {
 		branches() {
 			return {
-				method: 'press.api.marketplace.branches',
+				url: 'press.api.marketplace.branches',
 				params: {
 					name: this.source
 				},
@@ -45,7 +45,7 @@ export default {
 		},
 		changeBranch() {
 			return {
-				method: 'press.api.marketplace.change_branch',
+				url: 'press.api.marketplace.change_branch',
 				onSuccess() {
 					window.location.reload();
 				},

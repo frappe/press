@@ -225,6 +225,7 @@
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplacePrepaidCredits',
@@ -346,7 +347,7 @@ export default {
 							'payment_intent_authentication_failure'
 					) {
 						this.step = 'Add Card Details';
-						this.$notify({
+						notify({
 							title: 'Payment Error.',
 							message: stripeJsResult.error,
 							icon: 'X',
@@ -359,7 +360,7 @@ export default {
 						//this.showCheckoutDialog = false;
 						window.location.reload();
 						this.step = 'Confirm Checkout';
-						this.$notify({
+						notify({
 							title: 'Payment request received!',
 							message:
 								'Your plan will be change as soon as we get the payment confirmation',
@@ -384,7 +385,7 @@ export default {
 				this.errorMessage = null;
 				this.showCheckoutDialog = false;
 				this.step = 'Confirm Checkout';
-				this.$notify({
+				notify({
 					title: 'Payment request received!',
 					message:
 						'Your plan will be change as soon as we get the payment confirmation',
@@ -439,13 +440,13 @@ export default {
 	resources: {
 		subscriptions() {
 			return {
-				method: 'press.api.marketplace.subscriptions',
+				url: 'press.api.marketplace.subscriptions',
 				auto: false
 			};
 		},
 		plan() {
 			return {
-				method: 'press.api.marketplace.get_plan',
+				url: 'press.api.marketplace.get_plan',
 				params: {
 					name: this.plan
 				},
@@ -462,7 +463,7 @@ export default {
 		},
 		useCredits() {
 			return {
-				method: 'press.api.marketplace.use_existing_credits',
+				url: 'press.api.marketplace.use_existing_credits',
 				params: {
 					site: this.site,
 					app: this.app,
@@ -477,7 +478,7 @@ export default {
 		},
 		usePartnerCredits() {
 			return {
-				method: 'press.api.marketplace.use_partner_credits',
+				url: 'press.api.marketplace.use_partner_credits',
 				params: {
 					name: this.subscription,
 					app: this.app,
@@ -493,7 +494,7 @@ export default {
 		},
 		changePlan() {
 			return {
-				method: 'press.api.marketplace.prepaid_saas_payment',
+				url: 'press.api.marketplace.prepaid_saas_payment',
 				params: {
 					name: this.subscription,
 					app: this.app || 'test',
@@ -519,7 +520,7 @@ export default {
 					}
 				},
 				onError(e) {
-					this.$notify({
+					notify({
 						title: e,
 						icon: 'x',
 						color: 'red'

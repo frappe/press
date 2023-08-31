@@ -28,17 +28,17 @@ export default {
 	methods: {
 		benchConfig() {
 			return {
-				method: 'press.api.bench.bench_config',
+				url: 'press.api.bench.bench_config',
 				params: {
 					release_group_name: this.bench?.name
 				},
 				auto: true,
-				default: []
+				initialData: []
 			};
 		},
 		updateBenchConfigMethod(updatedConfig) {
 			return {
-				method: 'press.api.bench.update_config',
+				url: 'press.api.bench.update_config',
 				params: {
 					name: this.bench?.name,
 					config: JSON.stringify(updatedConfig)

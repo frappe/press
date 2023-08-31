@@ -43,7 +43,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.spaces.code_server_group_options',
+				url: 'press.api.spaces.code_server_group_options',
 				auto: true,
 				onSuccess(data) {
 					this.fuse = new Fuse(data, {

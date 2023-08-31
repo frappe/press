@@ -97,7 +97,7 @@ export default {
 		loadavg() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
@@ -110,7 +110,7 @@ export default {
 		cpu() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
@@ -123,7 +123,7 @@ export default {
 		memory() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
@@ -136,7 +136,7 @@ export default {
 		network() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
@@ -149,7 +149,7 @@ export default {
 		iops() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,
@@ -162,7 +162,7 @@ export default {
 		space() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.server.analytics',
+				url: 'press.api.server.analytics',
 				params: {
 					name: this.server?.name,
 					timezone: localTimezone,

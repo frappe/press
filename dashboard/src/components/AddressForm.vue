@@ -55,7 +55,7 @@ export default {
 	},
 	resources: {
 		countryList: {
-			method: 'press.api.account.country_list',
+			url: 'press.api.account.country_list',
 			auto: true,
 			onSuccess() {
 				let country = this.countryList.find(
@@ -67,7 +67,7 @@ export default {
 			}
 		},
 		indianStates: {
-			method: 'press.api.billing.indian_states'
+			url: 'press.api.billing.indian_states'
 		}
 	},
 	watch: {

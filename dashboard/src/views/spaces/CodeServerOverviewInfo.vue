@@ -95,6 +95,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'CodeServerOverviewInfo',
 	props: {
@@ -111,7 +113,7 @@ export default {
 	resources: {
 		stopCodeServer() {
 			return {
-				method: 'press.api.spaces.stop_code_server',
+				url: 'press.api.spaces.stop_code_server',
 				params: {
 					name: this.codeServer.name
 				},
@@ -122,7 +124,7 @@ export default {
 		},
 		startCodeServer() {
 			return {
-				method: 'press.api.spaces.start_code_server',
+				url: 'press.api.spaces.start_code_server',
 				params: {
 					name: this.codeServer.name
 				},
@@ -133,14 +135,14 @@ export default {
 		},
 		showPassword() {
 			return {
-				method: 'press.api.spaces.code_server_password',
+				url: 'press.api.spaces.code_server_password',
 				params: {
 					name: this.codeServer.name
 				},
 				onSuccess(r) {
 					const clipboard = window.navigator.clipboard;
 					clipboard.writeText(r).then(() => {
-						this.$notify({
+						notify({
 							title: 'Password copied to clipboard!',
 							icon: 'check',
 							color: 'green'
@@ -151,7 +153,7 @@ export default {
 		},
 		dropCodeServer() {
 			return {
-				method: 'press.api.spaces.drop_code_server',
+				url: 'press.api.spaces.drop_code_server',
 				params: {
 					name: this.codeServer.name
 				},

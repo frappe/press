@@ -95,7 +95,7 @@ export default {
 		countryList: 'press.api.account.country_list',
 		billingAddress() {
 			return {
-				method: 'press.api.account.get_billing_information',
+				url: 'press.api.account.get_billing_information',
 				params: {
 					timezone: this.browserTimezone
 				},

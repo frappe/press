@@ -120,7 +120,7 @@ export default {
 	resources: {
 		updateBillingInformation() {
 			return {
-				method: 'press.api.account.update_billing_information',
+				url: 'press.api.account.update_billing_information',
 				params: {
 					billing_details: this.address
 				},
@@ -131,7 +131,7 @@ export default {
 		},
 		changePaymentMode() {
 			return {
-				method: 'press.api.billing.change_payment_mode',
+				url: 'press.api.billing.change_payment_mode',
 				params: {
 					mode: this.paymentMode
 				},
@@ -142,7 +142,7 @@ export default {
 		},
 		prepaidCredits() {
 			return {
-				method: 'press.api.billing.prepaid_credits_via_onboarding',
+				url: 'press.api.billing.prepaid_credits_via_onboarding',
 				onSuccess() {
 					this.showDialog = false;
 					this.$account.fetchAccount();

@@ -48,7 +48,7 @@ export default {
 	resources: {
 		feedback() {
 			return {
-				method: 'press.api.account.feedback',
+				url: 'press.api.account.feedback',
 				params: {
 					message: this.message,
 					route: this.$route.fullPath

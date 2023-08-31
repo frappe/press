@@ -33,9 +33,9 @@ export default {
 		requestCounter() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.analytics.daily_usage',
+				url: 'press.api.analytics.daily_usage',
 				params: { name: this.site?.name, timezone: localTimezone },
-				default: { data: [], plan_limit: 0 },
+				initialData: { data: [], plan_limit: 0 },
 				onSuccess(data) {
 					if (data.data.length > 0) {
 						this.$nextTick().then(() => this.makeChart());

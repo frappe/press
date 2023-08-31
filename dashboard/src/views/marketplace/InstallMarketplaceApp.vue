@@ -15,7 +15,7 @@
 					<ul v-if="options.sites?.length">
 						<li
 							v-for="site in options.sites"
-							class="flex w-full flex-row justify-between rounded-md py-2 px-1 text-left text-base hover:bg-gray-50"
+							class="flex w-full flex-row justify-between rounded-md px-1 py-2 text-left text-base hover:bg-gray-50"
 						>
 							<p>
 								{{ site }}
@@ -44,7 +44,7 @@
 					<ul v-if="options.release_groups?.length" class="space-y-3">
 						<li
 							v-for="bench in options.release_groups"
-							class="flex w-full flex-row justify-between rounded-md py-2 px-1 text-left text-base hover:bg-gray-50"
+							class="flex w-full flex-row justify-between rounded-md px-1 py-2 text-left text-base hover:bg-gray-50"
 						>
 							<p>
 								{{ bench.title }}
@@ -102,6 +102,7 @@
 
 <script>
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'InstallMarketplaceApp',
@@ -120,7 +121,7 @@ export default {
 	resources: {
 		optionsForQuickInstall() {
 			return {
-				method: 'press.api.marketplace.options_for_quick_install',
+				url: 'press.api.marketplace.options_for_quick_install',
 				params: {
 					marketplace_app: this.marketplaceApp
 				},
@@ -129,9 +130,9 @@ export default {
 		},
 		addAppToBench() {
 			return {
-				method: 'press.api.bench.add_app',
+				url: 'press.api.bench.add_app',
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: 'App added successfully!',
 						icon: 'check',
 						color: 'green'
@@ -143,14 +144,14 @@ export default {
 		},
 		installAppOnSite() {
 			return {
-				method: 'press.api.site.install_app',
+				url: 'press.api.site.install_app',
 				validate() {
 					if (this.showPlanSelectionDialog && !this.selectedPlan) {
 						return 'Please select a plan to continue';
 					}
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: 'App installed successfully!',
 						icon: 'check',
 						color: 'green'

@@ -124,6 +124,7 @@
 import CreateAppVersionDialog from '@/components/marketplace/CreateAppVersionDialog.vue';
 import ChangeAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
 import FileUploader from '@/components/FileUploader.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppProfile',
@@ -151,7 +152,7 @@ export default {
 			let { name, title } = this.app;
 
 			return {
-				method: 'press.api.marketplace.update_app_title',
+				url: 'press.api.marketplace.update_app_title',
 				params: {
 					name,
 					title
@@ -165,7 +166,7 @@ export default {
 		},
 		profileImageUrl() {
 			return {
-				method: 'press.api.marketplace.profile_image_url',
+				url: 'press.api.marketplace.profile_image_url',
 				params: {
 					app: this.app.name
 				}
@@ -173,13 +174,13 @@ export default {
 		},
 		removeVersion() {
 			return {
-				method: 'press.api.marketplace.remove_version',
+				url: 'press.api.marketplace.remove_version',
 				onSuccess() {
 					window.location.reload();
 				},
 				onError(e) {
-					this.$notify({
-						title: e,
+					notify({
+						title: e.messages.join('\n'),
 						color: 'red',
 						icon: 'x'
 					});
@@ -193,7 +194,7 @@ export default {
 			this.notifySuccess();
 		},
 		onAppImageUploadError(errorMessage) {
-			this.$notify({
+			notify({
 				title: errorMessage,
 				color: 'red',
 				icon: 'x'
@@ -225,7 +226,7 @@ export default {
 			];
 		},
 		notifySuccess() {
-			this.$notify({
+			notify({
 				title: 'App Profile Updated!',
 				icon: 'check',
 				color: 'green'

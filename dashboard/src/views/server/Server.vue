@@ -97,6 +97,7 @@
 
 <script>
 import Tabs from '@/components/Tabs.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Server',
@@ -119,23 +120,25 @@ export default {
 	resources: {
 		server() {
 			return {
-				method: 'press.api.server.get',
+				url: 'press.api.server.get',
 				params: {
 					name: this.serverName
 				},
 				auto: true,
-				onSuccess() {},
+				onSuccess() {
+					this.routeToGeneral();
+				},
 				onError: this.$routeTo404PageIfNotFound
 			};
 		},
 		reboot() {
 			return {
-				method: 'press.api.server.reboot',
+				url: 'press.api.server.reboot',
 				params: {
 					name: this.serverName
 				},
 				onSuccess(data) {
-					this.$notify({
+					notify({
 						title: 'Server Reboot Scheduled Successfully',
 						color: 'green',
 						icon: 'check'
@@ -143,22 +146,13 @@ export default {
 					this.$resources.server.reload();
 				},
 				onError() {
-					this.$notify({
+					notify({
 						title: 'An error occurred',
 						color: 'red',
 						icon: 'x'
 					});
 				}
 			};
-		}
-	},
-	activated() {
-		if (this.server) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.server.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
 		}
 	},
 	methods: {
@@ -213,7 +207,7 @@ export default {
 					icon: 'tool',
 					onClick: async () => {
 						await this.$account.switchTeam(this.server.team);
-						this.$notify({
+						notify({
 							title: 'Switched Team',
 							message: `Switched to ${this.server.team}`,
 							icon: 'check',

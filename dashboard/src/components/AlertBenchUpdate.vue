@@ -91,7 +91,7 @@ export default {
 	resources: {
 		deployInformation() {
 			return {
-				method: 'press.api.bench.deploy_information',
+				url: 'press.api.bench.deploy_information',
 				params: {
 					name: this.bench?.name
 				},
@@ -109,7 +109,7 @@ export default {
 			}
 
 			return {
-				method: 'press.api.bench.deploy',
+				url: 'press.api.bench.deploy',
 				params: {
 					name: this.bench?.name,
 					apps_to_ignore: appsToIgnore

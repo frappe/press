@@ -33,6 +33,7 @@
 
 <script>
 import SitePlansTable from '@/components/SitePlansTable.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'SitePlansDialog',
@@ -64,23 +65,23 @@ export default {
 	resources: {
 		plans() {
 			return {
-				method: 'press.api.site.get_plans',
+				url: 'press.api.site.get_plans',
 				params: {
 					name: this.site?.name
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		changePlan() {
 			return {
-				method: 'press.api.site.change_plan',
+				url: 'press.api.site.change_plan',
 				params: {
 					name: this.site?.name,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: `Plan changed to ${this.selectedPlan.plan_title}`,
 						icon: 'check',
 						color: 'green'
@@ -93,7 +94,7 @@ export default {
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
-					this.$notify({
+					notify({
 						title: error,
 						icon: 'x',
 						color: 'red'

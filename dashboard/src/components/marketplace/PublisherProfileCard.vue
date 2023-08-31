@@ -73,7 +73,7 @@ export default {
 	resources: {
 		updatePublisherProfile() {
 			return {
-				method: 'press.api.marketplace.update_publisher_profile',
+				url: 'press.api.marketplace.update_publisher_profile',
 				params: {
 					profile_data: {
 						display_name: this.displayName,

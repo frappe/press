@@ -62,6 +62,7 @@
 </template>
 <script>
 import EditPermissions from './EditPermissions.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'AccountMembers',
@@ -79,11 +80,11 @@ export default {
 	},
 	resources: {
 		addMember: {
-			method: 'press.api.account.add_team_member',
+			url: 'press.api.account.add_team_member',
 			onSuccess() {
 				this.showManageMemberDialog = false;
 				this.memberEmail = null;
-				this.$notify({
+				notify({
 					title: 'Invite Sent!',
 					message: 'They will receive an email shortly to join your team.',
 					color: 'green',
@@ -92,11 +93,11 @@ export default {
 			}
 		},
 		removeMember: {
-			method: 'press.api.account.remove_team_member',
+			url: 'press.api.account.remove_team_member',
 			onSuccess() {
 				this.showManageMemberDialog = false;
 				this.$account.fetchAccount();
-				this.$notify({
+				notify({
 					title: 'Team member removed.',
 					icon: 'check',
 					color: 'green'

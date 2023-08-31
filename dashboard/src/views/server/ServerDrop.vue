@@ -46,7 +46,7 @@ export default {
 	resources: {
 		dropServer() {
 			return {
-				method: 'press.api.server.archive',
+				url: 'press.api.server.archive',
 				params: {
 					name: this.server?.name
 				},

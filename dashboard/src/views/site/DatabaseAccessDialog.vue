@@ -77,7 +77,7 @@
 								Password: {{ databaseAccessInfo.credentials.password }}
 							</p>
 						</div>
-						<div class="pt-5 pb-2">
+						<div class="pb-2 pt-5">
 							<p class="mb-2 text-base font-semibold text-gray-700">
 								Using MariaDB Client
 							</p>
@@ -167,6 +167,7 @@
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import SitePlansTable from '@/components/SitePlansTable.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	props: ['site', 'show'],
@@ -186,7 +187,7 @@ export default {
 	resources: {
 		fetchDatabaseAccessInfo() {
 			return {
-				method: 'press.api.site.get_database_access_info',
+				url: 'press.api.site.get_database_access_info',
 				params: {
 					name: this.site
 				},
@@ -195,7 +196,7 @@ export default {
 		},
 		enableDatabaseAccess() {
 			return {
-				method: 'press.api.site.enable_database_access',
+				url: 'press.api.site.enable_database_access',
 				params: {
 					name: this.site,
 					mode: this.enableReadWriteAccess ? 'read_write' : 'read_only'
@@ -207,7 +208,7 @@ export default {
 		},
 		disableDatabaseAccess() {
 			return {
-				method: 'press.api.site.disable_database_access',
+				url: 'press.api.site.disable_database_access',
 				params: {
 					name: this.site
 				},
@@ -218,23 +219,23 @@ export default {
 		},
 		plans() {
 			return {
-				method: 'press.api.site.get_plans',
+				url: 'press.api.site.get_plans',
 				params: {
 					name: this.site
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		changePlan() {
 			return {
-				method: 'press.api.site.change_plan',
+				url: 'press.api.site.change_plan',
 				params: {
 					name: this.site,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: `Plan changed to ${this.selectedPlan.plan_title}`,
 						icon: 'check',
 						color: 'green'
@@ -246,7 +247,7 @@ export default {
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
-					this.$notify({
+					notify({
 						title: error,
 						icon: 'x',
 						color: 'red'

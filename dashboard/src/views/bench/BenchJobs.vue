@@ -18,13 +18,16 @@ export default {
 		AgentJobs
 	},
 	methods: {
-		jobResource(start) {
+		jobResource() {
 			return {
-				method: 'press.api.bench.jobs',
-				params: { name: this.bench?.name, start },
+				type: 'list',
+				doctype: 'Agent Job',
+				url: 'press.api.bench.jobs',
+				filters: { name: this.bench?.name },
 				auto: true,
-				pageLength: 10,
-				keepData: true
+				orderBy: 'creation desc',
+				start: 0,
+				pageLength: 10
 			};
 		},
 		jobRoute(job) {

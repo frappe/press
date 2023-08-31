@@ -285,7 +285,7 @@ export default {
 	resources: {
 		allSites() {
 			return {
-				method: 'press.api.site.all',
+				url: 'press.api.site.all',
 				params: { site_filter: this.siteFilter },
 				auto: true,
 				onSuccess: data => {
@@ -295,9 +295,9 @@ export default {
 				}
 			};
 		},
-		siteTags: 'press.api.site.site_tags',
+		siteTags: { url: 'press.api.site.site_tags', auto: true },
 		latestUnpaidInvoice: {
-			method: 'press.api.billing.get_latest_unpaid_invoice',
+			url: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
 		},
 		loginAsAdmin() {

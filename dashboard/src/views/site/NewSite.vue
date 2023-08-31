@@ -222,7 +222,7 @@ export default {
 	resources: {
 		newSite() {
 			return {
-				method: 'press.api.site.new',
+				url: 'press.api.site.new',
 				params: {
 					site: {
 						name: this.subdomain,

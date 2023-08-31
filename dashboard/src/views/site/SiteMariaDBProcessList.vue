@@ -59,19 +59,19 @@ export default {
 	resources: {
 		processList() {
 			return {
-				method: 'press.api.analytics.mariadb_processlist',
+				url: 'press.api.analytics.mariadb_processlist',
 				params: {
 					site: this.site?.name
 				},
 				auto: true,
 				pageLength: this.max_lines,
 				keepData: true,
-				default: []
+				initialData: []
 			};
 		},
 		getPlan() {
 			return {
-				method: 'press.api.site.current_plan',
+				url: 'press.api.site.current_plan',
 				params: {
 					name: this.site?.name
 				},

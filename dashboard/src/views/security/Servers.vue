@@ -104,7 +104,7 @@ export default {
 	resources: {
 		allServers() {
 			return {
-				method: 'press.api.security.get_servers',
+				url: 'press.api.security.get_servers',
 				params: { server_filter: this.serverFilter },
 				auto: true,
 				onSuccess: data => {

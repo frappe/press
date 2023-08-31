@@ -477,14 +477,14 @@ def versions(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def candidates(name, start=0):
+def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	result = frappe.get_all(
 		"Deploy Candidate",
 		["name", "creation", "status"],
-		{"group": name, "status": ("!=", "Draft")},
+		{"group": filters["group"], "status": ("!=", "Draft")},
 		order_by="creation desc",
-		start=start,
-		limit=10,
+		start=limit_start,
+		limit=limit_page_length,
 	)
 	candidates = OrderedDict()
 	for d in result:
@@ -607,15 +607,16 @@ def create_deploy_candidate(name, apps_to_ignore=[]):
 
 @frappe.whitelist()
 @protected("Release Group")
-def jobs(name, start=0):
-	benches = frappe.get_all("Bench", {"group": name}, pluck="name")
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	benches = frappe.get_all("Bench", {"group": filters["name"]}, pluck="name")
 	if benches:
 		jobs = frappe.get_all(
 			"Agent Job",
 			fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
 			filters={"bench": ("in", benches)},
-			start=start,
-			limit=10,
+			order_by=order_by,
+			start=limit_start,
+			limit=limit_page_length,
 			ignore_ifnull=True,
 		)
 	else:

@@ -65,6 +65,7 @@ import Tabs from '@/components/Tabs.vue';
 import AlertUpdate from '@/components/AlertUpdate.vue';
 import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
 import EditBenchTitleDialog from './EditBenchTitleDialog.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Bench',
@@ -90,7 +91,7 @@ export default {
 	resources: {
 		bench() {
 			return {
-				method: 'press.api.bench.get',
+				url: 'press.api.bench.get',
 				params: {
 					name: this.benchName
 				},
@@ -100,7 +101,7 @@ export default {
 		},
 		updateAllSites() {
 			return {
-				method: 'press.api.bench.update_all_sites',
+				url: 'press.api.bench.update_all_sites',
 				params: {
 					bench_name: this.benchName
 				}
@@ -192,7 +193,7 @@ export default {
 					condition: () => this.$account.user.user_type == 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
-						this.$notify({
+						notify({
 							title: 'Switched Team',
 							message: `Switched to ${this.bench.team}`,
 							icon: 'check',
@@ -206,7 +207,7 @@ export default {
 					condition: () => this.bench.status == 'Active' && !this.bench.public,
 					onClick: async () => {
 						await this.$resources.updateAllSites.submit();
-						this.$notify({
+						notify({
 							title: 'Site update scheduled successfully',
 							message:
 								'All sites in this bench will be updated to the latest version',

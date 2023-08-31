@@ -80,6 +80,8 @@
 import BenchAppUpdates from './BenchAppUpdates.vue';
 import BenchSiteUpdates from './BenchSiteUpdates.vue';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
@@ -100,7 +102,7 @@ export default {
 	resources: {
 		deployInformation() {
 			return {
-				method: 'press.api.bench.deploy_information',
+				url: 'press.api.bench.deploy_information',
 				params: {
 					name: this.bench?.name
 				},
@@ -118,7 +120,7 @@ export default {
 			}
 
 			return {
-				method: 'press.api.bench.deploy_and_update',
+				url: 'press.api.bench.deploy_and_update',
 				params: {
 					name: this.bench?.name,
 					apps_to_ignore: appsToIgnore,
@@ -134,7 +136,7 @@ export default {
 				},
 				onSuccess() {
 					this.showDeployDialog = false;
-					this.$notify({
+					notify({
 						title: 'Updates scheduled successfully',
 						icon: 'check',
 						color: 'green'

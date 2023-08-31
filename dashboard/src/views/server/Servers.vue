@@ -202,7 +202,7 @@ export default {
 	resources: {
 		allServers() {
 			return {
-				method: 'press.api.server.all',
+				url: 'press.api.server.all',
 				params: { server_filter: this.serverFilter },
 				auto: true,
 				onSuccess: data => {
@@ -212,7 +212,7 @@ export default {
 				}
 			};
 		},
-		serverTags: 'press.api.server.server_tags'
+		serverTags: { url: 'press.api.server.server_tags', auto: true }
 	},
 	methods: {
 		dropdownItems(server) {

@@ -28,15 +28,15 @@ export default {
 	methods: {
 		siteConfig() {
 			return {
-				method: 'press.api.site.site_config',
+				url: 'press.api.site.site_config',
 				params: { name: this.site?.name },
 				auto: true,
-				default: []
+				initialData: []
 			};
 		},
 		updateSiteConfig(updatedConfig) {
 			return {
-				method: 'press.api.site.update_config',
+				url: 'press.api.site.update_config',
 				params: {
 					name: this.site?.name,
 					config: JSON.stringify(updatedConfig)

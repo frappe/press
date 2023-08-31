@@ -78,6 +78,7 @@
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Login',
@@ -110,7 +111,7 @@ export default {
 	resources: {
 		login() {
 			return {
-				method: 'login',
+				url: 'login',
 				params: {
 					usr: this.email,
 					pwd: this.password
@@ -126,13 +127,13 @@ export default {
 		},
 		oauthLogin() {
 			return {
-				method: 'press.api.oauth.google_login',
+				url: 'press.api.oauth.google_login',
 				onSuccess(r) {
 					window.location = r;
 				},
 				onError(e) {
 					this.state = null;
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'
@@ -142,7 +143,7 @@ export default {
 		},
 		guestFeatureFlags() {
 			return {
-				method: 'press.api.account.guest_feature_flags',
+				url: 'press.api.account.guest_feature_flags',
 				auto: true
 			};
 		}

@@ -50,12 +50,12 @@ export default {
 	resources: {
 		branches() {
 			return {
-				method: 'press.api.bench.branch_list'
+				url: 'press.api.bench.branch_list'
 			};
 		},
 		changeBranch() {
 			return {
-				method: 'press.api.bench.change_branch',
+				url: 'press.api.bench.change_branch',
 				onSuccess() {
 					window.location.reload();
 				},

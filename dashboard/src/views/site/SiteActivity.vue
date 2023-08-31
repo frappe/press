@@ -12,11 +12,11 @@
 				:description="getDescription(a)"
 			/>
 		</div>
-		<div class="my-2" v-if="!$resources.activities.lastPageEmpty">
+		<div class="my-2" v-if="$resources.activities.hasNextPage">
 			<Button
 				:loading="$resources.activities.loading"
 				loadingText="Fetching..."
-				@click="pageStart += 20"
+				@click="$resources.activities.next()"
 			>
 				Load more
 			</Button>
@@ -49,32 +49,35 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteActivity',
 	props: ['site'],
 	resources: {
 		activities() {
 			return {
-				method: 'press.api.site.activities',
-				params: {
-					name: this.site?.name,
-					start: this.pageStart
+				type: 'list',
+				doctype: 'Site Activity',
+				url: 'press.api.site.activities',
+				filters: {
+					site: this.site?.name
 				},
+				start: 0,
 				auto: true,
-				pageLength: 20,
-				keepData: true
+				pageLength: 20
 			};
 		},
 		changeNotifyEmail() {
 			return {
-				method: 'press.api.site.change_notify_email',
+				url: 'press.api.site.change_notify_email',
 				params: {
 					name: this.site?.name,
 					email: this.site?.notify_email
 				},
 				onSuccess() {
 					this.showChangeNotifyEmailDialog = false;
-					this.$notify({
+					notify({
 						title: 'Notify Email Changed!',
 						icon: 'check',
 						color: 'green'
@@ -90,7 +93,6 @@ export default {
 	},
 	data() {
 		return {
-			pageStart: 0,
 			showChangeNotifyEmailDialog: false
 		};
 	},

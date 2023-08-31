@@ -462,32 +462,6 @@ def plans(name, cluster=None):
 
 
 @frappe.whitelist()
-@protected(["Server", "Database Server"])
-def jobs(name, start=0):
-	jobs = frappe.get_all(
-		"Agent Job",
-		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return jobs
-
-
-@frappe.whitelist()
-@protected(["Server", "Database Server"])
-def plays(name, start=0):
-	plays = frappe.get_all(
-		"Ansible Play",
-		fields=["name", "play", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return plays
-
-
-@frappe.whitelist()
 def play(play):
 	play = frappe.get_doc("Ansible Play", play)
 	play = play.as_dict()

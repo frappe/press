@@ -29,7 +29,7 @@ export default {
 	resources: {
 		recentDeploys() {
 			return {
-				method: 'press.api.bench.recent_deploys',
+				url: 'press.api.bench.recent_deploys',
 				params: {
 					name: this.bench?.name
 				},

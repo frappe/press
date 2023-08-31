@@ -208,7 +208,7 @@ export default {
 	resources: {
 		getSiteAutoUpdateInfo() {
 			return {
-				method: 'press.api.site.get_auto_update_info',
+				url: 'press.api.site.get_auto_update_info',
 				params: {
 					name: this.site?.name
 				},
@@ -226,7 +226,7 @@ export default {
 		},
 		enableAutoUpdate() {
 			return {
-				method: 'press.api.site.enable_auto_update',
+				url: 'press.api.site.enable_auto_update',
 				params: {
 					name: this.site?.name
 				},
@@ -237,7 +237,7 @@ export default {
 		},
 		disableAutoUpdate() {
 			return {
-				method: 'press.api.site.disable_auto_update',
+				url: 'press.api.site.disable_auto_update',
 				params: {
 					name: this.site?.name
 				},
@@ -249,7 +249,7 @@ export default {
 		},
 		updateAutoUpdateInfo() {
 			return {
-				method: 'press.api.site.update_auto_update_info',
+				url: 'press.api.site.update_auto_update_info',
 				params: {
 					name: this.site?.name,
 					info: {

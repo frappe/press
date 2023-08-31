@@ -61,6 +61,7 @@
 
 <script>
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'EditPermissions',
@@ -74,7 +75,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.account.get_permission_options',
+				url: 'press.api.account.get_permission_options',
 				auto: true,
 				params: {
 					name: this.name,
@@ -91,14 +92,14 @@ export default {
 		},
 		updatePermissions() {
 			return {
-				method: 'press.api.account.update_permissions',
+				url: 'press.api.account.update_permissions',
 				params: {
 					user: this.name,
 					ptype: this.type,
 					updated: this.updated
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: 'Permissions Updated',
 						color: 'green',
 						icon: 'check'

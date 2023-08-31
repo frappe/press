@@ -32,7 +32,7 @@ export default {
 	resources: {
 		editTitle() {
 			return {
-				method: 'press.api.bench.rename',
+				url: 'press.api.bench.rename',
 				params: {
 					name: this.bench?.name,
 					title: this.benchTitle

@@ -124,7 +124,7 @@ export default {
 	resources: {
 		marketplaceSubscriptions() {
 			return {
-				method: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
+				url: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
 				params: {
 					site: this.site?.name
 				},
@@ -134,7 +134,7 @@ export default {
 
 		changePlan() {
 			return {
-				method: 'press.api.marketplace.change_app_plan',
+				url: 'press.api.marketplace.change_app_plan',
 				onSuccess() {
 					this.showAppPlanChangeDialog = false;
 					this.$resources.marketplaceSubscriptions.fetch();

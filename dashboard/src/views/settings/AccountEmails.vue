@@ -44,7 +44,7 @@ export default {
 	resources: {
 		getEmails() {
 			return {
-				method: 'press.api.account.get_emails',
+				url: 'press.api.account.get_emails',
 				auto: true,
 				onSuccess(res) {
 					this.emailData = res;
@@ -53,7 +53,7 @@ export default {
 		},
 		changeEmail() {
 			return {
-				method: 'press.api.account.update_emails',
+				url: 'press.api.account.update_emails',
 				params: {
 					data: JSON.stringify(this.emailData)
 				},

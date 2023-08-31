@@ -38,6 +38,7 @@
 
 <script>
 import AddressForm from '@/components/AddressForm.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'UpdateBillingDetails',
@@ -61,7 +62,7 @@ export default {
 	},
 	resources: {
 		currentBillingInformation: {
-			method: 'press.api.account.get_billing_information',
+			url: 'press.api.account.get_billing_information',
 			auto: true,
 			onSuccess(billingInformation) {
 				if ('country' in (billingInformation || {})) {
@@ -82,13 +83,13 @@ export default {
 		},
 		updateBillingInformation() {
 			return {
-				method: 'press.api.account.update_billing_information',
+				url: 'press.api.account.update_billing_information',
 				params: {
 					billing_details: this.billingInformation
 				},
 				onSuccess() {
 					this.$emit('update:show', false);
-					this.$notify({
+					notify({
 						title: 'Address updated successfully!'
 					});
 					this.$emit('updated');

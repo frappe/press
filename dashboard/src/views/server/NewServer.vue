@@ -146,7 +146,7 @@ export default {
 	resources: {
 		newServer() {
 			return {
-				method: 'press.api.server.new',
+				url: 'press.api.server.new',
 				params: {
 					server: {
 						title: this.title,

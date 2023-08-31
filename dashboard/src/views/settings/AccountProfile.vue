@@ -166,6 +166,8 @@
 </template>
 <script>
 import FileUploader from '@/components/FileUploader.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountProfile',
 	components: {
@@ -188,7 +190,7 @@ export default {
 		updateProfile() {
 			let { first_name, last_name, email } = this.$account.user;
 			return {
-				method: 'press.api.account.update_profile',
+				url: 'press.api.account.update_profile',
 				params: {
 					first_name,
 					last_name,
@@ -201,9 +203,9 @@ export default {
 			};
 		},
 		disableAccount: {
-			method: 'press.api.account.disable_account',
+			url: 'press.api.account.disable_account',
 			onSuccess() {
-				this.$notify({
+				notify({
 					title: 'Account disabled',
 					message: 'Your account was disabled successfully',
 					icon: 'check',
@@ -214,9 +216,9 @@ export default {
 			}
 		},
 		enableAccount: {
-			method: 'press.api.account.enable_account',
+			url: 'press.api.account.enable_account',
 			onSuccess() {
-				this.$notify({
+				notify({
 					title: 'Account enabled',
 					message: 'Your account was enabled successfully',
 					icon: 'check',
@@ -228,7 +230,7 @@ export default {
 		},
 		isDeveloperAccountAllowed() {
 			return {
-				method: 'press.api.marketplace.developer_toggle_allowed',
+				url: 'press.api.marketplace.developer_toggle_allowed',
 				auto: true,
 				onSuccess(data) {
 					if (data) {
@@ -239,7 +241,7 @@ export default {
 		},
 		becomePublisher() {
 			return {
-				method: 'press.api.marketplace.become_publisher',
+				url: 'press.api.marketplace.become_publisher',
 				onSuccess() {
 					this.$router.push('/marketplace');
 				}
@@ -252,7 +254,7 @@ export default {
 			this.notifySuccess();
 		},
 		notifySuccess() {
-			this.$notify({
+			notify({
 				title: 'Updated profile information',
 				icon: 'check',
 				color: 'green'

@@ -1,11 +1,16 @@
 <template>
 	<Dialog
-		:options="{ title: 'Create Code Server', actions:[{
-			label: 'Create',
-			variant: 'solid',
-			loading: $resources.newCodeServer.loading,
-			onClick: () => $resources.newCodeServer.submit()
-		}] }"
+		:options="{
+			title: 'Create Code Server',
+			actions: [
+				{
+					label: 'Create',
+					variant: 'solid',
+					loading: $resources.newCodeServer.loading,
+					onClick: () => $resources.newCodeServer.submit()
+				}
+			]
+		}"
 		:modelValue="show"
 		@after-leave="
 			() => {
@@ -98,7 +103,7 @@ export default {
 	resources: {
 		newCodeServer() {
 			return {
-				method: 'press.api.spaces.create_code_server',
+				url: 'press.api.spaces.create_code_server',
 				params: {
 					subdomain: this.subdomain,
 					bench: this.version,

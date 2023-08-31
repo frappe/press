@@ -231,6 +231,7 @@ import TableCell from '@/components/Table/TableCell.vue';
 import CommitTag from '@/components/utils/CommitTag.vue';
 import CodeServer from '@/views/spaces/CreateCodeServerDialog.vue';
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'BenchSites',
@@ -259,7 +260,7 @@ export default {
 	resources: {
 		versions() {
 			return {
-				method: 'press.api.bench.versions',
+				url: 'press.api.bench.versions',
 				params: {
 					name: this.benchName
 				},
@@ -271,14 +272,14 @@ export default {
 		},
 		getCertificate() {
 			return {
-				method: 'press.api.bench.certificate',
+				url: 'press.api.bench.certificate',
 				params: { name: this.bench?.name },
 				auto: true
 			};
 		},
 		generateCertificate() {
 			return {
-				method: 'press.api.bench.generate_certificate',
+				url: 'press.api.bench.generate_certificate',
 				params: { name: this.bench?.name },
 				onSuccess() {
 					this.$resources.getCertificate.reload();
@@ -287,7 +288,7 @@ export default {
 		},
 		restartBench() {
 			return {
-				method: 'press.api.bench.restart',
+				url: 'press.api.bench.restart',
 				params: {
 					bench: this.versions[this.selectedVersionIndex]?.name
 				}
@@ -295,7 +296,7 @@ export default {
 		},
 		updateAllSites() {
 			return {
-				method: 'press.api.bench.update',
+				url: 'press.api.bench.update',
 				params: {
 					bench: this.versions[this.selectedVersionIndex]?.name
 				}
@@ -361,7 +362,7 @@ export default {
 						onClick: () => {
 							this.selectedVersionIndex = i;
 							this.$resources.updateAllSites.submit();
-							this.$notify({
+							notify({
 								title: 'Site update scheduled successfully',
 								message: `All sites in ${this.versions[i]?.name} will be updated to the latest version`,
 								icon: 'check',

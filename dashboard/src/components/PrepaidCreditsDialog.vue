@@ -126,7 +126,7 @@ export default {
 	resources: {
 		createRazorpayOrder() {
 			return {
-				method: 'press.api.billing.create_razorpay_order',
+				url: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.creditsToBuy
 				},
@@ -142,7 +142,7 @@ export default {
 		},
 		handlePaymentSuccess() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_success',
+				url: 'press.api.billing.handle_razorpay_payment_success',
 				onSuccess() {
 					this.$emit('success');
 				}
@@ -150,7 +150,7 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_failed',
+				url: 'press.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
 				}

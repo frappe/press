@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="text-sm cursor-pointer w-fit mb-8"
+		class="mb-8 w-fit cursor-pointer text-sm"
 		v-on:click="$emit('update:step', 1)"
 	>
 		← Back to Apps
@@ -36,10 +36,10 @@
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
 							</span>
 						</span>
-          </div>
-        </h4>
+					</div>
+				</h4>
 
-			  <FeatureList class="my-5" :features="plan.features" />
+				<FeatureList class="my-5" :features="plan.features" />
 			</div>
 			<Button variant="solid" @click="selectPlan(plan)"> Buy Now </Button>
 		</div>
@@ -66,7 +66,7 @@ export default {
 	resources: {
 		plans() {
 			return {
-				method: 'press.api.developer.marketplace.get_plans',
+				url: 'press.api.developer.marketplace.get_plans',
 				params: {
 					secret_key: this.secretKey,
 					subscription: this.selectedSubscription.name
@@ -76,7 +76,7 @@ export default {
 		},
 		sendLoginLink() {
 			return {
-				method: 'press.api.developer.marketplace.send_login_link',
+				url: 'press.api.developer.marketplace.send_login_link',
 				params: {
 					secret_key: this.secretKey
 				},

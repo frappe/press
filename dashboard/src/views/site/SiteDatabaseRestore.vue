@@ -223,7 +223,7 @@ export default {
 	resources: {
 		restoreBackup() {
 			return {
-				method: 'press.api.site.restore',
+				url: 'press.api.site.restore',
 				params: {
 					name: this.site?.name,
 					files: this.selectedFiles,
@@ -245,7 +245,7 @@ export default {
 		},
 		resetDatabase() {
 			return {
-				method: 'press.api.site.reinstall',
+				url: 'press.api.site.reinstall',
 				params: {
 					name: this.site?.name
 				},
@@ -259,7 +259,7 @@ export default {
 		},
 		migrateDatabase() {
 			return {
-				method: 'press.api.site.migrate',
+				url: 'press.api.site.migrate',
 				params: {
 					name: this.site?.name
 				},
@@ -276,7 +276,7 @@ export default {
 		},
 		clearCache() {
 			return {
-				method: 'press.api.site.clear_cache',
+				url: 'press.api.site.clear_cache',
 				params: {
 					name: this.site?.name
 				},

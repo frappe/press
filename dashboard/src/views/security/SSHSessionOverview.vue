@@ -1,5 +1,5 @@
 <template>
-	<Card class="min-h-full h-full max-h-96" title="SSH Activity Log">
+	<Card class="h-full max-h-96 min-h-full" title="SSH Activity Log">
 		<div class="divide-y">
 			<router-link
 				v-for="log in $resources.sshLogs.data"
@@ -35,12 +35,11 @@ export default {
 	resources: {
 		sshLogs() {
 			return {
-				method: 'press.api.security.fetch_ssh_session_logs',
+				url: 'press.api.security.fetch_ssh_session_logs',
 				params: {
 					server: this.server?.name
 				},
-				auto: true,
-				keepData: true
+				auto: true
 			};
 		}
 	},

@@ -20,7 +20,7 @@
 				<LoadingText />
 			</div>
 			<div
-				class="py-2 content-center text-base"
+				class="content-center py-2 text-base"
 				v-if="
 					!$resources.deadlockReport.loading &&
 					$resources.deadlockReport.data.length == 0
@@ -82,7 +82,7 @@ export default {
 	resources: {
 		deadlockReport() {
 			return {
-				method: 'press.api.analytics.deadlock_report',
+				url: 'press.api.analytics.deadlock_report',
 				params: {
 					site: this.site?.name,
 					start: this.startTime || this.today,
@@ -92,12 +92,12 @@ export default {
 				auto: true,
 				pageLength: 10,
 				keepData: true,
-				default: []
+				initialData: []
 			};
 		},
 		getPlan() {
 			return {
-				method: 'press.api.site.current_plan',
+				url: 'press.api.site.current_plan',
 				params: {
 					name: this.site?.name
 				},

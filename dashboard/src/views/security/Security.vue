@@ -56,23 +56,16 @@ export default {
 	resources: {
 		server() {
 			return {
-				method: 'press.api.server.get',
+				url: 'press.api.server.get',
 				params: {
 					name: this.serverName
 				},
 				auto: true,
-				onSuccess() {},
+				onSuccess() {
+					this.routeToGeneral();
+				},
 				onError: this.$routeTo404PageIfNotFound
 			};
-		}
-	},
-	activated() {
-		if (this.server) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.server.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
 		}
 	},
 	methods: {

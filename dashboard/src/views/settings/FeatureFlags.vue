@@ -54,7 +54,7 @@ export default {
 	resources: {
 		updateFeatureFlags() {
 			return {
-				method: 'press.api.account.update_feature_flags',
+				url: 'press.api.account.update_feature_flags',
 				params: {
 					values: this.values
 				},

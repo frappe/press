@@ -88,6 +88,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountTeam',
 	data() {
@@ -112,17 +114,17 @@ export default {
 	resources: {
 		leaveTeam() {
 			return {
-				method: 'press.api.account.leave_team',
+				url: 'press.api.account.leave_team',
 				onSuccess() {
 					this.$account.fetchAccount();
-					this.$notify({
+					notify({
 						title: 'Successfully Left Team',
 						icon: 'check',
 						color: 'green'
 					});
 				},
 				onError() {
-					this.$notify({
+					notify({
 						title: 'Cannot leave this Team.',
 						icon: 'x',
 						color: 'red'
@@ -132,12 +134,12 @@ export default {
 		},
 		addChildTeam() {
 			return {
-				method: 'press.api.account.create_child_team',
+				url: 'press.api.account.create_child_team',
 				onSuccess(data) {
 					this.showManageTeamDialog = false;
 					this.childTeamTitle = null;
 					this.$account.fetchAccount();
-					this.$notify({
+					notify({
 						title: this.newChildTeamTitle,
 						message: this.newChildTeamMessage,
 						color: 'green',
@@ -148,7 +150,7 @@ export default {
 		},
 		removeMember() {
 			return {
-				method: 'press.api.account.remove_child_team',
+				url: 'press.api.account.remove_child_team',
 				onSuccess() {
 					this.$account.fetchAccount();
 				}

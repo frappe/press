@@ -97,7 +97,7 @@ export default {
 	resources: {
 		benches() {
 			return {
-				method: 'press.api.server.groups',
+				url: 'press.api.server.groups',
 				params: {
 					name: this.server?.name
 				},

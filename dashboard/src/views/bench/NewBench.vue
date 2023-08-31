@@ -120,8 +120,8 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.bench.options',
-				default: {
+				url: 'press.api.bench.options',
+				initialData: {
 					versions: [],
 					clusters: []
 				},
@@ -138,7 +138,7 @@ export default {
 		},
 		createBench() {
 			return {
-				method: 'press.api.bench.new',
+				url: 'press.api.bench.new',
 				params: {
 					bench: {
 						title: this.benchTitle,

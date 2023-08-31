@@ -84,7 +84,7 @@ export default {
 	resources: {
 		createPaymentIntent() {
 			return {
-				method: 'press.api.billing.create_payment_intent_for_buying_credits',
+				url: 'press.api.billing.create_payment_intent_for_buying_credits',
 				params: {
 					amount: this.creditsToBuy
 				},

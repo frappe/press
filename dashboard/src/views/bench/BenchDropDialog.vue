@@ -42,7 +42,7 @@ export default {
 	resources: {
 		dropBench() {
 			return {
-				method: 'press.api.bench.archive',
+				url: 'press.api.bench.archive',
 				params: {
 					name: this.bench?.name
 				},

@@ -178,10 +178,13 @@ export default {
 		)
 	},
 	resources: {
-		paymentMethods: 'press.api.billing.get_payment_methods',
+		paymentMethods: {
+			url: 'press.api.billing.get_payment_methods',
+			auto: true
+		},
 		allBenches() {
 			return {
-				method: 'press.api.bench.all',
+				url: 'press.api.bench.all',
 				params: { bench_filter: this.benchFilter },
 				auto: true,
 				onSuccess: data => {
@@ -191,7 +194,10 @@ export default {
 				}
 			};
 		},
-		benchTags: 'press.api.bench.bench_tags'
+		benchTags: {
+			url: 'press.api.bench.bench_tags',
+			auto: true
+		}
 	},
 	computed: {
 		benches() {

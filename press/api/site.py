@@ -253,20 +253,6 @@ def get_app_subscriptions(app_plans, team: str):
 
 
 @frappe.whitelist()
-@protected("Site")
-def jobs(name, start=0):
-	jobs = frappe.get_all(
-		"Agent Job",
-		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"site": name},
-		start=start,
-		limit=10,
-		order_by="creation desc",
-	)
-	return jobs
-
-
-@frappe.whitelist()
 def job(job):
 	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
@@ -376,25 +362,25 @@ def domains(name):
 
 
 @frappe.whitelist()
-def activities(name, start=0, limit=20):
+def activities(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	# get all site activity except Backup by Administrator
-	activities = frappe.db.sql(
-		"""
-		SELECT action, reason, creation, owner
-		FROM `tabSite Activity`
-		WHERE site = %(site)s
-		AND (action != 'Backup' or owner != 'Administrator')
-		ORDER BY creation desc
-		LIMIT %(limit)s
-		OFFSET %(start)s
-	""",
-		values={"site": name, "limit": limit, "start": start},
-		as_dict=1,
+	SiteActivity = frappe.qb.DocType("Site Activity")
+	activities = (
+		frappe.qb.from_(SiteActivity)
+		.select(
+			SiteActivity.action, SiteActivity.reason, SiteActivity.creation, SiteActivity.owner
+		)
+		.where(SiteActivity.site == filters["site"])
+		.where((SiteActivity.action != "Backup") | (SiteActivity.owner != "Administrator"))
+		.orderby(SiteActivity.creation, order=frappe.qb.desc)
+		.offset(limit_start)
+		.limit(limit_page_length)
+		.run(as_dict=True)
 	)
 
 	for activity in activities:
 		if activity.action == "Create":
-			activity.action = "Site created"
+			activity.action = "Site Created"
 
 	return activities
 

@@ -248,6 +248,7 @@ import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
 import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'SiteOverviewApps',
@@ -276,7 +277,7 @@ export default {
 	resources: {
 		marketplaceSubscriptions() {
 			return {
-				method: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
+				url: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
 				params: {
 					site: this.site?.name
 				},
@@ -286,14 +287,14 @@ export default {
 
 		changePlan() {
 			return {
-				method: 'press.api.marketplace.change_app_plan',
+				url: 'press.api.marketplace.change_app_plan',
 				onSuccess() {
 					this.showAppPlanChangeDialog = false;
 					this.$resources.marketplaceSubscriptions.fetch();
 				},
 				onError(e) {
 					this.showAppPlanChangeDialog = false;
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'
@@ -304,7 +305,7 @@ export default {
 
 		installedApps() {
 			return {
-				method: 'press.api.site.installed_apps',
+				url: 'press.api.site.installed_apps',
 				params: { name: this.site?.name },
 				auto: true
 			};
@@ -312,14 +313,14 @@ export default {
 
 		availableApps() {
 			return {
-				method: 'press.api.site.available_apps',
+				url: 'press.api.site.available_apps',
 				params: { name: this.site?.name }
 			};
 		},
 
 		installApp() {
 			return {
-				method: 'press.api.site.install_app',
+				url: 'press.api.site.install_app',
 				params: {
 					name: this.site?.name,
 					app: this.appToInstall?.app,
@@ -339,7 +340,7 @@ export default {
 		},
 
 		uninstallApp: {
-			method: 'press.api.site.uninstall_app',
+			url: 'press.api.site.uninstall_app',
 			onSuccess() {
 				this.$emit('app-uninstalled');
 			}

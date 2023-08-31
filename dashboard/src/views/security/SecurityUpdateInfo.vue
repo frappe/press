@@ -2,7 +2,7 @@
 	<CardDetails :showDetails="showDetails">
 		<div class="px-6 py-5">
 			<template v-if="showDetails">
-				<div class="flex justify-between items-center">
+				<div class="flex items-center justify-between">
 					<div>
 						<h4 class="text-lg font-medium">
 							Package: {{ secUpdateInfo.package }}
@@ -16,7 +16,7 @@
 							class="mr-4"
 							@click="redirectToUbuntuPage(secUpdateInfo.package)"
 						>
-							<span class="text-blue-600 text-base">More Info</span>
+							<span class="text-base text-blue-600">More Info</span>
 						</button>
 
 						<Badge
@@ -31,12 +31,12 @@
 			</template>
 			<div v-else>
 				<LoadingText v-if="loading" />
-				<span v-else class="text-base text-gray-600 text-center">
+				<span v-else class="text-center text-base text-gray-600">
 					No item selected
 				</span>
 			</div>
 		</div>
-		<div class="flex-auto px-6 overflow-auto" v-if="showDetails">
+		<div class="flex-auto overflow-auto px-6" v-if="showDetails">
 			<InfoSection
 				sectionName="Package Meta"
 				:sectionData="secUpdateInfo.package_meta"
@@ -64,9 +64,8 @@ export default {
 	resources: {
 		secUpdateInfo() {
 			return {
-				method: 'press.api.security.get_security_update_details',
+				url: 'press.api.security.get_security_update_details',
 				params: { update_id: this.updateId },
-				keepData: true,
 				auto: true
 			};
 		}

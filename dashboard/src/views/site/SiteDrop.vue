@@ -55,7 +55,7 @@ export default {
 	resources: {
 		dropSite() {
 			return {
-				method: 'press.api.site.archive',
+				url: 'press.api.site.archive',
 				params: {
 					name: this.site?.name,
 					force: this.site.archive_failed == true ? true : this.forceDrop

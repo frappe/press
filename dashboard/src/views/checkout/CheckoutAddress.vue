@@ -153,7 +153,7 @@ export default {
 	resources: {
 		updateBillingDetails() {
 			return {
-				method: 'press.api.developer.marketplace.update_billing_info',
+				url: 'press.api.developer.marketplace.update_billing_info',
 				params: {
 					secret_key: this.secretKey,
 					data: {
@@ -171,7 +171,6 @@ export default {
 				}
 			};
 		}
-	},
-	methods: {}
+	}
 };
 </script>

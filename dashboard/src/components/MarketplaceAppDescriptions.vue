@@ -100,6 +100,7 @@
 
 <script>
 import MarkdownIt from 'markdown-it';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppDescriptions',
@@ -116,7 +117,7 @@ export default {
 		updateAppSummary() {
 			let { name, description } = this.app;
 			return {
-				method: 'press.api.marketplace.update_app_summary',
+				url: 'press.api.marketplace.update_app_summary',
 				params: {
 					name,
 					summary: description
@@ -130,7 +131,7 @@ export default {
 		updateAppDescription() {
 			let { name, long_description } = this.app;
 			return {
-				method: 'press.api.marketplace.update_app_description',
+				url: 'press.api.marketplace.update_app_description',
 				params: {
 					name,
 					description: long_description
@@ -143,10 +144,10 @@ export default {
 		},
 		fetchReadme() {
 			return {
-				method: 'press.api.marketplace.fetch_readme',
+				url: 'press.api.marketplace.fetch_readme',
 				params: { name: this.app.name },
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: 'Successfully fetched latest readme',
 						message: 'Long description updated!',
 						icon: 'check',
@@ -154,7 +155,7 @@ export default {
 					});
 				},
 				onError(e) {
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'
@@ -173,7 +174,7 @@ export default {
 	},
 	methods: {
 		notifySuccess(message) {
-			this.$notify({
+			notify({
 				title: message,
 				icon: 'check',
 				color: 'green'

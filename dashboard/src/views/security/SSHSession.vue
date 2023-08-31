@@ -40,12 +40,11 @@ export default {
 	resources: {
 		sshLogs() {
 			return {
-				method: 'press.api.security.fetch_ssh_session_logs',
+				url: 'press.api.security.fetch_ssh_session_logs',
 				params: {
 					server: this.server?.name
 				},
-				auto: true,
-				keepData: true
+				auto: true
 			};
 		}
 	},

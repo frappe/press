@@ -104,15 +104,15 @@ export default {
 		)
 	},
 	resources: {
-		upcomingInvoice: 'press.api.billing.upcoming_invoice',
+		upcomingInvoice: { url: 'press.api.billing.upcoming_invoice', auto: true },
 		availablePartnerCredits() {
 			return {
-				method: 'press.api.billing.get_partner_credits'
+				url: 'press.api.billing.get_partner_credits'
 			};
 		},
 		unpaidAmountDue() {
 			return {
-				method: 'press.api.billing.total_unpaid_amount',
+				url: 'press.api.billing.total_unpaid_amount',
 				auto: true
 			};
 		}

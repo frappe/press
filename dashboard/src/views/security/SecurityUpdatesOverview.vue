@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="min-h-full h-full max-h-96"
+		class="h-full max-h-96 min-h-full"
 		title="Security Updates"
 		subtitle="Pedning security updates"
 	>
@@ -43,15 +43,21 @@ export default {
 	resources: {
 		securityUpdates() {
 			return {
-				method: 'press.api.security.fetch_security_updates',
-				params: {
-					server: this.server?.name,
-					start: 0,
-					limit: 3
-				},
-				auto: true,
+				type: 'list',
+				doctype: 'Security Update',
+				filters: { server: this.server?.name },
+				fields: [
+					'name',
+					'package',
+					'version',
+					'priority',
+					'priority_level',
+					'datetime'
+				],
+				orderBy: 'priority_level asc',
 				pageLength: 3,
-				keepData: true
+				start: 0,
+				auto: true
 			};
 		}
 	},

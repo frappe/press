@@ -52,6 +52,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'MarketplaceAppLinks',
 	props: {
@@ -65,7 +67,7 @@ export default {
 	resources: {
 		updateAppLinks() {
 			return {
-				method: 'press.api.marketplace.update_app_links',
+				url: 'press.api.marketplace.update_app_links',
 				params: {
 					name: this.app.name,
 					links: {
@@ -78,7 +80,7 @@ export default {
 				},
 				onSuccess() {
 					this.showEditLinksDialog = false;
-					this.$notify({
+					notify({
 						title: 'Links Updated!',
 						icon: 'check',
 						color: 'green'

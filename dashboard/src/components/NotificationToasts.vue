@@ -1,22 +1,6 @@
 <script setup>
-import { getCurrentInstance, ref } from 'vue';
 import Notification from './Notification.vue';
-
-const app = getCurrentInstance();
-const notifications = ref([]);
-
-const hideNotification = id => {
-	notifications.value = notifications.value.filter(props => props.id !== id);
-};
-
-const notify = props => {
-	props.id = Math.floor(Math.random() * 1000 + Date.now());
-	notifications.value.push(props);
-	setTimeout(() => hideNotification(props.id), props.timeout || 5000);
-};
-
-// Attach to global instance
-app.appContext.config.globalProperties.$notify = notify;
+import { hideNotification, notifications } from '@/utils/toast';
 </script>
 
 <template>

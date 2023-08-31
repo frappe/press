@@ -111,6 +111,8 @@
 </template>
 <script>
 import SiteDrop from './SiteDrop.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteOverviewInfo',
 	props: ['site', 'info'],
@@ -171,7 +173,7 @@ export default {
 			this.$call('press.api.site.activate', {
 				name: this.site.name
 			});
-			this.$notify({
+			notify({
 				title: 'Site activated successfully!',
 				message: 'You can now access your site',
 				icon: 'check',

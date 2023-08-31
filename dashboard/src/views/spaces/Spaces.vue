@@ -138,7 +138,7 @@ export default {
 	resources: {
 		spaces() {
 			return {
-				method: 'press.api.spaces.spaces',
+				url: 'press.api.spaces.spaces',
 				auto: true,
 				params: { space_filter: this.spaceFilter },
 				onSuccess: data => {

@@ -133,7 +133,7 @@ export default {
 	resources: {
 		validateRequestKey() {
 			return {
-				method: 'press.api.account.validate_request_key',
+				url: 'press.api.account.validate_request_key',
 				params: {
 					key: this.requestKey,
 					timezone: window.Intl
@@ -160,7 +160,7 @@ export default {
 		},
 		setupAccount() {
 			return {
-				method: 'press.api.account.setup_account',
+				url: 'press.api.account.setup_account',
 				params: {
 					key: this.requestKey,
 					password: this.password,

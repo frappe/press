@@ -16,12 +16,23 @@ export default {
 		AgentJobs
 	},
 	methods: {
-		jobResource(start) {
+		jobResource() {
 			return {
-				method: 'press.api.spaces.code_server_jobs',
-				params: { name: this.codeServer?.name, start },
+				type: 'list',
+				doctype: 'Agent Job',
+				filters: { code_server: this.codeServer?.name },
+				fields: [
+					'name',
+					'job_type',
+					'creation',
+					'status',
+					'start',
+					'end',
+					'duration'
+				],
+				orderBy: 'creation desc',
+				start: 0,
 				pageLength: 10,
-				keepData: true,
 				auto: true
 			};
 		},

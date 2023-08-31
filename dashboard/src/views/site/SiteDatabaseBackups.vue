@@ -125,24 +125,24 @@ export default {
 	resources: {
 		sites() {
 			return {
-				method: 'press.api.site.all',
-				default: [],
+				url: 'press.api.site.all',
+				initialData: [],
 				auto: true
 			};
 		},
 		backups() {
 			return {
-				method: 'press.api.site.backups',
+				url: 'press.api.site.backups',
 				params: {
 					name: this.site?.name
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		scheduleBackup() {
 			return {
-				method: 'press.api.site.backup',
+				url: 'press.api.site.backup',
 				params: {
 					name: this.site?.name,
 					with_files: true

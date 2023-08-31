@@ -118,7 +118,7 @@ export default {
 	resources: {
 		handlePayment() {
 			return {
-				method: 'press.api.developer.marketplace.saas_payment',
+				url: 'press.api.developer.marketplace.saas_payment',
 				params: {
 					secret_key: this.secretKey,
 					data: {

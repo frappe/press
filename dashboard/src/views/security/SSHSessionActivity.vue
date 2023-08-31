@@ -2,7 +2,7 @@
 	<CardDetails :showDetails="showDetails">
 		<div class="px-6 py-5">
 			<template v-if="showDetails">
-				<div class="flex justify-between items-center">
+				<div class="flex items-center justify-between">
 					<div>
 						<h4 class="text-lg font-medium">
 							Session: {{ SSHActivity.session_id }}
@@ -21,12 +21,12 @@
 			</template>
 			<div v-else>
 				<LoadingText v-if="loading" />
-				<span v-else class="text-base text-gray-600 text-center">
+				<span v-else class="text-center text-base text-gray-600">
 					No item selected
 				</span>
 			</div>
 		</div>
-		<div class="flex-auto px-6 overflow-auto" v-if="showDetails">
+		<div class="flex-auto overflow-auto px-6" v-if="showDetails">
 			<InfoSection
 				sectionName="Activity"
 				:sectionData="SSHActivity.content"
@@ -48,12 +48,11 @@ export default {
 	resources: {
 		SSHActivity() {
 			return {
-				method: 'press.api.security.fetch_ssh_session_activity',
+				url: 'press.api.security.fetch_ssh_session_activity',
 				params: {
 					server: this.server?.name,
 					filename: this.logId
 				},
-				keepData: true,
 				auto: true
 			};
 		}

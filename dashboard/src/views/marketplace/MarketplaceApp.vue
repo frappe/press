@@ -36,11 +36,11 @@
 			</header>
 		</div>
 		<div>
-			<div class="px-5 pt-6">
+			<div class="px-5 pt-5">
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
-					<div class="mt-2 flex items-center">
+					<div class="mb-3 flex items-center">
 						<h1 class="text-2xl font-bold">{{ app.title }}</h1>
 						<Badge class="ml-4" :label="app.status" />
 					</div>
@@ -67,22 +67,16 @@ export default {
 	resources: {
 		app() {
 			return {
-				method: 'press.api.marketplace.get_app',
+				url: 'press.api.marketplace.get_app',
 				params: {
 					name: this.appName
 				},
 				auto: true,
-				onError: this.$routeTo404PageIfNotFound
+				onError: this.$routeTo404PageIfNotFound,
+				onSuccess() {
+					this.routeToGeneral();
+				}
 			};
-		}
-	},
-	activated() {
-		if (this.app) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.app.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
 		}
 	},
 	methods: {

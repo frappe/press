@@ -80,7 +80,7 @@ export default {
 		analytics() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.analytics.get',
+				url: 'press.api.analytics.get',
 				params: {
 					name: this.site?.name,
 					timezone: localTimezone

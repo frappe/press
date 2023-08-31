@@ -15,7 +15,7 @@ export default {
 	resources: {
 		prompts() {
 			return {
-				method: 'press.api.account.user_prompts',
+				url: 'press.api.account.user_prompts',
 				auto: true,
 				validate() {
 					if (document.cookie.includes('user_id=Guest')) {

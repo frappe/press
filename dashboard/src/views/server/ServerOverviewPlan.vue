@@ -72,6 +72,7 @@
 import ServerPlansTable from '@/components/ServerPlansTable.vue';
 import ProgressArc from '@/components/ProgressArc.vue';
 import PlanIcon from '@/components/PlanIcon.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'ServerOverviewPlan',
@@ -90,33 +91,33 @@ export default {
 	resources: {
 		usageResource() {
 			return {
-				method: 'press.api.server.usage',
+				url: 'press.api.server.usage',
 				params: {
 					name: this.server?.name
 				},
-				default: {},
+				initialData: {},
 				auto: true
 			};
 		},
 		plans() {
 			return {
-				method: 'press.api.server.plans',
+				url: 'press.api.server.plans',
 				params: {
 					name: 'Server',
 					cluster: this.server.region_info.name
 				},
-				default: []
+				initialData: []
 			};
 		},
 		changePlan() {
 			return {
-				method: 'press.api.server.change_plan',
+				url: 'press.api.server.change_plan',
 				params: {
 					name: this.server?.name,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: `Plan changed to ${this.selectedPlan.plan_title}`,
 						icon: 'check',
 						color: 'green'
@@ -128,7 +129,7 @@ export default {
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
-					this.$notify({
+					notify({
 						title: error,
 						icon: 'x',
 						color: 'red'

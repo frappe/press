@@ -23,11 +23,11 @@
 				</ListItem>
 				<div class="border-b"></div>
 			</router-link>
-			<div class="py-3" v-if="!$resources.updates.lastPageEmpty">
+			<div class="py-3" v-if="$resources.updates.hasNextPage">
 				<Button
 					:loading="$resources.updates.loading"
 					loadingText="Loading..."
-					@click="pageStart += 10"
+					@click="$resources.updates.next()"
 				>
 					Load more
 				</Button>
@@ -51,26 +51,28 @@ export default {
 		CardWithDetails,
 		SecurityUpdateInfo
 	},
-	data() {
-		return {
-			pageStart: 0
-		};
-	},
 	resources: {
 		updates() {
-			return this.securityUpdateResource(this.pageStart);
+			return {
+				type: 'list',
+				doctype: 'Security Update',
+				filters: { server: this.server?.name },
+				fields: [
+					'name',
+					'package',
+					'version',
+					'priority',
+					'priority_level',
+					'datetime'
+				],
+				orderBy: 'priority_level asc',
+				pageLength: 10,
+				start: 0,
+				auto: true
+			};
 		}
 	},
 	methods: {
-		securityUpdateResource(start) {
-			return {
-				method: 'press.api.security.fetch_security_updates',
-				params: { server: this.server?.name, start },
-				pageLength: 10,
-				keepData: true,
-				auto: true
-			};
-		},
 		updateRoute(sec_update) {
 			return `/security/${this.server.name}/security_update/${sec_update}`;
 		},

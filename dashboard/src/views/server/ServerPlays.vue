@@ -16,12 +16,22 @@ export default {
 		AnsiblePlays
 	},
 	methods: {
-		plaResource(start) {
+		plaResource() {
 			return {
-				method: 'press.api.server.plays',
-				params: { name: this.server?.name, start },
+				type: 'list',
+				doctype: 'Ansible Play',
+				filters: { server: this.server?.name },
+				fields: [
+					'name',
+					'play',
+					'creation',
+					'status',
+					'start',
+					'end',
+					'duration'
+				],
 				pageLength: 10,
-				keepData: true,
+				start: 0,
 				auto: true
 			};
 		},

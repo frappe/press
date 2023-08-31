@@ -50,12 +50,15 @@ import { defineAsyncComponent } from 'vue';
 export default {
 	name: 'AccountBillingCards',
 	resources: {
-		paymentMethods: 'press.api.billing.get_payment_methods',
+		paymentMethods: {
+			url: 'press.api.billing.get_payment_methods',
+			auto: true
+		},
 		setAsDefault: {
-			method: 'press.api.billing.set_as_default'
+			url: 'press.api.billing.set_as_default'
 		},
 		remove: {
-			method: 'press.api.billing.remove_payment_method'
+			url: 'press.api.billing.remove_payment_method'
 		}
 	},
 	components: {

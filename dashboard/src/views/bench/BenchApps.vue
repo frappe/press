@@ -132,6 +132,7 @@
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'BenchApps',
@@ -152,7 +153,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.bench.apps',
+				url: 'press.api.bench.apps',
 				params: {
 					name: this.benchName
 				},
@@ -161,7 +162,7 @@ export default {
 		},
 		installableApps() {
 			return {
-				method: 'press.api.bench.installable_apps',
+				url: 'press.api.bench.installable_apps',
 				params: {
 					name: this.benchName
 				},
@@ -176,7 +177,7 @@ export default {
 		},
 		fetchLatestAppUpdate() {
 			return {
-				method: 'press.api.bench.fetch_latest_app_update',
+				url: 'press.api.bench.fetch_latest_app_update',
 				onSuccess() {
 					window.location.reload();
 				}
@@ -184,7 +185,7 @@ export default {
 		},
 		addApps() {
 			return {
-				method: 'press.api.bench.add_apps',
+				url: 'press.api.bench.add_apps',
 				onSuccess() {
 					window.location.reload();
 				}
@@ -192,9 +193,9 @@ export default {
 		},
 		removeApp() {
 			return {
-				method: 'press.api.bench.remove_app',
+				url: 'press.api.bench.remove_app',
 				onError(e) {
-					this.$notify({
+					notify({
 						title: 'Error',
 						message: e,
 						icon: 'x',

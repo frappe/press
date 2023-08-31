@@ -84,6 +84,7 @@
 <script>
 import CardWithDetails from '@/components/CardWithDetails.vue';
 import CardDetails from '@/components/CardDetails.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppReviewStages',
@@ -113,7 +114,7 @@ export default {
 	resources: {
 		startReview() {
 			return {
-				method: 'press.api.marketplace.start_review',
+				url: 'press.api.marketplace.start_review',
 				params: {
 					name: this.appName
 				},
@@ -124,7 +125,7 @@ export default {
 		},
 		communication() {
 			return {
-				method: 'press.api.marketplace.communication',
+				url: 'press.api.marketplace.communication',
 				params: {
 					name: this.appName
 				}
@@ -132,14 +133,14 @@ export default {
 		},
 		addReply() {
 			return {
-				method: 'press.api.marketplace.add_reply',
+				url: 'press.api.marketplace.add_reply',
 				params: {
 					name: this.appName,
 					message: this.message
 				},
 				onSuccess() {
 					this.showReplyDialog = false;
-					this.$notify({
+					notify({
 						title: 'Reply Queued',
 						message: 'Message reply is queued for sending',
 						icon: 'check',

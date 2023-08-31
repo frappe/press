@@ -56,6 +56,8 @@
 	</Card>
 </template>
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountSSHKey',
 	data() {
@@ -68,14 +70,14 @@ export default {
 	resources: {
 		saveKey() {
 			return {
-				method: 'press.api.account.add_key',
+				url: 'press.api.account.add_key',
 				params: {
 					key: this.newKey
 				},
 				onSuccess() {
 					this.$account.fetchAccount();
 					this.showAddNewKeyDialog = false;
-					this.$notify({
+					notify({
 						title: 'New SSH Key Added',
 						icon: 'check',
 						color: 'green'

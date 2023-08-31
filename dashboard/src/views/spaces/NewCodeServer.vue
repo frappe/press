@@ -105,7 +105,7 @@ export default {
 	resources: {
 		newCodeServer() {
 			return {
-				method: 'press.api.spaces.create_code_server',
+				url: 'press.api.spaces.create_code_server',
 				params: {
 					subdomain: this.subdomain,
 					bench: this.selectedBench,

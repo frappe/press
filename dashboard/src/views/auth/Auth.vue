@@ -171,7 +171,7 @@ export default {
 	resources: {
 		signup() {
 			return {
-				method: 'press.api.account.signup',
+				url: 'press.api.account.signup',
 				params: {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
@@ -184,7 +184,7 @@ export default {
 		},
 		googleLogin() {
 			return {
-				method: 'press.api.oauth.google_login',
+				url: 'press.api.oauth.google_login',
 				onSuccess(r) {
 					window.location = r;
 				}
@@ -192,7 +192,7 @@ export default {
 		},
 		resetPassword() {
 			return {
-				method: 'press.api.account.send_reset_password_email',
+				url: 'press.api.account.send_reset_password_email',
 				params: {
 					email: this.email
 				},
@@ -203,7 +203,7 @@ export default {
 		},
 		signupSettings() {
 			return {
-				method: 'press.api.account.signup_settings',
+				url: 'press.api.account.signup_settings',
 				params: {
 					product: this.$route.query.product
 				},

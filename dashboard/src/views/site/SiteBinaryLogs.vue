@@ -91,7 +91,7 @@ export default {
 	resources: {
 		binaryLogs() {
 			return {
-				method: 'press.api.analytics.binary_logs',
+				url: 'press.api.analytics.binary_logs',
 				params: {
 					name: this.site?.name,
 					start_time: this.startTime || this.today,
@@ -107,7 +107,7 @@ export default {
 		},
 		getPlan() {
 			return {
-				method: 'press.api.site.current_plan',
+				url: 'press.api.site.current_plan',
 				params: {
 					name: this.site?.name
 				},
