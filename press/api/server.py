@@ -114,7 +114,7 @@ def overview(name):
 	plan = frappe.get_doc("Plan", server.plan)
 	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
 		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
-		plan.vcpu = self_hosted_server.vcpu
+		plan.vcpu = self_hosted_server.vcpus
 		plan.memory = self_hosted_server.ram
 		plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
 	return {
