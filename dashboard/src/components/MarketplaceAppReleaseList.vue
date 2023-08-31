@@ -224,10 +224,8 @@ export default {
 			});
 		},
 		resetReleaseListState() {
-			// this.$resources.releases.reset();
 			this.$resources.releases.reload();
-			// Re-fetch latest approved
-			this.$resources.latestApproved.fetch();
+			this.$resources.latestApproved.reload();
 		},
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
