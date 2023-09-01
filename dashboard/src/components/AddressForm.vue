@@ -40,6 +40,7 @@
 
 <script>
 import Form from '@/components/Form.vue';
+import { indianStates } from '@/utils/billing';
 
 export default {
 	name: 'AddressForm',
@@ -65,20 +66,6 @@ export default {
 					this.update('country', country.value);
 				}
 			}
-		},
-		indianStates: {
-			url: 'press.api.billing.indian_states'
-		}
-	},
-	watch: {
-		'address.country': {
-			handler(value) {
-				if (value === 'India') {
-					this.$resources.indianStates.fetch();
-					this.update('state', '');
-				}
-			},
-			immediate: true
 		}
 	},
 	methods: {
@@ -117,7 +104,7 @@ export default {
 			}));
 		},
 		indianStates() {
-			return (this.$resources.indianStates.data || []).map(d => ({
+			return indianStates.map(d => ({
 				label: d,
 				value: d
 			}));

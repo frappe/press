@@ -96,6 +96,8 @@
 </template>
 
 <script>
+import { indianStates } from '@/utils/billing';
+
 export default {
 	name: 'CheckoutAddress',
 	props: ['currency', 'countries', 'secretKey', 'step'],
@@ -108,46 +110,7 @@ export default {
 			city: '',
 			postalCode: null,
 			gstin: 'Not Applicable',
-			gstApplicable: false,
-			indianStates: [
-				'Andaman and Nicobar Islands',
-				'Andhra Pradesh',
-				'Arunachal Pradesh',
-				'Assam',
-				'Bihar',
-				'Chandigarh',
-				'Chhattisgarh',
-				'Dadra and Nagar Haveli and Daman and Diu',
-				'Delhi',
-				'Goa',
-				'Gujarat',
-				'Haryana',
-				'Himachal Pradesh',
-				'Jammu and Kashmir',
-				'Jharkhand',
-				'Karnataka',
-				'Kerala',
-				'Ladakh',
-				'Lakshadweep Islands',
-				'Madhya Pradesh',
-				'Maharashtra',
-				'Manipur',
-				'Meghalaya',
-				'Mizoram',
-				'Nagaland',
-				'Odisha',
-				'Other Territory',
-				'Pondicherry',
-				'Punjab',
-				'Rajasthan',
-				'Sikkim',
-				'Tamil Nadu',
-				'Telangana',
-				'Tripura',
-				'Uttar Pradesh',
-				'Uttarakhand',
-				'West Bengal'
-			]
+			gstApplicable: false
 		};
 	},
 	resources: {
