@@ -90,7 +90,8 @@ def get_frappe_io_connection():
 	)
 
 	if not (frappe_api_key and frappe_api_secret and press_settings.frappe_url):
-		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
+		pass
+		# frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
 
 	frappe.local.press_frappeio_conn = FrappeClient(
 		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret
