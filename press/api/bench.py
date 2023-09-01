@@ -593,7 +593,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 			"status": "Pending",
 		}
 	).insert(ignore_permissions=True)
-	bench_update.deploy(apps_to_ignore=apps_to_ignore)
+	return bench_update.deploy(apps_to_ignore=apps_to_ignore)
 
 
 @frappe.whitelist()

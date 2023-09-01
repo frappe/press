@@ -134,8 +134,13 @@ export default {
 						return 'You must select atleast 1 app to proceed with update.';
 					}
 				},
-				onSuccess() {
+				onSuccess(new_candidate_name) {
 					this.showDeployDialog = false;
+					this.$resources.deployInformation.setData({
+						...this.$resources.deployInformation.data,
+						deploy_in_progress: true,
+						last_deploy: { name: new_candidate_name, status: 'Running' }
+					});
 					notify({
 						title: 'Updates scheduled successfully',
 						icon: 'check',
