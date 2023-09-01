@@ -123,7 +123,6 @@ export default {
 			}
 		},
 		onStopped() {
-			this.$resources.candidates.reset();
 			this.$resources.candidates.reload();
 			this.$resources.selectedCandidate.reload();
 		},
