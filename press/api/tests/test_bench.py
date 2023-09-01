@@ -9,6 +9,7 @@ from press.press.doctype.app.test_app import create_test_app
 
 
 from press.api.bench import (
+	dependencies,
 	deploy,
 	deploy_information,
 	get,
@@ -323,6 +324,23 @@ class TestAPIBenchConfig(FrappeTestCase):
 		)
 		self.rg.reload()
 		self.assertTrue(deploy_information(self.rg.name)["update_available"])
+
+	def test_dependencies_lists_all_dependencies(self):
+		deps = [
+			{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+			{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+			{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+			{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+		]
+		update_dependencies(
+			self.rg.name,
+			json.dumps(deps),
+		)
+		self.assertListEqual(
+			sorted(dependencies(self.rg.name), key=lambda x: x["key"]),
+			sorted(deps, key=lambda x: x["key"]),
+		)
 
 
 class TestAPIBenchList(FrappeTestCase):
