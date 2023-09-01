@@ -387,11 +387,16 @@ class ReleaseGroup(Document):
 
 	def get_next_apps(self, current_apps):
 		marketplace_app_sources = self.get_marketplace_app_sources()
-		current_team = get_current_team()
+		current_team = get_current_team(True)
+		app_publishers_team = [current_team.name]
+
+		if current_team.parent_team:
+			app_publishers_team.append(current_team.parent_team)
+
 		only_approved_for_sources = [
 			source
 			for source in marketplace_app_sources
-			if frappe.db.get_value("App Source", source, "team") != current_team
+			if frappe.db.get_value("App Source", source, "team") in app_publishers_team
 		]
 
 		next_apps = []
