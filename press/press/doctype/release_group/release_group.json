@@ -30,6 +30,7 @@
   "background_workers",
   "dependencies_tab",
   "dependencies",
+  "last_dependency_update",
   "packages",
   "environment_variables",
   "feature_flags_tab",
@@ -265,10 +266,16 @@
    "fieldname": "background_workers",
    "fieldtype": "Int",
    "label": "Background Workers"
+  },
+  {
+   "fieldname": "last_dependency_update",
+   "fieldtype": "Datetime",
+   "label": "Last Dependency Update",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-08-25 14:16:44.730535",
+ "modified": "2023-09-01 08:32:18.643025",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
