@@ -19,8 +19,8 @@
 				v-if="paymentMode == 'Paid By Partner'"
 				label="Select Frappe Partner"
 				type="select"
-				:options="frappePartners"
-				v-model="frappePartner"
+				:options="partners"
+				v-model="selectedPartner"
 			/>
 			<ErrorMessage
 				class="mt-2"
@@ -48,7 +48,8 @@ export default {
 	data() {
 		return {
 			paymentMode: this.$account.team.payment_mode || 'Card',
-			frappePartner: ''
+			selectedPartner: null,
+			partners: []
 		};
 	},
 	watch: {
@@ -58,13 +59,16 @@ export default {
 			}
 		}
 	},
+	onMounted() {
+		this.$resources.getPartners();
+	},
 	resources: {
 		changePaymentMode() {
 			return {
 				method: 'press.api.billing.change_payment_mode',
 				params: {
 					mode: this.paymentMode,
-					partner: this.frappePartner
+					partner: this.selectedPartner
 				},
 				onSuccess() {
 					this.$emit('update:modelValue', false);
@@ -80,13 +84,19 @@ export default {
 				}
 			};
 		},
-		partners() {
+		getPartners() {
 			return {
 				method: 'press.api.billing.get_frappe_partners',
+				auto: true,
+				cache: ['partners'],
 				onSuccess(data) {
-					this.frappePartners = data;
-				},
-				auto: true
+					this.partners = data.map(d => {
+						return {
+							label: d.billing_name,
+							value: d.name
+						};
+					});
+				}
 			};
 		}
 	},
@@ -104,9 +114,6 @@ export default {
 				return ['Card', 'Prepaid Credits', 'Partner Credits'];
 			}
 			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
-		},
-		frappePartners() {
-			return this.$resources.partners.data.map(d => d.billing_name);
 		}
 	}
 };

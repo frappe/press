@@ -317,9 +317,21 @@ def remove_payment_method(name):
 
 
 @frappe.whitelist()
-def change_payment_mode(mode):
+def change_payment_mode(mode, partner=None):
 	team = get_current_team(get_doc=True)
 	team.payment_mode = mode
+	if partner:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Partner Approval Request",
+				"partner": partner,
+				"requested_by": team.name,
+				"status": "Pending",
+				"send_mail": True,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		return
 	team.save()
 
 
