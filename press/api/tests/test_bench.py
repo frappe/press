@@ -208,7 +208,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_update_dependencies_throws_error_for_invalid_dependencies(self):
 		self.assertRaisesRegex(
 			Exception,
-			"Invalid dependencies: hjkl, asdf",
+			"Invalid dependencies: asdf",
 			update_dependencies,
 			self.rg.name,
 			json.dumps(
@@ -216,7 +216,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
 					{"key": "NODE_VERSION", "value": "16.36.0", "type": "String"},
 					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "hjkl", "value": "5.15.2", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
 					{
 						"key": "asdf",
 						"value": "10.9",
