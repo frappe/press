@@ -305,7 +305,7 @@ class ReleaseGroup(Document):
 		out.update_available = any([app["update_available"] for app in out.apps]) or (
 			len(out.removed_apps) > 0
 		)
-		if self.last_dependency_update:
+		if self.last_dependency_update and last_dc_info:
 			out.update_available = self.last_dependency_update > last_dc_info.creation
 		out.number_of_apps = len(self.apps)
 
