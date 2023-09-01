@@ -7,7 +7,7 @@
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
-		<ErrorMessage :message="$resourceErrors" />
+		<ErrorMessage :message="$resources.addApp.error" />
 
 		<Button
 			v-if="app"

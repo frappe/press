@@ -49,7 +49,7 @@
 					v-model="memberEmail"
 					required
 				/>
-				<ErrorMessage :message="$resourceErrors" />
+				<ErrorMessage :message="$resources.addMember.error" />
 			</template>
 		</Dialog>
 		<EditPermissions

@@ -36,7 +36,7 @@
 					:key="member.name"
 				>
 					<template #actions>
-						<ErrorMessage :message="$resourceErrors" />
+						<ErrorMessage :message="$resources.removeMember.error" />
 						<Button
 							class="ml-2 p-4"
 							@click="
@@ -57,7 +57,7 @@
 						v-model="childTeamTitle"
 						required
 					/>
-					<ErrorMessage :message="$resourceErrors" />
+					<ErrorMessage :message="$resources.addChildTeam.error" />
 
 					<div class="mt-5">
 						<Button class="w-full" @click="showManageTeamForm = false">

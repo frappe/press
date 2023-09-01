@@ -180,7 +180,7 @@
 					"
 				/>
 
-				<ErrorMessage :message="$resourceErrors" />
+				<ErrorMessage :message="$resources.installApp.error" />
 			</template>
 		</Dialog>
 

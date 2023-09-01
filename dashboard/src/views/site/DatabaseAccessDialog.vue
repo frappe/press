@@ -102,8 +102,6 @@
 					</div>
 				</div>
 
-				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
-
 				<div class="mt-4">
 					<div
 						v-if="
@@ -125,8 +123,9 @@
 						<ErrorMessage
 							class="mt-2"
 							:message="
-								enableReadWriteAccess &&
-								'Your credentials can be used to modify or wipe your database'
+								(enableReadWriteAccess &&
+									'Your credentials can be used to modify or wipe your database') ||
+								error
 							"
 						/>
 					</div>
@@ -140,7 +139,7 @@
 							$resources.enableDatabaseAccess.loading || pollingAgentJob
 						"
 						variant="solid"
-						class="w-full"
+						class="mt-2 w-full"
 						>Enable
 						{{ enableReadWriteAccess ? 'Read-Write' : 'Read-Only' }}
 						Access</Button

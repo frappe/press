@@ -25,7 +25,7 @@
 					required
 				/>
 			</div>
-			<ErrorMessage class="mt-6" :message="$resourceErrors" />
+			<ErrorMessage class="mt-6" :message="$resources.resetPassword.error" />
 			<Button
 				class="mt-6"
 				variant="solid"

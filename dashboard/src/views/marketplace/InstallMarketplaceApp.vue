@@ -86,7 +86,7 @@
 					class="mb-9"
 					@change="plan => (selectedPlan = plan.name)"
 				/>
-				<ErrorMessage :message="$resourceErrors" />
+				<ErrorMessage :message="$resources.installAppOnSite.error" />
 			</template>
 			<template v-slot:actions>
 				<Button

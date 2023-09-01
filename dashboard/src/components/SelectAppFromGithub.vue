@@ -68,7 +68,7 @@
 					</div>
 				</div>
 				<div>
-					<ErrorMessage class="mb-2" :message="$resourceErrors" />
+					<ErrorMessage class="mb-2" :message="$resources.validateApp.error" />
 					<Button
 						class="mt-2"
 						variant="solid"

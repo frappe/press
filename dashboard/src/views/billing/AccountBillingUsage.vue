@@ -56,8 +56,7 @@
 				</div>
 
 				<ErrorMessage
-					v-if="$resourceErrors"
-					:message="$resourceErrors"
+					:message="$resources.upcomingInvoice.error"
 					class="mt-3"
 				/>
 			</div>

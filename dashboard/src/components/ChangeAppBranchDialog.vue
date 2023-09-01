@@ -20,7 +20,7 @@
 					</select>
 				</div>
 
-				<ErrorMessage class="mt-2" :message="$resourceErrors" />
+				<ErrorMessage class="mt-2" :message="$resources.changeBranch.error" />
 			</div>
 		</template>
 		<template v-slot:actions>

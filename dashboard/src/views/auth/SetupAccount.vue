@@ -77,7 +77,7 @@
 					</label>
 				</div>
 			</div>
-			<ErrorMessage class="mt-4" :message="$resourceErrors" />
+			<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
 			<Button
 				class="mt-4"
 				variant="solid"
