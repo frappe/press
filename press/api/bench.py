@@ -317,6 +317,10 @@ def update_dependencies(name: str, dependencies: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	if len(rg.dependencies) != len(dependencies):
 		frappe.throw("Need all required dependencies")
+	if diff := set([d["key"] for d in dependencies]) - set(
+		d.dependency for d in rg.dependencies
+	):
+		frappe.throw("Invalid dependencies: " + ", ".join(diff))
 	for dep, new in zip(
 		sorted(rg.dependencies, key=lambda x: x.dependency),
 		sorted(dependencies, key=lambda x: x["key"]),
