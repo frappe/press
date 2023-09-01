@@ -10,6 +10,7 @@ from press.press.doctype.app.test_app import create_test_app
 
 from press.api.bench import (
 	deploy,
+	deploy_information,
 	get,
 	new,
 	all,
@@ -285,6 +286,25 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.rg.save()
 		self.rg.reload()
 		self.assertTrue(self.rg.last_dependency_update)
+
+	def test_deploy_information_shows_update_available_when_dependencies_are_updated(self):
+		self.assertFalse(self.rg.last_dependency_update)
+		create_test_bench(group=self.rg)  # avoid update available due to no deploys
+		self.assertFalse(deploy_information(self.rg.name)["update_available"])
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
+		)
+		self.rg.reload()
+		self.assertTrue(deploy_information(self.rg.name)["update_available"])
 
 
 class TestAPIBenchList(FrappeTestCase):

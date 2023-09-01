@@ -294,18 +294,21 @@ class ReleaseGroup(Document):
 		out.apps = self.get_app_updates(
 			last_deployed_bench.apps if last_deployed_bench else []
 		)
-		out.removed_apps = self.get_removed_apps()
-		out.update_available = any([app["update_available"] for app in out.apps]) or (
-			len(out.removed_apps) > 0
-		)
-		out.number_of_apps = len(self.apps)
-
 		last_dc_info = self.get_last_deploy_candidate_info()
 		out.last_deploy = last_dc_info
 		out.deploy_in_progress = last_dc_info and last_dc_info.status in (
 			"Running",
 			"Scheduled",
 		)
+
+		out.removed_apps = self.get_removed_apps()
+		out.update_available = any([app["update_available"] for app in out.apps]) or (
+			len(out.removed_apps) > 0
+		)
+		if self.last_dependency_update:
+			out.update_available = self.last_dependency_update > last_dc_info.creation
+		out.number_of_apps = len(self.apps)
+
 		out.sites = [
 			site.update({"skip_failing_patches": False, "skip_backups": False})
 			for site in frappe.get_all(
@@ -326,7 +329,7 @@ class ReleaseGroup(Document):
 		query = (
 			frappe.qb.from_(dc)
 			.where(dc.group == self.name)
-			.select(dc.name, dc.status)
+			.select(dc.name, dc.status, dc.creation)
 			.orderby(dc.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
