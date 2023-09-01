@@ -273,7 +273,7 @@ export default {
 		getCertificate() {
 			return {
 				url: 'press.api.bench.certificate',
-				params: { name: this.bench?.name },
+				params: { name: this.benchName },
 				auto: true
 			};
 		},
