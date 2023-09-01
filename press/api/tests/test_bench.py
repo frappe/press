@@ -285,7 +285,25 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.rg.append("dependencies", {"dependency": "MARIADB_VERSION", "version": "10.9"})
 		self.rg.save()
 		self.rg.reload()
-		self.assertTrue(self.rg.last_dependency_update)
+		dependency_update_1 = self.rg.last_dependency_update
+		self.assertTrue(dependency_update_1)
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},
+				]
+			),
+		)
+		self.rg.reload()
+		dependency_update_2 = self.rg.last_dependency_update
+		self.assertTrue(dependency_update_2)
+		self.assertGreater(dependency_update_2, dependency_update_1)
 
 	def test_deploy_information_shows_update_available_when_dependencies_are_updated(self):
 		self.assertFalse(self.rg.last_dependency_update)
