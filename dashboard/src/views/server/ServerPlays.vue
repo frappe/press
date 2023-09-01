@@ -11,7 +11,7 @@
 import AnsiblePlays from '@/views/general/AnsiblePlays.vue';
 export default {
 	name: 'ServerPlays',
-	props: ['server', 'playName'],
+	props: ['serverName', 'playName'],
 	components: {
 		AnsiblePlays
 	},
@@ -20,7 +20,7 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Ansible Play',
-				filters: { server: this.server?.name },
+				filters: { server: this.serverName },
 				fields: [
 					'name',
 					'play',
@@ -36,7 +36,7 @@ export default {
 			};
 		},
 		playRoute(play) {
-			return `/servers/${this.server.name}/plays/${play.name}`;
+			return `/servers/${this.serverName}/plays/${play.name}`;
 		}
 	}
 };

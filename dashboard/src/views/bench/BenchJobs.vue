@@ -13,7 +13,7 @@ import AgentJobs from '@/views/general/AgentJobs.vue';
 
 export default {
 	name: 'BenchJobs',
-	props: ['bench', 'jobName'],
+	props: ['benchName', 'jobName'],
 	components: {
 		AgentJobs
 	},
@@ -23,7 +23,7 @@ export default {
 				type: 'list',
 				doctype: 'Agent Job',
 				url: 'press.api.bench.jobs',
-				filters: { name: this.bench?.name },
+				filters: { name: this.benchName },
 				auto: true,
 				orderBy: 'creation desc',
 				start: 0,
@@ -31,7 +31,7 @@ export default {
 			};
 		},
 		jobRoute(job) {
-			return `/benches/${this.bench?.name}/jobs/${job.name}`;
+			return `/benches/${this.benchName}/jobs/${job.name}`;
 		}
 	}
 };

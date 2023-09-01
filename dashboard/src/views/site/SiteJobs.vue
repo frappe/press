@@ -11,7 +11,7 @@
 import AgentJobs from '@/views/general/AgentJobs.vue';
 export default {
 	name: 'SiteJobs',
-	props: ['site', 'jobName'],
+	props: ['siteName', 'jobName'],
 	components: {
 		AgentJobs
 	},
@@ -20,7 +20,7 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Agent Job',
-				filters: { site: this.site?.name },
+				filters: { site: this.siteName },
 				fields: [
 					'name',
 					'job_type',
@@ -37,7 +37,7 @@ export default {
 			};
 		},
 		jobRoute(job) {
-			return `/sites/${this.site.name}/jobs/${job.name}`;
+			return `/sites/${this.siteName}/jobs/${job.name}`;
 		}
 	}
 };
