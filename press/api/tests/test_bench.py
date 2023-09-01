@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock, patch
 
 import frappe
@@ -181,15 +182,19 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_update_dependencies_set_dependencies_correctly(self):
 		update_dependencies(
 			self.rg.name,
-			[
-				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
-			],
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},  # updated
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},  # updated
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
 		)
+		self.assertFalse(self.rg.last_dependency_update)
 		self.rg.reload()
+		self.assertTrue(self.rg.last_dependency_update)
 		self.assertEqual(
 			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
 		)
@@ -204,13 +209,19 @@ class TestAPIBenchConfig(FrappeTestCase):
 			"Invalid dependency.*",
 			update_dependencies,
 			self.rg.name,
-			[
-				{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},  # invalid dependency
-				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
-			],
+			json.dumps(
+				[
+					{
+						"key": "MARIADB_VERSION",
+						"value": "10.9",
+						"type": "String",
+					},  # invalid dependency
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				],
+			),
 		)
 
 	def test_update_dependencies_throws_error_for_invalid_version(self):
@@ -219,13 +230,15 @@ class TestAPIBenchConfig(FrappeTestCase):
 			"Invalid version.*",
 			update_dependencies,
 			self.rg.name,
-			[
-				{"key": "NODE_VERSION", "value": "v16.11", "type": "String"},  # v is invalid
-				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
-			],
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "v16.11", "type": "String"},  # v is invalid
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				],
+			),
 		)
 
 	def test_cannot_remove_dependencies(self):
@@ -234,12 +247,14 @@ class TestAPIBenchConfig(FrappeTestCase):
 			"Need all required dependencies",
 			update_dependencies,
 			self.rg.name,
-			[
-				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-			],
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				],
+			),
 		)
 
 	def test_cannot_add_additional_invalid_dependencies(self):
@@ -248,15 +263,28 @@ class TestAPIBenchConfig(FrappeTestCase):
 			"Need all required dependencies",
 			update_dependencies,
 			self.rg.name,
-			[
-				{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-				{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-				{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-				{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-				{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
-				{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},  # invalid dependency
-			],
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{
+						"key": "MARIADB_VERSION",
+						"value": "10.9",
+						"type": "String",
+					},  # invalid dependency
+				],
+			),
 		)
+
+	def test_update_of_dependency_child_table_sets_last_dependency_update(self):
+		self.assertFalse(self.rg.last_dependency_update)
+		self.rg.append("dependencies", {"dependency": "MARIADB_VERSION", "version": "10.9"})
+		self.rg.save()
+		self.rg.reload()
+		self.assertTrue(self.rg.last_dependency_update)
 
 
 class TestAPIBenchList(FrappeTestCase):

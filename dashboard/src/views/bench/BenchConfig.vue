@@ -8,7 +8,7 @@
 		/>
 		<ConfigEditor
 			title="Dependencies"
-			subtitle="Add and update dependencies for your bench"
+			subtitle="Update dependencies for your bench"
 			:configData="dependencies"
 			:updateConfigMethod="updateDependencies"
 		/>

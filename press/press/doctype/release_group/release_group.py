@@ -2,10 +2,12 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from itertools import chain
 import frappe
 import json
 
 from typing import List
+from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
@@ -44,6 +46,16 @@ class ReleaseGroup(Document):
 
 	def before_insert(self):
 		self.fetch_dependencies()
+
+	def on_update(self):
+		old_doc = self.get_doc_before_save()
+		if self.flags.in_insert or self.is_new() or not old_doc:
+			return
+		diff = get_diff(old_doc, self) or {}
+		for row in chain(diff.get("row_changed", []), diff.get("added", [])):
+			if row[0] == "dependencies":
+				self.db_set("last_dependency_update", frappe.utils.now_datetime())
+				break
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
