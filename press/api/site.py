@@ -1120,7 +1120,8 @@ def backup(name, with_files=False):
 
 		if (
 			frappe.db.count(
-				"Site Backup", filters=dict(site=name, creation=(">=", suspension_time))
+				"Site Backup",
+				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
 			)
 			> 3
 		):

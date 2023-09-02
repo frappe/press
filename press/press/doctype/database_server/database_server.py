@@ -186,6 +186,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.is_self_hosted:
+					server = frappe.get_doc("Server", self.name)
+					if server.status != "Active":
+						server.setup_server()  # Setup App server after DB server setup
 			else:
 				self.status = "Broken"
 		except Exception:

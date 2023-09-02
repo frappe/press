@@ -76,15 +76,15 @@ def create_test_site(
 	bench: str = None,
 	team: str = None,
 	standby_for: Optional[str] = None,
+	apps: Optional[list[str]] = None,
 ) -> Site:
 	"""Create test Site doc.
 
 	Installs all apps present in bench.
 	"""
-	if not creation:
-		creation = datetime.now()
-	if not subdomain:
-		subdomain = make_autoname("test-site-.#####")
+	creation = creation or datetime.now()
+	subdomain = subdomain or make_autoname("test-site-.#####")
+	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
 		bench = create_test_bench()
 	else:
@@ -102,7 +102,7 @@ def create_test_site(
 			"server": bench.server,
 			"bench": bench.name,
 			"team": team or get_current_team(),
-			"apps": [{"app": app.app} for app in group.apps],
+			"apps": apps or [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,
 		}

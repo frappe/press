@@ -122,6 +122,10 @@
   "github_access_token",
   "section_break_41",
   "github_app_private_key",
+  "aws_section",
+  "aws_access_key_id",
+  "column_break_agig",
+  "aws_secret_access_key",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1006,11 +1010,30 @@
    "fieldname": "arm_build_server",
    "fieldtype": "Data",
    "label": "ARM Build Server"
+  },
+  {
+   "fieldname": "aws_section",
+   "fieldtype": "Section Break",
+   "label": "AWS"
+  },
+  {
+   "fieldname": "aws_access_key_id",
+   "fieldtype": "Data",
+   "label": "AWS Access Key ID"
+  },
+  {
+   "fieldname": "column_break_agig",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aws_secret_access_key",
+   "fieldtype": "Password",
+   "label": "AWS Secret Access Key"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-08-22 13:19:08.002372",
+ "modified": "2023-08-25 11:33:46.589124",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

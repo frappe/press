@@ -23,7 +23,9 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if self.is_self_hosted:
+		if (
+			self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted
+		):
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,9 +35,13 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not self.is_self_hosted:
-			self.create_dns_record()
-			self.update_virtual_machine_name()
+		if self.ip:
+			if (
+				self.doctype not in ["Database Server", "Server", "Proxy Server"]
+				or not self.is_self_hosted
+			):
+				self.create_dns_record()
+				self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
@@ -335,7 +341,11 @@ class BaseServer(Document):
 			frappe.throw(_("Cannot archive server with benches"))
 		self.status = "Pending"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+		if self.is_self_hosted:
+			self.status = "Archived"
+			self.save()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
 	def _archive(self):
@@ -451,6 +461,22 @@ class BaseServer(Document):
 			ansible.run()
 		except Exception:
 			log_error("Increase swap exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_mysqldump(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
+		)
+
+	def _setup_mysqldump(self):
+		try:
+			ansible = Ansible(
+				playbook="mysqldump.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MySQLdump Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def update_tls_certificate(self):
@@ -838,11 +864,12 @@ class Server(BaseServer):
 				bench = frappe.get_doc("Bench", bench_name, for_update=True)
 				try:
 					gunicorn_workers = min(
-						24,
+						frappe.get_value("Release Group", bench.group, "gunicorn_workers") or 24,
 						max(2, round(workload / total_workload * max_gunicorn_workers)),  # min 2 max 24
 					)
 					background_workers = min(
-						8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+						frappe.get_value("Release Group", bench.group, "background_workers") or 8,
+						max(1, round(workload / total_workload * max_bg_workers)),  # min 1 max 8
 					)
 				except ZeroDivisionError:  # when total_workload is 0
 					gunicorn_workers = 2

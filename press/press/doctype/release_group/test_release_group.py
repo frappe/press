@@ -12,9 +12,6 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_source.test_app_source import create_test_app_source
-from press.press.doctype.frappe_version.test_frappe_version import (
-	create_test_frappe_version,
-)
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
@@ -23,7 +20,7 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_release_group(
-	apps: list[App], user: str = None, public=False, frappe_version=None
+	apps: list[App], user: str = None, public=False, frappe_version="Version 14"
 ) -> ReleaseGroup:
 	"""
 	Create Release Group doc.
@@ -31,8 +28,6 @@ def create_test_release_group(
 	Also creates app source
 	"""
 	user = user or frappe.session.user
-	if not frappe_version:
-		frappe_version = create_test_frappe_version().name
 	release_group = frappe.get_doc(
 		{
 			"doctype": "Release Group",
@@ -197,7 +192,7 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_new_release_group_loaded_with_correct_dependencies(self):
 		app = create_test_app("frappe", "Frappe Framework")
-		frappe_version = create_test_frappe_version(number=14, python="3.10")
+		frappe_version = frappe.get_doc("Frappe Version", "Version 14")
 		group = frappe.get_doc(
 			{
 				"doctype": "Release Group",
