@@ -10,6 +10,7 @@ frappe.ui.form.on('Log Server', {
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Archive'), 'archive', true, frm.doc.provider === 'AWS EC2'],
 			[
 				__('Fetch Keys'),
 				'fetch_keys',

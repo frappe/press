@@ -221,11 +221,9 @@ class Site(Document):
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
 	def uninstall_app(self, app):
-		app_doc = find(self.apps, lambda x: x.app == app)
 		log_site_activity(self.name, "Uninstall App")
-		self.remove(app_doc)
 		agent = Agent(self.server)
-		agent.uninstall_app_site(self, app_doc.app)
+		agent.uninstall_app_site(self, app)
 		self.status = "Pending"
 		self.save()
 
@@ -1407,8 +1405,31 @@ def process_install_app_site_job_update(job):
 	if updated_status != site_status:
 		if job.status == "Success":
 			site = frappe.get_doc("Site", job.site)
-			site.append("apps", {"app": json.loads(job.request_data).get("name")})
-			site.save()
+			app = json.loads(job.request_data).get("name")
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if not app_doc:
+				site.append("apps", {"app": app})
+				site.save()
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_uninstall_app_site_job_update(job):
+	updated_status = {
+		"Pending": "Active",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Active",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if job.status == "Success":
+			site = frappe.get_doc("Site", job.site)
+			app = job.request_path.rsplit("/", 1)[-1]
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if app_doc:
+				site.remove(app_doc)
+				site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 

@@ -207,8 +207,7 @@ class TestAPISite(FrappeTestCase):
 		)  # app3 shouldn't show in available_apps
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
-		site.uninstall_app(app2.name)
+		site = create_test_site(bench=bench.name, apps=[app1.name])
 		out = available_apps(site.name)
 		self.assertEqual(len(out), 1)
 		self.assertEqual(out[0]["name"], group.apps[1].source)
@@ -227,7 +226,7 @@ class TestAPISite(FrappeTestCase):
 
 		frappe.set_user(self.team.user)
 		site = create_test_site(bench=bench.name, apps=[app.name])
-		with fake_agent_job("Success"):
+		with fake_agent_job("Install App on Site", "Success"):
 			install_app(site.name, app2.name)
 			poll_pending_jobs()
 		site.reload()
@@ -235,15 +234,37 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(site.status, "Active")
 
 		site = create_test_site(bench=bench.name, apps=[app.name])
-		with fake_agent_job("Failure"):
+		with fake_agent_job("Install App on Site", "Failure"):
 			install_app(site.name, app2.name)
 			poll_pending_jobs()
 		site.reload()
 		self.assertEqual(len(site.apps), 1)
 		self.assertEqual(site.status, "Active")
 
-	def test_uninstall_app(self):
-		pass
+	def test_uninstall_app_removes_from_list_only_on_success(self):
+		from press.api.site import uninstall_app
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		with fake_agent_job("Uninstall App from Site", "Success"):
+			uninstall_app(site.name, app2.name)
+			poll_pending_jobs()
+		site.reload()
+		self.assertEqual(len(site.apps), 1)
+		self.assertEqual(site.status, "Active")
+
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		with fake_agent_job("Uninstall App from Site", "Failure"):
+			uninstall_app(site.name, app2.name)
+			poll_pending_jobs()
+		site.reload()
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.status, "Active")
 
 	def test_update_config(self):
 		pass

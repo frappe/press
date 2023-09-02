@@ -13,12 +13,28 @@ from press.utils import log_error
 
 
 class VirtualMachine(Document):
+	server_doctypes = [
+		"Server",
+		"Database Server",
+		"Proxy Server",
+		"Monitor Server",
+		"Log Server",
+	]
+
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
 	def validate(self):
+		if self.virtual_machine_image:
+			self.disk_size = max(
+				self.disk_size,
+				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
+			)
+			self.machine_image = frappe.db.get_value(
+				"Virtual Machine Image", self.virtual_machine_image, "aws_ami_id"
+			)
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		if not self.private_ip_address:
@@ -27,15 +43,10 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m"].index(self.series)
+				offset = ["f", "m", "c", "p", "e"].index(self.series)
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
-		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
 
 	@frappe.whitelist()
 	def provision(self):
@@ -138,7 +149,7 @@ class VirtualMachine(Document):
 		return init
 
 	def get_server(self):
-		for doctype in ["Server", "Database Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
@@ -240,7 +251,7 @@ class VirtualMachine(Document):
 			"Terminated": "Archived",
 			"Stopped": "Archived",
 		}
-		for doctype in ["Server", "Database Server", "Proxy Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]
@@ -384,6 +395,38 @@ class VirtualMachine(Document):
 	def create_proxy_server(self):
 		document = {
 			"doctype": "Proxy Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
+	@frappe.whitelist()
+	def create_monitor_server(self):
+		document = {
+			"doctype": "Monitor Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
+	@frappe.whitelist()
+	def create_log_server(self):
+		document = {
+			"doctype": "Log Server",
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
