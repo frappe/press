@@ -385,12 +385,12 @@ export default {
 				{ label: 'Overview', route: 'overview' },
 				{ label: 'Apps', route: 'apps' },
 				{ label: 'Analytics', route: 'analytics' },
+				{ label: 'Monitor', route: 'monitor' },
 				{ label: 'Database', route: 'database' },
 				{ label: 'Config', route: 'site-config' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Logs', route: 'logs' },
-				{ label: 'Settings', route: 'settings' },
-				{ label: 'Monitor', route: 'monitor' }
+				{ label: 'Settings', route: 'settings' }
 			];
 
 			if (this.site && this.site?.hide_config !== 1) {
