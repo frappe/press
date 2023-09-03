@@ -43,10 +43,11 @@
 						/>
 					</div>
 
-					<div
-						class="mt-[2px] truncate text-base text-gray-600 hover:text-clip"
-					>
-						{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
+					<div class="mt-1 flex items-center space-x-2">
+						<FeatherIcon name="git-branch" class="h-4 w-4" />
+						<div class="truncate text-base text-gray-600 hover:text-clip">
+							{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
+						</div>
 					</div>
 				</div>
 
