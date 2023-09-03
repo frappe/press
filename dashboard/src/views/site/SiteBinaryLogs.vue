@@ -1,5 +1,11 @@
 <template>
-	<div v-if="$resources.getPlan.data.monitor_access">
+	<div
+		class="flex items-center justify-center"
+		v-if="$resources.getPlan?.loading"
+	>
+		<LoadingText />
+	</div>
+	<div v-else-if="$resources.getPlan?.data?.monitor_access">
 		<Card>
 			<Report
 				:filters="filters"
