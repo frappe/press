@@ -888,6 +888,9 @@ def get_installed_apps(site):
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
 		app_source.hash = app.hash
+		app_source.commit_message = frappe.db.get_value(
+			"App Release", {"hash": app_source.hash}, "message"
+		)
 		app_tags = frappe.db.get_value(
 			"App Tag",
 			{

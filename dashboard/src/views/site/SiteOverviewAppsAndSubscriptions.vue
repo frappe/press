@@ -35,12 +35,13 @@
 						<div class="font-medium text-gray-900">
 							{{ app.title }}
 						</div>
-
-						<CommitTag
-							class="ml-2"
-							:tag="app.tag || app.hash.substr(0, 7)"
-							:link="`${app.repository_url}/commit/${app.hash}`"
-						/>
+						<Tooltip :text="app.commit_message">
+							<CommitTag
+								class="ml-2"
+								:tag="app.tag || app.hash.substr(0, 7)"
+								:link="`${app.repository_url}/commit/${app.hash}`"
+							/>
+						</Tooltip>
 					</div>
 
 					<div class="mt-1 flex items-center space-x-2">
