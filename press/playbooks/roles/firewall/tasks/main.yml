@@ -1,0 +1,5 @@
+---
+- name: Open port or port range publicly
+- name: Open port range from specific IP
+- name: Block trffic from specific IP
+- name: Delete rule

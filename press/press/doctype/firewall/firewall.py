@@ -3,6 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
+from press.runner import Ansible
+from press.utils import log_error
 
 
 class Firewall(Document):
@@ -33,6 +35,15 @@ class Firewall(Document):
 
 		for rule in [rule for rule in self.get_rules() if rule.name not in _rules]:
 			FirewallRule.delete_firewall_rule(rule.name)
+
+	def _update_firewall(self):
+		try:
+			Ansible.run_playbook(
+				"playbooks/firewall.yml",
+				extra_vars={"rules": self.get_rules()},
+			)
+		except Exception as e:
+			log_error(title="Firewall Update Failed", message=e)
 
 	@staticmethod
 	def create_firewall(server, server_type, firewall_name) -> Document:

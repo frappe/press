@@ -43,7 +43,7 @@
 								</template>
 							</Dropdown>
 						</div>
-						<span>{{ row[column.name] || '' }}</span>
+						<span class="message">{{ row[column.name] || '' }}</span>
 					</TableCell>
 				</TableRow>
 			</Table>
@@ -108,3 +108,10 @@ export default {
 	}
 };
 </script>
+
+<style scoped>
+.message {
+	white-space: pre-wrap;
+	line-height: 1.5;
+}
+</style>
