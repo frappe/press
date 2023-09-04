@@ -331,7 +331,7 @@ def change_payment_mode(mode, partner=None):
 			}
 		)
 		doc.insert(ignore_permissions=True)
-		return
+		return "ok"
 	team.save()
 
 

@@ -9,6 +9,7 @@
  "field_order": [
   "requested_by",
   "partner",
+  "key",
   "column_break_cujq",
   "status",
   "send_mail"
@@ -42,11 +43,16 @@
    "fieldname": "send_mail",
    "fieldtype": "Check",
    "label": "Send Mail"
+  },
+  {
+   "fieldname": "key",
+   "fieldtype": "Data",
+   "label": "Key"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-01 12:08:23.070010",
+ "modified": "2023-09-04 14:33:51.937865",
  "modified_by": "Administrator",
  "module": "Partner",
  "name": "Partner Approval Request",

@@ -70,7 +70,14 @@ export default {
 					mode: this.paymentMode,
 					partner: this.selectedPartner
 				},
-				onSuccess() {
+				onSuccess(res) {
+					if (res == 'ok') {
+						this.$notify({
+							title: 'Email Sent to Partner',
+							icon: 'check',
+							color: 'green'
+						});
+					}
 					this.$emit('update:modelValue', false);
 					this.$resources.changePaymentMode.reset();
 				},
