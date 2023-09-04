@@ -1,7 +1,7 @@
 <template>
 	<WizardCard v-if="domain">
 		<div class="mb-6 text-center">
-			<h1 class="text-2xl font-bold">Create a new code server</h1>
+			<h1 class="text-2xl font-bold">Create a new codespace</h1>
 		</div>
 		<Steps :steps="steps">
 			<template
@@ -41,13 +41,13 @@
 						</Button>
 						<Button
 							v-show="!hasNext"
-							class="w-full"
+							class="w-full mt-2"
 							variant="solid"
 							@click="$resources.newCodeServer.submit()"
 							:loading="$resources.newCodeServer.loading"
 							:disabled="selectedBench == null"
 						>
-							Create Servers
+							Create Codespace
 						</Button>
 					</div>
 				</div>

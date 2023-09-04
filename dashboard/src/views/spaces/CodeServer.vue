@@ -22,13 +22,6 @@
 								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
 							</template>
 						</Dropdown>
-						<Button
-							v-if="site?.status === 'Active'"
-							variant="solid"
-							icon-left="external-link"
-							label="Visit Site"
-							@click="$router.push(`/${this.site?.name}/new`)"
-						/>
 					</div>
 				</template>
 			</Breadcrumbs>
@@ -44,7 +37,7 @@
 							{{ codeServer.name }}
 						</h1>
 						<Badge
-							class="ml-4 hidden md:inline-block"
+							class="ml-4"
 							:label="codeServer.status"
 							:colorMap="$badgeStatusColorMap"
 						/>

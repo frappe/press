@@ -2,7 +2,7 @@ import frappe
 from press.utils import get_current_team
 from press.api.site import protected
 
-from typing import Dict, List
+from typing import Dict
 
 
 @frappe.whitelist()
@@ -27,6 +27,7 @@ def spaces(space_filter: Dict | None) -> Dict:
 		)
 		.left_join(ReleaseGroup)
 		.on(CodeServer.group == ReleaseGroup.name)
+		.where(CodeServer.team == get_current_team())
 		.orderby(CodeServer.creation, order=frappe.qb.desc)
 	)
 
