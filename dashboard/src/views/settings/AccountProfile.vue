@@ -3,9 +3,9 @@
 		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar
-					size="xl"
+					size="2xl"
 					:label="$account.user.first_name"
-					:imageURL="$account.user.user_image"
+					:image="$account.user.user_image"
 				/>
 				<FileUploader
 					@success="onProfilePhotoChange"

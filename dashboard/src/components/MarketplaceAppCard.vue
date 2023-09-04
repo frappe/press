@@ -4,9 +4,9 @@
 	>
 		<Avatar
 			class="shrink-0"
-			size="lg"
+			size="2xl"
 			shape="square"
-			:imageURL="app.image"
+			:image="app.image"
 			:label="app.title"
 		/>
 		<div class="ml-3 w-full">
