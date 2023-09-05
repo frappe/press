@@ -169,10 +169,9 @@ const routes = [
 				component: () => import('../views/site/SiteOverview.vue')
 			},
 			{
-				name: 'SiteOverviewAppsAndSubscriptions',
+				name: 'SiteAppsAndSubscriptions',
 				path: 'apps',
-				component: () =>
-					import('../views/site/SiteOverviewAppsAndSubscriptions.vue'),
+				component: () => import('../views/site/SiteAppsAndSubscriptions.vue'),
 				props: true
 			},
 			{

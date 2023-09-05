@@ -247,13 +247,12 @@
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
-import SiteOverviewAppSubscriptions from './SiteOverviewAppSubscriptions.vue';
 import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
 export default {
-	name: 'SiteOverviewApps',
+	name: 'SiteAppsAndSubscriptions',
 	props: ['site'],
 	data() {
 		return {
@@ -273,7 +272,6 @@ export default {
 	components: {
 		ChangeAppPlanSelector,
 		CommitTag,
-		SiteOverviewAppSubscriptions,
 		MarketplacePrepaidCredits
 	},
 	resources: {
