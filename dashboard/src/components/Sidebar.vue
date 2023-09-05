@@ -130,10 +130,7 @@ export default {
 					label: 'Sites',
 					route: '/sites',
 					highlight: () => {
-						return (
-							this.$route.fullPath.indexOf('/sites') >= 0 &&
-							this.$route.fullPath.indexOf('/benches/') < 0
-						);
+						return this.$route.fullPath.startsWith('/sites');
 					},
 					icon: FCIcons.SiteIcon
 				},
@@ -141,10 +138,7 @@ export default {
 					label: 'Benches',
 					route: '/benches',
 					highlight: () => {
-						return (
-							this.$route.fullPath.indexOf('/benches') >= 0 &&
-							this.$route.fullPath.indexOf('/servers/') < 0
-						);
+						return this.$route.fullPath.startsWith('/benches');
 					},
 					icon: FCIcons.BenchIcon,
 					condition: () => this.$account.team?.benches_enabled
@@ -153,7 +147,7 @@ export default {
 					label: 'Servers',
 					route: '/servers',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/servers') >= 0;
+						return this.$route.fullPath.startsWith('/servers');
 					},
 					icon: FCIcons.ServerIcon,
 					condition: () => this.$account.team?.servers_enabled
@@ -162,7 +156,7 @@ export default {
 					label: 'Spaces',
 					route: '/spaces',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/spaces') >= 0;
+						return this.$route.fullPath.startsWith('/spaces');
 					},
 					icon: FCIcons.SpacesIcon,
 					condition: () => this.$account.team?.code_servers_enabled
@@ -171,7 +165,7 @@ export default {
 					label: 'Apps',
 					route: '/marketplace/apps',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/marketplace') >= 0;
+						return this.$route.fullPath.startsWith('/marketplace');
 					},
 					icon: FCIcons.AppsIcon,
 					condition: () => this.$account.team?.is_developer
@@ -180,7 +174,7 @@ export default {
 					label: 'Security',
 					route: '/security',
 					highlight: () => {
-						return this.$route.fullPath.indexOf('/security') >= 0;
+						return this.$route.fullPath.startsWith('/security');
 					},
 					icon: FCIcons.SecurityIcon,
 					condition: () => this.$account.team?.security_portal_enabled
@@ -195,12 +189,7 @@ export default {
 					label: 'Settings',
 					route: '/settings',
 					highlight: () => {
-						return (
-							this.$route.fullPath.indexOf('/settings') >= 0 &&
-							this.$route.fullPath.indexOf('/sites/') < 0 &&
-							this.$route.fullPath.indexOf('/benches/') < 0 &&
-							this.$route.fullPath.indexOf('/servers/') < 0
-						);
+						return this.$route.fullPath.startsWith('/settings');
 					},
 					icon: FCIcons.SettingsIcon
 				}
