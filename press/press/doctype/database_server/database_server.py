@@ -40,8 +40,11 @@ class DatabaseServer(BaseServer):
 			self.update_memory_limits()
 
 		if self.has_value_changed("team"):
+
 			if self.subscription and self.subscription.team != self.team:
 				self.subscription.disable()
+
+				# enable subscription if exists
 				if subscription := frappe.db.get_value(
 					"Subscription",
 					{"document_type": self.doctype, "document_name": self.name, "team": self.team},
