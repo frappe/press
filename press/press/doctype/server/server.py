@@ -518,7 +518,12 @@ class Server(BaseServer):
 
 				if subscription := frappe.db.get_value(
 					"Subscription",
-					{"document_type": self.doctype, "document_name": self.name, "team": self.team},
+					{
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"team": self.team,
+						"plan": self.plan,
+					},
 				):
 					frappe.db.set_value("Subscription", subscription, "enabled", 1)
 				else:
