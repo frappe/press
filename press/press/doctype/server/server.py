@@ -534,7 +534,7 @@ class Server(BaseServer):
 							}
 						).insert()
 					except Exception:
-						frappe.log_error("New Subscription Creation Error")
+						frappe.log_error("Server Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):

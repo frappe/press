@@ -60,7 +60,7 @@ class DatabaseServer(BaseServer):
 							}
 						).insert()
 					except Exception:
-						frappe.log_error("New Subscription Creation Error")
+						frappe.log_error("Database Subscription Creation Error")
 
 	def update_memory_limits(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
