@@ -21,7 +21,7 @@
 			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="domain"
-				@change="$emit('update:domain', $event)"
+				@change="$emit('update:domain', $event.target.value)"
 				placeholder="abc.example.com"
 			/>
 		</div>
@@ -40,7 +40,7 @@ export default {
 	},
 	methods: {
 		async titleChange(e) {
-			let title = e;
+			let title = e.target.value;
 			this.$emit('update:title', title);
 			let error = this.validateTitle(title);
 			this.errorMessage = error;

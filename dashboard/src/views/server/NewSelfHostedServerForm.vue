@@ -6,13 +6,13 @@
 			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="publicIP"
-				@change="$emit('update:publicIP', $event)"
+				@change="$emit('update:publicIP', $event.target.value)"
 			/>
 			<p class="text-black-900 text-base">Private IP of the Server</p>
 			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="privateIP"
-				@change="$emit('update:privateIP', $event)"
+				@change="$emit('update:privateIP', $event.target.value)"
 			/>
 			<div class="mt-2">
 				<ErrorMessage :message="publicIpErrorMessage" />
