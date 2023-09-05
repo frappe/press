@@ -50,7 +50,7 @@
 						{{ release.message }}
 					</p>
 					<CommitTag
-						class="hidden md:inline"
+						class="hidden md:flex"
 						:tag="release.tag || release.hash.slice(0, 6)"
 						:link="getCommitUrl(release.hash)"
 					/>
@@ -257,7 +257,7 @@ export default {
 			});
 		},
 		getCommitUrl(releaseHash) {
-			return `${this.repoUrl}/commit/${releaseHash}`;
+			return this.repoUrl ? `${this.repoUrl}/commit/${releaseHash}` : '';
 		},
 		releaseStateUpdate(data) {
 			if (this.selectedSource && data.source == this.selectedSource) {
@@ -291,13 +291,7 @@ export default {
 			return tempArray;
 		},
 		repoUrl() {
-			if (
-				this.$resources.appSource.loading ||
-				!this.$resources.appSource.data
-			) {
-				return '';
-			}
-			return this.$resources.appSource.data.repository_url;
+			return this.$resources.appSource?.data?.repository_url;
 		}
 	},
 	watch: {
