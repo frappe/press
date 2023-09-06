@@ -65,8 +65,8 @@ export default {
 			if (!subdomain) {
 				return 'Subdomain cannot be empty';
 			}
-			if (subdomain.length < 5) {
-				return 'Subdomain too short. Use 5 or more characters';
+			if (subdomain.length < 4) {
+				return 'Subdomain too short. Use 4 or more characters';
 			}
 			if (subdomain.length > 32) {
 				return 'Subdomain too long. Use 32 or less characters';
