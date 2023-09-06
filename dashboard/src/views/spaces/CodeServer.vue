@@ -1,12 +1,34 @@
 <template>
 	<div>
-		<div v-if="codeServer">
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<Breadcrumbs
+				:items="[
+					{ label: 'Spaces', route: { name: 'Spaces' } },
+					{
+						label: serverName,
+						route: {
+							name: 'CodeServerOverview',
+							params: { serverName: serverName }
+						}
+					}
+				]"
+			>
+				<template #actions>
+					<div>
+						<Dropdown :options="codeServerActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+					</div>
+				</template>
+			</Breadcrumbs>
+		</header>
+
+		<div v-if="codeServer" class="p-5">
 			<div class="pb-2">
-				<div class="text-base text-gray-700">
-					<router-link to="/spaces" class="hover:text-gray-800">
-						← Back to Code Servers
-					</router-link>
-				</div>
 				<div
 					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -15,13 +37,10 @@
 							{{ codeServer.name }}
 						</h1>
 						<Badge
-							class="ml-4 hidden md:inline-block"
+							class="ml-4"
 							:label="codeServer.status"
 							:colorMap="$badgeStatusColorMap"
 						/>
-					</div>
-					<div>
-						<Button icon-left="external-link" @click="open"> Open </Button>
 					</div>
 				</div>
 			</div>
@@ -94,24 +113,18 @@ export default {
 	resources: {
 		codeServer() {
 			return {
-				method: 'press.api.spaces.code_server',
+				url: 'press.api.spaces.code_server',
 				params: {
 					name: this.serverName
 				},
 				auto: true,
+				onSuccess: this.routeToGeneral,
 				onError: this.$routeTo404PageIfNotFound
 			};
 		}
 	},
 	activated() {
 		this.setupAgentJobUpdate();
-		if (this.codeServer) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.codeServer.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
-		}
 
 		if (this.codeServer?.status === 'Running') {
 			this.$socket.on('list_update', this.onSocketUpdate);
@@ -148,6 +161,17 @@ export default {
 				});
 			}
 			return [];
+		},
+		codeServerActions() {
+			return [
+				{
+					label: 'Open',
+					icon: 'external-link',
+					onClick: () => {
+						window.open(`https://${this.serverName}`, '_blank');
+					}
+				}
+			];
 		}
 	}
 };

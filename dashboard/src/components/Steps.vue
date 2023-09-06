@@ -6,8 +6,8 @@
 					<div
 						class="z-10 flex h-5 w-5 items-center justify-center rounded-full border border-gray-400 bg-white"
 						:class="{
-							'bg-blue-500 text-white': isStepCompleted(step),
-							'border-blue-500': isStepCurrent(step) || isStepCompleted(step)
+							'bg-gray-700 text-white': isStepCompleted(step),
+							'border-gray-500': isStepCurrent(step) || isStepCompleted(step)
 						}"
 					>
 						<FeatherIcon
@@ -17,14 +17,14 @@
 							:stroke-width="3"
 						/>
 						<div
-							class="h-1.5 w-1.5 rounded-full bg-blue-500"
+							class="h-1.5 w-1.5 rounded-full bg-gray-700"
 							v-if="isStepCurrent(step)"
 						></div>
 					</div>
 					<div
 						class="absolute top-1/2 w-8 -translate-x-8 -translate-y-1/2 transform border-t border-gray-400"
 						:class="{
-							'border-blue-500': isStepCompleted(step) || isStepCurrent(step)
+							'border-gray-500': isStepCompleted(step) || isStepCurrent(step)
 						}"
 						v-show="index !== 0"
 					></div>

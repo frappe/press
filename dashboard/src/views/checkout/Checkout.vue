@@ -77,7 +77,7 @@ export default {
 	resources: {
 		subscriptions() {
 			return {
-				method: 'press.api.developer.marketplace.get_subscriptions',
+				url: 'press.api.developer.marketplace.get_subscriptions',
 				params: {
 					secret_key: this.secretKey
 				},

@@ -38,47 +38,53 @@
 		</Card>
 
 		<Dialog
-			:options="{ title: 'Edit Publisher Profile' }"
+			:options="{
+				title: 'Edit Publisher Profile',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						loading: $resources.updatePublisherProfile.loading,
+						onClick: () => $resources.updatePublisherProfile.submit()
+					}
+				]
+			}"
 			v-model="showEditProfileDialog"
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
+					<FormControl
 						label="Preferred Payment Method"
 						type="select"
 						:options="['Frappe Cloud Credits', 'Bank Transfer', 'PayPal']"
 						v-model="payoutMethod"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'PayPal'"
 						label="PayPal ID"
-						type="text"
 						v-model="payPalId"
 					/>
 
-					<Input
+					<FormControl
 						label="GSTIN (if applicable)"
 						v-if="payoutMethod != 'Frappe Cloud Credits'"
-						type="text"
 						v-model="gstin"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'Bank Transfer'"
 						label="Account Number"
-						type="text"
 						v-model="acNumber"
 					/>
 
-					<Input
+					<FormControl
 						v-if="payoutMethod == 'Bank Transfer'"
 						label="Account Holder Name"
-						type="text"
 						v-model="acName"
 					/>
 
-					<Input
+					<FormControl
 						label="Bank Name, Branch, IFS Code"
 						v-if="payoutMethod == 'Bank Transfer'"
 						type="textarea"
@@ -90,20 +96,6 @@
 					class="mt-4"
 					:message="$resources.updatePublisherProfile.error"
 				/>
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showEditProfileDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updatePublisherProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updatePublisherProfile.submit()"
-					>
-						Save
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</div>
@@ -128,7 +120,7 @@ export default {
 	resources: {
 		updatePublisherProfile() {
 			return {
-				method: 'press.api.marketplace.update_publisher_profile',
+				url: 'press.api.marketplace.update_publisher_profile',
 				params: {
 					profile_data: {
 						preferred_payout_method: this.payoutMethod,

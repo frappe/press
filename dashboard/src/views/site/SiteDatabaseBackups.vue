@@ -9,11 +9,14 @@
 				v-if="site?.status === 'Active' || site?.status === 'Suspended'"
 				@click="$resources.scheduleBackup.fetch()"
 				:loading="$resources.scheduleBackup.loading"
+				class="py-5"
 			>
-				Schedule a backup now
+				Create Backup
 			</Button>
 			<Dialog
-				:options="{ title: 'Cannot Backup Site' }"
+				:options="{
+					title: 'Cannot Backup Site'
+				}"
 				v-model="showBackupDialog"
 			>
 				<template v-slot:body-content>
@@ -21,8 +24,45 @@
 						You cannot take more than 3 backups after site suspension
 					</p>
 				</template>
-				<template v-slot:actions>
-					<Button @click="showBackupDialog = false"> Cancel </Button>
+			</Dialog>
+			<Dialog
+				:options="{ title: 'Restore Backup on Another Site' }"
+				v-model="showRestoreOnAnotherSiteDialog"
+			>
+				<template v-slot:body-content>
+					<p class="text-base">
+						Select the site where you want to restore the backup
+					</p>
+					<SiteRestoreSelector
+						:sites="
+							$resources.sites.data.filter(site => site.name !== this.site.name)
+						"
+						:selectedSite="selectedSite"
+						@update:selectedSite="value => (selectedSite = value)"
+					/>
+					<div v-if="selectedSite" class="mt-4">
+						<p class="text-base">
+							Are you sure you want to restore the backup from
+							<b>{{ site?.name }}</b> taken on
+							<b>{{ formatDate(backupToRestore.creation) }}</b> to your site
+							<b>{{ selectedSite.name }}</b
+							>?
+						</p>
+					</div>
+					<ErrorMessage
+						class="mt-2"
+						:message="restoreOnAnotherSiteErrorMessage"
+					/>
+				</template>
+				<template #actions>
+					<Button
+						variant="solid"
+						class="w-full"
+						v-if="selectedSite"
+						@click="restoreOffsiteBackupOnAnotherSite(backupToRestore)"
+					>
+						Restore
+					</Button>
 				</template>
 			</Dialog>
 		</template>
@@ -44,7 +84,7 @@
 					<span v-else> Performing Backup... </span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
+					<Badge v-if="backup.offsite" label="Offsite" theme="green" />
 					<Dropdown :options="dropdownItems(backup)">
 						<template v-slot="{ open }">
 							<Button icon="more-horizontal" />
@@ -64,30 +104,45 @@
 	</Card>
 </template>
 <script>
+import SiteRestoreSelector from '@/components/SiteRestoreSelector.vue';
+
 export default {
 	name: 'SiteDatabaseBackups',
 	props: ['site'],
+	components: {
+		SiteRestoreSelector
+	},
 	data() {
 		return {
 			isRestorePending: false,
 			backupToRestore: null,
-			showBackupDialog: false
+			showBackupDialog: false,
+			showRestoreOnAnotherSiteDialog: false,
+			restoreOnAnotherSiteErrorMessage: null,
+			selectedSite: null
 		};
 	},
 	resources: {
+		sites() {
+			return {
+				url: 'press.api.site.all',
+				initialData: [],
+				auto: true
+			};
+		},
 		backups() {
 			return {
-				method: 'press.api.site.backups',
+				url: 'press.api.site.backups',
 				params: {
 					name: this.site?.name
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		scheduleBackup() {
 			return {
-				method: 'press.api.site.backup',
+				url: 'press.api.site.backup',
 				params: {
 					name: this.site?.name,
 					with_files: true
@@ -96,7 +151,7 @@ export default {
 					this.$resources.backups.reload();
 				},
 				onError: () => {
-					this.showDialog();
+					this.showBackupDialog = true;
 				}
 			};
 		}
@@ -125,7 +180,7 @@ export default {
 							label: `Database (${this.formatBytes(
 								backup.database_size || 0
 							)})`,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'database',
@@ -139,7 +194,7 @@ export default {
 								backup.public_size || 0
 							)})`,
 							condition: () => backup.public_file,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'public',
@@ -153,7 +208,7 @@ export default {
 								backup.private_size || 0
 							)})`,
 							condition: () => backup.private_file,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'private',
@@ -167,7 +222,7 @@ export default {
 								backup.config_file_size || 0
 							)})`,
 							condition: () => backup.config_file_size,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'config',
@@ -184,18 +239,24 @@ export default {
 					items: [
 						{
 							label: 'Restore Backup',
-							handler: () => {
+							onClick: () => {
 								this.$confirm({
 									title: 'Restore Backup',
 									// prettier-ignore
 									message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
 									actionLabel: 'Restore',
-									actionType: 'primary',
 									action: closeDialog => {
 										closeDialog();
 										this.restoreOffsiteBackup(backup);
 									}
 								});
+							}
+						},
+						{
+							label: 'Restore Backup on Another Site',
+							onClick: () => {
+								this.showRestoreOnAnotherSiteDialog = true;
+								this.backupToRestore = backup;
 							}
 						}
 					]
@@ -228,6 +289,28 @@ export default {
 					window.location.reload();
 				}, 1000);
 			});
+		},
+		async restoreOffsiteBackupOnAnotherSite(backup) {
+			this.isRestorePending = true;
+			this.$call('press.api.site.restore', {
+				name: this.selectedSite.name,
+				files: {
+					database: backup.remote_database_file,
+					public: backup.remote_public_file,
+					private: backup.remote_private_file
+				}
+			})
+				.then(() => {
+					this.isRestorePending = false;
+					this.showRestoreOnAnotherSiteDialog = false;
+					this.$router.push(`/sites/${this.selectedSite.name}/jobs`);
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
+				})
+				.catch(error => {
+					this.restoreOnAnotherSiteErrorMessage = error;
+				});
 		},
 		showDialog() {
 			this.showBackupDialog = true;

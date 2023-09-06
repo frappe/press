@@ -22,7 +22,7 @@
 		</template>
 		<template #details>
 			<CardDetails>
-				<div class="px-6 py-5 h-full">
+				<div class="h-full px-6 py-5">
 					<div class="flex justify-between">
 						<div>
 							<h2 class="text-xl font-semibold">Review Communication</h2>
@@ -35,10 +35,10 @@
 							<Button @click="showReplyDialog = true"> Reply </Button>
 						</div>
 					</div>
-					<div class="overflow-auto h-full py-5 mt-4">
+					<div class="mt-4 h-full overflow-auto py-5">
 						<div
 							v-for="message in communication"
-							class="overflow-auto p-4 mb-4 rounded-lg bg-gray-50"
+							class="mb-4 overflow-auto rounded-lg bg-gray-50 p-4"
 						>
 							<div class="flex justify-between">
 								<div class="flex pb-4">
@@ -47,7 +47,7 @@
 										:label="message.sender"
 										:imageURL="message.user_image"
 									/>
-									<span class="text-lg font-semibold self-center">{{
+									<span class="self-center text-lg font-semibold">{{
 										message.sender
 									}}</span>
 								</div>
@@ -62,14 +62,21 @@
 			</CardDetails>
 		</template>
 	</CardWithDetails>
-	<Dialog v-model="showReplyDialog" :options="{ title: 'Reply' }">
+	<Dialog
+		v-model="showReplyDialog"
+		:options="{
+			title: 'Reply',
+			actions: [
+				{
+					label: 'Send',
+					variant: 'solid',
+					onClick: () => $resources.addReply.submit()
+				}
+			]
+		}"
+	>
 		<template v-slot:body-content>
-			<Input label="Message" v-model="message" type="textarea" required />
-		</template>
-		<template #actions>
-			<Button appearance="primary" @click="$resources.addReply.submit()">
-				Send
-			</Button>
+			<FormControl label="Message" v-model="message" type="textarea" required />
 		</template>
 	</Dialog>
 </template>
@@ -77,6 +84,7 @@
 <script>
 import CardWithDetails from '@/components/CardWithDetails.vue';
 import CardDetails from '@/components/CardDetails.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppReviewStages',
@@ -106,7 +114,7 @@ export default {
 	resources: {
 		startReview() {
 			return {
-				method: 'press.api.marketplace.start_review',
+				url: 'press.api.marketplace.start_review',
 				params: {
 					name: this.appName
 				},
@@ -117,7 +125,7 @@ export default {
 		},
 		communication() {
 			return {
-				method: 'press.api.marketplace.communication',
+				url: 'press.api.marketplace.communication',
 				params: {
 					name: this.appName
 				}
@@ -125,14 +133,14 @@ export default {
 		},
 		addReply() {
 			return {
-				method: 'press.api.marketplace.add_reply',
+				url: 'press.api.marketplace.add_reply',
 				params: {
 					name: this.appName,
 					message: this.message
 				},
 				onSuccess() {
 					this.showReplyDialog = false;
-					this.$notify({
+					notify({
 						title: 'Reply Queued',
 						message: 'Message reply is queued for sending',
 						icon: 'check',

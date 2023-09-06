@@ -1,68 +1,62 @@
 <template>
-	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-		<Card
-			title="Usage"
-			subtitle="Amount so far based on the usage of your sites"
-		>
-			<template #actions>
-				<Button @click="showChangeModeDialog = true">
-					Change Payment Mode
-				</Button>
-				<ChangePaymentModeDialog v-model="showChangeModeDialog" />
-			</template>
-			<div
-				class="flex h-full flex-col"
-				v-if="!$resources.upcomingInvoice.loading"
-			>
-				<div class="flex">
-					<PlanIcon />
-					<div class="ml-4">
-						<div class="text-4xl font-semibold">
+	<div class="space-y-5">
+		<Card title="Billing summary">
+			<div v-if="!$resources.upcomingInvoice.loading">
+				<div class="space-y-2">
+					<div class="grid grid-cols-3 items-center py-1.5">
+						<label class="text-base text-gray-700">
+							Current billing amount
+						</label>
+						<div class="col-span-2 text-lg font-semibold">
 							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
 						</div>
-						<div class="text-base text-gray-700" v-if="upcomingInvoice">
+					</div>
+					<div class="grid grid-cols-3 items-center py-1.5">
+						<label class="text-base text-gray-700">Current billing cycle</label>
+						<div
+							class="col-span-2 text-base text-gray-900"
+							v-if="upcomingInvoice"
+						>
 							{{ dateShort(upcomingInvoice.period_start) }}
 							→
 							{{ dateShort(upcomingInvoice.period_end) }}
 						</div>
-						<div class="mt-2 text-base text-gray-600">
-							{{ paymentModeDescription }}
+					</div>
+					<div class="grid grid-cols-3 items-center">
+						<label class="text-base text-gray-700"> Account balance </label>
+						<div class="text-base">
+							{{ availableCredits }}
+						</div>
+						<div class="text-right">
+							<Button
+								class="ml-2"
+								@click="showPrepaidCreditsDialog = true"
+								theme="gray"
+							>
+								Add money
+							</Button>
 						</div>
 					</div>
-				</div>
-				<div class="mt-auto rounded bg-gray-100 p-4">
-					<div class="flex items-center">
-						<!-- prettier-ignore -->
-						<svg width="26" height="20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 6.5A1.5 1.5 0 012.5 5h17A1.5 1.5 0 0121 6.5v11a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 011 17.5v-11z" stroke="url(#paint0_linear)" stroke-miterlimit="10"/><path d="M5 5V2.5A1.5 1.5 0 016.5 1h17A1.5 1.5 0 0125 2.5v9a1.5 1.5 0 01-1.5 1.5H21" stroke="url(#paint1_linear)" stroke-miterlimit="10"/><path d="M11 15a3 3 0 100-6 3 3 0 000 6z" stroke="url(#paint2_linear)" stroke-miterlimit="10"/><defs><linearGradient id="paint0_linear" x1="1" y1="5" x2="1" y2="19" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint1_linear" x1="5" y1="1" x2="5" y2="13" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient><linearGradient id="paint2_linear" x1="8" y1="9" x2="8" y2="15" gradientUnits="userSpaceOnUse"><stop stop-color="#2C9AF1"/><stop offset="1" stop-color="#2490EF"/></linearGradient></defs></svg>
-						<div class="ml-4">
-							<div class="text-base text-gray-600">
-								{{
-									$account.team.payment_mode === 'Partner Credits'
-										? 'Available Partner Credits'
-										: 'Account Balance'
-								}}
+					<div class="grid grid-cols-3 items-start">
+						<label class="pt-1.5 text-base text-gray-700"> Payment mode </label>
+						<div class="pt-1.5 text-base">
+							<div>
+								{{ $account.team.payment_mode || 'Not set' }}
 							</div>
-							<div v-if="loading || $resources.availablePartnerCredits.loading">
-								<Button :loading="true">Loading</Button>
-							</div>
-							<div v-else class="text-lg font-medium text-gray-900">
-								{{ availableCredits }}
+							<div class="mt-1 text-gray-600 empty:hidden">
+								{{ paymentModeDescription }}
 							</div>
 						</div>
-						<div class="ml-auto space-x-2">
-							<Button
-								@click="showPrepaidCreditsDialog = true"
-								appearance="white"
-							>
-								Add Balance
+						<div class="text-right">
+							<Button @click="showChangeModeDialog = true">
+								Change Payment Mode
 							</Button>
 						</div>
 					</div>
 				</div>
 
 				<ErrorMessage
-					v-if="$resourceErrors"
-					:message="$resourceErrors"
+					:message="$resources.upcomingInvoice.error"
 					class="mt-3"
 				/>
 			</div>
@@ -71,9 +65,11 @@
 				<Button :loading="true" loadingText="Loading" />
 			</div>
 
+			<ChangePaymentModeDialog v-model="showChangeModeDialog" />
+
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
-				v-model="showPrepaidCreditsDialog"
+				v-model:show="showPrepaidCreditsDialog"
 				:minimum-amount="minimumAmount"
 				@success="
 					() => {
@@ -85,7 +81,7 @@
 		</Card>
 		<AccountBillingUpcomingInvoice
 			:invoice-doc="upcomingInvoice"
-			class="md:h-72"
+			v-if="upcomingInvoice?.items.length"
 		/>
 	</div>
 </template>
@@ -107,15 +103,15 @@ export default {
 		)
 	},
 	resources: {
-		upcomingInvoice: 'press.api.billing.upcoming_invoice',
+		upcomingInvoice: { url: 'press.api.billing.upcoming_invoice', auto: true },
 		availablePartnerCredits() {
 			return {
-				method: 'press.api.billing.get_partner_credits'
+				url: 'press.api.billing.get_partner_credits'
 			};
 		},
 		unpaidAmountDue() {
 			return {
-				method: 'press.api.billing.total_unpaid_amount',
+				url: 'press.api.billing.total_unpaid_amount',
 				auto: true
 			};
 		}

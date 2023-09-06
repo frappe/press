@@ -22,7 +22,10 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(server_filter="All Servers"):
+def all(server_filter=None):
+	if server_filter is None:
+		server_filter = {"server_type": "", "tag": ""}
+
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -31,10 +34,16 @@ def all(server_filter="All Servers"):
 	app_server = frappe.qb.DocType("Server")
 	res_tag = frappe.qb.DocType("Resource Tag")
 
-	if server_filter != "Database Servers":
+	if server_filter["server_type"] != "Database Servers":
 		app_server_query = (
 			frappe.qb.from_(app_server)
-			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
+			.select(
+				app_server.name,
+				app_server.title,
+				app_server.status,
+				app_server.creation,
+				app_server.cluster,
+			)
 			.where(
 				((app_server.team).isin(teams))
 				& (app_server.status != "Archived")
@@ -42,37 +51,51 @@ def all(server_filter="All Servers"):
 			)
 		)
 
-	if server_filter != "App Servers":
+		if server_filter["tag"]:
+			app_server_query = app_server_query.inner_join(res_tag).on(
+				(res_tag.parent == app_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
+
+	if server_filter["server_type"] != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
-			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
+			.select(
+				db_server.name,
+				db_server.title,
+				db_server.status,
+				db_server.creation,
+				db_server.cluster,
+			)
 			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
 		)
 
-	if server_filter.startswith("tag:"):
-		tag = server_filter[4:]
+		if server_filter["tag"]:
+			database_server_query = database_server_query.inner_join(res_tag).on(
+				(res_tag.parent == db_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
 
-		app_server_query = app_server_query.inner_join(res_tag).on(
-			(res_tag.parent == app_server.name) & (res_tag.tag_name == tag)
-		)
-		database_server_query = database_server_query.inner_join(res_tag).on(
-			(res_tag.parent == db_server.name) & (res_tag.tag_name == tag)
-		)
-
-	if server_filter == "All Servers" or server_filter.startswith("tag:"):
-		query = app_server_query + database_server_query
-	elif server_filter == "App Servers":
+	if server_filter["server_type"] == "App Servers":
 		query = app_server_query
-	elif server_filter == "Database Servers":
+	elif server_filter["server_type"] == "Database Servers":
 		query = database_server_query
 	else:
-		return []
+		query = app_server_query + database_server_query
 
 	# union isn't supported in qb for run method
 	# https://github.com/frappe/frappe/issues/15609
 	servers = frappe.db.sql(query.get_sql(), as_dict=True)
 	for server in servers:
+		server_plan_name = frappe.get_value("Server", server.name, "plan")
+		server["plan"] = (
+			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
+		)
 		server["app_server"] = f"f{server.name[1:]}"
+		server["tags"] = frappe.get_all(
+			"Resource Tag", {"parent": server.name}, pluck="tag_name"
+		)
+		server["region_info"] = frappe.db.get_value(
+			"Cluster", server.cluster, ["title", "image"], as_dict=True
+		)
 	return servers
 
 
@@ -387,32 +410,6 @@ def plans(name, cluster=None):
 			plan.pop("roles", "")
 			out.append(plan)
 	return out
-
-
-@frappe.whitelist()
-@protected(["Server", "Database Server"])
-def jobs(name, start=0):
-	jobs = frappe.get_all(
-		"Agent Job",
-		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return jobs
-
-
-@frappe.whitelist()
-@protected(["Server", "Database Server"])
-def plays(name, start=0):
-	plays = frappe.get_all(
-		"Ansible Play",
-		fields=["name", "play", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return plays
 
 
 @frappe.whitelist()

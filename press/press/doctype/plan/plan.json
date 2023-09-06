@@ -24,6 +24,7 @@
   "offsite_backups",
   "private_benches",
   "database_access",
+  "monitor_access",
   "support_included",
   "servers",
   "cluster",
@@ -180,6 +181,12 @@
    "fieldname": "disk",
    "fieldtype": "Int",
    "label": "Disk"
+  },
+  {
+   "default": "0",
+   "fieldname": "monitor_access",
+   "fieldtype": "Check",
+   "label": "Monitor Access"
   },
   {
    "default": "0",

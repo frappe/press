@@ -30,18 +30,17 @@
 							<Badge
 								v-if="candidate.status != 'Success'"
 								:label="candidate.status"
-								:colorMap="$badgeStatusColorMap"
 							>
 							</Badge>
 						</template>
 					</ListItem>
 					<div class="border-b"></div>
 				</router-link>
-				<div class="py-3" v-if="!$resources.candidates.lastPageEmpty">
+				<div class="py-3" v-if="$resources.candidates.hasNextPage">
 					<Button
 						:loading="$resources.candidates.loading"
 						loadingText="Loading..."
-						@click="pageStart += 10"
+						@click="$resources.candidates.next()"
 					>
 						Load more
 					</Button>
@@ -72,28 +71,23 @@ export default {
 		CardWithDetails,
 		StepsDetail
 	},
-	data() {
-		return {
-			pageStart: 0
-		};
-	},
 	resources: {
 		candidates() {
 			return {
-				method: 'press.api.bench.candidates',
-				params: {
-					name: this.bench?.name,
-					start: this.pageStart
+				type: 'list',
+				doctype: 'Deploy Candidate',
+				url: 'press.api.bench.candidates',
+				filters: {
+					group: this.bench?.name
 				},
+				start: 0,
 				auto: true,
-				pageLength: 10,
-				keepData: true,
-				default: []
+				pageLength: 10
 			};
 		},
 		selectedCandidate() {
 			return {
-				method: 'press.api.bench.candidate',
+				url: 'press.api.bench.candidate',
 				params: {
 					name: this.candidateName
 				},
@@ -129,7 +123,6 @@ export default {
 			}
 		},
 		onStopped() {
-			this.$resources.candidates.reset();
 			this.$resources.candidates.reload();
 			this.$resources.selectedCandidate.reload();
 		},
@@ -221,7 +214,7 @@ export default {
 			}
 		},
 		candidates() {
-			return this.$resources.candidates.data;
+			return this.$resources.candidates.data || [];
 		}
 	}
 };

@@ -13,7 +13,7 @@
 				v-for="(bench, index) in benches"
 				:key="bench"
 				:title="bench"
-				class="border rounded-md m-2 px-2 shadow-sm hover:shadow-md hover:cursor-pointer"
+				class="m-2 rounded-md border px-2 shadow-sm hover:cursor-pointer hover:shadow-md"
 				:class="[
 					modelValue && modelValue == bench
 						? 'relative ring-2 ring-inset ring-blue-500'
@@ -22,14 +22,10 @@
 				v-on:click="selectBench(bench)"
 			>
 				<template #actions>
-					<Badge
-						v-if="index === 0"
-						label="Latest Deployed"
-						:colorMap="$badgeStatusColorMap"
-					></Badge>
+					<Badge v-if="index === 0" label="Latest Deployed"></Badge>
 				</template>
 			</ListItem>
-			<div v-else class="mt-4 ml-2 text-sm">
+			<div v-else class="ml-2 mt-4 text-sm">
 				No bench versions found with a code server. Click
 				<router-link
 					:to="`/benches/${selectedGroup}`"
@@ -55,7 +51,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.spaces.code_server_bench_options',
+				url: 'press.api.spaces.code_server_bench_options',
 				params: {
 					group: this.selectedGroup
 				},

@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-10" v-if="site">
+	<div class="space-y-6" v-if="site">
 		<ConfigEditor
 			title="Site Config"
 			subtitle="Add and update key value pairs to your site's site_config.json"
@@ -28,15 +28,15 @@ export default {
 	methods: {
 		siteConfig() {
 			return {
-				method: 'press.api.site.site_config',
+				url: 'press.api.site.site_config',
 				params: { name: this.site?.name },
 				auto: true,
-				default: []
+				initialData: []
 			};
 		},
 		updateSiteConfig(updatedConfig) {
 			return {
-				method: 'press.api.site.update_config',
+				url: 'press.api.site.update_config',
 				params: {
 					name: this.site?.name,
 					config: JSON.stringify(updatedConfig)

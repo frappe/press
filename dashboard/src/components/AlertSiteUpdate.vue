@@ -5,12 +5,33 @@
 			site now?
 		</span>
 		<template #actions>
-			<Button appearance="primary" @click="showUpdatesDialog = true">
-				Show updates
-			</Button>
+			<Tooltip
+				:text="
+					!permissions.update
+						? `You don't have enough permissions to perform this action`
+						: 'Show Updates'
+				"
+			>
+				<Button
+					:disabled="!permissions.update"
+					variant="solid"
+					@click="showUpdatesDialog = true"
+				>
+					Show updates
+				</Button>
+			</Tooltip>
 		</template>
 		<Dialog
-			:options="{ title: 'Updates available' }"
+			:options="{
+				title: 'Updates available',
+				actions: [
+					{
+						label: 'Update Now',
+						variant: 'solid',
+						onClick: () => $resources.scheduleUpdate.fetch()
+					}
+				]
+			}"
 			v-model="showUpdatesDialog"
 		>
 			<template v-slot:body-content>
@@ -39,26 +60,18 @@
 					<label for="skip-backup" class="ml-1 text-sm text-gray-900">
 						Update without site backup?
 					</label>
-					<div class="mt-1 text-red-600 text-sm" v-if="wantToSkipBackups">
+					<div class="mt-1 text-sm text-red-600" v-if="wantToSkipBackups">
 						In case of failure, you won't be able to restore the site.
 					</div>
 				</div>
 				<ErrorMessage class="mt-1" :message="$resources.scheduleUpdate.error" />
-			</template>
-			<template #actions>
-				<Button
-					appearance="primary"
-					@click="$resources.scheduleUpdate.fetch()"
-					:loading="$resources.scheduleUpdate.loading"
-				>
-					Update now
-				</Button>
 			</template>
 		</Dialog>
 	</Alert>
 </template>
 <script>
 import SiteAppUpdates from './SiteAppUpdates.vue';
+import { notify } from '@/utils/toast';
 export default {
 	name: 'AlertSiteUpdate',
 	props: ['site'],
@@ -75,7 +88,7 @@ export default {
 	resources: {
 		updateInformation() {
 			return {
-				method: 'press.api.site.check_for_updates',
+				url: 'press.api.site.check_for_updates',
 				params: {
 					name: this.site?.name
 				},
@@ -84,7 +97,7 @@ export default {
 		},
 		lastMigrateFailed() {
 			return {
-				method: 'press.api.site.last_migrate_failed',
+				url: 'press.api.site.last_migrate_failed',
 				params: {
 					name: this.site?.name
 				},
@@ -93,7 +106,7 @@ export default {
 		},
 		scheduleUpdate() {
 			return {
-				method: 'press.api.site.update',
+				url: 'press.api.site.update',
 				params: {
 					name: this.site?.name,
 					skip_failing_patches: this.wantToSkipFailingPatches,
@@ -101,7 +114,7 @@ export default {
 				},
 				onSuccess() {
 					this.showUpdatesDialog = false;
-					this.$notify({
+					notify({
 						title: 'Site update scheduled successfully',
 						icon: 'check',
 						color: 'green'
@@ -111,6 +124,14 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				update: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.update'
+				)
+			};
+		},
 		show() {
 			if (this.updateInformation) {
 				return (

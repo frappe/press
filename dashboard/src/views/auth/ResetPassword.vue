@@ -8,16 +8,15 @@
 			@submit.prevent="$resources.resetPassword.submit()"
 		>
 			<div class="space-y-4">
-				<Input
+				<FormControl
 					label="Email"
 					class="pointer-events-none"
-					type="text"
 					:modelValue="email"
 					name="email"
 					autocomplete="off"
 					disabled
 				/>
-				<Input
+				<FormControl
 					label="Password"
 					type="password"
 					v-model="password"
@@ -26,10 +25,10 @@
 					required
 				/>
 			</div>
-			<ErrorMessage class="mt-6" :message="$resourceErrors" />
+			<ErrorMessage class="mt-6" :message="$resources.resetPassword.error" />
 			<Button
 				class="mt-6"
-				appearance="primary"
+				variant="solid"
 				:disabled="!password"
 				:loading="$resources.resetPassword.loading"
 			>
@@ -64,7 +63,7 @@ export default {
 	resources: {
 		validateResetKey() {
 			return {
-				method: 'press.api.account.get_user_for_reset_password_key',
+				url: 'press.api.account.get_user_for_reset_password_key',
 				params: {
 					key: this.requestKey
 				},
@@ -76,7 +75,7 @@ export default {
 		},
 		resetPassword() {
 			return {
-				method: 'press.api.account.reset_password',
+				url: 'press.api.account.reset_password',
 				params: {
 					key: this.requestKey,
 					password: this.password

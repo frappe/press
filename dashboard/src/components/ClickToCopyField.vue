@@ -10,13 +10,15 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	props: ['textContent'],
 	methods: {
 		copyTextContentToClipboard() {
 			const clipboard = window.navigator.clipboard;
 			clipboard.writeText(this.textContent).then(() => {
-				this.$notify({
+				notify({
 					title: 'Copied to clipboard!',
 					icon: 'check',
 					color: 'green'

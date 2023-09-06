@@ -1,18 +1,22 @@
 <template>
 	<Dialog
 		:modelValue="modelValue"
-		@update:modelValue="$emit('update:modelValue', $event)"
-		:options="{
-			title: 'Buy Credits',
-			subtitle: paymentGateway ? '' : 'Choose your payment gateway'
-		}"
+		@update:modelValue="$emit('update:show', $event)"
 	>
+		<template #body-title>
+			<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+				Add money to your account
+			</h3>
+			<p class="mt-1 text-base text-gray-600">
+				{{ paymentGateway ? '' : 'Choose your payment gateway' }}
+			</p>
+		</template>
 		<template v-slot:body-content>
 			<BuyPrepaidCredits
 				v-if="paymentGateway === 'stripe'"
 				:minimumAmount="minimumAmount"
 				@success="$emit('success')"
-				@cancel="$emit('update:modelValue', false)"
+				@cancel="$emit('update:show', false)"
 			/>
 
 			<div v-if="paymentGateway === 'razorpay'">
@@ -39,7 +43,7 @@
 					<Button @click="paymentGateway = null">Go Back</Button>
 					<div>
 						<Button
-							appearance="primary"
+							variant="solid"
 							:loading="$resources.createRazorpayOrder.loading"
 							@click="buyCreditsWithRazorpay"
 						>
@@ -118,11 +122,11 @@ export default {
 			default: 0
 		}
 	},
-	emits: ['update:modelValue', 'success'],
+	emits: ['update:show', 'success'],
 	resources: {
 		createRazorpayOrder() {
 			return {
-				method: 'press.api.billing.create_razorpay_order',
+				url: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.creditsToBuy
 				},
@@ -138,7 +142,7 @@ export default {
 		},
 		handlePaymentSuccess() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_success',
+				url: 'press.api.billing.handle_razorpay_payment_success',
 				onSuccess() {
 					this.$emit('success');
 				}
@@ -146,7 +150,7 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_failed',
+				url: 'press.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
 				}

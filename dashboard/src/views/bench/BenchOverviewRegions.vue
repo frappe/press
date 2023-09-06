@@ -44,7 +44,8 @@
 
 			<template #actions>
 				<Button
-					appearance="primary"
+					variant="solid"
+					class="w-full"
 					v-if="selectedRegion"
 					:loading="$resources.addRegion.loading"
 					@click="
@@ -77,7 +78,7 @@ export default {
 	resources: {
 		regions() {
 			return {
-				method: 'press.api.bench.regions',
+				url: 'press.api.bench.regions',
 				params: {
 					name: this.bench?.name
 				},
@@ -86,7 +87,7 @@ export default {
 		},
 		availableRegions() {
 			return {
-				method: 'press.api.bench.available_regions',
+				url: 'press.api.bench.available_regions',
 				params: {
 					name: this.bench?.name
 				},
@@ -99,7 +100,7 @@ export default {
 		},
 		addRegion() {
 			return {
-				method: 'press.api.bench.add_region',
+				url: 'press.api.bench.add_region',
 				onSuccess() {
 					window.location.reload();
 				}

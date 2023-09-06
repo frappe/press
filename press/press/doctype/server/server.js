@@ -79,6 +79,12 @@ frappe.ui.form.on('Server', {
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
 			[
+				__('Setup MySQLdump'),
+				'setup_mysqldump',
+				true,
+				frm.doc.is_server_setup && frm.doc.status == 'Active',
+			],
+			[
 				__('Whitelist Server'),
 				'whitelist_ipaddress',
 				false,
@@ -103,6 +109,18 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup &&
 					frm.doc.is_standalone &&
 					!frm.doc.is_standalone_setup,
+			],
+			[
+				__('Fetch Security Updates'),
+				'fetch_security_updates',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Configure SSH logging'),
+				'configure_ssh_logging',
+				false,
+				frm.doc.is_server_setup,
 			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {

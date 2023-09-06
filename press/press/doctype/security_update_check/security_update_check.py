@@ -23,8 +23,9 @@ class SecurityUpdateCheck(Document):
 	def _start(self):
 		try:
 			ansible = Ansible(
-				playbook="security_update_check.yml",
+				playbook="security_update.yml",
 				server=frappe.get_doc(self.server_type, self.server),
+				variables={"validate_pending_security_updates": True},
 			)
 			self.reload()
 			self.play = ansible.play

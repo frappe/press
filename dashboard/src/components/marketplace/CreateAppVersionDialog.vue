@@ -1,7 +1,17 @@
 <template>
 	<Dialog
 		:modelValue="show"
-		:options="{ title: 'Add a New App Version' }"
+		:options="{
+			title: 'Add a New App Version',
+			actions: [
+				{
+					label: 'Add New Version',
+					variant: 'solid',
+					loading: $resources.addVersion.loading,
+					onClick: () => $resources.addVersion.submit()
+				}
+			]
+		}"
 		@close="
 			() => {
 				$emit('close', true);
@@ -32,19 +42,12 @@
 				</div>
 			</div>
 		</template>
-		<template v-slot:actions>
-			<Button
-				class="mt-3"
-				appearance="primary"
-				:loading="$resources.addVersion.loading"
-				@click="$resources.addVersion.submit()"
-				>Add New Version</Button
-			>
-		</template>
 	</Dialog>
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'CreateMarketplaceAppVersion.vue',
 	data() {
@@ -59,7 +62,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.marketplace.options_for_version',
+				url: 'press.api.marketplace.options_for_version',
 				auto: true,
 				params: {
 					name: this.app.name,
@@ -73,7 +76,7 @@ export default {
 		},
 		addVersion() {
 			return {
-				method: 'press.api.marketplace.add_version',
+				url: 'press.api.marketplace.add_version',
 				params: {
 					name: this.app.name,
 					branch: this.selectedBranch,
@@ -83,7 +86,7 @@ export default {
 					window.location.reload();
 				},
 				onError(e) {
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'

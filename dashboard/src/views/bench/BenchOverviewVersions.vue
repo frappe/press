@@ -7,7 +7,7 @@
 	>
 		<template #actions>
 			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
+				class="text-base text-gray-600 hover:text-gray-700"
 				:to="`/benches/${bench.name}/versions`"
 			>
 				View versions →
@@ -29,20 +29,21 @@
 			>
 				<template #actions>
 					<div class="flex items-center space-x-2">
-						<Badge
-							v-if="version.status != 'Active'"
-							:label="version.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
+						<Badge v-if="version.status != 'Active'" :label="version.status" />
 						<router-link
 							v-else
 							class="block"
 							:to="`/benches/${bench.name}/versions/${version.name}`"
 						>
-							<Badge class="cursor-pointer hover:text-green-600" color="green">
-								{{ version.sites.length }}
-								{{ $plural(version.sites.length, 'site', 'sites') }}
-							</Badge>
+							<Badge
+								class="cursor-pointer hover:text-green-600"
+								theme="green"
+								:label="`${version.sites.length} ${$plural(
+									version.sites.length,
+									'site',
+									'sites'
+								)}`"
+							/>
 						</router-link>
 					</div>
 				</template>
@@ -57,7 +58,7 @@ export default {
 	resources: {
 		versions() {
 			return {
-				method: 'press.api.bench.versions',
+				url: 'press.api.bench.versions',
 				params: { name: this.bench?.name },
 				auto: true
 			};

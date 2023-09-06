@@ -7,12 +7,15 @@
 				</template>
 			</Dropdown>
 		</template>
-		<div class="divide-y">
+		<div class="divide-y" v-if="addedTags?.length">
 			<ListItem v-for="tag in addedTags" :key="tag.name" :title="tag.tag">
 				<template #actions>
 					<Button icon="trash-2" @click="removeTag(tag.name)" />
 				</template>
 			</ListItem>
+		</div>
+		<div v-else class="m-4 text-center">
+			<p class="text-base text-gray-500">No tags added yet</p>
 		</div>
 	</Card>
 	<Dialog :options="{ title: `Add a new tag` }" v-model="showAddDialog">
@@ -25,21 +28,26 @@
 		</template>
 	</Dialog>
 	<Dialog
-		:options="{ title: `Create a new tag for ${doctype}` }"
+		:options="{
+			title: `Create a new tag for ${doctype}`,
+			actions: [
+				{
+					label: 'Create',
+					variant: 'solid',
+					onClick: () => $resources.createTag.submit()
+				}
+			]
+		}"
 		v-model="showNewDialog"
 	>
 		<template v-slot:body-content>
-			<Input label="Enter Tag name" v-model="newTag" />
-		</template>
-		<template #actions>
-			<Button @click="showNewDialog = false"> Cancel </Button>
-			<Button appearance="primary" @click="$resources.createTag.submit()">
-				Create
-			</Button>
+			<FormControl label="Enter Tag name" v-model="newTag" />
 		</template>
 	</Dialog>
 </template>
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'Tags',
 	props: ['name', 'doctype', 'resourceTags', 'tags'],
@@ -48,14 +56,14 @@ export default {
 			dropdownItems: [
 				{
 					label: 'Add',
-					handler: () =>
+					onClick: () =>
 						this.tags.length > 0
 							? (this.showAddDialog = true)
 							: (this.showNewDialog = true)
 				},
 				{
 					label: 'New',
-					handler: () => (this.showNewDialog = true)
+					onClick: () => (this.showNewDialog = true)
 				}
 			],
 			showAddDialog: false,
@@ -68,7 +76,7 @@ export default {
 	resources: {
 		addTag() {
 			return {
-				method: 'press.api.dashboard.add_tag',
+				url: 'press.api.dashboard.add_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -83,7 +91,7 @@ export default {
 		},
 		removeTag() {
 			return {
-				method: 'press.api.dashboard.remove_tag',
+				url: 'press.api.dashboard.remove_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -97,7 +105,7 @@ export default {
 		},
 		createTag() {
 			return {
-				method: 'press.api.dashboard.create_new_tag',
+				url: 'press.api.dashboard.create_new_tag',
 				params: {
 					name: this.name,
 					doctype: this.doctype,
@@ -110,7 +118,7 @@ export default {
 				},
 				onError(e) {
 					this.showNewDialog = false;
-					this.$notify({
+					notify({
 						title: e,
 						color: 'red',
 						icon: 'x'
