@@ -101,8 +101,9 @@
 				<FormControl
 					type="checkbox"
 					label="I am okay if my details are shared with local partner"
-					@change="val => $emit('update:shareDetailsConsent', val)"
-					:modelValue="shareDetailsConsent"
+					@change="
+						val => $emit('update:shareDetailsConsent', val.target.checked)
+					"
 				/>
 			</div>
 		</div>
