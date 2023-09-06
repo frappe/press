@@ -56,7 +56,7 @@ class AccountRequest(Document):
 	def send_verification_email(self):
 		url = self.get_verification_url()
 		signature, message, image_path = "", "", ""
-		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
+		app_title = "ERPNext" if self.saas_app == "erpnext" else "OptiBizPro Cloud"
 		sender = ""
 		args = {}
 
@@ -97,7 +97,7 @@ class AccountRequest(Document):
 			)
 
 			if self.invited_by and self.role != "Press Admin":
-				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
+				subject = f"You are invited by {self.invited_by} to join OptiBizPro Cloud"
 				template = "invite_team_member"
 
 		args.update(
