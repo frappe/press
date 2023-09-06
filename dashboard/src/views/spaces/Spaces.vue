@@ -39,7 +39,7 @@
 							class="mr-8"
 							type="select"
 							:options="spaceStatusFilterOptions()"
-							v-model="spaceFilter.status"
+							v-model="space_status"
 						/>
 					</div>
 				</div>
@@ -130,9 +130,7 @@ export default {
 	data() {
 		return {
 			searchTerm: '',
-			spaceFilter: {
-				status: 'All'
-			}
+			space_status: 'All'
 		};
 	},
 	resources: {
@@ -140,7 +138,7 @@ export default {
 			return {
 				url: 'press.api.spaces.spaces',
 				auto: true,
-				params: { space_filter: this.spaceFilter },
+				params: { space_filter: { status: this.space_status } },
 				onSuccess: data => {
 					this.fuse = new Fuse(data['servers'], {
 						keys: ['name']

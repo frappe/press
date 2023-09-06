@@ -20,7 +20,7 @@
 							class="mr-8"
 							type="select"
 							:options="serverTypeFilterOptions()"
-							v-model="serverFilter.server_type"
+							v-model="server_type"
 						/>
 					</div>
 				</div>
@@ -95,17 +95,16 @@ export default {
 	data() {
 		return {
 			searchTerm: '',
-			serverFilter: {
-				server_type: 'All Servers',
-				tag: ''
-			}
+			server_type: 'All Servers'
 		};
 	},
 	resources: {
 		allServers() {
 			return {
 				url: 'press.api.security.get_servers',
-				params: { server_filter: this.serverFilter },
+				params: {
+					server_filter: { server_type: this.server_type, tag: '' }
+				},
 				auto: true,
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {

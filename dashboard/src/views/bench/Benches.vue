@@ -31,14 +31,14 @@
 						class="mr-8"
 						type="select"
 						:options="benchStatusFilterOptions()"
-						v-model="benchFilter.status"
+						v-model="bench_status"
 					/>
 					<FormControl
 						label="Tag"
 						class="mr-8"
 						type="select"
 						:options="benchTagFilterOptions()"
-						v-model="benchFilter.tag"
+						v-model="bench_tag"
 					/>
 				</div>
 				<div class="w-10"></div>
@@ -157,10 +157,8 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			benchFilter: {
-				status: 'All',
-				tag: ''
-			}
+			bench_status: 'All',
+			bench_tag: ''
 		};
 	},
 	pageMeta() {
@@ -185,7 +183,9 @@ export default {
 		allBenches() {
 			return {
 				url: 'press.api.bench.all',
-				params: { bench_filter: this.benchFilter },
+				params: {
+					bench_filter: { status: this.bench_status, tag: this.bench_tag }
+				},
 				auto: true,
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {

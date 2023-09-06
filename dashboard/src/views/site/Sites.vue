@@ -81,14 +81,14 @@
 								class="mr-8"
 								type="select"
 								:options="siteStatusFilterOptions()"
-								v-model="siteFilter.status"
+								v-model="site_status"
 							/>
 							<FormControl
 								label="Tag"
 								class="mr-8"
 								type="select"
 								:options="siteTagFilterOptions()"
-								v-model="siteFilter.tag"
+								v-model="site_tag"
 							/>
 						</div>
 					</div>
@@ -277,17 +277,17 @@ export default {
 			errorMessage: null,
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null,
-			siteFilter: {
-				status: 'All',
-				tag: ''
-			}
+			site_status: 'All',
+			site_tag: ''
 		};
 	},
 	resources: {
 		allSites() {
 			return {
 				url: 'press.api.site.all',
-				params: { site_filter: this.siteFilter },
+				params: {
+					site_filter: { status: this.site_status, tag: this.site_tag }
+				},
 				auto: true,
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {

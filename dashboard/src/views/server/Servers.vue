@@ -45,14 +45,14 @@
 							class="mr-8"
 							type="select"
 							:options="serverStatusFilterOptions()"
-							v-model="serverFilter.server_type"
+							v-model="server_type"
 						/>
 						<FormControl
 							label="Tag"
 							class="mr-8"
 							type="select"
 							:options="serverTagFilterOptions()"
-							v-model="serverFilter.tag"
+							v-model="server_tag"
 						/>
 					</div>
 				</div>
@@ -183,10 +183,8 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			serverFilter: {
-				server_type: 'All Servers',
-				tag: ''
-			},
+			server_type: 'All Servers',
+			server_tag: '',
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -203,7 +201,9 @@ export default {
 		allServers() {
 			return {
 				url: 'press.api.server.all',
-				params: { server_filter: this.serverFilter },
+				params: {
+					server_filter: { server_type: this.server_type, tag: this.server_tag }
+				},
 				auto: true,
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
