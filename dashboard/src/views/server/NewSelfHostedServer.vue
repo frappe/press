@@ -82,7 +82,7 @@
 							id="region-consent"
 							type="checkbox"
 							label="I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe."
+							applicable to me and OptiBizPro."
 							class="rounded border-gray-300 focus:ring-blue-500"
 							v-model="agreedToRegionConsent"
 						/>
