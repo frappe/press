@@ -523,3 +523,11 @@ def groups(name):
 @protected(["Server", "Database Server"])
 def reboot(name):
 	return poly_get_doc(["Server", "Database Server"], name).reboot()
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def rename(name, title):
+	doc = poly_get_doc(["Server", "Database Server"], name)
+	doc.title = title
+	doc.save()
