@@ -252,6 +252,9 @@ scheduler_events = {
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
 		],
+		"0 0 1 */3 *": [
+			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
+		],
 	},
 }
 
