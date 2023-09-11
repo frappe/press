@@ -47,16 +47,10 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
-		self.set_partner_payment_mode()
-
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.user.encode())
 		self.referrer_id = h.hexdigest()
-
-	def set_partner_payment_mode(self):
-		if self.erpnext_partner:
-			self.payment_mode = "Partner Credits"
 
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
@@ -273,15 +267,14 @@ class Team(Document):
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.partner_email = self.user
-		self.payment_mode = "Partner Credits"
+		if not self.payment_mode:
+			self.payment_mode = "Prepaid Credits"
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.save(ignore_permissions=True)
-		# TODO: Maybe check if the partner had enough credits
-		# for settlement and if not, change payment mode
 
 	def allocate_free_credits(self):
 		if self.via_erpnext:
