@@ -173,7 +173,6 @@ scheduler_events = {
 	"daily": [
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
-		"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
 	"daily_long": [
@@ -216,6 +215,9 @@ scheduler_events = {
 			"press.press.cleanup.unlink_remote_files_from_site",
 			"press.press.audit.check_unbilled_subscriptions",
 		],
+		"0 3 * * *": [
+			"press.press.doctype.drip_email.drip_email.send_drip_emails",
+		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
@@ -249,6 +251,9 @@ scheduler_events = {
 		],
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
+		],
+		"0 0 1 */3 *": [
+			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
 	},
 }

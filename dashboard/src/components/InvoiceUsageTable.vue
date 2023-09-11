@@ -7,6 +7,7 @@
 						<th class="border-b py-3 pr-2 text-left font-normal">
 							Description
 						</th>
+						<th class="border-b py-3 pr-2 text-left font-normal">Site</th>
 						<th
 							class="whitespace-nowrap border-b py-3 pr-2 text-right font-normal"
 						>
@@ -19,6 +20,9 @@
 					<tr v-for="(row, i) in doc.items" :key="row.idx">
 						<td class="border-b py-3 pr-2">
 							{{ row.description || row.document_name }}
+						</td>
+						<td class="border-b py-3 pr-2">
+							{{ row.site || '-' }}
 						</td>
 						<td class="border-b py-3 pr-2 text-right">
 							{{ row.rate }} x {{ row.quantity }}

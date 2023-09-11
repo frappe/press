@@ -2,10 +2,12 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from itertools import chain
 import frappe
 import json
 
 from typing import List
+from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
@@ -44,6 +46,16 @@ class ReleaseGroup(Document):
 
 	def before_insert(self):
 		self.fetch_dependencies()
+
+	def on_update(self):
+		old_doc = self.get_doc_before_save()
+		if self.flags.in_insert or self.is_new() or not old_doc:
+			return
+		diff = get_diff(old_doc, self) or {}
+		for row in chain(diff.get("row_changed", []), diff.get("added", [])):
+			if row[0] == "dependencies":
+				self.db_set("last_dependency_update", frappe.utils.now_datetime())
+				break
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -282,18 +294,21 @@ class ReleaseGroup(Document):
 		out.apps = self.get_app_updates(
 			last_deployed_bench.apps if last_deployed_bench else []
 		)
-		out.removed_apps = self.get_removed_apps()
-		out.update_available = any([app["update_available"] for app in out.apps]) or (
-			len(out.removed_apps) > 0
-		)
-		out.number_of_apps = len(self.apps)
-
 		last_dc_info = self.get_last_deploy_candidate_info()
 		out.last_deploy = last_dc_info
 		out.deploy_in_progress = last_dc_info and last_dc_info.status in (
 			"Running",
 			"Scheduled",
 		)
+
+		out.removed_apps = self.get_removed_apps()
+		out.update_available = any([app["update_available"] for app in out.apps]) or (
+			len(out.removed_apps) > 0
+		)
+		if self.last_dependency_update and last_dc_info:
+			out.update_available = self.last_dependency_update > last_dc_info.creation
+		out.number_of_apps = len(self.apps)
+
 		out.sites = [
 			site.update({"skip_failing_patches": False, "skip_backups": False})
 			for site in frappe.get_all(
@@ -314,7 +329,7 @@ class ReleaseGroup(Document):
 		query = (
 			frappe.qb.from_(dc)
 			.where(dc.group == self.name)
-			.select(dc.name, dc.status)
+			.select(dc.name, dc.status, dc.creation)
 			.orderby(dc.creation, order=frappe.qb.desc)
 			.limit(1)
 		)
@@ -372,11 +387,16 @@ class ReleaseGroup(Document):
 
 	def get_next_apps(self, current_apps):
 		marketplace_app_sources = self.get_marketplace_app_sources()
-		current_team = get_current_team()
+		current_team = get_current_team(True)
+		app_publishers_team = [current_team.name]
+
+		if current_team.parent_team:
+			app_publishers_team.append(current_team.parent_team)
+
 		only_approved_for_sources = [
 			source
 			for source in marketplace_app_sources
-			if frappe.db.get_value("App Source", source, "team") != current_team
+			if frappe.db.get_value("App Source", source, "team") in app_publishers_team
 		]
 
 		next_apps = []

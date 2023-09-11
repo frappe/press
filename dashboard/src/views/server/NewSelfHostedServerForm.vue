@@ -9,16 +9,8 @@
 				@change="$emit('update:publicIP', $event)"
 				type="text"
 			/>
-			<p class="text-black-900 text-base">Private IP of the Server</p>
-			<Input
-				class="z-10 w-full rounded-r-none"
-				:value="privateIP"
-				@change="$emit('update:privateIP', $event)"
-				type="text"
-			/>
 			<div class="mt-2">
 				<ErrorMessage :message="publicIpErrorMessage" />
-				<ErrorMessage :message="privateIpErrorMessage" />
 			</div>
 		</div>
 	</div>
@@ -26,8 +18,8 @@
 <script>
 export default {
 	name: 'SelfHostedServerForm',
-	props: ['privateIP', 'publicIP', 'error'],
-	emits: ['update:publicIP', 'update:privateIP', 'update:error'],
+	props: ['publicIP', 'error'],
+	emits: ['update:publicIP', 'update:error'],
 	watch: {
 		hasError() {
 			this.$emit('update:error', this.hasError);
@@ -37,17 +29,11 @@ export default {
 		this.$emit('update:error', this.hasError);
 	},
 	computed: {
-		privateIpErrorMessage() {
-			return this.validateIP(this.privateIP, 'Private');
-		},
 		publicIpErrorMessage() {
 			return this.validateIP(this.publicIP, 'Public');
 		},
 		hasError() {
-			return (
-				this.privateIpErrorMessage !== null ||
-				this.publicIpErrorMessage !== null
-			);
+			return this.publicIpErrorMessage !== null;
 		}
 	},
 	methods: {

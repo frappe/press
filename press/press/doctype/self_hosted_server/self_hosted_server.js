@@ -10,7 +10,11 @@ frappe.ui.form.on('Self Hosted Server', {
 		[
 			[__('Ping Server'), 'ping_ansible', false],
 			[__('Fetch Ram'), 'fetch_system_ram', false, !frm.doc.ram],
+			[__('Fetch Private IP'), 'fetch_private_ip', false, !frm.doc.private_ip],
+			[__('Fetch System Details'), 'fetch_system_specifications', false],
 			[__('Setup Nginx'), '_setup_nginx', false],
+			[__('Fetch System Details'), 'fetch_system_specifications', false],
+			[__('Create TLS Certificate'), 'create_tls_certs', true],
 			[__('Update TLS'), 'update_tls', false],
 			[__('Create Proxy Server'), 'create_proxy_server', false],
 			[

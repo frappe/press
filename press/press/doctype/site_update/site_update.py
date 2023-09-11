@@ -327,9 +327,11 @@ def should_try_update(site):
 	)[0].destination
 
 	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
-	dest_apps = [
-		app.app for app in frappe.get_doc("Bench", dict(candidate=destination)).apps
-	]
+	dest_apps = []
+	if dest_bench := frappe.get_last_doc(
+		"Bench", dict(candidate=destination, status="Active")
+	):
+		dest_apps = [app.app for app in dest_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
 		return False

@@ -151,6 +151,8 @@ class TestPrivateCluster(TestCluster):
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+		frappe.db.set_single_value("Press Settings", "aws_access_key_id", "test")
+		frappe.db.set_single_value("Press Settings", "aws_secret_access_key", "test")
 
 		server_count_before = frappe.db.count("Server")
 		database_server_count_before = frappe.db.count("Database Server")
