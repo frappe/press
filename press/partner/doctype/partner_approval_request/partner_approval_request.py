@@ -15,7 +15,8 @@ class PartnerApprovalRequest(Document):
 			self.send_approval_request_email()
 
 	def send_approval_request_email(self):
-		email = frappe.db.get_value("Team", self.requested_by, "user")
+		email = frappe.db.get_value("Team", self.partner, "user")
+		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
 		link = get_url(
 			f"/api/method/press.api.account.approve_partner_request?key={self.key}"
@@ -25,6 +26,6 @@ class PartnerApprovalRequest(Document):
 			subject="Partner Approval Request",
 			recipients=email,
 			template="partner_approval",
-			args={"link": link},
+			args={"link": link, "customer": customer},
 			now=True,
 		)
