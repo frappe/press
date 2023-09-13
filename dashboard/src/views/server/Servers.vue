@@ -70,8 +70,10 @@
 				>
 					<TableHeader class="hidden sm:grid" />
 					<div class="flex items-center justify-center">
-						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
-						<div v-else-if="rows.length === 0" class="mt-8">
+						<div
+							v-if="$resources.allServers.fetched && rows.length === 0"
+							class="mt-8"
+						>
 							<div class="text-base text-gray-700">No Items</div>
 						</div>
 					</div>
@@ -205,6 +207,7 @@ export default {
 					server_filter: { server_type: this.server_type, tag: this.server_tag }
 				},
 				auto: true,
+				cache: ['ServerList', this.server_type, this.server_tag],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['name', 'title', 'tags']

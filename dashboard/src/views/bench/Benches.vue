@@ -57,8 +57,10 @@
 			>
 				<TableHeader class="hidden sm:grid" />
 				<div class="flex items-center justify-center">
-					<LoadingText v-if="$resources.allBenches.loading" class="mt-8" />
-					<div v-else-if="rows.length === 0" class="mt-8">
+					<div
+						v-if="$resources.allBenches.fetched && rows.length === 0"
+						class="mt-8"
+					>
 						<div class="text-base text-gray-700">No benches</div>
 					</div>
 				</div>
@@ -187,6 +189,7 @@ export default {
 					bench_filter: { status: this.bench_status, tag: this.bench_tag }
 				},
 				auto: true,
+				cache: ['BenchList', this.bench_status, this.bench_tag],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['title', 'tags']

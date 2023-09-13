@@ -106,8 +106,10 @@
 					>
 						<TableHeader class="hidden sm:grid" />
 						<div class="flex items-center justify-center">
-							<LoadingText class="mt-8" v-if="$resources.allSites.loading" />
-							<div v-else-if="rows.length === 0" class="mt-8">
+							<div
+								v-if="$resources.allSites.fetched && rows.length === 0"
+								class="mt-8"
+							>
 								<div class="text-base text-gray-700">No sites</div>
 							</div>
 						</div>
@@ -289,6 +291,7 @@ export default {
 					site_filter: { status: this.site_status, tag: this.site_tag }
 				},
 				auto: true,
+				cache: ['SiteList', this.site_status, this.site_tag],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['name', 'tags']

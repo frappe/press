@@ -54,8 +54,10 @@
 				>
 					<TableHeader class="hidden sm:grid" />
 					<div class="flex items-center justify-center">
-						<LoadingText class="mt-8" v-if="$resources.spaces.loading" />
-						<div v-else-if="rows.length === 0" class="mt-8">
+						<div
+							v-if="$resources.spaces.fetched && rows.length === 0"
+							class="mt-8"
+						>
 							<div class="text-base text-gray-700">No Spaces</div>
 						</div>
 					</div>
@@ -139,6 +141,7 @@ export default {
 				url: 'press.api.spaces.spaces',
 				auto: true,
 				params: { space_filter: { status: this.space_status } },
+				cache: ['SpaceList', this.space_status],
 				onSuccess: data => {
 					this.fuse = new Fuse(data['servers'], {
 						keys: ['name']
