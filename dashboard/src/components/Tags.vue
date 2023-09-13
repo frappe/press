@@ -1,7 +1,7 @@
 <template>
 	<Card title="Tags">
 		<template #actions>
-			<Button icon="plus" @click="showAddDialog = true" />
+			<Button label="Add Tag" @click="showAddDialog = true" />
 		</template>
 		<div class="divide-y" v-if="addedTags?.length">
 			<ListItem v-for="tag in addedTags" :key="tag.name" :title="tag.tag">
