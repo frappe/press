@@ -21,7 +21,10 @@
 			"
 		/>
 	</Card>
-	<Dialog :options="{ title: `Add a new tag` }" v-model="showAddDialog">
+	<Dialog
+		:options="{ title: `Add a New Tag for ${doctype}` }"
+		v-model="showAddDialog"
+	>
 		<template #body-content>
 			<Autocomplete
 				placeholder="Tags"
@@ -44,8 +47,6 @@
 	</Dialog>
 </template>
 <script>
-import { notify } from '@/utils/toast';
-
 export default {
 	name: 'Tags',
 	props: ['name', 'doctype', 'resourceTags', 'tags'],
