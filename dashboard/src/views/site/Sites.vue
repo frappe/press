@@ -487,12 +487,20 @@ export default {
 				}
 				if (!seen.includes(site.group)) {
 					seen.push(site.group);
-					groups.push({
-						title: site.title,
-						group: site.group,
-						public: site.public,
-						version: site.version
-					});
+					if (site.public)
+						groups.unshift({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
+					else
+						groups.push({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
 				}
 			}
 			return groups;
