@@ -905,6 +905,10 @@ class Site(Document):
 
 		team = frappe.get_doc("Team", self.team)
 
+		if team.parent_team:
+			# ignore validation if team is child team
+			return
+
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
