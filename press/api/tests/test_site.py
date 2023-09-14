@@ -365,7 +365,7 @@ insights 0.8.3	    HEAD
 		plan = create_test_plan("Site")
 		create_test_bench(group=group)
 
-		frappe.set_user(self.team.user)
+		# frappe.set_user(self.team.user) # can't this due to weird perm error with ignore_perimssions in new site
 		database = create_test_remote_file().name
 		public = create_test_remote_file().name
 		private = create_test_remote_file().name
