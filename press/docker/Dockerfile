@@ -78,7 +78,12 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
-{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
+{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.6' %}
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
   && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
