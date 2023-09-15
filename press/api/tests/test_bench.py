@@ -322,7 +322,9 @@ class TestAPIBenchConfig(FrappeTestCase):
 				]
 			),
 		)
-		create_test_bench(group=self.rg)
+		create_test_bench(
+			group=self.rg
+		)  # now update available due to dependency shouldn't be there (cuz create_test_bench created deploy candidate)
 		self.assertFalse(deploy_information(self.rg.name)["update_available"])
 		create_test_app_release(frappe.get_doc("App Source", self.rg.apps[0].source))
 		self.assertTrue(deploy_information(self.rg.name)["update_available"])
