@@ -200,7 +200,6 @@ scheduler_events = {
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
-		"press.marketplace.doctype.marketplace_consumption_record.marketplace_consumption_record.consume_credits_for_prepaid_records",
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
