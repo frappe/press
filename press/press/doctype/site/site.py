@@ -1449,8 +1449,7 @@ def process_restore_job_update(job):
 		if job.status == "Success":
 			apps = [line.split()[0] for line in job.output.splitlines()]
 			site = frappe.get_doc("Site", job.site)
-			for i in range(len(site.apps)):  # clear apps table
-				site.remove(site.apps[0])
+			site.apps = []
 			for app in apps:
 				site.append("apps", {"app": app})
 			site.save()
