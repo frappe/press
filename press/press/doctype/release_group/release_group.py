@@ -304,7 +304,7 @@ class ReleaseGroup(Document):
 		out.update_available = any([app["update_available"] for app in out.apps]) or (
 			len(out.removed_apps) > 0
 		)
-		if self.last_dependency_update and last_dc_info:
+		if (not out.update_available) and self.last_dependency_update and last_dc_info:
 			out.update_available = (
 				frappe.utils.get_datetime(self.last_dependency_update) > last_dc_info.creation
 			)
