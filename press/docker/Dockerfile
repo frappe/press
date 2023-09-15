@@ -78,16 +78,21 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 # Install wkhtmltopdf
 ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
-{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
-  && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
-  && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.6' %}
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
+  && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
 {% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.4' %}
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz \
-  && tar -xvf wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz \
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+  && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
   && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
-  && rm -rf wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz wkhtmltox \
+  && rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz wkhtmltox \
   `#stage-pre-wkhtmltopdf`
 {% endif %}
 
