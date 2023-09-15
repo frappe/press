@@ -1436,6 +1436,27 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
+def process_restore_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if job.status == "Success":
+			apps = [line.split()[0] for line in job.output.splitlines()]
+			site = frappe.get_doc("Site", job.site)
+			for i in range(len(site.apps)):  # clear apps table
+				site.remove(site.apps[0])
+			for app in apps:
+				site.append("apps", {"app": app})
+			site.save()
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
 def process_reinstall_site_job_update(job):
 	updated_status = {
 		"Pending": "Pending",

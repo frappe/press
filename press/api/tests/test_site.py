@@ -21,6 +21,8 @@ from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.remote_file.remote_file import RemoteFile
+from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
@@ -264,6 +266,135 @@ class TestAPISite(FrappeTestCase):
 			poll_pending_jobs()
 		site.reload()
 		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_job_updates_apps_table_with_output_from_job(self):
+		from press.api.site import restore
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		app3 = create_test_app("insights", "Insights")
+		group = create_test_release_group([app, app2, app3])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		database = create_test_remote_file(site.name).name
+		public = create_test_remote_file(site.name).name
+		private = create_test_remote_file(site.name).name
+
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job(
+			"Restore Site",
+			"Success",
+			output="""frappe	15.0.0-dev HEAD
+insights 0.8.3	    HEAD
+""",
+		):
+			restore(
+				site.name,
+				{
+					"database": database,
+					"public": public,
+					"private": private,
+				},
+			)
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "insights")
+		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_job_updates_apps_table_when_only_frappe_is_installed(self):
+		from press.api.site import restore
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		database = create_test_remote_file(site.name).name
+		public = create_test_remote_file(site.name).name
+		private = create_test_remote_file(site.name).name
+
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job(
+			"Restore Site",
+			"Success",
+			output="""frappe 15.0.0-dev HEAD""",
+		):
+			restore(
+				site.name,
+				{
+					"database": database,
+					"public": public,
+					"private": private,
+				},
+			)
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(len(site.apps), 1)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_new_site_from_backup_job_updates_apps_table_with_output_from_job(self):
+		from press.api.site import new
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		plan = create_test_plan("Site")
+		create_test_bench(group=group)
+
+		# frappe.set_user(self.team.user) # can't this due to weird perm error with ignore_perimssions in new site
+		database = create_test_remote_file().name
+		public = create_test_remote_file().name
+		private = create_test_remote_file().name
+		with fake_agent_job(
+			"New Site from Backup",
+			"Success",
+			output="""frappe	15.0.0-dev HEAD
+erpnext 0.8.3	    HEAD
+""",
+		):
+			new(
+				{
+					"name": "testsite",
+					"group": group.name,
+					"plan": plan.name,
+					"apps": [app.name],
+					"files": {
+						"database": database,
+						"public": public,
+						"private": private,
+					},
+				}
+			)
+			poll_pending_jobs()
+
+		site = frappe.get_last_doc("Site")
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.status, "Active")
 
 	def test_update_config(self):

@@ -36,6 +36,7 @@ def create_test_site_domain(
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestSiteDomain(unittest.TestCase):
 	"""Tests for Site Domain Document methods."""
 
