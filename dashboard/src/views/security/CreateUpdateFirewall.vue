@@ -84,7 +84,7 @@ export default {
 	resources: {
 		createFirewall() {
 			return {
-				method: 'press.api.security.create_firewall',
+				url: 'press.api.security.create_firewall',
 				params: {
 					server: this.server?.name,
 					server_type: this.server?.server_type,
@@ -99,7 +99,7 @@ export default {
 		},
 		updateFirewall() {
 			return {
-				method: 'press.api.security.update_firewall',
+				url: 'press.api.security.update_firewall',
 				params: {
 					server: this.server?.name,
 					server_type: this.server?.server_type,
@@ -114,7 +114,7 @@ export default {
 		},
 		fetchFirewallInfo() {
 			return {
-				method: 'press.api.security.fetch_firewall_and_rules',
+				url: 'press.api.security.fetch_firewall_and_rules',
 				params: {
 					server: this.server?.name,
 					server_type: this.server?.server_type

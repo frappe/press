@@ -1,12 +1,15 @@
 <template>
-	<Card class="min-h-full h-full max-h-96" title="Nginx">
-		<div class="divide-y"></div>
-	</Card>
+	<NginxAccessRule :server="server" />
 </template>
 
 <script>
+import NginxAccessRule from './NginxAccessRule.vue';
+
 export default {
 	name: 'Nginx',
-	props: ['server']
+	props: ['server'],
+	components: {
+		NginxAccessRule
+	}
 };
 </script>

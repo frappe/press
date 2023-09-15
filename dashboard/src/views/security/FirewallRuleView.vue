@@ -4,7 +4,7 @@
 			<div class="flex">
 				<div class="flex w-full space-x-2 pb-4">
 					<FormControl
-						label="Search Sites"
+						label="Search"
 						v-model="searchTerm"
 						v-if="!disableSearch"
 					>

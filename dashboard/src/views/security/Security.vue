@@ -68,19 +68,21 @@ export default {
 			let tabRoute = subRoute => `/security/${this.serverName}/${subRoute}`;
 			let tabs = [
 				{ label: 'Overview', route: 'overview' },
-				{ label: 'Security Updates', route: 'security_update' },
-				{ label: 'SSH Session Log', route: 'ssh_session_logs' },
-				{ label: 'Firewall Configuration', route: 'firewall' },
-				{ label: 'Nginx Overview', route: 'nginx' }
+				{ label: 'Patches', route: 'security_update' },
+				{ label: 'Advisories', route: 'app_security_advisories' },
+				{ label: 'SSH', route: 'ssh_session_logs' },
+				{ label: 'Nginx', route: 'nginx' },
+				{ label: 'Firewall', route: 'firewall' }
 			];
 
 			let tabsByStatus = {
 				Active: [
 					'Overview',
-					'Security Updates',
-					'Firewall Configuration',
-					'SSH Session Log',
-					'Nginx Overview'
+					'Patches',
+					'Advisories',
+					'Firewall',
+					'SSH',
+					'Nginx'
 				]
 			};
 			if (this.server) {

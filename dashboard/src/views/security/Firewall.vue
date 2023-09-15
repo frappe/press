@@ -94,7 +94,7 @@ export default {
 	resources: {
 		FirewallRules() {
 			return {
-				method: 'press.api.security.fetch_firewall_and_rules',
+				url: 'press.api.security.fetch_firewall_and_rules',
 				params: {
 					server: this.server?.name,
 					server_type: this.server?.server_type

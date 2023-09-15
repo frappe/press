@@ -59,7 +59,7 @@ export default {
 	},
 	computed: {
 		SSHActivity() {
-			return this.$resources.SSHActivity.data;
+			return this.$resources.SSHActivity.data || {};
 		}
 	},
 	methods: {

@@ -1,6 +1,6 @@
 <template>
 	<CardWithDetails
-		title="Server SSH Session Logs"
+		title="SSH Activity Log"
 		subtitle="Log of commands executed in session"
 	>
 		<div>
@@ -42,7 +42,8 @@ export default {
 			return {
 				url: 'press.api.security.fetch_ssh_session_logs',
 				params: {
-					server: this.server?.name
+					server: this.server?.name,
+					server_type: this.server?.server_type
 				},
 				auto: true
 			};

@@ -63,6 +63,7 @@ export default {
 	},
 	resources: {
 		secUpdateInfo() {
+			if (!this.updateId) return;
 			return {
 				url: 'press.api.security.get_security_update_details',
 				params: { update_id: this.updateId },
@@ -72,7 +73,7 @@ export default {
 	},
 	computed: {
 		secUpdateInfo() {
-			return this.$resources.secUpdateInfo.data;
+			return this.$resources.secUpdateInfo.data || {};
 		}
 	},
 	methods: {

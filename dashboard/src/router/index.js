@@ -514,6 +514,12 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'AppSecurityAdvisories',
+				path: 'app_security_advisories',
+				component: () => import('../views/security/AppSecurityAdvisories.vue'),
+				props: true
+			},
+			{
 				name: 'SSH Session Logs',
 				path: 'ssh_session_logs/:logId?',
 				component: () => import('../views/security/SSHSession.vue'),

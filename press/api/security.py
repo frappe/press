@@ -1,7 +1,9 @@
 import frappe
+import requests
+
 from press.api.server import all as get_all_servers
 from press.agent import Agent
-from frappe.utils import get_datetime
+from frappe.utils import get_datetime, getdate
 
 
 @frappe.whitelist()
@@ -145,3 +147,105 @@ def update_firewall(firewall_name, firewall_rules):
 		pass
 
 	return {}
+
+
+# Nginx
+
+
+@frappe.whitelist()
+def add_nginx_access_rule(server, server_type, ip_address, action):
+	from press.press.doctype.nginx_access_rule.nginx_access_rule import NginxAccessRule
+
+	try:
+		NginxAccessRule.create_nginx_access_rule(server, server_type, ip_address, action)
+	except frappe.DuplicateEntryError:
+		pass
+
+
+@frappe.whitelist()
+def fetch_nginx_access_rules(server, server_type):
+	from press.press.doctype.nginx_access_rule.nginx_access_rule import NginxAccessRule
+
+	return NginxAccessRule.fetch_nginx_access_rules(server, server_type)
+
+
+# Application Security
+@frappe.whitelist()
+def fetch_security_advisories(server, server_type):
+	advisories = []
+	apps = [
+		{
+			"name": "frappe",
+			"owner": "frappe",
+		},
+		{
+			"name": "erpnext",
+			"owner": "frappe",
+		},
+	]
+
+	for advisory in _get_advisories(server, server_type, apps):
+		vulnerable_version = []
+		patched_version = []
+
+		for vulnerability in advisory["vulnerabilities"]:
+			vulnerable_version.append(
+				{
+					"vulnerable_version_range": vulnerability["vulnerable_version_range"],
+				}
+			)
+			patched_version.append(
+				{
+					"patched_version": vulnerability["patched_versions"],
+				}
+			)
+
+		advisories.append(
+			{
+				"id": advisory["ghsa_id"],
+				"html_url": advisory["html_url"],
+				"severity": advisory["severity"].title(),
+				"summary": advisory["summary"],
+				"vulnerable_version": vulnerable_version,
+				"patched_version": patched_version,
+				"published_at": getdate(advisory["published_at"]),
+			}
+		)
+
+	return get_sorted_advisories(advisories)
+
+
+def _get_advisories(server, server_type, apps):
+	advisories = []
+	github_access_token = _get_github_access_token()
+
+	headers = {
+		"Authorization": f"Bearer {github_access_token}",
+		"Accept": "application/vnd.github.v3+json",
+		"X-GitHub-Api-Version": "2022-11-28",
+	}
+
+	try:
+		for app in apps:
+			res = requests.get(
+				f'https://api.github.com/repos/{app["owner"]}/{app["name"]}/security-advisories?state=published',
+				headers=headers,
+			)
+
+			advisories.extend(res.json())
+
+	except Exception:
+		pass
+
+	return advisories
+
+
+def _get_github_access_token():
+	return frappe.db.get_single_value("Press Settings", "github_access_token")
+
+
+def get_sorted_advisories(advisories):
+	priority = {"high": 1, "medium": 2, "low": 3}
+	advisories.sort(key=lambda x: priority[x["severity"].lower()])
+
+	return advisories
