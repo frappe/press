@@ -307,7 +307,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.assertTrue(dependency_update_2)
 		self.assertGreater(dependency_update_2, dependency_update_1)
 
-	def test_deploy_information_shows_update_available_for_bench_when_apps_are_updated(
+	def test_deploy_information_shows_update_available_for_bench_when_apps_are_updated_after_dependency_updated_deploy(
 		self,
 	):
 		update_dependencies(
