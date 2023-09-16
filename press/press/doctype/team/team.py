@@ -218,9 +218,10 @@ class Team(Document):
 			self.payment_mode = "Prepaid Credits"
 
 		if self.has_value_changed("payment_mode"):
-			if self.payment_mode == "Card":
-				if frappe.db.count("Midtrans Payment Method", {"team": self.name}) == 0:
-					frappe.throw("No card added")
+			# if self.payment_mode == "Card":
+			# 	frappe.log_error("team",self.name)
+			# 	if frappe.db.exists("Midtrans Payment Method", {"team": self.name}):
+			# 		frappe.throw("No card added")
 			if self.payment_mode == "Prepaid Credits":
 				if self.get_balance() <= 0:
 					frappe.throw("Account does not have sufficient balance")
