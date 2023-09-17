@@ -38,9 +38,6 @@ class TestStagingSite(unittest.TestCase):
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 class TestBench(unittest.TestCase):
-	def setUp(self):
-		self.bench_count = 0  # to uniquely name sites in benches
-
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -51,16 +48,12 @@ class TestBench(unittest.TestCase):
 		plan = create_test_plan("Site", cpu_time=x)
 
 		if not bench:
-			self.bench_count += 1
-			site = create_test_site(f"site-0-{self.bench_count}")
+			site = create_test_site()
 			create_test_subscription(site.name, plan.name, site.team)  # map site with plan
 			bench = site.bench
 			n -= 1
-			count = 1
-		else:
-			count = frappe.db.count("Site", {"bench": bench})
 		for i in range(n):
-			site = create_test_site(f"site-{count + i}-{self.bench_count}", bench=bench)
+			site = create_test_site(bench=bench)
 			create_test_subscription(site.name, plan.name, site.team)
 		return frappe.get_doc("Bench", bench)
 
@@ -87,3 +80,40 @@ class TestBench(unittest.TestCase):
 		workers_after = (bench.background_workers, bench.gunicorn_workers)
 		self.assertGreater(workers_after[1], workers_before[1])
 		self.assertGreater(workers_after[0], workers_before[0])
+
+	def test_auto_scale_uses_release_groups_workers_when_set(self):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		self.assertEqual(bench.gunicorn_workers, 2)
+		self.assertEqual(bench.background_workers, 1)
+		group = frappe.get_doc("Release Group", bench.group)
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 24)
+		self.assertEqual(bench.background_workers, 8)
+		group.db_set("gunicorn_workers", 8)
+		group.db_set("background_workers", 4)
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 8)
+		self.assertEqual(bench.background_workers, 4)
+
+	def test_auto_scale_uses_release_groups_workers_respecting_ram_available_on_server(
+		self,
+	):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		group = frappe.get_doc("Release Group", bench.group)
+		group.db_set("gunicorn_workers", 48)
+		group.db_set("background_workers", 8)
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 48)
+		bench2 = create_test_bench(
+			group=frappe.get_doc("Release Group", bench.group), server=bench.server
+		)
+		self._create_bench_with_n_sites_with_cpu_time(3, 5, bench2.name)
+		scale_workers()
+		bench.reload()
+		bench2.reload()
+		# assuming max gunicorn workers for default server (16gb RAM) is 52
+		self.assertLess(bench.gunicorn_workers, 48)
+		self.assertLess(bench2.gunicorn_workers, 48)

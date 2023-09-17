@@ -31,6 +31,8 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.client.get_count",
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
+	"/api/method/marketplace-apps",
+
 ]
 
 ALLOWED_WILDCARD_PATHS = [

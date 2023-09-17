@@ -7,6 +7,7 @@ from datetime import date
 from unittest.mock import patch
 
 import frappe
+from frappe.model.naming import make_autoname
 
 
 def create_test_plan(
@@ -14,15 +15,18 @@ def create_test_plan(
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
 	cpu_time: int = 1,
+	plan_title: str = None,
+	plan_name: str = None,
 ):
 	"""Create test Plan doc."""
-	name = frappe.mock("name")
+	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
+	plan_title = plan_name
 	plan = frappe.get_doc(
 		{
 			"doctype": "Plan",
 			"document_type": document_type,
-			"name": f"Test 10 dollar plan {name}",
-			"plan_title": name,
+			"name": plan_name,
+			"plan_title": plan_title,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
 			"cpu_time_per_day": cpu_time,

@@ -25,3 +25,9 @@
   become: yes
   become_user: frappe
   command: 'sudo supervisorctl start agent:'
+  ignore_errors: yes
+
+- name: Ensure Agent processes are started
+  supervisorctl:
+    name: 'agent:'
+    state: started

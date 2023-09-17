@@ -58,7 +58,10 @@ frappe.ui.form.on('Proxy Server', {
 					!frm.doc.is_primary &&
 					frm.doc.is_replication_setup,
 			],
+			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
+			[__('Setup Wireguard'), 'setup_wireguard', true],
+			[__('Reload Wireguard'), 'reload_wireguard', true],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

@@ -174,5 +174,27 @@
   "modified": "2023-08-03 14:20:47.702196",
   "name": "expire_logs_days",
   "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "1000",
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-15 15:15:31.563815",
+  "name": "innodb_old_blocks_time",
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "37",
+  "doc_section": "innodb",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-15 15:21:13.086214",
+  "name": "innodb_old_blocks_pct",
+  "skippable": 0
  }
 ]

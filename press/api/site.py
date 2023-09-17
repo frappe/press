@@ -7,7 +7,7 @@ from frappe.utils.user import is_system_user
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 import wrapt
 import frappe
-import dns.resolver
+from dns.resolver import Resolver
 import dns.exception
 
 from typing import Dict
@@ -31,6 +31,8 @@ from press.utils import (
 	group_children_in_result,
 	unique,
 )
+
+NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 
 
 def protected(doctypes):
@@ -1175,7 +1177,9 @@ def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
 		result = {"type": "CNAME", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "CNAME")
+			resolver = Resolver(configure=False)
+			resolver.nameservers = NAMESERVERS
+			answer = resolver.query(domain, "CNAME")
 			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 			result["answer"] = answer.rrset.to_text()
 			if mapped_domain == name:
@@ -1191,9 +1195,11 @@ def check_dns_cname_a(name, domain):
 	def check_dns_a(name, domain):
 		result = {"type": "A", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "A")
+			resolver = Resolver(configure=False)
+			resolver.nameservers = NAMESERVERS
+			answer = resolver.query(domain, "A")
 			domain_ip = answer[0].to_text()
-			site_ip = dns.resolver.query(name, "A")[0].to_text()
+			site_ip = resolver.query(name, "A")[0].to_text()
 			result["answer"] = answer.rrset.to_text()
 			if domain_ip == site_ip:
 				result["matched"] = True

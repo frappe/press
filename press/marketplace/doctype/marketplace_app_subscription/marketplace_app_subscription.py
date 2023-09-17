@@ -175,6 +175,10 @@ def process_prepaid_marketplace_payment(event):
 	metadata = payment_intent.get("metadata")
 	site = metadata.get("site")
 
+	team.allocate_credit_amount(
+		float(metadata.get("credits")), source="Prepaid Credits", remark=payment_intent["id"]
+	)
+
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
@@ -248,10 +252,6 @@ def process_prepaid_marketplace_payment(event):
 	# update transaction amount, fee and exchange rate
 	invoice.update_transaction_details(charge)
 	invoice.submit()
-
-	team.allocate_credit_amount(
-		float(metadata.get("credits")), source="Prepaid Credits", remark=payment_intent["id"]
-	)
 
 
 def change_site_hosting_plan(site, plan, team):

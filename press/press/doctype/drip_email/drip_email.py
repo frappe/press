@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 
-from datetime import date, timedelta
+from datetime import timedelta
 from typing import Dict, List
 
 import frappe
@@ -95,7 +95,7 @@ class DripEmail(Document):
 
 	@property
 	def sites_to_send_drip(self):
-		signup_date = date.today() - timedelta(days=self.send_after)
+		signup_date = frappe.utils.getdate() - timedelta(days=self.send_after)
 
 		conditions = ""
 

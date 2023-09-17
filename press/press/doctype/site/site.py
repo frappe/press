@@ -215,7 +215,6 @@ class Site(Document):
 	def install_app(self, app):
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
-			self.append("apps", {"app": app})
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
 			self.status = "Pending"
@@ -224,11 +223,9 @@ class Site(Document):
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
 	def uninstall_app(self, app):
-		app_doc = find(self.apps, lambda x: x.app == app)
 		log_site_activity(self.name, "Uninstall App")
-		self.remove(app_doc)
 		agent = Agent(self.server)
-		agent.uninstall_app_site(self, app_doc.app)
+		agent.uninstall_app_site(self, app)
 		self.status = "Pending"
 		self.save()
 
@@ -910,6 +907,9 @@ class Site(Document):
 
 		team = frappe.get_doc("Team", self.team)
 
+		if team.parent_team:
+			team = frappe.get_doc("Team", team.parent_team)
+
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
@@ -1451,6 +1451,53 @@ def process_install_app_site_job_update(job):
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if updated_status != site_status:
+		if job.status == "Success":
+			site = frappe.get_doc("Site", job.site)
+			app = json.loads(job.request_data).get("name")
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if not app_doc:
+				site.append("apps", {"app": app})
+				site.save()
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_uninstall_app_site_job_update(job):
+	updated_status = {
+		"Pending": "Active",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Active",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if job.status == "Success":
+			site = frappe.get_doc("Site", job.site)
+			app = job.request_path.rsplit("/", 1)[-1]
+			app_doc = find(site.apps, lambda x: x.app == app)
+			if app_doc:
+				site.remove(app_doc)
+				site.save()
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_restore_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if job.status == "Success":
+			apps = [line.split()[0] for line in job.output.splitlines()]
+			site = frappe.get_doc("Site", job.site)
+			site.apps = []
+			for app in apps:
+				site.append("apps", {"app": app})
+			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 

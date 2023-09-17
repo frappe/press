@@ -4,6 +4,7 @@
 
 import json
 from collections import OrderedDict
+import re
 from press.press.doctype.team.team import get_child_team_members
 from typing import Dict, List
 
@@ -249,8 +250,8 @@ def options(only_by_current_team=False):
 
 @frappe.whitelist()
 @protected("Release Group")
-def bench_config(release_group_name):
-	rg = frappe.get_doc("Release Group", release_group_name)
+def bench_config(name):
+	rg = frappe.get_doc("Release Group", name)
 
 	common_site_config = [
 		{"key": config.key, "value": config.value, "type": config.type}
@@ -303,6 +304,39 @@ def update_config(name, config):
 	rg = frappe.get_doc("Release Group", name)
 	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
 	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def dependencies(name: str):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	dependencies = [
+		{"key": d.dependency, "value": d.version, "type": "String"} for d in rg.dependencies
+	]
+	return dependencies
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_dependencies(name: str, dependencies: str):
+	dependencies = frappe.parse_json(dependencies)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	if len(rg.dependencies) != len(dependencies):
+		frappe.throw("Need all required dependencies")
+	if diff := set([d["key"] for d in dependencies]) - set(
+		d.dependency for d in rg.dependencies
+	):
+		frappe.throw("Invalid dependencies: " + ", ".join(diff))
+	for dep, new in zip(
+		sorted(rg.dependencies, key=lambda x: x.dependency),
+		sorted(dependencies, key=lambda x: x["key"]),
+	):
+		if dep.dependency != new["key"]:
+			frappe.throw(f"Invalid dependency: {new['key']}")
+		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
+			frappe.throw(f"Invalid version for {new['key']}")
+		dep.version = new["value"]
+	rg.save()
 
 
 @frappe.whitelist()

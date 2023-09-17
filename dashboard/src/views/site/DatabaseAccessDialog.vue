@@ -117,7 +117,10 @@
 							class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
 							v-model="enableReadWriteAccess"
 						/>
-						<label for="skip-failing" class="ml-1 text-sm text-gray-900">
+						<label
+							for="enable-read-write-access"
+							class="ml-1 text-sm text-gray-900"
+						>
 							Enable Read-Write Access
 						</label>
 						<ErrorMessage

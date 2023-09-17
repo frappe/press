@@ -16,7 +16,6 @@
 			/>
 			<div class="mt-2">
 				<ErrorMessage :message="publicIpErrorMessage" />
-				<ErrorMessage :message="privateIpErrorMessage" />
 			</div>
 		</div>
 	</div>
@@ -24,8 +23,8 @@
 <script>
 export default {
 	name: 'SelfHostedServerForm',
-	props: ['privateIP', 'publicIP', 'error'],
-	emits: ['update:publicIP', 'update:privateIP', 'update:error'],
+	props: ['publicIP', 'error'],
+	emits: ['update:publicIP', 'update:error'],
 	watch: {
 		hasError() {
 			this.$emit('update:error', this.hasError);
@@ -35,17 +34,11 @@ export default {
 		this.$emit('update:error', this.hasError);
 	},
 	computed: {
-		privateIpErrorMessage() {
-			return this.validateIP(this.privateIP, 'Private');
-		},
 		publicIpErrorMessage() {
 			return this.validateIP(this.publicIP, 'Public');
 		},
 		hasError() {
-			return (
-				this.privateIpErrorMessage !== null ||
-				this.publicIpErrorMessage !== null
-			);
+			return this.publicIpErrorMessage !== null;
 		}
 	},
 	methods: {

@@ -26,8 +26,11 @@
   "common_site_config",
   "column_break_14",
   "bench_config",
+  "gunicorn_workers",
+  "background_workers",
   "dependencies_tab",
   "dependencies",
+  "last_dependency_update",
   "packages",
   "environment_variables",
   "feature_flags_tab",
@@ -251,10 +254,28 @@
    "fieldtype": "Table",
    "label": "Configuration",
    "options": "Common Site Config"
+  },
+  {
+   "description": "Upper limit on workers. Considered by server-wide auto-scale",
+   "fieldname": "gunicorn_workers",
+   "fieldtype": "Int",
+   "label": "Gunicorn Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "background_workers",
+   "fieldtype": "Int",
+   "label": "Background Workers"
+  },
+  {
+   "fieldname": "last_dependency_update",
+   "fieldtype": "Datetime",
+   "label": "Last Dependency Update",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-07-17 17:44:39.805124",
+ "modified": "2023-09-01 08:32:18.643025",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

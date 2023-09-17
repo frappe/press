@@ -699,6 +699,10 @@ class DeployCandidate(Document):
 	def get_apt_packages(self):
 		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
 
+	def get_dependency_version(self, dependency):
+		version = find(self.dependencies, lambda x: x.dependency == dependency).version
+		return f"{dependency} {version}"
+
 
 def cleanup_build_directories():
 	# Cleanup Build Directories for Deploy Candidates older than a day

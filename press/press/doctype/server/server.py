@@ -23,7 +23,9 @@ class BaseServer(Document):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
 		self.name = f"{self.hostname}.{self.domain}"
-		if self.is_self_hosted:
+		if (
+			self.doctype in ["Database Server", "Server", "Proxy Server"] and self.is_self_hosted
+		):
 			self.name = f"{self.hostname}.{self.self_hosted_server_domain}"
 
 	def validate(self):
@@ -33,9 +35,13 @@ class BaseServer(Document):
 			self.self_hosted_mariadb_server = self.private_ip
 
 	def after_insert(self):
-		if self.ip and not self.is_self_hosted:
-			self.create_dns_record()
-			self.update_virtual_machine_name()
+		if self.ip:
+			if (
+				self.doctype not in ["Database Server", "Server", "Proxy Server"]
+				or not self.is_self_hosted
+			):
+				self.create_dns_record()
+				self.update_virtual_machine_name()
 
 	def create_dns_record(self):
 		try:
@@ -335,7 +341,11 @@ class BaseServer(Document):
 			frappe.throw(_("Cannot archive server with benches"))
 		self.status = "Pending"
 		self.save()
-		frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
+		if self.is_self_hosted:
+			self.status = "Archived"
+			self.save()
+		else:
+			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
 	def _archive(self):
@@ -354,6 +364,9 @@ class BaseServer(Document):
 			return
 
 		team = frappe.get_doc("Team", self.team)
+
+		if team.parent_team:
+			team = frappe.get_doc("Team", team.parent_team)
 
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
@@ -517,6 +530,36 @@ class Server(BaseServer):
 				bench = frappe.get_doc("Bench", bench)
 				bench.database_server = self.database_server
 				bench.save()
+
+		if not self.is_new() and self.has_value_changed("team"):
+
+			if self.subscription and self.subscription.team != self.team:
+				self.subscription.disable()
+
+				if subscription := frappe.db.get_value(
+					"Subscription",
+					{
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"team": self.team,
+						"plan": self.plan,
+					},
+				):
+					frappe.db.set_value("Subscription", subscription, "enabled", 1)
+				else:
+					try:
+						# create new subscription
+						frappe.get_doc(
+							{
+								"doctype": "Subscription",
+								"document_type": self.doctype,
+								"document_name": self.name,
+								"team": self.team,
+								"plan": self.plan,
+							}
+						).insert()
+					except Exception:
+						frappe.log_error("Server Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
@@ -871,11 +914,12 @@ class Server(BaseServer):
 				bench = frappe.get_doc("Bench", bench_name, for_update=True)
 				try:
 					gunicorn_workers = min(
-						24,
+						frappe.get_value("Release Group", bench.group, "gunicorn_workers") or 24,
 						max(2, round(workload / total_workload * max_gunicorn_workers)),  # min 2 max 24
 					)
 					background_workers = min(
-						8, max(1, round(workload / total_workload * max_bg_workers))  # min 1 max 8
+						frappe.get_value("Release Group", bench.group, "background_workers") or 8,
+						max(1, round(workload / total_workload * max_bg_workers)),  # min 1 max 8
 					)
 				except ZeroDivisionError:  # when total_workload is 0
 					gunicorn_workers = 2

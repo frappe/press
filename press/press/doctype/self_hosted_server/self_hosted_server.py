@@ -1,15 +1,14 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 
 import frappe
 from frappe.model.document import Document
 from press.runner import Ansible
 from press.utils import log_error
 
+import json
 from tldextract import extract as sdext
-import time
 
 
 class SelfHostedServer(Document):
@@ -308,7 +307,7 @@ class SelfHostedServer(Document):
 			server.ram = self.ram
 			server.new_worker_allocation = True
 			new_server = server.insert()
-			new_server.create_subscription("Unlimited")
+			new_server.create_subscription("Self Hosted Server")
 			self.server = new_server.name
 			self.status = "Active"
 			self.server_created = True
@@ -474,12 +473,9 @@ class SelfHostedServer(Document):
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		server = frappe.get_doc("Server", self.name)
 		db_server = frappe.get_doc("Database Server", self.name)
-		if not (server.is_server_setup and db_server.is_server_setup):
+		if not db_server.is_server_setup:
 			db_server.setup_server()
-			time.sleep(60)
-			server.setup_server()
 		else:
 			self.update_tls()
 
@@ -528,3 +524,91 @@ class SelfHostedServer(Document):
 			and self.team
 			and self.team != "Administrator"
 		)
+
+	@frappe.whitelist()
+	def fetch_private_ip(self):
+		"""
+		Fetch the Private IP from the Ping Ansible Play
+		"""
+		play_id = frappe.get_last_doc(
+			"Ansible Play", {"server": self.name, "play": "Ping Server"}
+		).name
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
+		try:
+			result = json.loads(play.result)
+			self.private_ip = fetch_private_ip_based_on_vendor(result)
+			self.save()
+		except Exception:
+			log_error("Fetching Private IP failed", server=self.as_dict())
+
+	@frappe.whitelist()
+	def fetch_system_specifications(self, play_id=None):
+		"""
+		Fetch the RAM from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.name, "play": "Ping Server"}
+			).name
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
+		try:
+			result = json.loads(play.result)
+			self.vendor = result["ansible_facts"]["system_vendor"]
+			self.ram = result["ansible_facts"]["memtotal_mb"]
+			self.vcpus = result["ansible_facts"]["processor_vcpus"]
+			self.swap_total = result["ansible_facts"]["swaptotal_mb"]
+			self.architecture = result["ansible_facts"]["architecture"]
+			self.instance_type = result["ansible_facts"]["product_name"]
+			self.processor = result["ansible_facts"]["processor"][2]
+			self.distribution = result["ansible_facts"]["lsb"]["description"]
+			match self.vendor:
+				case "DigitalOcean":
+					self.total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
+				case "Amazon EC2":
+					self.total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
+				case _:
+					self.total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+			self.save()
+		except Exception:
+			log_error("Fetching System Details Failed", server=self.as_dict())
+
+	def check_minimum_specs(self):
+		"""
+		Check if the server meets the minimum requirements
+		ie: RAM >= 4GB,vCPUs >= 2,Storage >= 40GB
+		"""
+
+		if round(int(self.ram), -3) < 4000:  # Round to nearest thousand
+			frappe.throw(
+				f"Minimum RAM requirement not met, Minumum is 4GB and available is {self.ram} MB"
+			)
+		if int(self.vcpus) < 2:
+			frappe.throw(
+				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
+			)
+		if round(int(float(self.total_storage.split()[0])), -1) < 40:
+			frappe.throw(
+				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
+			)
+		return True
+
+
+def fetch_private_ip_based_on_vendor(play_result: dict):
+	vendor = play_result["ansible_facts"]["system_vendor"]
+	match vendor:
+		case "DigitalOcean":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
+		case "Hetzner":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][2]
+		case "Amazon EC2":
+			return play_result["ansible_facts"]["default_ipv4"]["address"]
+		case "Microsoft Corporation":
+			return play_result["ansible_facts"]["all_ipv4_addresses"][0]
+		case "Google":
+			return play_result["ansible_facts"]["default_ipv4"]["address"]
+		case _:
+			return play_result["ansible_facts"]["default_ipv4"]["address"]

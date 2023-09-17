@@ -712,7 +712,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.join(site)
 		.on(site.name == app_sub.site)
 		.join(usage_record)
-		.on(usage_record.subscription == app_sub.name)
+		.on(usage_record.subscription == app_sub.subscription)
 		.where(conditions)
 		.groupby(usage_record.subscription)
 		.select(
@@ -1193,3 +1193,14 @@ def fetch_readme(name):
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.long_description = app.fetch_readme()
 	app.save()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_marketplace_apps():
+	apps = frappe.cache().get_value("marketplace_apps")
+	if not apps:
+		apps = frappe.get_all(
+			"Marketplace App", {"status": "Published"}, ["name", "title", "route"]
+		)
+		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
+	return apps

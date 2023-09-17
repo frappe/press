@@ -102,7 +102,7 @@ class AccountRequest(Document):
 
 	@property
 	def full_name(self):
-		return self.first_name + " " + self.last_name
+		return " ".join(filter(None, [self.first_name, self.last_name]))
 
 	def get_site_name(self):
 		return (
