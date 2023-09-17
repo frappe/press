@@ -104,7 +104,7 @@
 						:rows="sites"
 						v-slot="{ rows, columns }"
 					>
-						<TableHeader class="hidden sm:grid" />
+						<TableHeader class="hidden sm:grid mb-4" />
 						<div class="flex items-center justify-center">
 							<div
 								v-if="$resources.allSites.fetched && rows.length === 0"
@@ -114,9 +114,13 @@
 							</div>
 						</div>
 
-						<div v-for="group in groups" :key="group.group">
+						<div
+							v-for="group in groups"
+							:key="group.group"
+							class="border rounded mb-2"
+						>
 							<div
-								class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
+								class="flex w-full items-center bg-gray-50 px-3 py-2 text-base rounded-t"
 							>
 								<span class="font-semibold text-gray-900">
 									{{ group.title }}

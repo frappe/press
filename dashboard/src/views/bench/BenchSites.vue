@@ -12,16 +12,16 @@
 			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
-			<TableHeader v-if="rows.length !== 0" class="hidden sm:grid" />
+			<TableHeader v-if="rows.length !== 0" class="hidden sm:grid mb-4" />
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
 					<div class="text-base text-gray-700">No Benches</div>
 				</div>
 			</div>
-			<div v-for="(group, i) in rows" :key="group.name">
+			<div v-for="(group, i) in rows" :key="group.name" class="border rounded">
 				<div
-					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
+					class="flex w-full items-center justify-between rounded-t bg-gray-50 px-3 py-2 text-base"
 				>
 					<span
 						class="cursor-default font-semibold text-gray-900"

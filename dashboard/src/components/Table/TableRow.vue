@@ -2,7 +2,7 @@
 	<component
 		:is="row.route ? 'router-link' : 'div'"
 		:to="row.route ? row.route : null"
-		class="grid border-b"
+		class="grid"
 		:class="{ 'hover:bg-gray-100': row.route }"
 		:style="{
 			gridTemplateColumns: columns.map(col => col.width + 'fr').join(' ')
