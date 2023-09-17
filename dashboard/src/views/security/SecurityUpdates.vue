@@ -56,15 +56,8 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Security Update',
+				url: 'press.api.security.fetch_security_updates',
 				filters: { server: this.server?.name },
-				fields: [
-					'name',
-					'package',
-					'version',
-					'priority',
-					'priority_level',
-					'datetime'
-				],
 				orderBy: 'priority_level asc',
 				pageLength: 10,
 				start: 0,

@@ -148,3 +148,19 @@ def exists(subdomain, domain) -> bool:
 				{"subdomain": subdomain, "domain": domain, "status": ("!=", "Archived")},
 			)
 		)
+
+
+@frappe.whitelist()
+@protected("Code Server")
+def code_server_jobs(
+	filters=None, order_by=None, limit_start=None, limit_page_length=None
+) -> List:
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs

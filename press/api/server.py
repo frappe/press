@@ -461,6 +461,34 @@ def press_jobs(name):
 
 
 @frappe.whitelist()
+@protected(["Server", "Database Server"])
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	plays = frappe.get_all(
+		"Ansible Play",
+		fields=["name", "play", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return plays
+
+
+@frappe.whitelist()
 @protected("Server")
 def get_title_and_cluster(name):
 	return frappe.db.get_value("Server", name, ["title", "cluster"], as_dict=True)

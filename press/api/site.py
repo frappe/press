@@ -255,6 +255,20 @@ def get_app_subscriptions(app_plans, team: str):
 
 
 @frappe.whitelist()
+@protected("Site")
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs
+
+
+@frappe.whitelist()
 def job(job):
 	job = frappe.get_doc("Agent Job", job)
 	job = job.as_dict()
