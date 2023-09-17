@@ -136,7 +136,7 @@ export default {
 		releases() {
 			return {
 				type: 'list',
-				doctype: 'app_release',
+				doctype: 'App Release',
 				url: 'press.api.marketplace.releases',
 				filters: {
 					app: this.app.app,
