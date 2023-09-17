@@ -303,7 +303,7 @@ def releases(
 
 	app_releases = frappe.get_all(
 		"App Release",
-		filters={"app": filters["app"], "source": filters["source"]},
+		filters=filters,
 		fields="*",
 		order_by=order_by or "creation desc",
 		start=limit_start,
