@@ -140,10 +140,10 @@
 							</div>
 
 							<TableRow
-								v-for="row in sitesByGroup[group.group]"
+								v-for="(row, index) in sitesByGroup[group.group]"
 								:key="row.name"
 								:row="row"
-								class="rounded"
+								:class="index === 0 ? 'rounded-b' : 'rounded'"
 							>
 								<TableCell v-for="column in columns">
 									<Badge

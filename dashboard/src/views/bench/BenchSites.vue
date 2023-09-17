@@ -59,7 +59,12 @@
 				>
 					<div class="text-base text-gray-600">No Sites</div>
 				</div>
-				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
+				<TableRow
+					v-for="(row, index) in group.sites"
+					:key="row.name"
+					:row="row"
+					:class="index === 0 ? 'rounded-b' : 'rounded'"
+				>
 					<TableCell v-for="column in columns">
 						<Badge v-if="column.name === 'status'" :label="$siteStatus(row)" />
 						<div

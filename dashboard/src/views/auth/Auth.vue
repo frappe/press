@@ -43,7 +43,6 @@
 					<template v-else-if="isLogin">
 						<FormControl
 							label="Email"
-							type="email"
 							placeholder="johndoe@mail.com"
 							autocomplete="email"
 							v-model="email"
