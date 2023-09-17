@@ -143,6 +143,7 @@
 								v-for="row in sitesByGroup[group.group]"
 								:key="row.name"
 								:row="row"
+								class="rounded"
 							>
 								<TableCell v-for="column in columns">
 									<Badge

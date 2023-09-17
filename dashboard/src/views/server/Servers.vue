@@ -77,7 +77,12 @@
 							<div class="text-base text-gray-700">No Items</div>
 						</div>
 					</div>
-					<TableRow v-for="row in rows" :key="row.name" :row="row">
+					<TableRow
+						v-for="row in rows"
+						:key="row.name"
+						:row="row"
+						class="rounded"
+					>
 						<TableCell v-for="column in columns">
 							<Badge v-if="column.name === 'status'" :label="row.status" />
 							<div
