@@ -174,23 +174,23 @@ def login_using_key(key):
 		)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def approve_partner_request(key):
 	partner_request_doc = frappe.get_doc("Partner Approval Request", {"key": key})
+
 	if partner_request_doc and partner_request_doc.status == "Pending":
 		partner_request_doc.status = "Approved"
 		partner_request_doc.save(ignore_permissions=True)
 
 		partner_user = frappe.db.get_value("Team", partner_request_doc.partner, "user")
-		frappe.db.set_value(
-			"Team",
-			partner_request_doc.requested_by,
-			{
-				"billing_team": partner_request_doc.partner,
-				"payment_mode": "Paid By Partner",
-				"team_members": {"user": partner_user},
-			},
-		)
+
+		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
+		customer_team.billing_team = partner_request_doc.partner
+		customer_team.payment_mode = "Paid By Partner"
+		customer_team.append("team_members", {"user": partner_user})
+		customer_team.save(ignore_permissions=True)
+
+		frappe.db.commit()
 
 		frappe.response.type = "redirect"
 		frappe.response.location = "/dashboard"
