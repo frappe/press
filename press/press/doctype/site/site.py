@@ -905,6 +905,9 @@ class Site(Document):
 
 		team = frappe.get_doc("Team", self.team)
 
+		if team.parent_team:
+			team = frappe.get_doc("Team", team.parent_team)
+
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
@@ -1430,6 +1433,26 @@ def process_uninstall_app_site_job_update(job):
 			if app_doc:
 				site.remove(app_doc)
 				site.save()
+		frappe.db.set_value("Site", job.site, "status", updated_status)
+
+
+def process_restore_job_update(job):
+	updated_status = {
+		"Pending": "Pending",
+		"Running": "Installing",
+		"Success": "Active",
+		"Failure": "Broken",
+	}[job.status]
+
+	site_status = frappe.get_value("Site", job.site, "status")
+	if updated_status != site_status:
+		if job.status == "Success":
+			apps = [line.split()[0] for line in job.output.splitlines()]
+			site = frappe.get_doc("Site", job.site)
+			site.apps = []
+			for app in apps:
+				site.append("apps", {"app": app})
+			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 

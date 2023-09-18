@@ -1,11 +1,12 @@
 import time
 
-import dns.resolver
 import frappe
+from dns.resolver import Resolver
 
 from press.api.server import plans
 from press.runner import Ansible
 from press.utils import get_current_team
+from press.api.site import NAMESERVERS
 
 
 @frappe.whitelist()
@@ -90,7 +91,9 @@ def get_plans():
 @frappe.whitelist()
 def check_dns(domain, ip):
 	try:
-		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		domain_ip = resolver.query(domain, "A")[0].to_text()
 		if domain_ip == ip:
 			return True
 	except Exception:

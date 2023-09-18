@@ -12,6 +12,11 @@ from urllib.parse import urljoin
 
 
 def log_error(title, **kwargs):
+	if frappe.flags.in_test:
+		try:
+			raise
+		except RuntimeError:
+			pass
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"

@@ -77,6 +77,9 @@ def create_test_site(
 	team: str = None,
 	standby_for: Optional[str] = None,
 	apps: Optional[list[str]] = None,
+	remote_database_file=None,
+	remote_public_file=None,
+	remote_private_file=None,
 ) -> Site:
 	"""Create test Site doc.
 
@@ -105,6 +108,9 @@ def create_test_site(
 			"apps": apps or [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,
+			"remote_database_file": remote_database_file,
+			"remote_public_file": remote_public_file,
+			"remote_private_file": remote_private_file,
 		}
 	).insert()
 	site.db_set("creation", creation)
@@ -113,6 +119,7 @@ def create_test_site(
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
