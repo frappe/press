@@ -26,6 +26,6 @@ class PartnerApprovalRequest(Document):
 			subject="Partner Approval Request",
 			recipients=email,
 			template="partner_approval",
-			args={"link": link, "customer": customer},
+			args={"link": link, "user": customer},
 			now=True,
 		)

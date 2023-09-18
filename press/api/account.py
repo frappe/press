@@ -186,6 +186,7 @@ def approve_partner_request(key):
 
 		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
 		customer_team.billing_team = partner_request_doc.partner
+		customer_team.partner_email = partner_request_doc.partner_email
 		customer_team.payment_mode = "Paid By Partner"
 		customer_team.append("team_members", {"user": partner_user})
 		customer_team.save(ignore_permissions=True)
@@ -668,7 +669,7 @@ def get_partner_customers():
 	customers = frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
-		["name", "user"],
+		["name", "user", "payment_mode"],
 	)
 	return customers
 
