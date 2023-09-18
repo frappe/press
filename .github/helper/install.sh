@@ -31,9 +31,7 @@ bench get-app press "${GITHUB_WORKSPACE}"
 
 bench setup requirements --dev
 
-bench start &> bench_run_logs.txt &
+bench start &> bench_start_logs.txt &
 CI=Yes bench build --app frappe &
 bench new-site --db-root-password root --admin-password admin test_site
 bench --site test_site install-app press
-
-

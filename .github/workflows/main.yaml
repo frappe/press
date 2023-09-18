@@ -146,6 +146,13 @@ jobs:
           path: /home/runner/frappe-bench/sites/coverage.xml
         if: always()
 
+      - name: Upload bench start logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: bench-start-logs
+          path: bench_start_logs.txt
+        if: always()
+
   coverage:
     name: Coverage Wrap Up
     if: always()
