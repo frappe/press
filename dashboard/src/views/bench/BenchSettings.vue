@@ -8,18 +8,21 @@
 			:tags="bench.tags"
 		/>
 		<BenchOverviewRegions :bench="bench" />
+		<BenchDependencies :bench="bench" />
 	</div>
 </template>
 
 <script>
 import Tags from '@/components/Tags.vue';
 import BenchOverviewRegions from './BenchOverviewRegions.vue';
+import BenchDependencies from './BenchDependencies.vue';
 
 export default {
 	name: 'BenchSettings',
 	props: ['bench'],
 	components: {
 		Tags,
+		BenchDependencies,
 		BenchOverviewRegions
 	}
 };
