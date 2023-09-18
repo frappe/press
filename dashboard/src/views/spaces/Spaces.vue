@@ -53,14 +53,6 @@
 					v-slot="{ rows, columns }"
 				>
 					<TableHeader class="hidden sm:grid" />
-					<div class="flex items-center justify-center">
-						<div
-							v-if="$resources.spaces.fetched && rows.length === 0"
-							class="mt-8"
-						>
-							<div class="text-base text-gray-700">No Spaces</div>
-						</div>
-					</div>
 					<TableRow v-for="row in rows" :key="row.name" :row="row">
 						<TableCell v-for="column in columns">
 							<Badge
@@ -104,6 +96,17 @@
 							<span v-else>{{ row[column.name] || '' }}</span>
 						</TableCell>
 					</TableRow>
+					<div class="mt-8 flex items-center justify-center">
+						<LoadingText
+							v-if="$resources.spaces.loading && !$resources.spaces.data"
+						/>
+						<div
+							v-else-if="$resources.spaces.fetched && rows.length === 0"
+							class="text-base text-gray-700"
+						>
+							No Spaces
+						</div>
+					</div>
 				</Table>
 			</div>
 		</div>

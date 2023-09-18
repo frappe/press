@@ -69,14 +69,6 @@
 					v-slot="{ rows, columns }"
 				>
 					<TableHeader class="hidden sm:grid" />
-					<div class="flex items-center justify-center">
-						<div
-							v-if="$resources.allServers.fetched && rows.length === 0"
-							class="mt-8"
-						>
-							<div class="text-base text-gray-700">No Items</div>
-						</div>
-					</div>
 					<TableRow
 						v-for="row in rows"
 						:key="row.name"
@@ -143,6 +135,19 @@
 							<span v-else>{{ row[column.name] || '' }}</span>
 						</TableCell>
 					</TableRow>
+					<div class="mt-8 flex items-center justify-center">
+						<LoadingText
+							v-if="
+								$resources.allServers.loading && !$resources.allServers.data
+							"
+						/>
+						<div
+							v-else-if="$resources.allServers.fetched && rows.length === 0"
+							class="text-base text-gray-700"
+						>
+							No Servers
+						</div>
+					</div>
 				</Table>
 			</div>
 		</div>

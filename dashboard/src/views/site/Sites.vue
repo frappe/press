@@ -104,23 +104,14 @@
 						:rows="sites"
 						v-slot="{ rows, columns }"
 					>
-						<TableHeader class="hidden sm:grid mb-4" />
-						<div class="flex items-center justify-center">
-							<div
-								v-if="$resources.allSites.fetched && rows.length === 0"
-								class="mt-8"
-							>
-								<div class="text-base text-gray-700">No sites</div>
-							</div>
-						</div>
-
+						<TableHeader class="mb-4 hidden sm:grid" />
 						<div
 							v-for="group in groups"
 							:key="group.group"
-							class="border rounded mb-2"
+							class="mb-2 rounded border"
 						>
 							<div
-								class="flex w-full items-center bg-gray-50 px-3 py-2 text-base rounded-t"
+								class="flex w-full items-center rounded-t bg-gray-50 px-3 py-2 text-base"
 							>
 								<span class="font-semibold text-gray-900">
 									{{ group.title }}
@@ -213,6 +204,17 @@
 									<span v-else>{{ row[column.name] || '' }}</span>
 								</TableCell>
 							</TableRow>
+						</div>
+						<div class="mt-8 flex items-center justify-center">
+							<LoadingText
+								v-if="$resources.allSites.loading && !$resources.allSites.data"
+							/>
+							<div
+								v-else-if="$resources.allSites.fetched && rows.length === 0"
+								class="text-base text-gray-700"
+							>
+								No Sites
+							</div>
 						</div>
 					</Table>
 
