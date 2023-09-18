@@ -90,6 +90,7 @@
 									:label="`+${row.tags.length - 1}`"
 								/>
 							</Tooltip>
+							<span v-if="row.tags.length == 0">-</span>
 						</div>
 						<div
 							v-else-if="column.name === 'stats'"

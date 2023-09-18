@@ -6,7 +6,7 @@
 		}"
 	>
 		<div
-			class="px-3 py-3.5 text-left text-base font-semibold text-gray-900"
+			class="px-2 py-3.5 text-left text-base font-semibold text-gray-900"
 			v-for="column in columns"
 			:key="column.name"
 		>
