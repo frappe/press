@@ -103,7 +103,7 @@
 										:label="`+${row.tags.length - 1}`"
 									/>
 								</Tooltip>
-								<span v-else>-</span>
+								<span v-if="row.tags.length === 0">-</span>
 							</div>
 							<span v-else-if="column.name === 'plan'" class="hidden sm:block">
 								{{
