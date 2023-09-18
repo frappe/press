@@ -28,6 +28,8 @@ export default class Account {
 			this.balance = result.balance;
 			this.feature_flags = result.feature_flags;
 			this.parent_team = result.parent_team;
+			this.partner_email = result.partner_email;
+			this.partner_billing_name = result.partner_billing_name;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		}

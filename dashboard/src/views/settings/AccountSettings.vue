@@ -9,6 +9,7 @@
 			<AccountEmails />
 			<AccountAPI />
 			<AccountSSHKey />
+			<AccountPartner />
 		</div>
 	</div>
 </template>
@@ -22,6 +23,7 @@ import AccountEmails from './AccountEmails.vue';
 import AccountAPI from './AccountAPI.vue';
 import AccountSSHKey from './AccountSSHKey.vue';
 import PageHeader from '@/components/global/PageHeader.vue';
+import AccountPartner from './AccountPartner.vue';
 
 export default {
 	name: 'AccountSettings',
@@ -38,7 +40,8 @@ export default {
 		AccountEmails,
 		AccountAPI,
 		AccountSSHKey,
-		PageHeader
+		PageHeader,
+		AccountPartner
 	},
 	computed: {
 		pageSubtitle() {

@@ -457,7 +457,7 @@ class Invoice(Document):
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
 			headers=client.headers,
-			params={"email": self.partner_email},
+			params={"email": self.partner_email, "total_amount": self.total},
 		)
 
 		if response.ok:

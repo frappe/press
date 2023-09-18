@@ -93,7 +93,7 @@ export default {
 		},
 		getPartners() {
 			return {
-				method: 'press.api.billing.get_frappe_partners',
+				method: 'press.api.account.get_frappe_partners',
 				auto: true,
 				cache: ['partners'],
 				onSuccess(data) {

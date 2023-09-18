@@ -342,6 +342,14 @@ def get():
 			as_dict=True,
 		)
 
+	partner_billing_name = ""
+	if team_doc.partner_email:
+		partner_billing_name = frappe.db.get_value(
+			"Team",
+			{"erpnext_partner": 1, "partner_email": team_doc.partner_email},
+			"billing_name",
+		)
+
 	return {
 		"user": frappe.get_doc("User", user),
 		"ssh_key": get_ssh_key(user),
@@ -357,6 +365,8 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+		"partner_email": team_doc.partner_email or "",
+		"partner_billing_name": partner_billing_name,
 	}
 
 
@@ -634,6 +644,22 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+
+
+@frappe.whitelist()
+def get_frappe_partners():
+	return frappe.get_all(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 1},
+		["name", "billing_name", "partner_email"],
+	)
+
+
+@frappe.whitelist()
+def add_partner(partner_email):
+	team = get_current_team(get_doc=True)
+	team.partner_email = partner_email
+	team.save()
 
 
 @frappe.whitelist()
