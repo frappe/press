@@ -827,6 +827,7 @@ def get_permission_options(name, ptype):
 			.select(
 				ValueWrapper(doctype, alias="doctype"),
 				doc.name,
+				doc.title if doctype != "Site" else None,
 				GROUP_CONCAT(subtable.action, alias="perms"),
 			)
 			.where(

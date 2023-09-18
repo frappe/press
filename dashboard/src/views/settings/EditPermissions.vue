@@ -20,13 +20,13 @@
 				v-on:input="e => updateSearchTerm(e)"
 			/>
 			<LoadingText v-if="$resources.options.loading" />
-			<div v-else class="mb-8 flex flex-col">
+			<div v-else class="mb-8 flex flex-col max-h-96 overflow-auto">
 				<div v-for="(option, index) in filteredList" class="border-b pt-2">
 					<span class="mr-2 mt-4 w-full pb-2 text-lg text-gray-600">
 						{{ option.doctype }}
 					</span>
 					<span class="inline-block align-middle text-base font-bold">
-						{{ option.name }}
+						{{ option.title ? option.title : option.name }}
 					</span>
 					<Input
 						class="pt-4"
