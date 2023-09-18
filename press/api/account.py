@@ -663,6 +663,17 @@ def add_partner(partner_email):
 
 
 @frappe.whitelist()
+def get_partner_customers():
+	team = get_current_team(get_doc=True)
+	customers = frappe.get_all(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
+		["name", "user"],
+	)
+	return customers
+
+
+@frappe.whitelist()
 def get_emails():
 	team = get_current_team(True)
 	data = frappe.get_all(
