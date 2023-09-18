@@ -2,13 +2,13 @@
 	<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 		<Tags
 			v-if="bench"
-			:name="bench.name"
+			:name="benchName"
 			doctype="Release Group"
 			:resourceTags="bench.bench_tags"
 			:tags="bench.tags"
 		/>
-		<BenchOverviewRegions :bench="bench" />
-		<BenchDependencies :bench="bench" />
+		<BenchOverviewRegions :benchName="benchName" />
+		<BenchDependencies :benchName="benchName" />
 	</div>
 </template>
 
@@ -19,7 +19,7 @@ import BenchDependencies from './BenchDependencies.vue';
 
 export default {
 	name: 'BenchSettings',
-	props: ['bench'],
+	props: ['bench', 'benchName'],
 	components: {
 		Tags,
 		BenchDependencies,

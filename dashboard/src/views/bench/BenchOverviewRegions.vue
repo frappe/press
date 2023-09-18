@@ -50,7 +50,7 @@
 					:loading="$resources.addRegion.loading"
 					@click="
 						$resources.addRegion.submit({
-							name: bench.name,
+							name: benchName,
 							region: selectedRegion
 						})
 					"
@@ -67,7 +67,7 @@ import RichSelect from '@/components/RichSelect.vue';
 
 export default {
 	name: 'BenchOverviewRegions',
-	props: ['bench'],
+	props: ['benchName'],
 	components: { RichSelect },
 	data() {
 		return {
@@ -80,7 +80,7 @@ export default {
 			return {
 				url: 'press.api.bench.regions',
 				params: {
-					name: this.bench?.name
+					name: this.benchName
 				},
 				auto: true
 			};
@@ -89,7 +89,7 @@ export default {
 			return {
 				url: 'press.api.bench.available_regions',
 				params: {
-					name: this.bench?.name
+					name: this.benchName
 				},
 				auto: true,
 				onSuccess(availableRegions) {

@@ -60,7 +60,7 @@ import { notify } from '@/utils/toast';
 
 export default {
 	name: 'BenchDependencies',
-	props: ['bench'],
+	props: ['benchName'],
 	data() {
 		return {
 			isDirty: false
@@ -71,7 +71,7 @@ export default {
 			return {
 				url: 'press.api.bench.dependencies',
 				params: {
-					name: this.bench?.name
+					name: this.benchName
 				},
 				auto: true,
 				initialData: []
@@ -81,7 +81,7 @@ export default {
 			return {
 				url: 'press.api.bench.update_dependencies',
 				params: {
-					name: this.bench?.name,
+					name: this.benchName,
 					dependencies: JSON.stringify(this.$resources.dependencies.data)
 				},
 				onError(err) {
