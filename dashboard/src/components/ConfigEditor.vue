@@ -211,7 +211,11 @@ export default {
 				}
 			};
 		},
-		standardConfigKeys: 'press.api.config.standard_keys'
+		standardConfigKeys: {
+			url: 'press.api.config.standard_keys',
+			cache: 'standardConfigKeys',
+			auto: true
+		}
 	},
 	computed: {
 		configPreview() {
