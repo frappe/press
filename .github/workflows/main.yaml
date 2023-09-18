@@ -147,6 +147,7 @@ jobs:
         if: always()
 
       - name: Upload bench start logs
+        working-directory: /home/runner/frappe-bench
         uses: actions/upload-artifact@v3
         with:
           name: bench-start-logs
