@@ -12,7 +12,12 @@
 			</ListItem>
 		</div>
 		<template #actions>
-			<Button @click="showSelectPartnerDialog = true"> Change Partner </Button>
+			<Button
+				@click="showSelectPartnerDialog = true"
+				v-if="!$account.partner_email"
+			>
+				Add Partner
+			</Button>
 		</template>
 		<Dialog
 			:options="{ title: 'Add Partner' }"
