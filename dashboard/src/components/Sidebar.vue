@@ -140,8 +140,8 @@ export default {
 					highlight: () => {
 						return this.$route.fullPath.startsWith('/benches');
 					},
-					icon: FCIcons.BenchIcon,
-					condition: () => this.$account.team?.benches_enabled
+					icon: FCIcons.BenchIcon
+					//condition: () => this.$account.team?.benches_enabled
 				},
 				{
 					label: 'Servers',

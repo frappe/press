@@ -19,7 +19,11 @@
 					<div class="text-base text-gray-700">No Benches</div>
 				</div>
 			</div>
-			<div v-for="(group, i) in rows" :key="group.name" class="border rounded">
+			<div
+				v-for="(group, i) in rows"
+				:key="group.name"
+				class="border rounded mb-4"
+			>
 				<div
 					class="flex w-full items-center justify-between rounded-t bg-gray-50 px-3 py-2 text-base"
 				>

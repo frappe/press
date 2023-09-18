@@ -25,11 +25,11 @@ import { FormControl } from 'frappe-ui';
 
 let fields = [
 	{ label: 'Enable private benches', fieldname: 'benches_enabled' },
-	{ label: 'Enable servers', fieldname: 'servers_enabled' },
-	{
-		label: 'Enable self-hosted servers',
-		fieldname: 'self_hosted_servers_enabled'
-	},
+	//{ label: 'Enable servers', fieldname: 'servers_enabled' },
+	//{
+	//label: 'Enable self-hosted servers',
+	//fieldname: 'self_hosted_servers_enabled'
+	//},
 	{
 		label: 'Enable security portal',
 		fieldname: 'security_portal_enabled'
