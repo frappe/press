@@ -81,7 +81,7 @@ class Cluster(Document):
 				"Images for required series not available in other regions. Create Images from server docs.",
 				frappe.ValidationError,
 			)
-		frappe.enqueue_doc(self.doctype, self.name, "_add_images", queue="long")
+		frappe.enqueue_doc(self.doctype, self.name, "_add_images", queue="long", timeout=1200)
 
 	def _add_images(self):
 		"""Copies VMIs required for the cluster"""
