@@ -1,0 +1,20 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <p>User {{ user }} has raised a request for "Paid By Partner" payment mode with your partner email.</p>
+        <p>
+            Click on the following button to accept the request raised by the user.
+        </p>
+        {{ utils.button('Accept', link, true) }}
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}
+
