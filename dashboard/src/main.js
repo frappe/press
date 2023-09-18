@@ -18,7 +18,16 @@ import {
 } from 'frappe-ui';
 
 const app = createApp(App);
-setConfig('resourceFetcher', frappeRequest);
+let request = options => {
+	let _options = options || {};
+	_options.headers = options.headers || {};
+	let currentTeam = localStorage.getItem('current_team');
+	if (currentTeam) {
+		_options.headers['X-Press-Team'] = currentTeam;
+	}
+	return frappeRequest(_options);
+};
+setConfig('resourceFetcher', request);
 app.use(resourcesPlugin);
 app.use(pageMetaPlugin);
 
