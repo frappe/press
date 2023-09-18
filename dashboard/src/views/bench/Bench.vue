@@ -1,34 +1,55 @@
 <template>
-	<div>
-		<div v-if="bench">
-			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/benches" class="hover:text-gray-800">
-						← Back to Benches
-					</router-link>
-				</div>
-				<div
-					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
-				>
-					<div class="mt-2 flex items-center">
-						<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
-						<Badge
-							class="ml-4"
-							:label="bench.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
-					</div>
-					<div class="flex-row space-x-3 md:flex">
+	<div v-if="bench">
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<Breadcrumbs
+				:items="[
+					{ label: 'Benches', route: { name: 'BenchesScreen' } },
+					{
+						label: bench?.title,
+						route: {
+							name: 'BenchSiteList',
+							params: { benchName: bench?.name }
+						}
+					}
+				]"
+			>
+				<template #actions>
+					<div>
 						<Dropdown :options="benchActions">
 							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
+								<Button variant="ghost" class="mr-2" icon="more-horizontal" />
 							</template>
 						</Dropdown>
+						<Button
+							v-if="bench?.status === 'Active'"
+							variant="solid"
+							icon-left="plus"
+							label="New Site"
+							@click="$router.push(`/${this.bench.name}/new`)"
+						/>
 					</div>
+				</template>
+			</Breadcrumbs>
+		</header>
+
+		<EditBenchTitleDialog v-model="showEditTitleDialog" :bench="bench" />
+		<BenchDropDialog v-model="showDropBenchDialog" :bench="bench" />
+
+		<div class="p-5">
+			<div
+				class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+			>
+				<div class="flex items-center">
+					<h1 class="text-2xl font-bold">{{ bench.title }}</h1>
+					<Badge class="ml-4" :label="bench.status" />
 				</div>
 			</div>
-		</div>
-		<div>
+			<div class="mb-2 mt-4">
+				<AlertBenchUpdate v-if="bench?.no_sites <= 0" :bench="bench" />
+				<AlertUpdate v-else :bench="bench" />
+			</div>
 			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component }">
 					<component v-if="bench" :is="Component" :bench="bench"></component>
@@ -39,7 +60,12 @@
 </template>
 
 <script>
+import BenchDropDialog from './BenchDropDialog.vue';
 import Tabs from '@/components/Tabs.vue';
+import AlertUpdate from '@/components/AlertUpdate.vue';
+import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
+import EditBenchTitleDialog from './EditBenchTitleDialog.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Bench',
@@ -50,12 +76,22 @@ export default {
 	},
 	props: ['benchName'],
 	components: {
-		Tabs
+		Tabs,
+		BenchDropDialog,
+		AlertUpdate,
+		AlertBenchUpdate,
+		EditBenchTitleDialog
+	},
+	data() {
+		return {
+			showDropBenchDialog: false,
+			showEditTitleDialog: false
+		};
 	},
 	resources: {
 		bench() {
 			return {
-				method: 'press.api.bench.get',
+				url: 'press.api.bench.get',
 				params: {
 					name: this.benchName
 				},
@@ -65,7 +101,7 @@ export default {
 		},
 		updateAllSites() {
 			return {
-				method: 'press.api.bench.update_all_sites',
+				url: 'press.api.bench.update_all_sites',
 				params: {
 					bench_name: this.benchName
 				}
@@ -73,7 +109,6 @@ export default {
 		}
 	},
 	activated() {
-		this.routeToGeneral();
 		this.$socket.on('list_update', this.onSocketUpdate);
 	},
 	deactivated() {
@@ -83,13 +118,6 @@ export default {
 		onSocketUpdate({ doctype, name }) {
 			if (doctype == 'Release Group' && name == this.bench.name) {
 				this.reloadBench();
-			}
-		},
-		routeToGeneral() {
-			if (this.$route.matched.length === 1) {
-				let path = this.$route.fullPath;
-				let tab = 'overview';
-				this.$router.replace(`${path}/${tab}`);
 			}
 		},
 		reloadBench() {
@@ -109,25 +137,27 @@ export default {
 	},
 	computed: {
 		bench() {
-			if (this.$resources.bench.data && !this.$resources.bench.loading) {
+			if (this.$resources.bench?.data && !this.$resources.bench.loading) {
 				return this.$resources.bench.data;
 			}
 		},
 		tabs() {
 			let tabRoute = subRoute => `/benches/${this.benchName}/${subRoute}`;
 			let tabs = [
-				{ label: 'Overview', route: 'overview', condition: () => true },
-				{ label: 'Apps', route: 'apps', condition: () => true },
-				{ label: 'Versions', route: 'versions', condition: () => true },
 				{
-					label: 'Bench Config',
+					label: 'Sites',
+					route: 'sites'
+				},
+				{ label: 'Apps', route: 'apps' },
+				{ label: 'Deploys', route: 'deploys' },
+				{
+					label: 'Config',
 					route: 'bench-config',
 					condition: () => !this.bench?.public
 				},
-				{ label: 'Deploys', route: 'deploys', condition: () => true },
-				{ label: 'Jobs', route: 'jobs', condition: () => true },
-				{ label: 'Settings', route: 'setting', condition: () => true }
-			].filter(tab => tab.condition());
+				{ label: 'Jobs', route: 'jobs' },
+				{ label: 'Settings', route: 'settings' }
+			].filter(tab => (tab.condition ? tab.condition() : true));
 
 			if (this.bench) {
 				return tabs.map(tab => {
@@ -141,29 +171,29 @@ export default {
 		},
 		benchActions() {
 			return [
-				this.bench.status == 'Active' && {
-					label: 'New Site',
-					icon: 'plus',
-					handler: () => {
-						this.$router.push(`/${this.bench.name}/new`);
-					}
+				{
+					label: 'Edit Title',
+					icon: 'edit',
+					onClick: () => (this.showEditTitleDialog = true)
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'View in Desk',
 					icon: 'external-link',
-					handler: () => {
+					condition: () => this.$account.user.user_type == 'System User',
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/release-group/${this.bench.name}`,
 							'_blank'
 						);
 					}
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'Impersonate Team',
 					icon: 'tool',
-					handler: async () => {
+					condition: () => this.$account.user.user_type == 'System User',
+					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
-						this.$notify({
+						notify({
 							title: 'Switched Team',
 							message: `Switched to ${this.bench.team}`,
 							icon: 'check',
@@ -171,22 +201,28 @@ export default {
 						});
 					}
 				},
-				this.bench.status == 'Active' &&
-					!this.bench.public && {
-						label: 'Update All Sites to Latest Version',
-						icon: 'arrow-up-circle',
-						handler: async () => {
-							await this.$resources.updateAllSites.submit();
-							this.$notify({
-								title: 'Site update scheduled successfully',
-								message:
-									'All sites in this bench will be updated to the latest version',
-								icon: 'check',
-								color: 'green'
-							});
-						}
+				{
+					label: 'Update All Sites to Latest Version',
+					icon: 'arrow-up-circle',
+					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					onClick: async () => {
+						await this.$resources.updateAllSites.submit();
+						notify({
+							title: 'Site update scheduled successfully',
+							message:
+								'All sites in this bench will be updated to the latest version',
+							icon: 'check',
+							color: 'green'
+						});
 					}
-			].filter(Boolean);
+				},
+				{
+					label: 'Drop Bench',
+					icon: 'trash',
+					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					onClick: () => (this.showDropBenchDialog = true)
+				}
+			];
 		}
 	}
 };

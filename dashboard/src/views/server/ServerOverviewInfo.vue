@@ -1,5 +1,5 @@
 <template>
-	<Card title="Server info" subtitle="General information about your server">
+	<Card title="Server Info" subtitle="General information about your server">
 		<div class="divide-y">
 			<div class="flex items-center py-3">
 				<Avatar

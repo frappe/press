@@ -25,34 +25,34 @@
 		</Card>
 
 		<Dialog
-			:options="{ title: 'Edit Publisher Profile' }"
+			:options="{
+				title: 'Edit Publisher Profile',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						loading: $resources.updatePublisherProfile.loading,
+						onClick: () => $resources.updatePublisherProfile.submit()
+					}
+				]
+			}"
 			v-model="showEditProfileDialog"
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="Display Name" type="text" v-model="displayName" />
-					<Input label="Contact Email" type="email" v-model="contactEmail" />
-					<Input label="Website" type="text" v-model="website" />
+					<FormControl label="Display Name" v-model="displayName" />
+					<FormControl
+						label="Contact Email"
+						type="email"
+						v-model="contactEmail"
+					/>
+					<FormControl label="Website" v-model="website" />
 				</div>
 
 				<ErrorMessage
 					class="mt-4"
 					:message="$resources.updatePublisherProfile.error"
 				/>
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showEditProfileDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updatePublisherProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updatePublisherProfile.submit()"
-					>
-						Save
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</div>
@@ -73,7 +73,7 @@ export default {
 	resources: {
 		updatePublisherProfile() {
 			return {
-				method: 'press.api.marketplace.update_publisher_profile',
+				url: 'press.api.marketplace.update_publisher_profile',
 				params: {
 					profile_data: {
 						display_name: this.displayName,

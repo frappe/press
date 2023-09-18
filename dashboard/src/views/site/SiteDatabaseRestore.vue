@@ -16,12 +16,21 @@
 						Restore your database using a previous backup
 					</p>
 				</div>
-				<Button
-					:disabled="site.status === 'Suspended'"
-					@click="showRestoreDialog = true"
+				<Tooltip
+					:text="
+						!permissions.restore
+							? `You don't have enough permissions to perform this action`
+							: 'Restore Database'
+					"
 				>
-					<span class="text-red-600">Restore</span>
-				</Button>
+					<Button
+						theme="red"
+						:disabled="site.status === 'Suspended' || !permissions.restore"
+						@click="showRestoreDialog = true"
+					>
+						Restore
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -30,12 +39,20 @@
 						Run bench migrate command on your database
 					</p>
 				</div>
-				<Button
-					:disabled="site.status === 'Suspended'"
-					@click="showMigrateDialog = true"
+				<Tooltip
+					:text="
+						!permissions.migrate
+							? `You don't have enough permissions to perform this action`
+							: 'Migrate Database'
+					"
 				>
-					Migrate
-				</Button>
+					<Button
+						:disabled="site.status === 'Suspended' || !permissions.migrate"
+						@click="showMigrateDialog = true"
+					>
+						Migrate
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -44,9 +61,21 @@
 						Reset your database to a clean state
 					</p>
 				</div>
-				<Button :disabled="site.status === 'Suspended'" @click="confirmReset">
-					<span class="text-red-600"> Reset </span>
-				</Button>
+				<Tooltip
+					:text="
+						!permissions.reset
+							? `You don't have enough permissions to perform this action`
+							: 'Reset Database'
+					"
+				>
+					<Button
+						theme="red"
+						:disabled="site.status === 'Suspended' || !permissions.reset"
+						@click="confirmReset"
+					>
+						Reset
+					</Button>
+				</Tooltip>
 			</div>
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -57,7 +86,7 @@
 					:disabled="site.status === 'Suspended'"
 					@click="confirmClearCache"
 				>
-					<span class="text-red-600"> Clear </span>
+					Clear
 				</Button>
 			</div>
 			<div
@@ -75,7 +104,18 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Migrate Database' }"
+			:options="{
+				title: 'Migrate Database',
+				actions: [
+					{
+						label: 'Migrate',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.migrateDatabase.loading,
+						onClick: migrateDatabase
+					}
+				]
+			}"
 			v-model="showMigrateDialog"
 			@close="
 				() => {
@@ -107,18 +147,22 @@
 					</label>
 				</div>
 			</template>
-			<template #actions>
-				<Button
-					appearance="danger"
-					:loading="$resources.migrateDatabase.loading"
-					@click="migrateDatabase"
-				>
-					Migrate
-				</Button>
-			</template>
 		</Dialog>
 
-		<Dialog :options="{ title: 'Restore' }" v-model="showRestoreDialog">
+		<Dialog
+			:options="{
+				title: 'Restore',
+				actions: [
+					{
+						label: 'Restore',
+						variant: 'solid',
+						loading: $resources.restoreBackup.loading,
+						onClick: () => $resources.restoreBackup.submit()
+					}
+				]
+			}"
+			v-model="showRestoreDialog"
+		>
 			<template v-slot:body-content>
 				<div class="space-y-4">
 					<p class="text-base">
@@ -139,16 +183,6 @@
 					</label>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.restoreBackup.error" />
-			</template>
-
-			<template #actions>
-				<Button
-					appearance="primary"
-					:loading="$resources.restoreBackup.loading"
-					@click="$resources.restoreBackup.submit()"
-				>
-					Restore Database
-				</Button>
 			</template>
 		</Dialog>
 
@@ -189,7 +223,7 @@ export default {
 	resources: {
 		restoreBackup() {
 			return {
-				method: 'press.api.site.restore',
+				url: 'press.api.site.restore',
 				params: {
 					name: this.site?.name,
 					files: this.selectedFiles,
@@ -211,7 +245,7 @@ export default {
 		},
 		resetDatabase() {
 			return {
-				method: 'press.api.site.reinstall',
+				url: 'press.api.site.reinstall',
 				params: {
 					name: this.site?.name
 				},
@@ -225,7 +259,7 @@ export default {
 		},
 		migrateDatabase() {
 			return {
-				method: 'press.api.site.migrate',
+				url: 'press.api.site.migrate',
 				params: {
 					name: this.site?.name
 				},
@@ -242,7 +276,7 @@ export default {
 		},
 		clearCache() {
 			return {
-				method: 'press.api.site.clear_cache',
+				url: 'press.api.site.clear_cache',
 				params: {
 					name: this.site?.name
 				},
@@ -265,7 +299,7 @@ export default {
 				message:
 					'All the data from your site will be lost. Are you sure you want to reset your database?',
 				actionLabel: 'Reset',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.resetDatabase.submit();
 					closeDialog();
@@ -286,7 +320,7 @@ export default {
 					you want to run these command?
 				`,
 				actionLabel: 'Clear Cache',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.clearCache.submit();
 					closeDialog();
@@ -295,6 +329,22 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				migrate: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.migrate'
+				),
+				restore: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.restore'
+				),
+				reset: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.reset'
+				)
+			};
+		},
 		filesUploaded() {
 			return this.selectedFiles.database;
 		}

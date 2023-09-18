@@ -11,22 +11,24 @@
 import AnsiblePlays from '@/views/general/AnsiblePlays.vue';
 export default {
 	name: 'ServerPlays',
-	props: ['server', 'playName'],
+	props: ['serverName', 'playName'],
 	components: {
 		AnsiblePlays
 	},
 	methods: {
-		plaResource(start) {
+		plaResource() {
 			return {
-				method: 'press.api.server.plays',
-				params: { name: this.server?.name, start },
+				type: 'list',
+				doctype: 'Ansible Play',
+				url: 'press.api.server.plays',
+				filters: { server: this.serverName },
 				pageLength: 10,
-				keepData: true,
+				start: 0,
 				auto: true
 			};
 		},
 		playRoute(play) {
-			return `/servers/${this.server.name}/plays/${play.name}`;
+			return `/servers/${this.serverName}/plays/${play.name}`;
 		}
 	}
 };

@@ -2,27 +2,45 @@ import frappe
 from press.utils import get_current_team
 from press.api.site import protected
 
-from typing import Dict, List
+from typing import Dict
 
 
 @frappe.whitelist()
-def spaces() -> Dict:
+def spaces(space_filter: Dict | None) -> Dict:
 	"""
 	Returns all spaces and code servers for the current team
 	"""
+	if space_filter is None:
+		space_filter = {"status": ""}
+
+	CodeServer = frappe.qb.DocType("Code Server")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+
+	servers_query = (
+		frappe.qb.from_(CodeServer)
+		.select(
+			CodeServer.name,
+			CodeServer.status,
+			CodeServer.creation,
+			CodeServer.bench,
+			ReleaseGroup.title,
+		)
+		.left_join(ReleaseGroup)
+		.on(CodeServer.group == ReleaseGroup.name)
+		.where(CodeServer.team == get_current_team())
+		.orderby(CodeServer.creation, order=frappe.qb.desc)
+	)
+
+	if space_filter["status"] == "Active":
+		servers_query = servers_query.where(CodeServer.status == "Active")
+	elif space_filter["status"] == "Broken":
+		servers_query = servers_query.where(CodeServer.status == "Broken")
+	else:
+		servers_query = servers_query.where(CodeServer.status != "Archived")
+
 	return {
 		"spaces": {},
-		"servers": frappe.db.sql(
-			f"""
-				SELECT cs.name, cs.status, cs.creation, cs.bench, rg.title
-				FROM `tabCode Server` cs
-				LEFT JOIN `tabRelease Group` rg
-				ON cs.group = rg.name
-				WHERE cs.team = '{get_current_team()}'
-				AND cs.status != 'Archived'
-				ORDER BY creation DESC""",
-			as_dict=True,
-		),
+		"servers": servers_query.run(as_dict=True),
 	}
 
 
@@ -134,13 +152,15 @@ def exists(subdomain, domain) -> bool:
 
 @frappe.whitelist()
 @protected("Code Server")
-def code_server_jobs(name, start=0) -> List:
+def code_server_jobs(
+	filters=None, order_by=None, limit_start=None, limit_page_length=None
+) -> List:
 	jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"code_server": name},
-		start=start,
-		limit=10,
-		order_by="creation desc",
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
 	)
 	return jobs

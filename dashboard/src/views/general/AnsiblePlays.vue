@@ -17,24 +17,17 @@
 								runningPlay.status !== 'Success'
 							"
 							:label="runningPlay.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
-						<Badge
-							v-else-if="play.status != 'Success'"
-							:label="play.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
+						/>
+						<Badge v-else-if="play.status != 'Success'" :label="play.status" />
 					</template>
 				</ListItem>
 				<div class="border-b"></div>
 			</router-link>
-			<div class="py-3" v-if="!$resources.plays.lastPageEmpty">
+			<div class="py-3" v-if="$resources.plays.hasNextPage">
 				<Button
 					:loading="$resources.plays.loading"
 					loadingText="Loading..."
-					@click="pageStart += 10"
+					@click="$resources.plays.next()"
 				>
 					Load more
 				</Button>
@@ -54,13 +47,12 @@ export default {
 	components: { PlaysDetail, CardWithDetails },
 	data() {
 		return {
-			pageStart: 0,
 			runningPlay: null
 		};
 	},
 	resources: {
 		plays() {
-			return this.resource(this.pageStart);
+			return this.resource();
 		}
 	},
 	mounted() {

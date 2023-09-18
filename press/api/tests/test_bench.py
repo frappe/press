@@ -422,13 +422,17 @@ class TestAPIBenchList(FrappeTestCase):
 
 	def test_list_active_benches(self):
 		self.assertCountEqual(
-			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
+			all(bench_filter={"status": "Active", "tag": ""}),
+			[self.active_bench_dict, self.bench_with_tag_dict],
 		)
 
 	def test_list_awaiting_deploy_benches(self):
 		self.assertEqual(
-			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
+			all(bench_filter={"status": "Awaiting Deploy", "tag": ""}),
+			[self.bench_awaiting_deploy_dict],
 		)
 
 	def test_list_tagged_benches(self):
-		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])
+		self.assertEqual(
+			all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict]
+		)

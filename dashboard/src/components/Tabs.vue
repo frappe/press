@@ -10,11 +10,11 @@
 				>
 					<li>
 						<a
-							class="relative mr-8 block truncate border-b border-transparent px-1 py-4 font-medium leading-none focus:outline-none"
+							class="font-base relative mr-4 block truncate border-b py-2 leading-none focus:outline-none"
 							:class="[
 								isTabSelected(tab)
-									? 'border-brand text-gray-900'
-									: 'text-gray-600 hover:text-gray-900'
+									? 'border-brand border-gray-900 text-gray-900'
+									: 'border-transparent text-gray-600 hover:text-gray-900'
 							]"
 							:href="href"
 							@click="navigate"
@@ -23,7 +23,7 @@
 								{{ tab.label }}
 							</span>
 							<div
-								class="absolute right-0 top-2 h-2 w-2 rounded-full bg-red-500"
+								class="absolute right-0 top-1 h-1.5 w-1.5 rounded-full bg-red-500"
 								v-if="tab.showRedDot && !isActive"
 							></div>
 						</a>
@@ -44,7 +44,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="w-full pt-5">
+		<div class="w-full py-5" v-if="$slots.default">
 			<slot></slot>
 		</div>
 	</div>

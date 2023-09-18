@@ -9,8 +9,18 @@ import posthog from 'posthog-js';
 import { BrowserTracing } from '@sentry/tracing';
 import router from './router/index';
 import dayjs from 'dayjs';
+import { notify } from '@/utils/toast';
+import {
+	setConfig,
+	frappeRequest,
+	pageMetaPlugin,
+	resourcesPlugin
+} from 'frappe-ui';
 
 const app = createApp(App);
+setConfig('resourceFetcher', frappeRequest);
+app.use(resourcesPlugin);
+app.use(pageMetaPlugin);
 
 registerPlugins(app);
 registerGlobalComponents(app);
@@ -54,7 +64,7 @@ app.mount('#app');
 app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
-		instance.$notify({
+		notify({
 			icon: 'x',
 			title: 'An error occurred',
 			message: error.messages?.join('\n'),

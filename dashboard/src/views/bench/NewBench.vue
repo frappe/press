@@ -20,7 +20,7 @@
 						Name your bench based on its purpose. For e.g., Personal Websites,
 						Staging Bench, etc.
 					</p>
-					<Input class="mt-2" type="text" v-model="benchTitle" />
+					<FormControl class="mt-2" v-model="benchTitle" />
 				</div>
 				<div v-if="regionOptions.length > 0">
 					<h2 class="text-lg font-semibold">Select Region</h2>
@@ -40,7 +40,7 @@
 					<p class="text-base text-gray-700">
 						Select a Frappe version for your bench.
 					</p>
-					<Input
+					<FormControl
 						class="mt-2"
 						type="select"
 						v-model="selectedVersionName"
@@ -79,10 +79,11 @@
 					</label>
 				</div>
 
-				<div>
+				<div class="flex justify-between">
 					<ErrorMessage class="mb-2" :message="$resources.createBench.error" />
 					<Button
-						appearance="primary"
+						variant="solid"
+						class="ml-auto"
 						:loading="$resources.createBench.loading"
 						@click="$resources.createBench.submit()"
 					>
@@ -119,8 +120,8 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.bench.options',
-				default: {
+				url: 'press.api.bench.options',
+				initialData: {
 					versions: [],
 					clusters: []
 				},
@@ -137,7 +138,7 @@ export default {
 		},
 		createBench() {
 			return {
-				method: 'press.api.bench.new',
+				url: 'press.api.bench.new',
 				params: {
 					bench: {
 						title: this.benchTitle,

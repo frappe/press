@@ -5,7 +5,7 @@ from frappe.core.doctype.user.user import test_password_strength
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.team.team import Team
 from press.api.account import get_account_request_from_key
-from press.utils import log_error
+from press.utils import get_current_team, group_children_in_result, log_error
 
 from press.press.doctype.site.saas_site import (
 	SaasSite,
@@ -413,3 +413,110 @@ def get_site_url_and_sid(key, app=None):
 		"url": f"https://{site.name}",
 		"sid": site.login(),
 	}
+
+
+@frappe.whitelist()
+def get_saas_product_info(product=None):
+	team = get_current_team()
+	product = frappe.utils.cstr(product)
+	site_request = frappe.db.get_value(
+		"SaaS Product Site Request",
+		filters={
+			"saas_product": product,
+			"team": team,
+			"status": ("in", ["Pending", "Wait for Site"]),
+		},
+		fieldname=["name", "status", "site"],
+		as_dict=1,
+	)
+	if site_request:
+		saas_product = frappe.db.get_value(
+			"SaaS Product", {"name": product}, ["name", "title", "logo", "domain"], as_dict=True
+		)
+		return {
+			"title": saas_product.title,
+			"logo": saas_product.logo,
+			"domain": saas_product.domain,
+			"site_request": site_request,
+		}
+
+
+@frappe.whitelist()
+def create_site(subdomain, site_request):
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return site_request_doc.create_site(subdomain)
+
+
+@frappe.whitelist()
+def get_site_progress(site_request):
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return site_request_doc.get_progress()
+
+
+@frappe.whitelist()
+def login_to_site(site_request):
+	from press.api.site import login
+
+	site_request_doc = frappe.get_doc("SaaS Product Site Request", site_request)
+	return login(site_request_doc.site)
+
+
+@frappe.whitelist()
+def subscription(site):
+	team = get_current_team()
+	if not frappe.db.exists("Site", {"team": team, "name": site}):
+		frappe.throw("Invalid Site")
+
+	plans = frappe.db.get_all(
+		"Plan",
+		fields=[
+			"name",
+			"plan_title",
+			"price_usd",
+			"price_inr",
+			"cpu_time_per_day",
+			"max_storage_usage",
+			"max_database_usage",
+			"database_access",
+			"`tabHas Role`.role",
+		],
+		filters={"enabled": True, "document_type": "Site"},
+		order_by="price_usd asc",
+	)
+	plans = group_children_in_result(plans, {"role": "roles"})
+
+	release_group_name = frappe.db.get_value("Site", site, "group")
+	release_group = frappe.get_doc("Release Group", release_group_name)
+	is_private_bench = release_group.team == team and not release_group.public
+	is_system_user = frappe.session.data.user_type == "System User"
+	is_paywalled_bench = is_private_bench and not is_system_user
+
+	filtered_plans = []
+	for plan in plans:
+		if is_paywalled_bench and plan.price_usd < 25:
+			continue
+		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
+			plan.pop("roles", "")
+			filtered_plans.append(plan)
+
+	trial_end_date, current_plan = frappe.db.get_value(
+		"Site", site, ["trial_end_date", "plan"]
+	)
+	return {
+		"trial_end_date": trial_end_date,
+		"current_plan": current_plan,
+		"plans": filtered_plans,
+	}
+
+
+@frappe.whitelist()
+def set_subscription_plan(site, plan):
+	team = get_current_team()
+	if not frappe.db.exists("Site", {"team": team, "name": site}):
+		frappe.throw("Invalid Site")
+
+	site_doc = frappe.get_doc("Site", site)
+	if not site_doc.plan:
+		site_doc.create_subscription(plan)
+	else:
+		site_doc.change_plan(plan)

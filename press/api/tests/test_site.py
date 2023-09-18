@@ -418,6 +418,12 @@ class TestAPISiteList(FrappeTestCase):
 		broken_site.save()
 		self.broken_site_dict = {
 			"name": broken_site.name,
+			"cluster": broken_site.cluster,
+			"group": broken_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": [],
 			"host_name": broken_site.host_name,
 			"status": broken_site.status,
 			"creation": broken_site.creation,
@@ -437,6 +443,12 @@ class TestAPISiteList(FrappeTestCase):
 
 		self.trial_site_dict = {
 			"name": trial_site.name,
+			"cluster": trial_site.cluster,
+			"group": trial_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": [],
 			"host_name": trial_site.host_name,
 			"status": trial_site.status,
 			"creation": trial_site.creation,
@@ -455,6 +467,12 @@ class TestAPISiteList(FrappeTestCase):
 
 		self.tagged_site_dict = {
 			"name": tagged_site.name,
+			"cluster": tagged_site.cluster,
+			"group": tagged_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": ["test_tag"],
 			"host_name": tagged_site.host_name,
 			"status": tagged_site.status,
 			"creation": tagged_site.creation,
@@ -477,10 +495,16 @@ class TestAPISiteList(FrappeTestCase):
 		)
 
 	def test_list_broken_sites(self):
-		self.assertEqual(all(site_filter="Broken"), [self.broken_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "Broken", "tag": ""}), [self.broken_site_dict]
+		)
 
 	def test_list_trial_sites(self):
-		self.assertEqual(all(site_filter="Trial"), [self.trial_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "Trial", "tag": ""}), [self.trial_site_dict]
+		)
 
 	def test_list_tagged_sites(self):
-		self.assertEqual(all(site_filter="tag:test_tag"), [self.tagged_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "", "tag": "test_tag"}), [self.tagged_site_dict]
+		)

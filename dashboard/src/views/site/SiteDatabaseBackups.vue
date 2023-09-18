@@ -9,20 +9,20 @@
 				v-if="site?.status === 'Active' || site?.status === 'Suspended'"
 				@click="$resources.scheduleBackup.fetch()"
 				:loading="$resources.scheduleBackup.loading"
+				class="py-5"
 			>
-				Schedule a backup now
+				Create Backup
 			</Button>
 			<Dialog
-				:options="{ title: 'Cannot Backup Site' }"
+				:options="{
+					title: 'Cannot Backup Site'
+				}"
 				v-model="showBackupDialog"
 			>
 				<template v-slot:body-content>
 					<p class="text-base">
 						You cannot take more than 3 backups after site suspension
 					</p>
-				</template>
-				<template v-slot:actions>
-					<Button @click="showBackupDialog = false"> Cancel </Button>
 				</template>
 			</Dialog>
 			<Dialog
@@ -54,16 +54,14 @@
 						:message="restoreOnAnotherSiteErrorMessage"
 					/>
 				</template>
-				<template v-slot:actions>
+				<template #actions>
 					<Button
-						appearance="primary"
+						variant="solid"
+						class="w-full"
 						v-if="selectedSite"
 						@click="restoreOffsiteBackupOnAnotherSite(backupToRestore)"
 					>
 						Restore
-					</Button>
-					<Button @click="showRestoreOnAnotherSiteDialog = false">
-						Cancel
 					</Button>
 				</template>
 			</Dialog>
@@ -86,7 +84,7 @@
 					<span v-else> Performing Backup... </span>
 				</div>
 				<div class="flex items-center space-x-2">
-					<Badge v-if="backup.offsite" color="green"> Offsite </Badge>
+					<Badge v-if="backup.offsite" label="Offsite" theme="green" />
 					<Dropdown :options="dropdownItems(backup)">
 						<template v-slot="{ open }">
 							<Button icon="more-horizontal" />
@@ -127,24 +125,24 @@ export default {
 	resources: {
 		sites() {
 			return {
-				method: 'press.api.site.all',
-				default: [],
+				url: 'press.api.site.all',
+				initialData: [],
 				auto: true
 			};
 		},
 		backups() {
 			return {
-				method: 'press.api.site.backups',
+				url: 'press.api.site.backups',
 				params: {
 					name: this.site?.name
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		scheduleBackup() {
 			return {
-				method: 'press.api.site.backup',
+				url: 'press.api.site.backup',
 				params: {
 					name: this.site?.name,
 					with_files: true
@@ -153,7 +151,7 @@ export default {
 					this.$resources.backups.reload();
 				},
 				onError: () => {
-					this.showDialog();
+					this.showBackupDialog = true;
 				}
 			};
 		}
@@ -182,7 +180,7 @@ export default {
 							label: `Database (${this.formatBytes(
 								backup.database_size || 0
 							)})`,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'database',
@@ -196,7 +194,7 @@ export default {
 								backup.public_size || 0
 							)})`,
 							condition: () => backup.public_file,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'public',
@@ -210,7 +208,7 @@ export default {
 								backup.private_size || 0
 							)})`,
 							condition: () => backup.private_file,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'private',
@@ -224,7 +222,7 @@ export default {
 								backup.config_file_size || 0
 							)})`,
 							condition: () => backup.config_file_size,
-							handler: () => {
+							onClick: () => {
 								this.downloadBackup(
 									backup.name,
 									'config',
@@ -241,13 +239,12 @@ export default {
 					items: [
 						{
 							label: 'Restore Backup',
-							handler: () => {
+							onClick: () => {
 								this.$confirm({
 									title: 'Restore Backup',
 									// prettier-ignore
 									message: `Are you sure you want to restore your site to <b>${this.formatDate(backup.creation)}</b>?`,
 									actionLabel: 'Restore',
-									actionType: 'primary',
 									action: closeDialog => {
 										closeDialog();
 										this.restoreOffsiteBackup(backup);
@@ -257,7 +254,7 @@ export default {
 						},
 						{
 							label: 'Restore Backup on Another Site',
-							handler: () => {
+							onClick: () => {
 								this.showRestoreOnAnotherSiteDialog = true;
 								this.backupToRestore = backup;
 							}

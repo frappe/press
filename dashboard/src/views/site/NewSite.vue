@@ -1,121 +1,120 @@
 <template>
-	<WizardCard>
-		<div class="mb-6 text-center">
-			<h1 class="text-2xl font-bold">Create a new site</h1>
-			<p v-if="benchTitle" class="text-base text-gray-700">
-				Site will be created on bench
-				<span class="font-medium">{{ benchTitle }}</span>
-			</p>
-		</div>
-		<Steps :steps="steps">
-			<template
-				v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }"
-			>
-				<div class="mt-8"></div>
-				<Hostname
-					v-show="activeStep.name === 'Hostname'"
-					v-model="subdomain"
-					@error="error => (subdomainValid = !Boolean(error))"
-				/>
-				<Apps
-					v-show="activeStep.name === 'Apps'"
-					:privateBench="privateBench"
-					:bench="benchName"
-					v-model:selectedApps="selectedApps"
-					v-model:selectedGroup="selectedGroup"
-					v-model:selectedRegion="selectedRegion"
-					v-model:shareDetailsConsent="shareDetailsConsent"
-				/>
-
-				<div v-if="activeStep.name === 'Select App Plans'">
-					<ChangeAppPlanSelector
-						v-for="app in appsWithPlans"
-						:key="app.name"
-						:app="app.name"
-						:group="selectedGroup"
-						:editable="false"
-						class="mb-9"
-						@change="plan => (selectedAppPlans[app.name] = plan.name)"
+	<div>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<Breadcrumbs
+				:items="[
+					{ label: 'Sites', route: { name: 'Sites' } },
+					{ label: 'New', route: { name: 'NewSite' } }
+				]"
+			/>
+		</header>
+		<WizardCard>
+			<div class="mb-2 text-center">
+				<h1 class="text-2xl font-bold">Create a new site</h1>
+				<p v-if="benchTitle" class="text-base text-gray-700">
+					Site will be created on bench
+					<span class="font-medium">{{ benchTitle }}</span>
+				</p>
+			</div>
+			<Steps :steps="steps">
+				<template
+					v-slot="{ active: activeStep, next, previous, hasPrevious, hasNext }"
+				>
+					<div class="mt-8"></div>
+					<Hostname
+						v-show="activeStep.name === 'Hostname'"
+						v-model="subdomain"
+						@error="error => (subdomainValid = !Boolean(error))"
 					/>
-				</div>
+					<Apps
+						v-show="activeStep.name === 'Apps'"
+						:privateBench="privateBench"
+						:bench="benchName"
+						v-model:selectedApps="selectedApps"
+						v-model:selectedGroup="selectedGroup"
+						v-model:selectedRegion="selectedRegion"
+						v-model:shareDetailsConsent="shareDetailsConsent"
+					/>
 
-				<Restore
-					v-model:selectedFiles="selectedFiles"
-					v-model:skipFailingPatches="skipFailingPatches"
-					v-show="activeStep.name == 'Restore'"
-				/>
-				<Plans
-					v-model:selectedPlan="selectedPlan"
-					:bench="bench"
-					:benchTeam="benchTeam"
-					v-show="activeStep.name === 'Plan'"
-				/>
-				<ErrorMessage :message="validationMessage" />
-				<div class="mt-4">
-					<!-- Region consent checkbox -->
-					<div class="my-6" v-if="!hasNext">
-						<input
-							id="region-consent"
-							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-							v-model="agreedToRegionConsent"
+					<div v-if="activeStep.name === 'Select App Plans'">
+						<ChangeAppPlanSelector
+							v-for="app in appsWithPlans"
+							:key="app.name"
+							:app="app.name"
+							:group="selectedGroup"
+							:editable="false"
+							class="mb-9"
+							@change="plan => (selectedAppPlans[app.name] = plan.name)"
 						/>
-						<label
-							for="region-consent"
-							class="ml-1 text-sm font-semibold text-gray-900"
-						>
-							I agree that the laws of the region selected by me shall stand
-							applicable to me and Frappe.
-						</label>
 					</div>
 
-					<ErrorMessage class="mb-4" :message="$resources.newSite.error" />
+					<Restore
+						v-model:selectedFiles="selectedFiles"
+						v-model:skipFailingPatches="skipFailingPatches"
+						v-show="activeStep.name == 'Restore'"
+					/>
+					<Plans
+						v-model:selectedPlan="selectedPlan"
+						:bench="bench"
+						:benchTeam="benchTeam"
+						v-show="activeStep.name === 'Plan'"
+					/>
+					<ErrorMessage :message="validationMessage" />
+					<div class="mt-4">
+						<!-- Region consent checkbox -->
+						<div class="my-6 w-full" v-if="!hasNext">
+							<FormControl
+								type="checkbox"
+								v-model="agreedToRegionConsent"
+								label="I agree that the laws of the region selected by me shall stand applicable to me and Frappe."
+							/>
+						</div>
 
-					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
-							Back
-						</Button>
-						<Button
-							v-show="
-								(activeStep.name !== 'Restore' || wantsToRestore) && hasNext
-							"
-							appearance="primary"
-							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
-							:loading="loadingPlans"
-							loadingText="Loading"
-						>
-							Next
-						</Button>
-						<Button
-							v-show="
-								!wantsToRestore && activeStep.name === 'Restore' && hasNext
-							"
-							appearance="primary"
-							@click="nextStep(activeStep, next)"
-						>
-							Skip
-						</Button>
-						<Button
-							v-show="!hasNext"
-							appearance="primary"
-							@click="$resources.newSite.submit()"
-							:loading="$resources.newSite.loading"
-						>
-							Create Site
-						</Button>
+						<ErrorMessage class="mb-4" :message="$resources.newSite.error" />
+
+						<div class="flex items-center justify-between">
+							<Button v-show="hasPrevious" @click="previous"> Back </Button>
+							<Button
+								v-show="
+									(activeStep.name !== 'Restore' || wantsToRestore) && hasNext
+								"
+								class="ml-auto"
+								variant="solid"
+								@click="nextStep(activeStep, next)"
+								:class="{ 'mt-2': hasPrevious }"
+								:loading="loadingPlans"
+								loadingText="Loading"
+							>
+								Next
+							</Button>
+							<Button
+								v-show="
+									!wantsToRestore && activeStep.name === 'Restore' && hasNext
+								"
+								class="ml-auto"
+								variant="solid"
+								@click="nextStep(activeStep, next)"
+							>
+								Skip
+							</Button>
+							<Button
+								v-show="!hasNext"
+								class="ml-auto"
+								variant="solid"
+								:class="{ 'mt-2': hasPrevious }"
+								@click="$resources.newSite.submit()"
+								:loading="$resources.newSite.loading"
+							>
+								Create Site
+							</Button>
+						</div>
 					</div>
-				</div>
-			</template>
-		</Steps>
-	</WizardCard>
+				</template>
+			</Steps>
+		</WizardCard>
+	</div>
 </template>
 
 <script>
@@ -223,7 +222,7 @@ export default {
 	resources: {
 		newSite() {
 			return {
-				method: 'press.api.site.new',
+				url: 'press.api.site.new',
 				params: {
 					site: {
 						name: this.subdomain,
@@ -249,8 +248,6 @@ export default {
 						(!this.wantsToRestore || this.selectedFiles.database);
 
 					if (!this.agreedToRegionConsent) {
-						document.getElementById('region-consent').focus();
-
 						return 'Please agree to the above consent to create site';
 					}
 

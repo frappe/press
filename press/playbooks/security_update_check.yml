@@ -1,7 +1,0 @@
----
-- name: Check for security updates
-  hosts: all
-  become: yes
-  become_user: root
-  roles:
-    - security_update_check

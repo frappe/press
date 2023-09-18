@@ -1,7 +1,7 @@
 <template>
 	<WizardCard v-if="domain">
 		<div class="mb-6 text-center">
-			<h1 class="text-2xl font-bold">Create a new code server</h1>
+			<h1 class="text-2xl font-bold">Create a new codespace</h1>
 		</div>
 		<Steps :steps="steps">
 			<template
@@ -26,32 +26,28 @@
 						class="mb-4"
 						:message="$resources.newCodeServer.error"
 					/>
-					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
+					<div>
+						<Button v-if="hasPrevious" class="w-full" @click="previous">
 							Back
 						</Button>
 						<Button
-							appearance="primary"
+							v-if="hasNext"
+							class="w-full"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							class="w-full mt-2"
+							variant="solid"
 							@click="$resources.newCodeServer.submit()"
 							:loading="$resources.newCodeServer.loading"
 							:disabled="selectedBench == null"
 						>
-							Create Servers
+							Create Codespace
 						</Button>
 					</div>
 				</div>
@@ -109,7 +105,7 @@ export default {
 	resources: {
 		newCodeServer() {
 			return {
-				method: 'press.api.spaces.create_code_server',
+				url: 'press.api.spaces.create_code_server',
 				params: {
 					subdomain: this.subdomain,
 					bench: this.selectedBench,

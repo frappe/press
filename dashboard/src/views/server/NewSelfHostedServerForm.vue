@@ -3,11 +3,16 @@
 		<h2 class="space-y-1 text-lg font-semibold">Enter the Server Details</h2>
 		<div class="mt-6 flex flex-col gap-4">
 			<p class="text-black-900 text-base">Public IP of the Server</p>
-			<Input
+			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="publicIP"
-				@change="$emit('update:publicIP', $event)"
-				type="text"
+				@change="$emit('update:publicIP', $event.target.value)"
+			/>
+			<p class="text-black-900 text-base">Private IP of the Server</p>
+			<FormControl
+				class="z-10 w-full rounded-r-none"
+				:value="privateIP"
+				@change="$emit('update:privateIP', $event.target.value)"
 			/>
 			<div class="mt-2">
 				<ErrorMessage :message="publicIpErrorMessage" />

@@ -103,9 +103,7 @@ def process_backup_site_job_update(job):
 		return
 	backup = backups[0]
 	if job.status != backup.status:
-		frappe.db.set_value(
-			"Site Backup", backup.name, "status", job.status, for_update=False
-		)
+		frappe.db.set_value("Site Backup", backup.name, "status", job.status)
 		if job.status == "Success":
 			job_data = json.loads(job.data)
 			backup_data, offsite_backup_data = job_data["backups"], job_data["offsite"]
@@ -148,7 +146,7 @@ def process_backup_site_job_update(job):
 					}
 				)
 
-			frappe.db.set_value("Site Backup", backup.name, site_backup_dict, for_update=False)
+			frappe.db.set_value("Site Backup", backup.name, site_backup_dict)
 
 
 def get_backup_bucket(cluster, region=False):

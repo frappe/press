@@ -1,6 +1,6 @@
 <template>
 	<Card
-		title="Code Server info"
+		title="Code Server Info"
 		subtitle="General information about your code server"
 	>
 		<div class="divide-y">
@@ -65,7 +65,20 @@
 				</template>
 			</ListItem>
 
-			<Dialog v-model="showDialog" :options="{ title: 'Drop Code Server' }">
+			<Dialog
+				v-model="showDialog"
+				:options="{
+					title: 'Drop Code Server',
+					actions: [
+						{
+							label: 'Drop Code Server',
+							variant: 'solid',
+							theme: 'red',
+							onClick: () => $resources.dropCodeServer.submit()
+						}
+					]
+				}"
+			>
 				<template v-slot:body-content>
 					<p class="text-base">
 						Are you sure you want to drop your code-server? Once you drop your
@@ -76,26 +89,14 @@
 						:message="$resources.dropCodeServer.error"
 					/>
 				</template>
-
-				<template v-slot:actions>
-					<div>
-						<Button @click="showDialog = false"> Cancel </Button>
-						<Button
-							class="ml-3"
-							appearance="danger"
-							@click="$resources.dropCodeServer.submit()"
-							:loading="$resources.dropCodeServer.loading"
-						>
-							Drop Code Server
-						</Button>
-					</div>
-				</template>
 			</Dialog>
 		</div>
 	</Card>
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'CodeServerOverviewInfo',
 	props: {
@@ -112,7 +113,7 @@ export default {
 	resources: {
 		stopCodeServer() {
 			return {
-				method: 'press.api.spaces.stop_code_server',
+				url: 'press.api.spaces.stop_code_server',
 				params: {
 					name: this.codeServer.name
 				},
@@ -123,7 +124,7 @@ export default {
 		},
 		startCodeServer() {
 			return {
-				method: 'press.api.spaces.start_code_server',
+				url: 'press.api.spaces.start_code_server',
 				params: {
 					name: this.codeServer.name
 				},
@@ -134,14 +135,14 @@ export default {
 		},
 		showPassword() {
 			return {
-				method: 'press.api.spaces.code_server_password',
+				url: 'press.api.spaces.code_server_password',
 				params: {
 					name: this.codeServer.name
 				},
 				onSuccess(r) {
 					const clipboard = window.navigator.clipboard;
 					clipboard.writeText(r).then(() => {
-						this.$notify({
+						notify({
 							title: 'Password copied to clipboard!',
 							icon: 'check',
 							color: 'green'
@@ -152,7 +153,7 @@ export default {
 		},
 		dropCodeServer() {
 			return {
-				method: 'press.api.spaces.drop_code_server',
+				url: 'press.api.spaces.drop_code_server',
 				params: {
 					name: this.codeServer.name
 				},

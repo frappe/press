@@ -16,7 +16,7 @@
 			</Button>
 		</template>
 
-		<div v-if="plan" class="flex rounded-lg bg-gray-50 p-5">
+		<div v-if="plan" class="flex items-center rounded-lg bg-gray-50 p-5">
 			<PlanIcon />
 			<div class="ml-4">
 				<h4 class="text-4xl font-semibold text-gray-900">
@@ -43,7 +43,20 @@
 			</div>
 		</div>
 
-		<Dialog :options="{ title: 'Change Plan' }" v-model="showChangePlanDialog">
+		<Dialog
+			:options="{
+				title: 'Change Plan',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						loading: $resources.changePlan.loading,
+						onClick: () => $resources.changePlan.submit()
+					}
+				]
+			}"
+			v-model="showChangePlanDialog"
+		>
 			<template v-slot:body-content>
 				<ServerPlansTable
 					class="mt-6"
@@ -52,17 +65,6 @@
 				/>
 				<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
 			</template>
-			<template #actions>
-				<Button @click="showChangePlanDialog = false"> Cancel </Button>
-				<Button
-					class="ml-2"
-					appearance="primary"
-					:loading="$resources.changePlan.loading"
-					@click="$resources.changePlan.submit()"
-				>
-					Submit
-				</Button>
-			</template>
 		</Dialog>
 	</Card>
 </template>
@@ -70,6 +72,7 @@
 import ServerPlansTable from '@/components/ServerPlansTable.vue';
 import ProgressArc from '@/components/ProgressArc.vue';
 import PlanIcon from '@/components/PlanIcon.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'ServerOverviewPlan',
@@ -88,33 +91,33 @@ export default {
 	resources: {
 		usageResource() {
 			return {
-				method: 'press.api.server.usage',
+				url: 'press.api.server.usage',
 				params: {
 					name: this.server?.name
 				},
-				default: {},
+				initialData: {},
 				auto: true
 			};
 		},
 		plans() {
 			return {
-				method: 'press.api.server.plans',
+				url: 'press.api.server.plans',
 				params: {
 					name: 'Server',
 					cluster: this.server.region_info.name
 				},
-				default: []
+				initialData: []
 			};
 		},
 		changePlan() {
 			return {
-				method: 'press.api.server.change_plan',
+				url: 'press.api.server.change_plan',
 				params: {
 					name: this.server?.name,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: `Plan changed to ${this.selectedPlan.plan_title}`,
 						icon: 'check',
 						color: 'green'
@@ -126,7 +129,7 @@ export default {
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
-					this.$notify({
+					notify({
 						title: error,
 						icon: 'x',
 						color: 'red'

@@ -17,24 +17,17 @@
 								runningJob.status !== 'Success'
 							"
 							:label="runningJob.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
-						<Badge
-							v-else-if="job.status != 'Success'"
-							:label="job.status"
-							:colorMap="$badgeStatusColorMap"
-						>
-						</Badge>
+						/>
+						<Badge v-else-if="job.status != 'Success'" :label="job.status" />
 					</template>
 				</ListItem>
 				<div class="border-b"></div>
 			</router-link>
-			<div class="py-3" v-if="!$resources.jobs.lastPageEmpty">
+			<div class="py-3" v-if="$resources.jobs.hasNextPage">
 				<Button
 					:loading="$resources.jobs.loading"
 					loadingText="Loading..."
-					@click="pageStart += 10"
+					@click="$resources.jobs.next()"
 				>
 					Load more
 				</Button>
@@ -54,13 +47,12 @@ export default {
 	components: { JobsDetail, CardWithDetails },
 	data() {
 		return {
-			pageStart: 0,
 			runningJob: null
 		};
 	},
 	resources: {
 		jobs() {
-			return this.resource(this.pageStart);
+			return this.resource();
 		}
 	},
 	mounted() {

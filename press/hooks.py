@@ -195,7 +195,6 @@ scheduler_events = {
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
@@ -242,7 +241,10 @@ scheduler_events = {
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
-		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
+		"*/10 * * * *": [
+			"press.saas.doctype.saas_product.pooling.create",
+			"press.press.doctype.site.saas_pool.create",
+		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -268,6 +270,7 @@ fixtures = [
 	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
+	"Press Method Permission",
 ]
 # Testing
 # -------

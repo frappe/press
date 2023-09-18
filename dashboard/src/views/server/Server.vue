@@ -1,22 +1,58 @@
 <template>
 	<div>
 		<div v-if="server">
-			<div class="pb-3">
-				<div class="text-base text-gray-700">
-					<router-link to="/servers" class="hover:text-gray-800">
-						← Back to Servers
-					</router-link>
-				</div>
+			<div>
+				<header
+					class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+				>
+					<Breadcrumbs
+						:items="[
+							{ label: 'Servers', route: { name: 'Servers' } },
+							{
+								label: server?.title,
+								route: {
+									name: 'ServerOverview',
+									params: { serverName: server?.name }
+								}
+							}
+						]"
+					>
+						<template #actions>
+							<div>
+								<Dropdown :options="serverActions">
+									<template v-slot="{ open }">
+										<Button
+											variant="ghost"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
+								<Button
+									v-if="server?.status === 'Active'"
+									variant="solid"
+									icon-left="plus"
+									label="New Bench"
+									@click="
+										$router.push({
+											name: 'NewServerBench',
+											params: { server: server?.name }
+										})
+									"
+								/>
+							</div>
+						</template>
+					</Breadcrumbs>
+				</header>
+
+				<EditServerTitleDialog v-model="showEditTitleDialog" :server="server" />
+
 				<div
-					class="flex flex-col space-y-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
+					class="flex flex-col space-y-3 px-5 py-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
 					<div class="mt-2 flex items-center">
 						<h1 class="text-2xl font-bold">{{ server.title }}</h1>
-						<Badge
-							class="ml-4 hidden md:inline-block"
-							:label="server.status"
-							:colorMap="$badgeStatusColorMap"
-						></Badge>
+						<Badge class="ml-4" :label="server.status" />
 
 						<div
 							v-if="regionInfo"
@@ -34,10 +70,9 @@
 					</div>
 					<div class="mb-10 flex flex-row justify-between md:hidden">
 						<div class="flex flex-row">
-							<Badge :label="server.status" :colorMap="$badgeStatusColorMap" />
 							<div
 								v-if="regionInfo"
-								class="ml-2 flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
+								class="flex cursor-default flex-row items-center rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
 							>
 								<img
 									v-if="regionInfo.image"
@@ -49,43 +84,12 @@
 								<p>{{ regionInfo.title }}</p>
 							</div>
 						</div>
-
-						<!-- Only for mobile view -->
-						<Dropdown
-							v-if="serverActions.length > 0"
-							:options="serverActions"
-							right
-						>
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
-					</div>
-
-					<div class="hidden flex-row space-x-3 md:flex">
-						<Button
-							v-for="action in serverActions"
-							v-if="serverActions.length <= 2"
-							:key="action.label"
-							:icon-left="action.icon"
-							:loading="action.loading"
-							:route="action.route"
-							@click="action.action"
-						>
-							{{ action.label }}
-						</Button>
-
-						<Dropdown v-if="serverActions.length > 2" :options="serverActions">
-							<template v-slot="{ open }">
-								<Button icon-right="chevron-down">Actions</Button>
-							</template>
-						</Dropdown>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div>
-			<Tabs class="pb-8" :tabs="tabs">
+		<div class="p-5 pt-1">
+			<Tabs :tabs="tabs">
 				<router-view v-slot="{ Component, route }">
 					<component v-if="server" :is="Component" :server="server"></component>
 				</router-view>
@@ -95,7 +99,9 @@
 </template>
 
 <script>
+import EditServerTitleDialog from './EditServerTitleDialog.vue';
 import Tabs from '@/components/Tabs.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Server',
@@ -106,35 +112,39 @@ export default {
 	},
 	props: ['serverName'],
 	components: {
+		EditServerTitleDialog,
 		Tabs
 	},
 	data() {
 		return {
 			runningJob: false,
 			runningPlay: false,
+			showEditTitleDialog: false,
 			errorMessage: ''
 		};
 	},
 	resources: {
 		server() {
 			return {
-				method: 'press.api.server.get',
+				url: 'press.api.server.get',
 				params: {
 					name: this.serverName
 				},
 				auto: true,
-				onSuccess() {},
+				onSuccess() {
+					this.routeToGeneral();
+				},
 				onError: this.$routeTo404PageIfNotFound
 			};
 		},
 		reboot() {
 			return {
-				method: 'press.api.server.reboot',
+				url: 'press.api.server.reboot',
 				params: {
 					name: this.serverName
 				},
 				onSuccess(data) {
-					this.$notify({
+					notify({
 						title: 'Server Reboot Scheduled Successfully',
 						color: 'green',
 						icon: 'check'
@@ -142,22 +152,13 @@ export default {
 					this.$resources.server.reload();
 				},
 				onError() {
-					this.$notify({
+					notify({
 						title: 'An error occurred',
 						color: 'red',
 						icon: 'x'
 					});
 				}
 			};
-		}
-	},
-	activated() {
-		if (this.server) {
-			this.routeToGeneral();
-		} else {
-			this.$resources.server.once('onSuccess', () => {
-				this.routeToGeneral();
-			});
 		}
 	},
 	methods: {
@@ -182,26 +183,22 @@ export default {
 
 		serverActions() {
 			return [
+				{
+					label: 'Edit Title',
+					icon: 'edit',
+					onClick: () => (this.showEditTitleDialog = true)
+				},
 				['Active', 'Updating'].includes(this.server.status) && {
 					label: 'Visit Server',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(`https://${this.server.name}`, '_blank');
-					}
-				},
-				this.server.status === 'Active' && {
-					label: 'New Bench',
-					icon: 'plus',
-					handler: () => {
-						this.$router.replace(
-							`/servers/${this.server.app_server}/bench/new`
-						);
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',
-					handler: () => {
+					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
 							'_blank'
@@ -212,16 +209,16 @@ export default {
 					label: 'Reboot',
 					icon: 'tool',
 					loading: this.$resources.reboot.loading,
-					handler: () => {
+					onClick: () => {
 						return this.$resources.reboot.submit();
 					}
 				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',
-					handler: async () => {
+					onClick: async () => {
 						await this.$account.switchTeam(this.server.team);
-						this.$notify({
+						notify({
 							title: 'Switched Team',
 							message: `Switched to ${this.server.team}`,
 							icon: 'check',
@@ -241,7 +238,7 @@ export default {
 				{ label: 'Benches', route: 'benches' },
 				{ label: 'Jobs', route: 'jobs', showRedDot: this.runningJob },
 				{ label: 'Plays', route: 'plays', showRedDot: this.runningPlay },
-				{ label: 'Settings', route: 'setting' }
+				{ label: 'Settings', route: 'settings' }
 			];
 
 			let tabsByStatus = {
