@@ -122,6 +122,16 @@ class TestAPISite(FrappeTestCase):
 				"can_change_plan": True,
 				"hide_config": site.hide_config,
 				"notify_email": site.notify_email,
+				"info": {
+					"auto_updates_enabled": True,
+					"created_on": site.creation,
+					"last_deployed": None,
+					"owner": {
+						"first_name": "Frappe",
+						"last_name": None,
+						"user_image": None,
+					},
+				},
 				"ip": frappe.get_last_doc("Proxy Server").ip,
 				"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 				"tags": frappe.get_all(
