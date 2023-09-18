@@ -271,7 +271,7 @@ class LetsEncrypt(BaseCA):
 			f" {self.directory}/logs --work-dir {self.directory} --config-dir"
 			f" {self.directory} {force_renewal} --agree-tos --eff-email --email"
 			f" {self.eff_registration_email} --staple-ocsp"
-			" --key-type ecdsa"
+			" --key-type rsa"
 			f" --rsa-key-size {self.rsa_key_size} --cert-name {self.domain} --domains"
 			f" {self.domain}"
 		)
