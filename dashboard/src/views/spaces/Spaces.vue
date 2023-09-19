@@ -144,7 +144,7 @@ export default {
 				url: 'press.api.spaces.spaces',
 				auto: true,
 				params: { space_filter: { status: this.space_status } },
-				cache: ['SpaceList', this.space_status],
+				cache: ['SpaceList', this.space_status, this.$account.team.name],
 				onSuccess: data => {
 					this.fuse = new Fuse(data['servers'], {
 						keys: ['name']

@@ -299,7 +299,12 @@ export default {
 					site_filter: { status: this.site_status, tag: this.site_tag }
 				},
 				auto: true,
-				cache: ['SiteList', this.site_status, this.site_tag],
+				cache: [
+					'SiteList',
+					this.site_status,
+					this.site_tag,
+					this.$account.team.name
+				],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['name', 'tags']

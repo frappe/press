@@ -113,7 +113,11 @@ export default {
 					server_filter: { server_type: this.server_type, tag: '' }
 				},
 				auto: true,
-				cache: ['SecurityServerList', this.server_type],
+				cache: [
+					'SecurityServerList',
+					this.server_type,
+					this.$account.team.name
+				],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['name', 'title']

@@ -198,7 +198,12 @@ export default {
 					bench_filter: { status: this.bench_status, tag: this.bench_tag }
 				},
 				auto: true,
-				cache: ['BenchList', this.bench_status, this.bench_tag],
+				cache: [
+					'BenchList',
+					this.bench_status,
+					this.bench_tag,
+					this.$account.team.name
+				],
 				onSuccess: data => {
 					this.fuse = new Fuse(data, {
 						keys: ['title', 'tags']
