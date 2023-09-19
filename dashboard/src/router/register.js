@@ -4,7 +4,9 @@ export default function registerRouter(app, auth, account) {
 	app.use(router);
 
 	router.beforeEach(async (to, from, next) => {
-		await account.fetchIfRequired();
+		// TODO: Remove once the new signup flow is live,
+		// currently this is being called for every guest request which breaks the current signup flow
+		// await account.fetchIfRequired();
 
 		if (account.saas_site_request && to.name != 'App Site Setup') {
 			next({

@@ -8,9 +8,10 @@ const routes = [
 		component: Home
 	},
 	{
-		path: '/checkout',
+		path: '/checkout/:secretKey',
 		name: 'Checkout',
 		component: () => import('../views/checkout/Checkout.vue'),
+		props: true,
 		meta: {
 			isLoginPage: true
 		}
