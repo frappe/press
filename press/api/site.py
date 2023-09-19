@@ -47,7 +47,10 @@ def protected(doctypes):
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = kwargs.get("name") or args[0]
+		# name is either name or 1st value from filters dict from kwargs or 1st value from args
+		name = (
+			kwargs.get("name") or next(iter(kwargs.get("filters", {}).values()), None) or args[0]
+		)
 		team = get_current_team()
 
 		nonlocal doctypes
