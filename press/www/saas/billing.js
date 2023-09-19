@@ -49,7 +49,7 @@ if (showFloatingBanner != null) {
 }
 
 let siteAge = frappe.boot.telemetry_site_age || 7;
-if (siteAge < 3) {
+if (siteAge < 6) {
 	banner = false;
 }
 
