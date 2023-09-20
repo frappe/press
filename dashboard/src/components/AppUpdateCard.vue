@@ -15,12 +15,12 @@
 				type="checkbox"
 				class="h-4 w-4 cursor-pointer rounded border-gray-300 text-gray-600 focus:ring-transparent"
 			/>
-			<h3 class="text-lg font-medium text-gray-900">
+			<h3 class="text-left text-lg font-medium text-gray-900">
 				{{ app.title }}
 			</h3>
 		</div>
 		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
-		<div v-else class="flex flex-row space-x-2">
+		<div v-else class="ml-2 flex flex-row space-x-2">
 			<CommitTag
 				v-if="deployFrom(app)"
 				:tag="deployFrom(app)"
@@ -34,7 +34,12 @@
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
 			</a>
-			<Badge v-else label="First Deploy" theme="green" />
+			<Badge
+				v-else
+				label="First Deploy"
+				theme="green"
+				class="whitespace-nowrap"
+			/>
 			<CommitTag
 				:tag="deployTo(app)"
 				:link="`${app.repository_url}/commit/${app.next_hash}`"
