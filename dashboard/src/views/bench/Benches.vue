@@ -55,7 +55,7 @@
 				:rows="benches"
 				v-slot="{ rows, columns }"
 			>
-				<TableHeader class="hidden sm:grid" />
+				<TableHeader class="hidden lg:grid" />
 				<TableRow
 					v-for="row in rows"
 					:key="row.name"
@@ -66,7 +66,7 @@
 						<Badge v-if="column.name === 'status'" :label="row.status" />
 						<div
 							v-else-if="column.name === 'tags'"
-							class="hidden space-x-1 sm:flex"
+							class="hidden space-x-1 lg:flex"
 						>
 							<Badge
 								v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -86,7 +86,7 @@
 						</div>
 						<div
 							v-else-if="column.name === 'stats'"
-							class="hidden text-sm text-gray-600 sm:block"
+							class="hidden text-sm text-gray-600 md:block"
 						>
 							{{
 								`${row.stats.number_of_sites} ${$plural(
@@ -117,7 +117,7 @@
 						</div>
 						<span
 							v-else
-							:class="{ 'hidden sm:block': column.name === 'version' }"
+							:class="{ 'hidden md:block': column.name === 'version' }"
 							>{{ row[column.name] || '' }}
 						</span>
 					</TableCell>

@@ -68,7 +68,7 @@
 					:rows="servers"
 					v-slot="{ rows, columns }"
 				>
-					<TableHeader class="hidden sm:grid" />
+					<TableHeader class="hidden lg:grid" />
 					<TableRow
 						v-for="row in rows"
 						:key="row.name"
@@ -79,7 +79,7 @@
 							<Badge v-if="column.name === 'status'" :label="row.status" />
 							<div
 								v-else-if="column.name === 'tags'"
-								class="hidden space-x-1 sm:flex"
+								class="hidden space-x-1 lg:flex"
 							>
 								<Badge
 									v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -97,7 +97,7 @@
 								</Tooltip>
 								<span v-if="row.tags.length === 0">-</span>
 							</div>
-							<span v-else-if="column.name === 'plan'" class="hidden sm:block">
+							<span v-else-if="column.name === 'plan'" class="hidden md:block">
 								{{
 									row.plan
 										? `${$planTitle(row.plan)}${
@@ -106,7 +106,7 @@
 										: ''
 								}}
 							</span>
-							<div v-else-if="column.name === 'region'" class="hidden sm:block">
+							<div v-else-if="column.name === 'region'" class="hidden md:block">
 								<img
 									v-if="row.server_region_info.image"
 									class="h-4"

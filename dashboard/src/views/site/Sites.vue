@@ -104,7 +104,7 @@
 						:rows="sites"
 						v-slot="{ rows, columns }"
 					>
-						<TableHeader class="mb-4 hidden sm:grid" />
+						<TableHeader class="mb-4 hidden lg:grid" />
 						<div
 							v-for="group in groups"
 							:key="group.group"
@@ -143,7 +143,7 @@
 									/>
 									<div
 										v-else-if="column.name === 'tags'"
-										class="hidden space-x-1 sm:flex"
+										class="hidden space-x-1 lg:flex"
 									>
 										<Badge
 											v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -163,7 +163,7 @@
 									</div>
 									<span
 										v-else-if="column.name === 'plan'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										{{
 											row.plan
@@ -175,7 +175,7 @@
 									</span>
 									<div
 										v-else-if="column.name === 'region'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										<img
 											v-if="row.server_region_info.image"
