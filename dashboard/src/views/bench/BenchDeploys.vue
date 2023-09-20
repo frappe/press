@@ -38,7 +38,7 @@
 				</router-link>
 				<div class="py-3" v-if="$resources.candidates.hasNextPage">
 					<Button
-						:loading="$resources.candidates.loading"
+						:loading="$resources.candidates.list.loading"
 						loadingText="Loading..."
 						@click="$resources.candidates.next()"
 					>
