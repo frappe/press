@@ -98,7 +98,7 @@
 							{ label: 'Status', name: 'status' },
 							{ label: 'Region', name: 'region' },
 							{ label: 'Tags', name: 'tags' },
-							{ label: 'Plan', name: 'plan' },
+							{ label: 'Plan', name: 'plan', width: 1.5 },
 							{ label: '', name: 'actions', width: 0.5 }
 						]"
 						:rows="sites"
