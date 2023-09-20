@@ -25,7 +25,7 @@
 			</router-link>
 			<div class="py-3" v-if="$resources.plays.hasNextPage">
 				<Button
-					:loading="$resources.plays.loading"
+					:loading="$resources.plays.list.loading"
 					loadingText="Loading..."
 					@click="$resources.plays.next()"
 				>

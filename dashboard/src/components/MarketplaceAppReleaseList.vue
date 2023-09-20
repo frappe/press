@@ -21,7 +21,9 @@
 				publish a version of this app.
 			</p>
 		</div>
-		<div v-else-if="releasesList.length === 0 && !$resources.releases.loading">
+		<div
+			v-else-if="releasesList.length === 0 && !$resources.releases.list.loading"
+		>
 			<p class="mt-3 text-center text-lg text-gray-600">
 				No app releases have been created for this version.
 			</p>
@@ -98,7 +100,7 @@
 					<Button
 						@click="$resources.releases.next()"
 						v-if="$resources.releases.hasNextPage"
-						:loading="$resources.releases.loading"
+						:loading="$resources.releases.list.loading"
 						loadingText="Loading..."
 						>Load More</Button
 					>
