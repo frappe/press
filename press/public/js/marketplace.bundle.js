@@ -100,10 +100,9 @@ function updateCategories(category) {
 	var button = document.querySelector(`button[value="${category}"]`);
 	if (button) {
 		button.classList.add('bg-gray-200');
+		removeCategoryBtn.classList.remove('hidden');
+		document.getElementById('remove-category-name').innerText = category;
 	}
-
-	removeCategoryBtn.classList.remove('hidden');
-	document.getElementById('remove-category-name').innerText = category;
 }
 
 var category = new URLSearchParams(window.location.search).get('category');
