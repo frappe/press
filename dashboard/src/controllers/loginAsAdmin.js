@@ -9,9 +9,19 @@ export function loginAsAdmin(siteName) {
 				window.open(`https://${data.site}/desk?sid=${data.sid}`, '_blank');
 			}
 		},
-		onError() {
+		validate() {
+			// hack to display the toast
+			notify({
+				title: 'Attempting to login as Administrator',
+				message: `Please wait...`,
+				icon: 'alert-circle',
+				color: 'yellow'
+			});
+		},
+		onError(err) {
 			notify({
 				title: 'Could not login as Administrator',
+				message: err.messages.join('\n'),
 				color: 'red',
 				icon: 'x'
 			});
