@@ -1,0 +1,13 @@
+---
+- name: Regenerate Wireguard Config
+  template:
+    src: wg.conf
+    dest: /etc/wireguard/wg0.conf
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Reload Wireguard with systemd
+  systemd:
+    name: wg-quick@wg0
+    state: reloaded

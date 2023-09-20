@@ -80,7 +80,7 @@ export default {
 		analytics() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
-				method: 'press.api.analytics.get',
+				url: 'press.api.analytics.get',
 				params: {
 					name: this.site?.name,
 					timezone: localTimezone
@@ -102,7 +102,7 @@ export default {
 				datasets: [{ values }],
 				// show daily limit marker if usage crosses 50%
 				yMarkers: values.some(value => value > plan_limit / 2)
-					? [{ label: 'Daily CPU Time Limit', value: plan_limit }]
+					? [{ label: 'Daily Compute Limit', value: plan_limit }]
 					: null
 			};
 		},

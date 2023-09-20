@@ -5,16 +5,16 @@
 
 import unittest
 from datetime import datetime
+from typing import Optional
 
 import frappe
 
 
 def create_test_remote_file(
-	site: str, creation: datetime = None, file_path: str = None
+	site: Optional[str] = None, creation: datetime = None, file_path: str = None
 ):
 	"""Create test remote file doc for required timestamp."""
-	if not creation:
-		creation = datetime.now()
+	creation = creation or frappe.utils.now_datetime()
 	remote_file = frappe.get_doc(
 		{
 			"doctype": "Remote File",

@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-08-07 17:54:33.377864",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "peer_name",
+  "ip",
+  "private_ip",
+  "status",
+  "peer_ip",
+  "wireguard_network",
+  "is_wireguard_setup",
+  "column_break_bsvs",
+  "private_key",
+  "public_key",
+  "allowed_ips",
+  "peer_private_network",
+  "upstream_proxy",
+  "config_tab",
+  "peer_config"
+ ],
+ "fields": [
+  {
+   "fieldname": "peer_name",
+   "fieldtype": "Data",
+   "label": "Peer Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nBroken\nArchived"
+  },
+  {
+   "fieldname": "peer_ip",
+   "fieldtype": "Data",
+   "label": "Peer IP",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_bsvs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "private_key",
+   "fieldtype": "Password",
+   "label": "Private Key"
+  },
+  {
+   "fieldname": "public_key",
+   "fieldtype": "Data",
+   "label": "Public Key"
+  },
+  {
+   "description": "Comma Seperated CIDR blocks. EG: 10.122.0.0/20,10.7.0.1/32",
+   "fieldname": "allowed_ips",
+   "fieldtype": "Data",
+   "label": "Allowed IPs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "peer_private_network",
+   "fieldtype": "Data",
+   "label": "Peer Private Network"
+  },
+  {
+   "fieldname": "upstream_proxy",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Upstream Proxy",
+   "mandatory_depends_on": "eval:doc.setup_wireguard",
+   "options": "Proxy Server",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_wireguard_setup",
+   "fieldtype": "Check",
+   "label": "Is Wireguard Setup"
+  },
+  {
+   "fieldname": "private_ip",
+   "fieldtype": "Data",
+   "label": "Private IP"
+  },
+  {
+   "fetch_from": "upstream_proxy.wireguard_network",
+   "fieldname": "wireguard_network",
+   "fieldtype": "Data",
+   "label": "Wireguard Network",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "Public IP"
+  },
+  {
+   "fieldname": "config_tab",
+   "fieldtype": "Tab Break",
+   "label": "Config"
+  },
+  {
+   "fieldname": "peer_config",
+   "fieldtype": "Code",
+   "label": "Peer Config",
+   "options": "conf",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-08-11 13:00:39.385957",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Wireguard Peer",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "peer_name,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "peer_name"
+}

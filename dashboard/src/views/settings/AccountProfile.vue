@@ -1,11 +1,11 @@
 <template>
-	<Card title="Profile" subtitle="Your profile information">
-		<div class="flex items-center border-b pb-5">
+	<Card title="Profile">
+		<div class="flex items-center border-b pb-3">
 			<div class="relative">
 				<Avatar
-					size="lg"
+					size="2xl"
 					:label="$account.user.first_name"
-					:imageURL="$account.user.user_image"
+					:image="$account.user.user_image"
 				/>
 				<FileUploader
 					@success="onProfilePhotoChange"
@@ -20,7 +20,7 @@
 						<div class="ml-4">
 							<button
 								@click="openFileSelector()"
-								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-semibold text-white opacity-0 hover:opacity-50 focus:opacity-50 focus:outline-none"
+								class="absolute inset-0 grid w-full place-items-center rounded-full bg-black text-xs font-medium text-white opacity-0 transition hover:opacity-50 focus:opacity-50 focus:outline-none"
 								:class="{ 'opacity-50': uploading }"
 							>
 								<span v-if="uploading">{{ progress }}%</span>
@@ -31,10 +31,10 @@
 				</FileUploader>
 			</div>
 			<div class="ml-4">
-				<h3 class="text-lg font-semibold">
+				<h3 class="text-base font-semibold">
 					{{ $account.user.first_name }} {{ $account.user.last_name }}
 				</h3>
-				<p class="text-sm text-gray-600">{{ $account.user.email }}</p>
+				<p class="mt-1 text-base text-gray-600">{{ $account.user.email }}</p>
 			</div>
 			<div class="ml-auto">
 				<Button icon-left="edit" @click="showProfileEditDialog = true">
@@ -82,46 +82,44 @@
 			</ListItem>
 		</div>
 		<Dialog
-			:options="{ title: 'Update Profile Information' }"
+			:options="{
+				title: 'Update Profile Information',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						onClick: () => $resources.updateProfile.submit()
+					}
+				]
+			}"
 			v-model="showProfileEditDialog"
 		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input
-						label="First Name"
-						type="text"
-						v-model="$account.user.first_name"
-					/>
-					<Input
-						label="Last Name"
-						type="text"
-						v-model="$account.user.last_name"
-					/>
+					<FormControl label="First Name" v-model="$account.user.first_name" />
+					<FormControl label="Last Name" v-model="$account.user.last_name" />
 				</div>
 				<ErrorMessage class="mt-4" :message="$resources.updateProfile.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showProfileEditDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateProfile.loading"
-						loadingText="Saving..."
-						@click="$resources.updateProfile.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Disable Account' }"
+			:options="{
+				title: 'Disable Account',
+				actions: [
+					{
+						label: 'Disable Account',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.disableAccount.loading,
+						onClick: () => $resources.disableAccount.submit()
+					}
+				]
+			}"
 			v-model="showDisableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be disabled</li>
@@ -135,26 +133,24 @@
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.disableAccount.error" />
 			</template>
-
-			<template v-slot:actions>
-				<Button @click="showDisableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="danger"
-					@click="$resources.disableAccount.submit()"
-					:loading="$resources.disableAccount.loading"
-				>
-					Disable Account
-				</Button>
-			</template>
 		</Dialog>
 
 		<Dialog
-			:options="{ title: 'Enable Account' }"
+			:options="{
+				title: 'Enable Account',
+				actions: [
+					{
+						label: 'Enable Account',
+						variant: 'solid',
+						loading: $resources.enableAccount.loading,
+						onClick: () => $resources.enableAccount.submit()
+					}
+				]
+			}"
 			v-model="showEnableAccountDialog"
 		>
 			<template v-slot:body-content>
-				<div class="text-base prose">
+				<div class="prose text-base">
 					By confirming this action:
 					<ul>
 						<li>Your account will be enabled</li>
@@ -165,23 +161,13 @@
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.enableAccount.error" />
 			</template>
-
-			<template v-slot:actions>
-				<Button @click="showEnableAccountDialog = false"> Cancel </Button>
-				<Button
-					class="ml-3"
-					appearance="primary"
-					@click="$resources.enableAccount.submit()"
-					:loading="$resources.enableAccount.loading"
-				>
-					Enable Account
-				</Button>
-			</template>
 		</Dialog>
 	</Card>
 </template>
 <script>
 import FileUploader from '@/components/FileUploader.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountProfile',
 	components: {
@@ -204,7 +190,7 @@ export default {
 		updateProfile() {
 			let { first_name, last_name, email } = this.$account.user;
 			return {
-				method: 'press.api.account.update_profile',
+				url: 'press.api.account.update_profile',
 				params: {
 					first_name,
 					last_name,
@@ -217,9 +203,9 @@ export default {
 			};
 		},
 		disableAccount: {
-			method: 'press.api.account.disable_account',
+			url: 'press.api.account.disable_account',
 			onSuccess() {
-				this.$notify({
+				notify({
 					title: 'Account disabled',
 					message: 'Your account was disabled successfully',
 					icon: 'check',
@@ -230,9 +216,9 @@ export default {
 			}
 		},
 		enableAccount: {
-			method: 'press.api.account.enable_account',
+			url: 'press.api.account.enable_account',
 			onSuccess() {
-				this.$notify({
+				notify({
 					title: 'Account enabled',
 					message: 'Your account was enabled successfully',
 					icon: 'check',
@@ -244,7 +230,7 @@ export default {
 		},
 		isDeveloperAccountAllowed() {
 			return {
-				method: 'press.api.marketplace.developer_toggle_allowed',
+				url: 'press.api.marketplace.developer_toggle_allowed',
 				auto: true,
 				onSuccess(data) {
 					if (data) {
@@ -255,7 +241,7 @@ export default {
 		},
 		becomePublisher() {
 			return {
-				method: 'press.api.marketplace.become_publisher',
+				url: 'press.api.marketplace.become_publisher',
 				onSuccess() {
 					this.$router.push('/marketplace');
 				}
@@ -268,7 +254,7 @@ export default {
 			this.notifySuccess();
 		},
 		notifySuccess() {
-			this.$notify({
+			notify({
 				title: 'Updated profile information',
 				icon: 'check',
 				color: 'green'
@@ -280,7 +266,6 @@ export default {
 				message:
 					'You will be able to publish apps to our Marketplace upon confirmation.',
 				actionLabel: 'Yes',
-				actionType: 'primary',
 				action: closeDialog => {
 					this.$resources.becomePublisher.submit();
 					closeDialog();

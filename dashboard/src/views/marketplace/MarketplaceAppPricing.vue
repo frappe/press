@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import AppPlanCard from '@/components/AppPlanCard.vue';
 import PrinterIcon from '@/components/PrinterIcon.vue';
 
@@ -17,8 +17,8 @@ const props = defineProps({
 	app: Object
 });
 
-const appPlans = useResource({
-	method: 'press.api.marketplace.get_app_plans',
+const appPlans = createResource({
+	url: 'press.api.marketplace.get_app_plans',
 	params: {
 		app: props.app?.name,
 		include_disabled: true
@@ -26,15 +26,15 @@ const appPlans = useResource({
 	auto: true
 });
 
-const updateAppPlan = useResource({
-	method: 'press.api.marketplace.update_app_plan',
+const updateAppPlan = createResource({
+	url: 'press.api.marketplace.update_app_plan',
 	onSuccess() {
 		refreshState();
 	}
 });
 
-const createAppPlan = useResource({
-	method: 'press.api.marketplace.create_app_plan',
+const createAppPlan = createResource({
+	url: 'press.api.marketplace.create_app_plan',
 	validate() {
 		if (!currentEditingPlan.plan_title) {
 			return 'Plan name is required';
@@ -99,8 +99,8 @@ function resetCurrentEditingPlan() {
 <template>
 	<div>
 		<Card title="Pricing Plans" subtitle="Set up pricing plans for this app">
-			<div class="mb-4">
-				<div v-if="appPlans.loading">
+			<div class="m-4">
+				<div class="flex justify-center" v-if="appPlans.loading">
 					<Button :loading="true">Loading</Button>
 				</div>
 
@@ -127,9 +127,7 @@ function resetCurrentEditingPlan() {
 							<p class="mb-3.5 text-base text-gray-700">
 								Looks like you haven't created any plans yet
 							</p>
-							<Button appearance="primary" @click="editPlan()"
-								>Create plan</Button
-							>
+							<Button variant="solid" @click="editPlan()">Create plan</Button>
 						</div>
 					</div>
 				</div>
@@ -155,26 +153,23 @@ function resetCurrentEditingPlan() {
 						</label>
 					</div>
 					<div class="mb-4">
-						<Input
+						<FormControl
 							placeholder="My Pro Plan"
-							type="text"
 							label="Name"
 							v-model="currentEditingPlan.plan_title"
-						></Input>
+						></FormControl>
 					</div>
 					<div class="mb-8">
 						<h3 class="mb-4 text-lg font-semibold">Subscription Price</h3>
 						<div class="grid grid-cols-2 gap-2">
-							<Input
+							<FormControl
 								label="Price INR"
-								type="text"
 								v-model="currentEditingPlan.price_inr"
-							></Input>
-							<Input
+							></FormControl>
+							<FormControl
 								label="Price USD"
-								type="text"
 								v-model="currentEditingPlan.price_usd"
-							></Input>
+							></FormControl>
 						</div>
 					</div>
 					<div>
@@ -191,11 +186,10 @@ function resetCurrentEditingPlan() {
 								</div>
 
 								<div class="w-full">
-									<Input
+									<FormControl
 										class="w-full"
-										type="text"
 										v-model="currentEditingPlan.features[idx]"
-									></Input>
+									></FormControl>
 								</div>
 
 								<Button
@@ -220,7 +214,8 @@ function resetCurrentEditingPlan() {
 
 			<template #actions>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					:loading="updateAppPlan.loading || createAppPlan.loading"
 					@click="savePlan"
 					@close="resetCurrentEditingPlan"

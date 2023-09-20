@@ -29,11 +29,17 @@ describe('ClickToCopyField Component', () => {
 	});
 
 	test("let's us copy with a button click", async () => {
+		const $notify = vi.fn();
 		expect(ClickToCopyField).toBeTruthy();
 
 		const wrapper = mount(ClickToCopyField, {
 			props: {
 				textContent: 'Test'
+			},
+			global: {
+				mocks: {
+					$notify
+				}
 			}
 		});
 

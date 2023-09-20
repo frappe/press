@@ -33,7 +33,7 @@
 								class="flex"
 								v-if="d.redirect_to_primary == 1 && d.status == 'Active'"
 							>
-								<FeatherIcon name="arrow-right" class="w-4 mx-1" />
+								<FeatherIcon name="arrow-right" class="mx-1 w-4" />
 								<a
 									class="text-blue-500"
 									:href="'https://' + d.domain"
@@ -48,13 +48,8 @@
 							<Badge
 								v-if="d.status == 'Active' && d.primary"
 								:label="'Primary'"
-								:colorMap="$badgeStatusColorMap"
 							/>
-							<Badge
-								v-else-if="d.status != 'Active'"
-								:label="d.status"
-								:colorMap="$badgeStatusColorMap"
-							/>
+							<Badge v-else-if="d.status != 'Active'" :label="d.status" />
 							<Button
 								v-if="d.status == 'Broken' && d.retry_count <= 5"
 								:loading="$resources.retryAddDomain.loading"
@@ -99,14 +94,13 @@
 						To add a custom domain, you must already own it. If you don't have
 						one, buy it and come back here.
 					</p>
-					<Input
-						type="text"
+					<FormControl
 						placeholder="www.example.com"
 						v-model="newDomain"
 						:readonly="dnsVerified"
 					/>
 
-					<div v-if="newDomain && !dnsVerified" class="text-base space-y-2">
+					<div v-if="newDomain && !dnsVerified" class="space-y-2 text-base">
 						<p>Create one of the following DNS records</p>
 						<p class="px-2">
 							<span class="font-semibold text-gray-700">CNAME</span> record from
@@ -182,12 +176,11 @@
 				</div>
 			</template>
 
-			<template v-slot:actions>
-				<Button @click="cancelAddDomainDialog()"> Cancel </Button>
+			<template #actions>
 				<Button
 					v-if="!dnsVerified"
-					class="ml-3"
-					appearance="primary"
+					class="mt-2 w-full"
+					variant="solid"
 					:loading="$resources.checkDNS.loading"
 					@click="
 						$resources.checkDNS.submit({
@@ -200,8 +193,8 @@
 				</Button>
 				<Button
 					v-if="dnsVerified"
-					class="ml-3"
-					appearance="primary"
+					class="mt-2 w-full"
+					variant="solid"
 					:loading="$resources.addDomain.loading"
 					@click="
 						$resources.addDomain.submit({
@@ -218,6 +211,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteOverviewDomains',
 	props: ['site'],
@@ -230,19 +225,19 @@ export default {
 	resources: {
 		domains() {
 			return {
-				method: 'press.api.site.domains',
+				url: 'press.api.site.domains',
 				params: { name: this.site?.name },
 				auto: true
 			};
 		},
 		checkDNS: {
-			method: 'press.api.site.check_dns',
+			url: 'press.api.site.check_dns',
 			validate() {
 				if (!this.newDomain) return 'Domain cannot be empty';
 			}
 		},
 		addDomain: {
-			method: 'press.api.site.add_domain',
+			url: 'press.api.site.add_domain',
 			onSuccess() {
 				this.$resources.checkDNS.reset();
 				this.$resources.domains.reload();
@@ -250,31 +245,31 @@ export default {
 			}
 		},
 		removeDomain: {
-			method: 'press.api.site.remove_domain',
+			url: 'press.api.site.remove_domain',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		retryAddDomain: {
-			method: 'press.api.site.retry_add_domain',
+			url: 'press.api.site.retry_add_domain',
 			onSuccess() {
 				this.$resources.domains.fetch();
 			}
 		},
 		setHostName: {
-			method: 'press.api.site.set_host_name',
+			url: 'press.api.site.set_host_name',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		setupRedirect: {
-			method: 'press.api.site.set_redirect',
+			url: 'press.api.site.set_redirect',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
 		},
 		removeRedirect: {
-			method: 'press.api.site.unset_redirect',
+			url: 'press.api.site.unset_redirect',
 			onSuccess() {
 				this.$resources.domains.reload();
 			}
@@ -304,12 +299,12 @@ export default {
 			return [
 				{
 					label: 'Remove',
-					handler: () => this.confirmRemoveDomain(domain.domain)
+					onClick: () => this.confirmRemoveDomain(domain.domain)
 				},
 				{
 					label: 'Set Primary',
 					condition: () => domain.status == 'Active' && !domain.primary,
-					handler: () => this.confirmSetPrimary(domain.domain)
+					onClick: () => this.confirmSetPrimary(domain.domain)
 				},
 				{
 					label: 'Redirect to Primary',
@@ -317,7 +312,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						!domain.redirect_to_primary,
-					handler: () => this.confirmSetupRedirect(domain.domain)
+					onClick: () => this.confirmSetupRedirect(domain.domain)
 				},
 				{
 					label: 'Remove Redirect',
@@ -325,7 +320,7 @@ export default {
 						domain.status == 'Active' &&
 						!domain.primary &&
 						domain.redirect_to_primary,
-					handler: () => this.confirmRemoveRedirect(domain.domain)
+					onClick: () => this.confirmRemoveRedirect(domain.domain)
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		},
@@ -334,7 +329,7 @@ export default {
 				title: 'Remove Domain',
 				message: `Are you sure you want to remove the domain <b>${domain}</b>?`,
 				actionLabel: 'Remove',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.removeDomain.submit({
@@ -353,7 +348,7 @@ export default {
 			});
 
 			if (workingRedirects) {
-				this.$notify({
+				notify({
 					title: 'Please Remove all Active Redirects',
 					color: 'red',
 					icon: 'x'
@@ -363,7 +358,6 @@ export default {
 					title: 'Set as Primary Domain',
 					message: `Setting as primary will make <b>${domain}</b> the primary URL for your site. Do you want to continue?`,
 					actionLabel: 'Set Primary',
-					actionType: 'primary',
 					action: closeDialog => {
 						closeDialog();
 						this.$resources.setHostName.submit({
@@ -379,7 +373,6 @@ export default {
 				title: 'Redirect to Primary Domain',
 				message: `Redirect to Primary will redirect <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
 				actionLabel: 'Redirect to Primary',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.setupRedirect.submit({
@@ -394,7 +387,6 @@ export default {
 				title: 'Remove Redirect',
 				message: `Remove Redirect will remove previously set up redirect from <b>${domain}</b> to <b>${this.primaryDomain}</b>. Do you want to continue?`,
 				actionLabel: 'Remove Redirect',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.removeRedirect.submit({
@@ -403,11 +395,6 @@ export default {
 					});
 				}
 			});
-		},
-		cancelAddDomainDialog() {
-			this.showDialog = false;
-			this.newDomain = null;
-			this.$resources.checkDNS.reset();
 		}
 	}
 };

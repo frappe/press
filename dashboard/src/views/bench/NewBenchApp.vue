@@ -7,7 +7,7 @@
 
 		<SelectAppFromGithub @onSelect="d => (app = d)" />
 
-		<ErrorMessage :message="$resourceErrors" />
+		<ErrorMessage :message="$resources.addApp.error" />
 
 		<Button
 			v-if="app"
@@ -37,7 +37,7 @@ export default {
 	resources: {
 		addApp() {
 			return {
-				method: 'press.api.app.new',
+				url: 'press.api.app.new',
 				params: {
 					app: {
 						name: this.app?.name,

@@ -7,11 +7,6 @@ const confirmDialogs = ref([]);
 function confirm(dialog) {
 	dialog.id = confirmDialogs.value.length;
 	dialog.show = true;
-	if (dialog.resource) {
-		dialog.resource.on('onSuccess', () => {
-			removeConfirmDialog(dialog);
-		});
-	}
 	confirmDialogs.value.push(dialog);
 }
 
@@ -36,7 +31,22 @@ app.appContext.config.globalProperties.$confirm = confirm;
 			v-model="dialog.show"
 			@close="removeConfirmDialog(dialog)"
 			:key="dialog.id"
-			:options="{ title: dialog.title }"
+			:options="{
+				title: dialog.title,
+				actions: [
+					{
+						label: dialog.actionLabel || 'Submit',
+						theme: dialog.actionColor,
+						variant: dialog.actionVariant || 'solid',
+						onClick: () => onDialogAction(dialog),
+						loading: dialog.resource?.loading
+					},
+					{
+						label: 'Cancel',
+						onClick: () => removeConfirmDialog(dialog)
+					}
+				]
+			}"
 		>
 			<template v-slot:body-content>
 				<div class="prose">
@@ -47,20 +57,6 @@ app.appContext.config.globalProperties.$confirm = confirm;
 					v-if="dialog.resource"
 					:message="dialog.resource.error"
 				/>
-			</template>
-
-			<template v-slot:actions>
-				<Button appearance="secondary" @click="removeConfirmDialog(dialog)">
-					Cancel
-				</Button>
-				<Button
-					class="ml-2"
-					:appearance="dialog.actionType || 'primary'"
-					@click="onDialogAction(dialog)"
-					:loading="dialog.resource && dialog.resource.loading"
-				>
-					{{ dialog.actionLabel || 'Submit' }}
-				</Button>
 			</template>
 		</Dialog>
 	</div>

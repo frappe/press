@@ -25,6 +25,7 @@ from press.utils.test import foreground_enqueue_doc
 def fake_agent_job_req(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
+	output: str = "",
 ) -> Callable:
 	def prepare_agent_responses(self):
 		"""
@@ -35,8 +36,7 @@ def fake_agent_job_req(
 		nonlocal status
 		job_id = int(make_autoname(".#"))
 
-		# TODO: make job creation independent of POST #
-
+		# TODO: auto add response corresponding to request type #
 		responses.post(
 			f"https://{self.server}:443/agent/{self.request_path}",
 			json={"job": job_id},
@@ -51,8 +51,11 @@ def fake_agent_job_req(
 		responses.add(
 			responses.GET,
 			f"https://{self.server}:443/agent/jobs/{str(job_id)}",
+			# TODO:  populate steps with data from agent job type #
 			json={
-				"data": {},
+				"data": {
+					"output": output,
+				},
 				# TODO: uncomment lines as needed and make new parameters #
 				"duration": "00:00:13.496281",
 				"end": "2023-08-20 18:24:41.506067",
@@ -88,11 +91,13 @@ def fake_agent_job_req(
 
 @contextmanager
 def fake_agent_job(
-	job_name: str, status: Literal["Success", "Pending", "Running", "Failure"]
+	job_name: str,
+	status: Literal["Success", "Pending", "Running", "Failure"],
+	output: str = "",
 ):
 	"""Fakes agent job request and response. Also polls the job."""
 	with responses.mock, patch.object(
-		AgentJob, "before_insert", fake_agent_job_req(job_name, status), create=True
+		AgentJob, "before_insert", fake_agent_job_req(job_name, status, output), create=True
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,

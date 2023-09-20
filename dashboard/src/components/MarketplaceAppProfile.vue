@@ -82,27 +82,23 @@
 		</div>
 
 		<Dialog
-			:options="{ title: 'Update App Title' }"
+			:options="{
+				title: 'Update App Title',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						loading: $resources.updateAppTitle.loading,
+						onClick: () => $resources.updateAppTitle.submit()
+					}
+				]
+			}"
 			v-model="showAppProfileEditDialog"
 		>
 			<template v-slot:body-content>
-				<Input label="App Title" type="text" v-model="app.title" />
+				<FormControl label="App Title" v-model="app.title" />
 
 				<ErrorMessage class="mt-4" :message="$resources.updateAppTitle.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showAppProfileEditDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateAppTitle.loading"
-						loadingText="Saving..."
-						@click="$resources.updateAppTitle.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 
@@ -128,6 +124,7 @@
 import CreateAppVersionDialog from '@/components/marketplace/CreateAppVersionDialog.vue';
 import ChangeAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
 import FileUploader from '@/components/FileUploader.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppProfile',
@@ -155,7 +152,7 @@ export default {
 			let { name, title } = this.app;
 
 			return {
-				method: 'press.api.marketplace.update_app_title',
+				url: 'press.api.marketplace.update_app_title',
 				params: {
 					name,
 					title
@@ -169,7 +166,7 @@ export default {
 		},
 		profileImageUrl() {
 			return {
-				method: 'press.api.marketplace.profile_image_url',
+				url: 'press.api.marketplace.profile_image_url',
 				params: {
 					app: this.app.name
 				}
@@ -177,13 +174,13 @@ export default {
 		},
 		removeVersion() {
 			return {
-				method: 'press.api.marketplace.remove_version',
+				url: 'press.api.marketplace.remove_version',
 				onSuccess() {
 					window.location.reload();
 				},
 				onError(e) {
-					this.$notify({
-						title: e,
+					notify({
+						title: e.messages.join('\n'),
 						color: 'red',
 						icon: 'x'
 					});
@@ -197,7 +194,7 @@ export default {
 			this.notifySuccess();
 		},
 		onAppImageUploadError(errorMessage) {
-			this.$notify({
+			notify({
 				title: errorMessage,
 				color: 'red',
 				icon: 'x'
@@ -210,7 +207,7 @@ export default {
 			return [
 				{
 					label: 'Change Branch',
-					handler: () => {
+					onClick: () => {
 						this.selectedSource = source.source;
 						this.selectedVersion = source.version;
 						this.activeBranch = source.source_information.branch;
@@ -219,7 +216,7 @@ export default {
 				},
 				{
 					label: 'Remove',
-					handler: () => {
+					onClick: () => {
 						this.$resources.removeVersion.submit({
 							name: this.app.name,
 							version: source.version
@@ -229,7 +226,7 @@ export default {
 			];
 		},
 		notifySuccess() {
-			this.$notify({
+			notify({
 				title: 'App Profile Updated!',
 				icon: 'check',
 				color: 'green'

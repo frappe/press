@@ -19,7 +19,7 @@ const options = {
 	keys: ['title'], // Can add description later if required
 	includeScore: true,
 	shouldSort: true,
-	minMatchCharLength: 3,
+	minMatchCharLength: 2,
 };
 const fuse = new Fuse(appList, options);
 

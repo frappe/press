@@ -99,7 +99,7 @@ export default {
 			return (this.repositoryResource.data.branches || []).map(d => {
 				return {
 					label: d.name,
-					handler: () => this.$emit('update:selectedBranch', d.name)
+					onClick: () => this.$emit('update:selectedBranch', d.name)
 				};
 			});
 		}

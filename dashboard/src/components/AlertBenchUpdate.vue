@@ -14,13 +14,26 @@
 		<template #actions>
 			<Button
 				v-if="deployInformation.deploy_in_progress"
-				appearance="primary"
+				variant="solid"
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
-			<Button v-else appearance="primary" @click="showDeployDialog = true">
-				Show updates
-			</Button>
+			<Tooltip
+				v-else
+				:text="
+					!permissions.update
+						? `You don't have enough permissions to perform this action`
+						: 'Show Updates'
+				"
+			>
+				<Button
+					variant="solid"
+					:disabled="!permissions.update"
+					@click="showDeployDialog = true"
+				>
+					Show updates
+				</Button>
+			</Tooltip>
 		</template>
 
 		<Dialog
@@ -37,14 +50,20 @@
 			</template>
 			<template v-slot:actions>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 					v-if="this.bench.team === $account.team.name"
 				>
 					Deploy
 				</Button>
-				<Button appearance="primary" @click="showTeamSwitcher = true" v-else>
+				<Button
+					class="w-full"
+					variant="solid"
+					@click="showTeamSwitcher = true"
+					v-else
+				>
 					Switch Team
 				</Button>
 				<SwitchTeamDialog v-model="showTeamSwitcher" />
@@ -72,7 +91,7 @@ export default {
 	resources: {
 		deployInformation() {
 			return {
-				method: 'press.api.bench.deploy_information',
+				url: 'press.api.bench.deploy_information',
 				params: {
 					name: this.bench?.name
 				},
@@ -90,7 +109,7 @@ export default {
 			}
 
 			return {
-				method: 'press.api.bench.deploy',
+				url: 'press.api.bench.deploy',
 				params: {
 					name: this.bench?.name,
 					apps_to_ignore: appsToIgnore
@@ -105,11 +124,20 @@ export default {
 				},
 				onSuccess(candidate) {
 					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
+					this.showDeployDialog = false;
 				}
 			};
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				update: this.$account.hasPermission(
+					this.bench.name,
+					'press.api.bench.deploy_and_update'
+				)
+			};
+		},
 		show() {
 			if (this.deployInformation) {
 				return (

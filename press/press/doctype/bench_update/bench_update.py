@@ -43,6 +43,7 @@ class BenchUpdate(Document):
 		self.status = "Running"
 		self.candidate = candidates[0].name
 		self.save()
+		return candidate.name
 
 	def update_sites_on_server(self, bench, server):
 		if frappe.get_value("Bench", bench, "status") != "Active":

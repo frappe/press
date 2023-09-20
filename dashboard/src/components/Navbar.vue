@@ -1,40 +1,12 @@
 <template>
-	<nav class="px-4 border-b bg-gray-50">
+	<nav class="border-b bg-gray-50 px-4">
 		<div class="z-10 mx-auto md:container">
 			<div class="flex h-16 items-center justify-between">
 				<div class="flex items-center">
 					<div class="shrink-0">
 						<router-link to="/">
-							<FrappeCloudLogo class="h-4 w-auto ml-2" />
+							<FrappeCloudLogo class="h-6" />
 						</router-link>
-					</div>
-				</div>
-				<div class="hidden md:block">
-					<div class="flex items-center">
-						<Button icon-left="book-open" link="/docs">Docs</Button>
-						<Button class="ml-2" icon-left="life-buoy" link="/support"
-							>Support</Button
-						>
-						<div class="relative ml-3">
-							<div>
-								<Dropdown :options="dropdownItems" right>
-									<template v-slot="{ open }">
-										<button
-											class="focus:shadow-solid flex max-w-xs items-center rounded-full text-sm text-white focus:outline-none"
-											id="user-menu"
-											aria-label="User menu"
-											aria-haspopup="true"
-										>
-											<Avatar
-												v-if="$account.user"
-												:label="$account.user.first_name"
-												:imageURL="$account.user.user_image"
-											/>
-										</button>
-									</template>
-								</Dropdown>
-							</div>
-						</div>
 					</div>
 				</div>
 				<div class="-mr-2 flex md:hidden">
@@ -70,7 +42,7 @@
 					</a>
 				</router-link>
 			</div>
-			<div class="border-t pt-4 pb-3">
+			<div class="border-t pb-3 pt-4">
 				<div class="flex items-center px-4">
 					<div class="shrink-0">
 						<Avatar
@@ -117,7 +89,7 @@
 </template>
 
 <script>
-import FrappeCloudLogo from '@/components/FrappeCloudLogo.vue';
+import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 
 export default {
 	components: {
@@ -125,17 +97,7 @@ export default {
 	},
 	data() {
 		return {
-			mobileMenuOpen: false,
-			dropdownItems: [
-				{
-					label: 'Settings',
-					handler: () => this.$router.push('/settings')
-				},
-				{
-					label: 'Logout',
-					handler: () => this.$auth.logout()
-				}
-			]
+			mobileMenuOpen: false
 		};
 	},
 	computed: {
@@ -156,7 +118,7 @@ export default {
 					}
 				},
 				{
-					label: 'Developer',
+					label: 'Apps',
 					route: '/marketplace',
 					highlight: () => {
 						return this.$route.fullPath.includes('/marketplace');
@@ -172,7 +134,7 @@ export default {
 				},
 				{
 					label: 'Settings',
-					route: '/settings'
+					route: '/settings/profile'
 				}
 			].filter(d => (d.condition ? d.condition() : true));
 		}

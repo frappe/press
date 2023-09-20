@@ -12,6 +12,7 @@
   "user",
   "account_request",
   "is_developer",
+  "is_saas_user",
   "free_account",
   "via_erpnext",
   "column_break_6",
@@ -50,6 +51,8 @@
   "servers_enabled",
   "code_servers_enabled",
   "self_hosted_servers_enabled",
+  "security_portal_enabled",
+  "benches_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -333,6 +336,25 @@
   },
   {
    "default": "0",
+   "description": "SaaS user sees a simplified version of the dashboard",
+   "fieldname": "is_saas_user",
+   "fieldtype": "Check",
+   "label": "Is SaaS User"
+  },
+  {
+   "default": "0",
+   "fieldname": "security_portal_enabled",
+   "fieldtype": "Check",
+   "label": "Security Portal Enabled"
+  },
+  {
+   "default": "0",
+   "fieldname": "benches_enabled",
+   "fieldtype": "Check",
+   "label": "Benches Enabled"
+  },
+  {
+   "default": "0",
    "fieldname": "code_servers_enabled",
    "fieldtype": "Check",
    "label": "Code Servers Enabled"
@@ -385,7 +407,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-07-29 12:19:18.195316",
+ "modified": "2023-09-03 20:15:07.034144",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

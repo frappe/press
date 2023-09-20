@@ -1,5 +1,5 @@
 <template>
-	<Card title="Upcoming Invoice Summary" :subtitle="subtitle">
+	<Card title="Invoice summary" :subtitle="subtitle">
 		<InvoiceUsageTable :invoiceDoc="invoiceDoc" />
 	</Card>
 </template>

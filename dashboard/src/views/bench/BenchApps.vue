@@ -1,7 +1,5 @@
 <template>
 	<div class="space-y-5">
-		<AlertBenchUpdate v-if="bench.no_sites <= 0" :bench="bench" />
-		<AlertUpdate v-else :bench="bench" />
 		<Card
 			title="Apps"
 			subtitle="Apps available on your bench"
@@ -24,8 +22,15 @@
 					v-for="app in $resources.apps.data"
 					:key="app.name"
 					:title="app.title"
-					:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 				>
+					<template #subtitle>
+						<div class="mt-1 flex items-center space-x-2 text-gray-600">
+							<FeatherIcon name="git-branch" class="h-4 w-4" />
+							<div class="truncate text-base hover:text-clip">
+								{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
+							</div>
+						</div>
+					</template>
 					<template #actions>
 						<div class="ml-auto flex items-center space-x-2">
 							<span
@@ -48,23 +53,22 @@
 									</a>
 								</Tooltip>
 
-								<Badge color="red"> Attention Required </Badge>
+								<Badge label="Attention Required" theme="red" />
 							</span>
 							<Badge
 								v-if="!app.last_github_poll_failed && !app.deployed"
-								color="yellow"
-								>Not Deployed</Badge
-							>
+								label="Not Deployed"
+								theme="orange"
+							/>
 							<Badge
 								v-if="
 									!app.last_github_poll_failed &&
 									app.update_available &&
 									app.deployed
 								"
-								color="blue"
-							>
-								Update Available
-							</Badge>
+								label="Update Available"
+								theme="blue"
+							/>
 							<Dropdown :options="dropdownItems(app)" right>
 								<template v-slot="{ open }">
 									<Button icon="more-horizontal" />
@@ -82,15 +86,15 @@
 				v-model="showAddAppDialog"
 			>
 				<template v-slot:body-content>
-					<Input
+					<FormControl
 						class="mb-2"
 						placeholder="Search for Apps"
-						v-on:input="e => updateSearchTerm(e)"
+						v-on:input="e => updateSearchTerm(e.data)"
 					/>
 					<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 					<AppSourceSelector
 						v-else
-						class="pt-1 max-h-96 overflow-auto"
+						class="max-h-96 overflow-auto p-1"
 						:class="filteredOptions.length > 5 ? 'pr-2' : ''"
 						:apps="filteredOptions"
 						v-model="selectedApps"
@@ -105,7 +109,8 @@
 				</template>
 				<template v-slot:actions>
 					<Button
-						appearance="primary"
+						variant="solid"
+						class="w-full"
 						v-if="selectedApps.length > 0"
 						:loading="$resources.addApps.loading"
 						@click="
@@ -131,17 +136,14 @@
 	</div>
 </template>
 <script>
-import AlertUpdate from '@/components/AlertUpdate.vue';
-import AlertBenchUpdate from '@/components/AlertBenchUpdate.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'BenchApps',
 	components: {
-		AlertUpdate,
-		AlertBenchUpdate,
 		AppSourceSelector,
 		ChangeAppBranchDialog
 	},
@@ -158,7 +160,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.bench.apps',
+				url: 'press.api.bench.apps',
 				params: {
 					name: this.benchName
 				},
@@ -167,7 +169,7 @@ export default {
 		},
 		installableApps() {
 			return {
-				method: 'press.api.bench.installable_apps',
+				url: 'press.api.bench.installable_apps',
 				params: {
 					name: this.benchName
 				},
@@ -182,7 +184,7 @@ export default {
 		},
 		fetchLatestAppUpdate() {
 			return {
-				method: 'press.api.bench.fetch_latest_app_update',
+				url: 'press.api.bench.fetch_latest_app_update',
 				onSuccess() {
 					window.location.reload();
 				}
@@ -190,7 +192,7 @@ export default {
 		},
 		addApps() {
 			return {
-				method: 'press.api.bench.add_apps',
+				url: 'press.api.bench.add_apps',
 				onSuccess() {
 					window.location.reload();
 				}
@@ -198,7 +200,15 @@ export default {
 		},
 		removeApp() {
 			return {
-				method: 'press.api.bench.remove_app'
+				url: 'press.api.bench.remove_app',
+				onError(e) {
+					notify({
+						title: 'Error',
+						message: e,
+						icon: 'x',
+						color: 'red'
+					});
+				}
 			};
 		}
 	},
@@ -216,23 +226,23 @@ export default {
 			return [
 				{
 					label: 'Fetch Latest Update',
-					handler: () => this.fetchLatestUpdate(app)
+					onClick: () => this.fetchLatestUpdate(app)
 				},
 				{
 					label: 'Remove App',
-					handler: () => this.confirmRemoveApp(app),
+					onClick: () => this.confirmRemoveApp(app),
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Change Branch',
-					handler: () => {
+					onClick: () => {
 						this.appToChangeBranchOf = app;
 					},
 					condition: () => app.name != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
-					handler: () =>
+					onClick: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
 				}
 			].filter(Boolean);
@@ -248,8 +258,7 @@ export default {
 				title: 'Remove App',
 				message: `Are you sure you want to remove app ${app.name} from this bench?`,
 				actionLabel: 'Remove App',
-				actionType: 'danger',
-				resource: this.$resources.removeApp,
+				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.removeApp.submit({
 						name: this.benchName,

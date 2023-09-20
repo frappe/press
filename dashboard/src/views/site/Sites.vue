@@ -1,126 +1,261 @@
 <template>
 	<div>
 		<div>
-			<PageHeader title="Sites" subtitle="Your Frappe instances">
-				<template v-if="this.$account.team.enabled" v-slot:actions>
-					<Button
-						appearance="primary"
-						iconLeft="plus"
-						class="ml-2"
-						@click="showBillingDialog"
-					>
-						New
-					</Button>
-				</template>
-			</PageHeader>
-
-			<div class="mb-2" v-if="!$account.team.enabled">
-				<Alert title="Your account is disabled">
-					Enable your account to start creating sites
-
-					<template #actions>
-						<Button appearance="primary" route="/settings">
-							Enable Account
-						</Button>
-					</template>
-				</Alert>
-			</div>
-			<div class="mb-2" v-if="showUnpaidInvoiceAlert">
-				<Alert
-					v-if="latestUnpaidInvoice.payment_mode == 'Prepaid Credits'"
-					title="Your last invoice payment has failed."
-				>
-					Please add
-					<strong>
-						{{ latestUnpaidInvoice.currency }}
-						{{ latestUnpaidInvoice.amount_due }}
-					</strong>
-					more in credits.
-					<template #actions>
-						<Button
-							@click="showPrepaidCreditsDialog = true"
-							appearance="primary"
-						>
-							Add Credits
-						</Button>
-					</template>
-				</Alert>
-
-				<Alert v-else title="Your last invoice payment has failed.">
-					Pay now for uninterrupted services.
-					<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
-						<router-link
-							:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
-						>
-							<Button icon-left="external-link" appearance="primary">
-								Go to Billing
-							</Button>
-						</router-link>
-					</template>
-				</Alert>
-
-				<PrepaidCreditsDialog
-					v-if="showPrepaidCreditsDialog"
-					v-model:show="showPrepaidCreditsDialog"
-					:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
-					@success="handleAddPrepaidCreditsSuccess"
-				/>
-			</div>
-
-			<div v-if="recentSitesVisible" class="mb-6">
-				<SectionHeader heading="Recents"> </SectionHeader>
-
-				<div class="mt-3">
-					<LoadingText v-if="$resources.recentSites.loading" />
-					<SiteList v-else :sites="recentlyCreatedSites" />
-				</div>
-			</div>
-
-			<div class="mb-6">
-				<SectionHeader :heading="getSiteFilterHeading()">
-					<template #actions>
-						<Dropdown :options="siteFilterOptions()">
-							<template v-slot="{ open }">
-								<Button
-									:class="[
-										'rounded-md px-3 py-1 text-base font-medium',
-										open ? 'bg-gray-200' : 'bg-gray-100'
-									]"
-									icon-left="chevron-down"
-									>{{ siteFilter.replace('tag:', '') }}</Button
-								>
-							</template>
-						</Dropdown>
-					</template>
-				</SectionHeader>
-
-				<div class="mt-3">
-					<LoadingText v-if="$resources.allSites.loading" />
-					<SiteList v-else :sites="sites" />
-				</div>
-			</div>
-			<Dialog
-				:options="{ title: 'Add card to create new sites' }"
-				v-model="showAddCardDialog"
+			<header
+				class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
 			>
-				<template v-slot:body-content>
-					<StripeCard
-						class="mb-1"
-						v-if="showAddCardDialog"
-						@complete="
-							showAddCardDialog = false;
-							$resources.paymentMethods.reload();
-						"
+				<Breadcrumbs :items="[{ label: 'Sites', route: { name: 'Sites' } }]">
+					<template v-if="this.$account.team.enabled" #actions>
+						<Button
+							variant="solid"
+							icon-left="plus"
+							class="ml-2"
+							label="Create"
+							@click="showBillingDialog"
+						>
+						</Button>
+					</template>
+				</Breadcrumbs>
+			</header>
+
+			<div class="my-5 space-y-2 px-5">
+				<div v-if="!$account.team.enabled">
+					<Alert title="Your account is disabled">
+						Enable your account to start creating sites
+						<template #actions>
+							<Button variant="solid" route="/settings/profile">
+								Enable Account
+							</Button>
+						</template>
+					</Alert>
+				</div>
+				<AlertBillingInformation />
+				<template v-if="showUnpaidInvoiceAlert">
+					<Alert
+						v-if="latestUnpaidInvoice.payment_mode === 'Prepaid Credits'"
+						title="Your last invoice payment has failed."
+					>
+						Please add
+						<strong>
+							{{ latestUnpaidInvoice.currency }}
+							{{ latestUnpaidInvoice.amount_due }}
+						</strong>
+						more in credits.
+						<template #actions>
+							<Button @click="showPrepaidCreditsDialog = true" variant="solid">
+								Add Credits
+							</Button>
+						</template>
+					</Alert>
+
+					<Alert v-else title="Your last invoice payment has failed.">
+						Pay now for uninterrupted services.
+						<template v-if="this.$resources.latestUnpaidInvoice.data" #actions>
+							<router-link
+								:to="{ path: '/billing', query: { invoiceStatus: 'Unpaid' } }"
+							>
+								<Button variant="solid"> Go to Billing </Button>
+							</router-link>
+						</template>
+					</Alert>
+
+					<PrepaidCreditsDialog
+						v-if="showPrepaidCreditsDialog"
+						v-model:show="showPrepaidCreditsDialog"
+						:minimum-amount="Math.ceil(latestUnpaidInvoice.amount_due)"
+						@success="handleAddPrepaidCreditsSuccess"
 					/>
 				</template>
-			</Dialog>
+			</div>
+			<div class="mx-5">
+				<div class="pb-20">
+					<div class="flex">
+						<div class="flex w-full space-x-2 pb-4">
+							<FormControl label="Search Sites" v-model="searchTerm">
+								<template #prefix>
+									<FeatherIcon name="search" class="w-4 text-gray-600" />
+								</template>
+							</FormControl>
+							<FormControl
+								label="Status"
+								class="mr-8"
+								type="select"
+								:options="siteStatusFilterOptions()"
+								v-model="site_status"
+							/>
+							<FormControl
+								label="Tag"
+								class="mr-8"
+								type="select"
+								:options="siteTagFilterOptions()"
+								v-model="site_tag"
+							/>
+						</div>
+					</div>
+					<Table
+						:columns="[
+							{ label: 'Site Name', name: 'name', width: 2 },
+							{ label: 'Status', name: 'status' },
+							{ label: 'Region', name: 'region' },
+							{ label: 'Tags', name: 'tags' },
+							{ label: 'Plan', name: 'plan' },
+							{ label: '', name: 'actions', width: 0.5 }
+						]"
+						:rows="sites"
+						v-slot="{ rows, columns }"
+					>
+						<TableHeader class="mb-4 hidden sm:grid" />
+						<div
+							v-for="group in groups"
+							:key="group.group"
+							class="mb-2 rounded border"
+						>
+							<div
+								class="flex w-full items-center rounded-t bg-gray-50 px-3 py-2 text-base"
+							>
+								<span class="font-semibold text-gray-900">
+									{{ group.title }}
+								</span>
+								<span v-if="!group.public" class="ml-2 text-gray-600">{{
+									group.version
+								}}</span>
+								<Button
+									v-if="!group.public"
+									variant="ghost"
+									class="ml-auto"
+									:route="{ name: 'Bench', params: { benchName: group.group } }"
+								>
+									View Bench
+								</Button>
+								<div v-else class="h-7" />
+							</div>
+
+							<TableRow
+								v-for="(row, index) in sitesByGroup[group.group]"
+								:key="row.name"
+								:row="row"
+								:class="index === 0 ? 'rounded-b' : 'rounded'"
+							>
+								<TableCell v-for="column in columns">
+									<Badge
+										v-if="column.name === 'status'"
+										:label="$siteStatus(row)"
+									/>
+									<div
+										v-else-if="column.name === 'tags'"
+										class="hidden space-x-1 sm:flex"
+									>
+										<Badge
+											v-for="(tag, i) in row.tags.slice(0, 1)"
+											theme="blue"
+											:label="tag"
+										/>
+										<Tooltip
+											v-if="row.tags.length > 1"
+											:text="row.tags.slice(1).join(', ')"
+										>
+											<Badge
+												v-if="row.tags.length > 1"
+												:label="`+${row.tags.length - 1}`"
+											/>
+										</Tooltip>
+										<span v-if="row.tags.length == 0">-</span>
+									</div>
+									<span
+										v-else-if="column.name === 'plan'"
+										class="hidden sm:block"
+									>
+										{{
+											row.plan
+												? `${$planTitle(row.plan)}${
+														row.plan.price_usd > 0 ? '/mo' : ''
+												  }`
+												: ''
+										}}
+									</span>
+									<div
+										v-else-if="column.name === 'region'"
+										class="hidden sm:block"
+									>
+										<img
+											v-if="row.server_region_info.image"
+											class="h-4"
+											:src="row.server_region_info.image"
+											:alt="`Flag of ${row.server_region_info.title}`"
+											:title="row.server_region_info.title"
+										/>
+										<span class="text-base text-gray-700" v-else>
+											{{ row.server_region_info.title }}
+										</span>
+									</div>
+									<div
+										class="w-full text-right"
+										v-else-if="column.name == 'actions'"
+									>
+										<Dropdown @click.prevent :options="dropdownItems(row)">
+											<template v-slot="{ open }">
+												<Button
+													:variant="open ? 'subtle' : 'ghost'"
+													icon="more-horizontal"
+												/>
+											</template>
+										</Dropdown>
+									</div>
+									<span v-else>{{ row[column.name] || '' }}</span>
+								</TableCell>
+							</TableRow>
+						</div>
+						<div class="mt-8 flex items-center justify-center">
+							<LoadingText
+								v-if="$resources.allSites.loading && !$resources.allSites.data"
+							/>
+							<div
+								v-else-if="$resources.allSites.fetched && rows.length === 0"
+								class="text-base text-gray-700"
+							>
+								No Sites
+							</div>
+						</div>
+					</Table>
+
+					<Dialog
+						:options="{
+							title: 'Login As Administrator',
+							actions: [
+								{
+									label: 'Proceed',
+									variant: 'solid',
+									onClick: proceedWithLoginAsAdmin
+								}
+							]
+						}"
+						v-model="showReasonForAdminLoginDialog"
+					>
+						<template #body-content>
+							<FormControl
+								label="Reason for logging in as Administrator"
+								type="textarea"
+								v-model="reasonForAdminLogin"
+								required
+							/>
+							<ErrorMessage class="mt-3" :message="errorMessage" />
+						</template>
+					</Dialog>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 <script>
-import SiteList from './SiteList.vue';
 import { defineAsyncComponent } from 'vue';
-import PageHeader from '@/components/global/PageHeader.vue';
+import Table from '@/components/Table/Table.vue';
+import TableHeader from '@/components/Table/TableHeader.vue';
+import TableRow from '@/components/Table/TableRow.vue';
+import TableCell from '@/components/Table/TableCell.vue';
+import { loginAsAdmin } from '@/controllers/loginAsAdmin';
+import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
+import Fuse from 'fuse.js/dist/fuse.basic.esm';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'Sites',
@@ -131,36 +266,59 @@ export default {
 	},
 	props: ['bench'],
 	components: {
-		SiteList,
+		Table,
+		TableHeader,
+		TableRow,
+		TableCell,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		),
-		PageHeader
+		AlertBillingInformation
 	},
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
 			showAddCardDialog: false,
-			siteFilter: 'All'
+			searchTerm: '',
+			reasonForAdminLogin: '',
+			errorMessage: null,
+			showReasonForAdminLoginDialog: false,
+			siteForLogin: null,
+			site_status: 'All',
+			site_tag: ''
 		};
 	},
 	resources: {
-		paymentMethods: 'press.api.billing.get_payment_methods',
 		allSites() {
 			return {
-				method: 'press.api.site.all',
-				params: { site_filter: this.siteFilter },
-				auto: true
+				url: 'press.api.site.all',
+				params: {
+					site_filter: { status: this.site_status, tag: this.site_tag }
+				},
+				auto: true,
+				cache: [
+					'SiteList',
+					this.site_status,
+					this.site_tag,
+					this.$account.team.name
+				],
+				onSuccess: data => {
+					this.fuse = new Fuse(data, {
+						keys: ['name', 'tags']
+					});
+				}
 			};
 		},
-		siteTags: 'press.api.site.site_tags',
-		recentSites: 'press.api.site.recent_sites',
+		siteTags: { url: 'press.api.site.site_tags', auto: true },
 		latestUnpaidInvoice: {
-			method: 'press.api.billing.get_latest_unpaid_invoice',
+			url: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
+		},
+		loginAsAdmin() {
+			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
 		}
 	},
 	mounted() {
@@ -172,13 +330,6 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		getSiteFilterHeading() {
-			if (this.siteFilter === 'Update Available')
-				return 'Sites with Update Available';
-			else if (this.siteFilter.startsWith('tag:'))
-				return `Sites with tag ${this.siteFilter.slice(4)}`;
-			return `${this.siteFilter || 'All'} Sites`;
-		},
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
@@ -191,7 +342,7 @@ export default {
 				return;
 			if (data.status === 'Success' && data.user === this.$account.user.name) {
 				this.reload();
-				this.$notify({
+				notify({
 					title: 'Site creation complete!',
 					message: 'Login to your site and complete the setup wizard',
 					icon: 'check',
@@ -225,50 +376,89 @@ export default {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
 		},
-		recentSitesVisible() {
-			return this.sites.length > 3;
-		},
-		siteFilterOptions() {
-			const options = [
+		siteStatusFilterOptions() {
+			return [
 				{
-					group: 'Status',
-					items: [
-						{
-							label: 'All',
-							handler: () => (this.siteFilter = 'All')
-						},
-						{
-							label: 'Active',
-							handler: () => (this.siteFilter = 'Active')
-						},
-						{
-							label: 'Broken',
-							handler: () => (this.siteFilter = 'Broken')
-						},
-						{
-							label: 'Trial',
-							handler: () => (this.siteFilter = 'Trial')
-						},
-						{
-							label: 'Update Available',
-							handler: () => (this.siteFilter = 'Update Available')
-						}
-					]
+					label: 'All',
+					value: 'All'
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Broken',
+					value: 'Broken'
+				},
+				{
+					label: 'Trial',
+					value: 'Trial'
+				},
+				{
+					label: 'Update Available',
+					value: 'Update Available'
+				}
+			];
+		},
+		siteTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
 				}
 			];
 
-			if (!this.$resources.siteTags?.data?.length) return options;
+			if (!this.$resources.siteTags.data) return defaultOptions;
 
 			return [
-				...options,
-				{
-					group: 'Tags',
-					items: this.$resources.siteTags.data.map(tag => ({
-						label: tag,
-						handler: () => (this.siteFilter = `tag:${tag}`)
-					}))
-				}
+				...defaultOptions,
+				...this.$resources.siteTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
 			];
+		},
+		dropdownItems(site) {
+			return [
+				{
+					label: 'Visit Site',
+					onClick: () => {
+						window.open(`https://${site.name}`, '_blank');
+					},
+					condition: () =>
+						site.status === 'Active' || site.status === 'Updating'
+				},
+				{
+					label: 'Login As Admin',
+					onClick: () => {
+						if (this.$account.team.name === site.team) {
+							return this.$resources.loginAsAdmin.submit({
+								name: site.name
+							});
+						}
+
+						this.siteForLogin = site.name;
+						this.showReasonForAdminLoginDialog = true;
+					},
+					condition: () =>
+						site.status === 'Active' || site.status === 'Updating'
+				}
+			].filter(item => item.condition());
+		},
+		proceedWithLoginAsAdmin() {
+			this.errorMessage = '';
+
+			if (!this.reasonForAdminLogin.trim()) {
+				this.errorMessage = 'Reason is required';
+				return;
+			}
+
+			this.$resources.loginAsAdmin.submit({
+				name: this.siteForLogin,
+				reason: this.reasonForAdminLogin
+			});
+
+			this.showReasonForAdminLoginDialog = false;
 		}
 	},
 	computed: {
@@ -276,11 +466,60 @@ export default {
 			if (!this.$resources.allSites.data) {
 				return [];
 			}
-
-			return this.$resources.allSites.data;
+			let sites = this.$resources.allSites.data.filter(site =>
+				this.$account.hasPermission(site.name, '', true)
+			);
+			if (this.searchTerm) {
+				return this.fuse.search(this.searchTerm).map(result => result.item);
+			}
+			return sites;
 		},
-		recentlyCreatedSites() {
-			return this.$resources.recentSites.data;
+		sitesByGroup() {
+			let sitesByGroup = {};
+
+			for (let site of this.sites) {
+				let group = site.group;
+				if (!sitesByGroup[group]) {
+					sitesByGroup[group] = [];
+				}
+				site.route = {
+					name: 'SiteOverview',
+					params: {
+						siteName: site.name
+					}
+				};
+				sitesByGroup[group].push(site);
+			}
+
+			return sitesByGroup;
+		},
+		groups() {
+			let seen = [];
+			let groups = [];
+			for (let site of this.sites) {
+				if (site.public) {
+					site.title = 'Shared';
+					site.group = 'Shared';
+				}
+				if (!seen.includes(site.group)) {
+					seen.push(site.group);
+					if (site.public)
+						groups.unshift({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
+					else
+						groups.push({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
+				}
+			}
+			return groups;
 		},
 		showUnpaidInvoiceAlert() {
 			if (!this.latestUnpaidInvoice) {

@@ -428,11 +428,6 @@ def setup_intent_success(setup_intent, address=None):
 
 
 @frappe.whitelist()
-def indian_states():
-	return states_with_tin.keys()
-
-
-@frappe.whitelist()
 def validate_gst(address, method=None):
 	if isinstance(address, dict):
 		address = frappe._dict(address)

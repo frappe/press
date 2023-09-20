@@ -27,7 +27,7 @@
 				>
 					<template v-slot="{ openFileSelector, uploading, progress, error }">
 						<Button
-							class="ml-1 w-12 h-12"
+							class="ml-1 h-12 w-12"
 							@click="openFileSelector()"
 							icon="plus"
 						>
@@ -41,6 +41,7 @@
 
 <script>
 import FileUploader from '@/components/FileUploader.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'MarketplaceAppScreenshots',
@@ -53,7 +54,7 @@ export default {
 	methods: {
 		onAppImageAdd(file) {
 			this.app.screenshots.push({ image: file });
-			this.$notify({
+			notify({
 				title: 'Screenshot was added successfully!',
 				icon: 'check',
 				color: 'green'
@@ -67,7 +68,7 @@ export default {
 			this.app.screenshots.splice(index, 1);
 		},
 		onAppImageUploadError(errorMessage) {
-			this.$notify({
+			notify({
 				title: errorMessage,
 				color: 'red',
 				icon: 'x'
@@ -77,8 +78,7 @@ export default {
 	resources: {
 		removeScreenshot(file) {
 			return {
-				method: 'press.api.marketplace.remove_app_screenshot',
-				onSuccess() {}
+				url: 'press.api.marketplace.remove_app_screenshot'
 			};
 		}
 	}

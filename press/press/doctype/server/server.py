@@ -365,6 +365,9 @@ class BaseServer(Document):
 
 		team = frappe.get_doc("Team", self.team)
 
+		if team.parent_team:
+			team = frappe.get_doc("Team", team.parent_team)
+
 		if team.is_defaulter():
 			frappe.throw("Cannot change plan because you have unpaid invoices")
 
@@ -498,6 +501,23 @@ class BaseServer(Document):
 	def agent(self):
 		return Agent(self.name, server_type=self.doctype)
 
+	@frappe.whitelist()
+	def fetch_security_updates(self):
+		from press.press.doctype.security_update.security_update import SecurityUpdate
+
+		frappe.enqueue(SecurityUpdate.fetch_security_updates, server_obj=self)
+
+	@frappe.whitelist()
+	def configure_ssh_logging(self):
+		try:
+			ansible = Ansible(
+				playbook="configure_ssh_logging.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Set SSH Session Logging Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	def on_update(self):
@@ -510,6 +530,36 @@ class Server(BaseServer):
 				bench = frappe.get_doc("Bench", bench)
 				bench.database_server = self.database_server
 				bench.save()
+
+		if not self.is_new() and self.has_value_changed("team"):
+
+			if self.subscription and self.subscription.team != self.team:
+				self.subscription.disable()
+
+				if subscription := frappe.db.get_value(
+					"Subscription",
+					{
+						"document_type": self.doctype,
+						"document_name": self.name,
+						"team": self.team,
+						"plan": self.plan,
+					},
+				):
+					frappe.db.set_value("Subscription", subscription, "enabled", 1)
+				else:
+					try:
+						# create new subscription
+						frappe.get_doc(
+							{
+								"doctype": "Subscription",
+								"document_type": self.doctype,
+								"document_name": self.name,
+								"team": self.team,
+								"plan": self.plan,
+							}
+						).insert()
+					except Exception:
+						frappe.log_error("Server Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):

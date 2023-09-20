@@ -19,6 +19,7 @@ from press.api.bench import (
 	bench_config,
 	update_dependencies,
 )
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -306,6 +307,28 @@ class TestAPIBenchConfig(FrappeTestCase):
 		self.assertTrue(dependency_update_2)
 		self.assertGreater(dependency_update_2, dependency_update_1)
 
+	def test_deploy_information_shows_update_available_for_bench_when_apps_are_updated_after_dependency_updated_deploy(
+		self,
+	):
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
+		)
+		create_test_bench(
+			group=self.rg
+		)  # now update available due to dependency shouldn't be there (cuz create_test_bench created deploy candidate)
+		self.assertFalse(deploy_information(self.rg.name)["update_available"])
+		create_test_app_release(frappe.get_doc("App Source", self.rg.apps[0].source))
+		self.assertTrue(deploy_information(self.rg.name)["update_available"])
+
 	def test_deploy_information_shows_update_available_when_dependencies_are_updated(self):
 		self.assertFalse(self.rg.last_dependency_update)
 		create_test_bench(group=self.rg)  # avoid update available due to no deploys
@@ -399,13 +422,17 @@ class TestAPIBenchList(FrappeTestCase):
 
 	def test_list_active_benches(self):
 		self.assertCountEqual(
-			all(bench_filter="Active"), [self.active_bench_dict, self.bench_with_tag_dict]
+			all(bench_filter={"status": "Active", "tag": ""}),
+			[self.active_bench_dict, self.bench_with_tag_dict],
 		)
 
 	def test_list_awaiting_deploy_benches(self):
 		self.assertEqual(
-			all(bench_filter="Awaiting Deploy"), [self.bench_awaiting_deploy_dict]
+			all(bench_filter={"status": "Awaiting Deploy", "tag": ""}),
+			[self.bench_awaiting_deploy_dict],
 		)
 
 	def test_list_tagged_benches(self):
-		self.assertEqual(all(bench_filter="tag:test_tag"), [self.bench_with_tag_dict])
+		self.assertEqual(
+			all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict]
+		)

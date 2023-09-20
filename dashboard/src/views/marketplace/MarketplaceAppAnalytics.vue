@@ -146,7 +146,7 @@ export default {
 	resources: {
 		analytics() {
 			return {
-				method: 'press.api.marketplace.analytics',
+				url: 'press.api.marketplace.analytics',
 				auto: true,
 				params: {
 					name: this.app?.app
@@ -155,7 +155,7 @@ export default {
 		},
 		plausible_analytics() {
 			return {
-				method: 'press.api.analytics.plausible_analytics',
+				url: 'press.api.analytics.plausible_analytics',
 				auto: true,
 				params: {
 					name: this.app?.app

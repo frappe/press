@@ -15,7 +15,7 @@
 			</p>
 		</div>
 		<div v-else>
-			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 md:grid-cols-2">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name, app.status)"
 					v-for="app in $resources.apps.data"
@@ -41,7 +41,7 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.marketplace.get_apps',
+				url: 'press.api.marketplace.get_apps',
 				auto: true
 			};
 		}

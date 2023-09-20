@@ -1,5 +1,5 @@
 <template>
-	<Card title="Bench info" subtitle="General information about your bench">
+	<Card title="Bench Info" subtitle="General information about your bench">
 		<div class="divide-y">
 			<div class="flex items-center justify-between py-3">
 				<div>
@@ -21,45 +21,33 @@
 				title="Drop Bench"
 				description="Permanently delete the bench and related data"
 			>
-				<template v-slot:actions>
-					<BenchDrop :bench="bench" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Bench</span>
-						</Button>
-					</BenchDrop>
-				</template>
+				<template v-slot:actions> </template>
 			</ListItem>
 		</div>
-		<Dialog :options="{ title: 'Edit Title' }" v-model="showEditTitleDialog">
+		<Dialog
+			:options="{
+				title: 'Edit Title',
+				actions: [
+					{
+						label: 'Update',
+						variant: 'solid',
+						loading: $resources.editTitle.loading,
+						onClick: () => $resources.editTitle.submit()
+					}
+				]
+			}"
+			v-model="showEditTitleDialog"
+		>
 			<template v-slot:body-content>
-				<Input label="Title" type="text" v-model="benchTitle" />
+				<FormControl label="Title" v-model="benchTitle" />
 				<ErrorMessage class="mt-4" :message="$resources.editTitle.error" />
-			</template>
-
-			<template v-slot:actions>
-				<div class="space-x-2">
-					<Button @click="showEditTitleDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.editTitle.loading"
-						loadingText="Saving..."
-						@click="$resources.editTitle.submit()"
-					>
-						Update
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</Card>
 </template>
 <script>
-import BenchDrop from './BenchDrop.vue';
-
 export default {
 	name: 'BenchOverviewInfo',
-	components: {
-		BenchDrop
-	},
 	props: ['bench'],
 	data() {
 		return {
@@ -70,7 +58,7 @@ export default {
 	resources: {
 		editTitle() {
 			return {
-				method: 'press.api.bench.rename',
+				url: 'press.api.bench.rename',
 				params: {
 					name: this.bench?.name,
 					title: this.benchTitle

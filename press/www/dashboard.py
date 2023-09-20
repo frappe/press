@@ -15,3 +15,4 @@ def get_context(context):
 	context.press_frontend_sentry_dsn = frappe.get_conf().press_frontend_sentry_dsn
 	context.press_frontend_posthog_host = frappe.conf.get("posthog_host")
 	context.press_frontend_posthog_project_id = frappe.conf.get("posthog_project_id")
+	context.press_site_name = frappe.conf.get("default_site")

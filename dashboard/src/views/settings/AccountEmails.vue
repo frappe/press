@@ -1,8 +1,5 @@
 <template>
-	<Card
-		title="Email Notifications"
-		subtitle="Email preferences for your account"
-	>
+	<Card title="Email Notifications">
 		<template #actions>
 			<Button icon-left="edit" @click="showEmailsEditDialog = true">
 				Edit
@@ -16,25 +13,27 @@
 			:key="email.type"
 		>
 		</ListItem>
-		<Dialog :options="{ title: 'Edit Emails' }" v-model="showEmailsEditDialog">
+		<Dialog
+			:options="{
+				title: 'Edit Emails',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						onClick: () => $resources.changeEmail.submit()
+					}
+				]
+			}"
+			v-model="showEmailsEditDialog"
+		>
 			<template v-slot:body-content>
 				<div class="mt-3" v-for="email in emailData" :key="email.type">
-					<Input
+					<FormControl
 						:label="fieldLabelMap[email.type] || email.type"
-						type="text"
 						v-model="email.value"
 					/>
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.changeEmail.error" />
-			</template>
-
-			<template #actions>
-				<Button class="mr-3" @click="showEmailsEditDialog = false"
-					>Cancel</Button
-				>
-				<Button appearance="primary" @click="$resources.changeEmail.submit()">
-					Save Changes
-				</Button>
 			</template>
 		</Dialog>
 	</Card>
@@ -45,7 +44,7 @@ export default {
 	resources: {
 		getEmails() {
 			return {
-				method: 'press.api.account.get_emails',
+				url: 'press.api.account.get_emails',
 				auto: true,
 				onSuccess(res) {
 					this.emailData = res;
@@ -54,7 +53,7 @@ export default {
 		},
 		changeEmail() {
 			return {
-				method: 'press.api.account.update_emails',
+				url: 'press.api.account.update_emails',
 				params: {
 					data: JSON.stringify(this.emailData)
 				},
@@ -73,8 +72,8 @@ export default {
 	computed: {
 		fieldLabelMap() {
 			return {
-				invoices: 'Email To Receive Invoices',
-				marketplace_notifications: 'Marketplace Notifications'
+				invoices: 'Send invoices to',
+				marketplace_notifications: 'Send marketplace emails to'
 			};
 		}
 	}

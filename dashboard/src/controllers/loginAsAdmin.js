@@ -1,6 +1,8 @@
+import { notify } from '@/utils/toast';
+
 export function loginAsAdmin(siteName) {
 	return {
-		method: 'press.api.site.login',
+		url: 'press.api.site.login',
 		params: { name: siteName },
 		onSuccess(data) {
 			if (data?.sid && data?.site) {
@@ -8,7 +10,7 @@ export function loginAsAdmin(siteName) {
 			}
 		},
 		onError() {
-			this.$notify({
+			notify({
 				title: 'Could not login as Administrator',
 				color: 'red',
 				icon: 'x'

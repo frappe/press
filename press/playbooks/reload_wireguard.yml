@@ -1,0 +1,8 @@
+---
+- name: Reload Wireguard on Proxy Server
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+  roles:
+    - role: reload_wireguard
