@@ -694,9 +694,13 @@ def all(site_filter=None):
 	elif site_filter["status"] == "Broken":
 		sites_query = sites_query.where(Site.status == "Broken")
 	elif site_filter["status"] == "Trial":
-		sites_query = sites_query.where(Site.trial_end_date != "")
+		sites_query = sites_query.where(
+			(Site.trial_end_date != "") & (Site.status != "Archived")
+		)
 	elif site_filter["status"] == "Update Available":
-		sites_query = sites_query.where(Site.bench.isin(benches_with_updates))
+		sites_query = sites_query.where(
+			Site.bench.isin(benches_with_updates) & (Site.status != "Archived")
+		)
 	else:
 		sites_query = sites_query.where(Site.status != "Archived")
 
