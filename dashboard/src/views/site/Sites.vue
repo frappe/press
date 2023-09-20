@@ -391,6 +391,10 @@ export default {
 					value: 'Broken'
 				},
 				{
+					label: 'Inactive',
+					value: 'Inactive'
+				},
+				{
 					label: 'Trial',
 					value: 'Trial'
 				},

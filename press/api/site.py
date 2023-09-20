@@ -693,6 +693,8 @@ def all(site_filter=None):
 		sites_query = sites_query.where(Site.status == "Active")
 	elif site_filter["status"] == "Broken":
 		sites_query = sites_query.where(Site.status == "Broken")
+	elif site_filter["status"] == "Inactive":
+		sites_query = sites_query.where(Site.status == "Inactive")
 	elif site_filter["status"] == "Trial":
 		sites_query = sites_query.where(
 			(Site.trial_end_date != "") & (Site.status != "Archived")
