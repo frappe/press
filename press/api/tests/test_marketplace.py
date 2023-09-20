@@ -301,7 +301,7 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_releases(self):
 		frappe.set_user(self.team.user)
-		r = releases(app=self.marketplace_app.name, source=self.app_source.name)
+		r = releases({"app": self.marketplace_app.name, "source": self.app_source.name})
 		self.assertEqual(r[0].name, self.app_release.name)
 
 	def test_app_release_approvals(self):
