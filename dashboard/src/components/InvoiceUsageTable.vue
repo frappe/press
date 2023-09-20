@@ -35,22 +35,22 @@
 				<tfoot>
 					<tr v-if="doc.total_discount_amount > 0">
 						<td></td>
-						<td class="pt-4 pb-2 pr-2 text-right font-semibold">
+						<td class="pb-2 pr-2 pt-4 text-right font-semibold">
 							Total Without Discount
 						</td>
 						<td
-							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
+							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
 						>
 							{{ doc.formatted.total_before_discount }}
 						</td>
 					</tr>
 					<tr v-if="doc.total_discount_amount > 0">
 						<td></td>
-						<td class="pt-4 pb-2 pr-2 text-right font-semibold">
+						<td class="pb-2 pr-2 pt-4 text-right font-semibold">
 							Total Discount Amount
 						</td>
 						<td
-							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
+							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
 						>
 							{{
 								doc.partner_email && doc.partner_email != doc.team
@@ -61,9 +61,9 @@
 					</tr>
 					<tr>
 						<td></td>
-						<td class="pt-4 pb-2 pr-2 text-right font-semibold">Grand Total</td>
+						<td class="pb-2 pr-2 pt-4 text-right font-semibold">Grand Total</td>
 						<td
-							class="whitespace-nowrap pt-4 pb-2 pr-2 text-right font-semibold"
+							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
 						>
 							{{
 								doc.partner_email && doc.partner_email != doc.team
@@ -103,7 +103,7 @@ export default {
 	resources: {
 		doc() {
 			return {
-				method: 'press.api.billing.get_invoice_usage',
+				url: 'press.api.billing.get_invoice_usage',
 				params: { invoice: this.invoice },
 				auto: this.invoice,
 				onSuccess(doc) {

@@ -4,9 +4,12 @@
 		:href="link"
 		target="_blank"
 		:class="[styleClasses, 'hover:bg-gray-200 hover:text-gray-900']"
-		>{{ tag }}</a
 	>
+		<FeatherIcon name="git-commit" class="mr-1 h-4 w-4" />
+		{{ tag }}
+	</a>
 	<span v-else :class="styleClasses">
+		<FeatherIcon name="git-commit" class="mr-1 h-4 w-4" />
 		{{ tag }}
 	</span>
 </template>

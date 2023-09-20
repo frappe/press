@@ -4,10 +4,10 @@
             <table cellpadding="0" cellspacing="0" role="presentation" width="600px">
                 <tbody>
                     <tr>
-                        <td class="px-8 py-10 text-center text-gray-900">
+                        <td class="px-8 pt-10 pb-8 text-center text-gray-900">
                             <div>
                                 {% if image_path %}
-                                  <img src="{{ image_path }}" alt="Logo" style="height: 16px;margin:auto;">
+                                <img src="{{ image_path }}" alt="Logo" class="h-6 mx-auto">
                                 {% endif %}
                             </div>
                         </td>
@@ -16,8 +16,8 @@
                         {% block content %}{% endblock %}
                     </tr>
                     <tr>
-                        <td class="py-8">
-                            &nbsp;
+                        <td class="py-8 text-center text-gray-500 text-sm">
+                            This email was sent by Frappe Cloud
                         </td>
                     </tr>
                 </tbody>

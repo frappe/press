@@ -47,7 +47,7 @@ export default {
 	resources: {
 		log() {
 			return {
-				method: 'press.api.bench.log',
+				url: 'press.api.bench.log',
 				params: {
 					name: this.bench?.name,
 					bench: this.instanceName,

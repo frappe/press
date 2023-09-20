@@ -12,7 +12,7 @@
 	<form name="verify">
 		{%- if frappe.form_dict.key -%}
 		<div class="mx-auto form-container col-xl-5 col-lg-6 col-md-7 col-sm-9">
-			<button id="redirect" type="submit" class="btn btn-primary" hidden>Redirect</button>
+			<button id="redirect" type="submit" style="width: 100%; background-color: #171717; color: white;" class="btn btn-primary" hidden>Redirect</button>
 		</div>
 		{%- else -%}
 		<div class="m-0 alert alert-danger small" role="alert">
@@ -94,10 +94,7 @@
 					<p class="d-inline" for="agreed_to_partner_consent">I am okay if my details are shared with
 						local partner</p>
 				</div>
-				<div class="mt-8 d-flex justify-content-between">
-					<div></div>
-					<button type="submit" class="ml-4 btn btn-primary btn-step-4">Next</button>
-				</div>
+				<button type="submit" style="width: 100%; background-color: #171717; color: white;" class="btn btn-primary btn-step-4">Next</button>
 			</form>
 			{%- else -%}
 			<div class="m-0 alert alert-danger small" role="alert">

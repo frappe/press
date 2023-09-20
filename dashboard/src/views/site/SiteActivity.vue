@@ -1,6 +1,6 @@
 <template>
 	<Card
-		class="min-h-full h-full max-h-96"
+		class="h-full max-h-96 min-h-full"
 		title="Site Activity"
 		subtitle="Log of activities performed on your site"
 	>
@@ -12,11 +12,11 @@
 				:description="getDescription(a)"
 			/>
 		</div>
-		<div class="my-2" v-if="!$resources.activities.lastPageEmpty">
+		<div class="my-2" v-if="$resources.activities.hasNextPage">
 			<Button
 				:loading="$resources.activities.loading"
 				loadingText="Fetching..."
-				@click="pageStart += 20"
+				@click="$resources.activities.next()"
 			>
 				Load more
 			</Button>
@@ -28,51 +28,56 @@
 			</Button>
 		</template>
 		<Dialog
-			:options="{ title: 'Change Notify Email' }"
+			:options="{
+				title: 'Change Notify Email',
+				actions: [
+					{
+						label: 'Save Changes',
+						variant: 'solid',
+						loading: $resources.changeNotifyEmail.loading,
+						onClick: () => $resources.changeNotifyEmail.submit()
+					}
+				]
+			}"
 			v-model="showChangeNotifyEmailDialog"
 		>
 			<template v-slot:body-content>
-				<Input v-model="site.notify_email" />
-			</template>
-			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					@click="$resources.changeNotifyEmail.submit()"
-				>
-					Save
-				</Button>
+				<FormControl v-model="site.notify_email" />
 			</template>
 		</Dialog>
 	</Card>
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteActivity',
 	props: ['site'],
 	resources: {
 		activities() {
 			return {
-				method: 'press.api.site.activities',
-				params: {
-					name: this.site?.name,
-					start: this.pageStart
+				type: 'list',
+				doctype: 'Site Activity',
+				url: 'press.api.site.activities',
+				filters: {
+					site: this.site?.name
 				},
+				start: 0,
 				auto: true,
-				pageLength: 20,
-				keepData: true
+				pageLength: 20
 			};
 		},
 		changeNotifyEmail() {
 			return {
-				method: 'press.api.site.change_notify_email',
+				url: 'press.api.site.change_notify_email',
 				params: {
 					name: this.site?.name,
 					email: this.site?.notify_email
 				},
 				onSuccess() {
 					this.showChangeNotifyEmailDialog = false;
-					this.$notify({
+					notify({
 						title: 'Notify Email Changed!',
 						icon: 'check',
 						color: 'green'
@@ -88,7 +93,6 @@ export default {
 	},
 	data() {
 		return {
-			pageStart: 0,
 			showChangeNotifyEmailDialog: false
 		};
 	},

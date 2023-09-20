@@ -1,5 +1,5 @@
 <script setup>
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import MarketplacePayoutDetails from './MarketplacePayoutDetails.vue';
 
 const props = defineProps({
@@ -8,8 +8,8 @@ const props = defineProps({
 	}
 });
 
-const payouts = useResource({
-	method: 'press.api.marketplace.get_payouts_list',
+const payouts = createResource({
+	url: 'press.api.marketplace.get_payouts_list',
 	auto: true
 });
 </script>
@@ -56,7 +56,7 @@ const payouts = useResource({
 					</div>
 
 					<div class="hidden md:inline">
-						<Badge :label="payout.status" :colorMap="$badgeStatusColorMap" />
+						<Badge :label="payout.status" />
 					</div>
 
 					<div>₹{{ round(payout.net_total_inr, 2) }}</div>

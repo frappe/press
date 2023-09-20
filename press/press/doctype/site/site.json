@@ -36,7 +36,6 @@
   "is_erpnext_setup",
   "trial_end_date",
   "erpnext_consultant",
-  "section_break_6",
   "apps_tab",
   "apps",
   "_keys_removed_in_last_update",
@@ -76,12 +75,15 @@
   "saas_section",
   "is_standby",
   "standby_for",
+  "standby_for_product",
   "column_break_63",
   "hybrid_saas_pool",
   "backups_section",
   "skip_scheduled_backups",
   "tags_section",
-  "tags"
+  "tags",
+  "monitor_section",
+  "hide_monitor_tab"
  ],
  "fields": [
   {
@@ -133,12 +135,6 @@
   {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break",
-   "hide_days": 1,
-   "hide_seconds": 1
-  },
-  {
-   "fieldname": "section_break_6",
-   "fieldtype": "Section Break",
    "hide_days": 1,
    "hide_seconds": 1
   },
@@ -577,6 +573,12 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "fieldname": "standby_for_product",
+   "fieldtype": "Link",
+   "label": "Standby for Product",
+   "options": "SaaS Product"
   }
  ],
  "links": [
@@ -646,7 +648,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-07-02 00:08:36.031427",
+ "modified": "2023-08-07 17:47:21.855550",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

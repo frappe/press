@@ -1,6 +1,7 @@
 <template>
 	<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 		<Tags
+			v-if="site"
 			:name="site.name"
 			doctype="Site"
 			:resourceTags="site.site_tags"

@@ -18,6 +18,9 @@ from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.press_user_permission.press_user_permission import (
+	has_user_permission,
+)
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -35,18 +38,20 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
+		request_path = (
+			frappe.local.request.path.rsplit("/", 1)[-1] if not frappe.flags.in_test else ""
+		)
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = kwargs.get("name") or args[0]
+		# name is either name or 1st value from filters dict from kwargs or 1st value from args
+		name = (
+			kwargs.get("name") or next(iter(kwargs.get("filters", {}).values()), None) or args[0]
+		)
 		team = get_current_team()
-
-		from press.press.doctype.team.team import get_child_team_members
-
-		child_teams = [team.name for team in get_child_team_members(team)]
 
 		nonlocal doctypes
 		if not isinstance(doctypes, list):
@@ -54,8 +59,34 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			if owner == team or owner in child_teams:
-				return wrapped(*args, **kwargs)
+			if owner == team:
+				if (
+					frappe.get_value("Team", team, "user") != frappe.session.user
+					and not frappe.flags.in_test
+				):
+					# Logged in user is a team member
+					# Check if the user has permission to access the document
+					groups = frappe.get_all(
+						"Press Permission Group User",
+						{
+							"user": frappe.session.user,
+						},
+						pluck="parent",
+					)
+					if (
+						frappe.db.exists("Press User Permission", {"user": frappe.session.user}) or groups
+					) and frappe.db.exists(
+						"Press Method Permission", {"document_type": doctype, "method": request_path}
+					):
+						# has restricted access
+						if has_user_permission(doctype, name, request_path, groups):
+							return wrapped(*args, **kwargs)
+					else:
+						# has access to everything
+						return wrapped(*args, **kwargs)
+				else:
+					# Logged in user is the team owner
+					return wrapped(*args, **kwargs)
 
 		raise frappe.PermissionError
 
@@ -122,42 +153,18 @@ def _new(site, server: str = None):
 		tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 	)
 
-	query_sub_str = ""
-	if server:
-		query_sub_str = f"AND server.name = '{server}'"
-
-	bench = frappe.db.sql(
-		f"""
-	SELECT
-		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
-	FROM
-		tabBench bench
-	LEFT JOIN
-		tabServer server
-	ON
-		bench.server = server.name
-	WHERE
-		server.proxy_server in {proxy_servers} AND
-		bench.status = "Active" AND
-		bench.group = '{site["group"]}'
-		{query_sub_str}
-	ORDER BY
-		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
-	LIMIT 1
-	""",
-		as_dict=True,
-	)[0]
 	plan = site["plan"]
-
 	app_plans = site.get("selected_app_plans")
+	validate_plan(server, plan)
 
-	validate_plan(bench.server, plan)
 	site = frappe.get_doc(
 		{
 			"doctype": "Site",
 			"subdomain": site["name"],
 			"domain": domain,
-			"bench": bench.name,
+			"group": site["group"],
+			"server": server,
+			"cluster": cluster,
 			"apps": [{"app": app} for app in site["apps"]],
 			"team": team.name,
 			"free": team.free_account,
@@ -257,14 +264,14 @@ def get_app_subscriptions(app_plans, team: str):
 
 @frappe.whitelist()
 @protected("Site")
-def jobs(name, start=0):
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	jobs = frappe.get_all(
 		"Agent Job",
 		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"site": name},
-		start=start,
-		limit=10,
-		order_by="creation desc",
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
 	)
 	return jobs
 
@@ -379,25 +386,25 @@ def domains(name):
 
 
 @frappe.whitelist()
-def activities(name, start=0, limit=20):
+def activities(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 	# get all site activity except Backup by Administrator
-	activities = frappe.db.sql(
-		"""
-		SELECT action, reason, creation, owner
-		FROM `tabSite Activity`
-		WHERE site = %(site)s
-		AND (action != 'Backup' or owner != 'Administrator')
-		ORDER BY creation desc
-		LIMIT %(limit)s
-		OFFSET %(start)s
-	""",
-		values={"site": name, "limit": limit, "start": start},
-		as_dict=1,
+	SiteActivity = frappe.qb.DocType("Site Activity")
+	activities = (
+		frappe.qb.from_(SiteActivity)
+		.select(
+			SiteActivity.action, SiteActivity.reason, SiteActivity.creation, SiteActivity.owner
+		)
+		.where(SiteActivity.site == filters["site"])
+		.where((SiteActivity.action != "Backup") | (SiteActivity.owner != "Administrator"))
+		.orderby(SiteActivity.creation, order=frappe.qb.desc)
+		.offset(limit_start)
+		.limit(limit_page_length)
+		.run(as_dict=True)
 	)
 
 	for activity in activities:
 		if activity.action == "Create":
-			activity.action = "Site created"
+			activity.action = "Site Created"
 
 	return activities
 
@@ -641,65 +648,84 @@ def sites_with_recent_activity(sites, limit=3):
 	return query.run(pluck="site")
 
 
-def get_sites(site_filter=""):
+@frappe.whitelist()
+def all(site_filter=None):
 	from press.press.doctype.team.team import get_child_team_members
+
+	if site_filter is None:
+		site_filter = {"status": "", "tag": ""}
 
 	team = get_current_team()
 	child_teams = [x.name for x in get_child_team_members(team)]
-	if not child_teams:
-		condition = f"= '{team}'"
-	else:
-		condition = f"in {tuple([team] + child_teams)}"
-
 	benches_with_updates = tuple(benches_with_available_update())
 
-	status_condition = "!= 'Archived'"
-	if site_filter == "Active":
-		status_condition = "= 'Active'"
-	elif site_filter == "Broken":
-		status_condition = "= 'Broken'"
-	elif site_filter == "Trial":
-		condition = f"{condition} AND s.trial_end_date != ''"
-	elif site_filter == "Update Available":
-		condition = f"{condition} AND s.bench IN {benches_with_updates}"
-	elif site_filter.startswith("tag:"):
-		tag = site_filter[4:]
-		condition = f"{condition} AND s.name IN (SELECT parent FROM `tabResource Tag` WHERE tag_name = '{tag}')"
-
-	sites = frappe.db.sql(
-		f"""
-			SELECT s.name, s.host_name, s.status, s.creation, s.bench, s.current_cpu_usage, s.current_database_usage, s.current_disk_usage, s.trial_end_date, s.team, rg.title, rg.version
-			FROM `tabSite` s
-			LEFT JOIN `tabRelease Group` rg
-			ON s.group = rg.name
-			WHERE s.status {status_condition}
-			AND s.team {condition}
-			ORDER BY creation DESC""",
-		as_dict=True,
+	Site = frappe.qb.DocType("Site")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	sites_query = (
+		frappe.qb.from_(Site)
+		.select(
+			Site.name,
+			Site.host_name,
+			Site.status,
+			Site.creation,
+			Site.bench,
+			Site.current_cpu_usage,
+			Site.current_database_usage,
+			Site.current_disk_usage,
+			Site.trial_end_date,
+			Site.team,
+			Site.cluster,
+			Site.group,
+			ReleaseGroup.title,
+			ReleaseGroup.version,
+			ReleaseGroup.public,
+		)
+		.left_join(ReleaseGroup)
+		.on(Site.group == ReleaseGroup.name)
+		.orderby(Site.creation, order=frappe.qb.desc)
 	)
+	if child_teams:
+		sites_query = sites_query.where(Site.team.isin([team] + child_teams))
+	else:
+		sites_query = sites_query.where(Site.team == team)
+
+	if site_filter["status"] == "Active":
+		sites_query = sites_query.where(Site.status == "Active")
+	elif site_filter["status"] == "Broken":
+		sites_query = sites_query.where(Site.status == "Broken")
+	elif site_filter["status"] == "Trial":
+		sites_query = sites_query.where(
+			(Site.trial_end_date != "") & (Site.status != "Archived")
+		)
+	elif site_filter["status"] == "Update Available":
+		sites_query = sites_query.where(
+			Site.bench.isin(benches_with_updates) & (Site.status != "Archived")
+		)
+	else:
+		sites_query = sites_query.where(Site.status != "Archived")
+
+	if site_filter["tag"]:
+		Tag = frappe.qb.DocType("Resource Tag")
+		sites_with_tag = (
+			frappe.qb.from_(Tag).select(Tag.parent).where(Tag.tag_name == site_filter["tag"])
+		)
+		sites_query = sites_query.where(Site.name.isin(sites_with_tag))
+
+	sites = sites_query.run(as_dict=True)
 
 	for site in sites:
+		site.server_region_info = get_server_region_info(site)
+		site_plan_name = frappe.get_value("Site", site.name, "plan")
+		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.tags = frappe.get_all(
+			"Resource Tag",
+			{"parent": site.name},
+			pluck="tag_name",
+		)
 		if site.bench in benches_with_updates:
 			site.update_available = True
 
 	return sites
-
-
-@frappe.whitelist()
-def all(site_filter=""):
-	return get_sites(site_filter=site_filter)
-
-
-@frappe.whitelist()
-def recent_sites():
-	sites = get_sites()
-
-	site_names = [site.name for site in sites]
-	if not site_names:
-		return []
-	recents = sites_with_recent_activity(site_names)
-
-	return [site for site in sites if site.name in recents]
 
 
 @frappe.whitelist()
@@ -761,6 +787,26 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": team, "doctype_name": "Site"}, ["name", "tag"]
 		),
+		"info": {
+			"owner": frappe.db.get_value(
+				"User",
+				frappe.get_cached_doc("Team", site.team).user,
+				["first_name", "last_name", "user_image"],
+				as_dict=True,
+			),
+			"created_on": site.creation,
+			"last_deployed": (
+				frappe.db.get_all(
+					"Site Activity",
+					filters={"site": name, "action": "Update"},
+					order_by="creation desc",
+					limit=1,
+					pluck="creation",
+				)
+				or [None]
+			)[0],
+			"auto_updates_enabled": not site.skip_auto_updates,
+		},
 	}
 
 
@@ -840,38 +886,6 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 
 @frappe.whitelist()
 @protected("Site")
-def overview(name):
-	site = frappe.get_cached_doc("Site", name)
-	team = frappe.get_cached_doc("Team", site.team)
-
-	return {
-		"plan": current_plan(name),
-		"info": {
-			"owner": frappe.db.get_value(
-				"User",
-				team.user,
-				["first_name", "last_name", "user_image"],
-				as_dict=True,
-			),
-			"created_on": site.creation,
-			"last_deployed": (
-				frappe.db.get_all(
-					"Site Activity",
-					filters={"site": name, "action": "Update"},
-					order_by="creation desc",
-					limit=1,
-					pluck="creation",
-				)
-				or [None]
-			)[0],
-			"auto_updates_enabled": not site.skip_auto_updates,
-		},
-		"domains": domains(name),
-	}
-
-
-@frappe.whitelist()
-@protected("Site")
 def installed_apps(name):
 	site = frappe.get_cached_doc("Site", name)
 	return get_installed_apps(site)
@@ -902,6 +916,9 @@ def get_installed_apps(site):
 	for app in installed_bench_apps:
 		app_source = find(sources, lambda x: x.name == app.source)
 		app_source.hash = app.hash
+		app_source.commit_message = frappe.db.get_value(
+			"App Release", {"hash": app_source.hash}, "message"
+		)
 		app_tags = frappe.db.get_value(
 			"App Tag",
 			{
@@ -1051,6 +1068,7 @@ def current_plan(name):
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"database_access": plan.database_access if plan else None,
+		"monitor_access": plan.monitor_access if plan else None,
 		"usage_in_percent": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,
@@ -1376,15 +1394,18 @@ def site_config(name):
 def update_config(name, config):
 	config = frappe.parse_json(config)
 	config = [frappe._dict(c) for c in config]
-	blacklisted_keys = get_client_blacklisted_keys()
 
 	sanitized_config = []
 	for c in config:
-		if c.key in blacklisted_keys:
+		if c.key in get_client_blacklisted_keys():
 			continue
+		if frappe.db.exists("Site Config Key", c.key):
+			c.type = frappe.db.get_value("Site Config Key", c.key, "type")
 		if c.type == "Number":
 			c.value = flt(c.value)
-		elif c.type in ("JSON", "Boolean"):
+		elif c.type == "Boolean":
+			c.value = bool(c.value)
+		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		sanitized_config.append(c)
 

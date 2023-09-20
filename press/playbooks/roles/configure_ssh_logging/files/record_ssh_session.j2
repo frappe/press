@@ -1,0 +1,11 @@
+#Script to Record the User's Terminal Session
+
+if [ "x$session_record" = "x" ]
+then
+timestamp=`date "+%d_%m_%Y_%H_%M"`
+output=/var/log/ssh_sessions/session.$USER.$$.$timestamp
+session_record=started
+export session_record
+script -t -f -q 2>${output}.timing $output
+exit
+fi

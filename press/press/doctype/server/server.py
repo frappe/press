@@ -501,6 +501,23 @@ class BaseServer(Document):
 	def agent(self):
 		return Agent(self.name, server_type=self.doctype)
 
+	@frappe.whitelist()
+	def fetch_security_updates(self):
+		from press.press.doctype.security_update.security_update import SecurityUpdate
+
+		frappe.enqueue(SecurityUpdate.fetch_security_updates, server_obj=self)
+
+	@frappe.whitelist()
+	def configure_ssh_logging(self):
+		try:
+			ansible = Ansible(
+				playbook="configure_ssh_logging.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Set SSH Session Logging Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	def on_update(self):

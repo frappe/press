@@ -1,11 +1,17 @@
 <template>
 	<div>
-		<PageHeader title="Billing" subtitle="Manage your invoices and payments" />
-
-		<div class="space-y-5">
-			<AlertBillingInformation />
-			<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-				<AccountBillingUsage class="col-span-1 md:col-span-2" />
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<Breadcrumbs
+				:items="[{ label: 'Billing', route: { name: 'BillingScreen' } }]"
+			>
+			</Breadcrumbs>
+		</header>
+		<div class="p-5">
+			<div class="mx-auto max-w-4xl space-y-5">
+				<AlertBillingInformation />
+				<AccountBillingUsage />
 				<AccountBillingDetails />
 				<AccountBillingCards />
 				<AccountBillingPayments
@@ -26,11 +32,10 @@ import AccountBillingCards from './AccountBillingCards.vue';
 import AccountBillingPayments from './AccountBillingPayments.vue';
 import AccountBillingCreditBalance from './AccountBillingCreditBalance.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
 import PartnerCustomers from './PartnerCustomers.vue';
 
 export default {
-	name: 'AccountBilling',
+	name: 'BillingScreen',
 	pageMeta() {
 		return {
 			title: 'Billing - Frappe Cloud'
@@ -44,7 +49,6 @@ export default {
 		AccountBillingPayments,
 		AccountBillingCreditBalance,
 		AlertBillingInformation,
-		PageHeader,
 		PartnerCustomers
 	}
 };

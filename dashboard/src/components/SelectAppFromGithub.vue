@@ -14,7 +14,7 @@
 
 				<Button
 					v-if="requiresReAuth"
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					@click="$resources.clearAccessToken.submit()"
 					:loading="$resources.clearAccessToken.loading"
@@ -27,7 +27,7 @@
 
 			<div v-if="needsAuthorization">
 				<Button
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					:link="options.installation_url + '?state=' + state"
 				>
@@ -68,9 +68,10 @@
 					</div>
 				</div>
 				<div>
-					<ErrorMessage class="mb-2" :message="$resourceErrors" />
+					<ErrorMessage class="mb-2" :message="$resources.validateApp.error" />
 					<Button
-						appearance="primary"
+						class="mt-2"
+						variant="solid"
 						v-if="selectedRepo && selectedBranch && !validatedApp"
 						@click="$resources.validateApp.submit()"
 						:loading="$resources.validateApp.loading"
@@ -102,7 +103,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.github.options',
+				url: 'press.api.github.options',
 				auto: true,
 				onError(message) {
 					if (message === 'Bad credentials') {
@@ -120,7 +121,7 @@ export default {
 			};
 
 			return {
-				method: 'press.api.github.repository',
+				url: 'press.api.github.repository',
 				params,
 				auto,
 				onSuccess(repository) {
@@ -136,7 +137,7 @@ export default {
 				branch: this.selectedBranch
 			};
 			return {
-				method: 'press.api.github.app',
+				url: 'press.api.github.app',
 				params,
 				onSuccess(data) {
 					if (data) {
@@ -158,7 +159,7 @@ export default {
 		},
 		clearAccessToken() {
 			return {
-				method: 'press.api.github.clear_token_and_get_installation_url',
+				url: 'press.api.github.clear_token_and_get_installation_url',
 				onSuccess(installation_url) {
 					window.location.href = installation_url + '?state=' + this.state;
 				}

@@ -7,9 +7,8 @@
 			Name your server based on its purpose
 		</p>
 		<div class="space-y-2">
-			<Input
+			<FormControl
 				class="z-10 w-full rounded-r-none"
-				type="text"
 				:value="title"
 				@change="titleChange"
 				placeholder="AcmeCorp Production Server"
@@ -19,11 +18,10 @@
 			<h2 class="text-lg font-semibold">Add Domain</h2>
 
 			<p class="text-base text-gray-700">Add Domain pointing to Server</p>
-			<Input
+			<FormControl
 				class="z-10 w-full rounded-r-none"
-				type="text"
 				:value="domain"
-				@change="$emit('update:domain', $event)"
+				@change="$emit('update:domain', $event.target.value)"
 				placeholder="abc.example.com"
 			/>
 		</div>
@@ -42,7 +40,7 @@ export default {
 	},
 	methods: {
 		async titleChange(e) {
-			let title = e;
+			let title = e.target.value;
 			this.$emit('update:title', title);
 			let error = this.validateTitle(title);
 			this.errorMessage = error;

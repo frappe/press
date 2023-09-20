@@ -1,11 +1,21 @@
 <template>
 	<Dialog
-		:options="{ title: 'Change Payment Mode' }"
+		:options="{
+			title: 'Change Payment Mode',
+			actions: [
+				{
+					label: 'Change',
+					variant: 'solid',
+					loading: $resources.changePaymentMode.loading,
+					onClick: () => $resources.changePaymentMode.submit()
+				}
+			]
+		}"
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<template v-slot:body-content>
-			<Input
+			<FormControl
 				label="Select Payment Mode"
 				type="select"
 				:options="paymentModeOptions"
@@ -26,17 +36,6 @@
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
 			/>
-		</template>
-
-		<template #actions>
-			<Button
-				appearance="primary"
-				class="mt-2"
-				@click="$resources.changePaymentMode.submit()"
-				:loading="$resources.changePaymentMode.loading"
-			>
-				Change
-			</Button>
 		</template>
 	</Dialog>
 </template>
@@ -65,7 +64,7 @@ export default {
 	resources: {
 		changePaymentMode() {
 			return {
-				method: 'press.api.billing.change_payment_mode',
+				url: 'press.api.billing.change_payment_mode',
 				params: {
 					mode: this.paymentMode,
 					partner: this.selectedPartner

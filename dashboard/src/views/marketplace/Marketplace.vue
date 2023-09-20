@@ -1,19 +1,26 @@
 <template>
 	<div>
-		<PageHeader title="Apps" subtitle="Manage your marketplace apps">
-			<template v-slot:actions>
-				<Button
-					appearance="primary"
-					iconLeft="plus"
-					@click="
-						!$resources.appOptions.data ? $resources.appOptions.fetch() : null;
-						showAddAppDialog = true;
-					"
-				>
-					New
-				</Button>
-			</template>
-		</PageHeader>
+		<header
+			class="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-5 py-2.5"
+		>
+			<Breadcrumbs :items="[{ label: 'Apps', route: '/marketplace' }]">
+				<template #actions>
+					<Button
+						variant="solid"
+						icon-left="plus"
+						label="New"
+						class="ml-2"
+						@click="
+							!$resources.appOptions.data
+								? $resources.appOptions.fetch()
+								: null;
+							showAddAppDialog = true;
+						"
+					/>
+				</template>
+			</Breadcrumbs>
+		</header>
+		<SectionHeader class="mx-5 mt-6" heading="Apps" />
 
 		<Dialog
 			:options="{
@@ -34,7 +41,10 @@
 				/>
 				<p v-else class="text-base">No app sources available.</p>
 
-				<ErrorMessage class="mt-2" :message="$resourceErrors" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.addMarketplaceApp.error"
+				/>
 
 				<p class="mt-4 text-base" @click="showAddAppDialog = false">
 					Don't find your app here?
@@ -43,8 +53,8 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
-					class="ml-2"
+					variant="solid"
+					class="ml-2 w-full"
 					v-if="selectedApp"
 					:loading="$resources.addMarketplaceApp.loading"
 					@click="
@@ -59,7 +69,7 @@
 			</template>
 		</Dialog>
 
-		<Tabs class="pb-32" :tabs="tabs">
+		<Tabs class="mx-5 mt-3 pb-32" :tabs="tabs">
 			<router-view v-if="$account.team"></router-view>
 		</Tabs>
 	</div>
@@ -68,7 +78,6 @@
 <script>
 import Tabs from '@/components/Tabs.vue';
 import AppSourceSelector from '@/components/AppSourceSelector.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
 
 export default {
 	name: 'Marketplace',
@@ -79,8 +88,7 @@ export default {
 	},
 	components: {
 		Tabs,
-		AppSourceSelector,
-		PageHeader
+		AppSourceSelector
 	},
 	data: () => ({
 		tabs: [
@@ -94,12 +102,12 @@ export default {
 	resources: {
 		appOptions() {
 			return {
-				method: 'press.api.marketplace.options_for_marketplace_app'
+				url: 'press.api.marketplace.options_for_marketplace_app'
 			};
 		},
 		addMarketplaceApp() {
 			return {
-				method: 'press.api.marketplace.add_app',
+				url: 'press.api.marketplace.add_app',
 				onSuccess() {
 					this.showAddAppDialog = false;
 					window.location.reload();

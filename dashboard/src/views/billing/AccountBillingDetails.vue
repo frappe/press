@@ -4,7 +4,7 @@
 		subtitle="Your billing details are shown in the monthly invoice"
 	>
 		<template #actions>
-			<Button @click="editBillingDetails = true">Change</Button>
+			<Button @click="editBillingDetails = true">Update</Button>
 		</template>
 		<UpdateBillingDetails
 			v-model="editBillingDetails"

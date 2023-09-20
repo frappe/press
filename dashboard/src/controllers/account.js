@@ -10,6 +10,17 @@ export default class Account {
 		this.onboarding = null;
 		this.balance = 0;
 		this.feature_flags = {};
+		this._fetchAccountPromise = null;
+	}
+
+	async fetchIfRequired() {
+		if (!this.user) {
+			if (this._fetchAccountPromise) {
+				await this._fetchAccountPromise;
+			} else {
+				await this.fetchAccount();
+			}
+		}
 	}
 
 	async fetchAccount() {
@@ -17,7 +28,8 @@ export default class Account {
 			return;
 		}
 		try {
-			let result = await call('press.api.account.get');
+			this._fetchAccountPromise = call('press.api.account.get');
+			let result = await this._fetchAccountPromise;
 			this.user = result.user;
 			this.ssh_key = result.ssh_key;
 			this.team = result.team;
@@ -30,8 +42,13 @@ export default class Account {
 			this.parent_team = result.parent_team;
 			this.partner_email = result.partner_email;
 			this.partner_billing_name = result.partner_billing_name;
+			this.saas_site_request = result.saas_site_request;
+			this.permissions = result.permissions;
+			this.number_of_sites = result.number_of_sites;
 		} catch (e) {
 			localStorage.removeItem('current_team');
+		} finally {
+			this._fetchAccountPromise = null;
 		}
 	}
 
@@ -77,6 +94,28 @@ export default class Account {
 		}
 		if (this.team.payment_mode == 'Prepaid Credits') {
 			return this.balance > 0;
+		}
+		return false;
+	}
+
+	hasPermission(docname, action = '', list = false) {
+		// logged in user is site owner or
+		// has no granular permissions set, so has all permissions
+		if (
+			this.team.user === this.user.name ||
+			Object.keys(this.permissions).length === 0
+		) {
+			return true;
+		}
+		// if any permission is set for resource, show list view
+		if (Object.keys(this.permissions).includes(docname) && list) {
+			return true;
+		}
+		// check for granular restricted access
+		if (Object.keys(this.permissions).includes(docname)) {
+			if (this.permissions[docname].includes(action)) {
+				return true;
+			}
 		}
 		return false;
 	}

@@ -1,5 +1,5 @@
 <script setup>
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 
 const props = defineProps({
 	payoutOrderName: {
@@ -8,8 +8,8 @@ const props = defineProps({
 	}
 });
 
-const payout = useResource({
-	method: 'press.api.marketplace.get_payout_details',
+const payout = createResource({
+	url: 'press.api.marketplace.get_payout_details',
 	auto: true,
 	params: {
 		name: props.payoutOrderName

@@ -456,6 +456,7 @@ def archive_obsolete_benches():
 		):
 			continue
 		# If this bench is already being archived then don't do anything.
+		frappe.db.commit()
 		active_archival_jobs = frappe.get_all(
 			"Agent Job",
 			{
@@ -470,12 +471,14 @@ def archive_obsolete_benches():
 		if active_archival_jobs:
 			continue
 
+		frappe.db.commit()
 		ongoing_jobs = frappe.db.exists(
 			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
 		)
 		if ongoing_jobs:
 			continue
 
+		frappe.db.commit()
 		active_site_updates = frappe.get_all(
 			"Site Update",
 			{
@@ -493,6 +496,7 @@ def archive_obsolete_benches():
 		if active_site_updates:
 			continue
 
+		frappe.db.commit()
 		# Don't try archiving benches with sites
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue

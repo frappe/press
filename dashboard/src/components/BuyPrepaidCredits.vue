@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<Input
+		<FormControl
 			v-if="step == 'Get Amount'"
 			:label="`Amount (Minimum Amount: ${minimumAmount})`"
 			v-model.number="creditsToBuy"
@@ -32,11 +32,11 @@
 			class="mt-2"
 			:message="$resources.createPaymentIntent.error || errorMessage"
 		/>
-		<div class="mt-2 flex w-full justify-between">
+		<div class="mt-4 flex w-full justify-between">
 			<StripeLogo />
 			<div v-if="step == 'Get Amount'">
 				<Button
-					appearance="primary"
+					variant="solid"
 					@click="$resources.createPaymentIntent.submit()"
 					:loading="$resources.createPaymentIntent.loading"
 				>
@@ -47,7 +47,7 @@
 				<Button @click="$emit('cancel')"> Cancel </Button>
 				<Button
 					class="ml-2"
-					appearance="primary"
+					variant="solid"
 					@click="onBuyClick"
 					:loading="paymentInProgress"
 				>
@@ -84,7 +84,7 @@ export default {
 	resources: {
 		createPaymentIntent() {
 			return {
-				method: 'press.api.billing.create_payment_intent_for_buying_credits',
+				url: 'press.api.billing.create_payment_intent_for_buying_credits',
 				params: {
 					amount: this.creditsToBuy
 				},

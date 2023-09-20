@@ -10,7 +10,7 @@
 					Select the Frappe version for your site
 				</p>
 				<div class="mt-4">
-					<Input
+					<FormControl
 						type="select"
 						v-model="selectedVersion"
 						:options="versionOptions"
@@ -30,7 +30,7 @@
 					/>
 				</div>
 			</div>
-			<div v-if="publicApps.length || privateApps.length">
+			<div v-if="publicApps.length > 1 || privateApps.length">
 				<h2 class="text-lg font-semibold">Select apps to install</h2>
 				<p class="text-base text-gray-700">
 					Choose apps to install on your site. You can select apps published on
@@ -61,7 +61,7 @@
 								<template #secondary-content>
 									<a
 										v-if="publicApp.marketplace"
-										class="inline-block text-sm leading-snug text-blue-600"
+										class="inline-block text-sm leading-snug text-gray-600"
 										:href="'/' + publicApp.marketplace.route"
 										target="_blank"
 										@click.stop
@@ -98,11 +98,12 @@
 				</div>
 			</div>
 			<div v-if="selectedApps.includes('erpnext')">
-				<Input
+				<FormControl
 					type="checkbox"
 					label="I am okay if my details are shared with local partner"
-					@change="val => $emit('update:shareDetailsConsent', val)"
-					:modelValue="shareDetailsConsent"
+					@change="
+						val => $emit('update:shareDetailsConsent', val.target.checked)
+					"
 				/>
 			</div>
 		</div>
@@ -207,7 +208,7 @@ export default {
 	resources: {
 		versions() {
 			return {
-				method: 'press.api.site.get_new_site_options',
+				url: 'press.api.site.get_new_site_options',
 				auto: true,
 				params: {
 					group: this.privateBench ? this.bench : ''

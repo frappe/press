@@ -2,9 +2,9 @@
 # For license information, please see license.txt
 
 import frappe
-import pytz
 from frappe.core.doctype.access_log.access_log import make_access_log
-from frappe.utils import convert_utc_to_timezone, get_datetime, get_system_timezone
+from frappe.utils import convert_utc_to_timezone, get_system_timezone
+from press.utils import convert_user_timezone_to_utc
 
 from press.agent import Agent
 
@@ -37,12 +37,6 @@ def execute(filters=None):
 	)
 	data = get_data(filters)
 	return COLUMNS, data
-
-
-def convert_user_timezone_to_utc(datetime_obj):
-	timezone = pytz.timezone(get_system_timezone())
-	datetime_obj = get_datetime(datetime_obj)
-	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
 
 
 def get_data(filters):

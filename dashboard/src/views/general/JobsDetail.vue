@@ -19,7 +19,7 @@ export default {
 	resources: {
 		job() {
 			return {
-				method: 'press.api.site.job',
+				url: 'press.api.site.job',
 				params: {
 					job: this.jobName
 				},

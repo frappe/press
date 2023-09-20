@@ -1,49 +1,52 @@
 <template>
 	<div>
-		<PageHeader title="Settings" :subtitle="pageSubtitle" />
-		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-			<AccountProfile />
-			<AccountTeam />
-			<AccountMembers />
-			<AccountReferral />
-			<AccountEmails />
-			<AccountAPI />
-			<AccountSSHKey />
-			<AccountPartner />
+		<header class="sticky top-0 z-10 border-b bg-white px-5 pt-2.5">
+			<Breadcrumbs
+				:items="[{ label: 'Settings', route: { name: 'SettingsScreen' } }]"
+			/>
+			<Tabs :tabs="tabs" class="-mb-px pl-0.5" />
+		</header>
+		<div class="mx-auto max-w-4xl py-5">
+			<router-view />
 		</div>
 	</div>
 </template>
 
 <script>
-import AccountProfile from './AccountProfile.vue';
-import AccountTeam from './AccountTeam.vue';
-import AccountMembers from './AccountMembers.vue';
-import AccountReferral from './AccountReferral.vue';
-import AccountEmails from './AccountEmails.vue';
-import AccountAPI from './AccountAPI.vue';
-import AccountSSHKey from './AccountSSHKey.vue';
-import PageHeader from '@/components/global/PageHeader.vue';
-import AccountPartner from './AccountPartner.vue';
+import PageHeader from '@/components/PageHeader.vue';
+import Tabs from '@/components/Tabs.vue';
 
 export default {
 	name: 'AccountSettings',
 	pageMeta() {
 		return {
-			title: 'Settings - Frappe Cloud'
+			title: 'Settings - Profile'
 		};
 	},
 	components: {
-		AccountProfile,
-		AccountTeam,
-		AccountMembers,
-		AccountReferral,
-		AccountEmails,
-		AccountAPI,
-		AccountSSHKey,
-		PageHeader,
-		AccountPartner
+		Tabs,
+		PageHeader
 	},
 	computed: {
+		tabs() {
+			let tabRoute = subRoute => `/settings/${subRoute}`;
+			let tabs = [
+				{ label: 'Profile', route: 'profile' },
+				{
+					label: 'Team',
+					route: 'team',
+					condition: () => $account.user.name === $account.team.user
+				},
+				{ label: 'Developer', route: 'developer' }
+			].filter(tab => (tab.condition ? tab.condition() : true));
+
+			return tabs.map(tab => {
+				return {
+					...tab,
+					route: tabRoute(tab.route)
+				};
+			});
+		},
 		pageSubtitle() {
 			const { user, team } = this.$account;
 			let subtitle = '';
@@ -52,8 +55,10 @@ export default {
 				return subtitle;
 			}
 
-			if (team.name != user.name) {
-				subtitle += `Team: ${team.name} &middot; Member: ${user.name} `;
+			if (team.name !== user.name) {
+				if (team.team_title) subtitle += `Team: ${team.team_title}`;
+				else subtitle += `Team: ${team.name}`;
+				subtitle += ` &middot; Member: ${user.name} `;
 			} else {
 				subtitle += `<span>${team.name}</span> `;
 			}

@@ -127,6 +127,10 @@ class Team(Document):
 			)
 		else:
 			team.parent_team = account_request.invited_by
+
+		if account_request.saas_product:
+			team.is_saas_user = 1
+
 		team.save(ignore_permissions=True)
 
 		team.create_stripe_customer()
@@ -277,7 +281,7 @@ class Team(Document):
 		self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
-		if self.via_erpnext:
+		if self.via_erpnext or self.is_saas_user:
 			# dont allocate free credits for signups via erpnext
 			# since they get a 14 day free trial site
 			return
@@ -575,7 +579,11 @@ class Team(Document):
 	def has_partner_account_on_erpnext_com(self):
 		if frappe.conf.developer_mode:
 			return False
-		erpnext_com = get_erpnext_com_connection()
+		try:
+			erpnext_com = get_erpnext_com_connection()
+		except Exception:
+			self.log_error("Cannot connect to erpnext.com to check partner account")
+			return False
 		res = erpnext_com.get_value(
 			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
 		)
@@ -585,7 +593,7 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account or self.parent_team or self.billing_team:
+		if self.free_account or self.parent_team or self.is_saas_user or self.billing_team:
 			return allow
 
 		if self.payment_mode == "Partner Credits":
@@ -616,6 +624,13 @@ class Team(Document):
 			frappe.db.exists(
 				"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
 			)
+		)
+
+	def has_billing_setup(self):
+		return bool(
+			self.payment_mode in ["Card", "Prepaid Credits"]
+			and (self.default_payment_method or self.get_balance() > 0)
+			and self.billing_address
 		)
 
 	def get_onboarding(self):
@@ -649,14 +664,35 @@ class Team(Document):
 			erpnext_site = None
 			erpnext_site_plan_set = True
 
-		return {
-			"account_created": True,
-			"billing_setup": billing_setup,
-			"erpnext_site": erpnext_site,
-			"erpnext_site_plan_set": erpnext_site_plan_set,
-			"site_created": site_created,
-			"complete": billing_setup and site_created and erpnext_site_plan_set,
-		}
+		return frappe._dict(
+			{
+				"account_created": True,
+				"billing_setup": billing_setup,
+				"erpnext_site": erpnext_site,
+				"erpnext_site_plan_set": erpnext_site_plan_set,
+				"site_created": site_created,
+				"complete": billing_setup and site_created and erpnext_site_plan_set,
+			}
+		)
+
+	def get_route_on_login(self):
+		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+			saas_product = frappe.db.get_value(
+				"SaaS Product Site Request",
+				{"team": self.name, "status": "Pending"},
+				"saas_product",
+			)
+			return f"/setup-site/{saas_product}"
+
+		return "/sites"
+
+	def get_pending_saas_site_request(self):
+		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+			return frappe.db.get_value(
+				"SaaS Product Site Request",
+				{"team": self.name, "status": "Pending"},
+				"saas_product",
+			)
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
@@ -735,7 +771,7 @@ class Team(Document):
 		)
 		payment_method = self.default_payment_method
 		last_4 = frappe.db.get_value("Stripe Payment Method", payment_method, "last_4")
-		account_update_link = frappe.utils.get_url("/dashboard/welcome")
+		account_update_link = frappe.utils.get_url("/dashboard")
 		subject = "Invoice Payment Failed for Frappe Cloud Subscription"
 
 		frappe.sendmail(
@@ -941,6 +977,7 @@ def validate_site_creation(doc, method):
 	# validate site creation for team
 	team = frappe.get_doc("Team", doc.team)
 	[allow_creation, why] = team.can_create_site()
+	print(allow_creation, why)
 	if not allow_creation:
 		frappe.throw(why)
 

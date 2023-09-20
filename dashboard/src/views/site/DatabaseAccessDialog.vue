@@ -17,15 +17,25 @@
 					</p>
 
 					<Button
-						class="mt-4"
-						appearance="primary"
+						class="mt-4 w-full"
+						variant="solid"
 						@click="showChangePlanDialog = true"
 						>Upgrade Site Plan</Button
 					>
 				</div>
 
 				<Dialog
-					:options="{ title: 'Upgrade Plan' }"
+					:options="{
+						title: 'Upgrade Plan',
+						actions: [
+							{
+								label: 'Submit',
+								variant: 'solid',
+								loading: $resources.changePlan.loading,
+								onClick: () => $resources.changePlan.submit()
+							}
+						]
+					}"
 					v-model="showChangePlanDialog"
 				>
 					<template v-slot:body-content>
@@ -35,17 +45,6 @@
 							v-model:selectedPlan="selectedPlan"
 						/>
 						<ErrorMessage class="mt-4" :message="$resources.changePlan.error" />
-					</template>
-					<template #actions>
-						<Button @click="showChangePlanDialog = false"> Cancel </Button>
-						<Button
-							class="ml-2"
-							appearance="primary"
-							:loading="$resources.changePlan.loading"
-							@click="$resources.changePlan.submit()"
-						>
-							Submit
-						</Button>
 					</template>
 				</Dialog>
 			</div>
@@ -78,7 +77,7 @@
 								Password: {{ databaseAccessInfo.credentials.password }}
 							</p>
 						</div>
-						<div class="pt-5 pb-2">
+						<div class="pb-2 pt-5">
 							<p class="mb-2 text-base font-semibold text-gray-700">
 								Using MariaDB Client
 							</p>
@@ -103,9 +102,7 @@
 					</div>
 				</div>
 
-				<ErrorMessage class="mt-3" :message="$resourceErrors || error" />
-
-				<div class="mt-2">
+				<div class="mt-4">
 					<div
 						v-if="
 							databaseAccessInfo &&
@@ -129,8 +126,9 @@
 						<ErrorMessage
 							class="mt-2"
 							:message="
-								enableReadWriteAccess &&
-								'Your credentials can be used to modify or wipe your database'
+								(enableReadWriteAccess &&
+									'Your credentials can be used to modify or wipe your database') ||
+								error
 							"
 						/>
 					</div>
@@ -143,7 +141,8 @@
 						:loading="
 							$resources.enableDatabaseAccess.loading || pollingAgentJob
 						"
-						appearance="primary"
+						variant="solid"
+						class="mt-2 w-full"
 						>Enable
 						{{ enableReadWriteAccess ? 'Read-Write' : 'Read-Only' }}
 						Access</Button
@@ -158,6 +157,7 @@
 						:loading="
 							$resources.disableDatabaseAccess.loading || pollingAgentJob
 						"
+						class="w-full"
 						>Disable Access</Button
 					>
 				</div>
@@ -169,6 +169,7 @@
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import SitePlansTable from '@/components/SitePlansTable.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	props: ['site', 'show'],
@@ -188,7 +189,7 @@ export default {
 	resources: {
 		fetchDatabaseAccessInfo() {
 			return {
-				method: 'press.api.site.get_database_access_info',
+				url: 'press.api.site.get_database_access_info',
 				params: {
 					name: this.site
 				},
@@ -197,7 +198,7 @@ export default {
 		},
 		enableDatabaseAccess() {
 			return {
-				method: 'press.api.site.enable_database_access',
+				url: 'press.api.site.enable_database_access',
 				params: {
 					name: this.site,
 					mode: this.enableReadWriteAccess ? 'read_write' : 'read_only'
@@ -209,7 +210,7 @@ export default {
 		},
 		disableDatabaseAccess() {
 			return {
-				method: 'press.api.site.disable_database_access',
+				url: 'press.api.site.disable_database_access',
 				params: {
 					name: this.site
 				},
@@ -220,23 +221,23 @@ export default {
 		},
 		plans() {
 			return {
-				method: 'press.api.site.get_plans',
+				url: 'press.api.site.get_plans',
 				params: {
 					name: this.site
 				},
-				default: [],
+				initialData: [],
 				auto: true
 			};
 		},
 		changePlan() {
 			return {
-				method: 'press.api.site.change_plan',
+				url: 'press.api.site.change_plan',
 				params: {
 					name: this.site,
 					plan: this.selectedPlan?.name
 				},
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: `Plan changed to ${this.selectedPlan.plan_title}`,
 						icon: 'check',
 						color: 'green'
@@ -248,7 +249,7 @@ export default {
 				},
 				onError(error) {
 					this.showChangePlanDialog = false;
-					this.$notify({
+					notify({
 						title: error,
 						icon: 'x',
 						color: 'red'

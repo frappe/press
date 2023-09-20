@@ -28,6 +28,7 @@ class SecurityUpdateCheck(Document):
 				server=_server,
 				user=_server.ssh_user or "root",
 				port=_server.ssh_port or 22,
+				variables={"validate_pending_security_updates": True},
 			)
 			self.reload()
 			self.play = ansible.play

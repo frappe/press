@@ -1,5 +1,5 @@
 <template>
-	<Card title="Site info" subtitle="General information about your site">
+	<Card title="Site Info" subtitle="General information about your site">
 		<div class="divide-y">
 			<div class="flex items-center py-3">
 				<Avatar
@@ -74,7 +74,7 @@
 					<Button
 						@click="onActivateClick"
 						class="shrink-0"
-						:appearance="site.status == 'Broken' ? 'primary' : 'secondary'"
+						:variant="site.status === 'Broken' ? 'solid' : 'subtle'"
 					>
 						Activate Site
 					</Button>
@@ -88,9 +88,21 @@
 			>
 				<template v-slot:actions>
 					<SiteDrop :site="site" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Site</span>
-						</Button>
+						<Tooltip
+							:text="
+								!permissions.drop
+									? `You don't have enough permissions to perform this action`
+									: 'Drop Site'
+							"
+						>
+							<Button
+								theme="red"
+								:disabled="!permissions.drop"
+								@click="showDialog"
+							>
+								Drop Site
+							</Button>
+						</Tooltip>
 					</SiteDrop>
 				</template>
 			</ListItem>
@@ -99,6 +111,8 @@
 </template>
 <script>
 import SiteDrop from './SiteDrop.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'SiteOverviewInfo',
 	props: ['site', 'info'],
@@ -135,7 +149,7 @@ export default {
 					It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
 				`,
 				actionLabel: 'Deactivate',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: () => this.deactivate()
 			});
 		},
@@ -145,7 +159,6 @@ export default {
 				message: `Are you sure you want to activate this site?
 				<br><br><strong>Note: Use this as last resort if site is broken and inaccessible</strong>`,
 				actionLabel: 'Activate',
-				actionType: 'primary',
 				action: () => this.activate()
 			});
 		},
@@ -160,13 +173,23 @@ export default {
 			this.$call('press.api.site.activate', {
 				name: this.site.name
 			});
-			this.$notify({
+			notify({
 				title: 'Site activated successfully!',
 				message: 'You can now access your site',
 				icon: 'check',
 				color: 'green'
 			});
 			setTimeout(() => window.location.reload(), 1000);
+		}
+	},
+	computed: {
+		permissions() {
+			return {
+				drop: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.archive'
+				)
+			};
 		}
 	}
 };

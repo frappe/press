@@ -42,7 +42,7 @@ def suspend_sites_and_send_email(team):
 	# send email
 	if sites:
 		email = team.user
-		account_update_link = frappe.utils.get_url("/dashboard/welcome")
+		account_update_link = frappe.utils.get_url("/dashboard")
 		frappe.sendmail(
 			recipients=email,
 			subject="Your sites have been suspended on Frappe Cloud",

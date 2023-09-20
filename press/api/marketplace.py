@@ -296,16 +296,18 @@ def update_app_description(name: str, description: str) -> None:
 
 
 @frappe.whitelist()
-def releases(app: str, source: str, start: int = 0) -> List[Dict]:
+def releases(
+	filters=None, order_by=None, limit_start=None, limit_page_length=None
+) -> List[Dict]:
 	"""Return list of App Releases for this `app` and `source` in order of creation time"""
 
 	app_releases = frappe.get_all(
 		"App Release",
-		filters={"app": app, "source": source},
+		filters=filters,
 		fields="*",
-		order_by="creation desc",
-		start=start,
-		limit=15,
+		order_by=order_by or "creation desc",
+		start=limit_start,
+		limit=limit_page_length,
 	)
 
 	for release in app_releases:
@@ -332,7 +334,7 @@ def get_app_source(name: str) -> AppSource:
 
 
 @frappe.whitelist()
-def latest_approved_release(source: str) -> AppRelease:
+def latest_approved_release(source: None | str) -> AppRelease:
 	"""Return the latest app release with `approved` status"""
 	return get_last_doc("App Release", {"source": source, "status": "Approved"})
 

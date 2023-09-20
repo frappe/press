@@ -6,16 +6,16 @@
 				Choose a bench where you want to install the code server.
 			</p>
 		</div>
-		<Input
+		<FormControl
 			class="my-2"
 			placeholder="Search for Bench"
-			v-on:input="e => updateSearchTerm(e)"
+			v-on:input="e => updateSearchTerm(e.data)"
 		/>
 		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<div
 				v-for="group in filteredOptions"
 				v-on:click="selectGroup(group)"
-				class="border rounded-md m-2 px-6 py-5 text-lg shadow-sm hover:shadow-md hover:cursor-pointer"
+				class="m-2 rounded-md border px-6 py-5 text-lg shadow-sm hover:cursor-pointer hover:shadow-md"
 				:class="[
 					modelValue && modelValue.name == group.name
 						? 'relative ring-2 ring-inset ring-blue-500'
@@ -43,7 +43,7 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.spaces.code_server_group_options',
+				url: 'press.api.spaces.code_server_group_options',
 				auto: true,
 				onSuccess(data) {
 					this.fuse = new Fuse(data, {

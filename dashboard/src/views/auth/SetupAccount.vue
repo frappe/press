@@ -12,17 +12,15 @@
 			@submit.prevent="$resources.setupAccount.submit()"
 		>
 			<div class="space-y-4">
-				<Input
+				<FormControl
 					v-if="oauthSignup == 0"
 					label="Email"
-					input-class="pointer-events-none"
 					type="text"
 					:modelValue="email"
-					autocomplete="off"
 					disabled
 				/>
 				<template v-if="oauthSignup == 0">
-					<Input
+					<FormControl
 						label="First Name"
 						type="text"
 						v-model="firstName"
@@ -30,7 +28,7 @@
 						autocomplete="given-name"
 						required
 					/>
-					<Input
+					<FormControl
 						label="Last Name"
 						type="text"
 						v-model="lastName"
@@ -38,7 +36,7 @@
 						autocomplete="family-name"
 						required
 					/>
-					<Input
+					<FormControl
 						label="Password"
 						type="password"
 						v-model="password"
@@ -47,48 +45,45 @@
 						required
 					/>
 				</template>
-				<Input
+				<FormControl
 					type="select"
 					:options="countries"
 					v-if="!isInvitation"
 					label="Country"
 					v-model="country"
-					:value="country"
 					required
 				/>
-				<div class="mt-4 flex">
-					<input
-						type="checkbox"
-						v-model="termsAccepted"
-						class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-						required
-					/>
-					<label class="ml-1 text-sm text-gray-900">
-						By clicking on <span v-if="!isInvitation">Submit</span
-						><span v-else>Accept</span>, you accept our
-						<a href="https://frappecloud.com/terms" class="text-blue-600"
-							>Terms of Service</a
+				<Form
+					v-if="signupFields.length > 0"
+					:fields="signupFields"
+					v-model="signupValues"
+				/>
+				<div class="mt-4 flex items-start">
+					<label class="text-base text-gray-900">
+						<FormControl type="checkbox" v-model="termsAccepted" />
+						By clicking on
+						<span>{{ isInvitation ? 'Accept' : 'Submit' }}</span
+						>, you accept our
+						<Link href="https://frappecloud.com/terms" target="_blank"
+							>Terms of Service </Link
 						>,
-						<a href="https://frappecloud.com/privacy" class="text-blue-600"
-							>Privacy Policy</a
-						>
+						<Link href="https://frappecloud.com/privacy" target="_blank">
+							Privacy Policy
+						</Link>
 						&#38;
-						<a
-							href="https://frappecloud.com/cookie-policy"
-							class="text-blue-600"
-							>Cookie Policy</a
-						>
+						<Link href="https://frappecloud.com/cookie-policy" target="_blank">
+							Cookie Policy
+						</Link>
 					</label>
 				</div>
 			</div>
-			<ErrorMessage class="mt-4" :message="$resourceErrors" />
+			<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
 			<Button
 				class="mt-4"
-				appearance="primary"
+				variant="solid"
 				:loading="$resources.setupAccount.loading"
 			>
-				<span v-if="!isInvitation"> Submit </span>
-				<span v-else> Accept </span>
+				{{ isInvitation ? 'Accept' : 'Create account' }}
 			</Button>
 		</form>
 	</LoginBox>
@@ -96,7 +91,7 @@
 		class="mt-20 px-6 text-center"
 		v-else-if="!$resources.validateRequestKey.loading && !email"
 	>
-		Account Key <strong>{{ requestKey }}</strong> is invalid or expired.
+		Verification link is invalid or expired.
 		<Link to="/signup">Sign up</Link>
 		for a new account.
 	</div>
@@ -105,11 +100,15 @@
 
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
+import Link from '@/components/Link.vue';
+import Form from '@/components/Form.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
-		LoginBox
+		LoginBox,
+		Link,
+		Form
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {
@@ -126,15 +125,20 @@ export default {
 			country: null,
 			termsAccepted: false,
 			invitedByParentTeam: false,
-			countries: []
+			countries: [],
+			saasProduct: null,
+			signupValues: {}
 		};
 	},
 	resources: {
 		validateRequestKey() {
 			return {
-				method: 'press.api.account.get_email_from_request_key',
+				url: 'press.api.account.validate_request_key',
 				params: {
-					key: this.requestKey
+					key: this.requestKey,
+					timezone: window.Intl
+						? Intl.DateTimeFormat().resolvedOptions().timeZone
+						: null
 				},
 				auto: true,
 				onSuccess(res) {
@@ -149,13 +153,14 @@ export default {
 						this.invitedByParentTeam = res.invited_by_parent_team;
 						this.oauthSignup = res.oauth_signup;
 						this.countries = res.countries;
+						this.saasProduct = res.saas_product;
 					}
 				}
 			};
 		},
 		setupAccount() {
 			return {
-				method: 'press.api.account.setup_account',
+				url: 'press.api.account.setup_account',
 				params: {
 					key: this.requestKey,
 					password: this.password,
@@ -166,7 +171,8 @@ export default {
 					user_exists: this.userExists,
 					invited_by_parent_team: this.invitedByParentTeam,
 					accepted_user_terms: this.termsAccepted,
-					oauth_signup: this.oauthSignup
+					oauth_signup: this.oauthSignup,
+					signup_values: this.signupValues
 				},
 				onSuccess(res) {
 					if (res) {
@@ -183,6 +189,21 @@ export default {
 			show = !this.userExists;
 			show = this.oauthSignup == 0;
 			return show;
+		}
+	},
+	computed: {
+		signupFields() {
+			let fields = this.saasProduct?.signup_fields || [];
+			return fields.map(df => {
+				if (df.fieldtype == 'Select') {
+					df.options = df.options
+						.split('\n')
+						.map(o => o.trim())
+						.filter(Boolean);
+				}
+				df.required = true;
+				return df;
+			});
 		}
 	}
 };

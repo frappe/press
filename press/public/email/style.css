@@ -72,7 +72,7 @@
 	}
 
 	a {
-		@apply text-blue-600 underline;
+		@apply text-gray-800 underline;
 	}
 }
 
@@ -81,15 +81,15 @@
 }
 
 .button-primary {
-	@apply bg-blue-500 rounded-lg;
+	@apply bg-gray-900 rounded-lg;
 }
 
 .button a {
-	@apply block px-4 py-2 text-base font-semibold leading-normal text-gray-900 no-underline bg-gray-200 rounded-lg;
+	@apply block px-2 py-1 text-base leading-normal text-gray-900 no-underline bg-gray-200 rounded-lg;
 }
 
 .button-primary a {
-	@apply text-white bg-blue-500 rounded-lg;
+	@apply text-white bg-gray-900 rounded-lg;
 }
 
 /* purgecss end ignore */
