@@ -12,7 +12,7 @@
 			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
-			<TableHeader v-if="rows.length !== 0" class="hidden sm:grid mb-4" />
+			<TableHeader v-if="rows.length !== 0" class="mb-4 hidden sm:grid" />
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
@@ -22,7 +22,7 @@
 			<div
 				v-for="(group, i) in rows"
 				:key="group.name"
-				class="border rounded mb-4"
+				class="mb-4 rounded border"
 			>
 				<div
 					class="flex w-full items-center justify-between rounded-t bg-gray-50 px-3 py-2 text-base"
@@ -299,7 +299,7 @@ export default {
 			return {
 				url: 'press.api.bench.restart',
 				params: {
-					bench: this.versions[this.selectedVersionIndex]?.name
+					name: this.versions[this.selectedVersionIndex]?.name
 				}
 			};
 		},
@@ -307,7 +307,7 @@ export default {
 			return {
 				url: 'press.api.bench.update',
 				params: {
-					bench: this.versions[this.selectedVersionIndex]?.name
+					name: this.versions[this.selectedVersionIndex]?.name
 				},
 				onSuccess() {
 					notify({

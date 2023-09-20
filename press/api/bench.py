@@ -802,20 +802,20 @@ def archive(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def restart(bench):
+def restart(name):
 	frappe.get_doc("Bench", bench).restart()
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update(bench):
+def update(name):
 	frappe.get_doc("Bench", bench).update_all_sites()
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update_all_sites(bench_name):
-	benches = frappe.get_all("Bench", {"group": bench_name, "status": "Active"})
+def update_all_sites(name):
+	benches = frappe.get_all("Bench", {"group": name, "status": "Active"})
 	for bench in benches:
 		frappe.get_cached_doc("Bench", bench).update_all_sites()
 
