@@ -66,7 +66,7 @@ import CardWithDetails from '@/components/CardWithDetails.vue';
 
 export default {
 	name: 'BenchDeploys',
-	props: ['bench', 'candidateName'],
+	props: ['bench', 'benchName', 'candidateName'],
 	components: {
 		CardWithDetails,
 		StepsDetail
@@ -78,7 +78,7 @@ export default {
 				doctype: 'Deploy Candidate',
 				url: 'press.api.bench.candidates',
 				filters: {
-					group: this.bench?.name
+					group: this.benchName
 				},
 				start: 0,
 				auto: true,
