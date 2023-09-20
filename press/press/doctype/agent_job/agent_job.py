@@ -45,9 +45,7 @@ class AgentJob(Document):
 			self.status = "Failure"
 			self.save()
 			process_job_updates(self.name)
-			frappe.db.set_value(
-				"Agent Job", self.name, "status", "Undelivered", for_update=False
-			)
+			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
