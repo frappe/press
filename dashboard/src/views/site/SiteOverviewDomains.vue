@@ -62,13 +62,7 @@
 							>
 								Retry
 							</Button>
-							<Button
-								v-if="
-									$resources.removeDomain.loading &&
-									$resources.removeDomain.currentParams.domain == d.domain
-								"
-								:loading="true"
-							>
+							<Button v-if="$resources.removeDomain.loading" :loading="true">
 								Removing domain
 							</Button>
 							<Dropdown v-else :options="actionItems(d)">
