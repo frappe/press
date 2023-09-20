@@ -453,7 +453,8 @@ const routes = [
 	},
 	{
 		name: 'BillingScreen',
-		path: '/billing',
+		path: '/billing/:invoiceName?',
+		props: true,
 		component: () => import('../views/billing/AccountBilling.vue')
 	},
 	{
