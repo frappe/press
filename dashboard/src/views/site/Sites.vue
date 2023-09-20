@@ -192,7 +192,11 @@
 										class="w-full text-right"
 										v-else-if="column.name == 'actions'"
 									>
-										<Dropdown @click.prevent :options="dropdownItems(row)">
+										<Dropdown
+											v-if="['Active', 'Updating'].includes(row.status)"
+											@click.prevent
+											:options="dropdownItems(row)"
+										>
 											<template v-slot="{ open }">
 												<Button
 													:variant="open ? 'subtle' : 'ghost'"
@@ -428,9 +432,7 @@ export default {
 					label: 'Visit Site',
 					onClick: () => {
 						window.open(`https://${site.name}`, '_blank');
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				},
 				{
 					label: 'Login As Admin',
@@ -443,11 +445,9 @@ export default {
 
 						this.siteForLogin = site.name;
 						this.showReasonForAdminLoginDialog = true;
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				}
-			].filter(item => item.condition());
+			];
 		},
 		proceedWithLoginAsAdmin() {
 			this.errorMessage = '';
