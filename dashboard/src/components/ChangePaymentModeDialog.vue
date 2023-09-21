@@ -25,7 +25,7 @@
 				{{ paymentModeDescription }}
 			</p>
 
-			<Input
+			<FormControl
 				v-if="paymentMode == 'Paid By Partner'"
 				label="Select Frappe Partner"
 				type="select"
@@ -92,9 +92,8 @@ export default {
 		},
 		getPartners() {
 			return {
-				method: 'press.api.account.get_frappe_partners',
+				url: 'press.api.account.get_frappe_partners',
 				auto: true,
-				cache: ['partners'],
 				onSuccess(data) {
 					this.partners = data.map(d => {
 						return {

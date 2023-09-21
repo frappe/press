@@ -2,6 +2,7 @@
 	<Card
 		title="Frappe Partner"
 		subtitle="Frappe Partner associated with your account"
+		v-if="!$account.team.erpnext_partner"
 	>
 		<div>
 			<ListItem
@@ -24,7 +25,7 @@
 			v-model="showSelectPartnerDialog"
 		>
 			<template v-slot:body-content>
-				<Input
+				<FormControl
 					label="Select Frappe Partner"
 					type="select"
 					:options="partners"
@@ -34,7 +35,7 @@
 			</template>
 			<template #actions>
 				<Button
-					appearance="primary"
+					variant="solid"
 					:loading="$resources.selectPartner.loading"
 					loadingText="Saving..."
 					@click="$resources.selectPartner.submit()"
@@ -59,7 +60,7 @@ export default {
 	resources: {
 		selectPartner() {
 			return {
-				method: 'press.api.account.add_partner',
+				url: 'press.api.account.add_partner',
 				params: {
 					partner_email: this.selectedPartner
 				},
@@ -70,9 +71,8 @@ export default {
 		},
 		getPartners() {
 			return {
-				method: 'press.api.account.get_frappe_partners',
+				url: 'press.api.account.get_frappe_partners',
 				auto: true,
-				cache: ['partners'],
 				onSuccess(data) {
 					this.partners = data.map(d => {
 						return {
