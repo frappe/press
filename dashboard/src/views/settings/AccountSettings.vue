@@ -35,7 +35,9 @@ export default {
 				{
 					label: 'Team',
 					route: 'team',
-					condition: () => $account.user.name === $account.team.user
+					condition: () =>
+						$account.user.name === $account.team.user ||
+						$account.user.user_type === 'System User'
 				},
 				{ label: 'Developer', route: 'developer' }
 			].filter(tab => (tab.condition ? tab.condition() : true));
