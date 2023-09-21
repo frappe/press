@@ -19,7 +19,6 @@
 					:invoice-name="invoiceName"
 				/>
 				<AccountBillingCreditBalance class="col-span-1 md:col-span-2" />
-				<PartnerCustomers class="col-span-1 md:col-span-2" />
 			</div>
 		</div>
 	</div>
@@ -32,7 +31,6 @@ import AccountBillingCards from './AccountBillingCards.vue';
 import AccountBillingPayments from './AccountBillingPayments.vue';
 import AccountBillingCreditBalance from './AccountBillingCreditBalance.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import PartnerCustomers from './PartnerCustomers.vue';
 
 export default {
 	name: 'BillingScreen',
@@ -48,8 +46,7 @@ export default {
 		AccountBillingCards,
 		AccountBillingPayments,
 		AccountBillingCreditBalance,
-		AlertBillingInformation,
-		PartnerCustomers
+		AlertBillingInformation
 	}
 };
 </script>

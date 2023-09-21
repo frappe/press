@@ -3,7 +3,6 @@
 		<AccountProfile />
 		<AccountEmails />
 		<AccountReferral />
-		<AccountPartner />
 	</div>
 </template>
 
@@ -11,7 +10,6 @@
 import AccountProfile from './AccountProfile.vue';
 import AccountReferral from './AccountReferral.vue';
 import AccountEmails from './AccountEmails.vue';
-import AccountPartner from './AccountPartner.vue';
 
 export default {
 	name: 'AccountSettings',
@@ -23,8 +21,7 @@ export default {
 	components: {
 		AccountProfile,
 		AccountReferral,
-		AccountEmails,
-		AccountPartner
+		AccountEmails
 	}
 };
 </script>

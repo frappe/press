@@ -1,8 +1,8 @@
 <template>
-	<div class="space-y-5">
+	<div class="mx-auto max-w-4xl space-y-5">
 		<AccountPartner />
 		<PartnerReferral />
-		<PartnerCustomers />
+		<PartnerCustomers class="col-span-1 md:col-span-2" />
 	</div>
 </template>
 
