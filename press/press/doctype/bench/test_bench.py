@@ -134,3 +134,29 @@ class TestBench(unittest.TestCase):
 		bench.reload()
 		self.assertEqual(bench.gunicorn_workers, 8)
 		self.assertEqual(bench.background_workers, 4)
+		frappe.db.set_value("Server", bench.server, "ram", 16000)
+		scale_workers()
+		bench.reload()
+		self.assertGreater(bench.gunicorn_workers, 8)
+		self.assertGreater(bench.background_workers, 4)
+
+	def test_auto_scale_uses_release_groups_min_workers_respecting_ram_available_on_server(
+		self,
+	):
+		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		group = frappe.get_doc("Release Group", bench.group)
+		group.db_set("min_gunicorn_workers", 48)
+		group.db_set("min_background_workers", 8)
+		scale_workers()
+		bench.reload()
+		self.assertEqual(bench.gunicorn_workers, 48)
+		bench2 = create_test_bench(
+			group=frappe.get_doc("Release Group", bench.group), server=bench.server
+		)
+		self._create_bench_with_n_sites_with_cpu_time(3, 5, bench2.name)
+		scale_workers()
+		bench.reload()
+		bench2.reload()
+		# assuming max gunicorn workers for default server (16gb RAM) is 52
+		self.assertGreaterEqual(bench.gunicorn_workers, 48)
+		self.assertGreaterEqual(bench2.gunicorn_workers, 48)

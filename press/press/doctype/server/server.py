@@ -913,13 +913,21 @@ class Server(BaseServer):
 			try:
 				bench = frappe.get_doc("Bench", bench_name, for_update=True)
 				try:
+					maximum = frappe.get_value("Release Group", bench.group, "max_gunicorn_workers")
+					minimum = frappe.get_value("Release Group", bench.group, "min_gunicorn_workers")
 					gunicorn_workers = min(
-						frappe.get_value("Release Group", bench.group, "max_gunicorn_workers") or 24,
-						max(2, round(workload / total_workload * max_gunicorn_workers)),  # min 2 max 24
+						maximum or 24,
+						max(
+							minimum or 2, round(workload / total_workload * max_gunicorn_workers)
+						),  # min 2 max 24
 					)
+					maximum = frappe.get_value("Release Group", bench.group, "max_background_workers")
+					minimum = frappe.get_value("Release Group", bench.group, "min_background_workers")
 					background_workers = min(
-						frappe.get_value("Release Group", bench.group, "max_background_workers") or 8,
-						max(1, round(workload / total_workload * max_bg_workers)),  # min 1 max 8
+						maximum or 8,
+						max(
+							minimum or 1, round(workload / total_workload * max_bg_workers)
+						),  # min 1 max 8
 					)
 				except ZeroDivisionError:  # when total_workload is 0
 					gunicorn_workers = 2
