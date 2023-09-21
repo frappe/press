@@ -26,8 +26,12 @@
   "common_site_config",
   "column_break_14",
   "bench_config",
-  "gunicorn_workers",
-  "background_workers",
+  "automatic_worker_allocation_section",
+  "min_gunicorn_workers",
+  "min_background_workers",
+  "column_break_njfg",
+  "max_gunicorn_workers",
+  "max_background_workers",
   "dependencies_tab",
   "dependencies",
   "last_dependency_update",
@@ -256,26 +260,47 @@
    "options": "Common Site Config"
   },
   {
-   "description": "Upper limit on workers. Considered by server-wide auto-scale",
-   "fieldname": "gunicorn_workers",
-   "fieldtype": "Int",
-   "label": "Gunicorn Workers",
-   "non_negative": 1
-  },
-  {
-   "fieldname": "background_workers",
-   "fieldtype": "Int",
-   "label": "Background Workers"
-  },
-  {
    "fieldname": "last_dependency_update",
    "fieldtype": "Datetime",
    "label": "Last Dependency Update",
    "read_only": 1
+  },
+  {
+   "fieldname": "max_gunicorn_workers",
+   "fieldtype": "Int",
+   "label": "Max Gunicorn Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "max_background_workers",
+   "fieldtype": "Int",
+   "label": "Max Background Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "automatic_worker_allocation_section",
+   "fieldtype": "Section Break",
+   "label": "Automatic Worker Allocation"
+  },
+  {
+   "fieldname": "min_gunicorn_workers",
+   "fieldtype": "Int",
+   "label": "Min Gunicorn Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "min_background_workers",
+   "fieldtype": "Int",
+   "label": "Min Background Workers",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "column_break_njfg",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2023-09-01 08:32:18.643025",
+ "modified": "2023-09-21 09:17:28.956768",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
