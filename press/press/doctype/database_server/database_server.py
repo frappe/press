@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from typing import Any
 import frappe
 from frappe.core.doctype.version.version import get_diff
 
@@ -160,6 +161,34 @@ class DatabaseServer(BaseServer):
 		play = ansible.run()
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
+
+	def add_variable(
+		self,
+		variable: str,
+		value_type: str,
+		value: Any,
+		skip: bool = False,
+		persist: bool = True,
+	):
+		"""Add or update MariaDB variable on the server"""
+		existing = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == variable
+		)
+		if existing:
+			existing.set(value_type, value)
+			existing.set("skip", skip)
+			existing.set("persist", persist)
+		else:
+			self.append(
+				"mariadb_system_variables",
+				{
+					"mariadb_variable": variable,
+					value_type: value,
+					"skip": skip,
+					"persist": persist,
+				},
+			)
+		self.save()
 
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
