@@ -160,7 +160,6 @@ import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'BenchesScreen',
@@ -203,12 +202,7 @@ export default {
 					this.bench_status,
 					this.bench_tag,
 					this.$account.team.name
-				],
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['title', 'tags']
-					});
-				}
+				]
 			};
 		},
 		benchTags: {
@@ -225,7 +219,9 @@ export default {
 				this.$account.hasPermission(bench.name, '', true)
 			);
 			if (this.searchTerm)
-				benches = this.fuse.search(this.searchTerm).map(result => result.item);
+				benches = benches.filter(bench =>
+					bench.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return benches.map(bench => ({
 				name: bench.title,
