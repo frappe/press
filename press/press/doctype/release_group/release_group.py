@@ -42,6 +42,7 @@ class ReleaseGroup(Document):
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
+		self.validate_max_min_workers()
 
 	def before_insert(self):
 		self.fetch_dependencies()
@@ -186,6 +187,20 @@ class ReleaseGroup(Document):
 				"Can't set Merge All RQ Queues and Merge Short and Default RQ Queues at once",
 				frappe.ValidationError,
 			)
+
+	def validate_max_min_workers(self):
+		if self.max_gunicorn_workers and self.min_gunicorn_workers:
+			if self.max_gunicorn_workers < self.min_gunicorn_workers:
+				frappe.throw(
+					"Max Gunicorn Workers can't be less than Min Gunicorn Workers",
+					frappe.ValidationError,
+				)
+		if self.max_background_workers and self.min_background_workers:
+			if self.max_background_workers < self.min_background_workers:
+				frappe.throw(
+					"Max Background Workers can't be less than Min Background Workers",
+					frappe.ValidationError,
+				)
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
