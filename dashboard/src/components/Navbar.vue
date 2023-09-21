@@ -31,7 +31,7 @@
 					<a
 						:class="[
 							(item.route == '/' ? isExactActive : isActive)
-								? 'bg-blue-50 bg-gray-200'
+								? 'bg-gray-200'
 								: 'text-gray-900 hover:bg-gray-50'
 						]"
 						:href="href"
