@@ -22,7 +22,7 @@
 			<span></span>
 		</div>
 
-		<LoadingText v-if="$resources.installedApps.loading" />
+		<LoadingText class="m-2 mt-4" v-if="$resources.installedApps.loading" />
 
 		<div v-else class="divide-y">
 			<div
