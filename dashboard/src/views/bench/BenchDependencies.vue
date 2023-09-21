@@ -6,13 +6,11 @@
 	>
 		<template #actions>
 			<Button
-				v-if="isDirty"
+				v-if="editMode"
 				label="Update"
-				@click="
-					$resources.updateDependencies.submit();
-					isDirty = false;
-				"
+				@click="$resources.updateDependencies.submit()"
 			/>
+			<Button v-else label="Edit" @click="editMode = true" />
 		</template>
 		<table class="min-w-full divide-y divide-gray-300">
 			<thead>
@@ -40,13 +38,14 @@
 					<td
 						class="whitespace-nowrap py-4 pl-4 pr-4 text-sm font-medium text-gray-900 sm:pl-0"
 					>
-						{{ dependency.key }}
+						{{ dependency.key.split('_').join(' ') }}
 					</td>
 					<td class="whitespace-nowrap text-sm text-gray-500">
 						<input
 							class="border-none focus:text-gray-800 focus:ring-0"
 							v-model="dependency.value"
 							@input="isDirty = true"
+							:disabled="!editMode"
 						/>
 					</td>
 				</tr>
@@ -63,6 +62,7 @@ export default {
 	props: ['benchName'],
 	data() {
 		return {
+			editMode: false,
 			isDirty: false
 		};
 	},
@@ -84,10 +84,17 @@ export default {
 					name: this.benchName,
 					dependencies: JSON.stringify(this.$resources.dependencies.data)
 				},
+				validate() {
+					if (!this.isDirty) return 'No changes made';
+				},
+				onSuccess() {
+					this.isDirty = false;
+					this.editMode = false;
+				},
 				onError(err) {
 					notify({
 						title: 'Error',
-						message: err.messages.join(', '),
+						message: (err.messages || err.message.split('_')).join(', '),
 						icon: 'x',
 						color: 'red'
 					});
