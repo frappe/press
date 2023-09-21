@@ -17,7 +17,7 @@
 							: 'hover:bg-gray-50'
 					"
 					:key="candidate.name"
-					:to="`/benches/${bench.name}/deploys/${candidate.name}`"
+					:to="`/benches/${benchName}/deploys/${candidate.name}`"
 				>
 					<ListItem
 						:title="`Deploy on ${formatDate(
@@ -90,11 +90,6 @@ export default {
 				url: 'press.api.bench.candidate',
 				params: {
 					name: this.candidateName
-				},
-				validate() {
-					if (!this.candidateName) {
-						return 'Select a candidate first';
-					}
 				},
 				auto: true
 			};

@@ -22,7 +22,7 @@
 			<span></span>
 		</div>
 
-		<LoadingText v-if="$resources.installedApps.loading" />
+		<LoadingText class="m-2 mt-4" v-if="$resources.installedApps.loading" />
 
 		<div v-else class="divide-y">
 			<div
@@ -108,7 +108,7 @@
 				<FormControl
 					class="mb-2"
 					placeholder="Search for Apps"
-					v-on:input="e => updateSearchTerm(e.data)"
+					v-on:input="e => updateSearchTerm(e.target.value)"
 				/>
 				<div
 					v-if="availableApps.data && availableApps.data.length"
