@@ -174,7 +174,8 @@
    "default": "0",
    "fieldname": "use_for_new_benches",
    "fieldtype": "Check",
-   "label": "Use For New Benches"
+   "label": "Use For New Benches",
+   "read_only": 1
   },
   {
    "fieldname": "hostname",
@@ -195,7 +196,8 @@
    "default": "0",
    "fieldname": "use_for_new_sites",
    "fieldtype": "Check",
-   "label": "Use For New Sites"
+   "label": "Use For New Sites",
+   "read_only": 1
   },
   {
    "fieldname": "cluster",
@@ -419,7 +421,7 @@
   }
  ],
  "links": [],
- "modified": "2023-07-02 14:59:31.104759",
+ "modified": "2023-09-21 08:28:59.247825",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
