@@ -44,6 +44,7 @@
   "github_access_token",
   "feature_flags_section",
   "referrer_id",
+  "partner_referral_code",
   "ssh_access_enabled",
   "skip_backups",
   "column_break_31",
@@ -365,6 +366,12 @@
    "fieldtype": "Link",
    "label": "Billing Team",
    "options": "Team"
+  },
+  {
+   "fieldname": "partner_referral_code",
+   "fieldtype": "Data",
+   "label": "Partner Referral Code",
+   "read_only": 1
   }
  ],
  "links": [
@@ -414,7 +421,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-15 12:00:11.533294",
+ "modified": "2023-09-21 19:13:33.251726",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -11,7 +11,7 @@ from typing import List
 from hashlib import blake2b
 from press.utils import log_error
 from frappe.utils import get_fullname
-from frappe.utils import get_url_to_form
+from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
@@ -274,11 +274,17 @@ class Team(Document):
 		if not self.payment_mode:
 			self.payment_mode = "Prepaid Credits"
 		self.save(ignore_permissions=True)
+		self.create_partner_referral_code()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.save(ignore_permissions=True)
+
+	def create_partner_referral_code(self):
+		if not self.partner_referral_code:
+			self.partner_referral_code = random_string(6)
+			self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
 		if self.via_erpnext or self.is_saas_user:
