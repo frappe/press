@@ -476,6 +476,11 @@ const routes = [
 				name: 'DeveloperSettings',
 				path: 'developer',
 				component: () => import('../views/settings/DeveloperSettings.vue')
+			},
+			{
+				name: 'PartnerSettings',
+				path: 'partner',
+				component: () => import('../views/settings/PartnerSettings.vue')
 			}
 		]
 	},

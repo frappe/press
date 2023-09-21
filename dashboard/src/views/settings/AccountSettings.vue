@@ -37,7 +37,8 @@ export default {
 					route: 'team',
 					condition: () => $account.user.name === $account.team.user
 				},
-				{ label: 'Developer', route: 'developer' }
+				{ label: 'Developer', route: 'developer' },
+				{ label: 'Partner', route: 'partner' }
 			].filter(tab => (tab.condition ? tab.condition() : true));
 
 			return tabs.map(tab => {
