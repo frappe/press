@@ -81,6 +81,7 @@ class TestAPISite(FrappeTestCase):
 				"group": group.name,
 				"plan": plan.name,
 				"apps": [app.name],
+				"cluster": bench.cluster,
 			}
 		)
 
