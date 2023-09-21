@@ -258,7 +258,6 @@ import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
 export default {
@@ -308,12 +307,7 @@ export default {
 					this.site_status,
 					this.site_tag,
 					this.$account.team.name
-				],
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'tags']
-					});
-				}
+				]
 			};
 		},
 		siteTags: { url: 'press.api.site.site_tags', auto: true },
@@ -474,7 +468,9 @@ export default {
 				this.$account.hasPermission(site.name, '', true)
 			);
 			if (this.searchTerm) {
-				return this.fuse.search(this.searchTerm).map(result => result.item);
+				return sites.filter(site =>
+					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 			}
 			return sites;
 		},

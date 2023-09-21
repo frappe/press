@@ -174,7 +174,6 @@ import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'Servers',
@@ -223,12 +222,7 @@ export default {
 					this.server_type,
 					this.server_tag,
 					this.$account.team.name
-				],
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'title', 'tags']
-					});
-				}
+				]
 			};
 		},
 		serverTags: { url: 'press.api.server.server_tags', auto: true }
@@ -315,7 +309,11 @@ export default {
 			);
 
 			if (this.searchTerm)
-				servers = this.fuse.search(this.searchTerm).map(result => result.item);
+				servers = servers.filter(
+					server =>
+						server.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+						server.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return servers.map(server => ({
 				name: server.title || server.name,
