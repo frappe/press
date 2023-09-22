@@ -24,14 +24,6 @@
 			<p class="mt-2 text-base text-gray-600 mb-5">
 				{{ paymentModeDescription }}
 			</p>
-
-			<FormControl
-				v-if="paymentMode == 'Paid By Partner'"
-				label="Select Frappe Partner"
-				type="select"
-				:options="partners"
-				v-model="selectedPartner"
-			/>
 			<ErrorMessage
 				class="mt-2"
 				:message="$resources.changePaymentMode.error"
@@ -46,9 +38,7 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			paymentMode: this.$account.team.payment_mode || 'Card',
-			selectedPartner: null,
-			partners: []
+			paymentMode: this.$account.team.payment_mode
 		};
 	},
 	watch: {
@@ -58,25 +48,14 @@ export default {
 			}
 		}
 	},
-	onMounted() {
-		this.$resources.getPartners();
-	},
 	resources: {
 		changePaymentMode() {
 			return {
 				url: 'press.api.billing.change_payment_mode',
 				params: {
-					mode: this.paymentMode,
-					partner: this.selectedPartner
+					mode: this.paymentMode
 				},
-				onSuccess(res) {
-					if (res == 'ok') {
-						this.$notify({
-							title: 'Email Sent to Partner',
-							icon: 'check',
-							color: 'green'
-						});
-					}
+				onSuccess() {
 					this.$emit('update:modelValue', false);
 					this.$resources.changePaymentMode.reset();
 				},
@@ -87,20 +66,13 @@ export default {
 					) {
 						return 'Please add a card first from Payment methods section';
 					}
-				}
-			};
-		},
-		getPartners() {
-			return {
-				url: 'press.api.account.get_frappe_partners',
-				auto: true,
-				onSuccess(data) {
-					this.partners = data.map(d => {
-						return {
-							label: d.billing_name,
-							value: d.name
-						};
-					});
+
+					if (
+						this.paymentMode == 'Paid By Partner' &&
+						!this.$account.team.partner_email
+					) {
+						return 'Please add a partner first from Partner section';
+					}
 				}
 			};
 		}
