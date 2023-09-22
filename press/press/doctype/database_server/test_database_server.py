@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.database_server.database_server import DatabaseServer
@@ -26,7 +27,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 			"ip": ip,
 			"private_ip": frappe.mock("ipv4_private"),
 			"agent_password": frappe.mock("password"),
-			"hostname": "m",
+			"hostname": f"m{make_autoname('.##')}",
 			"cluster": cluster,
 		}
 	).insert(ignore_if_duplicate=True)
