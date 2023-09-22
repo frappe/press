@@ -349,12 +349,12 @@ def get():
 	]
 
 	if parent_teams:
-		teams = frappe.db.sql(
-			"""
-			select name, team_title, user from tabTeam where enabled = 1 and name in %s
-		""",
-			[parent_teams],
-			as_dict=True,
+		Team = frappe.qb.DocType("Team")
+		teams = (
+			frappe.qb.from_(Team)
+			.select(Team.name, Team.team_title, Team.user)
+			.where((Team.enabled == 1) & (Team.name.isin(parent_teams)))
+			.run(as_dict=True)
 		)
 
 	number_of_sites = frappe.db.count(
