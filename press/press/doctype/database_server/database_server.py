@@ -162,7 +162,7 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
 
-	def add_variable(
+	def add_mariadb_variable(
 		self,
 		variable: str,
 		value_type: str,

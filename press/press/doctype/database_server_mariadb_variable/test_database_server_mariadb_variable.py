@@ -350,7 +350,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_variable("tmp_disk_table_size", "value_int", 10241)
+			server.add_mariadb_variable("tmp_disk_table_size", "value_int", 10241)
 
 		Mock_Ansible.assert_called_once()
 
@@ -365,7 +365,7 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_variable("tmp_disk_table_size", "value_int", 10242)
+			server.add_mariadb_variable("tmp_disk_table_size", "value_int", 10242)
 
 		Mock_Ansible.assert_called_once()
 
@@ -379,14 +379,14 @@ class TestDatabaseServerMariaDBVariable(FrappeTestCase):
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_variable("tmp_disk_table_size", "value_int", 10242)  # no change
+			server.add_mariadb_variable("tmp_disk_table_size", "value_int", 10242)  # no change
 		Mock_Ansible.assert_not_called()
 
 		with patch(
 			"press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable.Ansible",
 			wraps=Ansible,
 		) as Mock_Ansible:
-			server.add_variable(
+			server.add_mariadb_variable(
 				"tmp_disk_table_size", "value_int", 10242, persist=False
 			)  # no change
 		Mock_Ansible.assert_called_once()
