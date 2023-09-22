@@ -34,6 +34,7 @@ thread-cache-size               = 50
 open-files-limit                = 65535
 table-definition-cache          = 4096
 table-open-cache                = 10240
+tmp-disk-table-size							= 5120M
 
 # INNODB #
 innodb-flush-method             = O_DIRECT
