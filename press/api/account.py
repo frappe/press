@@ -200,13 +200,13 @@ def approve_partner_request(key):
 		partner_request_doc.status = "Approved"
 		partner_request_doc.save(ignore_permissions=True)
 
-		partner_user = frappe.db.get_value("Team", partner_request_doc.partner, "user")
+		partner = frappe.get_doc("Team", partner_request_doc.partner)
 
 		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
 		customer_team.billing_team = partner_request_doc.partner
-		customer_team.partner_email = partner_request_doc.partner_email
+		customer_team.partner_email = partner.partner_email
 		customer_team.payment_mode = "Paid By Partner"
-		customer_team.append("team_members", {"user": partner_user})
+		customer_team.append("team_members", {"user": partner.user})
 		customer_team.save(ignore_permissions=True)
 
 		frappe.db.commit()
