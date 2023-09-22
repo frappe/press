@@ -6,19 +6,21 @@
 	>
 		<div class="max-h-96 divide-y">
 			<div
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600"
+				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-600"
 			>
+				<span>Name</span>
 				<span>Email</span>
-				<span>Team</span>
+				<span>Currency</span>
 				<span>Payment Mode</span>
 			</div>
 			<div
 				:key="customer.team"
 				v-for="customer in partnerCustomers"
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900"
+				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-900"
 			>
+				<span>{{ customer.billing_name }}</span>
 				<span>{{ customer.email }}</span>
-				<span>{{ customer.team }}</span>
+				<span>{{ customer.currency }}</span>
 				<span>
 					{{ customer.payment_mode }}
 				</span>
@@ -41,8 +43,9 @@ export default {
 				this.partnerCustomers = data.map(d => {
 					return {
 						email: d.user,
-						team: d.name,
-						payment_mode: d.payment_mode
+						billing_name: d.billing_name || '',
+						payment_mode: d.payment_mode || '',
+						currency: d.currency
 					};
 				});
 			},

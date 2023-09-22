@@ -786,7 +786,7 @@ def get_partner_customers():
 	customers = frappe.get_all(
 		"Team",
 		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
-		["name", "user", "payment_mode"],
+		["name", "user", "payment_mode", "billing_name", "currency"],
 	)
 	return customers
 
