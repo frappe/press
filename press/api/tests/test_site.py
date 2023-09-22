@@ -398,6 +398,7 @@ erpnext 0.8.3	    HEAD
 						"public": public,
 						"private": private,
 					},
+					"cluster": "Default",
 				}
 			)
 			poll_pending_jobs()
