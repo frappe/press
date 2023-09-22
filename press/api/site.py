@@ -153,9 +153,34 @@ def _new(site, server: str = None):
 		tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 	)
 
+	query_sub_str = ""
+	if server:
+		query_sub_str = f"AND server.name = '{server}'"
+
+	bench = frappe.db.sql(
+		f"""
+	SELECT
+		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
+	FROM
+		tabBench bench
+	LEFT JOIN
+		tabServer server
+	ON
+		bench.server = server.name
+	WHERE
+		server.proxy_server in {proxy_servers} AND
+		bench.status = "Active" AND
+		bench.group = '{site["group"]}'
+		{query_sub_str}
+	ORDER BY
+		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
+	LIMIT 1
+	""",
+		as_dict=True,
+	)[0]
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
-	validate_plan(server, plan)
+	validate_plan(bench.server, plan)
 
 	site = frappe.get_doc(
 		{
@@ -693,6 +718,8 @@ def all(site_filter=None):
 		sites_query = sites_query.where(Site.status == "Active")
 	elif site_filter["status"] == "Broken":
 		sites_query = sites_query.where(Site.status == "Broken")
+	elif site_filter["status"] == "Inactive":
+		sites_query = sites_query.where(Site.status == "Inactive")
 	elif site_filter["status"] == "Trial":
 		sites_query = sites_query.where(
 			(Site.trial_end_date != "") & (Site.status != "Archived")

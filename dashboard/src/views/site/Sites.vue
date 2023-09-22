@@ -96,15 +96,15 @@
 						:columns="[
 							{ label: 'Site Name', name: 'name', width: 2 },
 							{ label: 'Status', name: 'status' },
-							{ label: 'Region', name: 'region' },
+							{ label: 'Region', name: 'region', width: 0.5 },
 							{ label: 'Tags', name: 'tags' },
-							{ label: 'Plan', name: 'plan' },
+							{ label: 'Plan', name: 'plan', width: 1.5 },
 							{ label: '', name: 'actions', width: 0.5 }
 						]"
 						:rows="sites"
 						v-slot="{ rows, columns }"
 					>
-						<TableHeader class="mb-4 hidden sm:grid" />
+						<TableHeader class="mb-4 hidden lg:grid" />
 						<div
 							v-for="group in groups"
 							:key="group.group"
@@ -143,7 +143,7 @@
 									/>
 									<div
 										v-else-if="column.name === 'tags'"
-										class="hidden space-x-1 sm:flex"
+										class="hidden space-x-1 lg:flex"
 									>
 										<Badge
 											v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -163,7 +163,7 @@
 									</div>
 									<span
 										v-else-if="column.name === 'plan'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										{{
 											row.plan
@@ -175,7 +175,7 @@
 									</span>
 									<div
 										v-else-if="column.name === 'region'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										<img
 											v-if="row.server_region_info.image"
@@ -192,7 +192,11 @@
 										class="w-full text-right"
 										v-else-if="column.name == 'actions'"
 									>
-										<Dropdown @click.prevent :options="dropdownItems(row)">
+										<Dropdown
+											v-if="['Active', 'Updating'].includes(row.status)"
+											@click.prevent
+											:options="dropdownItems(row)"
+										>
 											<template v-slot="{ open }">
 												<Button
 													:variant="open ? 'subtle' : 'ghost'"
@@ -254,7 +258,6 @@ import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
 export default {
@@ -304,12 +307,7 @@ export default {
 					this.site_status,
 					this.site_tag,
 					this.$account.team.name
-				],
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'tags']
-					});
-				}
+				]
 			};
 		},
 		siteTags: { url: 'press.api.site.site_tags', auto: true },
@@ -391,6 +389,10 @@ export default {
 					value: 'Broken'
 				},
 				{
+					label: 'Inactive',
+					value: 'Inactive'
+				},
+				{
 					label: 'Trial',
 					value: 'Trial'
 				},
@@ -424,9 +426,7 @@ export default {
 					label: 'Visit Site',
 					onClick: () => {
 						window.open(`https://${site.name}`, '_blank');
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				},
 				{
 					label: 'Login As Admin',
@@ -439,11 +439,9 @@ export default {
 
 						this.siteForLogin = site.name;
 						this.showReasonForAdminLoginDialog = true;
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				}
-			].filter(item => item.condition());
+			];
 		},
 		proceedWithLoginAsAdmin() {
 			this.errorMessage = '';
@@ -470,7 +468,9 @@ export default {
 				this.$account.hasPermission(site.name, '', true)
 			);
 			if (this.searchTerm) {
-				return this.fuse.search(this.searchTerm).map(result => result.item);
+				return sites.filter(site =>
+					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 			}
 			return sites;
 		},

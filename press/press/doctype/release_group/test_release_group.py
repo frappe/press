@@ -211,3 +211,26 @@ class TestReleaseGroup(unittest.TestCase):
 				frappe_version.dependencies, lambda x: x.dependency == "PYTHON_VERSION"
 			).version,
 		)
+
+	def test_cant_set_min_greater_than_max_workers(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.max_gunicorn_workers = 1
+		rg.min_gunicorn_workers = 2
+		self.assertRaises(frappe.ValidationError, rg.save)
+		rg.max_background_workers = 1
+		rg.min_background_workers = 2
+		self.assertRaises(frappe.ValidationError, rg.save)
+		rg.reload()
+		try:
+			rg.max_gunicorn_workers = 2
+			rg.min_gunicorn_workers = 1
+			rg.max_background_workers = 2
+			rg.min_background_workers = 1
+			rg.save()
+			rg.max_gunicorn_workers = 0  # default
+			rg.min_gunicorn_workers = 2
+			rg.max_background_workers = 0  # default
+			rg.min_background_workers = 2
+			rg.save()
+		except frappe.ValidationError:
+			self.fail("Should not raise validation error")

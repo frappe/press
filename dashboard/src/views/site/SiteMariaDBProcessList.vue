@@ -11,16 +11,20 @@
 				:title="`MariaDB Process List`"
 				:columns="[
 					{ label: 'ID', name: 'id', class: 'w-1/12' },
-					{ label: 'User', name: 'user', class: 'w-1/12' },
+					{ label: 'User', name: 'user', class: 'w-2/12' },
 					{ label: 'Time', name: 'time', class: 'w-1/12' },
 					{ label: 'Command', name: 'command', class: 'w-1/12' },
 					{ label: 'State', name: 'state', class: 'w-2/12' },
-					{ label: 'Query', name: 'query', class: 'w-6/12' }
+					{ label: 'Query', name: 'query', class: 'w-5/12' }
 				]"
 				:data="processData"
 			>
 				<template #actions>
-					<Button @click="$resources.processList.reload()">Refresh</Button>
+					<Button
+						@click="$resources.processList.reload()"
+						:loading="$resources.processList.loading"
+						>Refresh</Button
+					>
 				</template>
 			</Report>
 			<div
@@ -91,11 +95,11 @@ export default {
 			this.$resources.processList.data.forEach(row => {
 				let out = [
 					{ name: 'ID', value: row.Id, class: 'w-1/12' },
-					{ name: 'User', value: row.User, class: 'w-1/12' },
+					{ name: 'User', value: row.User, class: 'w-2/12' },
 					{ name: 'Time', value: row.Time, class: 'w-1/12' },
 					{ name: 'Command', value: row.Command, class: 'w-1/12' },
 					{ name: 'State', value: row.State, class: 'w-2/12' },
-					{ name: 'Query', value: row.Info, class: 'w-6/12' }
+					{ name: 'Query', value: row.Info, class: 'w-5/12' }
 				];
 				data.push(out);
 			});

@@ -89,7 +89,7 @@
 					<FormControl
 						class="mb-2"
 						placeholder="Search for Apps"
-						v-on:input="e => updateSearchTerm(e.data)"
+						v-on:input="e => updateSearchTerm(e.target.value)"
 					/>
 					<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 					<AppSourceSelector

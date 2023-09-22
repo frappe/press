@@ -14,7 +14,7 @@
 		</div>
 		<div class="my-2" v-if="$resources.activities.hasNextPage">
 			<Button
-				:loading="$resources.activities.loading"
+				:loading="$resources.activities.list.loading"
 				loadingText="Fetching..."
 				@click="$resources.activities.next()"
 			>

@@ -1443,7 +1443,7 @@ def process_archive_site_job_update(job):
 
 def process_install_app_site_job_update(job):
 	updated_status = {
-		"Pending": "Active",
+		"Pending": "Pending",
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",
@@ -1463,7 +1463,7 @@ def process_install_app_site_job_update(job):
 
 def process_uninstall_app_site_job_update(job):
 	updated_status = {
-		"Pending": "Active",
+		"Pending": "Pending",
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",

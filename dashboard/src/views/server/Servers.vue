@@ -68,7 +68,7 @@
 					:rows="servers"
 					v-slot="{ rows, columns }"
 				>
-					<TableHeader class="hidden sm:grid" />
+					<TableHeader class="hidden lg:grid" />
 					<TableRow
 						v-for="row in rows"
 						:key="row.name"
@@ -79,7 +79,7 @@
 							<Badge v-if="column.name === 'status'" :label="row.status" />
 							<div
 								v-else-if="column.name === 'tags'"
-								class="hidden space-x-1 sm:flex"
+								class="hidden space-x-1 lg:flex"
 							>
 								<Badge
 									v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -97,7 +97,7 @@
 								</Tooltip>
 								<span v-if="row.tags.length === 0">-</span>
 							</div>
-							<span v-else-if="column.name === 'plan'" class="hidden sm:block">
+							<span v-else-if="column.name === 'plan'" class="hidden md:block">
 								{{
 									row.plan
 										? `${$planTitle(row.plan)}${
@@ -106,7 +106,7 @@
 										: ''
 								}}
 							</span>
-							<div v-else-if="column.name === 'region'" class="hidden sm:block">
+							<div v-else-if="column.name === 'region'" class="hidden md:block">
 								<img
 									v-if="row.server_region_info.image"
 									class="h-4"
@@ -174,7 +174,6 @@ import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'Servers',
@@ -223,12 +222,7 @@ export default {
 					this.server_type,
 					this.server_tag,
 					this.$account.team.name
-				],
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'title', 'tags']
-					});
-				}
+				]
 			};
 		},
 		serverTags: { url: 'press.api.server.server_tags', auto: true }
@@ -315,7 +309,11 @@ export default {
 			);
 
 			if (this.searchTerm)
-				servers = this.fuse.search(this.searchTerm).map(result => result.item);
+				servers = servers.filter(
+					server =>
+						server.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+						server.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return servers.map(server => ({
 				name: server.title || server.name,

@@ -81,6 +81,7 @@ class TestAPISite(FrappeTestCase):
 				"group": group.name,
 				"plan": plan.name,
 				"apps": [app.name],
+				"cluster": bench.cluster,
 			}
 		)
 
@@ -397,6 +398,7 @@ erpnext 0.8.3	    HEAD
 						"public": public,
 						"private": private,
 					},
+					"cluster": "Default",
 				}
 			)
 			poll_pending_jobs()

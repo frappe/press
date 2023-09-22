@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import change_plan, new, all
@@ -226,6 +227,37 @@ class TestAPIServer(FrappeTestCase):
 		self.assertEqual(db_subscription.plan, db_plan_2.name)
 		self.assertTrue(db_subscription.enabled)
 		self.assertEqual(db_server.plan, db_plan_2.name)
+
+	@patch(
+		"press.press.doctype.press_job.press_job.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(VirtualMachine, "provision", new=successful_provision)
+	@patch.object(VirtualMachine, "sync", new=successful_sync)
+	def test_creation_of_db_server_adds_default_mariadb_variables(self):
+		create_test_virtual_machine_image(cluster=self.cluster, series="m")
+		create_test_virtual_machine_image(
+			cluster=self.cluster, series="f"
+		)  # call from here and not setup, so mocks work
+		frappe.set_user(self.team.user)
+
+		new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+
+		db_server = frappe.get_last_doc("Database Server")
+		self.assertEqual(
+			find(
+				db_server.mariadb_system_variables,
+				lambda x: x.mariadb_variable == "tmp_disk_table_size",
+			).value_int,
+			5120,
+		)
 
 
 class TestAPIServerList(FrappeTestCase):

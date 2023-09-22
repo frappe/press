@@ -18,19 +18,13 @@
 			/>
 			<div
 				class="px-2 py-2 text-base text-gray-600"
-				v-if="
-					$resources.binaryLogs.loading &&
-					$resources.binaryLogs.data.length == 0
-				"
+				v-if="$resources.binaryLogs.loading"
 			>
 				<LoadingText />
 			</div>
 			<div
 				class="py-2 text-base text-gray-600"
-				v-if="
-					!$resources.binaryLogs.loading &&
-					$resources.binaryLogs.data.length == 0
-				"
+				v-else-if="$resources.binaryLogs.data.length == 0"
 			>
 				No data
 			</div>
@@ -80,6 +74,7 @@ export default {
 					value: ''
 				}
 			],
+			today: new Date().toISOString().slice(0, 10),
 			max_lines: 100
 		};
 	},
@@ -108,7 +103,7 @@ export default {
 				auto: true,
 				pageLength: 10,
 				keepData: true,
-				default: []
+				initialData: []
 			};
 		},
 		getPlan() {

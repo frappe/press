@@ -17,7 +17,7 @@
 							: 'hover:bg-gray-50'
 					"
 					:key="candidate.name"
-					:to="`/benches/${bench.name}/deploys/${candidate.name}`"
+					:to="`/benches/${benchName}/deploys/${candidate.name}`"
 				>
 					<ListItem
 						:title="`Deploy on ${formatDate(
@@ -38,7 +38,7 @@
 				</router-link>
 				<div class="py-3" v-if="$resources.candidates.hasNextPage">
 					<Button
-						:loading="$resources.candidates.loading"
+						:loading="$resources.candidates.list.loading"
 						loadingText="Loading..."
 						@click="$resources.candidates.next()"
 					>
@@ -66,7 +66,7 @@ import CardWithDetails from '@/components/CardWithDetails.vue';
 
 export default {
 	name: 'BenchDeploys',
-	props: ['bench', 'candidateName'],
+	props: ['bench', 'benchName', 'candidateName'],
 	components: {
 		CardWithDetails,
 		StepsDetail
@@ -78,7 +78,7 @@ export default {
 				doctype: 'Deploy Candidate',
 				url: 'press.api.bench.candidates',
 				filters: {
-					group: this.bench?.name
+					group: this.benchName
 				},
 				start: 0,
 				auto: true,
@@ -90,11 +90,6 @@ export default {
 				url: 'press.api.bench.candidate',
 				params: {
 					name: this.candidateName
-				},
-				validate() {
-					if (!this.candidateName) {
-						return 'Select a candidate first';
-					}
 				},
 				auto: true
 			};

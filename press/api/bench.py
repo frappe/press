@@ -537,6 +537,9 @@ def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def candidate(name):
+	if not name:
+		return
+
 	candidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
 	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
