@@ -3,24 +3,26 @@
 		<div>
 			<Dropdown :options="dropdownItems">
 				<template v-slot="{ open }">
-					<div
-						class="flex w-[15rem] cursor-pointer items-center gap-2 rounded-md px-2 py-2"
+					<button
+						class="flex w-[15rem] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<div>
-							<FrappeCloudLogo class="h-5" />
-							<p
-								v-if="$account.user"
-								class="mt-1 break-all text-sm text-gray-600"
+						<FCLogo class="w-8 h-8 rounded" />
+						<div class="ml-2 flex flex-col">
+							<div class="text-base font-medium text-gray-900 leading-none">
+								Frappe Cloud
+							</div>
+							<div
+								class="mt-1 hidden text-sm text-gray-700 sm:inline leading-none"
 							>
 								{{ $account.user.full_name }}
-							</p>
+							</div>
 						</div>
 						<FeatherIcon
 							name="chevron-down"
 							class="ml-auto h-5 w-5 text-gray-700"
 						/>
-					</div>
+					</button>
 				</template>
 			</Dropdown>
 			<div class="mt-2 flex flex-col space-y-0.5">
@@ -75,11 +77,13 @@
 import { FCIcons } from '@/components/icons';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
+import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
+		FCLogo,
 		FrappeCloudLogo,
 		SwitchTeamDialog,
 		CommandPalette

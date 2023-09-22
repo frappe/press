@@ -1,12 +1,6 @@
 <template>
-	<div class="mx-2 mt-2 flex">
-		<div class="flex flex-col">
-			<h2 class="text-xl font-semibold">{{ title }}</h2>
-			<p class="mt-1.5 text-base text-gray-600" v-if="subtitle">
-				{{ subtitle }}
-			</p>
-		</div>
-		<div class="ml-auto">
+	<Card title="Site Config">
+		<template #actions>
 			<Button
 				class="mr-2"
 				:loading="$resources.configData.loading"
@@ -29,95 +23,95 @@
 			>
 				Save changes
 			</Button>
-		</div>
-	</div>
-	<div class="flex space-x-4">
-		<div class="w-full shrink-0 space-y-4 md:w-1/2">
-			<div class="ml-2">
-				<ErrorMessage :message="$resources.updateConfig.error" />
-				<div
-					v-if="$resources.configData?.data?.length"
-					v-for="config in $resources.configData.data"
-					:key="config.key"
-					class="mt-2 flex"
-				>
-					<FormControl
-						:label="getStandardConfigTitle(config.key)"
-						v-model="config.value"
-						@input="isDirty = true"
-						class="flex-1"
-					/>
-					<Button
-						class="ml-2 mt-5"
-						icon="x"
-						variant="ghost"
-						@click="removeConfig(config)"
-					/>
-				</div>
-				<p v-else class="my-2 text-base text-gray-600">
-					No keys added. Click on Add Key to add one.
-				</p>
-				<Button class="mt-4" @click="showAddConfigKeyDialog = true"
-					>Add Key</Button
-				>
-			</div>
-		</div>
-		<div
-			class="hidden h-fit max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
-		>
-			<div v-if="configName" class="mb-4">{{ configName }}</div>
-			<div v-html="configPreview"></div>
-		</div>
-		<Dialog
-			:options="{
-				title: 'Add Config Key',
-				actions: [
-					{
-						label: 'Add Key',
-						variant: 'solid',
-						onClick: addConfig
-					}
-				]
-			}"
-			v-model="showAddConfigKeyDialog"
-		>
-			<template v-slot:body-content>
-				<div class="space-y-4">
-					<div>
-						<span class="mb-1 block text-xs text-gray-600">Key</span>
-						<Autocomplete
-							placeholder="Key"
-							:options="getStandardConfigKeys"
-							v-model="chosenStandardConfig"
-							@update:modelValue="handleAutocompleteSelection"
+		</template>
+		<div class="flex space-x-4">
+			<div class="w-full shrink-0 space-y-4 md:w-1/2">
+				<div class="ml-2">
+					<ErrorMessage :message="$resources.updateConfig.error" />
+					<div
+						v-if="$resources.configData?.data?.length"
+						v-for="config in $resources.configData.data"
+						:key="config.key"
+						class="mt-2 flex"
+					>
+						<FormControl
+							:label="getStandardConfigTitle(config.key)"
+							v-model="config.value"
+							@input="isDirty = true"
+							class="flex-1"
+						/>
+						<Button
+							class="ml-2 mt-5"
+							icon="x"
+							variant="ghost"
+							@click="removeConfig(config)"
 						/>
 					</div>
-					<FormControl
-						v-if="showCustomKeyInput"
-						v-model="newConfig.key"
-						label="Custom Key"
-						class="w-full"
-						@change="isDirty = true"
-					/>
-					<FormControl
-						label="Type"
-						v-model="newConfig.type"
-						type="select"
-						:disabled="chosenStandardConfig && !showCustomKeyInput"
-						:options="['String', 'Number', 'JSON', 'Boolean']"
-						@change="isDirty = true"
-					/>
-					<FormControl
-						v-bind="configInputProps()"
-						v-model="newConfig.value"
-						label="Value"
-						class="w-full"
-						@change="isDirty = true"
-					/>
+					<p v-else class="my-2 text-base text-gray-600">
+						No keys added. Click on Add Key to add one.
+					</p>
+					<Button class="mt-4" @click="showAddConfigKeyDialog = true"
+						>Add Key</Button
+					>
 				</div>
-			</template>
-		</Dialog>
-	</div>
+			</div>
+			<div
+				class="hidden h-fit max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
+			>
+				<div v-if="configName" class="mb-4">{{ configName }}</div>
+				<div v-html="configPreview"></div>
+			</div>
+			<Dialog
+				:options="{
+					title: 'Add Config Key',
+					actions: [
+						{
+							label: 'Add Key',
+							variant: 'solid',
+							onClick: addConfig
+						}
+					]
+				}"
+				v-model="showAddConfigKeyDialog"
+			>
+				<template v-slot:body-content>
+					<div class="space-y-4">
+						<div>
+							<span class="mb-1 block text-xs text-gray-600">Key</span>
+							<Autocomplete
+								placeholder="Key"
+								:options="getStandardConfigKeys"
+								v-model="chosenStandardConfig"
+								@update:modelValue="handleAutocompleteSelection"
+							/>
+						</div>
+						<FormControl
+							v-if="showCustomKeyInput"
+							v-model="newConfig.key"
+							label="Custom Key"
+							class="w-full"
+							@change="isDirty = true"
+						/>
+						<FormControl
+							label="Type"
+							v-model="newConfig.type"
+							type="select"
+							:disabled="chosenStandardConfig && !showCustomKeyInput"
+							:options="['String', 'Number', 'JSON', 'Boolean']"
+							@change="isDirty = true"
+						/>
+						<FormControl
+							v-bind="configInputProps()"
+							v-model="newConfig.value"
+							label="Value"
+							class="w-full"
+							@change="isDirty = true"
+						/>
+					</div>
+				</template>
+			</Dialog>
+		</div>
+	</Card>
 </template>
 
 <script>

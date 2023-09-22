@@ -1,12 +1,11 @@
 <template>
-	<div class="space-y-6" v-if="bench && !bench?.public">
-		<ConfigEditor
-			title="Bench Config"
-			subtitle="Add and update key value pairs to your bench's common_site_config.json and bench_config.json"
-			:configData="benchConfig"
-			:updateConfigMethod="updateBenchConfigMethod"
-		/>
-	</div>
+	<ConfigEditor
+		v-if="bench && !bench?.public"
+		title="Bench Config"
+		subtitle="Add and update key value pairs to your bench's common_site_config.json and bench_config.json"
+		:configData="benchConfig"
+		:updateConfigMethod="updateBenchConfigMethod"
+	/>
 </template>
 
 <script>
