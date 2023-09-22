@@ -108,7 +108,7 @@
 						<div
 							v-for="group in groups"
 							:key="group.group"
-							class="mb-2 rounded border"
+							class="mb-4 rounded border"
 						>
 							<div
 								class="flex w-full items-center rounded-t bg-gray-50 px-3 py-2 text-base"
