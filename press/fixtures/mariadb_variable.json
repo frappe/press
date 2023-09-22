@@ -156,18 +156,6 @@
   "skippable": 0
  },
  {
-  "datatype": "Str",
-  "default_value": "10800",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-22 13:52:43.002171",
-  "name": "max_statement_time",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
   "datatype": "Int",
   "default_value": null,
   "doc_section": "innodb",
@@ -193,14 +181,14 @@
  },
  {
   "datatype": "Str",
-  "default_value": "1000",
+  "default_value": "5000",
   "doc_section": "innodb",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-09-15 15:15:31.563815",
+  "modified": "2023-09-22 14:02:04.157025",
   "name": "innodb_old_blocks_time",
-  "set_on_new_servers": 0,
+  "set_on_new_servers": 1,
   "skippable": 0
  },
  {
@@ -224,6 +212,18 @@
   "dynamic": 1,
   "modified": "2023-09-22 08:38:16.807229",
   "name": "tmp_disk_table_size",
+  "set_on_new_servers": 1,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "10800",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2023-09-22 13:52:43.002171",
+  "name": "max_statement_time",
   "set_on_new_servers": 1,
   "skippable": 0
  }
