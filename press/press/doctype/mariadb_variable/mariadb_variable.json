@@ -12,8 +12,10 @@
   "dynamic",
   "datatype",
   "doc_section",
+  "skippable",
+  "column_break_yrfg",
   "default_value",
-  "skippable"
+  "set_on_new_servers"
  ],
  "fields": [
   {
@@ -49,11 +51,21 @@
    "label": "Doc Section",
    "options": "server\nreplication-and-binary-log\ninnodb",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yrfg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "set_on_new_servers",
+   "fieldtype": "Check",
+   "label": "Set on new servers"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-27 17:35:06.034806",
+ "modified": "2023-09-22 08:36:43.526135",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Variable",

@@ -8,6 +8,7 @@
   "dynamic": 1,
   "modified": "2023-06-15 14:41:36.038646",
   "name": "innodb_buffer_pool_size",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -19,17 +20,19 @@
   "dynamic": 0,
   "modified": "2023-06-15 14:41:09.156699",
   "name": "log_bin",
+  "set_on_new_servers": 0,
   "skippable": 1
  },
  {
   "datatype": "Int",
-  "default_value": "16",
+  "default_value": "512",
   "doc_section": "server",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-06-15 14:41:28.376813",
+  "modified": "2023-09-22 08:38:25.704420",
   "name": "max_allowed_packet",
+  "set_on_new_servers": 1,
   "skippable": 0
  },
  {
@@ -39,8 +42,9 @@
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-06-15 14:41:18.419011",
+  "modified": "2023-09-22 08:38:16.807229",
   "name": "tmp_disk_table_size",
+  "set_on_new_servers": 1,
   "skippable": 0
  },
  {
@@ -52,6 +56,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 18:21:51.984252",
   "name": "performance_schema",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -63,6 +68,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.751992",
   "name": "performance-schema-instrument",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -74,6 +80,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.766945",
   "name": "performance-schema-consumer-events-stages-current",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -85,6 +92,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.784028",
   "name": "performance-schema-consumer-events-stages-history",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -96,6 +104,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.809367",
   "name": "performance-schema-consumer-events-stages-history-long",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -107,6 +116,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.833060",
   "name": "performance-schema-consumer-events-statements-current",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -118,6 +128,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.851892",
   "name": "performance-schema-consumer-events-statements-history",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -129,6 +140,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.870716",
   "name": "performance-schema-consumer-events-statements-history-long",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -140,6 +152,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.951921",
   "name": "performance-schema-consumer-events-waits-current",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -151,6 +164,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.971205",
   "name": "performance-schema-consumer-events-waits-history",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -162,6 +176,7 @@
   "dynamic": 0,
   "modified": "2023-07-27 17:55:19.987419",
   "name": "performance-schema-consumer-events-waits-history-long",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -173,6 +188,7 @@
   "dynamic": 1,
   "modified": "2023-08-03 14:20:47.702196",
   "name": "expire_logs_days",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -184,6 +200,7 @@
   "dynamic": 1,
   "modified": "2023-09-15 15:15:31.563815",
   "name": "innodb_old_blocks_time",
+  "set_on_new_servers": 0,
   "skippable": 0
  },
  {
@@ -195,6 +212,7 @@
   "dynamic": 1,
   "modified": "2023-09-15 15:21:13.086214",
   "name": "innodb_old_blocks_pct",
+  "set_on_new_servers": 0,
   "skippable": 0
  }
 ]
