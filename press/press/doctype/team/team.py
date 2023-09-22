@@ -271,8 +271,6 @@ class Team(Document):
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.partner_email = self.user
-		if not self.payment_mode:
-			self.payment_mode = "Prepaid Credits"
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
 
