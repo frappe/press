@@ -13,6 +13,7 @@
 								Frappe Cloud
 							</div>
 							<div
+								v-if="$account.user"
 								class="mt-1 hidden text-sm text-gray-700 sm:inline leading-none"
 							>
 								{{ $account.user.full_name }}
