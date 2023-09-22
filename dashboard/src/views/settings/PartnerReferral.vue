@@ -6,6 +6,10 @@
 	>
 		<div class="space-y-4">
 			<ClickToCopyField :textContent="referralCode" />
+			<h3 class="text-base text-gray-700">
+				Partners can share this referral code with their customers to link their
+				account with the partner.
+			</h3>
 		</div>
 	</Card>
 </template>

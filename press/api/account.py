@@ -753,19 +753,31 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 
 
 @frappe.whitelist()
-def get_frappe_partners():
-	return frappe.get_all(
-		"Team",
-		{"enabled": 1, "erpnext_partner": 1},
-		["name", "billing_name", "partner_email"],
+def add_partner(referral_code: str):
+	team = get_current_team(get_doc=True)
+	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
+	doc = frappe.get_doc(
+		{
+			"doctype": "Partner Approval Request",
+			"partner": partner,
+			"requested_by": team.name,
+			"status": "Pending",
+			"send_mail": True,
+		}
 	)
+	doc.insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
-def add_partner(partner_email):
-	team = get_current_team(get_doc=True)
-	team.partner_email = partner_email
-	team.save()
+def validate_partner_code(code):
+	partner = frappe.db.get_value(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 1, "partner_referral_code": code},
+		"billing_name",
+	)
+	if partner:
+		return True, partner
+	return False, None
 
 
 @frappe.whitelist()

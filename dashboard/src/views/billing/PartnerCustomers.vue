@@ -36,7 +36,7 @@ export default {
 	},
 	resources: {
 		getPartnerCustomers: {
-			method: 'press.api.account.get_partner_customers',
+			url: 'press.api.account.get_partner_customers',
 			onSuccess(data) {
 				this.partnerCustomers = data.map(d => {
 					return {

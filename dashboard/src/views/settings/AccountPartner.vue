@@ -8,37 +8,51 @@
 			<ListItem
 				:title="$account.partner_billing_name"
 				:subtitle="$account.partner_email"
-				v-if="$account.partner_email && !$account.team.erpnext_partner"
+				v-if="$account.partner_email"
 			>
 			</ListItem>
+
+			<div class="py-4">
+				<h3 class="text-base text-gray-700" v-if="!$account.partner_email">
+					Have a Frappe Partner Referral Code? Click on
+					<strong>Add Partner Code</strong> to link with your Partner team.
+				</h3>
+			</div>
 		</div>
 		<template #actions>
 			<Button
-				@click="showSelectPartnerDialog = true"
+				@click="showPartnerReferralDialog = true"
 				v-if="!$account.partner_email"
 			>
-				Add Partner
+				Add Partner Code
 			</Button>
 		</template>
 		<Dialog
-			:options="{ title: 'Add Partner' }"
-			v-model="showSelectPartnerDialog"
+			:options="{ title: 'Partner Referral Code' }"
+			v-model="showPartnerReferralDialog"
 		>
 			<template v-slot:body-content>
 				<FormControl
-					label="Select Frappe Partner"
-					type="select"
-					:options="partners"
-					v-model="selectedPartner"
+					label="Enter Partner Referral Code"
+					type="input"
+					v-model="referralCode"
+					placeholder="e.g. rGjw3hJ81b"
+					@input="referralCodeChange"
 				/>
-				<ErrorMessage class="mt-2" :message="$resources.selectPartner.error" />
+				<ErrorMessage class="mt-2" :message="$resources.addPartner.error" />
+				<div class="mt-1">
+					<div v-if="partnerExists" class="text-sm text-green-600" role="alert">
+						Referral Code {{ referralCode }} belongs to {{ partner }}
+					</div>
+					<ErrorMessage :message="errorMessage" />
+				</div>
 			</template>
 			<template #actions>
 				<Button
 					variant="solid"
-					:loading="$resources.selectPartner.loading"
+					:loading="$resources.addPartner.loading"
 					loadingText="Saving..."
-					@click="$resources.selectPartner.submit()"
+					@click="$resources.addPartner.submit()"
 				>
 					Add partner
 				</Button>
@@ -51,37 +65,45 @@ export default {
 	name: 'AccountPartner',
 	data() {
 		return {
-			showSelectPartnerDialog: false,
-			partners: [],
-			selectedPartner: null,
-			partner_email: null
+			showPartnerReferralDialog: false,
+			referralCode: null,
+			partnerExists: false,
+			errorMessage: null,
+			partner: null
 		};
 	},
 	resources: {
-		selectPartner() {
+		addPartner() {
 			return {
 				url: 'press.api.account.add_partner',
 				params: {
-					partner_email: this.selectedPartner
+					referral_code: this.referralCode
 				},
 				onSuccess(res) {
-					this.showSelectPartnerDialog = false;
+					this.showPartnerReferralDialog = false;
 				}
 			};
-		},
-		getPartners() {
-			return {
-				url: 'press.api.account.get_frappe_partners',
-				auto: true,
-				onSuccess(data) {
-					this.partners = data.map(d => {
-						return {
-							label: d.billing_name,
-							value: d.partner_email
-						};
-					});
-				}
-			};
+		}
+	},
+	methods: {
+		async referralCodeChange(e) {
+			let code = e.target.value;
+			this.partnerExists = false;
+
+			let result = await this.$call('press.api.account.validate_partner_code', {
+				code: code
+			});
+
+			let [isValidCode, partnerName] = result;
+
+			if (isValidCode) {
+				this.partnerExists = true;
+				this.referralCode = code;
+				this.partner = partnerName;
+				this.partnerExists = true;
+			} else {
+				this.errorMessage = `${code} is Invalid Referral Code`;
+			}
 		}
 	}
 };
