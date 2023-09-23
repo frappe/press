@@ -237,10 +237,26 @@ class Team(Document):
 	def on_update(self):
 		self.validate_payment_mode()
 		self.update_draft_invoice_payment_mode()
+		self.validate_partnership_date()
 
 		if not self.is_new() and self.billing_name and not frappe.conf.allow_tests:
 			if self.has_value_changed("billing_name"):
 				self.update_billing_details_on_frappeio()
+
+	def validate_partnership_date(self):
+		if self.erpnext_partner:
+			return
+
+		if partner_email := self.partner_email:
+			frappe_partnership_date = frappe.db.get_value(
+				"Team",
+				{"enabled": 1, "erpnext_partner": 1, "partner_email": partner_email},
+				"frappe_partnership_date",
+			)
+			if frappe_partnership_date and frappe_partnership_date > self.partnership_date:
+				frappe.throw(
+					"Partnership date cannot be less than the partnership date of the partner"
+				)
 
 	def update_draft_invoice_payment_mode(self):
 		if self.has_value_changed("payment_mode"):
@@ -271,18 +287,65 @@ class Team(Document):
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.partner_email = self.user
+		self.frappe_partnership_date = self.get_partnership_start_date()
+		self.servers_enabled = 1
 		self.save(ignore_permissions=True)
 		self.create_partner_referral_code()
+		self.create_new_invoice()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
+		self.servers_enabled = 0
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
 		if not self.partner_referral_code:
 			self.partner_referral_code = random_string(10)
 			self.save(ignore_permissions=True)
+
+	def get_partnership_start_date(self):
+		client = get_frappe_io_connection()
+		start_date = client.get_value(
+			"Partner", {"user": self.partner_email, "enabled": 1}, "start_date"
+		)
+		if not start_date:
+			frappe.throw("Partner not found on frappe.io")
+		return start_date
+
+	def create_new_invoice(self):
+		"""
+		After enabling partner privileges, new invoice should be created
+		to track the partner achivements
+		"""
+		today = frappe.utils.nowdate()
+		current_invoice = frappe.db.get_value(
+			"Invoice",
+			{
+				"team": self.name,
+				"type": "Subscription",
+				"docstatus": 0,
+				"period_end": frappe.utils.get_last_day(today),
+			},
+			"name",
+		)
+
+		if not current_invoice or today == frappe.utils.get_last_day(today):
+			# don't create invoice new team or today is the last day of the month
+			return
+		else:
+			frappe.db.set_value("Invoice", current_invoice, "period_end", frappe.utils.nowdate())
+
+		# create invoice
+		invoice = frappe.get_doc(
+			{
+				"doctype": "Invoice",
+				"team": self.name,
+				"type": "Subscription",
+				"period_start": today,
+			}
+		)
+		invoice.insert()
 
 	def allocate_free_credits(self):
 		if self.via_erpnext or self.is_saas_user:

@@ -204,6 +204,7 @@ def approve_partner_request(key):
 
 		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
 		customer_team.partner_email = partner.partner_email
+		customer_team.partnership_date = frappe.utils.nowdate()
 		customer_team.append("team_members", {"user": partner.user})
 		customer_team.save(ignore_permissions=True)
 
@@ -319,6 +320,13 @@ def validate_request_key(key, timezone=None):
 			if saas_product_doc
 			else None,
 		}
+
+
+@frappe.whitelist()
+def get_partner_request_status(team):
+	return frappe.db.get_value(
+		"Partner Approval Request", {"requested_by": team}, "status"
+	)
 
 
 @frappe.whitelist(allow_guest=True)

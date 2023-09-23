@@ -42,9 +42,13 @@
   "address_html",
   "custom_apps_section",
   "github_access_token",
+  "partner_section",
+  "partner_referral_code",
+  "partnership_date",
+  "column_break_ppov",
+  "frappe_partnership_date",
   "feature_flags_section",
   "referrer_id",
-  "partner_referral_code",
   "ssh_access_enabled",
   "skip_backups",
   "column_break_31",
@@ -372,6 +376,27 @@
    "fieldtype": "Data",
    "label": "Partner Referral Code",
    "read_only": 1
+  },
+  {
+   "fieldname": "partner_section",
+   "fieldtype": "Section Break",
+   "label": "Partner"
+  },
+  {
+   "fieldname": "partnership_date",
+   "fieldtype": "Date",
+   "label": "Partnership Date"
+  },
+  {
+   "fieldname": "column_break_ppov",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.erpnext_partner",
+   "description": "Fetched from frappe.io",
+   "fieldname": "frappe_partnership_date",
+   "fieldtype": "Date",
+   "label": "Frappe Partnership Date"
   }
  ],
  "links": [
@@ -421,7 +446,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-21 19:13:33.251726",
+ "modified": "2023-09-23 14:11:44.540214",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
