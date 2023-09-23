@@ -23,6 +23,8 @@ class InvoiceDiscountType(Enum):
 
 discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
+DISCOUNT_MAP = {"Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+
 
 class Invoice(Document):
 	def validate(self):
@@ -411,15 +413,26 @@ class Invoice(Document):
 
 	def apply_partner_discount(self):
 		# check if discount is already added
+		discount_note = (
+			"Flat Partner Discount"
+			if self.payment_mode == "Partner Credits"
+			else "New Partner Discount"
+		)
 		for discount in self.discounts:
-			if discount.note == "Flat Partner Discount":
+			if discount.note == discount_note:
 				return
 
 		# give 10% discount for partners
+		discount_percent = (
+			0.1
+			if self.payment_mode == "Partner Credits"
+			else DISCOUNT_MAP.get(self.get_partner_level())
+		)
+
 		total_partner_discount = 0
 		for item in self.items:
 			if item.document_type in ("Site", "Server", "Database Server"):
-				item.discount = item.amount * 0.1
+				item.discount = item.amount * discount_percent
 				total_partner_discount += item.discount
 
 		if total_partner_discount > 0:
@@ -430,13 +443,30 @@ class Invoice(Document):
 					"based_on": "Amount",
 					"percent": 0,
 					"amount": total_partner_discount,
-					"note": "Flat Partner Discount",
+					"note": discount_note,
 					"via_team": False,
 				},
 			)
 
 		self.save()
 		self.reload()
+
+	def get_partner_level(self):
+		# fetch partner level from frappe.io
+		client = self.get_frappeio_connection()
+		response = client.session.get(
+			f"{client.url}/api/method/get_partner_level",
+			headers=client.headers,
+			params={"email": self.partner_email, "total_amount": self.total},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_level = res.get("message")
+			if partner_level:
+				return partner_level
+		else:
+			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0

@@ -11,7 +11,7 @@ from typing import List
 from hashlib import blake2b
 from press.utils import log_error
 from frappe.utils import get_fullname
-from frappe.utils import get_url_to_form
+from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
@@ -47,16 +47,10 @@ class Team(Document):
 		if not self.referrer_id:
 			self.set_referrer_id()
 
-		self.set_partner_payment_mode()
-
 	def set_referrer_id(self):
 		h = blake2b(digest_size=4)
 		h.update(self.user.encode())
 		self.referrer_id = h.hexdigest()
-
-	def set_partner_payment_mode(self):
-		if self.erpnext_partner:
-			self.payment_mode = "Partner Credits"
 
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
@@ -277,15 +271,18 @@ class Team(Document):
 	def enable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 1
 		self.partner_email = self.user
-		self.payment_mode = "Partner Credits"
 		self.save(ignore_permissions=True)
+		self.create_partner_referral_code()
 
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.save(ignore_permissions=True)
-		# TODO: Maybe check if the partner had enough credits
-		# for settlement and if not, change payment mode
+
+	def create_partner_referral_code(self):
+		if not self.partner_referral_code:
+			self.partner_referral_code = random_string(10)
+			self.save(ignore_permissions=True)
 
 	def allocate_free_credits(self):
 		if self.via_erpnext or self.is_saas_user:
@@ -600,7 +597,7 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account or self.parent_team or self.is_saas_user:
+		if self.free_account or self.parent_team or self.is_saas_user or self.billing_team:
 			return allow
 
 		if self.payment_mode == "Partner Credits":
@@ -624,7 +621,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.payment_mode == "Partner Credits":
+		if self.free_account or self.payment_mode == "Partner Credits" or self.billing_team:
 			return True
 
 		return bool(

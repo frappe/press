@@ -18,6 +18,7 @@
   "column_break_6",
   "erpnext_partner",
   "partner_email",
+  "billing_team",
   "parent_team",
   "section_break_6",
   "team_members",
@@ -43,6 +44,7 @@
   "github_access_token",
   "feature_flags_section",
   "referrer_id",
+  "partner_referral_code",
   "ssh_access_enabled",
   "skip_backups",
   "column_break_31",
@@ -191,7 +193,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nPartner Credits"
+   "options": "\nCard\nPrepaid Credits\nPartner Credits\nPaid By Partner"
   },
   {
    "depends_on": "eval:doc.send_notifications;",
@@ -261,7 +263,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval: doc.erpnext_partner",
    "fieldname": "partner_email",
    "fieldtype": "Data",
    "label": "Partner Email"
@@ -358,6 +359,19 @@
    "fieldname": "code_servers_enabled",
    "fieldtype": "Check",
    "label": "Code Servers Enabled"
+  },
+  {
+   "depends_on": "eval: !doc.erpnext_partner",
+   "fieldname": "billing_team",
+   "fieldtype": "Link",
+   "label": "Billing Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "partner_referral_code",
+   "fieldtype": "Data",
+   "label": "Partner Referral Code",
+   "read_only": 1
   }
  ],
  "links": [
@@ -407,7 +421,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-03 20:15:07.034144",
+ "modified": "2023-09-21 19:13:33.251726",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

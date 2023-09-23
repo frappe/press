@@ -32,6 +32,9 @@ class UsageRecord(Document):
 		if team.parent_team:
 			team = frappe.get_doc("Team", team.parent_team)
 
+		if team.billing_team:
+			team = frappe.get_doc("Team", team.billing_team)
+
 		if team.free_account:
 			return
 		invoice = team.get_upcoming_invoice()

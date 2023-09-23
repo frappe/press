@@ -193,6 +193,27 @@ def login_using_key(key):
 
 
 @frappe.whitelist()
+def approve_partner_request(key):
+	partner_request_doc = frappe.get_doc("Partner Approval Request", {"key": key})
+
+	if partner_request_doc and partner_request_doc.status == "Pending":
+		partner_request_doc.status = "Approved"
+		partner_request_doc.save(ignore_permissions=True)
+
+		partner = frappe.get_doc("Team", partner_request_doc.partner)
+
+		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
+		customer_team.partner_email = partner.partner_email
+		customer_team.append("team_members", {"user": partner.user})
+		customer_team.save(ignore_permissions=True)
+
+		frappe.db.commit()
+
+		frappe.response.type = "redirect"
+		frappe.response.location = "/dashboard"
+
+
+@frappe.whitelist()
 def disable_account():
 	team = get_current_team(get_doc=True)
 	if frappe.session.user != team.name:
@@ -357,6 +378,13 @@ def get():
 			.run(as_dict=True)
 		)
 
+	partner_billing_name = ""
+	if team_doc.partner_email:
+		partner_billing_name = frappe.db.get_value(
+			"Team",
+			{"erpnext_partner": 1, "partner_email": team_doc.partner_email},
+			"billing_name",
+		)
 	number_of_sites = frappe.db.count(
 		"Site", {"team": team_doc.name, "status": ("!=", "Archived")}
 	)
@@ -377,6 +405,8 @@ def get():
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+		"partner_email": team_doc.partner_email or "",
+		"partner_billing_name": partner_billing_name,
 		"number_of_sites": number_of_sites,
 		"permissions": get_permissions(),
 	}
@@ -718,6 +748,45 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+
+
+@frappe.whitelist()
+def add_partner(referral_code: str):
+	team = get_current_team(get_doc=True)
+	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
+	doc = frappe.get_doc(
+		{
+			"doctype": "Partner Approval Request",
+			"partner": partner,
+			"requested_by": team.name,
+			"status": "Pending",
+			"send_mail": True,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def validate_partner_code(code):
+	partner = frappe.db.get_value(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 1, "partner_referral_code": code},
+		"billing_name",
+	)
+	if partner:
+		return True, partner
+	return False, None
+
+
+@frappe.whitelist()
+def get_partner_customers():
+	team = get_current_team(get_doc=True)
+	customers = frappe.get_all(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
+		["name", "user", "payment_mode", "billing_name", "currency"],
+	)
+	return customers
 
 
 @frappe.whitelist()
