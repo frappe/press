@@ -61,6 +61,8 @@
 	</Card>
 </template>
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountPartner',
 	data() {
@@ -81,6 +83,11 @@ export default {
 				},
 				onSuccess(res) {
 					this.showPartnerReferralDialog = false;
+					notify({
+						title: 'Email sent to Partner',
+						icon: 'check',
+						color: 'green'
+					});
 				}
 			};
 		}
