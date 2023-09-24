@@ -11,7 +11,7 @@
 		<div class="flex items-center">
 			<div v-if="$account.team.partnership_date">
 				<span class="text-base">
-					Partnership Start Date:
+					Customer Partnership Start Date:
 					<span class="font-semibold">{{
 						$date($account.team.partnership_date).toLocaleString({
 							month: 'long',
@@ -23,7 +23,7 @@
 			</div>
 			<div v-else>
 				<span class="text-base">
-					To set Partnership Start Date, click on Edit button</span
+					To set Customer Partnership Start Date, click on Edit button</span
 				>
 			</div>
 			<div class="ml-auto">
@@ -35,7 +35,7 @@
 
 		<Dialog
 			:options="{
-				title: 'Update Partnership Start Date',
+				title: 'Update Customer Partnership Start Date',
 				actions: [
 					{
 						variant: 'solid',
