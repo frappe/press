@@ -383,9 +383,10 @@
    "label": "Partner"
   },
   {
+   "depends_on": "eval:!doc.erpnext_partner && doc.partner_email",
    "fieldname": "partnership_date",
    "fieldtype": "Date",
-   "label": "Partnership Date"
+   "label": "Customer Partnership Date"
   },
   {
    "fieldname": "column_break_ppov",
@@ -396,7 +397,8 @@
    "description": "Fetched from frappe.io",
    "fieldname": "frappe_partnership_date",
    "fieldtype": "Date",
-   "label": "Frappe Partnership Date"
+   "label": "Frappe Partnership Date",
+   "read_only": 1
   }
  ],
  "links": [
@@ -446,7 +448,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-23 14:11:44.540214",
+ "modified": "2023-09-23 17:04:14.045892",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -11,6 +11,7 @@
   "customer_email",
   "currency",
   "partner_email",
+  "customer_partnership_date",
   "column_break_4",
   "status",
   "marketplace",
@@ -405,6 +406,13 @@
    "fieldname": "marketplace",
    "fieldtype": "Check",
    "label": "Marketplace"
+  },
+  {
+   "fetch_from": "team.partnership_date",
+   "fieldname": "customer_partnership_date",
+   "fieldtype": "Date",
+   "label": "Customer Partnership Date",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
@@ -425,7 +433,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-09-18 14:07:10.847260",
+ "modified": "2023-09-24 10:19:31.100411",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

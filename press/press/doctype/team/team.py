@@ -297,6 +297,7 @@ class Team(Document):
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.servers_enabled = 0
+		self.partner_email = ""
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):

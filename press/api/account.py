@@ -211,7 +211,7 @@ def approve_partner_request(key):
 		frappe.db.commit()
 
 		frappe.response.type = "redirect"
-		frappe.response.location = "/dashboard"
+		frappe.response.location = "/dashboard/settings/partner"
 
 
 @frappe.whitelist()
@@ -327,6 +327,12 @@ def get_partner_request_status(team):
 	return frappe.db.get_value(
 		"Partner Approval Request", {"requested_by": team}, "status"
 	)
+
+
+@frappe.whitelist()
+def update_partnership_date(team, partnership_date):
+	if team:
+		frappe.db.set_value("Team", team, "partnership_date", partnership_date)
 
 
 @frappe.whitelist(allow_guest=True)
