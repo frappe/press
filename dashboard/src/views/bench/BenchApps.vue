@@ -201,6 +201,11 @@ export default {
 		removeApp() {
 			return {
 				url: 'press.api.bench.remove_app',
+				onSuccess(app_name) {
+					this.$resources.apps.setData(data =>
+						data.filter(app => app.name !== app_name)
+					);
+				},
 				onError(e) {
 					notify({
 						title: 'Error',

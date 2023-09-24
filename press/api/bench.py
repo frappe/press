@@ -438,6 +438,7 @@ def remove_app(name, app):
 		release_group.remove(app_doc_to_remove)
 
 	release_group.save()
+	return app
 
 
 @frappe.whitelist()
