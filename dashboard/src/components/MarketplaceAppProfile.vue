@@ -6,7 +6,7 @@
 					size="lg"
 					shape="square"
 					:label="app.title"
-					:imageURL="profileImageUrl"
+					:image="profileImageUrl"
 				/>
 				<FileUploader
 					@success="onAppImageChange"
