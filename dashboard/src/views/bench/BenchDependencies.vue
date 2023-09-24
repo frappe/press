@@ -17,7 +17,7 @@
 			:key="dependency.key"
 			v-model="dependency.value"
 			:label="dependency.key.split('_').join(' ')"
-			class="my-2"
+			class="mx-0.5 my-2"
 			@input="isDirty = true"
 		/>
 	</Card>
