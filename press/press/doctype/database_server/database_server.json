@@ -45,6 +45,9 @@
   "ssh_user",
   "ssh_port",
   "root_public_key",
+  "section_break_cees",
+  "ram",
+  "column_break_apox",
   "tags_section",
   "tags",
   "mariadb_settings_tab",
@@ -364,11 +367,24 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "fieldname": "section_break_cees",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Float",
+   "label": "RAM (MB)"
+  },
+  {
+   "fieldname": "column_break_apox",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-30 22:29:30.346012",
+ "modified": "2023-09-24 09:11:57.951188",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
