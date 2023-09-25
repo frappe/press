@@ -27,6 +27,12 @@ class Container(Document):
 				"network": self.stack,
 			}
 		)
+		if config["ports"]:
+			config["entrypoint"] = {
+				"site": frappe.db.get_value("Stack", self.stack, "title"),
+				"port": config["ports"][0]["host_port"],
+			}
+
 		self.config = json.dumps(config, indent=4)
 
 	@frappe.whitelist()
