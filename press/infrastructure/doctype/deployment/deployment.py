@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 import ipaddress
+import random
 
 
 class Deployment(Document):
@@ -42,12 +43,13 @@ class Deployment(Document):
 			container.mac_address = deployment_container.mac_address
 
 			service = frappe.get_doc("Service", container.service)
-			for row in service.ports:
+			host_ports = self.get_random_port(container.node, len(service.ports))
+			for row, host_port in zip(service.ports, host_ports):
 				container.append(
 					"ports",
 					{
 						"host_ip": "127.0.0.1",
-						"host_port": "",
+						"host_port": host_port,
 						"container_port": row.port,
 						"protocol": row.protocol,
 					},
@@ -74,6 +76,20 @@ class Deployment(Document):
 
 			container.insert()
 			container.deploy()
+
+	def get_random_port(self, node, count):
+		rows = frappe.db.sql(
+			"""
+		SELECT host_port FROM `tabContainer Port`
+		LEFT JOIN `tabContainer` ON `tabContainer Port`.parent = `tabContainer`.name
+		WHERE `tabContainer`.status != "Archived" AND `tabContainer`.node = %s""",
+			node,
+			as_dict=True,
+		)
+		port_range = set(range(30000, 60000))
+		occupied_ports = set(row.host_port for row in rows)
+
+		return random.sample(list(port_range - occupied_ports), count)
 
 	def on_trash(self):
 		containers = frappe.get_all("Container", filters={"deployment": self.name})
