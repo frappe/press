@@ -547,6 +547,12 @@ const routes = [
 				path: 'services',
 				component: () => import('../views/stack/StackServices.vue'),
 				props: true
+			},
+			{
+				name: 'StackDeploys',
+				path: 'deploys/:deploymentName?',
+				component: () => import('../views/stack/StackDeploys.vue'),
+				props: true
 			}
 		]
 	},
