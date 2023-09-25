@@ -66,13 +66,16 @@ class Container(Document):
 	def get_peers(self):
 		containers_on_other_nodes = frappe.get_all(
 			"Deployment Container",
-			["ip_address", "mac_address", "node"],
+			["ip_address", "mac_address", "node", "service"],
 			{"parent": self.deployment, "node": ("!=", self.node)},
 		)
 		peers = []
 		for container in containers_on_other_nodes:
 			peer = container.copy()
 			peer["node_ip_address"] = frappe.db.get_value("Node", peer["node"], "private_ip")
+			peer["name"] = frappe.db.get_value("Service", peer["service"], "title")
+			peer.pop("Node", None)
+			peer.pop("service", None)
 			peers.append(peer)
 
 		return peers
