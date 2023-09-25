@@ -12,6 +12,7 @@
   "cluster",
   "subnet_cidr_block",
   "section_break_krco",
+  "compose",
   "services",
   "volumes"
  ],
@@ -20,8 +21,8 @@
    "fieldname": "services",
    "fieldtype": "Table",
    "label": "Services",
-   "options": "Stack Service",
-   "reqd": 1
+   "mandatory_depends_on": "eval:!doc.compose",
+   "options": "Stack Service"
   },
   {
    "fieldname": "title",
@@ -75,6 +76,13 @@
    "label": "Volumes",
    "options": "Stack Volume",
    "read_only": 1
+  },
+  {
+   "fieldname": "compose",
+   "fieldtype": "Code",
+   "label": "Compose",
+   "mandatory_depends_on": "eval:!(doc.services && doc.services.length > 0 && doc.services[0].service)",
+   "options": "yaml"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -88,7 +96,7 @@
    "link_fieldname": "stack"
   }
  ],
- "modified": "2023-08-30 10:05:10.144900",
+ "modified": "2023-09-07 04:19:52.495505",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Stack",

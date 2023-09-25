@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "title",
   "image",
   "column_break_r20a",
   "tag",
@@ -87,11 +88,17 @@
    "in_list_view": 1,
    "label": "Tag",
    "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-29 22:58:30.975248",
+ "modified": "2023-09-06 14:12:30.213674",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Service",
@@ -114,5 +121,5 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "image"
+ "title_field": "title"
 }
