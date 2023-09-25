@@ -49,12 +49,12 @@ class Invoice(Document):
 			self.submit()
 			return
 
-		team_enabled = frappe.db.get_value("Team", self.team, "enabled")
-		if not team_enabled:
+		team = frappe.get_doc("Team", self.team)
+		if not team.enabled:
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
 
-		if self.partner_email:
+		if self.partner_email and team.erpnext_partner:
 			self.apply_partner_discount()
 
 		# set as unpaid by default
