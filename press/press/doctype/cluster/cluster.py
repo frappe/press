@@ -461,3 +461,13 @@ class Cluster(Document):
 		return frappe.db.get_all(
 			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"]
 		)
+
+	@classmethod
+	def get_all_for_new_container(cls, extra_filters={}) -> List[Dict[str, str]]:
+		cluster_names = unique(
+			frappe.db.get_all("Node", filters={"status": "Active"}, pluck="cluster")
+		)
+		filters = {"name": ("in", cluster_names), "public": True}
+		return frappe.db.get_all(
+			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"]
+		)

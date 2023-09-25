@@ -6,7 +6,18 @@
 import frappe
 
 from press.api.site import protected
+from press.press.doctype.cluster.cluster import Cluster
 from frappe.utils import unique
+
+
+@frappe.whitelist()
+def new(stack):
+	doc = frappe.new_doc("Stack")
+	doc.title = stack.get("title")
+	doc.cluster = stack.get("cluster")
+	doc.compose = stack.get("compose")
+	doc.insert()
+	return doc.name
 
 
 @frappe.whitelist()
@@ -22,6 +33,11 @@ def get(name):
 		"stack_tags": [],
 		"tags": [],
 	}
+
+
+@frappe.whitelist()
+def validate(compose):
+	return frappe.new_doc("Stack").__class__.parse_compose(compose)
 
 
 def get_stack_status(name):
@@ -55,6 +71,15 @@ def all():
 		stack.status = get_stack_status(stack.name)
 
 	return stacks
+
+
+@frappe.whitelist()
+def options():
+	clusters = Cluster.get_all_for_new_container()
+	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
+
+	options = {"clusters": clusters, "domain": domain}
+	return options
 
 
 @frappe.whitelist()
