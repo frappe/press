@@ -25,6 +25,7 @@
 									'Site',
 									'Bench',
 									'Server',
+									'Stack',
 									'Marketplace',
 									'Account',
 									'MarketplaceApp'

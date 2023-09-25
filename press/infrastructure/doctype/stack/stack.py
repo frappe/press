@@ -93,3 +93,20 @@ class Stack(Document):
 			doc = frappe.get_doc(service)
 			doc.insert()
 			self.append("services", {"service": doc.name})
+
+	@frappe.whitelist()
+	def deploy_information(self):
+		out = frappe._dict(update_available=False)
+
+		last_deployment = frappe.get_all("Deployment", {"stack": self.name}, "*")
+		if last_deployment:
+			last_deployment = last_deployment[0]
+			out.update_available = False
+		else:
+			out.update_available = True
+
+		out.last_deploy = last_deployment
+		out.deploy_in_progress = bool(
+			last_deployment and last_deployment.status in ("Pending", "Running")
+		)
+		return out

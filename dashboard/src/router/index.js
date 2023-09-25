@@ -536,6 +536,21 @@ const routes = [
 		component: () => import('../views/stack/Stacks.vue')
 	},
 	{
+		path: '/stacks/:stackName',
+		name: 'Stack',
+		component: () => import('../views/stack/Stack.vue'),
+		props: true,
+		redirect: { name: 'StackServices' },
+		children: [
+			{
+				name: 'StackServices',
+				path: 'services',
+				component: () => import('../views/stack/StackServices.vue'),
+				props: true
+			}
+		]
+	},
+	{
 		name: 'NotFound',
 		path: '/:pathMatch(.*)*',
 		component: () => import('../views/general/404.vue')
