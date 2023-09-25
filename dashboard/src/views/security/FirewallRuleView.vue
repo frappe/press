@@ -3,11 +3,7 @@
 		<div class="pb-20">
 			<div class="flex">
 				<div class="flex w-full space-x-2 pb-4">
-					<FormControl
-						label="Search"
-						v-model="searchTerm"
-						v-if="!disableSearch"
-					>
+					<FormControl v-model="searchTerm" v-if="!disableSearch">
 						<template #prefix>
 							<FeatherIcon name="search" class="w-4 text-gray-600" />
 						</template>
