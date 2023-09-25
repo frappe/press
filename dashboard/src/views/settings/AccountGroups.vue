@@ -115,6 +115,7 @@ export default {
 					icon: 'check'
 				});
 				this.showAddGroupDialog = false;
+				this.showManageMemberDialog = true;
 			}
 		},
 		removeGroup: {
