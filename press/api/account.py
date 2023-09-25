@@ -975,9 +975,10 @@ def permission_group_users(name):
 
 @frappe.whitelist()
 def add_permission_group(title):
-	frappe.get_doc(
+	doc = frappe.get_doc(
 		{"doctype": "Press Permission Group", "team": get_current_team(), "title": title}
 	).insert(ignore_permissions=True)
+	return {"name": doc.name, "title": doc.title}
 
 
 @frappe.whitelist()
