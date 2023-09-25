@@ -95,24 +95,6 @@ export default {
 					ptype: this.type
 				},
 				onSuccess(r) {
-					r = {
-						options: [],
-						actions: {
-							Site: {
-								Migrate: 'press.api.site.migrate',
-								'Database Access': 'press.api.site.enable_database_access',
-								'Login as Admin': 'press.api.site.login',
-								Update: 'press.api.site.update',
-								View: 'press.api.site.overview',
-								Restore: 'press.api.site.restore'
-							},
-							'Release Group': {
-								Deploy: 'press.api.bench.deploy_and_update',
-								View: 'press.api.bench.get',
-								Update: 'press.api.bench.update'
-							}
-						}
-					};
 					this.fuse = new Fuse(r.options, {
 						keys: ['name'],
 						threshold: 0.3

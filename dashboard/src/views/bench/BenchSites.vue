@@ -356,56 +356,67 @@ export default {
 		},
 		benchDropdownItems(i) {
 			return [
-				this.$account.user.user_type === 'System User' && {
+				{
 					label: 'View in Desk',
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/bench/${this.versions[i].name}`,
 							'_blank'
 						);
-					}
-				},
-				this.versions[i].status === 'Active' &&
-					this.$account.ssh_key &&
-					this.versions[i].is_ssh_proxy_setup && {
-						label: 'SSH Access',
-						onClick: () => {
-							this.selectedVersionIndex = i;
-							this.showSSHDialog = true;
-						}
 					},
-				this.versions[i].status === 'Active' && {
+					condition: () => this.$account.user.user_type === 'System User'
+				},
+				{
+					label: 'SSH Access',
+					onClick: () => {
+						this.selectedVersionIndex = i;
+						this.showSSHDialog = true;
+					},
+					condition: () =>
+						this.versions[i].status === 'Active' &&
+						this.$account.ssh_key &&
+						this.versions[i].is_ssh_proxy_setup &&
+						this.permissions.sshAccess
+				},
+				{
 					label: 'View Logs',
 					onClick: () => {
 						this.$router.push(
 							`/benches/${this.bench.name}/logs/${this.versions[i].name}/`
 						);
-					}
-				},
-				this.versions[i].status === 'Active' &&
-					i > 0 &&
-					this.versions[i].sites.length > 0 && {
-						label: 'Update All Sites',
-						onClick: () => {
-							this.selectedVersionIndex = i;
-							this.$resources.updateAllSites.submit();
-						}
 					},
-				this.versions[i].status === 'Active' && {
+					condition: () => this.versions[i].status === 'Active'
+				},
+				{
+					label: 'Update All Sites',
+					onClick: () => {
+						this.selectedVersionIndex = i;
+						this.$resources.updateAllSites.submit();
+					},
+					condition: () =>
+						this.versions[i].status === 'Active' &&
+						i > 0 &&
+						this.versions[i].sites.length > 0
+				},
+				{
 					label: 'Restart Bench',
 					onClick: () => {
 						this.selectedVersionIndex = i;
 						this.confirmRestart();
-					}
+					},
+					condition: () =>
+						this.versions[i].status === 'Active' &&
+						this.permissions.restartBench
 				},
-				this.$account.team.code_servers_enabled && {
+				{
 					label: 'Create Code Server',
 					onClick: () => {
 						this.selectedVersionIndex = i;
 						this.showCodeServerDialog = true;
-					}
+					},
+					condition: () => this.$account.team.code_servers_enabled
 				}
-			];
+			].filter(d => (d.condition ? d.condition() : true));
 		},
 		proceedWithLoginAsAdmin() {
 			this.errorMessage = '';
@@ -439,6 +450,18 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				restartBench: this.$account.hasPermission(
+					this.benchName,
+					'press.api.bench.restart'
+				),
+				sshAccess: this.$account.hasPermission(
+					this.benchName,
+					'press.api.bench.generate_certificate'
+				)
+			};
+		},
 		versions() {
 			if (!this.$resources.versions.data) return [];
 
