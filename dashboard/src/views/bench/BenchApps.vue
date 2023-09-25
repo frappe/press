@@ -89,7 +89,7 @@
 					<FormControl
 						class="mb-2"
 						placeholder="Search for Apps"
-						v-on:input="e => updateSearchTerm(e.data)"
+						v-on:input="e => updateSearchTerm(e.target.value)"
 					/>
 					<LoadingText class="py-2" v-if="$resources.installableApps.loading" />
 					<AppSourceSelector
@@ -201,6 +201,11 @@ export default {
 		removeApp() {
 			return {
 				url: 'press.api.bench.remove_app',
+				onSuccess(app_name) {
+					this.$resources.apps.setData(data =>
+						data.filter(app => app.name !== app_name)
+					);
+				},
 				onError(e) {
 					notify({
 						title: 'Error',
@@ -259,7 +264,6 @@ export default {
 				message: `Are you sure you want to remove app ${app.name} from this bench?`,
 				actionLabel: 'Remove App',
 				actionColor: 'red',
-				resource: this.$resources.removeApp,
 				action: closeDialog => {
 					this.$resources.removeApp.submit({
 						name: this.benchName,

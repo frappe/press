@@ -81,14 +81,14 @@
 								class="mr-8"
 								type="select"
 								:options="siteStatusFilterOptions()"
-								v-model="siteFilter.status"
+								v-model="site_status"
 							/>
 							<FormControl
 								label="Tag"
 								class="mr-8"
 								type="select"
 								:options="siteTagFilterOptions()"
-								v-model="siteFilter.tag"
+								v-model="site_tag"
 							/>
 						</div>
 					</div>
@@ -96,25 +96,22 @@
 						:columns="[
 							{ label: 'Site Name', name: 'name', width: 2 },
 							{ label: 'Status', name: 'status' },
-							{ label: 'Region', name: 'region' },
+							{ label: 'Region', name: 'region', width: 0.5 },
 							{ label: 'Tags', name: 'tags' },
-							{ label: 'Plan', name: 'plan' },
+							{ label: 'Plan', name: 'plan', width: 1.5 },
 							{ label: '', name: 'actions', width: 0.5 }
 						]"
 						:rows="sites"
 						v-slot="{ rows, columns }"
 					>
-						<TableHeader class="hidden sm:grid" />
-						<div class="flex items-center justify-center">
-							<LoadingText class="mt-8" v-if="$resources.allSites.loading" />
-							<div v-else-if="rows.length === 0" class="mt-8">
-								<div class="text-base text-gray-700">No sites</div>
-							</div>
-						</div>
-
-						<div v-for="group in groups" :key="group.group">
+						<TableHeader class="mb-4 hidden lg:grid" />
+						<div
+							v-for="group in groups"
+							:key="group.group"
+							class="mb-4 rounded border"
+						>
 							<div
-								class="flex w-full items-center border-b bg-gray-50 px-3 py-2 text-base"
+								class="flex w-full items-center rounded-t bg-gray-50 px-3 py-2 text-base"
 							>
 								<span class="font-semibold text-gray-900">
 									{{ group.title }}
@@ -134,9 +131,10 @@
 							</div>
 
 							<TableRow
-								v-for="row in sitesByGroup[group.group]"
+								v-for="(row, index) in sitesByGroup[group.group]"
 								:key="row.name"
 								:row="row"
+								:class="index === 0 ? 'rounded-b' : 'rounded'"
 							>
 								<TableCell v-for="column in columns">
 									<Badge
@@ -145,7 +143,7 @@
 									/>
 									<div
 										v-else-if="column.name === 'tags'"
-										class="hidden space-x-1 sm:flex"
+										class="hidden space-x-1 lg:flex"
 									>
 										<Badge
 											v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -161,10 +159,11 @@
 												:label="`+${row.tags.length - 1}`"
 											/>
 										</Tooltip>
+										<span v-if="row.tags.length == 0">-</span>
 									</div>
 									<span
 										v-else-if="column.name === 'plan'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										{{
 											row.plan
@@ -176,7 +175,7 @@
 									</span>
 									<div
 										v-else-if="column.name === 'region'"
-										class="hidden sm:block"
+										class="hidden md:block"
 									>
 										<img
 											v-if="row.server_region_info.image"
@@ -193,7 +192,11 @@
 										class="w-full text-right"
 										v-else-if="column.name == 'actions'"
 									>
-										<Dropdown @click.prevent :options="dropdownItems(row)">
+										<Dropdown
+											v-if="['Active', 'Updating'].includes(row.status)"
+											@click.prevent
+											:options="dropdownItems(row)"
+										>
 											<template v-slot="{ open }">
 												<Button
 													:variant="open ? 'subtle' : 'ghost'"
@@ -205,6 +208,17 @@
 									<span v-else>{{ row[column.name] || '' }}</span>
 								</TableCell>
 							</TableRow>
+						</div>
+						<div class="mt-8 flex items-center justify-center">
+							<LoadingText
+								v-if="$resources.allSites.loading && !$resources.allSites.data"
+							/>
+							<div
+								v-else-if="$resources.allSites.fetched && rows.length === 0"
+								class="text-base text-gray-700"
+							>
+								No Sites
+							</div>
 						</div>
 					</Table>
 
@@ -244,7 +258,6 @@ import TableRow from '@/components/Table/TableRow.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
 export default {
@@ -277,23 +290,24 @@ export default {
 			errorMessage: null,
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null,
-			siteFilter: {
-				status: 'All',
-				tag: ''
-			}
+			site_status: 'All',
+			site_tag: ''
 		};
 	},
 	resources: {
 		allSites() {
 			return {
 				url: 'press.api.site.all',
-				params: { site_filter: this.siteFilter },
+				params: {
+					site_filter: { status: this.site_status, tag: this.site_tag }
+				},
 				auto: true,
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'tags']
-					});
-				}
+				cache: [
+					'SiteList',
+					this.site_status,
+					this.site_tag,
+					this.$account.team.name
+				]
 			};
 		},
 		siteTags: { url: 'press.api.site.site_tags', auto: true },
@@ -375,6 +389,10 @@ export default {
 					value: 'Broken'
 				},
 				{
+					label: 'Inactive',
+					value: 'Inactive'
+				},
+				{
 					label: 'Trial',
 					value: 'Trial'
 				},
@@ -408,9 +426,7 @@ export default {
 					label: 'Visit Site',
 					onClick: () => {
 						window.open(`https://${site.name}`, '_blank');
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				},
 				{
 					label: 'Login As Admin',
@@ -423,11 +439,9 @@ export default {
 
 						this.siteForLogin = site.name;
 						this.showReasonForAdminLoginDialog = true;
-					},
-					condition: () =>
-						site.status === 'Active' || site.status === 'Updating'
+					}
 				}
-			].filter(item => item.condition());
+			];
 		},
 		proceedWithLoginAsAdmin() {
 			this.errorMessage = '';
@@ -454,7 +468,9 @@ export default {
 				this.$account.hasPermission(site.name, '', true)
 			);
 			if (this.searchTerm) {
-				return this.fuse.search(this.searchTerm).map(result => result.item);
+				return sites.filter(site =>
+					site.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 			}
 			return sites;
 		},
@@ -487,12 +503,20 @@ export default {
 				}
 				if (!seen.includes(site.group)) {
 					seen.push(site.group);
-					groups.push({
-						title: site.title,
-						group: site.group,
-						public: site.public,
-						version: site.version
-					});
+					if (site.public)
+						groups.unshift({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
+					else
+						groups.push({
+							title: site.title,
+							group: site.group,
+							public: site.public,
+							version: site.version
+						});
 				}
 			}
 			return groups;

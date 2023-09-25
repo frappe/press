@@ -20,16 +20,8 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Agent Job',
+				url: 'press.api.spaces.code_server_jobs',
 				filters: { code_server: this.serverName },
-				fields: [
-					'name',
-					'job_type',
-					'creation',
-					'status',
-					'start',
-					'end',
-					'duration'
-				],
 				orderBy: 'creation desc',
 				start: 0,
 				pageLength: 10,

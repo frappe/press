@@ -4,6 +4,7 @@
 
 import json
 from collections import OrderedDict
+import re
 from press.press.doctype.team.team import get_child_team_members
 from typing import Dict, List
 
@@ -249,8 +250,8 @@ def options(only_by_current_team=False):
 
 @frappe.whitelist()
 @protected("Release Group")
-def bench_config(release_group_name):
-	rg = frappe.get_doc("Release Group", release_group_name)
+def bench_config(name):
+	rg = frappe.get_doc("Release Group", name)
 
 	common_site_config = [
 		{"key": config.key, "value": config.value, "type": config.type}
@@ -303,6 +304,39 @@ def update_config(name, config):
 	rg = frappe.get_doc("Release Group", name)
 	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
 	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def dependencies(name: str):
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	dependencies = [
+		{"key": d.dependency, "value": d.version, "type": "String"} for d in rg.dependencies
+	]
+	return dependencies
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def update_dependencies(name: str, dependencies: str):
+	dependencies = frappe.parse_json(dependencies)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
+	if len(rg.dependencies) != len(dependencies):
+		frappe.throw("Need all required dependencies")
+	if diff := set([d["key"] for d in dependencies]) - set(
+		d.dependency for d in rg.dependencies
+	):
+		frappe.throw("Invalid dependencies: " + ", ".join(diff))
+	for dep, new in zip(
+		sorted(rg.dependencies, key=lambda x: x.dependency),
+		sorted(dependencies, key=lambda x: x["key"]),
+	):
+		if dep.dependency != new["key"]:
+			frappe.throw(f"Invalid dependency: {new['key']}")
+		if not re.match(r"^\d+\.\d+\.*\d*$", new["value"]):
+			frappe.throw(f"Invalid version for {new['key']}")
+		dep.version = new["value"]
+	rg.save()
 
 
 @frappe.whitelist()
@@ -404,6 +438,7 @@ def remove_app(name, app):
 		release_group.remove(app_doc_to_remove)
 
 	release_group.save()
+	return app
 
 
 @frappe.whitelist()
@@ -503,6 +538,9 @@ def candidates(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def candidate(name):
+	if not name:
+		return
+
 	candidate = frappe.get_doc("Deploy Candidate", name)
 	jobs = []
 	deploys = frappe.get_all("Deploy", {"candidate": name}, limit=1)
@@ -768,20 +806,20 @@ def archive(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def restart(bench):
+def restart(name):
 	frappe.get_doc("Bench", bench).restart()
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update(bench):
+def update(name):
 	frappe.get_doc("Bench", bench).update_all_sites()
 
 
 @frappe.whitelist()
 @protected("Release Group")
-def update_all_sites(bench_name):
-	benches = frappe.get_all("Bench", {"group": bench_name, "status": "Active"})
+def update_all_sites(name):
+	benches = frappe.get_all("Bench", {"group": name, "status": "Active"})
 	for bench in benches:
 		frappe.get_cached_doc("Bench", bench).update_all_sites()
 

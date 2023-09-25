@@ -24,7 +24,7 @@
 							variant="solid"
 							icon-left="external-link"
 							label="Visit Site"
-							@click="$router.push(`/${this.site?.name}/new`)"
+							:link="`https://${site?.name}`"
 						/>
 					</div>
 				</template>
@@ -307,13 +307,6 @@ export default {
 
 		siteActions() {
 			return [
-				['Active', 'Updating'].includes(this.site?.status) && {
-					label: 'Visit Site',
-					icon: 'external-link',
-					onClick: () => {
-						window.open(`https://${this.site?.name}`, '_blank');
-					}
-				},
 				this.$account.user.user_type == 'System User' && {
 					label: 'View in Desk',
 					icon: 'external-link',

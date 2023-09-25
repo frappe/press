@@ -44,6 +44,9 @@
 						</template>
 					</Breadcrumbs>
 				</header>
+
+				<EditServerTitleDialog v-model="showEditTitleDialog" :server="server" />
+
 				<div
 					class="flex flex-col space-y-3 px-5 py-3 md:flex-row md:items-baseline md:justify-between md:space-y-0"
 				>
@@ -96,6 +99,7 @@
 </template>
 
 <script>
+import EditServerTitleDialog from './EditServerTitleDialog.vue';
 import Tabs from '@/components/Tabs.vue';
 import { notify } from '@/utils/toast';
 
@@ -108,12 +112,14 @@ export default {
 	},
 	props: ['serverName'],
 	components: {
+		EditServerTitleDialog,
 		Tabs
 	},
 	data() {
 		return {
 			runningJob: false,
 			runningPlay: false,
+			showEditTitleDialog: false,
 			errorMessage: ''
 		};
 	},
@@ -177,6 +183,11 @@ export default {
 
 		serverActions() {
 			return [
+				{
+					label: 'Edit Title',
+					icon: 'edit',
+					onClick: () => (this.showEditTitleDialog = true)
+				},
 				['Active', 'Updating'].includes(this.server.status) && {
 					label: 'Visit Server',
 					icon: 'external-link',

@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-08-14 15:59:21.127979",
+  "modified": "2023-09-22 08:37:36.852558",
   "name": "Create Server",
   "steps": [
    {
@@ -41,7 +41,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for TLS Certificate to be updated",
     "wait_until_true": 1
    },
@@ -57,9 +57,17 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Agent to be updated",
     "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
    }
   ]
  },

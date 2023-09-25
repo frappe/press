@@ -151,6 +151,8 @@ class TestPrivateCluster(TestCluster):
 
 		root_domain = create_test_root_domain("local.fc.frappe.dev")
 		frappe.db.set_single_value("Press Settings", "domain", root_domain.name)
+		frappe.db.set_single_value("Press Settings", "aws_access_key_id", "test")
+		frappe.db.set_single_value("Press Settings", "aws_secret_access_key", "test")
 
 		server_count_before = frappe.db.count("Server")
 		database_server_count_before = frappe.db.count("Database Server")
@@ -253,8 +255,8 @@ class TestPublicCluster(TestCluster):
 		client = boto3.client("iam")
 		client.create_user(UserName="test")
 		key_pairs = client.create_access_key(UserName="test")
-		settings.offsite_backups_access_key_id = key_pairs["AccessKey"]["AccessKeyId"]
-		settings.offsite_backups_secret_access_key = key_pairs["AccessKey"]["SecretAccessKey"]
+		settings.aws_access_key_id = key_pairs["AccessKey"]["AccessKeyId"]
+		settings.aws_secret_access_key = key_pairs["AccessKey"]["SecretAccessKey"]
 		settings.save()
 		cluster = self._create_cluster(
 			aws_access_key_id=None, aws_secret_access_key=None, public=True

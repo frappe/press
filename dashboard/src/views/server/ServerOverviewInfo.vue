@@ -4,7 +4,7 @@
 			<div class="flex items-center py-3">
 				<Avatar
 					v-if="info.owner"
-					:imageURL="info.owner.user_image"
+					:image="info.owner.user_image"
 					:label="info.owner.first_name"
 				/>
 				<div class="ml-3 flex flex-1 items-center justify-between">

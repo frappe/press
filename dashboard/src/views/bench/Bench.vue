@@ -103,7 +103,7 @@ export default {
 			return {
 				url: 'press.api.bench.update_all_sites',
 				params: {
-					bench_name: this.benchName
+					name: this.benchName
 				}
 			};
 		}

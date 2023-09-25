@@ -31,14 +31,14 @@
 						class="mr-8"
 						type="select"
 						:options="benchStatusFilterOptions()"
-						v-model="benchFilter.status"
+						v-model="bench_status"
 					/>
 					<FormControl
 						label="Tag"
 						class="mr-8"
 						type="select"
 						:options="benchTagFilterOptions()"
-						v-model="benchFilter.tag"
+						v-model="bench_tag"
 					/>
 				</div>
 				<div class="w-10"></div>
@@ -55,19 +55,18 @@
 				:rows="benches"
 				v-slot="{ rows, columns }"
 			>
-				<TableHeader class="hidden sm:grid" />
-				<div class="flex items-center justify-center">
-					<LoadingText v-if="$resources.allBenches.loading" class="mt-8" />
-					<div v-else-if="rows.length === 0" class="mt-8">
-						<div class="text-base text-gray-700">No benches</div>
-					</div>
-				</div>
-				<TableRow v-for="row in rows" :key="row.name" :row="row">
+				<TableHeader class="hidden lg:grid" />
+				<TableRow
+					v-for="row in rows"
+					:key="row.name"
+					:row="row"
+					class="rounded"
+				>
 					<TableCell v-for="column in columns">
 						<Badge v-if="column.name === 'status'" :label="row.status" />
 						<div
 							v-else-if="column.name === 'tags'"
-							class="hidden space-x-1 sm:flex"
+							class="hidden space-x-1 lg:flex"
 						>
 							<Badge
 								v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -83,10 +82,11 @@
 									:label="`+${row.tags.length - 1}`"
 								/>
 							</Tooltip>
+							<span v-if="row.tags.length == 0">-</span>
 						</div>
 						<div
 							v-else-if="column.name === 'stats'"
-							class="hidden text-sm text-gray-600 sm:block"
+							class="hidden text-sm text-gray-600 md:block"
 						>
 							{{
 								`${row.stats.number_of_sites} ${$plural(
@@ -117,11 +117,22 @@
 						</div>
 						<span
 							v-else
-							:class="{ 'hidden sm:block': column.name === 'version' }"
+							:class="{ 'hidden md:block': column.name === 'version' }"
 							>{{ row[column.name] || '' }}
 						</span>
 					</TableCell>
 				</TableRow>
+				<div class="mt-8 flex items-center justify-center">
+					<LoadingText
+						v-if="$resources.allBenches.loading && !$resources.allBenches.data"
+					/>
+					<div
+						v-else-if="$resources.allBenches.fetched && rows.length === 0"
+						class="text-base text-gray-700"
+					>
+						No Benches
+					</div>
+				</div>
 			</Table>
 		</div>
 
@@ -149,7 +160,6 @@ import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'BenchesScreen',
@@ -157,10 +167,8 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			benchFilter: {
-				status: 'All',
-				tag: ''
-			}
+			bench_status: 'All',
+			bench_tag: ''
 		};
 	},
 	pageMeta() {
@@ -185,13 +193,16 @@ export default {
 		allBenches() {
 			return {
 				url: 'press.api.bench.all',
-				params: { bench_filter: this.benchFilter },
+				params: {
+					bench_filter: { status: this.bench_status, tag: this.bench_tag }
+				},
 				auto: true,
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['title', 'tags']
-					});
-				}
+				cache: [
+					'BenchList',
+					this.bench_status,
+					this.bench_tag,
+					this.$account.team.name
+				]
 			};
 		},
 		benchTags: {
@@ -208,7 +219,9 @@ export default {
 				this.$account.hasPermission(bench.name, '', true)
 			);
 			if (this.searchTerm)
-				benches = this.fuse.search(this.searchTerm).map(result => result.item);
+				benches = benches.filter(bench =>
+					bench.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return benches.map(bench => ({
 				name: bench.title,

@@ -45,14 +45,14 @@
 							class="mr-8"
 							type="select"
 							:options="serverStatusFilterOptions()"
-							v-model="serverFilter.server_type"
+							v-model="server_type"
 						/>
 						<FormControl
 							label="Tag"
 							class="mr-8"
 							type="select"
 							:options="serverTagFilterOptions()"
-							v-model="serverFilter.tag"
+							v-model="server_tag"
 						/>
 					</div>
 				</div>
@@ -68,19 +68,18 @@
 					:rows="servers"
 					v-slot="{ rows, columns }"
 				>
-					<TableHeader class="hidden sm:grid" />
-					<div class="flex items-center justify-center">
-						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
-						<div v-else-if="rows.length === 0" class="mt-8">
-							<div class="text-base text-gray-700">No Items</div>
-						</div>
-					</div>
-					<TableRow v-for="row in rows" :key="row.name" :row="row">
+					<TableHeader class="hidden lg:grid" />
+					<TableRow
+						v-for="row in rows"
+						:key="row.name"
+						:row="row"
+						class="rounded"
+					>
 						<TableCell v-for="column in columns">
 							<Badge v-if="column.name === 'status'" :label="row.status" />
 							<div
 								v-else-if="column.name === 'tags'"
-								class="hidden space-x-1 sm:flex"
+								class="hidden space-x-1 lg:flex"
 							>
 								<Badge
 									v-for="(tag, i) in row.tags.slice(0, 1)"
@@ -96,8 +95,9 @@
 										:label="`+${row.tags.length - 1}`"
 									/>
 								</Tooltip>
+								<span v-if="row.tags.length === 0">-</span>
 							</div>
-							<span v-else-if="column.name === 'plan'" class="hidden sm:block">
+							<span v-else-if="column.name === 'plan'" class="hidden md:block">
 								{{
 									row.plan
 										? `${$planTitle(row.plan)}${
@@ -106,7 +106,7 @@
 										: ''
 								}}
 							</span>
-							<div v-else-if="column.name === 'region'" class="hidden sm:block">
+							<div v-else-if="column.name === 'region'" class="hidden md:block">
 								<img
 									v-if="row.server_region_info.image"
 									class="h-4"
@@ -135,6 +135,19 @@
 							<span v-else>{{ row[column.name] || '' }}</span>
 						</TableCell>
 					</TableRow>
+					<div class="mt-8 flex items-center justify-center">
+						<LoadingText
+							v-if="
+								$resources.allServers.loading && !$resources.allServers.data
+							"
+						/>
+						<div
+							v-else-if="$resources.allServers.fetched && rows.length === 0"
+							class="text-base text-gray-700"
+						>
+							No Servers
+						</div>
+					</div>
 				</Table>
 			</div>
 		</div>
@@ -161,7 +174,6 @@ import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
 import { defineAsyncComponent } from 'vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'Servers',
@@ -183,10 +195,8 @@ export default {
 		return {
 			showAddCardDialog: false,
 			searchTerm: '',
-			serverFilter: {
-				server_type: 'All Servers',
-				tag: ''
-			},
+			server_type: 'All Servers',
+			server_tag: '',
 			dropDownOptions: [
 				{
 					label: 'Frappe Cloud Server',
@@ -203,13 +213,16 @@ export default {
 		allServers() {
 			return {
 				url: 'press.api.server.all',
-				params: { server_filter: this.serverFilter },
+				params: {
+					server_filter: { server_type: this.server_type, tag: this.server_tag }
+				},
 				auto: true,
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'title', 'tags']
-					});
-				}
+				cache: [
+					'ServerList',
+					this.server_type,
+					this.server_tag,
+					this.$account.team.name
+				]
 			};
 		},
 		serverTags: { url: 'press.api.server.server_tags', auto: true }
@@ -296,7 +309,11 @@ export default {
 			);
 
 			if (this.searchTerm)
-				servers = this.fuse.search(this.searchTerm).map(result => result.item);
+				servers = servers.filter(
+					server =>
+						server.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+						server.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return servers.map(server => ({
 				name: server.title || server.name,

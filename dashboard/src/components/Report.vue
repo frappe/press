@@ -3,7 +3,7 @@
 		<div class="flex flex-row justify-between pb-3">
 			<h1 class="text-2xl font-bold">{{ title }}</h1>
 			<!-- generic report filters -->
-			<div class="flex px-2 gap-2">
+			<div class="flex gap-2 px-2">
 				<div v-for="filter in filters" :key="filter.name">
 					<p class="text-sm text-gray-600">{{ filter.label }}</p>
 					<FormControl
@@ -16,14 +16,14 @@
 			</div>
 		</div>
 		<div class="divide-y">
-			<div class="flex items-center py-2 text-base text-gray-600 gap-2">
+			<div class="flex items-center gap-2 py-2 text-base text-gray-600">
 				<!-- generic report columns -->
 				<div v-for="column in columns" :key="column.name" :class="column.class">
 					{{ column.label }}
 				</div>
 			</div>
 			<div
-				class="flex items-center py-2 text-base gap-2"
+				class="flex items-center gap-2 py-2 text-base"
 				v-for="(row, i) in data"
 				:key="i"
 			>
@@ -36,12 +36,8 @@
 	</div>
 </template>
 <script>
-import { FormControl } from 'frappe-ui';
 export default {
 	name: 'Report',
-	components: {
-		FormControl
-	},
 	props: {
 		filters: {
 			type: Array,

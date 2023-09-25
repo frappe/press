@@ -12,16 +12,20 @@
 			:rows="versions"
 			v-slot="{ rows, columns }"
 		>
-			<TableHeader v-if="rows.length !== 0" class="hidden sm:grid" />
+			<TableHeader v-if="rows.length !== 0" class="mb-4 hidden sm:grid" />
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
 					<div class="text-base text-gray-700">No Benches</div>
 				</div>
 			</div>
-			<div v-for="(group, i) in rows" :key="group.name">
+			<div
+				v-for="(group, i) in rows"
+				:key="group.name"
+				class="mb-4 rounded border"
+			>
 				<div
-					class="flex w-full items-center justify-between border-b bg-gray-50 px-3 py-2 text-base"
+					class="flex w-full items-center justify-between rounded-t bg-gray-50 px-3 py-2 text-base"
 				>
 					<span
 						class="cursor-default font-semibold text-gray-900"
@@ -59,7 +63,12 @@
 				>
 					<div class="text-base text-gray-600">No Sites</div>
 				</div>
-				<TableRow v-for="row in group.sites" :key="row.name" :row="row">
+				<TableRow
+					v-for="(row, index) in group.sites"
+					:key="row.name"
+					:row="row"
+					:class="index === 0 ? 'rounded-b' : 'rounded'"
+				>
 					<TableCell v-for="column in columns">
 						<Badge v-if="column.name === 'status'" :label="$siteStatus(row)" />
 						<div
@@ -290,7 +299,7 @@ export default {
 			return {
 				url: 'press.api.bench.restart',
 				params: {
-					bench: this.versions[this.selectedVersionIndex]?.name
+					name: this.versions[this.selectedVersionIndex]?.name
 				}
 			};
 		},
@@ -298,7 +307,7 @@ export default {
 			return {
 				url: 'press.api.bench.update',
 				params: {
-					bench: this.versions[this.selectedVersionIndex]?.name
+					name: this.versions[this.selectedVersionIndex]?.name
 				},
 				onSuccess() {
 					notify({

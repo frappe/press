@@ -45,12 +45,10 @@ class Cluster(Document):
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
 		if self.public and not self.aws_access_key_id:
-			self.aws_access_key_id = settings.offsite_backups_access_key_id
-			self.aws_secret_access_key = settings.get_password(
-				"offsite_backups_secret_access_key"
-			)
+			self.aws_access_key_id = settings.aws_access_key_id
+			self.aws_secret_access_key = settings.get_password("aws_secret_access_key")
 		elif not self.aws_access_key_id or not self.aws_secret_access_key:
-			root_client = settings.boto3_offsite_backup_session.client("iam")
+			root_client = settings.boto3_iam_client
 			group = (  # make sure group exists
 				root_client.get_group(GroupName="fc-vpc-customer").get("Group", {}).get("GroupName")
 			)
@@ -83,7 +81,7 @@ class Cluster(Document):
 				"Images for required series not available in other regions. Create Images from server docs.",
 				frappe.ValidationError,
 			)
-		frappe.enqueue_doc(self.doctype, self.name, "_add_images", queue="long")
+		frappe.enqueue_doc(self.doctype, self.name, "_add_images", queue="long", timeout=1200)
 
 	def _add_images(self):
 		"""Copies VMIs required for the cluster"""

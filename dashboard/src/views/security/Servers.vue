@@ -20,7 +20,7 @@
 							class="mr-8"
 							type="select"
 							:options="serverTypeFilterOptions()"
-							v-model="serverFilter.server_type"
+							v-model="server_type"
 						/>
 					</div>
 				</div>
@@ -34,12 +34,6 @@
 					v-slot="{ rows, columns }"
 				>
 					<TableHeader class="hidden sm:grid" />
-					<div class="flex items-center justify-center">
-						<LoadingText class="mt-8" v-if="$resources.allServers.loading" />
-						<div v-else-if="rows.length === 0" class="mt-8">
-							<div class="text-base text-gray-700">No Items</div>
-						</div>
-					</div>
 					<TableRow v-for="row in rows" :key="row.name" :row="row">
 						<TableCell v-for="column in columns">
 							<Badge
@@ -66,6 +60,19 @@
 							</span>
 						</TableCell>
 					</TableRow>
+					<div class="mt-8 flex items-center justify-center">
+						<LoadingText
+							v-if="
+								$resources.allServers.loading && !$resources.allServers.data
+							"
+						/>
+						<div
+							v-else-if="$resources.allServers.fetched && rows.length === 0"
+							class="text-base text-gray-700"
+						>
+							No Servers
+						</div>
+					</div>
 				</Table>
 			</div>
 		</div>
@@ -77,7 +84,6 @@ import Table from '@/components/Table/Table.vue';
 import TableCell from '@/components/Table/TableCell.vue';
 import TableHeader from '@/components/Table/TableHeader.vue';
 import TableRow from '@/components/Table/TableRow.vue';
-import Fuse from 'fuse.js/dist/fuse.basic.esm';
 
 export default {
 	name: 'Servers',
@@ -95,23 +101,18 @@ export default {
 	data() {
 		return {
 			searchTerm: '',
-			serverFilter: {
-				server_type: 'All Servers',
-				tag: ''
-			}
+			server_type: 'All Servers'
 		};
 	},
 	resources: {
 		allServers() {
 			return {
 				url: 'press.api.security.get_servers',
-				params: { server_filter: this.serverFilter },
+				params: {
+					server_filter: { server_type: this.server_type, tag: '' }
+				},
 				auto: true,
-				onSuccess: data => {
-					this.fuse = new Fuse(data, {
-						keys: ['name', 'title']
-					});
-				}
+				cache: ['SecurityServerList', this.server_type, this.$account.team.name]
 			};
 		}
 	},
@@ -126,7 +127,9 @@ export default {
 			);
 
 			if (this.searchTerm)
-				servers = this.fuse.search(this.searchTerm).map(result => result.item);
+				servers = servers.filter(server =>
+					server.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
 
 			return servers.map(server => ({
 				...server,

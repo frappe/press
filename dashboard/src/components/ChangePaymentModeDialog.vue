@@ -21,7 +21,7 @@
 				:options="paymentModeOptions"
 				v-model="paymentMode"
 			/>
-			<p class="mt-2 text-base text-gray-600">
+			<p class="mt-2 text-base text-gray-600 mb-5">
 				{{ paymentModeDescription }}
 			</p>
 			<ErrorMessage
@@ -66,6 +66,13 @@ export default {
 					) {
 						return 'Please add a card first from Payment methods section';
 					}
+
+					if (
+						this.paymentMode == 'Paid By Partner' &&
+						!this.$account.team.partner_email
+					) {
+						return 'Please add a partner first from Partner section';
+					}
 				}
 			};
 		}
@@ -75,14 +82,15 @@ export default {
 			return {
 				Card: `Your card will be charged for monthly subscription`,
 				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`,
-				'Partner Credits': `You will be charged from your partner credits on frappe.io`
+				'Partner Credits': `You will be charged from your partner credits on frappe.io`,
+				'Paid By Partner': `Your partner will be charged for monthly subscription`
 			}[this.paymentMode];
 		},
 		paymentModeOptions() {
 			if (this.$account.team.erpnext_partner) {
 				return ['Card', 'Prepaid Credits', 'Partner Credits'];
 			}
-			return ['Card', 'Prepaid Credits'];
+			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
 		}
 	}
 };

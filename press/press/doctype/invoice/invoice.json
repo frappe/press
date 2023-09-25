@@ -324,7 +324,7 @@
    "fieldname": "payment_mode",
    "fieldtype": "Select",
    "label": "Payment Mode",
-   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits"
+   "options": "\nCard\nPrepaid Credits\nNEFT\nPartner Credits\nPaid By Partner"
   },
   {
    "fieldname": "frappe_partner_order",
@@ -425,7 +425,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-02-27 23:46:40.091022",
+ "modified": "2023-09-18 14:07:10.847260",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

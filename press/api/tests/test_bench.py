@@ -1,12 +1,25 @@
+import json
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
 
-from press.api.bench import deploy, get, new, all, update_config, bench_config
+from press.api.bench import (
+	dependencies,
+	deploy,
+	deploy_information,
+	get,
+	new,
+	all,
+	update_config,
+	bench_config,
+	update_dependencies,
+)
+from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
@@ -168,6 +181,189 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 		for key, value in frappe.parse_json(self.rg.common_site_config).items():
 			self.assertEqual(value, frappe.parse_json(bench.config).get(key))
+
+	def test_update_dependencies_set_dependencies_correctly(self):
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},  # updated
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},  # updated
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
+		)
+		self.assertFalse(self.rg.last_dependency_update)
+		self.rg.reload()
+		self.assertTrue(self.rg.last_dependency_update)
+		self.assertEqual(
+			find(self.rg.dependencies, lambda d: d.dependency == "NODE_VERSION").version, "16.11"
+		)
+		self.assertEqual(
+			find(self.rg.dependencies, lambda d: d.dependency == "PYTHON_VERSION").version,
+			"3.6",
+		)
+
+	def test_update_dependencies_throws_error_for_invalid_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Invalid dependencies: asdf",
+			update_dependencies,
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.36.0", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{
+						"key": "asdf",
+						"value": "10.9",
+						"type": "String",
+					},  # invalid dependency
+				],
+			),
+		)
+
+	def test_update_dependencies_throws_error_for_invalid_version(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Invalid version.*",
+			update_dependencies,
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "v16.11", "type": "String"},  # v is invalid
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				],
+			),
+		)
+
+	def test_cannot_remove_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Need all required dependencies",
+			update_dependencies,
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+				],
+			),
+		)
+
+	def test_cannot_add_additional_invalid_dependencies(self):
+		self.assertRaisesRegex(
+			Exception,
+			"Need all required dependencies",
+			update_dependencies,
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{
+						"key": "MARIADB_VERSION",
+						"value": "10.9",
+						"type": "String",
+					},  # invalid dependency
+				],
+			),
+		)
+
+	def test_update_of_dependency_child_table_sets_last_dependency_update(self):
+		self.assertFalse(self.rg.last_dependency_update)
+		self.rg.append("dependencies", {"dependency": "MARIADB_VERSION", "version": "10.9"})
+		self.rg.save()
+		self.rg.reload()
+		dependency_update_1 = self.rg.last_dependency_update
+		self.assertTrue(dependency_update_1)
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},
+				]
+			),
+		)
+		self.rg.reload()
+		dependency_update_2 = self.rg.last_dependency_update
+		self.assertTrue(dependency_update_2)
+		self.assertGreater(dependency_update_2, dependency_update_1)
+
+	def test_deploy_information_shows_update_available_for_bench_when_apps_are_updated_after_dependency_updated_deploy(
+		self,
+	):
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
+		)
+		create_test_bench(
+			group=self.rg
+		)  # now update available due to dependency shouldn't be there (cuz create_test_bench created deploy candidate)
+		self.assertFalse(deploy_information(self.rg.name)["update_available"])
+		create_test_app_release(frappe.get_doc("App Source", self.rg.apps[0].source))
+		self.assertTrue(deploy_information(self.rg.name)["update_available"])
+
+	def test_deploy_information_shows_update_available_when_dependencies_are_updated(self):
+		self.assertFalse(self.rg.last_dependency_update)
+		create_test_bench(group=self.rg)  # avoid update available due to no deploys
+		self.assertFalse(deploy_information(self.rg.name)["update_available"])
+		update_dependencies(
+			self.rg.name,
+			json.dumps(
+				[
+					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+				]
+			),
+		)
+		self.rg.reload()
+		self.assertTrue(deploy_information(self.rg.name)["update_available"])
+
+	def test_dependencies_lists_all_dependencies(self):
+		deps = [
+			{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
+			{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
+			{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
+			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+			{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+		]
+		update_dependencies(
+			self.rg.name,
+			json.dumps(deps),
+		)
+		self.assertListEqual(
+			sorted(dependencies(self.rg.name), key=lambda x: x["key"]),
+			sorted(deps, key=lambda x: x["key"]),
+		)
 
 
 class TestAPIBenchList(FrappeTestCase):

@@ -45,9 +45,7 @@ class AgentJob(Document):
 			self.status = "Failure"
 			self.save()
 			process_job_updates(self.name)
-			frappe.db.set_value(
-				"Agent Job", self.name, "status", "Undelivered", for_update=False
-			)
+			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -354,6 +352,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.site.site import (
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
+			process_uninstall_app_site_job_update,
 			process_migrate_site_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
@@ -362,6 +361,7 @@ def process_job_updates(job_name):
 			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
 			process_move_site_to_bench_job_update,
+			process_restore_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -393,8 +393,9 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Restore Site":
-			process_reinstall_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
 		elif job.job_type == "Migrate Site":
@@ -402,7 +403,7 @@ def process_job_updates(job_name):
 		elif job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		elif job.job_type == "Uninstall App from Site":
-			process_install_app_site_job_update(job)
+			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
 		elif job.job_type == "Add Code Server to Upstream":

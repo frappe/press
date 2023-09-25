@@ -45,6 +45,9 @@ class VirtualDiskSnapshot(Document):
 
 	@frappe.whitelist()
 	def delete_snapshot(self):
+		self.sync()
+		if self.status == "Unavailable":
+			return
 		self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
 		self.sync()
 

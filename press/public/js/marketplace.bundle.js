@@ -19,7 +19,7 @@ const options = {
 	keys: ['title'], // Can add description later if required
 	includeScore: true,
 	shouldSort: true,
-	minMatchCharLength: 3,
+	minMatchCharLength: 2,
 };
 const fuse = new Fuse(appList, options);
 
@@ -98,10 +98,11 @@ function updateCategories(category) {
 	}
 
 	var button = document.querySelector(`button[value="${category}"]`);
-	button.classList.add('bg-gray-200');
-
-	removeCategoryBtn.classList.remove('hidden');
-	document.getElementById('remove-category-name').innerText = category;
+	if (button) {
+		button.classList.add('bg-gray-200');
+		removeCategoryBtn.classList.remove('hidden');
+		document.getElementById('remove-category-name').innerText = category;
+	}
 }
 
 var category = new URLSearchParams(window.location.search).get('category');

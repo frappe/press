@@ -3,6 +3,7 @@
 
 import frappe
 import requests
+from press.press.doctype.cluster.cluster import Cluster
 
 from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
@@ -133,8 +134,14 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
+	plan = frappe.get_doc("Plan", server.plan)
+	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
+		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
+		plan.vcpu = self_hosted_server.vcpus
+		plan.memory = self_hosted_server.ram
+		plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
 	return {
-		"plan": frappe.get_doc("Plan", server.plan).as_dict(),
+		"plan": plan.as_dict(),
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
@@ -170,7 +177,7 @@ def new(server):
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
 
-	cluster = frappe.get_doc("Cluster", server["cluster"])
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
 	db_server, job = cluster.create_server(
@@ -454,6 +461,34 @@ def press_jobs(name):
 
 
 @frappe.whitelist()
+@protected(["Server", "Database Server"])
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	plays = frappe.get_all(
+		"Ansible Play",
+		fields=["name", "play", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return plays
+
+
+@frappe.whitelist()
 @protected("Server")
 def get_title_and_cluster(name):
 	return frappe.db.get_value("Server", name, ["title", "cluster"], as_dict=True)
@@ -474,3 +509,11 @@ def groups(name):
 @protected(["Server", "Database Server"])
 def reboot(name):
 	return poly_get_doc(["Server", "Database Server"], name).reboot()
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def rename(name, title):
+	doc = poly_get_doc(["Server", "Database Server"], name)
+	doc.title = title
+	doc.save()

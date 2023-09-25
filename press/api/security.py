@@ -21,6 +21,20 @@ def get_servers(server_filter):
 
 
 @frappe.whitelist()
+def fetch_security_updates(
+	filters=None, order_by=None, limit_start=None, limit_page_length=None
+):
+	return frappe.get_all(
+		"Security Update",
+		filters=filters,
+		fields=["name", "package", "version", "priority", "priority_level", "datetime"],
+		order_by=order_by or "priority_level asc",
+		start=limit_start,
+		limit=limit_page_length,
+	)
+
+
+@frappe.whitelist()
 def get_security_update_details(update_id):
 	return frappe.get_doc("Security Update", update_id).as_dict()
 

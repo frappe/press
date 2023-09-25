@@ -13,11 +13,11 @@ def create_test_ansible_play(
 	server_type: str = "Server",
 	server: str = "",
 	vars: dict = {},
+	status: str = "Success",
 ):
 	play = frappe.get_doc(
 		{
 			"doctype": "Ansible Play",
-			"status": "Success",
 			"play": play,
 			"playbook": playbook,
 			"server_type": server_type,
@@ -25,7 +25,7 @@ def create_test_ansible_play(
 			"variable": vars,
 		}
 	).insert()
-	play.db_set("status", "Success")
+	play.db_set("status", status)
 	play.reload()
 	return play
 

@@ -16,7 +16,7 @@
 				class="mr-2"
 				size="lg"
 				shape="square"
-				:imageURL="appInfo.image"
+				:image="appInfo.image"
 				:label="appInfo.title"
 			/>
 

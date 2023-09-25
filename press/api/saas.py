@@ -321,7 +321,9 @@ def create_marketplace_subscription(account_request):
 	"""
 	team_doc = create_team(account_request)
 	site_name = frappe.db.get_value("Site", {"account_request": account_request.name})
-	frappe.db.set_value("Site", site_name, "team", team_doc.name)
+	if site_name:
+		frappe.db.set_value("Site", site_name, "team", team_doc.name)
+
 	subscription = frappe.db.exists("Subscription", {"document_name": site_name})
 	if subscription:
 		frappe.db.set_value("Subscription", subscription, "team", team_doc.name)

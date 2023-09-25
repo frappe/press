@@ -24,7 +24,6 @@
 					<SelfHostedServerForm
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
-						v-model:privateIP="privateIP"
 						v-model:error="ipInvalid"
 					/>
 					<Button
@@ -36,9 +35,22 @@
 						"
 						@click="!domainVerified && $resources.verifyDNS.submit()"
 						:loading="$resources.verifyDNS.loading"
-						:icon-left="domainVerified ? 'check' : ''"
+						:icon-left="domainVerified ? 'check' : dnsErrorMessage ? 'x' : ''"
+						:appearance="
+							domainVerified
+								? 'success'
+								: dnsErrorMessage
+								? 'danger'
+								: 'primary'
+						"
 					>
-						{{ domainVerified ? 'Domain Verified' : 'Verify Domain' }}
+						{{
+							domainVerified
+								? 'Domain Verified'
+								: dnsErrorMessage
+								? 'Verification Error'
+								: 'Verify Domain'
+						}}
 					</Button>
 					<ErrorMessage
 						v-if="activeStep.name === 'ServerDetails'"
@@ -63,6 +75,7 @@
 						:icon-left="playOutput ? 'check' : 'x'"
 						variant="solid"
 						:theme="playOutput ? 'gray' : 'red'"
+						:appearance="playOutput ? 'success' : 'warning'"
 						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
@@ -75,7 +88,7 @@
 						>
 					</div>
 				</div>
-				<ErrorMessage :message="validationMessage" />
+				<ErrorMessage class="mt-2" :message="$resources.verify.error" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
@@ -175,7 +188,7 @@ export default {
 				{
 					name: 'ServerDetails',
 					validate: () => {
-						return this.privateIP && this.publicIP;
+						return this.publicIP;
 					}
 				},
 				{
@@ -204,7 +217,6 @@ export default {
 					server: {
 						title: this.title,
 						publicIP: this.publicIP,
-						privateIP: this.privateIP,
 						plan: this.selectedPlan,
 						url: this.domain
 					}

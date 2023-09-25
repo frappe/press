@@ -31,7 +31,7 @@
 					<a
 						:class="[
 							(item.route == '/' ? isExactActive : isActive)
-								? 'bg-blue-50 bg-gray-200'
+								? 'bg-gray-200'
 								: 'text-gray-900 hover:bg-gray-50'
 						]"
 						:href="href"
@@ -48,7 +48,7 @@
 						<Avatar
 							v-if="$account.user"
 							:label="$account.user.first_name"
-							:imageURL="$account.user.user_image"
+							:image="$account.user.user_image"
 						/>
 					</div>
 					<div class="ml-3" v-if="$account.user">

@@ -1,13 +1,12 @@
 <template>
-	<div class="space-y-6" v-if="site">
-		<ConfigEditor
-			title="Site Config"
-			subtitle="Add and update key value pairs to your site's site_config.json"
-			configName="site_config.json"
-			:configData="siteConfig"
-			:updateConfigMethod="updateSiteConfig"
-		/>
-	</div>
+	<ConfigEditor
+		v-if="site"
+		title="Site Config"
+		subtitle="Add and update key value pairs to your site's site_config.json"
+		configName="site_config.json"
+		:configData="siteConfig"
+		:updateConfigMethod="updateSiteConfig"
+	/>
 </template>
 
 <script>

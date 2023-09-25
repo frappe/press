@@ -20,16 +20,8 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Ansible Play',
+				url: 'press.api.server.plays',
 				filters: { server: this.serverName },
-				fields: [
-					'name',
-					'play',
-					'creation',
-					'status',
-					'start',
-					'end',
-					'duration'
-				],
 				pageLength: 10,
 				start: 0,
 				auto: true

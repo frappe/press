@@ -22,10 +22,7 @@
 							</p>
 							<Button
 								@click="installAppOnSite(site)"
-								:loading="
-									$resources.installAppOnSite.loading &&
-									$resources.installAppOnSite.currentParams.name === site
-								"
+								:loading="$resources.installAppOnSite.loading"
 								>Install</Button
 							>
 						</li>
@@ -51,10 +48,7 @@
 							</p>
 							<Button
 								@click="addAppToBench(bench)"
-								:loading="
-									$resources.addAppToBench.loading &&
-									$resources.addAppToBench.currentParams.name === bench.name
-								"
+								:loading="$resources.addAppToBench.loading"
 								>Add</Button
 							>
 						</li>

@@ -92,7 +92,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 18
           check-latest: true
 
       - name: Cache pip
@@ -144,6 +144,13 @@ jobs:
         with:
           name: coverage-${{ matrix.container }}
           path: /home/runner/frappe-bench/sites/coverage.xml
+        if: always()
+
+      - name: Upload bench start logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: bench-start-logs
+          path: /home/runner/frappe-bench/bench_start_logs.txt
         if: always()
 
   coverage:

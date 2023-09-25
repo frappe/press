@@ -8,9 +8,10 @@ const routes = [
 		component: Home
 	},
 	{
-		path: '/checkout',
+		path: '/checkout/:secretKey',
 		name: 'Checkout',
 		component: () => import('../views/checkout/Checkout.vue'),
+		props: true,
 		meta: {
 			isLoginPage: true
 		}
@@ -209,12 +210,6 @@ const routes = [
 				props: true
 			},
 			{
-				name: 'SiteRequestLogs',
-				path: 'request-logs',
-				component: () => import('../views/site/SiteRequestLogs.vue'),
-				props: true
-			},
-			{
 				path: 'auto-update',
 				component: () => import('../views/site/SiteAutoUpdate.vue'),
 				props: true
@@ -222,31 +217,39 @@ const routes = [
 			{
 				path: 'monitor',
 				component: () => import('../views/site/SiteMonitorsList.vue'),
-				props: true
-			},
-			{
-				name: 'SiteBinaryLogs',
-				path: 'binary-logs',
-				component: () => import('../views/site/SiteBinaryLogs.vue'),
-				props: true
-			},
-			{
-				name: 'MariaDBProcessList',
-				path: 'mariadb-process-list',
-				component: () => import('../views/site/SiteMariaDBProcessList.vue'),
-				props: true
-			},
-			{
-				name: 'SiteMariaDBSlowQueries',
-				path: 'mariadb-slow-queries',
-				component: () => import('../views/site/SiteMariaDBSlowQueries.vue'),
-				props: true
-			},
-			{
-				name: 'SiteDeadlockReport',
-				path: 'deadlock-report',
-				component: () => import('../views/site/SiteDeadlockReport.vue'),
-				props: true
+				props: true,
+				children: [
+					{
+						name: 'SiteRequestLogs',
+						path: 'request-logs',
+						component: () => import('../views/site/SiteRequestLogs.vue'),
+						props: true
+					},
+					{
+						name: 'SiteBinaryLogs',
+						path: 'binary-logs',
+						component: () => import('../views/site/SiteBinaryLogs.vue'),
+						props: true
+					},
+					{
+						name: 'MariaDBProcessList',
+						path: 'mariadb-process-list',
+						component: () => import('../views/site/SiteMariaDBProcessList.vue'),
+						props: true
+					},
+					{
+						name: 'SiteMariaDBSlowQueries',
+						path: 'mariadb-slow-queries',
+						component: () => import('../views/site/SiteMariaDBSlowQueries.vue'),
+						props: true
+					},
+					{
+						name: 'SiteDeadlockReport',
+						path: 'deadlock-report',
+						component: () => import('../views/site/SiteDeadlockReport.vue'),
+						props: true
+					}
+				]
 			}
 		]
 	},
@@ -452,7 +455,8 @@ const routes = [
 	},
 	{
 		name: 'BillingScreen',
-		path: '/billing',
+		path: '/billing/:invoiceName?',
+		props: true,
 		component: () => import('../views/billing/AccountBilling.vue')
 	},
 	{
@@ -475,6 +479,11 @@ const routes = [
 				name: 'DeveloperSettings',
 				path: 'developer',
 				component: () => import('../views/settings/DeveloperSettings.vue')
+			},
+			{
+				name: 'PartnerSettings',
+				path: 'partner',
+				component: () => import('../views/settings/PartnerSettings.vue')
 			}
 		]
 	},

@@ -7,11 +7,6 @@ const confirmDialogs = ref([]);
 function confirm(dialog) {
 	dialog.id = confirmDialogs.value.length;
 	dialog.show = true;
-	if (dialog.resource) {
-		dialog.resource.on('onSuccess', () => {
-			removeConfirmDialog(dialog);
-		});
-	}
 	confirmDialogs.value.push(dialog);
 }
 

@@ -32,9 +32,16 @@ export default {
 			let tabRoute = subRoute => `/settings/${subRoute}`;
 			let tabs = [
 				{ label: 'Profile', route: 'profile' },
-				{ label: 'Team', route: 'team' },
-				{ label: 'Developer', route: 'developer' }
-			];
+				{
+					label: 'Team',
+					route: 'team',
+					condition: () =>
+						$account.user.name === $account.team.user ||
+						$account.user.user_type === 'System User'
+				},
+				{ label: 'Developer', route: 'developer' },
+				{ label: 'Partner', route: 'partner' }
+			].filter(tab => (tab.condition ? tab.condition() : true));
 
 			return tabs.map(tab => {
 				return {

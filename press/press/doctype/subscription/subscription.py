@@ -57,6 +57,9 @@ class Subscription(Document):
 		if team.parent_team:
 			team = frappe.get_cached_doc("Team", team.parent_team)
 
+		if team.billing_team:
+			team = frappe.get_cached_doc("Team", team.billing_team)
+
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 

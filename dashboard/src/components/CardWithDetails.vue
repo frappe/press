@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-col rounded-lg border shadow-sm md:flex-row">
+	<div class="flex flex-col rounded-lg border md:flex-row">
 		<Card
 			:title="title"
 			:subtitle="subtitle"

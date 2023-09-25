@@ -9,7 +9,7 @@
 		<FormControl
 			class="my-2"
 			placeholder="Search for Bench"
-			v-on:input="e => updateSearchTerm(e.data)"
+			v-on:input="e => updateSearchTerm(e.target.value)"
 		/>
 		<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 			<div

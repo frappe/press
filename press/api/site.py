@@ -7,7 +7,7 @@ from frappe.utils.user import is_system_user
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 import wrapt
 import frappe
-import dns.resolver
+from dns.resolver import Resolver
 import dns.exception
 
 from typing import Dict
@@ -32,18 +32,25 @@ from press.utils import (
 	unique,
 )
 
+NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
+
 
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		request_path = frappe.local.request.path.rsplit("/", 1)[-1]
+		request_path = (
+			frappe.local.request.path.rsplit("/", 1)[-1] if not frappe.flags.in_test else ""
+		)
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
 		if user_type == "System User":
 			return wrapped(*args, **kwargs)
 
-		name = kwargs.get("name") or args[0]
+		# name is either name or 1st value from filters dict from kwargs or 1st value from args
+		name = (
+			kwargs.get("name") or next(iter(kwargs.get("filters", {}).values()), None) or args[0]
+		)
 		team = get_current_team()
 
 		nonlocal doctypes
@@ -53,7 +60,10 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 			if owner == team:
-				if frappe.get_value("Team", team, "user") != frappe.session.user:
+				if (
+					frappe.get_value("Team", team, "user") != frappe.session.user
+					and not frappe.flags.in_test
+				):
 					# Logged in user is a team member
 					# Check if the user has permission to access the document
 					groups = frappe.get_all(
@@ -143,9 +153,34 @@ def _new(site, server: str = None):
 		tuple(proxy_servers) if len(proxy_servers) > 1 else f"('{proxy_servers[0]}')"
 	)
 
+	query_sub_str = ""
+	if server:
+		query_sub_str = f"AND server.name = '{server}'"
+
+	bench = frappe.db.sql(
+		f"""
+	SELECT
+		bench.name, bench.server, bench.cluster = '{cluster}' as in_primary_cluster
+	FROM
+		tabBench bench
+	LEFT JOIN
+		tabServer server
+	ON
+		bench.server = server.name
+	WHERE
+		server.proxy_server in {proxy_servers} AND
+		bench.status = "Active" AND
+		bench.group = '{site["group"]}'
+		{query_sub_str}
+	ORDER BY
+		in_primary_cluster DESC, server.use_for_new_sites DESC, bench.creation DESC
+	LIMIT 1
+	""",
+		as_dict=True,
+	)[0]
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
-	validate_plan(server, plan)
+	validate_plan(bench.server, plan)
 
 	site = frappe.get_doc(
 		{
@@ -250,6 +285,20 @@ def get_app_subscriptions(app_plans, team: str):
 		subscriptions.append(new_subscription)
 
 	return subscriptions
+
+
+@frappe.whitelist()
+@protected("Site")
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs
 
 
 @frappe.whitelist()
@@ -669,10 +718,16 @@ def all(site_filter=None):
 		sites_query = sites_query.where(Site.status == "Active")
 	elif site_filter["status"] == "Broken":
 		sites_query = sites_query.where(Site.status == "Broken")
+	elif site_filter["status"] == "Inactive":
+		sites_query = sites_query.where(Site.status == "Inactive")
 	elif site_filter["status"] == "Trial":
-		sites_query = sites_query.where(Site.trial_end_date != "")
+		sites_query = sites_query.where(
+			(Site.trial_end_date != "") & (Site.status != "Archived")
+		)
 	elif site_filter["status"] == "Update Available":
-		sites_query = sites_query.where(Site.bench.isin(benches_with_updates))
+		sites_query = sites_query.where(
+			Site.bench.isin(benches_with_updates) & (Site.status != "Archived")
+		)
 	else:
 		sites_query = sites_query.where(Site.status != "Archived")
 
@@ -1175,7 +1230,9 @@ def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
 		result = {"type": "CNAME", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "CNAME")
+			resolver = Resolver(configure=False)
+			resolver.nameservers = NAMESERVERS
+			answer = resolver.query(domain, "CNAME")
 			mapped_domain = answer[0].to_text().rsplit(".", 1)[0]
 			result["answer"] = answer.rrset.to_text()
 			if mapped_domain == name:
@@ -1191,9 +1248,11 @@ def check_dns_cname_a(name, domain):
 	def check_dns_a(name, domain):
 		result = {"type": "A", "matched": False, "answer": ""}
 		try:
-			answer = dns.resolver.query(domain, "A")
+			resolver = Resolver(configure=False)
+			resolver.nameservers = NAMESERVERS
+			answer = resolver.query(domain, "A")
 			domain_ip = answer[0].to_text()
-			site_ip = dns.resolver.query(name, "A")[0].to_text()
+			site_ip = resolver.query(name, "A")[0].to_text()
 			result["answer"] = answer.rrset.to_text()
 			if domain_ip == site_ip:
 				result["matched"] = True

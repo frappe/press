@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<Button
-			v-if="$resources.apps.loading"
+			v-if="$resources.apps.loading && !$resources.apps.data"
 			:loading="true"
 			loadingText="Loading..."
 		></Button>
@@ -42,6 +42,7 @@ export default {
 		apps() {
 			return {
 				url: 'press.api.marketplace.get_apps',
+				cache: ['MarketplaceAppList', this.$account.team.name],
 				auto: true
 			};
 		}

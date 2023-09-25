@@ -25,7 +25,7 @@
 			</router-link>
 			<div class="py-3" v-if="$resources.updates.hasNextPage">
 				<Button
-					:loading="$resources.updates.loading"
+					:loading="$resources.updates.list.loading"
 					loadingText="Loading..."
 					@click="$resources.updates.next()"
 				>
@@ -56,15 +56,8 @@ export default {
 			return {
 				type: 'list',
 				doctype: 'Security Update',
+				url: 'press.api.security.fetch_security_updates',
 				filters: { server: this.server?.name },
-				fields: [
-					'name',
-					'package',
-					'version',
-					'priority',
-					'priority_level',
-					'datetime'
-				],
 				orderBy: 'priority_level asc',
 				pageLength: 10,
 				start: 0,
