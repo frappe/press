@@ -15,6 +15,7 @@ class Container(Document):
 		config.update(
 			{
 				"image": self.image,
+				"hostname": frappe.db.get_value("Service", self.service, "title"),
 				"environment_variables": self.get_environment_variables(),
 				"ports": self.get_ports(),
 				"mounts": self.get_mounts(),
