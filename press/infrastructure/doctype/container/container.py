@@ -6,6 +6,7 @@ import json
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
+from press.utils.dns import _change_dns_record
 
 
 class Container(Document):
@@ -30,6 +31,12 @@ class Container(Document):
 	@frappe.whitelist()
 	def deploy(self):
 		self.agent.new_container(self)
+		if self.get_ports():
+			domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
+			site = frappe.db.get_value("Stack", self.stack, "title")
+			_change_dns_record(
+				"UPSERT", frappe.get_doc("Root Domain", domain), self.node, record_name=site
+			)
 
 	@frappe.whitelist()
 	def archive(self):
