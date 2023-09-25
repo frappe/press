@@ -1716,5 +1716,49 @@
     "step_name": "Reload NGINX"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-08-07 19:06:28.908268",
+  "name": "Archive Container",
+  "request_method": "DELETE",
+  "request_path": "/containers/{container}",
+  "steps": [
+   {
+    "parent": "Archive Container",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Stop Container"
+   },
+   {
+    "parent": "Archive Container",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Container to Archived Directory"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-08-07 17:50:38.865011",
+  "name": "New Container",
+  "request_method": "POST",
+  "request_path": "/containers",
+  "steps": [
+   {
+    "parent": "New Container",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Initialize Container"
+   },
+   {
+    "parent": "New Container",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Start Container"
+   }
+  ]
  }
 ]
