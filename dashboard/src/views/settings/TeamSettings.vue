@@ -1,5 +1,11 @@
 <template>
-	<div v-if="$account.user.name === $account.team.user" class="space-y-5">
+	<div
+		v-if="
+			$account.user.name === $account.team.user ||
+			$account.user.user_type === 'System User'
+		"
+		class="space-y-5"
+	>
 		<AccountMembers />
 		<AccountGroups />
 	</div>
