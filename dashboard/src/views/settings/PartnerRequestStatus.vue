@@ -51,6 +51,7 @@
 					label="Enter Partnership Start Date"
 					type="date"
 					v-model="partnerDate"
+					description="This date will be used to calculate your partner's target achievement."
 				/>
 				<ErrorMessage
 					class="mt-2"

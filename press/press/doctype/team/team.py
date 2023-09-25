@@ -332,7 +332,7 @@ class Team(Document):
 		)
 
 		if not current_invoice or today == frappe.utils.get_last_day(today):
-			# don't create invoice new team or today is the last day of the month
+			# don't create invoice if new team or today is the last day of the month
 			return
 		else:
 			frappe.db.set_value("Invoice", current_invoice, "period_end", frappe.utils.nowdate())
