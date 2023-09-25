@@ -807,13 +807,13 @@ def archive(name):
 @frappe.whitelist()
 @protected("Release Group")
 def restart(name):
-	frappe.get_doc("Bench", bench).restart()
+	frappe.get_doc("Bench", name).restart()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def update(name):
-	frappe.get_doc("Bench", bench).update_all_sites()
+	frappe.get_doc("Bench", name).update_all_sites()
 
 
 @frappe.whitelist()
