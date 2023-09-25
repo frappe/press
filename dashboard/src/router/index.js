@@ -531,6 +531,11 @@ const routes = [
 		]
 	},
 	{
+		path: '/stacks',
+		name: 'StacksScreen',
+		component: () => import('../views/stack/Stacks.vue')
+	},
+	{
 		name: 'NotFound',
 		path: '/:pathMatch(.*)*',
 		component: () => import('../views/general/404.vue')

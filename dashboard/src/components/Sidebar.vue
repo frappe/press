@@ -167,6 +167,14 @@ export default {
 					condition: () => this.$account.team?.code_servers_enabled
 				},
 				{
+					label: 'Stacks',
+					route: '/stacks',
+					highlight: () => {
+						return this.$route.fullPath.startsWith('/stacks');
+					},
+					icon: FCIcons.BenchIcon
+				},
+				{
 					label: 'Apps',
 					route: '/marketplace/apps',
 					highlight: () => {

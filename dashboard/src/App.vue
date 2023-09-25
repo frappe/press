@@ -21,6 +21,7 @@
 									'Sites',
 									'Benches',
 									'Servers',
+									'Stacks',
 									'Site',
 									'Bench',
 									'Server',
