@@ -112,6 +112,8 @@ def process_new_container_job_update(job):
 
 	if updated_status != container.status:
 		frappe.db.set_value("Container", job.container, "status", updated_status)
+		deployment = frappe.db.get_value("Container", job.container, "deployment")
+		frappe.get_doc("Deployment", deployment).update_status()
 
 
 def process_archive_container_job_update(job):

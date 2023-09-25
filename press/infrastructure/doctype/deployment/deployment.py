@@ -91,6 +91,50 @@ class Deployment(Document):
 
 		return random.sample(list(port_range - occupied_ports), count)
 
+	def update_status(self):
+		containers = frappe.get_all("Container", ["name"], {"deployment": self.name})
+		statuses = set()
+		for container in containers:
+			statuses.add(
+				frappe.get_all(
+					"Agent Job",
+					{"container": container.name, "job_type": "New Container"},
+					pluck="status",
+					limit=1,
+				)[0]
+			)
+
+		if "Failure" in statuses:
+			self.status = "Failure"
+		elif "Pending" in statuses and "Running" in statuses:
+			self.status = "Running"
+		elif "Success" in statuses and len(statuses) == 1:
+			self.status = "Success"
+
+		self.save()
+
+	def on_update(self):
+		jobs = []
+		containers = frappe.get_all(
+			"Container", ["name", "service"], {"deployment": self.name}
+		)
+		for container in containers:
+			job = frappe.get_all(
+				"Agent Job",
+				["name", "status", "start", "end", "duration", "creation", "modified"],
+				{"container": container.name, "job_type": "New Container"},
+				limit=1,
+			)[0]
+			job.service = frappe.db.get_value("Service", container.service, "title")
+			jobs.append(job)
+
+		if self.status == "Running":
+			frappe.publish_realtime(
+				f"stack_deploy:{self.name}:jobs", {"jobs": jobs, "name": self.name}
+			)
+		if self.status == "Success":
+			frappe.publish_realtime(f"stack_deploy:{self.name}:finished")
+
 	def on_trash(self):
 		containers = frappe.get_all("Container", filters={"deployment": self.name})
 		for container in containers:
