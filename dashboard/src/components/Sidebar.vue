@@ -172,7 +172,8 @@ export default {
 					highlight: () => {
 						return this.$route.fullPath.startsWith('/stacks');
 					},
-					icon: FCIcons.BenchIcon
+					icon: FCIcons.BenchIcon,
+					condition: () => this.$account.team?.stacks_enabled
 				},
 				{
 					label: 'Apps',

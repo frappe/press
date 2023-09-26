@@ -55,6 +55,7 @@
   "self_hosted_servers_enabled",
   "security_portal_enabled",
   "benches_enabled",
+  "stacks_enabled",
   "section_break_28",
   "communication_emails",
   "discounts_section",
@@ -372,6 +373,12 @@
    "fieldtype": "Data",
    "label": "Partner Referral Code",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "stacks_enabled",
+   "fieldtype": "Check",
+   "label": "Stacks Enabled"
   }
  ],
  "links": [
@@ -421,7 +428,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-21 19:13:33.251726",
+ "modified": "2023-09-26 10:20:59.631490",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
