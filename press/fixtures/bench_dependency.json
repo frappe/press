@@ -76,7 +76,7 @@
   "docstatus": 0,
   "doctype": "Bench Dependency",
   "internal": 0,
-  "modified": "2023-09-26 15:42:45.065562",
+  "modified": "2023-09-26 20:41:50.762776",
   "name": "NODE_VERSION",
   "supported_versions": [
    {
@@ -98,7 +98,7 @@
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
-    "version": "14.19.0"
+    "version": "16.11.0"
    },
    {
     "parent": "NODE_VERSION",
