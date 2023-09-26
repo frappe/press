@@ -3,28 +3,35 @@
   "docstatus": 0,
   "doctype": "Bench Dependency",
   "internal": 0,
-  "modified": "2023-09-26 15:45:19.585463",
+  "modified": "2023-09-26 19:45:32.017532",
   "name": "PYTHON_VERSION",
   "supported_versions": [
    {
     "parent": "PYTHON_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Nightly",
-    "version": "3.10"
-   },
-   {
-    "parent": "PYTHON_VERSION",
-    "parentfield": "supported_versions",
-    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
-    "version": "3.10"
+    "version": "3.7"
    },
    {
     "parent": "PYTHON_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
+    "version": "3.7"
+   },
+   {
+    "parent": "PYTHON_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 13",
+    "version": "3.8"
+   },
+   {
+    "parent": "PYTHON_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Nightly",
     "version": "3.10"
    },
    {
