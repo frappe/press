@@ -187,11 +187,11 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},  # updated
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},  # updated
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},  # updated
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},  # updated
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 				]
 			),
 		)
@@ -214,14 +214,13 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "NODE_VERSION", "value": "16.36.0", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "NODE_VERSION", "value": "16.36.0"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 					{
 						"key": "asdf",
 						"value": "10.9",
-						"type": "String",
 					},  # invalid dependency
 				],
 			),
@@ -235,11 +234,11 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "v16.11", "type": "String"},  # v is invalid
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NODE_VERSION", "value": "v16.11"},  # v is invalid
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 				],
 			),
 		)
@@ -252,10 +251,10 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
 				],
 			),
 		)
@@ -268,15 +267,14 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 					{
 						"key": "MARIADB_VERSION",
 						"value": "10.9",
-						"type": "String",
 					},  # invalid dependency
 				],
 			),
@@ -293,12 +291,12 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
-					{"key": "MARIADB_VERSION", "value": "10.9", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
+					{"key": "MARIADB_VERSION", "value": "10.9"},
 				]
 			),
 		)
@@ -314,11 +312,11 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 				]
 			),
 		)
@@ -337,11 +335,11 @@ class TestAPIBenchConfig(FrappeTestCase):
 			self.rg.name,
 			json.dumps(
 				[
-					{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-					{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-					{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-					{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+					{"key": "NODE_VERSION", "value": "16.11"},
+					{"key": "NVM_VERSION", "value": "0.36.0"},
+					{"key": "PYTHON_VERSION", "value": "3.6"},
+					{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+					{"key": "BENCH_VERSION", "value": "5.15.2"},
 				]
 			),
 		)
@@ -350,18 +348,19 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_dependencies_lists_all_dependencies(self):
 		deps = [
-			{"key": "NODE_VERSION", "value": "16.11", "type": "String"},
-			{"key": "NVM_VERSION", "value": "0.36.0", "type": "String"},
-			{"key": "PYTHON_VERSION", "value": "3.6", "type": "String"},
-			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5", "type": "String"},
-			{"key": "BENCH_VERSION", "value": "5.15.2", "type": "String"},
+			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NVM_VERSION", "value": "0.36.0"},
+			{"key": "PYTHON_VERSION", "value": "3.6"},
+			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+			{"key": "BENCH_VERSION", "value": "5.15.2"},
 		]
 		update_dependencies(
 			self.rg.name,
 			json.dumps(deps),
 		)
+		active_dependencies = dependencies(self.rg.name)["active_dependencies"]
 		self.assertListEqual(
-			sorted(dependencies(self.rg.name), key=lambda x: x["key"]),
+			sorted(active_dependencies, key=lambda x: x["key"]),
 			sorted(deps, key=lambda x: x["key"]),
 		)
 
