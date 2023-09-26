@@ -13,15 +13,13 @@
 			/>
 		</template>
 		<FormControl
-			v-for="dependency in $resources.dependencies.data.active_dependencies"
+			v-for="dependency in activeDependencies"
 			:key="dependency.key"
 			type="select"
+			v-model="dependency.value"
 			:options="dependencySelectOptions(dependency.key)"
 			:value="dependency.value"
-			:label="
-				$resources.dependencies.data.dependency_title[dependency.key] +
-				' Version'
-			"
+			:label="dependencies.dependency_title[dependency.key] + ' Version'"
 			class="mx-0.5 my-2"
 			@input="isDirty = true"
 		/>
@@ -58,7 +56,7 @@ export default {
 				url: 'press.api.bench.update_dependencies',
 				params: {
 					name: this.benchName,
-					dependencies: JSON.stringify(this.$resources.dependencies.data)
+					dependencies: JSON.stringify(this.dependencies.active_dependencies)
 				},
 				validate() {
 					if (!this.isDirty) return 'No changes made';
@@ -77,10 +75,21 @@ export default {
 			};
 		}
 	},
+	computed: {
+		dependencies() {
+			return this.$resources.dependencies.data;
+		},
+		activeDependencies() {
+			return this.dependencies.active_dependencies.filter(
+				dependency =>
+					!this.dependencies.internal_dependencies.includes(dependency.key)
+			);
+		}
+	},
 	methods: {
 		dependencySelectOptions(dependency) {
 			let versions_for_specific_package =
-				this.$resources.dependencies.data.supported_dependencies.filter(
+				this.dependencies.supported_dependencies.filter(
 					dep => dep.key === dependency
 				);
 			return versions_for_specific_package.map(dep => ({

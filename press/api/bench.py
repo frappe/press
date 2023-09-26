@@ -320,21 +320,15 @@ def dependencies(name: str):
 	)
 
 	bench_dependencies = frappe.get_all("Bench Dependency", ["name", "title", "internal"])
-	internal_dependencies = [d["name"] for d in bench_dependencies if d["internal"]]
 
 	return {
-		"active_dependencies": [
-			d for d in active_dependencies if d["key"] not in internal_dependencies
-		],
+		"active_dependencies": active_dependencies,
 		"supported_dependencies": list(
 			# deduplicate dependencies
-			{
-				d["value"]: d
-				for d in supported_dependencies + active_dependencies
-				if d["key"] not in internal_dependencies
-			}.values()
+			{d["value"]: d for d in supported_dependencies + active_dependencies}.values()
 		),
 		"dependency_title": {d["name"]: d["title"] for d in bench_dependencies},
+		"internal_dependencies": [d["name"] for d in bench_dependencies if d["internal"]],
 	}
 
 
