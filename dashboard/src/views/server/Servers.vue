@@ -300,6 +300,7 @@ export default {
 				return [];
 			}
 
+			let servers = this.$resources.allServers.data;
 			if (this.searchTerm)
 				servers = servers.filter(
 					server =>
