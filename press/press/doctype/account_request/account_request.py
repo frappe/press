@@ -76,6 +76,7 @@ class AccountRequest(Document):
 
 		args.update(
 			{
+				"invited_by": self.invited_by,
 				"link": url,
 				# "image_path": "/assets/press/images/frappe-logo-black.png",
 				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
