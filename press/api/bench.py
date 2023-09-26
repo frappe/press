@@ -316,7 +316,7 @@ def dependencies(name: str):
 	supported_dependencies = frappe.db.get_all(
 		"Bench Dependency Version",
 		{"supported_frappe_version": rg.version},
-		["parent as `key`", "title as `value`"],
+		["parent as `key`", "version as `value`"],
 	)
 
 	bench_dependencies = frappe.get_all("Bench Dependency", ["name", "title", "internal"])
