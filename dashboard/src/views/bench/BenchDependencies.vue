@@ -19,7 +19,7 @@
 			v-model="dependency.value"
 			:options="dependencySelectOptions(dependency.key)"
 			:value="dependency.value"
-			:label="dependencies.dependency_title[dependency.key] + ' Version'"
+			:label="dependencies.dependency_title[dependency.key]"
 			class="mx-0.5 my-2"
 			@input="isDirty = true"
 		/>
@@ -45,10 +45,7 @@ export default {
 					name: this.benchName
 				},
 				auto: true,
-				initialData: [],
-				onSuccess(data) {
-					console.log(data);
-				}
+				initialData: []
 			};
 		},
 		updateDependencies() {
