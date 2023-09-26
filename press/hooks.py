@@ -271,6 +271,7 @@ fixtures = [
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
+	"Bench Dependency",
 ]
 # Testing
 # -------
