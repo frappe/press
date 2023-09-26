@@ -11,8 +11,15 @@
 	>
 		<template v-slot:body-content>
 			<LoadingText v-if="$resources.groupUsers.loading" />
-			<div>
+			<div v-else>
+				<span
+					v-if="$resources.groupUsers.data.length === 0"
+					class="text-gray-500 text-center"
+				>
+					No members added to this group.
+				</span>
 				<ListItem
+					v-else
 					v-for="user in $resources.groupUsers.data"
 					:title="user"
 					:key="user"

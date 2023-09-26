@@ -23,19 +23,26 @@
   {
    "fieldname": "method",
    "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "Method",
    "reqd": 1
   },
   {
    "fieldname": "checkbox_label",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
    "label": "Checkbox Label",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-09 23:21:54.352149",
+ "modified": "2023-09-25 21:33:32.729651",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Method Permission",

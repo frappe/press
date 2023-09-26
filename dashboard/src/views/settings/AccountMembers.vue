@@ -19,7 +19,13 @@
 				:key="member.name"
 			>
 				<template #actions>
-					<Dropdown :options="dropdownItems(member)" right>
+					<Badge
+						label="Owner"
+						color="blue"
+						class="ml-2"
+						v-if="member.name == $account.team.user"
+					/>
+					<Dropdown v-else :options="dropdownItems(member)" right>
 						<template v-slot="{ open }">
 							<Button icon="more-horizontal" />
 						</template>

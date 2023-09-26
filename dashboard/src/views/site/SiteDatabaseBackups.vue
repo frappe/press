@@ -87,7 +87,18 @@
 					<Badge v-if="backup.offsite" label="Offsite" theme="green" />
 					<Dropdown :options="dropdownItems(backup)">
 						<template v-slot="{ open }">
-							<Button icon="more-horizontal" />
+							<Tooltip
+								:text="
+									!permissions.backups
+										? `You don't have enough permissions to perform this action`
+										: 'Download Backups'
+								"
+							>
+								<Button
+									icon="more-horizontal"
+									:disabled="!permissions.backups"
+								/>
+							</Tooltip>
 						</template>
 					</Dropdown>
 				</div>
@@ -168,6 +179,14 @@ export default {
 	computed: {
 		backups() {
 			return this.$resources.backups;
+		},
+		permissions() {
+			return {
+				backups: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.get_backup_link'
+				)
+			};
 		}
 	},
 	methods: {
