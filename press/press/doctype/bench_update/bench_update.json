@@ -11,7 +11,7 @@
   "apps_to_ignore",
   "column_break_wff5",
   "status",
-  "candidate",
+  "candidates",
   "section_break_nfd1",
   "sites"
  ],
@@ -47,20 +47,19 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "candidate",
-   "fieldtype": "Link",
-   "label": "Candidate",
-   "options": "Deploy Candidate",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_nfd1",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "candidates",
+   "fieldtype": "Table",
+   "label": "Candidates",
+   "options": "Bench Update Candidate"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-21 19:11:56.737713",
+ "modified": "2023-09-26 19:48:51.100966",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Update",

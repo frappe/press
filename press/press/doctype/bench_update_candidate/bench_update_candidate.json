@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-09-26 12:30:48.236805",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "candidate",
+  "architecture"
+ ],
+ "fields": [
+  {
+   "fieldname": "candidate",
+   "fieldtype": "Link",
+   "label": "Candidate",
+   "options": "Deploy Candidate"
+  },
+  {
+   "fetch_from": "candidate.architecture",
+   "fieldname": "architecture",
+   "fieldtype": "Data",
+   "label": "Architecture"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-09-26 12:31:00.481249",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Update Candidate",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

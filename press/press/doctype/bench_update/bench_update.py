@@ -38,12 +38,12 @@ class BenchUpdate(Document):
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidates = rg.create_deploy_candidate(apps_to_ignore)
 		for candidate in candidates:
+			self.append("candidates",{"candidate": candidate.name})
 			candidate.deploy_to_production()
 
 		self.status = "Running"
-		self.candidate = candidates[0].name
 		self.save()
-		return candidate.name
+		return candidates[0].name
 
 	def update_sites_on_server(self, bench, server):
 		if frappe.get_value("Bench", bench, "status") != "Active":
