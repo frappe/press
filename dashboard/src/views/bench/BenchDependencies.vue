@@ -13,10 +13,15 @@
 			/>
 		</template>
 		<FormControl
-			v-for="dependency in $resources.dependencies.data"
+			v-for="dependency in $resources.dependencies.data.active_dependencies"
 			:key="dependency.key"
-			v-model="dependency.value"
-			:label="dependency.key.split('_').join(' ')"
+			type="select"
+			:options="dependencySelectOptions(dependency.key)"
+			:value="dependency.value"
+			:label="
+				$resources.dependencies.data.dependency_title[dependency.key] +
+				' Version'
+			"
 			class="mx-0.5 my-2"
 			@input="isDirty = true"
 		/>
@@ -42,7 +47,10 @@ export default {
 					name: this.benchName
 				},
 				auto: true,
-				initialData: []
+				initialData: [],
+				onSuccess(data) {
+					console.log(data);
+				}
 			};
 		},
 		updateDependencies() {
@@ -67,6 +75,18 @@ export default {
 					});
 				}
 			};
+		}
+	},
+	methods: {
+		dependencySelectOptions(dependency) {
+			let versions_for_specific_package =
+				this.$resources.dependencies.data.supported_dependencies.filter(
+					dep => dep.key === dependency
+				);
+			return versions_for_specific_package.map(dep => ({
+				label: dep.value,
+				value: dep.value
+			}));
 		}
 	}
 };
