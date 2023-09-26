@@ -39,7 +39,9 @@ def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
 		request_path = (
-			frappe.local.request.path.rsplit("/", 1)[-1] if not frappe.flags.in_test else ""
+			frappe.local.request.path.rsplit("/", 1)[-1]
+			if hasattr(frappe.local, "request")
+			else ""
 		)
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
@@ -60,9 +62,8 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 			if owner == team:
-				if (
-					frappe.get_value("Team", team, "user") != frappe.session.user
-					and not frappe.flags.in_test
+				if frappe.get_value("Team", team, "user") != frappe.session.user and not hasattr(
+					frappe.local, "request"
 				):
 					# Logged in user is a team member
 					# Check if the user has permission to access the document
