@@ -121,7 +121,7 @@
   "docstatus": 0,
   "doctype": "Bench Dependency",
   "internal": 0,
-  "modified": "2023-09-26 15:45:55.052852",
+  "modified": "2023-09-27 09:37:02.358511",
   "name": "WKHTMLTOPDF_VERSION",
   "supported_versions": [
    {
@@ -129,35 +129,35 @@
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Nightly",
-    "version": "0.12.6"
+    "version": "0.12.4"
    },
    {
     "parent": "WKHTMLTOPDF_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
-    "version": "0.12.6"
+    "version": "0.12.4"
    },
    {
     "parent": "WKHTMLTOPDF_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
-    "version": "0.12.6"
+    "version": "0.12.4"
    },
    {
     "parent": "WKHTMLTOPDF_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
-    "version": "0.12.6"
+    "version": "0.12.4"
    },
    {
     "parent": "WKHTMLTOPDF_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
-    "version": "0.12.6"
+    "version": "0.12.4"
    },
    {
     "parent": "WKHTMLTOPDF_VERSION",
@@ -193,6 +193,41 @@
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 15",
     "version": "0.12.5"
+   },
+   {
+    "parent": "WKHTMLTOPDF_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Nightly",
+    "version": "0.12.6"
+   },
+   {
+    "parent": "WKHTMLTOPDF_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 12",
+    "version": "0.12.6"
+   },
+   {
+    "parent": "WKHTMLTOPDF_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 13",
+    "version": "0.12.6"
+   },
+   {
+    "parent": "WKHTMLTOPDF_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 14",
+    "version": "0.12.6"
+   },
+   {
+    "parent": "WKHTMLTOPDF_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 15",
+    "version": "0.12.6"
    }
   ],
   "title": "Wkhtmltopdf Version"
@@ -201,15 +236,29 @@
   "docstatus": 0,
   "doctype": "Bench Dependency",
   "internal": 0,
-  "modified": "2023-09-26 15:44:41.057161",
+  "modified": "2023-09-27 09:34:34.235495",
   "name": "BENCH_VERSION",
   "supported_versions": [
    {
     "parent": "BENCH_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
-    "supported_frappe_version": "Nightly",
-    "version": "5.17.2"
+    "supported_frappe_version": "Version 14",
+    "version": "5.15.2"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 13",
+    "version": "5.15.2"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 12",
+    "version": "5.15.2"
    },
    {
     "parent": "BENCH_VERSION",
@@ -222,22 +271,36 @@
     "parent": "BENCH_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Nightly",
+    "version": "5.17.2"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 15",
+    "version": "5.17.2"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 14",
-    "version": "5.15.2"
+    "version": "5.17.2"
    },
    {
     "parent": "BENCH_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 13",
-    "version": "5.15.2"
+    "version": "5.17.2"
    },
    {
     "parent": "BENCH_VERSION",
     "parentfield": "supported_versions",
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
-    "version": "5.15.2"
+    "version": "5.17.2"
    }
   ],
   "title": "Bench Version"
