@@ -3,10 +3,25 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
 
 
 class SiteAnalytics(Document):
-	pass
+	@staticmethod
+	def clear_old_logs(days=30):
+		tables = [
+			"Site Analytics",
+			"Site Analytics User",
+			"Site Analytics Login",
+			"Site Analytics App",
+			"Site Analytics DocType",
+			"Site Analytics Active",
+		]
+		for table in tables:
+			table = frappe.qb.DocType(table)
+			frappe.db.delete(table, filters=(table.modified < (Now() - Interval(days=days))))
+			frappe.db.commit()
 
 
 def create_site_analytics(site, data):
