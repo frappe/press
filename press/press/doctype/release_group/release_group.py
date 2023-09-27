@@ -189,10 +189,10 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
-		return self.create_deploy_candidate([app.as_dict() for app in self.apps])
+		return self.create_deploy_candidates([app.as_dict() for app in self.apps])
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_ignore=None) -> "DeployCandidate":
+	def create_deploy_candidates(self, apps_to_ignore=None) -> "DeployCandidate":
 		if not self.enabled:
 			return
 
@@ -258,7 +258,7 @@ class ReleaseGroup(Document):
 
 		platforms = []
 		for server in set(server.server for server in self.servers):
-			platforms.append(frappe.get_value("Server", server, "architecture"))
+			platforms.append(frappe.db.get_value("Server", server, "architecture"))
 		candidates = []
 		if "arm" in platforms:
 			candidate = frappe.get_doc(

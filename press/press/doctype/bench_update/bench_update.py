@@ -36,14 +36,14 @@ class BenchUpdate(Document):
 			apps_to_ignore = json.loads(self.apps_to_ignore)
 
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidates = rg.create_deploy_candidate(apps_to_ignore)
+		candidates = rg.create_deploy_candidates(apps_to_ignore)
 		for candidate in candidates:
-			self.append("candidates",{"candidate": candidate.name})
+			self.append("candidates", {"candidate": candidate.name})
 			candidate.deploy_to_production()
 
 		self.status = "Running"
 		self.save()
-		return candidates[0].name
+		return [candidate.name for candidate in candidates]
 
 	def update_sites_on_server(self, bench, server):
 		if frappe.get_value("Bench", bench, "status") != "Active":

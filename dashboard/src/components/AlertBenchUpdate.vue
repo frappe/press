@@ -123,7 +123,9 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push(`/benches/${this.bench.name}/deploys/${candidate}`);
+					this.$router.push(
+						`/benches/${this.bench.name}/deploys/${candidate[0]}`
+					);
 					this.showDeployDialog = false;
 				}
 			};

@@ -139,7 +139,7 @@ export default {
 					this.$resources.deployInformation.setData({
 						...this.$resources.deployInformation.data,
 						deploy_in_progress: true,
-						last_deploy: { name: new_candidate_name, status: 'Running' }
+						last_deploy: { name: new_candidate_name[0], status: 'Running' }
 					});
 					notify({
 						title: 'Updates scheduled successfully',

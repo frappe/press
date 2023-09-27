@@ -25,7 +25,7 @@ class Deploy(Document):
 		for bench in self.benches:
 			server_arch = frappe.get_value("Server", bench.server, "architecture")
 			if server_arch == candidate.architecture:
-				new = frappe.get_doc(
+				new_bench = frappe.get_doc(
 					{
 						"doctype": "Bench",
 						"server": bench.server,
@@ -36,11 +36,11 @@ class Deploy(Document):
 						"environment_variables": environment_variables,
 					}
 				).insert()
-				bench.bench = new.name
+				bench.bench = new_bench.name
 
 				frappe.enqueue(
 					"press.press.doctype.deploy.deploy.create_deploy_candidate_differences",
-					bench=new,
+					bench=new_bench,
 					enqueue_after_commit=True,
 				)
 		self.save()

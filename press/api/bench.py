@@ -595,7 +595,7 @@ def deploy(name, apps_to_ignore=[]):
 	for candidate in candidates:
 		candidate.deploy_to_production()
 
-	return candidates[0].name
+	return [candidate.name for candidate in candidates]
 
 
 @frappe.whitelist()
