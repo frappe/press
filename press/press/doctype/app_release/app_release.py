@@ -174,7 +174,7 @@ class AppRelease(Document):
 				continue
 			group = frappe.get_doc("Release Group", group.parent)
 			apps_to_ignore = [app.as_dict() for app in group.apps if not app.enable_auto_deploy]
-			candidate = group.create_deploy_candidate(apps_to_ignore)
+			candidate = group.create_deploy_candidates(apps_to_ignore)
 			if candidate:
 				candidate.deploy_to_production()
 
