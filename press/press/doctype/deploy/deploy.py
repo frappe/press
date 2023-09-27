@@ -23,7 +23,7 @@ class Deploy(Document):
 			{"key": v.key, "value": v.value} for v in candidate.environment_variables
 		]
 		for bench in self.benches:
-			server_arch = frappe.get_value("Server", bench.server, "architecture")
+			server_arch = frappe.db.get_value("Server", bench.server, "architecture")
 			if server_arch == candidate.architecture:
 				new_bench = frappe.get_doc(
 					{
