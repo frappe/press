@@ -134,6 +134,7 @@ export default {
 		show() {
 			if (this.updateInformation) {
 				return (
+					this.site.setup_wizard_complete &&
 					this.updateInformation.update_available &&
 					['Active', 'Inactive', 'Suspended'].includes(this.site.status)
 				);
