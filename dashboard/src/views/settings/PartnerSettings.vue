@@ -3,13 +3,15 @@
 		<AccountPartner />
 		<PartnerReferral />
 		<PartnerCustomers class="col-span-1 md:col-span-2" />
+		<PartnerRequestStatus />
 	</div>
 </template>
 
 <script>
-import PartnerCustomers from '../billing/PartnerCustomers.vue';
+import PartnerCustomers from './PartnerCustomers.vue';
 import AccountPartner from './AccountPartner.vue';
 import PartnerReferral from './PartnerReferral.vue';
+import PartnerRequestStatus from './PartnerRequestStatus.vue';
 
 export default {
 	name: 'PartnerSettings',
@@ -21,7 +23,8 @@ export default {
 	components: {
 		AccountPartner,
 		PartnerCustomers,
-		PartnerReferral
+		PartnerReferral,
+		PartnerRequestStatus
 	}
 };
 </script>

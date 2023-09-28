@@ -13,7 +13,13 @@
 			</ListItem>
 
 			<div class="py-4">
-				<h3 class="text-base text-gray-700" v-if="!$account.partner_email">
+				<h3 class="text-base text-gray-700" v-if="$account.parent_team">
+					Only parent team can link with Frappe Partner.
+				</h3>
+				<h3
+					class="text-base text-gray-700"
+					v-if="!$account.partner_email && !$account.parent_team"
+				>
 					Have a Frappe Partner Referral Code? Click on
 					<strong>Add Partner Code</strong> to link with your Partner team.
 				</h3>
