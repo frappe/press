@@ -135,8 +135,15 @@
 				v-for="app in versions[selectedVersionIndex].apps"
 				:key="app.app"
 				:title="app.app"
-				:subtitle="`${app.repository_owner}/${app.repository}:${app.branch}`"
 			>
+				<template #subtitle>
+					<div class="mt-1 flex items-center space-x-2 text-gray-600">
+						<FeatherIcon name="git-branch" class="h-4 w-4" />
+						<div class="truncate text-base hover:text-clip">
+							{{ app.repository_owner }}/{{ app.repository }}:{{ app.branch }}
+						</div>
+					</div>
+				</template>
 				<template #actions>
 					<CommitTag
 						:tag="app.tag || app.hash.substr(0, 7)"
