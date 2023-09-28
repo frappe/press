@@ -82,7 +82,6 @@ export default {
 				team: $account.team.name
 			},
 			onSuccess(data) {
-				console.log(data);
 				this.partnerRequestStatus = data;
 			},
 			auto: true
