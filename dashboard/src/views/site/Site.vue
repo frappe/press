@@ -298,16 +298,18 @@ export default {
 
 		siteActions() {
 			return [
-				this.site?.status === 'Active' && {
+				{
 					label: 'View Site',
 					icon: 'external-link',
+					condition: () => this.site?.status === 'Active',
 					onClick: () => {
 						window.open(`https://${site?.name}`, '_blank');
 					}
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'View in Desk',
 					icon: 'external-link',
+					condition: () => this.$account.user.user_type === 'System User',
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/site/${this.site?.name}`,
@@ -315,18 +317,20 @@ export default {
 						);
 					}
 				},
-				this.site?.group && {
+				{
 					label: 'Manage Bench',
 					icon: 'tool',
 					route: `/benches/${this.site?.group}`,
+					condition: () => this.site?.group,
 					onClick: () => {
 						this.$router.push(`/benches/${this.site?.group}`);
 					}
 				},
-				this.site?.status == 'Active' && {
+				{
 					label: 'Login As Administrator',
 					icon: 'external-link',
 					loading: this.$resources.loginAsAdmin.loading,
+					condition: () => this.site?.status === 'Active',
 					onClick: () => {
 						if (this.$account.team.name == this.site?.notify_email) {
 							return this.$resources.loginAsAdmin.submit({
@@ -337,9 +341,10 @@ export default {
 						this.showReasonForAdminLoginDialog = true;
 					}
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'Impersonate Team',
 					icon: 'tool',
+					condition: () => this.$account.user.user_type === 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.site?.team);
 						notify({
@@ -350,18 +355,17 @@ export default {
 						});
 					}
 				},
-				this.site?.status == 'Active' && {
+				{
 					label: 'Transfer Site',
 					icon: 'tool',
 					loading: this.$resources.transferSite.loading,
+					condition: () =>
+						this.site?.status === 'Active' && !this.$account.parent_team,
 					onClick: () => {
 						this.showTransferSiteDialog = true;
-					},
-					condition: () => {
-						return !this.$account.parent_team;
 					}
 				}
-			].filter(Boolean);
+			];
 		},
 
 		hasMonitorAccess() {
