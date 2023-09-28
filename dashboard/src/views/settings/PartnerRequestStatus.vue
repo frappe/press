@@ -6,6 +6,7 @@
 				:theme="this.partnerRequestStatus === 'Pending' ? 'orange' : 'green'"
 				size="lg"
 				:label="this.partnerRequestStatus"
+				v-if="this.partnerRequestStatus"
 			/>
 		</template>
 		<div class="flex items-center">

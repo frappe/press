@@ -319,7 +319,7 @@ class Team(Document):
 		After enabling partner privileges, new invoice should be created
 		to track the partner achivements
 		"""
-		today = frappe.utils.nowdate()
+		today = frappe.utils.getdate()
 		current_invoice = frappe.db.get_value(
 			"Invoice",
 			{
