@@ -1,5 +1,23 @@
 [
  {
+  "checkbox_label": "Login as Admin",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.login",
+  "modified": "2023-09-04 21:22:19.952471",
+  "name": "9b1cac0bc7"
+ },
+ {
+  "checkbox_label": "Database Access",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.enable_database_access",
+  "modified": "2023-09-04 22:20:23.131654",
+  "name": "e98deda64d"
+ },
+ {
   "checkbox_label": "Update",
   "docstatus": 0,
   "doctype": "Press Method Permission",
@@ -23,7 +41,7 @@
   "doctype": "Press Method Permission",
   "document_type": "Site",
   "method": "press.api.site.overview",
-  "modified": "2023-08-10 23:33:47.092508",
+  "modified": "2023-09-26 00:03:50.779625",
   "name": "10805b1854"
  },
  {
@@ -36,12 +54,12 @@
   "name": "8d80a2c6cb"
  },
  {
-  "checkbox_label": "Restore",
+  "checkbox_label": "Migrate",
   "docstatus": 0,
   "doctype": "Press Method Permission",
   "document_type": "Site",
   "method": "press.api.site.migrate",
-  "modified": "2023-08-10 23:27:15.462575",
+  "modified": "2023-09-25 11:41:46.915505",
   "name": "f408433d45"
  },
  {
@@ -70,5 +88,68 @@
   "method": "press.api.bench.deploy_and_update",
   "modified": "2023-08-16 00:02:26.396406",
   "name": "7cb4ecfd3a"
+ },
+ {
+  "checkbox_label": "Archive",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.archive",
+  "modified": "2023-09-25 21:34:34.964150",
+  "name": "ab2bec02b1"
+ },
+ {
+  "checkbox_label": "Reset",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.reset",
+  "modified": "2023-09-25 21:36:30.485983",
+  "name": "17c4806fba"
+ },
+ {
+  "checkbox_label": "Deactivate",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.deactivate",
+  "modified": "2023-09-25 21:36:56.303022",
+  "name": "91dcf28e26"
+ },
+ {
+  "checkbox_label": "SSH Access",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Release Group",
+  "method": "press.api.bench.generate_certificate",
+  "modified": "2023-09-25 21:40:01.706266",
+  "name": "a1b64a0abb"
+ },
+ {
+  "checkbox_label": "Restart",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Release Group",
+  "method": "press.api.bench.restart",
+  "modified": "2023-09-25 21:40:40.280318",
+  "name": "07cba0fe8f"
+ },
+ {
+  "checkbox_label": "Change Plan",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.change_plan",
+  "modified": "2023-09-25 21:42:47.001379",
+  "name": "977ecf4b96"
+ },
+ {
+  "checkbox_label": "Download Backups",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Site",
+  "method": "press.api.site.get_backup_link",
+  "modified": "2023-09-25 21:46:24.621413",
+  "name": "084fe1db67"
  }
 ]

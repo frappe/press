@@ -310,10 +310,26 @@ def update_config(name, config):
 @protected("Release Group")
 def dependencies(name: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
-	dependencies = [
-		{"key": d.dependency, "value": d.version, "type": "String"} for d in rg.dependencies
+	active_dependencies = [
+		{"key": d.dependency, "value": d.version} for d in rg.dependencies
 	]
-	return dependencies
+	supported_dependencies = frappe.db.get_all(
+		"Bench Dependency Version",
+		{"supported_frappe_version": rg.version},
+		["parent as `key`", "version as `value`"],
+	)
+
+	bench_dependencies = frappe.get_all("Bench Dependency", ["name", "title", "internal"])
+
+	return {
+		"active_dependencies": active_dependencies,
+		"supported_dependencies": list(
+			# deduplicate dependencies
+			{d["value"]: d for d in supported_dependencies + active_dependencies}.values()
+		),
+		"dependency_title": {d["name"]: d["title"] for d in bench_dependencies},
+		"internal_dependencies": [d["name"] for d in bench_dependencies if d["internal"]],
+	}
 
 
 @frappe.whitelist()
@@ -438,6 +454,7 @@ def remove_app(name, app):
 		release_group.remove(app_doc_to_remove)
 
 	release_group.save()
+	return app
 
 
 @frappe.whitelist()
@@ -806,13 +823,13 @@ def archive(name):
 @frappe.whitelist()
 @protected("Release Group")
 def restart(name):
-	frappe.get_doc("Bench", bench).restart()
+	frappe.get_doc("Bench", name).restart()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def update(name):
-	frappe.get_doc("Bench", bench).update_all_sites()
+	frappe.get_doc("Bench", name).update_all_sites()
 
 
 @frappe.whitelist()

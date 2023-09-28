@@ -20,8 +20,20 @@
 				v-on:input="e => updateSearchTerm(e)"
 			/>
 			<LoadingText v-if="$resources.options.loading" />
-			<div v-else class="mb-8 flex flex-col max-h-96 overflow-auto">
-				<div v-for="(option, index) in filteredList" class="border-b pt-2">
+			<div v-else class="flex flex-col max-h-96 overflow-auto">
+				<div v-if="options.length === 0" class="mt-4 text-center">
+					<span class="text-gray-500">
+						No options available to add permissions, let's create somes sites!
+						<router-link :to="'/sites/new'" class="text-gray-900">
+							Click here
+						</router-link>
+					</span>
+				</div>
+				<div
+					v-else
+					v-for="(option, index) in filteredList"
+					class="border-b pt-2"
+				>
 					<span class="mr-2 mt-4 w-full pb-2 text-lg text-gray-600">
 						{{ option.doctype }}
 					</span>
@@ -52,6 +64,7 @@
 				variant="solid"
 				class="w-full"
 				@click="$resources.updatePermissions.submit()"
+				:disabled="options.length === 0"
 			>
 				Save
 			</Button>

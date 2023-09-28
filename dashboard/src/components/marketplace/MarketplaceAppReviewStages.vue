@@ -45,7 +45,7 @@
 									<Avatar
 										class="mr-2"
 										:label="message.sender"
-										:imageURL="message.user_image"
+										:image="message.user_image"
 									/>
 									<span class="self-center text-lg font-semibold">{{
 										message.sender

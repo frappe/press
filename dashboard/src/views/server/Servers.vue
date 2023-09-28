@@ -136,13 +136,9 @@
 						</TableCell>
 					</TableRow>
 					<div class="mt-8 flex items-center justify-center">
-						<LoadingText
-							v-if="
-								$resources.allServers.loading && !$resources.allServers.data
-							"
-						/>
+						<LoadingText v-if="$resources.allServers.loading" />
 						<div
-							v-else-if="$resources.allServers.fetched && rows.length === 0"
+							v-else-if="$resources.allServers.data && rows.length === 0"
 							class="text-base text-gray-700"
 						>
 							No Servers
@@ -304,10 +300,7 @@ export default {
 				return [];
 			}
 
-			let servers = this.$resources.allServers.data.filter(server =>
-				this.$account.hasPermission(server.name, '', true)
-			);
-
+			let servers = this.$resources.allServers.data;
 			if (this.searchTerm)
 				servers = servers.filter(
 					server =>

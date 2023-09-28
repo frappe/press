@@ -138,7 +138,7 @@ const marketplacePromotionalBanners = createResource({
 						class="mr-2"
 						size="lg"
 						shape="square"
-						:imageURL="clickedPromotion.image"
+						:image="clickedPromotion.image"
 						:label="clickedPromotion.title"
 					/>
 

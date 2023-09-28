@@ -10,10 +10,10 @@ class PressUserPermission(Document):
 
 
 def has_user_permission(doc, name, action, groups):
-	# is part of a group that has perm
 	allowed = False
 
-	group_perm = frappe.get_value(
+	# part of a group with access
+	if frappe.db.exists(
 		"Press User Permission",
 		{
 			"type": "Group",
@@ -22,12 +22,11 @@ def has_user_permission(doc, name, action, groups):
 			"document_name": name,
 			"action": action,
 		},
-	)
-	if group_perm:
+	):
 		allowed = True
 
-	# user has granular perm
-	user_perm = frappe.get_value(
+	# user has granular perm access
+	if frappe.db.exists(
 		"Press User Permission",
 		{
 			"type": "User",
@@ -36,8 +35,7 @@ def has_user_permission(doc, name, action, groups):
 			"document_name": name,
 			"action": action,
 		},
-	)
-	if user_perm:
+	):
 		allowed = True
 
 	return allowed

@@ -204,7 +204,9 @@ def approve_partner_request(key):
 
 		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
 		customer_team.partner_email = partner.partner_email
-		customer_team.append("team_members", {"user": partner.user})
+		team_members = [d.user for d in customer_team.team_members]
+		if partner.user not in team_members:
+			customer_team.append("team_members", {"user": partner.user})
 		customer_team.save(ignore_permissions=True)
 
 		frappe.db.commit()
@@ -988,9 +990,10 @@ def permission_group_users(name):
 
 @frappe.whitelist()
 def add_permission_group(title):
-	frappe.get_doc(
+	doc = frappe.get_doc(
 		{"doctype": "Press Permission Group", "team": get_current_team(), "title": title}
 	).insert(ignore_permissions=True)
+	return {"name": doc.name, "title": doc.title}
 
 
 @frappe.whitelist()

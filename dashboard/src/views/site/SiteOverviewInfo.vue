@@ -4,7 +4,7 @@
 			<div class="flex items-center py-3">
 				<Avatar
 					v-if="info.owner"
-					:imageURL="info.owner.user_image"
+					:image="info.owner.user_image"
 					:label="info.owner.first_name"
 				/>
 				<div class="ml-3 flex flex-1 items-center justify-between">
@@ -59,9 +59,21 @@
 				description="The site will go inactive and won't be publicly accessible"
 			>
 				<template v-slot:actions>
-					<Button @click="onDeactivateClick" class="shrink-0">
-						Deactivate Site
-					</Button>
+					<Tooltip
+						:text="
+							!permissions.deactivate
+								? `You don't have enough permissions to perform this action`
+								: 'Deactivate Site'
+						"
+					>
+						<Button
+							@click="onDeactivateClick"
+							class="shrink-0"
+							:disabled="!permissions.deactivate"
+						>
+							Deactivate Site
+						</Button>
+					</Tooltip>
 				</template>
 			</ListItem>
 
@@ -188,6 +200,10 @@ export default {
 				drop: this.$account.hasPermission(
 					this.site.name,
 					'press.api.site.archive'
+				),
+				deactivate: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.deactivate'
 				)
 			};
 		}

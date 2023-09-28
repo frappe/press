@@ -10,7 +10,7 @@
 					size="lg"
 					class="mx-1 cursor-pointer hover:bg-red-100 hover:opacity-20"
 					shape="square"
-					:imageURL="image.image"
+					:image="image.image"
 					v-for="(image, index) in app.screenshots"
 					@click="removeScreenshot(image.image, index)"
 				>

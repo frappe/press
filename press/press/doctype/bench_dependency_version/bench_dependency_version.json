@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-09-26 12:22:19.339438",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "version",
+  "supported_frappe_version"
+ ],
+ "fields": [
+  {
+   "fieldname": "supported_frappe_version",
+   "fieldtype": "Link",
+   "label": "Supported Frappe Version",
+   "options": "Frappe Version"
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Data",
+   "label": "Version"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-09-26 15:39:15.831272",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Dependency Version",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

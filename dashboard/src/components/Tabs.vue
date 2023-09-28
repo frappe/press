@@ -44,7 +44,7 @@
 				</option>
 			</select>
 		</div>
-		<div class="w-full py-5" v-if="$slots.default">
+		<div class="w-full pt-5" v-if="$slots.default">
 			<slot></slot>
 		</div>
 	</div>

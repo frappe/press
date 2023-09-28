@@ -9,17 +9,26 @@
 		v-if="site.status != 'Inactive'"
 	>
 		<template #actions>
-			<Button
-				v-if="['Active', 'Suspended'].includes(site.status) && canChangePlan"
-				@click="
-					() => {
-						showChangePlanDialog = true;
-						!plans.length && $resources.plans.fetch();
-					}
+			<Tooltip
+				:text="
+					!permissions.changePlan
+						? `You don't have enough permissions to perform this action`
+						: 'Change Plan'
 				"
 			>
-				{{ site.status == 'Suspended' ? 'Set Plan' : 'Change Plan' }}
-			</Button>
+				<Button
+					:disabled="!permissions.changePlan"
+					v-if="['Active', 'Suspended'].includes(site.status) && canChangePlan"
+					@click="
+						() => {
+							showChangePlanDialog = true;
+							!plans.length && $resources.plans.fetch();
+						}
+					"
+				>
+					{{ site.status == 'Suspended' ? 'Set Plan' : 'Change Plan' }}
+				</Button>
+			</Tooltip>
 		</template>
 
 		<div v-if="!plan" class="flex items-center justify-center py-20">
@@ -176,6 +185,14 @@ export default {
 		}
 	},
 	computed: {
+		permissions() {
+			return {
+				changePlan: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.change_plan'
+				)
+			};
+		},
 		canChangePlan() {
 			return this.site.can_change_plan;
 		},

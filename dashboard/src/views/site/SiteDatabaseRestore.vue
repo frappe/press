@@ -97,9 +97,21 @@
 					<h3 class="text-lg">Access</h3>
 					<p class="mt-1 text-base text-gray-600">Connect to your database</p>
 				</div>
-				<Button icon-left="database" @click="showDatabaseAccessDialog = true">
-					Access</Button
+				<Tooltip
+					:text="
+						!permissions.access
+							? `You don't have enough permissions to perform this action`
+							: 'Access Database'
+					"
 				>
+					<Button
+						:disabled="!permissions.access"
+						icon-left="database"
+						@click="showDatabaseAccessDialog = true"
+					>
+						Access</Button
+					>
+				</Tooltip>
 			</div>
 		</div>
 
@@ -342,6 +354,10 @@ export default {
 				reset: this.$account.hasPermission(
 					this.site.name,
 					'press.api.site.reset'
+				),
+				access: this.$account.hasPermission(
+					this.site.name,
+					'press.api.site.enable_database_access'
 				)
 			};
 		},

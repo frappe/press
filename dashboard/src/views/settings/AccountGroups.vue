@@ -114,7 +114,9 @@ export default {
 					color: 'green',
 					icon: 'check'
 				});
+				this.group = r;
 				this.showAddGroupDialog = false;
+				this.showGroupMemberDialog = true;
 			}
 		},
 		removeGroup: {

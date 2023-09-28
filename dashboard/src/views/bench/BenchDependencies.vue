@@ -6,51 +6,23 @@
 	>
 		<template #actions>
 			<Button
-				v-if="editMode"
+				v-if="isDirty"
 				label="Update"
 				@click="$resources.updateDependencies.submit()"
+				:loading="$resources.updateDependencies.loading"
 			/>
-			<Button v-else label="Edit" @click="editMode = true" />
 		</template>
-		<table class="min-w-full divide-y divide-gray-300">
-			<thead>
-				<tr class="divide-x divide-gray-200">
-					<th
-						scope="col"
-						class="py-3.5 pl-4 pr-4 text-left text-base font-semibold text-gray-900 sm:pl-0"
-					>
-						Dependency
-					</th>
-					<th
-						scope="col"
-						class="px-4 py-3.5 text-left text-base font-semibold text-gray-900"
-					>
-						Version
-					</th>
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-gray-200 bg-white">
-				<tr
-					v-for="dependency in $resources.dependencies.data"
-					:key="dependency.key"
-					class="divide-x divide-gray-200"
-				>
-					<td
-						class="whitespace-nowrap py-4 pl-4 pr-4 text-sm font-medium text-gray-900 sm:pl-0"
-					>
-						{{ dependency.key.split('_').join(' ') }}
-					</td>
-					<td class="whitespace-nowrap text-sm text-gray-500">
-						<input
-							class="border-none focus:text-gray-800 focus:ring-0"
-							v-model="dependency.value"
-							@input="isDirty = true"
-							:disabled="!editMode"
-						/>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+		<FormControl
+			v-for="dependency in activeDependencies"
+			:key="dependency.key"
+			type="select"
+			v-model="dependency.value"
+			:options="dependencySelectOptions(dependency.key)"
+			:value="dependency.value"
+			:label="dependencies.dependency_title[dependency.key]"
+			class="mx-0.5 my-2"
+			@input="isDirty = true"
+		/>
 	</Card>
 </template>
 
@@ -62,7 +34,6 @@ export default {
 	props: ['benchName'],
 	data() {
 		return {
-			editMode: false,
 			isDirty: false
 		};
 	},
@@ -82,14 +53,13 @@ export default {
 				url: 'press.api.bench.update_dependencies',
 				params: {
 					name: this.benchName,
-					dependencies: JSON.stringify(this.$resources.dependencies.data)
+					dependencies: JSON.stringify(this.dependencies.active_dependencies)
 				},
 				validate() {
 					if (!this.isDirty) return 'No changes made';
 				},
 				onSuccess() {
 					this.isDirty = false;
-					this.editMode = false;
 				},
 				onError(err) {
 					notify({
@@ -100,6 +70,29 @@ export default {
 					});
 				}
 			};
+		}
+	},
+	computed: {
+		dependencies() {
+			return this.$resources.dependencies.data;
+		},
+		activeDependencies() {
+			return this.dependencies.active_dependencies.filter(
+				dependency =>
+					!this.dependencies.internal_dependencies.includes(dependency.key)
+			);
+		}
+	},
+	methods: {
+		dependencySelectOptions(dependency) {
+			let versions_for_specific_package =
+				this.dependencies.supported_dependencies.filter(
+					dep => dep.key === dependency
+				);
+			return versions_for_specific_package.map(dep => ({
+				label: dep.value,
+				value: dep.value
+			}));
 		}
 	}
 };
