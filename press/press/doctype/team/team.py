@@ -331,11 +331,20 @@ class Team(Document):
 			"name",
 		)
 
-		if not current_invoice or today == frappe.utils.get_last_day(today):
+		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
+
+		if (
+			not current_invoice
+			or today == frappe.utils.get_last_day(today)
+			or today == current_inv_doc.period_start
+		):
 			# don't create invoice if new team or today is the last day of the month
 			return
 		else:
-			frappe.db.set_value("Invoice", current_invoice, "period_end", frappe.utils.nowdate())
+			current_inv_doc.period_end = frappe.utils.add_days(today, -1)
+			current_inv_doc.flags.on_partner_conversion = True
+			current_inv_doc.save()
+			current_inv_doc.finalize_invoice()
 
 		# create invoice
 		invoice = frappe.get_doc(

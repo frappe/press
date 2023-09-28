@@ -412,6 +412,9 @@ class Invoice(Document):
 		)
 
 	def apply_partner_discount(self):
+		if self.flags.on_partner_conversion:
+			return
+
 		# check if discount is already added
 		discount_note = (
 			"Flat Partner Discount"
