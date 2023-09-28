@@ -499,24 +499,6 @@ def versions(name):
 				pluck="tag_name",
 			)
 
-		version.apps = frappe.db.get_all(
-			"Bench App",
-			{"parent": version.name},
-			["name", "app", "hash", "source"],
-			order_by="idx",
-		)
-		for app in version.apps:
-			app.update(
-				frappe.db.get_value(
-					"App Source",
-					app.source,
-					("branch", "repository", "repository_owner", "repository_url"),
-					as_dict=1,
-					cache=True,
-				)
-			)
-			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
-
 		version.deployed_on = frappe.db.get_value(
 			"Agent Job",
 			{"bench": version.name, "job_type": "New Bench", "status": "Success"},
@@ -524,6 +506,30 @@ def versions(name):
 		)
 
 	return deployed_versions
+
+
+@frappe.whitelist()
+@protected("Bench")
+def get_installed_apps_in_version(name):
+	apps = frappe.db.get_all(
+		"Bench App",
+		{"parent": name},
+		["name", "app", "hash", "source"],
+		order_by="idx",
+	)
+	for app in apps:
+		app.update(
+			frappe.db.get_value(
+				"App Source",
+				app.source,
+				("branch", "repository", "repository_owner", "repository_url"),
+				as_dict=1,
+				cache=True,
+			)
+		)
+		app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
+
+	return apps
 
 
 @frappe.whitelist()
