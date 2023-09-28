@@ -333,7 +333,9 @@ def get_partner_request_status(team):
 @frappe.whitelist()
 def update_partnership_date(team, partnership_date):
 	if team:
-		frappe.db.set_value("Team", team, "partnership_date", partnership_date)
+		team_doc = frappe.get_doc("Team", team)
+		team_doc.partnership_date = partnership_date
+		team_doc.save()
 
 
 @frappe.whitelist(allow_guest=True)
