@@ -76,7 +76,7 @@
 							class="hidden space-x-1 sm:flex"
 						>
 							<Badge
-								v-for="(tag, i) in row.tags.slice(0, 1)"
+								v-for="tag in row.tags.slice(0, 1)"
 								theme="blue"
 								:label="tag"
 							/>
