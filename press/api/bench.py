@@ -475,47 +475,48 @@ def versions(name):
 
 	rg_version = frappe.db.get_value("Release Group", name, "version")
 
+	sites_in_group_details = frappe.db.get_all(
+		"Site",
+		filters={
+			"group": name,
+			"status": ("not in", ("Archived", "Suspended")),
+			"is_standby": 0,
+		},
+		fields=["name", "status", "cluster", "plan", "creation", "bench"],
+	)
+
+	Cluster = frappe.qb.DocType("Cluster")
+	cluster_data = (
+		frappe.qb.from_(Cluster)
+		.select(Cluster.name, Cluster.title, Cluster.image)
+		.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+		.run(as_dict=True)
+	)
+
+	Plan = frappe.qb.DocType("Plan")
+	plan_data = (
+		frappe.qb.from_(Plan)
+		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+		.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+		.run(as_dict=True)
+	)
+
+	ResourceTag = frappe.qb.DocType("Resource Tag")
+	tag_data = (
+		frappe.qb.from_(ResourceTag)
+		.select(ResourceTag.tag_name, ResourceTag.parent)
+		.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+		.run(as_dict=True)
+	)
+
 	for version in deployed_versions:
-		version.sites = frappe.db.get_all(
-			"Site",
-			{
-				"status": ("not in", ("Archived", "Suspended")),
-				"group": name,
-				"bench": version.name,
-				"is_standby": 0,
-			},
-			["name", "status", "cluster", "creation"],
-		)
+		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 		for site in version.sites:
 			site.version = rg_version
-			site.server_region_info = frappe.db.get_value(
-				"Cluster", site.cluster, ["title", "image"], as_dict=True
-			)
-			site_plan_name = frappe.get_value("Site", site.name, "plan")
-			site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
-			site.tags = frappe.get_all(
-				"Resource Tag",
-				{"parent": site.name},
-				pluck="tag_name",
-			)
-
-		version.apps = frappe.db.get_all(
-			"Bench App",
-			{"parent": version.name},
-			["name", "app", "hash", "source"],
-			order_by="idx",
-		)
-		for app in version.apps:
-			app.update(
-				frappe.db.get_value(
-					"App Source",
-					app.source,
-					("branch", "repository", "repository_owner", "repository_url"),
-					as_dict=1,
-					cache=True,
-				)
-			)
-			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
+			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
+			site.plan = find(plan_data, lambda x: x.name == site.plan)
+			tags = find_all(tag_data, lambda x: x.parent == site.name)
+			site.tags = [tag.tag_name for tag in tags]
 
 		version.deployed_on = frappe.db.get_value(
 			"Agent Job",
@@ -524,6 +525,30 @@ def versions(name):
 		)
 
 	return deployed_versions
+
+
+@frappe.whitelist()
+@protected("Bench")
+def get_installed_apps_in_version(name):
+	apps = frappe.db.get_all(
+		"Bench App",
+		{"parent": name},
+		["name", "app", "hash", "source"],
+		order_by="idx",
+	)
+	for app in apps:
+		app.update(
+			frappe.db.get_value(
+				"App Source",
+				app.source,
+				("branch", "repository", "repository_owner", "repository_url"),
+				as_dict=1,
+				cache=True,
+			)
+		)
+		app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
+
+	return apps
 
 
 @frappe.whitelist()

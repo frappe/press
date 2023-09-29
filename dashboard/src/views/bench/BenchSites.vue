@@ -42,7 +42,7 @@
 							variant="ghost"
 							label="Show Apps"
 							@click="
-								selectedVersionIndex = i;
+								$resources.versionApps.submit({ name: group.name });
 								showAppsDialog = true;
 							"
 						/>
@@ -76,7 +76,7 @@
 							class="hidden space-x-1 sm:flex"
 						>
 							<Badge
-								v-for="(tag, i) in row.tags.slice(0, 1)"
+								v-for="tag in row.tags.slice(0, 1)"
 								theme="blue"
 								:label="tag"
 							/>
@@ -132,7 +132,7 @@
 		<template #body-content>
 			<ListItem
 				class="mb-3 flex items-center rounded-md border px-4 py-3 shadow ring-1 ring-gray-300"
-				v-for="app in versions[selectedVersionIndex].apps"
+				v-for="app in $resources.versionApps.data"
 				:key="app.app"
 				:title="app.app"
 			>
@@ -152,6 +152,10 @@
 					/>
 				</template>
 			</ListItem>
+			<LoadingText
+				class="justify-center"
+				v-if="$resources.versionApps.loading"
+			/>
 		</template>
 	</Dialog>
 
@@ -281,6 +285,11 @@ export default {
 					name: this.benchName
 				},
 				auto: true
+			};
+		},
+		versionApps() {
+			return {
+				url: 'press.api.bench.get_installed_apps_in_version'
 			};
 		},
 		loginAsAdmin() {
