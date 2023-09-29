@@ -425,12 +425,9 @@ class Invoice(Document):
 			if discount.note == discount_note:
 				return
 
+		partner_level, legacy_contract = self.get_partner_level()
 		# give 10% discount for partners
-		discount_percent = (
-			0.1
-			if self.payment_mode == "Partner Credits"
-			else DISCOUNT_MAP.get(self.get_partner_level())
-		)
+		discount_percent = 0.1 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 		total_partner_discount = 0
 		for item in self.items:
@@ -460,14 +457,15 @@ class Invoice(Document):
 		response = client.session.get(
 			f"{client.url}/api/method/get_partner_level",
 			headers=client.headers,
-			params={"email": self.partner_email, "total_amount": self.total},
+			params={"email": self.partner_email},
 		)
 
 		if response.ok:
 			res = response.json()
 			partner_level = res.get("message")
+			legacy_contract = res.get("legacy_contract")
 			if partner_level:
-				return partner_level
+				return partner_level, legacy_contract
 		else:
 			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
