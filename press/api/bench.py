@@ -492,7 +492,13 @@ def versions(name):
 				"Cluster", site.cluster, ["title", "image"], as_dict=True
 			)
 			site_plan_name = frappe.get_value("Site", site.name, "plan")
-			site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+			site.plan = (
+				frappe.get_value(
+					"Plan", site_plan_name, ["price_inr", "price_usd", "plan_title"], as_dict=True
+				)
+				if site_plan_name
+				else None
+			)
 			site.tags = frappe.get_all(
 				"Resource Tag",
 				{"parent": site.name},
