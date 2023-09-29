@@ -90,6 +90,7 @@ class AccountRequest(Document):
 			subject=subject,
 			template=template,
 			args=args,
+			now=True,
 		)
 
 	def get_verification_url(self):
