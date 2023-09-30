@@ -416,16 +416,31 @@ class ReleaseGroup(Document):
 		]
 
 		next_apps = []
-		for app in self.apps:
-			# TODO: Optimize using get_value, maybe?
-			latest_app_release = None
 
+		app_sources = [app.source for app in self.apps]
+		AppRelease = frappe.qb.DocType("App Release")
+		latest_app_releases = (
+			frappe.qb.from_(AppRelease)
+			.where(AppRelease.source.isin(app_sources))
+			.select(
+				AppRelease.name,
+				AppRelease.source,
+				AppRelease.status,
+				AppRelease.hash,
+				AppRelease.creation,
+			)
+			.orderby(AppRelease.creation, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+
+		for app in self.apps:
+			latest_app_release = None
 			if app.source in only_approved_for_sources:
-				latest_app_release = get_last_doc(
-					"App Release", {"source": app.source, "status": "Approved"}
+				latest_app_release = find(
+					latest_app_releases, lambda x: x.source == app.source and x.status == "Approved"
 				)
 			else:
-				latest_app_release = get_last_doc("App Release", {"source": app.source})
+				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
 			# No release exists for this source
 			if not latest_app_release:
