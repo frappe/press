@@ -369,28 +369,9 @@ def apps(name):
 	deployed_apps = unique(deployed_apps)
 	updates = deploy_information(name)
 
-	AppSource = frappe.qb.DocType("App Source")
-	sources = (
-		frappe.qb.from_(AppSource)
-		.select(
-			AppSource.name,
-			AppSource.repository_url,
-			AppSource.branch,
-			AppSource.repository,
-			AppSource.repository_owner,
-			AppSource.last_github_poll_failed,
-		)
-		.run(as_dict=True)
-	)
-
-	App = frappe.qb.DocType("App")
-	all_apps = (
-		frappe.qb.from_(App).select(App.name, App.title, App.frappe).run(as_dict=True)
-	)
-
 	for app in group.apps:
-		source = find(sources, lambda x: x.name == app.source)
-		app = find(all_apps, lambda x: x.name == app.app)
+		source = frappe.get_doc("App Source", app.source)
+		app = frappe.get_doc("App", app.app)
 		update_available = updates["update_available"] and find(
 			updates.apps, lambda x: x["app"] == app.name and x["update_available"]
 		)
