@@ -409,11 +409,17 @@ class ReleaseGroup(Document):
 		if current_team.parent_team:
 			app_publishers_team.append(current_team.parent_team)
 
-		only_approved_for_sources = [
-			source
-			for source in marketplace_app_sources
-			if frappe.db.get_value("App Source", source, "team") in app_publishers_team
-		]
+		only_approved_for_sources = []
+		if marketplace_app_sources:
+			AppSource = frappe.qb.DocType("App Source")
+			only_approved_for_sources = (
+				frappe.qb.from_(AppSource)
+				.where(AppSource.name.isin(marketplace_app_sources))
+				.where(AppSource.team.isin(app_publishers_team))
+				.select(AppSource.name)
+				.run(as_dict=True)
+			)
+			only_approved_for_sources = [source.name for source in only_approved_for_sources]
 
 		next_apps = []
 
