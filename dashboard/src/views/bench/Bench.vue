@@ -16,11 +16,19 @@
 				]"
 			>
 				<template #actions>
-					<Dropdown :options="benchActions">
-						<template v-slot="{ open }">
-							<Button variant="ghost" class="mr-2" icon="more-horizontal" />
-						</template>
-					</Dropdown>
+					<div class="space-x-2">
+						<Button
+							v-if="bench?.status === 'Active'"
+							icon-left="plus"
+							label="New Site"
+							@click="$router.push(`/${this.bench.name}/new`)"
+						/>
+						<Dropdown :options="benchActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+					</div>
 				</template>
 			</Breadcrumbs>
 		</header>
@@ -162,12 +170,6 @@ export default {
 		},
 		benchActions() {
 			return [
-				{
-					label: 'New Site',
-					icon: 'plus',
-					onClick: () => this.$router.push(`/${this.bench.name}/new`),
-					condition: () => this.bench?.status === 'Active'
-				},
 				{
 					label: 'Edit Title',
 					icon: 'edit',

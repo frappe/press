@@ -13,11 +13,19 @@
 				]"
 			>
 				<template #actions>
-					<Dropdown :options="siteActions">
-						<template v-slot="{ open }">
-							<Button variant="ghost" class="mr-2" icon="more-horizontal" />
-						</template>
-					</Dropdown>
+					<div class="space-x-2">
+						<Button
+							v-if="site?.status === 'Active'"
+							icon-left="external-link"
+							label="Visit Site"
+							:link="`https://${site?.name}`"
+						/>
+						<Dropdown :options="siteActions">
+							<template v-slot="{ open }">
+								<Button variant="ghost" icon="more-horizontal" />
+							</template>
+						</Dropdown>
+					</div>
 				</template>
 			</Breadcrumbs>
 		</header>
@@ -298,14 +306,6 @@ export default {
 
 		siteActions() {
 			return [
-				{
-					label: 'View Site',
-					icon: 'external-link',
-					condition: () => this.site?.status === 'Active',
-					onClick: () => {
-						window.open(`https://${site?.name}`, '_blank');
-					}
-				},
 				{
 					label: 'View in Desk',
 					icon: 'external-link',
