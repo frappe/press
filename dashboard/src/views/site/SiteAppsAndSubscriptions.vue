@@ -253,7 +253,7 @@ import { notify } from '@/utils/toast';
 
 export default {
 	name: 'SiteAppsAndSubscriptions',
-	props: ['site'],
+	props: ['site', 'siteName'],
 	data() {
 		return {
 			showInstallAppsDialog: false,
@@ -279,7 +279,7 @@ export default {
 			return {
 				url: 'press.api.marketplace.get_marketplace_subscriptions_for_site',
 				params: {
-					site: this.site?.name
+					site: this.siteName
 				},
 				auto: true
 			};
@@ -306,7 +306,7 @@ export default {
 		installedApps() {
 			return {
 				url: 'press.api.site.installed_apps',
-				params: { name: this.site?.name },
+				params: { name: this.siteName },
 				auto: true
 			};
 		},
@@ -314,7 +314,7 @@ export default {
 		availableApps() {
 			return {
 				url: 'press.api.site.available_apps',
-				params: { name: this.site?.name }
+				params: { name: this.siteName }
 			};
 		},
 
@@ -322,7 +322,7 @@ export default {
 			return {
 				url: 'press.api.site.install_app',
 				params: {
-					name: this.site?.name,
+					name: this.siteName,
 					app: this.appToInstall?.app,
 					plan: this.selectedPlan
 				},
@@ -435,7 +435,7 @@ export default {
 			}
 
 			this.$resources.installApp.submit({
-				name: this.site?.name,
+				name: this.siteName,
 				app: this.appToInstall?.app,
 				plan: this.selectedPlan
 			});

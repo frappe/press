@@ -273,17 +273,20 @@ const routes = [
 			{
 				name: 'ServerOverview',
 				path: 'overview',
-				component: () => import('../views/server/ServerOverview.vue')
+				component: () => import('../views/server/ServerOverview.vue'),
+				props: true
 			},
 			{
 				name: 'ServerAnalytics',
 				path: 'analytics',
-				component: () => import('../views/server/ServerAnalytics.vue')
+				component: () => import('../views/server/ServerAnalytics.vue'),
+				props: true
 			},
 			{
 				name: 'ServerBenches',
 				path: 'benches',
-				component: () => import('../views/server/ServerBenches.vue')
+				component: () => import('../views/server/ServerBenches.vue'),
+				props: true
 			},
 			{
 				name: 'ServerJobs',

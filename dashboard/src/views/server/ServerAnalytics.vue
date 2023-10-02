@@ -83,7 +83,7 @@ import FrappeChart from '@/components/FrappeChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
-	props: ['server'],
+	props: ['server', 'serverName'],
 	components: {
 		FrappeChart
 	},
@@ -99,7 +99,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'loadavg',
 					duration: this.duration
@@ -112,7 +112,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'cpu',
 					duration: this.duration
@@ -125,7 +125,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'memory',
 					duration: this.duration
@@ -138,7 +138,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'network',
 					duration: this.duration
@@ -151,7 +151,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'iops',
 					duration: this.duration
@@ -164,7 +164,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.server?.name,
+					name: this.serverName,
 					timezone: localTimezone,
 					query: 'space',
 					duration: this.duration

@@ -93,13 +93,13 @@ export default {
 		TableRow,
 		TableCell
 	},
-	props: ['server'],
+	props: ['server', 'serverName'],
 	resources: {
 		benches() {
 			return {
 				url: 'press.api.server.groups',
 				params: {
-					name: this.server?.name
+					name: this.serverName
 				},
 				auto: true
 			};
