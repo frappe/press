@@ -134,14 +134,15 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
-	plan = frappe.get_doc("Plan", server.plan)
+	plan = frappe.get_doc("Plan", server.plan) if server.plan else None
 	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
 		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
-		plan.vcpu = self_hosted_server.vcpus
-		plan.memory = self_hosted_server.ram
-		plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
+		if plan:
+			plan.vcpu = self_hosted_server.vcpus
+			plan.memory = self_hosted_server.ram
+			plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
 	return {
-		"plan": plan.as_dict(),
+		"plan": plan if plan else None,
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",

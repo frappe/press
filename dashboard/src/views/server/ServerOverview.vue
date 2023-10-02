@@ -19,6 +19,7 @@ const overview = createResource({
 			v-if="server && overview.data"
 		>
 			<ServerOverviewPlan
+				v-if="overview.data.plan"
 				:server="server"
 				:plan="overview.data.plan"
 				@plan-change="overview.reload()"
