@@ -19,18 +19,8 @@
 					>
 						<template #actions>
 							<div>
-								<Dropdown :options="serverActions">
-									<template v-slot="{ open }">
-										<Button
-											variant="ghost"
-											class="mr-2"
-											icon="more-horizontal"
-										/>
-									</template>
-								</Dropdown>
 								<Button
 									v-if="server?.status === 'Active'"
-									variant="solid"
 									icon-left="plus"
 									label="New Bench"
 									@click="
@@ -40,6 +30,15 @@
 										})
 									"
 								/>
+								<Dropdown :options="serverActions">
+									<template v-slot="{ open }">
+										<Button
+											variant="ghost"
+											class="mr-2"
+											icon="more-horizontal"
+										/>
+									</template>
+								</Dropdown>
 							</div>
 						</template>
 					</Breadcrumbs>
