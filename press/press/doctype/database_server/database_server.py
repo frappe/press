@@ -572,6 +572,20 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	def adjust_memory_config(self):
+		if not self.ram:
+			return
+
+		self.memory_high = max(self.ram // 1024 - 2, 1)
+		self.memory_max = max(self.ram // 1024 - 1, 2)
+		self.save()
+
+		self.add_mariadb_variable(
+			"innodb_buffer_pool_size",
+			"value_int",
+			int(self.ram * 0.685),  # will be rounded up based on chunk_size
+		)
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"

@@ -74,7 +74,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-01 14:38:02.723500",
+  "modified": "2023-10-03 17:11:39.766483",
   "name": "Resize Server",
   "steps": [
    {
@@ -116,6 +116,14 @@
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
    }
   ]
  },
