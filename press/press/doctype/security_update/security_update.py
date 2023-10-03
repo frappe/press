@@ -65,7 +65,7 @@ class SecurityUpdate(Document):
 		package_meta = SecurityUpdate.get_package_meta_from_log(play)
 		package_change_log = SecurityUpdate.get_package_change_log(play)
 		version = SecurityUpdate.get_package_version(package_meta)
-		priority, level = SecurityUpdate.get_package_priority(package_meta)
+		priority, level = SecurityUpdate.get_package_priority_and_level(package_meta)
 
 		if frappe.db.exists(
 			"Security Update",
