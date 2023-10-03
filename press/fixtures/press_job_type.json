@@ -74,7 +74,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-09-27 15:52:54.416534",
+  "modified": "2023-10-03 17:11:39.766483",
   "name": "Resize Server",
   "steps": [
    {
@@ -121,7 +121,7 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.doctype == \"Database Server\":\n    server = frappe.get_doc(doc.doctype, doc.server)\n    server.adjust_memory_config()",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()",
     "step_name": "Set additional config",
     "wait_until_true": 0
    }
