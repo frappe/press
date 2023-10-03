@@ -222,7 +222,11 @@ export default {
 				]
 			};
 		},
-		serverTags: { url: 'press.api.server.server_tags', auto: true }
+		serverTags: {
+			url: 'press.api.server.server_tags',
+			auto: true,
+			initialData: []
+		}
 	},
 	methods: {
 		dropdownItems(server) {
