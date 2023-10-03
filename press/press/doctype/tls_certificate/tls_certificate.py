@@ -105,7 +105,7 @@ class TLSCertificate(Document):
 				frappe.enqueue(
 					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
 					server=frappe.get_doc(server_doctype, server),
-					certificate=self.name,
+					certificate=self,
 				)
 
 	def trigger_site_domain_callback(self):
