@@ -80,14 +80,15 @@
 								label="Status"
 								class="mr-8"
 								type="select"
-								:options="siteStatusFilterOptions()"
+								:options="siteStatusFilterOptions"
 								v-model="site_status"
 							/>
 							<FormControl
+								v-if="$resources.siteTags.data.length > 0"
 								label="Tag"
 								class="mr-8"
 								type="select"
-								:options="siteTagFilterOptions()"
+								:options="siteTagFilterOptions"
 								v-model="site_tag"
 							/>
 						</div>
@@ -310,7 +311,7 @@ export default {
 				]
 			};
 		},
-		siteTags: { url: 'press.api.site.site_tags', auto: true },
+		siteTags: { url: 'press.api.site.site_tags', auto: true, initialData: [] },
 		latestUnpaidInvoice: {
 			url: 'press.api.billing.get_latest_unpaid_invoice',
 			auto: true
@@ -373,52 +374,6 @@ export default {
 		handleAddPrepaidCreditsSuccess() {
 			this.$resources.latestUnpaidInvoice.reload();
 			this.showPrepaidCreditsDialog = false;
-		},
-		siteStatusFilterOptions() {
-			return [
-				{
-					label: 'All',
-					value: 'All'
-				},
-				{
-					label: 'Active',
-					value: 'Active'
-				},
-				{
-					label: 'Broken',
-					value: 'Broken'
-				},
-				{
-					label: 'Inactive',
-					value: 'Inactive'
-				},
-				{
-					label: 'Trial',
-					value: 'Trial'
-				},
-				{
-					label: 'Update Available',
-					value: 'Update Available'
-				}
-			];
-		},
-		siteTagFilterOptions() {
-			const defaultOptions = [
-				{
-					label: '',
-					value: ''
-				}
-			];
-
-			if (!this.$resources.siteTags.data) return defaultOptions;
-
-			return [
-				...defaultOptions,
-				...this.$resources.siteTags.data.map(tag => ({
-					label: tag,
-					value: tag
-				}))
-			];
 		},
 		dropdownItems(site) {
 			return [
@@ -533,6 +488,52 @@ export default {
 			if (this.$resources.latestUnpaidInvoice.data) {
 				return this.$resources.latestUnpaidInvoice.data;
 			}
+		},
+		siteStatusFilterOptions() {
+			return [
+				{
+					label: 'All',
+					value: 'All'
+				},
+				{
+					label: 'Active',
+					value: 'Active'
+				},
+				{
+					label: 'Broken',
+					value: 'Broken'
+				},
+				{
+					label: 'Inactive',
+					value: 'Inactive'
+				},
+				{
+					label: 'Trial',
+					value: 'Trial'
+				},
+				{
+					label: 'Update Available',
+					value: 'Update Available'
+				}
+			];
+		},
+		siteTagFilterOptions() {
+			const defaultOptions = [
+				{
+					label: '',
+					value: ''
+				}
+			];
+
+			if (!this.$resources.siteTags.data) return defaultOptions;
+
+			return [
+				...defaultOptions,
+				...this.$resources.siteTags.data.map(tag => ({
+					label: tag,
+					value: tag
+				}))
+			];
 		}
 	}
 };

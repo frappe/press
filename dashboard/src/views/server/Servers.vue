@@ -44,14 +44,15 @@
 							label="Server Type"
 							class="mr-8"
 							type="select"
-							:options="serverStatusFilterOptions()"
+							:options="serverStatusFilterOptions"
 							v-model="server_type"
 						/>
 						<FormControl
+							v-if="$resources.serverTags.data.length > 0"
 							label="Tag"
 							class="mr-8"
 							type="select"
-							:options="serverTagFilterOptions()"
+							:options="serverTagFilterOptions"
 							v-model="server_tag"
 						/>
 					</div>
@@ -258,6 +259,31 @@ export default {
 				}
 				this.showAddCardDialog = false;
 			}
+		}
+	},
+	computed: {
+		servers() {
+			if (!this.$resources.allServers.data) {
+				return [];
+			}
+
+			let servers = this.$resources.allServers.data;
+			if (this.searchTerm)
+				servers = servers.filter(
+					server =>
+						server.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+						server.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+				);
+
+			return servers.map(server => ({
+				name: server.title || server.name,
+				status: server.status,
+				server_region_info: server.region_info,
+				plan: server.plan,
+				tags: server.tags,
+				app_server: server.app_server,
+				route: { name: 'ServerOverview', params: { serverName: server.name } }
+			}));
 		},
 		serverStatusFilterOptions() {
 			return [
@@ -292,31 +318,6 @@ export default {
 					value: tag
 				}))
 			];
-		}
-	},
-	computed: {
-		servers() {
-			if (!this.$resources.allServers.data) {
-				return [];
-			}
-
-			let servers = this.$resources.allServers.data;
-			if (this.searchTerm)
-				servers = servers.filter(
-					server =>
-						server.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-						server.title.toLowerCase().includes(this.searchTerm.toLowerCase())
-				);
-
-			return servers.map(server => ({
-				name: server.title || server.name,
-				status: server.status,
-				server_region_info: server.region_info,
-				plan: server.plan,
-				tags: server.tags,
-				app_server: server.app_server,
-				route: { name: 'ServerOverview', params: { serverName: server.name } }
-			}));
 		}
 	}
 };

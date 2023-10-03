@@ -30,14 +30,15 @@
 						label="Status"
 						class="mr-8"
 						type="select"
-						:options="benchStatusFilterOptions()"
+						:options="benchStatusFilterOptions"
 						v-model="bench_status"
 					/>
 					<FormControl
+						v-if="$resources.benchTags.data.length > 0"
 						label="Tag"
 						class="mr-8"
 						type="select"
-						:options="benchTagFilterOptions()"
+						:options="benchTagFilterOptions"
 						v-model="bench_tag"
 					/>
 				</div>
@@ -207,7 +208,8 @@ export default {
 		},
 		benchTags: {
 			url: 'press.api.bench.bench_tags',
-			auto: true
+			auto: true,
+			initialData: []
 		}
 	},
 	computed: {
@@ -234,9 +236,7 @@ export default {
 				tags: bench.tags,
 				route: { name: 'BenchSiteList', params: { benchName: bench.name } }
 			}));
-		}
-	},
-	methods: {
+		},
 		benchStatusFilterOptions() {
 			return [
 				{
@@ -270,7 +270,9 @@ export default {
 					value: tag
 				}))
 			];
-		},
+		}
+	},
+	methods: {
 		showBillingDialog() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
