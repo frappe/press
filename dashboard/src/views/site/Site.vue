@@ -38,7 +38,6 @@
 						{{ site.host_name || site.name }}
 					</h1>
 					<Badge class="ml-4" :label="site.status" />
-
 					<div
 						v-if="regionInfo"
 						class="ml-2 hidden cursor-default flex-row items-center self-end rounded-md bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700 md:flex"
@@ -53,6 +52,14 @@
 						<p>{{ regionInfo.title }}</p>
 					</div>
 				</div>
+				<Button
+					@click="onActivateClick"
+					v-if="site.last_job_undelivered_for_long"
+					:variant="'solid'"
+					class="mr-1"
+				>
+					Activate
+				</Button>
 				<div class="mb-10 flex flex-row justify-between md:hidden">
 					<div class="flex flex-row">
 						<div
@@ -291,6 +298,26 @@ export default {
 		handlePlanChange() {
 			$resources.site.reload();
 			$resources.plan.reload();
+		},
+		onActivateClick() {
+			this.$confirm({
+				title: 'Activate Site',
+				message: `Are you sure you want to activate this site?`,
+				actionLabel: 'Activate',
+				action: () => this.activate()
+			});
+		},
+		activate() {
+			this.$call('press.api.site.activate', {
+				name: this.site.name
+			});
+			notify({
+				title: 'Site activated successfully!',
+				message: 'You can now access your site',
+				icon: 'check',
+				color: 'green'
+			});
+			setTimeout(() => window.location.reload(), 1000);
 		}
 	},
 	computed: {

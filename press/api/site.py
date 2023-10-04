@@ -835,6 +835,9 @@ def get(name):
 			)[0],
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
+		"last_job_undelivered_for_long": site.last_job_undelivered_for_long
+		if site.status == "Pending"
+		else False,
 	}
 
 
