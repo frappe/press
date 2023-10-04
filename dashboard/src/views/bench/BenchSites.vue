@@ -16,7 +16,7 @@
 			<div class="flex items-center justify-center">
 				<LoadingText class="mt-8" v-if="$resources.versions.loading" />
 				<div v-else-if="rows.length === 0" class="mt-8">
-					<div class="text-base text-gray-700">No Benches</div>
+					<div class="text-base text-gray-700">No Sites</div>
 				</div>
 			</div>
 			<div
