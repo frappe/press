@@ -1314,6 +1314,22 @@ class Site(Document):
 	def disable_read_write(self):
 		self.enable_database_access("read_only")
 
+	@property
+	def last_job_undelivered_for_long(self) -> bool:
+		last_jobs = frappe.get_all(
+			"Agent Job",
+			["modified", "status"],
+			filters={"site": self.name},
+			order_by="creation desc",
+			limit=2,  # for pair jobs like Archive Site
+		)
+		for job in last_jobs:
+			if (
+				job.status == "Undelivered"
+				and (frappe.utils.now_datetime() - job.modified).total_seconds() > 60 * 60 * 4
+			):
+				return True
+
 
 def site_cleanup_after_archive(site):
 	delete_site_domains(site)
