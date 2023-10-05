@@ -308,7 +308,7 @@ class Team(Document):
 	def get_partnership_start_date(self):
 		client = get_frappe_io_connection()
 		start_date = client.get_value(
-			"Partner", {"user": self.partner_email, "enabled": 1}, "start_date"
+			"Partner", {"email": self.partner_email, "enabled": 1}, "start_date"
 		)
 		if not start_date:
 			frappe.throw("Partner not found on frappe.io")

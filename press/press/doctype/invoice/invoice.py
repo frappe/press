@@ -441,7 +441,7 @@ class Invoice(Document):
 				{
 					"discount_type": "Flat On Total",
 					"based_on": "Amount",
-					"percent": 0,
+					"percent": discount_percent,
 					"amount": total_partner_discount,
 					"note": discount_note,
 					"via_team": False,
