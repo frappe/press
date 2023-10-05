@@ -1,11 +1,18 @@
 <template>
 	<Card title="Uptime">
-		<div class="mt-8" v-for="type in uptimeTypes" :key="type.key">
+		<div
+			v-if="loading || !data"
+			class="flex h-full items-center justify-center"
+		>
+			<Button v-if="loading" :loading="loading" label="Loading..." />
+			<div v-else class="text-base text-gray-600">No data</div>
+		</div>
+		<div v-else class="mt-8" v-for="type in uptimeTypes" :key="type.key">
 			<div class="flex h-8 justify-between">
 				<div
 					v-for="d in data"
 					:key="d.date"
-					style="width: 2px"
+					style="width: 2.5px"
 					:class="[
 						d[type.key] === undefined
 							? 'bg-white'
@@ -27,7 +34,7 @@
 import { DateTime } from 'luxon';
 export default {
 	name: 'SiteAnalyticsUptime',
-	props: ['data'],
+	props: ['data', 'loading'],
 	computed: {
 		uptimeTypes() {
 			return [{ key: 'value', label: 'Web' }];

@@ -12,11 +12,9 @@
 				:loading="$resources.analytics.loading"
 			/>
 
-			<!-- TODO: add loading state -->
 			<SiteAnalyticsUptime
-				v-if="$resources.analytics?.data?.uptime"
-				:data="$resources.analytics.data.uptime"
-				:colors="[$theme.colors.blue[500]]"
+				:data="$resources.analytics?.data?.uptime"
+				:loading="$resources.analytics.loading"
 			/>
 
 			<LineChart
