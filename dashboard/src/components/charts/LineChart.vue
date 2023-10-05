@@ -1,14 +1,13 @@
 <template>
-	<Card :title="title" class="h-80">
+	<Card :title="title" class="h-80" :loading="loading">
 		<template #actions>
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="error || loading || !data.datasets.length"
+			v-if="error || !data.datasets.length"
 			class="flex h-full items-center justify-center"
 		>
-			<Button v-if="loading" :loading="loading" label="Loading..." />
-			<ErrorMessage v-else-if="error" :message="error" />
+			<ErrorMessage v-if="error" :message="error" />
 			<span v-else class="text-base text-gray-700">No data</span>
 		</div>
 		<VChart
