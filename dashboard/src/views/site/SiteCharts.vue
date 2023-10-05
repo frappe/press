@@ -8,7 +8,7 @@
 				:key="usageCounterData"
 				:data="usageCounterData"
 				unit="seconds"
-				:chartTheme="$theme.colors.purple[500]"
+				:chartTheme="[$theme.colors.purple[500]]"
 				:loading="$resources.analytics.loading"
 			/>
 
@@ -25,7 +25,7 @@
 				:key="requestCountData"
 				:data="requestCountData"
 				unit="requests"
-				:chartTheme="$theme.colors.green[500]"
+				:chartTheme="[$theme.colors.green[500]]"
 				:loading="$resources.analytics.loading"
 			/>
 			<LineChart
@@ -34,7 +34,7 @@
 				:key="requestTimeData"
 				:data="requestTimeData"
 				unit="seconds"
-				:chartTheme="$theme.colors.yellow[500]"
+				:chartTheme="[$theme.colors.yellow[500]]"
 				:loading="$resources.analytics.loading"
 			/>
 			<LineChart
@@ -43,7 +43,7 @@
 				:key="jobCountData"
 				:data="jobCountData"
 				unit="jobs"
-				:chartTheme="$theme.colors.red[500]"
+				:chartTheme="[$theme.colors.red[500]]"
 				:loading="$resources.analytics.loading"
 			/>
 			<LineChart
@@ -52,7 +52,7 @@
 				:key="jobTimeData"
 				:data="jobTimeData"
 				unit="seconds"
-				:chartTheme="$theme.colors.blue[500]"
+				:chartTheme="[$theme.colors.blue[500]]"
 				:loading="$resources.analytics.loading"
 			/>
 		</div>
@@ -92,7 +92,7 @@ export default {
 			let plan_limit = this.$resources.analytics.data?.plan_limit;
 
 			return {
-				datasets: data.map(d => [+new Date(d.date), d.value / 1000000]),
+				datasets: [data.map(d => [+new Date(d.date), d.value / 1000000])],
 				// daily limit marker
 				markLine: {
 					data: [
@@ -117,7 +117,7 @@ export default {
 			if (!requestCount) return;
 
 			return {
-				datasets: requestCount.map(d => [+new Date(d.date), d.value])
+				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		requestTimeData() {
@@ -125,10 +125,9 @@ export default {
 			if (!requestCpuTime) return;
 
 			return {
-				datasets: requestCpuTime.map(d => [
-					+new Date(d.date),
-					d.value / 1000000
-				])
+				datasets: [
+					requestCpuTime.map(d => [+new Date(d.date), d.value / 1000000])
+				]
 			};
 		},
 		jobCountData() {
@@ -136,7 +135,7 @@ export default {
 			if (!jobCount) return;
 
 			return {
-				datasets: jobCount.map(d => [+new Date(d.date), d.value])
+				datasets: [jobCount.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		jobTimeData() {
@@ -144,7 +143,7 @@ export default {
 			if (!jobCpuTime) return;
 
 			return {
-				datasets: jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])
+				datasets: [jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])]
 			};
 		}
 	}

@@ -5,7 +5,7 @@
 		:key="dailyUsageData"
 		:data="dailyUsageData"
 		unit="seconds"
-		:chartTheme="$theme.colors.purple[500]"
+		:chartTheme="[$theme.colors.purple[500]]"
 		:loading="$resources.requestCounter.loading"
 		:error="$resources.requestCounter.error"
 	>
@@ -44,10 +44,9 @@ export default {
 			let plan_limit = this.$resources.requestCounter.data.plan_limit;
 
 			return {
-				datasets: dailyUsageData.map(d => [
-					+new Date(d.date),
-					d.value / 1000000
-				]),
+				datasets: [
+					dailyUsageData.map(d => [+new Date(d.date), d.value / 1000000])
+				],
 				// daily limit marker
 				markLine: {
 					data: [
