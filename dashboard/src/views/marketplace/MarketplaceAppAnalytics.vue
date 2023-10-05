@@ -74,6 +74,7 @@
 		<LineChart
 			title="Pageviews"
 			type="time"
+			:key="pageViewsData"
 			:data="pageViewsData"
 			unit="views"
 			:chartTheme="$theme.colors.purple[500]"
@@ -94,6 +95,7 @@
 		<LineChart
 			title="Unique Visitors"
 			type="time"
+			:key="visitorsData"
 			:data="visitorsData"
 			unit="visitors"
 			:chartTheme="$theme.colors.green[500]"

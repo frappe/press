@@ -5,6 +5,7 @@
 			<LineChart
 				type="time"
 				title="Usage Counter"
+				:key="usageCounterData"
 				:data="usageCounterData"
 				unit="seconds"
 				:chartTheme="$theme.colors.purple[500]"
@@ -21,6 +22,7 @@
 			<LineChart
 				type="time"
 				title="Requests"
+				:key="requestCountData"
 				:data="requestCountData"
 				unit="requests"
 				:chartTheme="$theme.colors.green[500]"
@@ -29,6 +31,7 @@
 			<LineChart
 				type="time"
 				title="CPU Usage"
+				:key="requestTimeData"
 				:data="requestTimeData"
 				unit="seconds"
 				:chartTheme="$theme.colors.yellow[500]"
@@ -37,6 +40,7 @@
 			<LineChart
 				type="time"
 				title="Background Jobs"
+				:key="jobCountData"
 				:data="jobCountData"
 				unit="jobs"
 				:chartTheme="$theme.colors.red[500]"
@@ -45,6 +49,7 @@
 			<LineChart
 				type="time"
 				title="Background Jobs CPU Usage"
+				:key="jobTimeData"
 				:data="jobTimeData"
 				unit="seconds"
 				:chartTheme="$theme.colors.blue[500]"
