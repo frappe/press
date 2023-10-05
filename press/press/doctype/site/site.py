@@ -1316,18 +1316,17 @@ class Site(Document):
 
 	@property
 	def last_job_undelivered_for_long(self) -> bool:
-		last_job = frappe.get_all(
+		last_jobs = frappe.get_all(
 			"Agent Job",
 			["modified", "status"],
 			filters={"site": self.name},
 			order_by="creation desc",
-			limit=1,
+			limit=2,  # for pair jobs like Archive Site
 		)
-		if last_job:
-			last_job = last_job[0]
+		for job in last_jobs:
 			if (
-				last_job.status == "Undelivered"
-				and (frappe.utils.now_datetime() - last_job.modified).total_seconds() > 60 * 60 * 4
+				job.status == "Undelivered"
+				and (frappe.utils.now_datetime() - job.modified).total_seconds() > 60 * 60 * 4
 			):
 				return True
 
