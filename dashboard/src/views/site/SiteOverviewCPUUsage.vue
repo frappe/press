@@ -54,7 +54,7 @@ export default {
 							name: 'Daily Compute Limit',
 							yAxis: plan_limit,
 							label: {
-								formatter: '{b}: {c}s',
+								formatter: '{b}: {c} seconds',
 								position: 'middle'
 							},
 							lineStyle: {
