@@ -1,17 +1,14 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid justify-items-stretch">
-			<label>
-				<span class="mb-2 inline-block text-sm leading-4 text-gray-700">
-					Duration
-				</span>
-				<select class="form-select ml-2" v-model="duration">
-					<option v-for="option in durationOptions" :key="option">
-						{{ option }}
-					</option>
-				</select>
-			</label>
-		</div>
+		<FormControl
+			class="w-32"
+			label="Duration"
+			type="select"
+			:options="
+				durationOptions.map(option => ({ label: option, value: option }))
+			"
+			v-model="duration"
+		/>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<LineChart
 				type="time"
