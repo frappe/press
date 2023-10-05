@@ -168,6 +168,11 @@ const options = ref({
 		length: 10,
 		length2: 20
 	},
+	legend: {
+		top: 'bottom',
+		icon: 'circle',
+		show: data.value.datasets.length > 1
+	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
 			name: dataset.name || unit,
