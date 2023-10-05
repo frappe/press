@@ -23,6 +23,7 @@
 
 <script setup>
 import { ref, toRefs } from 'vue';
+import { DateTime } from 'luxon';
 import { use, graphic } from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
@@ -121,7 +122,9 @@ const options = ref({
 		trigger: 'axis',
 		formatter: params => {
 			// for the dot to follow the same color as the line 🗿
-			let tooltip = `<p>${params[0].axisValueLabel}</p>`;
+			let tooltip = `<p>${DateTime.fromSQL(
+				params[0].axisValueLabel
+			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
 			params.forEach(({ value, seriesName }, i) => {
 				let colorSpan = color =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
