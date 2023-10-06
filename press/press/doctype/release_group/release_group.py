@@ -384,25 +384,27 @@ class ReleaseGroup(Document):
 
 			next_hash = app.hash
 			apps.append(
-				{
-					"title": app.title,
-					"app": app.app,
-					"source": source.name,
-					"repository": source.repository,
-					"repository_owner": source.repository_owner,
-					"repository_url": source.repository_url,
-					"branch": source.branch,
-					"current_hash": current_hash,
-					"current_tag": current_tag,
-					"current_release": bench_app.release if bench_app else None,
-					"releases": app.releases,
-					"next_release": app.release,
-					"next_hash": next_hash,
-					"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
-					"will_branch_change": will_branch_change,
-					"current_branch": current_branch,
-					"update_available": not current_hash or current_hash != next_hash,
-				}
+				frappe._dict(
+					{
+						"title": app.title,
+						"app": app.app,
+						"source": source.name,
+						"repository": source.repository,
+						"repository_owner": source.repository_owner,
+						"repository_url": source.repository_url,
+						"branch": source.branch,
+						"current_hash": current_hash,
+						"current_tag": current_tag,
+						"current_release": bench_app.release if bench_app else None,
+						"releases": app.releases,
+						"next_release": app.release,
+						"next_hash": next_hash,
+						"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
+						"will_branch_change": will_branch_change,
+						"current_branch": current_branch,
+						"update_available": not current_hash or current_hash != next_hash,
+					}
+				)
 			)
 		return apps
 
