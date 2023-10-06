@@ -252,7 +252,7 @@ class ReleaseGroup(Document):
 			# If we want to update the app and there's an update available
 			if app_to_update and app["update_available"]:
 				# Use a specific release if mentioned, otherwise pick the most recent one
-				target_release = app.next_release
+				target_release = app_to_update.get("release", app.next_release)
 				apps.append(
 					{
 						"app": app["app"],

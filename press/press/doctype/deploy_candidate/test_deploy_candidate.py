@@ -137,6 +137,26 @@ class TestDeployCandidate(unittest.TestCase):
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_deploy_with_specific_release_creates_deploy_candidate_with_that_release(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if another deploy with specific release creates Deploy Candidate with that release release
+		"""
+		bench = create_test_bench()
+		# Create another release
+		source = frappe.get_doc("App Source", bench.apps[0].source)
+		second_release = create_test_app_release(source)
+		third_release = create_test_app_release(source)
+		group = frappe.get_doc("Release Group", bench.group)
+		candidate = group.create_deploy_candidate(
+			[{"app": source.app, "release": second_release.name}]
+		)
+		self.assertEqual(candidate.apps[0].release, second_release.name)
+		self.assertNotEqual(candidate.apps[0].release, third_release.name)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
 	def test_deploy_with_new_app_creates_deploy_candidate_with_new_app(
 		self, mock_enqueue_doc, mock_commit
 	):
