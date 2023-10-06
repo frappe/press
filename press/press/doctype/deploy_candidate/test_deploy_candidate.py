@@ -5,6 +5,9 @@
 from unittest.mock import Mock, patch
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.app_source.test_app_source import create_test_app_source
+from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.release_group.release_group import ReleaseGroup
 
@@ -81,3 +84,72 @@ class TestDeployCandidate(unittest.TestCase):
 			deploy_candidate.pre_build(method="_build")
 		except frappe.PermissionError:
 			self.fail("PermissionError raised in pre_build")
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_first_deploy_creates_draft_deploy_candidate(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if first deploy creates Deploy Candidate doc
+		"""
+		app = create_test_app()
+		source = create_test_app_source("Nightly", app)
+		create_test_app_release(source)
+		group = create_test_release_group([app])
+		candidate = group.create_deploy_candidate()
+		self.assertEqual(candidate.status, "Draft")
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_deploy_with_empty_apps_creates_deploy_candidate_with_same_release(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if another deploy with empty apps_to_update creates Deploy Candidate with same release
+		"""
+		bench = create_test_bench()
+		# Create another release
+		source = frappe.get_doc("App Source", bench.apps[0].source)
+		create_test_app_release(source)
+		group = frappe.get_doc("Release Group", bench.group)
+		first_candidate = frappe.get_doc("Deploy Candidate", bench.candidate)
+		second_candidate = group.create_deploy_candidate([])
+		self.assertEqual(first_candidate.apps[0].release, second_candidate.apps[0].release)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_deploy_with_no_arguments_creates_deploy_candidate_with_newer_release(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if another deploy with apps_to_update=None creates Deploy Candidate with newer release
+		"""
+		bench = create_test_bench()
+		# Create another release
+		source = frappe.get_doc("App Source", bench.apps[0].source)
+		release = create_test_app_release(source)
+		group = frappe.get_doc("Release Group", bench.group)
+		first_candidate = frappe.get_doc("Deploy Candidate", bench.candidate)
+		second_candidate = group.create_deploy_candidate()
+		self.assertNotEqual(first_candidate.apps[0].release, second_candidate.apps[0].release)
+		self.assertEqual(second_candidate.apps[0].release, release.name)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	def test_deploy_with_new_app_creates_deploy_candidate_with_new_app(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if another deploy with new app creates Deploy Candidate with new app
+		"""
+		bench = create_test_bench()
+		# Create another app
+		group = frappe.get_doc("Release Group", bench.group)
+		app = create_test_app("erpnext", "ERPNext")
+		source = create_test_app_source(group.version, app)
+		release = create_test_app_release(source)
+		group.add_app(source)
+		candidate = group.create_deploy_candidate([{"app": app.name}])
+		self.assertEqual(candidate.apps[1].app, app.name)
+		self.assertEqual(candidate.apps[1].release, release.name)

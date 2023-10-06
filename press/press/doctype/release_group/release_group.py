@@ -204,58 +204,14 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
-		return self.create_deploy_candidate([app.as_dict() for app in self.apps])
+		return self.create_deploy_candidate([])
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_ignore=None) -> "DeployCandidate":
+	def create_deploy_candidate(self, apps_to_update=None) -> "DeployCandidate":
 		if not self.enabled:
 			return
 
-		if apps_to_ignore is None:
-			apps_to_ignore = []
-
-		# Get the deploy information for apps
-		# that have updates available
-		apps_deploy_info = self.deploy_information().apps
-
-		app_updates = [
-			app
-			for app in apps_deploy_info
-			if app["update_available"]
-			and (not find(apps_to_ignore, lambda x: x["app"] == app["app"]))
-		]
-
-		apps = []
-		for update in app_updates:
-			apps.append(
-				{
-					"release": update["next_release"],
-					"source": update["source"],
-					"app": update["app"],
-					"hash": update["next_hash"],
-				}
-			)
-
-		# The apps that are in the release group
-		# Not updated or ignored
-		untouched_apps = [
-			a for a in self.apps if not find(app_updates, lambda x: x["app"] == a.app)
-		]
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
-
-		if last_deployed_bench:
-			for app in untouched_apps:
-				update = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-
-				if update:
-					apps.append(
-						{
-							"release": update.release,
-							"source": update.source,
-							"app": update.app,
-							"hash": update.hash,
-						}
-					)
+		apps = self.get_apps_to_update(apps_to_update)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
@@ -268,8 +224,6 @@ class ReleaseGroup(Document):
 		environment_variables = [
 			{"key": v.key, "value": v.value} for v in self.environment_variables
 		]
-
-		apps = self.get_sorted_based_on_rg_apps(apps)
 
 		# Create and deploy the DC
 		candidate = frappe.get_doc(
@@ -284,6 +238,45 @@ class ReleaseGroup(Document):
 		).insert()
 
 		return candidate
+
+	def get_apps_to_update(self, apps_to_update):
+		# If apps_to_update is None, try to update all apps
+		if apps_to_update is None:
+			apps_to_update = self.apps
+
+		apps = []
+		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+
+		for app in self.deploy_information().apps:
+			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
+			# If we want to update the app and there's an update available
+			if app_to_update and app["update_available"]:
+				# Use a specific release if mentioned, otherwise pick the most recent one
+				target_release = app.next_release
+				apps.append(
+					{
+						"app": app["app"],
+						"source": app["source"],
+						"release": target_release,
+						"hash": frappe.db.get_value("App Release", target_release, "hash"),
+					}
+				)
+			else:
+				# Either we don't want to update the app or there's no update available
+				if last_deployed_bench:
+					# Find the last deployed release and use it
+					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
+					if app_to_keep:
+						apps.append(
+							{
+								"app": app_to_keep.app,
+								"source": app_to_keep.source,
+								"release": app_to_keep.release,
+								"hash": app_to_keep.hash,
+							}
+						)
+
+		return self.get_sorted_based_on_rg_apps(apps)
 
 	def get_sorted_based_on_rg_apps(self, apps):
 		# Rearrange Apps to match release group ordering
@@ -398,8 +391,6 @@ class ReleaseGroup(Document):
 						"current_release": bench_app.release if bench_app else None,
 						"releases": app.releases,
 						"next_release": app.release,
-						"next_hash": next_hash,
-						"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
 						"will_branch_change": will_branch_change,
 						"current_branch": current_branch,
 						"update_available": not current_hash or current_hash != next_hash,
