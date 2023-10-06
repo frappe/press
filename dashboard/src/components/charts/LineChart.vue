@@ -29,7 +29,6 @@ import { LineChart } from 'echarts/charts';
 import {
 	GridComponent,
 	LegendComponent,
-	TitleComponent,
 	TooltipComponent,
 	MarkLineComponent
 } from 'echarts/components';
@@ -89,7 +88,6 @@ use([
 	GridComponent,
 	LegendComponent,
 	LineChart,
-	TitleComponent,
 	TooltipComponent,
 	MarkLineComponent
 ]);
