@@ -306,6 +306,9 @@ class Team(Document):
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
+		if frappe.flags.in_test:
+			return frappe.utils.getdate()
+
 		client = get_frappe_io_connection()
 		start_date = client.get_value(
 			"Partner", {"email": self.partner_email, "enabled": 1}, "start_date"
