@@ -44,6 +44,16 @@
 				:tag="deployTo(app)"
 				:link="`${app.repository_url}/commit/${app.next_hash}`"
 			/>
+			<Dropdown
+				v-if="app.releases.length > 1"
+				:options="dropdownItems(app)"
+				right
+				class="flex cursor-pointer flex-col justify-center"
+			>
+				<template v-slot="{ open }">
+					<FeatherIcon name="chevron-down" class="w-4" />
+				</template>
+			</Dropdown>
 		</div>
 	</button>
 </template>
@@ -67,6 +77,11 @@ export default {
 				return app.branch;
 			}
 			return app.next_tag || app.next_hash.slice(0, 7);
+		},
+		dropdownItems(app) {
+			return app.releases.map(release => ({
+				label: `${release.tag || release.hash.slice(0, 7)}`
+			}));
 		}
 	},
 	components: { CommitTag }
