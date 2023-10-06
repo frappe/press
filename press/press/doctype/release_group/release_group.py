@@ -7,7 +7,7 @@ import frappe
 import json
 from typing import List
 from frappe.core.doctype.version.version import get_diff
-from frappe.core.utils import find
+from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -378,6 +378,10 @@ class ReleaseGroup(Document):
 				if current_hash
 				else None
 			)
+
+			for release in app.releases:
+				release.tag = get_app_tag(source.repository, source.repository_owner, release.hash)
+
 			next_hash = app.hash
 			apps.append(
 				{
@@ -391,6 +395,7 @@ class ReleaseGroup(Document):
 					"current_hash": current_hash,
 					"current_tag": current_tag,
 					"current_release": bench_app.release if bench_app else None,
+					"releases": app.releases,
 					"next_release": app.release,
 					"next_hash": next_hash,
 					"next_tag": get_app_tag(source.repository, source.repository_owner, next_hash),
@@ -425,7 +430,7 @@ class ReleaseGroup(Document):
 
 		app_sources = [app.source for app in self.apps]
 		AppRelease = frappe.qb.DocType("App Release")
-		latest_app_releases = (
+		latest_releases = (
 			frappe.qb.from_(AppRelease)
 			.where(AppRelease.source.isin(app_sources))
 			.select(
@@ -441,10 +446,10 @@ class ReleaseGroup(Document):
 
 		for app in self.apps:
 			latest_app_release = None
+			latest_app_releases = find_all(latest_releases, lambda x: x.source == app.source)
+
 			if app.source in only_approved_for_sources:
-				latest_app_release = find(
-					latest_app_releases, lambda x: x.source == app.source and x.status == "Approved"
-				)
+				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
@@ -459,6 +464,18 @@ class ReleaseGroup(Document):
 			)
 			upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
 
+			if bench_app:
+				current_release_creation = frappe.db.get_value(
+					"App Release", bench_app.release, "creation"
+				)
+				upcoming_releases = [
+					release
+					for release in latest_app_releases
+					if release.creation > current_release_creation
+				]
+			else:
+				upcoming_releases = latest_app_releases
+
 			next_apps.append(
 				frappe._dict(
 					{
@@ -467,6 +484,7 @@ class ReleaseGroup(Document):
 						"release": upcoming_release,
 						"hash": upcoming_hash,
 						"title": app.title,
+						"releases": upcoming_releases[:16],
 					}
 				)
 			)
