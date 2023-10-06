@@ -1315,20 +1315,12 @@ class Site(Document):
 		self.enable_database_access("read_only")
 
 	@property
-	def last_job_undelivered_for_long(self) -> bool:
-		last_jobs = frappe.get_all(
-			"Agent Job",
-			["modified", "status"],
-			filters={"site": self.name},
-			order_by="creation desc",
-			limit=2,  # for pair jobs like Archive Site
-		)
-		for job in last_jobs:
-			if (
-				job.status == "Undelivered"
-				and (frappe.utils.now_datetime() - job.modified).total_seconds() > 60 * 60 * 4
-			):
-				return True
+	def pending_for_long(self) -> bool:
+		if not self.status == "Pending":
+			return False
+		return (
+			frappe.utils.now_datetime() - self.modified
+		).total_seconds() > 60 * 60 * 4  # 4 hours
 
 
 def site_cleanup_after_archive(site):
