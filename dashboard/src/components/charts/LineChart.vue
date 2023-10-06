@@ -1,5 +1,5 @@
 <template>
-	<Card :title="title" class="h-80" :loading="loading">
+	<Card :title="title" class="h-80" :loading="loading" :stopOverflow="true">
 		<template #actions>
 			<slot name="actions"></slot>
 		</template>

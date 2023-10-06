@@ -22,7 +22,11 @@
 		>
 			<LoadingText />
 		</div>
-		<div class="mt-4 flex-auto overflow-auto" v-else-if="$slots['default']">
+		<div
+			class="mt-4 flex-auto"
+			:class="{ 'overflow-auto': !stopOverflow }"
+			v-else-if="$slots['default']"
+		>
 			<slot></slot>
 		</div>
 	</div>
@@ -31,7 +35,7 @@
 import { LoadingText } from 'frappe-ui';
 export default {
 	name: 'Card',
-	props: ['title', 'subtitle', 'loading'],
+	props: ['title', 'subtitle', 'loading', 'stopOverflow'],
 	components: {
 		LoadingText
 	}
