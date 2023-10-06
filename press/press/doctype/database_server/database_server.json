@@ -18,6 +18,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "enabled_security_overview",
   "billing_section",
   "team",
   "column_break_11",
@@ -380,11 +381,18 @@
   {
    "fieldname": "column_break_apox",
    "fieldtype": "Column Break"
-  }
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled_security_overview",
+   "fieldtype": "Check",
+   "label": "Enabled Security Overview",
+   "search_index": 1
+  },
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-24 09:11:57.951188",
+ "modified": "2023-10-06 14:24:00.378245",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
