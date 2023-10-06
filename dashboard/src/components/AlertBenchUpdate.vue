@@ -98,20 +98,11 @@ export default {
 			};
 		},
 		deploy() {
-			let appsToIgnore = [];
-			if (this.deployInformation) {
-				appsToIgnore = Array.from(
-					this.deployInformation.apps.filter(
-						app => app.update_available && !this.selectedApps.includes(app.app)
-					)
-				);
-			}
-
 			return {
 				url: 'press.api.bench.deploy',
 				params: {
 					name: this.bench?.name,
-					apps_to_ignore: appsToIgnore
+					apps: this.selectedApps
 				},
 				validate() {
 					if (

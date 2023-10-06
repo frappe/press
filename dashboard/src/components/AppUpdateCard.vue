@@ -29,7 +29,9 @@
 			<a
 				v-if="deployFrom(app)"
 				class="flex cursor-pointer flex-col justify-center"
-				:href="`${app.repository_url}/compare/${app.current_hash}...${app.next_hash}`"
+				:href="`${app.repository_url}/compare/${app.current_hash}...${
+					deployTo(app).hash
+				}`"
 				target="_blank"
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
@@ -41,8 +43,8 @@
 				class="whitespace-nowrap"
 			/>
 			<CommitTag
-				:tag="deployTo(app)"
-				:link="`${app.repository_url}/commit/${app.next_hash}`"
+				:tag="deployTo(app).name"
+				:link="`${app.repository_url}/commit/${deployTo(app).hash}`"
 			/>
 			<Dropdown
 				v-if="app.releases.length > 1"
@@ -73,14 +75,25 @@ export default {
 				: null;
 		},
 		deployTo(app) {
+			let name = '';
+			let next_release = app.releases.filter(
+				release => release.name === app.next_release
+			)[0];
 			if (app.will_branch_change) {
-				return app.branch;
+				name = app.branch;
+			} else {
+				name = next_release.tag || next_release.hash.slice(0, 7);
 			}
-			return app.next_tag || app.next_hash.slice(0, 7);
+
+			return { name: name, hash: next_release.hash };
 		},
 		dropdownItems(app) {
 			return app.releases.map(release => ({
-				label: `${release.tag || release.hash.slice(0, 7)}`
+				label: `${release.tag || release.hash.slice(0, 7)}`,
+				onClick: () => {
+					app.next_release = release.name;
+					this.$emit('update:app', app);
+				}
 			}));
 		}
 	},
