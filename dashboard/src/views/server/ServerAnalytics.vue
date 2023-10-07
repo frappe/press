@@ -200,7 +200,7 @@ export default {
 			let space = this.$resources.space.data;
 			if (!space) return;
 
-			return this.transformSingleLineChartData(space);
+			return this.transformSingleLineChartData(space, true);
 		},
 		networkData() {
 			let network = this.$resources.network.data;
@@ -210,7 +210,7 @@ export default {
 		}
 	},
 	methods: {
-		transformSingleLineChartData(data) {
+		transformSingleLineChartData(data, percentage = false) {
 			let dataset = [];
 			const name = data.datasets[0].name;
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
@@ -220,7 +220,10 @@ export default {
 				]);
 			}
 
-			return { datasets: [{ dataset: dataset, name }] };
+			return {
+				datasets: [{ dataset: dataset, name }],
+				yMax: percentage ? 100 : null
+			};
 		},
 		transformMultiLineChartData(data, stack = null, percentage = false) {
 			let total = [];
