@@ -182,7 +182,7 @@ export default {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
 
-			return this.transformMultiLineChartData(cpu);
+			return this.transformMultiLineChartData(cpu, 'cpu');
 		},
 		memoryData() {
 			let memory = this.$resources.memory.data;
@@ -221,13 +221,13 @@ export default {
 
 			return { datasets: [datasets] };
 		},
-		transformMultiLineChartData(data) {
+		transformMultiLineChartData(data, stack = null) {
 			const datasets = data.datasets.map(({ name, values }) => {
 				let dataset = [];
 				for (let i = 0; i < values.length; i++) {
 					dataset.push([+new Date(data.labels[i]), values[i]]);
 				}
-				return { name, dataset };
+				return { name, dataset, stack };
 			});
 
 			return { datasets };

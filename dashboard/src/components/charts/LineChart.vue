@@ -175,6 +175,7 @@ const options = ref({
 		return {
 			name: dataset.name || unit,
 			type: 'line',
+			stack: dataset.stack,
 			showSymbol: false,
 			data: dataset.dataset || dataset,
 			markLine: data.value.markLine,
