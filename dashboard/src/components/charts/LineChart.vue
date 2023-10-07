@@ -150,6 +150,7 @@ const options = ref({
 	},
 	yAxis: {
 		type: 'value',
+		max: data.value.yMax,
 		axisLabel: {
 			formatter: value => {
 				if (unit.value === 'bytes') {

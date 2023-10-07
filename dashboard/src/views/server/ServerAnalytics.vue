@@ -182,7 +182,7 @@ export default {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
 
-			return this.transformMultiLineChartData(cpu, 'cpu');
+			return this.transformMultiLineChartData(cpu, 'cpu', true);
 		},
 		memoryData() {
 			let memory = this.$resources.memory.data;
@@ -222,16 +222,30 @@ export default {
 
 			return { datasets: [{ dataset: dataset, name }] };
 		},
-		transformMultiLineChartData(data, stack = null) {
+		transformMultiLineChartData(data, stack = null, percentage = false) {
+			let total = [];
+			if (percentage) {
+				// the sum of each cpu values tends to differ by few values
+				// so we need to calculate the total for each timestamp
+				for (let i = 0; i < data.datasets[0].values.length; i++) {
+					for (let j = 0; j < data.datasets.length; j++) {
+						if (!total[i]) total[i] = 0;
+						total[i] += data.datasets[j].values[i];
+					}
+				}
+			}
 			const datasets = data.datasets.map(({ name, values }) => {
 				let dataset = [];
 				for (let i = 0; i < values.length; i++) {
-					dataset.push([+new Date(data.labels[i]), values[i]]);
+					dataset.push([
+						+new Date(data.labels[i]),
+						percentage ? (values[i] / total[i]) * 100 : values[i]
+					]);
 				}
 				return { name, dataset, stack };
 			});
 
-			return { datasets };
+			return { datasets, yMax: percentage ? 100 : null };
 		}
 	}
 };
