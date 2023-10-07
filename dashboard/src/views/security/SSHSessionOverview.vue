@@ -16,7 +16,7 @@
 		</div>
 		<template #actions>
 			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
+				class="text-base text-gray-700 hover:text-gray-800"
 				:to="`/security/${server.name}/ssh_session_logs`"
 			>
 				View details →
