@@ -1,11 +1,6 @@
 @import 'frappe-ui/src/style.css';
-@import 'frappe-charts/dist/frappe-charts.min.css';
 
 @layer components {
-	.frappe-chart .line-vertical {
-		display: none;
-	}
-
 	/* Works on Firefox */
 	* {
 		scrollbar-width: thin;

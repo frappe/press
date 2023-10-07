@@ -1,96 +1,70 @@
 <template>
-	<Card title="Daily usage">
+	<LineChart
+		type="time"
+		title="Daily Usage"
+		:key="dailyUsageData"
+		:data="dailyUsageData"
+		unit="seconds"
+		:chartTheme="[$theme.colors.purple[500]]"
+		:loading="$resources.requestCounter.loading"
+		:error="$resources.requestCounter.error"
+	>
 		<template #actions>
 			<router-link
-				class="text-base text-blue-500 hover:text-blue-600"
+				class="text-base text-gray-600 hover:text-gray-700"
 				:to="`/sites/${site.name}/analytics`"
 			>
 				All analytics →
 			</router-link>
 		</template>
-		<div v-show="requestCounter.data.length" ref="target"></div>
-		<div
-			v-show="requestCounter.data.length == 0"
-			class="flex items-center justify-center py-20 text-base text-gray-700"
-		>
-			<Button
-				v-if="$resources.requestCounter.loading"
-				:loading="true"
-				loading-text="Loading"
-			/>
-			<span v-else> No data yet </span>
-		</div>
-	</Card>
+	</LineChart>
 </template>
 <script>
 import { DateTime } from 'luxon';
-import { Chart } from 'frappe-charts/dist/frappe-charts.esm.js';
+import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'CPUUsage',
 	props: ['site'],
+	components: { LineChart },
 	resources: {
 		requestCounter() {
 			let localTimezone = DateTime.local().zoneName;
 			return {
 				url: 'press.api.analytics.daily_usage',
 				params: { name: this.site?.name, timezone: localTimezone },
-				initialData: { data: [], plan_limit: 0 },
-				onSuccess(data) {
-					if (data.data.length > 0) {
-						this.$nextTick().then(() => this.makeChart());
-					}
-				}
+				auto: true
 			};
 		}
 	},
-	mounted() {
-		this.$resources.requestCounter.fetch();
-	},
 	computed: {
-		requestCounter() {
-			return this.$resources.requestCounter.data;
-		}
-	},
-	methods: {
-		makeChart() {
-			let { data, plan_limit } = this.requestCounter;
-			let values = data.map(d => d.value / 1000000);
+		dailyUsageData() {
+			let dailyUsageData = this.$resources.requestCounter.data?.data;
+			if (!dailyUsageData) return;
+			let plan_limit = this.$resources.requestCounter.data.plan_limit;
 
-			this.chart = new Chart(this.$refs['target'], {
-				data: {
-					labels: data.map(d => {
-						return {
-							date: d.date,
-							toString() {
-								return DateTime.fromSQL(d.date).toFormat('d MMM');
+			return {
+				datasets: [
+					dailyUsageData.map(d => [+new Date(d.date), d.value / 1000000])
+				],
+				// daily limit marker
+				markLine: {
+					data: [
+						{
+							name: 'Daily Compute Limit',
+							yAxis: plan_limit,
+							label: {
+								formatter: '{b}: {c} seconds',
+								position: 'middle'
+							},
+							lineStyle: {
+								color: '#f5222d'
 							}
-						};
-					}),
-					datasets: [{ values }],
-					// show daily limit marker if usage crosses 50%
-					yMarkers: values.some(value => value > plan_limit / 2)
-						? [{ label: 'Daily Compute Limit', value: plan_limit }]
-						: null
-				},
-				type: 'line',
-				colors: [this.$theme.colors.purple[500]],
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.date).toLocaleString();
-					},
-					formatTooltipY: d => {
-						return this.round(d, 1) + ' sec';
-					}
+						}
+					],
+					symbol: ['none', 'none']
 				}
-			});
+			};
 		}
 	}
 };
