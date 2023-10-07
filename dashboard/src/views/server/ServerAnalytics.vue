@@ -211,15 +211,16 @@ export default {
 	},
 	methods: {
 		transformSingleLineChartData(data) {
-			let datasets = [];
+			let dataset = [];
+			const name = data.datasets[0].name;
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
-				datasets.push([
+				dataset.push([
 					+new Date(data.labels[index]),
 					data.datasets[0].values[index]
 				]);
 			}
 
-			return { datasets: [datasets] };
+			return { datasets: [{ dataset: dataset, name }] };
 		},
 		transformMultiLineChartData(data, stack = null) {
 			const datasets = data.datasets.map(({ name, values }) => {

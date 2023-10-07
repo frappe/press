@@ -122,15 +122,17 @@ const options = ref({
 			let tooltip = `<p>${DateTime.fromSQL(
 				params[0].axisValueLabel
 			).toLocaleString(DateTime.DATETIME_MED)}</p>`;
+
 			params.forEach(({ value, seriesName }, i) => {
 				let colorSpan = color =>
 					'<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' +
 					color +
 					'"></span>';
+
 				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
 					value[1],
-					seriesName
-				)}</p>`;
+					unit.value
+				)} - ${seriesName}</p>`;
 			});
 			return tooltip;
 		}
