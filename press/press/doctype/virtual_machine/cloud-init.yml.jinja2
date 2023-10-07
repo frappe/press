@@ -33,6 +33,7 @@ runcmd:
 {% if server.doctype == 'Database Server' %}
 - systemctl daemon-reload
 - systemctl restart mariadb
+- systemctl restart mysqld_exporter
 {% endif %}
 
 write_files:
@@ -65,6 +66,10 @@ write_files:
 - path: /etc/systemd/system/mariadb.service.d/memory.conf
   content: |
     {{ mariadb_systemd_config | indent(4) }}
+
+- path: /etc/systemd/system/mysqld_exporter.service
+  content: |
+    {{ mariadb_exporter_config | indent(4) }}
 {% endif %}
 
 swap:

@@ -128,6 +128,7 @@ class VirtualMachine(Document):
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
 			context.update(
@@ -139,6 +140,11 @@ class VirtualMachine(Document):
 					),
 					"mariadb_systemd_config": frappe.render_template(
 						"press/playbooks/roles/mariadb_systemd_limits/templates/memory.conf",
+						mariadb_context,
+						is_path=True,
+					),
+					"mariadb_exporter_config": frappe.render_template(
+						"press/playbooks/roles/mysqld_exporter/templates/mysqld_exporter.service",
 						mariadb_context,
 						is_path=True,
 					),
