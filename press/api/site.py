@@ -835,9 +835,7 @@ def get(name):
 			)[0],
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
-		"last_job_undelivered_for_long": site.last_job_undelivered_for_long
-		if site.status == "Pending"
-		else False,
+		"pending_for_long": site.pending_for_long,
 	}
 
 
@@ -1007,6 +1005,7 @@ def get_server_region_info(site) -> Dict:
 @protected("Site")
 def available_apps(name):
 	site = frappe.get_doc("Site", name)
+
 	installed_apps = [app.app for app in site.apps]
 
 	bench = frappe.get_doc("Bench", site.bench)

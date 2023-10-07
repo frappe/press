@@ -140,7 +140,7 @@ class TestAPISite(FrappeTestCase):
 					{"team": self.team.name, "doctype_name": "Site"},
 					["name", "tag"],
 				),
-				"last_job_undelivered_for_long": False,
+				"pending_for_long": False,
 			},
 			site_details,
 		)
