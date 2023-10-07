@@ -132,7 +132,7 @@ const options = ref({
 				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
 					value[1],
 					unit.value
-				)} - ${seriesName}</p>`;
+				)} ${unit.value !== seriesName ? `- ${seriesName}` : ''}</p>`;
 			});
 			return tooltip;
 		}
