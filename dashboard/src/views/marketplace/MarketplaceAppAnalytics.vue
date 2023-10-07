@@ -77,7 +77,7 @@
 			:key="pageViewsData"
 			:data="pageViewsData"
 			unit="views"
-			:chartTheme="$theme.colors.purple[500]"
+			:chartTheme="[$theme.colors.purple[500]]"
 			:loading="$resources.plausible_analytics.loading"
 			:error="$resources.plausible_analytics.error"
 		>
@@ -98,7 +98,7 @@
 			:key="visitorsData"
 			:data="visitorsData"
 			unit="visitors"
-			:chartTheme="$theme.colors.green[500]"
+			:chartTheme="[$theme.colors.green[500]]"
 			:loading="$resources.plausible_analytics.loading"
 			:error="$resources.plausible_analytics.error"
 		/>
@@ -203,7 +203,7 @@ export default {
 			if (!pageViews) return;
 
 			return {
-				datasets: pageViews.map(d => [+new Date(d.date), d.value])
+				datasets: [pageViews.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		visitorsData() {
@@ -211,7 +211,7 @@ export default {
 			if (!visitorsData) return;
 
 			return {
-				datasets: visitorsData.map(d => [+new Date(d.date), d.value])
+				datasets: [visitorsData.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		paymentAnalytics() {
