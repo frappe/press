@@ -48,6 +48,7 @@ def fake_agent_job_req(
 						{
 							"name": step,
 							"status": "Success",
+							"data": {},
 						}
 					)
 
@@ -55,6 +56,7 @@ def fake_agent_job_req(
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
+				step["data"] = {}
 			if step["status"] in ["Success", "Failure", "Running"]:
 				step["start"] = "2023-08-20 18:24:28.024885"
 
@@ -119,7 +121,10 @@ def fake_agent_job(
 	output: str = "",
 	steps: list[dict] = [],
 ):
-	"""Fakes agent job request and response. Also polls the job."""
+	"""Fakes agent job request and response. Also polls the job.
+
+	HEADS UP: Don't use this when you're mocking enqueue_http_request in your test context
+	"""
 	with responses.mock, patch.object(
 		AgentJob,
 		"before_insert",
