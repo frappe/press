@@ -310,11 +310,12 @@ class Team(Document):
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
-		start_date = client.get_value(
-			"Partner", {"email": self.partner_email, "enabled": 1}, "start_date"
+		data = client.get_value(
+			"Partner", "start_date", {"email": self.partner_email, "enabled": 1}
 		)
-		if not start_date:
+		if not data:
 			frappe.throw("Partner not found on frappe.io")
+		start_date = frappe.utils.getdate(data.get("start_date"))
 		return start_date
 
 	def create_new_invoice(self):
