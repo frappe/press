@@ -5,7 +5,7 @@
 		>
 			<div
 				class="absolute left-1 top-1 w-fit cursor-pointer text-sm"
-				v-on:click="$emit('update:step', 2)"
+				v-on:click="$emit('update:step', 1)"
 			>
 				← Back to Plans
 			</div>

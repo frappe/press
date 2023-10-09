@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from press.api.developer import raise_invalid_key_error
 from press.api.marketplace import prepaid_saas_payment
+from press.api.site import get_plans as get_site_plans
 
 
 class DeveloperApiHandler:
@@ -53,10 +54,9 @@ class DeveloperApiHandler:
 
 		return filtered_dict
 
-	def get_subscriptions(self) -> Dict:
+	def get_subscription(self) -> Dict:
 		team = self.app_subscription_doc.team
 		with SessionManager(team) as _:
-			from press.api.marketplace import get_plans_for_app
 			from press.utils.telemetry import capture
 
 			currency, address = frappe.db.get_value(
@@ -67,44 +67,12 @@ class DeveloperApiHandler:
 				"address": True if address else False,
 				"team": self.app_subscription_doc.team,
 				"countries": frappe.db.get_all("Country", pluck="name"),
+				"plans": get_site_plans(),
 			}
-			response["subscriptions"] = [
-				s.update(
-					{
-						"available_plans": get_plans_for_app(app_name=s["app"], include_free=False),
-						**frappe.db.get_value(
-							"Marketplace App", s["app"], ["title", "image"], as_dict=True
-						),
-					}
-				)
-				for s in frappe.get_all(
-					"Marketplace App Subscription",
-					filters={
-						"team": self.app_subscription_doc.team,
-						"status": "Active",
-						"site": self.app_subscription_doc.site,
-						"app": (
-							"in",
-							frappe.get_all("Saas Settings", {"billing_type": "prepaid"}, pluck="name"),
-						),
-					},
-					fields=["name", "app", "site", "plan"],
-				)
-			]
 
 			capture("clicked_subscribe_button", "fc_signup", team)
 
 			return response
-
-	def get_plans(self, subscription):
-		team = self.app_subscription_doc.team
-		with SessionManager(team) as _:
-			from press.api.marketplace import get_plans_for_app
-
-			return get_plans_for_app(
-				frappe.db.get_value("Marketplace App Subscription", subscription, "app"),
-				include_free=False,
-			)
 
 	def update_billing_info(self, data: Dict) -> str:
 		team = self.app_subscription_doc.team
@@ -214,9 +182,9 @@ def get_subscription_info(secret_key: str) -> Dict:
 
 
 @frappe.whitelist(allow_guest=True)
-def get_subscriptions(secret_key: str) -> str:
+def get_subscription(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.get_subscriptions()
+	return api_handler.get_subscription()
 
 
 @frappe.whitelist(allow_guest=True)

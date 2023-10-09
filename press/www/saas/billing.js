@@ -60,7 +60,7 @@ if (frappe.boot.setup_complete === 1 && banner) {
 
 const d = new frappe.ui.Dialog({
 	title: __('Manage your subscriptions'),
-	size: 'large',
+	size: 'medium',
 });
 
 $('#show-dialog').on('click', function () {

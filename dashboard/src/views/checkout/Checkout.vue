@@ -1,18 +1,13 @@
 <template>
 	<div class="p-0" v-if="$resources.subscriptions.data">
 		<ErrorMessage :message="errorMessage" />
-		<Apps
-			v-if="step === 1"
-			:data="$resources.subscriptions.data"
-			v-model:selectedSubscription="selectedSubscription"
-			v-model:step="step"
-		/>
 		<Plans
-			v-if="step === 2"
+			v-if="step === 1"
 			:selectedSubscription="selectedSubscription"
 			:secretKey="secretKey"
 			:address="$resources.subscriptions.data.address"
 			:currency="$resources.subscriptions.data.currency"
+			:plans="$resources.subscriptions.data.plans"
 			v-model:step="step"
 			v-model:selectedPlan="selectedPlan"
 		/>
@@ -30,11 +25,6 @@
 			:plan="selectedPlan"
 			:currency="$resources.subscriptions.data.currency"
 			:secretKey="secretKey"
-			v-model:step="step"
-		/>
-		<ConfirmEmail
-			v-if="step === 5"
-			:email="$resources.subscriptions.data.team"
 			v-model:step="step"
 		/>
 	</div>
@@ -69,7 +59,7 @@ export default {
 	resources: {
 		subscriptions() {
 			return {
-				url: 'press.api.developer.marketplace.get_subscriptions',
+				url: 'press.api.developer.marketplace.get_subscription',
 				params: {
 					secret_key: this.secretKey
 				},

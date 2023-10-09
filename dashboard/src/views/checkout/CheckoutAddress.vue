@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="mb-4 w-fit cursor-pointer text-sm"
-		v-on:click="$emit('update:step', 2)"
+		v-on:click="$emit('update:step', 1)"
 	>
 		← Back to Plans
 	</div>
@@ -110,7 +110,8 @@ export default {
 			city: '',
 			postalCode: null,
 			gstin: 'Not Applicable',
-			gstApplicable: false
+			gstApplicable: false,
+			indianStates: indianStates
 		};
 	},
 	resources: {
