@@ -150,14 +150,44 @@
 				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
 			</template>
 		</Dialog>
+
+		<Dialog
+			:options="{
+				title: 'Move Site to another Bench',
+				actions: [
+					{
+						label: 'Submit',
+						variant: 'solid',
+						onClick: () =>
+							$resources.changeGroup.submit({
+								group: targetGroup.name,
+								name: siteName
+							})
+					}
+				]
+			}"
+			v-model="showChangeGroupDialog"
+		>
+			<template #body-content>
+				<ChangeGroupSelector
+					v-if="$resources.changeGroupOptions.data"
+					:groups="$resources.changeGroupOptions.data.groups"
+					:selectedGroup="targetGroup"
+					@update:selectedGroup="value => (targetGroup = value)"
+				/>
+				<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script>
+import { FCIcons } from '@/components/icons';
 import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
+import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
 
 export default {
 	name: 'Site',
@@ -169,7 +199,8 @@ export default {
 	props: ['siteName'],
 	components: {
 		SiteAlerts,
-		Tabs
+		Tabs,
+		ChangeGroupSelector
 	},
 	data() {
 		return {
@@ -177,6 +208,8 @@ export default {
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
 			showTransferSiteDialog: false,
+			showChangeGroupDialog: false,
+			targetGroup: null,
 			emailOfChildTeam: null,
 			errorMessage: ''
 		};
@@ -225,6 +258,34 @@ export default {
 						icon: 'check'
 					});
 				}
+			};
+		},
+		changeGroup() {
+			return {
+				url: 'press.api.site.change_group',
+				params: {
+					name: this.siteName
+				},
+				onSuccess(result) {
+					this.showChangeGroupDialog = false;
+					notify({
+						title: 'Scheduled Bench Change',
+						message: `Site scheduled to be moved to ${this.targetGroup.title}`,
+						color: 'green',
+						icon: 'check'
+					});
+					this.targetGroup = null;
+					this.$resources.site.reload();
+				}
+			};
+		},
+		changeGroupOptions() {
+			return {
+				url: 'press.api.site.change_group_options',
+				params: {
+					name: this.siteName
+				},
+				auto: true
 			};
 		},
 		plan() {
@@ -390,6 +451,17 @@ export default {
 						this.site?.status === 'Active' && !this.$account.parent_team,
 					onClick: () => {
 						this.showTransferSiteDialog = true;
+					}
+				},
+				{
+					label: 'Change Bench',
+					icon: FCIcons.BenchIcon,
+					loading: this.$resources.changeGroup.loading,
+					condition: () =>
+						this.$account.user.user_type === 'System User' &&
+						this.site?.status === 'Active',
+					onClick: () => {
+						this.showChangeGroupDialog = true;
 					}
 				}
 			];

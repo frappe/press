@@ -1682,3 +1682,43 @@ def change_team(team, name):
 	site_doc = frappe.get_doc("Site", name)
 	site_doc.team = child_team.name
 	site_doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_group_options(name):
+	team = get_current_team()
+	group = frappe.db.get_value("Site", name, "group")
+	version = frappe.db.get_value("Release Group", group, "version")
+	benches = frappe.qb.DocType("Bench")
+	groups = frappe.qb.DocType("Release Group")
+	query = (
+		frappe.qb.from_(benches)
+		.select(benches.group.as_("name"), groups.title)
+		.inner_join(groups)
+		.on(groups.name == benches.group)
+		.where(benches.status == "Active")
+		.where(groups.name != group)
+		.where(groups.version == version)
+		.where(groups.team == team)
+		.groupby(benches.group)
+	)
+	return {"groups": query.run(as_dict=True)}
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_group(name, group):
+	team = frappe.db.get_value("Release Group", group, "team")
+	if team != get_current_team():
+		frappe.throw(f"Bench {group} does not belong to your team")
+
+	site = frappe.get_doc("Site", name)
+	site.status = "Pending"
+	site.save()
+
+	doc = frappe.new_doc("Version Upgrade")
+	doc.site = name
+	doc.status = "Failure"
+	doc.destination_group = group
+	doc.insert()
