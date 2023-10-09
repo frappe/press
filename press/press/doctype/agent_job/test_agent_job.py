@@ -26,8 +26,10 @@ def fake_agent_job_req(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	output: str = "",
-	steps: list[dict] = [],
+	steps: list[dict] = None,
 ) -> Callable:
+	steps = steps or []
+
 	def prepare_agent_responses(self):
 		"""
 		Fake successful delivery with fake job id
@@ -119,7 +121,7 @@ def fake_agent_job(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	output: str = "",
-	steps: list[dict] = [],
+	steps: list[dict] = None,
 ):
 	"""Fakes agent job request and response. Also polls the job.
 
