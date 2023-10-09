@@ -6,7 +6,8 @@
 import json
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
@@ -14,6 +15,7 @@ from press.press.doctype.deploy.deploy import create_deploy_candidate_difference
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.server import Server
 
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
@@ -98,3 +100,30 @@ class TestSiteUpdate(FrappeTestCase):
 			f".*apps installed on {site.name}: app., app.$",
 			site.schedule_update,
 		)
+
+	@patch.object(Server, "auto_scale_workers")
+	def test_site_update_callback_reallocates_workers_after_disable_maintenance_mode_job(
+		self,
+		mock_reallocate_workers,
+	):
+		app1 = create_test_app()  # frappe
+		app2 = create_test_app("app2", "App 2")
+		app3 = create_test_app("app3", "App 3")
+
+		group = create_test_release_group([app1, app2, app3])
+		bench1 = create_test_bench(group=group)
+		bench2 = create_test_bench(group=group, server=bench1.server)
+
+		create_deploy_candidate_differences(bench2)  # for site update to be available
+
+		site = create_test_site(bench=bench1.name)
+
+		with fake_agent_job(
+			"Update Site Migrate",
+			"Running",
+			[{"Disable Maintenance Mode": "Success", "Build Search Index": "Running"}],
+		):
+			site.schedule_update()
+			poll_pending_jobs()
+
+		mock_reallocate_workers.assert_called_once()
