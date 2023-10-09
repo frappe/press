@@ -138,9 +138,11 @@ class Bench(Document):
 	def on_update(self):
 		self.update_bench_config()
 
-	def update_bench_config(self):
+	def update_bench_config(self, force=False):
 		old = self.get_doc_before_save()
-		if old and (old.config != self.config or old.bench_config != self.bench_config):
+		if force or (
+			old and (old.config != self.config or old.bench_config != self.bench_config)
+		):
 			agent = Agent(self.server)
 			agent.update_bench_config(self)
 
