@@ -15,19 +15,20 @@ from press.press.doctype.deploy.deploy import create_deploy_candidate_difference
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
-from press.press.doctype.server.server import Server
 
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
 from unittest.mock import patch, Mock
 
+from press.press.doctype.site_update.site_update import SiteUpdate
+
 
 @patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())
-@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 class TestSiteUpdate(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_of_v12_site_skips_search_index(self):
 		version = "Version 12"
 		app = create_test_app()
@@ -52,6 +53,7 @@ class TestSiteUpdate(FrappeTestCase):
 			dict(skip_search_index=False).items(), json.loads(agent_job.request_data).items()
 		)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_update_of_non_v12_site_doesnt_skip_search_index(self):
 		version = "Version 13"
 		app = create_test_app()
@@ -76,6 +78,7 @@ class TestSiteUpdate(FrappeTestCase):
 			dict(skip_search_index=True).items(), json.loads(agent_job.request_data).items()
 		)
 
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_site_update_throws_when_destination_doesnt_have_all_the_apps_in_the_site(
 		self,
 	):
@@ -101,7 +104,7 @@ class TestSiteUpdate(FrappeTestCase):
 			site.schedule_update,
 		)
 
-	@patch.object(Server, "auto_scale_workers")
+	@patch.object(SiteUpdate, "reallocate_workers")
 	def test_site_update_callback_reallocates_workers_after_disable_maintenance_mode_job(
 		self,
 		mock_reallocate_workers,
