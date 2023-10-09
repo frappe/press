@@ -119,9 +119,9 @@ class TestSiteUpdate(FrappeTestCase):
 		site = create_test_site(bench=bench1.name)
 
 		with fake_agent_job(
-			"Update Site Migrate",
-			"Running",
-			[{"Disable Maintenance Mode": "Success", "Build Search Index": "Running"}],
+			"Update Site Pull",
+			"Success",
+			steps=[{"name": "Disable Maintenance Mode", "status": "Success"}],
 		):
 			site.schedule_update()
 			poll_pending_jobs()

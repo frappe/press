@@ -117,10 +117,14 @@ def fake_agent_job(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	output: str = "",
+	steps: list[dict] = [],
 ):
 	"""Fakes agent job request and response. Also polls the job."""
 	with responses.mock, patch.object(
-		AgentJob, "before_insert", fake_agent_job_req(job_name, status, output), create=True
+		AgentJob,
+		"before_insert",
+		fake_agent_job_req(job_name, status, output, steps),
+		create=True,
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
