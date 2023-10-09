@@ -388,11 +388,11 @@
    "fieldtype": "Check",
    "label": "Enabled Security Overview",
    "search_index": 1
-  },
+  }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-06 14:24:00.378245",
+ "modified": "2023-10-06 14:29:08.230312",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
