@@ -26,15 +26,37 @@ def fake_agent_job_req(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	output: str = "",
+	steps: list[dict] = [],
 ) -> Callable:
 	def prepare_agent_responses(self):
 		"""
 		Fake successful delivery with fake job id
 
 		Also return fake result on polling
+		steps: list of {"name": "Step name", "status": "status"} dictionaries
 		"""
 		nonlocal status
 		job_id = int(make_autoname(".#"))
+
+		if steps:
+			needed_steps = frappe.get_all(
+				"Agent Job Type Step", {"parent": job_name}, pluck="step_name"
+			)
+			for step in needed_steps:
+				if not any(s["name"] == step for s in steps):
+					steps.append(
+						{
+							"name": step,
+							"status": "Success",
+						}
+					)
+
+		for step in steps:
+			if step["status"] in ["Success", "Failure"]:
+				step["duration"] = "00:00:13.464445"
+				step["end"] = "2023-08-20 18:24:41.489330"
+			if step["status"] in ["Success", "Failure", "Running"]:
+				step["start"] = "2023-08-20 18:24:28.024885"
 
 		# TODO: auto add response corresponding to request type #
 		responses.post(
@@ -64,7 +86,8 @@ def fake_agent_job_req(
 				# "name": "Install App on Site",
 				"start": "2023-08-20 18:24:28.009786",
 				"status": status,
-				"steps": [
+				"steps": steps
+				or [
 					{
 						"data": {
 							# "command": "docker exec -w /home/frappe/frappe-bench	bench-0001-000025-f1 bench --site fdesk-old.local.frappe.dev install-app helpdesk",
