@@ -39,6 +39,24 @@ class Bench(Document):
 		bench_name = f"bench-{candidate_name}-{server_name}"
 		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
 
+	def update_config_with_rg_config(self, config: dict):
+		release_group_common_site_config = frappe.db.get_value(
+			"Release Group", self.group, "common_site_config"
+		)
+		if release_group_common_site_config:
+			config.update(json.loads(release_group_common_site_config))
+
+		self.config = json.dumps(config, indent=4)
+
+	def update_bench_config_with_rg_config(self, bench_config: dict):
+		release_group_bench_config = frappe.db.get_value(
+			"Release Group", self.group, "bench_config"
+		)
+		if release_group_bench_config:
+			bench_config.update(json.loads(release_group_bench_config))
+
+		self.bench_config = json.dumps(bench_config, indent=4)
+
 	def validate(self):
 		if not self.candidate:
 			candidate = frappe.get_all("Deploy Candidate", filters={"group": self.group})[0]
@@ -89,13 +107,7 @@ class Bench(Document):
 		if press_settings_common_site_config:
 			config.update(json.loads(press_settings_common_site_config))
 
-		release_group_common_site_config = frappe.db.get_value(
-			"Release Group", self.group, "common_site_config"
-		)
-		if release_group_common_site_config:
-			config.update(json.loads(release_group_common_site_config))
-
-		self.config = json.dumps(config, indent=4)
+		self.update_config_with_rg_config(config)
 
 		server_private_ip = frappe.db.get_value("Server", self.server, "private_ip")
 		bench_config = {
@@ -116,13 +128,7 @@ class Bench(Document):
 			"single_container": bool(self.is_single_container),
 		}
 
-		release_group_bench_config = frappe.db.get_value(
-			"Release Group", self.group, "bench_config"
-		)
-		if release_group_bench_config:
-			bench_config.update(json.loads(release_group_bench_config))
-
-		self.bench_config = json.dumps(bench_config, indent=4)
+		self.update_bench_config_with_rg_config(bench_config)
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
@@ -139,10 +145,15 @@ class Bench(Document):
 		self.update_bench_config()
 
 	def update_bench_config(self, force=False):
+		if force:
+			bench_config = json.loads(self.bench_config)
+			config = json.loads(self.config)
+			self.update_config_with_rg_config(config)
+			self.update_bench_config_with_rg_config(bench_config)
+			self.save()
+			return
 		old = self.get_doc_before_save()
-		if force or (
-			old and (old.config != self.config or old.bench_config != self.bench_config)
-		):
+		if old and (old.config != self.config or old.bench_config != self.bench_config):
 			agent = Agent(self.server)
 			agent.update_bench_config(self)
 

@@ -6,7 +6,7 @@
 		<Card title="Earnings">
 			<template #actions>
 				<a
-					class="text-base text-blue-500 hover:text-blue-600"
+					class="text-base text-gray-700 hover:text-gray-800"
 					href="/support/tickets"
 					target="_blank"
 				>
