@@ -31,12 +31,6 @@ bench get-app press "${GITHUB_WORKSPACE}"
 
 bench setup requirements --dev
 
-# workaround for dependency issue
-bench pip install cryptography~=41.0.3
-bench pip install filelock~=3.8.0
-pip install pydantic==2.3.0
-pip install pyOpenSSL~=23.2.0
-
 bench start &> bench_start_logs.txt &
 CI=Yes bench build --app frappe &
 bench new-site --db-root-password root --admin-password admin test_site
