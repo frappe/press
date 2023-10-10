@@ -380,11 +380,13 @@ class SiteMigration(Document):
 		"""Activate site on destination proxy"""
 		site = frappe.get_doc("Site", self.site)
 		return site.update_site_status_on_proxy("activated")
-	
+
 	def adjust_plan_if_required(self):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site = frappe.get_doc("Site", self.site)
-		destination_server_team = frappe.db.get_value("Server", self.destination_server, "team")
+		destination_server_team = frappe.db.get_value(
+			"Server", self.destination_server, "team"
+		)
 		if site.team != destination_server_team:
 			self.update_next_step_status("Skipped")
 			return
