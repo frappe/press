@@ -54,7 +54,7 @@
 				</div>
 				<Button
 					@click="onActivateClick"
-					v-if="site.last_job_undelivered_for_long"
+					v-if="site.pending_for_long"
 					:variant="'solid'"
 					class="mr-1"
 				>

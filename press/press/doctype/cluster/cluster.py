@@ -426,6 +426,7 @@ class Cluster(Document):
 		match doctype:
 			case "Database Server":
 				server = vm.create_database_server()
+				server.ram = plan.memory
 				server.title = f"{title} - Database"
 			case "Server":
 				server = vm.create_server()

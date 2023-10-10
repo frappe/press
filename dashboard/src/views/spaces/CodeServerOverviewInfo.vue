@@ -11,7 +11,7 @@
 				<template v-slot:actions>
 					<router-link
 						:to="`/benches/${codeServer.group}/versions/${codeServer.bench}`"
-						class="text-base text-blue-600"
+						class="text-base text-gray-600 hover:text-gray-700"
 					>
 						{{ codeServer.bench }} →
 					</router-link>

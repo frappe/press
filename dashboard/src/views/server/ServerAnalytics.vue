@@ -1,91 +1,89 @@
 <template>
 	<div class="space-y-4">
-		<div class="grid justify-items-stretch">
-			<label>
-				<span class="mb-2 inline-block text-sm leading-4 text-gray-700">
-					Duration
-				</span>
-				<select class="form-select ml-2" v-model="duration">
-					<option v-for="option in durationOptions" :key="option">
-						{{ option }}
-					</option>
-				</select>
-			</label>
-		</div>
-		<div
-			v-if="cpuData?.datasets?.length"
-			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
-		>
-			<Card title="CPU">
-				<FrappeChart
-					type="line"
-					:data="cpuData"
-					:options="getChartOptions(d => d + ' %')"
-					:colors="[$theme.colors.yellow[500]]"
-				/>
-			</Card>
+		<FormControl
+			class="w-32"
+			label="Duration"
+			type="select"
+			:options="
+				durationOptions.map(option => ({ label: option, value: option }))
+			"
+			v-model="duration"
+		/>
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<LineChart
+				type="time"
+				title="CPU"
+				:key="cpuData"
+				:data="cpuData"
+				unit="%"
+				:loading="$resources.cpu.loading"
+				:error="$resources.cpu.error"
+			/>
 
-			<Card title="Load Average">
-				<FrappeChart
-					type="line"
-					:data="loadAverageData"
-					:options="getChartOptions(d => d)"
-					:colors="[$theme.colors.green[500]]"
-				/>
-			</Card>
+			<LineChart
+				type="time"
+				title="Load Average"
+				:key="loadAverageData"
+				:data="loadAverageData"
+				:loading="$resources.loadavg.loading"
+				:error="$resources.loadavg.error"
+			/>
 
-			<Card title="Memory">
-				<FrappeChart
-					type="line"
-					:data="memoryData"
-					:options="getChartOptions(d => formatBytes(d))"
-					:colors="[$theme.colors.yellow[500]]"
-				/>
-			</Card>
+			<LineChart
+				type="time"
+				title="Memory"
+				:key="memoryData"
+				:data="memoryData"
+				unit="bytes"
+				:chartTheme="[$theme.colors.yellow[500]]"
+				:loading="$resources.memory.loading"
+				:error="$resources.memory.error"
+			/>
 
-			<Card title="Disk Space">
-				<FrappeChart
-					type="line"
-					:data="spaceData"
-					:options="getChartOptions(d => d + ' %')"
-					:colors="[$theme.colors.red[500]]"
-				/>
-			</Card>
-			<Card title="Network">
-				<FrappeChart
-					type="line"
-					:data="networkData"
-					:options="getChartOptions(d => formatBytes(d))"
-					:colors="[$theme.colors.blue[500]]"
-				/>
-			</Card>
-			<Card title="Disk I/O">
-				<FrappeChart
-					type="line"
-					:data="iopsData"
-					:options="getChartOptions(d => d + ' I0ps')"
-					:colors="[$theme.colors.blue[500]]"
-				/>
-			</Card>
-		</div>
-		<div
-			v-if="!$resources.cpu.loading && !cpuData?.datasets?.length"
-			class="text-base text-gray-600"
-		>
-			No data yet
+			<LineChart
+				type="time"
+				title="Disk Space"
+				:key="spaceData"
+				:data="spaceData"
+				unit="%"
+				:chartTheme="[$theme.colors.red[500]]"
+				:loading="$resources.space.loading"
+				:error="$resources.space.error"
+			/>
+
+			<LineChart
+				type="time"
+				title="Network"
+				:key="networkData"
+				:data="networkData"
+				unit="bytes"
+				:chartTheme="[$theme.colors.blue[500]]"
+				:loading="$resources.network.loading"
+				:error="$resources.network.error"
+			/>
+			<LineChart
+				type="time"
+				title="Disk I/O"
+				:key="iopsData"
+				:data="iopsData"
+				unit="I0ps"
+				:chartTheme="[$theme.colors.purple[500]]"
+				:loading="$resources.iops.loading"
+				:error="$resources.iops.error"
+			/>
 		</div>
 	</div>
 </template>
 
 <script>
 import { DateTime } from 'luxon';
-import FrappeChart from '@/components/FrappeChart.vue';
+import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
 	props: ['server', 'serverName'],
 	components: {
-		FrappeChart
+		LineChart
 	},
 	data() {
 		return {
@@ -178,83 +176,79 @@ export default {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;
 
-			return {
-				labels: this.formatDate(loadavg.labels),
-				datasets: loadavg.datasets
-			};
+			return this.transformMultiLineChartData(loadavg);
 		},
 		cpuData() {
 			let cpu = this.$resources.cpu.data;
 			if (!cpu) return;
 
-			return {
-				labels: this.formatDate(cpu.labels),
-				datasets: cpu.datasets
-			};
+			return this.transformMultiLineChartData(cpu, 'cpu', true);
 		},
 		memoryData() {
 			let memory = this.$resources.memory.data;
 			if (!memory) return;
 
-			return {
-				labels: this.formatDate(memory.labels),
-				datasets: memory.datasets
-			};
+			return this.transformSingleLineChartData(memory);
 		},
 		iopsData() {
 			let iops = this.$resources.iops.data;
 			if (!iops) return;
 
-			return {
-				labels: this.formatDate(iops.labels),
-				datasets: iops.datasets
-			};
+			return this.transformSingleLineChartData(iops);
 		},
 		spaceData() {
 			let space = this.$resources.space.data;
 			if (!space) return;
 
-			return {
-				labels: this.formatDate(space.labels),
-				datasets: space.datasets
-			};
+			return this.transformSingleLineChartData(space, true);
 		},
 		networkData() {
 			let network = this.$resources.network.data;
 			if (!network) return;
 
-			return {
-				labels: this.formatDate(network.labels),
-				datasets: network.datasets
-			};
+			return this.transformSingleLineChartData(network);
 		}
 	},
 	methods: {
-		getChartOptions(yFormatter) {
+		transformSingleLineChartData(data, percentage = false) {
+			let dataset = [];
+			const name = data.datasets[0].name;
+			for (let index = 0; index < data.datasets[0].values.length; index++) {
+				dataset.push([
+					+new Date(data.labels[index]),
+					data.datasets[0].values[index]
+				]);
+			}
+
 			return {
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					regionFill: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.date).toLocaleString(
-							DateTime.DATETIME_MED
-						);
-					},
-					formatTooltipY: yFormatter
-				}
+				datasets: [{ dataset: dataset, name }],
+				yMax: percentage ? 100 : null
 			};
 		},
-		formatDate(labels) {
-			return labels.map(date => ({
-				date: date,
-				toString: () => DateTime.fromSQL(date).toFormat('d MMM')
-			}));
+		transformMultiLineChartData(data, stack = null, percentage = false) {
+			let total = [];
+			if (percentage) {
+				// the sum of each cpu values tends to differ by few values
+				// so we need to calculate the total for each timestamp
+				for (let i = 0; i < data.datasets[0].values.length; i++) {
+					for (let j = 0; j < data.datasets.length; j++) {
+						if (!total[i]) total[i] = 0;
+						total[i] += data.datasets[j].values[i];
+					}
+				}
+			}
+			const datasets = data.datasets.map(({ name, values }) => {
+				let dataset = [];
+				for (let i = 0; i < values.length; i++) {
+					dataset.push([
+						+new Date(data.labels[i]),
+						percentage ? (values[i] / total[i]) * 100 : values[i]
+					]);
+				}
+				return { name, dataset, stack };
+			});
+
+			return { datasets, yMax: percentage ? 100 : null };
 		}
 	}
 };

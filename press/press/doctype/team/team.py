@@ -17,9 +17,6 @@ from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
-	process_prepaid_marketplace_payment,
-)
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
@@ -310,11 +307,12 @@ class Team(Document):
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
-		start_date = client.get_value(
-			"Partner", {"email": self.partner_email, "enabled": 1}, "start_date"
+		data = client.get_value(
+			"Partner", "start_date", {"email": self.partner_email, "enabled": 1}
 		)
-		if not start_date:
+		if not data:
 			frappe.throw("Partner not found on frappe.io")
+		start_date = frappe.utils.getdate(data.get("start_date"))
 		return start_date
 
 	def create_new_invoice(self):
@@ -946,10 +944,6 @@ def process_stripe_webhook(doc, method):
 
 	metadata = payment_intent.get("metadata")
 	payment_for = metadata.get("payment_for")
-
-	if payment_for and payment_for == "prepaid_marketplace":
-		process_prepaid_marketplace_payment(event)
-		return
 
 	if payment_for and payment_for == "micro_debit_test_charge":
 		process_micro_debit_test_charge(event)

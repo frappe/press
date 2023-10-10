@@ -1,15 +1,15 @@
 <template>
-	<Badge :label="label" :theme="color" />
+	<FrappeUIBadge :label="label" :theme="color" />
 </template>
 
 <script>
-import { Badge } from 'frappe-ui';
+import { Badge as FrappeUIBadge } from 'frappe-ui';
 
 export default {
-	name: Badge,
+	name: 'Badge',
 	props: ['label'],
 	components: {
-		Badge
+		FrappeUIBadge
 	},
 	computed: {
 		color() {

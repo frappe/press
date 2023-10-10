@@ -6,7 +6,7 @@
 		<Card title="Earnings">
 			<template #actions>
 				<a
-					class="text-base text-blue-500 hover:text-blue-600"
+					class="text-base text-gray-700 hover:text-gray-800"
 					href="/support/tickets"
 					target="_blank"
 				>
@@ -71,46 +71,43 @@
 				<Button :loading="true">Loading</Button>
 			</div>
 		</Card>
-		<Card title="Pageviews">
+		<LineChart
+			title="Pageviews"
+			type="time"
+			:key="pageViewsData"
+			:data="pageViewsData"
+			unit="views"
+			:chartTheme="[$theme.colors.purple[500]]"
+			:loading="$resources.plausible_analytics.loading"
+			:error="$resources.plausible_analytics.error"
+		>
 			<template #actions>
 				<a
 					v-if="app"
-					class="text-base text-blue-500 hover:text-blue-600"
+					class="text-base text-gray-700 hover:text-gray-800"
 					:href="`/marketplace/apps/${app.app}`"
 					target="_blank"
 				>
 					View Marketplace Page →
 				</a>
 			</template>
-			<FrappeChart
-				v-if="$resources.plausible_analytics.data"
-				type="line"
-				:data="pageViewsData"
-				:options="getChartOptions(d => d + ' views')"
-				:colors="[$theme.colors.purple[500]]"
-			/>
-			<LoadingText v-if="$resources.plausible_analytics.loading" />
-			<ErrorMessage
-				v-if="$resources.plausible_analytics.error"
-				:message="$resources.plausible_analytics.error"
-			/>
-		</Card>
-		<Card title="Unique Visitors">
-			<FrappeChart
-				v-if="$resources.plausible_analytics.data"
-				type="line"
-				:data="visitorsData"
-				:options="getChartOptions(d => d + ' visitors')"
-				:colors="[$theme.colors.green[500]]"
-			/>
-			<LoadingText v-if="$resources.plausible_analytics.loading" />
-		</Card>
+		</LineChart>
+		<LineChart
+			title="Unique Visitors"
+			type="time"
+			:key="visitorsData"
+			:data="visitorsData"
+			unit="visitors"
+			:chartTheme="[$theme.colors.green[500]]"
+			:loading="$resources.plausible_analytics.loading"
+			:error="$resources.plausible_analytics.error"
+		/>
 	</div>
 </template>
 
 <script>
 import { DateTime } from 'luxon';
-import FrappeChart from '@/components/FrappeChart.vue';
+import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'MarketplaceAppAnalytics',
@@ -118,7 +115,7 @@ export default {
 		app: Object
 	},
 	components: {
-		FrappeChart
+		LineChart
 	},
 	methods: {
 		formatDate(data) {
@@ -205,22 +202,16 @@ export default {
 			let pageViews = this.$resources.plausible_analytics.data?.pageviews;
 			if (!pageViews) return;
 
-			let values = pageViews.map(d => d.value);
-
 			return {
-				labels: this.formatDate(pageViews),
-				datasets: [{ values }]
+				datasets: [pageViews.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		visitorsData() {
 			let visitorsData = this.$resources.plausible_analytics.data?.visitors;
 			if (!visitorsData) return;
 
-			let values = visitorsData.map(d => d.value);
-
 			return {
-				labels: this.formatDate(visitorsData),
-				datasets: [{ values }]
+				datasets: [visitorsData.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		paymentAnalytics() {

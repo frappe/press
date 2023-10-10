@@ -218,7 +218,7 @@ def approve_partner_request(key):
 @frappe.whitelist()
 def disable_account():
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.name:
+	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can disable the account")
 	team.disable_account()
 
@@ -226,7 +226,7 @@ def disable_account():
 @frappe.whitelist()
 def enable_account():
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.name:
+	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can enable the account")
 	team.enable_account()
 

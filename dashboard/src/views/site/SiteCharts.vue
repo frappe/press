@@ -1,71 +1,72 @@
 <template>
 	<div class="space-y-4">
 		<ErrorMessage :message="$resources.analytics.error" />
-		<div
-			class="grid grid-cols-1 gap-5 sm:grid-cols-2"
-			v-if="$resources.analytics.data"
-		>
-			<Card title="Usage Counter">
-				<FrappeChart
-					type="line"
-					:data="usageCounterData"
-					:colors="[$theme.colors.purple[500]]"
-					:options="getChartOptions(d => d + ' seconds')"
-				/>
-			</Card>
-
-			<SiteAnalyticsUptime
-				:data="$resources.analytics.data.uptime"
-				:colors="[$theme.colors.blue[500]]"
+		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+			<LineChart
+				type="time"
+				title="Usage Counter"
+				:key="usageCounterData"
+				:data="usageCounterData"
+				unit="seconds"
+				:chartTheme="[$theme.colors.purple[500]]"
+				:loading="$resources.analytics.loading"
 			/>
 
-			<Card title="Requests">
-				<FrappeChart
-					type="line"
-					:data="requestCountData"
-					:options="getChartOptions(d => d + ' requests')"
-					:colors="[$theme.colors.green[500]]"
-				/>
-			</Card>
+			<SiteAnalyticsUptime
+				:data="$resources.analytics?.data?.uptime"
+				:loading="$resources.analytics.loading"
+			/>
 
-			<Card title="CPU Usage">
-				<FrappeChart
-					type="line"
-					:data="requestTimeData"
-					:options="getChartOptions(d => d + ' s')"
-					:colors="[$theme.colors.yellow[500]]"
-				/>
-			</Card>
-			<Card title="Background Jobs">
-				<FrappeChart
-					type="line"
-					:data="jobCountData"
-					:options="getChartOptions(d => d + ' jobs')"
-					:colors="[$theme.colors.red[500]]"
-				/>
-			</Card>
-			<Card title="Background Jobs CPU Usage">
-				<FrappeChart
-					type="line"
-					:data="jobTimeData"
-					:options="getChartOptions(d => d + ' s')"
-					:colors="[$theme.colors.blue[500]]"
-				/>
-			</Card>
+			<LineChart
+				type="time"
+				title="Requests"
+				:key="requestCountData"
+				:data="requestCountData"
+				unit="requests"
+				:chartTheme="[$theme.colors.green[500]]"
+				:loading="$resources.analytics.loading"
+			/>
+			<LineChart
+				type="time"
+				title="CPU Usage"
+				:key="requestTimeData"
+				:data="requestTimeData"
+				unit="seconds"
+				:chartTheme="[$theme.colors.yellow[500]]"
+				:loading="$resources.analytics.loading"
+			/>
+			<LineChart
+				type="time"
+				title="Background Jobs"
+				:key="jobCountData"
+				:data="jobCountData"
+				unit="jobs"
+				:chartTheme="[$theme.colors.red[500]]"
+				:loading="$resources.analytics.loading"
+			/>
+			<LineChart
+				type="time"
+				title="Background Jobs CPU Usage"
+				:key="jobTimeData"
+				:data="jobTimeData"
+				unit="seconds"
+				:chartTheme="[$theme.colors.blue[500]]"
+				:loading="$resources.analytics.loading"
+			/>
 		</div>
 	</div>
 </template>
 
 <script>
 import { DateTime } from 'luxon';
-import FrappeChart from '@/components/FrappeChart.vue';
+import LineChart from '@/components/charts/LineChart.vue';
 import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
 	props: ['site'],
 	components: {
-		FrappeChart,
+		LineChart,
 		SiteAnalyticsUptime
 	},
 	resources: {
@@ -86,16 +87,27 @@ export default {
 			let data = this.$resources.analytics.data?.usage_counter;
 			if (!data) return;
 
-			let plan_limit = this.$resources.analytics.data.plan_limit;
-			let values = data.map(d => d.value / 1000000);
+			let plan_limit = this.$resources.analytics.data?.plan_limit;
 
 			return {
-				labels: this.formatDate(data),
-				datasets: [{ values }],
-				// show daily limit marker if usage crosses 50%
-				yMarkers: values.some(value => value > plan_limit / 2)
-					? [{ label: 'Daily Compute Limit', value: plan_limit }]
-					: null
+				datasets: [data.map(d => [+new Date(d.date), d.value / 1000000])],
+				// daily limit marker
+				markLine: {
+					data: [
+						{
+							name: 'Daily Compute Limit',
+							yAxis: plan_limit,
+							label: {
+								formatter: '{b}: {c} seconds',
+								position: 'middle'
+							},
+							lineStyle: {
+								color: '#f5222d'
+							}
+						}
+					],
+					symbol: ['none', 'none']
+				}
 			};
 		},
 		requestCountData() {
@@ -103,8 +115,7 @@ export default {
 			if (!requestCount) return;
 
 			return {
-				labels: this.formatDate(requestCount),
-				datasets: [{ values: requestCount.map(d => d.value) }]
+				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		requestTimeData() {
@@ -112,8 +123,9 @@ export default {
 			if (!requestCpuTime) return;
 
 			return {
-				labels: this.formatDate(requestCpuTime),
-				datasets: [{ values: requestCpuTime.map(d => d.value / 1000000) }]
+				datasets: [
+					requestCpuTime.map(d => [+new Date(d.date), d.value / 1000000])
+				]
 			};
 		},
 		jobCountData() {
@@ -121,8 +133,7 @@ export default {
 			if (!jobCount) return;
 
 			return {
-				labels: this.formatDate(jobCount),
-				datasets: [{ values: jobCount.map(d => d.value) }]
+				datasets: [jobCount.map(d => [+new Date(d.date), d.value])]
 			};
 		},
 		jobTimeData() {
@@ -130,37 +141,8 @@ export default {
 			if (!jobCpuTime) return;
 
 			return {
-				labels: this.formatDate(jobCpuTime),
-				datasets: [{ values: jobCpuTime.map(d => d.value / 1000000) }]
+				datasets: [jobCpuTime.map(d => [+new Date(d.date), d.value / 1000000])]
 			};
-		}
-	},
-	methods: {
-		getChartOptions(yFormatter) {
-			return {
-				axisOptions: {
-					xIsSeries: true,
-					shortenYAxisNumbers: 1
-				},
-				lineOptions: {
-					hideDots: true,
-					regionFill: true
-				},
-				tooltipOptions: {
-					formatTooltipX: d => {
-						return DateTime.fromSQL(d.date).toLocaleString(
-							DateTime.DATETIME_MED
-						);
-					},
-					formatTooltipY: yFormatter
-				}
-			};
-		},
-		formatDate(data) {
-			return data.map(d => ({
-				date: d.date,
-				toString: () => DateTime.fromSQL(d.date).toFormat('d MMM')
-			}));
 		}
 	}
 };

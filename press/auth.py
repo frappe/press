@@ -35,7 +35,6 @@ ALLOWED_PATHS = [
 ]
 
 ALLOWED_WILDCARD_PATHS = [
-	"/api/method/helpdesk.",
 	"/api/method/press.api.",
 	"/api/method/wiki.",
 ]

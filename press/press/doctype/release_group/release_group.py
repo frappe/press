@@ -611,6 +611,13 @@ class ReleaseGroup(Document):
 			self.remove(self.servers[0])
 		self.add_server(server, deploy=True)
 
+	@frappe.whitelist()
+	def update_benches_config(self):
+		"""Update benches config for all benches in the release group"""
+		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
+		for bench in benches:
+			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+
 
 def new_release_group(
 	title, version, apps, team=None, cluster=None, saas_app="", server=None
