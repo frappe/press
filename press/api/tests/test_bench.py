@@ -11,6 +11,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.api.bench import (
 	dependencies,
 	deploy,
+	deploy_and_update,
 	deploy_information,
 	get,
 	new,
@@ -124,6 +125,65 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(d_count_after, d_count_before + 1)
 
 		self._check_if_docker_image_was_built(group)
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
+	def test_deploy_and_update_fn_creates_bench_update(self):
+		group = new(
+			{
+				"title": "Test Bench",
+				"apps": [{"name": self.app.name, "source": self.app_source.name}],
+				"version": self.version,
+				"cluster": "Default",
+				"saas_app": None,
+				"server": None,
+			}
+		)
+
+		bu_count_before = frappe.db.count("Bench Update", filters={"group": group})
+		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
+
+		release = create_test_app_release(frappe.get_doc("App Source", self.app_source.name))
+		deploy_and_update(group, [{"release": release.name}], [])
+
+		bu_count_after = frappe.db.count("Bench Update", filters={"group": group})
+		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
+
+		self.assertEqual(dc_count_after, dc_count_before + 1)
+		self.assertEqual(bu_count_after, bu_count_before + 1)
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
+	def test_deploy_and_update_fn_fails_without_release_argument(self):
+		group = new(
+			{
+				"title": "Test Bench",
+				"apps": [{"name": self.app.name, "source": self.app_source.name}],
+				"version": self.version,
+				"cluster": "Default",
+				"saas_app": None,
+				"server": None,
+			}
+		)
+
+		self.assertRaises(
+			frappe.exceptions.MandatoryError,
+			deploy_and_update,
+			group,
+			[{"app": self.app.name}],
+			[],
+		)
 
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
