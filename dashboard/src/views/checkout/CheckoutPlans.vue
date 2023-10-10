@@ -1,7 +1,7 @@
 <template>
 	<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
-			v-for="plan in plans"
+			v-for="plan in subscription.plans"
 			class="m-2 flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow"
 		>
 			<div>
@@ -9,7 +9,9 @@
 					<div>
 						<span>
 							{{
-								currency === 'INR' ? '₹' + plan.price_inr : '$' + plan.price_usd
+								subscription.currency === 'INR'
+									? '₹' + plan.price_inr
+									: '$' + plan.price_usd
 							}}
 							<span class="text-base font-normal text-gray-600">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
@@ -22,10 +24,17 @@
 			</div>
 			<Button
 				variant="subtle"
-				class="hover:bg-gray-900 hover:text-white"
+				:disabled="subscription.current_plan === plan.name"
+				:class="{
+					'hover:bg-gray-900 hover:text-white':
+						subscription.current_plan != plan.name
+				}"
 				@click="selectPlan(plan)"
+				:loading="$resources.changeSitePlan.loading"
 			>
-				Buy Now
+				{{
+					subscription.current_plan === plan.name ? 'Current Plan' : 'Buy Now'
+				}}
 			</Button>
 		</div>
 	</div>
@@ -40,25 +49,11 @@ export default {
 		FeatureList
 	},
 	emits: ['update:selectedPlan', 'update:step'],
-	props: [
-		'selectedSubscription',
-		'selectedPlan',
-		'currency',
-		'step',
-		'secretKey',
-		'address',
-		'plans'
-	],
+	props: ['selectedPlan', 'currency', 'step', 'secretKey', 'subscription'],
 	resources: {
-		sendLoginLink() {
+		changeSitePlan() {
 			return {
-				url: 'press.api.developer.marketplace.send_login_link',
-				params: {
-					secret_key: this.secretKey
-				},
-				onSuccess() {
-					this.$emit('update:step', 5);
-				}
+				url: 'press.api.developer.marketplace.change_site_plan'
 			};
 		}
 	},
@@ -66,10 +61,18 @@ export default {
 		selectPlan(plan) {
 			this.$emit('update:selectedPlan', plan);
 
-			if (this.address) {
-				this.$emit('update:step', 4);
+			if (Object.keys(this.subscription.address).length > 0) {
+				if (this.subscription.has_billing_info) {
+					this.$resources.changeSitePlan.submit({
+						secret_key: this.secretKey,
+						plan: plan.name
+					});
+					this.$emit('update:step', 4);
+				} else {
+					this.$emit('update:step', 3);
+				}
 			} else {
-				this.$emit('update:step', 3);
+				this.$emit('update:step', 2);
 			}
 		},
 		getPlanFeatures(plan) {

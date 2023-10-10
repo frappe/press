@@ -131,7 +131,14 @@ export default {
 					}
 				},
 				onSuccess(r) {
-					this.$emit('update:step', 4);
+					this.$emit('update:newAddress', {
+						address_line1: this.address,
+						country: this.country,
+						city: this.city,
+						state: this.state,
+						pincode: this.postalCode
+					});
+					this.$emit('update:step', 3);
 				}
 			};
 		}

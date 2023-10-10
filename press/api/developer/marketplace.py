@@ -62,12 +62,26 @@ class DeveloperApiHandler:
 			currency, address = frappe.db.get_value(
 				"Team", team, ["currency", "billing_address"]
 			)
+			team_doc = frappe.get_doc("Team", team)
 			response = {
 				"currency": currency,
-				"address": True if address else False,
+				"address": frappe.db.get_value(
+					"Address",
+					address,
+					["address_line1", "city", "state", "country", "pincode"],
+					as_dict=True,
+				)
+				if address
+				else {},
 				"team": self.app_subscription_doc.team,
 				"countries": frappe.db.get_all("Country", pluck="name"),
 				"plans": get_site_plans(),
+				"has_billing_info": (
+					team_doc.default_payment_method
+					or team_doc.get_balance() > 0
+					or team_doc.free_account
+				),
+				"current_plan": frappe.db.get_value("Site", self.app_subscription_doc.site, "plan"),
 			}
 
 			capture("clicked_subscribe_button", "fc_signup", team)
@@ -81,6 +95,23 @@ class DeveloperApiHandler:
 			team_doc.update_billing_details(data)
 
 			return "success"
+
+	def get_publishable_key_and_setup_intent(self):
+		with SessionManager(self.app_subscription_doc.team) as _:
+			from press.api.billing import get_publishable_key_and_setup_intent
+
+			return get_publishable_key_and_setup_intent()
+
+	def setup_intent_success(self, setup_intent):
+		with SessionManager(self.app_subscription_doc.team) as _:
+			from press.api.billing import setup_intent_success
+
+			return setup_intent_success(setup_intent)
+
+	def change_site_plan(self, plan):
+		with SessionManager(self.app_subscription_doc.team) as _:
+			site = frappe.get_doc("Site", self.app_subscription_doc.site)
+			site.change_plan(plan)
 
 	def saas_payment(self, data: Dict) -> Dict:
 		with SessionManager(self.app_subscription_doc.team) as _:
@@ -145,14 +176,6 @@ class DeveloperApiHandler:
 			f"/api/method/press.api.marketplace.login_via_token?token={token}&team={team}&site={self.app_subscription_doc.site}"
 		)
 
-	def login(self):
-		team = self.app_subscription_doc.team
-		frappe.local.login_manager.login_as(frappe.db.get_value("Team", team, "user"))
-		frappe.local.response["type"] = "redirect"
-		frappe.local.response[
-			"location"
-		] = f"/dashboard/sites/{self.app_subscription_doc.site}/overview"
-
 
 class SessionManager:
 	# set user for authenticated requests and then switch to guest once completed
@@ -201,6 +224,24 @@ def update_billing_info(secret_key: str, data) -> str:
 
 
 @frappe.whitelist(allow_guest=True)
+def get_publishable_key_and_setup_intent(secret_key: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.get_publishable_key_and_setup_intent()
+
+
+@frappe.whitelist(allow_guest=True)
+def setup_intent_success(secret_key: str, setup_intent) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.setup_intent_success(setup_intent)
+
+
+@frappe.whitelist(allow_guest=True)
+def change_site_plan(secret_key: str, plan: str) -> str:
+	api_handler = DeveloperApiHandler(secret_key)
+	return api_handler.change_site_plan(plan)
+
+
+@frappe.whitelist(allow_guest=True)
 def saas_payment(secret_key: str, data) -> str:
 	data = frappe.parse_json(data)
 	api_handler = DeveloperApiHandler(secret_key)
@@ -211,9 +252,3 @@ def saas_payment(secret_key: str, data) -> str:
 def send_login_link(secret_key: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.send_login_link()
-
-
-@frappe.whitelist(allow_guest=True)
-def login(secret_key: str) -> str:
-	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.login()
