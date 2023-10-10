@@ -173,3 +173,40 @@ class TestDeployCandidate(unittest.TestCase):
 		candidate = group.create_deploy_candidate([{"app": app.name}])
 		self.assertEqual(candidate.apps[1].app, app.name)
 		self.assertEqual(candidate.apps[1].release, release.name)
+
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit")
+	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
+	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(
+		self, mock_enqueue_doc, mock_commit
+	):
+		"""
+		Test if creating a new app release with auto deploy creates a Deploy Candidate with most recent release of that app
+		"""
+		bench = create_test_bench()
+		# Create another app
+		group = frappe.get_doc("Release Group", bench.group)
+		app = create_test_app("erpnext", "ERPNext")
+		erpnext_source = create_test_app_source(group.version, app)
+		group.add_app(erpnext_source)
+		first_candidate = group.create_deploy_candidate(group.apps)
+
+		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group.name})
+
+		# Enable auto deploy on ERPNext app
+		group.apps[1].enable_auto_deploy = True
+		group.save()
+
+		# Create releases for both the apps
+		frappe_source = frappe.get_doc("App Source", group.apps[0].source)
+		create_test_app_release(frappe_source)
+		create_test_app_release(erpnext_source)
+
+		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group.name})
+		# We should have a new Deploy Candidate
+		self.assertEqual(dc_count_after, dc_count_before + 1)
+
+		second_candidate = frappe.get_last_doc("Deploy Candidate", {"group": group.name})
+		# Only the app with auto deploy enabled should be updated
+		self.assertEqual(second_candidate.apps[0].release, first_candidate.apps[0].release)
+		self.assertNotEqual(second_candidate.apps[1].release, first_candidate.apps[1].release)
