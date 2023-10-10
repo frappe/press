@@ -229,6 +229,11 @@ class SiteMigration(Document):
 				"method_name": self.reset_site_status_on_destination.__name__,
 				"status": "Pending",
 			},
+			{
+				"step_title": self.adjust_plan_if_required.__doc__,
+				"method_name": self.adjust_plan_if_required.__name__,
+				"status": "Pending",
+			},
 		]
 		for step in steps:
 			self.append("steps", step)
@@ -273,6 +278,11 @@ class SiteMigration(Document):
 			{
 				"step_title": self.reset_site_status_on_destination.__doc__,
 				"method_name": self.reset_site_status_on_destination.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.adjust_plan_if_required.__doc__,
+				"method_name": self.adjust_plan_if_required.__name__,
 				"status": "Pending",
 			},
 		]
@@ -370,6 +380,17 @@ class SiteMigration(Document):
 		"""Activate site on destination proxy"""
 		site = frappe.get_doc("Site", self.site)
 		return site.update_site_status_on_proxy("activated")
+	
+	def adjust_plan_if_required(self):
+		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
+		site = frappe.get_doc("Site", self.site)
+		destination_server_team = frappe.db.get_value("Server", self.destination_server, "team")
+		if site.team != destination_server_team:
+			self.update_next_step_status("Skipped")
+			return
+		site.change_plan("Unlimited")
+		self.update_next_step_status("Success")
+		self.run_next_step()
 
 
 def process_required_job_callbacks(job):
