@@ -117,13 +117,47 @@ class TestAPIBench(FrappeTestCase):
 		DeployCandidate.command += (
 			" --cache-from type=gha --cache-to type=gha,mode=max --load"
 		)
-		deploy(group)
+		deploy(group, [{"app": self.app.name}])
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
 		self.assertEqual(dc_count_after, dc_count_before + 1)
 		self.assertEqual(d_count_after, d_count_before + 1)
 
 		self._check_if_docker_image_was_built(group)
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
+	def test_deploy_fn_fails_without_apps(self):
+		frappe.set_user(self.team.user)
+		group = new(
+			{
+				"title": "Test Bench",
+				"apps": [{"name": self.app.name, "source": self.app_source.name}],
+				"version": self.version,
+				"cluster": "Default",
+				"saas_app": None,
+				"server": None,
+			}
+		)
+		self.assertRaises(TypeError, deploy, group)
+
+	@patch(
+		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
+	)
+	def test_deploy_fn_fails_with_empty_apps(self):
+		frappe.set_user(self.team.user)
+		group = new(
+			{
+				"title": "Test Bench",
+				"apps": [{"name": self.app.name, "source": self.app_source.name}],
+				"version": self.version,
+				"cluster": "Default",
+				"saas_app": None,
+				"server": None,
+			}
+		)
+		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
 
 	def _check_if_docker_image_was_built(self, group: str):
 		client = docker.from_env()

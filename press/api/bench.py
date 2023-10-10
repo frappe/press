@@ -2,7 +2,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 from collections import OrderedDict
 import re
 from press.press.doctype.team.team import get_child_team_members
@@ -621,10 +620,7 @@ def deploy_information(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy(name, apps=[]):
-	if isinstance(apps, str):
-		apps = json.loads(apps)
-
+def deploy(name, apps):
 	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
@@ -644,9 +640,9 @@ def deploy(name, apps=[]):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps=[], sites=[]):
-	if isinstance(apps, str):
-		apps = json.loads(apps)
+def deploy_and_update(name, apps, sites=None):
+	if sites is None:
+		sites = []
 
 	team = get_current_team(True)
 	rg_team = frappe.db.get_value("Release Group", name, "team")
