@@ -25,9 +25,12 @@ from press.utils.test import foreground_enqueue_doc
 def fake_agent_job_req(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
-	output: str = "",
-	steps: list[dict] = [],
+	data: dict,
+	steps: list[dict],
 ) -> Callable:
+	steps = steps or []
+	data = data or {}
+
 	def prepare_agent_responses(self):
 		"""
 		Fake successful delivery with fake job id
@@ -37,7 +40,6 @@ def fake_agent_job_req(
 		"""
 		nonlocal status
 		job_id = int(make_autoname(".#"))
-
 		if steps:
 			needed_steps = frappe.get_all(
 				"Agent Job Type Step", {"parent": job_name}, pluck="step_name"
@@ -77,9 +79,7 @@ def fake_agent_job_req(
 			f"https://{self.server}:443/agent/jobs/{str(job_id)}",
 			# TODO:  populate steps with data from agent job type #
 			json={
-				"data": {
-					"output": output,
-				},
+				"data": data,
 				# TODO: uncomment lines as needed and make new parameters #
 				"duration": "00:00:13.496281",
 				"end": "2023-08-20 18:24:41.506067",
@@ -117,9 +117,9 @@ def fake_agent_job_req(
 @contextmanager
 def fake_agent_job(
 	job_name: str,
-	status: Literal["Success", "Pending", "Running", "Failure"],
-	output: str = "",
-	steps: list[dict] = [],
+	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
+	data: dict = None,
+	steps: list[dict] = None,
 ):
 	"""Fakes agent job request and response. Also polls the job.
 
@@ -128,7 +128,7 @@ def fake_agent_job(
 	with responses.mock, patch.object(
 		AgentJob,
 		"before_insert",
-		fake_agent_job_req(job_name, status, output, steps),
+		fake_agent_job_req(job_name, status, data, steps),
 		create=True,
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",

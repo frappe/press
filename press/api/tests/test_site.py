@@ -305,9 +305,11 @@ class TestAPISite(FrappeTestCase):
 		with fake_agent_job(
 			"Restore Site",
 			"Success",
-			output="""frappe	15.0.0-dev HEAD
+			data=frappe._dict(
+				output="""frappe	15.0.0-dev HEAD
 insights 0.8.3	    HEAD
-""",
+"""
+			),
 		):
 			restore(
 				site.name,
@@ -347,9 +349,7 @@ insights 0.8.3	    HEAD
 		self.assertEqual(site.status, "Active")
 
 		with fake_agent_job(
-			"Restore Site",
-			"Success",
-			output="""frappe 15.0.0-dev HEAD""",
+			"Restore Site", "Success", data=frappe._dict(output="""frappe 15.0.0-dev HEAD""")
 		):
 			restore(
 				site.name,
@@ -384,9 +384,11 @@ insights 0.8.3	    HEAD
 		with fake_agent_job(
 			"New Site from Backup",
 			"Success",
-			output="""frappe	15.0.0-dev HEAD
+			data=frappe._dict(
+				output="""frappe	15.0.0-dev HEAD
 erpnext 0.8.3	    HEAD
-""",
+"""
+			),
 		):
 			new(
 				{
