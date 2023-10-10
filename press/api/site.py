@@ -12,7 +12,7 @@ import dns.exception
 
 from typing import Dict
 from boto3 import client
-from frappe.core.utils import find, find_all
+from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
 from frappe.utils import flt, time_diff_in_hours
@@ -864,12 +864,9 @@ def check_for_updates(name):
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
-	apps_installed_in_site = find_all(
-		bench.apps, lambda x: x.app in [a.app for a in site.apps]
-	)
-
+	out.installed_apps = site.apps
 	out.apps = get_updates_between_current_and_next_apps(
-		apps_installed_in_site, destination_candidate.apps
+		bench.apps, destination_candidate.apps
 	)
 	out.update_available = any([app["update_available"] for app in out.apps])
 	return out
