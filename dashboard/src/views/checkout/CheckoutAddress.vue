@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="mb-4 w-fit cursor-pointer text-sm"
-		v-on:click="$emit('update:step', 2)"
+		v-on:click="$emit('update:step', 1)"
 	>
 		← Back to Plans
 	</div>
@@ -110,7 +110,8 @@ export default {
 			city: '',
 			postalCode: null,
 			gstin: 'Not Applicable',
-			gstApplicable: false
+			gstApplicable: false,
+			indianStates: indianStates
 		};
 	},
 	resources: {
@@ -130,7 +131,14 @@ export default {
 					}
 				},
 				onSuccess(r) {
-					this.$emit('update:step', 4);
+					this.$emit('update:newAddress', {
+						address_line1: this.address,
+						country: this.country,
+						city: this.city,
+						state: this.state,
+						pincode: this.postalCode
+					});
+					this.$emit('update:step', 3);
 				}
 			};
 		}
