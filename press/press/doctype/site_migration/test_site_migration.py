@@ -84,3 +84,7 @@ class TestSiteMigration(FrappeTestCase):
 			poll_pending_jobs()
 		site_migration.reload()
 		self.assertEqual(site_migration.status, "Success")
+		site.reload()
+		self.assertEqual(site.status, "Active")
+		self.assertEqual(site.bench, bench.name)
+		self.assertEqual(site.server, bench.server)
