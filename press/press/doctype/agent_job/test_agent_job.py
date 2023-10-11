@@ -39,8 +39,8 @@ def fake_agent_job_req(
 	data: dict,
 	steps: list[dict],
 ) -> Callable:
-	steps = steps or []
 	data = data or {}
+	steps = steps or []
 
 	def prepare_agent_responses(self):
 		"""

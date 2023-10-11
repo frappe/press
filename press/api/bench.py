@@ -2,7 +2,6 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 from collections import OrderedDict
 import re
 from press.press.doctype.team.team import get_child_team_members
@@ -621,10 +620,7 @@ def deploy_information(name):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy(name, apps_to_ignore=[]):
-	if isinstance(apps_to_ignore, str):
-		apps_to_ignore = json.loads(apps_to_ignore)
-
+def deploy(name, apps):
 	team = get_current_team(True)
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 
@@ -636,7 +632,7 @@ def deploy(name, apps_to_ignore=[]):
 	if rg.deploy_in_progress:
 		frappe.throw("A deploy for this bench is already in progress")
 
-	candidate = rg.create_deploy_candidate(apps_to_ignore)
+	candidate = rg.create_deploy_candidate(apps)
 	candidate.deploy_to_production()
 
 	return candidate.name
@@ -644,9 +640,9 @@ def deploy(name, apps_to_ignore=[]):
 
 @frappe.whitelist()
 @protected("Release Group")
-def deploy_and_update(name, apps_to_ignore=[], sites=[]):
-	if isinstance(apps_to_ignore, str):
-		apps_to_ignore = json.loads(apps_to_ignore)
+def deploy_and_update(name, apps, sites=None):
+	if sites is None:
+		sites = []
 
 	team = get_current_team(True)
 	rg_team = frappe.db.get_value("Release Group", name, "team")
@@ -659,6 +655,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 		{
 			"doctype": "Bench Update",
 			"group": name,
+			"apps": apps,
 			"sites": [
 				{
 					"site": site["name"],
@@ -672,7 +669,7 @@ def deploy_and_update(name, apps_to_ignore=[], sites=[]):
 			"status": "Pending",
 		}
 	).insert(ignore_permissions=True)
-	return bench_update.deploy(apps_to_ignore=apps_to_ignore)
+	return bench_update.deploy()
 
 
 @frappe.whitelist()

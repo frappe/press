@@ -8,11 +8,11 @@
  "engine": "InnoDB",
  "field_order": [
   "group",
-  "apps_to_ignore",
-  "column_break_wff5",
   "status",
+  "column_break_wff5",
   "candidate",
   "section_break_nfd1",
+  "apps",
   "sites"
  ],
  "fields": [
@@ -38,11 +38,6 @@
    "options": "Pending\nRunning\nBuild Successful\nFailure\nSuccess"
   },
   {
-   "fieldname": "apps_to_ignore",
-   "fieldtype": "Data",
-   "label": "Apps to Ignore"
-  },
-  {
    "fieldname": "column_break_wff5",
    "fieldtype": "Column Break"
   },
@@ -56,11 +51,17 @@
   {
    "fieldname": "section_break_nfd1",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "apps",
+   "fieldtype": "Table",
+   "label": "Apps",
+   "options": "Bench Update App"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-21 19:11:56.737713",
+ "modified": "2023-10-05 11:22:49.776499",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Update",

@@ -53,7 +53,7 @@ five_star_rating -%}
 			}} {%- elif app.subscription_type == 'Paid'-%} {{ badge_green('Paid') }}
 			{%- else -%} {{ badge_blue('Free') }} {%- endif -%} {%- for category in
 			app.categories -%}
-			<div class="inline-flex flex-row mt-2 mr-2">
+			<div class="inline-flex flex-row mt-4 mr-2">
 				{{ badge_blue(category.category) }}
 			</div>
 			{%- endfor -%}
@@ -62,7 +62,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
-		<ul class="flex flex-col mt-2 space-y-3">
+		<ul class="flex flex-col mt-4 space-y-3">
 			{%- for label, icon, href in [ ('Visit Website', 'external-link',
 			app.website), ('Support', 'life-buoy', app.support), ('Documentation',
 			'file-text', app.documentation), ('Privacy Policy', 'lock',
@@ -80,7 +80,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
-		<ul class="mt-2 space-y-1 text-base text-gray-600">
+		<ul class="mt-4 space-y-1 text-base text-gray-600">
 			{%- for supported_version in supported_versions -%}
 			<li>
 				{{
@@ -105,7 +105,7 @@ five_star_rating -%}
 		</h1>
 	</div>
 	<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
-	<div class="mt-2 flex flex-row justify-items-center">
+	<div class="mt-4 flex flex-row justify-items-center">
 		{{ button('Install Now', '/dashboard/install-app/' + app.name, 'primary') }}
 		<div class="ml-2 mt-2 flex flex-row text-sm text-gray-600 justify-items-end">
 			<i class="w-4 h-4 mx-2" data-feather="download"></i>
@@ -189,7 +189,7 @@ five_star_rating -%}
 					<div class="text-base text-gray-600">
 						{{ review.user_name }} &bull; {{ frappe.utils.pretty_date(review.creation) }}
 						&bull; {{ link('Reply', url='/dashboard/developer-reply/' + app.name + '/' + review.name + '?title=' + app.title) }}
-						<div class="flex flex-col mt-2">
+						<div class="flex flex-col mt-4">
 							{% for reply in review.developer_reply %}
 							<div class="flex flex-row text-gray-900 mb-2">
 

@@ -1,36 +1,17 @@
 <template>
-	<div
-		class="mb-8 w-fit cursor-pointer text-sm"
-		v-on:click="$emit('update:step', 1)"
-	>
-		← Back to Apps
-	</div>
-	<!-- <div class="flex justify-between mb-4 p-4 rounded-lg border text-base"> -->
-	<!-- 	<span class="self-center" -->
-	<!-- 		>Checkout Frappe Cloud plans for site hosting from -->
-	<!-- 		<span class="font-bold" -->
-	<!-- 			>{{ currency === 'INR' ? '₹ 820' : '$ 10' }} Onwards</span -->
-	<!-- 		> -->
-	<!-- 	</span> -->
-	<!-- 	<Button -->
-	<!-- 		@click="$resources.sendLoginLink.submit()" -->
-	<!-- 		:loading="$resources.sendLoginLink.loading" -->
-	<!-- 	> -->
-	<!-- 		Get Login Link -->
-	<!-- 	</Button> -->
-	<!-- </div> -->
-	<div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+	<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 		<div
-			v-for="plan in $resources.plans.data"
+			v-for="plan in subscription.plans"
 			class="m-2 flex flex-col justify-between rounded-2xl border border-gray-100 p-4 shadow"
 		>
 			<div>
 				<h4 class="flex justify-between text-xl font-semibold text-gray-900">
 					<div>
-						<span v-if="plan.is_free"> Free </span>
-						<span v-else>
+						<span>
 							{{
-								currency === 'INR' ? '₹' + plan.price_inr : '$' + plan.price_usd
+								subscription.currency === 'INR'
+									? '₹' + plan.price_inr
+									: '$' + plan.price_usd
 							}}
 							<span class="text-base font-normal text-gray-600">
 								{{ plan.block_monthly === 1 ? '/year' : '/mo' }}
@@ -39,9 +20,22 @@
 					</div>
 				</h4>
 
-				<FeatureList class="my-5" :features="plan.features" />
+				<FeatureList class="my-5" :features="getPlanFeatures(plan)" />
 			</div>
-			<Button variant="solid" @click="selectPlan(plan)"> Buy Now </Button>
+			<Button
+				variant="subtle"
+				:disabled="subscription.current_plan === plan.name"
+				:class="{
+					'hover:bg-gray-900 hover:text-white':
+						subscription.current_plan != plan.name
+				}"
+				@click="selectPlan(plan)"
+				:loading="$resources.changeSitePlan.loading"
+			>
+				{{
+					subscription.current_plan === plan.name ? 'Current Plan' : 'Buy Now'
+				}}
+			</Button>
 		</div>
 	</div>
 </template>
@@ -55,34 +49,11 @@ export default {
 		FeatureList
 	},
 	emits: ['update:selectedPlan', 'update:step'],
-	props: [
-		'selectedSubscription',
-		'selectedPlan',
-		'currency',
-		'step',
-		'secretKey',
-		'address'
-	],
+	props: ['selectedPlan', 'currency', 'step', 'secretKey', 'subscription'],
 	resources: {
-		plans() {
+		changeSitePlan() {
 			return {
-				url: 'press.api.developer.marketplace.get_plans',
-				params: {
-					secret_key: this.secretKey,
-					subscription: this.selectedSubscription.name
-				},
-				auto: true
-			};
-		},
-		sendLoginLink() {
-			return {
-				url: 'press.api.developer.marketplace.send_login_link',
-				params: {
-					secret_key: this.secretKey
-				},
-				onSuccess() {
-					this.$emit('update:step', 5);
-				}
+				url: 'press.api.developer.marketplace.change_site_plan'
 			};
 		}
 	},
@@ -90,11 +61,32 @@ export default {
 		selectPlan(plan) {
 			this.$emit('update:selectedPlan', plan);
 
-			if (this.address) {
-				this.$emit('update:step', 4);
+			if (Object.keys(this.subscription.address).length > 0) {
+				if (this.subscription.has_billing_info) {
+					this.$resources.changeSitePlan.submit({
+						secret_key: this.secretKey,
+						plan: plan.name
+					});
+					this.$emit('update:step', 4);
+				} else {
+					this.$emit('update:step', 3);
+				}
 			} else {
-				this.$emit('update:step', 3);
+				this.$emit('update:step', 2);
 			}
+		},
+		getPlanFeatures(plan) {
+			let features = [
+				`${plan.cpu_time_per_day} ` +
+					this.$plural(plan.cpu_time_per_day, 'hour', 'hours') +
+					' CPU per day',
+				this.formatBytes(plan.max_database_usage, 0, 2) + ' Database',
+				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storge'
+			];
+			if (plan.support_included) {
+				features.push('Product warranty + Support');
+			}
+			return features;
 		}
 	}
 };

@@ -34,8 +34,8 @@
 			v-model="showUpdatesDialog"
 		>
 			<template v-slot:body-content>
-				<SiteAppUpdates :apps="updateInformation.apps" />
-				<div class="mt-4">
+				<SiteAppUpdates :apps="updateAvailableApps" />
+				<div class="mt-4" v-if="updateAvailableApps.length">
 					<!-- Skip Failing Checkbox -->
 					<input
 						id="skip-failing"
@@ -142,6 +142,14 @@ export default {
 		},
 		updateInformation() {
 			return this.$resources.updateInformation.data;
+		},
+		updateAvailableApps() {
+			const installedApps = this.updateInformation.installed_apps;
+			const updateAvailableApps = this.updateInformation.apps;
+
+			return updateAvailableApps.filter(app =>
+				installedApps.find(installedApp => installedApp.app === app.app)
+			);
 		},
 		lastMigrateFailed() {
 			return this.$resources.lastMigrateFailed.data;
