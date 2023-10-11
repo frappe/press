@@ -22,6 +22,17 @@ import responses
 from press.utils.test import foreground_enqueue_doc
 
 
+def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
+	def new_before_insert(self):
+		before_insert(self)
+		prepare_agent_responses(self)
+
+	return new_before_insert
+
+
+before_insert: Callable = lambda self: None
+
+
 def fake_agent_job_req(
 	job_name: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
@@ -39,6 +50,9 @@ def fake_agent_job_req(
 		steps: list of {"name": "Step name", "status": "status"} dictionaries
 		"""
 		nonlocal status
+		nonlocal job_name
+		if self.job_type != job_name:  # only fake the job we want to fake
+			return
 		job_id = int(make_autoname(".#"))
 		if steps:
 			needed_steps = frappe.get_all(
@@ -111,7 +125,9 @@ def fake_agent_job_req(
 			status=200,
 		)
 
-	return prepare_agent_responses
+	global before_insert
+	before_insert = fn_appender(before_insert, prepare_agent_responses)
+	return before_insert
 
 
 @contextmanager
