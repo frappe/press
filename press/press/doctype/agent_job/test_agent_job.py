@@ -158,6 +158,8 @@ def fake_agent_job(
 			{}
 		)  # due to bug in FF related to only_if_creator docperm
 		yield
+		global before_insert
+		before_insert = lambda self: None  # noqa
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
