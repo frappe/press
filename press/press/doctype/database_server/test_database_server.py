@@ -117,3 +117,16 @@ class TestDatabaseServer(FrappeTestCase):
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			},
 		)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+		wraps=Ansible,
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_exception_on_failed_reconfigure_fn_call(self, Mock_Ansible: Mock):
+		Mock_Ansible.side_effect = Exception()
+		server = create_test_database_server()
+		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)
