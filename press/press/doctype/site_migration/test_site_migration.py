@@ -3,6 +3,10 @@
 # See license.txt
 
 import frappe
+from unittest.mock import patch
+
+from press.press.doctype.remote_file.remote_file import RemoteFile
+
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -11,6 +15,7 @@ from press.press.doctype.site.test_site import create_test_bench, create_test_si
 
 
 class TestSiteMigration(FrappeTestCase):
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
 	def test_in_cluster_site_migration_goes_through_all_steps_and_updates_site(self):
 		site = create_test_site()
 		bench = create_test_bench()
@@ -32,6 +37,18 @@ class TestSiteMigration(FrappeTestCase):
 						"size": 1674818,
 						"url": "https://a.com/a.sql.gz",
 					},
+					"public": {
+						"file": "b.tar",
+						"path": "/home/frappe/b.tar",
+						"size": 1674818,
+						"url": "https://a.com/b.tar",
+					},
+					"private": {
+						"file": "a.tar",
+						"path": "/home/frappe/a.tar",
+						"size": 1674818,
+						"url": "https://a.com/a.tar",
+					},
 					"site_config": {
 						"file": "a.json",
 						"path": "/home/frappe/a.json",
@@ -39,9 +56,14 @@ class TestSiteMigration(FrappeTestCase):
 						"url": "https://a.com/json",
 					},
 				},
-				"offsite": {},
+				"offsite": {
+					"a.sql.gz": "bucket.frappe.cloud/2023-10-10/a.sql.gz",
+					"a.tar": "bucket.frappe.cloud/2023-10-10/a.tar",
+					"b.tar": "bucket.frappe.cloud/2023-10-10/b.tar",
+					"a.json": "bucket.frappe.cloud/2023-10-10/a.json",
+				},
 			},
-		), fake_agent_job("New Site From Backup"), fake_agent_job(
+		), fake_agent_job("New Site from Backup"), fake_agent_job(
 			"Archive Site"
 		), fake_agent_job(
 			"Remove Site from Upstream"
@@ -57,5 +79,8 @@ class TestSiteMigration(FrappeTestCase):
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
+			site_migration.reload()
+			self.assertEqual(site_migration.status, "Running")
 			poll_pending_jobs()
+		site_migration.reload()
 		self.assertEqual(site_migration.status, "Success")
