@@ -369,7 +369,9 @@ class SiteMigration(Document):
 			self.run_next_step()
 			job = None
 		else:
-			job = site.update_site_config({"maintenance_mode": 0})
+			job = site.update_site_config(
+				{"maintenance_mode": 0}
+			)  # will do run_next_step in callback
 		site.reload()
 		site.status = site.status_before_update
 		site.status_before_update = None
