@@ -387,11 +387,11 @@ class SiteMigration(Document):
 		destination_server_team = frappe.db.get_value(
 			"Server", self.destination_server, "team"
 		)
-		if site.team != destination_server_team:
+		if site.team == destination_server_team:
+			site.change_plan("Unlimited")
+			self.update_next_step_status("Success")
+		else:
 			self.update_next_step_status("Skipped")
-			return
-		site.change_plan("Unlimited")
-		self.update_next_step_status("Success")
 		self.run_next_step()
 
 
