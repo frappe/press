@@ -17,7 +17,7 @@ from press.press.doctype.server.server import BaseServer
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
-@patch.object(ProxyServer, "validate", new=Mock())
+@patch.object(ProxyServer, "validate_domains", new=Mock())
 def create_test_proxy_server(
 	hostname: str = "n",
 	domain: str = "fc.dev",
