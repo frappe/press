@@ -435,80 +435,38 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 	return activities
 
 
-@frappe.whitelist()
-def options_for_new():
-	team = get_current_team()
-	versions = frappe.get_all(
+def get_versions():
+	return frappe.get_all(
 		"Frappe Version",
 		["name", "number", "default", "status"],
 		{"public": True},
 		order_by="`default` desc, number desc",
 	)
-	deployed_versions = []
+
+
+@frappe.whitelist()
+def options_for_new():
+	team = get_current_team()
+	versions = get_versions()
 	apps = set()
+	deployed_versions = []
+
 	for version in versions:
-		groups = frappe.get_all(
-			"Release Group",
-			fields=["name", "`default`", "title"],
+		release_groups = get_release_groups(
 			filters={"enabled": True, "version": version.name},
 			or_filters={"public": True, "team": team},
 			order_by="public desc",
 		)
-		for group in groups:
-			# Find most recently created bench
-			# Assume that this bench has all the latest updates
-			benches = frappe.get_all(
-				"Bench",
-				filters={"status": "Active", "group": group.name},
-				order_by="creation desc",
-				limit=1,
-			)
-			if not benches:
-				continue
 
-			bench = frappe.get_doc("Bench", benches[0].name)
-			bench_apps = [app.source for app in bench.apps]
-			app_sources = frappe.get_all(
-				"App Source",
-				[
-					"name",
-					"app",
-					"repository_url",
-					"repository",
-					"repository_owner",
-					"branch",
-					"team",
-					"public",
-					"app_title",
-					"frappe",
-				],
-				filters={"name": ("in", bench_apps)},
-				or_filters={"public": True, "team": team},
-			)
-			group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+		setup_cluster_apps_for_release_group(release_groups, version, team, apps)
 
-			cluster_names = unique(
-				frappe.db.get_all("Bench", filters={"candidate": bench.candidate}, pluck="cluster")
-			)
-			group["clusters"] = frappe.db.get_all(
-				"Cluster",
-				filters={"name": ("in", cluster_names), "public": True},
-				fields=["name", "title", "image"],
-			)
-			version.setdefault("groups", []).append(group)
-			apps.update([source.app for source in app_sources])
 		if version.get("groups"):
 			deployed_versions.append(version)
 
-	marketplace_apps = frappe.db.get_all(
-		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
-		filters={"app": ("in", list(apps))},
-	)
+	marketplace_apps = get_marketplace_apps(apps)
 
-	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	return {
-		"domain": domain,
+		"domain": get_domain(),
 		"plans": get_plans(),
 		"marketplace_apps": {row.app: row for row in marketplace_apps},
 		"versions": deployed_versions,
@@ -523,13 +481,9 @@ def get_domain():
 @frappe.whitelist()
 def get_new_site_options(group: str = None):
 	team = get_current_team()
-	versions = frappe.get_all(
-		"Frappe Version",
-		["name", "number", "default", "status"],
-		{"public": True},
-		order_by="`default` desc, number desc",
-	)
+	versions = get_versions()
 	apps = set()
+
 	filters = {"enabled": True}
 	if group:  # private bench
 		filters.update({"name": group, "team": team})
@@ -538,72 +492,113 @@ def get_new_site_options(group: str = None):
 
 	for version in versions:
 		filters.update({"version": version.name})
-		rg = frappe.get_all(
-			"Release Group",
-			fields=["name", "`default`", "title"],
-			filters=filters,
-			limit=1,
-		)
-		if not rg:
-			continue
-		else:
-			rg = rg[0]
+		release_groups = get_release_groups(filters, limit=1)
 
-		benches = frappe.get_all(
-			"Bench",
-			filters={"status": "Active", "group": rg.name},
-			order_by="creation desc",
-			limit=1,
-		)
-		if not benches:
-			continue
+		setup_cluster_apps_for_release_group(release_groups, version, team, apps)
 
-		bench_name = benches[0].name
-		bench_apps = frappe.get_all("Bench App", {"parent": bench_name}, pluck="source")
-		app_sources = frappe.get_all(
-			"App Source",
-			[
-				"name",
-				"app",
-				"repository_url",
-				"repository",
-				"repository_owner",
-				"branch",
-				"team",
-				"public",
-				"app_title",
-				"frappe",
-			],
-			filters={"name": ("in", bench_apps)},
-			or_filters={"public": True, "team": team},
-		)
-		rg["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+	marketplace_apps = get_marketplace_apps(apps)
 
-		# Regions with latest update
-		cluster_names = unique(
-			frappe.db.get_all(
-				"Bench",
-				filters={"candidate": frappe.db.get_value("Bench", bench_name, "candidate")},
-				pluck="cluster",
-			)
-		)
-		rg["clusters"] = frappe.db.get_all(
-			"Cluster",
-			filters={"name": ("in", cluster_names), "public": True},
-			fields=["name", "title", "image"],
-		)
-		version["group"] = rg
-		apps.update([source.app for source in app_sources])
-
-	marketplace_apps = frappe.db.get_all(
-		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
-		filters={"app": ("in", list(apps))},
-	)
 	return {
 		"versions": versions,
 		"marketplace_apps": {row.app: row for row in marketplace_apps},
 	}
+
+
+def get_release_groups(filters, or_filters=None, limit=None, order_by=None):
+	return frappe.get_all(
+		"Release Group",
+		fields=["name", "`default`", "title"],
+		filters=filters,
+		or_filters=or_filters,
+		limit=limit,
+		order_by=order_by,
+	)
+
+
+def get_bench_for_release_group(release_group):
+	benches = frappe.get_all(
+		"Bench",
+		filters={"status": "Active", "group": release_group.name},
+		order_by="creation desc",
+		limit=1,
+	)
+
+	if not benches:
+		return None
+
+	bench_doc = frappe.get_cached_doc("Bench", benches[0].name)
+
+	return bench_doc
+
+
+def get_app_sources_for_bench(bench, bench_apps, team):
+	or_filters = {"public": True}
+
+	if bench.team != team:
+		or_filters.update({"team": team})
+
+	return frappe.get_all(
+		"App Source",
+		[
+			"name",
+			"app",
+			"repository_url",
+			"repository",
+			"repository_owner",
+			"branch",
+			"team",
+			"public",
+			"app_title",
+			"frappe",
+		],
+		filters={"name": ("in", bench_apps)},
+		or_filters=or_filters,
+	)
+
+
+def get_clusters_for_bench(bench):
+	# Regions with latest update
+	cluster_names = unique(
+		frappe.db.get_all(
+			"Bench",
+			filters={"candidate": bench.candidate},
+			pluck="cluster",
+		)
+	)
+
+	return frappe.db.get_all(
+		"Cluster",
+		filters={"name": ("in", cluster_names), "public": True},
+		fields=["name", "title", "image"],
+	)
+
+
+def get_marketplace_apps(apps):
+	return frappe.db.get_all(
+		"Marketplace App",
+		fields=["title", "image", "description", "app", "route"],
+		filters={"app": ("in", list(apps))},
+	)
+
+
+def setup_cluster_apps_for_release_group(release_groups, version, team, apps):
+	for release_group in release_groups:
+		# Find most recently created bench
+		# Assume that this bench has all the latest updates
+		bench = get_bench_for_release_group(release_group)
+
+		if not bench:
+			continue
+
+		bench_apps = [app.source for app in bench.apps]
+		app_sources = get_app_sources_for_bench(bench, bench_apps, team)
+
+		release_group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+
+		release_group["clusters"] = get_clusters_for_bench(bench)
+
+		version["group"] = release_group
+		apps.update([source.app for source in app_sources])
 
 
 @frappe.whitelist()
