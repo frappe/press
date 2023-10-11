@@ -3,6 +3,13 @@
 
 frappe.ui.form.on('Site Migration', {
 	refresh: function (frm) {
+		frm.set_query('site', () => {
+			return {
+				filters: {
+					status: 'Active',
+				},
+			};
+		});
 		frm.set_query('source_bench', () => {
 			return {
 				filters: {
