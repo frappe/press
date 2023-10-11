@@ -864,6 +864,7 @@ def check_for_updates(name):
 
 	destination_candidate = frappe.get_doc("Deploy Candidate", destination)
 
+	out.installed_apps = site.apps
 	out.apps = get_updates_between_current_and_next_apps(
 		bench.apps, destination_candidate.apps
 	)

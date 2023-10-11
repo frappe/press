@@ -1,40 +1,38 @@
 <template>
-	<div class="p-0" v-if="$resources.subscriptions.data">
+	<div class="p-0" v-if="$resources.subscription.data">
 		<ErrorMessage :message="errorMessage" />
-		<Apps
-			v-if="step === 1"
-			:data="$resources.subscriptions.data"
-			v-model:selectedSubscription="selectedSubscription"
-			v-model:step="step"
-		/>
 		<Plans
-			v-if="step === 2"
-			:selectedSubscription="selectedSubscription"
+			v-if="step === 1"
 			:secretKey="secretKey"
-			:address="$resources.subscriptions.data.address"
-			:currency="$resources.subscriptions.data.currency"
+			:subscription="$resources.subscription.data"
 			v-model:step="step"
 			v-model:selectedPlan="selectedPlan"
 		/>
 		<Address
-			v-if="step === 3"
+			v-if="step === 2"
 			:secretKey="secretKey"
-			:currency="$resources.subscriptions.data.currency"
-			:countries="$resources.subscriptions.data.countries"
+			:currency="$resources.subscription.data.currency"
+			:countries="$resources.subscription.data.countries"
 			v-model:step="step"
+			v-model:newAddress="newAddress"
 		/>
 		<Payment
-			v-if="step === 4"
-			:selectedSubscription="selectedSubscription"
+			v-if="step === 3"
 			:selectedPlan="selectedPlan"
-			:plan="selectedPlan"
-			:currency="$resources.subscriptions.data.currency"
+			:currency="$resources.subscription.data.currency"
+			:withoutAddress="true"
+			:address="
+				Object.keys($resources.subscription.data.address).length > 0
+					? $resources.subscription.data.address
+					: newAddress
+			"
 			:secretKey="secretKey"
 			v-model:step="step"
 		/>
-		<ConfirmEmail
-			v-if="step === 5"
-			:email="$resources.subscriptions.data.team"
+		<PlanChangeSuccessful
+			v-if="step === 4"
+			:selectedPlan="selectedPlan.name"
+			:currentPlan="$resources.subscription.data.current_plan"
 			v-model:step="step"
 		/>
 	</div>
@@ -45,7 +43,7 @@ import Apps from './CheckoutApps.vue';
 import Plans from './CheckoutPlans.vue';
 import Address from './CheckoutAddress.vue';
 import Payment from './CheckoutPayment.vue';
-import ConfirmEmail from './CheckoutConfirmEmail.vue';
+import PlanChangeSuccessful from './PlanChangeSuccessful.vue';
 
 export default {
 	name: 'Checkout',
@@ -54,22 +52,22 @@ export default {
 		Plans,
 		Address,
 		Payment,
-		ConfirmEmail
+		PlanChangeSuccessful
 	},
 	props: ['secretKey'],
 	data() {
 		return {
-			subscriptions: [],
 			selectedSubscription: '',
 			selectedPlan: '',
 			step: 1,
+			newAddress: {},
 			errorMessage: null
 		};
 	},
 	resources: {
-		subscriptions() {
+		subscription() {
 			return {
-				url: 'press.api.developer.marketplace.get_subscriptions',
+				url: 'press.api.developer.marketplace.get_subscription',
 				params: {
 					secret_key: this.secretKey
 				},

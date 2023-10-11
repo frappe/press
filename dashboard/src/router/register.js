@@ -27,6 +27,9 @@ export default function registerRouter(app, auth, account) {
 			if (!auth.isLoggedIn) {
 				next({ name: 'Login', query: { route: to.path } });
 			} else {
+				if (!account.user) {
+					await account.fetchAccount();
+				}
 				next();
 			}
 		} else {

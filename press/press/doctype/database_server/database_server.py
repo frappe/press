@@ -75,7 +75,9 @@ class DatabaseServer(BaseServer):
 					frappe.log_error("Database Subscription Creation Error")
 
 	def update_memory_limits(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True
+		)
 
 	def _update_memory_limits(self):
 		if not self.memory_high or not self.memory_max:
@@ -101,6 +103,7 @@ class DatabaseServer(BaseServer):
 			self.name,
 			"_update_mariadb_system_variables",
 			queue="long",
+			enqueue_after_commit=True,
 			variables=self.get_variables_to_update(),
 		)
 

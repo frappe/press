@@ -1,11 +1,7 @@
 <template>
-	<Card title="Uptime">
-		<div
-			v-if="loading || !data"
-			class="flex h-full items-center justify-center"
-		>
-			<Button v-if="loading" :loading="loading" label="Loading..." />
-			<div v-else class="text-base text-gray-600">No data</div>
+	<Card title="Uptime" :loading="loading">
+		<div v-if="!data" class="flex h-full items-center justify-center">
+			<div class="text-base text-gray-600">No data</div>
 		</div>
 		<div v-else class="mt-8" v-for="type in uptimeTypes" :key="type.key">
 			<div class="flex h-8 justify-between">

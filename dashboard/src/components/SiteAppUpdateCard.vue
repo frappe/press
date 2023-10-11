@@ -29,9 +29,7 @@
 			<a
 				v-if="deployFrom(app)"
 				class="flex cursor-pointer flex-col justify-center"
-				:href="`${app.repository_url}/compare/${app.current_hash}...${
-					deployTo(app).hash
-				}`"
+				:href="`${app.repository_url}/compare/${app.current_hash}...${app.next_hash}`"
 				target="_blank"
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
@@ -43,19 +41,9 @@
 				class="whitespace-nowrap"
 			/>
 			<CommitTag
-				:tag="deployTo(app).name"
-				:link="`${app.repository_url}/commit/${deployTo(app).hash}`"
+				:tag="deployTo(app)"
+				:link="`${app.repository_url}/commit/${app.next_hash}`"
 			/>
-			<Dropdown
-				v-if="app.releases.length > 1"
-				:options="dropdownItems(app)"
-				right
-				class="flex cursor-pointer flex-col justify-center"
-			>
-				<template v-slot="{ open }">
-					<FeatherIcon name="chevron-down" class="w-4" />
-				</template>
-			</Dropdown>
 		</div>
 	</button>
 </template>
@@ -63,7 +51,7 @@
 <script>
 import CommitTag from './utils/CommitTag.vue';
 export default {
-	name: 'AppUpdateCard',
+	name: 'SiteAppUpdateCard',
 	props: ['app', 'selectable', 'selected', 'uninstall'],
 	methods: {
 		deployFrom(app) {
@@ -75,26 +63,10 @@ export default {
 				: null;
 		},
 		deployTo(app) {
-			let name = '';
-			let next_release = app.releases.filter(
-				release => release.name === app.next_release
-			)[0];
 			if (app.will_branch_change) {
-				name = app.branch;
-			} else {
-				name = next_release.tag || next_release.hash.slice(0, 7);
+				return app.branch;
 			}
-
-			return { name: name, hash: next_release.hash };
-		},
-		dropdownItems(app) {
-			return app.releases.map(release => ({
-				label: `${release.tag || release.hash.slice(0, 7)}`,
-				onClick: () => {
-					app.next_release = release.name;
-					this.$emit('update:app', app);
-				}
-			}));
+			return app.next_tag || app.next_hash.slice(0, 7);
 		}
 	},
 	components: { CommitTag }

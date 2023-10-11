@@ -32,7 +32,6 @@ ALLOWED_PATHS = [
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
-
 ]
 
 ALLOWED_WILDCARD_PATHS = [
