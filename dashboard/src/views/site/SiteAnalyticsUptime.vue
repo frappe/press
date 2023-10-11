@@ -1,6 +1,9 @@
 <template>
 	<Card title="Uptime" :subtitle="subtitle" :loading="loading">
-		<div v-if="!data" class="flex h-full items-center justify-center">
+		<div
+			v-if="!data || data[0].date === undefined"
+			class="flex h-full items-center justify-center"
+		>
 			<div class="text-base text-gray-600">No data</div>
 		</div>
 		<div v-else class="mt-8" v-for="type in uptimeTypes" :key="type.key">
@@ -49,8 +52,9 @@ export default {
 
 				total += this.data[i].value;
 			}
+			const average = ((total / i) * 100).toFixed(2);
 
-			return this.data ? `Average: ${((total / i) * 100).toFixed(2)}%` : '';
+			return !isNaN(average) ? `Average: ${average}%` : '';
 		}
 	},
 	methods: {
