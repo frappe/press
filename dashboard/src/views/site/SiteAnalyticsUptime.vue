@@ -38,6 +38,8 @@ export default {
 			return [{ key: 'value', label: 'Web' }];
 		},
 		subtitle() {
+			if (!this.data) return '';
+
 			let total = 0;
 			let i = 0;
 			for (; i < this.data.length; i++) {
