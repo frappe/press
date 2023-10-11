@@ -119,6 +119,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   `#stage-pre-apt-packages`
 {% endif %}
 
+RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+
 RUN useradd -ms /bin/bash frappe
 USER frappe
 WORKDIR /home/frappe
