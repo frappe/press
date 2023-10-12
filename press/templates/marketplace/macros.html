@@ -2,8 +2,10 @@
 {%- set classes = resolve_class([
 'inline-flex items-center justify-center px-3 py-1 text-base leading-5 rounded-md focus:outline-none',
 {
-'text-white bg-gradient-blue hover:bg-gradient-none hover:bg-blue-500 focus:shadow-outline-blue': kind == 'primary',
-'bg-gray-50 hover:bg-gray-100 text-gray-900 focus:shadow-outline-gray': kind == 'default',
+'text-white bg-gray-900 hover:bg-gray-800 active:bg-gray-700 focus-visible:ring focus-visible:ring-gray-400': kind ==
+'primary',
+'text-gray-800 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus-visible:ring focus-visible:ring-gray-400': kind ==
+'default',
 }
 ]) -%}
 {%- if as == 'a' -%}
@@ -14,18 +16,18 @@
 {% endmacro %}
 
 {% macro link(label, url, class, blank=False) %}
-<a class="text-gray-600 hover:text-blue-500 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
+<a class="text-gray-600 hover:text-gray-800 {{ resolve_class(class) }}" href="{{ url | abs_url }}" {% if blank %}
 	target="_blank" {% endif %}>{{ label }}</a>
 {% endmacro %}
 
-{% macro badge_blue(title) %}
-<span class="inline-block px-3 py-1 text-sm text-blue-500 rounded-md cursor-default bg-blue-50">
+{% macro badge_gray(title) %}
+<span class="inline-block px-3 py-1 text-sm text-gray-700 rounded-md cursor-default bg-gray-100">
 	{{ title }}
 </span>
 {% endmacro %}
 
 {% macro badge_green(title) %}
-<span class="inline-block px-3 py-1 text-sm text-green-500 rounded-md cursor-default bg-green-50">
+<span class="inline-block px-3 py-1 text-sm text-green-800 rounded-md cursor-default bg-green-200">
 	{{ title }}
 </span>
 {% endmacro %}
