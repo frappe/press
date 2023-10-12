@@ -94,3 +94,39 @@ class TestDatabaseServer(FrappeTestCase):
 				"memory_max": server.memory_max,
 			},
 		)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+		wraps=Ansible,
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_reconfigure_mariadb_exporter_play_runs_on_reconfigure_fn_call(
+		self, Mock_Ansible: Mock
+	):
+		server = create_test_database_server()
+		server.reconfigure_mariadb_exporter()
+		server.reload()
+		Mock_Ansible.assert_called_with(
+			playbook="reconfigure_mysqld_exporter.yml",
+			server=server,
+			variables={
+				"private_ip": server.private_ip,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
+			},
+		)
+
+	@patch(
+		"press.press.doctype.database_server.database_server.Ansible",
+		wraps=Ansible,
+	)
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_exception_on_failed_reconfigure_fn_call(self, Mock_Ansible: Mock):
+		Mock_Ansible.side_effect = Exception()
+		server = create_test_database_server()
+		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)

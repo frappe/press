@@ -1,6 +1,10 @@
 <template>
 	<div class="space-y-2 divide-y">
-		<AppUpdateCard v-for="app in appsWithUpdates" :key="app.app" :app="app" />
+		<SiteAppUpdateCard
+			v-for="app in appsWithUpdates"
+			:key="app.app"
+			:app="app"
+		/>
 		<div
 			v-if="!appsWithUpdates.length"
 			class="text-center text-base text-gray-500"
@@ -11,13 +15,13 @@
 	</div>
 </template>
 <script>
-import AppUpdateCard from './AppUpdateCard.vue';
+import SiteAppUpdateCard from './SiteAppUpdateCard.vue';
 
 export default {
 	name: 'SiteAppUpdates',
 	props: ['apps'],
 	components: {
-		AppUpdateCard
+		SiteAppUpdateCard
 	},
 	computed: {
 		appsWithUpdates() {

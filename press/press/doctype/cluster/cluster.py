@@ -331,15 +331,24 @@ class Cluster(Document):
 		)
 
 	def get_other_region_vmis(self, get_series=False):
-		return frappe.get_all(
-			"Virtual Machine Image",
-			filters={
-				"region": ("!=", self.region),
-				"series": ("in", list(self.server_doctypes.values())),
-				"status": "Available",
-			},
-			pluck="name" if not get_series else "series",
-		)
+		vmis = []
+		for series in list(self.server_doctypes.values()):
+			vmis.extend(
+				frappe.get_all(
+					"Virtual Machine Image",
+					["name", "series", "creation"],
+					filters={
+						"region": ("!=", self.region),
+						"series": series,
+						"status": "Available",
+					},
+					limit=1,
+					order_by="creation DESC",
+					pluck="name" if not get_series else "series",
+				)
+			)
+
+		return vmis
 
 	def copy_virtual_machine_images(self) -> Generator[VirtualMachineImage, None, None]:
 		"""Creates VMIs required for the cluster"""

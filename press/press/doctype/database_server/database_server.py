@@ -589,6 +589,29 @@ class DatabaseServer(BaseServer):
 			int(self.ram * 0.685),  # will be rounded up based on chunk_size
 		)
 
+	@frappe.whitelist()
+	def reconfigure_mariadb_exporter(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_reconfigure_mariadb_exporter", queue="long", timeout=1200
+		)
+
+	def _reconfigure_mariadb_exporter(self):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="reconfigure_mysqld_exporter.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_root_password": mariadb_root_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error(
+				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
+			)
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"

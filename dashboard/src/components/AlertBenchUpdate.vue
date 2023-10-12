@@ -21,8 +21,9 @@
 			<Tooltip
 				v-else
 				:text="
-					!permissions.update &&
-					`You don't have enough permissions to perform this action`
+					!permissions.update
+						? `You don't have enough permissions to perform this action`
+						: ''
 				"
 			>
 				<Button
