@@ -200,6 +200,11 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
+				"step_title": self.archive_site_on_destination_server.__doc__,
+				"method_name": self.archive_site_on_destination_server.__name__,
+				"status": "Pending",
+			},
+			{
 				"step_title": self.restore_site_on_destination_server.__doc__,
 				"method_name": self.restore_site_on_destination_server.__name__,
 				"status": "Pending",
@@ -248,6 +253,11 @@ class SiteMigration(Document):
 			{
 				"step_title": self.backup_source_site.__doc__,
 				"method_name": self.backup_source_site.__name__,
+				"status": "Pending",
+			},
+			{
+				"step_title": self.archive_site_on_destination_server.__doc__,
+				"method_name": self.archive_site_on_destination_server.__name__,
 				"status": "Pending",
 			},
 			{
@@ -312,6 +322,13 @@ class SiteMigration(Document):
 
 		return frappe.get_doc("Agent Job", backup.job)
 
+	def archive_site_on_destination_server(self):
+		"""Archive site on destination (case of retry)"""
+		agent = Agent(self.destination_server)
+		site = frappe.get_doc("Site", self.site)
+		site.bench = self.destination_bench
+		return agent.archive_site(site, force=True)
+
 	def restore_site_on_destination_server(self):
 		"""Restore site on destination"""
 		agent = Agent(self.destination_server)
@@ -369,7 +386,9 @@ class SiteMigration(Document):
 			self.run_next_step()
 			job = None
 		else:
-			job = site.update_site_config({"maintenance_mode": 0})
+			job = site.update_site_config(
+				{"maintenance_mode": 0}
+			)  # will do run_next_step in callback
 		site.reload()
 		site.status = site.status_before_update
 		site.status_before_update = None
@@ -387,11 +406,11 @@ class SiteMigration(Document):
 		destination_server_team = frappe.db.get_value(
 			"Server", self.destination_server, "team"
 		)
-		if site.team != destination_server_team:
+		if site.team == destination_server_team:
+			site.change_plan("Unlimited")
+			self.update_next_step_status("Success")
+		else:
 			self.update_next_step_status("Skipped")
-			return
-		site.change_plan("Unlimited")
-		self.update_next_step_status("Success")
 		self.run_next_step()
 
 

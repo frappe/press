@@ -9,6 +9,12 @@ frappe.ui.form.on('Registry Server', {
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
 			[
+				__('Update TLS Certificate'),
+				'update_tls_certificate',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				false,

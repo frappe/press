@@ -163,8 +163,8 @@ def update_server_tls_certifcate(server, certificate):
 			proxysql_admin_password = server.get_password("proxysql_admin_password")
 		ansible = Ansible(
 			playbook="tls.yml",
-			user=server.ssh_user or "root",
-			port=server.ssh_port or 22,
+			user=server.get("ssh_user") or "root",
+			port=server.get("ssh_port") or 22,
 			server=server,
 			variables={
 				"certificate_private_key": certificate.private_key,
