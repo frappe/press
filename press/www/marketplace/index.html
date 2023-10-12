@@ -15,10 +15,10 @@
 		<h2 class="text-xl text-gray-800 font-semibold">Categories</h2>
 		<div class="flex flex-col mt-4">
 			{%- for category in categories -%}
-			<div class="relative -left-2 mr-8 text-lg transition hover:bg-gray-50 text-gray-700 rounded-lg">
+			<div class="relative -left-2 mr-8 transition hover:bg-gray-50 text-gray-700 rounded-lg">
 				<button
 				id="category-button"
-				class="w-full text-left rounded-lg py-1 pl-2" value="{{ category }}">
+				class="w-full text-left rounded py-1 pl-2" value="{{ category }}">
 					{{ category }}
 				</button>
 			</div>
@@ -31,7 +31,7 @@
 			<div class="flex flex-col sm:flex-row sm:justify-between">
 				<h2 class="text-xl font-bold text-gray-800">Apps</h2>
 				<div class="flex flex-row mt-3">
-					<button id="remove-category" class="hidden flex bg-blue-100 border-gray-700 text-sm text-blue-700 items-center px-2 mx-2 rounded-lg transition hover:shadow">
+					<button id="remove-category" class="hidden flex bg-gray-100 border-gray-700 text-sm text-gray-700 items-center px-2 mx-2 rounded-lg transition hover:shadow">
 						<span id="remove-category-name" class="block items-center mr-1"></span>
 						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 					</button>
@@ -45,7 +45,7 @@
 				<a href="/{{ app.route }}" id="{{app.name}}" data-title="{{ app.title }}"
 					data-description="{{ app.description }}"
 		 			data-categories="{{ app.categories }}"
-					class="app-card flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer transition hover:shadow-lg focus:outline-none focus:border-blue-500 focus:shadow-outline">
+					class="app-card flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer transition hover:shadow-lg focus:outline-none focus:border-gray-500 focus:shadow-outline">
 					<div>
 						<img alt="{{app.title}} Logo" src="{{ app.image }}"
 							class="w-10 h-10 border border-gray-200 rounded-lg" />

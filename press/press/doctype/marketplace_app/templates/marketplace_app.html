@@ -1,5 +1,5 @@
 {% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green,
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_gray, badge_green,
 five_star_rating -%}
 
 {%- block title -%}
@@ -38,7 +38,7 @@ five_star_rating -%}
 	{%- if publisher_profile -%}
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
-		<a class="text-base text-blue-500 hover:text-blue-700"
+		<a class="text-base text-gray-800 hover:text-gray-900"
 			href="{{ 'mailto:{}'.format(publisher_profile.contact_email) if  publisher_profile.contact_email else '#'}}">
 			{{ publisher_profile.display_name }}
 		</a>
@@ -51,10 +51,10 @@ five_star_rating -%}
 			<!-- Hard-coded for now -->
 			{%- if app.subscription_type == 'Freemium'-%} {{ badge_green('Freemium')
 			}} {%- elif app.subscription_type == 'Paid'-%} {{ badge_green('Paid') }}
-			{%- else -%} {{ badge_blue('Free') }} {%- endif -%} {%- for category in
+			{%- else -%} {{ badge_gray('Free') }} {%- endif -%} {%- for category in
 			app.categories -%}
 			<div class="inline-flex flex-row mt-4 mr-2">
-				{{ badge_blue(category.category) }}
+				{{ badge_gray(category.category) }}
 			</div>
 			{%- endfor -%}
 		</div>
