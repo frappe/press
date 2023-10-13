@@ -77,12 +77,19 @@ export default {
 				: null;
 		},
 		autocompleteOptions() {
-			return this.app.releases.map(release => ({
-				label: `${release.message.split('\n')[0]} (${
-					release.tag || release.hash.slice(0, 7)
-				})`,
-				value: release.name
-			}));
+			return this.app.releases.map(release => {
+				const messageMaxLength = 75;
+				let message = release.message.split('\n')[0];
+				message =
+					message.length > messageMaxLength
+						? message.slice(0, messageMaxLength) + '...'
+						: message;
+
+				return {
+					label: `${message} (${release.tag || release.hash.slice(0, 7)})`,
+					value: release.name
+				};
+			});
 		}
 	},
 	methods: {
