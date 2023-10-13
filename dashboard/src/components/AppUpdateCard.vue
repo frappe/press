@@ -86,7 +86,9 @@ export default {
 						: message;
 
 				return {
-					label: `${message} (${release.tag || release.hash.slice(0, 7)})`,
+					label: release.tag
+						? release.tag
+						: `${message} (${release.hash.slice(0, 7)})`,
 					value: release.name
 				};
 			});

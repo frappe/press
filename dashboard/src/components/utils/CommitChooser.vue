@@ -6,7 +6,7 @@
 			e =>
 				$emit('update:modelValue', {
 					// get only the commit tag
-					label: e.label.match(/\((\w+)\)$/)[1],
+					label: isVersion(e.label) ? e.label : e.label.match(/\((\w+)\)$/)[1],
 					value: e.value
 				})
 		"
@@ -27,6 +27,11 @@
 export default {
 	name: 'CommitTag',
 	props: ['options', 'modelValue'],
-	emits: ['update:modelValue']
+	emits: ['update:modelValue'],
+	methods: {
+		isVersion(tag) {
+			return tag.match(/^v\d+\.\d+\.\d+$/);
+		}
+	}
 };
 </script>
