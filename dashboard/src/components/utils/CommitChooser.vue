@@ -3,7 +3,12 @@
 		:options="options"
 		:value="modelValue"
 		@change="
-			e => $emit('update:modelValue', { label: e.label, value: e.value })
+			e =>
+				$emit('update:modelValue', {
+					// get only the commit tag
+					label: e.label.match(/\((\w+)\)$/)[1],
+					value: e.value
+				})
 		"
 	>
 		<template v-slot:target="{ togglePopover }">

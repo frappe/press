@@ -78,7 +78,9 @@ export default {
 		},
 		autocompleteOptions() {
 			return this.app.releases.map(release => ({
-				label: release.tag || release.hash.slice(0, 7),
+				label: `${release.message.split('\n')[0]} (${
+					release.tag || release.hash.slice(0, 7)
+				})`,
 				value: release.name
 			}));
 		}
