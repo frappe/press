@@ -20,7 +20,7 @@
 			</h3>
 		</div>
 		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
-		<div v-else class="ml-2 flex flex-row space-x-2">
+		<div v-else class="ml-2 flex flex-row items-center space-x-2">
 			<CommitTag
 				v-if="deployFrom(app)"
 				:tag="deployFrom(app)"
@@ -29,9 +29,9 @@
 			<a
 				v-if="deployFrom(app)"
 				class="flex cursor-pointer flex-col justify-center"
-				:href="`${app.repository_url}/compare/${app.current_hash}...${
-					deployTo(app).hash
-				}`"
+				:href="`${app.repository_url}/compare/${app.current_hash}...${getHash(
+					DeployTo.value
+				)}`"
 				target="_blank"
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
@@ -42,29 +42,31 @@
 				theme="green"
 				class="whitespace-nowrap"
 			/>
-			<CommitTag
-				:tag="deployTo(app).name"
-				:link="`${app.repository_url}/commit/${deployTo(app).hash}`"
-			/>
-			<Dropdown
-				v-if="app.releases.length > 1"
-				:options="dropdownItems(app)"
-				right
-				class="flex cursor-pointer flex-col justify-center"
-			>
-				<template v-slot="{ open }">
-					<FeatherIcon name="chevron-down" class="w-4" />
-				</template>
-			</Dropdown>
+			<CommitChooser :options="autocomplete(app)" v-model="DeployTo" />
 		</div>
 	</button>
 </template>
 
 <script>
+import CommitChooser from './utils/CommitChooser.vue';
 import CommitTag from './utils/CommitTag.vue';
 export default {
 	name: 'AppUpdateCard',
 	props: ['app', 'selectable', 'selected', 'uninstall'],
+	data() {
+		return {
+			DeployTo: {
+				label: this.getDeployTo(this.app).name,
+				value: this.app.next_release
+			}
+		};
+	},
+	watch: {
+		DeployTo(newVal) {
+			this.app.next_release = newVal.value;
+			this.$emit('update:app', this.app);
+		}
+	},
 	methods: {
 		deployFrom(app) {
 			if (app.will_branch_change) {
@@ -74,7 +76,7 @@ export default {
 				? app.current_tag || app.current_hash.slice(0, 7)
 				: null;
 		},
-		deployTo(app) {
+		getDeployTo(app) {
 			let name = '';
 			let next_release = app.releases.filter(
 				release => release.name === app.next_release
@@ -87,16 +89,16 @@ export default {
 
 			return { name: name, hash: next_release.hash };
 		},
-		dropdownItems(app) {
+		autocomplete(app) {
 			return app.releases.map(release => ({
-				label: `${release.tag || release.hash.slice(0, 7)}`,
-				onClick: () => {
-					app.next_release = release.name;
-					this.$emit('update:app', app);
-				}
+				label: release.tag || release.hash.slice(0, 7),
+				value: release.name
 			}));
+		},
+		getHash(tag) {
+			return this.app.releases.find(release => release.name === tag).hash;
 		}
 	},
-	components: { CommitTag }
+	components: { CommitTag, CommitChooser }
 };
 </script>
