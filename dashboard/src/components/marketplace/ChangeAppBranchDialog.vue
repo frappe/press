@@ -46,6 +46,12 @@ export default {
 		changeBranch() {
 			return {
 				url: 'press.api.marketplace.change_branch',
+				params: {
+					name: this.app,
+					source: this.source,
+					version: this.version,
+					to_branch: this.selectedBranch
+				},
 				onSuccess() {
 					window.location.reload();
 				},
@@ -58,14 +64,6 @@ export default {
 		}
 	},
 	methods: {
-		changeBranch() {
-			this.$resources.changeBranch.submit({
-				name: this.app,
-				source: this.source,
-				version: this.version,
-				to_branch: this.selectedBranch
-			});
-		},
 		branchList() {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];
