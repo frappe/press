@@ -23,7 +23,7 @@ class InvoiceDiscountType(Enum):
 
 discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
-DISCOUNT_MAP = {"Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
