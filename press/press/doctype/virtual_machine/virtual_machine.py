@@ -245,6 +245,12 @@ class VirtualMachine(Document):
 			self.termination_protection = self.client().describe_instance_attribute(
 				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
+
+			instance_type_response = self.client().describe_instance_types(
+				InstanceTypes=[self.machine_type]
+			)
+			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
+			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -262,6 +268,8 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				if doctype in ["Server", "Database Server"]:
+					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address:
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
