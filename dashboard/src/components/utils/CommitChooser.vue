@@ -5,7 +5,7 @@
 		@change="
 			e =>
 				$emit('update:modelValue', {
-					// get only the commit tag
+					// get only the commit hash if release not tagged
 					label: isVersion(e.label) ? e.label : e.label.match(/\((\w+)\)$/)[1],
 					value: e.value
 				})
