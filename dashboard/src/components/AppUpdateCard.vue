@@ -22,15 +22,15 @@
 		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
 		<div v-else class="ml-2 flex flex-row items-center space-x-2">
 			<CommitTag
-				v-if="deployFrom(app)"
-				:tag="deployFrom(app)"
+				v-if="deployFrom"
+				:tag="deployFrom"
 				:link="`${app.repository_url}/commit/${app.current_hash}`"
 			/>
 			<a
-				v-if="deployFrom(app)"
+				v-if="deployFrom"
 				class="flex cursor-pointer flex-col justify-center"
 				:href="`${app.repository_url}/compare/${app.current_hash}...${getHash(
-					DeployTo.value
+					deployTo.value
 				)}`"
 				target="_blank"
 			>
@@ -42,7 +42,7 @@
 				theme="green"
 				class="whitespace-nowrap"
 			/>
-			<CommitChooser :options="autocomplete(app)" v-model="DeployTo" />
+			<CommitChooser :options="autocompleteOptions" v-model="deployTo" />
 		</div>
 	</button>
 </template>
@@ -55,45 +55,44 @@ export default {
 	props: ['app', 'selectable', 'selected', 'uninstall'],
 	data() {
 		return {
-			DeployTo: {
-				label: this.getDeployTo(this.app).name,
+			deployTo: {
+				label: this.initialDeployTo(),
 				value: this.app.next_release
 			}
 		};
 	},
 	watch: {
-		DeployTo(newVal) {
+		deployTo(newVal) {
 			this.app.next_release = newVal.value;
 			this.$emit('update:app', this.app);
 		}
 	},
-	methods: {
-		deployFrom(app) {
-			if (app.will_branch_change) {
-				return app.current_branch;
+	computed: {
+		deployFrom() {
+			if (this.app.will_branch_change) {
+				return this.app.current_branch;
 			}
-			return app.current_hash
-				? app.current_tag || app.current_hash.slice(0, 7)
+			return this.app.current_hash
+				? this.app.current_tag || this.app.current_hash.slice(0, 7)
 				: null;
 		},
-		getDeployTo(app) {
-			let name = '';
-			let next_release = app.releases.filter(
-				release => release.name === app.next_release
-			)[0];
-			if (app.will_branch_change) {
-				name = app.branch;
-			} else {
-				name = next_release.tag || next_release.hash.slice(0, 7);
-			}
-
-			return { name: name, hash: next_release.hash };
-		},
-		autocomplete(app) {
-			return app.releases.map(release => ({
+		autocompleteOptions() {
+			return this.app.releases.map(release => ({
 				label: release.tag || release.hash.slice(0, 7),
 				value: release.name
 			}));
+		}
+	},
+	methods: {
+		initialDeployTo() {
+			let next_release = this.app.releases.filter(
+				release => release.name === this.app.next_release
+			)[0];
+			if (this.app.will_branch_change) {
+				return this.app.branch;
+			} else {
+				return next_release.tag || next_release.hash.slice(0, 7);
+			}
 		},
 		getHash(tag) {
 			return this.app.releases.find(release => release.name === tag).hash;
