@@ -66,6 +66,30 @@ class TestAPISite(FrappeTestCase):
 				self.assertEqual(version["group"]["name"], group14.name)
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	def test_all_private_apps_from_bench_if_app_source_team_is_different(self):
+		from press.api.site import get_new_site_options
+
+		apps = []
+		new_team = create_test_press_admin_team("testteam1@frappe.cloud")
+
+		for app_to_mock in [
+			("frappe", "Frappe Framework", self.team.name),
+			("erpnext", "ERPNext", self.team.name),
+			("test app", "Test App", new_team.name),
+		]:
+			apps.append(create_test_app(app_to_mock[0], app_to_mock[1], app_to_mock[2]))
+
+		server = create_test_server()
+		group15 = create_test_release_group(
+			apps, user=self.team.user, frappe_version="Version 15"
+		)
+
+		create_test_bench(group=group15, server=server.name)
+		frappe.set_user(self.team.user)
+
+		get_new_site_options(group15.name)
+
+	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
 	def test_new_fn_creates_site_and_subscription(self):
 		from press.api.site import new
 

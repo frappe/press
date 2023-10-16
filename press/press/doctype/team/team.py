@@ -306,7 +306,7 @@ class Team(Document):
 			self.save(ignore_permissions=True)
 
 	def get_partnership_start_date(self):
-		if frappe.flags.in_test:
+		if frappe.flags.in_test or frappe.flags.in_install:
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()

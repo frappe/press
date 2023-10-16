@@ -39,7 +39,9 @@ def create_test_release_group(
 		}
 	)
 	for app in apps:
-		app_source = create_test_app_source(release_group.version, app)
+		app_source = create_test_app_source(
+			release_group.version, app, team=app.get("team", None)
+		)
 		release_group.append("apps", {"app": app.name, "source": app_source.name})
 
 	release_group.insert(ignore_if_duplicate=True)
