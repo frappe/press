@@ -13,7 +13,7 @@
 			v-for="(app, index) in removedApps"
 			:key="app.name"
 			@click.native.self="toggleApp(app)"
-			v-model:app="removed_apps[index]"
+			v-model:app="removedApps[index]"
 			:selected="selectedApps.map(a => a.app).includes(app.app)"
 			:uninstall="true"
 		/>
