@@ -458,6 +458,25 @@ class TestAPIBenchConfig(FrappeTestCase):
 			sorted(deps, key=lambda x: x["key"]),
 		)
 
+	def test_dependencies_shows_dependency_update_available_on_update_of_the_same(self):
+		deps = [
+			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NVM_VERSION", "value": "0.36.0"},
+			{"key": "PYTHON_VERSION", "value": "3.6"},
+			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+			{"key": "BENCH_VERSION", "value": "5.15.2"},
+		]
+		self.assertFalse(dependencies(self.rg.name)["update_available"])
+		create_test_bench(
+			group=self.rg
+		)  # don't show dependency update available for new deploys
+		deps[0]["value"] = "16.12"
+		update_dependencies(
+			self.rg.name,
+			json.dumps(deps),
+		)
+		self.assertTrue(dependencies(self.rg.name)["update_available"])
+
 
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
