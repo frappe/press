@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
 from itertools import chain
 import frappe
 import json
@@ -301,21 +302,15 @@ class ReleaseGroup(Document):
 		out.apps = self.get_app_updates(
 			last_deployed_bench.apps if last_deployed_bench else []
 		)
-		last_dc_info = self.get_last_deploy_candidate_info()
-		out.last_deploy = last_dc_info
-		out.deploy_in_progress = last_dc_info and last_dc_info.status in (
-			"Running",
-			"Scheduled",
-		)
+		out.last_deploy = self.last_dc_info
+		out.deploy_in_progress = self.deploy_in_progress
 
 		out.removed_apps = self.get_removed_apps()
-		out.update_available = any([app["update_available"] for app in out.apps]) or (
-			len(out.removed_apps) > 0
+		out.update_available = (
+			any([app["update_available"] for app in out.apps])
+			or (len(out.removed_apps) > 0)
+			or self.dependency_update_pending
 		)
-		if (not out.update_available) and self.last_dependency_update and last_dc_info:
-			out.update_available = (
-				frappe.utils.get_datetime(self.last_dependency_update) > last_dc_info.creation
-			)
 		out.number_of_apps = len(self.apps)
 
 		out.sites = [
@@ -328,11 +323,19 @@ class ReleaseGroup(Document):
 		return out
 
 	@property
-	def deploy_in_progress(self):
-		last_dc_info = self.get_last_deploy_candidate_info()
-		return last_dc_info and last_dc_info.status == "Running"
+	def dependency_update_pending(self):
+		if not self.last_dependency_update or not self.last_dc_info:
+			return False
+		return (
+			frappe.utils.get_datetime(self.last_dependency_update) > self.last_dc_info.creation
+		)
 
-	def get_last_deploy_candidate_info(self):
+	@property
+	def deploy_in_progress(self):
+		return self.last_dc_info and self.last_dc_info.status in ("Running", "Scheduled")
+
+	@cached_property
+	def last_dc_info(self):
 		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (

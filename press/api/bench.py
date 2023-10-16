@@ -328,6 +328,7 @@ def dependencies(name: str):
 		),
 		"dependency_title": {d["name"]: d["title"] for d in bench_dependencies},
 		"internal_dependencies": [d["name"] for d in bench_dependencies if d["internal"]],
+		"update_available": rg.dependency_update_pending,
 	}
 
 
