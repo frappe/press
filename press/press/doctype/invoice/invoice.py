@@ -424,9 +424,6 @@ class Invoice(Document):
 			if self.payment_mode == "Partner Credits"
 			else "New Partner Discount"
 		)
-		for discount in self.discounts:
-			if discount.note == discount_note:
-				return
 
 		partner_level, legacy_contract = self.get_partner_level()
 		# give 10% discount for partners
