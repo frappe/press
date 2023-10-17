@@ -48,3 +48,26 @@ class UsageRecord(Document):
 		invoice = team.get_upcoming_invoice()
 		if invoice:
 			invoice.remove_usage_record(self)
+
+
+def link_unlinked_usage_records():
+	td = frappe.utils.today()
+	fd = frappe.utils.get_first_day(td)
+	ld = frappe.utils.get_last_day(td)
+	free_teams = frappe.db.get_all("Team", {"free_account": 1}, pluck="name")
+
+	usage_records = frappe.get_all(
+		"Usage Record",
+		filters={
+			"invoice": ("is", "not set"),
+			"date": ("between", (fd, ld)),
+			"team": ("not in", free_teams),
+		},
+		pluck="name",
+	)
+
+	for usage_record in usage_records:
+		try:
+			frappe.get_doc("Usage Record", usage_record).update_usage_in_invoice()
+		except Exception as e:
+			frappe.log_error("Failed to Link UR to Invoice", data=e)
