@@ -131,12 +131,15 @@ class Bench(Document):
 		self.update_bench_config_with_rg_config(bench_config)
 
 	def add_limits(self, bench_config):
-		if self.memory_max:
-			if not self.memory_swap:
-				frappe.throw("Memory Swap needs to be set if Memory Max is set")
+		if any([self.memory_high, self.memory_max, self.memory_swap]):
+			if not all([self.memory_high, self.memory_max, self.memory_swap]):
+				frappe.throw("All memory limits need to be set")
 
 			if self.memory_swap != -1 and (self.memory_max > self.memory_swap):
 				frappe.throw("Memory Swap needs to be greater than Memory Max")
+
+			if self.memory_high > self.memory_max:
+				frappe.throw("Memory Max needs to be greater than Memory High")
 
 		bench_config.update(
 			{

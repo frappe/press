@@ -497,6 +497,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 
 	def test_memory_swap_cannot_be_set_lower_than_memory_max(self):
 		bench = create_test_bench(group=self.rg)
+		bench.memory_high = 1024
 		bench.memory_max = 2048
 		bench.memory_swap = 1024
 		self.assertRaises(
@@ -504,6 +505,7 @@ class TestAPIBenchConfig(FrappeTestCase):
 			bench.save,
 		)
 		bench.reload()
+		bench.memory_high = 1024
 		bench.memory_max = 1024
 		bench.memory_swap = -1
 		try:
@@ -515,6 +517,16 @@ class TestAPIBenchConfig(FrappeTestCase):
 	def test_memory_max_cant_be_set_without_swap(self):
 		bench = create_test_bench(group=self.rg)
 		bench.memory_max = 2048
+		self.assertRaises(
+			frappe.exceptions.ValidationError,
+			bench.save,
+		)
+
+	def test_memory_high_cant_be_set_higher_than_memory_max(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_max = 2048
+		bench.memory_high = 4096
+		bench.memory_swap = 4096
 		self.assertRaises(
 			frappe.exceptions.ValidationError,
 			bench.save,
