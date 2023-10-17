@@ -1,7 +1,10 @@
 <template>
 	<div>
 		<div v-if="tab.type === 'list'">
-			<ObjectList :list="listProp" />
+			<ObjectList :options="listOptions" />
+		</div>
+		<div class="p-5" v-else-if="tab.type == 'Component'">
+			<component :is="tab.component" v-bind="getProps(tab)" />
 		</div>
 		<div v-else class="p-5">
 			{{ tab.label }}
@@ -15,13 +18,19 @@ export default {
 	methods: {
 		getFilters(tab) {
 			return tab.list.filters ? tab.list.filters(this.document) : {};
+		},
+		getProps(tab) {
+			return tab.props ? tab.props(this.document) : {};
 		}
 	},
 	computed: {
-		listProp() {
+		listOptions() {
 			return {
 				...this.tab.list,
-				filters: this.getFilters(this.tab)
+				filters: this.getFilters(this.tab),
+				context: {
+					documentResource: this.document
+				}
 			};
 		}
 	}

@@ -9,42 +9,43 @@
 				</TextInput>
 			</div>
 			<div class="ml-auto flex items-center space-x-2">
-				<Button
-					@click="$resources.list.reload()"
-					:loading="$resources.list.list.loading"
-				>
+				<Button @click="list.reload()" :loading="list.list.loading">
 					<template #prefix>
 						<i-lucide-refresh-ccw class="h-4 w-4" />
 					</template>
 					Refresh
 				</Button>
-				<Button>
-					<template #prefix>
-						<i-lucide-list-filter class="h-4 w-4" />
-					</template>
-					Filter
-				</Button>
-				<Dropdown
+				<!-- <Dropdown
 					:options="[{ label: 'Actions', onClick: () => {} }]"
 					:button="{ icon: 'more-horizontal' }"
-				/>
-				<Button variant="solid">
-					<template #prefix>
-						<i-lucide-plus class="h-4 w-4" />
+				/> -->
+				<Button v-if="primaryAction" v-bind="primaryAction">
+					<template v-if="primaryAction.icon" #prefix>
+						<FeatherIcon :name="primaryAction.icon" class="h-4 w-4" />
 					</template>
-					Create
 				</Button>
 			</div>
 		</div>
-		<div class="min-h-0 flex-1 overflow-y-auto">
-			<ListView :columns="_columns" :rows="rows" row-key="id">
+		<div class="mt-3 min-h-0 flex-1 overflow-y-auto px-5">
+			<ListView
+				:columns="columns"
+				:rows="rows"
+				:options="{
+					selectable: this.options.selectable || false,
+					onRowClick: () => {},
+					getRowRoute: this.options.route
+						? row => this.options.route(row)
+						: null
+				}"
+				row-key="name"
+			>
 				<ListHeader>
 					<ListHeaderItem
-						v-for="column in _columns"
+						v-for="column in columns"
 						:key="column.key"
-						:column="column"
+						:item="column"
 					>
-						<template #prefix="{ column }">
+						<template #prefix>
 							<FeatherIcon
 								v-if="column.icon"
 								:name="column.icon"
@@ -54,23 +55,26 @@
 					</ListHeaderItem>
 				</ListHeader>
 				<ListRows>
-					<ListRow v-for="(row, i) in rows" :row="row" :idx="i" :key="row.id">
-						<template #default="{ column, item }">
+					<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
+						<template v-slot="{ column, item }">
 							<ObjectListCell :row="row" :column="column" :idx="i" />
 						</template>
 					</ListRow>
 				</ListRows>
 			</ListView>
 			<div class="px-5" v-if="rows.length === 0">
-				<div class="text-center text-sm leading-10 text-gray-500">
+				<div
+					class="text-center text-sm leading-10 text-gray-500"
+					v-if="list.list.loading"
+				>
+					Loading...
+				</div>
+				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right">
-				<Button
-					@click="$resources.list.next()"
-					v-if="$resources.list.hasNextPage"
-				>
+				<Button @click="list.next()" v-if="list.hasNextPage">
 					Load more
 				</Button>
 			</div>
@@ -93,7 +97,7 @@ import {
 
 export default {
 	name: 'List',
-	props: ['list'],
+	props: ['options'],
 	components: {
 		Dropdown,
 		ListView,
@@ -110,39 +114,62 @@ export default {
 		list() {
 			return {
 				type: 'list',
-				cache: ['ObjectList', this.list.doctype || this.list.url],
-				url: this.list.url || null,
-				doctype: this.list.doctype,
+				cache: ['ObjectList', this.options.doctype || this.options.url],
+				url: this.options.url || null,
+				doctype: this.options.doctype,
 				fields: [
 					'name',
-					...(this.list.fields || []),
-					...this.list.columns.map(column => column.fieldname)
+					...(this.options.fields || []),
+					...this.options.columns.map(column => column.fieldname)
 				],
-				filters: this.list.filters || {},
-				orderBy: this.list.orderBy,
+				filters: this.options.filters || {},
+				orderBy: this.options.orderBy,
 				auto: true
 			};
 		}
 	},
 	computed: {
-		_columns() {
-			return (this.list.columns || []).map(column => {
-				return {
+		list() {
+			return this.$resources.list;
+		},
+		columns() {
+			let columns = [];
+			for (let column of this.options.columns || []) {
+				columns.push({
 					...column,
 					label: column.label,
 					key: column.fieldname
-				};
-			});
+				});
+			}
+			if (this.options.rowActions) {
+				columns.push({
+					label: '',
+					key: '__actions',
+					type: 'Actions',
+					width: '100px',
+					align: 'right',
+					actions: this.options.rowActions
+				});
+			}
+			return columns;
 		},
 		rows() {
-			let data = this.$resources.list.data || [];
-			return data.map(row => {
-				return {
-					id: row.name,
-					row: row,
-					route: this.list.route ? this.list.route(row) : null
-				};
-			});
+			let data = this.list.data || [];
+			return data;
+		},
+		primaryAction() {
+			if (!this.options.primaryAction) return null;
+			let props = this.options.primaryAction(this.context);
+			return {
+				variant: 'solid',
+				...props
+			};
+		},
+		context() {
+			return {
+				...this.options.context,
+				listResource: this.list
+			};
 		}
 	}
 };

@@ -16,9 +16,12 @@
 				</div>
 			</div>
 		</div>
+		<Toaster position="top-right" />
 	</div>
 </template>
 
-<script setup></script>
+<script setup>
+import { Toaster } from 'vue-sonner';
+</script>
 
 <style src="../src/assets/style.css"></style>

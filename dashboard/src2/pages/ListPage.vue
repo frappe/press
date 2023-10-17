@@ -8,7 +8,7 @@
 				<!-- <Button>Actions</Button> -->
 			</Header>
 		</div>
-		<ObjectList :list="listProp" />
+		<ObjectList :options="listOptions" />
 	</div>
 </template>
 
@@ -39,7 +39,7 @@ export default {
 		}
 	},
 	computed: {
-		listProp() {
+		listOptions() {
 			return {
 				...this.object.list,
 				doctype: this.object.doctype,

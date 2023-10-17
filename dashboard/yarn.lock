@@ -3547,10 +3547,10 @@ frappe-charts@2.0.0-rc22:
   resolved "https://registry.yarnpkg.com/frappe-charts/-/frappe-charts-2.0.0-rc22.tgz#9a5a747febdc381a1d4d7af96e89cf519dfba8c0"
   integrity sha512-N7f/8979wJCKjusOinaUYfMxB80YnfuVLrSkjpj4LtyqS0BGS6SuJxUnb7Jl4RWUFEIs7zEhideIKnyLeFZF4Q==
 
-frappe-ui@^0.1.7:
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-0.1.7.tgz#0475fb14fa866e82c612344b461e6c4864e484a8"
-  integrity sha512-DFFyhIwM+1Am3DbRDuQrhUUKJZPKYdT8amexdmPXsHMot4wdHdvvDNqswD3w0mIKKzxtxjt/bV34jpZOxXzc6Q==
+frappe-ui@^0.1.9:
+  version "0.1.9"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-0.1.9.tgz#3449f129af4b1e211ddbb0c5733ca8fa2a11955f"
+  integrity sha512-GXARcGIkv0LP6ccXukl30HLt+uRtdqJn3RDxwzPNn+0Lkw6igmRJ2mbFe6kULqYwfLrN/kQ74kznaqL3f0OSNQ==
   dependencies:
     "@headlessui/vue" "^1.7.14"
     "@popperjs/core" "^2.11.2"
@@ -6395,6 +6395,11 @@ vue-router@^4.0.5:
   integrity sha512-9PISkmaCO02OzPVOMq2w82ilty6+xJmQrarYZDkjZBfl4RvYAlt4PKnEX21oW4KTtWfa9OuO/b3qk1Od3AEdCQ==
   dependencies:
     "@vue/devtools-api" "^6.5.0"
+
+vue-sonner@^0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/vue-sonner/-/vue-sonner-0.4.4.tgz#1e549b9a48aac30b55f40e64bcc77ceb2a73935e"
+  integrity sha512-Cu8IqjpZF+B7KWu0FHkNTWpTuufn92S0s2c3YuCUG4dL4KNWvAv0Ox+TPWN525gJ1mijG2UUIccEx0lVNga58A==
 
 vue@^3.3.4:
   version "3.3.4"
