@@ -172,22 +172,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-07 16:10:22.420615",
-  "name": "Update Site Configuration",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/sites/{site}/config",
-  "steps": [
-   {
-    "parent": "Update Site Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Site Configuration"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-07-27 19:18:17.532920",
   "name": "Update Site Pull",
   "request_method": "POST",
@@ -316,28 +300,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Build Search Index"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2020-06-17 16:44:12.364275",
-  "name": "Backup Site",
-  "request_method": null,
-  "request_path": null,
-  "steps": [
-   {
-    "parent": "Backup Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Backup Site"
-   },
-   {
-    "parent": "Backup Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Upload Site Backup to S3"
    }
   ]
  },
@@ -624,118 +586,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-12-11 14:03:35.053168",
-  "name": "New Bench",
-  "request_method": "POST",
-  "request_path": "/benches",
-  "steps": [
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Initialize Bench"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Bench Configuration"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Deploy Bench"
-   },
-   {
-    "parent": "New Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2020-04-03 23:19:43.720292",
-  "name": "Remove Site from Upstream",
-  "request_method": "DELETE",
-  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
-  "steps": [
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Remove Site File from Upstream Directory"
-   },
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate NGINX Configuration"
-   },
-   {
-    "parent": "Remove Site from Upstream",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2020-02-20 10:19:17.561733",
-  "name": "Archive Site",
-  "request_method": null,
-  "request_path": null,
-  "steps": [
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Archive Site"
-   },
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "Archive Site",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2020-04-03 20:16:04.843363",
-  "name": "Archive Bench",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/archive",
-  "steps": [
-   {
-    "parent": "Archive Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Disable Production"
-   },
-   {
-    "parent": "Archive Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Move Bench to Archived Directory"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-04-08 15:02:15.559811",
   "name": "Install App on Site",
   "request_method": "POST",
@@ -930,40 +780,6 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "modified": "2021-02-01 16:31:25.999308",
-  "name": "Update Bench Configuration",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/config",
-  "steps": [
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Bench Configuration"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Setup NGINX"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Generate Docker Compose File"
-   },
-   {
-    "parent": "Update Bench Configuration",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Deploy Bench"
    }
   ]
  },
@@ -1508,22 +1324,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-04-26 12:43:33.641886",
-  "name": "Bench Restart",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/restart",
-  "steps": [
-   {
-    "parent": "Bench Restart",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Restart"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2021-10-14 09:27:02.587048",
   "name": "Cleanup Unused Files",
   "request_method": "POST",
@@ -1714,6 +1514,240 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-06-17 16:44:12.364275",
+  "name": "Backup Site",
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Backup Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Backup Site"
+   },
+   {
+    "parent": "Backup Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Upload Site Backup to S3"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-04-26 12:43:33.641886",
+  "name": "Bench Restart",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/restart",
+  "steps": [
+   {
+    "parent": "Bench Restart",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-04-03 20:16:04.843363",
+  "name": "Archive Bench",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/archive",
+  "steps": [
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Disable Production"
+   },
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Bench to Archived Directory"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-04-07 16:10:22.420615",
+  "name": "Update Site Configuration",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/sites/{site}/config",
+  "steps": [
+   {
+    "parent": "Update Site Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Site Configuration"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-12-11 14:03:35.053168",
+  "name": "New Bench",
+  "request_method": "POST",
+  "request_path": "/benches",
+  "steps": [
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Initialize Bench"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Configuration"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
+   },
+   {
+    "parent": "New Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-04-03 23:19:43.720292",
+  "name": "Remove Site from Upstream",
+  "request_method": "DELETE",
+  "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
+  "steps": [
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Remove Site File from Upstream Directory"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate NGINX Configuration"
+   },
+   {
+    "parent": "Remove Site from Upstream",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2020-02-20 10:19:17.561733",
+  "name": "Archive Site",
+  "request_method": null,
+  "request_path": null,
+  "steps": [
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Archive Site"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Archive Site",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-10-17 16:59:09.138319",
+  "name": "Force Update Bench Limits",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/limit",
+  "steps": [
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Stop Bench"
+   },
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Memory Limits"
+   },
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Start Bench"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-10-17 11:31:50.531377",
+  "name": "Update Bench Configuration",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/config",
+  "steps": [
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Configuration"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Setup NGINX"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Generate Docker Compose File"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Memory Limits"
+   },
+   {
+    "parent": "Update Bench Configuration",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Deploy Bench"
    }
   ]
  }

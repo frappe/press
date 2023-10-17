@@ -27,13 +27,18 @@ from press.press.doctype.site.site import Site, process_rename_site_job_update
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team
 
+import typing
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
+
 
 def create_test_bench(
 	user: str = None,
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
-):
+) -> "Bench":
 	"""
 	Create test Bench doc.
 
