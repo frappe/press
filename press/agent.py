@@ -792,7 +792,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def force_update_bench_limits(self, bench: str):
+	def force_update_bench_limits(self, bench: str, data: dict):
 		return self.create_agent_job(
-			"Force Update Bench Limits", f"benches/{bench}/limit", bench=bench
+			"Force Update Bench Limits", f"benches/{bench}/limit", bench=bench, data=data
 		)

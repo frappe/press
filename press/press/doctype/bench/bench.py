@@ -141,19 +141,20 @@ class Bench(Document):
 			if self.memory_high > self.memory_max:
 				frappe.throw("Memory Max needs to be greater than Memory High")
 
-		bench_config.update(
-			{
-				"memory_high": self.memory_high,
-				"memory_max": self.memory_max,
-				"memory_swap": self.memory_swap,
-				"vcpu": self.vcpu,
-			}
-		)
+		bench_config.update(self.get_limits())
+
+	def get_limits(self) -> dict:
+		return {
+			"memory_high": self.memory_high,
+			"memory_max": self.memory_max,
+			"memory_swap": self.memory_swap,
+			"vcpu": self.vcpu,
+		}
 
 	@frappe.whitelist()
 	def force_update_limits(self):
 		agent = Agent(self.server)
-		agent.force_update_bench_limits(self.name)
+		agent.force_update_bench_limits(self.name, self.get_limits())
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
