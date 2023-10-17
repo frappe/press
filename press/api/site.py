@@ -882,10 +882,16 @@ def get_updates_between_current_and_next_apps(current_apps, next_apps):
 	return apps
 
 
+# @frappe.whitelist()
+# @protected("Site")
+# def installed_apps(name):
+# 	site = frappe.get_cached_doc("Site", name)
+# 	return get_installed_apps(site)
+
+
 @frappe.whitelist()
-@protected("Site")
-def installed_apps(name):
-	site = frappe.get_cached_doc("Site", name)
+def installed_apps(filters=None):
+	site = frappe.get_cached_doc("Site", filters["site"])
 	return get_installed_apps(site)
 
 

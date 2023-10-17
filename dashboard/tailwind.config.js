@@ -6,6 +6,7 @@ module.exports = {
 		'./public/index.html',
 		'./src/**/*.html',
 		'./src/**/*.vue',
+		'./src2/**/*.vue',
 		'./src/assets/*.css',
 		'./node_modules/frappe-ui/src/components/**/*.{vue,js,ts}'
 	],

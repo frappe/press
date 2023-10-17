@@ -3,9 +3,25 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import frappeui from 'frappe-ui/vite';
 import pluginRewriteAll from 'vite-plugin-rewrite-all';
+import Components from 'unplugin-vue-components/vite';
+import Icons from 'unplugin-icons/vite';
+import IconsResolver from 'unplugin-icons/resolver';
 
 export default defineConfig({
-	plugins: [vue(), pluginRewriteAll(), frappeui()],
+	plugins: [
+		vue(),
+		pluginRewriteAll(),
+		frappeui(),
+		Components({
+			dirs: [
+				'src/components',
+				'src2/components',
+				'node_modules/frappe-ui/src/components'
+			],
+			resolvers: [IconsResolver()]
+		}),
+		Icons()
+	],
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, 'src')
