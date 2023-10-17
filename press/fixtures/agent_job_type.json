@@ -1324,22 +1324,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-04-26 12:43:33.641886",
-  "name": "Bench Restart",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/restart",
-  "steps": [
-   {
-    "parent": "Bench Restart",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Restart"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2021-10-14 09:27:02.587048",
   "name": "Cleanup Unused Files",
   "request_method": "POST",
@@ -1536,34 +1520,6 @@
  {
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-10-17 16:13:03.160649",
-  "name": "Force Update Bench Limits",
-  "request_method": "POST",
-  "request_path": "benches/{bench}/limit",
-  "steps": [
-   {
-    "parent": "Force Update Bench Limits",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Disable Production"
-   },
-   {
-    "parent": "Force Update Bench Limits",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Update Bench Memory Limits"
-   },
-   {
-    "parent": "Force Update Bench Limits",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Deploy Bench"
-   }
-  ]
- },
- {
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
   "modified": "2020-06-17 16:44:12.364275",
   "name": "Backup Site",
   "request_method": null,
@@ -1580,6 +1536,22 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Upload Site Backup to S3"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2022-04-26 12:43:33.641886",
+  "name": "Bench Restart",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/restart",
+  "steps": [
+   {
+    "parent": "Bench Restart",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
    }
   ]
  },
@@ -1708,6 +1680,34 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Reload NGINX"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-10-17 16:59:09.138319",
+  "name": "Force Update Bench Limits",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/limit",
+  "steps": [
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Stop Bench"
+   },
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Update Bench Memory Limits"
+   },
+   {
+    "parent": "Force Update Bench Limits",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Start Bench"
    }
   ]
  },
