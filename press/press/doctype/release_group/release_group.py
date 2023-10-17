@@ -416,7 +416,7 @@ class ReleaseGroup(Document):
 			only_approved_for_sources = (
 				frappe.qb.from_(AppSource)
 				.where(AppSource.name.isin(marketplace_app_sources))
-				.where(AppSource.team.isin(app_publishers_team))
+				.where(AppSource.team.notin(app_publishers_team))
 				.select(AppSource.name)
 				.run(as_dict=True, pluck="name")
 			)
