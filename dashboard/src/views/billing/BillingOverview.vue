@@ -1,13 +1,12 @@
 <template>
 	<div class="space-y-5">
 		<AlertBillingInformation />
-		<AccountBillingUsage />
+		<BillingSummary />
 	</div>
 </template>
 
 <script>
-import AccountBillingUsage from './AccountBillingUsage.vue';
-import AccountBillingDetails from './AccountBillingDetails.vue';
+import BillingSummary from './BillingSummary.vue';
 import AlertBillingInformation from '@/components/AlertBillingInformation.vue';
 
 export default {
@@ -19,7 +18,7 @@ export default {
 	},
 	props: ['invoiceName'],
 	components: {
-		AccountBillingUsage,
+		BillingSummary,
 		AlertBillingInformation
 	}
 };

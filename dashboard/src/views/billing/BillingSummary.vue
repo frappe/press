@@ -2,59 +2,54 @@
 	<div class="space-y-5">
 		<Card title="Billing Summary">
 			<div v-if="!$resources.upcomingInvoice.loading">
-				<div class="space-y-2">
-					<div class="grid grid-cols-3 gap-4">
-						<div class="border rounded-md p-4">
-							<div class="text-base mb-2">Current Billing Amount</div>
-							<div class="text-2xl font-medium">
-								{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
-							</div>
-						</div>
-						<div class="border rounded-md p-4">
-							<div class="flex justify-between text-base">
-								<div>Account Balance</div>
-								<Button
-									@click="showPrepaidCreditsDialog = true"
-									theme="gray"
-									iconLeft="plus"
-									>Add</Button
-								>
-							</div>
-							<div class="text-2xl font-medium">
-								{{ availableCredits }}
-							</div>
-						</div>
-						<div class="border rounded-md p-4">
-							<div class="flex justify-between text-base">
-								<div>Total Unpaid Amount</div>
-								<Button
-									@click="showPrepaidCreditsDialog = true"
-									theme="gray"
-									iconLeft="credit-card"
-									>Pay</Button
-								>
-							</div>
-							<div class="text-2xl font-medium">
-								{{
-									($account.team.currency == 'INR' ? '₹' : '$') +
-									' ' +
-									$resources.unpaidAmountDue.data
-								}}
-							</div>
+				<div class="grid grid-cols-3 gap-4">
+					<div class="border rounded-md p-4">
+						<div class="text-base mb-2">Current Billing Amount</div>
+						<div class="text-2xl font-medium">
+							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
 						</div>
 					</div>
-					<div class="grid grid-cols-3 items-start">
-						<label class="pt-1.5 text-base text-gray-700"> Payment mode </label>
-						<div class="pt-1.5 text-base">
-							<div>
-								{{ $account.team.payment_mode || 'Not set' }}
-							</div>
-							<div class="mt-1 text-gray-600 empty:hidden">
-								{{ paymentModeDescription }}
-							</div>
+					<div class="border rounded-md p-4">
+						<div class="flex justify-between text-base">
+							<div>Account Balance</div>
+							<Button
+								@click="showPrepaidCreditsDialog = true"
+								theme="gray"
+								iconLeft="plus"
+								>Add</Button
+							>
 						</div>
-						<div class="text-right">
-							<Button @click="showChangeModeDialog = true">Change</Button>
+						<div class="text-2xl font-medium">
+							{{ availableCredits }}
+						</div>
+					</div>
+					<div class="border rounded-md p-4">
+						<div class="flex justify-between text-base">
+							<div>Total Unpaid Amount</div>
+							<Button
+								@click="showPrepaidCreditsDialog = true"
+								theme="gray"
+								iconLeft="credit-card"
+								>Pay</Button
+							>
+						</div>
+						<div class="text-2xl font-medium">
+							{{
+								($account.team.currency == 'INR' ? '₹' : '$') +
+								' ' +
+								$resources.unpaidAmountDue.data
+							}}
+						</div>
+					</div>
+					<div class="border rounded-md p-4">
+						<div class="flex justify-between text-base">
+							<div>Payment Mode</div>
+							<Button @click="showChangeModeDialog = true" theme="gray"
+								>Change</Button
+							>
+						</div>
+						<div class="text-2xl font-medium">
+							{{ $account.team.payment_mode || 'Not set' }}
 						</div>
 					</div>
 				</div>
@@ -83,7 +78,7 @@
 				"
 			/>
 		</Card>
-		<AccountBillingUpcomingInvoice
+		<UpcomingInvoiceSummary
 			:invoice-doc="upcomingInvoice"
 			v-if="upcomingInvoice?.items.length"
 		/>
@@ -91,14 +86,16 @@
 </template>
 <script>
 import PlanIcon from '@/components/PlanIcon.vue';
-import AccountBillingUpcomingInvoice from './AccountBillingUpcomingInvoice.vue';
+import UpcomingInvoiceSummary from './UpcomingInvoiceSummary.vue';
 import { defineAsyncComponent } from 'vue';
+import InvoiceUsageTable from '@/components/InvoiceUsageTable.vue';
 
 export default {
-	name: 'AccountBillingUsage',
+	name: 'BillingSummary',
 	components: {
+		InvoiceUsageTable,
 		PlanIcon,
-		AccountBillingUpcomingInvoice,
+		UpcomingInvoiceSummary,
 		PrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('@/components/PrepaidCreditsDialog.vue')
 		),

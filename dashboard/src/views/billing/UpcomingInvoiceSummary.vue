@@ -1,12 +1,12 @@
 <template>
-	<Card title="Current Invoice Summary" :subtitle="subtitle">
+	<Card title="Invoice Summary" :subtitle="subtitle">
 		<InvoiceUsageTable :invoiceDoc="invoiceDoc" />
 	</Card>
 </template>
 <script>
 import InvoiceUsageTable from '@/components/InvoiceUsageTable.vue';
 export default {
-	name: 'AccountBillingUpcomingInvoice',
+	name: 'UpcomingInvoiceSummary',
 	props: ['invoiceDoc'],
 	components: {
 		InvoiceUsageTable
