@@ -1,40 +1,37 @@
 <template>
 	<div class="space-y-5">
-		<Card title="Billing summary">
+		<Card title="Billing Summary">
 			<div v-if="!$resources.upcomingInvoice.loading">
 				<div class="space-y-2">
-					<div class="grid grid-cols-3 items-center py-1.5">
-						<label class="text-base text-gray-700">
-							Current billing amount
-						</label>
-						<div class="col-span-2 text-lg font-semibold">
-							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
+					<div class="grid grid-cols-3 gap-4">
+						<div class="border rounded-md p-4">
+							<div class="text-base mb-2">Current Billing Amount</div>
+							<div class="text-2xl font-medium">
+								{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
+							</div>
 						</div>
-					</div>
-					<div class="grid grid-cols-3 items-center py-1.5">
-						<label class="text-base text-gray-700">Current billing cycle</label>
-						<div
-							class="col-span-2 text-base text-gray-900"
-							v-if="upcomingInvoice"
-						>
-							{{ dateShort(upcomingInvoice.period_start) }}
-							→
-							{{ dateShort(upcomingInvoice.period_end) }}
+						<div class="border rounded-md p-4">
+							<div class="flex justify-between text-base">
+								<div>Account Balance</div>
+								<Button
+									@click="showPrepaidCreditsDialog = true"
+									theme="gray"
+									icon="plus"
+								/>
+							</div>
+							<div class="text-2xl font-medium">
+								{{ availableCredits }}
+							</div>
 						</div>
-					</div>
-					<div class="grid grid-cols-3 items-center">
-						<label class="text-base text-gray-700"> Account balance </label>
-						<div class="text-base">
-							{{ availableCredits }}
-						</div>
-						<div class="text-right">
-							<Button
-								class="ml-2"
-								@click="showPrepaidCreditsDialog = true"
-								theme="gray"
-							>
-								Add money
-							</Button>
+						<div class="border rounded-md p-4">
+							<div class="text-base mb-2">Total Unpaid Amount</div>
+							<div class="text-2xl font-medium">
+								{{
+									($account.team.currency == 'INR' ? '₹' : '$') +
+									' ' +
+									$resources.unpaidAmountDue.data
+								}}
+							</div>
 						</div>
 					</div>
 					<div class="grid grid-cols-3 items-start">
@@ -48,9 +45,7 @@
 							</div>
 						</div>
 						<div class="text-right">
-							<Button @click="showChangeModeDialog = true">
-								Change Payment Mode
-							</Button>
+							<Button @click="showChangeModeDialog = true">Change</Button>
 						</div>
 					</div>
 				</div>

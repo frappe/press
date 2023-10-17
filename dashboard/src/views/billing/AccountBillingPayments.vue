@@ -1,9 +1,5 @@
 <template>
-	<Card
-		title="Billing history"
-		:subtitle="subtitle"
-		v-if="$resources.pastInvoices.data?.length && !invoiceName"
-	>
+	<Card title="Past Invoices" :subtitle="subtitle" v-if="!invoiceName">
 		<template #actions>
 			<FormControl
 				v-if="$resources.pastInvoices.data?.length"
@@ -45,7 +41,7 @@
 				<span class="hidden md:inline">
 					<Link
 						v-if="invoice.type == 'Subscription'"
-						:to="'/billing/' + invoice.name"
+						:to="'/billing/' + invoice.name + '/invoices'"
 					>
 						Invoice for
 						{{
