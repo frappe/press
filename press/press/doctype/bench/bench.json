@@ -24,6 +24,10 @@
   "auto_scale_workers",
   "is_single_container",
   "is_ssh_enabled",
+  "memory_high",
+  "memory_max",
+  "memory_swap",
+  "vcpu",
   "column_break_11",
   "config",
   "bench_config",
@@ -257,10 +261,33 @@
   {
    "fieldname": "column_break_mtyb",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "memory_high",
+   "fieldtype": "Int",
+   "label": "Memory High (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "memory_max",
+   "fieldtype": "Int",
+   "label": "Memory Max (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU"
+  },
+  {
+   "fieldname": "memory_swap",
+   "fieldtype": "Int",
+   "label": "Memory Swap (MB)"
   }
  ],
  "links": [],
- "modified": "2023-06-16 13:19:57.747257",
+ "modified": "2023-10-17 11:45:33.339042",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
