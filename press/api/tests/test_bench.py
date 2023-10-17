@@ -532,6 +532,22 @@ class TestAPIBenchConfig(FrappeTestCase):
 			bench.save,
 		)
 
+	def test_force_update_limits_creates_job_with_parameters(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_high = 1024
+		bench.memory_max = 2048
+		bench.memory_swap = 4096
+		bench.vcpu = 2
+		bench.force_update_limits()
+		job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name}
+		)
+		job_data = json.loads(job.request_data)
+		self.assertEqual(job_data["memory_high"], 1024)
+		self.assertEqual(job_data["memory_max"], 2048)
+		self.assertEqual(job_data["memory_swap"], 4096)
+		self.assertEqual(job_data["vcpu"], 2)
+
 
 class TestAPIBenchList(FrappeTestCase):
 	def setUp(self):
