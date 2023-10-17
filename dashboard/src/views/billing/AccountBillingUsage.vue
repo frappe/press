@@ -16,15 +16,24 @@
 								<Button
 									@click="showPrepaidCreditsDialog = true"
 									theme="gray"
-									icon="plus"
-								/>
+									iconLeft="plus"
+									>Add</Button
+								>
 							</div>
 							<div class="text-2xl font-medium">
 								{{ availableCredits }}
 							</div>
 						</div>
 						<div class="border rounded-md p-4">
-							<div class="text-base mb-2">Total Unpaid Amount</div>
+							<div class="flex justify-between text-base">
+								<div>Total Unpaid Amount</div>
+								<Button
+									@click="showPrepaidCreditsDialog = true"
+									theme="gray"
+									iconLeft="credit-card"
+									>Pay</Button
+								>
+							</div>
 							<div class="text-2xl font-medium">
 								{{
 									($account.team.currency == 'INR' ? '₹' : '$') +

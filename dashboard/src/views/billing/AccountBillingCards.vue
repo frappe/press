@@ -15,7 +15,7 @@
 				</template>
 			</Dialog>
 		</template>
-		<div class="max-h-52 space-y-3">
+		<div class="space-y-3">
 			<div
 				class="flex items-center justify-between rounded-lg border p-5"
 				v-for="card in $resources.paymentMethods.data"
