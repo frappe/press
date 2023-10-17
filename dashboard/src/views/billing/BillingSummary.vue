@@ -2,7 +2,7 @@
 	<div class="space-y-5">
 		<Card title="Billing Summary">
 			<div v-if="!$resources.upcomingInvoice.loading">
-				<div class="grid grid-cols-3 gap-4">
+				<div class="grid grid-cols-3 gap-4 mb-4">
 					<div class="border rounded-md p-4">
 						<div class="text-base mb-2">Current Billing Amount</div>
 						<div class="text-2xl font-medium">
@@ -54,6 +54,13 @@
 					</div>
 				</div>
 
+				<a
+					href="https://frappecloud.com/payment-options"
+					target="_blank"
+					class="text-sm text-gray-700 underline"
+				>
+					Alternative Payment Options
+				</a>
 				<ErrorMessage
 					:message="$resources.upcomingInvoice.error"
 					class="mt-3"
