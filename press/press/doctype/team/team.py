@@ -333,7 +333,9 @@ class Team(Document):
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
 
-		if current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email:
+		if (
+			current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email
+		):
 			# don't create new invoice if partner email is set
 			return
 
