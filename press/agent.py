@@ -793,4 +793,6 @@ class Agent:
 		)
 
 	def force_update_bench_limits(self, bench: str):
-		return self.create_agent_job("Force Update Bench Limits", f"benches/{bench}/limit")
+		return self.create_agent_job(
+			"Force Update Bench Limits", f"benches/{bench}/limit", bench=bench
+		)
