@@ -150,6 +150,11 @@ class Bench(Document):
 			}
 		)
 
+	@frappe.whitelist()
+	def force_update_limits(self):
+		agent = Agent(self.server)
+		agent.force_update_bench_limits(self.name)
+
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
 			"Bench",
