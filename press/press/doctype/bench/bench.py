@@ -127,8 +127,25 @@ class Bench(Document):
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
 		}
-
+		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
+
+	def add_limits(self, bench_config):
+		if self.memory_max:
+			if not self.memory_swap:
+				frappe.throw("Memory Swap needs to be set if Memory Max is set")
+
+			if self.memory_swap != -1 and (self.memory_max > self.memory_swap):
+				frappe.throw("Memory Swap needs to be greater than Memory Max")
+
+		bench_config.update(
+			{
+				"memory_high": self.memory_high,
+				"memory_max": self.memory_max,
+				"memory_swap": self.memory_swap,
+				"vcpu": self.vcpu,
+			}
+		)
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
