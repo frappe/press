@@ -416,6 +416,9 @@ class Invoice(Document):
 			return
 
 		# check if discount is already added
+		if self.discounts:
+			return
+
 		discount_note = (
 			"Flat Partner Discount"
 			if self.payment_mode == "Partner Credits"
