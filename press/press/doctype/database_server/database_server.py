@@ -524,6 +524,12 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider == "AWS EC2":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
