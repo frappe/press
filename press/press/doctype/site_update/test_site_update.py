@@ -12,15 +12,16 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
+from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
 
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 
-from press.press.doctype.site_update.site_update import SiteUpdate
+from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
 @patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())
@@ -104,10 +105,9 @@ class TestSiteUpdate(FrappeTestCase):
 			site.schedule_update,
 		)
 
-	@patch.object(SiteUpdate, "reallocate_workers")
+	@patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
 	def test_site_update_callback_reallocates_workers_after_disable_maintenance_mode_job(
 		self,
-		mock_reallocate_workers,
 	):
 		app1 = create_test_app()  # frappe
 		app2 = create_test_app("app2", "App 2")
@@ -120,6 +120,19 @@ class TestSiteUpdate(FrappeTestCase):
 		create_deploy_candidate_differences(bench2)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
+		plan = create_test_plan(site.doctype, cpu_time=8)
+		create_test_subscription(site.name, plan.name, site.team)
+		site.reload()
+
+		server = frappe.get_doc("Server", bench1.server)
+		server.auto_scale_workers()
+		bench1.reload()
+		bench2.reload()
+		self.assertEqual(site.bench, bench1.name)
+		self.assertGreater(bench1.gunicorn_workers, 2)
+		self.assertGreater(bench1.background_workers, 1)
+		self.assertEqual(bench2.gunicorn_workers, 2)
+		self.assertEqual(bench2.background_workers, 1)
 
 		with fake_agent_job(
 			"Update Site Pull",
@@ -129,4 +142,12 @@ class TestSiteUpdate(FrappeTestCase):
 			site.schedule_update()
 			poll_pending_jobs()
 
-		mock_reallocate_workers.assert_called_once()
+		bench1.reload()
+		bench2.reload()
+		site.reload()
+
+		self.assertEqual(site.bench, bench2.name)
+		self.assertEqual(bench1.gunicorn_workers, 2)
+		self.assertEqual(bench1.background_workers, 1)
+		self.assertGreater(bench2.gunicorn_workers, 2)
+		self.assertGreater(bench2.background_workers, 1)
