@@ -178,10 +178,10 @@ class SiteUpdate(Document):
 		source_bench = frappe.get_doc("Bench", self.source_bench)
 		dest_bench = frappe.get_doc("Bench", self.destination_bench)
 
-		work_load_diff = dest_bench.work_load - source_bench.work_load
+		workload_diff = dest_bench.workload - source_bench.workload
 		if (
 			server.new_worker_allocation
-			and work_load_diff
+			and workload_diff
 			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
 			server.auto_scale_workers()
