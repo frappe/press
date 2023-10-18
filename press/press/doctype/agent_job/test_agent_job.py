@@ -34,7 +34,7 @@ before_insert: Callable = lambda self: None
 
 
 def fake_agent_job_req(
-	job_name: str,
+	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"],
 	data: dict,
 	steps: list[dict],
@@ -50,16 +50,16 @@ def fake_agent_job_req(
 		steps: list of {"name": "Step name", "status": "status"} dictionaries
 		"""
 		nonlocal status
-		nonlocal job_name
-		if self.job_type != job_name:  # only fake the job we want to fake
+		nonlocal job_type
+		if self.job_type != job_type:  # only fake the job we want to fake
 			return
 		job_id = int(make_autoname(".#"))
 		if steps:
 			needed_steps = frappe.get_all(
-				"Agent Job Type Step", {"parent": job_name}, pluck="step_name"
+				"Agent Job Type Step", {"parent": job_type}, pluck="step_name"
 			)
 			for step in needed_steps:
-				if not any(s["name"] == step for s in steps):
+				if not any(step == s["name"] for s in steps):
 					steps.append(
 						{
 							"name": step,
@@ -69,12 +69,15 @@ def fake_agent_job_req(
 					)
 
 		for step in steps:
+			step["start"] = "2023-08-20 18:24:28.024885"
+			step["data"] = {}
 			if step["status"] in ["Success", "Failure"]:
 				step["duration"] = "00:00:13.464445"
 				step["end"] = "2023-08-20 18:24:41.489330"
-				step["data"] = {}
 			if step["status"] in ["Success", "Failure", "Running"]:
 				step["start"] = "2023-08-20 18:24:28.024885"
+				step["end"] = None
+				step["duration"] = None
 
 		# TODO: auto add response corresponding to request type #
 		responses.post(
@@ -116,7 +119,7 @@ def fake_agent_job_req(
 						"duration": "00:00:13.464445",
 						"end": "2023-08-20 18:24:41.489330",
 						# "id": 1350,
-						"name": job_name,
+						"name": job_type,
 						"start": "2023-08-20 18:24:28.024885",
 						"status": status,
 					}
@@ -132,7 +135,7 @@ def fake_agent_job_req(
 
 @contextmanager
 def fake_agent_job(
-	job_name: str,
+	job_type: str,
 	status: Literal["Success", "Pending", "Running", "Failure"] = "Success",
 	data: dict = None,
 	steps: list[dict] = None,
@@ -144,7 +147,7 @@ def fake_agent_job(
 	with responses.mock, patch.object(
 		AgentJob,
 		"before_insert",
-		fake_agent_job_req(job_name, status, data, steps),
+		fake_agent_job_req(job_type, status, data, steps),
 		create=True,
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
