@@ -373,7 +373,7 @@ class Bench(Document):
 
 	def allocate_workers(self, server_workload, max_gunicorn_workers, max_bg_workers):
 		"""
-		Only makes sense when called from Server's auto_scale_workers
+		Mostly makes sense when called from Server's auto_scale_workers
 		"""
 		try:
 			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
