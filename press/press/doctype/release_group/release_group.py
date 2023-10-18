@@ -433,6 +433,7 @@ class ReleaseGroup(Document):
 				AppRelease.source,
 				AppRelease.status,
 				AppRelease.hash,
+				AppRelease.message,
 				AppRelease.creation,
 			)
 			.orderby(AppRelease.creation, order=frappe.qb.desc)
