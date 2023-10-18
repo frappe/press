@@ -15,16 +15,16 @@ from press.agent import Agent
 
 class SiteBackup(Document):
 	def before_insert(self):
-		last_two_hours = datetime.now() - timedelta(hours=2)
+		two_hours_ago = datetime.now() - timedelta(hours=2)
 		if frappe.db.count(
 			"Site Backup",
 			{
 				"site": self.site,
 				"status": ("in", ["Running", "Pending"]),
-				"creation": (">", last_two_hours),
+				"creation": (">", two_hours_ago),
 			},
 		):
-			raise Exception("Too many pending backups")
+			frappe.throw("Too many pending backups")
 
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
