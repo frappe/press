@@ -905,22 +905,22 @@ class Server(BaseServer):
 		return bench_workloads
 
 	@cached_property
-	def workload(self):
+	def workload(self) -> int:
 		return sum(self.bench_workloads.values())
 
 	@cached_property
-	def usable_ram(self):
+	def usable_ram(self) -> float:
 		return max(
 			self.ram - 3000, self.ram * 0.75
 		)  # in MB (leaving some for disk cache + others)
 
-	@property
-	def max_gunicorn_workers(self):
+	@cached_property
+	def max_gunicorn_workers(self) -> int:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
 		return usable_ram_for_gunicorn / 150  # avg ram usage of 1 gunicorn worker
 
-	@property
-	def max_bg_workers(self):
+	@cached_property
+	def max_bg_workers(self) -> int:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
 		return usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
 
