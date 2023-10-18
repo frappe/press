@@ -36,11 +36,11 @@ def execute(filters=None):
 		},
 	]
 
-	return columns, get_data()
+	return columns, get_data(filters)
 
 
-def get_data():
-	server_name = "f1.local.frappe.dev"
+def get_data(filters):
+	server_name = filters.get("server").replace("%", "")  # hack to bypass weird sentry bug
 	benches = frappe.get_all(
 		"Bench",
 		filters={
