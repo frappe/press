@@ -34,7 +34,13 @@ export default defineConfig({
 		outDir: '../press/public/dashboard',
 		emptyOutDir: true,
 		sourcemap: true,
-		target: 'es2015'
+		target: 'es2015',
+		rollupOptions: {
+			input: {
+				main: path.resolve(__dirname, 'index.html'),
+				dashboard2: path.resolve(__dirname, 'dashboard2.html')
+			}
+		}
 	},
 	test: {
 		globals: true,
