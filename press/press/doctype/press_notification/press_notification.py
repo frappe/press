@@ -24,7 +24,7 @@ class PressNotification(Document):
 
 def create_new_notification(team, id, type, message, route):
 	if not frappe.db.exists("Press Notification", {"id": id}):
-		new_notification = frappe.get_doc(
+		frappe.get_doc(
 			{
 				"doctype": "Press Notification",
 				"team": team,
