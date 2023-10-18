@@ -13,7 +13,11 @@ import session from './data/session';
 import theme from '../tailwind.theme.json';
 
 setConfig('resourceFetcher', frappeRequest);
-setConfig('defaultListUrl', 'press.api.list.get');
+setConfig('defaultListUrl', 'press.api.client.get_list');
+setConfig('defaultDocGetUrl', 'press.api.client.get');
+// setConfig('defaultDocInsertUrl', 'press.api.list.insert');
+// setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
+// setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
 let app = createApp(App);
 app.use(router);

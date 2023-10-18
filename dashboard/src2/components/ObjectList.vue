@@ -19,7 +19,7 @@
 					:options="[{ label: 'Actions', onClick: () => {} }]"
 					:button="{ icon: 'more-horizontal' }"
 				/> -->
-				<Button v-if="primaryAction" v-bind="primaryAction">
+				<Button v-if="primaryAction" v-bind="primaryAction.props">
 					<template v-if="primaryAction.icon" #prefix>
 						<FeatherIcon :name="primaryAction.icon" class="h-4 w-4" />
 					</template>
@@ -79,6 +79,7 @@
 				</Button>
 			</div>
 		</div>
+		<component v-for="component in components" :is="component" />
 	</div>
 </template>
 <script>
@@ -94,6 +95,7 @@ import {
 	TextInput,
 	FeatherIcon
 } from 'frappe-ui';
+import { isVNode } from 'vue';
 
 export default {
 	name: 'List',
@@ -109,6 +111,11 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon
+	},
+	data() {
+		return {
+			components: []
+		};
 	},
 	resources: {
 		list() {
@@ -148,7 +155,7 @@ export default {
 					type: 'Actions',
 					width: '100px',
 					align: 'right',
-					actions: this.options.rowActions
+					actions: row => this.options.rowActions({ ...this.context, row })
 				});
 			}
 			return columns;
@@ -160,9 +167,21 @@ export default {
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
+			let { icon, ...rest } = props;
 			return {
-				variant: 'solid',
-				...props
+				icon,
+				props: {
+					variant: 'solid',
+					...rest,
+					onClick: () => {
+						if (props.onClick) {
+							let result = props.onClick(this.context);
+							if (isVNode(result)) {
+								this.components.push(result);
+							}
+						}
+					}
+				}
 			};
 		},
 		context() {

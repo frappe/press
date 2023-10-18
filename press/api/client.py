@@ -9,7 +9,7 @@ from frappe.model import default_fields
 
 
 @frappe.whitelist()
-def get(
+def get_list(
 	doctype,
 	fields=None,
 	filters=None,
@@ -45,6 +45,34 @@ def get(
 		return query
 	elif query is None:
 		return []
+
+
+@frappe.whitelist()
+def get(doctype, name):
+	doc = frappe.get_doc(doctype, name)
+
+	out = {}
+	for fieldname in default_fields:
+		out[fieldname] = doc.get(fieldname)
+	if hasattr(doc, "get_doc"):
+		out.update(doc.get_doc())
+
+	return out
+
+
+@frappe.whitelist()
+def insert(doc):
+	pass
+
+
+@frappe.whitelist(methods=["POST", "PUT"])
+def set_value(doctype, name, fieldname, value=None):
+	pass
+
+
+@frappe.whitelist(methods=["DELETE", "POST"])
+def delete(doctype, name):
+	pass
 
 
 def apply_custom_filters(doctype, query, **list_args):

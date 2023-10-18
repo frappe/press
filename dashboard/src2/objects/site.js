@@ -1,19 +1,49 @@
 import { toast } from 'vue-sonner';
 import { formatBytes } from '../utils/format';
-import { frappeRequest } from 'frappe-ui';
-import { defineAsyncComponent } from 'vue';
+import { FeatherIcon, frappeRequest } from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
+import AddDomainDialog from '../components/AddDomainDialog.vue';
 
 export default {
 	doctype: 'Site',
+	whitelistedMethods: {
+		activate: 'activate',
+		addDomain: 'add_domain',
+		archive: 'archive',
+		backup: 'backup',
+		clearSiteCache: 'clear_site_cache',
+		deactivate: 'deactivate',
+		disableDatabaseAccess: 'disable_database_access',
+		disableReadWrite: 'disable_read_write',
+		enableDatabaseAccess: 'enable_database_access',
+		enableReadWrite: 'enable_read_write',
+		getDatabaseCredentials: 'get_database_credentials',
+		migrate: 'migrate',
+		moveToBench: 'move_to_bench',
+		moveToGroup: 'move_to_group',
+		reinstall: 'reinstall',
+		removeDomain: 'remove_domain',
+		resetSiteUsage: 'reset_site_usage',
+		restoreSite: 'restore_site',
+		restoreTables: 'restore_tables',
+		retryArchive: 'retry_archive',
+		retryRename: 'retry_rename',
+		scheduleUpdate: 'schedule_update',
+		suspend: 'suspend',
+		sync_info: 'sync_info',
+		unsuspend: 'unsuspend',
+		updateSiteConfig: 'update_site_config',
+		updateWithoutBackup: 'update_without_backup'
+	},
 	list: {
 		route: '/sites',
 		title: 'Sites',
 		columns: [
-			{ label: 'Site', fieldname: 'name', type: 'Data' },
+			{ label: 'Site', fieldname: 'name' },
 			{ label: 'Status', fieldname: 'status', type: 'Badge' },
-			{ label: 'Cluster', fieldname: 'cluster', type: 'Data' },
-			{ label: 'Bench', fieldname: 'group', type: 'Data' },
-			{ label: 'Plan', fieldname: 'plan', type: 'Data' }
+			{ label: 'Cluster', fieldname: 'cluster' },
+			{ label: 'Bench', fieldname: 'group' },
+			{ label: 'Plan', fieldname: 'plan' }
 		]
 	},
 	detail: {
@@ -22,6 +52,7 @@ export default {
 		tabs: [
 			{
 				label: 'Analytics',
+				icon: () => h(FeatherIcon, { name: 'bar-chart-2' }),
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
@@ -33,6 +64,7 @@ export default {
 			},
 			{
 				label: 'Apps',
+				icon: () => h(FeatherIcon, { name: 'grid' }),
 				route: 'apps',
 				type: 'list',
 				list: {
@@ -71,6 +103,7 @@ export default {
 			},
 			{
 				label: 'Domains',
+				icon: () => h(FeatherIcon, { name: 'external-link' }),
 				route: 'domains',
 				type: 'list',
 				list: {
@@ -101,11 +134,51 @@ export default {
 							fieldname: 'dns_type',
 							type: 'Badge'
 						}
-					]
+					],
+					primaryAction({ listResource: domains, documentResource: site }) {
+						return {
+							label: 'Add Domain',
+							icon: 'plus',
+							onClick() {
+								return h(AddDomainDialog, {
+									site: site.doc,
+									onDomainAdded() {
+										domains.reload();
+									}
+								});
+							}
+						};
+					},
+					rowActions({ row, listResource: domains, documentResource: site }) {
+						if (row.domain === site.doc.name) return;
+						return [
+							{
+								label: 'Remove',
+								onClick() {
+									if (site.removeDomain.loading) return;
+									toast.promise(
+										site.removeDomain.submit({
+											domain: row.domain
+										}),
+										{
+											loading: 'Removing domain...',
+											success: () => 'Domain removed',
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
+										}
+									);
+								}
+							}
+						];
+					}
 				}
 			},
 			{
 				label: 'Backups',
+				icon: () => h(FeatherIcon, { name: 'archive' }),
 				route: 'backups',
 				type: 'list',
 				list: {
@@ -180,7 +253,7 @@ export default {
 							}
 						}
 					],
-					rowActions(row) {
+					rowActions({ row }) {
 						if (row.status != 'Success') return;
 
 						async function downloadBackup(backup, file) {
@@ -250,6 +323,7 @@ export default {
 			},
 			{
 				label: 'Activity',
+				icon: () => h(FeatherIcon, { name: 'activity' }),
 				route: 'activity',
 				type: 'list',
 				list: {
@@ -285,6 +359,7 @@ export default {
 			},
 			{
 				label: 'Settings',
+				icon: () => h(FeatherIcon, { name: 'settings' }),
 				route: 'settings'
 			}
 		]

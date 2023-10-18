@@ -37,6 +37,9 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
+	def get_doc(self):
+		return {"ip": self.ip}
+
 	def _get_site_name(self, subdomain: str):
 		"""Get full site domain name given subdomain."""
 		if not self.domain:
@@ -470,9 +473,10 @@ class Site(Document):
 		agent = Agent(self.server)
 		agent.remove_domain(self, domain)
 
+	@frappe.whitelist()
 	def remove_domain(self, domain):
 		if domain == self.name:
-			raise Exception("Cannot delete default site_domain")
+			frappe.throw("Cannot delete default site_domain")
 		site_domain = frappe.get_all(
 			"Site Domain", filters={"site": self.name, "domain": domain}
 		)[0]
@@ -1228,6 +1232,17 @@ class Site(Document):
 				# this month's or last month's invoice has been paid for
 			},
 		)
+
+	@property
+	def ip(self):
+		server = frappe.db.get_value(
+			"Server", self.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
+		)
+		if server.is_standalone:
+			ip = server.ip
+		else:
+			ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
+		return ip
 
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):

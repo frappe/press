@@ -14,7 +14,7 @@
 					<router-view
 						:tab="tab"
 						:document="$resources.document"
-						v-if="$resources.document.doc"
+						v-if="$resources.document?.doc"
 					/>
 				</template>
 			</FTabs>
@@ -26,7 +26,7 @@
 import { Tabs } from 'frappe-ui';
 
 export default {
-	name: 'Detail',
+	name: 'DetailPage',
 	props: {
 		object: {
 			type: Object,
@@ -66,7 +66,8 @@ export default {
 			return {
 				type: 'document',
 				doctype: this.object.doctype,
-				name: this.name
+				name: this.name,
+				whitelistedMethods: this.object.whitelistedMethods || {}
 			};
 		}
 	}
