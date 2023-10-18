@@ -16,8 +16,6 @@ from press.agent import Agent
 class SiteBackup(Document):
 	def before_insert(self):
 		last_two_hours = datetime.now() - timedelta(hours=2)
-		if self.site == "kyosk.erpnext.com":  # as per customer request
-			raise Exception("No auto backup for Kyosk")
 		if frappe.db.count(
 			"Site Backup",
 			{
