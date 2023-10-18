@@ -8,20 +8,24 @@ from press.api.server import prometheus_query
 
 
 def execute(filters=None):
-	columns, data = [], []
 	columns = [
 		{
-			"fieldname": "server",
-			"label": frappe._("Server"),
-			"fieldtype": "Dynamic Link",
-			"options": "server_type",
+			"fieldname": "bench",
+			"label": frappe._("Bench"),
+			"fieldtype": "Link",
+			"options": "Bench",
 			"width": 200,
 		},
 		{
-			"fieldname": "server_type",
-			"label": frappe._("Server Type"),
-			"fieldtype": "Link",
-			"options": "DocType",
+			"fieldname": "workload",
+			"label": frappe._("Workload"),
+			"fieldtype": "Data",
+			"width": 200,
+		},
+		{
+			"fieldname": "allocated_ram",
+			"label": frappe._("Allocated RAM"),
+			"fieldtype": "Float",
 			"width": 200,
 		},
 		{
@@ -32,35 +36,47 @@ def execute(filters=None):
 		},
 	]
 
-	return columns, data
+	return columns, get_data()
 
 
-def get_data(filters):
-	bench_workloads = {}
+def get_data():
+	server_name = "f1.local.frappe.dev"
 	benches = frappe.get_all(
 		"Bench",
 		filters={
-			"server": "f1-bahrain.frappe.cloud",
+			"server": server_name,
 			"status": "Active",
 			"auto_scale_workers": True,
 		},
 		pluck="name",
 	)
+	server = frappe.get_doc("Server", server_name)
+	result = []
 	for bench_name in benches:
 		bench = frappe.get_doc("Bench", bench_name)
-		bench_workloads[bench_name] = bench.work_load
 
-	total_workload = sum(bench_workloads.values())
-	result = []
-	for bench in benches:
+		gn, bg = bench.allocate_workers(
+			server.workload, server.max_gunicorn_workers, server.max_bg_workers
+		)
 		result.append(
 			{
-				"bench": bench,
-				"workload": bench_workloads[bench],
-				"allocated_ram": 32768 * bench_workloads[bench] / total_workload,
+				"bench": bench_name,
+				"workload": bench.workload,
+				"allocated_ram": gn * 150 + bg * (3 * 80),
 			}
 		)
 
-	prometheus_query('sum(avg_over_time(container_memory_rss{name=~".+"}[5m])) by (name)')
+	prom_res = prometheus_query(
+		f'sum(avg_over_time(container_memory_rss{{instance="{server_name}", name=~".+"}}[5m])) by (name)',
+		lambda x: x,
+		"Asia/Kolkata",
+		60,
+		60,
+	)["datasets"]
+	for row in result:
+		for prom_row in prom_res:
+			if row["bench"] == prom_row["name"]["name"]:
+				row["server_ram"] = prom_row["values"][-1] / 1024 / 1024
+				break
 
 	return result
