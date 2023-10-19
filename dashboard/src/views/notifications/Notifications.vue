@@ -20,7 +20,10 @@
 				<ListItem
 					v-for="notification in notifications"
 					:title="notification.type"
-					:description="notification.message"
+					:description="`${notification.message} • ${formatDate(
+						notification.creation,
+						'relative'
+					)}`"
 				>
 					<template #actions>
 						<Button
