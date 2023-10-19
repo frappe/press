@@ -76,3 +76,9 @@ class BenchUpdate(Document):
 				except Exception as e:
 					log_error("Bench Update: Failed to create Site Update", exception=e)
 					frappe.db.rollback()
+					site.status = "Failure"
+					self.save(ignore_permissions=True)
+					traceback = frappe.get_traceback(with_context=True)
+					comment = f"Failed to schedule update for {site.site} <br><br><pre><code>{traceback}</pre></code>"
+					self.add_comment(text=comment)
+					frappe.db.commit()
