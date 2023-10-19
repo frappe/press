@@ -668,6 +668,7 @@ class Site(Document):
 
 		return {
 			"database": last_usage.database,
+			"database_free": last_usage.database_free,
 			"backups": last_usage.backups,
 			"public": last_usage.public,
 			"private": last_usage.private,
@@ -715,6 +716,7 @@ class Site(Document):
 				and current_usages["database"] == site_usage_data["database"]
 				and current_usages["public"] == site_usage_data["public"]
 				and current_usages["private"] == site_usage_data["private"]
+				and current_usages["database_free"] == site_usage_data["private"]
 			)
 
 			if same_as_last_usage:
