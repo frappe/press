@@ -698,6 +698,7 @@ class Agent:
 			<br>
 		"""
 		self.log_failure_reason(agent_job, message)
+		agent_job.flags.status_code = result.status_code
 
 	def handle_exception(self, agent_job, exception):
 		message = f"""

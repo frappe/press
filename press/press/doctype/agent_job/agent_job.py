@@ -8,6 +8,7 @@ import random
 
 from press.agent import Agent
 from press.utils import log_error
+from frappe.utils import cint
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.site_migration.site_migration import (
@@ -87,6 +88,9 @@ class AgentJob(Document):
 			self.set_status_and_next_retry_at()
 
 	def set_status_and_next_retry_at(self):
+		if 400 <= cint(self.flags.status_code) <= 499:
+			return
+
 		next_retry_at = get_next_retry_at(self.retry_count)
 
 		if not self.retry_count:
