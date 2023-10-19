@@ -66,11 +66,6 @@ website_route_rules = [
 ]
 
 website_redirects = [
-	{
-		"source": r"/deploy(.*)",
-		"target": r"/api/method/press.api.quick_site.deploy\1",
-		"match_with_query_string": True,
-	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
