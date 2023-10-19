@@ -1750,5 +1750,37 @@
     "step_name": "Deploy Bench"
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-09-27 15:51:45.010890",
+  "name": "Rebuild Bench Assets",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/rebuild",
+  "steps": [
+   {
+    "parent": "Rebuild Bench Assets",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "modified": "2023-10-19 14:54:11.470559",
+  "name": "Optimize Tables",
+  "request_method": "POST",
+  "request_path": "benches/{bench}/sites/{site}/optimize",
+  "steps": [
+   {
+    "parent": "Optimize Tables",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Optimize Tables"
+   }
+  ]
  }
 ]

@@ -1208,6 +1208,11 @@ class Site(Document):
 			"mode": self.database_access_mode,
 		}
 
+	@frappe.whitelist()
+	def optimize_tables(self):
+		agent = Agent(self.server)
+		agent.optimize_tables(self)
+
 	@property
 	def server_logs(self):
 		return Agent(self.server).get(f"benches/{self.bench}/sites/{self.name}/logs")

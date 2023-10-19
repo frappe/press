@@ -139,6 +139,14 @@ class Agent:
 			site=site.name,
 		)
 
+	def optimize_tables(self, site):
+		return self.create_agent_job(
+			"Optimize Tables",
+			f"benches/{site.bench}/sites/{site.name}/optimize",
+			bench=site.bench,
+			site=site.name,
+		)
+
 	def rename_upstream_site(self, server: str, site, new_name: str, domains: List[str]):
 		_server = frappe.get_doc("Server", server)
 		ip = _server.ip if _server.is_self_hosted else _server.private_ip
