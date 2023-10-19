@@ -125,6 +125,11 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
+  "twilio_section",
+  "twilio_account_sid",
+  "twilio_phone_number",
+  "column_break_kxuj",
+  "twilio_auth_token",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1023,11 +1028,35 @@
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key"
+  },
+  {
+   "fieldname": "twilio_section",
+   "fieldtype": "Section Break",
+   "label": "Twilio"
+  },
+  {
+   "fieldname": "twilio_account_sid",
+   "fieldtype": "Data",
+   "label": "Twilio Account SID"
+  },
+  {
+   "fieldname": "column_break_kxuj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "twilio_auth_token",
+   "fieldtype": "Password",
+   "label": "Twilio Auth Token"
+  },
+  {
+   "fieldname": "twilio_phone_number",
+   "fieldtype": "Data",
+   "label": "Twilio Phone Number"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-08-25 11:33:46.589124",
+ "modified": "2023-10-17 16:55:41.848125",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

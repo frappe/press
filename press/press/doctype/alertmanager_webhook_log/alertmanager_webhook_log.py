@@ -5,7 +5,9 @@ import frappe
 import json
 from frappe.model.document import Document
 from press.telegram_utils import Telegram
+from press.utils import log_error
 from frappe.utils import get_url_to_form
+from frappe.utils.data import add_to_date
 
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
@@ -46,7 +48,8 @@ class AlertmanagerWebhookLog(Document):
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
-
+		if self.status is "Firing" and self.severity is "Critical":
+			self.create_incident()
 		frappe.enqueue_doc(
 			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 		)
@@ -100,3 +103,42 @@ class AlertmanagerWebhookLog(Document):
 		message = self.generate_telegram_message()
 		client = Telegram(self.severity)
 		client.send(message)
+
+	def create_incident(self):
+		# incident = frappe.new_doc("Incident")
+		# incident.alert = self.alert
+		parsed = json.loads(self.payload)
+		try:
+			bench = parsed["groupLabels"].get("bench")
+			cluster = parsed["groupLabels"].get("cluster")
+			server = parsed["groupLabels"].get("server")
+		except Exception as e:
+			log_error("Failed to create incident", e)
+			return
+		if incident_exists := frappe.db.exists(
+			"Incident",
+			filters={
+				"alert": self.alert,
+				"bench": bench,
+				"server": server,
+				"cluster": cluster,
+				"status": "Validating",
+				"creation": ["<=", add_to_date(frappe.utils.now(), minutes=-10)],
+			},
+		):
+			incident = frappe.get_doc("Incident", incident_exists)
+		else:
+			incident = frappe.new_doc("Incident")
+			incident.alert = self.alert
+			incident.bench = bench
+			incident.server = server
+			incident.cluster = cluster
+
+		incident.append(
+			"alerts",
+			{
+				"alert": self.name,
+				"combined_alerts": self.combined_alerts,
+			},
+		)
+		incident.save()

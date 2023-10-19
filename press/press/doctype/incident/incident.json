@@ -1,0 +1,182 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-10-16 18:45:05.744563",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "alerts_tab",
+  "alertname",
+  "status",
+  "type",
+  "acknowledged_by",
+  "column_break_smnd",
+  "bench",
+  "server",
+  "cluster",
+  "resolved_by",
+  "section_break_kjey",
+  "subject",
+  "description",
+  "section_break_bjjy",
+  "updates",
+  "updates_tab",
+  "alerts",
+  "section_break_aevb",
+  "column_break_rbwa",
+  "route",
+  "sms_sent",
+  "show_in_website"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "label": "Bench",
+   "options": "Bench"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "column_break_smnd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Validating",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved"
+  },
+  {
+   "default": "Site Down",
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Site Down\nBench Down\nServer Down"
+  },
+  {
+   "fieldname": "alertname",
+   "fieldtype": "Data",
+   "label": "Alertname"
+  },
+  {
+   "fieldname": "section_break_bjjy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "alerts",
+   "fieldtype": "Table",
+   "label": "Alerts",
+   "options": "Incident Alerts"
+  },
+  {
+   "default": "0",
+   "fieldname": "sms_sent",
+   "fieldtype": "Check",
+   "label": "SMS Sent"
+  },
+  {
+   "fieldname": "alerts_tab",
+   "fieldtype": "Tab Break",
+   "label": "Overview"
+  },
+  {
+   "fieldname": "updates_tab",
+   "fieldtype": "Tab Break",
+   "label": "Alerts"
+  },
+  {
+   "fieldname": "acknowledged_by",
+   "fieldtype": "Link",
+   "label": "Acknowledged By",
+   "mandatory_depends_on": "eval: doc.status==\"Acknowledged\";",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_rbwa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_aevb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "updates",
+   "fieldtype": "Table",
+   "label": "Updates",
+   "options": "Incident Updates"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_in_website",
+   "fieldtype": "Check",
+   "label": "Show in Website"
+  },
+  {
+   "fieldname": "section_break_kjey",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "resolved_by",
+   "fieldtype": "Link",
+   "label": "Resolved By",
+   "options": "User"
+  }
+ ],
+ "has_web_view": 1,
+ "index_web_pages_for_search": 1,
+ "is_published_field": "show_in_website",
+ "links": [],
+ "modified": "2023-10-18 10:52:13.430851",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Incident",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "route": "incidents",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
