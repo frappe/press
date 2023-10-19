@@ -307,13 +307,14 @@ def update_job(job_name, job):
 			notification_type = "Site Recovery"
 			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
 
-		create_new_notification(
-			frappe.get_value("Site", job_site, "team"),
-			job_id,
-			notification_type,
-			message,
-			route,
-		)
+		if notification_type:
+			create_new_notification(
+				frappe.get_value("Site", job_site, "team"),
+				job_id,
+				notification_type,
+				message,
+				route,
+			)
 
 
 def update_steps(job_name, job):
