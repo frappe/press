@@ -73,16 +73,35 @@ class AgentJob(Document):
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
-			self.job_id = agent.request(self.request_method, self.request_path, data, files)[
-				"job"
-			]
+			self.job_id = agent.request(
+				self.request_method, self.request_path, data, files, agent_job=self
+			)["job"]
+
 			self.status = "Pending"
 			self.save()
 		except Exception:
 			self.status = "Failure"
 			self.save()
 			process_job_updates(self.name)
-			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
+			self.reload()
+			self.set_status_and_next_retry_at()
+
+	def set_status_and_next_retry_at(self):
+		next_retry_at = get_next_retry_at(self.retry_count)
+
+		if not self.retry_count:
+			self.retry_count = 1
+
+		frappe.db.set_value(
+			"Agent Job",
+			self.name,
+			{
+				"status": "Undelivered",
+				"next_retry_at": next_retry_at,
+				"retry_count": self.retry_count,
+			},
+			update_modified=False,
+		)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -248,6 +267,7 @@ def poll_pending_jobs_server(server):
 		order_by="job_id",
 		ignore_ifnull=True,
 	)
+
 	if not pending_jobs:
 		return
 
@@ -293,6 +313,7 @@ def poll_pending_jobs():
 		order_by="count desc",
 		ignore_ifnull=True,
 	)
+
 	for server in servers:
 		server.pop("count")
 		frappe.enqueue(
@@ -454,6 +475,86 @@ def skip_pending_steps(job_name):
 		WHERE status = 'Pending' AND agent_job = %s""",
 		job_name,
 	)
+
+
+def get_next_retry_at(job_retry_count):
+	from frappe.utils import add_to_date, now_datetime
+
+	backoff_in_seconds = 2
+	retry_in_seconds = job_retry_count**backoff_in_seconds
+
+	return add_to_date(now_datetime(), seconds=retry_in_seconds)
+
+
+def retry_undelivered_jobs():
+	server_jobs = get_server_wise_undelivered_jobs()
+	print(server_jobs)
+	for server in server_jobs:
+		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
+		print(delivered_jobs)
+
+		if delivered_jobs:
+			update_job_ids_for_delivered_jobs(delivered_jobs)
+
+		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+		print(undelivered_jobs)
+
+		for job in undelivered_jobs:
+			print(job)
+			job = frappe.get_doc("Agent Job", job)
+			max_retry_count = frappe.db.get_value(
+				"Agent Job Type", job.job_type, "max_retry_count", cache=True
+			)
+
+			if job.retry_count < max_retry_count:
+				retry = job.retry_count + 1
+				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
+				job.retry_in_place()
+			else:
+				frappe.db.set_value(
+					"Agent Job", job, "status", "Delivery Failure", update_modified=False
+				)
+
+
+def get_server_wise_undelivered_jobs():
+	jobs = frappe._dict()
+	for job in frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Undelivered",
+			"job_id": 0,
+			"retry_count": [">=", 1],
+			"next_retry_at": ("<=", frappe.utils.now_datetime()),
+		},
+		["name", "server", "server_type"],
+	):
+		jobs.setdefault((job.server, job.server_type), []).append(job["name"])
+
+	return jobs
+
+
+def get_jobs_delivered_to_server(server, jobs):
+	agent = Agent(server[0], server_type=server[1])
+
+	random_undelivered_ids = random.sample(jobs, k=min(100, len(jobs)))
+	delivered_jobs = agent.get_jobs_id(random_undelivered_ids)
+
+	return delivered_jobs or []
+
+
+def update_job_ids_for_delivered_jobs(delivered_jobs):
+	for job in delivered_jobs:
+		frappe.db.set_value(
+			"Agent Job",
+			job["agent_job_id"],
+			{
+				"job_id": job["id"],
+				"status": "Pending",
+				"next_retry_at": None,
+				"retry_count": 0,
+			},
+			update_modified=False,
+		)
 
 
 def process_job_updates(job_name):

@@ -9,7 +9,9 @@
   "steps",
   "agent_request_section",
   "request_path",
-  "request_method"
+  "request_method",
+  "column_break_fijn",
+  "max_retry_count"
  ],
  "fields": [
   {
@@ -36,10 +38,19 @@
    "in_list_view": 1,
    "label": "Request Method",
    "options": "POST\nDELETE"
+  },
+  {
+   "fieldname": "column_break_fijn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_retry_count",
+   "fieldtype": "Int",
+   "label": "Max Retry Count"
   }
  ],
  "links": [],
- "modified": "2022-09-28 17:39:45.144111",
+ "modified": "2023-10-16 16:31:00.984946",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Type",

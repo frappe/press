@@ -632,11 +632,13 @@ class Agent:
 	def post(self, path, data=None):
 		return self.request("POST", path, data)
 
-	def request(self, method, path, data=None, files=None):
+	def request(self, method, path, data=None, files=None, agent_job=None):
+		agent_job_id = agent_job.name if agent_job else None
+
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
-			headers = {"Authorization": f"bearer {password}"}
+			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
 			intermediate_ca = frappe.db.get_value(
 				"Press Settings", "Press Settings", "backbone_intermediate_ca"
 			)
@@ -666,6 +668,7 @@ class Agent:
 				result.raise_for_status()
 				return json_response
 			except Exception:
+				self.handle_request_failure(agent_job, result)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -675,7 +678,8 @@ class Agent:
 					headers=headers,
 					result=json_response or result.text,
 				)
-		except Exception:
+		except Exception as exce:
+			self.handle_exception(agent_job, exce)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -684,6 +688,34 @@ class Agent:
 				files=files,
 				headers=headers,
 			)
+
+	def handle_request_failure(self, agent_job, result):
+		message = f"""
+			<br>
+			<p>Agent Job Failed</p>
+			<p>Status Code: {getattr(result, 'status_code', 'Unknown')}</p>
+			<p>Response: {getattr(result, 'text', 'Unknown')}</p>
+			<br>
+		"""
+		self.log_failure_reason(agent_job, message)
+
+	def handle_exception(self, agent_job, exception):
+		message = f"""
+			<br>
+			<p>Agent Job Failed</p>
+			<p>Exception: {exception}</p>
+			<br>
+		"""
+		self.log_failure_reason(agent_job, message)
+
+	def log_failure_reason(self, agent_job=None, message=None):
+		if not agent_job:
+			return
+
+		try:
+			agent_job.add_comment("Comment", message)
+		except Exception:
+			pass
 
 	def create_agent_job(
 		self,
@@ -747,6 +779,9 @@ class Agent:
 		if len(ids) == 1:
 			return [status]
 		return status
+
+	def get_jobs_id(self, agent_job_ids):
+		return self.get(f"agent-job/{agent_job_ids}")
 
 	def get_version(self):
 		return self.get("version")
