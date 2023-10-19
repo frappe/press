@@ -379,6 +379,9 @@ def process_update_site_job_update(job):
 		move_site_step_status = frappe.db.get_value(
 			"Agent Job Step", {"step_name": "Move Site", "agent_job": job.name}, "status"
 		)
+		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
+			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
+			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
 		site_enable_step_status = frappe.db.get_value(
 			"Agent Job Step",
 			{"step_name": "Disable Maintenance Mode", "agent_job": job.name},
@@ -386,9 +389,6 @@ def process_update_site_job_update(job):
 		)
 		if site_enable_step_status == "Success":
 			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
-		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
-			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
-			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":

@@ -316,7 +316,7 @@ class Bench(Document):
 			ON subscription.plan = plan.name
 
 			WHERE site.bench = "{self.name}"
-				AND site.status = "Active"
+			AND site.status in ("Active", "Pending", "Updating")
 				"""
 			)[0]
 			or 0
