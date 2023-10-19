@@ -1356,6 +1356,7 @@ def delete_site_subdomain(site):
 
 def delete_site_domains(site):
 	domains = frappe.get_all("Site Domain", {"site": site})
+	frappe.db.set_value("Site", site, "host_name", None)
 	for domain in domains:
 		frappe.delete_doc("Site Domain", domain.name)
 
