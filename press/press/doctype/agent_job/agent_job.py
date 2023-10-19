@@ -83,7 +83,9 @@ class AgentJob(Document):
 		except Exception:
 			self.status = "Failure"
 			self.save()
+
 			process_job_updates(self.name)
+
 			self.reload()
 			self.set_status_and_next_retry_at()
 

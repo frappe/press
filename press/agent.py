@@ -691,32 +691,21 @@ class Agent:
 
 	def handle_request_failure(self, agent_job, result):
 		message = f"""
-			<br>
-			<p>Agent Job Failed</p>
-			<p>Status Code: {getattr(result, 'status_code', 'Unknown')}</p>
-			<p>Response: {getattr(result, 'text', 'Unknown')}</p>
-			<br>
+			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
+			Response: {getattr(result, 'text', 'Unknown')}
 		"""
 		self.log_failure_reason(agent_job, message)
 		agent_job.flags.status_code = result.status_code
 
 	def handle_exception(self, agent_job, exception):
-		message = f"""
-			<br>
-			<p>Agent Job Failed</p>
-			<p>Exception: {exception}</p>
-			<br>
-		"""
-		self.log_failure_reason(agent_job, message)
+		self.log_failure_reason(agent_job, exception)
 
 	def log_failure_reason(self, agent_job=None, message=None):
 		if not agent_job:
 			return
 
-		try:
-			agent_job.add_comment("Comment", message)
-		except Exception:
-			pass
+		agent_job.traceback = message
+		agent_job.output = message
 
 	def create_agent_job(
 		self,
