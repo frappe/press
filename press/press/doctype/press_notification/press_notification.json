@@ -26,7 +26,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type",
-   "options": "Site Update\nSite Migration\nBench Deploy\nSite Recovery\nDowntime/Performance",
+   "options": "Site Update\nSite Migrate\nBench Deploy\nSite Recovery\nDowntime/Performance",
    "read_only": 1,
    "reqd": 1
   },
@@ -62,7 +62,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-18 18:32:42.475349",
+ "modified": "2023-10-19 08:31:32.804811",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",
