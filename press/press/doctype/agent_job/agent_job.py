@@ -298,14 +298,14 @@ def update_job(job_name, job):
 		route = f"sites/{job_site}/jobs/{job_name}"
 
 		if job_type == "Update Site Migrate":
-			notification_type = "Site Migration"
-			message = f"Site {job_site} failed to migrate"
+			notification_type = "Site Migrate"
+			message = f"Site <b>{job_site}</b> failed to migrate"
 		elif job_type == "Update Site Pull":
 			notification_type = "Site Update"
-			message = f"Site {job_site} failed to update"
+			message = f"Site <b>{job_site}</b> failed to update"
 		elif job_type.startswith("Recover Failed"):
 			notification_type = "Site Recovery"
-			message = f"Site {job_site} failed to recover after a failed update/migration"
+			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
 
 		create_new_notification(
 			frappe.get_value("Site", job_site, "team"),
