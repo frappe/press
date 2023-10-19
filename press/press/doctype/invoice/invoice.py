@@ -23,7 +23,7 @@ class InvoiceDiscountType(Enum):
 
 discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
-DISCOUNT_MAP = {"Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
@@ -416,14 +416,14 @@ class Invoice(Document):
 			return
 
 		# check if discount is already added
+		if self.discounts:
+			return
+
 		discount_note = (
 			"Flat Partner Discount"
 			if self.payment_mode == "Partner Credits"
 			else "New Partner Discount"
 		)
-		for discount in self.discounts:
-			if discount.note == discount_note:
-				return
 
 		partner_level, legacy_contract = self.get_partner_level()
 		# give 10% discount for partners

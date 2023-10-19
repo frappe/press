@@ -2,6 +2,7 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
 import json
 from datetime import datetime, timedelta
 
@@ -127,8 +128,34 @@ class Bench(Document):
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
 		}
-
+		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
+
+	def add_limits(self, bench_config):
+		if any([self.memory_high, self.memory_max, self.memory_swap]):
+			if not all([self.memory_high, self.memory_max, self.memory_swap]):
+				frappe.throw("All memory limits need to be set")
+
+			if self.memory_swap != -1 and (self.memory_max > self.memory_swap):
+				frappe.throw("Memory Swap needs to be greater than Memory Max")
+
+			if self.memory_high > self.memory_max:
+				frappe.throw("Memory Max needs to be greater than Memory High")
+
+		bench_config.update(self.get_limits())
+
+	def get_limits(self) -> dict:
+		return {
+			"memory_high": self.memory_high,
+			"memory_max": self.memory_max,
+			"memory_swap": self.memory_swap,
+			"vcpu": self.vcpu,
+		}
+
+	@frappe.whitelist()
+	def force_update_limits(self):
+		agent = Agent(self.server)
+		agent.force_update_bench_limits(self.name, self.get_limits())
 
 	def get_unused_port_offset(self):
 		benches = frappe.get_all(
@@ -268,8 +295,8 @@ class Bench(Document):
 		agent = Agent(self.server)
 		agent.update_bench_config(self)
 
-	@property
-	def work_load(self) -> float:
+	@cached_property
+	def workload(self) -> float:
 		"""
 		Score representing load on the bench put on by sites.
 
@@ -289,7 +316,7 @@ class Bench(Document):
 			ON subscription.plan = plan.name
 
 			WHERE site.bench = "{self.name}"
-				AND site.status = "Active"
+			AND site.status in ("Active", "Pending", "Updating")
 				"""
 			)[0]
 			or 0
@@ -343,6 +370,33 @@ class Bench(Document):
 
 	def get_environment_variables(self):
 		return {v.key: v.value for v in self.environment_variables}
+
+	def allocate_workers(self, server_workload, max_gunicorn_workers, max_bg_workers):
+		"""
+		Mostly makes sense when called from Server's auto_scale_workers
+		"""
+		try:
+			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
+			minimum = frappe.get_value("Release Group", self.group, "min_gunicorn_workers")
+			self.gunicorn_workers = min(
+				maximum or 24,
+				max(
+					minimum or 2, round(self.workload / server_workload * max_gunicorn_workers)
+				),  # min 2 max 24
+			)
+			maximum = frappe.get_value("Release Group", self.group, "max_background_workers")
+			minimum = frappe.get_value("Release Group", self.group, "min_background_workers")
+			self.background_workers = min(
+				maximum or 8,
+				max(
+					minimum or 1, round(self.workload / server_workload * max_bg_workers)
+				),  # min 1 max 8
+			)
+		except ZeroDivisionError:  # when total_workload is 0
+			self.gunicorn_workers = 2
+			self.background_workers = 1
+		self.save()
+		return self.gunicorn_workers, self.background_workers
 
 
 class StagingSite(Site):

@@ -57,7 +57,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
-RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/redis \
+RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
@@ -118,6 +119,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-apt-packages`
 {% endif %}
+
+RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
 RUN useradd -ms /bin/bash frappe
 USER frappe

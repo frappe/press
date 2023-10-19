@@ -16,6 +16,16 @@
 				:key="cpuData"
 				:data="cpuData"
 				unit="%"
+				:chartTheme="[
+					$theme.colors.green[500], // idle
+					$theme.colors.red[500], // iowait
+					$theme.colors.yellow[500], // irq
+					$theme.colors.pink[500], // nice
+					$theme.colors.purple[500], // softirq
+					$theme.colors.blue[500], // steal
+					$theme.colors.teal[500], // system
+					$theme.colors.cyan[500] // user
+				]"
 				:loading="$resources.cpu.loading"
 				:error="$resources.cpu.error"
 			/>

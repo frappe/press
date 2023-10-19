@@ -128,6 +128,7 @@ class VirtualMachine(Document):
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
 			context.update(
@@ -139,6 +140,11 @@ class VirtualMachine(Document):
 					),
 					"mariadb_systemd_config": frappe.render_template(
 						"press/playbooks/roles/mariadb_systemd_limits/templates/memory.conf",
+						mariadb_context,
+						is_path=True,
+					),
+					"mariadb_exporter_config": frappe.render_template(
+						"press/playbooks/roles/mysqld_exporter/templates/mysqld_exporter.service",
 						mariadb_context,
 						is_path=True,
 					),
@@ -239,6 +245,12 @@ class VirtualMachine(Document):
 			self.termination_protection = self.client().describe_instance_attribute(
 				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
+
+			instance_type_response = self.client().describe_instance_types(
+				InstanceTypes=[self.machine_type]
+			)
+			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
+			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -256,6 +268,8 @@ class VirtualMachine(Document):
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				if doctype in ["Server", "Database Server"]:
+					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address:
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])

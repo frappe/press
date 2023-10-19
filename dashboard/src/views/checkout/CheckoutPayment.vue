@@ -1,222 +1,196 @@
 <template>
-	<div v-if="plan" class="grid h-screen grid-cols-1 gap-0 sm:grid-cols-2">
+	<div class="relative">
 		<div
-			class="mx-auto flex max-h-full w-full flex-col justify-center bg-gray-50 px-10"
+			v-if="!ready"
+			class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-8 transform"
 		>
-			<div
-				class="absolute left-1 top-1 w-fit cursor-pointer text-sm"
-				v-on:click="$emit('update:step', 2)"
-			>
-				← Back to Plans
-			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">Plan</span>
-				<span class="text-base font-semibold">{{ plan.plan }}</span>
-			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">Amount</span>
-				<span class="text-base font-semibold">{{
-					currency == 'INR' ? '₹' + amount() : '$' + amount()
-				}}</span>
-			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">Billing</span>
+			<Spinner class="h-5 w-5 text-gray-600" />
+		</div>
+		<div :class="{ 'opacity-0': !ready }">
+			<div>
+				<label class="block">
+					<span class="block text-xs text-gray-600">
+						Credit or Debit Card
+					</span>
+					<div
+						class="form-input mt-2 block h-[unset] w-full py-2 pl-3"
+						ref="card-element"
+					></div>
+					<ErrorMessage class="mt-1" :message="cardErrorMessage" />
+				</label>
 				<FormControl
-					:disabled="stripePayment"
-					type="select"
-					:options="['Monthly', 'Annual']"
-					v-model="billing"
+					class="mt-4"
+					label="Name on Card"
+					type="text"
+					v-model="cardHolderName"
 				/>
 			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">Discount</span>
-				<span class="text-base font-semibold text-green-500">{{
-					discount() ? plan.discount_percent + '%' : '-'
-				}}</span>
-			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">GST(if applicable)</span>
-				<span class="text-base font-semibold text-red-500">{{
-					gst() ? '18%' : '-'
-				}}</span>
-			</div>
-			<div class="my-2 flex justify-between">
-				<span class="text-base">Total</span>
-				<span class="text-base font-semibold">{{
-					currency == 'INR' ? '₹' + getTotal() : '$' + getTotal()
-				}}</span>
-			</div>
-			<ErrorMessage class="mt-2" :message="confirmError" />
-			<Button
-				v-if="!stripePayment"
-				class="mt-4"
-				variant="solid"
-				:loading="$resources.handlePayment.loading"
-				@click="$resources.handlePayment.submit()"
-			>
-				Confirm Payment
-			</Button>
-		</div>
-
-		<!-- Stripe -->
-		<div class="flex h-full w-full justify-center">
-			<div class="my-auto flex h-20 w-72 flex-col">
-				<div
-					id="card"
-					class="form-input mt-2 block w-full py-2 pl-3"
-					:class="{ hidden: 'card' == null }"
-					ref="card-element"
-				></div>
-				<ErrorMessage class="mt-2" :message="errorMessage" />
-				<div class="flex flex-col justify-between">
-					<StripeLogo
-						class="mt-4 justify-self-end"
-						:loading="$resources.handlePayment.loading"
-					/>
-					<Button
-						v-if="card != null"
-						class="mt-4"
-						variant="solid"
-						:loading="$resources.handlePayment.loading"
-						@click="buy"
-					>
-						Pay Now
-					</Button>
-				</div>
+			<ErrorMessage class="mt-2" :message="errorMessage" />
+			<div class="mt-6 flex items-center justify-between">
+				<StripeLogo />
+				<Button variant="solid" @click="submit" :loading="addingCard">
+					Save Card
+				</Button>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import AddressForm from '@/components/AddressForm.vue';
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
 
 export default {
-	name: 'CheckoutPayment',
+	name: 'StripeCard',
+	props: ['secretKey', 'address', 'currency', 'selectedPlan'],
+	emits: ['complete'],
 	components: {
+		AddressForm,
 		StripeLogo
 	},
-	props: [
-		'plan',
-		'currency',
-		'selectedSubscription',
-		'selectedPlan',
-		'step',
-		'secretKey'
-	],
 	data() {
 		return {
-			billing: 'Annual',
-			total: 0,
-			card: null,
-			stripePayment: false,
 			errorMessage: null,
-			confirmError: null
+			cardErrorMessage: null,
+			ready: false,
+			setupIntent: null,
+			cardHolderName: '',
+			gstNotApplicable: false,
+			addingCard: false
 		};
 	},
+	async mounted() {
+		this.setupCard();
+	},
 	resources: {
-		handlePayment() {
+		countryList() {
 			return {
-				url: 'press.api.developer.marketplace.saas_payment',
-				params: {
-					secret_key: this.secretKey,
-					data: {
-						sub_name: this.selectedSubscription.name,
-						new_plan: this.selectedPlan,
-						app: this.selectedSubscription.app,
-						site: this.selectedSubscription.site,
-						total: this.total,
-						billing: this.billing.toLowerCase()
-					}
-				},
-				async onSuccess(r) {
-					if (r) {
-						this.clientSecret = r.client_secret;
-						this.stripePayment = true;
-						this.stripe = await loadStripe(r.publishable_key);
-						this.elements = this.stripe.elements({
-							clientSecret: r.client_secret
-						});
-
-						// theme
-						let theme = this.$theme;
-						let style = {
-							base: {
-								color: theme.colors.black,
-								fontFamily: theme.fontFamily.sans.join(', '),
-								fontSmoothing: 'antialiased',
-								padding: '4px',
-								fontSize: '14px',
-								'::placeholder': {
-									color: theme.colors.gray['400']
-								}
-							},
-							invalid: {
-								color: theme.colors.red['600'],
-								iconColor: theme.colors.red['600']
-							}
-						};
-
-						this.card = this.elements.create('card', {
-							hidePostalCode: true,
-							style: style,
-							classes: {
-								complete: '',
-								focus: 'bg-gray-100'
-							}
-						});
-						this.card.mount(this.$refs['card-element']);
-					} else {
-						this.confirmError = r;
-					}
-				},
-				onError(e) {
-					this.confirmError = e;
-				}
+				url: 'press.api.account.country_list',
+				auto: true
 			};
 		}
 	},
 	methods: {
-		amount() {
-			let multiple = this.billing === 'Annual' ? 12 : 1;
-			return this.currency === 'INR'
-				? this.plan.price_inr * multiple
-				: this.plan.price_usd * multiple;
-		},
-		discount() {
-			return this.plan.discount_percent > 0 && this.billing === 'Annual';
-		},
-		gst() {
-			return this.plan.gst === 1 && this.currency === 'INR';
-		},
-		getTotal() {
-			let total = this.amount();
-			if (this.discount()) {
-				total = total - total * (this.plan.discount_percent / 100);
-			}
-			if (this.gst()) {
-				total = total + total * 0.18;
-			}
-			this.total = total;
-			return total;
-		},
-		async buy() {
-			this.paymentInProgress = true;
-			let payload = await this.stripe.confirmCardPayment(this.clientSecret, {
-				payment_method: {
-					card: this.card
+		async setupCard() {
+			let result = await this.$call(
+				'press.api.developer.marketplace.get_publishable_key_and_setup_intent',
+				{ secret_key: this.secretKey }
+			);
+			//window.posthog.capture('init_client_add_card', 'fc_signup');
+			let { publishable_key, setup_intent } = result;
+			this.setupIntent = setup_intent;
+			this.stripe = await loadStripe(publishable_key);
+			this.elements = this.stripe.elements();
+			let theme = this.$theme;
+			let style = {
+				base: {
+					color: theme.colors.black,
+					fontFamily: theme.fontFamily.sans.join(', '),
+					fontSmoothing: 'antialiased',
+					fontSize: '13px',
+					'::placeholder': {
+						color: theme.colors.gray['400']
+					}
+				},
+				invalid: {
+					color: theme.colors.red['600'],
+					iconColor: theme.colors.red['600']
+				}
+			};
+			this.card = this.elements.create('card', {
+				hidePostalCode: true,
+				style: style,
+				classes: {
+					complete: '',
+					focus: 'bg-gray-100'
 				}
 			});
+			this.card.mount(this.$refs['card-element']);
 
-			this.paymentInProgress = false;
-			if (payload.error) {
-				this.errorMessage = payload.error.message;
-			} else {
-				this.$emit('success');
-				this.errorMessage = null;
-				this.creditsToBuy = null;
+			this.card.addEventListener('change', event => {
+				this.cardErrorMessage = event.error?.message || null;
+			});
+			this.card.addEventListener('ready', () => {
+				this.ready = true;
+			});
+		},
+		async submit() {
+			this.addingCard = true;
+
+			let message;
+			if (!this.address) {
+				message = await this.$refs['address-form'].validateValues();
 			}
+			if (message) {
+				this.errorMessage = message;
+				this.addingCard = false;
+				return;
+			} else {
+				this.errorMessage = null;
+			}
+
+			const { setupIntent, error } = await this.stripe.confirmCardSetup(
+				this.setupIntent.client_secret,
+				{
+					payment_method: {
+						card: this.card,
+						billing_details: {
+							name: this.cardHolderName,
+							address: {
+								line1: this.address.address_line1,
+								city: this.address.city,
+								state: this.address.state,
+								postal_code: this.address.postal_code,
+								country: this.getCountryCode(this.address.country)
+							}
+						}
+					}
+				}
+			);
+
+			if (error) {
+				this.addingCard = false;
+				let errorMessage = error.message;
+				// fix for duplicate error message
+				if (errorMessage != 'Your card number is incomplete.') {
+					this.errorMessage = errorMessage;
+				}
+			} else {
+				if (setupIntent.status === 'succeeded') {
+					try {
+						const { payment_method_name } = await this.$call(
+							'press.api.developer.marketplace.setup_intent_success',
+							{
+								secret_key: this.secretKey,
+								setup_intent: setupIntent
+							}
+						);
+
+						this.addingCard = false;
+
+						await this.$call(
+							'press.api.developer.marketplace.change_site_plan',
+							{
+								secret_key: this.secretKey,
+								plan: this.selectedPlan.name
+							}
+						);
+						this.$emit('update:step', 4);
+					} catch (error) {
+						console.error(error);
+						this.addingCard = false;
+						this.errorMessage = error.messages.join('\n');
+					}
+				}
+			}
+		},
+		getCountryCode(country) {
+			country = 'India';
+			let code = this.$resources.countryList.data.find(
+				d => d.name === country
+			).code;
+			return code.toUpperCase();
 		}
 	}
 };

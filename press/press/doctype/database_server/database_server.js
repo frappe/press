@@ -81,6 +81,12 @@ frappe.ui.form.on('Database Server', {
 			],
 			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
 			[
+				__('Reconfigure MariaDB Exporter'),
+				'reconfigure_mariadb_exporter',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Setup Deadlock Logger'),
 				'setup_deadlock_logger',
 				true,

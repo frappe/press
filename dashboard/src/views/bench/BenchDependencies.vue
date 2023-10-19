@@ -23,6 +23,12 @@
 			class="mx-0.5 my-2"
 			@input="isDirty = true"
 		/>
+		<p
+			v-if="dependencies.update_available"
+			class="ml-0.5 mt-2.5 text-base text-red-600"
+		>
+			The changes will take effect in your next bench deploy.
+		</p>
 	</Card>
 </template>
 

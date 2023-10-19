@@ -17,9 +17,6 @@ from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
-from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
-	process_prepaid_marketplace_payment,
-)
 from press.utils.billing import (
 	get_erpnext_com_connection,
 	get_frappe_io_connection,
@@ -297,7 +294,6 @@ class Team(Document):
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
 		self.servers_enabled = 0
-		self.partner_email = ""
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
@@ -336,6 +332,12 @@ class Team(Document):
 		)
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
+
+		if (
+			current_inv_doc.partner_email and current_inv_doc.partner_email == self.partner_email
+		):
+			# don't create new invoice if partner email is set
+			return
 
 		if (
 			not current_invoice
@@ -947,10 +949,6 @@ def process_stripe_webhook(doc, method):
 
 	metadata = payment_intent.get("metadata")
 	payment_for = metadata.get("payment_for")
-
-	if payment_for and payment_for == "prepaid_marketplace":
-		process_prepaid_marketplace_payment(event)
-		return
 
 	if payment_for and payment_for == "micro_debit_test_charge":
 		process_micro_debit_test_charge(event)

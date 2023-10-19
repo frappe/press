@@ -30,6 +30,7 @@ frappe.ui.form.on('Monitor Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[__('Update TLS Certificate'), 'update_tls_certificate', true],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

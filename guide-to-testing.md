@@ -62,6 +62,27 @@ keep reading.
 > Note: Class decorators aren't inherited, so you'll have to do this on all
 > classes you want to mock http request creation for Agent Job
 
+## Mocking Agent Jobs End-to-end
+
+There's also a decorator you can use to fake the result of an agent job. For
+example, you may do it like so:
+https://github.com/frappe/press/blob/983631ccb59f88e57fd60fdad1615e9abd87d99f/press/api/tests/test_site.py#L243-L247
+
+This way you can use the name of the type of job and fake a response from the same.
+
+You may also fake the output obtained from the job which you can then use to test the callback that uses the same:
+https://github.com/frappe/press/blob/983631ccb59f88e57fd60fdad1615e9abd87d99f/press/api/tests/test_site.py#L305-L323
+
+It is also possible to fake multiple jobs in the same context, for when multiple jobs are processed in the same request or job:
+
+https://github.com/frappe/press/blob/983631ccb59f88e57fd60fdad1615e9abd87d99f/press/press/doctype/site_migration/test_site_migration.py#L29-L77
+
+> Note that with this, you can't fake 2 results for the same type of job. This is still a limitation. As a workaround, you can have multiple `with` statements for such cases.
+
+This is all done with the help of the [responses](https://github.com/getsentry/responses) library by intercepting the http requests for the same.
+
+> Note that you shouldn't mock `AgentJob.enqueue_http_request` when using the above decorator as that will interfere with the request interception need to fake the job results
+
 Now that we've learned to mock the external things, we can go about mocking
 internal things, which forms the basis of testing, which is
 

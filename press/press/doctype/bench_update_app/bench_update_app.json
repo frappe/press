@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "creation": "2023-10-05 11:21:42.353413",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "app",
+  "source",
+  "column_break_3",
+  "release",
+  "hash"
+ ],
+ "fields": [
+  {
+   "fetch_from": "release.app",
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "App",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "release.source",
+   "fieldname": "source",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Source",
+   "options": "App Source",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Release",
+   "options": "App Release",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fetch_from": "release.hash",
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Hash",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2023-10-05 15:38:24.315931",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Update App",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

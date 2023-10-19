@@ -52,7 +52,7 @@ export default {
 	name: 'CreateMarketplaceAppVersion.vue',
 	data() {
 		return {
-			versionList: [],
+			versions: [],
 			branches: [],
 			selectedBranch: null,
 			selectedVersion: null
@@ -66,7 +66,7 @@ export default {
 				auto: true,
 				params: {
 					name: this.app.name,
-					source: this.app.sources[0].source
+					source: this.app.sources[0]?.source
 				},
 				onSuccess(d) {
 					this.versions = d.versions;

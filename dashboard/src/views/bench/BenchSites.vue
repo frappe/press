@@ -30,8 +30,10 @@
 					<span
 						class="cursor-default font-semibold text-gray-900"
 						:title="
-							'Deployed on ' +
-							formatDate(group.deployed_on, 'DATETIME_SHORT', true)
+							group.deployed_on
+								? 'Deployed on ' +
+								  formatDate(group.deployed_on, 'DATETIME_SHORT', true)
+								: ''
 						"
 					>
 						{{ group.name }}
