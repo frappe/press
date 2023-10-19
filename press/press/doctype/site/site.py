@@ -704,6 +704,8 @@ class Site(Document):
 				"site": self.name,
 				"backups": usage["backups"],
 				"database": usage["database"],
+				"database_free": usage["database_free"],
+				"database_free_tables": json.dumps(usage["database_free_tables"], indent=1),
 				"public": usage["public"],
 				"private": usage["private"],
 			}
