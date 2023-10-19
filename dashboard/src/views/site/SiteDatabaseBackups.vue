@@ -14,18 +14,6 @@
 				Create Backup
 			</Button>
 			<Dialog
-				:options="{
-					title: 'Cannot Backup Site'
-				}"
-				v-model="showBackupDialog"
-			>
-				<template v-slot:body-content>
-					<p class="text-base">
-						You cannot take more than 3 backups after site suspension
-					</p>
-				</template>
-			</Dialog>
-			<Dialog
 				:options="{ title: 'Restore Backup on Another Site' }"
 				v-model="showRestoreOnAnotherSiteDialog"
 			>
@@ -116,6 +104,7 @@
 </template>
 <script>
 import SiteRestoreSelector from '@/components/SiteRestoreSelector.vue';
+import { notify } from '@/utils/toast';
 
 export default {
 	name: 'SiteDatabaseBackups',
@@ -127,7 +116,6 @@ export default {
 		return {
 			isRestorePending: false,
 			backupToRestore: null,
-			showBackupDialog: false,
 			showRestoreOnAnotherSiteDialog: false,
 			restoreOnAnotherSiteErrorMessage: null,
 			selectedSite: null
@@ -161,8 +149,15 @@ export default {
 				onSuccess: () => {
 					this.$resources.backups.reload();
 				},
-				onError: () => {
-					this.showBackupDialog = true;
+				onError: err => {
+					notify({
+						title: "Couldn't create backup",
+						message: err.messages.join('\n'),
+						color: 'red',
+						icon: err.messages[0].includes('suspension')
+							? 'info'
+							: 'alert-triangle'
+					});
 				}
 			};
 		}
@@ -330,9 +325,6 @@ export default {
 				.catch(error => {
 					this.restoreOnAnotherSiteErrorMessage = error;
 				});
-		},
-		showDialog() {
-			this.showBackupDialog = true;
 		}
 	}
 };

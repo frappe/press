@@ -4,12 +4,14 @@ import urllib.request
 from selenium import webdriver
 import requests
 import subprocess
+import platform
 
 import click
 import frappe
 from bs4 import BeautifulSoup, SoupStrainer
 from selenium.webdriver.chrome.options import Options
 from urllib.parse import urlsplit, urlunsplit
+from frappe.core.utils import find
 
 CHROMEDRIVER_PATH = os.path.expanduser("~/chromedriver")
 
@@ -54,26 +56,42 @@ def initialize_webdriver():
 		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
 	except Exception as e:
 		version = re.search(r"is (\d+.\d+.\d+.\d+) with", e.msg).group(1)
-		download_chromedriver(version=version.rsplit(".", 1)[0])
+		download_chromedriver(version=version)
 		chrome = webdriver.Chrome(CHROMEDRIVER_PATH, options=options)
 	return True
 
 
 def download_chromedriver(version=None):
 	if version:
-		latest_release_url = (
-			f"https://chromedriver.storage.googleapis.com/LATEST_RELEASE_{version}"
-		)
-	else:
-		latest_release_url = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE"
+		build_version = version.rsplit(".", 1)[0]
 
-	latest_release = requests.get(latest_release_url).text
+		release_url = "https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json"
+		releases = requests.get(release_url).json()
+
+		builds = releases["builds"][build_version]["downloads"]["chromedriver"]
+	else:
+		release_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"
+		releases = requests.get(release_url).json()
+
+		builds = releases["channels"]["Stable"]["downloads"]["chromedriver"]
+
+	platform = get_platform()
+	download_url = find(builds, lambda x: x["platform"] == platform)["url"]
+
+	subprocess.check_output(f"curl -o chromedriver.zip {download_url}".split())
 	subprocess.check_output(
-		f"curl -o chromedriver.zip https://chromedriver.storage.googleapis.com/{latest_release}/chromedriver_linux64.zip".split()
+		f"unzip -o -j chromedriver.zip chromedriver-{platform}/chromedriver -d {os.path.expanduser('~')}".split()
 	)
-	subprocess.check_output(
-		f"unzip -o chromedriver.zip -d {os.path.expanduser('~')}".split()
-	)
+
+
+def get_platform():
+	if platform.system().lower() == "linux":
+		return "linux64"
+	elif platform.system().lower() == "darwin":
+		if platform.machine().lower() == "arm64":
+			return "mac-arm64"
+		else:
+			return "mac-x64"
 
 
 def test_browser_assets():

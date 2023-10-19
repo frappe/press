@@ -57,20 +57,20 @@ class TestBench(unittest.TestCase):
 			create_test_subscription(site.name, plan.name, site.team)
 		return frappe.get_doc("Bench", bench)
 
-	def test_work_load_is_calculated_correctly(self):
+	def test_workload_is_calculated_correctly(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
-		self.assertEqual(bench.work_load, 15)
+		self.assertEqual(bench.workload, 15)
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 10, bench.name)
-		self.assertEqual(bench.work_load, 45)
+		self.assertEqual(bench.workload, 45)
 
-	def test_work_load_gives_reasonable_numbers(self):
+	def test_workload_gives_reasonable_numbers(self):
 		bench1 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
 		bench2 = self._create_bench_with_n_sites_with_cpu_time(3, 10)
 		bench3 = self._create_bench_with_n_sites_with_cpu_time(6, 5)
 		bench4 = self._create_bench_with_n_sites_with_cpu_time(6, 10)
-		self.assertGreater(bench2.work_load, bench1.work_load)
-		self.assertGreater(bench4.work_load, bench3.work_load)
-		self.assertGreater(bench4.work_load, bench2.work_load)
+		self.assertGreater(bench2.workload, bench1.workload)
+		self.assertGreater(bench4.workload, bench3.workload)
+		self.assertGreater(bench4.workload, bench2.workload)
 
 	def test_workers_get_allocated(self):
 		bench = self._create_bench_with_n_sites_with_cpu_time(3, 5)
