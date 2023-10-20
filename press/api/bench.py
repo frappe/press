@@ -851,6 +851,12 @@ def restart(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def rebuild(name):
+	frappe.get_doc("Bench", name).rebuild()
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def update(name):
 	frappe.get_doc("Bench", name).update_all_sites()
 

@@ -58,6 +58,13 @@ class Agent:
 			bench=bench.name,
 		)
 
+	def rebuild_bench(self, bench):
+		return self.create_agent_job(
+			"Rebuild Bench Assets",
+			f"benches/{bench.name}/rebuild",
+			bench=bench.name,
+		)
+
 	def update_bench_config(self, bench):
 		data = {
 			"bench_config": json.loads(bench.bench_config),

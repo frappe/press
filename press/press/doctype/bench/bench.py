@@ -364,6 +364,10 @@ class Bench(Document):
 		candidate._create_deploy([self.server])
 
 	@frappe.whitelist()
+	def rebuild(self):
+		return Agent(self.server).rebuild_bench(self)
+
+	@frappe.whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)

@@ -321,6 +321,14 @@ export default {
 				}
 			};
 		},
+		rebuildBench() {
+			return {
+				url: 'press.api.bench.rebuild',
+				params: {
+					name: this.versions[this.selectedVersionIndex]?.name
+				}
+			};
+		},
 		updateAllSites() {
 			return {
 				url: 'press.api.bench.update',
@@ -427,6 +435,16 @@ export default {
 						this.permissions.restartBench
 				},
 				{
+					label: 'Rebuild Bench',
+					onClick: () => {
+						this.selectedVersionIndex = i;
+						this.confirmRebuild();
+					},
+					condition: () =>
+						this.versions[i].status === 'Active' &&
+						this.permissions.rebuildBench
+				},
+				{
 					label: 'Create Code Server',
 					onClick: () => {
 						this.selectedVersionIndex = i;
@@ -465,6 +483,21 @@ export default {
 					closeDialog();
 				}
 			});
+		},
+		confirmRebuild() {
+			this.$confirm({
+				title: 'Rebuild Bench',
+				message: `
+					<b>bench build</b> command will be executed on your bench. This will regenerate all static assets. Are you sure
+					you want to run this command?
+				`,
+				actionLabel: 'Rebuild Bench',
+				actionColor: 'red',
+				action: closeDialog => {
+					this.$resources.rebuildBench.submit();
+					closeDialog();
+				}
+			});
 		}
 	},
 	computed: {
@@ -473,6 +506,10 @@ export default {
 				restartBench: this.$account.hasPermission(
 					this.benchName,
 					'press.api.bench.restart'
+				),
+				rebuildBench: this.$account.hasPermission(
+					this.benchName,
+					'press.api.bench.rebuild'
 				),
 				sshAccess: this.$account.hasPermission(
 					this.benchName,
