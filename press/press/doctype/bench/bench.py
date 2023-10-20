@@ -380,7 +380,7 @@ class Bench(Document):
 		server_workload,
 		max_gunicorn_workers,
 		max_bg_workers,
-		set_memory_limits,
+		set_memory_limits=False,
 		gunicorn_memory=150,
 		bg_memory=3 * 80,
 	):
