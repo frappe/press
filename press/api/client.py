@@ -19,6 +19,7 @@ def get_list(
 	parent=None,
 	debug=False,
 ):
+	check_permissions(doctype)
 	filtered_fields = filter_fields(doctype, fields)
 	query = frappe.qb.get_query(
 		doctype,
@@ -49,6 +50,7 @@ def get_list(
 
 @frappe.whitelist()
 def get(doctype, name):
+	check_permissions(doctype)
 	doc = frappe.get_doc(doctype, name)
 
 	out = {}
@@ -79,9 +81,7 @@ def apply_custom_filters(doctype, query, **list_args):
 	"""Apply custom filters to query"""
 	controller = get_controller(doctype)
 	if hasattr(controller, "get_list_query"):
-		return_value = controller.get_list_query(query, **list_args)
-		if return_value is not None:
-			query = return_value
+		return controller.get_list_query(query, **list_args)
 
 	return query
 
@@ -99,3 +99,15 @@ def filter_fields(doctype, fields):
 			filtered_fields.append(field)
 
 	return filtered_fields
+
+
+def check_permissions(doctype):
+	# TODO: remove this when we have proper permission checking
+	frappe.only_for("System Manager")
+
+	if not frappe.local.team:
+		frappe.throw(
+			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
+		)
+
+	return True
