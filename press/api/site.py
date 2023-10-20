@@ -1530,30 +1530,7 @@ def update_auto_update_info(name, info=None):
 @frappe.whitelist()
 @protected("Site")
 def get_database_access_info(name):
-	db_access_info = frappe._dict({})
-	site = frappe.db.get_value(
-		"Site",
-		name,
-		["plan", "is_database_access_enabled"],
-		as_dict=True,
-	)
-
-	is_available_on_current_plan = (
-		frappe.db.get_value("Plan", site.plan, "database_access") if site.plan else None
-	)
-	is_db_access_enabled = site.is_database_access_enabled
-
-	db_access_info.is_available_on_current_plan = is_available_on_current_plan
-	db_access_info.is_database_access_enabled = is_db_access_enabled
-
-	if not is_db_access_enabled:
-		# Nothing more we can return here
-		return db_access_info
-
-	site_doc = frappe.get_doc("Site", name)
-	db_access_info.credentials = site_doc.get_database_credentials()
-
-	return db_access_info
+	return frappe.get_doc("Site", name).get_database_access_info()
 
 
 @frappe.whitelist()

@@ -1240,6 +1240,24 @@ class Site(Document):
 			"mode": self.database_access_mode,
 		}
 
+	def get_database_access_info(self):
+		db_access_info = frappe._dict({})
+
+		is_available_on_current_plan = (
+			frappe.db.get_value("Plan", self.plan, "database_access") if self.plan else None
+		)
+
+		db_access_info.is_available_on_current_plan = is_available_on_current_plan
+		db_access_info.is_database_access_enabled = self.is_database_access_enabled
+
+		if not self.is_database_access_enabled:
+			# Nothing more we can return here
+			return db_access_info
+
+		db_access_info.credentials = self.get_database_credentials()
+
+		return db_access_info
+
 	@frappe.whitelist()
 	def optimize_tables(self):
 		agent = Agent(self.server)
