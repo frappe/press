@@ -379,6 +379,11 @@ class ReleaseGroup(Document):
 				release.tag = get_app_tag(source.repository, source.repository_owner, release.hash)
 
 			next_hash = app.hash
+
+			update_available = not current_hash or current_hash != next_hash
+			if not app.releases:
+				update_available = False
+
 			apps.append(
 				frappe._dict(
 					{
@@ -396,7 +401,7 @@ class ReleaseGroup(Document):
 						"next_release": app.release,
 						"will_branch_change": will_branch_change,
 						"current_branch": current_branch,
-						"update_available": not current_hash or current_hash != next_hash,
+						"update_available": update_available,
 					}
 				)
 			)
