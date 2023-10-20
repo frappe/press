@@ -40,7 +40,7 @@ def execute(filters=None):
 
 
 def get_data(filters):
-	server_name = filters.get("server").replace("%", "")  # hack to bypass weird sentry bug
+	server_name = filters.get("server")
 	benches = frappe.get_all(
 		"Bench",
 		filters={
