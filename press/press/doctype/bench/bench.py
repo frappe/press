@@ -386,6 +386,8 @@ class Bench(Document):
 	):
 		"""
 		Mostly makes sense when called from Server's auto_scale_workers
+
+		Allocates workers and memory if required
 		"""
 		try:
 			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
@@ -411,7 +413,7 @@ class Bench(Document):
 			self.memory_high = (
 				self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
 			)
-			self.memory_max = self.memory_high + 1024
+			self.memory_max = self.memory_high + gunicorn_memory + bg_memory
 			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers

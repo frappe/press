@@ -228,7 +228,8 @@ class TestBench(unittest.TestCase):
 			bench1.memory_max,
 			bench1.gunicorn_workers * server.GUNICORN_MEMORY
 			+ bench1.background_workers * server.BACKGROUND_JOB_MEMORY
-			+ 1024,
+			+ server.GUNICORN_MEMORY
+			+ server.BACKGROUND_JOB_MEMORY,
 		)
 		self.assertEqual(bench1.memory_swap, bench1.memory_max * 2)
 
