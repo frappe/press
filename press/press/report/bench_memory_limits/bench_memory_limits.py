@@ -24,13 +24,25 @@ def execute(filters=None):
 		},
 		{
 			"fieldname": "allocated_ram",
-			"label": frappe._("Allocated RAM"),
+			"label": frappe._("Allocated RAM (based on current workers)"),
 			"fieldtype": "Float",
 			"width": 200,
 		},
 		{
-			"fieldname": "server_ram",
-			"label": frappe._("Server RAM"),
+			"fieldname": "5m_avg_server_ram",
+			"label": frappe._("5m average RAM"),
+			"fieldtype": "Float",
+			"width": 200,
+		},
+		{
+			"fieldname": "6h_avg_server_ram",
+			"label": frappe._("6h average RAM"),
+			"fieldtype": "Float",
+			"width": 200,
+		},
+		{
+			"fieldname": "max_server_ram",
+			"label": frappe._("6h max RAM"),
 			"fieldtype": "Float",
 			"width": 200,
 		},
@@ -76,7 +88,33 @@ def get_data(filters):
 	for row in result:
 		for prom_row in prom_res:
 			if row["bench"] == prom_row["name"]["name"]:
-				row["server_ram"] = prom_row["values"][-1] / 1024 / 1024
+				row["5m_avg_server_ram"] = prom_row["values"][-1] / 1024 / 1024
+				break
+
+	prom_res = prometheus_query(
+		f'sum(avg_over_time(container_memory_rss{{instance="{server_name}", name=~".+"}}[6h])) by (name)',
+		lambda x: x,
+		"Asia/Kolkata",
+		6 * 3600,
+		60,
+	)["datasets"]
+	for row in result:
+		for prom_row in prom_res:
+			if row["bench"] == prom_row["name"]["name"]:
+				row["6h_avg_server_ram"] = prom_row["values"][-1] / 1024 / 1024
+				break
+
+	prom_res = prometheus_query(
+		f'sum(max_over_time(container_memory_rss{{instance="{server_name}", name=~".+"}}[6h])) by (name)',
+		lambda x: x,
+		"Asia/Kolkata",
+		6 * 3600,
+		60,
+	)["datasets"]
+	for row in result:
+		for prom_row in prom_res:
+			if row["bench"] == prom_row["name"]["name"]:
+				row["max_server_ram"] = prom_row["values"][-1] / 1024 / 1024
 				break
 
 	return result
