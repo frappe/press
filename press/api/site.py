@@ -1300,51 +1300,7 @@ def unset_redirect(name, domain):
 @frappe.whitelist()
 @protected("Site")
 def install_app(name, app, plan=None):
-	if plan:
-		is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
-		if not is_free:
-			team = get_current_team(get_doc=True)
-			if not team.can_install_paid_apps():
-				frappe.throw(
-					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
-				)
-
-	frappe.get_doc("Site", name).install_app(app)
-
-	if plan:
-		create_marketplace_app_subscription(name, app, plan)
-
-
-def create_marketplace_app_subscription(site_name, app_name, plan_name):
-	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
-	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
-	)
-
-	# If already exists, update the plan and activate
-	if app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
-			for_update=True,
-		)
-
-		app_subscription.marketplace_app_plan = plan_name
-		app_subscription.status = "Active"
-		app_subscription.save(ignore_permissions=True)
-		app_subscription.reload()
-
-		return app_subscription
-
-	return frappe.get_doc(
-		{
-			"doctype": "Marketplace App Subscription",
-			"marketplace_app_plan": plan_name,
-			"app": app_name,
-			"site": site_name,
-			"team": get_current_team(),
-		}
-	).insert(ignore_permissions=True)
+	frappe.get_doc("Site", name).install_app(app, plan)
 
 
 @frappe.whitelist()

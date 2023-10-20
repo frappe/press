@@ -6,6 +6,8 @@ import json
 import traceback
 import os
 
+from press.utils import get_current_team
+
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
 
@@ -50,6 +52,7 @@ def hook():
 	else:
 		path = frappe.request.path
 
+	frappe.local.team = get_current_team(get_doc=True)
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 
 	# Allow unchecked access to System Users
