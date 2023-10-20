@@ -1258,6 +1258,18 @@ class Site(Document):
 
 		return db_access_info
 
+	def get_auto_update_info(self):
+		fields = [
+			"auto_updates_scheduled",
+			"auto_update_last_triggered_on",
+			"update_trigger_frequency",
+			"update_trigger_time",
+			"update_on_weekday",
+			"update_end_of_month",
+			"update_on_day_of_month",
+		]
+		return {field: self.get(field) for field in fields}
+
 	@frappe.whitelist()
 	def optimize_tables(self):
 		agent = Agent(self.server)

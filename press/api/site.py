@@ -1504,19 +1504,7 @@ def disable_auto_update(name):
 @frappe.whitelist()
 @protected("Site")
 def get_auto_update_info(name):
-	site_doc = frappe.get_doc("Site", name)
-
-	auto_update_info = {
-		"auto_updates_scheduled": site_doc.auto_updates_scheduled,
-		"auto_update_last_triggered_on": site_doc.auto_update_last_triggered_on,
-		"update_trigger_frequency": site_doc.update_trigger_frequency,
-		"update_trigger_time": site_doc.update_trigger_time,
-		"update_on_weekday": site_doc.update_on_weekday,
-		"update_end_of_month": site_doc.update_end_of_month,
-		"update_on_day_of_month": site_doc.update_on_day_of_month,
-	}
-
-	return auto_update_info
+	return frappe.get_doc("Site", name).get_auto_update_info()
 
 
 @frappe.whitelist()
