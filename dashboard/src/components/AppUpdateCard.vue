@@ -19,7 +19,12 @@
 				{{ app.title }}
 			</h3>
 		</div>
-		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
+		<Badge
+			v-if="uninstall"
+			class="my-1"
+			theme="red"
+			label="Will Be Uninstalled "
+		/>
 		<div v-else class="ml-2 flex flex-row items-center space-x-2">
 			<CommitTag
 				v-if="deployFrom"
@@ -96,6 +101,8 @@ export default {
 	},
 	methods: {
 		initialDeployTo() {
+			if (this.uninstall) return '';
+
 			let next_release = this.app.releases.filter(
 				release => release.name === this.app.next_release
 			)[0];
