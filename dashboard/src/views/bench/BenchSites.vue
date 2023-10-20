@@ -435,7 +435,7 @@ export default {
 						this.permissions.restartBench
 				},
 				{
-					label: 'Rebuild Bench',
+					label: 'Build Assets',
 					onClick: () => {
 						this.selectedVersionIndex = i;
 						this.confirmRebuild();
@@ -486,12 +486,12 @@ export default {
 		},
 		confirmRebuild() {
 			this.$confirm({
-				title: 'Rebuild Bench',
+				title: 'Build Assets',
 				message: `
 					<b>bench build</b> command will be executed on your bench. This will regenerate all static assets. Are you sure
 					you want to run this command?
 				`,
-				actionLabel: 'Rebuild Bench',
+				actionLabel: 'Build Assets',
 				actionColor: 'red',
 				action: closeDialog => {
 					this.$resources.rebuildBench.submit();
