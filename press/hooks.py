@@ -202,6 +202,7 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
+		"press.press.doctype.agent_jon.agent_job.update_job_step_status",
 	],
 	"cron": {
 		"0 4 * * *": [

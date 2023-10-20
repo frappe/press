@@ -494,19 +494,16 @@ def get_next_retry_at(job_retry_count):
 
 def retry_undelivered_jobs():
 	server_jobs = get_server_wise_undelivered_jobs()
-	print(server_jobs)
+
 	for server in server_jobs:
 		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
-		print(delivered_jobs)
 
 		if delivered_jobs:
 			update_job_ids_for_delivered_jobs(delivered_jobs)
 
 		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
-		print(undelivered_jobs)
 
 		for job in undelivered_jobs:
-			print(job)
 			job = frappe.get_doc("Agent Job", job)
 			max_retry_count = frappe.db.get_value(
 				"Agent Job Type", job.job_type, "max_retry_count", cache=True
@@ -519,6 +516,13 @@ def retry_undelivered_jobs():
 			else:
 				frappe.db.set_value(
 					"Agent Job", job, "status", "Delivery Failure", update_modified=False
+				)
+				frappe.db.set_value(
+					"Agent Job Step",
+					{"agent_job": job},
+					"status",
+					"Delivery Failure",
+					update_modified=False,
 				)
 
 
@@ -686,3 +690,29 @@ def process_job_updates(job_name):
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
 		raise e
+
+
+def update_job_step_status():
+	"""WIP"""
+	"""Update agent job step status to failure/delivery failure if the  agent job is in failure/delivery failure state"""
+
+	steps_group_by_agent_job = {}
+	agent_jobs = set()
+	for job_step in frappe.get_all(
+		"Agent Job Step",
+		filters={
+			"status": "Pending",
+		},
+		fields=["name", "agent_job"],
+	):
+		steps_group_by_agent_job.setdefault(job_step.agent_job, []).append(job_step.name)
+		agent_jobs.add(job_step.agent_job)
+
+	frappe.get_all(
+		"Agent Job",
+		filters={
+			"name": ("in", list(agent_jobs)),
+			"status": ("in", ["Failure", "Delivery Failure"]),
+		},
+		pluck="name",
+	)
