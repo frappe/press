@@ -94,7 +94,7 @@ def protected(doctypes):
 	return wrapper
 
 
-def _new(site, server: str = None):
+def _new(site, server: str = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -149,7 +149,8 @@ def _new(site, server: str = None):
 	)[0]
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
-	validate_plan(bench.server, plan)
+	if not ignore_plan_validation:
+		validate_plan(bench.server, plan)
 
 	site = frappe.get_doc(
 		{
