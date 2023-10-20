@@ -87,6 +87,8 @@ class CodeServer(Document):
 
 
 def process_new_code_server_job_update(job):
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
+
 	other_job_types = {
 		"Add Code Server to Upstream": ("Setup Code Server"),
 		"Setup Code Server": ("Add Code Server to Upstream"),
@@ -120,6 +122,8 @@ def process_stop_code_server_job_update(job):
 
 
 def process_archive_code_server_job_update(job):
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
+
 	other_job_types = {
 		"Remove Code Server from Upstream": ("Archive Code Server"),
 		"Archive Code Server": ("Remove Code Server from Upstream"),
