@@ -16,6 +16,9 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, cstr, get_datetime
+from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
+	MarketplaceAppPlan,
+)
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -215,7 +218,18 @@ class Site(Document):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	def install_app(self, app):
+	@frappe.whitelist()
+	def install_app(self, app, plan=None):
+		if plan:
+			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
+			if not is_free:
+				if not frappe.local.team.can_install_paid_apps():
+					frappe.throw(
+						"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
+					)
+
+					# TODO: check if app is available and can be installed
+
 		if not find(self.apps, lambda x: x.app == app):
 			log_site_activity(self.name, "Install App")
 			agent = Agent(self.server)
@@ -224,6 +238,9 @@ class Site(Document):
 			self.save()
 
 			marketplace_app_hook(app=app, site=self.name, op="install")
+
+		if plan:
+			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
 
 	def uninstall_app(self, app):
 		log_site_activity(self.name, "Uninstall App")

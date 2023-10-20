@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="flex"
+		class="flex text-gray-900"
 		:class="{
 			'justify-end': column.align === 'right',
 			'justify-center': column.align === 'center'
@@ -10,6 +10,7 @@
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
+		<Button v-else-if="column.type === 'Button'" v-bind="column.Button(row)" />
 		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="value">
@@ -26,7 +27,7 @@
 				</button>
 			</Dropdown>
 		</div>
-		<div v-else class="truncate text-base">
+		<div v-else class="truncate text-base" :class="column.class">
 			{{ formattedValue }}
 		</div>
 	</div>

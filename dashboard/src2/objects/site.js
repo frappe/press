@@ -3,6 +3,8 @@ import { formatBytes } from '../utils/format';
 import { FeatherIcon, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
+import GenericDialog from '../components/GenericDialog.vue';
+import ObjectList from '../components/ObjectList.vue';
 
 export default {
 	doctype: 'Site',
@@ -18,6 +20,7 @@ export default {
 		enableDatabaseAccess: 'enable_database_access',
 		enableReadWrite: 'enable_read_write',
 		getDatabaseCredentials: 'get_database_credentials',
+		installApp: 'install_app',
 		migrate: 'migrate',
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
@@ -98,7 +101,105 @@ export default {
 							label: 'Commit Message',
 							fieldname: 'commit_message'
 						}
-					]
+					],
+					resource({ documentResource: site }) {
+						return {
+							type: 'list',
+							doctype: 'Site App',
+							cache: ['ObjectList', 'Site App'],
+							fields: ['name', 'app'],
+							parent: 'Site',
+							filters: {
+								parenttype: 'Site',
+								parent: site.doc.name
+							},
+							auto: true
+						};
+					},
+					primaryAction({ listResource: apps, documentResource: site }) {
+						return {
+							label: 'Install App',
+							icon: 'plus',
+							onClick() {
+								return h(
+									GenericDialog,
+									{
+										options: {
+											title: 'Install app on your site',
+											size: '4xl'
+										}
+									},
+									{
+										default: () =>
+											h(ObjectList, {
+												options: {
+													label: 'App',
+													fieldname: 'app',
+													fieldtype: 'ListSelection',
+													columns: [
+														{
+															label: 'Title',
+															fieldname: 'title',
+															class: 'font-medium',
+															width: 2
+														},
+														{
+															label: 'Repo',
+															fieldname: 'repository_owner',
+															class: 'text-gray-600'
+														},
+														{
+															label: 'Branch',
+															fieldname: 'branch',
+															class: 'text-gray-600'
+														},
+														{
+															label: '',
+															fieldname: '',
+															align: 'right',
+															type: 'Button',
+															width: '5rem',
+															Button(row) {
+																return {
+																	label: 'Install',
+																	onClick() {
+																		if (site.installApp.loading) return;
+																		toast.promise(
+																			site.installApp.submit({
+																				app: row.name
+																			}),
+																			{
+																				loading: 'Installing app...',
+																				success: () =>
+																					'App will be installed shortly',
+																				error: e => {
+																					return e.messages.length
+																						? e.messages.join('\n')
+																						: e.message;
+																				}
+																			}
+																		);
+																	}
+																};
+															}
+														}
+													],
+													resource() {
+														return {
+															url: 'press.api.site.available_apps',
+															params: {
+																name: site.doc.name
+															},
+															auto: true
+														};
+													}
+												}
+											})
+									}
+								);
+							}
+						};
+					}
 				}
 			},
 			{
@@ -350,9 +451,10 @@ export default {
 							fieldname: 'reason'
 						},
 						{
-							label: 'Timestamp',
+							label: '',
 							fieldname: 'creation',
-							type: 'Timestamp'
+							type: 'Timestamp',
+							align: 'right'
 						}
 					]
 				}

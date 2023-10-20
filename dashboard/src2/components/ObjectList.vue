@@ -1,24 +1,20 @@
 <template>
 	<div>
-		<div class="flex px-5 pt-5">
+		<div class="flex">
 			<div>
-				<TextInput placeholder="Search" class="w-[20rem]">
+				<TextInput placeholder="Search" class="w-[20rem]" v-model="searchQuery">
 					<template #prefix>
 						<i-lucide-search class="h-4 w-4 text-gray-500" />
 					</template>
 				</TextInput>
 			</div>
 			<div class="ml-auto flex items-center space-x-2">
-				<Button @click="list.reload()" :loading="list.list.loading">
+				<Button @click="list.reload()" :loading="isLoading">
 					<template #prefix>
 						<i-lucide-refresh-ccw class="h-4 w-4" />
 					</template>
 					Refresh
 				</Button>
-				<!-- <Dropdown
-					:options="[{ label: 'Actions', onClick: () => {} }]"
-					:button="{ icon: 'more-horizontal' }"
-				/> -->
 				<Button v-if="primaryAction" v-bind="primaryAction.props">
 					<template v-if="primaryAction.icon" #prefix>
 						<FeatherIcon :name="primaryAction.icon" class="h-4 w-4" />
@@ -26,10 +22,10 @@
 				</Button>
 			</div>
 		</div>
-		<div class="mt-3 min-h-0 flex-1 overflow-y-auto px-5">
+		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
 			<ListView
 				:columns="columns"
-				:rows="rows"
+				:rows="filteredRows"
 				:options="{
 					selectable: this.options.selectable || false,
 					onRowClick: () => {},
@@ -55,17 +51,17 @@
 					</ListHeaderItem>
 				</ListHeader>
 				<ListRows>
-					<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
+					<ListRow v-for="(row, i) in filteredRows" :row="row" :key="row.name">
 						<template v-slot="{ column, item }">
 							<ObjectListCell :row="row" :column="column" :idx="i" />
 						</template>
 					</ListRow>
 				</ListRows>
 			</ListView>
-			<div class="px-5" v-if="rows.length === 0">
+			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
 					class="text-center text-sm leading-10 text-gray-500"
-					v-if="list.list.loading"
+					v-if="isLoading"
 				>
 					Loading...
 				</div>
@@ -74,7 +70,7 @@
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right">
-				<Button @click="list.next()" v-if="list.hasNextPage">
+				<Button @click="list.next()" v-if="list.next && list.hasNextPage">
 					Load more
 				</Button>
 			</div>
@@ -93,12 +89,13 @@ import {
 	ListRowItem,
 	ListSelectBanner,
 	TextInput,
-	FeatherIcon
+	FeatherIcon,
+	debounce
 } from 'frappe-ui';
 import { isVNode } from 'vue';
 
 export default {
-	name: 'List',
+	name: 'ObjectList',
 	props: ['options'],
 	components: {
 		Dropdown,
@@ -114,11 +111,42 @@ export default {
 	},
 	data() {
 		return {
+			searchQuery: '',
+			filteredRows: [],
 			components: []
 		};
 	},
+	watch: {
+		searchQuery: {
+			immediate: true,
+			handler: debounce(function (query) {
+				if (!query) {
+					this.filteredRows = this.rows;
+					return;
+				}
+				this.filteredRows = this.rows.filter(row => {
+					let values = this.options.columns.map(column => {
+						let value = row[column.fieldname];
+						if (column.format) {
+							value = column.format(value, row);
+						}
+						return value;
+					});
+					for (let value of values) {
+						if (value && value.toLowerCase().includes(query.toLowerCase())) {
+							return true;
+						}
+					}
+					return false;
+				});
+			}, 300)
+		}
+	},
 	resources: {
 		list() {
+			if (this.options.resource) {
+				return this.options.resource(this.context);
+			}
 			return {
 				type: 'list',
 				cache: ['ObjectList', this.options.doctype || this.options.url],
@@ -131,7 +159,13 @@ export default {
 				],
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
-				auto: true
+				auto: true,
+				onData: () => {
+					this.filteredRows = this.rows;
+				},
+				onSuccess: () => {
+					this.filteredRows = this.rows;
+				}
 			};
 		}
 	},
@@ -189,6 +223,9 @@ export default {
 				...this.options.context,
 				listResource: this.list
 			};
+		},
+		isLoading() {
+			return this.list.list?.loading || this.list.loading;
 		}
 	}
 };

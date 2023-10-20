@@ -3547,10 +3547,10 @@ frappe-charts@2.0.0-rc22:
   resolved "https://registry.yarnpkg.com/frappe-charts/-/frappe-charts-2.0.0-rc22.tgz#9a5a747febdc381a1d4d7af96e89cf519dfba8c0"
   integrity sha512-N7f/8979wJCKjusOinaUYfMxB80YnfuVLrSkjpj4LtyqS0BGS6SuJxUnb7Jl4RWUFEIs7zEhideIKnyLeFZF4Q==
 
-frappe-ui@^0.1.11:
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-0.1.11.tgz#8ca0e437a6ed6711fac0b6e72ab22825e1614878"
-  integrity sha512-mm6yh0RkT0bbYOH+Na+7/R8bO7PqxrKT0fl0xpqlLHz6o2Q1W7ujFt9xmGV8At1fdWIpwXgcJ7WRS+Gkq1qzug==
+frappe-ui@^0.1.12:
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/frappe-ui/-/frappe-ui-0.1.12.tgz#f112931897f75f307f18a3227ab641669cdfdddb"
+  integrity sha512-gb4aiNdcyiOYhJ1QZw1o+P26HSIM6T/3Dq4tfIq8uwvV2l3mk+xIW51g9lHLIUaYri44wojCrRCuCm8apO8xQw==
   dependencies:
     "@headlessui/vue" "^1.7.14"
     "@popperjs/core" "^2.11.2"

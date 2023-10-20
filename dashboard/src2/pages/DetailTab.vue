@@ -1,12 +1,12 @@
 <template>
-	<div>
+	<div class="p-5">
 		<div v-if="tab.type === 'list'">
 			<ObjectList :options="listOptions" />
 		</div>
-		<div class="p-5" v-else-if="tab.type == 'Component'">
+		<div v-else-if="tab.type == 'Component'">
 			<component :is="tab.component" v-bind="getProps(tab)" />
 		</div>
-		<div v-else class="p-5">
+		<div v-else>
 			{{ tab.label }}
 		</div>
 	</div>

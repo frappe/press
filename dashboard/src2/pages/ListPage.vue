@@ -8,7 +8,9 @@
 				<!-- <Button>Actions</Button> -->
 			</Header>
 		</div>
-		<ObjectList :options="listOptions" />
+		<div class="p-5">
+			<ObjectList :options="listOptions" />
+		</div>
 	</div>
 </template>
 
