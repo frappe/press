@@ -595,8 +595,8 @@ def candidate(name):
 				["name", "status", "end", "duration", "bench"],
 				{"bench": bench.bench, "job_type": "New Bench"},
 				limit=1,
-			)[0]
-			jobs.append(job)
+			) or [{}]
+			jobs.append(job[0])
 
 	return {
 		"name": candidate.name,
