@@ -239,12 +239,14 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 	for server in servers:
-		try:
-			poll_pending_jobs_server(server)
-			frappe.db.commit()
-		except Exception:
-			log_error("Server Agent Job Poll Exception", server=server)
-			frappe.db.rollback()
+		server.pop("count")
+		frappe.enqueue(
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
+			queue="short",
+			server=server,
+			job_id=f"poll_pending_jobs:{server.server}",
+			deduplicate=True,
+		)
 
 
 def fail_old_jobs():
