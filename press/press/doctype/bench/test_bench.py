@@ -194,3 +194,45 @@ class TestBench(unittest.TestCase):
 		bench.reload()
 		self.assertEqual(bench.gunicorn_workers, 10)
 		self.assertEqual(bench.background_workers, 5)
+
+	def test_set_bench_memory_limits_on_server_adds_memory_limit_on_bench_on_auto_scale(
+		self,
+	):
+		bench1 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		bench2 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+
+		scale_workers()
+
+		bench1.reload()
+		bench2.reload()
+		self.assertEqual(bench1.memory_high, 0)
+		self.assertEqual(bench1.memory_max, 0)
+		self.assertEqual(bench2.memory_high, 0)
+		self.assertEqual(bench2.memory_max, 0)
+		frappe.db.set_value("Server", bench1.server, "set_bench_memory_limits", True)
+		server = frappe.get_doc("Server", bench1.server)
+
+		scale_workers()
+
+		bench1.reload()
+		bench2.reload()
+		self.assertTrue(bench1.memory_high)
+		self.assertTrue(bench1.memory_max)
+		self.assertTrue(bench1.memory_swap)
+		self.assertEqual(
+			bench1.memory_high,
+			bench1.gunicorn_workers * server.GUNICORN_MEMORY
+			+ bench1.background_workers * server.BACKGROUND_JOB_MEMORY,
+		)
+		self.assertEqual(
+			bench1.memory_max,
+			bench1.gunicorn_workers * server.GUNICORN_MEMORY
+			+ bench1.background_workers * server.BACKGROUND_JOB_MEMORY
+			+ server.GUNICORN_MEMORY
+			+ server.BACKGROUND_JOB_MEMORY,
+		)
+		self.assertEqual(bench1.memory_swap, bench1.memory_max * 2)
+
+		self.assertFalse(bench2.memory_high)
+		self.assertFalse(bench2.memory_max)
+		self.assertFalse(bench2.memory_swap)

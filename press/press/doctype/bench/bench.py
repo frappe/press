@@ -375,9 +375,19 @@ class Bench(Document):
 	def get_environment_variables(self):
 		return {v.key: v.value for v in self.environment_variables}
 
-	def allocate_workers(self, server_workload, max_gunicorn_workers, max_bg_workers):
+	def allocate_workers(
+		self,
+		server_workload,
+		max_gunicorn_workers,
+		max_bg_workers,
+		set_memory_limits=False,
+		gunicorn_memory=150,
+		bg_memory=3 * 80,
+	):
 		"""
 		Mostly makes sense when called from Server's auto_scale_workers
+
+		Allocates workers and memory if required
 		"""
 		try:
 			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
@@ -399,6 +409,12 @@ class Bench(Document):
 		except ZeroDivisionError:  # when total_workload is 0
 			self.gunicorn_workers = 2
 			self.background_workers = 1
+		if set_memory_limits:
+			self.memory_high = (
+				self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
+			)
+			self.memory_max = self.memory_high + gunicorn_memory + bg_memory
+			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 
