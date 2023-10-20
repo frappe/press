@@ -52,7 +52,11 @@ def hook():
 	else:
 		path = frappe.request.path
 
-	frappe.local.team = get_current_team(get_doc=True)
+	if frappe.session.user == "Guest":
+		frappe.local.team = None
+	else:
+		frappe.local.team = get_current_team(get_doc=True)
+
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 
 	# Allow unchecked access to System Users
