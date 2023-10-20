@@ -45,6 +45,7 @@ export default class Account {
 			this.saas_site_request = result.saas_site_request;
 			this.permissions = result.permissions;
 			this.number_of_sites = result.number_of_sites;
+			this.billing_info = result.billing_info;
 		} catch (e) {
 			localStorage.removeItem('current_team');
 		} finally {
@@ -90,11 +91,17 @@ export default class Account {
 			return true;
 		}
 		if (this.team.payment_mode == 'Card') {
-			return this.team.default_payment_method;
+			// card is chargeable and not spam
+			return (
+				this.billing_info.verified_micro_charge ||
+				this.billing_info.has_paid_before ||
+				this.billing_info.balance > 0
+			);
 		}
 		if (this.team.payment_mode == 'Prepaid Credits') {
 			return this.balance > 0;
 		}
+
 		return false;
 	}
 

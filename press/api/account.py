@@ -426,6 +426,7 @@ def get():
 		"partner_billing_name": partner_billing_name,
 		"number_of_sites": number_of_sites,
 		"permissions": get_permissions(),
+		"billing_info": team_doc.billing_info(),
 	}
 
 
