@@ -1,6 +1,6 @@
 import frappe
 import functools
-from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.plan.plan import get_plan_config, plan_attribute
 from press.api.analytics import get_current_cpu_usage
 from press.utils import log_error
 
@@ -17,7 +17,7 @@ def get_cpu_limits(plan):
 
 @functools.lru_cache(maxsize=128)
 def get_disk_limits(plan):
-	return frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"])
+	return plan_attribute(plan, ["max_database_usage", "max_storage_usage"])
 
 
 @functools.lru_cache(maxsize=128)

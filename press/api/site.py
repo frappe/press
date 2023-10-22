@@ -28,8 +28,12 @@ from press.utils import (
 	log_error,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
-	group_children_in_result,
 	unique,
+)
+from press.press.doctype.plan.plan import (
+	get_plans,
+	get_plans_with_attributes,
+	plan_attribute,
 )
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -575,55 +579,8 @@ def get_new_site_options(group: str = None):
 
 
 @frappe.whitelist()
-def get_plans(name=None, rg=None):
-	filters = {"enabled": True, "document_type": "Site"}
-
-	plans = frappe.db.get_all(
-		"Plan",
-		fields=[
-			"name",
-			"plan_title",
-			"price_usd",
-			"price_inr",
-			"cpu_time_per_day",
-			"max_storage_usage",
-			"max_database_usage",
-			"database_access",
-			"support_included",
-			"`tabHas Role`.role",
-		],
-		filters=filters,
-		order_by="price_usd asc",
-	)
-	plans = group_children_in_result(plans, {"role": "roles"})
-
-	if name or rg:
-		team = get_current_team()
-		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
-		release_group = frappe.get_doc("Release Group", release_group_name)
-		is_private_bench = release_group.team == team and not release_group.public
-		is_system_user = (
-			frappe.db.get_value("User", frappe.session.user, "user_type") == "System User"
-		)
-		# poor man's bench paywall
-		# this will not allow creation of $10 sites on private benches
-		# wanted to avoid adding a new field, so doing this with a date check :)
-		# TODO: find a better way to do paywalls
-		paywall_date = frappe.utils.get_datetime("2021-09-21 00:00:00")
-		is_paywalled_bench = (
-			is_private_bench and release_group.creation > paywall_date and not is_system_user
-		)
-	else:
-		is_paywalled_bench = False
-
-	out = []
-	for plan in plans:
-		if is_paywalled_bench and plan.price_usd == 10:
-			continue
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
-	return out
+def plans(document_type="Site", name=None, rg=None):
+	return get_plans(document_type, name, rg)
 
 
 def sites_with_recent_activity(sites, limit=3):
@@ -1033,7 +990,6 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
@@ -1057,23 +1013,21 @@ def current_plan(name):
 	now = frappe.utils.now_datetime()
 	today_end = now.replace(hour=23, minute=59, second=59)
 	hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
+	plan = get_plans_with_attributes({"document_type": "Site", "name": site.plan})
 
-	return {
-		"current_plan": plan,
-		"total_cpu_usage_hours": total_cpu_usage_hours,
-		"hours_until_reset": hours_left_today,
-		"max_database_usage": plan.max_database_usage if plan else None,
-		"max_storage_usage": plan.max_storage_usage if plan else None,
-		"total_database_usage": total_database_usage,
-		"total_storage_usage": total_storage_usage,
-		"database_access": plan.database_access if plan else None,
-		"monitor_access": plan.monitor_access if plan else None,
-		"usage_in_percent": {
-			"cpu": site.current_cpu_usage,
-			"disk": site.current_disk_usage,
-			"database": site.current_database_usage,
-		},
-	}
+	return plan[0].update(
+		{
+			"total_cpu_usage_hours": total_cpu_usage_hours,
+			"hours_until_reset": hours_left_today,
+			"total_database_usage": total_database_usage,
+			"total_storage_usage": total_storage_usage,
+			"usage_in_percent": {
+				"cpu": site.current_cpu_usage,
+				"disk": site.current_disk_usage,
+				"database": site.current_database_usage,
+			},
+		}
+	)
 
 
 @frappe.whitelist()
@@ -1582,7 +1536,7 @@ def get_database_access_info(name):
 	)
 
 	is_available_on_current_plan = (
-		frappe.db.get_value("Plan", site.plan, "database_access") if site.plan else None
+		plan_attribute(site.plan, "database_access") if site.plan else None
 	)
 	is_db_access_enabled = site.is_database_access_enabled
 

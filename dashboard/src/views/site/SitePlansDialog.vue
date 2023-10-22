@@ -52,7 +52,7 @@ export default {
 			try {
 				// custom plan validation for frappe support
 				let result = await this.$call('validate_plan_change', {
-					current_plan: this.plan.current_plan,
+					current_plan: this.plan,
 					new_plan: value,
 					currency: this.$account.team.currency
 				});
@@ -65,7 +65,7 @@ export default {
 	resources: {
 		plans() {
 			return {
-				url: 'press.api.site.get_plans',
+				url: 'press.api.site.plans',
 				params: {
 					name: this.site?.name
 				},
@@ -87,7 +87,7 @@ export default {
 						color: 'green'
 					});
 					this.showChangePlanDialog = false;
-					this.plan.current_plan = this.selectedPlan;
+					this.plan = this.selectedPlan;
 					this.selectedPlan = null;
 					this.$resources.plans.reload();
 					this.$emit('plan-change');
@@ -132,7 +132,7 @@ export default {
 				}
 
 				// If this `plan` is currently in use
-				if (this.plan.current_plan.name === plan.name) {
+				if (this.plan.name === plan.name) {
 					plan.disabled = true;
 				}
 

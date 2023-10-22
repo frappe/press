@@ -35,24 +35,16 @@
 			<Button :loading="true" loading-text="Loading" />
 		</div>
 		<div v-else>
-			<div
-				v-if="plan.current_plan"
-				class="flex items-center rounded-lg bg-gray-50 p-5"
-			>
+			<div v-if="plan" class="flex items-center rounded-lg bg-gray-50 p-5">
 				<PlanIcon />
 				<div class="ml-4">
 					<h4 class="text-4xl font-semibold text-gray-900">
-						{{ $planTitle(plan.current_plan) }}
-						<span v-if="plan.current_plan.price_usd > 0" class="text-lg">
-							/mo
-						</span>
+						{{ $planTitle(plan) }}
+						<span v-if="plan.price_usd > 0" class="text-lg"> /mo </span>
 					</h4>
-					<p
-						class="text-base text-gray-700"
-						v-if="plan.current_plan.name != 'Unlimited'"
-					>
-						{{ plan.current_plan.cpu_time_per_day }}
-						{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }}
+					<p class="text-base text-gray-700" v-if="plan.name != 'Unlimited'">
+						{{ plan.cpu_time_per_day }}
+						{{ $plural(plan.cpu_time_per_day, 'hour', 'hours') }}
 						of CPU / day
 					</p>
 				</div>
@@ -62,13 +54,8 @@
 					<h4 class="font-semibold text-gray-600">No Plan Set</h4>
 				</div>
 			</div>
-
-			<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
-				<div
-					v-if="plan.current_plan.name != 'Unlimited'"
-					v-for="d in usage"
-					:key="d.label"
-				>
+			<div v-if="plan.name" class="mt-4 grid grid-cols-3 gap-12">
+				<div v-if="plan.name != 'Unlimited'" v-for="d in usage" :key="d.label">
 					<ProgressArc :percentage="d.percentage" />
 					<div class="mt-2 text-base font-medium text-gray-900">
 						{{ d.label }}
@@ -126,7 +113,7 @@ export default {
 			try {
 				// custom plan validation for frappe support
 				let result = await this.$call('validate_plan_change', {
-					current_plan: this.plan.current_plan,
+					current_plan: this.plan,
 					new_plan: value,
 					currency: this.$account.team.currency
 				});
@@ -139,7 +126,7 @@ export default {
 	resources: {
 		plans() {
 			return {
-				url: 'press.api.site.get_plans',
+				url: 'press.api.site.plans',
 				params: {
 					name: this.site?.name
 				},
@@ -148,14 +135,6 @@ export default {
 		}
 	},
 	methods: {
-		plan_title(plan) {
-			let india = this.$account.team.country == 'India';
-			let currency = india ? '₹' : '$';
-			let price_field = india ? 'price_inr' : 'price_usd';
-			let price = plan.current_plan[price_field];
-			return price > 0 ? `${currency}${price}` : plan.current_plan.plan_title;
-		},
-
 		belowCurrentUsage(plan) {
 			return (
 				this.plan.total_storage_usage > plan.max_storage_usage ||
@@ -207,7 +186,8 @@ export default {
 				}
 
 				// If this `plan` is currently in use
-				if (this.plan.current_plan.name === plan.name) {
+				if (this.plan.name === plan.name) {
+					console.log(this.plan, plan);
 					plan.disabled = true;
 				}
 
@@ -225,43 +205,34 @@ export default {
 				return this.formatBytes(value, 0, 2);
 			};
 
-			if (!this.plan.current_plan || this.site.status === 'Suspended') {
+			if (!this.plan.name || this.site.status === 'Suspended') {
 				return this.getCurrentFormattedUsage();
 			}
 			return [
 				{
-					label: 'CPU',
+					label: 'CPUs',
 					value: `${this.plan.total_cpu_usage_hours} / ${
-						this.plan.current_plan.cpu_time_per_day
-					} ${this.$plural(
-						this.plan.current_plan.cpu_time_per_day,
-						'hour',
-						'hours'
-					)}`,
+						this.plan.cpu_time_per_day
+					} ${this.$plural(this.plan.cpu_time_per_day, 'hour', 'hours')}`,
 					percentage:
-						(this.plan.total_cpu_usage_hours /
-							this.plan.current_plan.cpu_time_per_day) *
-						100
+						(this.plan.total_cpu_usage_hours / this.plan.cpu_time_per_day) * 100
 				},
 				{
 					label: 'Database',
 					value: `${f(this.plan.total_database_usage)} / ${f(
-						this.plan.current_plan.max_database_usage
+						this.plan.max_database_usage
 					)}`,
 					percentage:
-						(this.plan.total_database_usage /
-							this.plan.current_plan.max_database_usage) *
+						(this.plan.total_database_usage / this.plan.max_database_usage) *
 						100
 				},
 				{
 					label: 'Storage',
 					value: `${f(this.plan.total_storage_usage)} / ${f(
-						this.plan.current_plan.max_storage_usage
+						this.plan.max_storage_usage
 					)}`,
 					percentage:
-						(this.plan.total_storage_usage /
-							this.plan.current_plan.max_storage_usage) *
-						100
+						(this.plan.total_storage_usage / this.plan.max_storage_usage) * 100
 				}
 			];
 		}

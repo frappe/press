@@ -34,6 +34,7 @@ from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
 from press.utils.dns import create_dns_record, _change_dns_record
+from press.press.doctype.plan.plan import plan_attribute
 
 
 class Site(Document):
@@ -981,14 +982,14 @@ class Site(Document):
 				return
 			plan_name = subscription.plan
 
-		plan = frappe.get_doc("Plan", plan_name)
+		max_database_usage, max_storage_usage = plan_attribute(
+			plan_name, ["max_database_usage", "max_storage_usage"]
+		)
 
 		disk_usage = usage.public + usage.private
-		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
-			self.current_database_usage = (usage.database / plan.max_database_usage) * 100
-			self.current_disk_usage = (
-				(usage.public + usage.private) / plan.max_storage_usage
-			) * 100
+		if usage.database < max_database_usage and disk_usage < max_storage_usage:
+			self.current_database_usage = (usage.database / max_database_usage) * 100
+			self.current_disk_usage = ((usage.public + usage.private) / max_storage_usage) * 100
 			self.unsuspend(reason="Plan Upgraded")
 
 	@frappe.whitelist()
@@ -1149,7 +1150,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def enable_database_access(self, mode="read_only"):
-		if not frappe.db.get_value("Plan", self.plan, "database_access"):
+		if not plan_attribute(self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		log_site_activity(self.name, "Enable Database Access")
 

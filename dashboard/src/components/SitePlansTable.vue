@@ -49,7 +49,7 @@
 				{{ formatBytes(plan.max_storage_usage, 0, 2) }}
 			</div>
 			<a
-				v-if="plan.support_included"
+				v-if="plan.support_included === 1"
 				href="https://support.frappe.io"
 				target="_blank"
 				class="w-1/4"

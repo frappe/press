@@ -10,22 +10,16 @@
   "enabled",
   "section_break_2",
   "document_type",
+  "document_name",
   "plan_title",
   "interval",
   "column_break_5",
+  "is_trial_plan",
+  "private_benches",
   "price_usd",
   "price_inr",
-  "features_section",
-  "cpu_time_per_day",
-  "max_database_usage",
-  "max_storage_usage",
-  "column_break_13",
-  "is_trial_plan",
-  "offsite_backups",
-  "private_benches",
-  "database_access",
-  "monitor_access",
-  "support_included",
+  "attributes_section",
+  "attributes",
   "servers",
   "cluster",
   "instance_type",
@@ -65,12 +59,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "cpu_time_per_day",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "CPU Time Per Day"
-  },
-  {
    "fieldname": "document_type",
    "fieldtype": "Link",
    "label": "Document Type",
@@ -82,29 +70,6 @@
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly\nAnnually"
-  },
-  {
-   "depends_on": "eval:doc.document_type == 'Site'",
-   "fieldname": "features_section",
-   "fieldtype": "Section Break",
-   "label": "Site Features"
-  },
-  {
-   "default": "0",
-   "fieldname": "offsite_backups",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Offsite Backups"
-  },
-  {
-   "fieldname": "max_database_usage",
-   "fieldtype": "Int",
-   "label": "Max Database Usage (MiB)"
-  },
-  {
-   "fieldname": "max_storage_usage",
-   "fieldtype": "Int",
-   "label": "Max Storage Usage (MiB)"
   },
   {
    "fieldname": "column_break_5",
@@ -124,22 +89,6 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
-  },
-  {
-   "fieldname": "column_break_13",
-   "fieldtype": "Column Break"
-  },
-  {
-   "default": "0",
-   "fieldname": "private_benches",
-   "fieldtype": "Check",
-   "label": "Private Benches"
-  },
-  {
-   "default": "0",
-   "fieldname": "database_access",
-   "fieldtype": "Check",
-   "label": "Database Access"
   },
   {
    "default": "0",
@@ -183,21 +132,33 @@
    "label": "Disk"
   },
   {
-   "default": "0",
-   "fieldname": "monitor_access",
-   "fieldtype": "Check",
-   "label": "Monitor Access"
+   "fetch_from": ".",
+   "fieldname": "document_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Document Name",
+   "options": "document_type"
+  },
+  {
+   "fieldname": "attributes_section",
+   "fieldtype": "Section Break",
+   "label": "Attributes"
+  },
+  {
+   "fieldname": "attributes",
+   "fieldtype": "Table",
+   "label": "Attributes",
+   "options": "Plan Attribute"
   },
   {
    "default": "0",
-   "fieldname": "support_included",
+   "fieldname": "private_benches",
    "fieldtype": "Check",
-   "label": "Support Included"
+   "label": "Private Benches"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-14 11:07:21.911136",
+ "modified": "2023-10-22 13:23:36.094473",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

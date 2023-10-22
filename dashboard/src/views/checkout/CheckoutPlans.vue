@@ -83,7 +83,7 @@ export default {
 				this.formatBytes(plan.max_database_usage, 0, 2) + ' Database',
 				this.formatBytes(plan.max_storage_usage, 0, 2) + ' Storge'
 			];
-			if (plan.support_included) {
+			if (plan.support_included === 1) {
 				features.push('Product warranty + Support');
 			}
 			return features;

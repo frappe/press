@@ -306,9 +306,11 @@ def setup_plans():
 				"plan_title": plan[0],
 				"price_usd": plan[1],
 				"price_inr": plan[1] * 80,
-				"cpu_time_per_day": index,
-				"max_database_usage": 1024 * index,
-				"max_storage_usage": 10240 * index,
+				"attributes": [
+					{"fieldtype": "Int", "fieldname": "cpu_time_per_day", "value": index},
+					{"fieldtype": "Int", "fieldname": "max_database_usage", "value": 1024 * index},
+					{"fieldtype": "Int", "fieldname": "max_storage_usage", "value": 10240 * index},
+				],
 				"roles": [
 					{"role": "System Manager"},
 					{"role": "Press Admin"},
