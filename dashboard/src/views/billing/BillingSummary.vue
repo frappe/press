@@ -25,6 +25,20 @@
 					</div>
 					<div class="border rounded-md p-4">
 						<div class="flex justify-between text-base">
+							<div>Account Balance</div>
+							<Button
+								@click="showPrepaidCreditsDialog = true"
+								theme="gray"
+								iconLeft="plus"
+								>Add</Button
+							>
+						</div>
+						<div class="text-2xl font-medium">
+							{{ availableCredits }}
+						</div>
+					</div>
+					<div class="border rounded-md p-4">
+						<div class="flex justify-between text-base">
 							<div>Total Unpaid Amount</div>
 							<Button
 								@click="showPrepaidCreditsDialog = true"
@@ -143,6 +157,28 @@ export default {
 		this.$socket.off('balance_updated');
 	},
 	computed: {
+		cardBrand() {
+			return {
+				'master-card': defineAsyncComponent(() =>
+					import('@/components/icons/cards/MasterCard.vue')
+				),
+				visa: defineAsyncComponent(() =>
+					import('@/components/icons/cards/Visa.vue')
+				),
+				amex: defineAsyncComponent(() =>
+					import('@/components/icons/cards/Amex.vue')
+				),
+				jcb: defineAsyncComponent(() =>
+					import('@/components/icons/cards/JCB.vue')
+				),
+				generic: defineAsyncComponent(() =>
+					import('@/components/icons/cards/Generic.vue')
+				),
+				'union-pay': defineAsyncComponent(() =>
+					import('@/components/icons/cards/UnionPay.vue')
+				)
+			};
+		},
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
 			const minimumDefault = $account.team.currency == 'INR' ? 800 : 10;

@@ -503,6 +503,7 @@ class Team(Document):
 				"name_on_card": payment_method["billing_details"]["name"],
 				"expiry_month": payment_method["card"]["exp_month"],
 				"expiry_year": payment_method["card"]["exp_year"],
+				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
 			}
 		)
@@ -531,6 +532,7 @@ class Team(Document):
 				"name_on_card",
 				"expiry_month",
 				"expiry_year",
+				"brand",
 				"is_default",
 				"creation",
 			],
