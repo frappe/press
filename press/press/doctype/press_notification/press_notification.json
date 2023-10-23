@@ -10,8 +10,8 @@
   "read",
   "team",
   "type",
-  "route",
-  "id",
+  "document_type",
+  "document_name",
   "message"
  ],
  "fields": [
@@ -45,24 +45,26 @@
    "reqd": 1
   },
   {
-   "description": "Either Agent Job ID or Deploy Candidate ID",
-   "fieldname": "id",
-   "fieldtype": "Data",
-   "label": "ID",
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Document Type",
+   "options": "DocType",
    "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "route",
-   "fieldtype": "Data",
-   "label": "Route",
-   "read_only": 1,
+   "fieldname": "document_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Document Name",
+   "options": "document_type",
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-19 08:31:32.804811",
+ "modified": "2023-10-23 19:21:28.616144",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

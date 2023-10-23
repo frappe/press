@@ -706,10 +706,10 @@ class DeployCandidate(Document):
 
 			create_new_notification(
 				self.team,
-				self.name,
 				"Bench Deploy",
+				self.doctype,
+				self.name,
 				f"The scheduled deploy on the bench <b>{group_title}</b> failed at step <b>{error_msg}</b>",
-				f"benches/{self.group}/deploys/{self.name}",
 			)
 		if self.status == "Running":
 			frappe.publish_realtime(

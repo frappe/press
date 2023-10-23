@@ -291,11 +291,8 @@ def update_job(job_name, job):
 
 	# send notification if job failed
 	if job["status"] == "Failure":
-		job_site, job_id, job_type = frappe.db.get_value(
-			"Agent Job", job_name, ["site", "job_id", "job_type"]
-		)
+		job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
 		notification_type, message = "", ""
-		route = f"sites/{job_site}/jobs/{job_name}"
 
 		if job_type == "Update Site Migrate":
 			notification_type = "Site Migrate"
@@ -310,10 +307,10 @@ def update_job(job_name, job):
 		if notification_type:
 			create_new_notification(
 				frappe.get_value("Site", job_site, "team"),
-				job_id,
 				notification_type,
+				"Agent Job",
+				job_name,
 				message,
-				route,
 			)
 
 
