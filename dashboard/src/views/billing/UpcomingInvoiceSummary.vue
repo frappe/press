@@ -1,12 +1,12 @@
 <template>
-	<Card title="Invoice summary" :subtitle="subtitle">
+	<Card title="Invoice Summary" :subtitle="subtitle">
 		<InvoiceUsageTable :invoiceDoc="invoiceDoc" />
 	</Card>
 </template>
 <script>
 import InvoiceUsageTable from '@/components/InvoiceUsageTable.vue';
 export default {
-	name: 'AccountBillingUpcomingInvoice',
+	name: 'UpcomingInvoiceSummary',
 	props: ['invoiceDoc'],
 	components: {
 		InvoiceUsageTable
@@ -19,7 +19,9 @@ export default {
 			let start = this.$date(this.invoiceDoc.period_start);
 			let end = this.$date(this.invoiceDoc.period_end);
 
-			return `${start.toFormat('d MMM')} - ${end.toFormat('d MMM yyyy')}`;
+			return `Current month's total forcast (${start.toFormat(
+				'd MMM'
+			)} - ${end.toFormat('d MMM yyyy')})`;
 		}
 	}
 };

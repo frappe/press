@@ -30,14 +30,41 @@
 			/>
 		</template>
 	</Dialog>
+	<BillingInformationDialog
+		v-model="showBillingInformationDialog"
+		v-if="showBillingInformationDialog"
+	/>
+	<PrepaidCreditsDialog
+		v-if="showPrepaidCreditsDialog"
+		v-model:show="showPrepaidCreditsDialog"
+		:minimumAmount="$account.team.currency == 'INR' ? 800 : 10"
+		@success="
+			() => {
+				$resources.upcomingInvoice.reload();
+				showPrepaidCreditsDialog = false;
+			}
+		"
+	/>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'ChangePaymentModeDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
+	components: {
+		BillingInformationDialog: defineAsyncComponent(() =>
+			import('./BillingInformationDialog.vue')
+		),
+		PrepaidCreditsDialog: defineAsyncComponent(() =>
+			import('@/components/PrepaidCreditsDialog.vue')
+		)
+	},
 	data() {
 		return {
+			showBillingInformationDialog: false,
+			showPrepaidCreditsDialog: false,
 			paymentMode: this.$account.team.payment_mode
 		};
 	},
@@ -64,7 +91,16 @@ export default {
 						this.paymentMode == 'Card' &&
 						!this.$account.team.default_payment_method
 					) {
-						return 'Please add a card first from Payment methods section';
+						this.$emit('update:modelValue', false);
+						this.showBillingInformationDialog = true;
+					}
+
+					if (
+						this.paymentMode == 'Prepaid Credits' &&
+						this.$account.balance === 0
+					) {
+						this.$emit('update:modelValue', false);
+						this.showPrepaidCreditsDialog = true;
 					}
 
 					if (

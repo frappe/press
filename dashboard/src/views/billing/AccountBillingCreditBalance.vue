@@ -1,9 +1,5 @@
 <template>
-	<Card
-		title="Credit Balance"
-		subtitle="History of your credit balance"
-		v-if="$resources.balances.data && $resources.balances.data.length"
-	>
+	<Card title="Credit Balance" subtitle="History of your credit balance">
 		<div class="max-h-96 divide-y">
 			<div
 				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-5"

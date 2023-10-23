@@ -457,10 +457,35 @@ const routes = [
 		}
 	},
 	{
-		name: 'BillingScreen',
 		path: '/billing/:invoiceName?',
+		name: 'BillingScreen',
 		props: true,
-		component: () => import('../views/billing/AccountBilling.vue')
+		redirect: { name: 'BillingOverview' },
+		component: () => import('../views/billing/AccountBilling.vue'),
+		children: [
+			{
+				name: 'BillingOverview',
+				path: 'overview',
+				component: () => import('../views/billing/BillingOverview.vue')
+			},
+			{
+				name: 'Payment Methods',
+				path: 'payment',
+				component: () => import('../views/billing/PaymentMethods.vue')
+			},
+			{
+				name: 'Invoices',
+				path: 'invoices',
+				props: true,
+				component: () => import('../views/billing/AccountBillingPayments.vue')
+			},
+			{
+				name: 'Credit Balance',
+				path: 'credit-balance',
+				component: () =>
+					import('../views/billing/AccountBillingCreditBalance.vue')
+			}
+		]
 	},
 	{
 		path: '/settings',

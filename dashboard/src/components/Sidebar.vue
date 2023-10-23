@@ -187,7 +187,9 @@ export default {
 				{
 					label: 'Billing',
 					route: '/billing',
-					highlight: () => this.$route.name === 'BillingScreen',
+					highlight: () => {
+						return this.$route.fullPath.startsWith('/billing');
+					},
 					icon: FCIcons.BillingIcon
 				},
 				{
