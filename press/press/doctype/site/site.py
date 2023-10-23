@@ -1714,9 +1714,7 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	app_plans = [app.app for app in doc.apps]
 	backups = frappe.get_all(
 		"Site Backup",
-		dict(
-			status="Success", with_files=1, site=site, files_availability="Available", offsite=1
-		),
+		dict(status="Success", site=site, files_availability="Available", offsite=1),
 		pluck="name",
 	)
 	if not backups:

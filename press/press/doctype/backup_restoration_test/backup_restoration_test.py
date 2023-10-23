@@ -43,7 +43,7 @@ class BackupRestorationTest(Document):
 		site_dict = prepare_site(self.site)
 		server = frappe.get_value("Site", self.site, "server")
 		try:
-			site_job = _new(site_dict, server)
+			site_job = _new(site_dict, server, True)
 			self.test_site = site_job.get("site")
 			self.save()
 		except Exception:
