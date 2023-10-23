@@ -17,6 +17,28 @@ from press.press.doctype.site_migration.site_migration import (
 
 
 class AgentJob(Document):
+	def get_doc(self):
+		whitelisted_fields = [
+			"name",
+			"job_type",
+			"creation",
+			"status",
+			"start",
+			"end",
+			"duration",
+			"bench",
+			"site",
+			"server",
+		]
+		out = {key: self.get(key) for key in whitelisted_fields}
+		out["steps"] = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": self.name},
+			fields=["step_name", "status", "start", "end", "duration", "output"],
+			order_by="creation",
+		)
+		return out
+
 	def after_insert(self):
 		self.create_agent_job_steps()
 		self.enqueue_http_request()

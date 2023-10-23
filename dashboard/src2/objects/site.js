@@ -1,7 +1,8 @@
-import { toast } from 'vue-sonner';
-import { formatBytes } from '../utils/format';
-import { FeatherIcon, frappeRequest } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
+import { FeatherIcon, frappeRequest } from 'frappe-ui';
+import { toast } from 'vue-sonner';
+import { formatBytes, formatDuration } from '../utils/format';
+import dayjs from '../utils/dayjs';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
@@ -41,13 +42,66 @@ export default {
 	list: {
 		route: '/sites',
 		title: 'Sites',
+		fields: [
+			'plan.plan_title as plan_title',
+			'group.title as group_title',
+			'group.version as version',
+			'cluster.image as cluster_image',
+			'cluster.title as cluster_title'
+		],
 		columns: [
-			{ label: 'Site', fieldname: 'name' },
-			{ label: 'Status', fieldname: 'status', type: 'Badge' },
-			{ label: 'Cluster', fieldname: 'cluster' },
-			{ label: 'Bench', fieldname: 'group' },
-			{ label: 'Plan', fieldname: 'plan' }
-		]
+			{ label: 'Site', fieldname: 'name', width: 2 },
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 1 },
+			{
+				label: 'Plan',
+				fieldname: 'plan',
+				width: 1,
+				format(value, row) {
+					return row.plan_title || value;
+				}
+			},
+			{
+				label: 'Cluster',
+				fieldname: 'cluster',
+				width: 1,
+				format(value, row) {
+					return row.cluster_title || value;
+				},
+				prefix(row) {
+					return h('img', {
+						src: row.cluster_image,
+						class: 'w-4 h-4',
+						alt: row.cluster_title
+					});
+				}
+			},
+			{
+				label: 'Bench',
+				fieldname: 'group',
+				width: 1,
+				format(value, row) {
+					return row.group_title || value;
+				}
+			},
+			{
+				label: 'Version',
+				fieldname: 'version',
+				width: 1,
+				class: 'text-gray-600'
+			}
+		],
+		primaryAction({ listResource: sites }) {
+			return {
+				label: 'New Site',
+				icon: 'plus',
+				onClick() {
+					let NewSiteDialog = defineAsyncComponent(() =>
+						import('../components/NewSiteDialog.vue')
+					);
+					return h(NewSiteDialog);
+				}
+			};
+		}
 	},
 	detail: {
 		titleField: 'name',
@@ -460,10 +514,75 @@ export default {
 				}
 			},
 			{
-				label: 'Settings',
-				icon: () => h(FeatherIcon, { name: 'settings' }),
-				route: 'settings'
+				label: 'Jobs',
+				icon: () => h(FeatherIcon, { name: 'truck' }),
+				// highlight: route =>
+				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
+				route: 'jobs',
+				type: 'list',
+				list: {
+					doctype: 'Agent Job',
+					userFilters: {},
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					route(row) {
+						return {
+							name: 'Site Job',
+							params: { id: row.name, site: row.site }
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['site'],
+					columns: [
+						{
+							label: 'Job Type',
+							fieldname: 'job_type'
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge'
+						},
+						{
+							label: 'Job ID',
+							fieldname: 'job_id',
+							class: 'text-gray-600'
+						},
+						{
+							label: 'Duration',
+							fieldname: 'duration',
+							class: 'text-gray-600',
+							format: formatDuration
+						},
+						{
+							label: 'Start Time',
+							fieldname: 'start',
+							class: 'text-gray-600',
+							format(value) {
+								if (!value) return;
+								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
+							}
+						},
+						{
+							label: 'End Time',
+							fieldname: 'end',
+							class: 'text-gray-600',
+							format(value) {
+								if (!value) return;
+								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
+							}
+						}
+					]
+				}
 			}
 		]
-	}
+	},
+	routes: [
+		{
+			name: 'Site Job',
+			path: 'job/:id',
+			component: () => import('../pages/JobPage.vue')
+		}
+	]
 };

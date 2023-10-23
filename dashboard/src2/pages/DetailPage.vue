@@ -4,7 +4,13 @@
 			<Breadcrumbs
 				:items="[
 					{ label: object.list.title, route: object.list.route },
-					{ label: name, route: object.detail.route }
+					{
+						label: title,
+						route: {
+							name: `${object.doctype} Detail`,
+							params: { name: this.name }
+						}
+					}
 				]"
 			/>
 		</Header>
@@ -69,6 +75,12 @@ export default {
 				name: this.name,
 				whitelistedMethods: this.object.whitelistedMethods || {}
 			};
+		}
+	},
+	computed: {
+		title() {
+			let doc = this.$resources.document?.doc;
+			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
 		}
 	}
 };

@@ -40,6 +40,14 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
+	@staticmethod
+	def get_list_query(query):
+		Site = frappe.qb.DocType("Site")
+		query = query.where(Site.status != "Archived").where(
+			Site.team == frappe.local.team.name
+		)
+		return query
+
 	def get_doc(self):
 		return {"ip": self.ip}
 
@@ -1738,3 +1746,38 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	}
 
 	return site_dict
+
+
+@frappe.whitelist()
+def options_for_new(group: str = None, selected_values=None) -> Dict:
+	domain = frappe.db.get_single_value("Press Settings", "domain")
+	selected_values = (
+		frappe.parse_json(selected_values) if selected_values else frappe._dict()
+	)
+	subdomain_available = None
+	versions = []
+	apps = []
+
+	if selected_values.subdomain:
+		subdomain_available = not Site.exists(selected_values.subdomain, domain)
+
+	if subdomain_available:
+		versions = frappe.db.get_all(
+			"Frappe Version",
+			["name", "default", "status"],
+			{"public": True},
+			order_by="`default` desc, number desc",
+		)
+		for v in versions:
+			v.label = f"{v.name} ({v.status})"
+			v.value = v.name
+
+	if selected_values.version:
+		pass
+
+	return {
+		"domain": domain,
+		"subdomain_available": subdomain_available,
+		"versions": versions,
+		"apps": apps,
+	}

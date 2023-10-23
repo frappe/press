@@ -27,6 +27,17 @@ export function generateRoutes() {
 					}
 				};
 			});
+			if (object.routes) {
+				for (let route of object.routes) {
+					children.push({
+						...route,
+						props: route => {
+							return { object, ...route.params };
+						}
+					});
+				}
+			}
+
 			routes.push({
 				name: `${object.doctype} Detail`,
 				path: object.detail.route,
@@ -34,7 +45,7 @@ export function generateRoutes() {
 				props: route => {
 					return { object, ...route.params };
 				},
-				redirect: { name: children[0].name },
+				redirect: children.length ? { name: children[0].name } : null,
 				children
 			});
 		}
