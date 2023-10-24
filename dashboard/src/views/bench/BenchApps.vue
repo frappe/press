@@ -230,6 +230,15 @@ export default {
 		dropdownItems(app) {
 			return [
 				{
+					label: 'View in Desk',
+					onClick: () =>
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/app/${app.name}`,
+							'_blank'
+						),
+					condition: () => this.$account.user.user_type == 'System User'
+				},
+				{
 					label: 'Fetch Latest Update',
 					onClick: () => this.fetchLatestUpdate(app)
 				},
