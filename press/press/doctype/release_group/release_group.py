@@ -451,6 +451,9 @@ class ReleaseGroup(Document):
 
 			if app.source in only_approved_for_sources:
 				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
+				latest_app_releases = find_all(
+					latest_app_releases, lambda x: x.status == "Approved"
+				)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
