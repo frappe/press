@@ -472,7 +472,7 @@ def sync_virtual_machines():
 		"Virtual Machine", {"status": ("not in", ("Terminated", "Draft"))}
 	)
 	for machine in machines:
-		frappe.enqueue_doc("Virtual Machine", machine.name, "sync")
+		frappe.enqueue_doc("Virtual Machine", machine.name, "sync", queue="long")
 
 
 def snapshot_virtual_machines():
