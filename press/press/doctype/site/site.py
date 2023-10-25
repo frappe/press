@@ -16,6 +16,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, cstr, get_datetime
+from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -1757,6 +1758,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 	subdomain_available = None
 	versions = []
 	apps = []
+	clusters = []
 
 	if selected_values.subdomain:
 		subdomain_available = not Site.exists(selected_values.subdomain, domain)
@@ -1773,11 +1775,66 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 			v.value = v.name
 
 	if selected_values.version:
-		pass
+		release_group = frappe.db.get_value(
+			"Release Group",
+			fieldname=["name", "`default`", "title"],
+			filters={
+				"enabled": 1,
+				"public": 1,
+				"version": selected_values.version,
+			},
+			as_dict=1,
+		)
+		if release_group:
+			bench = frappe.db.get_value(
+				"Bench",
+				filters={"status": "Active", "group": release_group.name},
+				order_by="creation desc",
+			)
+			if bench:
+				team = frappe.local.team.name
+				bench_apps = frappe.db.get_all("Bench App", {"parent": bench}, pluck="source")
+				app_sources = frappe.get_all(
+					"App Source",
+					[
+						"name",
+						"app",
+						"repository_url",
+						"repository",
+						"repository_owner",
+						"branch",
+						"team",
+						"public",
+						"app_title",
+						"frappe",
+					],
+					filters={"name": ("in", bench_apps)},
+					or_filters={"public": True, "team": team},
+				)
+				for app in app_sources:
+					app.label = app.app_title
+					app.value = app.name
+				apps = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+				cluster_names = unique(
+					frappe.db.get_all(
+						"Bench",
+						filters={"candidate": frappe.db.get_value("Bench", bench, "candidate")},
+						pluck="cluster",
+					)
+				)
+				clusters = frappe.db.get_all(
+					"Cluster",
+					filters={"name": ("in", cluster_names), "public": True},
+					fields=["name", "title", "image"],
+				)
+				for cluster in clusters:
+					cluster.label = cluster.title
+					cluster.value = cluster.name
 
 	return {
 		"domain": domain,
 		"subdomain_available": subdomain_available,
 		"versions": versions,
 		"apps": apps,
+		"clusters": clusters,
 	}

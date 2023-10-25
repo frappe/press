@@ -43,6 +43,20 @@
 					:options="options.versions"
 					v-model="selectedValues.version"
 				/>
+				<FormControl
+					v-if="options.apps.length"
+					label="Select App"
+					type="select"
+					:options="options.apps"
+					v-model="selectedValues.app"
+				/>
+				<FormControl
+					v-if="options.clusters.length"
+					label="Select Cluster"
+					type="select"
+					:options="options.clusters"
+					v-model="selectedValues.cluster"
+				/>
 				<!-- <Autocomplete :options="regionOptions" /> -->
 			</div>
 		</template>
@@ -66,7 +80,6 @@ export default {
 	watch: {
 		selectedValues: {
 			handler: debounce(function (val, oldVal) {
-				console.log(this.subdomainInvalidMessage);
 				if (!this.subdomainInvalidMessage) {
 					console.log('reloading options');
 					this.$resources.options.reload();
