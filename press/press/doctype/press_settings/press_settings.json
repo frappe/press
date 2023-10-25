@@ -70,6 +70,7 @@
   "column_break_66",
   "code_server",
   "code_server_password",
+  "docker_remote_builder",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1023,11 +1024,16 @@
    "fieldname": "aws_secret_access_key",
    "fieldtype": "Password",
    "label": "AWS Secret Access Key"
+  },
+  {
+   "fieldname": "docker_remote_builder",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-08-25 11:33:46.589124",
+ "modified": "2023-10-25 13:37:18.168053",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

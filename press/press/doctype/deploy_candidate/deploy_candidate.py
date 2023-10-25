@@ -403,6 +403,22 @@ class DeployCandidate(Document):
 	def _run_docker_build(self, no_cache=False):
 		import platform
 
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			[
+				"domain",
+				"docker_registry_url",
+				"docker_registry_namespace",
+				"docker_remote_builder",
+			],
+			as_dict=True,
+		)
+
+		if settings.docker_remote_builder:
+			# Connect to Remote Docker Host if configured
+			self.command = f"docker -H ssh://root@{settings.docker_remote_builder} build"
+
 		# check if it's running on apple silicon mac
 		if (
 			platform.machine() == "arm64"
@@ -414,13 +430,6 @@ class DeployCandidate(Document):
 		environment = os.environ
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
-		)
-
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			["domain", "docker_registry_url", "docker_registry_namespace"],
-			as_dict=True,
 		)
 
 		if settings.docker_registry_namespace:
