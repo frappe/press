@@ -105,6 +105,7 @@ def get_plans_with_attributes(filters):
 			"plan_title",
 			"price_usd",
 			"price_inr",
+			"enabled",
 			{"roles": ["role"]},
 			{"attributes": ["fieldname", "fieldtype", "value"]},
 		],
@@ -114,7 +115,18 @@ def get_plans_with_attributes(filters):
 
 	for plan in plans:
 		for attr in plan["attributes"]:
-			plan[attr["fieldname"]] = cast(attr["fieldtype"], attr["value"])
-			plan.pop("attributes", "")
+			attr_name = attr["fieldname"]
+			attr_value = cast(attr["fieldtype"], attr["value"])
+
+			# make a list if attributes with same fieldname
+			if attr_name in plan:
+				if isinstance(plan[attr_name], list):
+					plan[attr_name].append(attr_value)
+				else:
+					plan[attr_name] = [plan[attr_name], attr_value]
+			else:
+				plan[attr_name] = attr_value
+
+		del plan["attributes"]
 
 	return plans
