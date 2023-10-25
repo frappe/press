@@ -60,8 +60,8 @@
 				</div>
 
 				<div class="w-1/6">
-					<span v-if="app.subscription.status"
-						><Badge :label="app.subscription.status" />
+					<span v-if="app.subscription.enabled === 1"
+						><Badge :label="'Active'" />
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -173,6 +173,7 @@
 					v-if="appToInstall?.app"
 					:app="appToInstall.app"
 					:frappeVersion="site?.frappe_version"
+					:currentPlan="appToChangePlan.plan"
 					class="mb-9"
 					@change="
 						plan => {
@@ -217,37 +218,11 @@
 				/>
 			</template>
 		</Dialog>
-
-		<Dialog
-			v-model="showCheckoutDialog"
-			:options="{ title: 'Checkout Details' }"
-			:dismissable="true"
-		>
-			<template v-slot:body-content>
-				<MarketplacePrepaidCredits
-					v-if="newAppPlan"
-					:subscription="currentSubscription"
-					:app="appToChangePlan.name"
-					:appTitle="appToChangePlan.title"
-					:site="site.name"
-					:plan="newAppPlan"
-				/>
-
-				<MarketplacePrepaidCredits
-					v-if="selectedPlan"
-					:app="appToInstall.app"
-					:appTitle="appToInstall.title"
-					:site="site.name"
-					:plan="selectedPlan"
-				/>
-			</template>
-		</Dialog>
 	</Card>
 </template>
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
-import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
@@ -271,8 +246,7 @@ export default {
 	},
 	components: {
 		ChangeAppPlanSelector,
-		CommitTag,
-		MarketplacePrepaidCredits
+		CommitTag
 	},
 	resources: {
 		marketplaceSubscriptions() {
@@ -387,11 +361,12 @@ export default {
 			this.currentAppPlan = app.subscription.marketplace_app_plan;
 			this.newAppPlan = this.currentAppPlan;
 
+			console.log(app.subscription);
 			this.appToChangePlan = {
-				name: app.subscription.app,
+				name: app.subscription.document_name,
 				title: app.app_title,
 				image: app.app_image,
-				plan: app.subscription.marketplace_app_plan,
+				plan: app.subscription.plan,
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};
@@ -399,19 +374,7 @@ export default {
 		},
 
 		handlePlanChange() {
-			if (
-				this.appToChangePlan.billing_type == 'prepaid' &&
-				!this.newAppPlanIsFree
-			) {
-				if (this.$account.hasBillingInfo) {
-					this.showAppPlanChangeDialog = false;
-					this.showCheckoutDialog = true;
-				} else {
-					window.location = '/dashboard/billing';
-				}
-			} else {
-				this.switchToNewPlan();
-			}
+			this.switchToNewPlan();
 		},
 
 		switchToNewPlan() {
@@ -441,19 +404,7 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			if (
-				this.appToInstall.billing_type == 'prepaid' &&
-				!this.selectedPlanIsFree
-			) {
-				if (this.$account.hasBillingInfo) {
-					this.showPlanSelectionDialog = false;
-					this.showCheckoutDialog = true;
-				} else {
-					window.location = '/dashboard/billing';
-				}
-			} else {
-				this.$resources.installApp.submit();
-			}
+			this.$resources.installApp.submit();
 		},
 		dropdownItems(app) {
 			return [

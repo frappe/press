@@ -12,12 +12,10 @@ from press.api.github import get_access_token
 from frappe.query_builder.functions import Cast_
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
-from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
-	get_app_plan_features,
-)
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from frappe.utils.safe_exec import safe_exec
 from frappe.utils import get_datetime
+from press.press.doctype.plan.plan import get_plans_with_attributes
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -444,44 +442,15 @@ def get_plans_for_app(
 	app_name, frappe_version=None, include_free=True, include_disabled=False
 ):  # Unused for now, might use later
 
-	plans = []
-	filters = {"app": app_name}
+	filters = {"document_type": "Marketplace App", "document_name": app_name}
 
 	if not include_free:
-		filters["is_free"] = False
+		filters["is_trial_plan"] = False
 
 	if not include_disabled:
 		filters["enabled"] = True
 
-	marketplace_app_plans = frappe.get_all(
-		"Marketplace App Plan",
-		filters=filters,
-		fields=[
-			"name",
-			"plan",
-			"discount_percent",
-			"gst",
-			"marked_most_popular",
-			"is_free",
-			"enabled",
-			"block_monthly",
-		],
-	)
-
-	for app_plan in marketplace_app_plans:
-		plan_data = {}
-		plan_data.update(app_plan)
-
-		plan_discount_percent = app_plan.discount_percent
-		plan_data["discounted"] = plan_discount_percent > 0
-		plan_prices = frappe.db.get_value(
-			"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
-		)
-
-		plan_data.update(plan_prices)
-		plan_data["features"] = get_app_plan_features(app_plan.name)
-
-		plans.append(plan_data)
+	plans = get_plans_with_attributes(filters=filters)
 
 	plans.sort(key=lambda x: x["price_usd"])
 	plans.sort(key=lambda x: x["enabled"], reverse=True)  # Enabled Plans First

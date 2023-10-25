@@ -237,8 +237,8 @@ def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
-		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
-		if not is_free:
+		trial_plan = frappe.db.get_value("Plan", plan_name, "is_trial_plan")
+		if not trial_plan:
 			team = get_current_team(get_doc=True)
 			if not team.can_install_paid_apps():
 				frappe.throw(
@@ -887,21 +887,22 @@ def get_installed_apps(site):
 		app_source.update(app_tags if app_tags else {})
 		app_source.subscription_available = bool(
 			frappe.db.exists(
-				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
+				"Plan",
+				{"is_trial_plan": 0, "document_name": app.app, "enabled": 1, "price_usd": (">", 0)},
 			)
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
-			"Marketplace App Subscription",
-			{"site": site.name, "app": app.app, "status": "Active"},
+			"Subscription",
+			{"site": site.name, "document_name": app.app, "enabled": True},
 		):
 			subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				{"site": site.name, "app": app.app, "status": "Active"},
+				"Subscription",
+				{"site": site.name, "document_name": app.app, "enabled": True},
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+				"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
 			)
 
 			app_source.app_title = marketplace_app_info.title
@@ -911,9 +912,7 @@ def get_installed_apps(site):
 				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 			)
 
-			app_source.is_free = frappe.db.get_value(
-				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-			)
+			app_source.is_free = frappe.db.get_value("Plan", subscription.plan, "is_trial_plan")
 		else:
 			app_source.subscription = {}
 
@@ -1255,8 +1254,8 @@ def unset_redirect(name, domain):
 @protected("Site")
 def install_app(name, app, plan=None):
 	if plan:
-		is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
-		if not is_free:
+		trial_plan = frappe.db.get_value("Plan", plan, "is_trial_plan")
+		if not trial_plan:
 			team = get_current_team(get_doc=True)
 			if not team.can_install_paid_apps():
 				frappe.throw(
@@ -1266,36 +1265,42 @@ def install_app(name, app, plan=None):
 	frappe.get_doc("Site", name).install_app(app)
 
 	if plan:
-		create_marketplace_app_subscription(name, app, plan)
+		create_app_subscription(name, app, plan)
 
 
-def create_marketplace_app_subscription(site_name, app_name, plan_name):
-	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
-	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
+def create_app_subscription(site, app, plan):
+	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
+	subscription = frappe.db.exists(
+		"Subscription",
+		{
+			"site": site,
+			"document_type": "Marketplace App",
+			"document_name": marketplace_app_name,
+		},
 	)
 
-	# If already exists, update the plan and activate
-	if app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
+	# If already exists, update the plan and enable
+	if subscription:
+		subscription = frappe.get_doc(
+			"Subscription",
+			subscription,
 			for_update=True,
 		)
 
-		app_subscription.marketplace_app_plan = plan_name
-		app_subscription.status = "Active"
-		app_subscription.save(ignore_permissions=True)
-		app_subscription.reload()
+		subscription.marketplace_app_plan = plan
+		subscription.enabled = True
+		subscription.save(ignore_permissions=True)
+		subscription.reload()
 
-		return app_subscription
+		return subscription
 
 	return frappe.get_doc(
 		{
-			"doctype": "Marketplace App Subscription",
-			"marketplace_app_plan": plan_name,
-			"app": app_name,
-			"site": site_name,
+			"doctype": "Subscription",
+			"plan": plan,
+			"document_type": "Marketplace App",
+			"document_name": app,
+			"site": site,
 			"team": get_current_team(),
 		}
 	).insert(ignore_permissions=True)
@@ -1305,22 +1310,22 @@ def create_marketplace_app_subscription(site_name, app_name, plan_name):
 @protected("Site")
 def uninstall_app(name, app):
 	frappe.get_doc("Site", name).uninstall_app(app)
-	disable_marketplace_plan_if_exists(name, app)
+	disable_app_plan_if_exists(name, app)
 
 
-def disable_marketplace_plan_if_exists(site_name, app_name):
+def disable_app_plan_if_exists(site_name, app_name):
 	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
 	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
+		"Subscription",
+		{
+			"site": site_name,
+			"document_type": "Marketplace App",
+			"document_name": marketplace_app_name,
+			"enabled": True,
+		},
 	)
 	if marketplace_app_name and app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
-			for_update=True,
-		)
-		app_subscription.status = "Disabled"
-		app_subscription.save(ignore_permissions=True)
+		frappe.db.set_value("Subscription", app_subscription, "enabled", False)
 
 
 @frappe.whitelist()

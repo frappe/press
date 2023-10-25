@@ -41,19 +41,7 @@
 					>
 				</div>
 			</h4>
-			<!--<h4
-				v-if="plan.discounted"
-				class="mt-1 text-base text-gray-600 line-through"
-			>
-				{{
-					$planTitle({
-						price_usd: plan.price_usd_before_discount,
-						price_inr: plan.price_inr_before_discount
-					})
-				}}
-			</h4>-->
-
-			<FeatureList class="mt-5" :features="plan.features" />
+			<FeatureList class="mt-5" :features="plan.feature" />
 		</div>
 
 		<Badge

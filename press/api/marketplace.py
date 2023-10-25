@@ -536,14 +536,14 @@ def get_promotional_banners() -> List:
 @frappe.whitelist()
 def get_marketplace_subscriptions_for_site(site: str):
 	subscriptions = frappe.db.get_all(
-		"Marketplace App Subscription",
-		filters={"site": site, "status": ("!=", "Disabled")},
-		fields=["name", "app", "status", "marketplace_app_plan", "plan"],
+		"Subscription",
+		filters={"site": site},
+		fields=["name", "document_name", "enabled", "plan"],
 	)
 
 	for subscription in subscriptions:
 		marketplace_app_info = frappe.db.get_value(
-			"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+			"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
 		)
 
 		subscription.app_title = marketplace_app_info.title
@@ -553,9 +553,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 		)
 
-		subscription.is_free = frappe.db.get_value(
-			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-		)
+		subscription.is_free = frappe.db.get_value("Plan", subscription.plan, "is_trial_plan")
 		subscription.billing_type = is_prepaid_marketplace_app(subscription.app)
 
 	return subscriptions

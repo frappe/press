@@ -29,6 +29,7 @@
 		<div v-if="plans" class="mx-auto grid grid-cols-1 gap-2 md:grid-cols-3">
 			<AppPlanCard
 				v-for="plan in plans"
+				:app="app"
 				:editable="editable"
 				:plan="plan"
 				:key="plan.name"

@@ -10,6 +10,7 @@
   "team",
   "document_type",
   "document_name",
+  "site",
   "plan",
   "interval",
   "marketplace_app_subscription"
@@ -66,6 +67,13 @@
    "fieldtype": "Link",
    "label": "Marketplace App Subscription",
    "options": "Marketplace App Subscription"
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Site",
+   "options": "Site"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -75,7 +83,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2023-06-27 21:57:40.400786",
+ "modified": "2023-10-23 19:57:21.365028",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
