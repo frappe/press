@@ -415,10 +415,6 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
-		if settings.docker_remote_builder:
-			# Connect to Remote Docker Host if configured
-			self.command = f"docker -H ssh://root@{settings.docker_remote_builder} build"
-
 		# check if it's running on apple silicon mac
 		if (
 			platform.machine() == "arm64"
@@ -427,10 +423,14 @@ class DeployCandidate(Document):
 		):
 			self.command = f"{self.command}x build --platform linux/amd64"
 
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
+
+		if settings.docker_remote_builder:
+			# Connect to Remote Docker Host if configured
+			environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
 
 		if settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
@@ -577,11 +577,20 @@ class DeployCandidate(Document):
 			settings = frappe.db.get_value(
 				"Press Settings",
 				None,
-				["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+				[
+					"docker_registry_url",
+					"docker_registry_username",
+					"docker_registry_password",
+					"docker_remote_builder",
+				],
 				as_dict=True,
 			)
+			environment = os.environ.copy()
+			if settings.docker_remote_builder:
+				# Connect to Remote Docker Host if configured
+				environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
 
-			client = docker.from_env()
+			client = docker.from_env(environment=environment)
 			client.login(
 				registry=settings.docker_registry_url,
 				username=settings.docker_registry_username,
