@@ -51,9 +51,12 @@
 			</Dropdown>
 		</div>
 		<nav class="px-2">
-			<template v-for="item in navigation">
+			<template v-for="(item, i) in navigation">
 				<template v-if="item.items">
-					<div class="mt-2 py-1 text-sm leading-5 text-gray-600">
+					<div
+						class="py-1 text-sm leading-5 text-gray-600"
+						:class="{ 'mt-2': i != 0 }"
+					>
 						{{ item.name }}
 					</div>
 					<div class="space-y-0.5">
@@ -83,11 +86,6 @@ import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 
 const navigation = [
-	{
-		name: 'Home',
-		icon: () => h(Home),
-		route: '/'
-	},
 	{
 		name: 'Shared',
 		items: [

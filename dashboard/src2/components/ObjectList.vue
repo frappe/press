@@ -201,6 +201,8 @@ export default {
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
+			if (!props) return null;
+
 			let { icon, ...rest } = props;
 			return {
 				icon,
