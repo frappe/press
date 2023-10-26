@@ -8,7 +8,7 @@ const showEditPlanDialog = ref(false);
 const currentEditingPlan = reactive({
 	price_inr: 0,
 	price_usd: 0,
-	features: [''],
+	feature: [''],
 	plan_title: '',
 	enabled: true
 });
@@ -22,6 +22,13 @@ const appPlans = createResource({
 	params: {
 		app: props.app?.name,
 		include_disabled: true
+	},
+	onSuccess(data) {
+		data.forEach(plan => {
+			if (typeof plan.feature == 'string') {
+				plan.feature = [plan.feature];
+			}
+		});
 	},
 	auto: true
 });
@@ -49,23 +56,23 @@ function editPlan(plan) {
 	if (plan) {
 		Object.assign(currentEditingPlan, plan);
 		currentEditingPlan.enabled = Boolean(plan.enabled);
-		currentEditingPlan.features = Array.from(plan.features); // Non-reference copy
+		currentEditingPlan.feature = Array.from(plan.feature); // Non-reference copy
 	}
 	showEditPlanDialog.value = true;
 }
 
 function addFeatureInput() {
-	currentEditingPlan.features.push('');
+	currentEditingPlan.feature.push('');
 }
 
 function deleteFeatureInput(idx) {
-	currentEditingPlan.features.splice(idx, 1);
+	currentEditingPlan.feature.splice(idx, 1);
 }
 
 function savePlan() {
 	if (currentEditingPlan.name) {
 		updateAppPlan.submit({
-			app_plan_name: currentEditingPlan.name,
+			plan_name: currentEditingPlan.name,
 			updated_plan_data: currentEditingPlan
 		});
 	} else {
@@ -86,7 +93,7 @@ function resetCurrentEditingPlan() {
 	Object.assign(currentEditingPlan, {
 		price_inr: 0,
 		price_usd: 0,
-		features: [''],
+		feature: [''],
 		plan_title: '',
 		enabled: true
 	});
@@ -176,7 +183,7 @@ function resetCurrentEditingPlan() {
 						<h3 class="mb-4 text-lg font-semibold">Features</h3>
 						<div>
 							<div
-								v-for="(feature, idx) in currentEditingPlan.features"
+								v-for="(feature, idx) in currentEditingPlan.feature"
 								class="mb-3.5 flex w-full items-stretch"
 							>
 								<div
@@ -188,7 +195,7 @@ function resetCurrentEditingPlan() {
 								<div class="w-full">
 									<FormControl
 										class="w-full"
-										v-model="currentEditingPlan.features[idx]"
+										v-model="currentEditingPlan.feature[idx]"
 									></FormControl>
 								</div>
 

@@ -1,7 +1,7 @@
 <template>
 	<div
 		v-if="plan"
-		class="flex flex-col justify-between rounded-2xl border border-gray-100 p-5 shadow"
+		class="flex flex-col justify-between rounded-2xl border border-gray-100 p-5"
 		:class="[
 			popular ? 'relative bg-blue-100' : '',
 			selected ? 'relative ring-2 ring-inset ring-blue-500' : '',

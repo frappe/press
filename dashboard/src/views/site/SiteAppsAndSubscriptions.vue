@@ -361,7 +361,6 @@ export default {
 			this.currentAppPlan = app.subscription.marketplace_app_plan;
 			this.newAppPlan = this.currentAppPlan;
 
-			console.log(app.subscription);
 			this.appToChangePlan = {
 				name: app.subscription.document_name,
 				title: app.app_title,
@@ -374,10 +373,6 @@ export default {
 		},
 
 		handlePlanChange() {
-			this.switchToNewPlan();
-		},
-
-		switchToNewPlan() {
 			if (this.currentAppPlan !== this.newAppPlan) {
 				this.$resources.changePlan.submit({
 					subscription: this.appToChangePlan.subscription,
@@ -387,6 +382,7 @@ export default {
 				this.showAppPlanChangeDialog = false;
 			}
 		},
+
 		installApp(app) {
 			this.appToInstall = app;
 
@@ -403,9 +399,11 @@ export default {
 				plan: this.selectedPlan
 			});
 		},
+
 		handlePlanSelection() {
 			this.$resources.installApp.submit();
 		},
+
 		dropdownItems(app) {
 			return [
 				app.app != 'frappe' && {
@@ -419,6 +417,7 @@ export default {
 				}
 			].filter(Boolean);
 		},
+
 		confirmRemoveApp(app) {
 			this.$confirm({
 				title: 'Remove App',
