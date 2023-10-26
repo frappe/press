@@ -233,7 +233,7 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans, team: str):
+def get_app_subscriptions(app_plans, team: str, site: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
@@ -247,10 +247,12 @@ def get_app_subscriptions(app_plans, team: str):
 
 		new_subscription = frappe.get_doc(
 			{
-				"doctype": "Marketplace App Subscription",
-				"marketplace_app_plan": plan_name,
-				"app": app_name,
+				"doctype": "Subscription",
+				"document_type": "Marketplace App",
+				"document_name": app_name,
+				"plan": plan_name,
 				"team": team,
+				"site": site,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
@@ -1286,8 +1288,6 @@ def create_app_subscription(site, app, plan):
 			subscription,
 			for_update=True,
 		)
-
-		subscription.marketplace_app_plan = plan
 		subscription.enabled = True
 		subscription.save(ignore_permissions=True)
 		subscription.reload()
