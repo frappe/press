@@ -45,7 +45,9 @@ const appSubscriptions = createResource({
 					</p>
 
 					<p>
-						<Badge :label="subscription.status" />
+						<Badge
+							:label="subscription.enabled === 1 ? 'Enabled' : 'Disabled'"
+						/>
 					</p>
 
 					<p class="hidden md:inline">

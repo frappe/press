@@ -682,38 +682,35 @@ def submit_developer_reply(review, reply):
 
 @frappe.whitelist()
 def get_subscriptions_list(marketplace_app: str) -> List:
-	app_sub = frappe.qb.DocType("Marketplace App Subscription")
-	app_plan = frappe.qb.DocType("Marketplace App Plan")
+	sub = frappe.qb.DocType("Subscription")
 	plan = frappe.qb.DocType("Plan")
 	site = frappe.qb.DocType("Site")
 	usage_record = frappe.qb.DocType("Usage Record")
 
-	conditions = app_plan.is_free == False  # noqa: E712
-	conditions = conditions & (app_sub.app == marketplace_app)
+	conditions = plan.is_trial_plan == False  # noqa: E712
+	conditions = conditions & (sub.document_name == marketplace_app)
 
 	query = (
-		frappe.qb.from_(app_sub)
-		.join(app_plan)
-		.on(app_sub.marketplace_app_plan == app_plan.name)
+		frappe.qb.from_(sub)
 		.join(plan)
-		.on(app_sub.plan == plan.name)
+		.on(sub.plan == plan.name)
 		.join(site)
-		.on(site.name == app_sub.site)
+		.on(site.name == sub.site)
 		.join(usage_record)
-		.on(usage_record.subscription == app_sub.subscription)
+		.on(usage_record.subscription == sub.name)
 		.where(conditions)
 		.groupby(usage_record.subscription)
 		.select(
 			frappe.query_builder.functions.Count("*").as_("active_days"),
-			app_sub.site,
+			sub.site,
 			site.team.as_("user_contact"),
-			app_sub.plan.as_("app_plan"),
+			sub.plan.as_("app_plan"),
 			plan.price_usd.as_("price_usd"),
 			plan.price_inr.as_("price_inr"),
-			app_sub.status,
+			sub.enabled,
 		)
-		.orderby(app_sub.status)
-		.orderby(app_sub.creation, order=frappe.qb.desc)
+		.orderby(sub.enabled)
+		.orderby(sub.creation, order=frappe.qb.desc)
 	)
 
 	result = query.run(as_dict=True)

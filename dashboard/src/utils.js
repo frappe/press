@@ -72,7 +72,7 @@ let utils = {
 			let currency = india ? '₹' : '$';
 			let price_field = india ? 'price_inr' : 'price_usd';
 			let price = plan[price_field];
-			return price > 0 ? `${currency}${price}` : plan;
+			return price > 0 ? `${currency}${price}` : plan[price_field];
 		},
 		trialEndsInDaysText(date) {
 			let diff = this.$date(date).diff(DateTime.local(), ['days']).toObject();
