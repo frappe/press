@@ -320,12 +320,14 @@ def remove_payment_method(name):
 def change_payment_mode(mode):
 	team = get_current_team(get_doc=True)
 	team.payment_mode = mode
-	if team.partner_email:
+	if team.partner_email and mode == "Paid By Partner" and not team.billing_team:
 		team.billing_team = frappe.db.get_value(
 			"Team",
 			{"enabled": 1, "erpnext_partner": 1, "partner_email": team.partner_email},
 			"name",
 		)
+	if team.billing_team and mode != "Paid By Partner":
+		team.billing_team = ""
 	team.save()
 
 
