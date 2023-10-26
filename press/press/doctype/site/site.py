@@ -474,6 +474,10 @@ class Site(Document):
 				}
 			).insert()
 
+	@frappe.whitelist()
+	def create_dns_record(self):
+		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
+
 	def get_config_value_for_key(self, key: str) -> Any:
 		"""
 		Get site config value configuration child table for given key.
