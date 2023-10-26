@@ -221,12 +221,14 @@ class TestBench(unittest.TestCase):
 		self.assertTrue(bench1.memory_swap)
 		self.assertEqual(
 			bench1.memory_high,
-			bench1.gunicorn_workers * server.GUNICORN_MEMORY
+			512
+			+ bench1.gunicorn_workers * server.GUNICORN_MEMORY
 			+ bench1.background_workers * server.BACKGROUND_JOB_MEMORY,
 		)
 		self.assertEqual(
 			bench1.memory_max,
-			bench1.gunicorn_workers * server.GUNICORN_MEMORY
+			512
+			+ bench1.gunicorn_workers * server.GUNICORN_MEMORY
 			+ bench1.background_workers * server.BACKGROUND_JOB_MEMORY
 			+ server.GUNICORN_MEMORY
 			+ server.BACKGROUND_JOB_MEMORY,

@@ -416,7 +416,7 @@ class Bench(Document):
 			self.gunicorn_workers = 2
 			self.background_workers = 1
 		if set_memory_limits:
-			self.memory_high = (
+			self.memory_high = 512 + (
 				self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
 			)
 			self.memory_max = self.memory_high + gunicorn_memory + bg_memory
