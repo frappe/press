@@ -186,6 +186,10 @@ class SiteUpdate(Document):
 		):
 			server.auto_scale_workers()
 
+	@frappe.whitelist()
+	def trigger_recovery_job(self):
+		trigger_recovery_job(self.name)
+
 
 def trigger_recovery_job(site_update_name):
 	site_update = frappe.get_doc("Site Update", site_update_name)
