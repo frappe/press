@@ -65,6 +65,12 @@ class DeployCandidate(Document):
 	def after_insert(self):
 		return
 
+	def on_trash(self):
+		frappe.db.delete(
+			"Press Notification",
+			{"document_type": self.doctype, "document_name": self.name},
+		)
+
 	def get_unpublished_marketplace_releases(self) -> List[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		marketplace_app_sources = rg.get_marketplace_app_sources()

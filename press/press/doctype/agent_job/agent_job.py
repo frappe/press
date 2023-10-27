@@ -130,6 +130,11 @@ class AgentJob(Document):
 		for step in steps:
 			frappe.delete_doc("Agent Job Step", step.name)
 
+		frappe.db.delete(
+			"Press Notification",
+			{"document_type": self.doctype, "document_name": self.name},
+		)
+
 
 def job_detail(job):
 	job = frappe.get_doc("Agent Job", job)
