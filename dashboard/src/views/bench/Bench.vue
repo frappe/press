@@ -201,7 +201,7 @@ export default {
 					}
 				},
 				{
-					label: 'Update All Sites to Latest Version',
+					label: 'Update All Sites',
 					icon: 'arrow-up-circle',
 					condition: () => this.bench.status == 'Active' && !this.bench.public,
 					onClick: async () => {
