@@ -99,3 +99,4 @@ press.press.doctype.database_server_mariadb_variable.patches.add_unique_constrai
 press.press.doctype.release_group.patches.sync_common_site_config
 execute:frappe.delete_doc('Central Site Migration')
 execute:frappe.delete_doc('Central Server')
+execute:frappe.delete_doc('Feature Traction')

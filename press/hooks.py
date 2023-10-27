@@ -63,14 +63,10 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
 ]
 
 website_redirects = [
-	{
-		"source": r"/deploy(.*)",
-		"target": r"/api/method/press.api.quick_site.deploy\1",
-		"match_with_query_string": True,
-	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},

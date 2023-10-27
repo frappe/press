@@ -595,8 +595,8 @@ def candidate(name):
 				["name", "status", "end", "duration", "bench"],
 				{"bench": bench.bench, "job_type": "New Bench"},
 				limit=1,
-			)[0]
-			jobs.append(job)
+			) or [{}]
+			jobs.append(job[0])
 
 	return {
 		"name": candidate.name,
@@ -847,6 +847,12 @@ def archive(name):
 @protected("Release Group")
 def restart(name):
 	frappe.get_doc("Bench", name).restart()
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def rebuild(name):
+	frappe.get_doc("Bench", name).rebuild()
 
 
 @frappe.whitelist()

@@ -81,7 +81,7 @@ const marketplacePromotionalBanners = createResource({
 				</template>
 			</Alert>
 		</div>
-		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
+		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.
 

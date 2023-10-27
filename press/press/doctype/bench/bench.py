@@ -364,6 +364,10 @@ class Bench(Document):
 		candidate._create_deploy([self.server])
 
 	@frappe.whitelist()
+	def rebuild(self):
+		return Agent(self.server).rebuild_bench(self)
+
+	@frappe.whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
@@ -371,30 +375,56 @@ class Bench(Document):
 	def get_environment_variables(self):
 		return {v.key: v.value for v in self.environment_variables}
 
-	def allocate_workers(self, server_workload, max_gunicorn_workers, max_bg_workers):
+	def allocate_workers(
+		self,
+		server_workload,
+		max_gunicorn_workers,
+		max_bg_workers,
+		set_memory_limits=False,
+		gunicorn_memory=150,
+		bg_memory=3 * 80,
+	):
 		"""
 		Mostly makes sense when called from Server's auto_scale_workers
+
+		Allocates workers and memory if required
 		"""
 		try:
-			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
-			minimum = frappe.get_value("Release Group", self.group, "min_gunicorn_workers")
+			max_gn, min_gn, max_bg, min_bg = frappe.db.get_values(
+				"Release Group",
+				self.group,
+				(
+					"max_gunicorn_workers",
+					"min_gunicorn_workers",
+					"max_background_workers",
+					"min_background_workers",
+				),
+			)[0]
 			self.gunicorn_workers = min(
-				maximum or 24,
+				max_gn or 24,
 				max(
-					minimum or 2, round(self.workload / server_workload * max_gunicorn_workers)
+					min_gn or 2, round(self.workload / server_workload * max_gunicorn_workers)
 				),  # min 2 max 24
 			)
-			maximum = frappe.get_value("Release Group", self.group, "max_background_workers")
-			minimum = frappe.get_value("Release Group", self.group, "min_background_workers")
 			self.background_workers = min(
-				maximum or 8,
+				max_bg or 8,
 				max(
-					minimum or 1, round(self.workload / server_workload * max_bg_workers)
+					min_bg or 1, round(self.workload / server_workload * max_bg_workers)
 				),  # min 1 max 8
 			)
 		except ZeroDivisionError:  # when total_workload is 0
 			self.gunicorn_workers = 2
 			self.background_workers = 1
+		if set_memory_limits:
+			if self.skip_memory_limits:
+				self.memory_max = frappe.db.get_value("Server", self.server, "ram")
+				self.memory_high = self.memory_max - 1024
+			else:
+				self.memory_high = 512 + (
+					self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
+				)
+				self.memory_max = self.memory_high + gunicorn_memory + bg_memory
+			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 

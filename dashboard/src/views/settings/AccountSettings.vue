@@ -13,7 +13,6 @@
 </template>
 
 <script>
-import PageHeader from '@/components/PageHeader.vue';
 import Tabs from '@/components/Tabs.vue';
 
 export default {
@@ -24,8 +23,7 @@ export default {
 		};
 	},
 	components: {
-		Tabs,
-		PageHeader
+		Tabs
 	},
 	computed: {
 		tabs() {

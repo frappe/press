@@ -71,7 +71,7 @@
 					<Button
 						theme="red"
 						:disabled="site.status === 'Suspended' || !permissions.reset"
-						@click="confirmReset"
+						@click="showResetDialog = true"
 					>
 						Reset
 					</Button>
@@ -203,6 +203,35 @@
 			:site="site.name"
 			v-model:show="showDatabaseAccessDialog"
 		/>
+
+		<Dialog
+			:options="{
+				title: 'Reset Database',
+				actions: [
+					{
+						label: 'Reset',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.resetDatabase.loading,
+						onClick: () => $resources.resetDatabase.submit()
+					}
+				]
+			}"
+			v-model="showResetDialog"
+		>
+			<template v-slot:body-content>
+				<p class="text-base">
+					All the data from your site will be lost. Are you sure you want to
+					reset your database?
+				</p>
+				<p class="mt-4 text-base">
+					Please type
+					<span class="font-semibold">{{ site.name }}</span> to confirm.
+				</p>
+				<FormControl class="mt-4 w-full" v-model="confirmSiteName" />
+				<ErrorMessage class="mt-2" :message="$resources.resetDatabase.error" />
+			</template>
+		</Dialog>
 	</Card>
 </template>
 
@@ -221,6 +250,8 @@ export default {
 	props: ['site'],
 	data() {
 		return {
+			confirmSiteName: '',
+			showResetDialog: false,
 			showMigrateDialog: false,
 			showRestoreDialog: false,
 			showDatabaseAccessDialog: false,
@@ -260,6 +291,11 @@ export default {
 				url: 'press.api.site.reinstall',
 				params: {
 					name: this.site?.name
+				},
+				validate() {
+					if (this.confirmSiteName !== this.site?.name) {
+						return 'Please type the site name to confirm.';
+					}
 				},
 				onSuccess() {
 					this.$router.push(`/sites/${this.site?.name}/installing`);
@@ -305,19 +341,6 @@ export default {
 		}
 	},
 	methods: {
-		confirmReset() {
-			this.$confirm({
-				title: 'Reset Database',
-				message:
-					'All the data from your site will be lost. Are you sure you want to reset your database?',
-				actionLabel: 'Reset',
-				actionColor: 'red',
-				action: closeDialog => {
-					this.$resources.resetDatabase.submit();
-					closeDialog();
-				}
-			});
-		},
 		migrateDatabase() {
 			this.$resources.migrateDatabase.submit({
 				name: this.site.name,

@@ -22,5 +22,5 @@ class AuditLog(Document):
 {self.log[:3000]}
 ```
 """
-		telegram = Telegram()
+		telegram = Telegram("Errors")
 		telegram.send(message)

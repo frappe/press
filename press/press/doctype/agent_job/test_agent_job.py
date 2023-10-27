@@ -19,7 +19,7 @@ from press.agent import Agent
 
 import responses
 
-from press.utils.test import foreground_enqueue_doc
+from press.utils.test import foreground_enqueue, foreground_enqueue_doc
 
 
 def fn_appender(before_insert: Callable, prepare_agent_responses: Callable):
@@ -152,6 +152,9 @@ def fake_agent_job(
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
+	), patch(
+		"press.press.doctype.agent_job.agent_job.frappe.enqueue",
+		new=foreground_enqueue,
 	), patch(
 		"press.press.doctype.agent_job.agent_job.frappe.db.commit", new=Mock()
 	), patch(

@@ -106,6 +106,7 @@ frappe.ui.form.on('Site', {
 			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
 			[__('Reset Site Usage'), 'reset_site_usage'],
 			[__('Clear Cache'), 'clear_site_cache'],
+			[__('Optimize Tables'), 'optimize_tables'],
 			[__('Update Site Config'), 'update_site_config'],
 			[
 				__('Enable Database Access'),

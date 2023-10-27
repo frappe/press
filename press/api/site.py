@@ -94,7 +94,7 @@ def protected(doctypes):
 	return wrapper
 
 
-def _new(site, server: str = None):
+def _new(site, server: str = None, ignore_plan_validation: bool = False):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new site because your account is disabled")
@@ -149,7 +149,8 @@ def _new(site, server: str = None):
 	)[0]
 	plan = site["plan"]
 	app_plans = site.get("selected_app_plans")
-	validate_plan(bench.server, plan)
+	if not ignore_plan_validation:
+		validate_plan(bench.server, plan)
 
 	site = frappe.get_doc(
 		{
@@ -1300,51 +1301,7 @@ def unset_redirect(name, domain):
 @frappe.whitelist()
 @protected("Site")
 def install_app(name, app, plan=None):
-	if plan:
-		is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
-		if not is_free:
-			team = get_current_team(get_doc=True)
-			if not team.can_install_paid_apps():
-				frappe.throw(
-					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
-				)
-
-	frappe.get_doc("Site", name).install_app(app)
-
-	if plan:
-		create_marketplace_app_subscription(name, app, plan)
-
-
-def create_marketplace_app_subscription(site_name, app_name, plan_name):
-	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
-	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
-	)
-
-	# If already exists, update the plan and activate
-	if app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
-			for_update=True,
-		)
-
-		app_subscription.marketplace_app_plan = plan_name
-		app_subscription.status = "Active"
-		app_subscription.save(ignore_permissions=True)
-		app_subscription.reload()
-
-		return app_subscription
-
-	return frappe.get_doc(
-		{
-			"doctype": "Marketplace App Subscription",
-			"marketplace_app_plan": plan_name,
-			"app": app_name,
-			"site": site_name,
-			"team": get_current_team(),
-		}
-	).insert(ignore_permissions=True)
+	frappe.get_doc("Site", name).install_app(app, plan)
 
 
 @frappe.whitelist()
@@ -1547,19 +1504,7 @@ def disable_auto_update(name):
 @frappe.whitelist()
 @protected("Site")
 def get_auto_update_info(name):
-	site_doc = frappe.get_doc("Site", name)
-
-	auto_update_info = {
-		"auto_updates_scheduled": site_doc.auto_updates_scheduled,
-		"auto_update_last_triggered_on": site_doc.auto_update_last_triggered_on,
-		"update_trigger_frequency": site_doc.update_trigger_frequency,
-		"update_trigger_time": site_doc.update_trigger_time,
-		"update_on_weekday": site_doc.update_on_weekday,
-		"update_end_of_month": site_doc.update_end_of_month,
-		"update_on_day_of_month": site_doc.update_on_day_of_month,
-	}
-
-	return auto_update_info
+	return frappe.get_doc("Site", name).get_auto_update_info()
 
 
 @frappe.whitelist()
@@ -1573,30 +1518,7 @@ def update_auto_update_info(name, info=None):
 @frappe.whitelist()
 @protected("Site")
 def get_database_access_info(name):
-	db_access_info = frappe._dict({})
-	site = frappe.db.get_value(
-		"Site",
-		name,
-		["plan", "is_database_access_enabled"],
-		as_dict=True,
-	)
-
-	is_available_on_current_plan = (
-		frappe.db.get_value("Plan", site.plan, "database_access") if site.plan else None
-	)
-	is_db_access_enabled = site.is_database_access_enabled
-
-	db_access_info.is_available_on_current_plan = is_available_on_current_plan
-	db_access_info.is_database_access_enabled = is_db_access_enabled
-
-	if not is_db_access_enabled:
-		# Nothing more we can return here
-		return db_access_info
-
-	site_doc = frappe.get_doc("Site", name)
-	db_access_info.credentials = site_doc.get_database_credentials()
-
-	return db_access_info
+	return frappe.get_doc("Site", name).get_database_access_info()
 
 
 @frappe.whitelist()
