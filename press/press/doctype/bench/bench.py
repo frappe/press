@@ -416,10 +416,14 @@ class Bench(Document):
 			self.gunicorn_workers = 2
 			self.background_workers = 1
 		if set_memory_limits:
-			self.memory_high = 512 + (
-				self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
-			)
-			self.memory_max = self.memory_high + gunicorn_memory + bg_memory
+			if self.skip_memory_limits:
+				self.memory_max = frappe.db.get_value("Server", self.server, "ram")
+				self.memory_high = self.memory_max - 1024
+			else:
+				self.memory_high = 512 + (
+					self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
+				)
+				self.memory_max = self.memory_high + gunicorn_memory + bg_memory
 			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers

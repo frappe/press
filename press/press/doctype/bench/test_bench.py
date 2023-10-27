@@ -238,3 +238,30 @@ class TestBench(unittest.TestCase):
 		self.assertFalse(bench2.memory_high)
 		self.assertFalse(bench2.memory_max)
 		self.assertFalse(bench2.memory_swap)
+
+	def test_memory_limits_set_to_server_ram_when_skip_memory_limits_is_set(self):
+		bench1 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+		bench2 = self._create_bench_with_n_sites_with_cpu_time(3, 5)
+
+		bench1.reload()
+		bench2.reload()
+		self.assertEqual(bench1.memory_high, 0)
+		self.assertEqual(bench1.memory_max, 0)
+		self.assertEqual(bench2.memory_high, 0)
+		self.assertEqual(bench2.memory_max, 0)
+		frappe.db.set_value("Server", bench1.server, "set_bench_memory_limits", True)
+		frappe.db.set_value("Bench", bench1.name, "skip_memory_limits", True)
+		server = frappe.get_doc("Server", bench1.server)
+
+		scale_workers()
+
+		bench1.reload()
+		bench2.reload()
+		self.assertTrue(bench1.memory_high)
+		self.assertEqual(bench1.memory_high, server.ram - 1024)
+		self.assertEqual(bench1.memory_max, server.ram)
+		self.assertEqual(bench1.memory_swap, server.ram * 2)
+
+		self.assertFalse(bench2.memory_high)
+		self.assertFalse(bench2.memory_max)
+		self.assertFalse(bench2.memory_swap)
