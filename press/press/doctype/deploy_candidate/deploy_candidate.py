@@ -20,6 +20,9 @@ from frappe.model.naming import make_autoname
 
 from press.utils import get_current_team, log_error
 from press.press.doctype.server.server import Server
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.release_group.release_group import ReleaseGroup
 
@@ -736,6 +739,25 @@ class DeployCandidate(Document):
 		return deploy
 
 	def on_update(self):
+		# failure notification
+		if self.status == "Failure":
+			error_msg = " - ".join(
+				frappe.get_value(
+					"Deploy Candidate Build Step",
+					{"parent": self.name, "status": "Failure"},
+					["stage", "step"],
+				)
+				or []
+			)
+			group_title = frappe.get_value("Release Group", self.group, "title")
+
+			create_new_notification(
+				self.team,
+				"Bench Deploy",
+				self.doctype,
+				self.name,
+				f"The scheduled deploy on the bench <b>{group_title}</b> failed at step <b>{error_msg}</b>",
+			)
 		if self.status == "Running":
 			frappe.publish_realtime(
 				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}

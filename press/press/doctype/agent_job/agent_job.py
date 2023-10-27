@@ -14,6 +14,9 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 
 
 class AgentJob(Document):
@@ -309,6 +312,30 @@ def update_job(job_name, job):
 			"traceback": job["data"].get("traceback"),
 		},
 	)
+
+	# send notification if job failed
+	if job["status"] == "Failure":
+		job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
+		notification_type, message = "", ""
+
+		if job_type == "Update Site Migrate":
+			notification_type = "Site Migrate"
+			message = f"Site <b>{job_site}</b> failed to migrate"
+		elif job_type == "Update Site Pull":
+			notification_type = "Site Update"
+			message = f"Site <b>{job_site}</b> failed to update"
+		elif job_type.startswith("Recover Failed"):
+			notification_type = "Site Recovery"
+			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
+
+		if notification_type:
+			create_new_notification(
+				frappe.get_value("Site", job_site, "team"),
+				notification_type,
+				"Agent Job",
+				job_name,
+				message,
+			)
 
 
 def update_steps(job_name, job):

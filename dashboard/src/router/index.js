@@ -57,6 +57,11 @@ const routes = [
 		props: true
 	},
 	{
+		path: '/notifications',
+		name: 'Notifications',
+		component: () => import('../views/notifications/Notifications.vue')
+	},
+	{
 		path: '/benches',
 		name: 'BenchesScreen',
 		component: () => import('../views/bench/Benches.vue')
@@ -108,6 +113,7 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'BenchDeploys',
 				path: 'deploys/:candidateName?',
 				component: () => import('../views/bench/BenchDeploys.vue'),
 				props: true
@@ -200,6 +206,7 @@ const routes = [
 				component: () => import('../views/site/SiteConsole.vue')
 			},
 			{
+				name: 'SiteJobs',
 				path: 'jobs/:jobName?',
 				component: () => import('../views/site/SiteJobs.vue'),
 				props: true
