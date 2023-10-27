@@ -251,8 +251,7 @@ export default {
 					label: 'Change Branch',
 					onClick: () => {
 						this.appToChangeBranchOf = app;
-					},
-					condition: () => app.name != 'frappe'
+					}
 				},
 				{
 					label: 'Visit Repo',
