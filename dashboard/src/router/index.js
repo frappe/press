@@ -98,11 +98,6 @@ const routes = [
 				props: true
 			},
 			{
-				name: 'BenchOverview',
-				path: 'overview',
-				component: () => import('../views/bench/BenchOverview.vue')
-			},
-			{
 				path: 'apps',
 				component: () => import('../views/bench/BenchApps.vue'),
 				props: true

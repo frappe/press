@@ -66,7 +66,7 @@
 import RichSelect from '@/components/RichSelect.vue';
 
 export default {
-	name: 'BenchOverviewRegions',
+	name: 'BenchRegions',
 	props: ['benchName'],
 	components: { RichSelect },
 	data() {
