@@ -33,7 +33,8 @@
   {
    "fieldname": "message",
    "fieldtype": "Data",
-   "label": "Message"
+   "label": "Message",
+   "read_only": 1
   },
   {
    "fieldname": "team",
@@ -59,12 +60,13 @@
    "in_list_view": 1,
    "label": "Document Name",
    "options": "document_type",
+   "read_only": 1,
    "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-23 19:21:28.616144",
+ "modified": "2023-10-28 22:03:57.471795",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",
