@@ -1657,7 +1657,8 @@ def change_team(team, name):
 @protected("Site")
 def change_group_options(name):
 	team = get_current_team()
-	group = frappe.db.get_value("Site", name, "group")
+	group, server = frappe.db.get_value("Site", name, ["group", "server"])
+
 	version = frappe.db.get_value("Release Group", group, "version")
 	benches = frappe.qb.DocType("Bench")
 	groups = frappe.qb.DocType("Release Group")
@@ -1670,8 +1671,10 @@ def change_group_options(name):
 		.where(groups.name != group)
 		.where(groups.version == version)
 		.where(groups.team == team)
+		.where(benches.server == server)
 		.groupby(benches.group)
 	)
+
 	return {"groups": query.run(as_dict=True)}
 
 
@@ -1682,12 +1685,55 @@ def change_group(name, group):
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
-	site = frappe.get_doc("Site", name)
-	site.status = "Pending"
-	site.save()
+	frappe.get_doc(
+		{
+			"doctype": "Site Update",
+			"site": name,
+			"destination_group": group,
+		}
+	).insert()
 
-	doc = frappe.new_doc("Version Upgrade")
-	doc.site = name
-	doc.status = "Failure"
-	doc.destination_group = group
-	doc.insert()
+
+@frappe.whitelist()
+@protected("Site")
+def change_region_options(name):
+	group, cluster = frappe.db.get_value("Site", name, ["group", "cluster"])
+
+	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+	Server = frappe.qb.DocType("Server")
+	Cluster = frappe.qb.DocType("Cluster")
+	query = (
+		frappe.qb.from_(ReleaseGroupServer)
+		.join(Server)
+		.on(Server.name == ReleaseGroupServer.server)
+		.join(Cluster)
+		.on(Cluster.name == Server.cluster)
+		.select(Cluster.name.as_("value"), Cluster.title.as_("label"), Cluster.image)
+		.where(ReleaseGroupServer.parent == group)
+		.where(ReleaseGroupServer.parenttype == "Release Group")
+	)
+
+	return {"regions": query.run(as_dict=True), "current_region": cluster}
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_region(name, cluster):
+	group = frappe.db.get_value("Site", name, "group")
+	bench, server = frappe.db.get_value(
+		"Bench", {"group": group, "cluster": cluster}, ["name", "server"]
+	)
+
+	site_migration = frappe.get_doc(
+		{
+			"doctype": "Site Migration",
+			"site": name,
+			"destination_group": group,
+			"destination_bench": bench,
+			"destination_server": server,
+			"destination_cluster": cluster,
+			"scheduled_time": frappe.utils.now_datetime(),
+		}
+	).insert()
+
+	site_migration.start()
