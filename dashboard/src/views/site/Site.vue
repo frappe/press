@@ -170,8 +170,12 @@
 			v-model="showChangeGroupDialog"
 		>
 			<template #body-content>
+				<LoadingIndicator
+					class="mx-auto h-4 w-4"
+					v-if="$resources.changeGroupOptions.loading"
+				/>
 				<ChangeGroupSelector
-					v-if="$resources.changeGroupOptions.data"
+					v-else
 					:groups="$resources.changeGroupOptions.data.groups"
 					:selectedGroup="targetGroup"
 					@update:selectedGroup="value => (targetGroup = value)"
@@ -186,8 +190,12 @@
 			v-model="showChangeRegionDialog"
 		>
 			<template #body-content>
+				<LoadingIndicator
+					class="mx-auto h-4 w-4"
+					v-if="$resources.changeRegionOptions.loading"
+				/>
 				<p
-					v-if="$resources.changeRegionOptions.data.regions.length < 2"
+					v-else-if="$resources.changeRegionOptions.data.regions.length < 2"
 					class="text-base text-gray-600"
 				>
 					You have only one region available. Add more regions to the current
@@ -209,7 +217,10 @@
 				<Button
 					class="w-full"
 					variant="solid"
-					:disabled="$resources.changeRegionOptions.data.regions.length < 2"
+					:disabled="
+						$resources.changeRegionOptions?.data &&
+						$resources.changeRegionOptions.data.regions.length < 2
+					"
 					:loading="$resources.changeRegion.loading"
 					@click="
 						$resources.changeRegion.submit({
@@ -333,8 +344,7 @@ export default {
 				url: 'press.api.site.change_group_options',
 				params: {
 					name: this.siteName
-				},
-				auto: true
+				}
 			};
 		},
 		changeRegionOptions() {
@@ -343,7 +353,6 @@ export default {
 				params: {
 					name: this.siteName
 				},
-				auto: true,
 				onSuccess(data) {
 					this.selectedRegion = data.current_region;
 				}
@@ -552,6 +561,7 @@ export default {
 						this.$account.user.user_type === 'System User' &&
 						this.site?.status === 'Active',
 					onClick: () => {
+						this.$resources.changeGroupOptions.fetch();
 						this.showChangeGroupDialog = true;
 					}
 				},
@@ -563,6 +573,7 @@ export default {
 						this.$account.user.user_type === 'System User' &&
 						this.site?.status === 'Active',
 					onClick: () => {
+						this.$resources.changeRegionOptions.fetch();
 						this.showChangeRegionDialog = true;
 					}
 				}
