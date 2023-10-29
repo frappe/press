@@ -62,7 +62,7 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 			if owner == team:
-				if frappe.get_value("Team", team, "user") != frappe.session.user and not hasattr(
+				if frappe.get_value("Team", team, "user") != frappe.session.user and hasattr(
 					frappe.local, "request"
 				):
 					# Logged in user is a team member
