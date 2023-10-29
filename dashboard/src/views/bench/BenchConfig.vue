@@ -1,7 +1,7 @@
 <template>
 	<ConfigEditor
 		v-if="bench && !bench?.public"
-		title="Bench Config"
+		title="Common Site Config"
 		subtitle="Add and update key value pairs to your bench's common_site_config.json and bench_config.json"
 		:configData="benchConfig"
 		:updateConfigMethod="updateBenchConfigMethod"
