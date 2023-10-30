@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch, Mock
 
 from frappe.model.naming import make_autoname
-from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.agent_job.agent_job import AgentJob, lock_doc_updated_by_job
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
 from press.press.doctype.team.test_team import create_test_press_admin_team
@@ -206,3 +206,21 @@ class TestAgentJob(unittest.TestCase):
 			mock_reload_nginx.call_count,
 			frappe.db.count("Proxy Server", {"status": "Active"}),
 		)
+
+	def test_lock_doc_updated_by_job_respects_hierarchy(self):
+		"""
+		Site > Bench > Server
+		"""
+		site = create_test_site()  # creates job
+		job = frappe.get_last_doc("Agent Job")
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertEqual(site.name, doc_name)
+		job.db_set("site", None)
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertEqual(site.bench, doc_name)
+		job.db_set("bench", None)
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertEqual(site.server, doc_name)
+		job.db_set("server", None)  # will realistically never happen
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertIsNone(doc_name)
