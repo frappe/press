@@ -1454,12 +1454,11 @@ def process_new_site_job_update(job):
 	}[job.job_type]
 
 	first = job.status
-	second = frappe.get_value(
+	second = frappe.get_all(
 		"Agent Job",
-		{"job_type": ("in", other_job_types), "site": job.site},
-		"status",
-		for_update=True,
-	)
+		fields=["status"],
+		filters={"job_type": ("in", other_job_types), "site": job.site},
+	)[0].status
 
 	backup_tests = frappe.get_all(
 		"Backup Restoration Test", dict(test_site=job.site, status="Running"), pluck="name"
@@ -1514,7 +1513,8 @@ def process_archive_site_job_update(job):
 	}[job.job_type]
 
 	other_job = frappe.get_last_doc(
-		"Agent Job", filters={"job_type": other_job_type, "site": job.site}, for_update=True
+		"Agent Job",
+		filters={"job_type": other_job_type, "site": job.site},
 	)
 
 	first = get_remove_step_status(job)
@@ -1656,7 +1656,6 @@ def process_rename_site_job_update(job):
 	other_job = frappe.get_last_doc(
 		"Agent Job",
 		filters={"job_type": other_job_type, "site": job.site},
-		for_update=True,
 	)
 	first = get_rename_step_status(job)
 	second = get_rename_step_status(other_job)
