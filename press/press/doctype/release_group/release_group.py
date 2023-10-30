@@ -36,6 +36,9 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
+	def get_doc(self):
+		return {"title": self.title}
+
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
@@ -379,6 +382,11 @@ class ReleaseGroup(Document):
 				release.tag = get_app_tag(source.repository, source.repository_owner, release.hash)
 
 			next_hash = app.hash
+
+			update_available = not current_hash or current_hash != next_hash
+			if not app.releases:
+				update_available = False
+
 			apps.append(
 				frappe._dict(
 					{
@@ -396,7 +404,7 @@ class ReleaseGroup(Document):
 						"next_release": app.release,
 						"will_branch_change": will_branch_change,
 						"current_branch": current_branch,
-						"update_available": not current_hash or current_hash != next_hash,
+						"update_available": update_available,
 					}
 				)
 			)
@@ -446,6 +454,9 @@ class ReleaseGroup(Document):
 
 			if app.source in only_approved_for_sources:
 				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
+				latest_app_releases = find_all(
+					latest_app_releases, lambda x: x.status == "Approved"
+				)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 

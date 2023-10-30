@@ -525,6 +525,10 @@ class BaseServer(Document):
 
 
 class Server(BaseServer):
+
+	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
+	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):
@@ -917,18 +921,23 @@ class Server(BaseServer):
 	@cached_property
 	def max_gunicorn_workers(self) -> int:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
-		return usable_ram_for_gunicorn / 150  # avg ram usage of 1 gunicorn worker
+		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
 
 	@cached_property
 	def max_bg_workers(self) -> int:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
-		return usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
+		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
 	def _auto_scale_workers_new(self):
 		for bench in self.bench_workloads.keys():
 			try:
 				bench.allocate_workers(
-					self.workload, self.max_gunicorn_workers, self.max_bg_workers
+					self.workload,
+					self.max_gunicorn_workers,
+					self.max_bg_workers,
+					self.set_bench_memory_limits,
+					self.GUNICORN_MEMORY,
+					self.BACKGROUND_JOB_MEMORY,
 				)
 				frappe.db.commit()
 			except Exception:

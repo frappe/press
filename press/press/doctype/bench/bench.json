@@ -22,6 +22,7 @@
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
+  "skip_memory_limits",
   "is_single_container",
   "is_ssh_enabled",
   "memory_high",
@@ -284,10 +285,16 @@
    "fieldname": "memory_swap",
    "fieldtype": "Int",
    "label": "Memory Swap (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_memory_limits",
+   "fieldtype": "Check",
+   "label": "Skip Memory Limits"
   }
  ],
  "links": [],
- "modified": "2023-10-17 11:45:33.339042",
+ "modified": "2023-10-27 09:27:05.409734",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

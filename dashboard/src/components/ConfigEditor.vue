@@ -1,5 +1,5 @@
 <template>
-	<Card title="Site Config">
+	<Card :title="title || 'Site Config'">
 		<template #actions>
 			<Button
 				class="mr-2"

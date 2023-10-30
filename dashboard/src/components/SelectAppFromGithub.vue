@@ -42,7 +42,7 @@
 					<span class="text-sm text-gray-600">
 						Don't see your organization?
 						<Link
-							:to="options.installation_url + '?state=' + state"
+							:href="options.installation_url + '?state=' + state"
 							class="font-medium"
 						>
 							Add from GitHub

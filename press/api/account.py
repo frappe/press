@@ -386,6 +386,7 @@ def get():
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
 
+	teams = []
 	if parent_teams:
 		Team = frappe.qb.DocType("Team")
 		teams = (
@@ -426,6 +427,7 @@ def get():
 		"partner_billing_name": partner_billing_name,
 		"number_of_sites": number_of_sites,
 		"permissions": get_permissions(),
+		"billing_info": team_doc.billing_info(),
 	}
 
 

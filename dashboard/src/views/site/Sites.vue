@@ -96,9 +96,9 @@
 					<Table
 						:columns="[
 							{ label: 'Site Name', name: 'name', width: 2 },
-							{ label: 'Status', name: 'status' },
+							{ label: 'Status', name: 'status', width: 1 },
 							{ label: 'Region', name: 'region', width: 0.5 },
-							{ label: 'Tags', name: 'tags' },
+							{ label: 'Tags', name: 'tags', width: 1 },
 							{ label: 'Plan', name: 'plan', width: 1.5 },
 							{ label: '', name: 'actions', width: 0.5 }
 						]"

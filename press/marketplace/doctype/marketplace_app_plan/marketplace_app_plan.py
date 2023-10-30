@@ -8,6 +8,38 @@ from frappe.model.document import Document
 
 
 class MarketplaceAppPlan(Document):
+	@staticmethod
+	def create_marketplace_app_subscription(site_name, app_name, plan_name):
+		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
+		app_subscription = frappe.db.exists(
+			"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
+		)
+
+		# If already exists, update the plan and activate
+		if app_subscription:
+			app_subscription = frappe.get_doc(
+				"Marketplace App Subscription",
+				app_subscription,
+				for_update=True,
+			)
+
+			app_subscription.marketplace_app_plan = plan_name
+			app_subscription.status = "Active"
+			app_subscription.save(ignore_permissions=True)
+			app_subscription.reload()
+
+			return app_subscription
+
+		return frappe.get_doc(
+			{
+				"doctype": "Marketplace App Subscription",
+				"marketplace_app_plan": plan_name,
+				"app": app_name,
+				"site": site_name,
+				"team": frappe.local.team.name,
+			}
+		).insert(ignore_permissions=True)
+
 	def validate(self):
 		self.validate_plan()
 		self.mark_free_if_applicable()

@@ -12,14 +12,14 @@
    "label": "Server",
    "mandatory": 1,
    "options": "Server",
-   "wildcard_filter": 1
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": "",
  "letterhead": null,
- "modified": "2023-10-19 12:30:33.997388",
+ "modified": "2023-10-20 11:26:37.053554",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Memory Limits",

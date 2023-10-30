@@ -1,7 +1,7 @@
 <template>
 	<Card v-if="invoice" :title="title">
 		<template #actions-left>
-			<Button route="/billing"> ← Back </Button>
+			<Button route="/billing/invoices"> ← Back </Button>
 		</template>
 		<InvoiceUsageTable :invoice="invoice" @doc="doc = $event" />
 	</Card>

@@ -57,7 +57,7 @@ class Subscription(Document):
 		if team.parent_team:
 			team = frappe.get_cached_doc("Team", team.parent_team)
 
-		if team.billing_team:
+		if team.billing_team and team.payment_mode == "Paid By Partner":
 			team = frappe.get_cached_doc("Team", team.billing_team)
 
 		if not team.get_upcoming_invoice():

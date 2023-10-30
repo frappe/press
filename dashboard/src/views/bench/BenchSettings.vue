@@ -7,14 +7,14 @@
 			:resourceTags="bench.bench_tags"
 			:tags="bench.tags"
 		/>
-		<BenchOverviewRegions :benchName="benchName" />
+		<BenchRegions :benchName="benchName" />
 		<BenchDependencies :benchName="benchName" />
 	</div>
 </template>
 
 <script>
 import Tags from '@/components/Tags.vue';
-import BenchOverviewRegions from './BenchOverviewRegions.vue';
+import BenchRegions from './BenchRegions.vue';
 import BenchDependencies from './BenchDependencies.vue';
 
 export default {
@@ -23,7 +23,7 @@ export default {
 	components: {
 		Tags,
 		BenchDependencies,
-		BenchOverviewRegions
+		BenchRegions
 	}
 };
 </script>

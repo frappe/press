@@ -508,6 +508,7 @@ class Team(Document):
 				"name_on_card": payment_method["billing_details"]["name"],
 				"expiry_month": payment_method["card"]["exp_month"],
 				"expiry_year": payment_method["card"]["exp_year"],
+				"brand": payment_method["card"]["brand"] or "",
 				"team": self.name,
 			}
 		)
@@ -536,6 +537,7 @@ class Team(Document):
 				"name_on_card",
 				"expiry_month",
 				"expiry_year",
+				"brand",
 				"is_default",
 				"creation",
 			],
@@ -709,12 +711,20 @@ class Team(Document):
 			)
 		)
 
-	def has_billing_setup(self):
-		return bool(
-			self.payment_mode in ["Card", "Prepaid Credits"]
-			and (self.default_payment_method or self.get_balance() > 0)
-			and self.billing_address
-		)
+	def billing_info(self):
+		return {
+			"balance": self.get_balance(),
+			"verified_micro_charge": bool(
+				frappe.db.exists(
+					"Stripe Payment Method", {"team": self.name, "is_verified_with_micro_charge": 1}
+				)
+			),
+			"has_paid_before": bool(
+				frappe.db.exists(
+					"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
+				)
+			),
+		}
 
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":

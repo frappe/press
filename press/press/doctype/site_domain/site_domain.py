@@ -12,6 +12,18 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class SiteDomain(Document):
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		domains = query.run(as_dict=1)
+		if filters.site:
+			host_name = frappe.db.get_value("Site", filters.site, "host_name")
+			for domain in domains:
+				if domain.domain == host_name:
+					domain.primary = True
+					break
+			domains.sort(key=lambda domain: not domain.primary)
+			return domains
+
 	def after_insert(self):
 		if not self.default:
 			self.create_tls_certificate()
