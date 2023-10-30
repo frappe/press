@@ -232,7 +232,10 @@ export default {
 					highlight: () => {
 						return this.$route.fullPath.startsWith('/billing');
 					},
-					icon: FCIcons.BillingIcon
+					icon: FCIcons.BillingIcon,
+					condition: () =>
+						$account.user.name === $account.team.user ||
+						$account.user.user_type === 'System User'
 				},
 				{
 					label: 'Settings',

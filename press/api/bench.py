@@ -825,7 +825,7 @@ def add_region(name, region):
 
 
 @frappe.whitelist()
-@protected("Release Group")
+@protected("Bench")
 def archive(name):
 	benches = frappe.get_all(
 		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
@@ -844,25 +844,25 @@ def archive(name):
 
 
 @frappe.whitelist()
-@protected("Release Group")
+@protected("Bench")
 def restart(name):
 	frappe.get_doc("Bench", name).restart()
 
 
 @frappe.whitelist()
-@protected("Release Group")
+@protected("Bench")
 def rebuild(name):
 	frappe.get_doc("Bench", name).rebuild()
 
 
 @frappe.whitelist()
-@protected("Release Group")
+@protected("Bench")
 def update(name):
 	frappe.get_doc("Bench", name).update_all_sites()
 
 
 @frappe.whitelist()
-@protected("Release Group")
+@protected("Bench")
 def update_all_sites(name):
 	benches = frappe.get_all("Bench", {"group": name, "status": "Active"})
 	for bench in benches:
