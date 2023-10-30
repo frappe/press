@@ -87,7 +87,6 @@ class CodeServer(Document):
 
 
 def process_new_code_server_job_update(job):
-	frappe.db.commit()
 	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
 
 	other_job_type = {
@@ -124,7 +123,6 @@ def process_stop_code_server_job_update(job):
 
 
 def process_archive_code_server_job_update(job):
-	frappe.db.commit()
 	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
 
 	other_job_type = {

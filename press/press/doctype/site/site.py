@@ -1445,7 +1445,6 @@ def release_name(name):
 
 
 def process_new_site_job_update(job):
-	frappe.db.commit()
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_types = {
@@ -1507,7 +1506,6 @@ def get_remove_step_status(job):
 
 
 def process_archive_site_job_update(job):
-	frappe.db.commit()
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_type = {
@@ -1648,7 +1646,6 @@ def get_rename_step_status(job):
 
 
 def process_rename_site_job_update(job):
-	frappe.db.commit()
 	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_type = {
