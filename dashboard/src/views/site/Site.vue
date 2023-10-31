@@ -159,7 +159,6 @@
 </template>
 
 <script>
-import { FCIcons } from '@/components/icons';
 import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
@@ -412,7 +411,7 @@ export default {
 				},
 				{
 					label: 'Change Bench',
-					icon: FCIcons.BenchIcon,
+					icon: 'package',
 					condition: () =>
 						this.$account.user.user_type === 'System User' &&
 						this.site?.status === 'Active',
