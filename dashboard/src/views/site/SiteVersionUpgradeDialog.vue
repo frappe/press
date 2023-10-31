@@ -3,7 +3,6 @@
 		v-model="show"
 		:options="{
 			title: 'Upgrade Site Version',
-			message: ``,
 			actions: [
 				{
 					label: 'Upgrade',
