@@ -2,39 +2,11 @@
 	<div class="space-y-5">
 		<Card title="Billing Summary">
 			<div v-if="!$resources.upcomingInvoice.loading">
-				<div class="grid grid-cols-3 gap-4 mb-4">
+				<div class="grid grid-cols-2 gap-4 mb-4">
 					<div class="border rounded-md p-4">
 						<div class="text-base mb-2">Current Billing Amount</div>
 						<div class="text-2xl font-medium">
 							{{ upcomingInvoice ? upcomingInvoice.formatted.total : '0.00' }}
-						</div>
-					</div>
-					<div class="border rounded-md p-4">
-						<div class="flex justify-between text-base">
-							<div>Account Balance</div>
-							<Button
-								@click="showPrepaidCreditsDialog = true"
-								theme="gray"
-								iconLeft="plus"
-								>Add</Button
-							>
-						</div>
-						<div class="text-2xl font-medium">
-							{{ availableCredits }}
-						</div>
-					</div>
-					<div class="border rounded-md p-4">
-						<div class="flex justify-between text-base">
-							<div>Account Balance</div>
-							<Button
-								@click="showPrepaidCreditsDialog = true"
-								theme="gray"
-								iconLeft="plus"
-								>Add</Button
-							>
-						</div>
-						<div class="text-2xl font-medium">
-							{{ availableCredits }}
 						</div>
 					</div>
 					<div class="border rounded-md p-4">
@@ -55,6 +27,21 @@
 							}}
 						</div>
 					</div>
+					<div class="border rounded-md p-4">
+						<div class="flex justify-between text-base">
+							<div>Account Balance</div>
+							<Button
+								@click="showPrepaidCreditsDialog = true"
+								theme="gray"
+								iconLeft="plus"
+								>Add</Button
+							>
+						</div>
+						<div class="text-2xl font-medium">
+							{{ availableCredits }}
+						</div>
+					</div>
+
 					<div class="border rounded-md p-4">
 						<div class="flex justify-between text-base">
 							<div>Payment Mode</div>
