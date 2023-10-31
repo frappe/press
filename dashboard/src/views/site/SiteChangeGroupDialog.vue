@@ -9,7 +9,7 @@
 					variant: 'solid',
 					onClick: () =>
 						$resources.changeGroup.submit({
-							group: targetGroup.name,
+							group: targetGroup,
 							name: site?.name
 						})
 				}
@@ -22,11 +22,17 @@
 				class="mx-auto h-4 w-4"
 				v-if="$resources.changeGroupOptions.loading"
 			/>
-			<ChangeGroupSelector
-				v-else
-				:groups="$resources.changeGroupOptions.data.groups"
-				:selectedGroup="targetGroup"
-				@update:selectedGroup="value => (targetGroup = value)"
+			<FormControl
+				v-else-if="$resources.changeGroupOptions.data.length > 0"
+				label="Select Bench"
+				type="select"
+				:options="
+					$resources.changeGroupOptions.data.map(group => ({
+						label: group.title,
+						value: group.name
+					}))
+				"
+				v-model="targetGroup"
 			/>
 			<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
 		</template>
@@ -35,15 +41,11 @@
 
 <script>
 import { notify } from '@/utils/toast';
-import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
 
 export default {
 	name: 'SiteChangeGroupDialog',
 	props: ['site', 'modelValue'],
 	emits: ['update:modelValue'],
-	components: {
-		ChangeGroupSelector
-	},
 	data() {
 		return {
 			targetGroup: null
@@ -72,9 +74,14 @@ export default {
 					name: this.site?.name
 				},
 				onSuccess() {
+					const destinationGroupTitle =
+						this.$resources.changeGroupOptions.data.find(
+							group => group.name === this.targetGroup
+						).title;
+
 					notify({
 						title: 'Scheduled Bench Change',
-						message: `Site scheduled to be moved to ${this.targetGroup.title}`,
+						message: `Site scheduled to be moved to <b>${destinationGroupTitle}</b>`,
 						color: 'green',
 						icon: 'check'
 					});
@@ -88,6 +95,9 @@ export default {
 				url: 'press.api.site.change_group_options',
 				params: {
 					name: this.site?.name
+				},
+				onSuccess(data) {
+					this.targetGroup = data[0].name;
 				}
 			};
 		}

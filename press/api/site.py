@@ -1587,7 +1587,7 @@ def change_group_options(name):
 	version = frappe.db.get_value("Release Group", group, "version")
 	benches = frappe.qb.DocType("Bench")
 	groups = frappe.qb.DocType("Release Group")
-	query = (
+	benches = (
 		frappe.qb.from_(benches)
 		.select(benches.group.as_("name"), groups.title)
 		.inner_join(groups)
@@ -1598,9 +1598,9 @@ def change_group_options(name):
 		.where(groups.team == team)
 		.where(benches.server == server)
 		.groupby(benches.group)
-	)
+	).run(as_dict=True)
 
-	return {"groups": query.run(as_dict=True)}
+	return benches
 
 
 @frappe.whitelist()
