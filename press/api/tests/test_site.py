@@ -117,6 +117,9 @@ class TestAPISite(FrappeTestCase):
 				"group": None,  # because group is public
 				"team": site.team,
 				"frappe_version": group.version,
+				"latest_frappe_version": group.version,
+				"is_public": group.public,
+				"server": site.server,
 				"server_region_info": frappe.db.get_value(
 					"Cluster", site.cluster, ["title", "image"], as_dict=True
 				),
