@@ -151,10 +151,7 @@
 			</template>
 		</Dialog>
 
-		<SiteChangeGroupDialog
-			:siteName="siteName"
-			v-model="showChangeGroupDialog"
-		/>
+		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
 		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
 		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>

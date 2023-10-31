@@ -10,7 +10,7 @@
 					onClick: () =>
 						$resources.changeGroup.submit({
 							group: targetGroup.name,
-							name: siteName
+							name: site?.name
 						})
 				}
 			]
@@ -39,7 +39,7 @@ import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
 
 export default {
 	name: 'SiteChangeGroupDialog',
-	props: ['siteName', 'modelValue'],
+	props: ['site', 'modelValue'],
 	emits: ['update:modelValue'],
 	components: {
 		ChangeGroupSelector
@@ -69,7 +69,7 @@ export default {
 			return {
 				url: 'press.api.site.change_group',
 				params: {
-					name: this.siteName
+					name: this.site?.name
 				},
 				onSuccess() {
 					notify({
@@ -87,7 +87,7 @@ export default {
 			return {
 				url: 'press.api.site.change_group_options',
 				params: {
-					name: this.siteName
+					name: this.site?.name
 				}
 			};
 		}
