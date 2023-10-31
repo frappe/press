@@ -244,6 +244,7 @@ def poll_pending_jobs_server(server):
 			# Update Job Status
 			# If it is worthy of an update
 			if job.status != polled_job["status"]:
+				lock_doc_updated_by_job(job.name)
 				update_job(job.name, polled_job)
 
 			# Update Steps' Status
@@ -325,7 +326,6 @@ def lock_doc_updated_by_job(job_name):
 
 
 def update_job(job_name, job):
-	lock_doc_updated_by_job(job_name)
 	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
 	frappe.db.set_value(
 		"Agent Job",
