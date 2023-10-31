@@ -58,7 +58,7 @@
   "docstatus": 0,
   "doctype": "Press Method Permission",
   "document_type": "Site",
-  "method": "press.api.site.get",
+  "method": "press.api.site.overview",
   "modified": "2023-10-30 00:28:47.065270",
   "name": "10805b1854"
  },
