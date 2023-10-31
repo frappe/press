@@ -48,7 +48,7 @@
 				<p v-else class="text-base">
 					There are no private release groups available to upgrade this site.
 				</p>
-				<ErrorMessage class="" :message="$resources.versionUpgrade.error" />
+				<ErrorMessage :message="$resources.versionUpgrade.error" />
 			</div>
 		</template>
 	</Dialog>
