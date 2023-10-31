@@ -151,39 +151,10 @@
 			</template>
 		</Dialog>
 
-		<Dialog
-			:options="{
-				title: 'Move Site to another Bench',
-				actions: [
-					{
-						label: 'Submit',
-						loading: this.$resources.changeGroup.loading,
-						variant: 'solid',
-						onClick: () =>
-							$resources.changeGroup.submit({
-								group: targetGroup.name,
-								name: siteName
-							})
-					}
-				]
-			}"
+		<SiteChangeGroupDialog
+			:siteName="siteName"
 			v-model="showChangeGroupDialog"
-		>
-			<template #body-content>
-				<LoadingIndicator
-					class="mx-auto h-4 w-4"
-					v-if="$resources.changeGroupOptions.loading"
-				/>
-				<ChangeGroupSelector
-					v-else
-					:groups="$resources.changeGroupOptions.data.groups"
-					:selectedGroup="targetGroup"
-					@update:selectedGroup="value => (targetGroup = value)"
-				/>
-				<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
-			</template>
-		</Dialog>
-
+		/>
 		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
 		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
@@ -195,9 +166,9 @@ import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
-import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
-import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
+import SiteChangeGroupDialog from './SiteChangeGroupDialog.vue';
 import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
+import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
 
 export default {
 	name: 'Site',
@@ -210,7 +181,7 @@ export default {
 	components: {
 		SiteAlerts,
 		Tabs,
-		ChangeGroupSelector,
+		SiteChangeGroupDialog,
 		SiteChangeRegionDialog,
 		SiteVersionUpgradeDialog
 	},
@@ -223,7 +194,6 @@ export default {
 			showChangeGroupDialog: false,
 			showChangeRegionDialog: false,
 			showVersionUpgradeDialog: false,
-			targetGroup: null,
 			emailOfChildTeam: null,
 			errorMessage: ''
 		};
@@ -271,33 +241,6 @@ export default {
 						color: 'green',
 						icon: 'check'
 					});
-				}
-			};
-		},
-		changeGroup() {
-			return {
-				url: 'press.api.site.change_group',
-				params: {
-					name: this.siteName
-				},
-				onSuccess(result) {
-					this.showChangeGroupDialog = false;
-					notify({
-						title: 'Scheduled Bench Change',
-						message: `Site scheduled to be moved to ${this.targetGroup.title}`,
-						color: 'green',
-						icon: 'check'
-					});
-					this.targetGroup = null;
-					this.$resources.site.reload();
-				}
-			};
-		},
-		changeGroupOptions() {
-			return {
-				url: 'press.api.site.change_group_options',
-				params: {
-					name: this.siteName
 				}
 			};
 		},
@@ -469,14 +412,10 @@ export default {
 				{
 					label: 'Change Bench',
 					icon: FCIcons.BenchIcon,
-					loading: this.$resources.changeGroup.loading,
 					condition: () =>
 						this.$account.user.user_type === 'System User' &&
 						this.site?.status === 'Active',
-					onClick: () => {
-						this.$resources.changeGroupOptions.fetch();
-						this.showChangeGroupDialog = true;
-					}
+					onClick: () => (this.showChangeGroupDialog = true)
 				},
 				{
 					label: 'Change Region',
