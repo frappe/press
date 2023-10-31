@@ -749,7 +749,7 @@ def get(name):
 		else:
 			raise
 	rg_info = frappe.db.get_value(
-		"Release Group", site.group, ["team", "version"], as_dict=True
+		"Release Group", site.group, ["team", "version", "public"], as_dict=True
 	)
 	group_team = rg_info.team
 	frappe_version = rg_info.version
@@ -774,6 +774,8 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
+		"is_public": not rg_info.public,
+		"latest_frappe_version": frappe.db.get_value("Frappe Version", {"status": "Stable"}),
 		"frappe_version": frappe_version,
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": server.team != team,
@@ -1659,3 +1661,55 @@ def change_region(name, cluster):
 	).insert()
 
 	site_migration.start()
+
+
+@frappe.whitelist()
+@protected("Site")
+def get_private_groups_for_upgrade(name, version):
+	team = get_current_team()
+	server = frappe.db.get_value("Site", name, "server")
+
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
+
+	private_groups = (
+		frappe.qb.from_(ReleaseGroup)
+		.select(ReleaseGroup.name.as_("value"), ReleaseGroup.title.as_("label"))
+		.join(ReleaseGroupServer)
+		.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+		.where(ReleaseGroup.enabled == 1)
+		.where(ReleaseGroupServer.server == server)
+		.where(ReleaseGroup.team == team)
+		.where(ReleaseGroup.public == 0)
+		.where(ReleaseGroup.version > version)
+	).run(as_dict=True)
+
+	return private_groups
+
+
+@frappe.whitelist()
+@protected("Site")
+def version_upgrade(name, destination_group):
+	site = frappe.get_doc("Site", name)
+	current_version, shared_site = frappe.db.get_value(
+		"Release Group", site.group, ["version", "public"]
+	)
+	next_version = f"Version {int(current_version.split(' ')[1]) + 1}"
+
+	if shared_site:
+		destination_group = frappe.db.get_value(
+			"Release Group", {"version": next_version, "public": 1}, "name"
+		)
+
+	if not destination_group:
+		frappe.throw(f"There are no benches with {next_version}.")
+
+	version_upgrade = frappe.get_doc(
+		{
+			"doctype": "Version Upgrade",
+			"site": name,
+			"destination_group": destination_group,
+		}
+	).insert()
+
+	version_upgrade.start()

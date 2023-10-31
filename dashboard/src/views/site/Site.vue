@@ -234,6 +234,8 @@
 				</Button>
 			</template>
 		</Dialog>
+
+		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
 </template>
 
@@ -245,6 +247,7 @@ import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
 import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
 import RichSelect from '@/components/RichSelect.vue';
+import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
 
 export default {
 	name: 'Site',
@@ -258,7 +261,8 @@ export default {
 		SiteAlerts,
 		RichSelect,
 		Tabs,
-		ChangeGroupSelector
+		ChangeGroupSelector,
+		SiteVersionUpgradeDialog
 	},
 	data() {
 		return {
@@ -268,6 +272,7 @@ export default {
 			showTransferSiteDialog: false,
 			showChangeGroupDialog: false,
 			showChangeRegionDialog: false,
+			showVersionUpgradeDialog: false,
 			selectedRegion: null,
 			targetGroup: null,
 			emailOfChildTeam: null,
@@ -576,6 +581,15 @@ export default {
 						this.$resources.changeRegionOptions.fetch();
 						this.showChangeRegionDialog = true;
 					}
+				},
+				{
+					label: 'Upgrade Version',
+					icon: 'arrow-up',
+					condition: () =>
+						this.$account.user.user_type === 'System User' &&
+						this.site?.frappe_version !== this.site?.latest_frappe_version &&
+						this.site?.status === 'Active',
+					onClick: () => (this.showVersionUpgradeDialog = true)
 				}
 			];
 		},
