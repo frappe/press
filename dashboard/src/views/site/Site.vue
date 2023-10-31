@@ -183,58 +183,8 @@
 				<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
 			</template>
 		</Dialog>
-		<Dialog
-			:options="{
-				title: 'Change Region'
-			}"
-			v-model="showChangeRegionDialog"
-		>
-			<template #body-content>
-				<LoadingIndicator
-					class="mx-auto h-4 w-4"
-					v-if="$resources.changeRegionOptions.loading"
-				/>
-				<p
-					v-else-if="$resources.changeRegionOptions.data.regions.length < 2"
-					class="text-base text-gray-600"
-				>
-					You have only one region available. Add more regions to the current
-					bench from bench settings to change the region of this site.
-				</p>
-				<div v-else>
-					<RichSelect
-						:value="selectedRegion"
-						@change="selectedRegion = $event"
-						:options="$resources.changeRegionOptions.data.regions"
-					/>
-					<p class="mt-4 text-sm text-gray-500">
-						Changing region may cause a downtime between 30 minutes to 1 hour
-					</p>
-				</div>
-				<ErrorMessage class="mt-3" :message="$resources.changeRegion.error" />
-			</template>
-			<template #actions>
-				<Button
-					class="w-full"
-					variant="solid"
-					:disabled="
-						$resources.changeRegionOptions?.data &&
-						$resources.changeRegionOptions.data.regions.length < 2
-					"
-					:loading="$resources.changeRegion.loading"
-					@click="
-						$resources.changeRegion.submit({
-							name: siteName,
-							cluster: selectedRegion
-						});
-						showChangeRegionDialog = false;
-					"
-				>
-					Submit
-				</Button>
-			</template>
-		</Dialog>
 
+		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
 		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
 </template>
@@ -246,8 +196,8 @@ import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
 import ChangeGroupSelector from '@/components/ChangeGroupSelector.vue';
-import RichSelect from '@/components/RichSelect.vue';
 import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
+import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
 
 export default {
 	name: 'Site',
@@ -259,9 +209,9 @@ export default {
 	props: ['siteName'],
 	components: {
 		SiteAlerts,
-		RichSelect,
 		Tabs,
 		ChangeGroupSelector,
+		SiteChangeRegionDialog,
 		SiteVersionUpgradeDialog
 	},
 	data() {
@@ -273,7 +223,6 @@ export default {
 			showChangeGroupDialog: false,
 			showChangeRegionDialog: false,
 			showVersionUpgradeDialog: false,
-			selectedRegion: null,
 			targetGroup: null,
 			emailOfChildTeam: null,
 			errorMessage: ''
@@ -349,47 +298,6 @@ export default {
 				url: 'press.api.site.change_group_options',
 				params: {
 					name: this.siteName
-				}
-			};
-		},
-		changeRegionOptions() {
-			return {
-				url: 'press.api.site.change_region_options',
-				params: {
-					name: this.siteName
-				},
-				onSuccess(data) {
-					this.selectedRegion = data.current_region;
-				}
-			};
-		},
-		changeRegion() {
-			return {
-				url: 'press.api.site.change_region',
-				params: {
-					name: this.siteName,
-					cluster: this.selectedRegion
-				},
-				validate() {
-					if (
-						this.$resources.changeRegionOptions.data.current_region ===
-						this.selectedRegion
-					)
-						return 'Site is already in this region';
-				},
-				onSuccess() {
-					const regionName =
-						this.$resources.changeRegionOptions.data.regions.find(
-							region => region.value === this.selectedRegion
-						).label;
-
-					notify({
-						title: 'Scheduled Region Change',
-						message: `Site scheduled to be moved to ${regionName}`,
-						color: 'green',
-						icon: 'check'
-					});
-					this.$resources.site.reload();
 				}
 			};
 		},
@@ -573,14 +481,10 @@ export default {
 				{
 					label: 'Change Region',
 					icon: 'globe',
-					loading: this.$resources.changeRegion.loading,
 					condition: () =>
 						this.$account.user.user_type === 'System User' &&
 						this.site?.status === 'Active',
-					onClick: () => {
-						this.$resources.changeRegionOptions.fetch();
-						this.showChangeRegionDialog = true;
-					}
+					onClick: () => (this.showChangeRegionDialog = true)
 				},
 				{
 					label: 'Upgrade Version',
