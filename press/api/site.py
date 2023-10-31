@@ -777,6 +777,7 @@ def get(name):
 		"is_public": not rg_info.public,
 		"latest_frappe_version": frappe.db.get_value("Frappe Version", {"status": "Stable"}),
 		"frappe_version": frappe_version,
+		"server": site.server,
 		"server_region_info": get_server_region_info(site),
 		"can_change_plan": server.team != team,
 		"hide_config": site.hide_config,
@@ -1713,3 +1714,52 @@ def version_upgrade(name, destination_group):
 	).insert()
 
 	version_upgrade.start()
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_server_options(name):
+	site_server = frappe.db.get_value("Site", name, "server")
+	return frappe.db.get_all(
+		"Server",
+		{"team": get_current_team(), "status": "Active", "name": ("!=", site_server)},
+	)
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_server(name, server):
+	site_group, site_bench = frappe.db.get_value("Site", name, ["group", "bench"])
+	site_candidate = frappe.db.get_value("Bench", site_bench, "candidate")
+	site_version = frappe.db.get_value("Release Group", site_group, "version")
+	team = get_current_team()
+
+	Bench = frappe.qb.DocType("Bench")
+	ReleaseGroup = frappe.qb.DocType("Release Group")
+	bench = (
+		frappe.qb.from_(Bench)
+		.select(Bench.name)
+		.join(ReleaseGroup)
+		.on(ReleaseGroup.name == Bench.group)
+		.where(Bench.server == server)
+		.where(Bench.status == "Active")
+		.where(ReleaseGroup.team == team)
+		.where(Bench.candidate > site_candidate)
+		.where(ReleaseGroup.version == site_version)
+	).run(as_dict=True, pluck="name")
+
+	if not bench:
+		frappe.throw(f"There are no benches with {site_version}.")
+	else:
+		bench = bench[0]
+
+	site_migration = frappe.get_doc(
+		{
+			"doctype": "Site Migration",
+			"site": name,
+			"destination_bench": bench,
+			"scheduled_time": frappe.utils.now_datetime(),
+		}
+	).insert()
+
+	site_migration.start()

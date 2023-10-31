@@ -153,6 +153,7 @@
 
 		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
 		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
+		<SiteChangeServerDialog :site="site" v-model="showChangeServerDialog" />
 		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
 </template>
@@ -166,6 +167,7 @@ import { notify } from '@/utils/toast';
 import SiteChangeGroupDialog from './SiteChangeGroupDialog.vue';
 import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
 import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
+import SiteChangeServerDialog from './SiteChangeServerDialog.vue';
 
 export default {
 	name: 'Site',
@@ -180,6 +182,7 @@ export default {
 		Tabs,
 		SiteChangeGroupDialog,
 		SiteChangeRegionDialog,
+		SiteChangeServerDialog,
 		SiteVersionUpgradeDialog
 	},
 	data() {
@@ -190,6 +193,7 @@ export default {
 			showTransferSiteDialog: false,
 			showChangeGroupDialog: false,
 			showChangeRegionDialog: false,
+			showChangeServerDialog: false,
 			showVersionUpgradeDialog: false,
 			emailOfChildTeam: null,
 			errorMessage: ''
@@ -430,6 +434,14 @@ export default {
 						this.site?.frappe_version !== this.site?.latest_frappe_version &&
 						this.site?.status === 'Active',
 					onClick: () => (this.showVersionUpgradeDialog = true)
+				},
+				{
+					label: 'Change Server',
+					icon: 'server',
+					condition: () =>
+						this.$account.user.user_type === 'System User' &&
+						this.site?.status === 'Active',
+					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];
 		},
