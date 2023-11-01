@@ -53,20 +53,11 @@
    "read_only": 1
   },
   {
-   "fetch_from": "virtual_machine.cluster",
-   "fetch_if_empty": 1,
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "options": "Cluster",
-   "read_only": 1,
-   "reqd": 1
-  },
-  {
    "fetch_from": "cluster.region",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Region",
+   "options": "Cloud Region",
    "read_only": 1,
    "reqd": 1
   },
@@ -88,7 +79,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm",
+   "options": "n\nf\nm\nc\np\ne\nr",
    "read_only": 1,
    "reqd": 1
   },
@@ -121,11 +112,20 @@
    "label": "Copied From",
    "options": "Virtual Machine Image",
    "read_only": 1
+  },
+  {
+   "fetch_from": "virtual_machine.cluster",
+   "fetch_if_empty": 1,
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-11 10:33:39.581634",
+ "modified": "2023-08-14 13:26:57.794274",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

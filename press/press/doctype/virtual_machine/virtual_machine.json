@@ -20,8 +20,11 @@
   "index",
   "section_break_5",
   "machine_type",
-  "disk_size",
   "aws_instance_id",
+  "column_break_hgcr",
+  "disk_size",
+  "vcpu",
+  "ram",
   "column_break_8",
   "virtual_machine_image",
   "machine_image",
@@ -55,8 +58,9 @@
   {
    "fetch_from": "cluster.region",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Region",
+   "options": "Cloud Region",
    "read_only": 1,
    "reqd": 1
   },
@@ -73,6 +77,7 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster",
+   "reqd": 1,
    "set_only_once": 1
   },
   {
@@ -249,7 +254,7 @@
    "fieldname": "series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "n\nf\nm",
+   "options": "n\nf\nm\nc\np\ne\nr",
    "reqd": 1
   },
   {
@@ -258,6 +263,22 @@
    "label": "Domain",
    "options": "Root Domain",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hgcr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Int",
+   "label": "RAM (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -288,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-04-01 14:37:17.417288",
+ "modified": "2023-10-13 09:21:11.804746",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

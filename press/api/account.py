@@ -18,10 +18,13 @@ from frappe.rate_limiter import rate_limit
 from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
 from press.utils import get_country_info, get_current_team
 from press.utils.telemetry import capture, identify
+from press.api.site import protected
+from frappe.query_builder.custom import GROUP_CONCAT
+from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, referrer=None):
+def signup(email, product=None, referrer=None):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -43,6 +46,7 @@ def signup(email, referrer=None):
 				"email": email,
 				"role": "Press Admin",
 				"referrer_id": referrer,
+				"saas_product": product,
 				"send_email": True,
 			}
 		).insert()
@@ -66,6 +70,7 @@ def setup_account(
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
+	signup_values=None,
 ):
 	account_request = get_account_request_from_key(key)
 	if not account_request:
@@ -91,7 +96,7 @@ def setup_account(
 				frappe.throw("Please provide a valid country name")
 
 	if not accepted_user_terms:
-		frappe.throw("Please accept our Terms of Service & Privary Policy to continue")
+		frappe.throw("Please accept our Terms of Service & Privacy Policy to continue")
 
 	# if the request is authenticated, set the user to Administrator
 	frappe.set_user("Administrator")
@@ -100,6 +105,11 @@ def setup_account(
 	email = account_request.email
 	role = account_request.role
 
+	if signup_values:
+		account_request.saas_signup_values = json.dumps(signup_values, separators=(",", ":"))
+		account_request.save(ignore_permissions=True)
+		account_request.reload()
+
 	if is_invitation:
 		# if this is a request from an invitation
 		# then Team already exists and will be added to that team
@@ -107,7 +117,7 @@ def setup_account(
 		doc.create_user_for_member(first_name, last_name, email, password, role)
 	else:
 		# Team doesn't exist, create it
-		Team.create_new(
+		team_doc = Team.create_new(
 			account_request=account_request,
 			first_name=first_name,
 			last_name=last_name,
@@ -119,6 +129,14 @@ def setup_account(
 			doc = frappe.get_doc("Team", account_request.invited_by)
 			doc.append("child_team_members", {"child_team": team})
 			doc.save()
+
+		if account_request.saas_product:
+			frappe.new_doc(
+				"SaaS Product Site Request",
+				saas_product=account_request.saas_product,
+				account_request=account_request.name,
+				team=team_doc.name,
+			).insert(ignore_permissions=True)
 
 	# Telemetry: Created account
 	capture("completed_signup", "fc_signup", account_request.name)
@@ -175,9 +193,32 @@ def login_using_key(key):
 
 
 @frappe.whitelist()
+def approve_partner_request(key):
+	partner_request_doc = frappe.get_doc("Partner Approval Request", {"key": key})
+
+	if partner_request_doc and partner_request_doc.status == "Pending":
+		partner_request_doc.status = "Approved"
+		partner_request_doc.save(ignore_permissions=True)
+
+		partner = frappe.get_doc("Team", partner_request_doc.partner)
+
+		customer_team = frappe.get_doc("Team", partner_request_doc.requested_by)
+		customer_team.partner_email = partner.partner_email
+		team_members = [d.user for d in customer_team.team_members]
+		if partner.user not in team_members:
+			customer_team.append("team_members", {"user": partner.user})
+		customer_team.save(ignore_permissions=True)
+
+		frappe.db.commit()
+
+		frappe.response.type = "redirect"
+		frappe.response.location = "/dashboard/settings/partner"
+
+
+@frappe.whitelist()
 def disable_account():
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.name:
+	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can disable the account")
 	team.disable_account()
 
@@ -185,7 +226,7 @@ def disable_account():
 @frappe.whitelist()
 def enable_account():
 	team = get_current_team(get_doc=True)
-	if frappe.session.user != team.name:
+	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can enable the account")
 	team.enable_account()
 
@@ -244,23 +285,57 @@ def delete_team(team):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_email_from_request_key(key):
+def validate_request_key(key, timezone=None):
+	from press.utils.country_timezone import get_country_from_timezone
+
 	account_request = get_account_request_from_key(key)
 	if account_request:
 		data = get_country_info()
+		possible_country = data.get("country") or get_country_from_timezone(timezone)
+		saas_product = frappe.db.get_value(
+			"SaaS Product",
+			{"name": account_request.saas_product},
+			pluck="name",
+		)
+		saas_product_doc = (
+			frappe.get_doc("SaaS Product", saas_product) if saas_product else None
+		)
 		capture("clicked_verify_link", "fc_signup", account_request.email)
 		return {
 			"email": account_request.email,
 			"first_name": account_request.first_name,
 			"last_name": account_request.last_name,
-			"country": data.get("country"),
+			"country": possible_country,
 			"countries": frappe.db.get_all("Country", pluck="name"),
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
+			"saas_product": {
+				"name": saas_product_doc.name,
+				"title": saas_product_doc.title,
+				"logo": saas_product_doc.logo,
+				"signup_fields": saas_product_doc.signup_fields,
+			}
+			if saas_product_doc
+			else None,
 		}
+
+
+@frappe.whitelist()
+def get_partner_request_status(team):
+	return frappe.db.get_value(
+		"Partner Approval Request", {"requested_by": team}, "status"
+	)
+
+
+@frappe.whitelist()
+def update_partnership_date(team, partnership_date):
+	if team:
+		team_doc = frappe.get_doc("Team", team)
+		team_doc.partnership_date = partnership_date
+		team_doc.save()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -311,14 +386,26 @@ def get():
 		d.parent for d in frappe.db.get_all("Team Member", {"user": user}, ["parent"])
 	]
 
+	teams = []
 	if parent_teams:
-		teams = frappe.db.sql(
-			"""
-			select name, team_title, user from tabTeam where enabled = 1 and name in %s
-		""",
-			[parent_teams],
-			as_dict=True,
+		Team = frappe.qb.DocType("Team")
+		teams = (
+			frappe.qb.from_(Team)
+			.select(Team.name, Team.team_title, Team.user)
+			.where((Team.enabled == 1) & (Team.name.isin(parent_teams)))
+			.run(as_dict=True)
 		)
+
+	partner_billing_name = ""
+	if team_doc.partner_email:
+		partner_billing_name = frappe.db.get_value(
+			"Team",
+			{"erpnext_partner": 1, "partner_email": team_doc.partner_email},
+			"billing_name",
+		)
+	number_of_sites = frappe.db.count(
+		"Site", {"team": team_doc.name, "status": ("!=", "Archived")}
+	)
 
 	return {
 		"user": frappe.get_doc("User", user),
@@ -330,11 +417,54 @@ def get():
 		"onboarding": team_doc.get_onboarding(),
 		"balance": team_doc.get_balance(),
 		"parent_team": team_doc.parent_team or "",
+		"saas_site_request": team_doc.get_pending_saas_site_request(),
 		"feature_flags": {
 			"verify_cards_with_micro_charge": frappe.db.get_single_value(
 				"Press Settings", "verify_cards_with_micro_charge"
 			)
 		},
+		"partner_email": team_doc.partner_email or "",
+		"partner_billing_name": partner_billing_name,
+		"number_of_sites": number_of_sites,
+		"permissions": get_permissions(),
+		"billing_info": team_doc.billing_info(),
+	}
+
+
+def get_permissions():
+	user = frappe.session.user
+	groups = tuple(
+		frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent")
+		+ ["1", "2"]
+	)  # [1, 2] is for avoiding singleton tuples
+	docperms = frappe.db.sql(
+		f"""
+			SELECT `document_name`, GROUP_CONCAT(`action`) as `actions`
+			FROM `tabPress User Permission`
+			WHERE user='{user}' or `group` in {groups}
+			GROUP BY `document_name`
+		""",
+		as_dict=True,
+	)
+	return {
+		perm.document_name: perm.actions.split(",") for perm in docperms if perm.actions
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def signup_settings(product=None):
+	settings = frappe.get_single("Press Settings")
+
+	product = frappe.utils.cstr(product)
+	saas_product = None
+	if product:
+		saas_product = frappe.db.get_value(
+			"SaaS Product", {"name": product, "published": 1}, ["title", "logo"], as_dict=1
+		)
+
+	return {
+		"enable_google_oauth": settings.enable_google_oauth,
+		"saas_product": saas_product,
 	}
 
 
@@ -343,7 +473,7 @@ def guest_feature_flags():
 	return {
 		"enable_google_oauth": frappe.db.get_single_value(
 			"Press Settings", "enable_google_oauth"
-		)
+		),
 	}
 
 
@@ -437,6 +567,23 @@ def update_profile_picture():
 	)
 	_file.save(ignore_permissions=True)
 	frappe.db.set_value("User", user, "user_image", _file.file_url)
+
+
+@frappe.whitelist()
+def update_feature_flags(values=None):
+	frappe.only_for("Press Admin")
+	team = get_current_team(get_doc=True)
+	values = frappe.parse_json(values)
+	fields = [
+		"benches_enabled",
+		"servers_enabled",
+		"self_hosted_servers_enabled",
+		"security_portal_enabled",
+	]
+	for field in fields:
+		if field in values:
+			team.set(field, values[field])
+	team.save()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -536,12 +683,20 @@ def leave_team(team):
 
 
 @frappe.whitelist()
-def get_billing_information():
+def get_billing_information(timezone=None):
+	from press.utils.country_timezone import get_country_from_timezone
+
 	team = get_current_team(True)
+
+	billing_details = frappe._dict()
 	if team.billing_address:
 		billing_details = frappe.get_doc("Address", team.billing_address).as_dict()
 		billing_details.billing_name = team.billing_name
-		return billing_details
+
+	if not billing_details.country and timezone:
+		billing_details.country = get_country_from_timezone(timezone)
+
+	return billing_details
 
 
 @frappe.whitelist()
@@ -612,6 +767,45 @@ def get_frappe_io_auth_url() -> Union[str, None]:
 		and provider.get_password("client_secret")
 	):
 		return get_oauth2_authorize_url(provider.name, redirect_to="")
+
+
+@frappe.whitelist()
+def add_partner(referral_code: str):
+	team = get_current_team(get_doc=True)
+	partner = frappe.get_doc("Team", {"partner_referral_code": referral_code}).name
+	doc = frappe.get_doc(
+		{
+			"doctype": "Partner Approval Request",
+			"partner": partner,
+			"requested_by": team.name,
+			"status": "Pending",
+			"send_mail": True,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def validate_partner_code(code):
+	partner = frappe.db.get_value(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 1, "partner_referral_code": code},
+		"billing_name",
+	)
+	if partner:
+		return True, partner
+	return False, None
+
+
+@frappe.whitelist()
+def get_partner_customers():
+	team = get_current_team(get_doc=True)
+	customers = frappe.get_all(
+		"Team",
+		{"enabled": 1, "erpnext_partner": 0, "partner_email": team.partner_email},
+		["name", "user", "payment_mode", "billing_name", "currency"],
+	)
+	return customers
 
 
 @frappe.whitelist()
@@ -688,3 +882,145 @@ def fuse_list():
 	"""
 
 	return frappe.db.sql(query, as_dict=True)
+
+
+# Permissions
+@frappe.whitelist()
+def get_permission_options(name, ptype):
+	"""
+	[{'doctype': 'Site', 'name': 'ccc.frappe.cloud', title: '', 'perms': 'press.api.site.get'}, ...]
+	"""
+	from press.press.doctype.press_method_permission.press_method_permission import (
+		available_actions,
+	)
+
+	doctypes = frappe.get_all(
+		"Press Method Permission", pluck="document_type", distinct=True
+	)
+
+	options = []
+	for doctype in doctypes:
+		doc = frappe.qb.DocType(doctype)
+		perm_doc = frappe.qb.DocType("Press User Permission")
+		subtable = (
+			frappe.qb.from_(perm_doc)
+			.select("*")
+			.where((perm_doc.user if ptype == "user" else perm_doc.group) == name)
+		)
+
+		query = (
+			frappe.qb.from_(doc)
+			.left_join(subtable)
+			.on(doc.name == subtable.document_name)
+			.select(
+				ValueWrapper(doctype, alias="doctype"),
+				doc.name,
+				doc.title if doctype != "Site" else None,
+				GROUP_CONCAT(subtable.action, alias="perms"),
+			)
+			.where(
+				(doc.team == get_current_team())
+				& ((doc.enabled == 1) if doctype == "Release Group" else (doc.status != "Archived"))
+			)
+			.groupby(doc.name)
+		)
+		options += query.run(as_dict=True)
+
+	return {"options": options, "actions": available_actions()}
+
+
+@frappe.whitelist()
+def update_permissions(user, ptype, updated):
+	values = []
+	drop = []
+
+	for doctype, docs in updated.items():
+		for doc, updated_perms in docs.items():
+			ptype_cap = ptype.capitalize()
+			old_perms = frappe.get_all(
+				"Press User Permission",
+				filters={
+					"type": ptype_cap,
+					ptype: user,
+					"document_type": doctype,
+					"document_name": doc,
+				},
+				pluck="action",
+			)
+			# perms to insert
+			add = set(updated_perms).difference(set(old_perms))
+			values += [(frappe.generate_hash(4), ptype_cap, doctype, doc, user, a) for a in add]
+
+			# perms to remove
+			remove = set(old_perms).difference(set(updated_perms))
+			drop += frappe.get_all(
+				"Press User Permission",
+				filters={
+					"type": ptype_cap,
+					ptype: user,
+					"document_type": doctype,
+					"document_name": doc,
+					"action": ("in", remove),
+				},
+				pluck="name",
+			)
+
+	if values:
+		frappe.db.bulk_insert(
+			"Press User Permission",
+			fields=["name", "type", "document_type", "document_name", ptype, "action"],
+			values=set(values),
+			ignore_duplicates=True,
+		)
+	if drop:
+		frappe.db.delete("Press User Permission", {"name": ("in", drop)})
+	frappe.db.commit()
+
+
+@frappe.whitelist()
+def groups():
+	return frappe.get_all(
+		"Press Permission Group", {"team": get_current_team()}, ["name", "title"]
+	)
+
+
+@frappe.whitelist()
+def permission_group_users(name):
+	if get_current_team() != frappe.db.get_value("Press Permission Group", name, "team"):
+		frappe.throw("You are not allowed to view this group")
+
+	return frappe.get_all("Press Permission Group User", {"parent": name}, pluck="user")
+
+
+@frappe.whitelist()
+def add_permission_group(title):
+	doc = frappe.get_doc(
+		{"doctype": "Press Permission Group", "team": get_current_team(), "title": title}
+	).insert(ignore_permissions=True)
+	return {"name": doc.name, "title": doc.title}
+
+
+@frappe.whitelist()
+@protected("Press Permission Group")
+def remove_permission_group(name):
+	frappe.db.delete("Press User Permission", {"group": name})
+	frappe.delete_doc("Press Permission Group", name)
+
+
+@frappe.whitelist()
+@protected("Press Permission Group")
+def add_permission_group_user(name, user):
+	doc = frappe.get_doc("Press Permission Group", name)
+	doc.append("users", {"user": user})
+	doc.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+@protected("Press Permission Group")
+def remove_permission_group_user(name, user):
+	doc = frappe.get_doc("Press Permission Group", name)
+	for group_user in doc.users:
+		if group_user.user == user:
+			doc.remove(group_user)
+			doc.save(ignore_permissions=True)
+			break

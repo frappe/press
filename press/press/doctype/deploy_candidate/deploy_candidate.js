@@ -26,7 +26,7 @@ frappe.ui.form.on('Deploy Candidate', {
 				true,
 			],
 			[
-				__('Cleanup Build Drectory'),
+				__('Cleanup Build Directory'),
 				'cleanup_build_directory',
 				frm.doc.status !== 'Draft',
 			],

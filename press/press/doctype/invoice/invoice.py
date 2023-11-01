@@ -23,6 +23,8 @@ class InvoiceDiscountType(Enum):
 
 discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
+DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+
 
 class Invoice(Document):
 	def validate(self):
@@ -47,10 +49,13 @@ class Invoice(Document):
 			self.submit()
 			return
 
-		team_enabled = frappe.db.get_value("Team", self.team, "enabled")
-		if not team_enabled:
+		team = frappe.get_doc("Team", self.team)
+		if not team.enabled:
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
+
+		if self.partner_email and team.erpnext_partner:
+			self.apply_partner_discount()
 
 		# set as unpaid by default
 		self.status = "Unpaid"
@@ -405,6 +410,64 @@ class Invoice(Document):
 		self.free_credits = sum(
 			[d.amount for d in self.credit_allocations if d.source == "Free Credits"]
 		)
+
+	def apply_partner_discount(self):
+		if self.flags.on_partner_conversion:
+			return
+
+		# check if discount is already added
+		if self.discounts:
+			return
+
+		discount_note = (
+			"Flat Partner Discount"
+			if self.payment_mode == "Partner Credits"
+			else "New Partner Discount"
+		)
+
+		partner_level, legacy_contract = self.get_partner_level()
+		# give 10% discount for partners
+		discount_percent = 0.1 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
+
+		total_partner_discount = 0
+		for item in self.items:
+			if item.document_type in ("Site", "Server", "Database Server"):
+				item.discount = item.amount * discount_percent
+				total_partner_discount += item.discount
+
+		if total_partner_discount > 0:
+			self.append(
+				"discounts",
+				{
+					"discount_type": "Flat On Total",
+					"based_on": "Amount",
+					"percent": discount_percent,
+					"amount": total_partner_discount,
+					"note": discount_note,
+					"via_team": False,
+				},
+			)
+
+		self.save()
+		self.reload()
+
+	def get_partner_level(self):
+		# fetch partner level from frappe.io
+		client = self.get_frappeio_connection()
+		response = client.session.get(
+			f"{client.url}/api/method/get_partner_level",
+			headers=client.headers,
+			params={"email": self.partner_email},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_level = res.get("message")
+			legacy_contract = res.get("legacy_contract")
+			if partner_level:
+				return partner_level, legacy_contract
+		else:
+			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0

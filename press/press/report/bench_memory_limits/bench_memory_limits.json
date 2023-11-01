@@ -1,0 +1,47 @@
+{
+ "add_total_row": 1,
+ "columns": [],
+ "creation": "2023-10-17 19:23:39.391050",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "label": "Server",
+   "mandatory": 1,
+   "options": "Server",
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "",
+ "letterhead": null,
+ "modified": "2023-10-20 11:26:37.053554",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Memory Limits",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "\t\tbench_workloads = {}\n\t\tbenches = frappe.get_all(\n\t\t\t\"Bench\",\n\t\t\tfilters={\"server\": self.name, \"status\": \"Active\", \"auto_scale_workers\": True},\n\t\t\tpluck=\"name\",\n\t\t)\n\t\tfor bench_name in benches:\n\t\t\tbench = frappe.get_doc(\"Bench\", bench_name)\n\t\t\tbench_workloads[bench_name] = bench.work_load\n\n\t\ttotal_workload = sum(bench_workloads.values())\n",
+ "ref_doctype": "Bench",
+ "report_name": "Bench Memory Limits",
+ "report_script": "",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Press Admin"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Press Member"
+  },
+  {
+   "role": "Site Manager"
+  }
+ ]
+}

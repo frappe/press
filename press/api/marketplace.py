@@ -4,7 +4,6 @@
 
 import json
 import frappe
-import datetime
 
 from typing import Dict, List
 from frappe.core.utils import find
@@ -17,10 +16,6 @@ from press.api.site import (
 )
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
-)
-from press.marketplace.doctype.marketplace_app_subscription.marketplace_app_subscription import (
-	change_site_hosting_plan,
-	install_subscription_apps,
 )
 from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
@@ -296,16 +291,18 @@ def update_app_description(name: str, description: str) -> None:
 
 
 @frappe.whitelist()
-def releases(app: str, source: str, start: int = 0) -> List[Dict]:
+def releases(
+	filters=None, order_by=None, limit_start=None, limit_page_length=None
+) -> List[Dict]:
 	"""Return list of App Releases for this `app` and `source` in order of creation time"""
 
 	app_releases = frappe.get_all(
 		"App Release",
-		filters={"app": app, "source": source},
+		filters=filters,
 		fields="*",
-		order_by="creation desc",
-		start=start,
-		limit=15,
+		order_by=order_by or "creation desc",
+		start=limit_start,
+		limit=limit_page_length,
 	)
 
 	for release in app_releases:
@@ -332,7 +329,7 @@ def get_app_source(name: str) -> AppSource:
 
 
 @frappe.whitelist()
-def latest_approved_release(source: str) -> AppRelease:
+def latest_approved_release(source: None | str) -> AppRelease:
 	"""Return the latest app release with `approved` status"""
 	return get_last_doc("App Release", {"source": source, "status": "Approved"})
 
@@ -710,7 +707,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.join(site)
 		.on(site.name == app_sub.site)
 		.join(usage_record)
-		.on(usage_record.subscription == app_sub.name)
+		.on(usage_record.subscription == app_sub.subscription)
 		.where(conditions)
 		.groupby(usage_record.subscription)
 		.select(
@@ -944,84 +941,6 @@ def get_discount_percent(plan, discount=0.0):
 
 
 @frappe.whitelist(allow_guest=True)
-def use_existing_credits(site, app, subscription, plan):
-	team = get_current_team(True)
-	if subscription == "new":
-		if frappe.db.exists("Marketplace App Subscription", {"app": app, "site": site}):
-			change_app_plan(
-				frappe.db.get_value(
-					"Marketplace App Subscription", {"app": app, "site": site}, "name"
-				),
-				plan,
-			)
-		else:
-			frappe.get_doc(
-				{
-					"doctype": "Marketplace App Subscription",
-					"app": app,
-					"site": site,
-					"marketplace_app_plan": plan,
-				}
-			).insert(ignore_permissions=True)
-		install_subscription_apps(site, app)
-	else:
-		change_app_plan(subscription, plan)
-
-	return change_site_hosting_plan(site, plan, team)
-
-
-@frappe.whitelist()
-def use_partner_credits(name, app, site, plan, amount, credits):
-	"""
-	Consume partner credits on PRM and add Frappe Cloud credits
-	"""
-	team = get_current_team(True)
-	if amount < team.get_available_partner_credits():
-		try:
-			invoice = frappe.get_doc(
-				doctype="Invoice",
-				team=team.name,
-				type="Subscription",
-				status="Draft",
-				marketplace=1,
-				due_date=datetime.datetime.today(),
-				amount_paid=amount,
-				amount_due=amount,
-			)
-
-			invoice.append(
-				"items",
-				{
-					"description": f"Credits for {app}",
-					"document_type": "Marketplace App",
-					"document_name": app,
-					"plan": frappe.db.get_value("Marketplace App Plan", plan, "plan"),
-					"rate": amount,
-					"quantity": 1,
-					"site": site,
-				},
-			)
-
-			invoice.save()
-			invoice.finalize_invoice()
-			invoice.reload()
-
-			if invoice.status == "Paid":
-				team.allocate_credit_amount(
-					credits, source="Prepaid Credits", remark="Convert from Partner Credits"
-				)
-				change_app_plan(name, plan)
-				change_site_hosting_plan(site, plan, team)
-				frappe.get_cached_doc("Site", site).update_site_config({"app_include_js": []})
-		except Exception as e:
-			frappe.throw(e)
-	else:
-		frappe.throw(
-			"Not enough credits available for this purchase. Please use different method for payment."
-		)
-
-
-@frappe.whitelist(allow_guest=True)
 def login_via_token(token, team, site):
 
 	if not token or not isinstance(token, str):
@@ -1191,3 +1110,14 @@ def fetch_readme(name):
 	app: MarketplaceApp = frappe.get_doc("Marketplace App", name)
 	app.long_description = app.fetch_readme()
 	app.save()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_marketplace_apps():
+	apps = frappe.cache().get_value("marketplace_apps")
+	if not apps:
+		apps = frappe.get_all(
+			"Marketplace App", {"status": "Published"}, ["name", "title", "route"]
+		)
+		frappe.cache().set_value("marketplace_apps", apps, expires_in_sec=60 * 60 * 24 * 7)
+	return apps

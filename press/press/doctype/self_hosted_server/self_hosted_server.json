@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "creation": "2023-03-07 11:56:33.641999",
  "default_view": "List",
  "doctype": "DocType",
@@ -33,7 +34,6 @@
   "ssh_user",
   "column_break_smwr",
   "ssh_port",
-  "ram",
   "database_section",
   "database_server",
   "mariadb_ip",
@@ -46,7 +46,18 @@
   "frappe_version",
   "section_break_33uh",
   "apps",
-  "sites"
+  "sites",
+  "system_information_tab",
+  "vendor",
+  "vcpus",
+  "ram",
+  "total_storage",
+  "swap_total",
+  "column_break_ep4j",
+  "instance_type",
+  "architecture",
+  "processor",
+  "distribution"
  ],
  "fields": [
   {
@@ -113,8 +124,7 @@
    "fieldname": "private_ip",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Private IP",
-   "reqd": 1
+   "label": "Private IP"
   },
   {
    "fetch_from": "server.team",
@@ -296,10 +306,59 @@
    "fieldname": "ram",
    "fieldtype": "Data",
    "label": "RAM"
+  },
+  {
+   "fieldname": "system_information_tab",
+   "fieldtype": "Tab Break",
+   "label": "System Information"
+  },
+  {
+   "fieldname": "vcpus",
+   "fieldtype": "Data",
+   "label": "vCPUs"
+  },
+  {
+   "fieldname": "total_storage",
+   "fieldtype": "Data",
+   "label": "Total Storage"
+  },
+  {
+   "fieldname": "swap_total",
+   "fieldtype": "Data",
+   "label": "Swap Total"
+  },
+  {
+   "fieldname": "column_break_ep4j",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type"
+  },
+  {
+   "fieldname": "architecture",
+   "fieldtype": "Data",
+   "label": "Architecture"
+  },
+  {
+   "fieldname": "processor",
+   "fieldtype": "Data",
+   "label": "Processor"
+  },
+  {
+   "fieldname": "distribution",
+   "fieldtype": "Data",
+   "label": "Distribution"
+  },
+  {
+   "fieldname": "vendor",
+   "fieldtype": "Data",
+   "label": "Vendor"
   }
  ],
  "links": [],
- "modified": "2023-06-26 15:28:02.524473",
+ "modified": "2023-08-03 19:20:04.797706",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

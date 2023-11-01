@@ -41,6 +41,8 @@ def create_test_server(
 			"domain": "fc.dev",
 			"hostname": make_autoname("f-.####"),
 			"cluster": cluster,
+			"new_worker_allocation": True,
+			"ram": 16000,
 		}
 	).insert()
 	server.reload()

@@ -1,16 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { utils } from '@/utils';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import ServerOverviewPlan from './ServerOverviewPlan.vue';
 import ServerOverviewInfo from './ServerOverviewInfo.vue';
 
-const props = defineProps({ server: Object });
+const props = defineProps({ server: Object, serverName: String });
 
-const overview = useResource({
-	method: 'press.api.server.overview',
-	params: { name: props.server?.name },
-	keepData: true,
+const overview = createResource({
+	url: 'press.api.server.overview',
+	params: { name: props.serverName },
 	auto: true
 });
 </script>
@@ -22,6 +19,7 @@ const overview = useResource({
 			v-if="server && overview.data"
 		>
 			<ServerOverviewPlan
+				v-if="overview.data.plan"
 				:server="server"
 				:plan="overview.data.plan"
 				@plan-change="overview.reload()"

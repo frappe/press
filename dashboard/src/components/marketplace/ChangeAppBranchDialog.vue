@@ -1,7 +1,17 @@
 <template>
 	<Dialog
 		v-if="source"
-		:options="{ title: 'Add New App Release' }"
+		:options="{
+			title: 'Add New App Release',
+			actions: [
+				{
+					label: 'Change Branch',
+					variant: 'solid',
+					loading: $resources.changeBranch.loading,
+					onClick: () => $resources.changeBranch.submit()
+				}
+			]
+		}"
 		:modelValue="show"
 	>
 		<template v-slot:body-content>
@@ -10,16 +20,6 @@
 					{{ branch }}
 				</option>
 			</select>
-		</template>
-		<template v-slot:actions>
-			<Button
-				class="mt-3"
-				appearance="primary"
-				:loading="$resources.changeBranch.loading"
-				@click="changeBranch()"
-			>
-				Change Branch
-			</Button>
 		</template>
 	</Dialog>
 </template>
@@ -36,7 +36,7 @@ export default {
 	resources: {
 		branches() {
 			return {
-				method: 'press.api.marketplace.branches',
+				url: 'press.api.marketplace.branches',
 				params: {
 					name: this.source
 				},
@@ -45,7 +45,13 @@ export default {
 		},
 		changeBranch() {
 			return {
-				method: 'press.api.marketplace.change_branch',
+				url: 'press.api.marketplace.change_branch',
+				params: {
+					name: this.app,
+					source: this.source,
+					version: this.version,
+					to_branch: this.selectedBranch
+				},
 				onSuccess() {
 					window.location.reload();
 				},
@@ -58,14 +64,6 @@ export default {
 		}
 	},
 	methods: {
-		changeBranch() {
-			this.$resources.changeBranch.submit({
-				name: this.app,
-				source: this.source,
-				version: this.version,
-				to_branch: this.selectedBranch
-			});
-		},
 		branchList() {
 			if (this.$resources.branches.loading || !this.$resources.branches.data) {
 				return [];

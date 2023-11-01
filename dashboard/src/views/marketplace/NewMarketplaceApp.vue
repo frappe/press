@@ -21,12 +21,13 @@
 				</option>
 			</select>
 
-			<ErrorMessage class="mb-3" :message="$resourceErrors" />
+			<ErrorMessage class="mb-3" :message="$resources.addApp.error" />
 
 			<Button
 				:loading="$resources.addApp.loading"
 				@click="$resources.addApp.submit()"
-				appearance="primary"
+				variant="solid"
+				class="w-full"
 				>Add to marketplace</Button
 			>
 		</div>
@@ -52,7 +53,7 @@ export default {
 	resources: {
 		frappeVersions() {
 			return {
-				method: 'press.api.marketplace.frappe_versions',
+				url: 'press.api.marketplace.frappe_versions',
 				auto: true,
 				onSuccess(data) {
 					if (data) {
@@ -63,7 +64,7 @@ export default {
 		},
 		addApp() {
 			return {
-				method: 'press.api.marketplace.new_app',
+				url: 'press.api.marketplace.new_app',
 				params: {
 					app: {
 						name: this.app?.name,

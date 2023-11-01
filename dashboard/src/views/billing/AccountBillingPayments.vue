@@ -1,7 +1,7 @@
 <template>
-	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
+	<Card title="Past Invoices" :subtitle="subtitle" v-if="!invoiceName">
 		<template #actions>
-			<Input
+			<FormControl
 				v-if="$resources.pastInvoices.data?.length"
 				type="select"
 				:options="selectItems"
@@ -41,7 +41,7 @@
 				<span class="hidden md:inline">
 					<Link
 						v-if="invoice.type == 'Subscription'"
-						:to="'/billing/' + invoice.name"
+						:to="'/billing/' + invoice.name + '/invoices'"
 					>
 						Invoice for
 						{{
@@ -60,9 +60,7 @@
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
 				<span>
-					<Badge v-bind="getStatusBadgeProps(invoice)">
-						{{ invoice.status }}
-					</Badge>
+					<Badge :label="invoice.status" />
 				</span>
 				<span class="hidden md:inline">
 					<span
@@ -106,6 +104,7 @@
 </template>
 <script>
 import InvoiceUsageCard from '@/components/InvoiceUsageCard.vue';
+
 export default {
 	name: 'AccountBillingPayments',
 	props: ['invoiceName'],
@@ -159,16 +158,6 @@ export default {
 		}
 	},
 	methods: {
-		getStatusBadgeProps(invoice) {
-			return {
-				status: invoice.status,
-				color: {
-					Paid: 'green',
-					Unpaid: 'yellow',
-					'Invoice Created': 'blue'
-				}[invoice.status]
-			};
-		},
 		async refreshLink(invoiceName) {
 			let refreshed_link = await this.$call(
 				'press.api.billing.refresh_invoice_link',

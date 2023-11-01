@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from typing import Any
 import frappe
 from frappe.core.doctype.version.version import get_diff
 
@@ -39,8 +40,44 @@ class DatabaseServer(BaseServer):
 		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
 			self.update_memory_limits()
 
+		if (
+			self.has_value_changed("team")
+			and self.subscription
+			and self.subscription.team != self.team
+		):
+
+			self.subscription.disable()
+
+			# enable subscription if exists
+			if subscription := frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan": self.plan,
+				},
+			):
+				frappe.db.set_value("Subscription", subscription, "enabled", 1)
+			else:
+				try:
+					# create new subscription
+					frappe.get_doc(
+						{
+							"doctype": "Subscription",
+							"document_type": self.doctype,
+							"document_name": self.name,
+							"team": self.team,
+							"plan": self.plan,
+						}
+					).insert()
+				except Exception:
+					frappe.log_error("Database Subscription Creation Error")
+
 	def update_memory_limits(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True
+		)
 
 	def _update_memory_limits(self):
 		if not self.memory_high or not self.memory_max:
@@ -66,6 +103,7 @@ class DatabaseServer(BaseServer):
 			self.name,
 			"_update_mariadb_system_variables",
 			queue="long",
+			enqueue_after_commit=True,
 			variables=self.get_variables_to_update(),
 		)
 
@@ -127,6 +165,34 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
 
+	def add_mariadb_variable(
+		self,
+		variable: str,
+		value_type: str,
+		value: Any,
+		skip: bool = False,
+		persist: bool = True,
+	):
+		"""Add or update MariaDB variable on the server"""
+		existing = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == variable
+		)
+		if existing:
+			existing.set(value_type, value)
+			existing.set("skip", skip)
+			existing.set("persist", persist)
+		else:
+			self.append(
+				"mariadb_system_variables",
+				{
+					"mariadb_variable": variable,
+					value_type: value,
+					"skip": skip,
+					"persist": persist,
+				},
+			)
+		self.save()
+
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all(
@@ -186,6 +252,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.is_self_hosted:
+					server = frappe.get_doc("Server", self.name)
+					if server.status != "Active":
+						server.setup_server()  # Setup App server after DB server setup
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -454,6 +524,12 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider == "AWS EC2":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
@@ -504,6 +580,43 @@ class DatabaseServer(BaseServer):
 			self.status = "Broken"
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
+
+	def adjust_memory_config(self):
+		if not self.ram:
+			return
+
+		self.memory_high = max(self.ram // 1024 - 2, 1)
+		self.memory_max = max(self.ram // 1024 - 1, 2)
+		self.save()
+
+		self.add_mariadb_variable(
+			"innodb_buffer_pool_size",
+			"value_int",
+			int(self.ram * 0.685),  # will be rounded up based on chunk_size
+		)
+
+	@frappe.whitelist()
+	def reconfigure_mariadb_exporter(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_reconfigure_mariadb_exporter", queue="long", timeout=1200
+		)
+
+	def _reconfigure_mariadb_exporter(self):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="reconfigure_mysqld_exporter.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_root_password": mariadb_root_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error(
+				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
+			)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

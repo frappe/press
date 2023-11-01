@@ -6,6 +6,8 @@ import json
 import traceback
 import os
 
+from press.utils import get_current_team
+
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
 
@@ -32,11 +34,9 @@ ALLOWED_PATHS = [
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
-
 ]
 
 ALLOWED_WILDCARD_PATHS = [
-	"/api/method/helpdesk.",
 	"/api/method/press.api.",
 	"/api/method/wiki.",
 ]
@@ -51,6 +51,11 @@ def hook():
 		path = f"/api/method/{frappe.form_dict.cmd}"
 	else:
 		path = frappe.request.path
+
+	if frappe.session.user == "Guest":
+		frappe.local.team = None
+	else:
+		frappe.local.team = get_current_team(get_doc=True)
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 

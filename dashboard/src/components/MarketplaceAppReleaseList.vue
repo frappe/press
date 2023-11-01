@@ -2,21 +2,17 @@
 	<Card title="App Releases">
 		<div v-if="sources.length">
 			<div class="flex flex-row items-baseline">
-				<select
+				<FormControl
+					type="select"
 					v-if="sources.length > 1"
-					class="form-select mb-2 inline-block"
 					v-model="selectedSource"
-				>
-					<option
-						v-for="source in sources"
-						:key="source.source"
-						:value="source.source"
-					>
-						{{
-							`${source.source_information.repository}:${source.source_information.branch}`
-						}}
-					</option>
-				</select>
+					:options="
+						sources.map(s => ({
+							label: `${s.source_information.repository}:${s.source_information.branch}`,
+							value: s.source
+						}))
+					"
+				/>
 			</div>
 		</div>
 		<div v-if="!sources.length">
@@ -25,7 +21,9 @@
 				publish a version of this app.
 			</p>
 		</div>
-		<div v-else-if="releasesList.length === 0 && !$resources.releases.loading">
+		<div
+			v-else-if="releasesList.length === 0 && !$resources.releases.list.loading"
+		>
 			<p class="mt-3 text-center text-lg text-gray-600">
 				No app releases have been created for this version.
 			</p>
@@ -54,7 +52,7 @@
 						{{ release.message }}
 					</p>
 					<CommitTag
-						class="hidden md:inline"
+						class="hidden md:flex"
 						:tag="release.tag || release.hash.slice(0, 6)"
 						:link="getCommitUrl(release.hash)"
 					/>
@@ -62,11 +60,7 @@
 						{{ release.author }}
 					</span>
 					<span>
-						<Badge
-							v-if="release.status != 'Draft'"
-							:label="release.status"
-							:colorMap="$badgeStatusColorMap"
-						/>
+						<Badge v-if="release.status != 'Draft'" :label="release.status" />
 					</span>
 					<span class="text-right">
 						<Button
@@ -104,12 +98,9 @@
 
 				<div class="py-3">
 					<Button
-						@click="
-							pageStart += 15;
-							$resources.releases.fetch();
-						"
-						v-if="!$resources.releases.lastPageEmpty"
-						:loading="$resources.releases.loading"
+						@click="$resources.releases.next()"
+						v-if="$resources.releases.hasNextPage"
+						:loading="$resources.releases.list.loading"
 						loadingText="Loading..."
 						>Load More</Button
 					>
@@ -121,6 +112,8 @@
 
 <script>
 import CommitTag from './utils/CommitTag.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	props: {
 		app: {
@@ -129,7 +122,6 @@ export default {
 	},
 	data() {
 		return {
-			pageStart: 0,
 			showRejectionFeedbackDialog: false,
 			rejectionFeedback: '',
 			selectedSource: null
@@ -144,21 +136,22 @@ export default {
 	},
 	resources: {
 		releases() {
-			let { app } = this.app;
 			return {
-				method: 'press.api.marketplace.releases',
-				params: {
-					app,
-					start: this.pageStart,
+				type: 'list',
+				doctype: 'App Release',
+				url: 'press.api.marketplace.releases',
+				filters: {
+					app: this.app.app,
 					source: this.selectedSource
 				},
+				start: 0,
 				pageLength: 15,
-				keepData: true
+				auto: true
 			};
 		},
 		appSource() {
 			return {
-				method: 'press.api.marketplace.get_app_source',
+				url: 'press.api.marketplace.get_app_source',
 				params: {
 					name: this.selectedSource
 				}
@@ -166,7 +159,7 @@ export default {
 		},
 		latestApproved() {
 			return {
-				method: 'press.api.marketplace.latest_approved_release',
+				url: 'press.api.marketplace.latest_approved_release',
 				params: {
 					source: this.selectedSource
 				},
@@ -175,18 +168,35 @@ export default {
 		},
 		createApprovalRequest() {
 			return {
-				method: 'press.api.marketplace.create_approval_request',
+				url: 'press.api.marketplace.create_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				},
-				onError() {
-					this.showRequestError();
+				onError(err) {
+					const requestAlreadyExists = err.messages.some(msg =>
+						msg.includes('already awaiting approval')
+					);
+
+					if (requestAlreadyExists)
+						notify({
+							title: 'Request already exists',
+							message: err.messages.join('\n'),
+							color: 'red',
+							icon: 'x'
+						});
+					else
+						notify({
+							title: 'Error',
+							message: err.messages.join('\n'),
+							color: 'red',
+							icon: 'x'
+						});
 				}
 			};
 		},
 		cancelApprovalRequest() {
 			return {
-				method: 'press.api.marketplace.cancel_approval_request',
+				url: 'press.api.marketplace.cancel_approval_request',
 				onSuccess() {
 					this.resetReleaseListState();
 				}
@@ -216,36 +226,12 @@ export default {
 			});
 		},
 		resetReleaseListState() {
-			this.pageStart = 0;
-			this.$resources.releases.reset();
-			this.$resources.releases.submit();
-			// Re-fetch latest approved
-			this.$resources.latestApproved.fetch();
+			this.$resources.releases.reload();
+			this.$resources.latestApproved.reload();
 		},
 		showFeedback(appRelease) {
 			this.showRejectionFeedbackDialog = true;
 			this.rejectionFeedback = appRelease.reason_for_rejection;
-		},
-		showRequestError() {
-			const requestAlreadyExists = this.$resources.createApprovalRequest.error
-				.toLowerCase()
-				.includes('already awaiting');
-			if (requestAlreadyExists) {
-				// A request already exists
-				this.$confirm({
-					title: requestAlreadyExists
-						? 'A request already exists'
-						: 'An error occured',
-					message: requestAlreadyExists
-						? 'Please cancel the previous request before creating a new one.'
-						: this.$resources.createApprovalRequest.error,
-					actionLabel: 'OK',
-					actionType: 'primary',
-					action: closeDialog => {
-						closeDialog();
-					}
-				});
-			}
 		},
 		confirmApprovalRequest(appRelease) {
 			this.$confirm({
@@ -253,7 +239,6 @@ export default {
 				message:
 					'Are you sure you want to publish this release to marketplace? Upon confirmation, the release will be sent for approval by the review team.',
 				actionLabel: 'Publish',
-				actionType: 'primary',
 				action: closeDialog => {
 					closeDialog();
 					this.createApprovalRequest(appRelease);
@@ -266,7 +251,7 @@ export default {
 				message:
 					'Are you sure you want to <strong>cancel</strong> the publish request for this release?',
 				actionLabel: 'Proceed',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.cancelApprovalRequest(appRelease);
@@ -274,7 +259,7 @@ export default {
 			});
 		},
 		getCommitUrl(releaseHash) {
-			return `${this.repoUrl}/commit/${releaseHash}`;
+			return this.repoUrl ? `${this.repoUrl}/commit/${releaseHash}` : '';
 		},
 		releaseStateUpdate(data) {
 			if (this.selectedSource && data.source == this.selectedSource) {
@@ -308,13 +293,7 @@ export default {
 			return tempArray;
 		},
 		repoUrl() {
-			if (
-				this.$resources.appSource.loading ||
-				!this.$resources.appSource.data
-			) {
-				return '';
-			}
-			return this.$resources.appSource.data.repository_url;
+			return this.$resources.appSource?.data?.repository_url;
 		}
 	},
 	watch: {

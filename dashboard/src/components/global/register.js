@@ -1,9 +1,6 @@
 import {
 	Button,
-	Alert,
-	Badge,
 	FeatherIcon,
-	Card,
 	Tooltip,
 	LoadingIndicator,
 	LoadingText,
@@ -13,7 +10,9 @@ import {
 	Avatar,
 	GreenCheckIcon,
 	Dropdown,
-	ErrorMessage
+	FormControl,
+	ErrorMessage,
+	Autocomplete
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
@@ -21,11 +20,8 @@ let components = import.meta.globEager('./*.vue'); // To get each component insi
 
 let globalFrappeUIComponents = {
 	Button,
-	Alert,
 	Avatar,
-	Badge,
 	FeatherIcon,
-	Card,
 	Tooltip,
 	LoadingIndicator,
 	LoadingText,
@@ -34,7 +30,9 @@ let globalFrappeUIComponents = {
 	Input,
 	GreenCheckIcon,
 	Dropdown,
-	ErrorMessage
+	FormControl,
+	ErrorMessage,
+	Autocomplete
 };
 
 export default function registerGlobalComponents(app) {

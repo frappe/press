@@ -1,10 +1,12 @@
 <template>
-	<div class="flex flex-col items-center rounded-md bg-white p-10 text-base">
-		<GreenCheckIcon class="h-8 w-8" />
-		<h2 class="mt-4 text-lg font-medium text-gray-900">
-			{{ title }}
-		</h2>
-		<p class="mt-1.5 text-center text-base text-gray-700">
+	<div class="flex flex-col rounded-md border bg-white p-10 shadow-sm">
+		<div class="flex items-center">
+			<GreenCheckIcon class="mr-2 h-5 w-5" />
+			<h2 class="text-lg font-medium text-gray-900">
+				{{ title }}
+			</h2>
+		</div>
+		<p class="mt-3 text-p-base text-gray-700">
 			<slot></slot>
 		</p>
 	</div>

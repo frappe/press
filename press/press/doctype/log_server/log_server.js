@@ -10,6 +10,7 @@ frappe.ui.form.on('Log Server', {
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Archive'), 'archive', true, frm.doc.provider === 'AWS EC2'],
 			[
 				__('Fetch Keys'),
 				'fetch_keys',
@@ -23,6 +24,7 @@ frappe.ui.form.on('Log Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[__('Update TLS Certificate'), 'update_tls_certificate', true],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

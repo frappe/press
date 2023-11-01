@@ -11,22 +11,25 @@
 import AgentJobs from '@/views/general/AgentJobs.vue';
 export default {
 	name: 'SiteJobs',
-	props: ['site', 'jobName'],
+	props: ['siteName', 'jobName'],
 	components: {
 		AgentJobs
 	},
 	methods: {
-		jobResource(start) {
+		jobResource() {
 			return {
-				method: 'press.api.site.jobs',
-				params: { name: this.site?.name, start },
+				type: 'list',
+				doctype: 'Agent Job',
+				url: 'press.api.site.jobs',
+				filters: { site: this.siteName },
+				orderBy: 'creation desc',
+				start: 0,
 				pageLength: 10,
-				keepData: true,
 				auto: true
 			};
 		},
 		jobRoute(job) {
-			return `/sites/${this.site.name}/jobs/${job.name}`;
+			return `/sites/${this.siteName}/jobs/${job.name}`;
 		}
 	}
 };

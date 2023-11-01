@@ -14,9 +14,11 @@
 						<p class="text-sm font-medium leading-6 text-gray-900">
 							{{ title }}
 						</p>
-						<p v-if="message" class="mt-1 text-sm leading-5 text-gray-700">
-							{{ message }}
-						</p>
+						<p
+							v-if="message"
+							v-html="message"
+							class="mt-1 text-sm leading-5 text-gray-700"
+						/>
 					</div>
 					<div class="ml-3 flex h-6 shrink-0 items-center">
 						<button @click="$emit('dismiss', id)" class="focus:outline-none">

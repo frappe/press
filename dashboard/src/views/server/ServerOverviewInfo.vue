@@ -1,10 +1,10 @@
 <template>
-	<Card title="Server info" subtitle="General information about your server">
+	<Card title="Server Info" subtitle="General information about your server">
 		<div class="divide-y">
 			<div class="flex items-center py-3">
 				<Avatar
 					v-if="info.owner"
-					:imageURL="info.owner.user_image"
+					:image="info.owner.user_image"
 					:label="info.owner.first_name"
 				/>
 				<div class="ml-3 flex flex-1 items-center justify-between">
@@ -43,9 +43,21 @@
 			>
 				<template v-slot:actions>
 					<ServerDrop :server="server" v-slot="{ showDialog }">
-						<Button @click="showDialog">
-							<span class="text-red-600">Drop Server</span>
-						</Button>
+						<Tooltip
+							:text="
+								!permissions.drop
+									? `You don't have enough permissions to perform this action`
+									: 'Drop Site'
+							"
+						>
+							<Button
+								theme="red"
+								@click="showDialog"
+								:disabled="!permissions.drop"
+							>
+								<span class="text-red-600">Drop Server</span>
+							</Button>
+						</Tooltip>
 					</ServerDrop>
 				</template>
 			</ListItem>
@@ -62,6 +74,16 @@ export default {
 		return {
 			loading: false
 		};
+	},
+	computed: {
+		permissions() {
+			return {
+				drop: this.$account.hasPermission(
+					this.server.name,
+					'press.api.server.archive'
+				)
+			};
+		}
 	}
 };
 </script>

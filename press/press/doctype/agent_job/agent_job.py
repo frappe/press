@@ -14,9 +14,34 @@ from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 
 
 class AgentJob(Document):
+	def get_doc(self):
+		whitelisted_fields = [
+			"name",
+			"job_type",
+			"creation",
+			"status",
+			"start",
+			"end",
+			"duration",
+			"bench",
+			"site",
+			"server",
+		]
+		out = {key: self.get(key) for key in whitelisted_fields}
+		out["steps"] = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": self.name},
+			fields=["step_name", "status", "start", "end", "duration", "output"],
+			order_by="creation",
+		)
+		return out
+
 	def after_insert(self):
 		self.create_agent_job_steps()
 		self.enqueue_http_request()
@@ -45,9 +70,7 @@ class AgentJob(Document):
 			self.status = "Failure"
 			self.save()
 			process_job_updates(self.name)
-			frappe.db.set_value(
-				"Agent Job", self.name, "status", "Undelivered", for_update=False
-			)
+			frappe.db.set_value("Agent Job", self.name, "status", "Undelivered")
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -106,6 +129,11 @@ class AgentJob(Document):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
 			frappe.delete_doc("Agent Job Step", step.name)
+
+		frappe.db.delete(
+			"Press Notification",
+			{"document_type": self.doctype, "document_name": self.name},
+		)
 
 
 def job_detail(job):
@@ -241,12 +269,14 @@ def poll_pending_jobs():
 		ignore_ifnull=True,
 	)
 	for server in servers:
-		try:
-			poll_pending_jobs_server(server)
-			frappe.db.commit()
-		except Exception:
-			log_error("Server Agent Job Poll Exception", server=server)
-			frappe.db.rollback()
+		server.pop("count")
+		frappe.enqueue(
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
+			queue="short",
+			server=server,
+			job_id=f"poll_pending_jobs:{server.server}",
+			deduplicate=True,
+		)
 
 
 def fail_old_jobs():
@@ -286,8 +316,31 @@ def update_job(job_name, job):
 			"output": job["data"].get("output"),
 			"traceback": job["data"].get("traceback"),
 		},
-		for_update=False,
 	)
+
+	# send notification if job failed
+	if job["status"] == "Failure":
+		job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
+		notification_type, message = "", ""
+
+		if job_type == "Update Site Migrate":
+			notification_type = "Site Migrate"
+			message = f"Site <b>{job_site}</b> failed to migrate"
+		elif job_type == "Update Site Pull":
+			notification_type = "Site Update"
+			message = f"Site <b>{job_site}</b> failed to update"
+		elif job_type.startswith("Recover Failed"):
+			notification_type = "Site Recovery"
+			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
+
+		if notification_type:
+			create_new_notification(
+				frappe.get_value("Site", job_site, "team"),
+				notification_type,
+				"Agent Job",
+				job_name,
+				message,
+			)
 
 
 def update_steps(job_name, job):
@@ -321,7 +374,6 @@ def update_step(step_name, step):
 			"output": step["data"].get("output"),
 			"traceback": step["data"].get("traceback"),
 		},
-		for_update=False,
 	)
 
 
@@ -352,6 +404,7 @@ def process_job_updates(job_name):
 		from press.press.doctype.site.site import (
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
+			process_uninstall_app_site_job_update,
 			process_migrate_site_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
@@ -360,6 +413,7 @@ def process_job_updates(job_name):
 			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
 			process_move_site_to_bench_job_update,
+			process_restore_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -387,8 +441,9 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Restore Site":
-			process_reinstall_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
 		elif job.job_type == "Migrate Site":
@@ -396,7 +451,7 @@ def process_job_updates(job_name):
 		elif job.job_type == "Install App on Site":
 			process_install_app_site_job_update(job)
 		elif job.job_type == "Uninstall App from Site":
-			process_install_app_site_job_update(job)
+			process_uninstall_app_site_job_update(job)
 		elif job.job_type == "Add Site to Upstream":
 			process_new_site_job_update(job)
 		elif job.job_type == "Add Code Server to Upstream":

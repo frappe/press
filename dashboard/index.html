@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html class="overflow-hidden" lang="en">
+<html class="h-full overflow-hidden" lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width,initial-scale=1.0" />
 		<title>NexTash | Cloud</title>
 		<link rel="icon" href="/favicon.png" type="image/x-icon" />
-		<span class="hidden"> {{ head_html or "" }} </span>
 	</head>
 
-	<body>
+	<body class="h-full">
 		<noscript>
 			<strong
 				>NexTash Cloud Dashboard doesn't work properly without JavaScript
@@ -18,7 +17,7 @@
 		</noscript>
 
 		<!-- Main Vue App -->
-		<div id="app"></div>
+		<div id="app" class="h-full"></div>
 
 		<!-- For Teleports -->
 		<div id="modals"></div>
@@ -30,7 +29,9 @@
 			window.press_frontend_posthog_host = '{{ press_frontend_posthog_host }}';
 			window.press_frontend_posthog_project_id =
 				'{{ press_frontend_posthog_project_id }}';
+			window.press_site_name = '{{ press_site_name }}';
 		</script>
 		<script type="module" src="/src/main.js"></script>
+		<!-- <script type="module" src="/src2/main.js"></script> -->
 	</body>
 </html>

@@ -54,26 +54,20 @@
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
+						<Button v-if="hasPrevious" @click="previous"> Back </Button>
 						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
-							Back
-						</Button>
-						<Button
-							appearance="primary"
+							v-if="hasNext"
+							class="ml-auto"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
-							:class="{
-								'pointer-events-none opacity-0': !hasNext
-							}"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							variant="solid"
+							class="ml-auto"
 							@click="$resources.newServer.submit()"
 							:loading="$resources.newServer.loading"
 						>
@@ -152,7 +146,7 @@ export default {
 	resources: {
 		newServer() {
 			return {
-				method: 'press.api.server.new',
+				url: 'press.api.server.new',
 				params: {
 					server: {
 						title: this.title,

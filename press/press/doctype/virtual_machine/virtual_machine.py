@@ -13,12 +13,28 @@ from press.utils import log_error
 
 
 class VirtualMachine(Document):
+	server_doctypes = [
+		"Server",
+		"Database Server",
+		"Proxy Server",
+		"Monitor Server",
+		"Log Server",
+	]
+
 	def autoname(self):
 		series = f"{self.series}-{slug(self.cluster)}.#####"
 		self.index = int(make_autoname(series)[-5:])
 		self.name = f"{self.series}{self.index}-{slug(self.cluster)}.{self.domain}"
 
 	def validate(self):
+		if self.virtual_machine_image:
+			self.disk_size = max(
+				self.disk_size,
+				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
+			)
+			self.machine_image = frappe.db.get_value(
+				"Virtual Machine Image", self.virtual_machine_image, "aws_ami_id"
+			)
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()
 		if not self.private_ip_address:
@@ -27,15 +43,10 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m"].index(self.series)
+				offset = ["f", "m", "c", "p", "e"].index(self.series)
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
-		if self.virtual_machine_image:
-			self.disk_size = max(
-				self.disk_size,
-				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
-			)
 
 	@frappe.whitelist()
 	def provision(self):
@@ -117,6 +128,7 @@ class VirtualMachine(Document):
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
 				"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
 			context.update(
@@ -131,6 +143,11 @@ class VirtualMachine(Document):
 						mariadb_context,
 						is_path=True,
 					),
+					"mariadb_exporter_config": frappe.render_template(
+						"press/playbooks/roles/mysqld_exporter/templates/mysqld_exporter.service",
+						mariadb_context,
+						is_path=True,
+					),
 				}
 			)
 
@@ -138,7 +155,7 @@ class VirtualMachine(Document):
 		return init
 
 	def get_server(self):
-		for doctype in ["Server", "Database Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.db.get_value(doctype, {"virtual_machine": self.name}, "name")
 			if server:
 				return frappe.get_doc(doctype, server)
@@ -228,6 +245,12 @@ class VirtualMachine(Document):
 			self.termination_protection = self.client().describe_instance_attribute(
 				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
+
+			instance_type_response = self.client().describe_instance_types(
+				InstanceTypes=[self.machine_type]
+			)
+			self.ram = instance_type_response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"]
+			self.vcpu = instance_type_response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"]
 		else:
 			self.status = "Terminated"
 		self.save()
@@ -240,11 +263,13 @@ class VirtualMachine(Document):
 			"Terminated": "Archived",
 			"Stopped": "Archived",
 		}
-		for doctype in ["Server", "Database Server", "Proxy Server"]:
+		for doctype in self.server_doctypes:
 			server = frappe.get_all(doctype, {"virtual_machine": self.name}, pluck="name")
 			if server:
 				server = server[0]
 				frappe.db.set_value(doctype, server, "ip", self.public_ip_address)
+				if doctype in ["Server", "Database Server"]:
+					frappe.db.set_value(doctype, server, "ram", self.ram)
 				if self.public_ip_address:
 					frappe.get_doc(doctype, server).create_dns_record()
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
@@ -396,6 +421,38 @@ class VirtualMachine(Document):
 
 		return frappe.get_doc(document).insert()
 
+	@frappe.whitelist()
+	def create_monitor_server(self):
+		document = {
+			"doctype": "Monitor Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
+	@frappe.whitelist()
+	def create_log_server(self):
+		document = {
+			"doctype": "Log Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
 	def get_security_groups(self):
 		groups = [self.aws_security_group_id]
 		if self.series == "n":
@@ -415,7 +472,7 @@ def sync_virtual_machines():
 		"Virtual Machine", {"status": ("not in", ("Terminated", "Draft"))}
 	)
 	for machine in machines:
-		frappe.enqueue_doc("Virtual Machine", machine.name, "sync")
+		frappe.enqueue_doc("Virtual Machine", machine.name, "sync", queue="long")
 
 
 def snapshot_virtual_machines():

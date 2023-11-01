@@ -57,7 +57,8 @@
 
 			<template #actions>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					@click="$resources.createSecret.submit()"
 					v-if="!$account.user.api_key && !$resources.createSecret.data"
 					:loading="$resources.createSecret.loading"
@@ -65,7 +66,8 @@
 					Create New API Key
 				</Button>
 				<Button
-					appearance="primary"
+					class="w-full"
+					variant="solid"
 					@click="$resources.createSecret.submit()"
 					v-if="$account.user.api_key && !$resources.createSecret.data"
 					:loading="$resources.createSecret.loading"
@@ -78,6 +80,8 @@
 </template>
 <script>
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountAPI',
 	components: {
@@ -92,9 +96,9 @@ export default {
 	resources: {
 		createSecret() {
 			return {
-				method: 'press.api.account.create_api_secret',
+				url: 'press.api.account.create_api_secret',
 				onSuccess() {
-					this.$notify({
+					notify({
 						title: 'Created new API Secret',
 						icon: 'check',
 						color: 'green'

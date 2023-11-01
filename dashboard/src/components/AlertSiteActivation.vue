@@ -9,7 +9,7 @@
 		</span>
 		<template #actions>
 			<Button
-				appearance="primary"
+				variant="solid"
 				@click="$resources.loginAsAdmin.submit()"
 				:loading="$resources.loginAsAdmin.loading"
 			>

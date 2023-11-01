@@ -1,0 +1,20 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hello,</p>
+        <p>User {{ user }} has raised a request to link their team to your account.</p>
+        <p>
+           Confirm your consent by clicking on the following button.
+        </p>
+        {{ utils.button('Accept', link, true) }}
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}
+

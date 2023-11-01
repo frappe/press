@@ -1,6 +1,6 @@
 <script setup>
 import { reactive } from 'vue';
-import useResource from '@/composables/resource';
+import { createResource } from 'frappe-ui';
 import StarRatingInput from '@/components/StarRatingInput.vue';
 
 const props = defineProps({
@@ -19,8 +19,8 @@ const review = reactive({
 	review: ''
 });
 
-const submitReview = useResource({
-	method: 'press.api.marketplace.submit_user_review',
+const submitReview = createResource({
+	url: 'press.api.marketplace.submit_user_review',
 	validate() {
 		if (!review.title) {
 			return 'Please add a title to your review';
@@ -51,15 +51,14 @@ const submitReview = useResource({
 					<StarRatingInput v-model="review.rating" />
 				</div>
 
-				<Input
+				<FormControl
 					class="mb-3"
 					v-model="review.title"
-					type="text"
 					label="Title"
 					placeholder="Review Title"
 				/>
 
-				<Input
+				<FormControl
 					v-model="review.review"
 					type="textarea"
 					label="Review this product"
@@ -68,9 +67,9 @@ const submitReview = useResource({
 
 				<ErrorMessage class="mt-2" :message="submitReview.error" />
 				<Button
-					class="mt-4"
+					class="mt-4 w-full"
 					:loading="submitReview.loading"
-					appearance="primary"
+					variant="solid"
 					@click="submitReview.submit({ ...review })"
 					>Submit</Button
 				>

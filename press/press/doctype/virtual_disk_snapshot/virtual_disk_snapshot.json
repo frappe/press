@@ -64,9 +64,11 @@
   {
    "fetch_from": "virtual_machine.region",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Region",
-   "read_only": 1
+   "options": "Cloud Region",
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "column_break_4",
@@ -117,7 +119,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-04-01 15:58:51.156501",
+ "modified": "2023-08-08 12:23:28.522967",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

@@ -12,8 +12,6 @@ Technologies at the heart of dashboard:
 
 4. [Feather Icons](https://feathericons.com/): Those Shiny & Crisp Open Source icons.
 
-5. [Frappe Charts](https://frappe.io/charts): For those beautiful charts. [FrappeChart.vue](./src/components/FrappeChart.vue) is a wrapper Vue component which makes it easy to use Frappe Charts in any other component.
-
 ## Development
 
 We use the vite's development server, gives us super-fast hot reload and more.

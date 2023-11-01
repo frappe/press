@@ -6,9 +6,8 @@
 			Staging Server, etc.
 		</p>
 		<div class="mt-4 flex">
-			<input
-				class="form-input z-10 w-full rounded-r-none"
-				type="text"
+			<FormControl
+				class="w-full"
 				:value="title"
 				@change="titleChange"
 				placeholder="Server"

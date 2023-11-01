@@ -63,14 +63,10 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
 ]
 
 website_redirects = [
-	{
-		"source": r"/deploy(.*)",
-		"target": r"/api/method/press.api.quick_site.deploy\1",
-		"match_with_query_string": True,
-	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
@@ -173,7 +169,6 @@ scheduler_events = {
 	"daily": [
 		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
-		"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
 	"daily_long": [
@@ -195,13 +190,12 @@ scheduler_events = {
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
+		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
-		"press.press.doctype.site.pool.create",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.press.doctype.app.app.poll_new_releases",
 		"press.press.doctype.agent_job.agent_job.fail_old_jobs",
 		"press.press.doctype.site_update.site_update.mark_stuck_updates_as_fatal",
-		"press.marketplace.doctype.marketplace_consumption_record.marketplace_consumption_record.consume_credits_for_prepaid_records",
 		"press.press.doctype.deploy_candidate.deploy_candidate.cleanup_build_directories",
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
@@ -215,6 +209,9 @@ scheduler_events = {
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
 			"press.press.audit.check_unbilled_subscriptions",
+		],
+		"0 3 * * *": [
+			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		],
 		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
 		"0 */6 * * *": [
@@ -233,7 +230,6 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 		],
 		"*/5 * * * *": [
-			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
@@ -241,7 +237,10 @@ scheduler_events = {
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
-		"*/10 * * * *": ["press.press.doctype.site.saas_pool.create"],
+		"*/10 * * * *": [
+			"press.saas.doctype.saas_product.pooling.create",
+			"press.press.doctype.site.saas_pool.create",
+		],
 		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
@@ -249,6 +248,9 @@ scheduler_events = {
 		],
 		"15 2,4 * * *": [
 			"press.press.doctype.team_deletion_request.team_deletion_request.process_team_deletion_requests",
+		],
+		"0 0 1 */3 *": [
+			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
 	},
 }
@@ -260,8 +262,12 @@ fixtures = [
 	"Press Job Type",
 	"Frappe Version",
 	"MariaDB Variable",
+	"Cloud Region",
+	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
+	"Press Method Permission",
+	"Bench Dependency",
 ]
 # Testing
 # -------

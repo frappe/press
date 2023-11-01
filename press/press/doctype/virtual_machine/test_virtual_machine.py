@@ -13,6 +13,7 @@ from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.cluster.cluster import Cluster
 
 
+@patch.object(VirtualMachine, "client", new=MagicMock())
 def create_test_virtual_machine(
 	ip: str = None,
 	cluster: Cluster = None,

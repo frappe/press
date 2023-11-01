@@ -3,6 +3,7 @@
 
 import frappe
 import requests
+from press.press.doctype.cluster.cluster import Cluster
 
 from press.utils import get_current_team, group_children_in_result
 from press.api.site import protected
@@ -22,7 +23,10 @@ def poly_get_doc(doctypes, name):
 
 
 @frappe.whitelist()
-def all(server_filter="All Servers"):
+def all(server_filter=None):
+	if server_filter is None:
+		server_filter = {"server_type": "", "tag": ""}
+
 	team = get_current_team()
 	child_teams = [team.name for team in get_child_team_members(team)]
 	teams = [team] + child_teams
@@ -31,10 +35,16 @@ def all(server_filter="All Servers"):
 	app_server = frappe.qb.DocType("Server")
 	res_tag = frappe.qb.DocType("Resource Tag")
 
-	if server_filter != "Database Servers":
+	if server_filter["server_type"] != "Database Servers":
 		app_server_query = (
 			frappe.qb.from_(app_server)
-			.select(app_server.name, app_server.title, app_server.status, app_server.creation)
+			.select(
+				app_server.name,
+				app_server.title,
+				app_server.status,
+				app_server.creation,
+				app_server.cluster,
+			)
 			.where(
 				((app_server.team).isin(teams))
 				& (app_server.status != "Archived")
@@ -42,37 +52,51 @@ def all(server_filter="All Servers"):
 			)
 		)
 
-	if server_filter != "App Servers":
+		if server_filter["tag"]:
+			app_server_query = app_server_query.inner_join(res_tag).on(
+				(res_tag.parent == app_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
+
+	if server_filter["server_type"] != "App Servers":
 		database_server_query = (
 			frappe.qb.from_(db_server)
-			.select(db_server.name, db_server.title, db_server.status, db_server.creation)
+			.select(
+				db_server.name,
+				db_server.title,
+				db_server.status,
+				db_server.creation,
+				db_server.cluster,
+			)
 			.where(((db_server.team).isin(teams)) & (db_server.status != "Archived"))
 		)
 
-	if server_filter.startswith("tag:"):
-		tag = server_filter[4:]
+		if server_filter["tag"]:
+			database_server_query = database_server_query.inner_join(res_tag).on(
+				(res_tag.parent == db_server.name) & (res_tag.tag_name == server_filter["tag"])
+			)
 
-		app_server_query = app_server_query.inner_join(res_tag).on(
-			(res_tag.parent == app_server.name) & (res_tag.tag_name == tag)
-		)
-		database_server_query = database_server_query.inner_join(res_tag).on(
-			(res_tag.parent == db_server.name) & (res_tag.tag_name == tag)
-		)
-
-	if server_filter == "All Servers" or server_filter.startswith("tag:"):
-		query = app_server_query + database_server_query
-	elif server_filter == "App Servers":
+	if server_filter["server_type"] == "App Servers":
 		query = app_server_query
-	elif server_filter == "Database Servers":
+	elif server_filter["server_type"] == "Database Servers":
 		query = database_server_query
 	else:
-		return []
+		query = app_server_query + database_server_query
 
 	# union isn't supported in qb for run method
 	# https://github.com/frappe/frappe/issues/15609
 	servers = frappe.db.sql(query.get_sql(), as_dict=True)
 	for server in servers:
+		server_plan_name = frappe.get_value("Server", server.name, "plan")
+		server["plan"] = (
+			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
+		)
 		server["app_server"] = f"f{server.name[1:]}"
+		server["tags"] = frappe.get_all(
+			"Resource Tag", {"parent": server.name}, pluck="tag_name"
+		)
+		server["region_info"] = frappe.db.get_value(
+			"Cluster", server.cluster, ["title", "image"], as_dict=True
+		)
 	return servers
 
 
@@ -110,8 +134,15 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
+	plan = frappe.get_doc("Plan", server.plan) if server.plan else None
+	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
+		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
+		if plan:
+			plan.vcpu = self_hosted_server.vcpus
+			plan.memory = self_hosted_server.ram
+			plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
 	return {
-		"plan": frappe.get_doc("Plan", server.plan).as_dict(),
+		"plan": plan if plan else None,
 		"info": {
 			"owner": frappe.db.get_value(
 				"User",
@@ -147,74 +178,25 @@ def new(server):
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
 
-	domain = frappe.db.get_single_value("Press Settings", "domain")
-	cluster = server["cluster"]
-
-	app_image = db_image = None
-	db_images = frappe.get_all(
-		"Virtual Machine Image",
-		{"status": "Available", "series": "m", "cluster": cluster},
-		pluck="name",
-	)
-	if db_images:
-		db_image = db_images[0]
-
-	app_images = frappe.get_all(
-		"Virtual Machine Image",
-		{"status": "Available", "series": "f", "cluster": cluster},
-		pluck="name",
-	)
-	if app_images:
-		app_image = app_images[0]
+	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
 	db_plan = frappe.get_doc("Plan", server["db_plan"])
-	db_machine = frappe.get_doc(
-		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster,
-			"domain": domain,
-			"series": "m",
-			"disk_size": db_plan.disk,
-			"machine_type": db_plan.instance_type,
-			"virtual_machine_image": db_image,
-			"team": team.name,
-		}
-	).insert()
-	db_server = db_machine.create_database_server()
-	db_server.plan = db_plan.name
-	db_server.title = f"{server['title']} - Database"
-	db_server.save()
-	db_server.create_subscription(db_plan.name)
-	db_server.run_press_job("Create Server")
+	db_server, job = cluster.create_server(
+		"Database Server", server["title"], db_plan, team=team.name
+	)
 
 	proxy_server = frappe.get_all(
-		"Proxy Server", {"status": "Active", "cluster": cluster}, limit=1
+		"Proxy Server", {"status": "Active", "cluster": cluster.name}, limit=1
 	)[0]
 
-	app_plan = frappe.get_doc("Plan", server["app_plan"])
-	app_machine = frappe.get_doc(
-		{
-			"doctype": "Virtual Machine",
-			"cluster": cluster,
-			"domain": domain,
-			"series": "f",
-			"disk_size": app_plan.disk,
-			"machine_type": app_plan.instance_type,
-			"virtual_machine_image": app_image,
-			"team": team.name,
-		}
-	).insert()
-	app_server = app_machine.create_server()
-	app_server.plan = app_plan.name
-	app_server.ram = app_plan.memory
-	app_server.new_worker_allocation = True
-	app_server.database_server = db_server.name
-	app_server.proxy_server = proxy_server.name
-	app_server.title = f"{server['title']} - Application"
-	app_server.save()
-	app_server.create_subscription(app_plan.name)
+	# to be used by app server
+	cluster.database_server = db_server.name
+	cluster.proxy_server = proxy_server.name
 
-	job = app_server.run_press_job("Create Server")
+	app_plan = frappe.get_doc("Plan", server["app_plan"])
+	app_server, job = cluster.create_server(
+		"Server", server["title"], app_plan, team=team.name
+	)
 
 	return {"server": app_server.name, "job": job.name}
 
@@ -439,32 +421,6 @@ def plans(name, cluster=None):
 
 
 @frappe.whitelist()
-@protected(["Server", "Database Server"])
-def jobs(name, start=0):
-	jobs = frappe.get_all(
-		"Agent Job",
-		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return jobs
-
-
-@frappe.whitelist()
-@protected(["Server", "Database Server"])
-def plays(name, start=0):
-	plays = frappe.get_all(
-		"Ansible Play",
-		fields=["name", "play", "creation", "status", "start", "end", "duration"],
-		filters={"server": name},
-		start=start,
-		limit=10,
-	)
-	return plays
-
-
-@frappe.whitelist()
 def play(play):
 	play = frappe.get_doc("Ansible Play", play)
 	play = play.as_dict()
@@ -506,6 +462,34 @@ def press_jobs(name):
 
 
 @frappe.whitelist()
+@protected(["Server", "Database Server"])
+def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	jobs = frappe.get_all(
+		"Agent Job",
+		fields=["name", "job_type", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return jobs
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def plays(filters=None, order_by=None, limit_start=None, limit_page_length=None):
+	plays = frappe.get_all(
+		"Ansible Play",
+		fields=["name", "play", "creation", "status", "start", "end", "duration"],
+		filters=filters,
+		start=limit_start,
+		limit=limit_page_length,
+		order_by=order_by or "creation desc",
+	)
+	return plays
+
+
+@frappe.whitelist()
 @protected("Server")
 def get_title_and_cluster(name):
 	return frappe.db.get_value("Server", name, ["title", "cluster"], as_dict=True)
@@ -526,3 +510,11 @@ def groups(name):
 @protected(["Server", "Database Server"])
 def reboot(name):
 	return poly_get_doc(["Server", "Database Server"], name).reboot()
+
+
+@frappe.whitelist()
+@protected(["Server", "Database Server"])
+def rename(name, title):
+	doc = poly_get_doc(["Server", "Database Server"], name)
+	doc.title = title
+	doc.save()

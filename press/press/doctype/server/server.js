@@ -110,6 +110,18 @@ frappe.ui.form.on('Server', {
 					frm.doc.is_standalone &&
 					!frm.doc.is_standalone_setup,
 			],
+			[
+				__('Fetch Security Updates'),
+				'fetch_security_updates',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
+				__('Configure SSH logging'),
+				'configure_ssh_logging',
+				false,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

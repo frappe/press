@@ -49,7 +49,7 @@ if (showFloatingBanner != null) {
 }
 
 let siteAge = frappe.boot.telemetry_site_age || 7;
-if (siteAge < 3) {
+if (siteAge < 6) {
 	banner = false;
 }
 
@@ -59,8 +59,8 @@ if (frappe.boot.setup_complete === 1 && banner) {
 }
 
 const d = new frappe.ui.Dialog({
-	title: __('Manage your subscriptions'),
-	size: 'large',
+	title: __('Change Plan'),
+	size: 'medium',
 });
 
 $('#show-dialog').on('click', function () {
@@ -79,7 +79,7 @@ $floatingBar.find('.dismiss-upgrade').on('click', () => {
 $(d.body).html(`
 	<div id="wrapper" style="position:relative">
 		<iframe
-			src="https://frappecloud.com/dashboard/checkout?secret_key=${frappe.boot.subscription_conf.secret_key}"
+			src="https://frappecloud.com/dashboard/checkout/${frappe.boot.subscription_conf.secret_key}"
 			style="position: relative; top: 0px; width: 100%; height: 60vh;"
 			frameborder="0"
 		>

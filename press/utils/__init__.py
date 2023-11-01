@@ -6,12 +6,22 @@ import frappe
 import functools
 import json
 import requests
+import pytz
 
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
+from frappe.utils import get_system_timezone, get_datetime
 
 
 def log_error(title, **kwargs):
+	if frappe.flags.in_test:
+		try:
+			raise
+		except RuntimeError as e:
+			if e.args[0] == "No active exception to reraise":
+				pass
+			else:
+				raise
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
@@ -438,3 +448,9 @@ def group_children_in_result(result, child_field_map):
 			out[d.name][target].append(d.get(child_field))
 			out[d.name].pop(child_field, "")
 	return out.values()
+
+
+def convert_user_timezone_to_utc(datetime):
+	timezone = pytz.timezone(get_system_timezone())
+	datetime_obj = get_datetime(datetime)
+	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()

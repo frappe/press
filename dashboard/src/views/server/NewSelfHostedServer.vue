@@ -24,11 +24,10 @@
 					<SelfHostedServerForm
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
-						v-model:privateIP="privateIP"
 						v-model:error="ipInvalid"
 					/>
 					<Button
-						appearance="primary"
+						variant="solid"
 						v-show="
 							activeStep.name === 'ServerDetails' &&
 							!this.ipInvalid &&
@@ -36,9 +35,22 @@
 						"
 						@click="!domainVerified && $resources.verifyDNS.submit()"
 						:loading="$resources.verifyDNS.loading"
-						:icon-left="domainVerified ? 'check' : ''"
+						:icon-left="domainVerified ? 'check' : dnsErrorMessage ? 'x' : ''"
+						:appearance="
+							domainVerified
+								? 'success'
+								: dnsErrorMessage
+								? 'danger'
+								: 'primary'
+						"
 					>
-						{{ domainVerified ? 'Domain Verified' : 'Verify Domain' }}
+						{{
+							domainVerified
+								? 'Domain Verified'
+								: dnsErrorMessage
+								? 'Verification Error'
+								: 'Verify Domain'
+						}}
 					</Button>
 					<ErrorMessage
 						v-if="activeStep.name === 'ServerDetails'"
@@ -54,14 +66,16 @@
 						v-if="$resources.verify.data === null"
 						@click="$resources.verify.submit()"
 						:loading="$resources.verify.loading"
-						appearance="primary"
+						variant="solid"
 					>
 						Verify Server
 					</Button>
 					<Button
 						v-else
 						:icon-left="playOutput ? 'check' : 'x'"
-						:appearance="playOutput ? 'primary' : 'warning'"
+						variant="solid"
+						:theme="playOutput ? 'gray' : 'red'"
+						:appearance="playOutput ? 'success' : 'warning'"
 						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
@@ -74,11 +88,11 @@
 						>
 					</div>
 				</div>
-				<ErrorMessage :message="validationMessage" />
+				<ErrorMessage class="mt-2" :message="$resources.verify.error" />
 				<div class="mt-4">
 					<!-- Region consent checkbox -->
 					<div class="my-6" v-if="!hasNext">
-						<Input
+						<FormControl
 							id="region-consent"
 							type="checkbox"
 							label="I agree that the laws of the region selected by me shall stand
@@ -90,28 +104,24 @@
 					<ErrorMessage class="mb-4" :message="$resources.newServer.error" />
 
 					<div class="flex justify-between">
-						<Button
-							@click="previous"
-							:class="{
-								'pointer-events-none opacity-0': !hasPrevious
-							}"
-						>
-							Back
-						</Button>
+						<Button v-if="hasPrevious" @click="previous"> Back </Button>
 
 						<Button
-							appearance="primary"
+							v-if="hasNext"
+							class="ml-auto"
+							variant="solid"
 							@click="nextStep(activeStep, next)"
 							:disabled="
 								activeStep.name === 'ServerDetails' ? !domainVerified : false
 							"
-							:class="{ 'pointer-events-none opacity-0': !hasNext }"
+							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
 						</Button>
 						<Button
 							v-show="!hasNext"
-							appearance="primary"
+							class="ml-auto"
+							variant="solid"
 							:disabled="
 								!playOutput || !nginxSetup || !this.agreedToRegionConsent
 							"
@@ -178,7 +188,7 @@ export default {
 				{
 					name: 'ServerDetails',
 					validate: () => {
-						return this.privateIP && this.publicIP;
+						return this.publicIP;
 					}
 				},
 				{
@@ -202,12 +212,11 @@ export default {
 	resources: {
 		newServer() {
 			return {
-				method: 'press.api.selfhosted.new',
+				url: 'press.api.selfhosted.new',
 				params: {
 					server: {
 						title: this.title,
 						publicIP: this.publicIP,
-						privateIP: this.privateIP,
 						plan: this.selectedPlan,
 						url: this.domain
 					}
@@ -219,7 +228,7 @@ export default {
 		},
 		verify() {
 			return {
-				method: 'press.api.selfhosted.verify',
+				url: 'press.api.selfhosted.verify',
 				params: {
 					server: this.serverDoc
 				},
@@ -233,7 +242,7 @@ export default {
 		},
 		setupServer() {
 			return {
-				method: 'press.api.selfhosted.setup',
+				url: 'press.api.selfhosted.setup',
 				params: {
 					server: this.serverDoc
 				},
@@ -251,7 +260,7 @@ export default {
 		},
 		verifyDNS() {
 			return {
-				method: 'press.api.selfhosted.check_dns',
+				url: 'press.api.selfhosted.check_dns',
 				params: {
 					domain: this.domain,
 					ip: this.publicIP
@@ -266,7 +275,7 @@ export default {
 		},
 		setupNginx() {
 			return {
-				method: 'press.api.selfhosted.setup_nginx',
+				url: 'press.api.selfhosted.setup_nginx',
 				params: {
 					server: this.serverDoc
 				},

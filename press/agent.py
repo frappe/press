@@ -58,6 +58,13 @@ class Agent:
 			bench=bench.name,
 		)
 
+	def rebuild_bench(self, bench):
+		return self.create_agent_job(
+			"Rebuild Bench Assets",
+			f"benches/{bench.name}/rebuild",
+			bench=bench.name,
+		)
+
 	def update_bench_config(self, bench):
 		data = {
 			"bench_config": json.loads(bench.bench_config),
@@ -135,6 +142,14 @@ class Agent:
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def optimize_tables(self, site):
+		return self.create_agent_job(
+			"Optimize Tables",
+			f"benches/{site.bench}/sites/{site.name}/optimize",
 			bench=site.bench,
 			site=site.name,
 		)
@@ -790,4 +805,9 @@ class Agent:
 			data,
 			bench=site.bench,
 			site=site.name,
+		)
+
+	def force_update_bench_limits(self, bench: str, data: dict):
+		return self.create_agent_job(
+			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)

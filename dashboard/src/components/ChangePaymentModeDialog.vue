@@ -1,17 +1,27 @@
 <template>
 	<Dialog
-		:options="{ title: 'Change Payment Mode' }"
+		:options="{
+			title: 'Change Payment Mode',
+			actions: [
+				{
+					label: 'Change',
+					variant: 'solid',
+					loading: $resources.changePaymentMode.loading,
+					onClick: () => $resources.changePaymentMode.submit()
+				}
+			]
+		}"
 		:modelValue="modelValue"
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<template v-slot:body-content>
-			<Input
+			<FormControl
 				label="Select Payment Mode"
 				type="select"
 				:options="paymentModeOptions"
 				v-model="paymentMode"
 			/>
-			<p class="mt-2 text-base text-gray-600">
+			<p class="mt-2 text-base text-gray-600 mb-5">
 				{{ paymentModeDescription }}
 			</p>
 			<ErrorMessage
@@ -19,27 +29,43 @@
 				:message="$resources.changePaymentMode.error"
 			/>
 		</template>
-
-		<template #actions>
-			<Button
-				appearance="primary"
-				class="mt-2"
-				@click="$resources.changePaymentMode.submit()"
-				:loading="$resources.changePaymentMode.loading"
-			>
-				Change
-			</Button>
-		</template>
 	</Dialog>
+	<BillingInformationDialog
+		v-model="showBillingInformationDialog"
+		v-if="showBillingInformationDialog"
+	/>
+	<PrepaidCreditsDialog
+		v-if="showPrepaidCreditsDialog"
+		v-model:show="showPrepaidCreditsDialog"
+		:minimumAmount="$account.team.currency == 'INR' ? 800 : 10"
+		@success="
+			() => {
+				$resources.upcomingInvoice.reload();
+				showPrepaidCreditsDialog = false;
+			}
+		"
+	/>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
+
 export default {
 	name: 'ChangePaymentModeDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
+	components: {
+		BillingInformationDialog: defineAsyncComponent(() =>
+			import('./BillingInformationDialog.vue')
+		),
+		PrepaidCreditsDialog: defineAsyncComponent(() =>
+			import('@/components/PrepaidCreditsDialog.vue')
+		)
+	},
 	data() {
 		return {
-			paymentMode: this.$account.team.payment_mode || 'Card'
+			showBillingInformationDialog: false,
+			showPrepaidCreditsDialog: false,
+			paymentMode: this.$account.team.payment_mode
 		};
 	},
 	watch: {
@@ -52,7 +78,7 @@ export default {
 	resources: {
 		changePaymentMode() {
 			return {
-				method: 'press.api.billing.change_payment_mode',
+				url: 'press.api.billing.change_payment_mode',
 				params: {
 					mode: this.paymentMode
 				},
@@ -65,7 +91,23 @@ export default {
 						this.paymentMode == 'Card' &&
 						!this.$account.team.default_payment_method
 					) {
-						return 'Please add a card first from Payment methods section';
+						this.$emit('update:modelValue', false);
+						this.showBillingInformationDialog = true;
+					}
+
+					if (
+						this.paymentMode == 'Prepaid Credits' &&
+						this.$account.balance === 0
+					) {
+						this.$emit('update:modelValue', false);
+						this.showPrepaidCreditsDialog = true;
+					}
+
+					if (
+						this.paymentMode == 'Paid By Partner' &&
+						!this.$account.team.partner_email
+					) {
+						return 'Please add a partner first from Partner section';
 					}
 				}
 			};
@@ -76,14 +118,15 @@ export default {
 			return {
 				Card: `Your card will be charged for monthly subscription`,
 				'Prepaid Credits': `You will be charged from your account balance for monthly subscription`,
-				'Partner Credits': `You will be charged from your partner credits on frappe.io`
+				'Partner Credits': `You will be charged from your partner credits on frappe.io`,
+				'Paid By Partner': `Your partner will be charged for monthly subscription`
 			}[this.paymentMode];
 		},
 		paymentModeOptions() {
 			if (this.$account.team.erpnext_partner) {
 				return ['Card', 'Prepaid Credits', 'Partner Credits'];
 			}
-			return ['Card', 'Prepaid Credits'];
+			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
 		}
 	}
 };
