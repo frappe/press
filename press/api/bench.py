@@ -825,7 +825,7 @@ def add_region(name, region):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def archive(name):
 	benches = frappe.get_all(
 		"Bench", filters={"group": name, "status": "Active"}, pluck="name"
