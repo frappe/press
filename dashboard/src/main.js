@@ -73,10 +73,11 @@ app.mount('#app');
 app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
+		const errorMessage = error.message || error.messages?.join('\n');
 		notify({
 			icon: 'x',
 			title: 'An error occurred',
-			message: error.messages?.join('\n'),
+			message: errorMessage,
 			color: 'red'
 		});
 	}
