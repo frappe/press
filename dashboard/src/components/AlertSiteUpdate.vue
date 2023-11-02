@@ -137,7 +137,9 @@ export default {
 				return (
 					this.site.setup_wizard_complete &&
 					this.updateInformation.update_available &&
-					['Active', 'Inactive', 'Suspended'].includes(this.site.status)
+					['Active', 'Inactive', 'Suspended', 'Broken'].includes(
+						this.site.status
+					)
 				);
 			}
 		},
