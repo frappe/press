@@ -862,7 +862,7 @@ def update(name):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def update_all_sites(name):
 	benches = frappe.get_all("Bench", {"group": name, "status": "Active"})
 	for bench in benches:
