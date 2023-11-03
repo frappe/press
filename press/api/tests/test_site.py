@@ -458,21 +458,33 @@ erpnext 0.8.3	    HEAD
 		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
 		new=Mock(),
 	)
+	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
 	def test_site_change_region(self):
 		from press.api.site import change_region, change_region_options
 
 		app = create_test_app()
+		tokyo_cluster = create_test_cluster("Tokyo")
 		seoul_cluster = create_test_cluster("Seoul")
+		tokyo_server = create_test_server(cluster=tokyo_cluster)
 		seoul_server = create_test_server(cluster=seoul_cluster)
 		group = create_test_release_group([app])
 		group.append(
 			"servers",
 			{
-				"server": seoul_server,
+				"server": tokyo_server.name,
 			},
 		)
 		group.save()
-		bench = create_test_bench(group=group)
+		bench = create_test_bench(group=group, server=tokyo_server.name)
+
+		group.append(
+			"servers",
+			{
+				"server": seoul_server.name,
+			},
+		)
+		group.save()
+
 		create_test_bench(group=group, server=seoul_server.name)
 		site = create_test_site(bench=bench.name)
 
@@ -480,7 +492,7 @@ erpnext 0.8.3	    HEAD
 			change_region_options(site.name),
 			{
 				"regions": [
-					{"name": site.cluster, "title": None, "image": None},
+					{"name": tokyo_server.cluster, "title": None, "image": None},
 					{"name": seoul_server.cluster, "title": None, "image": None},
 				],
 				"current_region": site.cluster,
