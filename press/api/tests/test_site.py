@@ -499,14 +499,15 @@ erpnext 0.8.3	    HEAD
 			},
 		)
 
-		responses.post(
-			f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
-			json={"jobs": []},
-			status=200,
-		)
-		change_region(site.name, seoul_server.cluster)
-		site_migration = frappe.get_last_doc("Site Migration")
-		site_migration.update_site_record_fields()
+		with fake_agent_job("Update Site Migrate"):
+			responses.post(
+				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
+				json={"jobs": []},
+				status=200,
+			)
+			change_region(site.name, seoul_server.cluster)
+			site_migration = frappe.get_last_doc("Site Migration")
+			site_migration.update_site_record_fields()
 
 		site.reload()
 		self.assertEqual(site.cluster, seoul_server.cluster)
