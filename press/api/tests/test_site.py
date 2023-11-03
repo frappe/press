@@ -499,6 +499,64 @@ erpnext 0.8.3	    HEAD
 		site.reload()
 		self.assertEqual(site.cluster, seoul_server.cluster)
 
+	def test_site_version_upgrade(self):
+		from press.api.site import version_upgrade, get_private_groups_for_upgrade
+		from press.press.doctype.site_update.site_update import process_update_site_job_update
+
+		app = create_test_app()
+		server = create_test_server()
+
+		v14_group = create_test_release_group([app], frappe_version="Version 14")
+		v14_group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		v14_group.save()
+
+		v15_group = create_test_release_group([app], frappe_version="Version 15")
+		v15_group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		v15_group.save()
+
+		v14_bench = create_test_bench(group=v14_group, server=server)
+		create_test_bench(group=v15_group, server=server)
+		site = create_test_site(bench=v14_bench.name)
+
+		self.assertEqual(
+			get_private_groups_for_upgrade(site.name, v14_group.version),
+			[
+				{"name": v15_group.name, "title": v15_group.title},
+			],
+		)
+
+		with fake_agent_job(
+			"Update Site Migrate",
+			"Success",
+			steps=[{"name": "Move Site", "status": "Success"}],
+		):
+			version_upgrade(site.name, v15_group.name)
+
+			responses.get(
+				f"https://{site.host_name}/",
+				status=200,
+			)
+			poll_pending_jobs()
+
+			site_update = frappe.get_last_doc("Site Update")
+			job = frappe.get_doc("Agent Job", site_update.update_job)
+
+			process_update_site_job_update(job)
+
+		site.reload()
+		site_version = frappe.db.get_value("Release Group", site.group, "version")
+		self.assertEqual(site_version, v15_group.version)
+
 	def test_update_config(self):
 		pass
 
