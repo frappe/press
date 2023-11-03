@@ -570,6 +570,56 @@ erpnext 0.8.3	    HEAD
 		site_version = frappe.db.get_value("Release Group", site.group, "version")
 		self.assertEqual(site_version, v15_group.version)
 
+	@patch(
+		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
+		new=Mock(),
+	)
+	def test_site_change_server(self):
+		from press.api.site import change_server, change_server_options
+		from press.utils import get_current_team
+
+		app = create_test_app()
+		team = get_current_team()
+		server = create_test_server(team=team)
+		group = create_test_release_group([app])
+		other_group = create_test_release_group([app])
+		bench = create_test_bench(group=group, server=server.name)
+		other_server = create_test_server(team=team)
+		create_test_bench(group=other_group, server=other_server.name)
+
+		group.append(
+			"servers",
+			{
+				"server": other_server,
+			},
+		)
+		group.save()
+
+		site = create_test_site(bench=bench.name)
+
+		self.assertEqual(
+			change_server_options(site.name),
+			[
+				{
+					"name": other_server.name,
+				}
+			],
+		)
+
+		with fake_agent_job("Update Site Migrate"):
+			responses.post(
+				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
+				json={"jobs": []},
+				status=200,
+			)
+
+			change_server(site.name, other_server.name)
+			site_migration = frappe.get_last_doc("Site Migration")
+			site_migration.update_site_record_fields()
+
+		site.reload()
+		self.assertEqual(site.server, other_server.name)
+
 	def test_update_config(self):
 		pass
 
