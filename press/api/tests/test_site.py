@@ -27,6 +27,8 @@ from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
+import responses
+
 
 class TestAPISite(FrappeTestCase):
 	def setUp(self):
@@ -414,6 +416,47 @@ erpnext 0.8.3	    HEAD
 		self.assertEqual(site.apps[0].app, "frappe")
 		self.assertEqual(site.apps[1].app, "erpnext")
 		self.assertEqual(site.status, "Active")
+
+	def test_site_change_group(self):
+		from press.api.site import change_group, change_group_options
+		from press.press.doctype.site_update.site_update import (
+			process_update_site_job_update,
+		)
+
+		app = create_test_app()
+		server = create_test_server()
+		group1 = create_test_release_group([app])
+		group2 = create_test_release_group([app])
+		bench1 = create_test_bench(group=group1, server=server)
+		bench2 = create_test_bench(group=group2, server=server)
+		site = create_test_site(bench=bench1.name)
+
+		self.assertEqual(
+			change_group_options(site.name), [{"name": group2.name, "title": group2.title}]
+		)
+
+		with fake_agent_job(
+			"Update Site Migrate",
+			"Success",
+			steps=[{"name": "Move Site", "status": "Success"}],
+		):
+			change_group(site.name, group2.name)
+
+			responses.get(
+				f"https://{site.host_name}/",
+				status=200,
+			)
+			poll_pending_jobs()
+
+			site_update = frappe.get_last_doc("Site Update")
+			job = frappe.get_doc("Agent Job", site_update.update_job)
+
+			process_update_site_job_update(job)
+
+		site.reload()
+
+		self.assertEqual(site.group, group2.name)
+		self.assertEqual(site.bench, bench2.name)
 
 	def test_update_config(self):
 		pass
