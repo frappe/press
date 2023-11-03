@@ -26,6 +26,7 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 
 import responses
 
@@ -457,6 +458,51 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(site.group, group2.name)
 		self.assertEqual(site.bench, bench2.name)
+
+	@patch(
+		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
+		new=Mock(),
+	)
+	def test_site_change_region(self):
+		from press.api.site import change_region, change_region_options
+
+		app = create_test_app()
+		seoul_cluster = create_test_cluster("Seoul")
+		seoul_server = create_test_server(cluster=seoul_cluster)
+		group = create_test_release_group([app])
+		group.append(
+			"servers",
+			{
+				"server": seoul_server,
+			},
+		)
+		group.save()
+		bench = create_test_bench(group=group)
+		create_test_bench(group=group, server=seoul_server.name)
+		site = create_test_site(bench=bench.name)
+
+		self.assertEqual(
+			change_region_options(site.name),
+			{
+				"regions": [
+					{"name": site.cluster, "title": None, "image": None},
+					{"name": seoul_server.cluster, "title": None, "image": None},
+				],
+				"current_region": site.cluster,
+			},
+		)
+
+		responses.post(
+			f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
+			json={"jobs": []},
+			status=200,
+		)
+		change_region(site.name, seoul_server.cluster)
+		site_migration = frappe.get_last_doc("Site Migration")
+		site_migration.update_site_record_fields()
+
+		site.reload()
+		self.assertEqual(site.cluster, seoul_server.cluster)
 
 	def test_update_config(self):
 		pass
