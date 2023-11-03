@@ -412,24 +412,19 @@ export default {
 				{
 					label: 'Change Bench',
 					icon: 'package',
-					condition: () =>
-						this.$account.user.user_type === 'System User' &&
-						this.site?.status === 'Active',
+					condition: () => this.site?.status === 'Active',
 					onClick: () => (this.showChangeGroupDialog = true)
 				},
 				{
 					label: 'Change Region',
 					icon: 'globe',
-					condition: () =>
-						this.$account.user.user_type === 'System User' &&
-						this.site?.status === 'Active',
+					condition: () => this.site?.status === 'Active',
 					onClick: () => (this.showChangeRegionDialog = true)
 				},
 				{
 					label: 'Upgrade Version',
 					icon: 'arrow-up',
 					condition: () =>
-						this.$account.user.user_type === 'System User' &&
 						this.site?.frappe_version !== this.site?.latest_frappe_version &&
 						this.site?.status === 'Active',
 					onClick: () => (this.showVersionUpgradeDialog = true)
