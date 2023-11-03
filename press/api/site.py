@@ -1633,7 +1633,7 @@ def change_region_options(name):
 		.on(Server.name == ReleaseGroupServer.server)
 		.join(Cluster)
 		.on(Cluster.name == Server.cluster)
-		.select(Cluster.name.as_("value"), Cluster.title.as_("label"), Cluster.image)
+		.select(Cluster.name, Cluster.title, Cluster.image)
 		.where(ReleaseGroupServer.parent == group)
 		.where(ReleaseGroupServer.parenttype == "Release Group")
 	)

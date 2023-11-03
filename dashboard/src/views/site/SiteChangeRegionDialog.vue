@@ -21,7 +21,13 @@
 				<RichSelect
 					:value="selectedRegion"
 					@change="selectedRegion = $event"
-					:options="$resources.changeRegionOptions.data.regions"
+					:options="
+						$resources.changeRegionOptions.data.regions.map(r => ({
+							label: r.title || r.name,
+							value: r.name,
+							image: r.image
+						}))
+					"
 				/>
 				<p class="mt-4 text-sm text-gray-500">
 					Changing region may cause a downtime between 30 minutes to 1 hour
@@ -111,8 +117,8 @@ export default {
 				onSuccess() {
 					const regionName =
 						this.$resources.changeRegionOptions.data.regions.find(
-							region => region.value === this.selectedRegion
-						).label;
+							region => region.name === this.selectedRegion
+						)?.title || this.selectedRegion;
 
 					notify({
 						title: 'Scheduled Region Change',
