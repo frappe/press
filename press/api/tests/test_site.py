@@ -6,16 +6,16 @@ import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+import responses
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
-from press.press.doctype.agent_job.test_agent_job import (
-	fake_agent_job,
-)
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
@@ -26,9 +26,6 @@ from press.press.doctype.remote_file.test_remote_file import create_test_remote_
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
-from press.press.doctype.cluster.test_cluster import create_test_cluster
-
-import responses
 
 
 class TestAPISite(FrappeTestCase):
@@ -420,9 +417,7 @@ erpnext 0.8.3	    HEAD
 
 	def test_site_change_group(self):
 		from press.api.site import change_group, change_group_options
-		from press.press.doctype.site_update.site_update import (
-			process_update_site_job_update,
-		)
+		from press.press.doctype.site_update.site_update import process_update_site_job_update
 
 		app = create_test_app()
 		server = create_test_server()
