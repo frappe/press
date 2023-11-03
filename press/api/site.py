@@ -1675,7 +1675,7 @@ def get_private_groups_for_upgrade(name, version):
 
 	private_groups = (
 		frappe.qb.from_(ReleaseGroup)
-		.select(ReleaseGroup.name.as_("value"), ReleaseGroup.title.as_("label"))
+		.select(ReleaseGroup.name, ReleaseGroup.title)
 		.join(ReleaseGroupServer)
 		.on(ReleaseGroupServer.parent == ReleaseGroup.name)
 		.where(ReleaseGroup.enabled == 1)

@@ -118,7 +118,10 @@ export default {
 					version: this.site?.frappe_version
 				},
 				onSuccess(data) {
-					this.privateReleaseGroups = data;
+					this.privateReleaseGroups = data.map(group => ({
+						label: group.title || group.name,
+						value: group.name
+					}));
 				}
 			};
 		}
