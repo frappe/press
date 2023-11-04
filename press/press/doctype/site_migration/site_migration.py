@@ -38,6 +38,19 @@ class SiteMigration(Document):
 		self.add_steps()
 		self.save()
 
+	def validate(self):
+		self.validate_apps()
+
+	def validate_apps(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
+
+		if diff := set(site_apps) - set(bench_apps):
+			frappe.throw(
+				f"Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				frappe.ValidationError,
+			)
+
 	def start(self):
 		self.db_set("status", "Pending")
 		frappe.db.commit()

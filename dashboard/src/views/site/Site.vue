@@ -150,6 +150,11 @@
 				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
 			</template>
 		</Dialog>
+
+		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
+		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
+		<SiteChangeServerDialog :site="site" v-model="showChangeServerDialog" />
+		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
 </template>
 
@@ -158,6 +163,10 @@ import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
+import SiteChangeGroupDialog from './SiteChangeGroupDialog.vue';
+import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
+import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
+import SiteChangeServerDialog from './SiteChangeServerDialog.vue';
 
 export default {
 	name: 'Site',
@@ -169,7 +178,11 @@ export default {
 	props: ['siteName'],
 	components: {
 		SiteAlerts,
-		Tabs
+		Tabs,
+		SiteChangeGroupDialog,
+		SiteChangeRegionDialog,
+		SiteChangeServerDialog,
+		SiteVersionUpgradeDialog
 	},
 	data() {
 		return {
@@ -177,6 +190,10 @@ export default {
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
 			showTransferSiteDialog: false,
+			showChangeGroupDialog: false,
+			showChangeRegionDialog: false,
+			showChangeServerDialog: false,
+			showVersionUpgradeDialog: false,
 			emailOfChildTeam: null,
 			errorMessage: ''
 		};
@@ -391,6 +408,34 @@ export default {
 					onClick: () => {
 						this.showTransferSiteDialog = true;
 					}
+				},
+				{
+					label: 'Change Bench',
+					icon: 'package',
+					condition: () => this.site?.status === 'Active',
+					onClick: () => (this.showChangeGroupDialog = true)
+				},
+				{
+					label: 'Change Region',
+					icon: 'globe',
+					condition: () => this.site?.status === 'Active',
+					onClick: () => (this.showChangeRegionDialog = true)
+				},
+				{
+					label: 'Upgrade Version',
+					icon: 'arrow-up',
+					condition: () =>
+						this.site?.frappe_version !== this.site?.latest_frappe_version &&
+						this.site?.status === 'Active',
+					onClick: () => (this.showVersionUpgradeDialog = true)
+				},
+				{
+					label: 'Change Server',
+					icon: 'server',
+					condition: () =>
+						this.$account.user.user_type === 'System User' &&
+						this.site?.status === 'Active',
+					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];
 		},

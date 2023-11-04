@@ -27,28 +27,26 @@ frappe.ui.form.on('Agent Job', {
 			},
 			__('Actions'),
 		);
-		frm.add_custom_button(
-			__('Retry In-Place'),
-			() => {
-				frappe.confirm(
-					`Are you sure you want to retry this job in-place?`,
-					() => frm.call('retry_in_place').then(() => frm.refresh()),
-				);
-			},
-			__('Actions'),
-		);
-
-		frm.add_custom_button(
-			__('Process Job Updates'),
-			() => {
-				frappe.confirm(
-					`Are you sure you want to process updates for this job?`,
-					() => frm.call('process_job_updates').then(() => frm.refresh()),
-				);
-			},
-			__('Actions'),
-		);
-
+		[
+			[__('Retry In-Place'), 'retry_in_place'],
+			[__('Process Job Updates'), 'process_job_updates'],
+			[__('Fail and Process Job Updates'), 'fail_and_process_job_updates'],
+			[
+				__('Succeed and Process Job Updates'),
+				'succeed_and_process_job_updates',
+			],
+		].forEach(([label, method, condition]) => {
+			frm.add_custom_button(
+				label,
+				() => {
+					frappe.confirm(
+						`Are you sure you want to ${label.toLowerCase()}?`,
+						() => frm.call(method).then(() => frm.refresh()),
+					);
+				},
+				__('Actions'),
+			);
+		});
 		if (['Update Site Migrate', 'Migrate Site'].includes(frm.doc.job_type)) {
 			frm.add_custom_button(
 				'Run by Skipping Failing Patches',

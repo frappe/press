@@ -122,6 +122,18 @@ class AgentJob(Document):
 		return self.retry()
 
 	@frappe.whitelist()
+	def succeed_and_process_job_updates(self):
+		self.status = "Success"
+		self.save()
+		self.process_job_updates()
+
+	@frappe.whitelist()
+	def fail_and_process_job_updates(self):
+		self.status = "Failure"
+		self.save()
+		self.process_job_updates()
+
+	@frappe.whitelist()
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
