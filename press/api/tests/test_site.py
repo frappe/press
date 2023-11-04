@@ -465,8 +465,8 @@ erpnext 0.8.3	    HEAD
 		app = create_test_app()
 		tokyo_cluster = create_test_cluster("Tokyo")
 		seoul_cluster = create_test_cluster("Seoul")
-		tokyo_server = create_test_server(cluster=tokyo_cluster)
-		seoul_server = create_test_server(cluster=seoul_cluster)
+		tokyo_server = create_test_server(cluster=tokyo_cluster.name)
+		seoul_server = create_test_server(cluster=seoul_cluster.name)
 		group = create_test_release_group([app])
 		group.append(
 			"servers",
