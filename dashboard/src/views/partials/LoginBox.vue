@@ -3,8 +3,8 @@
 		<div class="relative z-10">
 			<div class="flex">
 				<slot name="logo">
-					<FrappeCloudLogo
-						class="mx-auto inline-block h-6"
+					<FCLogo
+						class="mx-auto inline-block h-12"
 						@dblclick="redirectForFrappeioAuth"
 					/>
 				</slot>
@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
+import FCLogo from '@/components/icons/FCLogo.vue';
 import FrappeLogo from '@/components/icons/FrappeLogo.vue';
 import { notify } from '@/utils/toast';
 
@@ -33,7 +33,7 @@ export default {
 	name: 'LoginBox',
 	props: ['title', 'logo'],
 	components: {
-		FrappeCloudLogo,
+		FCLogo,
 		FrappeLogo
 	},
 	mounted() {

@@ -1,9 +1,8 @@
 ---
-- name: Increase swap on app server
+- name: Set swappiness and sysrq
   hosts: all
   become: yes
   become_user: root
   gather_facts: no
   roles:
-    - role: swap
     - role: swap_config

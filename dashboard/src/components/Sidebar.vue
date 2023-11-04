@@ -109,7 +109,6 @@
 <script>
 import { FCIcons } from '@/components/icons';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
-import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
@@ -118,7 +117,6 @@ export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
-		FrappeCloudLogo,
 		SwitchTeamDialog,
 		CommandPalette
 	},
@@ -234,7 +232,10 @@ export default {
 					highlight: () => {
 						return this.$route.fullPath.startsWith('/billing');
 					},
-					icon: FCIcons.BillingIcon
+					icon: FCIcons.BillingIcon,
+					condition: () =>
+						$account.user.name === $account.team.user ||
+						$account.user.user_type === 'System User'
 				},
 				{
 					label: 'Settings',
