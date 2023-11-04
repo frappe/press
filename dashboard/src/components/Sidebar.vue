@@ -234,8 +234,8 @@ export default {
 					},
 					icon: FCIcons.BillingIcon,
 					condition: () =>
-						$account.user.name === $account.team.user ||
-						$account.user.user_type === 'System User'
+						$account.user?.name === $account.team?.user ||
+						$account.user?.user_type === 'System User'
 				},
 				{
 					label: 'Settings',
