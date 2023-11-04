@@ -1721,11 +1721,15 @@ def version_upgrade(name, destination_group):
 @frappe.whitelist()
 @protected("Site")
 def change_server_options(name):
-	site_server = frappe.db.get_value("Site", name, "server")
-	return frappe.db.get_all(
-		"Server",
-		{"team": get_current_team(), "status": "Active", "name": ("!=", site_server)},
-	)
+	site_group = frappe.db.get_value("Site", name, "group")
+	rg = frappe.get_doc("Release Group", site_group)
+
+	if get_current_team() != rg.team:
+		frappe.throw(
+			f"You aren't allowed to change server as the bench {rg.title or rg.name} does not belong to your team"
+		)
+
+	return [server.server for server in rg.servers]
 
 
 @frappe.whitelist()

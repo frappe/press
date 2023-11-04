@@ -73,12 +73,12 @@ export default {
 				},
 				transform(d) {
 					return d.map(s => ({
-						label: s.name,
-						value: s.name
+						label: s,
+						value: s
 					}));
 				},
-				onSuccess() {
-					this.targetServer = this.$resources.changeServerOptions.data[0].value;
+				onSuccess(data) {
+					this.targetServer = data[0].value;
 				}
 			};
 		},
