@@ -121,11 +121,12 @@
    "wildcard_filter": 0
   },
   {
+   "default": "Intel",
    "fieldname": "processor",
    "fieldtype": "Select",
    "label": "Processor",
    "mandatory": 0,
-   "options": "\nIntel\nAMD\nGraviton",
+   "options": "Intel\nAMD\nGraviton\n",
    "wildcard_filter": 0
   },
   {
@@ -140,7 +141,7 @@
  "is_standard": "Yes",
  "json": "{}",
  "letterhead": null,
- "modified": "2023-11-06 18:47:01.743872",
+ "modified": "2023-11-06 19:08:45.728372",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "AWS Instance Pricing",
