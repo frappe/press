@@ -57,11 +57,6 @@ def get_cluster_data(filters, cluster_name):
 			}
 		)
 
-	if not filters.instance_store:
-		product_filters.append(
-			{"Type": "TERM_MATCH", "Field": "storage", "Value": "EBS only"}
-		)
-
 	response_iterator = paginator.paginate(
 		ServiceCode="AmazonEC2", Filters=product_filters, PaginationConfig={"PageSize": 100}
 	)
@@ -69,17 +64,6 @@ def get_cluster_data(filters, cluster_name):
 	for response in response_iterator:
 		for item in response["PriceList"]:
 			product = json.loads(item)
-			if (
-				filters.enhanced_networking
-				and "n." not in product["product"]["attributes"]["instanceType"]
-			):
-				continue
-			if (
-				not filters.enhanced_networking
-				and "n." in product["product"]["attributes"]["instanceType"]
-			):
-				continue
-
 			if filters.processor:
 				if filters.processor not in product["product"]["attributes"]["physicalProcessor"]:
 					continue
