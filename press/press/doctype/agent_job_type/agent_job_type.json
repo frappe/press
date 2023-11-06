@@ -11,6 +11,7 @@
   "request_path",
   "request_method",
   "column_break_fijn",
+  "disabled_auto_retry",
   "max_retry_count"
  ],
  "fields": [
@@ -44,13 +45,20 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "3",
    "fieldname": "max_retry_count",
    "fieldtype": "Int",
    "label": "Max Retry Count"
+  },
+  {
+   "default": "1",
+   "fieldname": "disabled_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disabled Auto Retry"
   }
  ],
  "links": [],
- "modified": "2023-10-16 16:31:00.984946",
+ "modified": "2023-11-06 05:00:29.705818",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Type",
