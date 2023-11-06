@@ -33,6 +33,36 @@
    "width": 0
   },
   {
+   "fieldname": "processor",
+   "fieldtype": "Data",
+   "label": "Processor",
+   "width": 0
+  },
+  {
+   "fieldname": "family",
+   "fieldtype": "Data",
+   "label": "Family",
+   "width": 0
+  },
+  {
+   "fieldname": "generation",
+   "fieldtype": "Int",
+   "label": "Generation",
+   "width": 0
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Data",
+   "label": "Size",
+   "width": 0
+  },
+  {
+   "fieldname": "size_multiplier",
+   "fieldtype": "Float",
+   "label": "Size Multiplier",
+   "width": 0
+  },
+  {
    "fieldname": "on_demand",
    "fieldtype": "Float",
    "label": "On-Demand",

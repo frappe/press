@@ -95,6 +95,21 @@ def get_cluster_data(filters, cluster_name):
 				row["on_demand"] = (
 					flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
 				)
+			instance_type = parse_instance_type(row["instance"])
+			if not instance_type:
+				continue
+
+			family, generation, processor, size = instance_type
+
+			row.update(
+				{
+					"family": family,
+					"generation": generation,
+					"processor": processor,
+					"size": size,
+					"size_multiplier": parse_size_multiplier(size),
+				}
+			)
 			rows.append(row)
 
 	client = boto3.client(
@@ -128,3 +143,75 @@ def get_cluster_data(filters, cluster_name):
 
 	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"], x["memory"]))
 	return rows
+
+
+FAMILIES = [
+	"c",
+	"d",
+	"f",
+	"g",
+	"hpc",
+	"inf",
+	"i",
+	"mac",
+	"m",
+	"p",
+	"r",
+	"trn",
+	"t",
+	"u",
+	"vt",
+	"x",
+]
+PREFERRED_FAMILIES = [
+	"c",
+	"m",
+	"r",
+]
+PROCESSORS = ["a", "g", "i"]
+
+
+def parse_instance_type(instance_type):
+	instance_type, size = instance_type.split(".")
+	# Skip metal instances
+	if "metal" in size:
+		return
+
+	family = None
+	for ff in FAMILIES:
+		if instance_type.startswith(ff):
+			family = ff
+			break
+
+	# Ignore other instance families
+	if family not in PREFERRED_FAMILIES:
+		return
+
+	rest = instance_type.removeprefix(family)
+	generation = int(rest[0])
+	rest = rest[1:]
+
+	# If processor isn't mentioned, assume it's an Intel
+	if rest and rest[0] in PROCESSORS:
+		processor = rest[0]
+		rest = rest[1:]
+	else:
+		processor = "i"
+
+	if rest:
+		return
+
+	return family, generation, processor, size
+
+
+def parse_size_multiplier(size):
+	SIZES = {
+		"medium": 1 / 4,
+		"large": 1 / 2,
+		"xlarge": 1,
+	}
+	if size in SIZES:
+		return SIZES[size]
+	else:
+		size = size.removesuffix("xlarge")
+		return float(size)
