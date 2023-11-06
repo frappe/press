@@ -112,6 +112,14 @@ def get_cluster_data(filters, cluster_name):
 			)
 			rows.append(row)
 
+	latest_generation = max(row["generation"] for row in rows)
+	for row in rows:
+		if row["generation"] == latest_generation:
+			row["is_latest_generation"] = True
+
+	if filters.latest_generation_only:
+		rows = [row for row in rows if row.get("is_latest_generation")]
+
 	client = boto3.client(
 		"savingsplans",
 		aws_access_key_id=cluster.aws_access_key_id,
