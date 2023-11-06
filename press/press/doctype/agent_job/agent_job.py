@@ -504,26 +504,35 @@ def retry_undelivered_jobs():
 		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
 
 		for job in undelivered_jobs:
-			job = frappe.get_doc("Agent Job", job)
-			max_retry_count = frappe.db.get_value(
-				"Agent Job Type", job.job_type, "max_retry_count", cache=True
+			job_doc = frappe.get_doc("Agent Job", job)
+			max_retry_count, disabled_auto_retry = frappe.db.get_value(
+				"Agent Job Type",
+				job_doc.job_type,
+				("max_retry_count", "disabled_auto_retry"),
+				cache=True,
 			)
 
-			if job.retry_count < max_retry_count:
-				retry = job.retry_count + 1
+			if disabled_auto_retry or not max_retry_count:
+				continue
+
+			if job_doc.retry_count < max_retry_count:
+				retry = job_doc.retry_count + 1
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
-				job.retry_in_place()
+				job_doc.retry_in_place()
 			else:
-				frappe.db.set_value(
-					"Agent Job", job, "status", "Delivery Failure", update_modified=False
-				)
-				frappe.db.set_value(
-					"Agent Job Step",
-					{"agent_job": job},
-					"status",
-					"Delivery Failure",
-					update_modified=False,
-				)
+				update_job_and_step_status(job)
+
+
+def update_job_and_step_status(job):
+	agent_job = frappe.qb.DocType("Agent Job")
+	frappe.qb.update(agent_job).set(agent_job.status, "Delivery Failure").where(
+		agent_job.name == job
+	).run()
+
+	agent_job_step = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
+		agent_job_step.agent_job == job
+	).run()
 
 
 def get_server_wise_undelivered_jobs():
@@ -693,26 +702,35 @@ def process_job_updates(job_name):
 
 
 def update_job_step_status():
-	"""WIP"""
-	"""Update agent job step status to failure/delivery failure if the  agent job is in failure/delivery failure state"""
+	from frappe.query_builder.custom import GROUP_CONCAT
 
-	steps_group_by_agent_job = {}
-	agent_jobs = set()
-	for job_step in frappe.get_all(
-		"Agent Job Step",
-		filters={
-			"status": "Pending",
-		},
-		fields=["name", "agent_job"],
-	):
-		steps_group_by_agent_job.setdefault(job_step.agent_job, []).append(job_step.name)
-		agent_jobs.add(job_step.agent_job)
+	agent_job = frappe.qb.DocType("Agent Job")
+	agent_job_step = frappe.qb.DocType("Agent Job Step")
 
-	frappe.get_all(
-		"Agent Job",
-		filters={
-			"name": ("in", list(agent_jobs)),
-			"status": ("in", ["Failure", "Delivery Failure"]),
-		},
-		pluck="name",
-	)
+	steps_to_update = (
+		frappe.qb.from_(agent_job)
+		.join(agent_job_step)
+		.on(agent_job.name == agent_job_step.agent_job)
+		.select(
+			agent_job.name.as_("agent_job"),
+			agent_job.status.as_("job_status"),
+			GROUP_CONCAT(agent_job_step.name, alias="step_names"),
+		)
+		.where(
+			(agent_job.status.isin(["Failure", "Delivery Failure"]))
+			& (agent_job_step.status == "Pending")
+		)
+		.groupby(agent_job.name)
+		.limit(100)
+	).run(as_dict=True)
+
+	for step in steps_to_update:
+		(
+			frappe.qb.update(agent_job_step)
+			.where(
+				(agent_job_step.agent_job == step.agent_job)
+				& (agent_job_step.name.isin(step.step_names.split(",")))
+				& (agent_job_step.status.isin(["Pending", "Running"]))
+			)
+			.set(agent_job_step.status, step.job_status)
+		).run()

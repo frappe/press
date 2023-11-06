@@ -771,7 +771,7 @@ class Agent:
 		return status
 
 	def get_jobs_id(self, agent_job_ids):
-		return self.get(f"agent-job/{agent_job_ids}")
+		return self.get(f"agent-jobs/{agent_job_ids}")
 
 	def get_version(self):
 		return self.get("version")

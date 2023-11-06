@@ -185,6 +185,7 @@ scheduler_events = {
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
@@ -202,7 +203,6 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
-		"press.press.doctype.agent_jon.agent_job.update_job_step_status",
 	],
 	"cron": {
 		"0 4 * * *": [

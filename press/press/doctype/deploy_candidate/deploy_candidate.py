@@ -429,8 +429,7 @@ class DeployCandidate(Document):
 			and platform.system() == "Darwin"
 			and platform.processor() == "arm"
 		):
-			pass
-		self.command = f"{self.command}x build --platform linux/amd64"
+			self.command = f"{self.command}x build --platform linux/amd64"
 
 		environment = os.environ.copy()
 		environment.update(
