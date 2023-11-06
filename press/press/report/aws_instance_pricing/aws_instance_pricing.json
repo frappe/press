@@ -2,6 +2,13 @@
  "add_total_row": 0,
  "columns": [
   {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster",
+   "width": 0
+  },
+  {
    "fieldname": "instance",
    "fieldtype": "Data",
    "label": "Instance",
@@ -66,7 +73,7 @@
    "fieldname": "cluster",
    "fieldtype": "Link",
    "label": "Cluster",
-   "mandatory": 1,
+   "mandatory": 0,
    "options": "Cluster",
    "wildcard_filter": 0
   },

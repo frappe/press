@@ -16,7 +16,20 @@ def execute(filters=None):
 
 
 def get_data(filters):
-	cluster = frappe.get_doc("Cluster", filters.cluster)
+	if filters.cluster:
+		clusters = [filters.cluster]
+	else:
+		clusters = frappe.get_all(
+			"Cluster", filters={"public": 1, "cloud_provider": "AWS EC2"}, pluck="name"
+		)
+	data = []
+	for cluster in clusters:
+		data.extend(get_cluster_data(filters, cluster))
+	return data
+
+
+def get_cluster_data(filters, cluster_name):
+	cluster = frappe.get_doc("Cluster", cluster_name)
 	client = boto3.client(
 		"pricing",
 		region_name="ap-south-1",
@@ -72,6 +85,7 @@ def get_data(filters):
 					continue
 
 			row = {
+				"cluster": cluster.name,
 				"instance_type": product["product"]["attributes"]["instanceType"].split(".")[0],
 				"instance": product["product"]["attributes"]["instanceType"],
 				"vcpu": cint(product["product"]["attributes"]["vcpu"], 0),
