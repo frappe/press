@@ -1073,7 +1073,9 @@ def current_plan(name):
 		"total_database_usage": total_database_usage,
 		"total_storage_usage": total_storage_usage,
 		"database_access": plan.database_access if plan else None,
-		"monitor_access": plan.monitor_access if plan else None,
+		"monitor_access": (
+			is_system_user(frappe.session.user) or (plan.monitor_access if plan else None)
+		),
 		"usage_in_percent": {
 			"cpu": site.current_cpu_usage,
 			"disk": site.current_disk_usage,
