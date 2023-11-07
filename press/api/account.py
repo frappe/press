@@ -15,7 +15,12 @@ from frappe.website.utils import build_response
 from frappe.core.utils import find
 from frappe.rate_limiter import rate_limit
 
-from press.press.doctype.team.team import Team, get_team_members, get_child_team_members
+from press.press.doctype.team.team import (
+	Team,
+	get_team_members,
+	get_child_team_members,
+	has_unsettled_invoices,
+)
 from press.utils import get_country_info, get_current_team
 from press.utils.telemetry import capture, identify
 from press.api.site import protected
@@ -220,6 +225,9 @@ def disable_account():
 	team = get_current_team(get_doc=True)
 	if frappe.session.user != team.user:
 		frappe.throw("Only team owner can disable the account")
+	if has_unsettled_invoices(team.name):
+		return "Unpaid Invoices"
+
 	team.disable_account()
 
 

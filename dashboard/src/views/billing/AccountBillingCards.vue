@@ -51,12 +51,21 @@
 			</div>
 		</div>
 	</Card>
+	<FinalizeInvoicesDialog v-model="showFinalizeDialog" />
 </template>
+
 <script>
 import { defineAsyncComponent } from 'vue';
+import FinalizeInvoicesDialog from './FinalizeInvoicesDialog.vue';
 
 export default {
 	name: 'AccountBillingCards',
+	data() {
+		return {
+			showAddCardDialog: false,
+			showFinalizeDialog: false
+		};
+	},
 	resources: {
 		paymentMethods: {
 			url: 'press.api.billing.get_payment_methods',
@@ -65,19 +74,22 @@ export default {
 		setAsDefault: {
 			url: 'press.api.billing.set_as_default'
 		},
-		remove: {
-			url: 'press.api.billing.remove_payment_method'
+		remove() {
+			return {
+				url: 'press.api.billing.remove_payment_method',
+				onSuccess: data => {
+					if (data === 'Unpaid Invoices') {
+						this.showFinalizeDialog = true;
+					}
+				}
+			};
 		}
 	},
 	components: {
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
-		)
-	},
-	data() {
-		return {
-			showAddCardDialog: false
-		};
+		),
+		FinalizeInvoicesDialog
 	},
 	computed: {
 		subtitle() {
