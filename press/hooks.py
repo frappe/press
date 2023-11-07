@@ -167,7 +167,6 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
@@ -252,6 +251,7 @@ scheduler_events = {
 		"0 0 1 */3 *": [
 			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
+		"0 */1 10 * *": ["press.press.doctype.team.suspend_sites.execute"],
 	},
 }
 
