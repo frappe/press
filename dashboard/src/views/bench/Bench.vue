@@ -218,7 +218,7 @@ export default {
 				{
 					label: 'Drop Bench',
 					icon: 'trash',
-					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					condition: () => !this.bench.public,
 					onClick: () => (this.showDropBenchDialog = true)
 				}
 			];
