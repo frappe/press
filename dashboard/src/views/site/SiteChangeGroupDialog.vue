@@ -34,6 +34,9 @@
 				"
 				v-model="targetGroup"
 			/>
+			<p v-else class="text-base">
+				There are no other benches that you own for this site to move to.
+			</p>
 			<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
 		</template>
 	</Dialog>
@@ -97,7 +100,7 @@ export default {
 					name: this.site?.name
 				},
 				onSuccess(data) {
-					this.targetGroup = data[0].name;
+					if (data.length > 0) this.targetGroup = data[0].name;
 				}
 			};
 		}
