@@ -94,7 +94,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-09-08 09:58:18.202905",
+ "modified": "2023-11-07 16:13:44.351361",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",
@@ -111,6 +111,24 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
   }
  ],
  "sort_field": "modified",
