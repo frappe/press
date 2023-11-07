@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "event_type",
+  "customer_id",
   "payload"
  ],
  "fields": [
@@ -22,10 +23,15 @@
    "fieldtype": "Code",
    "label": "Payload",
    "read_only": 1
+  },
+  {
+   "fieldname": "customer_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer ID"
   }
  ],
  "links": [],
- "modified": "2022-01-19 22:50:30.082445",
+ "modified": "2023-11-07 15:26:26.204145",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",

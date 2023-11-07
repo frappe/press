@@ -7,6 +7,7 @@ import frappe
 import press.utils
 from press.api.billing import get_stripe
 from frappe.model.document import Document
+import re
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -35,6 +36,7 @@ def stripe_webhook_handler():
 				"name": event.id,
 				"payload": frappe.as_json(form_dict),
 				"event_type": event.type,
+				"customer_id": get_customer_id(form_dict),
 			}
 		).insert(ignore_if_duplicate=True)
 	except Exception:
@@ -42,6 +44,18 @@ def stripe_webhook_handler():
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
 		frappe.set_user(current_user)
 		raise Exception
+
+
+def get_customer_id(form_dict):
+	try:
+		form_dict_str = frappe.as_json(form_dict)
+		customer_id = re.search(r"cus_\w+", form_dict_str)
+		if customer_id:
+			return customer_id.group(0)
+		else:
+			return None
+	except Exception:
+		frappe.log_error(title="Failed to capture customer id from stripe webhook log")
 
 
 def parse_payload(payload, signature):
