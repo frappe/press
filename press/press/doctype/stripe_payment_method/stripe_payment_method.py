@@ -31,7 +31,8 @@ class StripePaymentMethod(Document):
 		self.is_default = 1
 		self.save()
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
-		frappe.db.set_value("Team", self.team, "payment_mode", "Card")
+		if not frappe.db.get_value("Team", self.team, "payment_mode"):
+			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
 
 	def on_trash(self):
 		self.remove_address_links()
