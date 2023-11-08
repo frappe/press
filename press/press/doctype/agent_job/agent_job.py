@@ -256,6 +256,7 @@ def poll_pending_jobs_server(server):
 			# Update Job Status
 			# If it is worthy of an update
 			if job.status != polled_job["status"]:
+				lock_doc_updated_by_job(job.name)
 				update_job(job.name, polled_job)
 
 			# Update Steps' Status
@@ -314,6 +315,28 @@ def fail_old_jobs():
 	)
 
 
+def lock_doc_updated_by_job(job_name):
+	"""
+	Ensure serializability of callback of jobs associated with the same document
+
+	All select queries in this transaction should have for_update True for this to work correctly
+	"""
+	doc_names = frappe.db.get_values(
+		"Agent Job", job_name, ["site", "bench", "server", "server_type"], as_dict=True
+	)[
+		0
+	]  # relies on order of values to be site, bench..
+	for field, doc_name in doc_names.items():
+		doctype = field.capitalize()
+		if field == "server":
+			doctype = doc_names["server_type"]
+		elif field == "server_type":  # ideally will never happen, but sanity
+			return
+		if doc_name:
+			frappe.db.get_value(doctype, doc_name, "modified", for_update=True)
+			return doc_name
+
+
 def update_job(job_name, job):
 	job_data = json.dumps(job["data"], indent=4, sort_keys=True)
 	frappe.db.set_value(
@@ -369,6 +392,7 @@ def update_steps(job_name, job):
 	for polled_step in job["steps"]:
 		step = find(steps, lambda x: x.step_name == polled_step["name"])
 		if step and step.status != polled_step["status"]:
+			lock_doc_updated_by_job(job_name)
 			update_step(step.name, polled_step)
 
 
