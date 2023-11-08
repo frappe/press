@@ -19,7 +19,7 @@ export default {
 			let start = this.$date(this.invoiceDoc.period_start);
 			let end = this.$date(this.invoiceDoc.period_end);
 
-			return `Current month's total forcast (${start.toFormat(
+			return `Current month's total forecast (${start.toFormat(
 				'd MMM'
 			)} - ${end.toFormat('d MMM yyyy')})`;
 		}
