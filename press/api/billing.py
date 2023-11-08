@@ -7,6 +7,7 @@ from typing import Dict, List
 from itertools import groupby
 from frappe.utils import fmt_money
 from frappe.core.utils import find
+from press.press.doctype.team.team import has_unsettled_invoices
 from press.utils import get_current_team
 from press.utils.billing import (
 	clear_setup_intent,
@@ -310,10 +311,40 @@ def set_as_default(name):
 
 @frappe.whitelist()
 def remove_payment_method(name):
-	payment_method = frappe.get_doc(
-		"Stripe Payment Method", {"name": name, "team": get_current_team()}
-	)
+	team = get_current_team()
+	payment_method_count = frappe.db.count("Stripe Payment Method", {"team": team})
+
+	if has_unsettled_invoices(team) and payment_method_count == 1:
+		return "Unpaid Invoices"
+
+	payment_method = frappe.get_doc("Stripe Payment Method", {"name": name, "team": team})
 	payment_method.delete()
+
+
+@frappe.whitelist()
+def finalize_invoices():
+	unsettled_invoices = frappe.get_all(
+		"Invoice",
+		{"team": get_current_team(), "status": ("in", ("Draft", "Unpaid"))},
+		pluck="name",
+	)
+
+	for inv in unsettled_invoices:
+		inv_doc = frappe.get_doc("Invoice", inv)
+		inv_doc.finalize_invoice()
+
+
+@frappe.whitelist()
+def unpaid_invoices():
+	team = get_current_team()
+	invoices = frappe.get_all(
+		"Invoice",
+		{"team": team, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+		["name", "status", "period_end", "currency", "amount_due", "total"],
+		order_by="creation asc",
+	)
+
+	return invoices
 
 
 @frappe.whitelist()

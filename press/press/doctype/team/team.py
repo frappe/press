@@ -1071,6 +1071,13 @@ def validate_site_creation(doc, method):
 		frappe.throw(why)
 
 
+def has_unsettled_invoices(team):
+	return frappe.db.exists(
+		"Invoice",
+		{"team": team, "status": ("in", ("Unpaid", "Draft")), "type": "Subscription"},
+	)
+
+
 def is_us_eu():
 	"""Is the customer from U.S. or European Union"""
 	from press.utils import get_current_team
