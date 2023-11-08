@@ -8,8 +8,8 @@ This module deals with suspending sites of defaulters.
 
 Defaulters are identified based on the following conditions:
 - Is not a free account
-- Is not an Legacy Partner account with payment mode as Partner Credits
-- Has atleast one unpaid invoice
+- Is not a Legacy Partner account with payment mode as Partner Credits
+- Has at least one unpaid invoice
 - Has an active site
 
 The `execute` method is the main method which is run by the scheduler on every 10th day of the month.

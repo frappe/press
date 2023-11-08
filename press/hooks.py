@@ -251,7 +251,7 @@ scheduler_events = {
 		"0 0 1 */3 *": [
 			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
-		"0 */1 10 * *": ["press.press.doctype.team.suspend_sites.execute"],
+		"0 */3 10 * *": ["press.press.doctype.team.suspend_sites.execute"],
 	},
 }
 
