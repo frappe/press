@@ -67,15 +67,7 @@
 				:key="requestCountByPathData"
 				:data="requestCountByPathData"
 				unit="requests"
-				:chartTheme="[
-					$theme.colors.green[500],
-					$theme.colors.red[500],
-					$theme.colors.yellow[500],
-					$theme.colors.pink[500],
-					$theme.colors.purple[500],
-					$theme.colors.blue[500],
-					$theme.colors.teal[500]
-				]"
+				:chartTheme="requestChartColors"
 				:loading="$resources.analytics.loading"
 			/>
 			<BarChart
@@ -84,15 +76,7 @@
 				:key="requestDurationByPathData"
 				:data="requestDurationByPathData"
 				unit="seconds"
-				:chartTheme="[
-					$theme.colors.green[500],
-					$theme.colors.red[500],
-					$theme.colors.yellow[500],
-					$theme.colors.pink[500],
-					$theme.colors.purple[500],
-					$theme.colors.blue[500],
-					$theme.colors.teal[500]
-				]"
+				:chartTheme="requestChartColors"
 				:loading="$resources.analytics.loading"
 			/>
 		</div>
@@ -140,6 +124,17 @@ export default {
 		}
 	},
 	computed: {
+		requestChartColors() {
+			return [
+				this.$theme.colors.green[500],
+				this.$theme.colors.red[500],
+				this.$theme.colors.yellow[500],
+				this.$theme.colors.pink[500],
+				this.$theme.colors.purple[500],
+				this.$theme.colors.blue[500],
+				this.$theme.colors.teal[500]
+			];
+		},
 		usageCounterData() {
 			let data = this.$resources.analytics.data?.usage_counter;
 			if (!data) return;
