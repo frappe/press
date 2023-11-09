@@ -1722,7 +1722,7 @@ def update_records_for_rename(job):
 	if new_name == job.site:  # idempotency
 		return
 
-	site = frappe.get_doc("Site", job.site)
+	site = frappe.get_doc("Site", job.site, for_update=True)
 	if site.host_name == job.site:
 		# Host name already updated in f server, no need to create another job
 		site._update_configuration({"host_name": f"https://{new_name}"})
