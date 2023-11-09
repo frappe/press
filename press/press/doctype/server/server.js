@@ -122,6 +122,12 @@ frappe.ui.form.on('Server', {
 				false,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Reset Usage for all sites'),
+				'reset_sites_usage',
+				true,
+				frm.doc.is_server_setup,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

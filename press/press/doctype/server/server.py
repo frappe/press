@@ -984,6 +984,17 @@ class Server(BaseServer):
 				)
 				bench.save()
 
+	@frappe.whitelist()
+	def reset_sites_usage(self):
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": "Active"},
+			pluck="name",
+		)
+		for site_name in sites:
+			site = frappe.get_doc("Site", site_name)
+			site.reset_site_usage()
+
 
 def scale_workers():
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
