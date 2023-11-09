@@ -154,7 +154,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-07 16:13:18.568905",
+ "modified": "2023-11-09 22:47:54.999079",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration",
@@ -190,7 +190,8 @@
    "print": 1,
    "report": 1,
    "role": "Press Admin",
-   "share": 1
+   "share": 1,
+   "write": 1
   },
   {
    "create": 1,
@@ -199,7 +200,8 @@
    "print": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",
