@@ -713,6 +713,7 @@ class Team(Document):
 
 	def billing_info(self):
 		return {
+			"gst_percentage": frappe.db.get_single_value("Press Settings", "gst_percentage"),
 			"balance": self.get_balance(),
 			"verified_micro_charge": bool(
 				frappe.db.exists(
@@ -966,8 +967,9 @@ def process_stripe_webhook(doc, method):
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
+	gst = float(metadata.get("gst"))
 	balance_transaction = team.allocate_credit_amount(
-		amount, source="Prepaid Credits", remark=payment_intent["id"]
+		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
 
 	# Give them free credits too (only first time)
@@ -982,6 +984,7 @@ def process_stripe_webhook(doc, method):
 		status="Paid",
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		amount_paid=amount,
+		gst=gst or 0,
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
 	)

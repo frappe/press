@@ -34,6 +34,7 @@
   "total_discount_amount",
   "column_break_15",
   "total",
+  "gst",
   "applied_credits",
   "free_credits",
   "amount_due",
@@ -421,6 +422,12 @@
    "fieldtype": "Date",
    "label": "Frappe Partnership Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "gst",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
@@ -441,7 +448,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-09-25 12:38:40.289145",
+ "modified": "2023-11-08 17:14:00.102873",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

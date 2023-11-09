@@ -307,8 +307,8 @@ class TestInvoice(unittest.TestCase):
 		with patch.object(Invoice, "update_transaction_details", return_value=None):
 			process_stripe_webhook(doc, "")
 
-		# balance should 900 after buying prepaid credits
-		self.assertEqual(self.team.get_balance(), 900)
+		# balance should 755.64 after buying prepaid credits with gst applied
+		self.assertEqual(self.team.get_balance(), 755.64)
 
 	def test_single_x_percent_flat_on_total(self):
 
