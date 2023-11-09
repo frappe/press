@@ -64,6 +64,7 @@ def get_teams_with_unpaid_invoices():
 			AND t.free_account = 0
 			AND i.status = 'Unpaid'
 			AND i.docstatus < 2
+			AND i.type = 'Subscription'
 	""",
 		as_dict=True,
 	)
