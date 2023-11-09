@@ -153,6 +153,7 @@ const options = ref({
 		length2: 20
 	},
 	legend: {
+		type: 'scroll',
 		top: 'bottom',
 		icon: 'circle',
 		show: data.value.datasets.length > 1
