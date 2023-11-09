@@ -4,7 +4,7 @@
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="error || !data.length || !data.datasets.length"
+			v-if="error || !data.datasets.length || !data.datasets[0].length"
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
