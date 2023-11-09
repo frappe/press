@@ -60,6 +60,24 @@
 				:chartTheme="[$theme.colors.blue[500]]"
 				:loading="$resources.analytics.loading"
 			/>
+
+			<BarChart
+				class="col-span-2"
+				title="Request Count by Method"
+				:key="requestCountByMethodData"
+				:data="requestCountByMethodData"
+				unit="requests"
+				:chartTheme="[
+					$theme.colors.green[500],
+					$theme.colors.red[500],
+					$theme.colors.yellow[500],
+					$theme.colors.pink[500],
+					$theme.colors.purple[500],
+					$theme.colors.blue[500],
+					$theme.colors.teal[500]
+				]"
+				:loading="$resources.analytics.loading"
+			/>
 		</div>
 	</div>
 </template>
@@ -67,12 +85,14 @@
 <script>
 import { DateTime } from 'luxon';
 import LineChart from '@/components/charts/LineChart.vue';
+import BarChart from '@/components/charts/BarChart.vue';
 import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
 	props: ['site'],
 	components: {
+		BarChart,
 		LineChart,
 		SiteAnalyticsUptime
 	},
@@ -137,6 +157,13 @@ export default {
 			return {
 				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
 			};
+		},
+		requestCountByMethodData() {
+			let requestCountByMethod =
+				this.$resources.analytics.data?.request_count_by_method;
+			if (!requestCountByMethod) return;
+
+			return requestCountByMethod;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
