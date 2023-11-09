@@ -967,7 +967,7 @@ def process_stripe_webhook(doc, method):
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
-	gst = float(metadata.get("gst", 0.0))
+	gst = float(metadata.get("gst", 0))
 	balance_transaction = team.allocate_credit_amount(
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
