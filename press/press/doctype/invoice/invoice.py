@@ -33,7 +33,6 @@ class Invoice(Document):
 		self.validate_duplicate()
 		self.validate_items()
 		self.validate_amount()
-		self.validate_gst()
 		self.compute_free_credits()
 
 	def before_submit(self):
@@ -406,16 +405,6 @@ class Invoice(Document):
 
 		self.total_before_discount = total
 		self.set_total_and_discount()
-
-	def validate_gst(self):
-		if (
-			self.currency == "INR"
-			and self.type == "Subscription"
-			and self.payment_mode == "Card"
-		):
-			gst = self.total * frappe.db.get_single_value("Press Settings", "gst_percentage")
-			self.gst = gst
-			self.total += self.gst
 
 	def compute_free_credits(self):
 		self.free_credits = sum(
