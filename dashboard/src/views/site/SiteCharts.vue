@@ -63,9 +63,9 @@
 
 			<BarChart
 				class="col-span-2"
-				title="Request Count by Method"
-				:key="requestCountByMethodData"
-				:data="requestCountByMethodData"
+				title="Request Count by Path"
+				:key="requestCountByPathData"
+				:data="requestCountByPathData"
 				unit="requests"
 				:chartTheme="[
 					$theme.colors.green[500],
@@ -80,9 +80,9 @@
 			/>
 			<BarChart
 				class="col-span-2"
-				title="Request Duration by Method"
-				:key="requestDurationByMethodData"
-				:data="requestDurationByMethodData"
+				title="Request Duration by Path"
+				:key="requestDurationByPathData"
+				:data="requestDurationByPathData"
 				unit="seconds"
 				:chartTheme="[
 					$theme.colors.green[500],
@@ -175,19 +175,19 @@ export default {
 				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
 			};
 		},
-		requestCountByMethodData() {
-			let requestCountByMethod =
-				this.$resources.analytics.data?.request_count_by_method;
-			if (!requestCountByMethod) return;
+		requestCountByPathData() {
+			let requestCountByPath =
+				this.$resources.analytics.data?.request_count_by_path;
+			if (!requestCountByPath) return;
 
-			return requestCountByMethod;
+			return requestCountByPath;
 		},
-		requestDurationByMethodData() {
-			let requestDurationByMethod =
-				this.$resources.analytics.data?.request_duration_by_method;
-			if (!requestDurationByMethod) return;
+		requestDurationByPathData() {
+			let requestDurationByPath =
+				this.$resources.analytics.data?.request_duration_by_path;
+			if (!requestDurationByPath) return;
 
-			return requestDurationByMethod;
+			return requestDurationByPath;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;

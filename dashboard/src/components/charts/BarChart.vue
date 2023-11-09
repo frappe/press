@@ -176,7 +176,7 @@ const options = ref({
 	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
-			name: dataset.method || unit,
+			name: dataset.path || unit,
 			type: 'bar',
 			stack: dataset.stack,
 			showSymbol: false,

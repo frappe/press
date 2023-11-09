@@ -41,10 +41,10 @@ def get(name, timezone, duration="7d"):
 	}[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
-	request_count_by_method_data = get_request_by_method(
+	request_count_by_path_data = get_request_by_path(
 		name, "count", timezone, timespan, timegrain
 	)
-	request_duration_by_method_data = get_request_by_method(
+	request_duration_by_path_data = get_request_by_path(
 		name, "duration", timezone, timespan, timegrain
 	)
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
@@ -58,8 +58,8 @@ def get(name, timezone, duration="7d"):
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
-		"request_count_by_method": request_count_by_method_data,
-		"request_duration_by_method": request_duration_by_method_data,
+		"request_count_by_path": request_count_by_path_data,
+		"request_duration_by_path": request_duration_by_path_data,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
@@ -120,7 +120,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 	return buckets
 
 
-def get_request_by_method(site, query_type, timezone, timespan, timegrain):
+def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
 		return []
@@ -270,7 +270,7 @@ def get_request_by_method(site, query_type, timezone, timespan, timegrain):
 		buckets.append(
 			frappe._dict(
 				{
-					"method": bucket["key"],
+					"path": bucket["key"],
 					"values": [
 						data["request_count"]["doc_count"]
 						if query_type == "count"
@@ -279,7 +279,7 @@ def get_request_by_method(site, query_type, timezone, timespan, timegrain):
 						else 0
 						for data in bucket["histogram_of_method"]["buckets"]
 					],
-					"stack": "method",
+					"stack": "path",
 				}
 			)
 		)
