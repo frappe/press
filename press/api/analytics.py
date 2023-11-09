@@ -121,9 +121,11 @@ def get_uptime(site, timezone, timespan, timegrain):
 
 
 def get_request_by_path(site, query_type, timezone, timespan, timegrain):
+	MAX_NO_OF_PATHS = 10
+
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return []
+		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
@@ -134,7 +136,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 				"terms": {
 					"field": "json.request.path",
 					"order": {"request_count": "desc"},
-					"size": 6,
+					"size": MAX_NO_OF_PATHS,
 				},
 				"aggs": {
 					"request_count": {
@@ -189,7 +191,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 				"terms": {
 					"field": "json.request.path",
 					"order": {"methods>sum": "desc"},
-					"size": 6,
+					"size": MAX_NO_OF_PATHS,
 				},
 				"aggs": {
 					"methods": {
@@ -258,6 +260,9 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		query = duration_query
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
+
+	if not response["aggregations"]["method_path"]["buckets"]:
+		return {"datasets": [], "labels": []}
 
 	buckets = []
 	labels = [
