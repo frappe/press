@@ -343,7 +343,7 @@ def lock_doc_updated_by_job(job_name):
 		0
 	]  # relies on order of values to be site, bench..
 
-	if not field_values["job_type"] in get_pair_jobs():
+	if field_values["job_type"] not in get_pair_jobs():
 		return
 
 	for field, value in field_values.items():

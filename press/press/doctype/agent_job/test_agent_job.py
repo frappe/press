@@ -212,7 +212,10 @@ class TestAgentJob(unittest.TestCase):
 		Site > Bench > Server
 		"""
 		site = create_test_site()  # creates job
-		job = frappe.get_last_doc("Agent Job")
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertIsNone(doc_name)
+		job = frappe.get_last_doc("Agent Job", {"job_type": "New Site"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
 		job.db_set("site", None)
