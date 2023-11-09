@@ -78,6 +78,23 @@
 				]"
 				:loading="$resources.analytics.loading"
 			/>
+			<BarChart
+				class="col-span-2"
+				title="Request Duration by Method"
+				:key="requestDurationByMethodData"
+				:data="requestDurationByMethodData"
+				unit="seconds"
+				:chartTheme="[
+					$theme.colors.green[500],
+					$theme.colors.red[500],
+					$theme.colors.yellow[500],
+					$theme.colors.pink[500],
+					$theme.colors.purple[500],
+					$theme.colors.blue[500],
+					$theme.colors.teal[500]
+				]"
+				:loading="$resources.analytics.loading"
+			/>
 		</div>
 	</div>
 </template>
@@ -164,6 +181,13 @@ export default {
 			if (!requestCountByMethod) return;
 
 			return requestCountByMethod;
+		},
+		requestDurationByMethodData() {
+			let requestDurationByMethod =
+				this.$resources.analytics.data?.request_duration_by_method;
+			if (!requestDurationByMethod) return;
+
+			return requestDurationByMethod;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;
