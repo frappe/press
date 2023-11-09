@@ -1502,6 +1502,7 @@ def get_remove_step_status(job):
 		"Agent Job Step",
 		{"step_name": remove_step_name, "agent_job": job.name},
 		"status",
+		for_update=True,
 	)
 
 
@@ -1642,6 +1643,7 @@ def get_rename_step_status(job):
 		"Agent Job Step",
 		{"step_name": rename_step_name, "agent_job": job.name},
 		"status",
+		for_update=True,
 	)
 
 
