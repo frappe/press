@@ -1445,7 +1445,7 @@ def release_name(name):
 
 
 def process_new_site_job_update(job):
-	site_status = frappe.get_value("Site", job.site, "status")
+	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_types = {
 		"Add Site to Upstream": ("New Site", "New Site from Backup"),
@@ -1506,7 +1506,7 @@ def get_remove_step_status(job):
 
 
 def process_archive_site_job_update(job):
-	site_status = frappe.get_value("Site", job.site, "status")
+	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_type = {
 		"Remove Site from Upstream": "Archive Site",
@@ -1646,7 +1646,7 @@ def get_rename_step_status(job):
 
 
 def process_rename_site_job_update(job):
-	site_status = frappe.get_value("Site", job.site, "status")
+	site_status = frappe.get_value("Site", job.site, "status", for_update=True)
 
 	other_job_type = {
 		"Rename Site": "Rename Site on Upstream",
