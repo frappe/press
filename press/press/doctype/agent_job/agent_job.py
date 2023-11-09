@@ -315,26 +315,49 @@ def fail_old_jobs():
 	)
 
 
+def get_pair_jobs() -> tuple[str]:
+	"""Return list of jobs who's callback depend on another"""
+	return (
+		"New Site",
+		"New Site from Backup",
+		"Add Site to Upstream",
+		"Archive Site",
+		"Remove Site from Upstream",
+		"Rename Site",
+		"Rename Site on Upstream",
+	)
+
+
 def lock_doc_updated_by_job(job_name):
 	"""
 	Ensure serializability of callback of jobs associated with the same document
 
 	All select queries in this transaction should have for_update True for this to work correctly
 	"""
-	doc_names = frappe.db.get_values(
-		"Agent Job", job_name, ["site", "bench", "server", "server_type"], as_dict=True
+	field_values = frappe.db.get_values(
+		"Agent Job",
+		job_name,
+		["site", "bench", "server", "server_type", "job_type"],
+		as_dict=True,
 	)[
 		0
 	]  # relies on order of values to be site, bench..
-	for field, doc_name in doc_names.items():
+
+	if not field_values["job_type"] in get_pair_jobs():
+		return
+
+	for field, value in field_values.items():
 		doctype = field.capitalize()
 		if field == "server":
-			doctype = doc_names["server_type"]
-		elif field == "server_type":  # ideally will never happen, but sanity
+			doctype = field_values["server_type"]
+		elif field in (
+			"server_type",
+			"job_type",
+		):  # ideally will never happen, but for sanity
 			return
-		if doc_name:
-			frappe.db.get_value(doctype, doc_name, "modified", for_update=True)
-			return doc_name
+		if value:
+			frappe.db.get_value(doctype, value, "modified", for_update=True)
+			return value
 
 
 def update_job(job_name, job):
