@@ -6,6 +6,7 @@
 				{
 					label: 'Submit',
 					loading: this.$resources.changeGroup.loading,
+					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
 					onClick: () =>
 						$resources.changeGroup.submit({
@@ -34,7 +35,7 @@
 				"
 				v-model="targetGroup"
 			/>
-			<p v-else class="text-base">
+			<p v-else class="text-md text-base text-gray-800">
 				There are no other benches that you own for this site to move to.
 			</p>
 			<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
