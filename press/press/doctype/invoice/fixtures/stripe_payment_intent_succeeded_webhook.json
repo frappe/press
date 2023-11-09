@@ -50,7 +50,10 @@
 						"id": "ch_1HtDyjGjnxV0XKmrM13MbJf2",
 						"invoice": null,
 						"livemode": false,
-						"metadata": {},
+					  "metadata": {
+						  "gst": "144.36",
+						  "payment_for": "prepaid_credits"
+					  },
 						"object": "charge",
 						"on_behalf_of": null,
 						"order": null,
@@ -123,7 +126,10 @@
 			"invoice": null,
 			"last_payment_error": null,
 			"livemode": false,
-			"metadata": {},
+			"metadata": {
+				"gst": "144.36",
+				"payment_for": "prepaid_credits"
+			},
 			"next_action": null,
 			"object": "payment_intent",
 			"on_behalf_of": null,
