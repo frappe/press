@@ -224,10 +224,12 @@ def create_payment_intent_for_micro_debit(payment_method_name):
 @frappe.whitelist()
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
+	metadata = {"payment_for": "prepaid_credits"}
 
 	if team.currency == "INR":
 		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
 		amount += gst_amount
+		metadata.update({"gst": round(gst_amount, 2)})
 
 	amount = round(amount, 2)
 	stripe = get_stripe()
@@ -236,7 +238,7 @@ def create_payment_intent_for_buying_credits(amount):
 		currency=team.currency.lower(),
 		customer=team.stripe_customer_id,
 		description="Prepaid Credits",
-		metadata={"payment_for": "prepaid_credits", "gst": round(gst_amount, 2)},
+		metadata=metadata,
 	)
 	return {
 		"client_secret": intent["client_secret"],

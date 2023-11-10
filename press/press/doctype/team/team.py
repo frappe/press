@@ -792,7 +792,10 @@ class Team(Document):
 	def suspend_sites(self, reason=None):
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
-			frappe.get_doc("Site", site).suspend(reason)
+			try:
+				frappe.get_doc("Site", site).suspend(reason)
+			except Exception:
+				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
@@ -967,7 +970,7 @@ def process_stripe_webhook(doc, method):
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
-	gst = float(metadata.get("gst"))
+	gst = float(metadata.get("gst", 0))
 	balance_transaction = team.allocate_credit_amount(
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
@@ -985,6 +988,7 @@ def process_stripe_webhook(doc, method):
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		amount_paid=amount,
 		gst=gst or 0,
+		total_before_tax=amount - gst,
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
 	)

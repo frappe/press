@@ -85,9 +85,10 @@ export default class Account {
 			return true;
 		}
 		if (
-			this.team.erpnext_partner ||
+			this.team.payment_mode === 'Paid By Partner' ||
 			this.team.payment_mode === 'Partner Credits'
 		) {
+			// partner credits shall be deprecated in few months
 			return true;
 		}
 		if (this.team.payment_mode == 'Card') {

@@ -227,3 +227,16 @@ class TestAgentJob(unittest.TestCase):
 		job.db_set("server", None)  # will realistically never happen
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertIsNone(doc_name)
+
+	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
+	@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
+	def test_lock_doc_updated_by_job_locks_on_site_rename(self):
+		site = create_test_site()
+		site.subdomain = "renamed-domain"
+		site.save()
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site"})
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertEqual(site.name, doc_name)
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site on Upstream"})
+		doc_name = lock_doc_updated_by_job(job.name)
+		self.assertEqual(site.name, doc_name)

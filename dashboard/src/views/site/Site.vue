@@ -433,9 +433,7 @@ export default {
 				{
 					label: 'Change Server',
 					icon: 'server',
-					condition: () =>
-						this.$account.user.user_type === 'System User' &&
-						this.site?.status === 'Active',
+					condition: () => this.site?.status === 'Active',
 					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];
