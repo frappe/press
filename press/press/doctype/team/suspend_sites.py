@@ -22,7 +22,7 @@ import frappe
 def execute():
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
-	for d in teams_with_unpaid_invoices:
+	for d in teams_with_unpaid_invoices[:100]:
 		team = frappe.get_doc("Team", d.team)
 
 		if team.free_account or team.payment_mode == "Partner Credits":
