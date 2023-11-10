@@ -599,7 +599,7 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(
 			change_server_options(site.name),
-			[other_server.name],
+			[{"name": other_server.name, "title": None}],
 		)
 
 		with fake_agent_job("Update Site Migrate"):
