@@ -4,11 +4,7 @@
 			<slot name="actions"></slot>
 		</template>
 		<div
-			v-if="
-				error ||
-				!data.datasets.length ||
-				(data.datasets[0].length !== undefined && !data.datasets[0].length)
-			"
+			v-if="error || !data.datasets.length"
 			class="flex h-full items-center justify-center"
 		>
 			<ErrorMessage v-if="error" :message="error" />
@@ -29,7 +25,7 @@ import { ref, toRefs } from 'vue';
 import { DateTime } from 'luxon';
 import { use, graphic } from 'echarts/core';
 import { SVGRenderer } from 'echarts/renderers';
-import { LineChart } from 'echarts/charts';
+import { BarChart } from 'echarts/charts';
 import {
 	GridComponent,
 	LegendComponent,
@@ -89,10 +85,10 @@ const props = defineProps({
 const { title, unit, data, type, chartTheme } = toRefs(props);
 
 use([
+	BarChart,
 	SVGRenderer,
 	GridComponent,
 	LegendComponent,
-	LineChart,
 	TooltipComponent,
 	MarkLineComponent
 ]);
@@ -117,7 +113,7 @@ const options = ref({
 					'"></span>';
 
 				tooltip += `<p>${colorSpan(chartTheme.value[i])}  ${getUnit(
-					value[1],
+					value,
 					unit.value
 				)} ${unit.value !== seriesName ? `- ${seriesName}` : ''}</p>`;
 			});
@@ -157,17 +153,18 @@ const options = ref({
 		length2: 20
 	},
 	legend: {
+		type: 'scroll',
 		top: 'bottom',
 		icon: 'circle',
 		show: data.value.datasets.length > 1
 	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
-			name: dataset.name || unit,
-			type: 'line',
+			name: dataset.path || unit,
+			type: 'bar',
 			stack: dataset.stack,
 			showSymbol: false,
-			data: dataset.dataset || dataset,
+			data: dataset.values || dataset,
 			markLine: data.value.markLine,
 			emphasis: {
 				itemStyle: {
