@@ -79,7 +79,7 @@ export default {
 					}));
 				},
 				onSuccess(data) {
-					this.targetServer = data[0].value;
+					this.targetServer = data[0].name;
 				}
 			};
 		},
