@@ -17,12 +17,13 @@ The `execute` method is the main method which is run by the scheduler on every 1
 
 
 import frappe
+from press.utils import log_error
 
 
 def execute():
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
-	for d in teams_with_unpaid_invoices[:100]:
+	for d in teams_with_unpaid_invoices[:20]:
 		team = frappe.get_doc("Team", d.team)
 
 		if team.free_account or team.payment_mode == "Partner Credits":
@@ -33,7 +34,15 @@ def execute():
 
 
 def suspend_sites_and_send_email(team):
-	sites = team.suspend_sites(reason="Unpaid Invoices")
+	try:
+		sites = team.suspend_sites(reason="Unpaid Invoices")
+		frappe.db.commit()
+	except Exception:
+		log_error(
+			f"Error while suspending sites for team {team.name}",
+			traceback=frappe.get_traceback(),
+		)
+		frappe.db.rollback()
 	# send email
 	if sites:
 		email = team.user
