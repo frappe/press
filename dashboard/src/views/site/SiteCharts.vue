@@ -132,7 +132,10 @@ export default {
 				this.$theme.colors.pink[500],
 				this.$theme.colors.purple[500],
 				this.$theme.colors.blue[500],
-				this.$theme.colors.teal[500]
+				this.$theme.colors.teal[500],
+				this.$theme.colors.cyan[500],
+				this.$theme.colors.gray[500],
+				this.$theme.colors.orange[500]
 			];
 		},
 		usageCounterData() {
