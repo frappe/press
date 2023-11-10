@@ -54,6 +54,11 @@ export default {
 			gstApplicable: true
 		};
 	},
+	watch: {
+		'address.gstin'(gstin) {
+			this.update('gstin', gstin);
+		}
+	},
 	resources: {
 		countryList: {
 			url: 'press.api.account.country_list',
