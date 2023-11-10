@@ -791,8 +791,13 @@ class Team(Document):
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
 		sites_to_suspend = self.get_sites_to_suspend()
+		failed_to_suspend_sites = []
 		for site in sites_to_suspend:
-			frappe.get_doc("Site", site).suspend(reason)
+			try:
+				frappe.get_doc("Site", site).suspend(reason)
+			except Exception:
+				failed_to_suspend_sites.append(site)
+		frappe.log_error(title="Failed to Suspend Sites", message=failed_to_suspend_sites)
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
