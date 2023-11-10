@@ -30,7 +30,8 @@
 				v-model="targetServer"
 			/>
 			<p v-else class="text-base">
-				There are no servers available to move this site.
+				There are no servers available to move this site. Please create a new
+				server first.
 			</p>
 			<ErrorMessage class="mt-4" :message="$resources.changeServer.error" />
 		</template>
@@ -73,8 +74,8 @@ export default {
 				},
 				transform(d) {
 					return d.map(s => ({
-						label: s,
-						value: s
+						label: s.title || s.name,
+						value: s.name
 					}));
 				},
 				onSuccess(data) {
