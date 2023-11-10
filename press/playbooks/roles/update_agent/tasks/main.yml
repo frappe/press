@@ -14,6 +14,20 @@
     chdir: /home/frappe/agent
   ignore_errors: yes
 
+- name: Update Agent database
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent setup database
+  args:
+    chdir: /home/frappe/agent
+
+- name: Run agent db patches
+  become: yes
+  become_user: frappe
+  command: /home/frappe/agent/env/bin/agent run-patches
+  args:
+    chdir: /home/frappe/agent
+
 - name: Set Ownership of Agent Logs to Frappe user
   file:
     path: /home/frappe/agent/logs
