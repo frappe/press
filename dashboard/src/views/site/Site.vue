@@ -313,8 +313,8 @@ export default {
 			this.showReasonForAdminLoginDialog = false;
 		},
 		handlePlanChange() {
-			$resources.site.reload();
-			$resources.plan.reload();
+			this.$resources.site.reload();
+			this.$resources.plan.reload();
 		},
 		onActivateClick() {
 			this.$confirm({
