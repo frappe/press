@@ -1,18 +1,24 @@
 <template>
 	<Dialog
 		v-model="show"
+		@close="resetValues"
 		:options="{
 			title: 'Move Site to another Server',
 			actions: [
 				{
-					label: 'Submit',
-					loading: this.$resources.changeServer.loading,
+					label: checkForBench ? 'Check for Available Benches' : 'Submit',
+					loading: $resources.changeServer.loading,
 					variant: 'solid',
-					onClick: () =>
-						$resources.changeServer.submit({
-							server: targetServer,
-							name: site?.name
-						})
+					onClick: () => {
+						if (checkForBench) {
+							$resources.changeServerBenchOptions.fetch();
+						} else {
+							$resources.changeServer.submit({
+								name: site?.name,
+								group: targetBench
+							});
+						}
+					}
 				}
 			]
 		}"
@@ -33,7 +39,21 @@
 				There are no servers available to move this site. Please create a new
 				server first.
 			</p>
-			<ErrorMessage class="mt-4" :message="$resources.changeServer.error" />
+			<FormControl
+				class="mt-4"
+				v-if="$resources.changeServerBenchOptions.data.length > 0"
+				label="Select Bench"
+				type="select"
+				:options="$resources.changeServerBenchOptions.data"
+				v-model="targetBench"
+			/>
+			<ErrorMessage
+				class="mt-4"
+				:message="
+					$resources.changeServer.error ||
+					$resources.changeServerBenchOptions.error
+				"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -47,7 +67,9 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			targetServer: ''
+			targetBench: '',
+			targetServer: '',
+			checkForBench: true
 		};
 	},
 	watch: {
@@ -83,13 +105,29 @@ export default {
 				}
 			};
 		},
-		changeServer() {
+		changeServerBenchOptions() {
 			return {
-				url: 'press.api.site.change_server',
+				url: 'press.api.site.change_server_bench_options',
 				params: {
 					name: this.site?.name,
 					server: this.targetServer
 				},
+				initialData: [],
+				transform(d) {
+					return d.map(s => ({
+						label: s.title || s.name,
+						value: s.name
+					}));
+				},
+				onSuccess(data) {
+					this.targetBench = data[0].name;
+					this.checkForBench = false;
+				}
+			};
+		},
+		changeServer() {
+			return {
+				url: 'press.api.site.change_server',
 				onSuccess() {
 					notify({
 						title: 'Site Change Server',
@@ -100,6 +138,13 @@ export default {
 					this.$emit('update:modelValue', false);
 				}
 			};
+		}
+	},
+	methods: {
+		resetValues() {
+			this.targetBench = '';
+			this.targetServer = '';
+			this.checkForBench = true;
 		}
 	}
 };

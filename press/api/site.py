@@ -1734,7 +1734,7 @@ def change_server_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_server(name, server):
+def change_server_bench_options(name, server):
 	site_group, site_bench = frappe.db.get_value("Site", name, ["group", "bench"])
 	site_candidate = frappe.db.get_value("Bench", site_bench, "candidate")
 	site_version = frappe.db.get_value("Release Group", site_group, "version")
@@ -1742,9 +1742,9 @@ def change_server(name, server):
 
 	Bench = frappe.qb.DocType("Bench")
 	ReleaseGroup = frappe.qb.DocType("Release Group")
-	bench = (
+	rg = (
 		frappe.qb.from_(Bench)
-		.select(Bench.name)
+		.select(ReleaseGroup.name, ReleaseGroup.title)
 		.join(ReleaseGroup)
 		.on(ReleaseGroup.name == Bench.group)
 		.where(Bench.server == server)
@@ -1752,14 +1752,20 @@ def change_server(name, server):
 		.where(ReleaseGroup.team == team)
 		.where(Bench.candidate > site_candidate)
 		.where(ReleaseGroup.version == site_version)
-	).run(as_dict=True, pluck="name")
+	).run(as_dict=True)
 
-	if not bench:
+	if not rg:
 		frappe.throw(
 			f"There are no benches with <b>{site_version}</b> in server <b>{server}</b>."
 		)
-	else:
-		bench = bench[0]
+
+	return rg
+
+
+@frappe.whitelist()
+@protected("Site")
+def change_server(name, group):
+	bench = frappe.db.get_value("Bench", {"group": group, "status": "Active"}, "name")
 
 	site_migration = frappe.get_doc(
 		{
