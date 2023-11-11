@@ -1752,6 +1752,7 @@ def change_server_bench_options(name, server):
 		.where(ReleaseGroup.team == team)
 		.where(Bench.candidate > site_candidate)
 		.where(ReleaseGroup.version == site_version)
+		.distinct()
 	).run(as_dict=True)
 
 	if not rg:
