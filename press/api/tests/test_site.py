@@ -575,7 +575,11 @@ erpnext 0.8.3	    HEAD
 		new=Mock(),
 	)
 	def test_site_change_server(self):
-		from press.api.site import change_server, change_server_options
+		from press.api.site import (
+			change_server,
+			change_server_options,
+			change_server_bench_options,
+		)
 		from press.utils import get_current_team
 
 		app = create_test_app()
@@ -602,6 +606,11 @@ erpnext 0.8.3	    HEAD
 			[{"name": other_server.name, "title": None}],
 		)
 
+		self.assertEqual(
+			change_server_bench_options(site.name, other_server.name),
+			[{"name": other_group.name, "title": other_group.title}],
+		)
+
 		with fake_agent_job("Update Site Migrate"):
 			responses.post(
 				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
@@ -609,7 +618,7 @@ erpnext 0.8.3	    HEAD
 				status=200,
 			)
 
-			change_server(site.name, other_server.name)
+			change_server(site.name, other_group.name)
 			site_migration = frappe.get_last_doc("Site Migration")
 			site_migration.update_site_record_fields()
 
