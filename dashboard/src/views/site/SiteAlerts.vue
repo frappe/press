@@ -41,6 +41,23 @@ const trialEndsText = computed(() => {
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 
+const siteMigrationText = computed(() => {
+	const status = props.site?.site_migration.status;
+
+	if (status === 'Failure') {
+		return 'Your Site Migration failed';
+	} else if (status === 'Success') {
+		return 'Your Site Migration was successful';
+	} else if (status === 'Running') {
+		return 'Your Site Migration is in progress';
+	} else if (status === 'Scheduled') {
+		return `Your site migration is scheduled to happen ${utils.methods.formatDate(
+			props.site?.site_migration.scheduled_time,
+			'relative'
+		)}.`;
+	}
+});
+
 const marketplacePromotionalBanners = createResource({
 	url: 'press.api.marketplace.get_promotional_banners',
 	auto: true
@@ -116,6 +133,27 @@ const marketplacePromotionalBanners = createResource({
 		<Alert title="Attention Required" v-else-if="closeToLimits">
 			Your site has exceeded 80% of the allowed usage for your plan. Upgrade
 			your plan now.
+		</Alert>
+
+		<Alert title="Site Migration" v-if="site?.site_migration">
+			{{ siteMigrationText }}
+			<template #actions>
+				<Button
+					v-if="
+						['Failure', 'Running', 'Success'].includes(
+							site.site_migration.status
+						)
+					"
+					class="whitespace-nowrap"
+					variant="solid"
+					:route="{
+						name: 'SiteJobs',
+						params: { jobName: site.site_migration.job_id }
+					}"
+				>
+					Track Migration
+				</Button>
+			</template>
 		</Alert>
 
 		<Dialog

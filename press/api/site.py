@@ -26,6 +26,7 @@ from press.press.doctype.site_update.site_update import benches_with_available_u
 from press.utils import (
 	get_current_team,
 	log_error,
+	get_last_doc,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
 	group_children_in_result,
@@ -736,6 +737,8 @@ def site_tags():
 @frappe.whitelist()
 @protected("Site")
 def get(name):
+	from frappe.utils.data import time_diff
+
 	team = get_current_team()
 	try:
 		site = frappe.get_doc("Site", name)
@@ -766,6 +769,29 @@ def get(name):
 		ip = server.ip
 	else:
 		ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
+
+	site_migration = get_last_doc("Site Migration", {"site": site.name})
+	if (
+		site_migration
+		and -1
+		<= time_diff(site_migration.scheduled_time, frappe.utils.now_datetime()).days
+		<= 1
+	):
+		site_migration = {
+			"status": site_migration.status,
+			"scheduled_time": site_migration.scheduled_time,
+			"job_id": find(
+				site_migration.steps, lambda x: x.step_title == "Restore site on destination"
+			).step_job
+			if site_migration.status == "Success"
+			else find(site_migration.steps, lambda x: x.status == "Failure").step_job
+			if site_migration.status == "Failure"
+			else find(site_migration.steps, lambda x: x.status == "Running").step_job
+			if site_migration.status == "Running"
+			else None,
+		}
+	else:
+		site_migration = None
 
 	return {
 		"name": site.name,
@@ -810,6 +836,7 @@ def get(name):
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
 		"pending_for_long": site.pending_for_long,
+		"site_migration": site_migration,
 	}
 
 
