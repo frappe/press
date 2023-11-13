@@ -51,7 +51,7 @@ const siteMigrationText = computed(() => {
 	} else if (status === 'Running') {
 		return 'Your Site Migration is in progress';
 	} else if (status === 'Scheduled') {
-		return `Your site migration is scheduled to happen ${utils.methods.formatDate(
+		return `Your Site Migration is scheduled to happen ${utils.methods.formatDate(
 			props.site?.site_migration.scheduled_time,
 			'relative'
 		)}.`;
