@@ -793,6 +793,21 @@ def get(name):
 	else:
 		site_migration = None
 
+	version_upgrade = get_last_doc("Version Upgrade", {"site": site.name})
+	if (
+		version_upgrade
+		and -1
+		<= time_diff(version_upgrade.scheduled_time, frappe.utils.now_datetime()).days
+		<= 1
+	):
+		version_upgrade = {
+			"status": version_upgrade.status,
+			"scheduled_time": version_upgrade.scheduled_time,
+			"job_id": frappe.get_value("Site Update", version_upgrade.site_update, "update_job"),
+		}
+	else:
+		version_upgrade = None
+
 	return {
 		"name": site.name,
 		"host_name": site.host_name,
@@ -837,6 +852,7 @@ def get(name):
 		},
 		"pending_for_long": site.pending_for_long,
 		"site_migration": site_migration,
+		"version_upgrade": version_upgrade,
 	}
 
 

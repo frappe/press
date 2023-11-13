@@ -58,6 +58,23 @@ const siteMigrationText = computed(() => {
 	}
 });
 
+const siteVersionUpgradeText = computed(() => {
+	const status = props.site?.version_upgrade.status;
+
+	if (status === 'Failure') {
+		return 'Your Site Version Upgrade failed';
+	} else if (status === 'Success') {
+		return 'Your Site Version Upgrade was successful';
+	} else if (status === 'Running') {
+		return 'Your Site Version Upgrade is in progress';
+	} else if (status === 'Scheduled') {
+		return `Your site version upgrade is scheduled to happen ${utils.methods.formatDate(
+			props.site?.version_upgrade.scheduled_time,
+			'relative'
+		)}.`;
+	}
+});
+
 const marketplacePromotionalBanners = createResource({
 	url: 'press.api.marketplace.get_promotional_banners',
 	auto: true
@@ -142,7 +159,7 @@ const marketplacePromotionalBanners = createResource({
 					v-if="
 						['Failure', 'Running', 'Success'].includes(
 							site.site_migration.status
-						)
+						) && site.site_migration.job_id
 					"
 					class="whitespace-nowrap"
 					variant="solid"
@@ -151,7 +168,28 @@ const marketplacePromotionalBanners = createResource({
 						params: { jobName: site.site_migration.job_id }
 					}"
 				>
-					Track Migration
+					View Job
+				</Button>
+			</template>
+		</Alert>
+
+		<Alert title="Site Version Upgrade" v-if="site?.version_upgrade">
+			{{ siteVersionUpgradeText }}
+			<template #actions>
+				<Button
+					v-if="
+						['Failure', 'Running', 'Success'].includes(
+							site.version_upgrade.status
+						) && site.version_upgrade.job_id
+					"
+					class="whitespace-nowrap"
+					variant="solid"
+					:route="{
+						name: 'SiteJobs',
+						params: { jobName: site.version_upgrade.job_id }
+					}"
+				>
+					View Job
 				</Button>
 			</template>
 		</Alert>
