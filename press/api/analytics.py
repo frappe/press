@@ -279,7 +279,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 					"values": [
 						data["request_count"]["doc_count"]
 						if query_type == "count"
-						else data["methods"]["sum"]["value"] / 1000
+						else data["methods"]["sum"]["value"] / 1000000
 						if query_type == "duration"
 						else 0
 						for data in bucket["histogram_of_method"]["buckets"]
