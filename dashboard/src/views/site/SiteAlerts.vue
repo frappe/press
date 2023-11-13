@@ -173,7 +173,7 @@ const marketplacePromotionalBanners = createResource({
 			</template>
 		</Alert>
 
-		<Alert title="Site Version Upgrade" v-if="site?.version_upgrade">
+		<Alert title="Version Upgrade" v-if="site?.version_upgrade">
 			{{ siteVersionUpgradeText }}
 			<template #actions>
 				<Button
