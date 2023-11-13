@@ -332,7 +332,7 @@
   },
   {
    "fieldname": "memory_high",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory High (GB)",
    "non_negative": 1
   },
@@ -342,7 +342,7 @@
   },
   {
    "fieldname": "memory_max",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory Max (GB)",
    "non_negative": 1
   },
@@ -384,7 +384,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-24 09:11:57.951188",
+ "modified": "2023-11-13 17:27:30.718828",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

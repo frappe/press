@@ -144,6 +144,7 @@ class TestDatabaseServer(FrappeTestCase):
 		self.assertEqual(server.real_ram, 15707.248)
 		self.assertEqual(server.ram_for_mariadb, 15007.248)
 		server.adjust_memory_config()
+		server.reload()
 		self.assertEqual(server.memory_high, 13.656)
 		self.assertEqual(server.memory_max, 14.656)
 		self.assertEqual(
