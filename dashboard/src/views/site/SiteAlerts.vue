@@ -68,7 +68,7 @@ const siteVersionUpgradeText = computed(() => {
 	} else if (status === 'Running') {
 		return 'Your Site Version Upgrade is in progress';
 	} else if (status === 'Scheduled') {
-		return `Your site version upgrade is scheduled to happen ${utils.methods.formatDate(
+		return `Your Site Version Upgrade is scheduled to happen ${utils.methods.formatDate(
 			props.site?.version_upgrade.scheduled_time,
 			'relative'
 		)}.`;
