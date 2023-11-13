@@ -9,6 +9,7 @@
 					label: checkForBench ? 'Check for Available Benches' : 'Submit',
 					loading: $resources.changeServer.loading,
 					variant: 'solid',
+					disabled: !$resources.changeServerOptions?.data?.length,
 					onClick: () => {
 						if (checkForBench) {
 							$resources.changeServerBenchOptions.fetch();
@@ -101,7 +102,7 @@ export default {
 					}));
 				},
 				onSuccess(data) {
-					this.targetServer = data[0].name;
+					if (data.length > 0) this.targetServer = data[0].name;
 				}
 			};
 		},
