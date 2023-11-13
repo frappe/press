@@ -862,7 +862,7 @@ class Team(Document):
 		invoice = frappe.get_doc("Invoice", invoice)
 		email = (
 			frappe.db.get_value(
-				"Communication Email", {"parent": self.user, "type": "invoices"}, ["value"]
+				"Communication Email", {"parent": self.name, "type": "invoices"}, "value"
 			)
 			or self.user
 		)
