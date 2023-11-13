@@ -545,12 +545,18 @@ def create_razorpay_order(amount):
 	client = get_razorpay_client()
 	team = get_current_team(get_doc=True)
 
+	if team.currency == "INR":
+		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
+		amount += gst_amount
+
+	amount = round(amount, 2)
 	data = {
 		"amount": amount * 100,
 		"currency": team.currency,
 		"notes": {
 			"Description": "Order for Frappe Cloud Prepaid Credits",
 			"Team (Frappe Cloud ID)": team.name,
+			"gst": gst_amount,
 		},
 	}
 	order = client.order.create(data=data)
