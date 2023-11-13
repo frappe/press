@@ -523,6 +523,11 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
 
+	@property
+	def real_ram(self):
+		"""Ram detected by OS after h/w reservation"""
+		return 0.972 * self.ram - 218
+
 
 class Server(BaseServer):
 
