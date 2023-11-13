@@ -55,6 +55,8 @@
   "memory_high",
   "column_break_eiyu",
   "memory_max",
+  "column_break_wbbi",
+  "memory_swap_max",
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables"
@@ -380,11 +382,21 @@
   {
    "fieldname": "column_break_apox",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wbbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "memory_swap_max",
+   "fieldtype": "Float",
+   "label": "Memory Swap Max (GB)",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-13 17:27:30.718828",
+ "modified": "2023-11-13 23:53:16.197071",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
