@@ -133,6 +133,11 @@ class TestDatabaseServer(FrappeTestCase):
 		server = create_test_database_server()
 		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)
 
+	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
 	def test_adjust_memory_config_sets_memory_limits_with_some_buffer(self):
 		server = create_test_database_server()
 		server.ram = 16384
