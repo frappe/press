@@ -581,18 +581,23 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	@property
+	def ram_for_mariadb(self):
+		return self.real_ram - 700  # OS and other services
+
+	@frappe.whitelist()
 	def adjust_memory_config(self):
 		if not self.ram:
 			return
 
-		self.memory_high = max(self.ram // 1024 - 2, 1)
-		self.memory_max = max(self.ram // 1024 - 1, 2)
+		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
+		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 		self.save()
 
 		self.add_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram * 0.685),  # will be rounded up based on chunk_size
+			int(self.ram_for_mariadb * 0.685),  # will be rounded up based on chunk_size
 		)
 
 	@frappe.whitelist()
