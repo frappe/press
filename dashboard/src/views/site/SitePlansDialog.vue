@@ -123,7 +123,6 @@ export default {
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
 				if (this.belowCurrentUsage(plan)) {
-					console.log(plan);
 					plan.disabled = true;
 				}
 
