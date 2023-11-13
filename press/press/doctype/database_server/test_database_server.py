@@ -94,6 +94,7 @@ class TestDatabaseServer(FrappeTestCase):
 				"server": server.name,
 				"memory_high": server.memory_high,
 				"memory_max": server.memory_max,
+				"memory_swap_max": 0.1,
 			},
 		)
 

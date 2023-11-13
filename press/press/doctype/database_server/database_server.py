@@ -37,7 +37,11 @@ class DatabaseServer(BaseServer):
 		if self.flags.in_insert or self.is_new():
 			return
 		self.update_mariadb_system_variables()
-		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+		if (
+			self.has_value_changed("memory_high")
+			or self.has_value_changed("memory_max")
+			or self.has_value_changed("memory_swap_max")
+		):
 			self.update_memory_limits()
 
 		if (
@@ -80,6 +84,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _update_memory_limits(self):
+		self.memory_swap_max = self.memory_swap_max or 0.1
 		if not self.memory_high or not self.memory_max:
 			return
 		ansible = Ansible(
@@ -91,6 +96,7 @@ class DatabaseServer(BaseServer):
 				"server": self.name,
 				"memory_high": self.memory_high,
 				"memory_max": self.memory_max,
+				"memory_swap_max": self.memory_swap_max,
 			},
 		)
 		play = ansible.run()
