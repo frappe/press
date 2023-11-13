@@ -430,6 +430,18 @@ def get():
 	}
 
 
+@frappe.whitelist()
+def current_team():
+	user = frappe.session.user
+	if not frappe.db.exists("User", user):
+		frappe.throw(_("Account does not exist"))
+
+	from press.api.client import get
+
+	team = frappe.local.team
+	return get("Team", team.name)
+
+
 def get_permissions():
 	user = frappe.session.user
 	groups = tuple(

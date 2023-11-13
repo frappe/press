@@ -46,7 +46,7 @@ def get(name, timezone, duration="7d"):
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
 
 	plan = frappe.get_cached_doc("Site", name).plan
-	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
+	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
 
 	return {
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],

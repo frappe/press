@@ -32,7 +32,10 @@ from frappe.utils.user import is_system_user
 from press.agent import Agent
 from press.api.site import check_dns
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.marketplace_app.marketplace_app import marketplace_app_hook
+from press.press.doctype.marketplace_app.marketplace_app import (
+	get_plans_for_app,
+	marketplace_app_hook,
+)
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
@@ -41,6 +44,8 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
+	whitelisted_fields = ["ip", "status", "group", "notify_email", "team", "plan"]
+
 	@staticmethod
 	def get_list_query(query):
 		Site = frappe.qb.DocType("Site")
@@ -49,8 +54,10 @@ class Site(Document):
 		)
 		return query
 
-	def get_doc(self):
-		return {"ip": self.ip}
+	def get_doc(self, doc):
+		from press.api.site import current_plan
+		doc["current_plan"] = current_plan(self.name)
+		return doc
 
 	def _get_site_name(self, subdomain: str):
 		"""Get full site domain name given subdomain."""
@@ -71,6 +78,8 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
+		if not self.team:
+			self.team = frappe.local.team.name
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan
@@ -658,6 +667,7 @@ class Site(Document):
 
 		return delete_remote_backup_objects(sites_remote_files)
 
+	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
@@ -1785,24 +1795,21 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 	selected_values = (
 		frappe.parse_json(selected_values) if selected_values else frappe._dict()
 	)
-	subdomain_available = None
+
 	versions = []
+	bench = None
 	apps = []
 	clusters = []
 
-	if selected_values.subdomain:
-		subdomain_available = not Site.exists(selected_values.subdomain, domain)
-
-	if subdomain_available:
-		versions = frappe.db.get_all(
-			"Frappe Version",
-			["name", "default", "status"],
-			{"public": True},
-			order_by="`default` desc, number desc",
-		)
-		for v in versions:
-			v.label = f"{v.name} ({v.status})"
-			v.value = v.name
+	versions = frappe.db.get_all(
+		"Frappe Version",
+		["name", "default", "status", "number"],
+		{"public": True},
+		order_by="number desc",
+	)
+	for v in versions:
+		v.label = v.name
+		v.value = v.name
 
 	if selected_values.version:
 		release_group = frappe.db.get_value(
@@ -1813,6 +1820,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 				"public": 1,
 				"version": selected_values.version,
 			},
+			order_by="creation desc",
 			as_dict=1,
 		)
 		if release_group:
@@ -1838,13 +1846,25 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 						"app_title",
 						"frappe",
 					],
-					filters={"name": ("in", bench_apps)},
+					filters={"name": ("in", bench_apps), "frappe": 0},
 					or_filters={"public": True, "team": team},
 				)
 				for app in app_sources:
 					app.label = app.app_title
-					app.value = app.name
+					app.value = app.app
 				apps = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+				if apps:
+					marketplace_apps = frappe.db.get_all(
+						"Marketplace App",
+						fields=["title", "image", "description", "app", "route"],
+						filters={"app": ("in", [app.app for app in apps])},
+					)
+					for app in apps:
+						marketplace_details = find(marketplace_apps, lambda x: x.app == app.app)
+						if marketplace_details:
+							app.update(marketplace_details)
+							app.plans = get_plans_for_app(app.app, selected_values.version)
+
 				cluster_names = unique(
 					frappe.db.get_all(
 						"Bench",
@@ -1863,7 +1883,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 
 	return {
 		"domain": domain,
-		"subdomain_available": subdomain_available,
+		"bench": bench,
 		"versions": versions,
 		"apps": apps,
 		"clusters": clusters,

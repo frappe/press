@@ -23,11 +23,12 @@ def get_list(
 	debug=False,
 ):
 	check_permissions(doctype)
-	filtered_fields = filter_fields(doctype, fields)
+	valid_fields = validate_fields(doctype, fields)
+	valid_filters = validate_filters(doctype, filters)
 	query = frappe.qb.get_query(
 		doctype,
-		filters=filters,
-		fields=filtered_fields,
+		filters=valid_filters,
+		fields=valid_fields,
 		offset=start,
 		limit=limit,
 		order_by=order_by,
@@ -56,18 +57,42 @@ def get(doctype, name):
 	check_permissions(doctype)
 	doc = frappe.get_doc(doctype, name)
 
-	out = {}
-	for fieldname in default_fields:
-		out[fieldname] = doc.get(fieldname)
+	fields = list(default_fields)
+	if hasattr(doc, "whitelisted_fields"):
+		fields += doc.whitelisted_fields
+
+	_doc = frappe._dict()
+	for fieldname in fields:
+		_doc[fieldname] = doc.get(fieldname)
+
 	if hasattr(doc, "get_doc"):
-		out.update(doc.get_doc())
+		result = doc.get_doc(_doc)
+		if isinstance(result, dict):
+			_doc.update(result)
 
-	return out
+	return _doc
 
 
-@frappe.whitelist()
-def insert(doc):
-	pass
+@frappe.whitelist(methods=["POST", "PUT"])
+def insert(doc=None):
+	if not doc or not doc.get("doctype"):
+		frappe.throw(frappe._("doc.doctype is required"))
+	check_permissions(doc.doctype)
+
+	doc = frappe._dict(doc)
+	if frappe.is_table(doc.doctype):
+		if not (doc.parenttype and doc.parent and doc.parentfield):
+			frappe.throw(
+				frappe._("Parenttype, Parent and Parentfield are required to insert a child record")
+			)
+
+		# inserting a child record
+		parent = frappe.get_doc(doc.parenttype, doc.parent)
+		parent.append(doc.parentfield, doc)
+		parent.save()
+		return parent
+
+	return frappe.get_doc(doc).insert()
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
@@ -113,24 +138,46 @@ def apply_custom_filters(doctype, query, **list_args):
 	return query
 
 
-def filter_fields(doctype, fields):
+def validate_filters(doctype, filters):
+	"""Filter filters based on permissions"""
+	if not filters:
+		return filters
+
+	out = {}
+	for fieldname, value in filters.items():
+		if is_valid_field(doctype, fieldname):
+			out[fieldname] = value
+
+	return out
+
+
+def validate_fields(doctype, fields):
 	"""Filter fields based on permissions"""
 	if not fields:
 		return fields
-	meta = frappe.get_meta(doctype)
+
 	filtered_fields = []
 	for field in fields:
-		if not field:
-			continue
-		if field == "*" or "." in field:
+		if is_valid_field(doctype, field):
 			filtered_fields.append(field)
-		elif isinstance(field, dict) or field in default_fields:
-			filtered_fields.append(field)
-		elif df := meta.get_field(field):
-			if df.fieldtype not in frappe.model.table_fields:
-				filtered_fields.append(field)
 
 	return filtered_fields
+
+
+def is_valid_field(doctype, field):
+	"""Check if field is valid"""
+	if not field:
+		return False
+
+	if field == "*" or "." in field:
+		return True
+	elif isinstance(field, dict) or field in default_fields:
+		return True
+	elif df := frappe.get_meta(doctype).get_field(field):
+		if df.fieldtype not in frappe.model.table_fields:
+			return True
+
+	return False
 
 
 def check_permissions(doctype):

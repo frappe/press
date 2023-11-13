@@ -15,6 +15,11 @@ let router = createRouter({
 			component: () => import('./pages/JobPage.vue'),
 			props: true
 		},
+		{
+			name: 'NewSite',
+			path: '/sites/new',
+			component: () => import('./pages/NewSite.vue')
+		},
 		...generateRoutes()
 	]
 });

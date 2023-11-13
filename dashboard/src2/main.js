@@ -1,5 +1,4 @@
 import { createApp } from 'vue';
-import { toast } from 'vue-sonner';
 import {
 	setConfig,
 	frappeRequest,
@@ -8,14 +7,12 @@ import {
 } from 'frappe-ui';
 import App from './App.vue';
 import router from './router';
-import dayjs from './utils/dayjs';
-import session from './data/session';
-import theme from '../tailwind.theme.json';
+import { initSocket } from './socket';
 
 setConfig('resourceFetcher', frappeRequest);
 setConfig('defaultListUrl', 'press.api.client.get_list');
 setConfig('defaultDocGetUrl', 'press.api.client.get');
-// setConfig('defaultDocInsertUrl', 'press.api.list.insert');
+setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
 // setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
@@ -24,19 +21,30 @@ app.use(router);
 app.use(resourcesPlugin);
 app.use(pageMetaPlugin);
 
-app.config.globalProperties.$session = session;
-app.config.globalProperties.$toast = toast;
-app.config.globalProperties.$dayjs = dayjs;
-app.config.globalProperties.$theme = theme;
+let socket;
 
-fetchTeam().then(() => {
+getInitialData().then(() => {
+	socket = initSocket();
+	app.config.globalProperties.$socket = socket;
+	window.$socket = socket;
 	app.mount('#app');
 });
 
-function fetchTeam() {
-	return import('./data/team.js');
-}
+function getInitialData() {
+	let promises = [
+		import.meta.env.DEV
+			? frappeRequest({
+					url: '/api/method/press.www.dashboard.get_context_for_dev'
+			  }).then(values => {
+					for (let key in values) {
+						window[key] = values[key];
+					}
+			  })
+			: Promise.resolve(),
+		import('./globals.js').then(globals => {
+			app.use(globals.default);
+		})
+	];
 
-// import('./data/team.js').then(() => {
-// 	app.mount('#app');
-// });
+	return Promise.all(promises);
+}
