@@ -142,7 +142,7 @@ export default {
 				onSuccess() {
 					notify({
 						title: 'Site Change Server',
-						message: `Site ${this.site?.name} has been scheduled to move to ${this.targetServer}`,
+						message: `Site <b>${this.site?.name}</b> has been scheduled to move to <b>${this.targetServer}</b>`,
 						icon: 'check',
 						color: 'green'
 					});

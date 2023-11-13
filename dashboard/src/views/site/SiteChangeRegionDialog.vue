@@ -133,7 +133,7 @@ export default {
 
 					notify({
 						title: 'Scheduled Region Change',
-						message: `Site scheduled to be moved to ${regionName}`,
+						message: `Site <b>${this.site?.hostname}</b> scheduled to be moved to <b>${regionName}</b>`,
 						color: 'green',
 						icon: 'check'
 					});
