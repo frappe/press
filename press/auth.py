@@ -55,7 +55,10 @@ def hook():
 	if frappe.session.user == "Guest":
 		frappe.local.team = None
 	else:
-		frappe.local.team = get_current_team(get_doc=True)
+		try:
+			frappe.local.team = get_current_team(get_doc=True)
+		except:
+			frappe.local.team = None
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 
