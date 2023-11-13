@@ -1648,7 +1648,7 @@ def change_region_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_region(name, cluster):
+def change_region(name, cluster, scheduled_datetime=None):
 	group = frappe.db.get_value("Site", name, "group")
 	bench, server = frappe.db.get_value(
 		"Bench", {"group": group, "cluster": cluster}, ["name", "server"]
@@ -1662,11 +1662,12 @@ def change_region(name, cluster):
 			"destination_bench": bench,
 			"destination_server": server,
 			"destination_cluster": cluster,
-			"scheduled_time": frappe.utils.now_datetime(),
+			"scheduled_time": scheduled_datetime,
 		}
 	).insert()
 
-	site_migration.start()
+	if not scheduled_datetime:
+		site_migration.start()
 
 
 @frappe.whitelist()
@@ -1695,7 +1696,7 @@ def get_private_groups_for_upgrade(name, version):
 
 @frappe.whitelist()
 @protected("Site")
-def version_upgrade(name, destination_group):
+def version_upgrade(name, destination_group, scheduled_datetime=None):
 	site = frappe.get_doc("Site", name)
 	current_version, shared_site = frappe.db.get_value(
 		"Release Group", site.group, ["version", "public"]
@@ -1715,10 +1716,12 @@ def version_upgrade(name, destination_group):
 			"doctype": "Version Upgrade",
 			"site": name,
 			"destination_group": destination_group,
+			"scheduled_time": scheduled_datetime,
 		}
 	).insert()
 
-	version_upgrade.start()
+	if not scheduled_datetime:
+		version_upgrade.start()
 
 
 @frappe.whitelist()
@@ -1765,7 +1768,7 @@ def change_server_bench_options(name, server):
 
 @frappe.whitelist()
 @protected("Site")
-def change_server(name, group):
+def change_server(name, group, scheduled_datetime=None):
 	bench = frappe.db.get_value("Bench", {"group": group, "status": "Active"}, "name")
 
 	site_migration = frappe.get_doc(
@@ -1773,8 +1776,9 @@ def change_server(name, group):
 			"doctype": "Site Migration",
 			"site": name,
 			"destination_bench": bench,
-			"scheduled_time": frappe.utils.now_datetime(),
+			"scheduled_time": scheduled_datetime,
 		}
 	).insert()
 
-	site_migration.start()
+	if not scheduled_datetime:
+		site_migration.start()

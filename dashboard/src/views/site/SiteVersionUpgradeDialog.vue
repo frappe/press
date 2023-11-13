@@ -1,6 +1,7 @@
 <template>
 	<Dialog
 		v-model="show"
+		@close="resetValues"
 		:options="{
 			title: 'Upgrade Site Version',
 			actions: [
@@ -11,7 +12,8 @@
 					onClick: () => {
 						this.$resources.versionUpgrade.submit({
 							name: this.site?.name,
-							destination_group: this.privateReleaseGroup
+							destination_group: this.privateReleaseGroup,
+							scheduled_datetime: this.targetDateTime
 						});
 						this.$emit('update:modelValue', false);
 					}
@@ -37,12 +39,14 @@
 					v-if="site?.is_public || privateReleaseGroups.length > 0"
 					class="space-y-4"
 				>
-					<p class="text-base">Are you sure you want to upgrade this site?</p>
-					<p class="text-base">
-						Please type
-						<span class="font-semibold">{{ site.host_name }}</span> to confirm.
-					</p>
-					<FormControl class="w-full" v-model="confirmSiteName" />
+					<FormControl
+						class="mt-4"
+						v-if="privateReleaseGroups.length > 0"
+						label="Schedule Site Migration (IST)"
+						type="datetime-local"
+						:min="new Date().toISOString().slice(0, 16)"
+						v-model="targetDateTime"
+					/>
 				</div>
 				<p v-else class="text-base">
 					There are no private release groups available to upgrade this site.
@@ -62,7 +66,7 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			confirmSiteName: '',
+			targetDateTime: null,
 			privateReleaseGroup: '',
 			privateReleaseGroups: []
 		};
@@ -93,11 +97,6 @@ export default {
 					site: this.site?.name,
 					destination_group: this.privateReleaseGroup
 				},
-				validate() {
-					if (this.site?.host_name !== this.confirmSiteName) {
-						return 'Please type the site name correctly to confirm';
-					}
-				},
 				onSuccess() {
 					notify({
 						title: 'Site Version Upgrade',
@@ -124,6 +123,13 @@ export default {
 					}));
 				}
 			};
+		}
+	},
+	methods: {
+		resetValues() {
+			this.targetDateTime = null;
+			this.privateReleaseGroup = '';
+			this.privateReleaseGroups = [];
 		}
 	}
 };

@@ -16,7 +16,8 @@
 						} else {
 							$resources.changeServer.submit({
 								name: site?.name,
-								group: targetBench
+								group: targetBench,
+								scheduled_datetime: targetDateTime
 							});
 						}
 					}
@@ -48,6 +49,14 @@
 				:options="$resources.changeServerBenchOptions.data"
 				v-model="targetBench"
 			/>
+			<FormControl
+				class="mt-4"
+				v-if="$resources.changeServerBenchOptions.data.length > 0"
+				label="Schedule Site Migration (IST)"
+				type="datetime-local"
+				:min="new Date().toISOString().slice(0, 16)"
+				v-model="targetDateTime"
+			/>
 			<ErrorMessage
 				class="mt-4"
 				:message="
@@ -70,6 +79,7 @@ export default {
 		return {
 			targetBench: '',
 			targetServer: '',
+			targetDateTime: null,
 			checkForBench: true
 		};
 	},
@@ -145,6 +155,7 @@ export default {
 		resetValues() {
 			this.targetBench = '';
 			this.targetServer = '';
+			this.targetDateTime = null;
 			this.checkForBench = true;
 		}
 	}

@@ -4,6 +4,7 @@
 			title: 'Change Region'
 		}"
 		v-model="show"
+		@close="resetValues"
 	>
 		<template #body-content>
 			<LoadingIndicator
@@ -29,6 +30,14 @@
 						}))
 					"
 				/>
+				<FormControl
+					class="mt-4"
+					v-if="$resources.changeRegionOptions.data?.regions?.length > 0"
+					label="Schedule Site Migration (IST)"
+					type="datetime-local"
+					:min="new Date().toISOString().slice(0, 16)"
+					v-model="targetDateTime"
+				/>
 				<p class="mt-4 text-sm text-gray-500">
 					Changing region may cause a downtime between 30 minutes to 1 hour
 				</p>
@@ -47,7 +56,8 @@
 				@click="
 					$resources.changeRegion.submit({
 						name: site?.name,
-						cluster: selectedRegion
+						cluster: selectedRegion,
+						scheduled_datetime: targetDateTime
 					})
 				"
 			>
@@ -70,6 +80,7 @@ export default {
 	},
 	data() {
 		return {
+			targetDateTime: null,
 			selectedRegion: null
 		};
 	},
@@ -129,6 +140,12 @@ export default {
 					this.$emit('update:modelValue', false);
 				}
 			};
+		}
+	},
+	methods: {
+		resetValues() {
+			this.selectedRegion = null;
+			this.targetDateTime = null;
 		}
 	}
 };
