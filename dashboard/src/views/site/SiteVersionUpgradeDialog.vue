@@ -35,21 +35,16 @@
 					:options="privateReleaseGroups"
 					v-model="privateReleaseGroup"
 				/>
-				<div
-					v-if="site?.is_public || privateReleaseGroups.length > 0"
-					class="space-y-4"
-				>
-					<FormControl
-						class="mt-4"
-						v-if="privateReleaseGroups.length > 0"
-						label="Schedule Site Migration (IST)"
-						type="datetime-local"
-						:min="new Date().toISOString().slice(0, 16)"
-						v-model="targetDateTime"
-					/>
-				</div>
+				<FormControl
+					class="mt-4"
+					v-if="privateReleaseGroups.length > 0"
+					label="Schedule Site Migration (IST)"
+					type="datetime-local"
+					:min="new Date().toISOString().slice(0, 16)"
+					v-model="targetDateTime"
+				/>
 				<p v-else class="text-base">
-					There are no private release groups available to upgrade this site.
+					There are no private benches available to upgrade this site.
 				</p>
 				<ErrorMessage :message="$resources.versionUpgrade.error" />
 			</div>
