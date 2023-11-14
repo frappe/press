@@ -26,7 +26,7 @@ def execute():
 	for d in teams_with_unpaid_invoices[:20]:
 		team = frappe.get_doc("Team", d.team)
 
-		if team.free_account or team.payment_mode == "Partner Credits":
+		if team.payment_mode == "Partner Credits":
 			continue
 
 		# suspend sites
@@ -68,12 +68,13 @@ def get_teams_with_unpaid_invoices():
 			INNER JOIN `tabTeam` t ON t.name = i.team
 			INNER JOIN `tabSite` s ON s.team = t.name
 		WHERE
-			s.status NOT IN ('Archived', 'Suspended')
+			s.status IN ('Active', 'Inactive')
 			AND t.enabled = 1
 			AND t.free_account = 0
 			AND i.status = 'Unpaid'
 			AND i.docstatus < 2
 			AND i.type = 'Subscription'
+			AND s.free = 0
 	""",
 		as_dict=True,
 	)

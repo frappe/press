@@ -799,9 +799,17 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
+		dedicated_or_frappe_plans = frappe.get_all(
+			"Plan", {"enabled": 1, "dedicated_server_plan": 1, "is_frappe_plan": 1}, pluck="name"
+		)
 		return frappe.db.get_all(
 			"Site",
-			{"team": self.name, "status": ("in", ("Active", "Inactive")), "free": 0},
+			{
+				"team": self.name,
+				"status": ("in", ("Active", "Inactive")),
+				"free": 0,
+				"plan": ("not in", dedicated_or_frappe_plans),
+			},
 			pluck="name",
 		)
 

@@ -26,6 +26,8 @@
   "database_access",
   "monitor_access",
   "support_included",
+  "dedicated_server_plan",
+  "is_frappe_plan",
   "servers",
   "cluster",
   "instance_type",
@@ -193,11 +195,24 @@
    "fieldname": "support_included",
    "fieldtype": "Check",
    "label": "Support Included"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_server_plan",
+   "fieldtype": "Check",
+   "label": "Dedicated Server Plan"
+  },
+  {
+   "default": "0",
+   "description": "Enterprise, Central, Frappe Team etc",
+   "fieldname": "is_frappe_plan",
+   "fieldtype": "Check",
+   "label": "Is Frappe Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-14 11:07:21.911136",
+ "modified": "2023-11-14 10:33:12.531395",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",
