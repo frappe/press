@@ -388,6 +388,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "0.1",
    "fieldname": "memory_swap_max",
    "fieldtype": "Float",
    "label": "Memory Swap Max (GB)",
@@ -396,7 +397,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-13 23:53:16.197071",
+ "modified": "2023-11-14 11:15:20.783328",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
