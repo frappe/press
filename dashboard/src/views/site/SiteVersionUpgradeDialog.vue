@@ -37,7 +37,7 @@
 				/>
 				<FormControl
 					class="mt-4"
-					v-if="privateReleaseGroups.length > 0"
+					v-if="site.is_public || privateReleaseGroups.length > 0"
 					label="Schedule Site Migration (IST)"
 					type="datetime-local"
 					:min="new Date().toISOString().slice(0, 16)"
