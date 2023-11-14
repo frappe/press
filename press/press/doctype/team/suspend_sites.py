@@ -23,7 +23,7 @@ from press.utils import log_error
 def execute():
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
-	for d in teams_with_unpaid_invoices[:20]:
+	for d in teams_with_unpaid_invoices[:30]:
 		team = frappe.get_doc("Team", d.team)
 
 		if team.payment_mode == "Partner Credits":
