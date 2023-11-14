@@ -23,10 +23,10 @@ from press.utils import log_error
 def execute():
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
-	for d in teams_with_unpaid_invoices[:20]:
+	for d in teams_with_unpaid_invoices[:30]:
 		team = frappe.get_doc("Team", d.team)
 
-		if team.free_account or team.payment_mode == "Partner Credits":
+		if team.payment_mode == "Partner Credits":
 			continue
 
 		# suspend sites
@@ -59,21 +59,32 @@ def suspend_sites_and_send_email(team):
 
 def get_teams_with_unpaid_invoices():
 	"""Find out teams which has active sites and unpaid invoices and not a free account"""
-	return frappe.db.sql(
-		"""
-		SELECT DISTINCT
-			i.team
-		FROM
-			`tabInvoice` i
-			INNER JOIN `tabTeam` t ON t.name = i.team
-			INNER JOIN `tabSite` s ON s.team = t.name
-		WHERE
-			s.status NOT IN ('Archived', 'Suspended')
-			AND t.enabled = 1
-			AND t.free_account = 0
-			AND i.status = 'Unpaid'
-			AND i.docstatus < 2
-			AND i.type = 'Subscription'
-	""",
-		as_dict=True,
+	dedicated_or_frappe_plans = frappe.get_all(
+		"Plan", {"enabled": 1, "dedicated_server_plan": 1, "is_frappe_plan": 1}, pluck="name"
 	)
+
+	invoice = frappe.qb.DocType("Invoice")
+	team = frappe.qb.DocType("Team")
+	site = frappe.qb.DocType("Site")
+
+	query = (
+		frappe.qb.from_(invoice)
+		.inner_join(team)
+		.on(invoice.team == team.name)
+		.inner_join(site)
+		.on(site.team == team.name)
+		.where(
+			(site.status).isin(["Active", "Inactive"])
+			& (team.enabled == 1)
+			& (team.free_account == 0)
+			& (invoice.status == "Unpaid")
+			& (invoice.docstatus < 2)
+			& (invoice.type == "Subscription")
+			& (site.free == 0)
+			& (site.plan).notin(dedicated_or_frappe_plans)
+		)
+		.select(invoice.team)
+		.distinct()
+	)
+
+	return query.run(as_dict=True)
