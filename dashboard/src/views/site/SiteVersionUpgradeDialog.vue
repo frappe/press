@@ -43,7 +43,10 @@
 					:min="new Date().toISOString().slice(0, 16)"
 					v-model="targetDateTime"
 				/>
-				<p v-else class="text-base">
+				<p
+					v-if="!site.is_public && !privateReleaseGroups.length"
+					class="text-base"
+				>
 					There are no private benches available to upgrade this site.
 				</p>
 				<ErrorMessage :message="$resources.versionUpgrade.error" />
