@@ -799,9 +799,17 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
-		dedicated_or_frappe_plans = frappe.get_all(
-			"Plan", {"enabled": 1, "dedicated_server_plan": 1, "is_frappe_plan": 1}, pluck="name"
-		)
+		plan = frappe.qb.DocType("Plan")
+		query = (
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where(
+				(plan.enabled == 1)
+				& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
+			)
+		).run(as_dict=True)
+		dedicated_or_frappe_plans = [d.name for d in query]
+
 		return frappe.db.get_all(
 			"Site",
 			{

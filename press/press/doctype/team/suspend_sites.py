@@ -59,9 +59,16 @@ def suspend_sites_and_send_email(team):
 
 def get_teams_with_unpaid_invoices():
 	"""Find out teams which has active sites and unpaid invoices and not a free account"""
-	dedicated_or_frappe_plans = frappe.get_all(
-		"Plan", {"enabled": 1, "dedicated_server_plan": 1, "is_frappe_plan": 1}, pluck="name"
-	)
+	plan = frappe.qb.DocType("Plan")
+	query = (
+		frappe.qb.from_(plan)
+		.select(plan.name)
+		.where(
+			(plan.enabled == 1)
+			& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
+		)
+	).run(as_dict=True)
+	dedicated_or_frappe_plans = [d.name for d in query]
 
 	invoice = frappe.qb.DocType("Invoice")
 	team = frappe.qb.DocType("Team")
