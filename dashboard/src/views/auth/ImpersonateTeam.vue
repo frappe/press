@@ -8,7 +8,7 @@ export default {
 	async mounted() {
 		if (this.team) {
 			try {
-				await this.$account.switchTeam(this.team);
+				await this.$account.switchToTeam(this.team);
 				if (window.history.length === 1) {
 					this.$router.replace('/');
 				} else {
