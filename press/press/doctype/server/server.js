@@ -7,6 +7,9 @@ frappe.ui.form.on('Server', {
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
+
+		press.set_hostname_abbreviation(frm);
+
 		[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, !frm.doc.is_server_prepared],
@@ -159,5 +162,9 @@ frappe.ui.form.on('Server', {
 				);
 			}
 		});
+	},
+
+	hostname: function (frm) {
+		press.set_hostname_abbreviation(frm);
 	},
 });

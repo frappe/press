@@ -1,3 +1,28 @@
+frappe.provide('press');
+frappe.provide('press.utils');
+
+$.extend(press, {
+	set_hostname_abbreviation: function (frm) {
+		if (!frm.doc.hostname_abbreviation && frm.doc.hostname) {
+			let parts = frm.doc.hostname.split('-');
+
+			let first_part = parts[0];
+
+			let sub_parts_abbr = $.map(parts.slice(1), function (p) {
+				return p ? p.substr(0, 1) : null;
+			}).join('');
+
+			if (sub_parts_abbr) {
+				abbr = first_part + '-' + sub_parts_abbr;
+			} else {
+				abbr = first_part;
+			}
+
+			frm.set_value('hostname_abbreviation', abbr);
+		}
+	},
+});
+
 function clear_block(frm, block) {
 	clear_wrapper(frm.get_field(block).$wrapper);
 }

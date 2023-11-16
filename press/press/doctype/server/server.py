@@ -39,6 +39,19 @@ class BaseServer(Document):
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
+		if not self.hostname_abbreviation:
+			self.set_hostname_abbreviation()
+
+	def set_hostname_abbreviation(self):
+		hostname_parts = self.hostname.split("-")
+
+		abbr = hostname_parts[0]
+
+		for part in hostname_parts[1:]:
+			abbr += part[0]
+
+		self.hostname_abbreviation = abbr
+
 	def after_insert(self):
 		if self.ip:
 			if (
