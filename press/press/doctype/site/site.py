@@ -56,6 +56,7 @@ class Site(Document):
 
 	def get_doc(self, doc):
 		from press.api.site import current_plan
+
 		doc["current_plan"] = current_plan(self.name)
 		return doc
 
