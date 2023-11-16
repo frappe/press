@@ -551,7 +551,7 @@ def create_razorpay_order(amount):
 
 	amount = round(amount, 2)
 	data = {
-		"amount": amount * 100,
+		"amount": int(amount * 100),
 		"currency": team.currency,
 		"notes": {
 			"Description": "Order for Frappe Cloud Prepaid Credits",
