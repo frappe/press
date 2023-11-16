@@ -314,10 +314,10 @@ class Site(Document):
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
-		agent.reinstall_site(self)
+		job = agent.reinstall_site(self)
 		self.status = "Pending"
 		self.save()
-		return frappe.get_value("Agent Job", {"site": self.name}, "name")
+		return job.name
 
 	@frappe.whitelist()
 	def migrate(self, skip_failing_patches=False):
@@ -388,10 +388,10 @@ class Site(Document):
 
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
-		agent.restore_site(self, skip_failing_patches=skip_failing_patches)
+		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
-		return frappe.get_value("Agent Job", {"site": self.name}, "name")
+		return job.name
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False):
