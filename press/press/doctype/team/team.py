@@ -968,6 +968,12 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
+	if frappe.db.exists(
+		"Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}
+	):
+		# ignore creating if already allocated
+		return
+
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
 	gst = float(metadata.get("gst", 0))
