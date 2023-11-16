@@ -307,6 +307,7 @@ class Site(Document):
 		agent.reinstall_site(self)
 		self.status = "Pending"
 		self.save()
+		return frappe.get_value("Agent Job", {"site": self.name}, "name")
 
 	@frappe.whitelist()
 	def migrate(self, skip_failing_patches=False):
@@ -380,6 +381,7 @@ class Site(Document):
 		agent.restore_site(self, skip_failing_patches=skip_failing_patches)
 		self.status = "Pending"
 		self.save()
+		return frappe.get_value("Agent Job", {"site": self.name}, "name")
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False):

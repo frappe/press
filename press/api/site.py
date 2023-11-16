@@ -1166,7 +1166,7 @@ def archive(name, force):
 @frappe.whitelist()
 @protected("Site")
 def reinstall(name):
-	frappe.get_doc("Site", name).reinstall()
+	return frappe.get_doc("Site", name).reinstall()
 
 
 @frappe.whitelist()
@@ -1190,7 +1190,7 @@ def restore(name, files, skip_failing_patches=False):
 	site.remote_private_file = files["private"]
 	site.save()
 	site.reload()
-	site.restore_site(skip_failing_patches=skip_failing_patches)
+	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
