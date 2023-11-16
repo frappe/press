@@ -5,6 +5,7 @@
 from functools import cached_property
 from itertools import chain
 import frappe
+from frappe.utils import comma_and
 import json
 from typing import List
 from frappe.core.doctype.version.version import get_diff
@@ -518,6 +519,7 @@ class ReleaseGroup(Document):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
+	@frappe.whitelist()
 	def change_app_branch(self, app: str, to_branch: str) -> None:
 		current_app_source = self.get_app_source(app)
 
@@ -630,6 +632,39 @@ class ReleaseGroup(Document):
 		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
 		for bench in benches:
 			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+
+	@frappe.whitelist()
+	def remove_app(self, app: str):
+		"""Remove app from release group"""
+
+		sites = frappe.get_all(
+			"Site", filters={"group": self.name, "status": ("!=", "Archived")}, pluck="name"
+		)
+
+		site_apps = frappe.get_all(
+			"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
+		)
+
+		if site_apps:
+			installed_on_sites = ", ".join(
+				frappe.bold(site_app["parent"]) for site_app in site_apps
+			)
+			frappe.throw(
+				"Cannot remove this app, it is already installed on the"
+				f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
+			)
+
+		app_doc_to_remove = find(self.apps, lambda x: x.app == app)
+		if app_doc_to_remove:
+			self.remove(app_doc_to_remove)
+
+		self.save()
+		return app
+
+	@frappe.whitelist()
+	def fetch_latest_app_update(self, app: str):
+		app_source = self.get_app_source(app)
+		app_source.create_release(force=True)
 
 
 def new_release_group(
