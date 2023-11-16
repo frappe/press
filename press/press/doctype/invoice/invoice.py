@@ -232,24 +232,32 @@ class Invoice(Document):
 		stripe.Invoice.finalize_invoice(self.stripe_invoice_id)
 
 	def validate_duplicate(self):
-		if self.type != "Subscription":
-			return
-
-		if self.period_start and self.period_end and self.is_new():
-			query = (
-				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
-				f" `period_end` or '{self.period_end}' between `period_start` and"
-				" `period_end`)"
-			)
-
-			intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
-
-			if intersecting_invoices:
+		if self.type == "Prepaid Credits":
+			if frappe.db.exists(
+				"Invoice",
+				{"stripe_payment_intent_id": self.stripe_payment_intent_id, "status": "Paid"},
+			):
 				frappe.throw(
-					f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
+					"There are duplicate invoices with same strip_payment_intent_id",
 					frappe.DuplicateEntryError,
 				)
+
+		if self.type == "Subscription":
+			if self.period_start and self.period_end and self.is_new():
+				query = (
+					f"select `name` from `tabInvoice` where team = '{self.team}' and"
+					f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
+					f" `period_end` or '{self.period_end}' between `period_start` and"
+					" `period_end`)"
+				)
+
+				intersecting_invoices = [x[0] for x in frappe.db.sql(query, as_list=True)]
+
+				if intersecting_invoices:
+					frappe.throw(
+						f"There are invoices with intersecting periods:{', '.join(intersecting_invoices)}",
+						frappe.DuplicateEntryError,
+					)
 
 	def validate_team(self):
 		team = frappe.get_cached_doc("Team", self.team)
