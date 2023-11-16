@@ -17,11 +17,13 @@
 			</div>
 		</div>
 		<Toaster position="top-right" />
+		<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 	</div>
 </template>
 
 <script setup>
 import { Toaster } from 'vue-sonner';
+import { dialogs } from './utils/components';
 </script>
 
 <style src="../src/assets/style.css"></style>

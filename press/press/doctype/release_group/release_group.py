@@ -36,8 +36,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
-	def get_doc(self):
-		return {"title": self.title}
+	whitelisted_fields = ["title"]
 
 	def validate(self):
 		self.validate_title()

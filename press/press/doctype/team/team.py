@@ -27,6 +27,33 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
+	whitelisted_methods = [
+		"enabled",
+		"team_title",
+		"user",
+		"partner_email",
+		"billing_team",
+		"team_members",
+		"child_team_members",
+		"notify_email",
+		"country",
+		"currency",
+		"payment_mode",
+		"default_payment_method",
+	]
+
+	def get_doc(self, doc):
+		user = frappe.db.get_value(
+			"User",
+			self.user,
+			["first_name", "last_name", "user_image", "user_type"],
+			as_dict=True,
+		)
+		doc.balance = self.get_balance()
+		doc.user = user
+		doc.is_desk_user = user.user_type == "System User"
+		return doc
+
 	def onload(self):
 		load_address_and_contact(self)
 

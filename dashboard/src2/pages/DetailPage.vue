@@ -1,6 +1,6 @@
 <template>
-	<div>
-		<Header>
+	<Header class="sticky top-0 z-10 bg-white">
+		<div class="flex items-center space-x-2">
 			<Breadcrumbs
 				:items="[
 					{ label: object.list.title, route: object.list.route },
@@ -13,18 +13,26 @@
 					}
 				]"
 			/>
-		</Header>
-		<div>
-			<FTabs v-model="currentTab" :tabs="object.detail.tabs">
-				<template #default="{ tab }">
-					<router-view
-						:tab="tab"
-						:document="$resources.document"
-						v-if="$resources.document?.doc"
-					/>
-				</template>
-			</FTabs>
+			<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
 		</div>
+		<div class="flex items-center space-x-2" v-if="$resources.document?.doc">
+			<ActionButton
+				v-for="button in actions"
+				v-bind="button"
+				:key="button.label"
+			/>
+		</div>
+	</Header>
+	<div>
+		<FTabs v-model="currentTab" :tabs="object.detail.tabs">
+			<template #default="{ tab }">
+				<router-view
+					:tab="tab"
+					:document="$resources.document"
+					v-if="$resources.document?.doc"
+				/>
+			</template>
+		</FTabs>
 	</div>
 </template>
 
@@ -81,6 +89,30 @@ export default {
 		title() {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
+		},
+		badge() {
+			if (this.object.detail.statusBadge) {
+				return this.object.detail.statusBadge({
+					documentResource: this.$resources.document
+				});
+			}
+			return null;
+		},
+		actions() {
+			if (this.object.detail.actions && this.$resources.document?.doc) {
+				let actions = this.object.detail.actions({
+					documentResource: this.$resources.document
+				});
+				return actions.filter(action => {
+					if (action.condition) {
+						return action.condition({
+							documentResource: this.$resources.document
+						});
+					}
+					return true;
+				});
+			}
+			return [];
 		}
 	}
 };
