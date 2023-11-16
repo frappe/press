@@ -127,6 +127,8 @@
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
+  "section_break_rgly",
+  "docker_remote_builder",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1027,6 +1029,11 @@
    "label": "AWS Secret Access Key"
   },
   {
+   "fieldname": "docker_remote_builder",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder"
+  },
+  {
    "fieldname": "invoicing_column",
    "fieldtype": "Column Break",
    "label": "Invoicing"
@@ -1035,11 +1042,15 @@
    "fieldname": "gst_percentage",
    "fieldtype": "Float",
    "label": "GST Percentage"
+  },
+  {
+   "fieldname": "section_break_rgly",
+   "fieldtype": "Section Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-11-08 17:03:04.819861",
+ "modified": "2023-11-16 17:44:48.449246",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
