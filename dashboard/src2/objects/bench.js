@@ -180,6 +180,7 @@ export default {
 			{
 				label: 'Deploys',
 				route: 'deploys',
+				icon: icon('package'),
 				type: 'list',
 				list: {
 					doctype: 'Deploy Candidate',
