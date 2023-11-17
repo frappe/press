@@ -300,7 +300,7 @@ export default {
 			{
 				label: 'Config',
 				icon: icon('code'),
-				route: 'config',
+				route: 'bench-config',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
 					import('../../src/views/bench/BenchConfig.vue')
