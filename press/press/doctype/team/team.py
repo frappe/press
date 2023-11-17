@@ -346,6 +346,11 @@ class Team(Document):
 		After enabling partner privileges, new invoice should be created
 		to track the partner achivements
 		"""
+		# check if any active user with an invoice
+		if not frappe.get_all(
+			"Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"
+		):
+			return
 		today = frappe.utils.getdate()
 		current_invoice = frappe.db.get_value(
 			"Invoice",
@@ -357,6 +362,9 @@ class Team(Document):
 			},
 			"name",
 		)
+
+		if not current_invoice:
+			return
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
 
