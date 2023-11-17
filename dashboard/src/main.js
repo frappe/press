@@ -84,7 +84,8 @@ if (import.meta.env.DEV) {
 app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
-		const errorMessage = error.message || error.messages?.join('\n');
+		let errorMessage = error.message;
+		if (error.messages) errorMessage = error.messages.join('\n');
 		notify({
 			icon: 'x',
 			title: 'An error occurred',

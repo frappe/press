@@ -263,7 +263,6 @@ class Bench(Document):
 			{
 				"bench": self.name,
 				"status": ("in", ("Active", "Inactive", "Suspended")),
-				"skip_auto_updates": False,
 			},
 			pluck="name",
 		)

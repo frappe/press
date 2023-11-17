@@ -94,12 +94,16 @@ class Telegram:
 			doctype, name, action, key = arguments
 			commands = {"get": get_value, "execute": execute}
 			return commands.get(action, what)(frappe.unscrub(doctype), name, key)
-		elif len(arguments) == 5:
-			doctype, name, action, key, value = arguments
+		elif len(arguments) >= 5:
+			doctype, name, action, key, *values = arguments
 			commands = {
 				"set": set_value,
+				"execute": execute,
 			}
-			return commands.get(action, what)(frappe.unscrub(doctype), name, key, value)
+			if action == "set" and len(values) == 1:
+				return commands.get(action, what)(frappe.unscrub(doctype), name, key, values[0])
+			else:
+				return commands.get(action, what)(frappe.unscrub(doctype), name, key, *values)
 		return what()
 
 
@@ -123,7 +127,7 @@ def execute(doctype, name, method, *args):
 	# return "EXECUTE", doctype, name, method
 	try:
 		document = frappe.get_doc(doctype, name)
-		return document.run_method(method)
+		return document.run_method(method, *args)
 	except Exception:
 		return f"```{frappe.get_traceback()}```"
 
@@ -141,6 +145,7 @@ HELP_MESSAGE = """Try one of these
 doctype name execute method
 doctype name get field
 doctype name set field value
+doctype name execute method argument1 argument2 ...
 
 doctype = site|bench|server|proxy-server|database-server
 
@@ -150,4 +155,6 @@ server f17.frappe.cloud execute reboot```
 site docs.frappe.cloud get status```
 ```
 bench docs.frappe.cloud set auto_scale_workers 0```
+```
+server f17.frappe.cloud execute increase_disk_size 25```
 """

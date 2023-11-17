@@ -74,7 +74,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-10-03 17:11:39.766483",
+  "modified": "2023-11-17 17:25:50.325082",
   "name": "Resize Server",
   "steps": [
    {
@@ -115,6 +115,14 @@
     "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
     "wait_until_true": 1
    },
    {
