@@ -43,7 +43,7 @@ class BaseServer(Document):
 			self._set_hostname_abbreviation()
 
 	def _set_hostname_abbreviation(self):
-		self.set_hostname_abbreviation = get_hostname_abbreviation()
+		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
 		if self.ip:
