@@ -4,8 +4,8 @@ import dayjs from '../utils/dayjs';
 import { duration } from '../utils/format';
 import { icon, renderDialog } from '../utils/components';
 import teamResource from '../data/team';
-import ChangeAppBranchDialog from '../components/ChangeAppBranchDialog.vue';
-import AddAppDialog from '../components/AddAppDialog.vue';
+import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
+import AddAppDialog from '../components/bench/AddAppDialog.vue';
 
 export default {
 	doctype: 'Release Group',
