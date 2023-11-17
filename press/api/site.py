@@ -1753,7 +1753,7 @@ def change_server_bench_options(name, server):
 		.where(Bench.server == server)
 		.where(Bench.status == "Active")
 		.where(ReleaseGroup.team == team)
-		.where(Bench.candidate > site_candidate)
+		.where(Bench.candidate >= site_candidate)
 		.where(ReleaseGroup.version == site_version)
 		.distinct()
 	).run(as_dict=True)
