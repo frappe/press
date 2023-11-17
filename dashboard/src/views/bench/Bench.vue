@@ -103,6 +103,21 @@ export default {
 				url: 'press.api.bench.update_all_sites',
 				params: {
 					name: this.benchName
+				},
+				onSuccess() {
+					notify({
+						title: 'Switched Team',
+						message: `Switched to ${this.bench.team}`,
+						icon: 'check',
+						color: 'green'
+					});
+				},
+				onError(e) {
+					notify({
+						title: e,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}
@@ -192,12 +207,6 @@ export default {
 					condition: () => this.$account.user.user_type == 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
-						notify({
-							title: 'Switched Team',
-							message: `Switched to ${this.bench.team}`,
-							icon: 'check',
-							color: 'green'
-						});
 					}
 				},
 				{
