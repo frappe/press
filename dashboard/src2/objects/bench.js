@@ -1,4 +1,4 @@
-import { h } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import dayjs from '../utils/dayjs';
 import { duration } from '../utils/format';
@@ -296,6 +296,16 @@ export default {
 						}
 					]
 				}
+			},
+			{
+				label: 'Config',
+				icon: icon('code'),
+				route: 'config',
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../../src/views/bench/BenchConfig.vue')
+				),
+				props: group => ({ bench: group.doc })
 			}
 		],
 		actions(context) {
