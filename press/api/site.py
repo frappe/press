@@ -1209,7 +1209,7 @@ def archive(name, force):
 @frappe.whitelist()
 @protected("Site")
 def reinstall(name):
-	frappe.get_doc("Site", name).reinstall()
+	return frappe.get_doc("Site", name).reinstall()
 
 
 @frappe.whitelist()
@@ -1233,7 +1233,7 @@ def restore(name, files, skip_failing_patches=False):
 	site.remote_private_file = files["private"]
 	site.save()
 	site.reload()
-	site.restore_site(skip_failing_patches=skip_failing_patches)
+	return site.restore_site(skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -1693,9 +1693,14 @@ def change_region_options(name):
 @protected("Site")
 def change_region(name, cluster, scheduled_datetime=None):
 	group = frappe.db.get_value("Site", name, "group")
-	bench, server = frappe.db.get_value(
+	bench_vals = frappe.db.get_value(
 		"Bench", {"group": group, "cluster": cluster}, ["name", "server"]
 	)
+
+	if bench_vals is None:
+		frappe.throw(f"Bench {group} does not have an existing deploy in {cluster}")
+
+	bench, server = bench_vals
 
 	site_migration = frappe.get_doc(
 		{
@@ -1796,7 +1801,7 @@ def change_server_bench_options(name, server):
 		.where(Bench.server == server)
 		.where(Bench.status == "Active")
 		.where(ReleaseGroup.team == team)
-		.where(Bench.candidate > site_candidate)
+		.where(Bench.candidate >= site_candidate)
 		.where(ReleaseGroup.version == site_version)
 		.distinct()
 	).run(as_dict=True)

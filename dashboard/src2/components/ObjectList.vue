@@ -2,9 +2,23 @@
 	<div>
 		<div class="flex">
 			<div>
-				<TextInput placeholder="Search" class="w-[20rem]" v-model="searchQuery">
+				<TextInput
+					placeholder="Search"
+					class="w-[20rem]"
+					:debounce="500"
+					v-model="searchQuery"
+				>
 					<template #prefix>
 						<i-lucide-search class="h-4 w-4 text-gray-500" />
+					</template>
+					<template #suffix>
+						<span class="text-sm text-gray-500" v-if="searchQuery">
+							{{
+								filteredRows.length === 0
+									? 'No results'
+									: `${filteredRows.length} of ${rows.length}`
+							}}
+						</span>
 					</template>
 				</TextInput>
 			</div>
@@ -15,11 +29,7 @@
 					</template>
 					Refresh
 				</Button>
-				<Button v-if="primaryAction" v-bind="primaryAction.props">
-					<template v-if="primaryAction.icon" #prefix>
-						<FeatherIcon :name="primaryAction.icon" class="h-4 w-4" />
-					</template>
-				</Button>
+				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
 		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
@@ -70,12 +80,15 @@
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right">
-				<Button @click="list.next()" v-if="list.next && list.hasNextPage">
+				<Button
+					@click="list.next()"
+					v-if="list.next && list.hasNextPage"
+					:loading="list.list.loading"
+				>
 					Load more
 				</Button>
 			</div>
 		</div>
-		<component v-for="component in components" :is="component" />
 	</div>
 </template>
 <script>
@@ -92,7 +105,7 @@ import {
 	FeatherIcon,
 	debounce
 } from 'frappe-ui';
-import { isVNode } from 'vue';
+import { onDocUpdate } from 'frappe-ui/src/resources/realtime';
 
 export default {
 	name: 'ObjectList',
@@ -111,36 +124,8 @@ export default {
 	},
 	data() {
 		return {
-			searchQuery: '',
-			filteredRows: [],
-			components: []
+			searchQuery: ''
 		};
-	},
-	watch: {
-		searchQuery: {
-			immediate: true,
-			handler: debounce(function (query) {
-				if (!query) {
-					this.filteredRows = this.rows;
-					return;
-				}
-				this.filteredRows = this.rows.filter(row => {
-					let values = this.options.columns.map(column => {
-						let value = row[column.fieldname];
-						if (column.format) {
-							value = column.format(value, row);
-						}
-						return value;
-					});
-					for (let value of values) {
-						if (value && value.toLowerCase().includes(query.toLowerCase())) {
-							return true;
-						}
-					}
-					return false;
-				});
-			}, 300)
-		}
 	},
 	resources: {
 		list() {
@@ -149,7 +134,11 @@ export default {
 			}
 			return {
 				type: 'list',
-				cache: ['ObjectList', this.options.doctype || this.options.url],
+				cache: [
+					'ObjectList',
+					this.options.doctype || this.options.url,
+					this.options.filters
+				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
 				fields: [
@@ -159,15 +148,14 @@ export default {
 				],
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
-				auto: true,
-				onData: () => {
-					this.filteredRows = this.rows;
-				},
-				onSuccess: () => {
-					this.filteredRows = this.rows;
-				}
+				auto: true
 			};
 		}
+	},
+	mounted() {
+		onDocUpdate(this.$socket, this.list.doctype, () => {
+			this.list.reload();
+		});
 	},
 	computed: {
 		list() {
@@ -198,27 +186,31 @@ export default {
 			let data = this.list.data || [];
 			return data;
 		},
+		filteredRows() {
+			if (!this.searchQuery) return this.rows;
+			let query = this.searchQuery.toLowerCase();
+
+			return this.rows.filter(row => {
+				let values = this.options.columns.map(column => {
+					let value = row[column.fieldname];
+					if (column.format) {
+						value = column.format(value, row);
+					}
+					return value;
+				});
+				for (let value of values) {
+					if (value && value.toLowerCase?.().includes(query)) {
+						return true;
+					}
+				}
+				return false;
+			});
+		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
 			if (!props) return null;
-
-			let { icon, ...rest } = props;
-			return {
-				icon,
-				props: {
-					variant: 'solid',
-					...rest,
-					onClick: () => {
-						if (props.onClick) {
-							let result = props.onClick(this.context);
-							if (isVNode(result)) {
-								this.components.push(result);
-							}
-						}
-					}
-				}
-			};
+			return props;
 		},
 		context() {
 			return {

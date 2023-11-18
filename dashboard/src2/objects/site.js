@@ -1,11 +1,15 @@
-import { defineAsyncComponent, h } from 'vue';
-import { FeatherIcon, frappeRequest } from 'frappe-ui';
+import { defineAsyncComponent, h, ref } from 'vue';
+import { frappeRequest } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { formatBytes, formatDuration } from '../utils/format';
+import { bytes, duration } from '../utils/format';
 import dayjs from '../utils/dayjs';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
+import { confirmDialog, renderDialog, icon } from '../utils/components';
+import teamResource from '../data/team';
+import router from '../router';
+import BadgeDollarSign from '~icons/lucide/badge-dollar-sign';
 
 export default {
 	doctype: 'Site',
@@ -25,6 +29,7 @@ export default {
 		migrate: 'migrate',
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
+		loginAsAdmin: 'login',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
 		resetSiteUsage: 'reset_site_usage',
@@ -93,12 +98,12 @@ export default {
 		primaryAction({ listResource: sites }) {
 			return {
 				label: 'New Site',
-				icon: 'plus',
+				variant: 'solid',
+				slots: {
+					prefix: icon('plus')
+				},
 				onClick() {
-					let NewSiteDialog = defineAsyncComponent(() =>
-						import('../components/NewSiteDialog.vue')
-					);
-					return h(NewSiteDialog);
+					router.push({ name: 'NewSite' });
 				}
 			};
 		}
@@ -106,10 +111,15 @@ export default {
 	detail: {
 		titleField: 'name',
 		route: '/sites/:name',
+		statusBadge({ documentResource: site }) {
+			return {
+				label: site.doc.status
+			};
+		},
 		tabs: [
 			{
 				label: 'Analytics',
-				icon: () => h(FeatherIcon, { name: 'bar-chart-2' }),
+				icon: icon('bar-chart-2'),
 				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
@@ -121,7 +131,7 @@ export default {
 			},
 			{
 				label: 'Apps',
-				icon: () => h(FeatherIcon, { name: 'grid' }),
+				icon: icon('grid'),
 				route: 'apps',
 				type: 'list',
 				list: {
@@ -134,26 +144,27 @@ export default {
 						{
 							label: 'App',
 							fieldname: 'app',
-							width: '12rem'
+							width: 1
 						},
 						{
 							label: 'Branch',
 							fieldname: 'branch',
 							type: 'Badge',
-							width: '12rem'
+							width: 1
 						},
 						{
 							label: 'Commit',
 							fieldname: 'hash',
 							type: 'Badge',
-							width: '12rem',
+							width: 1,
 							format(value) {
 								return value.slice(0, 7);
 							}
 						},
 						{
 							label: 'Commit Message',
-							fieldname: 'commit_message'
+							fieldname: 'commit_message',
+							width: '34rem'
 						}
 					],
 					resource({ documentResource: site }) {
@@ -173,83 +184,88 @@ export default {
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
-							icon: 'plus',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
 							onClick() {
-								return h(
-									GenericDialog,
-									{
-										options: {
-											title: 'Install app on your site',
-											size: '4xl'
-										}
-									},
-									{
-										default: () =>
-											h(ObjectList, {
-												options: {
-													label: 'App',
-													fieldname: 'app',
-													fieldtype: 'ListSelection',
-													columns: [
-														{
-															label: 'Title',
-															fieldname: 'title',
-															class: 'font-medium',
-															width: 2
-														},
-														{
-															label: 'Repo',
-															fieldname: 'repository_owner',
-															class: 'text-gray-600'
-														},
-														{
-															label: 'Branch',
-															fieldname: 'branch',
-															class: 'text-gray-600'
-														},
-														{
-															label: '',
-															fieldname: '',
-															align: 'right',
-															type: 'Button',
-															width: '5rem',
-															Button(row) {
-																return {
-																	label: 'Install',
-																	onClick() {
-																		if (site.installApp.loading) return;
-																		toast.promise(
-																			site.installApp.submit({
-																				app: row.name
-																			}),
-																			{
-																				loading: 'Installing app...',
-																				success: () =>
-																					'App will be installed shortly',
-																				error: e => {
-																					return e.messages.length
-																						? e.messages.join('\n')
-																						: e.message;
-																				}
-																			}
-																		);
-																	}
-																};
-															}
-														}
-													],
-													resource() {
-														return {
-															url: 'press.api.site.available_apps',
-															params: {
-																name: site.doc.name
+								renderDialog(
+									h(
+										GenericDialog,
+										{
+											options: {
+												title: 'Install app on your site',
+												size: '4xl'
+											}
+										},
+										{
+											default: () =>
+												h(ObjectList, {
+													options: {
+														label: 'App',
+														fieldname: 'app',
+														fieldtype: 'ListSelection',
+														columns: [
+															{
+																label: 'Title',
+																fieldname: 'title',
+																class: 'font-medium',
+																width: 2
 															},
-															auto: true
-														};
+															{
+																label: 'Repo',
+																fieldname: 'repository_owner',
+																class: 'text-gray-600'
+															},
+															{
+																label: 'Branch',
+																fieldname: 'branch',
+																class: 'text-gray-600'
+															},
+															{
+																label: '',
+																fieldname: '',
+																align: 'right',
+																type: 'Button',
+																width: '5rem',
+																Button(row) {
+																	return {
+																		label: 'Install',
+																		onClick() {
+																			if (site.installApp.loading) return;
+																			toast.promise(
+																				site.installApp.submit({
+																					app: row.app
+																				}),
+																				{
+																					loading: 'Installing app...',
+																					success: () =>
+																						'App will be installed shortly',
+																					error: e => {
+																						return e.messages.length
+																							? e.messages.join('\n')
+																							: e.message;
+																					}
+																				}
+																			);
+																		}
+																	};
+																}
+															}
+														],
+														resource() {
+															return {
+																url: 'press.api.site.available_apps',
+																params: {
+																	name: site.doc.name
+																},
+																auto: true
+															};
+														}
 													}
-												}
-											})
-									}
+												})
+										}
+									)
 								);
 							}
 						};
@@ -258,7 +274,7 @@ export default {
 			},
 			{
 				label: 'Domains',
-				icon: () => h(FeatherIcon, { name: 'external-link' }),
+				icon: icon('external-link'),
 				route: 'domains',
 				type: 'list',
 				list: {
@@ -293,14 +309,19 @@ export default {
 					primaryAction({ listResource: domains, documentResource: site }) {
 						return {
 							label: 'Add Domain',
-							icon: 'plus',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
 							onClick() {
-								return h(AddDomainDialog, {
-									site: site.doc,
-									onDomainAdded() {
-										domains.reload();
-									}
-								});
+								renderDialog(
+									h(AddDomainDialog, {
+										site: site.doc,
+										onDomainAdded() {
+											domains.reload();
+										}
+									})
+								);
 							}
 						};
 					},
@@ -333,7 +354,7 @@ export default {
 			},
 			{
 				label: 'Backups',
-				icon: () => h(FeatherIcon, { name: 'archive' }),
+				icon: icon('archive'),
 				route: 'backups',
 				type: 'list',
 				list: {
@@ -370,7 +391,7 @@ export default {
 							fieldname: 'database_size',
 							width: 0.5,
 							format(value) {
-								return value ? formatBytes(value) : '';
+								return value ? bytes(value) : '';
 							}
 						},
 						{
@@ -378,7 +399,7 @@ export default {
 							fieldname: 'public_size',
 							width: 0.5,
 							format(value) {
-								return value ? formatBytes(value) : '';
+								return value ? bytes(value) : '';
 							}
 						},
 						{
@@ -386,7 +407,7 @@ export default {
 							fieldname: 'private_size',
 							width: 0.5,
 							format(value) {
-								return value ? formatBytes(value) : '';
+								return value ? bytes(value) : '';
 							}
 						},
 						{
@@ -453,6 +474,10 @@ export default {
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
 							label: 'Schedule Backup',
+							variant: 'solid',
+							slots: {
+								prefix: icon('upload-cloud')
+							},
 							loading: backups.insert.loading,
 							onClick() {
 								return backups.insert.submit(
@@ -478,7 +503,7 @@ export default {
 			},
 			{
 				label: 'Activity',
-				icon: () => h(FeatherIcon, { name: 'activity' }),
+				icon: icon('activity'),
 				route: 'activity',
 				type: 'list',
 				list: {
@@ -515,7 +540,7 @@ export default {
 			},
 			{
 				label: 'Jobs',
-				icon: () => h(FeatherIcon, { name: 'truck' }),
+				icon: icon('truck'),
 				// highlight: route =>
 				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
 				route: 'jobs',
@@ -553,7 +578,7 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
-							format: formatDuration
+							format: duration
 						},
 						{
 							label: 'Start Time',
@@ -576,7 +601,103 @@ export default {
 					]
 				}
 			}
-		]
+		],
+		actions(context) {
+			let { documentResource: site } = context;
+			let team = teamResource.data;
+			return [
+				{
+					label: `Current Plan: ${site.doc.plan}`,
+					slots: {
+						prefix: () => h(BadgeDollarSign)
+					},
+					onClick() {
+						let SitePlansDialog = defineAsyncComponent(() =>
+							import('../../src/views/site/SitePlansDialog.vue')
+						);
+						renderDialog(
+							h(SitePlansDialog, {
+								site: site.doc,
+								plan: site.doc.current_plan
+							})
+						);
+					}
+				},
+				{
+					label: 'Visit Site',
+					slots: {
+						prefix: icon('external-link')
+					},
+					condition: () => site.doc.status === 'Active',
+					onClick() {
+						window.open(`https://${site.name}`, '_blank');
+					}
+				},
+				{
+					label: 'Options',
+					button: {
+						label: 'Options',
+						slots: {
+							default: icon('more-horizontal')
+						}
+					},
+					context,
+					options: [
+						{
+							label: 'View in Desk',
+							icon: 'external-link',
+							condition: () => team.is_desk_user,
+							onClick: () => {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
+							label: 'Manage Bench',
+							icon: 'tool',
+							condition: () => site.doc?.group,
+							onClick: () => {
+								router.push(`/benches/${site.doc?.group}`);
+							}
+						},
+						{
+							label: 'Login As Administrator',
+							icon: 'external-link',
+							condition: () => site.doc.status === 'Active',
+							onClick: () => {
+								confirmDialog({
+									title: 'Login as Administrator',
+									fields: [
+										{
+											label: 'Reason',
+											type: 'textarea',
+											fieldname: 'reason'
+										}
+									],
+									onSuccess: ({ hide, values }) => {
+										if (!values.reason && team.name != site.doc.team) {
+											throw new Error('Reason is required');
+										}
+										return site.loginAsAdmin
+											.submit({ reason: values.reason })
+											.then(result => {
+												let sid = result.message;
+												window.open(
+													`https://${site.doc.name}/desk?sid=${sid}`,
+													'_blank'
+												);
+												hide();
+											});
+									}
+								});
+							}
+						}
+					]
+				}
+			];
+		}
 	},
 	routes: [
 		{

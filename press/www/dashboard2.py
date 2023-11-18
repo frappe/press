@@ -12,4 +12,4 @@ no_cache = 1
 
 def get_context(context):
 	frappe.only_for("System Manager")
-	return _get_context(context)
+	return _get_context()

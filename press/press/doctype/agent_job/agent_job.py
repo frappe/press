@@ -20,27 +20,39 @@ from press.press.doctype.press_notification.press_notification import (
 
 
 class AgentJob(Document):
-	def get_doc(self):
-		whitelisted_fields = [
-			"name",
-			"job_type",
-			"creation",
-			"status",
-			"start",
-			"end",
-			"duration",
-			"bench",
-			"site",
-			"server",
-		]
-		out = {key: self.get(key) for key in whitelisted_fields}
-		out["steps"] = frappe.get_all(
+	whitelisted_fields = [
+		"name",
+		"job_type",
+		"creation",
+		"status",
+		"start",
+		"end",
+		"duration",
+		"bench",
+		"site",
+		"server",
+	]
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		if filters.group:
+			AgentJob = frappe.qb.DocType("Agent Job")
+			Bench = frappe.qb.DocType("Bench")
+			benches = (
+				frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
+			)
+			query = query.where(AgentJob.bench.isin(benches))
+			return query
+		return query
+
+	def get_doc(self, doc):
+		doc["steps"] = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.name},
 			fields=["step_name", "status", "start", "end", "duration", "output"],
 			order_by="creation",
 		)
-		return out
+		return doc
 
 	def after_insert(self):
 		self.create_agent_job_steps()

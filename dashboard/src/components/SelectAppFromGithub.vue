@@ -153,7 +153,7 @@ export default {
 				},
 				onError() {
 					// Invalid Frappe App
-					this.$emit('onSelect', null);
+					if (this.$emit) this.$emit('onSelect', null);
 				}
 			};
 		},

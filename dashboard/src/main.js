@@ -37,7 +37,7 @@ const { auth, account } = registerControllers(app);
 registerRouter(app, auth, account);
 
 // sentry
-if (window.press_frontend_sentry_dsn.includes('https://')) {
+if (window.press_frontend_sentry_dsn?.includes('https://')) {
 	Sentry.init({
 		app,
 		dsn: window.press_frontend_sentry_dsn,
@@ -53,7 +53,7 @@ if (window.press_frontend_sentry_dsn.includes('https://')) {
 }
 
 // posthog
-if (window.press_frontend_posthog_host.includes('https://')) {
+if (window.press_frontend_posthog_host?.includes('https://')) {
 	try {
 		posthog.init(window.press_frontend_posthog_project_id, {
 			api_host: window.press_frontend_posthog_host,
@@ -68,12 +68,24 @@ if (window.press_frontend_posthog_host.includes('https://')) {
 	}
 }
 
-app.mount('#app');
+if (import.meta.env.DEV) {
+	request({
+		url: '/api/method/press.www.dashboard.get_context_for_dev'
+	}).then(values => {
+		for (let key in values) {
+			window[key] = values[key];
+		}
+		app.mount('#app');
+	});
+} else {
+	app.mount('#app');
+}
 
 app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
-		const errorMessage = error.message || error.messages?.join('\n');
+		let errorMessage = error.message;
+		if (error.messages) errorMessage = error.messages.join('\n');
 		notify({
 			icon: 'x',
 			title: 'An error occurred',

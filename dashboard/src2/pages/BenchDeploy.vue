@@ -22,7 +22,7 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ formatDuration(deploy.build_duration) }}
+							{{ $format.duration(deploy.build_duration) }}
 						</div>
 					</div>
 					<div>
@@ -51,8 +51,6 @@
 	</div>
 </template>
 <script>
-import { formatDuration } from '../utils/format';
-
 export default {
 	name: 'BenchDeploy',
 	props: ['id'],
@@ -64,7 +62,9 @@ export default {
 				name: this.id,
 				transform(deploy) {
 					for (let step of deploy.build_steps) {
-						step.isOpen = false;
+						if (step.status === 'Running') {
+							step.isOpen = true;
+						}
 						step.title = `${step.stage} - ${step.step}`;
 						step.output =
 							step.command || step.output
@@ -81,13 +81,20 @@ export default {
 			};
 		}
 	},
+	mounted() {
+		this.$socket.on(`bench_deploy:${this.id}:steps`, data => {
+			if (data.name === this.id && this.$resources.deploy.doc) {
+				this.$resources.deploy.reload();
+			}
+		});
+	},
+	beforeUnmount() {
+		this.$socket.off(`bench_deploy:${this.id}:steps`);
+	},
 	computed: {
 		deploy() {
 			return this.$resources.deploy.doc;
 		}
-	},
-	methods: {
-		formatDuration
 	}
 };
 </script>

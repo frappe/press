@@ -447,9 +447,14 @@
    "group": "Documents",
    "link_doctype": "Stripe Payment Event",
    "link_fieldname": "invoice"
+  },
+  {
+   "group": "Webhook Logs",
+   "link_doctype": "Stripe Webhook Log",
+   "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-11-09 20:23:22.317645",
+ "modified": "2023-11-14 12:52:53.654283",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

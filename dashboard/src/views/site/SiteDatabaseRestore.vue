@@ -277,9 +277,9 @@ export default {
 						return 'Please upload database, public and private files to restore.';
 					}
 				},
-				onSuccess() {
+				onSuccess(jobName) {
 					this.selectedFiles = {};
-					this.$router.push(`/sites/${this.site?.name}/installing`);
+					this.$router.push({ name: 'SiteJobs', params: { jobName } });
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);
@@ -297,8 +297,8 @@ export default {
 						return 'Please type the site name to confirm.';
 					}
 				},
-				onSuccess() {
-					this.$router.push(`/sites/${this.site?.name}/installing`);
+				onSuccess(jobName) {
+					this.$router.push({ name: 'SiteJobs', params: { jobName } });
 					setTimeout(() => {
 						window.location.reload();
 					}, 1000);

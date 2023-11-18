@@ -551,12 +551,12 @@ def create_razorpay_order(amount):
 
 	amount = round(amount, 2)
 	data = {
-		"amount": amount * 100,
+		"amount": int(amount * 100),
 		"currency": team.currency,
 		"notes": {
 			"Description": "Order for Frappe Cloud Prepaid Credits",
 			"Team (Frappe Cloud ID)": team.name,
-			"gst": gst_amount,
+			"gst": gst_amount if team.currency == "INR" else 0,
 		},
 	}
 	order = client.order.create(data=data)

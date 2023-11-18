@@ -27,6 +27,33 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
+	whitelisted_methods = [
+		"enabled",
+		"team_title",
+		"user",
+		"partner_email",
+		"billing_team",
+		"team_members",
+		"child_team_members",
+		"notify_email",
+		"country",
+		"currency",
+		"payment_mode",
+		"default_payment_method",
+	]
+
+	def get_doc(self, doc):
+		user = frappe.db.get_value(
+			"User",
+			self.user,
+			["first_name", "last_name", "user_image", "user_type"],
+			as_dict=True,
+		)
+		doc.balance = self.get_balance()
+		doc.user = user
+		doc.is_desk_user = user.user_type == "System User"
+		return doc
+
 	def onload(self):
 		load_address_and_contact(self)
 
@@ -319,6 +346,11 @@ class Team(Document):
 		After enabling partner privileges, new invoice should be created
 		to track the partner achivements
 		"""
+		# check if any active user with an invoice
+		if not frappe.get_all(
+			"Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"
+		):
+			return
 		today = frappe.utils.getdate()
 		current_invoice = frappe.db.get_value(
 			"Invoice",
@@ -330,6 +362,9 @@ class Team(Document):
 			},
 			"name",
 		)
+
+		if not current_invoice:
+			return
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
 
@@ -799,9 +834,25 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
+		plan = frappe.qb.DocType("Plan")
+		query = (
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where(
+				(plan.enabled == 1)
+				& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
+			)
+		).run(as_dict=True)
+		dedicated_or_frappe_plans = [d.name for d in query]
+
 		return frappe.db.get_all(
 			"Site",
-			{"team": self.name, "status": ("in", ("Active", "Inactive")), "free": 0},
+			{
+				"team": self.name,
+				"status": ("in", ("Active", "Inactive")),
+				"free": 0,
+				"plan": ("not in", dedicated_or_frappe_plans),
+			},
 			pluck="name",
 		)
 
@@ -966,6 +1017,12 @@ def process_stripe_webhook(doc, method):
 
 	if payment_for and payment_for == "micro_debit_test_charge":
 		process_micro_debit_test_charge(event)
+		return
+
+	if frappe.db.exists(
+		"Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}
+	):
+		# ignore creating if already allocated
 		return
 
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})

@@ -5,7 +5,6 @@
 				<Breadcrumbs
 					:items="[{ label: object.list.title, route: object.list.route }]"
 				/>
-				<!-- <Button>Actions</Button> -->
 			</Header>
 		</div>
 		<div class="p-5">

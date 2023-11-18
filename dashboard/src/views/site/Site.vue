@@ -425,6 +425,7 @@ export default {
 					label: 'Upgrade Version',
 					icon: 'arrow-up',
 					condition: () =>
+						this.site?.is_public && // TODO: Remove this once version upgrade is ready for private benches
 						this.site?.frappe_version !== 'Nightly' &&
 						this.site?.frappe_version !== this.site?.latest_frappe_version &&
 						this.site?.status === 'Active',
