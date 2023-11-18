@@ -711,7 +711,7 @@ def branch_list(name: str, app: str) -> List[Dict]:
 	"""Return a list of git branches available for the `app`"""
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	app_source = rg.get_app_source(app)
-	print(name, app)
+
 	installation_id = app_source.github_installation_id
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
