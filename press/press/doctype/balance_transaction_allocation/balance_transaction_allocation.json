@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "invoice",
+  "balance_transaction",
   "amount",
   "currency"
  ],
@@ -29,12 +30,18 @@
    "in_list_view": 1,
    "label": "Currency",
    "options": "Currency"
+  },
+  {
+   "fieldname": "balance_transaction",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Balance Transaction"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-12-07 21:56:10.582664",
+ "modified": "2023-11-18 23:53:33.424419",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction Allocation",

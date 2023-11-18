@@ -474,3 +474,28 @@ class TestInvoice(unittest.TestCase):
 		).insert()
 		invoice.finalize_invoice()
 		self.assertEqual(invoice.stripe_invoice_id, None)
+
+	def test_negative_balance_case(self):
+		try:
+			team = create_test_team("test22@example.com")
+
+			# add 10 credits
+			team.allocate_credit_amount(10, source="Prepaid Credits")
+			# transfer 5 credits
+			team.allocate_credit_amount(-5, source="Transferred Credits")
+
+			# consume 10 credits
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 10, "amount": 10})
+			invoice.insert()
+
+			# finalize invoice
+			with self.assertRaises(frappe.ValidationError) as err:
+				invoice.finalize_invoice()
+			self.assertTrue("Not enough credits for this invoice" in str(err.exception))
+
+		finally:
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Invoice", invoice.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()

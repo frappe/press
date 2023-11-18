@@ -28,6 +28,10 @@ class BalanceTransaction(Document):
 
 		if self.type == "Adjustment":
 			self.unallocated_amount = self.amount
+			if self.unallocated_amount < 0:
+				# in case of credit transfer
+				self.allocate_to_previous_transaction()
+				self.unallocated_amount = 0
 
 	def before_update_after_submit(self):
 		total_allocated = sum([d.amount for d in self.allocated_to])
@@ -35,6 +39,35 @@ class BalanceTransaction(Document):
 
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
+
+	def allocate_to_previous_transaction(self):
+		previous_transaction = (
+			frappe.get_all(
+				"Balance Transaction",
+				filters={
+					"docstatus": 1,
+					"team": self.team,
+					"unallocated_amount": (">", 0)
+				},
+				order_by="creation desc",
+				pluck="name",
+				limit=1,
+			)
+			or []
+		)
+		if not previous_transaction:
+			frappe.throw(
+				"Cannot reduce unallocated amount from previous transaction as no previous transaction found"
+			)
+		previous_transaction = frappe.get_doc(
+			"Balance Transaction", previous_transaction[0]
+		)
+		previous_transaction.append("allocated_to", {
+			"amount": -1 * self.amount,
+			"currency": self.currency,
+			"balance_transaction": self.name,
+		})
+		previous_transaction.save(ignore_permissions=True)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
