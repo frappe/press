@@ -64,16 +64,18 @@
 			</div>
 
 			<div v-if="plan.current_plan" class="mt-4 grid grid-cols-3 gap-12">
-				<div
-					v-if="plan.current_plan.name != 'Unlimited'"
-					v-for="d in usage"
-					:key="d.label"
-				>
-					<ProgressArc :percentage="d.percentage" />
+				<div v-for="d in usage" :key="d.label">
+					<ProgressArc
+						:percentage="
+							plan.current_plan.name === 'Unlimited' ? 33 : d.percentage
+						"
+					/>
 					<div class="mt-2 text-base font-medium text-gray-900">
 						{{ d.label }}
 						{{
-							isNaN(d.percentage) ? '' : `(${Number(d.percentage).toFixed(1)}%)`
+							isNaN(d.percentage) || plan.current_plan.name === 'Unlimited'
+								? ''
+								: `(${Number(d.percentage).toFixed(1)}%)`
 						}}
 					</div>
 					<div class="mt-1 text-xs text-gray-600">{{ d.value }}</div>
@@ -231,13 +233,20 @@ export default {
 			return [
 				{
 					label: 'CPU',
-					value: `${this.plan.total_cpu_usage_hours} / ${
-						this.plan.current_plan.cpu_time_per_day
-					} ${this.$plural(
-						this.plan.current_plan.cpu_time_per_day,
-						'hour',
-						'hours'
-					)}`,
+					value:
+						this.plan.current_plan.name === 'Unlimited'
+							? `${this.plan.total_cpu_usage_hours} ${this.$plural(
+									this.plan.current_plan.cpu_time_per_day,
+									'hour',
+									'hours'
+							  )}`
+							: `${this.plan.total_cpu_usage_hours} / ${
+									this.plan.current_plan.cpu_time_per_day
+							  } ${this.$plural(
+									this.plan.current_plan.cpu_time_per_day,
+									'hour',
+									'hours'
+							  )}`,
 					percentage:
 						(this.plan.total_cpu_usage_hours /
 							this.plan.current_plan.cpu_time_per_day) *
@@ -245,9 +254,12 @@ export default {
 				},
 				{
 					label: 'Database',
-					value: `${f(this.plan.total_database_usage)} / ${f(
-						this.plan.current_plan.max_database_usage
-					)}`,
+					value:
+						this.plan.current_plan.name === 'Unlimited'
+							? f(this.plan.total_database_usage)
+							: `${f(this.plan.total_database_usage)} / ${f(
+									this.plan.current_plan.max_database_usage
+							  )}`,
 					percentage:
 						(this.plan.total_database_usage /
 							this.plan.current_plan.max_database_usage) *
@@ -255,9 +267,12 @@ export default {
 				},
 				{
 					label: 'Storage',
-					value: `${f(this.plan.total_storage_usage)} / ${f(
-						this.plan.current_plan.max_storage_usage
-					)}`,
+					value:
+						this.plan.current_plan.name === 'Unlimited'
+							? f(this.plan.total_storage_usage)
+							: `${f(this.plan.total_storage_usage)} / ${f(
+									this.plan.current_plan.max_storage_usage
+							  )}`,
 					percentage:
 						(this.plan.total_storage_usage /
 							this.plan.current_plan.max_storage_usage) *
