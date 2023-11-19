@@ -328,7 +328,7 @@ class SiteMigration(Document):
 		"""Backup site on source"""
 		site = frappe.get_doc("Site", self.site)
 
-		backup = site.backup(with_files=True, offsite=True)
+		backup = site.backup(with_files=True, offsite=True, force=True)
 		backup.reload()
 		self.backup = backup.name
 		self.save()

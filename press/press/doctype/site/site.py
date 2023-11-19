@@ -394,13 +394,14 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
-	def backup(self, with_files=False, offsite=False):
+	def backup(self, with_files=False, offsite=False, force=False):
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
 				"site": self.name,
 				"with_files": with_files,
 				"offsite": offsite,
+				"force": force,
 			}
 		).insert()
 

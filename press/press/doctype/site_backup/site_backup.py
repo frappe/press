@@ -15,6 +15,8 @@ from press.agent import Agent
 
 class SiteBackup(Document):
 	def before_insert(self):
+		if self.force:
+			return
 		two_hours_ago = datetime.now() - timedelta(hours=2)
 		if frappe.db.count(
 			"Site Backup",
