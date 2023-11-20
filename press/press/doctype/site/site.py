@@ -394,13 +394,14 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
-	def backup(self, with_files=False, offsite=False):
+	def backup(self, with_files=False, offsite=False, force=False):
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
 				"site": self.name,
 				"with_files": with_files,
 				"offsite": offsite,
+				"force": force,
 			}
 		).insert()
 
@@ -1781,7 +1782,7 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	backup = frappe.get_doc("Site Backup", backups[0])
 
 	files = {
-		"config": "",  # not necessary for test sites
+		"config": backup.remote_config_file,
 		"database": backup.remote_database_file,
 		"public": backup.remote_public_file,
 		"private": backup.remote_private_file,
