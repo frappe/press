@@ -39,12 +39,14 @@ class BackupRestorationTest(Document):
 			)
 
 	def create_test_site(self) -> None:
-		self.status = "Running"
 		site_dict = prepare_site(self.site)
 		server = frappe.get_value("Site", self.site, "server")
 		try:
 			site_job = _new(site_dict, server, True)
 			self.test_site = site_job.get("site")
+			self.status = "Running"
 			self.save()
+			frappe.db.commit()
 		except Exception:
+			frappe.db.rollback()
 			frappe.log_error("Site Creation Error")
