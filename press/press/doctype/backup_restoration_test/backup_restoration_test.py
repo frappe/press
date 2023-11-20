@@ -22,7 +22,7 @@ class BackupRestorationTest(Document):
 		# check if another backup restoration is already running
 		backups = frappe.get_all(
 			"Backup Restoration Test",
-			dict(status=("in", ["Running", "Started"]), site=self.site, name=("!=", self.name)),
+			dict(status="Running", site=self.site, name=("!=", self.name)),
 			pluck="name",
 		)
 		if backups:

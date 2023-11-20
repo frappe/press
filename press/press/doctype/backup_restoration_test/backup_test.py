@@ -63,7 +63,7 @@ class BackupTest:
 		bench_list = []
 		for group in groups:
 			group_benches = frappe.get_all(
-				"Bench", dict(status="Active", group=group), pluck="name"
+				"Bench", dict(status="Active", group=group, server=server), pluck="name"
 			)
 
 			for bench in benches.keys():
