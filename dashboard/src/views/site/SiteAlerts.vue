@@ -44,11 +44,7 @@ const trialEndsText = computed(() => {
 const siteMigrationText = computed(() => {
 	const status = props.site?.site_migration.status;
 
-	if (status === 'Failure') {
-		return 'Your Site Migration failed';
-	} else if (status === 'Success') {
-		return 'Your Site Migration was successful';
-	} else if (status === 'Running') {
+	if (status === 'Running') {
 		return 'Your Site Migration is in progress';
 	} else if (status === 'Scheduled') {
 		return `Your Site Migration is scheduled to happen ${utils.methods.formatDate(
@@ -61,11 +57,7 @@ const siteMigrationText = computed(() => {
 const siteVersionUpgradeText = computed(() => {
 	const status = props.site?.version_upgrade.status;
 
-	if (status === 'Failure') {
-		return 'Your Site Version Upgrade failed';
-	} else if (status === 'Success') {
-		return 'Your Site Version Upgrade was successful';
-	} else if (status === 'Running') {
+	if (status === 'Running') {
 		return 'Your Site Version Upgrade is in progress';
 	} else if (status === 'Scheduled') {
 		return `Your Site Version Upgrade is scheduled to happen ${utils.methods.formatDate(

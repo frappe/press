@@ -780,13 +780,7 @@ def get(name):
 		site_migration = {
 			"status": site_migration.status,
 			"scheduled_time": site_migration.scheduled_time,
-			"job_id": find(
-				site_migration.steps, lambda x: x.step_title == "Restore site on destination"
-			).step_job
-			if site_migration.status == "Success"
-			else find(site_migration.steps, lambda x: x.status == "Failure").step_job
-			if site_migration.status == "Failure"
-			else find(site_migration.steps, lambda x: x.status == "Running").step_job
+			"job_id": find(site_migration.steps, lambda x: x.status == "Running").step_job
 			if site_migration.status == "Running"
 			else None,
 		}
