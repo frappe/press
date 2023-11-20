@@ -31,7 +31,11 @@ class BackupRestorationTest(Document):
 	def check_duplicate_active_site(self):
 		# check if any active backup restoration test site is active
 		sites = frappe.get_all(
-			"Site", dict(status="Active", name=self.test_site), pluck="name"
+			"Site",
+			dict(
+				status=("in", ["Active", "Inactive", "Broken", "Suspended"]), name=self.test_site
+			),
+			pluck="name",
 		)
 		if sites:
 			frappe.throw(
