@@ -149,9 +149,8 @@ const marketplacePromotionalBanners = createResource({
 			<template #actions>
 				<Button
 					v-if="
-						['Failure', 'Running', 'Success'].includes(
-							site.site_migration.status
-						) && site.site_migration.job_id
+						site.version_upgrade.status === 'Running' &&
+						site.site_migration.job_id
 					"
 					class="whitespace-nowrap"
 					variant="solid"
@@ -170,9 +169,8 @@ const marketplacePromotionalBanners = createResource({
 			<template #actions>
 				<Button
 					v-if="
-						['Failure', 'Running', 'Success'].includes(
-							site.version_upgrade.status
-						) && site.version_upgrade.job_id
+						site.version_upgrade.status === 'Running' &&
+						site.version_upgrade.job_id
 					"
 					class="whitespace-nowrap"
 					variant="solid"

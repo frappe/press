@@ -773,6 +773,7 @@ def get(name):
 	site_migration = get_last_doc("Site Migration", {"site": site.name})
 	if (
 		site_migration
+		and site_migration.status not in ["Failure", "Success"]
 		and -1
 		<= time_diff(site_migration.scheduled_time, frappe.utils.now_datetime()).days
 		<= 1
@@ -790,6 +791,7 @@ def get(name):
 	version_upgrade = get_last_doc("Version Upgrade", {"site": site.name})
 	if (
 		version_upgrade
+		and version_upgrade.status not in ["Failure", "Success"]
 		and -1
 		<= time_diff(version_upgrade.scheduled_time, frappe.utils.now_datetime()).days
 		<= 1
