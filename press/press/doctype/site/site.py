@@ -1782,7 +1782,7 @@ def prepare_site(site: str, subdomain: str = None) -> Dict:
 	backup = frappe.get_doc("Site Backup", backups[0])
 
 	files = {
-		"config": "",  # not necessary for test sites
+		"config": backup.remote_config_file,
 		"database": backup.remote_database_file,
 		"public": backup.remote_public_file,
 		"private": backup.remote_private_file,
