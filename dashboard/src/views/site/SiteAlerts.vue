@@ -46,6 +46,8 @@ const siteMigrationText = computed(() => {
 
 	if (status === 'Running') {
 		return 'Your Site Migration is in progress';
+	} else if (status === 'Pending') {
+		return 'Your Site Migration will start shortly';
 	} else if (status === 'Scheduled') {
 		return `Your Site Migration is scheduled to happen ${utils.methods.formatDate(
 			props.site?.site_migration.scheduled_time,
@@ -59,6 +61,8 @@ const siteVersionUpgradeText = computed(() => {
 
 	if (status === 'Running') {
 		return 'Your Site Version Upgrade is in progress';
+	} else if (status === 'Pending') {
+		return 'Your Site Version Upgrade will start shortly';
 	} else if (status === 'Scheduled') {
 		return `Your Site Version Upgrade is scheduled to happen ${utils.methods.formatDate(
 			props.site?.version_upgrade.scheduled_time,
