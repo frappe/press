@@ -778,12 +778,11 @@ def get(name):
 		<= time_diff(site_migration.scheduled_time, frappe.utils.now_datetime()).days
 		<= 1
 	):
+		job = find(site_migration.steps, lambda x: x.status == "Running")
 		site_migration = {
 			"status": site_migration.status,
 			"scheduled_time": site_migration.scheduled_time,
-			"job_id": find(site_migration.steps, lambda x: x.status == "Running").step_job
-			if site_migration.status == "Running"
-			else None,
+			"job_id": job.step_job if job else None,
 		}
 	else:
 		site_migration = None
