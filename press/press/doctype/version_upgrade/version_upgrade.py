@@ -34,6 +34,7 @@ class VersionUpgrade(Document):
 
 		create_new_notification(
 			site.team,
+			"Version Upgrade",
 			"Agent Job",
 			agent_job_id,
 			message,
