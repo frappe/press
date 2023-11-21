@@ -13,10 +13,12 @@ if TYPE_CHECKING:
 	from press.press.doctype.app.app import App
 
 
-def create_test_app(name: str = "frappe", title: str = "Frappe Framework") -> "App":
-	return frappe.get_doc({"doctype": "App", "name": name, "title": title}).insert(
-		ignore_if_duplicate=True
-	)
+def create_test_app(
+	name: str = "frappe", title: str = "Frappe Framework", team: str = None
+) -> "App":
+	return frappe.get_doc(
+		{"doctype": "App", "name": name, "title": title, "team": team}
+	).insert(ignore_if_duplicate=True)
 
 
 class TestApp(unittest.TestCase):
