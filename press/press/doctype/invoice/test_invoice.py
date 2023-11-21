@@ -4,11 +4,10 @@
 
 
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.utils.data import add_days, today
-
 from press.press.doctype.team.test_team import create_test_team
 
 from .invoice import Invoice
@@ -497,5 +496,84 @@ class TestInvoice(unittest.TestCase):
 		finally:
 			frappe.db.delete("Team", team.name)
 			frappe.db.delete("Invoice", invoice.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_negative_balance_case_2(self):
+		try:
+			team = create_test_team("test22@example.com")
+			team.allocate_credit_amount(10, source="Prepaid Credits")
+
+			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
+			invoice.append("items", {"quantity": 1, "rate": 8, "amount": 8})
+			invoice.insert()
+			invoice.finalize_invoice()
+
+			with self.assertRaises(frappe.ValidationError) as err:
+				team.allocate_credit_amount(-5, source="Transferred Credits")
+			self.assertTrue("is less than" in str(err.exception))
+
+		finally:
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Invoice", invoice.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_negative_balance_allocation(self):
+		try:
+			team = create_test_team("test22@example.com")
+			team.allocate_credit_amount(10, source="Prepaid Credits")
+			team.allocate_credit_amount(30, source="Prepaid Credits")
+
+			with self.assertRaises(frappe.ValidationError) as err:
+				team.allocate_credit_amount(-50, source="Transferred Credits")
+			self.assertTrue("is less than" in str(err.exception))
+
+			team.allocate_credit_amount(-35, source="Transferred Credits")
+			self.assertEqual(team.get_balance(), 5)
+			transactions = frappe.get_all(
+				"Balance Transaction",
+				filters={
+					"team": team.name,
+					"docstatus": 1,
+					"unallocated_amount": (">=", 0),
+					"source": "Prepaid Credits"
+				},
+				fields=["name", "unallocated_amount"],
+				order_by="creation asc",
+			)
+			self.assertEqual(len(transactions), 2)
+			self.assertEqual(transactions[0].unallocated_amount, 0)
+			self.assertEqual(transactions[1].unallocated_amount, 5)
+
+		finally:
+			frappe.db.delete("Team", team.name)
+			frappe.db.delete("Balance Transaction", {"team": team.name})
+			frappe.db.commit()
+
+	def test_settle_negative_balance(self):
+		# create team
+		# allocate -100 credits
+		# try to settle by adding 200 credits
+		# the new unallocated amount should be 100
+
+		try:
+			team = create_test_team("test22@example.com")
+			bt = frappe.new_doc("Balance Transaction")
+			bt.team = team.name
+			bt.amount = -100
+			bt.source = "Transferred Credits"
+			bt.type = "Adjustment"
+			bt.docstatus = 1
+			bt.db_insert()
+
+			settling_transaction = team.allocate_credit_amount(200, source="Prepaid Credits")
+			self.assertEqual(team.get_balance(), 100)
+
+			settling_transaction.reload()
+			self.assertEqual(settling_transaction.unallocated_amount, 100)
+
+		finally:
+			frappe.db.delete("Team", team.name)
 			frappe.db.delete("Balance Transaction", {"team": team.name})
 			frappe.db.commit()
