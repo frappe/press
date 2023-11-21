@@ -21,6 +21,7 @@ class BalanceTransaction(Document):
 			group_by="team",
 			pluck="ending_balance",
 		)
+		last_balance = last_balance[0] if last_balance else 0
 		if last_balance:
 			last_balance = last_balance[0]
 			self.ending_balance = (last_balance or 0) + self.amount
