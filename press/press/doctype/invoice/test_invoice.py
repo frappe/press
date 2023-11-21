@@ -537,7 +537,7 @@ class TestInvoice(unittest.TestCase):
 					"team": team.name,
 					"docstatus": 1,
 					"unallocated_amount": (">=", 0),
-					"source": "Prepaid Credits"
+					"source": "Prepaid Credits",
 				},
 				fields=["name", "unallocated_amount"],
 				order_by="creation asc",
