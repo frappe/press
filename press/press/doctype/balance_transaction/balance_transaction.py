@@ -37,12 +37,11 @@ class BalanceTransaction(Document):
 				# previously the balance was negative
 				# settle the negative balance
 				self.unallocated_amount = self.amount - abs(last_balance)
+				self.add_comment(text=f"Settling negative balance of {abs(last_balance)}")
 			elif last_balance < 0 and abs(last_balance) > self.amount:
 				frappe.throw(
 					f"Your credit balance is negative. You need to add minimum {abs(last_balance)} prepaid credits."
 				)
-
-
 
 	def before_update_after_submit(self):
 		total_allocated = sum([d.amount for d in self.allocated_to])
@@ -58,50 +57,41 @@ class BalanceTransaction(Document):
 		remaining_amount = abs(self.amount)
 		transactions = frappe.get_all(
 			"Balance Transaction",
-			filters={
-				"docstatus": 1,
-				"team": self.team,
-				"unallocated_amount": (">", 0)
-			},
+			filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
 			fields=["name", "unallocated_amount"],
 			order_by="creation asc",
 		)
 		for transaction in transactions:
 			if remaining_amount <= 0:
 				break
-			allocated_amount = min(
-				remaining_amount, transaction.unallocated_amount
-			)
+			allocated_amount = min(remaining_amount, transaction.unallocated_amount)
 			remaining_amount -= allocated_amount
 			allocation_map[transaction.name] = allocated_amount
 
 		for transaction, amount in allocation_map.items():
 			doc = frappe.get_doc("Balance Transaction", transaction)
-			doc.append("allocated_to", {
-				"amount": abs(amount),
-				"currency": self.currency,
-				"balance_transaction": self.name,
-			})
+			doc.append(
+				"allocated_to",
+				{
+					"amount": abs(amount),
+					"currency": self.currency,
+					"balance_transaction": self.name,
+				},
+			)
 			doc.save(ignore_permissions=True)
 
 	def validate_total_unallocated_amount(self):
 		total_unallocated_amount = (
 			frappe.get_all(
 				"Balance Transaction",
-				filters={
-					"docstatus": 1,
-					"team": self.team,
-					"unallocated_amount": (">", 0)
-				},
+				filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
 				fields=["sum(unallocated_amount) as total_unallocated_amount"],
 				pluck="total_unallocated_amount",
 			)
 			or []
 		)
 		if not total_unallocated_amount:
-			frappe.throw(
-				"Cannot create transaction as no unallocated amount found"
-			)
+			frappe.throw("Cannot create transaction as no unallocated amount found")
 		if total_unallocated_amount[0] < abs(self.amount):
 			frappe.throw(
 				f"Cannot create transaction as unallocated amount {total_unallocated_amount[0]} is less than {self.amount}"
