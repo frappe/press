@@ -5,11 +5,40 @@ from typing import List
 
 import frappe
 from frappe.model.document import Document
+
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.utils import log_error
 
 
 class VersionUpgrade(Document):
 	doctype = "Version Upgrade"
+
+	def on_update(self):
+		if self.status not in ["Success", "Failure"]:
+			return
+
+		site = frappe.get_doc("Site", self.site)
+		next_version = frappe.get_value("Release Group", self.destination_group, "version")
+
+		message = agent_job_id = ""
+		if self.status == "Success":
+			message = f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> was done successfully"
+			agent_job_id = frappe.get_value("Site Update", self.site_update, "update_job")
+		elif self.status == "Failure":
+			message = (
+				f"Version Upgrade for site <b>{site.host_name}</b> to <b>{next_version}</b> failed"
+			)
+			agent_job_id = frappe.get_value("Site Update", self.site_update, "update_job")
+
+		create_new_notification(
+			site.team,
+			"Version Upgrade",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
 
 	def validate(self):
 		self.validate_versions()

@@ -26,6 +26,7 @@ from press.press.doctype.site_update.site_update import benches_with_available_u
 from press.utils import (
 	get_current_team,
 	log_error,
+	get_last_doc,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
 	group_children_in_result,
@@ -736,6 +737,8 @@ def site_tags():
 @frappe.whitelist()
 @protected("Site")
 def get(name):
+	from frappe.utils.data import time_diff
+
 	team = get_current_team()
 	try:
 		site = frappe.get_doc("Site", name)
@@ -766,6 +769,39 @@ def get(name):
 		ip = server.ip
 	else:
 		ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
+
+	site_migration = get_last_doc("Site Migration", {"site": site.name})
+	if (
+		site_migration
+		and site_migration.status not in ["Failure", "Success"]
+		and -1
+		<= time_diff(site_migration.scheduled_time, frappe.utils.now_datetime()).days
+		<= 1
+	):
+		job = find(site_migration.steps, lambda x: x.status == "Running")
+		site_migration = {
+			"status": site_migration.status,
+			"scheduled_time": site_migration.scheduled_time,
+			"job_id": job.step_job if job else None,
+		}
+	else:
+		site_migration = None
+
+	version_upgrade = get_last_doc("Version Upgrade", {"site": site.name})
+	if (
+		version_upgrade
+		and version_upgrade.status not in ["Failure", "Success"]
+		and -1
+		<= time_diff(version_upgrade.scheduled_time, frappe.utils.now_datetime()).days
+		<= 1
+	):
+		version_upgrade = {
+			"status": version_upgrade.status,
+			"scheduled_time": version_upgrade.scheduled_time,
+			"job_id": frappe.get_value("Site Update", version_upgrade.site_update, "update_job"),
+		}
+	else:
+		version_upgrade = None
 
 	return {
 		"name": site.name,
@@ -810,6 +846,8 @@ def get(name):
 			"auto_updates_enabled": not site.skip_auto_updates,
 		},
 		"pending_for_long": site.pending_for_long,
+		"site_migration": site_migration,
+		"version_upgrade": version_upgrade,
 	}
 
 

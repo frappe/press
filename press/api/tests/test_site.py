@@ -144,6 +144,8 @@ class TestAPISite(FrappeTestCase):
 					["name", "tag"],
 				),
 				"pending_for_long": False,
+				"site_migration": None,
+				"version_upgrade": None,
 			},
 			site_details,
 		)
