@@ -74,7 +74,7 @@ class SiteMigration(Document):
 
 		create_new_notification(
 			site.team,
-			"Site Migration",
+			"Site Migrate",
 			"Agent Job",
 			agent_job_id,
 			message,
