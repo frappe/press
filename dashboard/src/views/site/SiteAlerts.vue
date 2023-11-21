@@ -149,7 +149,7 @@ const marketplacePromotionalBanners = createResource({
 			<template #actions>
 				<Button
 					v-if="
-						site.version_upgrade.status === 'Running' &&
+						site.site_migration.status === 'Running' &&
 						site.site_migration.job_id
 					"
 					class="whitespace-nowrap"
