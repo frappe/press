@@ -11,7 +11,7 @@
 					<b>{{ nextVersion }}</b>
 				</p>
 				<FormControl
-					v-else-if="privateReleaseGroups.length > 0"
+					v-else-if="privateReleaseGroups.length > 0 && nextVersion"
 					:label="`Please select a ${nextVersion} bench`"
 					class="w-full"
 					type="select"
@@ -108,11 +108,10 @@ export default {
 			}
 		},
 		nextVersion() {
-			const next = `Version ${
-				Number(this.site?.frappe_version.split(' ')[1]) + 1
-			}`;
-			if (isNaN(next)) return null;
-			else return next;
+			const nextNumber = Number(this.site?.frappe_version.split(' ')[1]);
+			if (isNaN(nextNumber)) return null;
+
+			return `Version ${nextNumber + 1}`;
 		},
 		privateReleaseGroups() {
 			return this.$resources.getPrivateGroups.data;
