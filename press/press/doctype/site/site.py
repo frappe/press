@@ -1003,18 +1003,6 @@ class Site(Document):
 			self.save()
 
 	def unsuspend_if_applicable(self):
-		unpaid_invoices = frappe.get_all(
-			"Invoice",
-			{
-				"status": "Unpaid",
-				"team": self.team,
-				"docstatus": ("<", 2),
-				"type": "Subscription",
-			},
-			pluck="name",
-		)
-		if unpaid_invoices:
-			return
 		try:
 			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
 		except frappe.DoesNotExistError:
