@@ -1,24 +1,26 @@
 <template>
-	<div v-if="plans.length">
-		<div class="grid grid-cols-4 gap-3">
+	<div class="@container" v-if="plans.length">
+		<div class="grid grid-cols-2 gap-3 @4xl:grid-cols-4">
 			<button
+				v-for="(plan, i) in plans"
+				:key="plan.name"
 				class="flex flex-col overflow-hidden rounded border text-left hover:bg-gray-50"
 				:class="[
-					modelValue === plan
+					modelValue === plan.name
 						? 'border-gray-900 ring-1 ring-gray-900'
 						: 'border-gray-300',
 					{
 						'pointer-events-none': plan.disabled
 					}
 				]"
-				v-for="(plan, i) in plans"
-				:key="plan.name"
-				@click="$emit('update:modelValue', plan)"
+				@click="$emit('update:modelValue', plan.name)"
 			>
 				<div
 					class="w-full border-b p-3"
 					:class="[
-						modelValue === plan ? 'border-gray-900 ring-1 ring-gray-900' : ''
+						modelValue === plan.name
+							? 'border-gray-900 ring-1 ring-gray-900'
+							: ''
 					]"
 				>
 					<div class="flex items-center justify-between">
@@ -42,7 +44,15 @@
 						</Tooltip>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
-						${{ Number(plan.price_usd / 30).toFixed(2) }} /day
+						{{ $team.doc.country === 'India' ? '₹' : '$'
+						}}{{
+							Number(
+								($team.doc.country === 'India'
+									? plan.price_inr
+									: plan.price_usd) / 30
+							).toFixed(2)
+						}}
+						/day
 					</div>
 				</div>
 				<div class="p-3 text-p-sm text-gray-800">
@@ -79,13 +89,14 @@
 
 <script>
 export default {
-	name: 'SitePlansTable',
+	name: 'SitePlansCards',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
 	resources: {
 		plans() {
 			return {
 				url: 'press.api.site.get_plans',
+				cache: 'site.plans',
 				auto: true
 			};
 		}

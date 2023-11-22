@@ -27,7 +27,7 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
-	whitelisted_methods = [
+	whitelisted_fields = [
 		"enabled",
 		"team_title",
 		"user",
@@ -43,6 +43,15 @@ class Team(Document):
 	]
 
 	def get_doc(self, doc):
+		if (
+			frappe.session.data.user_type != "System User"
+			and self.user != frappe.session.user
+			and self.user not in self.get_user_list()
+		):
+			frappe.throw(
+				_("You are not allowed to access this document")
+			)
+
 		user = frappe.db.get_value(
 			"User",
 			self.user,
@@ -50,9 +59,7 @@ class Team(Document):
 			as_dict=True,
 		)
 		doc.balance = self.get_balance()
-		doc.user = user
 		doc.is_desk_user = user.user_type == "System User"
-		return doc
 
 	def onload(self):
 		load_address_and_contact(self)

@@ -77,7 +77,8 @@ def get(doctype, name):
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
 		frappe.throw(frappe._("doc.doctype is required"))
-	check_permissions(doc.doctype)
+
+	check_permissions(doc.get("doctype"))
 
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
