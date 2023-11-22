@@ -193,6 +193,7 @@ export default {
 							jobName: data
 						}
 					});
+					this.resetValues();
 					this.$emit('update:modelValue', false);
 				}
 			};
