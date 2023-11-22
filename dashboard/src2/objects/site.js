@@ -29,7 +29,7 @@ export default {
 		migrate: 'migrate',
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
-		loginAsAdmin: 'login',
+		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
 		resetSiteUsage: 'reset_site_usage',
@@ -681,16 +681,24 @@ export default {
 										if (!values.reason && $team.name != site.doc.team) {
 											throw new Error('Reason is required');
 										}
-										return site.loginAsAdmin
-											.submit({ reason: values.reason })
-											.then(result => {
-												let sid = result.message;
-												window.open(
-													`https://${site.doc.name}/desk?sid=${sid}`,
-													'_blank'
-												);
-												hide();
-											});
+										toast.promise(
+											site.loginAsAdmin
+												.submit({ reason: values.reason })
+												.then(result => {
+													let url = result.message;
+													window.open(url, '_blank');
+													hide();
+												}),
+											{
+												loading: 'Attempting to login...',
+												success: () => 'Opening site in a new tab...',
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											}
+										);
 									}
 								});
 							}

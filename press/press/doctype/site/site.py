@@ -686,6 +686,11 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	@frappe.whitelist()
+	def login_as_admin(self, reason=None):
+		sid = self.login(reason=reason)
+		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+
+	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()

@@ -8,7 +8,7 @@ from pypika.queries import QueryBuilder
 from frappe.model.base_document import get_controller
 from frappe.model import default_fields
 from frappe import is_whitelisted
-from frappe.handler import get_attr
+from frappe.handler import get_attr, run_doc_method as _run_doc_method
 
 
 @frappe.whitelist()
@@ -104,6 +104,13 @@ def set_value(doctype, name, fieldname, value=None):
 @frappe.whitelist(methods=["DELETE", "POST"])
 def delete(doctype, name):
 	pass
+
+
+@frappe.whitelist()
+def run_doc_method(dt, dn, method, args=None):
+	check_permissions(dt)
+	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
+	frappe.response.docs = [get(dt, dn)]
 
 
 @frappe.whitelist()
