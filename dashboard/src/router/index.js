@@ -119,6 +119,7 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'BenchJobs',
 				path: 'jobs/:jobName?',
 				component: () => import('../views/bench/BenchJobs.vue'),
 				props: true

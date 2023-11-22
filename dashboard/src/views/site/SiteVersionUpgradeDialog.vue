@@ -2,24 +2,7 @@
 	<Dialog
 		v-model="show"
 		@close="resetValues"
-		:options="{
-			title: 'Upgrade Site Version',
-			actions: [
-				{
-					label: 'Upgrade',
-					variant: 'solid',
-					disabled: !site?.is_public && privateReleaseGroups.length === 0,
-					onClick: () => {
-						this.$resources.versionUpgrade.submit({
-							name: this.site?.name,
-							destination_group: this.privateReleaseGroup,
-							scheduled_datetime: this.targetDateTime
-						});
-						this.$emit('update:modelValue', false);
-					}
-				}
-			]
-		}"
+		:options="{ title: 'Upgrade Site Version' }"
 	>
 		<template #body-content>
 			<div class="space-y-4">
@@ -34,23 +17,62 @@
 					type="select"
 					:options="privateReleaseGroups"
 					v-model="privateReleaseGroup"
+					@change="
+						benchHasCommonServer = false;
+						benchValidationStarted = false;
+					"
 				/>
 				<FormControl
 					class="mt-4"
-					v-if="site.is_public || privateReleaseGroups.length > 0"
+					v-if="site.is_public || benchHasCommonServer"
 					label="Schedule Site Migration (IST)"
 					type="datetime-local"
 					:min="new Date().toISOString().slice(0, 16)"
 					v-model="targetDateTime"
 				/>
-				<p
-					v-if="!site.is_public && !privateReleaseGroups.length"
-					class="text-base"
-				>
-					There are no private benches available to upgrade this site.
+				<p v-if="message" class="text-sm text-gray-700">
+					{{ message }}
 				</p>
-				<ErrorMessage :message="$resources.versionUpgrade.error" />
+				<ErrorMessage
+					:message="
+						$resources.versionUpgrade.error ||
+						$resources.validateGroupforUpgrade.error ||
+						$resources.addServerToReleaseGroup.error ||
+						$resources.getPrivateGroups.error
+					"
+				/>
 			</div>
+		</template>
+		<template v-if="privateReleaseGroups.length" #actions>
+			<Button
+				v-if="!this.benchValidationStarted"
+				class="w-full"
+				variant="solid"
+				label="Validate Bench for Version Upgrade"
+				@click="$resources.validateGroupforUpgrade.submit()"
+				:loading="$resources.validateGroupforUpgrade.loading"
+			/>
+			<Button
+				v-else-if="!this.benchHasCommonServer"
+				class="w-full"
+				variant="solid"
+				label="Add Server to Bench"
+				@click="$resources.addServerToReleaseGroup.submit()"
+				:loading="$resources.addServerToReleaseGroup.loading"
+			/>
+			<Button
+				v-else
+				class="w-full"
+				variant="solid"
+				label="Upgrade"
+				:loading="$resources.versionUpgrade.loading"
+				@click="
+					{
+						$resources.versionUpgrade.submit();
+						$emit('update:modelValue', false);
+					}
+				"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -66,7 +88,8 @@ export default {
 		return {
 			targetDateTime: null,
 			privateReleaseGroup: '',
-			privateReleaseGroups: []
+			benchHasCommonServer: false,
+			benchValidationStarted: false
 		};
 	},
 	watch: {
@@ -85,6 +108,26 @@ export default {
 		},
 		nextVersion() {
 			return `Version ${Number(this.site?.frappe_version.split(' ')[1]) + 1}`;
+		},
+		privateReleaseGroups() {
+			return this.$resources.getPrivateGroups.data;
+		},
+		message() {
+			if (!this.site.is_public && !this.privateReleaseGroups.length)
+				return `Your team don't own any private benches available to upgrade this site to ${this.nextVersion}.`;
+			else if (
+				!this.site.is_public &&
+				this.benchValidationStarted &&
+				!this.benchHasCommonServer
+			)
+				return `The selected bench and site doesn't have a common server. Please add a common server.`;
+			else if (
+				!this.site.is_public &&
+				this.benchValidationStarted &&
+				this.benchHasCommonServer
+			)
+				return `The selected bench and site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
+			else return '';
 		}
 	},
 	resources: {
@@ -92,8 +135,9 @@ export default {
 			return {
 				url: 'press.api.site.version_upgrade',
 				params: {
-					site: this.site?.name,
-					destination_group: this.privateReleaseGroup
+					name: this.site?.name,
+					destination_group: this.privateReleaseGroup,
+					scheduled_datetime: this.targetDateTime
 				},
 				onSuccess() {
 					notify({
@@ -114,11 +158,50 @@ export default {
 					name: this.site?.name,
 					version: this.site?.frappe_version
 				},
-				onSuccess(data) {
-					this.privateReleaseGroups = data.map(group => ({
+				transform(data) {
+					return data.map(group => ({
 						label: group.title || group.name,
 						value: group.name
 					}));
+				},
+				initialData: []
+			};
+		},
+		addServerToReleaseGroup() {
+			return {
+				url: 'press.api.site.add_server_to_release_group',
+				params: {
+					name: this.site?.name,
+					group_name: this.privateReleaseGroup
+				},
+				onSuccess(data) {
+					notify({
+						title: 'Server Added to the Bench',
+						message: `Added a server to <b>${this.privateReleaseGroup}</b> bench. Please wait for the bench to complete the deploy.`,
+						icon: 'check',
+						color: 'green'
+					});
+					this.$router.push({
+						name: 'BenchJobs',
+						params: {
+							benchName: this.privateReleaseGroup,
+							jobName: data
+						}
+					});
+					this.$emit('update:modelValue', false);
+				}
+			};
+		},
+		validateGroupforUpgrade() {
+			return {
+				url: 'press.api.site.validate_group_for_upgrade',
+				params: {
+					name: this.site?.name,
+					group_name: this.privateReleaseGroup
+				},
+				onSuccess(data) {
+					this.benchValidationStarted = true;
+					this.benchHasCommonServer = data;
 				}
 			};
 		}
@@ -127,7 +210,9 @@ export default {
 		resetValues() {
 			this.targetDateTime = null;
 			this.privateReleaseGroup = '';
-			this.privateReleaseGroups = [];
+			this.benchHasCommonServer = false;
+			this.benchValidationStarted = false;
+			this.$resources.getPrivateGroups.reset();
 		}
 	}
 };
