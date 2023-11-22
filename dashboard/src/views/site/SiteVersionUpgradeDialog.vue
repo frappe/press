@@ -6,7 +6,7 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<p v-if="site.is_public" class="text-base">
+				<p v-if="site.is_public && nextVersion" class="text-base">
 					The site <b>{{ site.host_name }}</b> will be upgraded to
 					<b>{{ nextVersion }}</b>
 				</p>
@@ -24,7 +24,7 @@
 				/>
 				<FormControl
 					class="mt-4"
-					v-if="site.is_public || benchHasCommonServer"
+					v-if="(site.is_public && nextVersion) || benchHasCommonServer"
 					label="Schedule Site Migration (IST)"
 					type="datetime-local"
 					:min="new Date().toISOString().slice(0, 16)"
@@ -94,7 +94,8 @@ export default {
 	},
 	watch: {
 		show(value) {
-			if (value) this.$resources.getPrivateGroups.fetch();
+			if (value && !this.site?.is_public)
+				this.$resources.getPrivateGroups.fetch();
 		}
 	},
 	computed: {
@@ -107,13 +108,17 @@ export default {
 			}
 		},
 		nextVersion() {
-			return `Version ${Number(this.site?.frappe_version.split(' ')[1]) + 1}`;
+			const next = `Version ${
+				Number(this.site?.frappe_version.split(' ')[1]) + 1
+			}`;
+			if (isNaN(next)) return null;
+			else return next;
 		},
 		privateReleaseGroups() {
 			return this.$resources.getPrivateGroups.data;
 		},
 		message() {
-			if (isNaN(this.nextVersion)) {
+			if (!this.nextVersion) {
 				return 'This site is already on the latest version.';
 			}
 			if (!this.site.is_public && !this.privateReleaseGroups.length)
@@ -153,8 +158,6 @@ export default {
 			};
 		},
 		getPrivateGroups() {
-			if (this.site?.is_public) return;
-
 			return {
 				url: 'press.api.site.get_private_groups_for_upgrade',
 				params: {
