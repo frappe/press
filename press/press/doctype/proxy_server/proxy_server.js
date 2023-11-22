@@ -3,8 +3,6 @@
 
 frappe.ui.form.on('Proxy Server', {
 	refresh: function (frm) {
-		press.set_hostname_abbreviation(frm);
-
 		[
 			[__('Ping Agent'), 'ping_agent', false, frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true],

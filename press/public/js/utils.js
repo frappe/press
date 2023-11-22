@@ -3,7 +3,7 @@ frappe.provide('press.utils');
 
 $.extend(press, {
 	set_hostname_abbreviation: function (frm) {
-		if (!frm.doc.hostname_abbreviation && frm.doc.hostname) {
+		if (frm.doc.hostname) {
 			let parts = frm.doc.hostname.split('-');
 
 			let first_part = parts[0];
