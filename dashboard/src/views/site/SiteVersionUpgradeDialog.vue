@@ -127,7 +127,7 @@ export default {
 				this.benchValidationStarted &&
 				!this.benchHasCommonServer
 			)
-				return `The selected bench and site doesn't have a common server. Please add a common server.`;
+				return `The selected bench and site doesn't have a common server. Please add site's server to the bench.`;
 			else if (
 				!this.site.is_public &&
 				this.benchValidationStarted &&
