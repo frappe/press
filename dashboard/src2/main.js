@@ -13,6 +13,7 @@ setConfig('resourceFetcher', frappeRequest);
 setConfig('defaultListUrl', 'press.api.client.get_list');
 setConfig('defaultDocGetUrl', 'press.api.client.get');
 setConfig('defaultDocInsertUrl', 'press.api.client.insert');
+setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
 // setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
