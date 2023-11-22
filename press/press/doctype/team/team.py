@@ -48,9 +48,7 @@ class Team(Document):
 			and self.user != frappe.session.user
 			and self.user not in self.get_user_list()
 		):
-			frappe.throw(
-				_("You are not allowed to access this document")
-			)
+			frappe.throw("You are not allowed to access this document")
 
 		user = frappe.db.get_value(
 			"User",
