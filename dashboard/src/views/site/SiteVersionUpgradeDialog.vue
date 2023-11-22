@@ -113,6 +113,9 @@ export default {
 			return this.$resources.getPrivateGroups.data;
 		},
 		message() {
+			if (isNaN(this.nextVersion)) {
+				return 'This site is already on the latest version.';
+			}
 			if (!this.site.is_public && !this.privateReleaseGroups.length)
 				return `Your team don't own any private benches available to upgrade this site to ${this.nextVersion}.`;
 			else if (
