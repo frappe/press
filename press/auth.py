@@ -63,7 +63,6 @@ def hook():
 			frappe.local.team = None
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
-	frappe.local.system_user = user_type == "System User"
 
 	# Allow unchecked access to System Users
 	if user_type == "System User":
