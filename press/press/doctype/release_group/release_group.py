@@ -612,7 +612,7 @@ class ReleaseGroup(Document):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			self.get_last_successful_candidate()._create_deploy([server], staging=False)
+			return self.get_last_successful_candidate()._create_deploy([server], staging=False)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):

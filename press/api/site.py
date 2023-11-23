@@ -1622,6 +1622,25 @@ def change_team(team, name):
 
 @frappe.whitelist()
 @protected("Site")
+def add_server_to_release_group(name, group_name):
+	server = frappe.db.get_value("Site", name, "server")
+	deploy = frappe.get_doc("Release Group", group_name).add_server(server, deploy=True)
+
+	bench = find(deploy.benches, lambda bench: bench.server == server).bench
+	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")
+
+
+@frappe.whitelist()
+def validate_group_for_upgrade(name, group_name):
+	server = frappe.db.get_value("Site", name, "server")
+	rg = frappe.get_doc("Release Group", group_name)
+	if server not in [server.server for server in rg.servers]:
+		return False
+	return True
+
+
+@frappe.whitelist()
+@protected("Site")
 def change_group_options(name):
 	team = get_current_team()
 	group, server = frappe.db.get_value("Site", name, ["group", "server"])
@@ -1717,7 +1736,10 @@ def change_region(name, cluster, scheduled_datetime=None):
 @protected("Site")
 def get_private_groups_for_upgrade(name, version):
 	team = get_current_team()
-	server = frappe.db.get_value("Site", name, "server")
+	version_number = frappe.db.get_value("Frappe Version", version, "number")
+	next_version = frappe.db.get_value(
+		"Frappe Version", {"number": version_number + 1, "status": "Stable"}, "name"
+	)
 
 	ReleaseGroup = frappe.qb.DocType("Release Group")
 	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
@@ -1728,10 +1750,10 @@ def get_private_groups_for_upgrade(name, version):
 		.join(ReleaseGroupServer)
 		.on(ReleaseGroupServer.parent == ReleaseGroup.name)
 		.where(ReleaseGroup.enabled == 1)
-		.where(ReleaseGroupServer.server == server)
 		.where(ReleaseGroup.team == team)
 		.where(ReleaseGroup.public == 0)
-		.where(ReleaseGroup.version > version)
+		.where(ReleaseGroup.version == next_version)
+		.distinct()
 	).run(as_dict=True)
 
 	return private_groups
@@ -1751,8 +1773,8 @@ def version_upgrade(name, destination_group, scheduled_datetime=None):
 			"Release Group", {"version": next_version, "public": 1}, "name"
 		)
 
-	if not destination_group:
-		frappe.throw(f"There are no benches with {next_version}.")
+		if not destination_group:
+			frappe.throw(f"There are no public benches with {next_version}.")
 
 	version_upgrade = frappe.get_doc(
 		{
