@@ -28,7 +28,7 @@
 				<FormControl
 					class="mt-4"
 					v-if="(site.is_public && nextVersion) || benchHasCommonServer"
-					label="Schedule Site Migration (IST)"
+					label="Schedule Site Migration"
 					type="datetime-local"
 					:min="new Date().toISOString().slice(0, 16)"
 					v-model="targetDateTime"
@@ -121,10 +121,18 @@ export default {
 			} else if (!this.site.is_public && !this.privateReleaseGroups.length)
 				return `Your team don't own any private benches available to upgrade this site to ${this.nextVersion}.`;
 			else if (!this.site.is_public && !this.benchHasCommonServer)
-				return `The selected bench and site doesn't have a common server. Please add site's server to the bench.`;
+				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
 			else if (!this.site.is_public && this.benchHasCommonServer)
-				return `The selected bench and site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
+				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
 			else return '';
+		},
+		datetimeInIST() {
+			if (!this.targetDateTime) return null;
+			const datetimeInIST = this.$dayjs(this.targetDateTime)
+				.tz('Asia/Kolkata')
+				.format('YYYY-MM-DDTHH:mm');
+
+			return datetimeInIST;
 		}
 	},
 	resources: {
@@ -134,7 +142,7 @@ export default {
 				params: {
 					name: this.site?.name,
 					destination_group: this.privateReleaseGroup,
-					scheduled_datetime: this.targetDateTime
+					scheduled_datetime: this.datetimeInIST
 				},
 				onSuccess() {
 					notify({
