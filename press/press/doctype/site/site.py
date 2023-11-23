@@ -79,7 +79,7 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
-		if not self.team:
+		if not frappe.local.system_user and frappe.local.team:
 			self.team = frappe.local.team.name
 		if not self.bench and self.group:
 			self._set_latest_bench()
@@ -284,11 +284,21 @@ class Site(Document):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
+		if hasattr(self, "subscription_plan") and self.subscription_plan:
+			# create subscription
+			self.create_subscription(self.subscription_plan)
+
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
 		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
 		self.create_agent_request()
+
+		if hasattr(self, "share_details_consent") and self.share_details_consent:
+			# create partner lead
+			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
+				ignore_permissions=True
+			)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -981,6 +991,14 @@ class Site(Document):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
+
+	# TODO: rename to change_plan and remove the need for ignore_card_setup param
+	@frappe.whitelist()
+	def set_plan(self, plan):
+		from press.api.site import validate_plan
+
+		validate_plan(self.server, plan)
+		self.change_plan(plan)
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)

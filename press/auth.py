@@ -34,6 +34,7 @@ ALLOWED_PATHS = [
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
+	"/api/method/press.www.dashboard.get_context_for_dev"
 ]
 
 ALLOWED_WILDCARD_PATHS = [
@@ -57,10 +58,12 @@ def hook():
 	else:
 		try:
 			frappe.local.team = get_current_team(get_doc=True)
-		except:
+			frappe.local.cookie_manager.set_cookie("current_team", frappe.local.team.name)
+		except Exception:
 			frappe.local.team = None
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
+	frappe.local.system_user = user_type == "System User"
 
 	# Allow unchecked access to System Users
 	if user_type == "System User":

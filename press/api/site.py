@@ -190,13 +190,6 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 			doc.site = site.name
 			doc.save(ignore_permissions=True)
 
-	site.create_subscription(plan)
-
-	if share_details_consent:
-		frappe.get_doc(doctype="Partner Lead", team=team.name, site=site.name).insert(
-			ignore_permissions=True
-		)
-
 	# Telemetry: Send event if first site
 	if len(frappe.db.get_all("Site", {"team": team.name})) <= 1:
 		from press.utils.telemetry import capture
@@ -409,81 +402,84 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 @frappe.whitelist()
 def options_for_new():
-	team = get_current_team()
-	versions = frappe.get_all(
+	versions = frappe.db.get_all(
 		"Frappe Version",
-		["name", "number", "default", "status"],
+		["name", "default", "status", "number"],
 		{"public": True},
-		order_by="`default` desc, number desc",
+		order_by="number desc",
 	)
-	deployed_versions = []
-	apps = set()
+	available_versions = []
 	for version in versions:
-		groups = frappe.get_all(
+		release_group = frappe.db.get_value(
 			"Release Group",
-			fields=["name", "`default`", "title"],
-			filters={"enabled": True, "version": version.name},
-			or_filters={"public": True, "team": team},
-			order_by="public desc",
+			fieldname=["name", "`default`", "title"],
+			filters={
+				"enabled": 1,
+				"public": 1,
+				"version": version.name,
+			},
+			order_by="creation desc",
+			as_dict=1,
 		)
-		for group in groups:
-			# Find most recently created bench
-			# Assume that this bench has all the latest updates
-			benches = frappe.get_all(
+		version.group = release_group
+		if version.group:
+			bench = frappe.db.get_value(
 				"Bench",
-				filters={"status": "Active", "group": group.name},
+				filters={"status": "Active", "group": version.group.name},
 				order_by="creation desc",
-				limit=1,
 			)
-			if not benches:
-				continue
+			if bench:
+				version.group.bench = bench
+				bench_app_sources = frappe.db.get_all("Bench App", {"parent": bench}, pluck="source")
+				app_sources = frappe.db.get_all(
+					"App Source",
+					[
+						"name",
+						"app",
+						"repository_url",
+						"repository",
+						"repository_owner",
+						"branch",
+						"team",
+						"public",
+						"app_title",
+						"frappe",
+					],
+					filters={"name": ("in", bench_app_sources), "frappe": 0, "public": True},
+				)
+				version.group.apps = app_sources
+				if version.group.apps:
+					marketplace_apps = frappe.db.get_all(
+						"Marketplace App",
+						fields=["title", "image", "description", "app", "route"],
+						filters={"app": ("in", [app.app for app in version.group.apps])},
+					)
+					for app in version.group.apps:
+						marketplace_details = find(marketplace_apps, lambda x: x.app == app.app)
+						if marketplace_details:
+							app.update(marketplace_details)
+							app.plans = get_plans_for_app(app.app, version.name)
 
-			bench = frappe.get_doc("Bench", benches[0].name)
-			bench_apps = [app.source for app in bench.apps]
-			app_sources = frappe.get_all(
-				"App Source",
-				[
-					"name",
-					"app",
-					"repository_url",
-					"repository",
-					"repository_owner",
-					"branch",
-					"team",
-					"public",
-					"app_title",
-					"frappe",
-				],
-				filters={"name": ("in", bench_apps)},
-				or_filters={"public": True, "team": team},
-			)
-			group["apps"] = sorted(app_sources, key=lambda x: bench_apps.index(x.name))
+				cluster_names = unique(
+					frappe.db.get_all(
+						"Bench",
+						filters={"candidate": frappe.db.get_value("Bench", bench, "candidate")},
+						pluck="cluster",
+					)
+				)
+				clusters = frappe.db.get_all(
+					"Cluster",
+					filters={"name": ("in", cluster_names), "public": True},
+					fields=["name", "title", "image"],
+				)
+				version.group.clusters = clusters
 
-			cluster_names = unique(
-				frappe.db.get_all("Bench", filters={"candidate": bench.candidate}, pluck="cluster")
-			)
-			group["clusters"] = frappe.db.get_all(
-				"Cluster",
-				filters={"name": ("in", cluster_names), "public": True},
-				fields=["name", "title", "image"],
-			)
-			version.setdefault("groups", []).append(group)
-			apps.update([source.app for source in app_sources])
-		if version.get("groups"):
-			deployed_versions.append(version)
+				if version.group and version.group.bench and version.group.clusters:
+					available_versions.append(version)
 
-	marketplace_apps = frappe.db.get_all(
-		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
-		filters={"app": ("in", list(apps))},
-	)
-
-	domain = frappe.db.get_value("Press Settings", "Press Settings", ["domain"])
 	return {
-		"domain": domain,
-		"plans": get_plans(),
-		"marketplace_apps": {row.app: row for row in marketplace_apps},
-		"versions": deployed_versions,
+		"versions": available_versions,
+		"domain": frappe.db.get_single_value("Press Settings", "domain"),
 	}
 
 
@@ -1125,9 +1121,7 @@ def current_plan(name):
 @frappe.whitelist()
 @protected("Site")
 def change_plan(name, plan):
-	site = frappe.get_doc("Site", name)
-	validate_plan(site.server, plan)
-	site.change_plan(plan)
+	frappe.get_doc("Site", name).set_plan(plan)
 
 
 @frappe.whitelist()
