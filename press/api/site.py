@@ -1767,8 +1767,8 @@ def version_upgrade(name, destination_group, scheduled_datetime=None):
 			"Release Group", {"version": next_version, "public": 1}, "name"
 		)
 
-	if not destination_group:
-		frappe.throw(f"There are no benches with {next_version}.")
+		if not destination_group:
+			frappe.throw(f"There are no public benches with {next_version}.")
 
 	version_upgrade = frappe.get_doc(
 		{
