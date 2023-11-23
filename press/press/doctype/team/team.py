@@ -430,13 +430,20 @@ class Team(Document):
 			return False
 
 		try:
-			last_invoice = frappe.get_last_doc(
-				"Invoice", filters={"docstatus": 0, "team": self.name}
+			unpaid_invoices = frappe.get_all(
+				"Invoice",
+				{
+					"status": "Unpaid",
+					"team": self.name,
+					"docstatus": ("<", 2),
+					"type": "Subscription",
+				},
+				pluck="name",
 			)
 		except frappe.DoesNotExistError:
 			return False
 
-		return last_invoice.status == "Unpaid"
+		return unpaid_invoices
 
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
