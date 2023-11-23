@@ -50,7 +50,7 @@ class Site(Document):
 	def get_list_query(query):
 		Site = frappe.qb.DocType("Site")
 		query = query.where(Site.status != "Archived").where(
-			Site.team == frappe.local.team.name
+			Site.team == frappe.local.team().name
 		)
 		return query
 
@@ -79,8 +79,8 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
-		if frappe.session.data.user_type != "System User" and frappe.local.team:
-			self.team = frappe.local.team.name
+		if frappe.session.data.user_type != "System User" and frappe.local.team():
+			self.team = frappe.local.team().name
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan
@@ -242,7 +242,7 @@ class Site(Document):
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
 			if not is_free:
-				if not frappe.local.team.can_install_paid_apps():
+				if not frappe.local.team().can_install_paid_apps():
 					frappe.throw(
 						"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
 					)
@@ -1859,7 +1859,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 				order_by="creation desc",
 			)
 			if bench:
-				team = frappe.local.team.name
+				team = frappe.local.team().name
 				bench_apps = frappe.db.get_all("Bench App", {"parent": bench}, pluck="source")
 				app_sources = frappe.get_all(
 					"App Source",

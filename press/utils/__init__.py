@@ -92,6 +92,12 @@ def get_current_team(get_doc=False):
 	return team
 
 
+def _get_current_team():
+	if not hasattr(frappe.local, "_current_team"):
+		frappe.local._current_team = get_current_team(get_doc=True)
+	return frappe.local._current_team
+
+
 @functools.lru_cache(maxsize=1024)
 def get_app_tag(repository, repository_owner, hash):
 	return frappe.db.get_value(

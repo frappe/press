@@ -447,8 +447,7 @@ def current_team():
 
 	from press.api.client import get
 
-	team = frappe.local.team
-	return get("Team", team.name)
+	return get("Team", frappe.local.team().name)
 
 
 def get_permissions():
