@@ -10,6 +10,9 @@ from frappe.model.document import Document
 
 class SitePlanChange(Document):
 	def validate(self):
+		if not self.from_plan and self.to_plan:
+			self.type = "Initial Plan"
+
 		if self.from_plan and not self.type:
 			from_plan_value = frappe.db.get_value("Plan", self.from_plan, "price_usd")
 			to_plan_value = frappe.db.get_value("Plan", self.to_plan, "price_usd")

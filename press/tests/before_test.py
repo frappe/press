@@ -6,6 +6,7 @@ import os
 
 import frappe
 from frappe.model.document import Document
+from press.utils import _get_current_team
 
 
 def doc_equal(self: Document, other: Document) -> bool:
@@ -28,6 +29,9 @@ def execute():
 
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
+
+    # frappe.local.team helper
+	frappe.local.team = _get_current_team
 
 
 def create_test_stripe_credentials():
