@@ -3,7 +3,7 @@ import dayjs from './utils/dayjs';
 import session from './data/session';
 import theme from '../tailwind.theme.json';
 import { debounce } from 'frappe-ui';
-import { getTeam } from './data/team';
+import team from './data/team';
 import * as formatters from './utils/format';
 
 export default function globals(app) {
@@ -15,7 +15,7 @@ export default function globals(app) {
 	app.config.globalProperties.$format = formatters;
 	app.config.globalProperties.$log = console.log;
 	app.config.globalProperties.$debounce = debounce;
-	app.config.globalProperties.$team = getTeam();
+	app.config.globalProperties.$team = team;
 }
 
 function getPlatform() {

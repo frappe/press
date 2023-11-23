@@ -77,8 +77,7 @@ def get(doctype, name):
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
 		frappe.throw(frappe._("doc.doctype is required"))
-
-	check_permissions(doc.get("doctype"))
+	check_permissions(doc.doctype)
 
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
@@ -186,7 +185,7 @@ def check_permissions(doctype):
 	if not (frappe.conf.developer_mode or frappe.local.dev_server):
 		frappe.only_for("System Manager")
 
-	if not frappe.local.team():
+	if not frappe.local.team:
 		frappe.throw(
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)

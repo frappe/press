@@ -36,7 +36,7 @@ class MarketplaceAppPlan(Document):
 				"marketplace_app_plan": plan_name,
 				"app": app_name,
 				"site": site_name,
-				"team": frappe.local.team().name,
+				"team": frappe.local.team.name,
 			}
 		).insert(ignore_permissions=True)
 

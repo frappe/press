@@ -8,7 +8,6 @@ from frappe.utils import cint
 from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
-from press.utils import _get_current_team
 
 
 @frappe.whitelist(allow_guest=True)
@@ -70,18 +69,8 @@ def on_session_creation():
 		team = get_current_team(get_doc=True)
 		route = team.get_route_on_login()
 		frappe.local.response.update({"dashboard_route": route})
-		frappe.local.cookie_manager.set_cookie("current_team", team.name)
 	except:
 		pass
-
-
-def on_logout():
-	frappe.local.cookie_manager.delete_cookie("current_team")
-
-
-def before_job():
-	frappe.local.team = _get_current_team
-
 
 def update_website_context(context):
 	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(

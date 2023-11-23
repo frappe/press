@@ -6,7 +6,7 @@ import json
 import traceback
 import os
 
-from press.utils import _get_current_team
+from press.utils import get_current_team
 
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
@@ -34,7 +34,6 @@ ALLOWED_PATHS = [
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
-	"/api/method/press.www.dashboard.get_context_for_dev"
 ]
 
 ALLOWED_WILDCARD_PATHS = [
@@ -53,13 +52,13 @@ def hook():
 	else:
 		path = frappe.request.path
 
-	frappe.local.team = _get_current_team
-
-	if frappe.session.user != "Guest":
+	if frappe.session.user == "Guest":
+		frappe.local.team = None
+	else:
 		try:
-			frappe.local.cookie_manager.set_cookie("current_team", frappe.local.team().name)
-		except Exception:
-			pass
+			frappe.local.team = get_current_team(get_doc=True)
+		except:
+			frappe.local.team = None
 
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 

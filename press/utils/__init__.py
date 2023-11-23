@@ -51,9 +51,6 @@ def get_current_team(get_doc=False):
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		# get team from cookie
-		team = frappe.request.cookies.get("current_team")
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
@@ -71,31 +68,34 @@ def get_current_team(get_doc=False):
 		)
 
 	if not team:
-		# if team is not passed via header, get the default team for user
-		team = get_default_team_for_user(frappe.session.user)
+		# if team is not passed via header, get the first team that this user is part of
+		team_dict = frappe.db.sql(
+			"""select t.name from `tabTeam` t
+			inner join `tabTeam Member` tm on tm.parent = t.name
+			where tm.user = %s and tm.parenttype = 'Team' and t.enabled = 1
+			order by t.creation asc
+			limit 1""",
+			frappe.session.user,
+			as_dict=True,
+		)
+		team = team_dict[0].name
 
-	if not is_user_part_of_team(frappe.session.user, team):
-		# if user is not part of the team, get the default team for user
-		team = get_default_team_for_user(frappe.session.user)
-		if not team:
-			frappe.throw(
-				"User {0} does not belong to Team {1}".format(frappe.session.user, team),
-				frappe.PermissionError,
-			)
-
-	if not frappe.db.exists("Team", {"name": team, "enabled": 1}):
+	if not frappe.db.exists("Team", team):
 		frappe.throw("Invalid Team", frappe.PermissionError)
+
+	valid_team = frappe.db.exists(
+		"Team Member", {"parenttype": "Team", "parent": team, "user": frappe.session.user}
+	)
+	if not valid_team and not user_is_system_user:
+		frappe.throw(
+			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
+			frappe.PermissionError,
+		)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
 
 	return team
-
-
-def _get_current_team():
-	if not hasattr(frappe.local, "_current_team"):
-		frappe.local._current_team = get_current_team(get_doc=True)
-	return frappe.local._current_team
 
 
 @functools.lru_cache(maxsize=1024)
@@ -108,24 +108,15 @@ def get_app_tag(repository, repository_owner, hash):
 
 
 def get_default_team_for_user(user):
-	"""Returns the Team if user has one, or returns the Team in which they belong"""
-	if frappe.db.exists("Team", {"user": user, "enabled": 1}):
-		return frappe.db.get_value("Team", {"user": user, "enabled": 1}, "name")
+	"""Returns the Team if user has one, or returns the Team to which they belong"""
+	if frappe.db.exists("Team", {"user": user}):
+		return frappe.db.get_value("Team", {"user": user}, "name")
 
-	teams = frappe.db.get_values(
+	team = frappe.db.get_value(
 		"Team Member", filters={"parenttype": "Team", "user": user}, fieldname="parent"
 	)
-	# if user is part of multiple teams, we don't know which one to pick
-	if len(teams) == 1:
-		team = teams[0]
-		return team if frappe.db.exists("Team", {"name": team, "enabled": 1}) else None
-
-
-def is_user_part_of_team(user, team):
-	"""Returns True if user is part of the team"""
-	return frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": user}
-	)
+	if team:
+		return team
 
 
 def get_country_info():
