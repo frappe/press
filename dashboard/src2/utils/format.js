@@ -1,5 +1,5 @@
 import dayjs from '../utils/dayjs';
-import { getTeam } from '../data/team';
+import team from '../data/team';
 
 export function bytes(bytes, decimals = 2, current = 0) {
 	if (bytes === 0) return '0 Bytes';
@@ -47,8 +47,7 @@ export function plural(number, singular, plural) {
 }
 
 export function planTitle(plan) {
-	let $team = getTeam();
-	let india = $team.doc.country == 'India';
+	let india = team.data.country == 'India';
 	let currency = india ? '₹' : '$';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =

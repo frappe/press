@@ -7,7 +7,7 @@ import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
-import { getTeam } from '../data/team';
+import teamResource from '../data/team';
 import router from '../router';
 import BadgeDollarSign from '~icons/lucide/badge-dollar-sign';
 
@@ -38,7 +38,6 @@ export default {
 		retryArchive: 'retry_archive',
 		retryRename: 'retry_rename',
 		scheduleUpdate: 'schedule_update',
-		setPlan: 'set_plan',
 		suspend: 'suspend',
 		sync_info: 'sync_info',
 		unsuspend: 'unsuspend',
@@ -55,7 +54,6 @@ export default {
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title'
 		],
-		orderBy: 'creation desc',
 		columns: [
 			{ label: 'Site', fieldname: 'name', width: 2 },
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 1 },
@@ -606,20 +604,21 @@ export default {
 		],
 		actions(context) {
 			let { documentResource: site } = context;
-			let $team = getTeam();
+			let team = teamResource.data;
 			return [
 				{
-					label: `Subscription Plan: ${site.doc.plan}`,
+					label: `Current Plan: ${site.doc.plan}`,
 					slots: {
 						prefix: () => h(BadgeDollarSign)
 					},
 					onClick() {
 						let SitePlansDialog = defineAsyncComponent(() =>
-							import('../components/ManageSitePlansDialog.vue')
+							import('../../src/views/site/SitePlansDialog.vue')
 						);
 						renderDialog(
 							h(SitePlansDialog, {
-								site: site.doc.name
+								site: site.doc,
+								plan: site.doc.current_plan
 							})
 						);
 					}
@@ -647,7 +646,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: 'external-link',
-							condition: () => $team.doc.is_desk_user,
+							condition: () => team.is_desk_user,
 							onClick: () => {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
@@ -678,7 +677,7 @@ export default {
 										}
 									],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && $team.name != site.doc.team) {
+										if (!values.reason && team.name != site.doc.team) {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin

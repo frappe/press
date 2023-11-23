@@ -31,19 +31,20 @@ getInitialData().then(() => {
 });
 
 function getInitialData() {
-	if (import.meta.env.DEV) {
-		return frappeRequest({
-			url: '/api/method/press.www.dashboard.get_context_for_dev'
+	let promises = [
+		import.meta.env.DEV
+			? frappeRequest({
+					url: '/api/method/press.www.dashboard.get_context_for_dev'
+			  }).then(values => {
+					for (let key in values) {
+						window[key] = values[key];
+					}
+			  })
+			: Promise.resolve(),
+		import('./globals.js').then(globals => {
+			app.use(globals.default);
 		})
-			.then(values => Object.assign(window, values))
-			.then(importGlobals);
-	} else {
-		return importGlobals();
-	}
-}
+	];
 
-function importGlobals() {
-	return import('./globals.js').then(globals => {
-		app.use(globals.default);
-	});
+	return Promise.all(promises);
 }

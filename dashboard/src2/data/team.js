@@ -1,20 +1,9 @@
-import { createDocumentResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui';
 
-let team;
+let team = createResource({
+	url: '/api/method/press.api.account.current_team',
+	cache: 'CurrentTeam'
+});
+team.fetch();
 
-export function getTeam() {
-	if (!team) {
-		team = createDocumentResource({
-			doctype: 'Team',
-			name: getCurrentTeam()
-		});
-	}
-	return team;
-}
-
-function getCurrentTeam() {
-	return document.cookie
-		.split(';')
-		.find(item => item.trim().startsWith('current_team='))
-		?.split('=')[1];
-}
+export default team;
