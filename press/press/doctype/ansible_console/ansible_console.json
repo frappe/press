@@ -21,6 +21,7 @@
   "inventory_section",
   "inventory",
   "command",
+  "output",
   "error"
  ],
  "fields": [
@@ -40,6 +41,13 @@
    "label": "Command",
    "max_height": "40px",
    "options": "Shell"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Table",
+   "label": "Output",
+   "options": "Ansible Console Output",
+   "read_only": 1
   },
   {
    "fieldname": "error",

@@ -14,6 +14,7 @@ frappe.ui.form.on('Ansible Console', {
 	refresh: function (frm) {
 		frm.disable_save();
 		frm.page.set_primary_action(__('Execute'), ($btn) => {
+			frm.clear_table('output');
 			$btn.text(__('Executing...'));
 			return frm
 				.execute_action('Execute')

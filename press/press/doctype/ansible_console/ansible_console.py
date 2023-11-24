@@ -16,6 +16,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
 from ansible.playbook.play import Play
 from ansible.executor.task_queue_manager import TaskQueueManager
+from frappe.utils import get_timedelta
 
 
 class AnsibleConsole(Document):
@@ -23,7 +24,8 @@ class AnsibleConsole(Document):
 		frappe.only_for("System Manager")
 		try:
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
-			ad_hoc.run(self.command)
+			for host in ad_hoc.run(self.command):
+				self.append("output", host)
 		except Exception:
 			self.error = frappe.get_traceback()
 			import traceback
@@ -70,6 +72,8 @@ class AnsibleCallback(CallbackBase):
 				"output": _result.get("stdout"),
 				"error": _result.get("stderr"),
 				"exception": _result.get("msg"),
+				"exit_code": _result.get("rc"),
+				"duration": get_timedelta(_result.get("delta", "0:00:00.000000")),
 			}
 		)
 
