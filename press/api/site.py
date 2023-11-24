@@ -1708,22 +1708,14 @@ def change_group(name, group):
 def change_region_options(name):
 	group, cluster = frappe.db.get_value("Site", name, ["group", "cluster"])
 
-	ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
-	Server = frappe.qb.DocType("Server")
-	Cluster = frappe.qb.DocType("Cluster")
-	query = (
-		frappe.qb.from_(ReleaseGroupServer)
-		.join(Server)
-		.on(Server.name == ReleaseGroupServer.server)
-		.join(Cluster)
-		.on(Cluster.name == Server.cluster)
-		.select(Cluster.name, Cluster.title, Cluster.image)
-		.distinct()
-		.where(ReleaseGroupServer.parent == group)
-		.where(ReleaseGroupServer.parenttype == "Release Group")
+	cluster_names = frappe.get_doc("Release Group", group).get_clusters()
+	group_regions = frappe.get_all(
+		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
 	)
 
-	return {"regions": query.run(as_dict=True), "current_region": cluster}
+	regions = frappe.db.get_all("Cluster", fields=["name", "title", "image"])
+
+	return {"regions": regions, "group_regions": group_regions, "current_region": cluster}
 
 
 @frappe.whitelist()

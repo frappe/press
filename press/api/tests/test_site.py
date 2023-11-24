@@ -490,16 +490,21 @@ erpnext 0.8.3	    HEAD
 		create_test_bench(group=group, server=seoul_server.name)
 		site = create_test_site(bench=bench.name)
 
-		self.assertEqual(
-			change_region_options(site.name),
-			{
-				"regions": [
-					{"name": tokyo_server.cluster, "title": None, "image": None},
-					{"name": seoul_server.cluster, "title": None, "image": None},
-				],
-				"current_region": site.cluster,
-			},
+		options = change_region_options(site.name)
+
+		self.assertCountEqual(
+			(options["regions"]),
+			[
+				{"name": "Mumbai", "title": None, "image": None},
+				{"name": seoul_server.cluster, "title": None, "image": None},
+				{"name": tokyo_server.cluster, "title": None, "image": None},
+				{"name": "Default", "title": None, "image": None},
+			],
 		)
+		self.assertCountEqual(
+			options["group_regions"], [seoul_server.cluster, tokyo_server.cluster]
+		)
+		self.assertEqual(options["current_region"], tokyo_server.cluster)
 
 		with fake_agent_job("Update Site Migrate"):
 			responses.post(
