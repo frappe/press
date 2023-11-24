@@ -5,6 +5,8 @@ import json
 import shutil
 import frappe
 from frappe.model.document import Document
+
+import wrapt
 from ansible import context
 from ansible import constants
 
@@ -14,6 +16,7 @@ from ansible.parsing.dataloader import DataLoader
 
 from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
+from pymysql.err import InterfaceError
 from ansible.playbook.play import Play
 from ansible.executor.task_queue_manager import TaskQueueManager
 from frappe.utils import get_timedelta
@@ -47,6 +50,18 @@ def _execute_command(doc):
 	return console.as_dict()
 
 
+def reconnect_on_failure():
+	@wrapt.decorator
+	def wrapper(wrapped, instance, args, kwargs):
+		try:
+			return wrapped(*args, **kwargs)
+		except InterfaceError:
+			frappe.db.connect()
+			return wrapped(*args, **kwargs)
+
+	return wrapper
+
+
 class AnsibleCallback(CallbackBase):
 	def __init__(self, *args, **kwargs):
 		super(AnsibleCallback, self).__init__(*args, **kwargs)
@@ -61,6 +76,7 @@ class AnsibleCallback(CallbackBase):
 	def v2_runner_on_unreachable(self, result):
 		self.update_task("Unreachable", result)
 
+	@reconnect_on_failure()
 	def update_task(self, status, result):
 		host, result = self.parse_result(result)
 		result.update(
