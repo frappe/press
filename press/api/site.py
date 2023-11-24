@@ -430,7 +430,9 @@ def options_for_new():
 			)
 			if bench:
 				version.group.bench = bench
-				bench_app_sources = frappe.db.get_all("Bench App", {"parent": bench}, pluck="source")
+				bench_app_sources = frappe.db.get_all(
+					"Bench App", {"parent": bench}, pluck="source"
+				)
 				app_sources = frappe.db.get_all(
 					"App Source",
 					[
@@ -1710,6 +1712,19 @@ def change_region_options(name):
 	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
 
 	return {"regions": regions, "group_regions": group_regions, "current_region": cluster}
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def add_region_to_group(name, region):
+	from press.api.bench import add_region
+
+	add_region(name, region)
+	group = frappe.get_doc("Release Group", name)
+	candidate = group.create_deploy_candidate()
+	candidate.deploy_to_production()
+
+	return candidate.name
 
 
 @frappe.whitelist()

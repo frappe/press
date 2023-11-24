@@ -147,7 +147,7 @@ export default {
 		},
 		addRegionToReleaseGroup() {
 			return {
-				url: 'press.api.bench.add_region',
+				url: 'press.api.site.add_region_to_group',
 				params: {
 					name: this.site?.group,
 					region: this.selectedRegion
@@ -160,12 +160,20 @@ export default {
 					)
 						return 'Region is already added to the release group';
 				},
-				onSuccess() {
+				onSuccess(data) {
 					notify({
 						title: 'Region Added to Release Group',
-						message: 'You can now change the region of this site',
+						message: `Please wait till the deploy in the region ${this.selectedRegion} is done.`,
 						color: 'green',
 						icon: 'check'
+					});
+					this.$emit('update:modelValue', false);
+					this.$router.push({
+						name: 'BenchDeploys',
+						params: {
+							benchName: this.site?.group,
+							candidateName: data
+						}
 					});
 				}
 			};
