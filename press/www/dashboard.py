@@ -27,9 +27,9 @@ def get_context_for_dev():
 def get_boot():
 	return frappe._dict(
 		frappe_version=frappe.__version__,
-		press_frontend_sentry_dsn=frappe.conf.press_frontend_sentry_dsn or '',
-		press_frontend_posthog_host=frappe.conf.posthog_host or '',
-		press_frontend_posthog_project_id=frappe.conf.posthog_project_id or '',
+		press_frontend_sentry_dsn=frappe.conf.press_frontend_sentry_dsn or "",
+		press_frontend_posthog_host=frappe.conf.posthog_host or "",
+		press_frontend_posthog_project_id=frappe.conf.posthog_project_id or "",
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
 	)
