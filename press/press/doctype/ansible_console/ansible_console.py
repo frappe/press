@@ -35,6 +35,13 @@ class AnsibleConsole(Document):
 
 @frappe.whitelist()
 def execute_command(doc):
+	frappe.enqueue(
+		"press.press.doctype.ansible_console.ansible_console._execute_command", doc=doc
+	)
+	return doc
+
+
+def _execute_command(doc):
 	console = frappe.get_doc(json.loads(doc))
 	console.run()
 	return console.as_dict()
