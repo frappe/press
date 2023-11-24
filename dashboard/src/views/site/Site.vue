@@ -430,7 +430,8 @@ export default {
 				{
 					label: 'Change Server',
 					icon: 'server',
-					condition: () => this.site?.status === 'Active',
+					condition: () =>
+						this.site?.status === 'Active' && !this.site?.is_public,
 					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];

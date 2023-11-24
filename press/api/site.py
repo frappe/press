@@ -1622,8 +1622,9 @@ def change_team(team, name):
 
 @frappe.whitelist()
 @protected("Site")
-def add_server_to_release_group(name, group_name):
-	server = frappe.db.get_value("Site", name, "server")
+def add_server_to_release_group(name, group_name, server=None):
+	if not server:
+		server = frappe.db.get_value("Site", name, "server")
 	deploy = frappe.get_doc("Release Group", group_name).add_server(server, deploy=True)
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
@@ -1802,39 +1803,21 @@ def change_server_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_server_bench_options(name, server):
-	site_group, site_bench = frappe.db.get_value("Site", name, ["group", "bench"])
-	site_candidate = frappe.db.get_value("Bench", site_bench, "candidate")
-	site_version = frappe.db.get_value("Release Group", site_group, "version")
-	team = get_current_team()
-
-	Bench = frappe.qb.DocType("Bench")
-	ReleaseGroup = frappe.qb.DocType("Release Group")
-	rg = (
-		frappe.qb.from_(Bench)
-		.select(ReleaseGroup.name, ReleaseGroup.title)
-		.join(ReleaseGroup)
-		.on(ReleaseGroup.name == Bench.group)
-		.where(Bench.server == server)
-		.where(Bench.status == "Active")
-		.where(ReleaseGroup.team == team)
-		.where(Bench.candidate >= site_candidate)
-		.where(ReleaseGroup.version == site_version)
-		.distinct()
-	).run(as_dict=True)
-
-	if not rg:
-		frappe.throw(
-			f"There are no benches with <b>{site_version}</b> in server <b>{server}</b>."
-		)
-
-	return rg
+def is_server_added_in_group(name, server):
+	site_group = frappe.get_value("Site", name, "group")
+	rg = frappe.get_doc("Release Group", site_group)
+	if server not in [s.server for s in rg.servers]:
+		return False
+	return True
 
 
 @frappe.whitelist()
 @protected("Site")
-def change_server(name, group, scheduled_datetime=None):
-	bench = frappe.db.get_value("Bench", {"group": group, "status": "Active"}, "name")
+def change_server(name, server, scheduled_datetime=None):
+	group = frappe.db.get_value("Site", name, "group")
+	bench = frappe.db.get_value(
+		"Bench", {"group": group, "status": "Active", "server": server}, "name"
+	)
 
 	site_migration = frappe.get_doc(
 		{
