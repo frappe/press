@@ -1813,10 +1813,10 @@ def is_server_added_in_group(name, server):
 
 @frappe.whitelist()
 @protected("Site")
-def change_server(name, scheduled_datetime=None):
-	group, server = frappe.db.get_value("Site", name, ["group", "server"])
+def change_server(name, server, scheduled_datetime=None):
+	group = frappe.db.get_value("Site", name, "group")
 	bench = frappe.db.get_value(
-		"Bench", {"group": group, "status": "Active", "server": ("not in", server)}, "name"
+		"Bench", {"group": group, "status": "Active", "server": server}, "name"
 	)
 
 	site_migration = frappe.get_doc(

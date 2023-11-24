@@ -22,6 +22,7 @@
 					onClick: () => {
 						$resources.changeServer.submit({
 							name: site?.name,
+							server: targetServer,
 							scheduled_datetime: datetimeInIST
 						});
 					}
