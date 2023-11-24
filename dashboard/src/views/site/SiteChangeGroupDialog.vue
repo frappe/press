@@ -8,8 +8,7 @@
 					loading: $resources.cloneGroup.loading,
 					onClick: () =>
 						$resources.cloneGroup.submit({
-							name: site?.name,
-							group: targetGroup
+							name: site?.name
 						})
 				},
 				{
