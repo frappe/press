@@ -6,20 +6,24 @@
 			title: 'Move Site to another Server',
 			actions: [
 				{
-					label: checkForBench ? 'Check for Available Benches' : 'Submit',
+					label: 'Add Server to Bench',
+					loading: $resources.addServerToReleaseGroup.loading,
+					disabled: $resources.isServerAddedInGroup.data || !targetServer,
+					onClick: () => $resources.addServerToReleaseGroup.submit()
+				},
+				{
+					label: `Migrate Site to Server`,
 					loading: $resources.changeServer.loading,
 					variant: 'solid',
-					disabled: !$resources.changeServerOptions?.data?.length,
+					disabled:
+						!$resources.changeServerOptions?.data?.length ||
+						!targetServer ||
+						!$resources.isServerAddedInGroup.data,
 					onClick: () => {
-						if (checkForBench) {
-							$resources.changeServerBenchOptions.fetch();
-						} else {
-							$resources.changeServer.submit({
-								name: site?.name,
-								group: targetBench,
-								scheduled_datetime: targetDateTime
-							});
-						}
+						$resources.changeServer.submit({
+							name: site?.name,
+							scheduled_datetime: datetimeInIST
+						});
 					}
 				}
 			]
@@ -36,23 +40,22 @@
 				type="select"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
+				@change="
+					e =>
+						$resources.isServerAddedInGroup.fetch({
+							name: site?.name,
+							server: e.target.value
+						})
+				"
 			/>
-			<p v-else class="text-base">
-				There are no servers available to move this site. Please create a new
-				server first.
+			<p v-else class="text-sm text-gray-700">
+				The chosen server isn't added to the bench yet. Please add the server to
+				the bench first.
 			</p>
 			<FormControl
 				class="mt-4"
-				v-if="$resources.changeServerBenchOptions.data.length > 0"
-				label="Select Bench"
-				type="select"
-				:options="$resources.changeServerBenchOptions.data"
-				v-model="targetBench"
-			/>
-			<FormControl
-				class="mt-4"
-				v-if="$resources.changeServerBenchOptions.data.length > 0"
-				label="Schedule Site Migration (IST)"
+				v-if="$resources.isServerAddedInGroup.data"
+				label="Schedule Site Migration"
 				type="datetime-local"
 				:min="new Date().toISOString().slice(0, 16)"
 				v-model="targetDateTime"
@@ -61,7 +64,8 @@
 				class="mt-4"
 				:message="
 					$resources.changeServer.error ||
-					$resources.changeServerBenchOptions.error
+					$resources.isServerAddedInGroup.error ||
+					$resources.addServerToReleaseGroup.error
 				"
 			/>
 		</template>
@@ -77,10 +81,8 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			targetBench: '',
 			targetServer: '',
-			targetDateTime: null,
-			checkForBench: true
+			targetDateTime: null
 		};
 	},
 	watch: {
@@ -96,6 +98,14 @@ export default {
 			set(value) {
 				this.$emit('update:modelValue', value);
 			}
+		},
+		datetimeInIST() {
+			if (!this.targetDateTime) return null;
+			const datetimeInIST = this.$dayjs(this.targetDateTime)
+				.tz('Asia/Kolkata')
+				.format('YYYY-MM-DDTHH:mm');
+
+			return datetimeInIST;
 		}
 	},
 	resources: {
@@ -110,30 +120,13 @@ export default {
 						label: s.title || s.name,
 						value: s.name
 					}));
-				},
-				onSuccess(data) {
-					if (data.length > 0) this.targetServer = data[0].name;
 				}
 			};
 		},
-		changeServerBenchOptions() {
+		isServerAddedInGroup() {
 			return {
-				url: 'press.api.site.change_server_bench_options',
-				params: {
-					name: this.site?.name,
-					server: this.targetServer
-				},
-				initialData: [],
-				transform(d) {
-					return d.map(s => ({
-						label: s.title || s.name,
-						value: s.name
-					}));
-				},
-				onSuccess(data) {
-					this.targetBench = data[0].name;
-					this.checkForBench = false;
-				}
+				url: 'press.api.site.is_server_added_in_group',
+				initialData: false
 			};
 		},
 		changeServer() {
@@ -149,14 +142,40 @@ export default {
 					this.$emit('update:modelValue', false);
 				}
 			};
+		},
+		addServerToReleaseGroup() {
+			return {
+				url: 'press.api.site.add_server_to_release_group',
+				params: {
+					name: this.site?.name,
+					group_name: this.site?.group,
+					server: this.targetServer
+				},
+				onSuccess(data) {
+					notify({
+						title: 'Server Added to the Bench',
+						message: `Added <b>${this.targetServer}</b> to current bench. Please wait for the deploy to be completed.`,
+						icon: 'check',
+						color: 'green'
+					});
+					this.$router.push({
+						name: 'BenchJobs',
+						params: {
+							benchName: this.site?.group,
+							jobName: data
+						}
+					});
+					this.resetValues();
+					this.$emit('update:modelValue', false);
+				}
+			};
 		}
 	},
 	methods: {
 		resetValues() {
-			this.targetBench = '';
 			this.targetServer = '';
 			this.targetDateTime = null;
-			this.checkForBench = true;
+			this.$resources.isServerAddedInGroup.reset();
 		}
 	}
 };
