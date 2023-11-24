@@ -13,8 +13,10 @@ export function getTeam() {
 }
 
 function getCurrentTeam() {
-	return document.cookie
-		.split(';')
-		.find(item => item.trim().startsWith('current_team='))
-		?.split('=')[1];
+	return decodeURIComponent(
+		document.cookie
+			.split(';')
+			.find(item => item.trim().startsWith('current_team='))
+			?.split('=')[1]
+	);
 }
