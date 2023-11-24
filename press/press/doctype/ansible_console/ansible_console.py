@@ -170,4 +170,5 @@ class AnsibleAdHoc:
 
 		shutil.rmtree(constants.DEFAULT_LOCAL_TMP, True)
 
+		self.callback.publish_update()
 		return list(self.callback.hosts.values())
