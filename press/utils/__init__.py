@@ -98,7 +98,7 @@ def _get_current_team():
 	return frappe.local._current_team
 
 def _system_user():
-	return frappe.db.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
 
 @functools.lru_cache(maxsize=1024)
