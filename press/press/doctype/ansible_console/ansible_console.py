@@ -34,6 +34,10 @@ class AnsibleConsole(Document):
 			import traceback
 
 			traceback.print_exc()
+		log = self.as_dict()
+		log.update({"doctype": "Ansible Console Log"})
+		frappe.get_doc(log).insert()
+		frappe.db.commit()
 
 
 @frappe.whitelist()
