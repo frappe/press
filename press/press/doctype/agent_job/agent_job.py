@@ -493,7 +493,8 @@ def get_next_retry_at(job_retry_count):
 
 
 def retry_undelivered_jobs():
-	server_jobs = get_server_wise_undelivered_jobs()
+	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
+	server_jobs = get_server_wise_undelivered_jobs(job_types)
 
 	for server in server_jobs:
 		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
@@ -505,14 +506,9 @@ def retry_undelivered_jobs():
 
 		for job in undelivered_jobs:
 			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count, disabled_auto_retry = frappe.db.get_value(
-				"Agent Job Type",
-				job_doc.job_type,
-				("max_retry_count", "disabled_auto_retry"),
-				cache=True,
-			)
+			max_retry_count = max_retry_per_job_type[job_doc.job_type]
 
-			if disabled_auto_retry or not max_retry_count:
+			if not max_retry_count:
 				continue
 
 			if job_doc.retry_count < max_retry_count:
@@ -521,6 +517,19 @@ def retry_undelivered_jobs():
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
+
+
+def get_retryable_job_types_and_max_retry_count():
+	job_types, max_retry_per_job_type = [], {}
+	for job_type in frappe.get_all(
+		"Agent Job Type",
+		filters={"disabled_auto_retry": 0, "max_retry_count": [">", 0]},
+		fields=["name", "max_retry_count"],
+	):
+		job_types.append(job_type["name"])
+		max_retry_per_job_type[job_type["name"]] = job_type["max_retry_count"]
+
+	return job_types, max_retry_per_job_type
 
 
 def update_job_and_step_status(job):
@@ -535,8 +544,9 @@ def update_job_and_step_status(job):
 	).run()
 
 
-def get_server_wise_undelivered_jobs():
+def get_server_wise_undelivered_jobs(job_types):
 	jobs = frappe._dict()
+
 	for job in frappe.get_all(
 		"Agent Job",
 		{
@@ -544,6 +554,7 @@ def get_server_wise_undelivered_jobs():
 			"job_id": 0,
 			"retry_count": [">=", 1],
 			"next_retry_at": ("<=", frappe.utils.now_datetime()),
+			"job_type": ("in", job_types),
 		},
 		["name", "server", "server_type"],
 	):
