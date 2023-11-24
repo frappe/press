@@ -1,0 +1,14 @@
+---
+- name: Check if package is installed
+  hosts: all
+  become_user: root
+  become_method: sudo
+  tasks:
+    - name: Gather package facts
+      package_facts:
+        manager: auto
+
+    - name: Check if package is installed
+      debug:
+        var: ansible_facts.packages
+      failed_when: '"{{ pkg }}" not in ansible_facts.packages'
