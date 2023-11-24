@@ -113,6 +113,7 @@ export default {
 				params: {
 					name: this.site?.name
 				},
+				initialData: [],
 				onSuccess(data) {
 					if (data.length > 0) this.targetGroup = data[0].name;
 				}
