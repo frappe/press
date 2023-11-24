@@ -99,7 +99,8 @@ def validate_plan(secret_key):
 	if frappe.db.exists("Saas App Subscription", {"secret_key": secret_key}):
 		return True
 
-	plan_label_map = {"Mail 25$": 10000, "Mail 5$": 2000, "Mail Free": 100}
+	# TODO: replace this with plan attributes
+	plan_label_map = {"Mail $25": 10000, "Mail $5": 2000, "Mail Free": 100}
 
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
