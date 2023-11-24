@@ -27,7 +27,7 @@ class AnsibleConsole(Document):
 		frappe.only_for("System Manager")
 		try:
 			ad_hoc = AnsibleAdHoc(sources=self.inventory)
-			for host in ad_hoc.run(self.command):
+			for host in ad_hoc.run(self.command, self.nonce):
 				self.append("output", host)
 		except Exception:
 			self.error = frappe.get_traceback()
