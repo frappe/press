@@ -4,12 +4,11 @@
 			title: 'Move Site to another Bench',
 			actions: [
 				{
-					label: 'Clone Group',
+					label: 'Clone current Bench',
 					loading: $resources.cloneGroup.loading,
 					onClick: () =>
 						$resources.cloneGroup.submit({
-							name: site?.name,
-							group: targetGroup
+							name: site?.name
 						})
 				},
 				{
