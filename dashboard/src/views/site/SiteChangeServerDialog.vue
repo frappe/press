@@ -12,7 +12,7 @@
 					onClick: () => $resources.addServerToReleaseGroup.submit()
 				},
 				{
-					label: `Migrate Site to Server`,
+					label: 'Change Server',
 					loading: $resources.changeServer.loading,
 					variant: 'solid',
 					disabled:
