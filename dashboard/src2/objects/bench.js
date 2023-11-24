@@ -3,7 +3,7 @@ import { toast } from 'vue-sonner';
 import dayjs from '../utils/dayjs';
 import { duration } from '../utils/format';
 import { icon, renderDialog } from '../utils/components';
-import teamResource from '../data/team';
+import { getTeam } from '../data/team';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 
@@ -76,11 +76,11 @@ export default {
 						}
 					],
 					rowActions({ row, listResource: apps, documentResource: group }) {
-						let team = teamResource.data;
+						let team = getTeam();
 						return [
 							{
 								label: 'View in Desk',
-								condition: () => team.is_desk_user,
+								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
 										`${window.location.protocol}//${window.location.host}/app/release-group/${group.name}`,

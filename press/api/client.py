@@ -8,7 +8,7 @@ from pypika.queries import QueryBuilder
 from frappe.model.base_document import get_controller
 from frappe.model import default_fields
 from frappe import is_whitelisted
-from frappe.handler import get_attr
+from frappe.handler import get_attr, run_doc_method as _run_doc_method
 
 
 @frappe.whitelist()
@@ -57,6 +57,10 @@ def get(doctype, name):
 	check_permissions(doctype)
 	doc = frappe.get_doc(doctype, name)
 
+	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+		if doc.team != frappe.local.team().name:
+			frappe.throw("Not permitted", frappe.PermissionError)
+
 	fields = list(default_fields)
 	if hasattr(doc, "whitelisted_fields"):
 		fields += doc.whitelisted_fields
@@ -77,7 +81,8 @@ def get(doctype, name):
 def insert(doc=None):
 	if not doc or not doc.get("doctype"):
 		frappe.throw(frappe._("doc.doctype is required"))
-	check_permissions(doc.doctype)
+
+	check_permissions(doc.get("doctype"))
 
 	doc = frappe._dict(doc)
 	if frappe.is_table(doc.doctype):
@@ -92,7 +97,12 @@ def insert(doc=None):
 		parent.save()
 		return parent
 
-	return frappe.get_doc(doc).insert()
+	_doc = frappe.get_doc(doc)
+	if not frappe.local.system_user() and frappe.get_meta(doc.doctype).has_field("team"):
+		# don't allow non system user to set any other team
+		_doc.team = frappe.local.team().name
+	_doc.insert()
+	return get(_doc.doctype, _doc.name)
 
 
 @frappe.whitelist(methods=["POST", "PUT"])
@@ -103,6 +113,13 @@ def set_value(doctype, name, fieldname, value=None):
 @frappe.whitelist(methods=["DELETE", "POST"])
 def delete(doctype, name):
 	pass
+
+
+@frappe.whitelist()
+def run_doc_method(dt, dn, method, args=None):
+	check_permissions(dt)
+	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
+	frappe.response.docs = [get(dt, dn)]
 
 
 @frappe.whitelist()
@@ -185,7 +202,7 @@ def check_permissions(doctype):
 	if not (frappe.conf.developer_mode or frappe.local.dev_server):
 		frappe.only_for("System Manager")
 
-	if not frappe.local.team:
+	if not frappe.local.team():
 		frappe.throw(
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)

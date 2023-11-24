@@ -33,8 +33,11 @@ def create_test_subscription(
 class TestSubscription(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		frappe.set_user(self.team.user)
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def test_subscription_daily(self):

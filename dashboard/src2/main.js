@@ -13,6 +13,7 @@ setConfig('resourceFetcher', frappeRequest);
 setConfig('defaultListUrl', 'press.api.client.get_list');
 setConfig('defaultDocGetUrl', 'press.api.client.get');
 setConfig('defaultDocInsertUrl', 'press.api.client.insert');
+setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
 // setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
@@ -31,20 +32,19 @@ getInitialData().then(() => {
 });
 
 function getInitialData() {
-	let promises = [
-		import.meta.env.DEV
-			? frappeRequest({
-					url: '/api/method/press.www.dashboard.get_context_for_dev'
-			  }).then(values => {
-					for (let key in values) {
-						window[key] = values[key];
-					}
-			  })
-			: Promise.resolve(),
-		import('./globals.js').then(globals => {
-			app.use(globals.default);
+	if (import.meta.env.DEV) {
+		return frappeRequest({
+			url: '/api/method/press.www.dashboard.get_context_for_dev'
 		})
-	];
+			.then(values => Object.assign(window, values))
+			.then(importGlobals);
+	} else {
+		return importGlobals();
+	}
+}
 
-	return Promise.all(promises);
+function importGlobals() {
+	return import('./globals.js').then(globals => {
+		app.use(globals.default);
+	});
 }

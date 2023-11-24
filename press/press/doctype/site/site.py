@@ -50,7 +50,7 @@ class Site(Document):
 	def get_list_query(query):
 		Site = frappe.qb.DocType("Site")
 		query = query.where(Site.status != "Archived").where(
-			Site.team == frappe.local.team.name
+			Site.team == frappe.local.team().name
 		)
 		return query
 
@@ -79,8 +79,6 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
-		if not self.team:
-			self.team = frappe.local.team.name
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan
@@ -242,7 +240,7 @@ class Site(Document):
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
 			if not is_free:
-				if not frappe.local.team.can_install_paid_apps():
+				if not frappe.local.team().can_install_paid_apps():
 					frappe.throw(
 						"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
 					)
@@ -284,11 +282,21 @@ class Site(Document):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
+		if hasattr(self, "subscription_plan") and self.subscription_plan:
+			# create subscription
+			self.create_subscription(self.subscription_plan)
+
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
 		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
 		self.create_agent_request()
+
+		if hasattr(self, "share_details_consent") and self.share_details_consent:
+			# create partner lead
+			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
+				ignore_permissions=True
+			)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -676,6 +684,11 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	@frappe.whitelist()
+	def login_as_admin(self, reason=None):
+		sid = self.login(reason=reason)
+		return f"https://{self.host_name or self.name}/desk?sid={sid}"
+
+	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
 		return self.get_login_sid()
@@ -981,6 +994,14 @@ class Site(Document):
 			frappe.throw(
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
+
+	# TODO: rename to change_plan and remove the need for ignore_card_setup param
+	@frappe.whitelist()
+	def set_plan(self, plan):
+		from press.api.site import validate_plan
+
+		validate_plan(self.server, plan)
+		self.change_plan(plan)
 
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
@@ -1841,7 +1862,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 				order_by="creation desc",
 			)
 			if bench:
-				team = frappe.local.team.name
+				team = frappe.local.team().name
 				bench_apps = frappe.db.get_all("Bench App", {"parent": bench}, pluck="source")
 				app_sources = frappe.get_all(
 					"App Source",

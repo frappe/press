@@ -447,8 +447,7 @@ def current_team():
 
 	from press.api.client import get
 
-	team = frappe.local.team
-	return get("Team", team.name)
+	return get("Team", frappe.local.team().name)
 
 
 def get_permissions():
@@ -685,6 +684,7 @@ def switch_team(team):
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	if user_is_part_of_team or user_is_system_user:
 		frappe.db.set_value("Team", frappe.session.user, "last_used_team", team)
+		frappe.local.cookie_manager.set_cookie("current_team", team)
 		return {
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),

@@ -7,7 +7,7 @@ import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { confirmDialog, renderDialog, icon } from '../utils/components';
-import teamResource from '../data/team';
+import { getTeam } from '../data/team';
 import router from '../router';
 import BadgeDollarSign from '~icons/lucide/badge-dollar-sign';
 
@@ -29,7 +29,7 @@ export default {
 		migrate: 'migrate',
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
-		loginAsAdmin: 'login',
+		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
 		resetSiteUsage: 'reset_site_usage',
@@ -38,6 +38,7 @@ export default {
 		retryArchive: 'retry_archive',
 		retryRename: 'retry_rename',
 		scheduleUpdate: 'schedule_update',
+		setPlan: 'set_plan',
 		suspend: 'suspend',
 		sync_info: 'sync_info',
 		unsuspend: 'unsuspend',
@@ -54,6 +55,7 @@ export default {
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title'
 		],
+		orderBy: 'creation desc',
 		columns: [
 			{ label: 'Site', fieldname: 'name', width: 2 },
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 1 },
@@ -604,21 +606,20 @@ export default {
 		],
 		actions(context) {
 			let { documentResource: site } = context;
-			let team = teamResource.data;
+			let $team = getTeam();
 			return [
 				{
-					label: `Current Plan: ${site.doc.plan}`,
+					label: `Subscription Plan: ${site.doc.plan}`,
 					slots: {
 						prefix: () => h(BadgeDollarSign)
 					},
 					onClick() {
 						let SitePlansDialog = defineAsyncComponent(() =>
-							import('../../src/views/site/SitePlansDialog.vue')
+							import('../components/ManageSitePlansDialog.vue')
 						);
 						renderDialog(
 							h(SitePlansDialog, {
-								site: site.doc,
-								plan: site.doc.current_plan
+								site: site.doc.name
 							})
 						);
 					}
@@ -646,7 +647,7 @@ export default {
 						{
 							label: 'View in Desk',
 							icon: 'external-link',
-							condition: () => team.is_desk_user,
+							condition: () => $team.doc.is_desk_user,
 							onClick: () => {
 								window.open(
 									`${window.location.protocol}//${window.location.host}/app/site/${site.name}`,
@@ -677,19 +678,27 @@ export default {
 										}
 									],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && team.name != site.doc.team) {
+										if (!values.reason && $team.name != site.doc.team) {
 											throw new Error('Reason is required');
 										}
-										return site.loginAsAdmin
-											.submit({ reason: values.reason })
-											.then(result => {
-												let sid = result.message;
-												window.open(
-													`https://${site.doc.name}/desk?sid=${sid}`,
-													'_blank'
-												);
-												hide();
-											});
+										toast.promise(
+											site.loginAsAdmin
+												.submit({ reason: values.reason })
+												.then(result => {
+													let url = result.message;
+													window.open(url, '_blank');
+													hide();
+												}),
+											{
+												loading: 'Attempting to login...',
+												success: () => 'Opening site in a new tab...',
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											}
+										);
 									}
 								});
 							}

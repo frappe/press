@@ -289,7 +289,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 override_doctype_class = {"User": "press.overrides.CustomUser"}
 
 on_session_creation = "press.overrides.on_session_creation"
+on_logout = "press.overrides.on_logout"
 
+before_request = "press.overrides.before_request"
+before_job = "press.overrides.before_job"
 
 # Data Deletion Privacy Docs
 

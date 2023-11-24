@@ -106,7 +106,6 @@ def create_or_rename_saas_site(app, account_request):
 				account_request=account_request, app=app, hybrid_saas_pool=hybrid_saas_pool
 			).insert(ignore_permissions=True)
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
-			saas_site.create_subscription(get_saas_site_plan(app))
 
 		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
 	except Exception as e:

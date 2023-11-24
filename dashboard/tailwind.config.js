@@ -39,6 +39,7 @@ module.exports = {
 		}
 	},
 	plugins: [
+		require('@tailwindcss/container-queries'),
 		plugin(function ({ addUtilities, theme }) {
 			// Add your custom styles here
 			addUtilities({
