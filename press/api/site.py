@@ -1707,7 +1707,7 @@ def change_region_options(name):
 		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
 	)
 
-	regions = frappe.db.get_all("Cluster", fields=["name", "title", "image"])
+	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
 
 	return {"regions": regions, "group_regions": group_regions, "current_region": cluster}
 
