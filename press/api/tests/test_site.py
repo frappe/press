@@ -465,8 +465,8 @@ erpnext 0.8.3	    HEAD
 		from press.api.site import change_region, change_region_options
 
 		app = create_test_app()
-		tokyo_cluster = create_test_cluster("Tokyo")
-		seoul_cluster = create_test_cluster("Seoul")
+		tokyo_cluster = create_test_cluster("Tokyo", public=True)
+		seoul_cluster = create_test_cluster("Seoul", public=True)
 		tokyo_server = create_test_server(cluster=tokyo_cluster.name)
 		seoul_server = create_test_server(cluster=seoul_cluster.name)
 		group = create_test_release_group([app])
@@ -495,10 +495,8 @@ erpnext 0.8.3	    HEAD
 		self.assertCountEqual(
 			(options["regions"]),
 			[
-				{"name": "Mumbai", "title": None, "image": None},
 				{"name": seoul_server.cluster, "title": None, "image": None},
 				{"name": tokyo_server.cluster, "title": None, "image": None},
-				{"name": "Default", "title": None, "image": None},
 			],
 		)
 		self.assertCountEqual(
