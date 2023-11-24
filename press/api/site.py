@@ -103,7 +103,6 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		frappe.throw("You cannot create a new site because your account is disabled")
 
 	files = site.get("files", {})
-	share_details_consent = site.get("share_details_consent")
 
 	domain = site.get("domain")
 	if not (domain and frappe.db.exists("Root Domain", {"name": domain})):

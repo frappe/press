@@ -48,7 +48,6 @@ def get_current_team(get_doc=False):
 			)
 		)
 
-	user_is_system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
 	if not team:
@@ -97,8 +96,11 @@ def _get_current_team():
 		frappe.local._current_team = get_current_team(get_doc=True)
 	return frappe.local._current_team
 
+
 def _system_user():
-	return frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	return (
+		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	)
 
 
 @functools.lru_cache(maxsize=1024)

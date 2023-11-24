@@ -71,7 +71,7 @@ def on_session_creation():
 		route = team.get_route_on_login()
 		frappe.local.response.update({"dashboard_route": route})
 		frappe.local.cookie_manager.set_cookie("current_team", team.name)
-	except:
+	except Exception:
 		pass
 
 
@@ -82,6 +82,7 @@ def on_logout():
 def before_job():
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
+
 
 def before_request():
 	frappe.local.team = _get_current_team
