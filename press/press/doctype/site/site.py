@@ -79,8 +79,6 @@ class Site(Document):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
-		if frappe.session.data.user_type != "System User" and frappe.local.team():
-			self.team = frappe.local.team().name
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan

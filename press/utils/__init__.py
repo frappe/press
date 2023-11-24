@@ -93,9 +93,12 @@ def get_current_team(get_doc=False):
 
 
 def _get_current_team():
-	if not hasattr(frappe.local, "_current_team"):
+	if not getattr(frappe.local, "_current_team", None):
 		frappe.local._current_team = get_current_team(get_doc=True)
 	return frappe.local._current_team
+
+def _system_user():
+	return frappe.db.get_cached_value("User", frappe.session.user, "user_type") == "System User"
 
 
 @functools.lru_cache(maxsize=1024)

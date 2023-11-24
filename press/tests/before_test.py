@@ -6,6 +6,7 @@ import os
 
 import frappe
 from frappe.model.document import Document
+from press.utils import _get_current_team, _system_user
 from frappe import set_user as _set_user
 
 
@@ -33,8 +34,10 @@ def execute():
 	# patch frappe.set_user that
 	frappe.set_user = set_user_with_current_team
 
-    # frappe.local.team helper
+	# frappe.local.team helper
 	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
+
 
 def set_user_with_current_team(user):
 	_set_user(user)

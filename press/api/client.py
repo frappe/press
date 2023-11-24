@@ -57,6 +57,10 @@ def get(doctype, name):
 	check_permissions(doctype)
 	doc = frappe.get_doc(doctype, name)
 
+	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+		if doc.team != frappe.local.team().name:
+			frappe.throw("Not permitted", frappe.PermissionError)
+
 	fields = list(default_fields)
 	if hasattr(doc, "whitelisted_fields"):
 		fields += doc.whitelisted_fields
@@ -93,7 +97,12 @@ def insert(doc=None):
 		parent.save()
 		return parent
 
-	return frappe.get_doc(doc).insert()
+	_doc = frappe.get_doc(doc)
+	if not frappe.local.system_user() and frappe.get_meta(doc.doctype).has_field("team"):
+		# don't allow non system user to set any other team
+		_doc.team = frappe.local.team().name
+	_doc.insert()
+	return get(_doc.doctype, _doc.name)
 
 
 @frappe.whitelist(methods=["POST", "PUT"])

@@ -53,8 +53,6 @@ def hook():
 	else:
 		path = frappe.request.path
 
-	frappe.local.team = _get_current_team
-
 	if frappe.session.user != "Guest":
 		try:
 			frappe.local.cookie_manager.set_cookie("current_team", frappe.local.team().name)

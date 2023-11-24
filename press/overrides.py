@@ -8,7 +8,7 @@ from frappe.utils import cint
 from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
-from press.utils import _get_current_team
+from press.utils import _get_current_team, _system_user
 
 
 @frappe.whitelist(allow_guest=True)
@@ -81,6 +81,11 @@ def on_logout():
 
 def before_job():
 	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
+
+def before_request():
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
 
 
 def update_website_context(context):
