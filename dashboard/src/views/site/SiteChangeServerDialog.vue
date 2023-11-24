@@ -48,10 +48,6 @@
 						})
 				"
 			/>
-			<p v-else class="text-sm text-gray-700">
-				The chosen server isn't added to the bench yet. Please add the server to
-				the bench first.
-			</p>
 			<FormControl
 				class="mt-4"
 				v-if="$resources.isServerAddedInGroup.data"
@@ -60,6 +56,9 @@
 				:min="new Date().toISOString().slice(0, 16)"
 				v-model="targetDateTime"
 			/>
+			<p class="mt-4 text-sm text-gray-700">
+				{{ message }}
+			</p>
 			<ErrorMessage
 				class="mt-4"
 				:message="
@@ -98,6 +97,16 @@ export default {
 			set(value) {
 				this.$emit('update:modelValue', value);
 			}
+		},
+		message() {
+			if (this.targetServer && !this.$resources.isServerAddedInGroup.data) {
+				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
+			} else if (
+				this.targetServer &&
+				this.$resources.isServerAddedInGroup.data
+			) {
+				return 'The chosen server is already added to the bench. You can now migrate the site to the server.';
+			} else return '';
 		},
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;
