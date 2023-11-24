@@ -63,7 +63,9 @@
 				variant="solid"
 				label="Upgrade"
 				:disabled="
-					(!benchHasCommonServer || !privateReleaseGroup) && !site.is_public
+					((!benchHasCommonServer || !privateReleaseGroup) &&
+						!site.is_public) ||
+					!nextVersion
 				"
 				:loading="
 					$resources.versionUpgrade.loading ||
@@ -116,6 +118,8 @@ export default {
 		message() {
 			if (this.site.frappe_version === this.site.latest_frappe_version) {
 				return 'This site is already on the latest version.';
+			} else if (this.site.frappe_version === 'Nightly') {
+				return "This site is on a nightly version and doesn't need to be upgraded.";
 			} else if (!this.privateReleaseGroup) {
 				return '';
 			} else if (!this.site.is_public && !this.privateReleaseGroups.length)
