@@ -22,6 +22,20 @@ frappe.ui.form.on('Ansible Console', {
 				.finally(() => $btn.text(__('Execute')));
 		});
 
+		if (window.localStorage.getItem('ansible_console_command')) {
+			frm.set_value(
+				'inventory',
+				window.localStorage.getItem('ansible_console_inventory'),
+			);
+			frm.set_value(
+				'command',
+				window.localStorage.getItem('ansible_console_command'),
+			);
+
+			window.localStorage.removeItem('ansible_console_inventory');
+			window.localStorage.removeItem('ansible_console_command');
+		}
+
 		frappe.realtime.off('ansible_console_update');
 		frappe.realtime.on('ansible_console_update', (message) => {
 			if (message.nonce == frm.doc.nonce) {
