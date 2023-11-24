@@ -14,6 +14,7 @@ frappe.ui.form.on('Ansible Console', {
 	refresh: function (frm) {
 		frm.disable_save();
 		frm.page.set_primary_action(__('Execute'), ($btn) => {
+			frm.set_value('nonce', Math.random());
 			frm.clear_table('output');
 			$btn.text(__('Executing...'));
 			return frm
@@ -23,7 +24,9 @@ frappe.ui.form.on('Ansible Console', {
 
 		frappe.realtime.off('ansible_console_update');
 		frappe.realtime.on('ansible_console_update', (message) => {
-			frm.set_value('output', message.output);
+			if (message.nonce == frm.doc.nonce) {
+				frm.set_value('output', message.output);
+			}
 		});
 	},
 });

@@ -86,7 +86,7 @@ class AnsibleCallback(CallbackBase):
 		)
 
 	def publish_update(self):
-		message = {"output": list(self.hosts.values())}
+		message = {"nonce": self.nonce, "output": list(self.hosts.values())}
 		frappe.publish_realtime(
 			event="ansible_console_update",
 			doctype="Ansible Console",
@@ -118,7 +118,7 @@ class AnsibleAdHoc:
 
 		self.callback = AnsibleCallback()
 
-	def run(self, command):
+	def run(self, command, nonce=None):
 		self.tasks = [dict(action=dict(module="shell", args=command))]
 		source = dict(
 			name="Ansible Play",
@@ -130,6 +130,8 @@ class AnsibleAdHoc:
 		self.play = Play().load(
 			source, variable_manager=self.variable_manager, loader=self.loader
 		)
+
+		self.callback.nonce = nonce
 
 		tqm = TaskQueueManager(
 			inventory=self.inventory,
