@@ -494,9 +494,12 @@ erpnext 0.8.3	    HEAD
 			change_region_options(site.name),
 			{
 				"regions": [
-					{"name": tokyo_server.cluster, "title": None, "image": None},
+					{"name": "Mumbai", "title": None, "image": None},
 					{"name": seoul_server.cluster, "title": None, "image": None},
+					{"name": tokyo_server.cluster, "title": None, "image": None},
+					{"name": "Default", "title": None, "image": None},
 				],
+				"group_regions": [seoul_server.cluster, tokyo_server.cluster],
 				"current_region": site.cluster,
 			},
 		)
