@@ -8,6 +8,7 @@
 					loading: $resources.addRegionToReleaseGroup.loading,
 					disabled:
 						!selectedRegion ||
+						site?.is_public ||
 						$resources.changeRegionOptions.data.group_regions.includes(
 							selectedRegion
 						),
@@ -117,7 +118,10 @@ export default {
 					this.selectedRegion
 				)
 			) {
-				return 'Selected region is not available in the bench. You can add this region to the bench and then schedule the site migration later.';
+				if (this.site?.is_public)
+					return 'Selected region is not available in the bench. Get in touch with support to add this region.';
+				else
+					return 'Selected region is not available in the bench. You can add this region to the bench and then schedule the site migration later.';
 			} else return '';
 		},
 		datetimeInIST() {
