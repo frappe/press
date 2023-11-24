@@ -1645,8 +1645,8 @@ def validate_group_for_upgrade(name, group_name):
 def change_group_options(name):
 	team = get_current_team()
 	group, server = frappe.db.get_value("Site", name, ["group", "server"])
-
 	version = frappe.db.get_value("Release Group", group, "version")
+
 	benches = frappe.qb.DocType("Bench")
 	groups = frappe.qb.DocType("Release Group")
 	benches = (
@@ -1663,6 +1663,28 @@ def change_group_options(name):
 	).run(as_dict=True)
 
 	return benches
+
+
+@frappe.whitelist()
+@protected("Site")
+def clone_group(name):
+	site = frappe.get_doc("Site", name)
+	group = frappe.get_doc("Release Group", site.group)
+	cloned_group = frappe.copy_doc(group)
+	cloned_group.title = f"Clone of {cloned_group.title}"
+	cloned_group.team = get_current_team()
+	cloned_group.public = 0
+	cloned_group.remove(cloned_group.servers[0])
+	cloned_group.append("servers", {"server": site.server, "default": False})
+	cloned_group.insert()
+
+	candidate = cloned_group.create_deploy_candidate()
+	candidate.deploy_to_production()
+
+	return {
+		"bench_name": cloned_group.name,
+		"candidate_name": candidate.name,
+	}
 
 
 @frappe.whitelist()
