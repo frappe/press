@@ -70,6 +70,7 @@ class AnsibleCallback(CallbackBase):
 			}
 		)
 		self.hosts[host] = result
+		self.publish_update()
 
 	def parse_result(self, result):
 		host = result._host.get_name()
@@ -82,6 +83,16 @@ class AnsibleCallback(CallbackBase):
 				"exit_code": _result.get("rc"),
 				"duration": get_timedelta(_result.get("delta", "0:00:00.000000")),
 			}
+		)
+
+	def publish_update(self):
+		message = {"output": list(self.hosts.values())}
+		frappe.publish_realtime(
+			event="ansible_console_update",
+			doctype="Ansible Console",
+			docname="Ansible Console",
+			user=frappe.session.user,
+			message=message,
 		)
 
 

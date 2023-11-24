@@ -20,5 +20,10 @@ frappe.ui.form.on('Ansible Console', {
 				.execute_action('Execute')
 				.finally(() => $btn.text(__('Execute')));
 		});
+
+		frappe.realtime.off('ansible_console_update');
+		frappe.realtime.on('ansible_console_update', (message) => {
+			frm.set_value('output', message.output);
+		});
 	},
 });
