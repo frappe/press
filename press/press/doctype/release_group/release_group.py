@@ -39,6 +39,16 @@ DEFAULT_DEPENDENCIES = [
 class ReleaseGroup(Document):
 	whitelisted_fields = ["title"]
 
+	@staticmethod
+	def get_list_query(query):
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		query = (
+			query.where(ReleaseGroup.team == frappe.local.team().name)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.public == 0)
+		)
+		return query
+
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
