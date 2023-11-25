@@ -46,7 +46,7 @@ def account_request(
 	if exists and not enabled:
 		frappe.throw(f"Account with email {email} has been deactivated")
 	elif exists and enabled:
-		frappe.throw("Account with email {email} is already registered")
+		frappe.throw(f"Account with email {email} is already registered")
 
 	if not check_subdomain_availability(subdomain, app):
 		frappe.throw(f"Subdomain {subdomain} is already taken")
