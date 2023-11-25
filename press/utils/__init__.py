@@ -48,6 +48,7 @@ def get_current_team(get_doc=False):
 			)
 		)
 
+	system_user = frappe.session.data.user_type == "System User"
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
 	if not team:
@@ -73,7 +74,7 @@ def get_current_team(get_doc=False):
 		# if team is not passed via header, get the default team for user
 		team = get_default_team_for_user(frappe.session.user)
 
-	if not is_user_part_of_team(frappe.session.user, team):
+	if not system_user and not is_user_part_of_team(frappe.session.user, team):
 		# if user is not part of the team, get the default team for user
 		team = get_default_team_for_user(frappe.session.user)
 		if not team:
