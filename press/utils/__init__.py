@@ -119,7 +119,10 @@ def get_default_team_for_user(user):
 		return frappe.db.get_value("Team", {"user": user, "enabled": 1}, "name")
 
 	teams = frappe.db.get_values(
-		"Team Member", filters={"parenttype": "Team", "user": user}, fieldname="parent"
+		"Team Member",
+		filters={"parenttype": "Team", "user": user},
+		fieldname="parent",
+		pluck="parent",
 	)
 	# if user is part of multiple teams, we don't know which one to pick
 	if len(teams) == 1:
