@@ -50,7 +50,7 @@
 			<Button
 				v-if="!site.is_public"
 				class="mb-2 w-full"
-				:disabled="benchHasCommonServer || !privateReleaseGroup"
+				:disabled="benchHasCommonServer || !privateReleaseGroup || !nextVersion"
 				label="Add Server to Bench"
 				@click="$resources.addServerToReleaseGroup.submit()"
 				:loading="
@@ -108,7 +108,11 @@ export default {
 		},
 		nextVersion() {
 			const nextNumber = Number(this.site?.frappe_version.split(' ')[1]);
-			if (isNaN(nextNumber)) return null;
+			if (
+				isNaN(nextNumber) ||
+				this.site?.frappe_version === this.site?.latest_frappe_version
+			)
+				return null;
 
 			return `Version ${nextNumber + 1}`;
 		},
