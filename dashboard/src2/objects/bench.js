@@ -45,7 +45,7 @@ export default {
 						return {
 							type: 'list',
 							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App'],
+							cache: ['ObjectList', 'Release Group App', group.name],
 							parent: 'Release Group',
 							filters: {
 								parenttype: 'Release Group',
