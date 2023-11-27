@@ -9,7 +9,26 @@
 		<div v-if="column.prefix" class="mr-2">
 			<component :is="column.prefix(row)" />
 		</div>
-		<Badge v-if="column.type == 'Badge'" :label="formattedValue" />
+		<template v-if="column.type === 'Badge'">
+			<Badge :label="formattedValue" />
+			<template v-if="column.help === formattedValue">
+				<Tooltip
+					class="ml-2 flex cursor-pointer items-center rounded-full bg-gray-100 p-1"
+					text="What's this?"
+					placement="top"
+				>
+					<a
+						href="https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app"
+						target="_blank"
+					>
+						<FeatherIcon
+							class="h-[13px] w-[13px] text-gray-800"
+							name="help-circle"
+						/>
+					</a>
+				</Tooltip>
+			</template>
+		</template>
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>

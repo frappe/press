@@ -68,16 +68,17 @@ export default {
 						{
 							label: 'Status',
 							type: 'Badge',
+							help: 'Action Required',
 							format(value, row) {
-								const { update_available, deployed, last_github_poll_failed } =
+								let { update_available, deployed, last_github_poll_failed } =
 									row;
-
+								update_available = last_github_poll_failed = false;
 								return !deployed
 									? 'Not Deployed'
 									: update_available
 									? 'Update Available'
 									: !last_github_poll_failed
-									? 'Attention Required'
+									? 'Action Required'
 									: '';
 							},
 							width: 1
