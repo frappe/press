@@ -107,7 +107,7 @@ export default {
 									? 'Not Deployed'
 									: update_available
 									? 'Update Available'
-									: '';
+									: 'Latest Version';
 							},
 							width: 1
 						}
