@@ -342,7 +342,7 @@ export default {
 				route: 'bench-config',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../../src/views/bench/BenchConfig.vue')
+					import('../components/bench/BenchConfig.vue')
 				),
 				props: group => ({ bench: group.doc })
 			}
