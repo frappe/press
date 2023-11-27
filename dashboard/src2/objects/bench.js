@@ -6,6 +6,7 @@ import { icon, renderDialog } from '../utils/components';
 import { getTeam } from '../data/team';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
+import { FeatherIcon, Tooltip } from 'frappe-ui';
 
 export default {
 	doctype: 'Release Group',
@@ -68,17 +69,46 @@ export default {
 						{
 							label: 'Status',
 							type: 'Badge',
-							help: 'Action Required',
+							suffix(row) {
+								if (!row.last_github_poll_failed) return;
+
+								return h(
+									Tooltip,
+									{
+										text: "What's this?",
+										placement: 'top',
+										class:
+											'flex cursor-pointer items-center rounded-full bg-gray-100 p-1'
+									},
+									[
+										h(
+											'a',
+											{
+												attrs: {
+													href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
+													target: '_blank'
+												}
+											},
+											[
+												h(FeatherIcon, {
+													class: 'h-[13px] w-[13px] text-gray-800',
+													name: 'help-circle'
+												})
+											]
+										)
+									]
+								);
+							},
 							format(value, row) {
 								let { update_available, deployed, last_github_poll_failed } =
 									row;
-								update_available = last_github_poll_failed = false;
-								return !deployed
+
+								return last_github_poll_failed
+									? 'Action Required'
+									: !deployed
 									? 'Not Deployed'
 									: update_available
 									? 'Update Available'
-									: !last_github_poll_failed
-									? 'Action Required'
 									: '';
 							},
 							width: 1
