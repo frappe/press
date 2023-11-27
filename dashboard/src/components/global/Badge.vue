@@ -39,7 +39,9 @@ export default {
 				Published: 'green',
 				Owner: 'blue',
 				Primary: 'green',
-				'Latest Deployed': 'orange'
+				'Latest Deployed': 'orange',
+				'Not Deployed': 'orange',
+				'Action Required': 'red'
 			}[this.label];
 		}
 	}

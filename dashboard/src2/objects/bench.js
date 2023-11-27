@@ -6,6 +6,7 @@ import { icon, renderDialog } from '../utils/components';
 import { getTeam } from '../data/team';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
+import { FeatherIcon, Tooltip } from 'frappe-ui';
 
 export default {
 	doctype: 'Release Group',
@@ -44,7 +45,7 @@ export default {
 						return {
 							type: 'list',
 							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App'],
+							cache: ['ObjectList', 'Release Group App', group.name],
 							parent: 'Release Group',
 							filters: {
 								parenttype: 'Release Group',
@@ -66,11 +67,46 @@ export default {
 							width: 1
 						},
 						{
-							label: 'Update Available',
-							fieldname: 'update_available',
-							type: 'Icon',
-							Icon(value) {
-								return value ? 'check' : '';
+							label: 'Status',
+							type: 'Badge',
+							suffix(row) {
+								if (!row.last_github_poll_failed) return;
+
+								return h(
+									Tooltip,
+									{
+										text: "What's this?",
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									[
+										h(
+											'a',
+											{
+												href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
+												target: '_blank'
+											},
+											[
+												h(FeatherIcon, {
+													class: 'h-[13px] w-[13px] text-gray-800',
+													name: 'help-circle'
+												})
+											]
+										)
+									]
+								);
+							},
+							format(value, row) {
+								let { update_available, deployed, last_github_poll_failed } =
+									row;
+
+								return last_github_poll_failed
+									? 'Action Required'
+									: !deployed
+									? 'Not Deployed'
+									: update_available
+									? 'Update Available'
+									: 'Latest Version';
 							},
 							width: 1
 						}
@@ -97,7 +133,10 @@ export default {
 										}),
 										{
 											loading: `Fetching Latest Updates for ${row.title}...`,
-											success: `Latest Updates Fetched for ${row.title}`,
+											success: () => {
+												apps.reload();
+												return `Latest Updates Fetched for ${row.title}`;
+											},
 											error: e => {
 												return e.messages.length
 													? e.messages.join('\n')

@@ -9,7 +9,7 @@
 		<div v-if="column.prefix" class="mr-2">
 			<component :is="column.prefix(row)" />
 		</div>
-		<Badge v-if="column.type == 'Badge'" :label="formattedValue" />
+		<Badge v-if="column.type === 'Badge'" :label="formattedValue" />
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
@@ -32,6 +32,9 @@
 		</div>
 		<div v-else class="truncate text-base" :class="column.class">
 			{{ formattedValue }}
+		</div>
+		<div v-if="column.suffix" class="ml-2">
+			<component :is="column.suffix(row)" />
 		</div>
 	</div>
 </template>
