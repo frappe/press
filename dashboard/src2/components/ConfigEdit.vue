@@ -4,7 +4,6 @@
 			<Button
 				:loading="$resources.configData.loading"
 				:disabled="!isDirty"
-				icon-left="trash"
 				@click="
 					() => {
 						$resources.configData.reload().then(() => {
@@ -13,7 +12,10 @@
 					}
 				"
 			>
-				Discard
+				<template #prefix>
+					<i-lucide-refresh-ccw class="h-4 w-4" />
+				</template>
+				Reset Changes
 			</Button>
 			<Button
 				variant="solid"
