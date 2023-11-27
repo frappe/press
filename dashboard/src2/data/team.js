@@ -1,4 +1,4 @@
-import { createDocumentResource } from 'frappe-ui';
+import { createDocumentResource, frappeRequest } from 'frappe-ui';
 
 let team;
 
@@ -13,10 +13,24 @@ export function getTeam() {
 }
 
 function getCurrentTeam() {
-	return decodeURIComponent(
-		document.cookie
-			.split(';')
-			.find(item => item.trim().startsWith('current_team='))
-			?.split('=')[1]
-	);
+	return localStorage.getItem('current_team') || window.default_team;
 }
+
+export async function switchToTeam(team) {
+	let canSwitch = false;
+	try {
+		canSwitch = await frappeRequest({
+			url: '/api/method/press.api.account.can_switch_to_team',
+			params: { team }
+		});
+	} catch (error) {
+		console.log(error);
+		canSwitch = false;
+	}
+	if (canSwitch) {
+		localStorage.setItem('current_team', team);
+		window.location.reload();
+	}
+}
+
+window.switchToTeam = switchToTeam;

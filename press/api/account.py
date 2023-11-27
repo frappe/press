@@ -21,7 +21,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	has_unsettled_invoices,
 )
-from press.utils import get_country_info, get_current_team
+from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture, identify
 from press.api.site import protected
 from frappe.query_builder.custom import GROUP_CONCAT
@@ -384,6 +384,18 @@ def get_account_request_from_key(key):
 
 @frappe.whitelist()
 def get():
+	cached = frappe.cache.get_value("cached-account.get", user=frappe.session.user)
+	if cached:
+		return cached
+	else:
+		value = _get()
+		frappe.cache.set_value(
+			"cached-account.get", value, user=frappe.session.user, expires_in_sec=60
+		)
+		return value
+
+
+def _get():
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
@@ -677,6 +689,17 @@ def remove_child_team(child_team):
 
 
 @frappe.whitelist()
+def can_switch_to_team(team):
+	if not frappe.db.exists("Team", team):
+		return False
+	if frappe.local.system_user():
+		return True
+	if is_user_part_of_team(frappe.session.user, team):
+		return True
+	return False
+
+
+@frappe.whitelist()
 def switch_team(team):
 	user_is_part_of_team = frappe.db.exists(
 		"Team Member", {"parent": team, "user": frappe.session.user}
@@ -684,7 +707,6 @@ def switch_team(team):
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	if user_is_part_of_team or user_is_system_user:
 		frappe.db.set_value("Team", frappe.session.user, "last_used_team", team)
-		frappe.local.cookie_manager.set_cookie("current_team", team)
 		return {
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),

@@ -19,6 +19,8 @@
   "job_id",
   "request_path",
   "request_method",
+  "retry_count",
+  "next_retry_at",
   "column_break_10",
   "start",
   "end",
@@ -46,7 +48,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Undelivered\nPending\nRunning\nSuccess\nFailure",
+   "options": "Undelivered\nPending\nRunning\nSuccess\nFailure\nDelivery Failure",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -192,11 +194,23 @@
    "label": "Code Server",
    "options": "Code Server",
    "read_only": 1
+  },
+  {
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2023-07-20 23:20:44.028057",
+ "modified": "2023-10-18 11:09:55.601701",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
