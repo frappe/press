@@ -77,8 +77,7 @@ export default {
 									{
 										text: "What's this?",
 										placement: 'top',
-										class:
-											'flex cursor-pointer items-center rounded-full bg-gray-100 p-1'
+										class: 'rounded-full bg-gray-100 p-1'
 									},
 									[
 										h(
