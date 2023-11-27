@@ -66,11 +66,19 @@ export default {
 							width: 1
 						},
 						{
-							label: 'Update Available',
-							fieldname: 'update_available',
-							type: 'Icon',
-							Icon(value) {
-								return value ? 'check' : '';
+							label: 'Status',
+							type: 'Badge',
+							format(value, row) {
+								const { update_available, deployed, last_github_poll_failed } =
+									row;
+
+								return !deployed
+									? 'Not Deployed'
+									: update_available
+									? 'Update Available'
+									: !last_github_poll_failed
+									? 'Attention Required'
+									: '';
 							},
 							width: 1
 						}
