@@ -1,6 +1,7 @@
 <template>
 	<Dialog v-model="show" :options="{ title: title }">
 		<template #body-content>
+			<p class="text-base text-gray-800" v-if="message" v-html="message" />
 			<div class="space-y-4">
 				<FormControl
 					v-for="field in fields"
@@ -26,7 +27,7 @@ import { ErrorMessage, FormControl } from 'frappe-ui';
 
 export default {
 	name: 'ConfirmDialog',
-	props: ['title', 'fields', 'onSuccess'],
+	props: ['title', 'message', 'fields', 'onSuccess'],
 	data() {
 		return {
 			show: true,
@@ -42,7 +43,7 @@ export default {
 			this.isLoading = true;
 			try {
 				let result = this.onSuccess({ hide: this.hide, values: this.values });
-				if (result.then) {
+				if (result?.then) {
 					result
 						.then(() => (this.isLoading = false))
 						.catch(error => (this.error = error));
