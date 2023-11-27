@@ -136,7 +136,10 @@ export default {
 										}),
 										{
 											loading: `Fetching Latest Updates for ${row.title}...`,
-											success: `Latest Updates Fetched for ${row.title}`,
+											success: () => {
+												apps.reload();
+												return `Latest Updates Fetched for ${row.title}`;
+											},
 											error: e => {
 												return e.messages.length
 													? e.messages.join('\n')
