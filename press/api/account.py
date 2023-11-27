@@ -396,7 +396,6 @@ def get():
 
 
 def _get():
-	print("Called GEt")
 	user = frappe.session.user
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("Account does not exist"))
