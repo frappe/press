@@ -84,10 +84,8 @@ export default {
 										h(
 											'a',
 											{
-												attrs: {
-													href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
-													target: '_blank'
-												}
+												href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
+												target: '_blank'
 											},
 											[
 												h(FeatherIcon, {
