@@ -123,10 +123,10 @@ def get_default_team_for_user(user):
 		fieldname="parent",
 		pluck="parent",
 	)
-	# if user is part of multiple teams, we don't know which one to pick
-	if len(teams) == 1:
-		team = teams[0]
-		return team if frappe.db.exists("Team", {"name": team, "enabled": 1}) else None
+	for team in teams:
+		# if user is part of multiple teams, send the first enabled one
+		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
+			return team
 
 
 def get_valid_teams_for_user(user):
