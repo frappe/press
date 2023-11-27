@@ -68,6 +68,7 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.set_partner_email()
+		self.validate_disable()
 
 	def before_insert(self):
 		if not self.notify_email:
@@ -84,6 +85,17 @@ class Team(Document):
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
 			self.partner_email = self.user
+
+	def validate_disable(self):
+		if self.has_value_changed("enabled"):
+			has_unpaid_invoices = frappe.get_all(
+				"Invoice",
+				{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+			)
+			if self.enabled == 0 and has_unpaid_invoices:
+				frappe.throw(
+					"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
+				)
 
 	def delete(self, force=False, workflow=False):
 		if force:
