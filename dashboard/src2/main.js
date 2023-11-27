@@ -9,7 +9,16 @@ import App from './App.vue';
 import router from './router';
 import { initSocket } from './socket';
 
-setConfig('resourceFetcher', frappeRequest);
+let request = options => {
+	let _options = options || {};
+	_options.headers = options.headers || {};
+	let currentTeam = localStorage.getItem('current_team') || window.default_team;
+	if (currentTeam) {
+		_options.headers['X-Press-Team'] = currentTeam;
+	}
+	return frappeRequest(_options);
+};
+setConfig('resourceFetcher', request);
 setConfig('defaultListUrl', 'press.api.client.get_list');
 setConfig('defaultDocGetUrl', 'press.api.client.get');
 setConfig('defaultDocInsertUrl', 'press.api.client.insert');

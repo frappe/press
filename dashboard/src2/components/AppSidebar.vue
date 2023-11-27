@@ -4,9 +4,9 @@
 			<Dropdown
 				:options="[
 					{
-						label: 'Switch Team',
+						label: 'Change Team',
 						icon: 'command',
-						onClick: () => (this.showTeamSwitcher = true)
+						onClick: () => (showTeamSwitcher = true)
 					},
 					{
 						label: 'Support & Docs',
@@ -36,10 +36,10 @@
 								Frappe Cloud
 							</div>
 							<div
-								v-if="$session.user"
+								v-if="$team.doc"
 								class="mt-1 hidden text-sm leading-none text-gray-700 sm:inline"
 							>
-								{{ $session.user }}
+								{{ $team.doc.user }}
 							</div>
 						</div>
 						<FeatherIcon
@@ -70,11 +70,52 @@
 				<SidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
 			</template>
 		</nav>
+		<Dialog :options="{ title: 'Change Team' }" v-model="showTeamSwitcher">
+			<template #body-content>
+				<div class="rounded bg-gray-100 px-2 py-3">
+					<div class="text-base text-gray-900">
+						Viewing Dashboard as
+						<span class="font-medium">{{ $team.doc.user }}</span>
+						<span
+							class="font-mono text-sm text-gray-500"
+							v-if="$team.name != $team.doc.user"
+						>
+							({{ $team.name }})
+						</span>
+					</div>
+				</div>
+				<div class="-mb-3 mt-3 divide-y">
+					<div
+						class="flex items-center justify-between py-3"
+						v-for="team in $team.doc.valid_teams"
+						:key="team.name"
+					>
+						<div>
+							<span class="text-base text-gray-800">
+								{{ team.user }}
+							</span>
+							<span
+								class="font-mono text-sm text-gray-500"
+								v-if="team.name != team.user"
+							>
+								({{ team.name }})
+							</span>
+						</div>
+						<Badge
+							v-if="$team.name === team.name"
+							label="Currently Active"
+							theme="green"
+						/>
+						<Button v-else @click="switchToTeam(team.name)">Change</Button>
+					</div>
+				</div>
+			</template>
+		</Dialog>
 	</div>
 </template>
 
 <script setup>
-import { h } from 'vue';
+import { h, ref } from 'vue';
 import Home from '~icons/lucide/home';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
@@ -84,6 +125,7 @@ import LayoutGrid from '~icons/lucide/layout-grid';
 import SquareDashedBottomCode from '~icons/lucide/square-dashed-bottom-code';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
+import { switchToTeam } from '../data/team';
 
 const navigation = [
 	{
@@ -162,4 +204,6 @@ const navigation = [
 		]
 	}
 ];
+
+let showTeamSwitcher = ref(false);
 </script>

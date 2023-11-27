@@ -52,12 +52,6 @@ def hook():
 	else:
 		path = frappe.request.path
 
-	if frappe.session.user != "Guest":
-		try:
-			frappe.local.cookie_manager.set_cookie("current_team", frappe.local.team().name)
-		except Exception:
-			pass
-
 	user_type = frappe.get_cached_value("User", frappe.session.user, "user_type")
 
 	# Allow unchecked access to System Users

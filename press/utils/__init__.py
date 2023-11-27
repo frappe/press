@@ -49,11 +49,10 @@ def get_current_team(get_doc=False):
 		)
 
 	system_user = frappe.session.data.user_type == "System User"
+
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		# get team from cookie
-		team = frappe.request.cookies.get("current_team")
+
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
@@ -128,6 +127,14 @@ def get_default_team_for_user(user):
 	if len(teams) == 1:
 		team = teams[0]
 		return team if frappe.db.exists("Team", {"name": team, "enabled": 1}) else None
+
+
+def get_valid_teams_for_user(user):
+	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
+	valid_teams = frappe.db.get_all(
+		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
+	)
+	return valid_teams
 
 
 def is_user_part_of_team(user, team):

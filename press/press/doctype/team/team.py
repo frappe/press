@@ -9,7 +9,7 @@ from frappe import _
 from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
-from press.utils import log_error
+from press.utils import log_error, get_valid_teams_for_user
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
@@ -44,7 +44,7 @@ class Team(Document):
 
 	def get_doc(self, doc):
 		if (
-			frappe.session.data.user_type != "System User"
+			not frappe.local.system_user()
 			and self.user != frappe.session.user
 			and self.user not in self.get_user_list()
 		):
@@ -58,6 +58,7 @@ class Team(Document):
 		)
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
+		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 
 	def onload(self):
 		load_address_and_contact(self)

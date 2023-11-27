@@ -21,7 +21,7 @@ from press.press.doctype.team.team import (
 	get_child_team_members,
 	has_unsettled_invoices,
 )
-from press.utils import get_country_info, get_current_team
+from press.utils import get_country_info, get_current_team, is_user_part_of_team
 from press.utils.telemetry import capture, identify
 from press.api.site import protected
 from frappe.query_builder.custom import GROUP_CONCAT
@@ -677,6 +677,17 @@ def remove_child_team(child_team):
 
 
 @frappe.whitelist()
+def can_switch_to_team(team):
+	if not frappe.db.exists("Team", team):
+		return False
+	if frappe.local.system_user():
+		return True
+	if is_user_part_of_team(frappe.session.user, team):
+		return True
+	return False
+
+
+@frappe.whitelist()
 def switch_team(team):
 	user_is_part_of_team = frappe.db.exists(
 		"Team Member", {"parent": team, "user": frappe.session.user}
@@ -684,7 +695,6 @@ def switch_team(team):
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	if user_is_part_of_team or user_is_system_user:
 		frappe.db.set_value("Team", frappe.session.user, "last_used_team", team)
-		frappe.local.cookie_manager.set_cookie("current_team", team)
 		return {
 			"team": frappe.get_doc("Team", team),
 			"team_members": get_team_members(team),
