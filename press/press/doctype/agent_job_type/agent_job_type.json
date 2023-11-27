@@ -9,7 +9,10 @@
   "steps",
   "agent_request_section",
   "request_path",
-  "request_method"
+  "request_method",
+  "job_retry_section",
+  "disabled_auto_retry",
+  "max_retry_count"
  ],
  "fields": [
   {
@@ -36,10 +39,27 @@
    "in_list_view": 1,
    "label": "Request Method",
    "options": "POST\nDELETE"
+  },
+  {
+   "default": "3",
+   "fieldname": "max_retry_count",
+   "fieldtype": "Int",
+   "label": "Max Retry Count"
+  },
+  {
+   "default": "1",
+   "fieldname": "disabled_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "job_retry_section",
+   "fieldtype": "Section Break",
+   "label": "Job Retry"
   }
  ],
  "links": [],
- "modified": "2022-09-28 17:39:45.144111",
+ "modified": "2023-11-16 12:19:35.365980",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Type",

@@ -185,6 +185,7 @@ scheduler_events = {
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
@@ -212,7 +213,10 @@ scheduler_events = {
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		],
-		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+		"* * * * * 0/5": [
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
+		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
