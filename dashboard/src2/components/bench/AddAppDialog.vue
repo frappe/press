@@ -27,7 +27,7 @@
 			<Button
 				variant="solid"
 				class="w-full"
-				v-if="selectedApps.length > 0"
+				:disabled="selectedApps.length <= 0"
 				:loading="$resources.addApps.loading"
 				@click="
 					$resources.addApps.submit({

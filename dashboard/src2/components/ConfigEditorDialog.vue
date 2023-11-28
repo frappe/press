@@ -4,8 +4,11 @@
 			title: config ? 'Edit Config' : 'Add Config',
 			actions: [
 				{
-					label: 'Add Key',
+					label: config ? 'Edit Key' : 'Add Key',
 					variant: 'solid',
+					loading:
+						siteDocResource?.updateConfig?.loading ||
+						groupDocResource?.updateConfig?.loading,
 					onClick: addConfig
 				}
 			]
@@ -66,7 +69,7 @@ import {
 
 export default {
 	name: 'ConfigEditorDialog',
-	props: ['site', 'config'],
+	props: ['site', 'group', 'config'],
 	components: {
 		Autocomplete,
 		FormControl,
@@ -74,6 +77,8 @@ export default {
 	},
 	data() {
 		return {
+			siteDocResource: null,
+			groupDocResource: null,
 			showDialog: true,
 			selectedConfig: null,
 			key: null,
@@ -116,8 +121,12 @@ export default {
 	},
 	methods: {
 		addConfig() {
-			let site = getCachedDocumentResource('Site', this.site);
-			if (!site) return;
+			this.siteDocResource = getCachedDocumentResource('Site', this.site);
+			this.groupDocResource = getCachedDocumentResource(
+				'Release Group',
+				this.group
+			);
+			if (!this.siteDocResource && !this.groupDocResource) return;
 			let key =
 				this.selectedConfig?.value == '__custom_key'
 					? this.key
@@ -139,16 +148,29 @@ export default {
 
 			let config = { [key]: value };
 
-			site.updateConfig.submit(
-				{ config },
-				{
-					onSuccess: () => {
-						this.$emit('success');
-						this.showDialog = false;
+			if (this.site) {
+				this.siteDocResource.updateConfig.submit(
+					{ config },
+					{
+						onSuccess: () => {
+							this.$emit('success');
+							this.showDialog = false;
+						}
 					}
-				}
-			);
-			this.error = site.updateConfig.error;
+				);
+				this.error = this.siteDocResource.updateConfig.error;
+			} else if (this.group) {
+				this.groupDocResource.updateConfig.submit(
+					{ config },
+					{
+						onSuccess: () => {
+							this.$emit('success');
+							this.showDialog = false;
+						}
+					}
+				);
+				this.error = this.groupDocResource.updateConfig.error;
+			}
 		}
 	},
 	computed: {
