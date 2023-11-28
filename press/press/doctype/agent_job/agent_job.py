@@ -93,21 +93,26 @@ class AgentJob(Document):
 		if 400 <= cint(self.flags.status_code) <= 499:
 			return
 
-		next_retry_at = get_next_retry_at(self.retry_count)
+		try:
 
-		if not self.retry_count:
-			self.retry_count = 1
+			next_retry_at = get_next_retry_at(self.retry_count)
 
-		frappe.db.set_value(
-			"Agent Job",
-			self.name,
-			{
-				"status": "Undelivered",
-				"next_retry_at": next_retry_at,
-				"retry_count": self.retry_count,
-			},
-			update_modified=False,
-		)
+			if not self.retry_count:
+				self.retry_count = 1
+
+			frappe.db.set_value(
+				"Agent Job",
+				self.name,
+				{
+					"status": "Undelivered",
+					"next_retry_at": next_retry_at,
+					"retry_count": self.retry_count,
+				},
+				update_modified=False,
+			)
+
+		except Exception:
+			log_error("Agent Job Set Status Exception", job=self)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
