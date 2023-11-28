@@ -1,4 +1,4 @@
-import { defineAsyncComponent, h, ref } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { frappeRequest } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { bytes, duration } from '../utils/format';
@@ -43,6 +43,8 @@ export default {
 		sync_info: 'sync_info',
 		unsuspend: 'unsuspend',
 		updateSiteConfig: 'update_site_config',
+		updateConfig: 'update_config',
+		deleteConfig: 'delete_config',
 		updateWithoutBackup: 'update_without_backup'
 	},
 	list: {
@@ -173,7 +175,7 @@ export default {
 						return {
 							type: 'list',
 							doctype: 'Site App',
-							cache: ['ObjectList', 'Site App'],
+							cache: ['Site Apps', site.name],
 							fields: ['name', 'app'],
 							parent: 'Site',
 							filters: {
@@ -538,6 +540,115 @@ export default {
 							align: 'right'
 						}
 					]
+				}
+			},
+			{
+				label: 'Site Config',
+				icon: icon('settings'),
+				route: 'site-config',
+				type: 'list',
+				list: {
+					doctype: 'Site Config',
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					fields: ['name'],
+					orderBy: 'creation desc',
+					columns: [
+						{
+							label: 'Config Name',
+							fieldname: 'key',
+							format(value, row) {
+								if (row.title) {
+									return `${row.title} (${row.key})`;
+								}
+								return row.key;
+							}
+						},
+						{
+							label: 'Type',
+							fieldname: 'type'
+						},
+						{
+							label: 'Config Value',
+							fieldname: 'value'
+						}
+					],
+					primaryAction({ listResource: configs, documentResource: site }) {
+						return {
+							label: 'Add Config',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let ConfigEditorDialog = defineAsyncComponent(() =>
+									import('../components/ConfigEditorDialog.vue')
+								);
+								renderDialog(
+									h(ConfigEditorDialog, {
+										site: site.doc.name,
+										onSuccess() {
+											configs.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({ row, listResource: configs, documentResource: site }) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/ConfigEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											site: site.doc.name,
+											config: row,
+											onSuccess() {
+												configs.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Config',
+										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (site.deleteConfig.loading) return;
+											toast.promise(
+												site.deleteConfig.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															configs.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting config...',
+													success: () => `Config ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
 				}
 			},
 			{

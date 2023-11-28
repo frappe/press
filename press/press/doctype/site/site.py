@@ -15,7 +15,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime
+from frappe.utils import cint, cstr, get_datetime, flt
 from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
@@ -908,6 +908,53 @@ class Site(Document):
 
 		if save:
 			self.save()
+
+	@frappe.whitelist()
+	def update_config(self, config=None):
+		"""Updates site.configuration, meant for dashboard and API users"""
+		if config is None:
+			return
+		# config = {"key1": value1, "key2": value2}
+		config = frappe.parse_json(config)
+
+		sanitized_config = {}
+		for key, value in config.items():
+			if key in get_client_blacklisted_keys():
+				continue
+
+			if isinstance(value, (dict, list)):
+				_type = "JSON"
+			elif isinstance(value, bool):
+				_type = "Boolean"
+			elif isinstance(value, (int, float)):
+				_type = "Number"
+			else:
+				_type = "String"
+
+			if frappe.db.exists("Site Config Key", key):
+				_type = frappe.db.get_value("Site Config Key", key, "type")
+			if _type == "Number":
+				value = flt(value)
+			elif _type == "Boolean":
+				value = bool(value)
+			elif _type == "JSON":
+				value = frappe.parse_json(value)
+			sanitized_config[key] = value
+
+		self.update_site_config(sanitized_config)
+
+	@frappe.whitelist()
+	def delete_config(self, key):
+		"""Deletes a key from site configuration, meant for dashboard and API users"""
+		if key in get_client_blacklisted_keys():
+			return
+
+		updated_config = []
+		for row in self.configuration:
+			if row.key != key and not row.internal:
+				updated_config.append({"key": row.key, "value": row.value, "type": row.type})
+
+		self.update_site_config(updated_config)
 
 	@frappe.whitelist()
 	def update_site_config(self, config=None):
