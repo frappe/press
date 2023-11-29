@@ -5,7 +5,7 @@
 from functools import cached_property
 from itertools import chain
 import frappe
-from frappe.utils import comma_and
+from frappe.utils import comma_and, flt
 import json
 from typing import List
 from frappe.core.doctype.version.version import get_diff
@@ -109,6 +109,69 @@ class ReleaseGroup(Document):
 			new_config[row.key] = key_value
 
 		self.common_site_config = json.dumps(new_config, indent=4)
+
+	@frappe.whitelist()
+	def delete_config(self, key):
+		"""Deletes a key from the common_site_config_table"""
+
+		if key in get_client_blacklisted_keys():
+			return
+
+		updated_common_site_config = []
+		for row in self.common_site_config_table:
+			if row.key != key and not row.internal:
+				updated_common_site_config.append(
+					{"key": row.key, "value": row.value, "type": row.type}
+				)
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(updated_common_site_config, ())
+
+	@frappe.whitelist()
+	def update_config(self, config):
+		sanitized_common_site_config = [
+			{"key": c.key, "type": c.type, "value": c.value}
+			for c in self.common_site_config_table
+		]
+
+		config = frappe.parse_json(config)
+
+		for key, value in config.items():
+			if key in get_client_blacklisted_keys():
+				continue
+
+			if isinstance(value, (dict, list)):
+				_type = "JSON"
+			elif isinstance(value, bool):
+				_type = "Boolean"
+			elif isinstance(value, (int, float)):
+				_type = "Number"
+			else:
+				_type = "String"
+
+			if frappe.db.exists("Site Config Key", key):
+				_type = frappe.db.get_value("Site Config Key", key, "type")
+
+			if _type == "Number":
+				value = flt(value)
+			elif _type == "Boolean":
+				value = bool(value)
+			elif _type == "JSON":
+				value = frappe.parse_json(value)
+
+			# update existing key
+			for row in sanitized_common_site_config:
+				if row["key"] == key:
+					row["value"] = value
+					row["type"] = _type
+					break
+			else:
+				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(sanitized_common_site_config, ())
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group

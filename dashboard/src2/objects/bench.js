@@ -1,19 +1,21 @@
+import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import dayjs from '../utils/dayjs';
 import { duration } from '../utils/format';
-import { icon, renderDialog } from '../utils/components';
+import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam } from '../data/team';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
-import { FeatherIcon, Tooltip } from 'frappe-ui';
 
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
 		removeApp: 'remove_app',
 		changeAppBranch: 'change_app_branch',
-		fetchLatestAppUpdates: 'fetch_latest_app_update'
+		fetchLatestAppUpdates: 'fetch_latest_app_update',
+		deleteConfig: 'delete_config',
+		updateConfig: 'update_config'
 	},
 	list: {
 		route: '/benches',
@@ -338,13 +340,112 @@ export default {
 			},
 			{
 				label: 'Config',
-				icon: icon('code'),
+				icon: icon('settings'),
 				route: 'bench-config',
-				type: 'Component',
-				component: defineAsyncComponent(() =>
-					import('../../src/views/bench/BenchConfig.vue')
-				),
-				props: group => ({ bench: group.doc })
+				type: 'list',
+				list: {
+					doctype: 'Common Site Config',
+					filters: group => {
+						return { group: group.name };
+					},
+					orderBy: 'creation desc',
+					fields: ['name'],
+					columns: [
+						{
+							label: 'Config Name',
+							fieldname: 'key',
+							format(value, row) {
+								if (row.title) {
+									return `${row.title} (${row.key})`;
+								}
+								return row.key;
+							}
+						},
+						{
+							label: 'Type',
+							fieldname: 'type'
+						},
+						{
+							label: 'Config Value',
+							fieldname: 'value'
+						}
+					],
+					primaryAction({ listResource: configs, documentResource: group }) {
+						return {
+							label: 'Add Config',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let ConfigEditorDialog = defineAsyncComponent(() =>
+									import('../components/ConfigEditorDialog.vue')
+								);
+								renderDialog(
+									h(ConfigEditorDialog, {
+										group: group.doc.name,
+										onSuccess() {
+											configs.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({ row, listResource: configs, documentResource: group }) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/ConfigEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											group: group.doc.name,
+											config: row,
+											onSuccess() {
+												configs.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Config',
+										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (group.deleteConfig.loading) return;
+											toast.promise(
+												group.deleteConfig.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															configs.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting config...',
+													success: () => `Config ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
+				}
 			}
 		],
 		actions(context) {
