@@ -111,6 +111,16 @@ class ReleaseGroup(Document):
 		self.common_site_config = json.dumps(new_config, indent=4)
 
 	@frappe.whitelist()
+	def update_dependency(self, dependency_name, version):
+		"""Updates a dependency version in the Release Group Dependency table"""
+
+		for dependency in self.dependencies:
+			if dependency.name == dependency_name:
+				dependency.version = version
+				self.save()
+				return
+
+	@frappe.whitelist()
 	def delete_config(self, key):
 		"""Deletes a key from the common_site_config_table"""
 

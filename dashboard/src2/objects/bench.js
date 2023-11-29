@@ -15,7 +15,8 @@ export default {
 		changeAppBranch: 'change_app_branch',
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
 		deleteConfig: 'delete_config',
-		updateConfig: 'update_config'
+		updateConfig: 'update_config',
+		updateDependency: 'update_dependency'
 	},
 	list: {
 		route: '/benches',
@@ -441,6 +442,56 @@ export default {
 											);
 										}
 									});
+								}
+							}
+						];
+					}
+				}
+			},
+			{
+				label: 'Dependencies',
+				icon: icon('box'),
+				route: 'bench-dependencies',
+				type: 'list',
+				list: {
+					doctype: 'Release Group Dependency',
+					filters: group => {
+						return { group: group.doc.name };
+					},
+					columns: [
+						{
+							label: 'Dependency',
+							fieldname: 'dependency',
+							format(value, row) {
+								return row.title;
+							}
+						},
+						{
+							label: 'Version',
+							fieldname: 'version'
+						}
+					],
+					rowActions({
+						row,
+						listResource: dependencies,
+						documentResource: group
+					}) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let DependencyEditorDialog = defineAsyncComponent(() =>
+										import('../components/bench/DependencyEditorDialog.vue')
+									);
+									renderDialog(
+										h(DependencyEditorDialog, {
+											group: group.doc.name,
+											dependency: row,
+											onSuccess() {
+												dependencies.reload();
+											}
+										})
+									);
 								}
 							}
 						];
