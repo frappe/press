@@ -36,7 +36,7 @@ class VersionUpgrade(Document):
 			site.team,
 			"Version Upgrade",
 			"Agent Job",
-			agent_job_id,
+			agent_job_id or 0,
 			message,
 		)
 

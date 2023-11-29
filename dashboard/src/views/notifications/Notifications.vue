@@ -27,6 +27,7 @@
 				>
 					<template #actions>
 						<Button
+							v-if="notification.route"
 							variant="ghost"
 							label="View"
 							@click="openNotification(notification)"
