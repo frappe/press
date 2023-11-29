@@ -38,12 +38,13 @@
 
 <script>
 import { Tabs } from 'frappe-ui';
+import { getObject } from '../objects';
 
 export default {
 	name: 'DetailPage',
 	props: {
-		object: {
-			type: Object,
+		objectType: {
+			type: String,
 			required: true
 		},
 		name: {
@@ -55,24 +56,21 @@ export default {
 		FTabs: Tabs
 	},
 	data() {
-		let currentTab = 0;
-		let currentRoute = this.$route.name;
-		for (let tab of this.object.detail.tabs) {
-			let routeName = `${this.object.doctype} Detail ${tab.label}`;
-			if (currentRoute === routeName) {
-				currentTab = this.object.detail.tabs.indexOf(tab);
-				break;
-			}
-		}
 		return {
-			currentTab
+			currentTab: 0
 		};
+	},
+	beforeRouteUpdate(to, from, next) {
+		this.setTabToRoute(to);
+		next();
+	},
+	mounted() {
+		this.setTabToRoute(this.$route);
 	},
 	watch: {
 		currentTab(value) {
 			let tab = this.object.detail.tabs[value];
-			let routeName = `${this.object.doctype} Detail ${tab.label}`;
-			this.$router.replace({ name: routeName });
+			this.$router.replace({ name: tab.routeName });
 		}
 	},
 	resources: {
@@ -85,7 +83,20 @@ export default {
 			};
 		}
 	},
+	methods: {
+		setTabToRoute(route) {
+			for (let tab of this.object.detail.tabs) {
+				if (route.name === tab.routeName) {
+					this.currentTab = this.object.detail.tabs.indexOf(tab);
+					break;
+				}
+			}
+		}
+	},
 	computed: {
+		object() {
+			return getObject(this.objectType);
+		},
 		title() {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
