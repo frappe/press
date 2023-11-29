@@ -115,7 +115,7 @@ class ReleaseGroup(Document):
 		"""Updates a dependency version in the Release Group Dependency table"""
 
 		for dependency in self.dependencies:
-			if dependency.dependency == dependency_name:
+			if dependency.name == dependency_name:
 				dependency.version = version
 				self.save()
 				return
