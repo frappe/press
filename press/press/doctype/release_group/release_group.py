@@ -124,7 +124,9 @@ class ReleaseGroup(Document):
 					{"key": row.key, "value": row.value, "type": row.type}
 				)
 
-		self.update_config_in_release_group(updated_common_site_config, [])
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(updated_common_site_config, ())
 
 	@frappe.whitelist()
 	def update_config(self, config):
@@ -167,7 +169,9 @@ class ReleaseGroup(Document):
 			else:
 				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
 
-		self.update_config_in_release_group(sanitized_common_site_config, [])
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(sanitized_common_site_config, ())
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group
