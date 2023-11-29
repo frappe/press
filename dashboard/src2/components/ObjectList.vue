@@ -63,7 +63,12 @@
 				<ListRows>
 					<ListRow v-for="(row, i) in filteredRows" :row="row" :key="row.name">
 						<template v-slot="{ column, item }">
-							<ObjectListCell :row="row" :column="column" :idx="i" />
+							<ObjectListCell
+								:row="row"
+								:column="column"
+								:idx="i"
+								:context="context"
+							/>
 						</template>
 					</ListRow>
 				</ListRows>
