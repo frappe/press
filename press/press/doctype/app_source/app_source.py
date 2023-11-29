@@ -118,7 +118,7 @@ class AppSource(Document):
 					"last_synced": frappe.utils.now(),
 				},
 			)
-		except Exception as e:
+		except Exception:
 			github_response = github_response.text if (github_response is not None) else None
 			frappe.db.set_value(
 				"App Source",
@@ -131,7 +131,7 @@ class AppSource(Document):
 			)
 			self.add_comment(
 				text=f"""Exception occured in create_release:
-{e}
+{frappe.get_traceback()}
 user: {frappe.session.user}
 team: {frappe.local.team()}
 """
