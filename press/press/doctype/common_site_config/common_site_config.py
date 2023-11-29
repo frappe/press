@@ -14,6 +14,7 @@ class CommonSiteConfig(Document):
 				query.where(Config.parent == filters.get("group"))
 				.where(Config.parenttype == "Release Group")
 				.where(Config.internal == 0)
+				.orderby(Config.key, order=frappe.qb.asc)
 			)
 		configs = query.run(as_dict=True)
 		config_key_titles = frappe.db.get_all(
