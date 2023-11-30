@@ -212,7 +212,7 @@
 		<DatabaseAccessDialog
 			v-if="showDatabaseAccessDialog"
 			:site="site.name"
-			v-model:show="showDatabaseAccessDialog"
+			v-model="showDatabaseAccessDialog"
 		/>
 
 		<Dialog

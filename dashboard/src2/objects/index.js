@@ -1,56 +1,13 @@
 import site from './site';
 import bench from './bench';
 
-let objects = [site, bench];
+let objects = {
+	Site: site,
+	Bench: bench
+};
 
-export function generateRoutes() {
-	let routes = [];
-	for (let object of objects) {
-		if (object.list) {
-			routes.push({
-				name: `${object.doctype} List`,
-				path: object.list.route,
-				component: () => import('../pages/ListPage.vue'),
-				props: route => {
-					return { object, ...route.params };
-				}
-			});
-		}
-		if (object.detail) {
-			let children = object.detail.tabs.map(tab => {
-				return {
-					name: `${object.doctype} Detail ${tab.label}`,
-					path: tab.route,
-					component: () => import('../pages/DetailTab.vue'),
-					props: route => {
-						return { ...route.params };
-					}
-				};
-			});
-			if (object.routes) {
-				for (let route of object.routes) {
-					children.push({
-						...route,
-						props: route => {
-							return { object, ...route.params };
-						}
-					});
-				}
-			}
-
-			routes.push({
-				name: `${object.doctype} Detail`,
-				path: object.detail.route,
-				component: () => import('../pages/DetailPage.vue'),
-				props: route => {
-					return { object, ...route.params };
-				},
-				redirect: children.length ? { name: children[0].name } : null,
-				children
-			});
-		}
-	}
-	return routes;
+export function getObject(name) {
+	return objects[name];
 }
 
 export default objects;

@@ -232,7 +232,7 @@ export default {
 																align: 'right',
 																type: 'Button',
 																width: '5rem',
-																Button(row) {
+																Button({ row }) {
 																	return {
 																		label: 'Install',
 																		onClick() {
@@ -459,19 +459,22 @@ export default {
 								label: 'Download Public',
 								onClick() {
 									return downloadBackup(row, 'public');
-								}
+								},
+								condition: () => row.public_url
 							},
 							{
 								label: 'Download Private',
 								onClick() {
 									return downloadBackup(row, 'private');
-								}
+								},
+								condition: () => row.private_url
 							},
 							{
 								label: 'Download Config',
 								onClick() {
 									return downloadBackup(row, 'config_file');
-								}
+								},
+								condition: () => row.config_file_url
 							}
 						];
 					},
@@ -558,6 +561,7 @@ export default {
 						{
 							label: 'Config Name',
 							fieldname: 'key',
+							width: 1,
 							format(value, row) {
 								if (row.title) {
 									return `${row.title} (${row.key})`;
@@ -566,12 +570,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({ listResource: configs, documentResource: site }) {
@@ -710,6 +718,67 @@ export default {
 								if (!value) return;
 								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
 							}
+						}
+					]
+				}
+			},
+			{
+				label: 'Actions',
+				icon: icon('activity'),
+				route: 'actions',
+				type: 'list',
+				list: {
+					resource({ documentResource: site }) {
+						return {
+							url: 'press.api.client.run_doc_method',
+							params: {
+								dt: 'Site',
+								dn: site.doc.name,
+								method: 'get_actions'
+							},
+							transform(data) {
+								return data.message;
+							},
+							cache: ['Site Actions', site.name],
+							auto: true
+						};
+					},
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'button_label',
+							type: 'Button',
+							width: 1,
+							Button({ row, documentResource: site }) {
+								let actionDialogs = {
+									'Restore from backup': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseRestoreDialog.vue')
+									),
+									'Migrate site': defineAsyncComponent(() =>
+										import('../components/SiteMigrateDialog.vue')
+									),
+									'Reset site': defineAsyncComponent(() =>
+										import('../components/SiteResetDialog.vue')
+									),
+									'Access site database': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseAccessDialog.vue')
+									)
+								};
+								return {
+									label: row.action,
+									onClick() {
+										let dialog = actionDialogs[row.action];
+										if (!dialog) return;
+										renderDialog(h(dialog, { site: site.name }));
+									}
+								};
+							}
+						},
+						{
+							label: 'Description',
+							fieldname: 'description',
+							class: 'text-gray-600',
+							width: 3
 						}
 					]
 				}

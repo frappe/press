@@ -68,10 +68,11 @@
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { duration } from '../utils/format';
+import { getObject } from '../objects';
 
 export default {
 	name: 'JobPage',
-	props: ['id', 'object'],
+	props: ['id', 'objectType'],
 	data() {
 		return {
 			isOpen: {}
@@ -95,6 +96,9 @@ export default {
 		}
 	},
 	computed: {
+		object() {
+			return getObject(this.objectType);
+		},
 		job() {
 			return this.$resources.job.doc;
 		}

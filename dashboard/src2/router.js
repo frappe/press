@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { generateRoutes } from './objects';
+import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
 	history: createWebHistory('/dashboard2/'),

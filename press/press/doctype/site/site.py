@@ -1485,6 +1485,31 @@ class Site(Document):
 	def disable_read_write(self):
 		self.enable_database_access("read_only")
 
+	@frappe.whitelist()
+	def get_actions(self):
+		return [
+			{
+				"action": "Restore from backup",
+				"description": "Restore your database from database, public and private files",
+				"button_label": "Restore",
+			},
+			{
+				"action": "Migrate site",
+				"description": "Run bench migrate command on your site",
+				"button_label": "Migrate",
+			},
+			{
+				"action": "Reset site",
+				"description": "Reset your site database to a clean state",
+				"button_label": "Reset",
+			},
+			{
+				"action": "Access site database",
+				"description": "Enable read/write access to your site database",
+				"button_label": "Enable Access",
+			},
+		]
+
 	@property
 	def pending_for_long(self) -> bool:
 		if not self.status == "Pending":
