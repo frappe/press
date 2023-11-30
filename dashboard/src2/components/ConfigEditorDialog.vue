@@ -6,9 +6,7 @@
 				{
 					label: config ? 'Edit Key' : 'Add Key',
 					variant: 'solid',
-					loading:
-						siteDocResource?.updateConfig?.loading ||
-						groupDocResource?.updateConfig?.loading,
+					loading: docResource?.updateConfig?.loading,
 					onClick: addConfig
 				}
 			]
@@ -77,8 +75,7 @@ export default {
 	},
 	data() {
 		return {
-			siteDocResource: null,
-			groupDocResource: null,
+			docResource: null,
 			showDialog: true,
 			selectedConfig: null,
 			key: null,
@@ -121,12 +118,15 @@ export default {
 	},
 	methods: {
 		addConfig() {
-			this.siteDocResource = getCachedDocumentResource('Site', this.site);
-			this.groupDocResource = getCachedDocumentResource(
-				'Release Group',
-				this.group
-			);
-			if (!this.siteDocResource && !this.groupDocResource) return;
+			if (this.site) {
+				this.docResource = getCachedDocumentResource('Site', this.site);
+			} else if (this.group) {
+				this.docResource = getCachedDocumentResource(
+					'Release Group',
+					this.group
+				);
+			}
+			if (!this.docResource) return;
 			let key =
 				this.selectedConfig?.value == '__custom_key'
 					? this.key
@@ -148,29 +148,16 @@ export default {
 
 			let config = { [key]: value };
 
-			if (this.site) {
-				this.siteDocResource.updateConfig.submit(
-					{ config },
-					{
-						onSuccess: () => {
-							this.$emit('success');
-							this.showDialog = false;
-						}
+			this.docResource.updateConfig.submit(
+				{ config },
+				{
+					onSuccess: () => {
+						this.$emit('success');
+						this.showDialog = false;
 					}
-				);
-				this.error = this.siteDocResource.updateConfig.error;
-			} else if (this.group) {
-				this.groupDocResource.updateConfig.submit(
-					{ config },
-					{
-						onSuccess: () => {
-							this.$emit('success');
-							this.showDialog = false;
-						}
-					}
-				);
-				this.error = this.groupDocResource.updateConfig.error;
-			}
+				}
+			);
+			this.error = this.docResource.updateConfig.error;
 		}
 	},
 	computed: {
