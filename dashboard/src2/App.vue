@@ -8,7 +8,7 @@
 					<AppSidebar />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
-					<router-view v-if="$session.user" />
+					<router-view v-if="$team.doc" />
 					<div v-else class="py-20 text-center text-base">
 						You are not logged in.
 						<a href="/login" class="underline">Login</a> to access dashboard.

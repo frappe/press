@@ -36,10 +36,9 @@
 								Frappe Cloud
 							</div>
 							<div
-								v-if="$team.doc"
 								class="mt-1 hidden text-sm leading-none text-gray-700 sm:inline"
 							>
-								{{ $team.doc.user }}
+								{{ $team.get.loading ? 'Loading...' : $team.doc.user }}
 							</div>
 						</div>
 						<FeatherIcon
