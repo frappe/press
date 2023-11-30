@@ -268,6 +268,7 @@ export default {
 				params: {
 					doc: {
 						doctype: 'Site',
+						team: this.$team.doc.name,
 						subdomain: this.subdomain,
 						apps: apps.map(app => ({ app })),
 						cluster: this.cluster,
