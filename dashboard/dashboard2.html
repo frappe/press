@@ -19,17 +19,10 @@
 		<!-- Main Vue App -->
 		<div id="app" class="h-full"></div>
 
-		<!-- For Teleports -->
-		<div id="modals"></div>
-		<div id="popovers"></div>
-
 		<script>
-			window.csrf_token = '{{ csrf_token }}';
-			window.press_frontend_sentry_dsn = '{{ press_frontend_sentry_dsn }}';
-			window.press_frontend_posthog_host = '{{ press_frontend_posthog_host }}';
-			window.press_frontend_posthog_project_id =
-				'{{ press_frontend_posthog_project_id }}';
-			window.press_site_name = '{{ press_site_name }}';
+			{% for key in boot %}
+			window["{{ key }}"] = {{ boot[key] | tojson }};
+			{% endfor %}
 		</script>
 		<script type="module" src="/src2/main.js"></script>
 	</body>
