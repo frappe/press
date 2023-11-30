@@ -37,17 +37,20 @@ export default {
 		return {
 			showDialog: true,
 			selectedDependencyVersion: null,
-			groupDocResource: getCachedDocumentResource('Release Group', this.group)
+			groupDocResource: getCachedDocumentResource(
+				'Release Group',
+				this.group.name
+			)
 		};
 	},
 	computed: {
 		dependencyOptions() {
 			const versions = [
 				...new Set([
-					...this.$resources.dependencyVersions.data,
+					...(this.$resources.dependencyVersions.data || []),
 					this.dependency.version
 				])
-			];
+			].sort();
 			this.selectedDependencyVersion = this.dependency.version;
 			return versions.map(v => ({
 				label: v,
@@ -58,12 +61,18 @@ export default {
 	resources: {
 		dependencyVersions() {
 			return {
-				url: 'press.api.bench.get_dependency_options',
-				params: {
-					name: this.group,
-					dependency: this.dependency.dependency
+				type: 'list',
+				doctype: 'Bench Dependency Version',
+				fields: ['version'],
+				filters: {
+					parent: this.dependency.dependency,
+					supported_frappe_version: this.group.version
 				},
-				initialData: [],
+				transform(data) {
+					return data.map(d => d.version);
+				},
+				orderBy: 'version asc',
+				pageLength: 1000,
 				auto: true
 			};
 		}

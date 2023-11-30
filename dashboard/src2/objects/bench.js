@@ -485,7 +485,7 @@ export default {
 									);
 									renderDialog(
 										h(DependencyEditorDialog, {
-											group: group.doc.name,
+											group: group.doc,
 											dependency: row,
 											onSuccess() {
 												dependencies.reload();
