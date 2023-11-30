@@ -161,6 +161,9 @@ export default {
 							fieldname: 'hash',
 							type: 'Badge',
 							width: 1,
+							link: (value, row) => {
+								return `${row.repository_url}/commit/${value}`;
+							},
 							format(value) {
 								return value.slice(0, 7);
 							}

@@ -1,5 +1,8 @@
 <template>
-	<div
+	<component
+		:is="column.link ? 'a' : 'div'"
+		:href="column.link ? column.link(value, row) : undefined"
+		:target="column.link ? '_blank' : undefined"
 		class="flex text-gray-900"
 		:class="{
 			'justify-end': column.align === 'right',
@@ -39,7 +42,7 @@
 		<div v-if="column.suffix" class="ml-2">
 			<component :is="column.suffix(row)" />
 		</div>
-	</div>
+	</component>
 </template>
 <script>
 import { Tooltip } from 'frappe-ui';
