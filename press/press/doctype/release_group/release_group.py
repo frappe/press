@@ -49,6 +49,10 @@ class ReleaseGroup(Document):
 		)
 		return query
 
+	def get_doc(self, doc):
+		doc.deploy_information = self.deploy_information()
+		doc.status = self.status
+
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
@@ -419,6 +423,13 @@ class ReleaseGroup(Document):
 	@property
 	def deploy_in_progress(self):
 		return self.last_dc_info and self.last_dc_info.status in ("Running", "Scheduled")
+
+	@property
+	def status(self):
+		active_benches = frappe.db.get_all(
+			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
+		)
+		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
 	def last_dc_info(self):

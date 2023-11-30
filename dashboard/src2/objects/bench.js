@@ -1,4 +1,4 @@
-import { FeatherIcon, Tooltip } from 'frappe-ui';
+import { FeatherIcon, LoadingIndicator, Tooltip } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import dayjs from '../utils/dayjs';
@@ -201,7 +201,6 @@ export default {
 					primaryAction({ listResource: apps, documentResource: group }) {
 						return {
 							label: 'Add App',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -374,7 +373,6 @@ export default {
 					primaryAction({ listResource: configs, documentResource: group }) {
 						return {
 							label: 'Add Config',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -500,12 +498,32 @@ export default {
 			}
 		],
 		actions(context) {
-			let { documentResource: group } = context;
+			let { documentResource: bench } = context;
 			return [
 				{
 					label: 'Update available',
+					slots: {
+						prefix: icon('alert-circle')
+					},
 					variant: 'solid',
-					condition: () => group.doc.status === 'Update Available'
+					condition: () =>
+						bench.doc.deploy_information.update_available &&
+						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
+					onClick() {
+						// TODO
+					}
+				},
+				{
+					label: 'Deploy in progress',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' })
+					},
+					theme: 'green',
+					condition: () => bench.doc.deploy_information.deploy_in_progress,
+					route: {
+						name: 'Bench Deploy',
+						params: { id: bench.doc?.deploy_information?.last_deploy?.name }
+					}
 				}
 			];
 		}
