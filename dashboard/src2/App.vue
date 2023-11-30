@@ -9,7 +9,10 @@
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<router-view v-if="$team.doc" />
-					<div v-else class="py-20 text-center text-base">
+					<div
+						v-else-if="!$team.get.loading"
+						class="mx-auto my-auto mt-20 w-max rounded border p-20 text-center text-base"
+					>
 						You are not logged in.
 						<a href="/login" class="underline">Login</a> to access dashboard.
 					</div>
