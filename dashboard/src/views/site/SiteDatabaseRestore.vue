@@ -47,6 +47,7 @@
 					"
 				>
 					<Button
+						theme="red"
 						:disabled="site.status === 'Suspended' || !permissions.migrate"
 						@click="showMigrateDialog = true"
 					>
@@ -142,6 +143,11 @@
 					you sure you want to run this command? We recommend that you download
 					a database backup before continuing.
 				</p>
+				<p class="mt-4 text-base">
+					Please type
+					<span class="font-semibold">{{ site.name }}</span> to confirm.
+				</p>
+				<FormControl class="mt-4 w-full" v-model="confirmSiteName" />
 				<ErrorMessage
 					class="mt-2"
 					:message="$resources.migrateDatabase.error"
@@ -182,6 +188,11 @@
 					</p>
 					<BackupFilesUploader v-model:backupFiles="selectedFiles" />
 				</div>
+				<p class="mt-4 text-base">
+					Please type
+					<span class="font-semibold">{{ site.name }}</span> to confirm.
+				</p>
+				<FormControl class="mt-4 w-full" v-model="confirmSiteName" />
 				<div class="mt-3">
 					<!-- Skip Failing Checkbox -->
 					<input
@@ -273,6 +284,9 @@ export default {
 					skip_failing_patches: this.wantToSkipFailingPatches
 				},
 				validate() {
+					if (this.confirmSiteName !== this.site?.name) {
+						return 'Please type the site name to confirm.';
+					}
 					if (!this.filesUploaded) {
 						return 'Please upload database, public and private files to restore.';
 					}
@@ -310,6 +324,11 @@ export default {
 				url: 'press.api.site.migrate',
 				params: {
 					name: this.site?.name
+				},
+				validate() {
+					if (this.confirmSiteName !== this.site?.name) {
+						return 'Please type the site name to confirm.';
+					}
 				},
 				onSuccess() {
 					this.$router.push({

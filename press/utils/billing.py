@@ -131,7 +131,9 @@ def get_setup_intent(team):
 		customer_id = frappe.db.get_value("Team", team, "stripe_customer_id")
 		stripe = get_stripe()
 		intent = stripe.SetupIntent.create(
-			customer=customer_id, payment_method_types=["card"]
+			customer=customer_id,
+			payment_method_types=["card"],
+			payment_method_options={"card": {"request_three_d_secure": "any"}},
 		)
 		frappe.cache().hset("setup_intent", team, intent)
 	return intent

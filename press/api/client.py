@@ -6,7 +6,7 @@ import frappe
 import inspect
 from pypika.queries import QueryBuilder
 from frappe.model.base_document import get_controller
-from frappe.model import default_fields
+from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
 from frappe.handler import get_attr, run_doc_method as _run_doc_method
 
@@ -188,7 +188,7 @@ def is_valid_field(doctype, field):
 
 	if field == "*" or "." in field:
 		return True
-	elif isinstance(field, dict) or field in default_fields:
+	elif isinstance(field, dict) or field in [*default_fields, *child_table_fields]:
 		return True
 	elif df := frappe.get_meta(doctype).get_field(field):
 		if df.fieldtype not in frappe.model.table_fields:

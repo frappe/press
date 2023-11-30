@@ -141,7 +141,8 @@ export default {
 					name: this.site?.name
 				},
 				onSuccess(data) {
-					this.selectedRegion = data.current_region;
+					if (data.regions.find(r => r.name === data.current_region))
+						this.selectedRegion = data.current_region;
 				}
 			};
 		},

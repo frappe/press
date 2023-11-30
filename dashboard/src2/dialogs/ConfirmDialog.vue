@@ -1,5 +1,22 @@
 <template>
-	<Dialog v-model="show" :options="{ title: title }">
+	<Dialog
+		v-model="show"
+		:options="{
+			title: title,
+			actions: [
+				{
+					label: 'Cancel',
+					onClick: hide
+				},
+				{
+					label: 'Confirm',
+					variant: 'solid',
+					onClick: onConfirm,
+					loading: isLoading
+				}
+			]
+		}"
+	>
 		<template #body-content>
 			<p class="text-base text-gray-800" v-if="message" v-html="message" />
 			<div class="space-y-4">
@@ -11,14 +28,6 @@
 				/>
 			</div>
 			<ErrorMessage class="mt-2" :message="error" />
-		</template>
-		<template #actions>
-			<div class="flex items-center justify-end space-x-2">
-				<Button @click="show = false">Cancel</Button>
-				<Button variant="solid" @click="onConfirm" :loading="isLoading">
-					Confirm
-				</Button>
-			</div>
 		</template>
 	</Dialog>
 </template>

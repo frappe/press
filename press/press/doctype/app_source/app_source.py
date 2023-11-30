@@ -129,6 +129,13 @@ class AppSource(Document):
 					"last_synced": frappe.utils.now(),
 				},
 			)
+			self.add_comment(
+				text=f"""Exception occured in create_release:
+{frappe.get_traceback()}
+user: {frappe.session.user}
+team: {frappe.local.team()}
+"""
+			)
 
 
 def create_app_source(

@@ -30,7 +30,7 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"team": team,
 				"type": type,
 				"document_type": document_type,
-				"document_name": document_name,
+				"document_name": document_name or 0,
 				"message": message,
 			}
 		).insert()

@@ -4,8 +4,9 @@
 			title: config ? 'Edit Config' : 'Add Config',
 			actions: [
 				{
-					label: 'Add Key',
+					label: config ? 'Edit Key' : 'Add Key',
 					variant: 'solid',
+					loading: docResource?.updateConfig?.loading,
 					onClick: addConfig
 				}
 			]
@@ -66,7 +67,7 @@ import {
 
 export default {
 	name: 'ConfigEditorDialog',
-	props: ['site', 'config'],
+	props: ['site', 'group', 'config'],
 	components: {
 		Autocomplete,
 		FormControl,
@@ -74,6 +75,7 @@ export default {
 	},
 	data() {
 		return {
+			docResource: null,
 			showDialog: true,
 			selectedConfig: null,
 			key: null,
@@ -116,8 +118,15 @@ export default {
 	},
 	methods: {
 		addConfig() {
-			let site = getCachedDocumentResource('Site', this.site);
-			if (!site) return;
+			if (this.site) {
+				this.docResource = getCachedDocumentResource('Site', this.site);
+			} else if (this.group) {
+				this.docResource = getCachedDocumentResource(
+					'Release Group',
+					this.group
+				);
+			}
+			if (!this.docResource) return;
 			let key =
 				this.selectedConfig?.value == '__custom_key'
 					? this.key
@@ -139,7 +148,7 @@ export default {
 
 			let config = { [key]: value };
 
-			site.updateConfig.submit(
+			this.docResource.updateConfig.submit(
 				{ config },
 				{
 					onSuccess: () => {
@@ -148,7 +157,7 @@ export default {
 					}
 				}
 			);
-			this.error = site.updateConfig.error;
+			this.error = this.docResource.updateConfig.error;
 		}
 	},
 	computed: {

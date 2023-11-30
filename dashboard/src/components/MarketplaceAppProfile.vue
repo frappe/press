@@ -105,7 +105,7 @@
 		<ChangeAppBranchDialog
 			v-if="showBranchChangeDialog"
 			:show="showBranchChangeDialog"
-			:app="app.name"
+			:app="app"
 			:source="selectedSource"
 			:version="selectedVersion"
 			:activeBranch="activeBranch"
