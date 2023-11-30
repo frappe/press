@@ -16,7 +16,8 @@ export default {
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
-		updateDependency: 'update_dependency'
+		updateDependency: 'update_dependency',
+		addRegion: 'add_cluster'
 	},
 	list: {
 		route: '/benches',
@@ -493,6 +494,60 @@ export default {
 								}
 							}
 						];
+					}
+				}
+			},
+			{
+				label: 'Regions',
+				icon: icon('globe'),
+				route: 'regions',
+				type: 'list',
+				list: {
+					doctype: 'Cluster',
+					filters: group => {
+						return { group: group.name };
+					},
+					columns: [
+						{
+							label: 'Region',
+							fieldname: 'title'
+						},
+						{
+							label: 'Country',
+							fieldname: 'image',
+							format(value, row) {
+								return '';
+							},
+							prefix(row) {
+								return h('img', {
+									src: row.image,
+									class: 'w-4 h-4',
+									alt: row.title
+								});
+							}
+						}
+					],
+					primaryAction({ listResource: clusters, documentResource: group }) {
+						return {
+							label: 'Add Region',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let AddRegionDialog = defineAsyncComponent(() =>
+									import('../components/bench/AddRegionDialog.vue')
+								);
+								renderDialog(
+									h(AddRegionDialog, {
+										group: group.doc.name,
+										onSuccess() {
+											clusters.reload();
+										}
+									})
+								);
+							}
+						};
 					}
 				}
 			}

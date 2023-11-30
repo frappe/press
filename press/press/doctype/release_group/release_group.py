@@ -683,6 +683,7 @@ class ReleaseGroup(Document):
 			"Server", {"name": ("in", servers)}, pluck="cluster", distinct=True
 		)
 
+	@frappe.whitelist()
 	def add_cluster(self, cluster: str):
 		"""
 		Add new server belonging to cluster.
