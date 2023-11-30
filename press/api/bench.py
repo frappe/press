@@ -307,20 +307,6 @@ def update_config(name, config):
 
 @frappe.whitelist()
 @protected("Release Group")
-def get_dependency_options(name, dependency):
-	version = frappe.get_value("Release Group", name, "version")
-	dependency_name = frappe.get_value("Bench Dependency", dependency)
-	dependency_versions = frappe.get_all(
-		"Bench Dependency Version",
-		{"parent": dependency_name, "supported_frappe_version": version},
-		pluck="version",
-	)
-
-	return dependency_versions
-
-
-@frappe.whitelist()
-@protected("Release Group")
 def dependencies(name: str):
 	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	active_dependencies = [
