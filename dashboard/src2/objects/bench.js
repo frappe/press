@@ -5,6 +5,7 @@ import dayjs from '../utils/dayjs';
 import { duration } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam } from '../data/team';
+import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 
@@ -50,7 +51,19 @@ export default {
 				class: 'text-gray-600',
 				width: 0.25
 			}
-		]
+		],
+		primaryAction({ listResource: benches }) {
+			return {
+				label: 'New Bench',
+				variant: 'solid',
+				slots: {
+					prefix: icon('plus')
+				},
+				onClick() {
+					router.push({ name: 'NewBench' });
+				}
+			};
+		}
 	},
 	detail: {
 		titleField: 'title',
