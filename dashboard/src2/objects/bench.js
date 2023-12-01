@@ -17,7 +17,7 @@ export default {
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
 		updateDependency: 'update_dependency',
-		addRegion: 'add_cluster'
+		addRegion: 'add_region'
 	},
 	list: {
 		route: '/benches',

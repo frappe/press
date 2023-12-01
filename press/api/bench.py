@@ -791,10 +791,7 @@ def available_regions(name):
 @frappe.whitelist()
 @protected("Release Group")
 def add_region(name, region):
-	rg = frappe.get_doc("Release Group", name)
-	if len(rg.get_clusters()) >= 2:
-		frappe.throw("More than 2 regions for bench not allowed")
-	rg.add_cluster(region)
+	frappe.get_doc("Release Group", name).add_region(region)
 
 
 @frappe.whitelist()

@@ -684,6 +684,15 @@ class ReleaseGroup(Document):
 		)
 
 	@frappe.whitelist()
+	def add_region(self, region):
+		"""
+		Add new region to release group (limits to 2). Meant for dashboard use only.
+		"""
+
+		if len(self.get_clusters()) >= 2:
+			frappe.throw("More than 2 regions for bench not allowed")
+		self.add_cluster(region)
+
 	def add_cluster(self, cluster: str):
 		"""
 		Add new server belonging to cluster.
