@@ -22,16 +22,33 @@ export default {
 	list: {
 		route: '/benches',
 		title: 'Benches',
+		fields: [{ apps: ['app'] }],
 		columns: [
-			{ label: 'Title', fieldname: 'title', fieldtype: 'Data' },
-			{ label: 'Version', fieldname: 'version', fieldtype: 'Data' },
+			{ label: 'Title', fieldname: 'title' },
 			{
-				label: 'Auto Deploy',
-				fieldname: 'is_push_to_deploy_enabled',
-				fieldtype: 'Check',
-				format(value) {
-					return value ? 'Yes' : 'No';
+				label: 'Status',
+				fieldname: 'active_benches',
+				type: 'Badge',
+				width: 0.5,
+				format: (value, row) => {
+					if (!value) return 'Awaiting Deploy';
+					else return 'Active';
 				}
+			},
+			{ label: 'Version', fieldname: 'version', width: 0.5 },
+			{
+				label: 'Apps',
+				fieldname: 'app',
+				format: (value, row) => {
+					return (row.apps || []).map(d => d.app).join(', ');
+				},
+				width: '25rem'
+			},
+			{
+				label: 'Sites',
+				fieldname: 'site_count',
+				class: 'text-gray-600',
+				width: 0.25
 			}
 		]
 	},
