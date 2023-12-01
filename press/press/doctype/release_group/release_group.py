@@ -42,11 +42,30 @@ class ReleaseGroup(Document):
 	@staticmethod
 	def get_list_query(query):
 		ReleaseGroup = frappe.qb.DocType("Release Group")
+		Bench = frappe.qb.DocType("Bench")
+		Site = frappe.qb.DocType("Site")
+
+		site_count = (
+			frappe.qb.from_(Site)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Site.group == ReleaseGroup.name)
+			.where(Site.status == "Active")
+		)
+
+		active_benches = (
+			frappe.qb.from_(Bench)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Bench.group == ReleaseGroup.name)
+			.where(Bench.status == "Active")
+		)
+
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
+			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
 		)
+
 		return query
 
 	def get_doc(self, doc):
