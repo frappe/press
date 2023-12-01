@@ -20,6 +20,11 @@ let router = createRouter({
 			path: '/sites/new',
 			component: () => import('./pages/NewSite.vue')
 		},
+		{
+			name: 'NewBench',
+			path: '/benches/new',
+			component: () => import('./pages/NewBench.vue')
+		},
 		...generateRoutes()
 	]
 });
