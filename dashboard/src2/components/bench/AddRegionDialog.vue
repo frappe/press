@@ -11,18 +11,21 @@
 					disabled: !selectedRegion,
 					onClick: () =>
 						groupDocResource.addRegion.submit({
-							cluster: selectedRegion
+							region: selectedRegion
 						})
 				}
 			]
 		}"
 	>
 		<template #body-content>
-			<RichSelect
-				:value="selectedRegion"
-				@change="selectedRegion = $event"
-				:options="regionOptions"
-			/>
+			<div class="space-y-4">
+				<RichSelect
+					:value="selectedRegion"
+					@change="selectedRegion = $event"
+					:options="regionOptions"
+				/>
+				<ErrorMessage :message="groupDocResource.addRegion.error" />
+			</div>
 		</template>
 	</Dialog>
 </template>
