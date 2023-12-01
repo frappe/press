@@ -560,7 +560,6 @@ export default {
 					primaryAction({ listResource: clusters, documentResource: group }) {
 						return {
 							label: 'Add Region',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
