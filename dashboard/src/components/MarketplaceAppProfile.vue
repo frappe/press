@@ -102,7 +102,7 @@
 			</template>
 		</Dialog>
 
-		<ChangeAppBranchDialog
+		<ChangeMarketplaceAppBranchDialog
 			v-if="showBranchChangeDialog"
 			:show="showBranchChangeDialog"
 			:app="app"
@@ -122,7 +122,7 @@
 
 <script>
 import CreateAppVersionDialog from '@/components/marketplace/CreateAppVersionDialog.vue';
-import ChangeAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
+import ChangeMarketplaceAppBranchDialog from '@/components/marketplace/ChangeAppBranchDialog.vue';
 import FileUploader from '@/components/FileUploader.vue';
 import { notify } from '@/utils/toast';
 
@@ -134,7 +134,7 @@ export default {
 	components: {
 		FileUploader,
 		CreateAppVersionDialog,
-		ChangeAppBranchDialog
+		ChangeMarketplaceAppBranchDialog
 	},
 	data() {
 		return {
