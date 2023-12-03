@@ -1,9 +1,12 @@
 import json
+import os
+import time
+import requests
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.core.utils import find
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, timeout
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
@@ -34,8 +37,6 @@ from press.press.doctype.release_group.test_release_group import (
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
 import docker
-
-import os
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -219,6 +220,7 @@ class TestAPIBench(FrappeTestCase):
 		)
 		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
 
+	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
 		client = docker.from_env()
 		dc = frappe.get_last_doc("Deploy Candidate")
@@ -228,6 +230,21 @@ class TestAPIBench(FrappeTestCase):
 		except docker.errors.ImageNotFound:
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
+
+		test_port = 10501
+		client.containers.run(
+			image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port}
+		)
+		while True:
+			# Ensure that gunicorn at least responds. Usually we'll get 404 as there's no site installed *yet*
+			try:
+				response = requests.get(f"http://localhost:{test_port}")
+				print("Received Response", response.text)
+				if response.status_code < 500:
+					break
+			except IOError as e:
+				print("Waitng for container to respond", str(e))
+			time.sleep(0.5)
 
 
 class TestAPIBenchConfig(FrappeTestCase):
