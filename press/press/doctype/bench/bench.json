@@ -73,6 +73,7 @@
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
    "reqd": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -294,7 +295,7 @@
   }
  ],
  "links": [],
- "modified": "2023-10-27 09:27:05.409734",
+ "modified": "2023-12-04 16:40:32.814283",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
