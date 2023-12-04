@@ -39,6 +39,12 @@ class BaseServer(Document):
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
+		if not self.hostname_abbreviation:
+			self._set_hostname_abbreviation()
+
+	def _set_hostname_abbreviation(self):
+		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
+
 	def after_insert(self):
 		if self.ip:
 			if (
@@ -1027,3 +1033,14 @@ def cleanup_unused_files():
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
+
+
+def get_hostname_abbreviation(hostname):
+	hostname_parts = hostname.split("-")
+
+	abbr = hostname_parts[0]
+
+	for part in hostname_parts[1:]:
+		abbr += part[0]
+
+	return abbr

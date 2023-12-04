@@ -35,10 +35,22 @@ class Bench(Document):
 		return benches
 
 	def autoname(self):
-		server_name = frappe.db.get_value("Server", self.server, "hostname")
+		server_name_abbreviation, server_name = frappe.db.get_value(
+			"Server", self.server, ["hostname_abbreviation", "hostname"]
+		)
 		candidate_name = self.candidate[7:]
+
+		self.name = self.get_bench_name(candidate_name, server_name, server_name_abbreviation)
+
+	def get_bench_name(self, candidate_name, server_name, server_name_abbreviation):
 		bench_name = f"bench-{candidate_name}-{server_name}"
-		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
+		if len(bench_name) > 32:
+			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
+
+		bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
+		return bench_name
 
 	def update_config_with_rg_config(self, config: dict):
 		release_group_common_site_config = frappe.db.get_value(
