@@ -36,7 +36,12 @@ export default {
 					else return 'Active';
 				}
 			},
-			{ label: 'Version', fieldname: 'version', width: 0.5 },
+			{
+				label: 'Version',
+				fieldname: 'version',
+				class: 'text-gray-600',
+				width: 0.5
+			},
 			{
 				label: 'Apps',
 				fieldname: 'app',
