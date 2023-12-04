@@ -300,7 +300,8 @@
    "label": "Release Group",
    "options": "Release Group",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_29",
@@ -648,7 +649,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-08-07 17:47:21.855550",
+ "modified": "2023-12-04 16:11:36.503340",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
