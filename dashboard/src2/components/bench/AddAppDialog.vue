@@ -115,6 +115,7 @@ import {
 	ListRowItem,
 	TextInput
 } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'AddAppDialog',
@@ -172,10 +173,13 @@ export default {
 	},
 	resources: {
 		addApps: {
-			url: 'press.api.bench.add_apps',
+			url: 'press.api.bench.add_app',
 			onSuccess() {
 				this.$emit('appAdd');
 				this.$resources.installableApps.reload();
+			},
+			onError(e) {
+				toast.error(e.messages.length ? e.messages.join('\n') : e.message);
 			}
 		},
 		installableApps() {
@@ -225,14 +229,12 @@ export default {
 			if (!this.selectedAppSources.includes(row))
 				this.selectedAppSources.push(row);
 
+			let app = this.selectedAppSources.find(app => app.name === row.name);
+
 			this.$resources.addApps.submit({
 				name: this.benchName,
-				apps: this.selectedAppSources
-					.filter(app => app.name === row.name)
-					.map(a => ({
-						app: a.name,
-						source: a.source.name
-					}))
+				source: app.source.name,
+				app: app.name
 			});
 		},
 		dropdownItems(row) {
