@@ -311,7 +311,8 @@
    "fieldname": "parent_team",
    "fieldtype": "Link",
    "label": "Parent Team",
-   "options": "Team"
+   "options": "Team",
+   "search_index": 1
   },
   {
    "fieldname": "section_break_tdm9",
@@ -454,7 +455,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-12-04 14:35:30.252285",
+ "modified": "2023-12-04 17:07:30.774582",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
