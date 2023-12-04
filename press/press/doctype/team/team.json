@@ -70,7 +70,8 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User"
+   "options": "User",
+   "search_index": 1
   },
   {
    "fieldname": "team_members",
@@ -453,7 +454,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-11-14 17:28:46.504627",
+ "modified": "2023-12-04 14:35:30.252285",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",
