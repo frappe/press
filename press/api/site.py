@@ -62,11 +62,11 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			has_permission_set = frappe.db.exists(
-				"Press User Permission", {"user": frappe.session.user}
+			has_config_permissions = frappe.db.exists(
+				"Press User Permission", {"type": "Config", "user": frappe.session.user}
 			)
 
-			if owner == team or has_permission_set:
+			if owner == team or has_config_permissions:
 				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
 				if is_team_member and hasattr(frappe.local, "request"):
 					groups = frappe.get_all(
@@ -81,9 +81,11 @@ def protected(doctypes):
 					restricted_method = frappe.db.exists(
 						"Press Method Permission", {"method": request_path}
 					)
+					has_permission_set = frappe.db.exists(
+						"Press User Permission", {"user": frappe.session.user}
+					)
 
 					if (has_permission_set or groups) and restricted_method:
-						# has restricted access
 						if has_user_permission(doctype, name, request_path, groups):
 							return wrapped(*args, **kwargs)
 					else:
