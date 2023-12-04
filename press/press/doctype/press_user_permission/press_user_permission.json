@@ -12,11 +12,12 @@
   "group",
   "document_type",
   "document_name",
-  "action"
+  "action",
+  "config"
  ],
  "fields": [
   {
-   "depends_on": "eval: doc.type == \"User\";",
+   "depends_on": "eval: doc.type == \"User\" || doc.type == \"Config\";",
    "fieldname": "user",
    "fieldtype": "Link",
    "in_filter": 1,
@@ -27,6 +28,7 @@
    "options": "User"
   },
   {
+   "depends_on": "eval: doc.type != 'Config';",
    "fieldname": "document_type",
    "fieldtype": "Link",
    "in_filter": 1,
@@ -37,6 +39,7 @@
    "options": "DocType"
   },
   {
+   "depends_on": "eval: doc.type != 'Config';",
    "fieldname": "document_name",
    "fieldtype": "Dynamic Link",
    "in_filter": 1,
@@ -47,6 +50,7 @@
    "options": "document_type"
   },
   {
+   "depends_on": "eval: doc.type != 'Config';",
    "fieldname": "action",
    "fieldtype": "Data",
    "in_filter": 1,
@@ -60,7 +64,7 @@
    "fieldname": "type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "User\nGroup"
+   "options": "User\nGroup\nConfig"
   },
   {
    "depends_on": "eval: doc.type == \"Group\";",
@@ -68,11 +72,17 @@
    "fieldtype": "Link",
    "label": "Group",
    "options": "Press Permission Group"
+  },
+  {
+   "depends_on": "eval: doc.type == 'Config';",
+   "fieldname": "config",
+   "fieldtype": "JSON",
+   "label": "config"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-07 18:00:50.875930",
+ "modified": "2023-12-03 14:34:58.554059",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press User Permission",
