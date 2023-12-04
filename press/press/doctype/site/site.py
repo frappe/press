@@ -285,6 +285,7 @@ class Site(Document):
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
 			self.create_subscription(self.subscription_plan)
+			self.reload()
 
 		# log activity
 		log_site_activity(self.name, "Create")
