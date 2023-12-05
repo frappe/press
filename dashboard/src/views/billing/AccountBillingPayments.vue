@@ -10,11 +10,12 @@
 		</template>
 		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-7"
 			>
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
 				<span class="hidden md:inline">Amount</span>
+				<span class="hidden md:inline">Amount Due</span>
 				<span>Status</span>
 				<span class="hidden md:inline">Payment Date</span>
 				<span></span>
@@ -22,7 +23,7 @@
 			<div
 				:key="invoice.name"
 				v-for="invoice in filteredInvoices"
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-7"
 			>
 				<div>
 					<div>
@@ -59,6 +60,7 @@
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
+				<span class="hidden md:inline">{{ invoice.formatted_amount_due }}</span>
 				<span>
 					<Badge :label="invoice.status" />
 				</span>
