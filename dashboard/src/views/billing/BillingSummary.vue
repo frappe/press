@@ -23,7 +23,7 @@
 							{{
 								($account.team.currency == 'INR' ? '₹' : '$') +
 								' ' +
-								$resources.unpaidAmountDue.data
+								Math.ceil($resources.unpaidAmountDue.data)
 							}}
 						</div>
 					</div>
