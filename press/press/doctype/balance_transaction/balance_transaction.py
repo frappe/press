@@ -39,9 +39,8 @@ class BalanceTransaction(Document):
 				self.unallocated_amount = self.amount - abs(last_balance)
 				self.add_comment(text=f"Settling negative balance of {abs(last_balance)}")
 			elif last_balance < 0 and abs(last_balance) > self.amount:
-				frappe.throw(
-					f"Your credit balance is negative. You need to add minimum {abs(last_balance)} prepaid credits."
-				)
+				# doesn't make sense to throw because payment happens before creating BT
+				pass
 
 	def before_update_after_submit(self):
 		total_allocated = sum([d.amount for d in self.allocated_to])
