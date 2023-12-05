@@ -42,9 +42,12 @@ def upcoming_invoice():
 	else:
 		upcoming_invoice = None
 
+	balance = team.get_balance()
+
 	return {
 		"upcoming_invoice": upcoming_invoice,
-		"available_credits": fmt_money(team.get_balance(), 2, team.currency),
+		"available_credits": fmt_money(balance, 2, team.currency),
+		"account_balance": balance,
 	}
 
 
