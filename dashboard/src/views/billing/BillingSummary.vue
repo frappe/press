@@ -23,7 +23,7 @@
 							{{
 								($account.team.currency == 'INR' ? '₹' : '$') +
 								' ' +
-								Math.round(($resources.unpaidAmountDue.data)*100)/100;
+								Math.round($resources.unpaidAmountDue.data*100/100);
 							}}
 						</div>
 					</div>
