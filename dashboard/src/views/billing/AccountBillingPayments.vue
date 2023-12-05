@@ -15,6 +15,7 @@
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
 				<span class="hidden md:inline">Amount</span>
+				<span class="hidden md:inline">Amount Due</span>
 				<span>Status</span>
 				<span class="hidden md:inline">Payment Date</span>
 				<span></span>
@@ -59,6 +60,7 @@
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
+				<span class="hidden md:inline">{{ invoice.formatted_amount_due }}</span>
 				<span>
 					<Badge :label="invoice.status" />
 				</span>
