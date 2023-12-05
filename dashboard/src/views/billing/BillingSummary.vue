@@ -169,18 +169,9 @@ export default {
 		minimumAmount() {
 			const unpaidAmount = this.$resources.unpaidAmountDue.data;
 			const minimumDefault = $account.team.currency == 'INR' ? 800 : 10;
-			const accountBalance =
-				this.$resources.upcomingInvoice.data?.account_balance;
-			let totalUnpaid = 0;
 
-			// add negative balance
-			if (accountBalance < 0) {
-				totalUnpaid = -1 * accountBalance;
-			}
-			totalUnpaid += unpaidAmount;
-
-			return unpaidAmount && totalUnpaid > minimumDefault
-				? totalUnpaid
+			return unpaidAmount && unpaidAmount > minimumDefault
+				? unpaidAmount
 				: minimumDefault;
 		},
 		upcomingInvoice() {
