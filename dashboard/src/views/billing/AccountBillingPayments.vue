@@ -18,7 +18,7 @@
 				<span class="hidden md:inline">Amount Due</span>
 				<span>Status</span>
 				<span class="hidden md:inline">Payment Date</span>
-				<span></span>
+				<span>Download</span>
 			</div>
 			<div
 				:key="invoice.name"
@@ -60,7 +60,10 @@
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
-				<span class="hidden md:inline">{{ invoice.formatted_amount_due }}</span>
+				<span v-if="invoice.formatted_amount_due" class="hidden md:inline">{{
+					invoice.formatted_amount_due
+				}}</span>
+				<span v-else>-</span>
 				<span>
 					<Badge :label="invoice.status" />
 				</span>
@@ -80,6 +83,7 @@
 							})
 						}}
 					</span>
+					<span v-else>-</span>
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button

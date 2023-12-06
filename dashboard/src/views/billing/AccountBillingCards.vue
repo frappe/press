@@ -144,7 +144,7 @@ export default {
 		},
 		cardBrand() {
 			return {
-				'master-card': defineAsyncComponent(() =>
+				mastercard: defineAsyncComponent(() =>
 					import('@/components/icons/cards/MasterCard.vue')
 				),
 				visa: defineAsyncComponent(() =>
