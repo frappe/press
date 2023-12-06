@@ -85,9 +85,6 @@ def setup_account(
 		if not first_name:
 			frappe.throw("First Name is required")
 
-		if not last_name:
-			frappe.throw("Last Name is required")
-
 		if not password and not oauth_signup:
 			frappe.throw("Password is required")
 
