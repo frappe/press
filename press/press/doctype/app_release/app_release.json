@@ -73,7 +73,8 @@
    "label": "Source",
    "options": "App Source",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_9",
@@ -168,7 +169,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2023-12-04 16:52:55.661064",
+ "modified": "2023-12-06 15:38:30.386183",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",
