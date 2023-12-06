@@ -91,16 +91,13 @@ export default class Account {
 			// partner credits shall be deprecated in few months
 			return true;
 		}
-		if (this.team.payment_mode == 'Card') {
+		if (['Card', 'Prepaid Credits'].includes(this.team.payment_mode)) {
 			// card is chargeable and not spam
 			return (
 				this.billing_info.verified_micro_charge ||
 				this.billing_info.has_paid_before ||
-				this.billing_info.balance > 0
+				this.balance > 0
 			);
-		}
-		if (this.team.payment_mode == 'Prepaid Credits') {
-			return this.balance > 0;
 		}
 
 		return false;
