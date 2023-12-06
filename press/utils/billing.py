@@ -133,7 +133,7 @@ def get_setup_intent(team):
 		intent = stripe.SetupIntent.create(
 			customer=customer_id,
 			payment_method_types=["card"],
-			payment_method_options={"card": {"request_three_d_secure": "any"}},
+			payment_method_options={"card": {"request_three_d_secure": "automatic"}},
 		)
 		frappe.cache().hset("setup_intent", team, intent)
 	return intent
