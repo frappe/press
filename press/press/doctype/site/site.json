@@ -154,7 +154,8 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Subdomain",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "team",
@@ -649,7 +650,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-12-04 16:11:36.503340",
+ "modified": "2023-12-06 15:36:26.281669",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
