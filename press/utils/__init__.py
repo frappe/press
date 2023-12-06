@@ -11,6 +11,7 @@ import pytz
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 from frappe.utils import get_system_timezone, get_datetime
+from frappe.utils.caching import site_cache
 
 
 def log_error(title, **kwargs):
@@ -359,6 +360,7 @@ class RemoteFrappeSite:
 			self._remote_backup_links[file_type] = self.__process_frappe_url(file_path)
 
 
+@site_cache(ttl=5 * 60)
 def get_client_blacklisted_keys() -> list:
 	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
 	return list(
