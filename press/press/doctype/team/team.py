@@ -676,7 +676,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def get_balance(self):
-		res = frappe.db.get_all(
+		res = frappe.get_all(
 			"Balance Transaction",
 			filters={"team": self.name, "docstatus": 1},
 			order_by="creation desc",

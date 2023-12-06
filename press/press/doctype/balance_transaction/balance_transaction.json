@@ -25,7 +25,8 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "default": "Adjustment",
@@ -101,7 +102,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-29 14:58:09.158731",
+ "modified": "2023-12-06 15:52:44.971950",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",
