@@ -552,6 +552,9 @@ def update_job_and_step_status(job):
 def get_server_wise_undelivered_jobs(job_types):
 	jobs = frappe._dict()
 
+	if not job_types:
+		return jobs
+
 	for job in frappe.get_all(
 		"Agent Job",
 		{
@@ -562,6 +565,7 @@ def get_server_wise_undelivered_jobs(job_types):
 			"job_type": ("in", job_types),
 		},
 		["name", "server", "server_type"],
+		ignore_ifnull=True,  # job type is mandatory and next_retry_at has to be set for retry
 	):
 		jobs.setdefault((job.server, job.server_type), []).append(job["name"])
 
