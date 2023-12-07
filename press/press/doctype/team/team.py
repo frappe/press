@@ -512,6 +512,9 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
+		if frappe.flags.in_install:
+			return
+
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
