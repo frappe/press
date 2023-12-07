@@ -44,7 +44,14 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
-	whitelisted_fields = ["ip", "status", "group", "notify_email", "team", "plan"]
+	whitelisted_fields = [
+		"ip",
+		"status",
+		"group",
+		"notify_email",
+		"team",
+		"plan",
+	]
 
 	@staticmethod
 	def get_list_query(query):
@@ -58,6 +65,12 @@ class Site(Document):
 		from press.api.site import current_plan
 
 		doc["current_plan"] = current_plan(self.name)
+		group = frappe.db.get_value(
+			"Release Group", self.group, ["title", "public"], as_dict=1
+		)
+		doc["group_title"] = group.title
+		doc["group_public"] = group.public
+
 		return doc
 
 	def _get_site_name(self, subdomain: str):

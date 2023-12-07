@@ -116,9 +116,19 @@ export default {
 		titleField: 'name',
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
-			return {
-				label: site.doc.status
-			};
+			return { label: site.doc.status };
+		},
+		breadcrumbs({ items, documentResource: site }) {
+			if (site.doc?.group_public) {
+				return items;
+			}
+			return [
+				{
+					label: site.doc?.group_title,
+					route: `/benches/${site.doc?.group}`
+				},
+				items[1]
+			];
 		},
 		tabs: [
 			{

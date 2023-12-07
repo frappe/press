@@ -8,6 +8,7 @@ import { getTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
+import LucideAppWindow from '~icons/lucide/app-window.vue';
 
 export default {
 	doctype: 'Release Group',
@@ -74,6 +75,73 @@ export default {
 		titleField: 'title',
 		route: '/benches/:name',
 		tabs: [
+			{
+				label: 'Sites',
+				icon: icon(LucideAppWindow),
+				route: 'sites',
+				type: 'list',
+				list: {
+					doctype: 'Site',
+					fields: [
+						'plan.plan_title as plan_title',
+						'group.title as group_title',
+						'group.version as version',
+						'cluster.image as cluster_image',
+						'cluster.title as cluster_title'
+					],
+					orderBy: 'creation desc',
+					filters: group => {
+						return { group: group.doc.name };
+					},
+					route(row) {
+						return {
+							name: 'Site Detail',
+							params: { name: row.name }
+						};
+					},
+					columns: [
+						{ label: 'Site', fieldname: 'name', width: 2 },
+						{ label: 'Status', fieldname: 'status', type: 'Badge', width: 1 },
+						{
+							label: 'Plan',
+							fieldname: 'plan',
+							width: 1,
+							format(value, row) {
+								return row.plan_title || value;
+							}
+						},
+						{
+							label: 'Cluster',
+							fieldname: 'cluster',
+							width: 1,
+							format(value, row) {
+								return row.cluster_title || value;
+							},
+							prefix(row) {
+								return h('img', {
+									src: row.cluster_image,
+									class: 'w-4 h-4',
+									alt: row.cluster_title
+								});
+							}
+						},
+						{
+							label: 'Bench',
+							fieldname: 'group',
+							width: 1,
+							format(value, row) {
+								return row.group_title || value;
+							}
+						},
+						{
+							label: 'Version',
+							fieldname: 'version',
+							width: 1,
+							class: 'text-gray-600'
+						}
+					]
+				}
+			},
 			{
 				label: 'Apps',
 				icon: icon('grid'),
