@@ -351,7 +351,11 @@ def unpaid_invoices():
 	team = get_current_team()
 	invoices = frappe.get_all(
 		"Invoice",
-		{"team": team, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+		{
+			"team": team,
+			"status": ("in", ["Draft", "Unpaid", "Invoice Created"]),
+			"type": "Subscription",
+		},
 		["name", "status", "period_end", "currency", "amount_due", "total"],
 		order_by="creation asc",
 	)
