@@ -59,14 +59,14 @@
 						{{ item.name }}
 					</div>
 					<div class="space-y-0.5">
-						<SidebarItem
+						<AppSidebarItem
 							v-for="subItem in item.items"
 							:key="subItem.name"
 							:item="subItem"
 						/>
 					</div>
 				</template>
-				<SidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
+				<AppSidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
 			</template>
 		</nav>
 		<Dialog :options="{ title: 'Change Team' }" v-model="showTeamSwitcher">
@@ -114,7 +114,7 @@
 </template>
 
 <script setup>
-import { h, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import Home from '~icons/lucide/home';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
@@ -125,20 +125,30 @@ import SquareDashedBottomCode from '~icons/lucide/square-dashed-bottom-code';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import { switchToTeam } from '../data/team';
+import { useRoute } from 'vue-router';
 
-const navigation = [
+const $route = useRoute();
+
+const navigation = computed(() => [
 	{
 		name: 'Shared',
 		items: [
 			{
 				name: 'Sites',
 				icon: () => h(PanelTopInactive),
-				route: '/sites'
+				route: '/sites',
+				isActive:
+					['Site List', 'Site Detail'].includes($route.name) ||
+					$route.name.startsWith('Site Detail')
 			},
 			{
 				name: 'Benches',
 				icon: () => h(Package),
-				route: '/benches'
+				route: '/benches',
+				isActive:
+					['Release Group List', 'Release Group Detail'].includes(
+						$route.name
+					) || $route.name.startsWith('Release Group Detail')
 			}
 		]
 	},
@@ -202,7 +212,7 @@ const navigation = [
 			}
 		]
 	}
-];
+]);
 
 let showTeamSwitcher = ref(false);
 </script>
