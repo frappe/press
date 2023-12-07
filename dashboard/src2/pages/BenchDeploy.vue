@@ -1,6 +1,13 @@
 <template>
 	<div class="p-5" v-if="deploy">
-		<div>
+		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
+			<template #prefix>
+				<i-lucide-arrow-left class="inline-block h-4 w-4" />
+			</template>
+			All deploys
+		</Button>
+
+		<div class="mt-3">
 			<div class="flex items-center space-x-2">
 				<h2 class="text-lg font-medium text-gray-900">{{ deploy.name }}</h2>
 				<Badge :label="deploy.status" />
@@ -51,9 +58,11 @@
 	</div>
 </template>
 <script>
+import { getObject } from '../objects';
+
 export default {
 	name: 'BenchDeploy',
-	props: ['id'],
+	props: ['id', 'objectType'],
 	resources: {
 		deploy() {
 			return {
@@ -94,6 +103,9 @@ export default {
 	computed: {
 		deploy() {
 			return this.$resources.deploy.doc;
+		},
+		object() {
+			return getObject(this.objectType);
 		}
 	}
 };

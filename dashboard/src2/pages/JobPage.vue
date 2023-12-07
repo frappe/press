@@ -1,10 +1,10 @@
 <template>
 	<div class="p-5" v-if="job">
-		<Button variant="ghost" :route="{ name: `${object.doctype} Detail Jobs` }">
+		<Button :route="{ name: `${object.doctype} Detail Jobs` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
-			Back to all jobs
+			All jobs
 		</Button>
 
 		<div class="mt-3">
