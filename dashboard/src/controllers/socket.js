@@ -5,7 +5,7 @@ let host = window.location.hostname;
 let port = window.location.port ? `:${config.socketio_port}` : '';
 let protocol = port ? 'http' : 'https';
 let url = `${protocol}://${host}${port}`;
-let socket = io(`${url}/${window.press_site_name}`, {
+let socket = io(`${url}/${window.site_name}`, {
 	withCredentials: true
 });
 
