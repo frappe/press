@@ -23,11 +23,10 @@
 				</TextInput>
 			</div>
 			<div class="ml-auto flex items-center space-x-2">
-				<Button @click="list.reload()" :loading="isLoading">
-					<template #prefix>
-						<i-lucide-refresh-ccw class="h-4 w-4" />
+				<Button label="Refresh" @click="list.reload()" :loading="isLoading">
+					<template #icon>
+						<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
 					</template>
-					Refresh
 				</Button>
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
