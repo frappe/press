@@ -34,7 +34,7 @@
   "cidr_block",
   "subnet_cidr_block",
   "column_break_12",
-  "aws_vpc_id",
+  "vpc_id",
   "aws_subnet_id",
   "aws_security_group_id",
   "aws_proxy_security_group_id",
@@ -114,12 +114,6 @@
   {
    "fieldname": "column_break_12",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "aws_vpc_id",
-   "fieldtype": "Data",
-   "label": "AWS VPC ID",
-   "read_only": 1
   },
   {
    "fieldname": "subnet_cidr_block",
@@ -256,6 +250,12 @@
    "length": 4096,
    "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
    "set_only_once": 1
+  },
+  {
+   "fieldname": "vpc_id",
+   "fieldtype": "Data",
+   "label": "VPC ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -287,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 15:31:23.401987",
+ "modified": "2023-12-11 16:53:26.671149",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

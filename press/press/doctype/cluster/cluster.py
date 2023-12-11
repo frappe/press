@@ -172,9 +172,9 @@ class Cluster(Document):
 			],
 			CidrBlock=self.cidr_block,
 		)
-		self.aws_vpc_id = response["Vpc"]["VpcId"]
+		self.vpc_id = response["Vpc"]["VpcId"]
 
-		client.modify_vpc_attribute(VpcId=self.aws_vpc_id, EnableDnsHostnames={"Value": True})
+		client.modify_vpc_attribute(VpcId=self.vpc_id, EnableDnsHostnames={"Value": True})
 
 		response = client.create_subnet(
 			TagSpecifications=[
@@ -184,7 +184,7 @@ class Cluster(Document):
 				},
 			],
 			AvailabilityZone=self.availability_zone,
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			CidrBlock=self.subnet_cidr_block,
 		)
 		self.aws_subnet_id = response["Subnet"]["SubnetId"]
@@ -203,11 +203,11 @@ class Cluster(Document):
 		self.aws_internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
 
 		client.attach_internet_gateway(
-			InternetGatewayId=self.aws_internet_gateway_id, VpcId=self.aws_vpc_id
+			InternetGatewayId=self.aws_internet_gateway_id, VpcId=self.vpc_id
 		)
 
 		response = client.describe_route_tables(
-			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
 		self.aws_route_table_id = response["RouteTables"][0]["RouteTableId"]
 
@@ -223,7 +223,7 @@ class Cluster(Document):
 		)
 
 		response = client.describe_network_acls(
-			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
 		self.aws_network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
 		client.create_tags(
@@ -234,7 +234,7 @@ class Cluster(Document):
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Security Group",
 			Description="Allow Everything",
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			TagSpecifications=[
 				{
 					"ResourceType": "security-group",
@@ -316,7 +316,7 @@ class Cluster(Document):
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Proxy - Security Group",
 			Description="Allow Everything on Proxy",
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			TagSpecifications=[
 				{
 					"ResourceType": "security-group",
@@ -391,7 +391,7 @@ class Cluster(Document):
 				cidr_block=self.subnet_cidr_block,
 			)
 		).data
-		self.aws_vpc_id = vcn.id
+		self.vpc_id = vcn.id
 		self.aws_route_table_id = vcn.default_route_table_id
 		self.aws_security_group_id = vcn.default_security_list_id
 
@@ -456,7 +456,7 @@ class Cluster(Document):
 		proxy_security_list = vcn_client.create_security_list(
 			CreateSecurityListDetails(
 				compartment_id=self.oci_tenancy,
-				vcn_id=self.aws_vpc_id,
+				vcn_id=self.vpc_id,
 				ingress_security_rules=[
 					IngressSecurityRule(
 						description="SSH proxy from anywhere",
@@ -488,7 +488,7 @@ class Cluster(Document):
 			CreateSubnetDetails(
 				compartment_id=self.oci_tenancy,
 				display_name=f"Frappe Cloud - {self.name} - Public Subnet",
-				vcn_id=self.aws_vpc_id,
+				vcn_id=self.vpc_id,
 				cidr_block=self.subnet_cidr_block,
 				route_table_id=self.aws_route_table_id,
 				security_list_ids=[self.aws_security_group_id, self.aws_proxy_security_group_id],
@@ -503,7 +503,7 @@ class Cluster(Document):
 				compartment_id=self.oci_tenancy,
 				display_name=f"Frappe Cloud - {self.name} - Internet Gateway",
 				is_enabled=True,
-				vcn_id=self.aws_vpc_id,
+				vcn_id=self.vpc_id,
 			)
 		).data
 		self.aws_internet_gateway_id = internet_gateway.id

@@ -17,15 +17,15 @@ frappe.ui.form.on('Cluster', {
 				);
 			}
 		});
-		if (frm.doc.aws_vpc_id) {
+		if (frm.doc.vpc_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(
-					`https://${frm.doc.region}.console.aws.amazon.com/vpc/home?region=${frm.doc.region}#VpcDetails:VpcId=${frm.doc.aws_vpc_id}`,
+					`https://${frm.doc.region}.console.aws.amazon.com/vpc/home?region=${frm.doc.region}#VpcDetails:VpcId=${frm.doc.vpc_id}`,
 					__('Visit AWS Dashboard'),
 				);
 			} else if (frm.doc.cloud_provider === 'OCI') {
 				frm.add_web_link(
-					`https://cloud.oracle.com/networking/vcns/${frm.doc.aws_vpc_id}?region=${frm.doc.region}`,
+					`https://cloud.oracle.com/networking/vcns/${frm.doc.vpc_id}?region=${frm.doc.region}`,
 					__('Visit OCI Dashboard'),
 				);
 			}
