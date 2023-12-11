@@ -176,7 +176,10 @@ export default {
 							label: 'Branch',
 							fieldname: 'branch',
 							type: 'Badge',
-							width: 1
+							width: 1,
+							link: (value, row) => {
+								return `${row.repository_url}/tree/${value}`;
+							}
 						},
 						{
 							label: 'Commit',
@@ -534,43 +537,6 @@ export default {
 				}
 			},
 			{
-				label: 'Activity',
-				icon: icon('activity'),
-				route: 'activity',
-				type: 'list',
-				list: {
-					doctype: 'Site Activity',
-					filters: site => {
-						return { site: site.doc.name };
-					},
-					fields: ['owner'],
-					orderBy: 'creation desc',
-					columns: [
-						{
-							label: 'Action',
-							fieldname: 'action',
-							format(value, row) {
-								let action = row.action;
-								if (action == 'Create') {
-									action = 'Site created';
-								}
-								return `${action} by ${row.owner}`;
-							}
-						},
-						{
-							label: 'Reason',
-							fieldname: 'reason'
-						},
-						{
-							label: '',
-							fieldname: 'creation',
-							type: 'Timestamp',
-							align: 'right'
-						}
-					]
-				}
-			},
-			{
 				label: 'Site Config',
 				icon: icon('settings'),
 				route: 'site-config',
@@ -685,6 +651,70 @@ export default {
 				}
 			},
 			{
+				label: 'Actions',
+				icon: icon('activity'),
+				route: 'actions',
+				type: 'list',
+				list: {
+					resource({ documentResource: site }) {
+						return {
+							url: 'press.api.client.run_doc_method',
+							params: {
+								dt: 'Site',
+								dn: site.doc.name,
+								method: 'get_actions'
+							},
+							transform(data) {
+								return data.message;
+							},
+							cache: ['Site Actions', site.name],
+							auto: true
+						};
+					},
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'button_label',
+							type: 'Button',
+							width: 1,
+							Button({ row, documentResource: site }) {
+								let actionDialogs = {
+									'Activate site': null, // TODO
+									'Deactivate site': null, // TODO
+									'Restore from backup': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseRestoreDialog.vue')
+									),
+									'Migrate site': defineAsyncComponent(() =>
+										import('../components/SiteMigrateDialog.vue')
+									),
+									'Reset site': defineAsyncComponent(() =>
+										import('../components/SiteResetDialog.vue')
+									),
+									'Access site database': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseAccessDialog.vue')
+									),
+									'Drop site': null // TODO
+								};
+								return {
+									label: row.action,
+									onClick() {
+										let dialog = actionDialogs[row.action];
+										if (!dialog) return;
+										renderDialog(h(dialog, { site: site.name }));
+									}
+								};
+							}
+						},
+						{
+							label: 'Description',
+							fieldname: 'description',
+							class: 'text-gray-600',
+							width: 3
+						}
+					]
+				}
+			},
+			{
 				label: 'Jobs',
 				icon: icon('truck'),
 				// highlight: route =>
@@ -724,7 +754,10 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
-							format: duration
+							format(value, row) {
+								if (row.job_id == 0) return;
+								return duration(value);
+							}
 						},
 						{
 							label: 'Start Time',
@@ -747,63 +780,40 @@ export default {
 					]
 				}
 			},
+
 			{
-				label: 'Actions',
+				label: 'Activity',
 				icon: icon('activity'),
-				route: 'actions',
+				route: 'activity',
 				type: 'list',
 				list: {
-					resource({ documentResource: site }) {
-						return {
-							url: 'press.api.client.run_doc_method',
-							params: {
-								dt: 'Site',
-								dn: site.doc.name,
-								method: 'get_actions'
-							},
-							transform(data) {
-								return data.message;
-							},
-							cache: ['Site Actions', site.name],
-							auto: true
-						};
+					doctype: 'Site Activity',
+					filters: site => {
+						return { site: site.doc.name };
 					},
+					fields: ['owner'],
+					orderBy: 'creation desc',
 					columns: [
 						{
 							label: 'Action',
-							fieldname: 'button_label',
-							type: 'Button',
-							width: 1,
-							Button({ row, documentResource: site }) {
-								let actionDialogs = {
-									'Restore from backup': defineAsyncComponent(() =>
-										import('../components/SiteDatabaseRestoreDialog.vue')
-									),
-									'Migrate site': defineAsyncComponent(() =>
-										import('../components/SiteMigrateDialog.vue')
-									),
-									'Reset site': defineAsyncComponent(() =>
-										import('../components/SiteResetDialog.vue')
-									),
-									'Access site database': defineAsyncComponent(() =>
-										import('../components/SiteDatabaseAccessDialog.vue')
-									)
-								};
-								return {
-									label: row.action,
-									onClick() {
-										let dialog = actionDialogs[row.action];
-										if (!dialog) return;
-										renderDialog(h(dialog, { site: site.name }));
-									}
-								};
+							fieldname: 'action',
+							format(value, row) {
+								let action = row.action;
+								if (action == 'Create') {
+									action = 'Site created';
+								}
+								return `${action} by ${row.owner}`;
 							}
 						},
 						{
-							label: 'Description',
-							fieldname: 'description',
-							class: 'text-gray-600',
-							width: 3
+							label: 'Reason',
+							fieldname: 'reason'
+						},
+						{
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right'
 						}
 					]
 				}
@@ -813,22 +823,6 @@ export default {
 			let { documentResource: site } = context;
 			let $team = getTeam();
 			return [
-				{
-					label: `Subscription Plan: ${site.doc.plan}`,
-					slots: {
-						prefix: () => h(BadgeDollarSign)
-					},
-					onClick() {
-						let SitePlansDialog = defineAsyncComponent(() =>
-							import('../components/ManageSitePlansDialog.vue')
-						);
-						renderDialog(
-							h(SitePlansDialog, {
-								site: site.doc.name
-							})
-						);
-					}
-				},
 				{
 					label: 'Visit Site',
 					slots: {
