@@ -38,7 +38,7 @@
   "public_dns_name",
   "private_dns_name",
   "security_section",
-  "aws_security_group_id",
+  "security_group_id",
   "column_break_18",
   "termination_protection",
   "volumes_section",
@@ -148,13 +148,6 @@
   {
    "fieldname": "column_break_18",
    "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "cluster.aws_security_group_id",
-   "fieldname": "aws_security_group_id",
-   "fieldtype": "Data",
-   "label": "AWS Security Group ID",
-   "read_only": 1
   },
   {
    "fieldname": "public_ip_address",
@@ -279,6 +272,13 @@
    "fieldtype": "Data",
    "label": "Subnet ID",
    "read_only": 1
+  },
+  {
+   "fetch_from": "cluster.security_group_id",
+   "fieldname": "security_group_id",
+   "fieldtype": "Data",
+   "label": "Security Group ID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -309,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-12-11 17:09:18.757158",
+ "modified": "2023-12-11 17:37:16.644109",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

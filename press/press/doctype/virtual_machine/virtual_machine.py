@@ -454,7 +454,7 @@ class VirtualMachine(Document):
 		return frappe.get_doc(document).insert()
 
 	def get_security_groups(self):
-		groups = [self.aws_security_group_id]
+		groups = [self.security_group_id]
 		if self.series == "n":
 			groups.append(
 				frappe.db.get_value("Cluster", self.cluster, "proxy_security_group_id")

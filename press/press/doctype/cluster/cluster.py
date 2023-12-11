@@ -244,10 +244,10 @@ class Cluster(Document):
 				},
 			],
 		)
-		self.aws_security_group_id = response["GroupId"]
+		self.security_group_id = response["GroupId"]
 
 		client.authorize_security_group_ingress(
-			GroupId=self.aws_security_group_id,
+			GroupId=self.security_group_id,
 			IpPermissions=[
 				{
 					"FromPort": 80,
@@ -393,7 +393,7 @@ class Cluster(Document):
 		).data
 		self.vpc_id = vcn.id
 		self.aws_route_table_id = vcn.default_route_table_id
-		self.aws_security_group_id = vcn.default_security_list_id
+		self.security_group_id = vcn.default_security_list_id
 
 		time.sleep(1)
 		# https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
@@ -401,7 +401,7 @@ class Cluster(Document):
 		# 6 TCP
 		# 17 UDP
 		vcn_client.update_security_list(
-			self.aws_security_group_id,
+			self.security_group_id,
 			UpdateSecurityListDetails(
 				ingress_security_rules=[
 					IngressSecurityRule(
@@ -491,7 +491,7 @@ class Cluster(Document):
 				vcn_id=self.vpc_id,
 				cidr_block=self.subnet_cidr_block,
 				route_table_id=self.aws_route_table_id,
-				security_list_ids=[self.aws_security_group_id, self.proxy_security_group_id],
+				security_list_ids=[self.security_group_id, self.proxy_security_group_id],
 			)
 		).data
 		self.subnet_id = subnet.id
