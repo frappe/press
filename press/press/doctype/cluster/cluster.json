@@ -38,7 +38,7 @@
   "subnet_id",
   "security_group_id",
   "proxy_security_group_id",
-  "aws_network_acl_id",
+  "network_acl_id",
   "route_table_id"
  ],
  "fields": [
@@ -128,12 +128,6 @@
    "label": "Availability Zone",
    "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "set_only_once": 1
-  },
-  {
-   "fieldname": "aws_network_acl_id",
-   "fieldtype": "Data",
-   "label": "AWS Network ACL ID",
-   "read_only": 1
   },
   {
    "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
@@ -256,6 +250,12 @@
    "fieldtype": "Data",
    "label": "Route Table ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "network_acl_id",
+   "fieldtype": "Data",
+   "label": "Network ACL ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -287,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 17:41:24.634445",
+ "modified": "2023-12-11 17:45:05.626912",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

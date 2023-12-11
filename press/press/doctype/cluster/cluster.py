@@ -225,9 +225,9 @@ class Cluster(Document):
 		response = client.describe_network_acls(
 			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
-		self.aws_network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
+		self.network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
 		client.create_tags(
-			Resources=[self.aws_network_acl_id],
+			Resources=[self.network_acl_id],
 			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Network ACL"}],
 		)
 

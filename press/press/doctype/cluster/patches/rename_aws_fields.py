@@ -12,3 +12,4 @@ def execute():
 	rename_field("Cluster", "aws_proxy_security_group_id", "proxy_security_group_id")
 	rename_field("Cluster", "aws_security_group_id", "security_group_id")
 	rename_field("Cluster", "aws_route_table_id", "route_table_id")
+	rename_field("Cluster", "aws_network_acl_id", "network_acl_id")
