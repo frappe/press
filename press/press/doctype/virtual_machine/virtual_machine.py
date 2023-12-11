@@ -33,7 +33,7 @@ class VirtualMachine(Document):
 				frappe.db.get_value("Virtual Machine Image", self.virtual_machine_image, "size"),
 			)
 			self.machine_image = frappe.db.get_value(
-				"Virtual Machine Image", self.virtual_machine_image, "aws_ami_id"
+				"Virtual Machine Image", self.virtual_machine_image, "image_id"
 			)
 		if not self.machine_image:
 			self.machine_image = self.get_latest_ubuntu_image()

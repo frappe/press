@@ -8,7 +8,7 @@
  "field_order": [
   "virtual_machine",
   "instance_id",
-  "aws_ami_id",
+  "image_id",
   "aws_snapshot_id",
   "status",
   "size",
@@ -30,12 +30,6 @@
    "options": "Virtual Machine",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fieldname": "aws_ami_id",
-   "fieldtype": "Data",
-   "label": "AWS AMI ID",
-   "read_only": 1
   },
   {
    "fieldname": "platform",
@@ -121,11 +115,17 @@
    "label": "Instance ID",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "image_id",
+   "fieldtype": "Data",
+   "label": "Image ID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-11 17:48:59.688103",
+ "modified": "2023-12-11 17:55:01.652767",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",

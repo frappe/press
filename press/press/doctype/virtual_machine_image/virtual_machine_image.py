@@ -26,17 +26,17 @@ class VirtualMachineImage(Document):
 			InstanceId=self.instance_id,
 			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
 		)
-		self.aws_ami_id = response["ImageId"]
+		self.image_id = response["ImageId"]
 		self.sync()
 
 	def create_image_from_copy(self):
 		source = frappe.get_doc("Virtual Machine Image", self.copied_from)
 		response = self.client.copy_image(
 			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
-			SourceImageId=source.aws_ami_id,
+			SourceImageId=source.image_id,
 			SourceRegion=source.region,
 		)
-		self.aws_ami_id = response["ImageId"]
+		self.image_id = response["ImageId"]
 		self.sync()
 
 	def set_credentials(self):
@@ -47,7 +47,7 @@ class VirtualMachineImage(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		images = self.client.describe_images(ImageIds=[self.aws_ami_id])["Images"]
+		images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
 		if images:
 			image = images[0]
 			self.status = self.get_status_map(image["State"])
@@ -80,7 +80,7 @@ class VirtualMachineImage(Document):
 
 	@frappe.whitelist()
 	def delete_image(self):
-		self.client.deregister_image(ImageId=self.aws_ami_id)
+		self.client.deregister_image(ImageId=self.image_id)
 		if self.aws_snapshot_id:
 			self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
 		self.sync()

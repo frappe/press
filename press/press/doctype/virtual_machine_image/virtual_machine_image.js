@@ -52,9 +52,9 @@ frappe.ui.form.on('Virtual Machine Image', {
 			},
 			__('Actions'),
 		);
-		if (frm.doc.aws_ami_id) {
+		if (frm.doc.image_id) {
 			frm.add_web_link(
-				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#ImageDetails:imageId=${frm.doc.aws_ami_id}`,
+				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#ImageDetails:imageId=${frm.doc.image_id}`,
 				__('Visit AWS Dashboard'),
 			);
 		}

@@ -93,7 +93,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "virtual_machine_image.aws_ami_id",
+   "fetch_from": "virtual_machine_image.image_id",
    "fetch_if_empty": 1,
    "fieldname": "machine_image",
    "fieldtype": "Data",
@@ -309,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-12-11 17:48:37.361742",
+ "modified": "2023-12-11 17:55:22.459092",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

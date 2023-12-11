@@ -8,3 +8,4 @@ from frappe.model.utils.rename_field import rename_field
 def execute():
 	frappe.reload_doctype("Virtual Machine Image")
 	rename_field("Virtual Machine Image", "aws_instance_id", "instance_id")
+	rename_field("Virtual Machine Image", "aws_ami_id", "image_id")
