@@ -46,11 +46,9 @@
 					<div class="mt-1 text-sm text-gray-600">
 						{{ $team.doc.country === 'India' ? '₹' : '$'
 						}}{{
-							Number(
-								($team.doc.country === 'India'
-									? plan.price_inr
-									: plan.price_usd) / 30
-							).toFixed(2)
+							$team.doc.country === 'India'
+								? plan.price_per_day_inr
+								: plan.price_per_day_usd
 						}}
 						/day
 					</div>

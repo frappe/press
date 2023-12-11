@@ -15,7 +15,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime, flt
+from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours
 from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
@@ -62,14 +62,16 @@ class Site(Document):
 		return query
 
 	def get_doc(self, doc):
-		from press.api.site import current_plan
+		from press.api.client import get
 
-		doc["current_plan"] = current_plan(self.name)
 		group = frappe.db.get_value(
 			"Release Group", self.group, ["title", "public"], as_dict=1
 		)
 		doc["group_title"] = group.title
 		doc["group_public"] = group.public
+		doc["current_usage"] = self.current_usage
+		doc["current_plan"] = get("Plan", self.plan) if self.plan else None
+		doc["last_updated"] = self.last_updated
 
 		return doc
 
@@ -1414,6 +1416,42 @@ class Site(Document):
 			ip = frappe.db.get_value("Proxy Server", server.proxy_server, "ip")
 		return ip
 
+	@property
+	def current_usage(self):
+		from press.api.analytics import get_current_cpu_usage
+
+		result = frappe.db.get_all(
+			"Site Usage",
+			fields=["database", "public", "private"],
+			filters={"site": self.name},
+			order_by="creation desc",
+			limit=1,
+		)
+		usage = result[0] if result else {}
+
+		# number of hours until cpu usage resets
+		now = frappe.utils.now_datetime()
+		today_end = now.replace(hour=23, minute=59, second=59)
+		hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
+
+		return {
+			"cpu": get_current_cpu_usage(self.name),  # hours
+			"storage": usage.get("public", 0) + usage.get("private", 0),
+			"database": usage.get("database", 0),
+			"hours_until_cpu_usage_resets": hours_left_today,
+		}
+
+	@property
+	def last_updated(self):
+		result = frappe.db.get_all(
+			"Site Activity",
+			filters={"site": self.name, "action": "Update"},
+			order_by="creation desc",
+			limit=1,
+			pluck="creation",
+		)
+		return result[0] if result else None
+
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
@@ -1501,7 +1539,19 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def get_actions(self):
-		return [
+		actions = [
+			{
+				"action": "Deactivate site",
+				"description": "Deactivated site is not accessible on the internet",
+				"button_label": "Deactivate",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Activate site",
+				"description": "Activate site to make it accessible on the internet",
+				"button_label": "Activate",
+				"condition": self.status in ["Inactive", "Broken"],
+			},
 			{
 				"action": "Restore from backup",
 				"description": "Restore your database from database, public and private files",
@@ -1522,7 +1572,12 @@ class Site(Document):
 				"description": "Enable read/write access to your site database",
 				"button_label": "Enable Access",
 			},
+			{
+				"action": "Drop site",
+				"description": "When you drop site your site, all it's data is deleted forever",
+			},
 		]
+		return [d for d in actions if d.get("condition", True)]
 
 	@property
 	def pending_for_long(self) -> bool:

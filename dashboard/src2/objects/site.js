@@ -132,6 +132,18 @@ export default {
 		},
 		tabs: [
 			{
+				label: 'Overview',
+				icon: icon('home'),
+				route: 'overview',
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../components/SiteOverview.vue')
+				),
+				props: site => {
+					return { site: site.doc.name };
+				}
+			},
+			{
 				label: 'Analytics',
 				icon: icon('bar-chart-2'),
 				route: 'analytics',
