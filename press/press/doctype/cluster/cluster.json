@@ -17,13 +17,19 @@
   "provisioning_section",
   "cloud_provider",
   "region",
-  "availability_zone",
   "column_break_5",
-  "aws_access_key_id",
-  "aws_secret_access_key",
-  "public_key",
-  "private_key",
   "ssh_key",
+  "availability_zone",
+  "aws_section",
+  "aws_access_key_id",
+  "column_break_qpia",
+  "aws_secret_access_key",
+  "oci_section",
+  "oci_user",
+  "oci_public_key",
+  "column_break_bpar",
+  "oci_tenancy",
+  "oci_private_key",
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
@@ -199,22 +205,55 @@
    "options": "Active\nCopying Images\nArchived"
   },
   {
+   "collapsible": 1,
+   "fieldname": "oci_section",
+   "fieldtype": "Section Break",
+   "label": "OCI"
+  },
+  {
+   "fieldname": "column_break_bpar",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aws_section",
+   "fieldtype": "Section Break",
+   "label": "AWS"
+  },
+  {
+   "fieldname": "column_break_qpia",
+   "fieldtype": "Column Break"
+  },
+  {
    "depends_on": "eval:doc.cloud_provider === \"OCI\"",
-   "fieldname": "public_key",
-   "fieldtype": "Code",
-   "label": "Public Key",
+   "fieldname": "oci_user",
+   "fieldtype": "Data",
+   "label": "OCI User",
    "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
-   "options": "SSH Key",
    "set_only_once": 1
   },
   {
    "depends_on": "eval:doc.cloud_provider === \"OCI\"",
-   "fieldname": "private_key",
+   "fieldname": "oci_public_key",
+   "fieldtype": "Code",
+   "label": " OCI Public Key",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_tenancy",
+   "fieldtype": "Data",
+   "label": "OCI Tenancy",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_private_key",
    "fieldtype": "Password",
-   "label": "Private Key",
+   "label": "OCI Private Key",
    "length": 4096,
    "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
-   "options": "SSH Key",
    "set_only_once": 1
   }
  ],
@@ -247,7 +286,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 12:52:04.103065",
+ "modified": "2023-12-11 15:12:44.049178",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
