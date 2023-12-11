@@ -24,13 +24,13 @@ class VirtualDiskSnapshot(Document):
 	@frappe.whitelist()
 	def sync(self):
 		try:
-			snapshots = self.client.describe_snapshots(SnapshotIds=[self.aws_snapshot_id])[
+			snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])[
 				"Snapshots"
 			]
 			if snapshots:
 				snapshot = snapshots[0]
 				self.aws_volume_id = snapshot["VolumeId"]
-				self.aws_snapshot_id = snapshot["SnapshotId"]
+				self.snapshot_id = snapshot["SnapshotId"]
 
 				self.status = self.get_status_map(snapshot["State"])
 				self.description = snapshot["Description"]
@@ -48,7 +48,7 @@ class VirtualDiskSnapshot(Document):
 		self.sync()
 		if self.status == "Unavailable":
 			return
-		self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
+		self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 		self.sync()
 
 	def get_status_map(self, status):

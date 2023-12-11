@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "virtual_machine",
-  "aws_snapshot_id",
+  "snapshot_id",
   "status",
   "column_break_4",
   "cluster",
@@ -22,13 +22,6 @@
   "mariadb_root_password"
  ],
  "fields": [
-  {
-   "fieldname": "aws_snapshot_id",
-   "fieldtype": "Data",
-   "label": "AWS Snapshot ID",
-   "read_only": 1,
-   "reqd": 1
-  },
   {
    "fieldname": "aws_volume_id",
    "fieldtype": "Data",
@@ -115,11 +108,18 @@
   {
    "fieldname": "column_break_7lcz",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "snapshot_id",
+   "fieldtype": "Data",
+   "label": "Snapshot ID",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-08 12:23:28.522967",
+ "modified": "2023-12-11 18:02:47.147003",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Disk Snapshot",

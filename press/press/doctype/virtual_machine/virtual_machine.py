@@ -309,7 +309,7 @@ class VirtualMachine(Document):
 					{
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
-						"aws_snapshot_id": snapshot["SnapshotId"],
+						"snapshot_id": snapshot["SnapshotId"],
 					}
 				).insert()
 			except Exception:

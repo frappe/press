@@ -56,7 +56,7 @@ class VirtualMachineImage(Document):
 			if volume and "VolumeSize" in volume["Ebs"]:
 				self.size = volume["Ebs"]["VolumeSize"]
 			if volume and "SnapshotId" in volume["Ebs"]:
-				self.aws_snapshot_id = volume["Ebs"]["SnapshotId"]
+				self.snapshot_id = volume["Ebs"]["SnapshotId"]
 		else:
 			self.status = "Unavailable"
 		self.save()
@@ -81,8 +81,8 @@ class VirtualMachineImage(Document):
 	@frappe.whitelist()
 	def delete_image(self):
 		self.client.deregister_image(ImageId=self.image_id)
-		if self.aws_snapshot_id:
-			self.client.delete_snapshot(SnapshotId=self.aws_snapshot_id)
+		if self.snapshot_id:
+			self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 		self.sync()
 
 	def get_status_map(self, status):
