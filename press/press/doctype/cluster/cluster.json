@@ -21,6 +21,8 @@
   "column_break_5",
   "aws_access_key_id",
   "aws_secret_access_key",
+  "public_key",
+  "private_key",
   "ssh_key",
   "networking_section",
   "cidr_block",
@@ -195,6 +197,25 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Active\nCopying Images\nArchived"
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "public_key",
+   "fieldtype": "Code",
+   "label": "Public Key",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "options": "SSH Key",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "private_key",
+   "fieldtype": "Password",
+   "label": "Private Key",
+   "length": 4096,
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "options": "SSH Key",
+   "set_only_once": 1
   }
  ],
  "image_field": "image",
@@ -226,7 +247,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 12:02:04.476871",
+ "modified": "2023-12-11 12:52:04.103065",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
