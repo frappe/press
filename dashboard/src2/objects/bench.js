@@ -193,12 +193,7 @@ export default {
 												href: 'https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app',
 												target: '_blank'
 											},
-											[
-												h(FeatherIcon, {
-													class: 'h-[13px] w-[13px] text-gray-800',
-													name: 'help-circle'
-												})
-											]
+											[h(icon('help-circle', 'w-3 h-3'), {})]
 										)
 									]
 								);
