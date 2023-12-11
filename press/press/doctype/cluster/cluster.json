@@ -7,13 +7,13 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "image",
   "description",
   "column_break_2",
-  "monitoring_password",
+  "status",
   "public",
   "column_break_fsht",
-  "status",
+  "monitoring_password",
+  "image",
   "provisioning_section",
   "cloud_provider",
   "region",
@@ -88,11 +88,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "Cloud Region",
    "set_only_once": 1
   },
@@ -134,11 +134,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "set_only_once": 1
   },
   {
@@ -160,11 +160,11 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "ssh_key",
    "fieldtype": "Link",
    "label": "SSH Key",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "SSH Key",
    "set_only_once": 1
   },
@@ -215,6 +215,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "aws_section",
    "fieldtype": "Section Break",
    "label": "AWS"
@@ -286,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 15:12:44.049178",
+ "modified": "2023-12-11 15:17:07.980702",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
