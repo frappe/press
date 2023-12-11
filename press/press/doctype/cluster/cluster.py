@@ -326,10 +326,10 @@ class Cluster(Document):
 				},
 			],
 		)
-		self.aws_proxy_security_group_id = response["GroupId"]
+		self.proxy_security_group_id = response["GroupId"]
 
 		client.authorize_security_group_ingress(
-			GroupId=self.aws_proxy_security_group_id,
+			GroupId=self.proxy_security_group_id,
 			IpPermissions=[
 				{
 					"FromPort": 2222,
@@ -357,7 +357,7 @@ class Cluster(Document):
 		return ":".join(wrap(digest, 2))
 
 	def get_oci_config(self):
-		# Stupid Password field, replaces newines with aws_proxy_security_group_idspaces
+		# Stupid Password field, replaces newines with spaces
 		private_key = (
 			self.get_password("oci_private_key")
 			.replace(" ", "\n")
@@ -481,7 +481,7 @@ class Cluster(Document):
 				display_name=f"Frappe Cloud - {self.name} - Proxy - Security List",
 			)
 		).data
-		self.aws_proxy_security_group_id = proxy_security_list.id
+		self.proxy_security_group_id = proxy_security_list.id
 
 		time.sleep(1)
 		subnet = vcn_client.create_subnet(
@@ -491,7 +491,7 @@ class Cluster(Document):
 				vcn_id=self.vpc_id,
 				cidr_block=self.subnet_cidr_block,
 				route_table_id=self.aws_route_table_id,
-				security_list_ids=[self.aws_security_group_id, self.aws_proxy_security_group_id],
+				security_list_ids=[self.aws_security_group_id, self.proxy_security_group_id],
 			)
 		).data
 		self.subnet_id = subnet.id

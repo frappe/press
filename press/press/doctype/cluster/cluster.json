@@ -37,7 +37,7 @@
   "vpc_id",
   "subnet_id",
   "aws_security_group_id",
-  "aws_proxy_security_group_id",
+  "proxy_security_group_id",
   "aws_network_acl_id",
   "aws_route_table_id"
  ],
@@ -174,12 +174,6 @@
    "label": "Image"
   },
   {
-   "fieldname": "aws_proxy_security_group_id",
-   "fieldtype": "Data",
-   "label": "AWS Proxy Security Group ID",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_fsht",
    "fieldtype": "Column Break"
   },
@@ -256,6 +250,12 @@
    "fieldtype": "Data",
    "label": "Subnet ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "proxy_security_group_id",
+   "fieldtype": "Data",
+   "label": "Proxy Security Group ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -287,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 17:07:32.669911",
+ "modified": "2023-12-11 17:32:39.818053",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
