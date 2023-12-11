@@ -22,6 +22,7 @@ from oci.core.models import (
 	UpdateRouteTableDetails,
 	RouteRule,
 	CreateSecurityListDetails,
+	UpdateSecurityListDetails,
 	IngressSecurityRule,
 	EgressSecurityRule,
 	TcpOptions,
@@ -392,54 +393,16 @@ class Cluster(Document):
 		).data
 		self.aws_vpc_id = vcn.id
 		self.aws_route_table_id = vcn.default_route_table_id
-
-		time.sleep(1)
-		subnet = vcn_client.create_subnet(
-			CreateSubnetDetails(
-				compartment_id=self.oci_tenancy,
-				display_name=f"Frappe Cloud - {self.name} - Public Subnet",
-				vcn_id=self.aws_vpc_id,
-				cidr_block=self.subnet_cidr_block,
-				route_table_id=self.aws_route_table_id,
-				security_list_ids=[vcn.default_security_list_id],
-			)
-		).data
-		self.aws_subnet_id = subnet.id
-
-		time.sleep(1)
-		# Don't associate IGW with any route table Otherwise it fails with "Rules in the route table must use private IP"
-		internet_gateway = vcn_client.create_internet_gateway(
-			CreateInternetGatewayDetails(
-				compartment_id=self.oci_tenancy,
-				display_name=f"Frappe Cloud - {self.name} - Internet Gateway",
-				is_enabled=True,
-				vcn_id=self.aws_vpc_id,
-			)
-		).data
-		self.aws_internet_gateway_id = internet_gateway.id
-
-		time.sleep(1)
-		vcn_client.update_route_table(
-			self.aws_route_table_id,
-			UpdateRouteTableDetails(
-				route_rules=[
-					RouteRule(
-						destination="0.0.0.0/0",
-						network_entity_id=self.aws_internet_gateway_id,
-					)
-				]
-			),
-		)
+		self.aws_security_group_id = vcn.default_security_list_id
 
 		time.sleep(1)
 		# https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
 		# 1 ICMP
 		# 6 TCP
 		# 17 UDP
-		security_list = vcn_client.create_security_list(
-			CreateSecurityListDetails(
-				compartment_id=self.oci_tenancy,
-				vcn_id=self.aws_vpc_id,
+		vcn_client.update_security_list(
+			self.aws_security_group_id,
+			UpdateSecurityListDetails(
 				ingress_security_rules=[
 					IngressSecurityRule(
 						description="HTTP from anywhere",
@@ -486,9 +449,8 @@ class Cluster(Document):
 					),
 				],
 				display_name=f"Frappe Cloud - {self.name} - Security List",
-			)
-		).data
-		self.aws_security_group_id = security_list.id
+			),
+		)
 
 		time.sleep(1)
 		proxy_security_list = vcn_client.create_security_list(
@@ -520,6 +482,45 @@ class Cluster(Document):
 			)
 		).data
 		self.aws_proxy_security_group_id = proxy_security_list.id
+
+		time.sleep(1)
+		subnet = vcn_client.create_subnet(
+			CreateSubnetDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Public Subnet",
+				vcn_id=self.aws_vpc_id,
+				cidr_block=self.subnet_cidr_block,
+				route_table_id=self.aws_route_table_id,
+				security_list_ids=[self.aws_security_group_id, self.aws_proxy_security_group_id],
+			)
+		).data
+		self.aws_subnet_id = subnet.id
+
+		time.sleep(1)
+		# Don't associate IGW with any route table Otherwise it fails with "Rules in the route table must use private IP"
+		internet_gateway = vcn_client.create_internet_gateway(
+			CreateInternetGatewayDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Internet Gateway",
+				is_enabled=True,
+				vcn_id=self.aws_vpc_id,
+			)
+		).data
+		self.aws_internet_gateway_id = internet_gateway.id
+
+		time.sleep(1)
+		vcn_client.update_route_table(
+			self.aws_route_table_id,
+			UpdateRouteTableDetails(
+				route_rules=[
+					RouteRule(
+						destination="0.0.0.0/0",
+						network_entity_id=self.aws_internet_gateway_id,
+					)
+				]
+			),
+		)
+
 		self.save()
 
 	def get_available_vmi(self, series) -> Optional[str]:
