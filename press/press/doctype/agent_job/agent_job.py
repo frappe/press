@@ -8,7 +8,7 @@ import random
 
 from press.agent import Agent
 from press.utils import log_error
-from frappe.utils import cint
+from frappe.utils import cint, convert_utc_to_system_timezone
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.site_migration.site_migration import (
@@ -43,8 +43,15 @@ class AgentJob(Document):
 				frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
 			)
 			query = query.where(AgentJob.bench.isin(benches))
-			return query
-		return query
+
+		results = query.run(as_dict=1)
+		for result in results:
+			# agent job start and end are in utc
+			if result.start:
+				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
+			if result.end:
+				result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+		return results
 
 	def get_doc(self, doc):
 		doc["steps"] = frappe.get_all(
@@ -53,6 +60,12 @@ class AgentJob(Document):
 			fields=["step_name", "status", "start", "end", "duration", "output"],
 			order_by="creation",
 		)
+		# agent job start and end are in utc
+		if doc.start:
+			doc.start = convert_utc_to_system_timezone(doc.start).replace(tzinfo=None)
+		if doc.end:
+			doc.end = convert_utc_to_system_timezone(doc.end).replace(tzinfo=None)
+
 		return doc
 
 	def after_insert(self):
