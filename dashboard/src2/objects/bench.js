@@ -186,7 +186,7 @@ export default {
 										placement: 'top',
 										class: 'rounded-full bg-gray-100 p-1'
 									},
-									[
+									() => [
 										h(
 											'a',
 											{
