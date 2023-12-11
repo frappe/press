@@ -209,16 +209,16 @@ class Cluster(Document):
 		response = client.describe_route_tables(
 			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
-		self.aws_route_table_id = response["RouteTables"][0]["RouteTableId"]
+		self.route_table_id = response["RouteTables"][0]["RouteTableId"]
 
 		client.create_route(
 			DestinationCidrBlock="0.0.0.0/0",
 			GatewayId=self.aws_internet_gateway_id,
-			RouteTableId=self.aws_route_table_id,
+			RouteTableId=self.route_table_id,
 		)
 
 		client.create_tags(
-			Resources=[self.aws_route_table_id],
+			Resources=[self.route_table_id],
 			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Route Table"}],
 		)
 
@@ -392,7 +392,7 @@ class Cluster(Document):
 			)
 		).data
 		self.vpc_id = vcn.id
-		self.aws_route_table_id = vcn.default_route_table_id
+		self.route_table_id = vcn.default_route_table_id
 		self.security_group_id = vcn.default_security_list_id
 
 		time.sleep(1)
@@ -490,7 +490,7 @@ class Cluster(Document):
 				display_name=f"Frappe Cloud - {self.name} - Public Subnet",
 				vcn_id=self.vpc_id,
 				cidr_block=self.subnet_cidr_block,
-				route_table_id=self.aws_route_table_id,
+				route_table_id=self.route_table_id,
 				security_list_ids=[self.security_group_id, self.proxy_security_group_id],
 			)
 		).data
@@ -510,7 +510,7 @@ class Cluster(Document):
 
 		time.sleep(1)
 		vcn_client.update_route_table(
-			self.aws_route_table_id,
+			self.route_table_id,
 			UpdateRouteTableDetails(
 				route_rules=[
 					RouteRule(

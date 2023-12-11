@@ -39,7 +39,7 @@
   "security_group_id",
   "proxy_security_group_id",
   "aws_network_acl_id",
-  "aws_route_table_id"
+  "route_table_id"
  ],
  "fields": [
   {
@@ -133,12 +133,6 @@
    "fieldname": "aws_network_acl_id",
    "fieldtype": "Data",
    "label": "AWS Network ACL ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "aws_route_table_id",
-   "fieldtype": "Data",
-   "label": "AWS Route Table ID",
    "read_only": 1
   },
   {
@@ -256,6 +250,12 @@
    "fieldtype": "Data",
    "label": "Security Group ID",
    "read_only": 1
+  },
+  {
+   "fieldname": "route_table_id",
+   "fieldtype": "Data",
+   "label": "Route Table ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -287,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 17:36:49.011690",
+ "modified": "2023-12-11 17:41:24.634445",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
