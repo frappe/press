@@ -416,8 +416,11 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
-							format: duration,
-							width: '7rem'
+							width: '7rem',
+							format(value, row) {
+								if (row.job_id === 0) return;
+								return duration(value);
+							}
 						},
 						{
 							label: 'Start Time',
