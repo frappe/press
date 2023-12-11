@@ -4,9 +4,15 @@
 
 
 import ipaddress
+import base64
+import re
+import hashlib
+from textwrap import wrap
 from typing import Dict, Generator, List, Optional
 
 import boto3
+from oci.identity import IdentityClient
+from oci.config import validate_config
 import frappe
 from frappe.model.document import Document
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -53,6 +59,8 @@ class Cluster(Document):
 		self.validate_cidr_block()
 		if self.cloud_provider == "AWS EC2":
 			self.validate_aws_credentials()
+		elif self.cloud_provider == "OCI":
+			self.set_oci_availability_zone()
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
@@ -319,6 +327,42 @@ class Cluster(Document):
 				},
 			],
 		)
+
+	def get_oci_public_key_fingerprint(self):
+		match = re.match(
+			r"-*BEGIN PUBLIC KEY-*(.*?)-*END PUBLIC KEY-*",
+			"".join(self.oci_public_key.splitlines()),
+		)
+		base64_key = match.group(1).encode("utf-8")
+		binary_key = base64.b64decode(base64_key)
+		digest = hashlib.md5(binary_key).hexdigest()
+		return ":".join(wrap(digest, 2))
+
+	def get_oci_config(self):
+		# Stupid Password field, replaces newines with aws_proxy_security_group_idspaces
+		private_key = (
+			self.get_password("oci_private_key")
+			.replace(" ", "\n")
+			.replace("\nPRIVATE\n", " PRIVATE ")
+		)
+
+		config = {
+			"user": self.oci_user,
+			"fingerprint": self.get_oci_public_key_fingerprint(),
+			"tenancy": self.oci_tenancy,
+			"region": self.region,
+			"key_content": private_key,
+			"log_requests": True,
+		}
+		validate_config(config)
+		return config
+
+	def set_oci_availability_zone(self):
+		identiy_client = IdentityClient(self.get_oci_config())
+		availibility_domain = (
+			identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
+		)
+		self.availability_zone = availibility_domain
 
 	def get_available_vmi(self, series) -> Optional[str]:
 		"""Virtual Machine Image available in region for given series"""

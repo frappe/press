@@ -138,7 +138,7 @@
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
-   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
    "set_only_once": 1
   },
   {
@@ -287,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 15:17:07.980702",
+ "modified": "2023-12-11 15:31:23.401987",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
