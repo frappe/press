@@ -15,7 +15,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime
+from frappe.utils import cint, cstr, get_datetime, flt
 from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
@@ -44,7 +44,14 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class Site(Document):
-	whitelisted_fields = ["ip", "status", "group", "notify_email", "team", "plan"]
+	whitelisted_fields = [
+		"ip",
+		"status",
+		"group",
+		"notify_email",
+		"team",
+		"plan",
+	]
 
 	@staticmethod
 	def get_list_query(query):
@@ -58,6 +65,12 @@ class Site(Document):
 		from press.api.site import current_plan
 
 		doc["current_plan"] = current_plan(self.name)
+		group = frappe.db.get_value(
+			"Release Group", self.group, ["title", "public"], as_dict=1
+		)
+		doc["group_title"] = group.title
+		doc["group_public"] = group.public
+
 		return doc
 
 	def _get_site_name(self, subdomain: str):
@@ -285,6 +298,7 @@ class Site(Document):
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
 			self.create_subscription(self.subscription_plan)
+			self.reload()
 
 		# log activity
 		log_site_activity(self.name, "Create")
@@ -910,6 +924,53 @@ class Site(Document):
 			self.save()
 
 	@frappe.whitelist()
+	def update_config(self, config=None):
+		"""Updates site.configuration, meant for dashboard and API users"""
+		if config is None:
+			return
+		# config = {"key1": value1, "key2": value2}
+		config = frappe.parse_json(config)
+
+		sanitized_config = {}
+		for key, value in config.items():
+			if key in get_client_blacklisted_keys():
+				continue
+
+			if isinstance(value, (dict, list)):
+				_type = "JSON"
+			elif isinstance(value, bool):
+				_type = "Boolean"
+			elif isinstance(value, (int, float)):
+				_type = "Number"
+			else:
+				_type = "String"
+
+			if frappe.db.exists("Site Config Key", key):
+				_type = frappe.db.get_value("Site Config Key", key, "type")
+			if _type == "Number":
+				value = flt(value)
+			elif _type == "Boolean":
+				value = bool(value)
+			elif _type == "JSON":
+				value = frappe.parse_json(value)
+			sanitized_config[key] = value
+
+		self.update_site_config(sanitized_config)
+
+	@frappe.whitelist()
+	def delete_config(self, key):
+		"""Deletes a key from site configuration, meant for dashboard and API users"""
+		if key in get_client_blacklisted_keys():
+			return
+
+		updated_config = []
+		for row in self.configuration:
+			if row.key != key and not row.internal:
+				updated_config.append({"key": row.key, "value": row.value, "type": row.type})
+
+		self.update_site_config(updated_config)
+
+	@frappe.whitelist()
 	def update_site_config(self, config=None):
 		"""Updates site.configuration, site.config and runs site.save which initiates an Agent Request
 		This checks for the blacklisted config keys via Frappe Validations, but not for internal usages.
@@ -1437,6 +1498,31 @@ class Site(Document):
 	@frappe.whitelist()
 	def disable_read_write(self):
 		self.enable_database_access("read_only")
+
+	@frappe.whitelist()
+	def get_actions(self):
+		return [
+			{
+				"action": "Restore from backup",
+				"description": "Restore your database from database, public and private files",
+				"button_label": "Restore",
+			},
+			{
+				"action": "Migrate site",
+				"description": "Run bench migrate command on your site",
+				"button_label": "Migrate",
+			},
+			{
+				"action": "Reset site",
+				"description": "Reset your site database to a clean state",
+				"button_label": "Reset",
+			},
+			{
+				"action": "Access site database",
+				"description": "Enable read/write access to your site database",
+				"button_label": "Enable Access",
+			},
+		]
 
 	@property
 	def pending_for_long(self) -> bool:

@@ -11,6 +11,7 @@ import pytz
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
 from frappe.utils import get_system_timezone, get_datetime
+from frappe.utils.caching import site_cache
 
 
 def log_error(title, **kwargs):
@@ -49,11 +50,10 @@ def get_current_team(get_doc=False):
 		)
 
 	system_user = frappe.session.data.user_type == "System User"
+
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
-	if not team:
-		# get team from cookie
-		team = frappe.request.cookies.get("current_team")
+
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
@@ -124,10 +124,18 @@ def get_default_team_for_user(user):
 		fieldname="parent",
 		pluck="parent",
 	)
-	# if user is part of multiple teams, we don't know which one to pick
-	if len(teams) == 1:
-		team = teams[0]
-		return team if frappe.db.exists("Team", {"name": team, "enabled": 1}) else None
+	for team in teams:
+		# if user is part of multiple teams, send the first enabled one
+		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
+			return team
+
+
+def get_valid_teams_for_user(user):
+	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
+	valid_teams = frappe.db.get_all(
+		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
+	)
+	return valid_teams
 
 
 def is_user_part_of_team(user, team):
@@ -352,6 +360,7 @@ class RemoteFrappeSite:
 			self._remote_backup_links[file_type] = self.__process_frappe_url(file_path)
 
 
+@site_cache(ttl=5 * 60)
 def get_client_blacklisted_keys() -> list:
 	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
 	return list(

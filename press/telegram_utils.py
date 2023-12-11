@@ -9,7 +9,7 @@ from press.utils import log_error
 
 
 class Telegram:
-	def __init__(self, topic: str = None):
+	def __init__(self, topic: str = None, group: str = None):
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
@@ -17,7 +17,7 @@ class Telegram:
 			as_dict=True,
 		)
 		self.token = settings.telegram_bot_token
-		self.group = settings.telegram_alerts_chat_group
+		self.group = group or settings.telegram_alerts_chat_group
 		self.chat_id = frappe.db.get_value("Telegram Group", self.group, "chat_id")
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"

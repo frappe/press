@@ -8,10 +8,7 @@
 					label: 'Submit',
 					variant: 'solid',
 					loading: $resources.changePlan.loading,
-					onClick: () => {
-						$resources.changePlan.submit();
-						showChangePlanDialog = false;
-					}
+					onClick: () => $resources.changePlan.submit()
 				}
 			]
 		}"
@@ -91,14 +88,6 @@ export default {
 					this.selectedPlan = null;
 					this.$resources.plans.reload();
 					this.$emit('plan-change');
-				},
-				onError(error) {
-					this.showChangePlanDialog = false;
-					notify({
-						title: error,
-						icon: 'x',
-						color: 'red'
-					});
 				}
 			};
 		}

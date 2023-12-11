@@ -1,5 +1,8 @@
 <template>
-	<div
+	<component
+		:is="column.link ? 'a' : 'div'"
+		:href="column.link ? column.link(value, row) : undefined"
+		:target="column.link ? '_blank' : undefined"
 		class="flex text-gray-900"
 		:class="{
 			'justify-end': column.align === 'right',
@@ -9,11 +12,14 @@
 		<div v-if="column.prefix" class="mr-2">
 			<component :is="column.prefix(row)" />
 		</div>
-		<Badge v-if="column.type == 'Badge'" :label="formattedValue" />
+		<Badge v-if="column.type === 'Badge'" :label="formattedValue" />
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
-		<Button v-else-if="column.type === 'Button'" v-bind="column.Button(row)" />
+		<Button
+			v-else-if="column.type === 'Button'"
+			v-bind="column.Button(contextWithRow)"
+		/>
 		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="value">
@@ -33,7 +39,10 @@
 		<div v-else class="truncate text-base" :class="column.class">
 			{{ formattedValue }}
 		</div>
-	</div>
+		<div v-if="column.suffix" class="ml-2">
+			<component :is="column.suffix(row)" />
+		</div>
+	</component>
 </template>
 <script>
 import { Tooltip } from 'frappe-ui';
@@ -43,7 +52,8 @@ export default {
 	props: {
 		row: Object,
 		column: Object,
-		idx: Number
+		idx: Number,
+		context: Object
 	},
 	computed: {
 		value() {
@@ -65,6 +75,12 @@ export default {
 			if (!this.column.type === 'Actions') return;
 			let actions = this.column.actions(this.row);
 			return actions;
+		},
+		contextWithRow() {
+			return {
+				...this.context,
+				row: this.row
+			};
 		}
 	},
 	components: { Tooltip }

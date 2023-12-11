@@ -225,6 +225,10 @@ def create_payment_intent_for_micro_debit(payment_method_name):
 def create_payment_intent_for_buying_credits(amount):
 	team = get_current_team(True)
 	metadata = {"payment_for": "prepaid_credits"}
+	total_unpaid = total_unpaid_amount()
+
+	if amount < total_unpaid:
+		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
 	if team.currency == "INR":
 		gst_amount = amount * frappe.db.get_single_value("Press Settings", "gst_percentage")
@@ -347,7 +351,11 @@ def unpaid_invoices():
 	team = get_current_team()
 	invoices = frappe.get_all(
 		"Invoice",
-		{"team": team, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+		{
+			"team": team,
+			"status": ("in", ["Draft", "Unpaid", "Invoice Created"]),
+			"type": "Subscription",
+		},
 		["name", "status", "period_end", "currency", "amount_due", "total"],
 		order_by="creation asc",
 	)
@@ -607,12 +615,16 @@ def handle_razorpay_payment_failed(response):
 
 @frappe.whitelist()
 def total_unpaid_amount():
+	team = get_current_team(get_doc=True)
+	balance = team.get_balance()
+	negative_balance = -1 * balance if balance < 0 else 0
+
 	return (
 		frappe.get_all(
 			"Invoice",
-			{"status": "Unpaid", "team": get_current_team(), "type": "Subscription"},
-			["sum(total) as total"],
+			{"status": "Unpaid", "team": team.name, "type": "Subscription"},
+			["sum(amount_due) as total"],
 			pluck="total",
 		)[0]
 		or 0
-	)
+	) + negative_balance

@@ -21,7 +21,6 @@ class SiteActivity(Document):
 					args={"site": self.site, "user": self.owner, "reason": self.reason},
 					reference_doctype=self.doctype,
 					reference_name=self.name,
-					now=True,
 				)
 
 

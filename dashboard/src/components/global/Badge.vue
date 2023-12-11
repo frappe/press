@@ -1,5 +1,5 @@
 <template>
-	<FrappeUIBadge :label="label" :theme="color" />
+	<FrappeUIBadge :label="label" :theme="_color" />
 </template>
 
 <script>
@@ -7,12 +7,13 @@ import { Badge as FrappeUIBadge } from 'frappe-ui';
 
 export default {
 	name: 'Badge',
-	props: ['label'],
+	props: ['label', 'theme'],
 	components: {
 		FrappeUIBadge
 	},
 	computed: {
-		color() {
+		_color() {
+			if (this.theme) return this.theme;
 			return {
 				Approved: 'green',
 				Broken: 'red',
@@ -38,7 +39,9 @@ export default {
 				Published: 'green',
 				Owner: 'blue',
 				Primary: 'green',
-				'Latest Deployed': 'orange'
+				'Latest Deployed': 'orange',
+				'Not Deployed': 'orange',
+				'Action Required': 'red'
 			}[this.label];
 		}
 	}

@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "hostname",
+  "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
   "title",
@@ -393,11 +394,16 @@
    "fieldtype": "Float",
    "label": "Memory Swap Max (GB)",
    "non_negative": 1
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-14 11:15:20.783328",
+ "modified": "2023-11-16 18:21:59.143044",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

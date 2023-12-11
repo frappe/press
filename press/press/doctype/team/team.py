@@ -9,7 +9,7 @@ from frappe import _
 from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
-from press.utils import log_error
+from press.utils import log_error, get_valid_teams_for_user
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
@@ -44,7 +44,7 @@ class Team(Document):
 
 	def get_doc(self, doc):
 		if (
-			frappe.session.data.user_type != "System User"
+			not frappe.local.system_user()
 			and self.user != frappe.session.user
 			and self.user not in self.get_user_list()
 		):
@@ -58,6 +58,7 @@ class Team(Document):
 		)
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
+		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -511,6 +512,9 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
+		if frappe.flags.in_install:
+			return
+
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
@@ -633,6 +637,9 @@ class Team(Document):
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
 			invoice.stripe_link_expired = False
 			if invoice.status == "Unpaid":
+				invoice.formatted_amount_due = frappe.utils.fmt_money(
+					invoice.amount_due, 2, invoice.currency
+				)
 				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
 				if days_diff > 30:
 					invoice.stripe_link_expired = True
@@ -672,7 +679,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def get_balance(self):
-		res = frappe.db.get_all(
+		res = frappe.get_all(
 			"Balance Transaction",
 			filters={"team": self.name, "docstatus": 1},
 			order_by="creation desc",

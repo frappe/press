@@ -16,6 +16,12 @@ export default function globals(app) {
 	app.config.globalProperties.$log = console.log;
 	app.config.globalProperties.$debounce = debounce;
 	app.config.globalProperties.$team = getTeam();
+
+	// legacy globals for old dashboard
+	// TODO: remove later
+	app.config.globalProperties.formatBytes = formatters.bytes;
+	app.config.globalProperties.$planTitle = formatters.planTitle;
+	app.config.globalProperties.$plural = formatters.plural;
 }
 
 function getPlatform() {

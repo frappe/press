@@ -1,4 +1,4 @@
-import { defineAsyncComponent, h, ref } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { frappeRequest } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { bytes, duration } from '../utils/format';
@@ -43,6 +43,8 @@ export default {
 		sync_info: 'sync_info',
 		unsuspend: 'unsuspend',
 		updateSiteConfig: 'update_site_config',
+		updateConfig: 'update_config',
+		deleteConfig: 'delete_config',
 		updateWithoutBackup: 'update_without_backup'
 	},
 	list: {
@@ -114,9 +116,19 @@ export default {
 		titleField: 'name',
 		route: '/sites/:name',
 		statusBadge({ documentResource: site }) {
-			return {
-				label: site.doc.status
-			};
+			return { label: site.doc.status };
+		},
+		breadcrumbs({ items, documentResource: site }) {
+			if (site.doc?.group_public) {
+				return items;
+			}
+			return [
+				{
+					label: site.doc?.group_title,
+					route: `/benches/${site.doc?.group}`
+				},
+				items[1]
+			];
 		},
 		tabs: [
 			{
@@ -159,6 +171,9 @@ export default {
 							fieldname: 'hash',
 							type: 'Badge',
 							width: 1,
+							link: (value, row) => {
+								return `${row.repository_url}/commit/${value}`;
+							},
 							format(value) {
 								return value.slice(0, 7);
 							}
@@ -173,7 +188,7 @@ export default {
 						return {
 							type: 'list',
 							doctype: 'Site App',
-							cache: ['ObjectList', 'Site App'],
+							cache: ['Site Apps', site.name],
 							fields: ['name', 'app'],
 							parent: 'Site',
 							filters: {
@@ -230,7 +245,7 @@ export default {
 																align: 'right',
 																type: 'Button',
 																width: '5rem',
-																Button(row) {
+																Button({ row }) {
 																	return {
 																		label: 'Install',
 																		onClick() {
@@ -457,19 +472,22 @@ export default {
 								label: 'Download Public',
 								onClick() {
 									return downloadBackup(row, 'public');
-								}
+								},
+								condition: () => row.public_url
 							},
 							{
 								label: 'Download Private',
 								onClick() {
 									return downloadBackup(row, 'private');
-								}
+								},
+								condition: () => row.private_url
 							},
 							{
 								label: 'Download Config',
 								onClick() {
 									return downloadBackup(row, 'config_file');
-								}
+								},
+								condition: () => row.config_file_url
 							}
 						];
 					},
@@ -541,6 +559,120 @@ export default {
 				}
 			},
 			{
+				label: 'Site Config',
+				icon: icon('settings'),
+				route: 'site-config',
+				type: 'list',
+				list: {
+					doctype: 'Site Config',
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					fields: ['name'],
+					orderBy: 'creation desc',
+					columns: [
+						{
+							label: 'Config Name',
+							fieldname: 'key',
+							width: 1,
+							format(value, row) {
+								if (row.title) {
+									return `${row.title} (${row.key})`;
+								}
+								return row.key;
+							}
+						},
+						{
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
+						},
+						{
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
+						}
+					],
+					primaryAction({ listResource: configs, documentResource: site }) {
+						return {
+							label: 'Add Config',
+							variant: 'solid',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let ConfigEditorDialog = defineAsyncComponent(() =>
+									import('../components/ConfigEditorDialog.vue')
+								);
+								renderDialog(
+									h(ConfigEditorDialog, {
+										site: site.doc.name,
+										onSuccess() {
+											configs.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({ row, listResource: configs, documentResource: site }) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/ConfigEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											site: site.doc.name,
+											config: row,
+											onSuccess() {
+												configs.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Config',
+										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (site.deleteConfig.loading) return;
+											toast.promise(
+												site.deleteConfig.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															configs.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting config...',
+													success: () => `Config ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
+				}
+			},
+			{
 				label: 'Jobs',
 				icon: icon('truck'),
 				// highlight: route =>
@@ -599,6 +731,67 @@ export default {
 								if (!value) return;
 								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
 							}
+						}
+					]
+				}
+			},
+			{
+				label: 'Actions',
+				icon: icon('activity'),
+				route: 'actions',
+				type: 'list',
+				list: {
+					resource({ documentResource: site }) {
+						return {
+							url: 'press.api.client.run_doc_method',
+							params: {
+								dt: 'Site',
+								dn: site.doc.name,
+								method: 'get_actions'
+							},
+							transform(data) {
+								return data.message;
+							},
+							cache: ['Site Actions', site.name],
+							auto: true
+						};
+					},
+					columns: [
+						{
+							label: 'Action',
+							fieldname: 'button_label',
+							type: 'Button',
+							width: 1,
+							Button({ row, documentResource: site }) {
+								let actionDialogs = {
+									'Restore from backup': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseRestoreDialog.vue')
+									),
+									'Migrate site': defineAsyncComponent(() =>
+										import('../components/SiteMigrateDialog.vue')
+									),
+									'Reset site': defineAsyncComponent(() =>
+										import('../components/SiteResetDialog.vue')
+									),
+									'Access site database': defineAsyncComponent(() =>
+										import('../components/SiteDatabaseAccessDialog.vue')
+									)
+								};
+								return {
+									label: row.action,
+									onClick() {
+										let dialog = actionDialogs[row.action];
+										if (!dialog) return;
+										renderDialog(h(dialog, { site: site.name }));
+									}
+								};
+							}
+						},
+						{
+							label: 'Description',
+							fieldname: 'description',
+							class: 'text-gray-600',
+							width: 3
 						}
 					]
 				}

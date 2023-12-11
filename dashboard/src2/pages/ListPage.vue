@@ -15,6 +15,7 @@
 
 <script>
 import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
+import { getObject } from '../objects';
 
 export default {
 	components: {
@@ -24,8 +25,8 @@ export default {
 		TextInput
 	},
 	props: {
-		object: {
-			type: Object,
+		objectType: {
+			type: String,
 			required: true
 		}
 	},
@@ -40,6 +41,9 @@ export default {
 		}
 	},
 	computed: {
+		object() {
+			return getObject(this.objectType);
+		},
 		listOptions() {
 			return {
 				...this.object.list,

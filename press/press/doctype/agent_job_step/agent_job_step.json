@@ -41,7 +41,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped",
+   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped\nDelivery Failure",
    "read_only": 1,
    "reqd": 1,
    "search_index": 1
@@ -94,7 +94,7 @@
  ],
  "in_create": 1,
  "links": [],
- "modified": "2021-02-15 19:45:04.313124",
+ "modified": "2023-10-20 11:27:22.573494",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Step",
@@ -123,6 +123,7 @@
  ],
  "sort_field": "creation",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "step_name",
  "track_changes": 1
 }

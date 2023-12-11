@@ -18,6 +18,9 @@ version = app_version
 # include js, css files in header of desk.html
 # app_include_css = "/assets/press/css/press.css"
 # app_include_js = "/assets/press/js/press.js"
+app_include_js = [
+	"press.bundle.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/press/css/press.css"
@@ -151,7 +154,7 @@ has_permission = {
 doc_events = {
 	"Stripe Webhook Log": {
 		"after_insert": [
-			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_invoice_webhook_events",
+			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
 			"press.press.doctype.team.team.process_stripe_webhook",
 		],
 	},
@@ -185,6 +188,7 @@ scheduler_events = {
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
@@ -212,7 +216,10 @@ scheduler_events = {
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		],
-		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+		"* * * * * 0/5": [
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
+		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
@@ -289,7 +296,7 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 override_doctype_class = {"User": "press.overrides.CustomUser"}
 
 on_session_creation = "press.overrides.on_session_creation"
-on_logout = "press.overrides.on_logout"
+# on_logout = "press.overrides.on_logout"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"

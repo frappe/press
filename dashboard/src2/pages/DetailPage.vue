@@ -1,18 +1,7 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-white">
 		<div class="flex items-center space-x-2">
-			<Breadcrumbs
-				:items="[
-					{ label: object.list.title, route: object.list.route },
-					{
-						label: title,
-						route: {
-							name: `${object.doctype} Detail`,
-							params: { name: this.name }
-						}
-					}
-				]"
-			/>
+			<FBreadcrumbs :items="breadcrumbs" />
 			<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
 		</div>
 		<div class="flex items-center space-x-2" v-if="$resources.document?.doc">
@@ -37,13 +26,14 @@
 </template>
 
 <script>
-import { Tabs } from 'frappe-ui';
+import { Tabs, Breadcrumbs } from 'frappe-ui';
+import { getObject } from '../objects';
 
 export default {
 	name: 'DetailPage',
 	props: {
-		object: {
-			type: Object,
+		objectType: {
+			type: String,
 			required: true
 		},
 		name: {
@@ -52,27 +42,25 @@ export default {
 		}
 	},
 	components: {
-		FTabs: Tabs
+		FTabs: Tabs,
+		FBreadcrumbs: Breadcrumbs
 	},
 	data() {
-		let currentTab = 0;
-		let currentRoute = this.$route.name;
-		for (let tab of this.object.detail.tabs) {
-			let routeName = `${this.object.doctype} Detail ${tab.label}`;
-			if (currentRoute === routeName) {
-				currentTab = this.object.detail.tabs.indexOf(tab);
-				break;
-			}
-		}
 		return {
-			currentTab
+			currentTab: 0
 		};
+	},
+	beforeRouteUpdate(to, from, next) {
+		this.setTabToRoute(to);
+		next();
+	},
+	mounted() {
+		this.setTabToRoute(this.$route);
 	},
 	watch: {
 		currentTab(value) {
 			let tab = this.object.detail.tabs[value];
-			let routeName = `${this.object.doctype} Detail ${tab.label}`;
-			this.$router.replace({ name: routeName });
+			this.$router.replace({ name: tab.routeName });
 		}
 	},
 	resources: {
@@ -85,7 +73,20 @@ export default {
 			};
 		}
 	},
+	methods: {
+		setTabToRoute(route) {
+			for (let tab of this.object.detail.tabs) {
+				if (route.name === tab.routeName) {
+					this.currentTab = this.object.detail.tabs.indexOf(tab);
+					break;
+				}
+			}
+		}
+	},
 	computed: {
+		object() {
+			return getObject(this.objectType);
+		},
 		title() {
 			let doc = this.$resources.document?.doc;
 			return doc ? doc[this.object.detail.titleField || 'name'] : this.name;
@@ -113,6 +114,28 @@ export default {
 				});
 			}
 			return [];
+		},
+		breadcrumbs() {
+			let items = [
+				{ label: this.object.list.title, route: this.object.list.route },
+				{
+					label: this.title,
+					route: {
+						name: `${this.object.doctype} Detail`,
+						params: { name: this.name }
+					}
+				}
+			];
+			if (this.object.detail.breadcrumbs && this.$resources.document?.doc) {
+				let result = this.object.detail.breadcrumbs({
+					documentResource: this.$resources.document,
+					items
+				});
+				if (Array.isArray(result)) {
+					items = result;
+				}
+			}
+			return items;
 		}
 	}
 };

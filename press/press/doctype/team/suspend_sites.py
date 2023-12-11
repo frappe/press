@@ -49,7 +49,7 @@ def suspend_sites_and_send_email(team):
 		frappe.sendmail(
 			recipients=email,
 			subject="Your sites have been suspended on Frappe Cloud",
-			template="unpaid_invoices",
+			template="suspended_sites",
 			args={
 				"subject": "Your sites have been suspended on Frappe Cloud",
 				"sites": sites,
@@ -57,6 +57,7 @@ def suspend_sites_and_send_email(team):
 		)
 
 
+@frappe.whitelist()
 def get_teams_with_unpaid_invoices():
 	"""Find out teams which has active sites and unpaid invoices and not a free account"""
 	plan = frappe.qb.DocType("Plan")

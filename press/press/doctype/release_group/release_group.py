@@ -5,7 +5,7 @@
 from functools import cached_property
 from itertools import chain
 import frappe
-from frappe.utils import comma_and
+from frappe.utils import comma_and, flt
 import json
 from typing import List
 from frappe.core.doctype.version.version import get_diff
@@ -37,17 +37,40 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
-	whitelisted_fields = ["title"]
+	whitelisted_fields = ["title", "version"]
 
 	@staticmethod
 	def get_list_query(query):
 		ReleaseGroup = frappe.qb.DocType("Release Group")
+		Bench = frappe.qb.DocType("Bench")
+		Site = frappe.qb.DocType("Site")
+
+		site_count = (
+			frappe.qb.from_(Site)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Site.group == ReleaseGroup.name)
+			.where(Site.status == "Active")
+		)
+
+		active_benches = (
+			frappe.qb.from_(Bench)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Bench.group == ReleaseGroup.name)
+			.where(Bench.status == "Active")
+		)
+
 		query = (
 			query.where(ReleaseGroup.team == frappe.local.team().name)
 			.where(ReleaseGroup.enabled == 1)
 			.where(ReleaseGroup.public == 0)
+			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
 		)
+
 		return query
+
+	def get_doc(self, doc):
+		doc.deploy_information = self.deploy_information()
+		doc.status = self.status
 
 	def validate(self):
 		self.validate_title()
@@ -56,6 +79,7 @@ class ReleaseGroup(Document):
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
+		self.validate_gunicorn_config()
 		self.validate_max_min_workers()
 
 	def before_insert(self):
@@ -109,6 +133,79 @@ class ReleaseGroup(Document):
 			new_config[row.key] = key_value
 
 		self.common_site_config = json.dumps(new_config, indent=4)
+
+	@frappe.whitelist()
+	def update_dependency(self, dependency_name, version):
+		"""Updates a dependency version in the Release Group Dependency table"""
+
+		for dependency in self.dependencies:
+			if dependency.name == dependency_name:
+				dependency.version = version
+				self.save()
+				return
+
+	@frappe.whitelist()
+	def delete_config(self, key):
+		"""Deletes a key from the common_site_config_table"""
+
+		if key in get_client_blacklisted_keys():
+			return
+
+		updated_common_site_config = []
+		for row in self.common_site_config_table:
+			if row.key != key and not row.internal:
+				updated_common_site_config.append(
+					{"key": row.key, "value": row.value, "type": row.type}
+				)
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(updated_common_site_config, ())
+
+	@frappe.whitelist()
+	def update_config(self, config):
+		sanitized_common_site_config = [
+			{"key": c.key, "type": c.type, "value": c.value}
+			for c in self.common_site_config_table
+		]
+
+		config = frappe.parse_json(config)
+
+		for key, value in config.items():
+			if key in get_client_blacklisted_keys():
+				continue
+
+			if isinstance(value, (dict, list)):
+				_type = "JSON"
+			elif isinstance(value, bool):
+				_type = "Boolean"
+			elif isinstance(value, (int, float)):
+				_type = "Number"
+			else:
+				_type = "String"
+
+			if frappe.db.exists("Site Config Key", key):
+				_type = frappe.db.get_value("Site Config Key", key, "type")
+
+			if _type == "Number":
+				value = flt(value)
+			elif _type == "Boolean":
+				value = bool(value)
+			elif _type == "JSON":
+				value = frappe.parse_json(value)
+
+			# update existing key
+			for row in sanitized_common_site_config:
+				if row["key"] == key:
+					row["value"] = value
+					row["type"] = _type
+					break
+			else:
+				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(sanitized_common_site_config, ())
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group
@@ -201,6 +298,17 @@ class ReleaseGroup(Document):
 				"Can't set Merge All RQ Queues and Merge Short and Default RQ Queues at once",
 				frappe.ValidationError,
 			)
+
+	def validate_gunicorn_config(self):
+		if not self.gunicorn_worker_type:
+			self.gunicorn_worker_type = "sync"
+
+		if self.gunicorn_worker_type == "gthread":
+			if self.gunicorn_threads_per_worker < 2:
+				self.gunicorn_threads_per_worker = 4  # GThread with 1 thread is meaningless.
+		else:
+			# This only applies to gthread workers
+			self.gunicorn_threads_per_worker = 0
 
 	def validate_max_min_workers(self):
 		if self.max_gunicorn_workers and self.min_gunicorn_workers:
@@ -346,6 +454,13 @@ class ReleaseGroup(Document):
 	@property
 	def deploy_in_progress(self):
 		return self.last_dc_info and self.last_dc_info.status in ("Running", "Scheduled")
+
+	@property
+	def status(self):
+		active_benches = frappe.db.get_all(
+			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
+		)
+		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
 	def last_dc_info(self):
@@ -598,6 +713,16 @@ class ReleaseGroup(Document):
 		return frappe.get_all(
 			"Server", {"name": ("in", servers)}, pluck="cluster", distinct=True
 		)
+
+	@frappe.whitelist()
+	def add_region(self, region):
+		"""
+		Add new region to release group (limits to 2). Meant for dashboard use only.
+		"""
+
+		if len(self.get_clusters()) >= 2:
+			frappe.throw("More than 2 regions for bench not allowed")
+		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
 		"""

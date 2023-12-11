@@ -70,7 +70,8 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User"
+   "options": "User",
+   "search_index": 1
   },
   {
    "fieldname": "team_members",
@@ -310,7 +311,8 @@
    "fieldname": "parent_team",
    "fieldtype": "Link",
    "label": "Parent Team",
-   "options": "Team"
+   "options": "Team",
+   "search_index": 1
   },
   {
    "fieldname": "section_break_tdm9",
@@ -453,7 +455,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-11-14 17:28:46.504627",
+ "modified": "2023-12-04 17:07:30.774582",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

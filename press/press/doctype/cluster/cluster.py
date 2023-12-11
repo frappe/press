@@ -36,6 +36,18 @@ class Cluster(Document):
 	}
 	wait_for_aws_creds_seconds = 20
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		if filters and filters.get("group"):
+			rg = frappe.get_doc("Release Group", filters.get("group"))
+			cluster_names = rg.get_clusters()
+			clusters = frappe.get_all(
+				"Cluster",
+				fields=["name", "title", "image"],
+				filters={"name": ("in", cluster_names)},
+			)
+			return clusters
+
 	def validate(self):
 		self.validate_monitoring_password()
 		self.validate_cidr_block()

@@ -3,6 +3,7 @@
 
 
 import frappe
+from press.utils import get_default_team_for_user
 
 base_template_path = "templates/www/dashboard.html"
 no_cache = 1
@@ -32,4 +33,5 @@ def get_boot():
 		press_frontend_posthog_project_id=frappe.conf.posthog_project_id or "",
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
+		default_team=get_default_team_for_user(frappe.session.user),
 	)

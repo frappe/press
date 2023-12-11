@@ -11,6 +11,7 @@
 				<ListItem :title="job.job_type" :description="formatDate(job.creation)">
 					<template v-slot:actions>
 						<Badge
+							class="whitespace-nowrap"
 							v-if="
 								runningJob &&
 								runningJob.id == job.name &&
@@ -18,7 +19,11 @@
 							"
 							:label="runningJob.status"
 						/>
-						<Badge v-else-if="job.status != 'Success'" :label="job.status" />
+						<Badge
+							class="whitespace-nowrap"
+							v-else-if="job.status != 'Success'"
+							:label="job.status"
+						/>
 					</template>
 				</ListItem>
 				<div class="border-b"></div>

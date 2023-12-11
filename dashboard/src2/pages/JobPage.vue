@@ -1,10 +1,10 @@
 <template>
 	<div class="p-5" v-if="job">
-		<Button variant="ghost" :route="{ name: `${object.doctype} Detail Jobs` }">
+		<Button :route="{ name: `${object.doctype} Detail Jobs` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
 			</template>
-			Back to all jobs
+			All jobs
 		</Button>
 
 		<div class="mt-3">
@@ -68,10 +68,11 @@
 <script>
 import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { duration } from '../utils/format';
+import { getObject } from '../objects';
 
 export default {
 	name: 'JobPage',
-	props: ['id', 'object'],
+	props: ['id', 'objectType'],
 	data() {
 		return {
 			isOpen: {}
@@ -95,6 +96,9 @@ export default {
 		}
 	},
 	computed: {
+		object() {
+			return getObject(this.objectType);
+		},
 		job() {
 			return this.$resources.job.doc;
 		}

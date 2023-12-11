@@ -100,7 +100,7 @@ def validate_plan(secret_key):
 		return True
 
 	# TODO: replace this with plan attributes
-	plan_label_map = {"Mail $25": 10000, "Mail $5": 2000, "Mail Free": 100}
+	plan_label_map = frappe.conf.email_plans
 
 	try:
 		subscription = get_subscription_info(secret_key=secret_key)
