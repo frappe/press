@@ -52,7 +52,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric",
+   "options": "AWS EC2\nGeneric\nOCI",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -226,7 +226,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-08-18 05:46:14.895927",
+ "modified": "2023-12-11 12:02:04.476871",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
