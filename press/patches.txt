@@ -105,3 +105,4 @@ press.press.doctype.cluster.patches.rename_aws_fields
 press.press.doctype.virtual_machine.patches.rename_aws_fields
 press.press.doctype.virtual_machine_image.patches.rename_aws_fields
 press.press.doctype.virtual_disk_snapshot.patches.rename_aws_fields
+press.press.doctype.virtual_machine_volume.patches.rename_aws_fields

@@ -29,7 +29,7 @@ class VirtualDiskSnapshot(Document):
 			]
 			if snapshots:
 				snapshot = snapshots[0]
-				self.aws_volume_id = snapshot["VolumeId"]
+				self.volume_id = snapshot["VolumeId"]
 				self.snapshot_id = snapshot["SnapshotId"]
 
 				self.status = self.get_status_map(snapshot["State"])

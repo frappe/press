@@ -184,7 +184,7 @@ class VirtualMachine(Document):
 		volume = self.volumes[0]
 		volume.size += increment
 		self.disk_size = volume.size
-		self.client().modify_volume(VolumeId=volume.aws_volume_id, Size=volume.size)
+		self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
 		self.save()
 
 	def get_volumes(self):
@@ -200,7 +200,7 @@ class VirtualMachine(Document):
 				volume.iops = max(3000, volume.iops)
 				volume.throughput = 250 if volume.size > 340 else 125
 				self.client().modify_volume(
-					VolumeId=volume.aws_volume_id,
+					VolumeId=volume.volume_id,
 					VolumeType=volume.volume_type,
 					Iops=volume.iops,
 					Throughput=volume.throughput,
@@ -223,14 +223,12 @@ class VirtualMachine(Document):
 			self.private_dns_name = instance.get("PrivateDnsName")
 
 			for volume in self.get_volumes():
-				existing_volume = find(
-					self.volumes, lambda v: v.aws_volume_id == volume["VolumeId"]
-				)
+				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
 					row = existing_volume
 				else:
 					row = frappe._dict()
-				row.aws_volume_id = volume["VolumeId"]
+				row.volume_id = volume["VolumeId"]
 				row.volume_type = volume["VolumeType"]
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
