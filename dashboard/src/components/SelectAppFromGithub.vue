@@ -6,6 +6,7 @@
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
 					:message="
+						$resources.options?.error?.messages &&
 						$resources.options.error.messages.includes('Bad credentials')
 							? 'Access token expired, reauthorization required'
 							: $resources.options.error
