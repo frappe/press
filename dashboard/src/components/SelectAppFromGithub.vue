@@ -6,7 +6,7 @@
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
 					:message="
-						$resources.options.error === 'Bad credentials'
+						$resources.options.error.messages.includes('Bad credentials')
 							? 'Access token expired, reauthorization required'
 							: $resources.options.error
 					"
@@ -105,8 +105,8 @@ export default {
 			return {
 				url: 'press.api.github.options',
 				auto: true,
-				onError(message) {
-					if (message === 'Bad credentials') {
+				onError(error) {
+					if (error.messages.includes('Bad credentials')) {
 						this.requiresReAuth = true;
 					}
 				}
