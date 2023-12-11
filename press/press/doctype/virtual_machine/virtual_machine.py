@@ -75,7 +75,7 @@ class VirtualMachine(Document):
 					"DeviceIndex": 0,
 					"PrivateIpAddress": self.private_ip_address,
 					"Groups": self.get_security_groups(),
-					"SubnetId": self.aws_subnet_id,
+					"SubnetId": self.subnet_id,
 				},
 			],
 			"DisableApiTermination": True,

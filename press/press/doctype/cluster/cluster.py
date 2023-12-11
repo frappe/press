@@ -187,7 +187,7 @@ class Cluster(Document):
 			VpcId=self.vpc_id,
 			CidrBlock=self.subnet_cidr_block,
 		)
-		self.aws_subnet_id = response["Subnet"]["SubnetId"]
+		self.subnet_id = response["Subnet"]["SubnetId"]
 
 		response = client.create_internet_gateway(
 			TagSpecifications=[
@@ -494,7 +494,7 @@ class Cluster(Document):
 				security_list_ids=[self.aws_security_group_id, self.aws_proxy_security_group_id],
 			)
 		).data
-		self.aws_subnet_id = subnet.id
+		self.subnet_id = subnet.id
 
 		time.sleep(1)
 		# Don't associate IGW with any route table Otherwise it fails with "Rules in the route table must use private IP"

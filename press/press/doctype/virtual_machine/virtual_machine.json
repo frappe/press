@@ -30,7 +30,7 @@
   "machine_image",
   "ssh_key",
   "networking_section",
-  "aws_subnet_id",
+  "subnet_id",
   "private_ip_address",
   "public_ip_address",
   "column_break_15",
@@ -117,13 +117,6 @@
    "fieldname": "networking_section",
    "fieldtype": "Section Break",
    "label": "Networking"
-  },
-  {
-   "fetch_from": "cluster.aws_subnet_id",
-   "fieldname": "aws_subnet_id",
-   "fieldtype": "Data",
-   "label": "AWS Subnet ID",
-   "read_only": 1
   },
   {
    "fetch_from": "cluster.subnet_cidr_block",
@@ -279,6 +272,13 @@
    "fieldtype": "Int",
    "label": "vCPU",
    "read_only": 1
+  },
+  {
+   "fetch_from": "cluster.subnet_id",
+   "fieldname": "subnet_id",
+   "fieldtype": "Data",
+   "label": "Subnet ID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -309,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-10-13 09:21:11.804746",
+ "modified": "2023-12-11 17:09:18.757158",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",
