@@ -200,10 +200,10 @@ class Cluster(Document):
 			],
 		)
 
-		self.aws_internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
+		self.internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
 
 		client.attach_internet_gateway(
-			InternetGatewayId=self.aws_internet_gateway_id, VpcId=self.vpc_id
+			InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id
 		)
 
 		response = client.describe_route_tables(
@@ -213,7 +213,7 @@ class Cluster(Document):
 
 		client.create_route(
 			DestinationCidrBlock="0.0.0.0/0",
-			GatewayId=self.aws_internet_gateway_id,
+			GatewayId=self.internet_gateway_id,
 			RouteTableId=self.route_table_id,
 		)
 
@@ -506,7 +506,7 @@ class Cluster(Document):
 				vcn_id=self.vpc_id,
 			)
 		).data
-		self.aws_internet_gateway_id = internet_gateway.id
+		self.internet_gateway_id = internet_gateway.id
 
 		time.sleep(1)
 		vcn_client.update_route_table(
@@ -515,7 +515,7 @@ class Cluster(Document):
 				route_rules=[
 					RouteRule(
 						destination="0.0.0.0/0",
-						network_entity_id=self.aws_internet_gateway_id,
+						network_entity_id=self.internet_gateway_id,
 					)
 				]
 			),
