@@ -94,7 +94,7 @@ class VirtualMachine(Document):
 			}
 		response = self.client().run_instances(**options)
 
-		self.aws_instance_id = response["Instances"][0]["InstanceId"]
+		self.instance_id = response["Instances"][0]["InstanceId"]
 		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
 
@@ -177,7 +177,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def reboot(self):
-		self.client().reboot_instances(InstanceIds=[self.aws_instance_id])
+		self.client().reboot_instances(InstanceIds=[self.instance_id])
 		self.sync()
 
 	def increase_disk_size(self, increment=50):
@@ -189,7 +189,7 @@ class VirtualMachine(Document):
 
 	def get_volumes(self):
 		response = self.client().describe_volumes(
-			Filters=[{"Name": "attachment.instance-id", "Values": [self.aws_instance_id]}]
+			Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
 		)
 		return response["Volumes"]
 
@@ -209,7 +209,7 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		response = self.client().describe_instances(InstanceIds=[self.aws_instance_id])
+		response = self.client().describe_instances(InstanceIds=[self.instance_id])
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
 
@@ -243,7 +243,7 @@ class VirtualMachine(Document):
 			self.disk_size = self.volumes[0].size
 
 			self.termination_protection = self.client().describe_instance_attribute(
-				InstanceId=self.aws_instance_id, Attribute="disableApiTermination"
+				InstanceId=self.instance_id, Attribute="disableApiTermination"
 			)["DisableApiTermination"]["Value"]
 
 			instance_type_response = self.client().describe_instance_types(
@@ -276,7 +276,7 @@ class VirtualMachine(Document):
 
 	def update_name_tag(self, name):
 		self.client().create_tags(
-			Resources=[self.aws_instance_id],
+			Resources=[self.instance_id],
 			Tags=[
 				{"Key": "Name", "Value": name},
 			],
@@ -292,7 +292,7 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def create_snapshots(self):
 		response = self.client().create_snapshots(
-			InstanceSpecification={"InstanceId": self.aws_instance_id},
+			InstanceSpecification={"InstanceId": self.instance_id},
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
 			TagSpecifications=[
 				{
@@ -320,33 +320,33 @@ class VirtualMachine(Document):
 	@frappe.whitelist()
 	def disable_termination_protection(self):
 		self.client().modify_instance_attribute(
-			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": False}
+			InstanceId=self.instance_id, DisableApiTermination={"Value": False}
 		)
 		self.sync()
 
 	@frappe.whitelist()
 	def enable_termination_protection(self):
 		self.client().modify_instance_attribute(
-			InstanceId=self.aws_instance_id, DisableApiTermination={"Value": True}
+			InstanceId=self.instance_id, DisableApiTermination={"Value": True}
 		)
 		self.sync()
 
 	@frappe.whitelist()
 	def start(self):
-		self.client().start_instances(InstanceIds=[self.aws_instance_id])
+		self.client().start_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
 	def stop(self):
-		self.client().stop_instances(InstanceIds=[self.aws_instance_id])
+		self.client().stop_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
 	def terminate(self):
-		self.client().terminate_instances(InstanceIds=[self.aws_instance_id])
+		self.client().terminate_instances(InstanceIds=[self.instance_id])
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
 		self.client().modify_instance_attribute(
-			InstanceId=self.aws_instance_id,
+			InstanceId=self.instance_id,
 			InstanceType={"Value": machine_type},
 		)
 		self.machine_type = machine_type

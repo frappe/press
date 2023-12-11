@@ -23,7 +23,7 @@ class VirtualMachineImage(Document):
 
 	def create_image(self):
 		response = self.client.create_image(
-			InstanceId=self.aws_instance_id,
+			InstanceId=self.instance_id,
 			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
 		)
 		self.aws_ami_id = response["ImageId"]

@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "virtual_machine",
-  "aws_instance_id",
+  "instance_id",
   "aws_ami_id",
   "aws_snapshot_id",
   "status",
@@ -30,15 +30,6 @@
    "options": "Virtual Machine",
    "reqd": 1,
    "set_only_once": 1
-  },
-  {
-   "fetch_from": "virtual_machine.aws_instance_id",
-   "fieldname": "aws_instance_id",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "AWS Instance ID",
-   "read_only": 1,
-   "reqd": 1
   },
   {
    "fieldname": "aws_ami_id",
@@ -121,11 +112,20 @@
    "label": "Cluster",
    "options": "Cluster",
    "reqd": 1
+  },
+  {
+   "fetch_from": "virtual_machine.instance_id",
+   "fieldname": "instance_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instance ID",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-14 13:26:57.794274",
+ "modified": "2023-12-11 17:48:59.688103",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine Image",
