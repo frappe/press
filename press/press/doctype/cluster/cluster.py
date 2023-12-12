@@ -370,7 +370,6 @@ class Cluster(Document):
 			"tenancy": self.oci_tenancy,
 			"region": self.region,
 			"key_content": private_key,
-			"log_requests": True,
 		}
 		validate_config(config)
 		return config
