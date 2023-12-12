@@ -313,7 +313,7 @@
    "fieldname": "gunicorn_worker_type",
    "fieldtype": "Select",
    "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent"
+   "options": "\nsync\ngthread"
   },
   {
    "description": "Setting this to non-zero value will convert sync to gthread worker. This doesn't apply to gevent. ",
@@ -323,7 +323,7 @@
   }
  ],
  "links": [],
- "modified": "2023-12-03 14:13:58.693402",
+ "modified": "2023-12-12 11:56:17.384674",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

@@ -308,12 +308,12 @@
    "fieldname": "gunicorn_worker_type",
    "fieldtype": "Select",
    "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent",
+   "options": "\nsync\ngthread",
    "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-04 16:44:19.425413",
+ "modified": "2023-12-12 11:57:24.929123",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
