@@ -244,7 +244,10 @@ def created_usage_records(free_sites, date=None):
 	return frappe.get_all(
 		"Usage Record",
 		filters={
-			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
+			"document_type": (
+				"in",
+				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
+			),
 			"date": date,
 			"document_name": ("not in", free_sites),
 		},
