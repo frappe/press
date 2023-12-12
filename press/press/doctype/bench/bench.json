@@ -39,8 +39,6 @@
   "feature_flags_section",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
-  "gunicorn_worker_type",
-  "gunicorn_threads_per_worker",
   "column_break_mtyb",
   "environment_variables"
  ],
@@ -294,26 +292,10 @@
    "fieldname": "skip_memory_limits",
    "fieldtype": "Check",
    "label": "Skip Memory Limits"
-  },
-  {
-   "fetch_from": "candidate.gunicorn_threads_per_worker",
-   "fieldname": "gunicorn_threads_per_worker",
-   "fieldtype": "Int",
-   "label": "Gunicorn Threads Per Worker",
-   "read_only": 1
-  },
-  {
-   "default": "sync",
-   "fetch_from": "candidate.gunicorn_worker_type",
-   "fieldname": "gunicorn_worker_type",
-   "fieldtype": "Select",
-   "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-12 11:57:24.929123",
+ "modified": "2023-12-12 16:35:27.484083",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
