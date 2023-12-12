@@ -118,34 +118,37 @@ class VirtualMachine(Document):
 
 	def _provision_oci(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		client = ComputeClient(cluster.get_oci_config())
 		# OCI doesn't have machine types. So let's make up our own.
 		# nxm = n vcpus and m GB memory
 		self.vcpus, self.memory = map(int, self.machine_type.split("x"))
-		instance = client.launch_instance(
-			LaunchInstanceDetails(
-				compartment_id=cluster.oci_tenancy,
-				availability_domain=self.availability_zone,
-				display_name=self.name,
-				create_vnic_details=CreateVnicDetails(private_ip=self.private_ip_address),
-				subnet_id=self.subnet_id,
-				instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
-				source_details=InstanceSourceViaImageDetails(
-					image_id=self.machine_image, boot_volume_size_in_gbs=self.disk_size
-				),
-				shape="VM.Standard3.Flex",
-				shape_config=LaunchInstanceShapeConfigDetails(
-					ocpus=self.vcpus // 2, vcpus=self.vcpus, memory_in_gbs=self.memory
-				),
-				platform_config=LaunchInstancePlatformConfig(type="INTEL_VM"),
-				metadata={
-					"ssh_authorized_keys": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
-					"user_data": base64.b64encode(self.get_cloud_init().encode()).decode()
-					if self.virtual_machine_image
-					else "",
-				},
+		instance = (
+			self.client()
+			.launch_instance(
+				LaunchInstanceDetails(
+					compartment_id=cluster.oci_tenancy,
+					availability_domain=self.availability_zone,
+					display_name=self.name,
+					create_vnic_details=CreateVnicDetails(private_ip=self.private_ip_address),
+					subnet_id=self.subnet_id,
+					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
+					source_details=InstanceSourceViaImageDetails(
+						image_id=self.machine_image, boot_volume_size_in_gbs=self.disk_size
+					),
+					shape="VM.Standard3.Flex",
+					shape_config=LaunchInstanceShapeConfigDetails(
+						ocpus=self.vcpus // 2, vcpus=self.vcpus, memory_in_gbs=self.memory
+					),
+					platform_config=LaunchInstancePlatformConfig(type="INTEL_VM"),
+					metadata={
+						"ssh_authorized_keys": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+						"user_data": base64.b64encode(self.get_cloud_init().encode()).decode()
+						if self.virtual_machine_image
+						else "",
+					},
+				)
 			)
-		).data
+			.data
+		)
 		self.instance_id = instance.id
 		self.save()
 
@@ -416,12 +419,15 @@ class VirtualMachine(Document):
 
 	def client(self, client_type="ec2"):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return boto3.client(
-			client_type,
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
+		if self.cloud_provider == "AWS EC2":
+			return boto3.client(
+				client_type,
+				region_name=self.region,
+				aws_access_key_id=cluster.aws_access_key_id,
+				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+			)
+		elif self.cloud_provider == "OCI":
+			return ComputeClient(cluster.get_oci_config())
 
 	@frappe.whitelist()
 	def create_server(self):
