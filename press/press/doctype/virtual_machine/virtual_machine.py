@@ -314,7 +314,7 @@ class VirtualMachine(Document):
 
 	def _sync_oci(self):
 		instance = self.client().get_instance(instance_id=self.instance_id).data
-		if instance:
+		if instance and instance.lifecycle_state != "TERMINATED":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 
 			self.status = self.get_oci_status_map()[instance.lifecycle_state]
