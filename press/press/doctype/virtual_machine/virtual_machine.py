@@ -417,17 +417,17 @@ class VirtualMachine(Document):
 		self.machine_type = machine_type
 		self.save()
 
-	def client(self, client_type="ec2"):
+	def client(self, client_type=None):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if self.cloud_provider == "AWS EC2":
 			return boto3.client(
-				client_type,
+				client_type or "ec2",
 				region_name=self.region,
 				aws_access_key_id=cluster.aws_access_key_id,
 				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
 			)
 		elif self.cloud_provider == "OCI":
-			return ComputeClient(cluster.get_oci_config())
+			return (client_type or ComputeClient)(cluster.get_oci_config())
 
 	@frappe.whitelist()
 	def create_server(self):
