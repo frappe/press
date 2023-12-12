@@ -257,7 +257,10 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def reboot(self):
-		self.client().reboot_instances(InstanceIds=[self.instance_id])
+		if self.cloud_provider == "AWS EC2":
+			self.client().reboot_instances(InstanceIds=[self.instance_id])
+		elif self.cloud_provider == "OCI":
+			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		self.sync()
 
 	def increase_disk_size(self, increment=50):
@@ -492,15 +495,26 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def start(self):
-		self.client().start_instances(InstanceIds=[self.instance_id])
+		if self.cloud_provider == "AWS EC2":
+			self.client().start_instances(InstanceIds=[self.instance_id])
+		elif self.cloud_provider == "OCI":
+			self.client().instance_action(instance_id=self.instance_id, action="START")
+		self.sync()
 
 	@frappe.whitelist()
 	def stop(self):
-		self.client().stop_instances(InstanceIds=[self.instance_id])
+		if self.cloud_provider == "AWS EC2":
+			self.client().stop_instances(InstanceIds=[self.instance_id])
+		elif self.cloud_provider == "OCI":
+			self.client().instance_action(instance_id=self.instance_id, action="STOP")
+		self.sync()
 
 	@frappe.whitelist()
 	def terminate(self):
-		self.client().terminate_instances(InstanceIds=[self.instance_id])
+		if self.cloud_provider == "AWS EC2":
+			self.client().terminate_instances(InstanceIds=[self.instance_id])
+		elif self.cloud_provider == "OCI":
+			self.client().terminate_instance(instance_id=self.instance_id)
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
