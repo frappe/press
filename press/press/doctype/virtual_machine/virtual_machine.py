@@ -119,8 +119,8 @@ class VirtualMachine(Document):
 	def _provision_oci(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		# OCI doesn't have machine types. So let's make up our own.
-		# nxm = n vcpus and m GB memory
-		self.vcpus, self.memory = map(int, self.machine_type.split("x"))
+		# nxm = n vcpus and m GB ram
+		vcpu, ram_in_gbs = map(int, self.machine_type.split("x"))
 		instance = (
 			self.client()
 			.launch_instance(
@@ -136,7 +136,7 @@ class VirtualMachine(Document):
 					),
 					shape="VM.Standard3.Flex",
 					shape_config=LaunchInstanceShapeConfigDetails(
-						ocpus=self.vcpus // 2, vcpus=self.vcpus, memory_in_gbs=self.memory
+						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
 					),
 					platform_config=LaunchInstancePlatformConfig(type="INTEL_VM"),
 					metadata={
