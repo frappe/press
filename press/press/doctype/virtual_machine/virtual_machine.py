@@ -5,7 +5,7 @@ import frappe
 import base64
 import ipaddress
 import boto3
-from oci.core import ComputeClient
+from oci.core import ComputeClient, BlockstorageClient
 from oci.core.models import (
 	LaunchInstanceShapeConfigDetails,
 	LaunchInstancePlatformConfig,
@@ -268,10 +268,28 @@ class VirtualMachine(Document):
 		self.save()
 
 	def get_volumes(self):
-		response = self.client().describe_volumes(
-			Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
-		)
-		return response["Volumes"]
+		if self.cloud_provider == "AWS EC2":
+			response = self.client().describe_volumes(
+				Filters=[{"Name": "attachment.instance-id", "Values": [self.instance_id]}]
+			)
+			return response["Volumes"]
+		elif self.cloud_provider == "OCI":
+			cluster = frappe.get_doc("Cluster", self.cluster)
+			return (
+				self.client()
+				.list_boot_volume_attachments(
+					compartment_id=cluster.oci_tenancy,
+					availability_domain=self.availability_zone,
+					instance_id=self.instance_id,
+				)
+				.data
+				+ self.client()
+				.list_volume_attachments(
+					compartment_id=cluster.oci_tenancy,
+					instance_id=self.instance_id,
+				)
+				.data
+			)
 
 	def convert_to_gp3(self):
 		for volume in self.volumes:
@@ -289,6 +307,55 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def sync(self):
+		if self.cloud_provider == "AWS EC2":
+			return self._sync_aws()
+		elif self.cloud_provider == "OCI":
+			return self._sync_oci()
+
+	def _sync_oci(self):
+		instance = self.client().get_instance(instance_id=self.instance_id).data
+		if instance:
+			self.status = self.get_oci_status_map()[instance.lifecycle_state]
+
+			self.ram = instance.shape_config.memory_in_gbs * 1024
+			self.vcpu = instance.shape_config.vcpus
+			self.machine_type = f"{int(self.vcpu)}x{int(instance.shape_config.memory_in_gbs)}"
+
+			for volume in self.get_volumes():
+				if hasattr(volume, "volume_id"):
+					volume = (
+						self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
+					)
+				else:
+					volume = (
+						self.client(BlockstorageClient)
+						.get_boot_volume(boot_volume_id=volume.boot_volume_id)
+						.data
+					)
+
+				existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
+				if existing_volume:
+					row = existing_volume
+				else:
+					row = frappe._dict()
+				row.volume_id = volume.id
+				row.size = volume.size_in_gbs
+
+				vpus = volume.vpus_per_gb
+				# Reference: https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
+				row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
+				row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
+
+				if not existing_volume:
+					self.append("volumes", row)
+
+			self.disk_size = self.volumes[0].size
+		else:
+			self.status = "Terminated"
+		self.save()
+		self.update_servers()
+
+	def _sync_aws(self):
 		response = self.client().describe_instances(InstanceIds=[self.instance_id])
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
