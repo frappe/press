@@ -73,10 +73,17 @@ frappe.ui.form.on('Virtual Machine', {
 			},
 		);
 		if (frm.doc.instance_id) {
-			frm.add_web_link(
-				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.instance_id}`,
-				__('Visit AWS Dashboard'),
-			);
+			if (frm.doc.cloud_provider === 'AWS EC2') {
+				frm.add_web_link(
+					`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.instance_id}`,
+					__('Visit AWS Dashboard'),
+				);
+			} else if (frm.doc.cloud_provider === 'OCI') {
+				frm.add_web_link(
+					`https://cloud.oracle.com/compute/instances/${frm.doc.instance_id}?region=${frm.doc.region}`,
+					__('Visit OCI Dashboard'),
+				);
+			}
 		}
 	},
 });
