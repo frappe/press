@@ -132,7 +132,7 @@ class VirtualMachine(Document):
 					subnet_id=self.subnet_id,
 					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
 					source_details=InstanceSourceViaImageDetails(
-						image_id=self.machine_image, boot_volume_size_in_gbs=self.disk_size
+						image_id=self.machine_image, boot_volume_size_in_gbs=max(self.disk_size, 50)
 					),
 					shape="VM.Standard3.Flex",
 					shape_config=LaunchInstanceShapeConfigDetails(
