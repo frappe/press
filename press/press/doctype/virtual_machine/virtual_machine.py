@@ -113,7 +113,7 @@ class VirtualMachine(Document):
 		response = self.client().run_instances(**options)
 
 		self.instance_id = response["Instances"][0]["InstanceId"]
-		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
+		self.status = self.get_aws_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
 
 	def _provision_oci(self):
@@ -215,7 +215,7 @@ class VirtualMachine(Document):
 			if server:
 				return frappe.get_doc(doctype, server)
 
-	def get_status_map(self):
+	def get_aws_status_map(self):
 		return {
 			"pending": "Pending",
 			"running": "Running",
@@ -223,6 +223,19 @@ class VirtualMachine(Document):
 			"stopping": "Pending",
 			"stopped": "Stopped",
 			"terminated": "Terminated",
+		}
+
+	def get_oci_status_map(self):
+		return {
+			"MOVING": "Pending",
+			"PROVISIONING": "Pending",
+			"RUNNING": "Running",
+			"STARTING": "Pending",
+			"STOPPING": "Pending",
+			"STOPPED": "Stopped",
+			"CREATING_IMAGE": "Pending",
+			"TERMINATING": "Pending",
+			"TERMINATED": "Terminated",
 		}
 
 	def get_latest_ubuntu_image(self):
@@ -280,7 +293,7 @@ class VirtualMachine(Document):
 		if response["Reservations"]:
 			instance = response["Reservations"][0]["Instances"][0]
 
-			self.status = self.get_status_map()[instance["State"]["Name"]]
+			self.status = self.get_aws_status_map()[instance["State"]["Name"]]
 			self.machine_type = instance.get("InstanceType")
 
 			self.public_ip_address = instance.get("PublicIpAddress")
