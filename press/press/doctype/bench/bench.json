@@ -20,6 +20,7 @@
   "configuration_section",
   "background_workers",
   "gunicorn_workers",
+  "gunicorn_threads_per_worker",
   "port_offset",
   "auto_scale_workers",
   "skip_memory_limits",
@@ -292,10 +293,18 @@
    "fieldname": "skip_memory_limits",
    "fieldtype": "Check",
    "label": "Skip Memory Limits"
+  },
+  {
+   "default": "0",
+   "description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
+   "fieldname": "gunicorn_threads_per_worker",
+   "fieldtype": "Int",
+   "label": "Gunicorn Threads Per Worker",
+   "non_negative": 1
   }
  ],
  "links": [],
- "modified": "2023-12-12 16:35:27.484083",
+ "modified": "2023-12-12 16:45:15.665032",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
