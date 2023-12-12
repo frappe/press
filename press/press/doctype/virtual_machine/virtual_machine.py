@@ -150,6 +150,7 @@ class VirtualMachine(Document):
 			.data
 		)
 		self.instance_id = instance.id
+		self.status = self.get_oci_status_map()[instance.lifecycle_state]
 		self.save()
 
 	def get_cloud_init(self):
