@@ -5,7 +5,7 @@ import frappe
 import base64
 import ipaddress
 import boto3
-from oci.core import ComputeClient, BlockstorageClient
+from oci.core import ComputeClient, BlockstorageClient, VirtualNetworkClient
 from oci.core.models import (
 	LaunchInstanceShapeConfigDetails,
 	LaunchInstancePlatformConfig,
@@ -315,11 +315,25 @@ class VirtualMachine(Document):
 	def _sync_oci(self):
 		instance = self.client().get_instance(instance_id=self.instance_id).data
 		if instance:
+			cluster = frappe.get_doc("Cluster", self.cluster)
+
 			self.status = self.get_oci_status_map()[instance.lifecycle_state]
 
 			self.ram = instance.shape_config.memory_in_gbs * 1024
 			self.vcpu = instance.shape_config.vcpus
 			self.machine_type = f"{int(self.vcpu)}x{int(instance.shape_config.memory_in_gbs)}"
+
+			for vnic_attachment in (
+				self.client()
+				.list_vnic_attachments(
+					compartment_id=cluster.oci_tenancy, instance_id=self.instance_id
+				)
+				.data
+			):
+				vnic = (
+					self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
+				)
+				self.public_ip_address = vnic.public_ip
 
 			for volume in self.get_volumes():
 				if hasattr(volume, "volume_id"):
