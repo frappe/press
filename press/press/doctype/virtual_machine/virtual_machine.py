@@ -264,6 +264,7 @@ class VirtualMachine(Document):
 			self.client().instance_action(instance_id=self.instance_id, action="RESET")
 		self.sync()
 
+	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
 		volume = self.volumes[0]
 		volume.size += int(increment or 50)

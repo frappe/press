@@ -20,6 +20,7 @@ frappe.ui.form.on('Virtual Machine', {
 				'enable_termination_protection',
 				!frm.doc.termination_protection,
 			],
+			[__('Increase Disk Size'), 'increase_disk_size'],
 			[__('Create Image'), 'create_image', frm.doc.status == 'Stopped'],
 			[__('Create Snapshots'), 'create_snapshots', frm.doc.status == 'Running'],
 			[__('Create Server'), 'create_server', frm.doc.series === 'f'],
