@@ -266,7 +266,7 @@ class VirtualMachine(Document):
 
 	def increase_disk_size(self, increment=50):
 		volume = self.volumes[0]
-		volume.size += increment
+		volume.size += int(increment or 50)
 		self.disk_size = volume.size
 		self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
 		self.save()
