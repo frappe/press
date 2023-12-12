@@ -292,7 +292,7 @@
    "fieldname": "gunicorn_worker_type",
    "fieldtype": "Select",
    "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent",
+   "options": "\nsync\ngthread",
    "read_only": 1
   },
   {
@@ -304,7 +304,7 @@
   }
  ],
  "links": [],
- "modified": "2023-12-04 16:09:20.194391",
+ "modified": "2023-12-12 11:57:03.360730",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
