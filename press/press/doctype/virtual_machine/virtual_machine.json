@@ -51,7 +51,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2",
+   "options": "\nAWS EC2\nOCI",
    "read_only": 1,
    "reqd": 1
   },
@@ -309,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-12-11 17:55:22.459092",
+ "modified": "2023-12-12 12:18:00.680292",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

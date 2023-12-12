@@ -2,8 +2,20 @@
 # For license information, please see license.txt
 
 import frappe
+import base64
 import ipaddress
 import boto3
+from oci.core import ComputeClient
+from oci.core.models import (
+	LaunchInstanceShapeConfigDetails,
+	LaunchInstancePlatformConfig,
+	CreateVnicDetails,
+	LaunchInstanceDetails,
+	InstanceSourceViaImageDetails,
+	InstanceOptions,
+)
+
+
 from frappe.model.document import Document
 from frappe.core.utils import find
 from frappe.model.naming import make_autoname
@@ -50,6 +62,12 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def provision(self):
+		if self.cloud_provider == "AWS EC2":
+			return self._provision_aws()
+		elif self.cloud_provider == "OCI":
+			return self._provision_oci()
+
+	def _provision_aws(self):
 		options = {
 			"BlockDeviceMappings": [
 				{
@@ -98,6 +116,39 @@ class VirtualMachine(Document):
 		self.status = self.get_status_map()[response["Instances"][0]["State"]["Name"]]
 		self.save()
 
+	def _provision_oci(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		client = ComputeClient(cluster.get_oci_config())
+		# OCI doesn't have machine types. So let's make up our own.
+		# nxm = n vcpus and m GB memory
+		self.vcpus, self.memory = map(int, self.machine_type.split("x"))
+		instance = client.launch_instance(
+			LaunchInstanceDetails(
+				compartment_id=cluster.oci_tenancy,
+				availability_domain=self.availability_zone,
+				display_name=self.name,
+				create_vnic_details=CreateVnicDetails(private_ip=self.private_ip_address),
+				subnet_id=self.subnet_id,
+				instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
+				source_details=InstanceSourceViaImageDetails(
+					image_id=self.machine_image, boot_volume_size_in_gbs=self.disk_size
+				),
+				shape="VM.Standard3.Flex",
+				shape_config=LaunchInstanceShapeConfigDetails(
+					ocpus=self.vcpus // 2, vcpus=self.vcpus, memory_in_gbs=self.memory
+				),
+				platform_config=LaunchInstancePlatformConfig(type="INTEL_VM"),
+				metadata={
+					"ssh_authorized_keys": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
+					"user_data": base64.b64encode(self.get_cloud_init().encode()).decode()
+					if self.virtual_machine_image
+					else "",
+				},
+			)
+		).data
+		self.instance_id = instance.id
+		self.save()
+
 	def get_cloud_init(self):
 		server = self.get_server()
 		log_server, kibana_password = server.get_log_server()
@@ -133,6 +184,7 @@ class VirtualMachine(Document):
 
 			context.update(
 				{
+					"log_requests": True,
 					"mariadb_config": frappe.render_template(
 						"press/playbooks/roles/mariadb/templates/mariadb.cnf",
 						mariadb_context,
@@ -171,9 +223,21 @@ class VirtualMachine(Document):
 		}
 
 	def get_latest_ubuntu_image(self):
-		return self.client("ssm").get_parameter(
-			Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
-		)["Parameter"]["Value"]
+		if self.cloud_provider == "AWS EC2":
+			return self.client("ssm").get_parameter(
+				Name="/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+			)["Parameter"]["Value"]
+		elif self.cloud_provider == "OCI":
+			cluster = frappe.get_doc("Cluster", self.cluster)
+			client = ComputeClient(cluster.get_oci_config())
+			images = client.list_images(
+				compartment_id=cluster.oci_tenancy,
+				operating_system="Canonical Ubuntu",
+				operating_system_version="20.04",
+				shape="VM.Standard3.Flex",
+				lifecycle_state="AVAILABLE",
+			).data
+			return images[0].id
 
 	@frappe.whitelist()
 	def reboot(self):
