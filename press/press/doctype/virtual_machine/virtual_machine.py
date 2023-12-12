@@ -13,6 +13,8 @@ from oci.core.models import (
 	LaunchInstanceDetails,
 	InstanceSourceViaImageDetails,
 	InstanceOptions,
+	UpdateBootVolumeDetails,
+	UpdateVolumeDetails,
 )
 
 
@@ -269,7 +271,19 @@ class VirtualMachine(Document):
 		volume = self.volumes[0]
 		volume.size += int(increment or 50)
 		self.disk_size = volume.size
-		self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_volume(VolumeId=volume.volume_id, Size=volume.size)
+		elif self.cloud_provider == "OCI":
+			if ".bootvolume." in volume.volume_id:
+				self.client(BlockstorageClient).update_boot_volume(
+					boot_volume_id=volume.volume_id,
+					update_boot_volume_details=UpdateBootVolumeDetails(size_in_gbs=volume.size),
+				)
+			else:
+				self.client(BlockstorageClient).update_volume(
+					volume_id=volume.volume_id,
+					update_volume_details=UpdateVolumeDetails(size_in_gbs=volume.size),
+				)
 		self.save()
 
 	def get_volumes(self):
