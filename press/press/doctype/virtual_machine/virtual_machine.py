@@ -351,38 +351,51 @@ class VirtualMachine(Document):
 				)
 				.data
 			):
-				vnic = (
-					self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
-				)
-				self.public_ip_address = vnic.public_ip
+				try:
+					vnic = (
+						self.client(VirtualNetworkClient).get_vnic(vnic_id=vnic_attachment.vnic_id).data
+					)
+					self.public_ip_address = vnic.public_ip
+				except Exception:
+					log_error(
+						title="OCI VNIC Fetch Error",
+						virtual_machine=self.name,
+						vnic_attachment=vnic_attachment,
+					)
 
 			for volume in self.get_volumes():
-				if hasattr(volume, "volume_id"):
-					volume = (
-						self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
+				try:
+					if hasattr(volume, "volume_id"):
+						volume = (
+							self.client(BlockstorageClient).get_volume(volume_id=volume.volume_id).data
+						)
+					else:
+						volume = (
+							self.client(BlockstorageClient)
+							.get_boot_volume(boot_volume_id=volume.boot_volume_id)
+							.data
+						)
+					existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
+					if existing_volume:
+						row = existing_volume
+					else:
+						row = frappe._dict()
+					row.volume_id = volume.id
+					row.size = volume.size_in_gbs
+
+					vpus = volume.vpus_per_gb
+					# Reference: https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
+					row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
+					row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
+
+					if not existing_volume:
+						self.append("volumes", row)
+				except Exception:
+					log_error(
+						title="OCI Volume Fetch Error",
+						virtual_machine=self.name,
+						volume=volume,
 					)
-				else:
-					volume = (
-						self.client(BlockstorageClient)
-						.get_boot_volume(boot_volume_id=volume.boot_volume_id)
-						.data
-					)
-
-				existing_volume = find(self.volumes, lambda v: v.volume_id == volume.id)
-				if existing_volume:
-					row = existing_volume
-				else:
-					row = frappe._dict()
-				row.volume_id = volume.id
-				row.size = volume.size_in_gbs
-
-				vpus = volume.vpus_per_gb
-				# Reference: https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/blockvolumeperformance.htm
-				row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
-				row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
-
-				if not existing_volume:
-					self.append("volumes", row)
 
 			self.disk_size = self.volumes[0].size
 		else:
