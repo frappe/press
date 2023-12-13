@@ -61,7 +61,7 @@ class VirtualMachine(Document):
 			if self.series == "n":
 				self.private_ip_address = str(ip + index)
 			else:
-				offset = ["f", "m", "c", "p", "e"].index(self.series)
+				offset = ["f", "m", "c", "p", "e", "r"].index(self.series)
 				self.private_ip_address = str(
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
@@ -786,6 +786,21 @@ class VirtualMachine(Document):
 			"domain": self.domain,
 			"cluster": self.cluster,
 			"provider": self.cloud_provider,
+			"virtual_machine": self.name,
+			"team": self.team,
+		}
+		if self.virtual_machine_image:
+			document["is_server_setup"] = True
+
+		return frappe.get_doc(document).insert()
+
+	def create_registry_server(self):
+		document = {
+			"doctype": "Registry Server",
+			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
+			"domain": self.domain,
+			"cluster": self.cluster,
+			"provider": "AWS EC2",
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
