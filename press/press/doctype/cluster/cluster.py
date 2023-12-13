@@ -21,10 +21,9 @@ from oci.core.models import (
 	CreateInternetGatewayDetails,
 	UpdateRouteTableDetails,
 	RouteRule,
-	CreateSecurityListDetails,
-	UpdateSecurityListDetails,
-	IngressSecurityRule,
-	EgressSecurityRule,
+	CreateNetworkSecurityGroupDetails,
+	AddNetworkSecurityGroupSecurityRulesDetails,
+	AddSecurityRuleDetails,
 	TcpOptions,
 	PortRange,
 )
@@ -392,95 +391,117 @@ class Cluster(Document):
 		).data
 		self.vpc_id = vcn.id
 		self.route_table_id = vcn.default_route_table_id
-		self.security_group_id = vcn.default_security_list_id
+		self.network_acl_id = vcn.default_security_list_id
 
 		time.sleep(1)
 		# https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
 		# 1 ICMP
 		# 6 TCP
 		# 17 UDP
-		vcn_client.update_security_list(
+		security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Security Group",
+				vcn_id=self.vpc_id,
+			)
+		).data
+		self.security_group_id = security_group.id
+
+		time.sleep(1)
+		vcn_client.add_network_security_group_security_rules(
 			self.security_group_id,
-			UpdateSecurityListDetails(
-				ingress_security_rules=[
-					IngressSecurityRule(
+			AddNetworkSecurityGroupSecurityRulesDetails(
+				security_rules=[
+					AddSecurityRuleDetails(
 						description="HTTP from anywhere",
+						direction="INGRESS",
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=80, max=80)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="HTTPS from anywhere",
+						direction="INGRESS",
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=443, max=443)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="SSH from anywhere",
+						direction="INGRESS",
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=22, max=22)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="MariaDB from private network",
+						direction="INGRESS",
 						protocol="6",
 						source=self.subnet_cidr_block,
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=3306, max=3306)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="SSH from private network",
+						direction="INGRESS",
 						protocol="6",
 						source=self.subnet_cidr_block,
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=22000, max=22999)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="ICMP from anywhere",
+						direction="INGRESS",
 						protocol="1",
 						source="0.0.0.0/0",
 						# Ignoring IcmpOptions for now. https://docs.oracle.com/en-us/iaas/tools/python/2.117.0/api/core/models/oci.core.models.IcmpOptions.html#oci.core.models.IcmpOptions
 					),
-				],
-				egress_security_rules=[
-					EgressSecurityRule(
+					AddSecurityRuleDetails(
 						description="Everything to anywhere",
+						direction="EGRESS",
 						protocol="all",
 						destination="0.0.0.0/0",
 					),
 				],
-				display_name=f"Frappe Cloud - {self.name} - Security List",
 			),
 		)
 
 		time.sleep(1)
-		proxy_security_list = vcn_client.create_security_list(
-			CreateSecurityListDetails(
+		proxy_security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
 				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Proxy - Security Group",
 				vcn_id=self.vpc_id,
-				ingress_security_rules=[
-					IngressSecurityRule(
+			)
+		).data
+		self.proxy_security_group_id = proxy_security_group.id
+
+		time.sleep(1)
+		vcn_client.add_network_security_group_security_rules(
+			self.proxy_security_group_id,
+			AddNetworkSecurityGroupSecurityRulesDetails(
+				security_rules=[
+					AddSecurityRuleDetails(
 						description="SSH proxy from anywhere",
+						direction="INGRESS",
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=2222, max=2222)),
 					),
-					IngressSecurityRule(
+					AddSecurityRuleDetails(
 						description="MariaDB from anywhere",
+						direction="INGRESS",
 						protocol="6",
 						source="0.0.0.0/0",
 						tcp_options=TcpOptions(destination_port_range=PortRange(min=3306, max=3306)),
 					),
-				],
-				egress_security_rules=[
-					EgressSecurityRule(
+					AddSecurityRuleDetails(
 						description="Everything to anywhere",
+						direction="EGRESS",
 						protocol="all",
 						destination="0.0.0.0/0",
 					),
 				],
-				display_name=f"Frappe Cloud - {self.name} - Proxy - Security List",
-			)
+			),
 		).data
-		self.proxy_security_group_id = proxy_security_list.id
 
 		time.sleep(1)
 		subnet = vcn_client.create_subnet(
@@ -490,7 +511,7 @@ class Cluster(Document):
 				vcn_id=self.vpc_id,
 				cidr_block=self.subnet_cidr_block,
 				route_table_id=self.route_table_id,
-				security_list_ids=[self.security_group_id, self.proxy_security_group_id],
+				security_list_ids=[self.network_acl_id],
 			)
 		).data
 		self.subnet_id = subnet.id
