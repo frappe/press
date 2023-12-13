@@ -64,6 +64,19 @@ class VirtualMachine(Document):
 					ip + 256 * (2 * (index // 256) + offset) + (index % 256)
 				)
 
+	def on_trash(self):
+		snapshots = frappe.get_all(
+			"Virtual Disk Snapshot", {"status": "Unavailable"}, pluck="name"
+		)
+		for snapshot in snapshots:
+			frappe.delete_doc("Virtual Disk Snapshot", snapshot)
+
+		images = frappe.get_all(
+			"Virtual Machine Image", {"status": "Unavailable"}, pluck="name"
+		)
+		for image in images:
+			frappe.delete_doc("Virtual Machine Image", image)
+
 	@frappe.whitelist()
 	def provision(self):
 		if self.cloud_provider == "AWS EC2":
