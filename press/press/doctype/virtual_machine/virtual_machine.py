@@ -468,12 +468,13 @@ class VirtualMachine(Document):
 				frappe.db.set_value(doctype, server, "status", status_map[self.status])
 
 	def update_name_tag(self, name):
-		self.client().create_tags(
-			Resources=[self.instance_id],
-			Tags=[
-				{"Key": "Name", "Value": name},
-			],
-		)
+		if self.cloud_provider == "AWS EC2":
+			self.client().create_tags(
+				Resources=[self.instance_id],
+				Tags=[
+					{"Key": "Name", "Value": name},
+				],
+			)
 
 	@frappe.whitelist()
 	def create_image(self):
@@ -553,17 +554,19 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def disable_termination_protection(self):
-		self.client().modify_instance_attribute(
-			InstanceId=self.instance_id, DisableApiTermination={"Value": False}
-		)
-		self.sync()
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id, DisableApiTermination={"Value": False}
+			)
+			self.sync()
 
 	@frappe.whitelist()
 	def enable_termination_protection(self):
-		self.client().modify_instance_attribute(
-			InstanceId=self.instance_id, DisableApiTermination={"Value": True}
-		)
-		self.sync()
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id, DisableApiTermination={"Value": True}
+			)
+			self.sync()
 
 	@frappe.whitelist()
 	def start(self):
