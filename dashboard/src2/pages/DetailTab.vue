@@ -12,9 +12,13 @@
 	</div>
 </template>
 <script>
+import ObjectList from '../components/ObjectList.vue';
 export default {
 	name: 'DetailTab',
 	props: ['document', 'tab'],
+	components: {
+		ObjectList
+	},
 	methods: {
 		getFilters(tab) {
 			return tab.list.filters ? tab.list.filters(this.document) : {};

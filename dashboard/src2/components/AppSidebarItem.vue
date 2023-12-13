@@ -6,6 +6,7 @@
 			class="flex items-center rounded px-2 py-1 text-gray-800 transition"
 			:class="[
 				item.isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100',
+				item.disabled ? 'pointer-events-none opacity-50' : '',
 				$attrs.class
 			]"
 		>

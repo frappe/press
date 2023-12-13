@@ -57,12 +57,25 @@ class Team(Document):
 			["first_name", "last_name", "user_image", "user_type"],
 			as_dict=True,
 		)
+		doc.user_info = user
 		doc.balance = self.get_balance()
 		doc.is_desk_user = user.user_type == "System User"
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
+		doc.onboarding = self.get_onboarding()
+		doc.billing_info = self.billing_info()
 
 	def onload(self):
 		load_address_and_contact(self)
+
+	@frappe.whitelist()
+	def get_home_data(self):
+		return {
+			"sites": frappe.db.get_all(
+				"Site",
+				{"team": self.name, "status": ["!=", "Archived"]},
+				["name", "host_name", "status"],
+			),
+		}
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -797,12 +810,14 @@ class Team(Document):
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
+		elif self.payment_mode == "Prepaid Credits" and self.get_balance() > 0:
+			billing_setup = True
+		elif (
+			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
+		):
+			billing_setup = True
 		else:
-			billing_setup = bool(
-				self.payment_mode in ["Card", "Prepaid Credits"]
-				and (self.default_payment_method or self.get_balance() > 0)
-				and self.billing_address
-			)
+			billing_setup = False
 
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 
@@ -832,7 +847,7 @@ class Team(Document):
 				"erpnext_site": erpnext_site,
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
-				"complete": billing_setup and site_created and erpnext_site_plan_set,
+				"complete": billing_setup and site_created,
 			}
 		)
 

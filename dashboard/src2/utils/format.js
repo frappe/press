@@ -55,3 +55,10 @@ export function planTitle(plan) {
 		plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
 	return price > 0 ? `${currency}${price}` : plan.plan_title;
 }
+
+export function userCurrency(value) {
+	let $team = getTeam();
+	let india = $team.doc.currency == 'INR';
+	let symbol = india ? '₹' : '$';
+	return `${symbol}${value}`;
+}

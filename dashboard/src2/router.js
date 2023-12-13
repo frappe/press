@@ -6,8 +6,40 @@ let router = createRouter({
 	routes: [
 		{
 			path: '/',
+			name: 'Home',
 			component: () => import('./pages/Home.vue'),
-			redirect: '/sites'
+			redirect: { name: 'Welcome' }
+		},
+		{
+			path: '/welcome',
+			name: 'Welcome',
+			component: () => import('./pages/Welcome.vue')
+		},
+		{
+			path: '/login',
+			name: 'Login',
+			component: () => import('./pages/LoginSignup.vue'),
+			meta: { isLoginPage: true }
+		},
+		{
+			path: '/signup',
+			name: 'Signup',
+			component: () => import('./pages/LoginSignup.vue'),
+			meta: { isLoginPage: true }
+		},
+		{
+			path: '/setup-account/:requestKey/:joinRequest?',
+			name: 'Setup Account',
+			component: () => import('./pages/SetupAccount.vue'),
+			props: true,
+			meta: { isLoginPage: true }
+		},
+		{
+			path: '/reset-password/:requestKey',
+			name: 'Reset Password',
+			component: () => import('./pages/ResetPassword.vue'),
+			props: true,
+			meta: { isLoginPage: true }
 		},
 		{
 			name: 'JobPage',
@@ -27,6 +59,26 @@ let router = createRouter({
 		},
 		...generateRoutes()
 	]
+});
+
+router.beforeEach((to, from, next) => {
+	let isLoggedIn =
+		document.cookie.includes('user_id') &&
+		!document.cookie.includes('user_id=Guest;');
+
+	if (to.matched.some(record => record.meta.isLoginPage)) {
+		if (isLoggedIn) {
+			next({ name: 'Home' });
+		} else {
+			next();
+		}
+	} else {
+		if (isLoggedIn) {
+			next();
+		} else {
+			next({ name: 'Login' });
+		}
+	}
 });
 
 export default router;
