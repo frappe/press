@@ -40,6 +40,7 @@ class Team(Document):
 		"currency",
 		"payment_mode",
 		"default_payment_method",
+		"skip_backups",
 	]
 
 	def get_doc(self, doc):

@@ -1,0 +1,313 @@
+<template>
+	<Dialog
+		v-model="show"
+		:options="{
+			size: '3xl',
+			title: `Update Bench / ${
+				step === 'select-apps'
+					? 'Apps to update'
+					: step === 'removed-apps'
+					? 'Apps to be removed'
+					: 'Sites to update'
+			}`
+		}"
+	>
+		<template #body-content>
+			<div class="space-y-4">
+				<GenericList
+					v-if="step === 'select-apps'"
+					:options="updatableAppOptions"
+					@update:selections="handleAppSelection"
+				/>
+				<GenericList
+					v-if="step === 'removed-apps'"
+					:options="removedAppOptions"
+				/>
+				<GenericList
+					v-else-if="step === 'select-sites'"
+					:options="siteOptions"
+					@update:selections="handleSiteSelection"
+				/>
+				<ErrorMessage :message="$resources.deploy.error" />
+			</div>
+		</template>
+		<template #actions>
+			<div class="space-y-2">
+				<Button
+					v-if="step !== 'select-apps'"
+					class="w-full"
+					label="Back"
+					@click="
+						benchDocResource.doc.deploy_information.removed_apps.length &&
+						step === 'select-sites'
+							? (step = 'removed-apps')
+							: (step = 'select-apps');
+						selectedApps = new Set();
+					"
+				/>
+				<Button
+					v-if="step === 'select-apps' || step === 'removed-apps'"
+					class="w-full"
+					variant="solid"
+					label="Next"
+					:disabled="!selectedApps.length"
+					@click="
+						benchDocResource.doc.deploy_information.removed_apps.length &&
+						step === 'select-apps'
+							? (step = 'removed-apps')
+							: (step = 'select-sites')
+					"
+				/>
+				<Button
+					v-if="step === 'select-sites'"
+					class="w-full"
+					variant="solid"
+					:label="selectedSites.length > 0 ? 'Update' : 'Skip and Deploy'"
+					:disabled="!selectedApps.length"
+					:loading="$resources.deploy.loading"
+					@click="$resources.deploy.submit()"
+				/>
+			</div>
+		</template>
+	</Dialog>
+</template>
+
+<script>
+import { h } from 'vue';
+import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
+import CommitChooser from '@/components/utils/CommitChooser.vue';
+import GenericList from '../../components/GenericList.vue';
+import { getTeam } from '../../data/team';
+
+export default {
+	name: 'UpdateBenchDialog',
+	props: ['bench'],
+	components: { GenericList, CommitChooser },
+	data() {
+		return {
+			show: true,
+			step: 'select-apps',
+			benchDocResource: getCachedDocumentResource('Release Group', this.bench),
+			selectedApps: [],
+			selectedSites: []
+		};
+	},
+	computed: {
+		updatableAppOptions() {
+			let deployInformation = this.benchDocResource.doc.deploy_information;
+			let appData = deployInformation.apps;
+
+			return {
+				data: appData,
+				selectable: true,
+				columns: [
+					{
+						label: 'App',
+						field: 'title'
+					},
+					{
+						label: 'From',
+						field: 'current_hash',
+						type: 'commit',
+						format(value, row) {
+							if (!row.next_release) return null;
+							return value.slice(0, 7);
+						}
+					},
+					{
+						label: 'To',
+						field: 'next_release',
+						type: 'component',
+						component(app) {
+							function commitChooserOptions(app) {
+								return app.releases.map(release => {
+									const messageMaxLength = 75;
+									let message = release.message.split('\n')[0];
+									message =
+										message.length > messageMaxLength
+											? message.slice(0, messageMaxLength) + '...'
+											: message;
+
+									return {
+										label: release.tag
+											? release.tag
+											: `${message} (${release.hash.slice(0, 7)})`,
+										value: release.name
+									};
+								});
+							}
+
+							function initialDeployTo(app) {
+								let next_release = app.releases.filter(
+									release => release.name === app.next_release
+								)[0];
+								if (app.will_branch_change) {
+									return app.branch;
+								} else {
+									return next_release.tag || next_release.hash.slice(0, 7);
+								}
+							}
+
+							if (!app.releases.length) return undefined;
+
+							let initialValue = {
+								label: initialDeployTo(app),
+								value: app.next_release
+							};
+
+							return h(CommitChooser, {
+								options: commitChooserOptions(app),
+								modelValue: initialValue,
+								'onUpdate:modelValue': value => {
+									appData.find(app => app.name === app.name).next_release =
+										value.value;
+								}
+							});
+						}
+					},
+					{
+						label: 'Status',
+						field: 'title',
+						type: 'Badge',
+						format(value, row) {
+							if (
+								deployInformation.removed_apps.find(
+									app => app.name === row.name
+								)
+							) {
+								return 'Will be Uninstalled';
+							} else if (!row.will_branch_change && !row.current_hash) {
+								return 'First Deploy';
+							}
+							return 'Update Available';
+						}
+					}
+				]
+			};
+		},
+		removedAppOptions() {
+			let deployInformation = this.benchDocResource.doc.deploy_information;
+			let appData = deployInformation.removed_apps;
+
+			return {
+				data: appData,
+				columns: [
+					{
+						label: 'App',
+						field: 'title'
+					},
+					{
+						label: 'Status',
+						field: 'name',
+						type: 'Badge',
+						format() {
+							return 'Will be Uninstalled';
+						}
+					}
+				]
+			};
+		},
+		siteOptions() {
+			let deployInformation = this.benchDocResource.doc.deploy_information;
+			let siteData = deployInformation.sites;
+			let team = getTeam();
+
+			return {
+				data: siteData,
+				selectable: true,
+				columns: [
+					{
+						label: 'Site',
+						field: 'name'
+					},
+					{
+						label: 'Skip failed patches',
+						field: 'skip_failing_patches',
+						type: 'component',
+						component(site) {
+							return h(Checkbox, {
+								modelValue: site.skip_failing_patches
+							});
+						}
+					},
+					{
+						label: 'Skip backup',
+						field: 'skip_backups',
+						type: 'component',
+						condition() {
+							return !!team.doc.skip_backups;
+						},
+						component(site) {
+							return h(Checkbox, {
+								modelValue: site.skip_backups
+							});
+						}
+					}
+				]
+			};
+		}
+	},
+	resources: {
+		deploy() {
+			return {
+				url: 'press.api.bench.deploy_and_update',
+				params: {
+					name: this.bench,
+					apps: this.selectedApps,
+					sites: this.selectedSites
+				},
+				validate() {
+					if (
+						this.selectedApps.length === 0 &&
+						this.deployInformation.removed_apps.length === 0
+					) {
+						return 'You must select atleast 1 app to proceed with update.';
+					}
+				},
+				onSuccess(candidate) {
+					this.$router.push(`/benches/${this.bench}/deploys/${candidate}`);
+					this.show = false;
+				}
+			};
+		}
+	},
+	methods: {
+		handleAppSelection(apps) {
+			apps = Array.from(apps);
+			let appData = this.benchDocResource.doc.deploy_information.apps;
+
+			this.selectedApps = appData
+				.filter(app => apps.includes(app.name))
+				.map(app => {
+					return {
+						app: app.name,
+						source: app.source,
+						release: app.next_release,
+						hash: app.releases.find(
+							release => release.name === app.next_release
+						).hash
+					};
+				});
+		},
+		handleSiteSelection(sites) {
+			sites = Array.from(sites);
+			let siteData = this.benchDocResource.doc.deploy_information.sites;
+
+			this.selectedSites = siteData.filter(site => sites.includes(site.name));
+		},
+		deployFrom(app) {
+			if (app.will_branch_change) {
+				return app.current_branch;
+			}
+			return app.current_hash
+				? app.current_tag || app.current_hash.slice(0, 7)
+				: null;
+		},
+		initialDeployTo(app) {
+			return this.benchDocResource.doc.deploy_information.apps.find(
+				a => a.app === app.app
+			).next_release;
+		}
+	}
+};
+</script>
