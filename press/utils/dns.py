@@ -9,10 +9,22 @@ import boto3
 @frappe.whitelist()
 def create_dns_record(doc, record_name=None):
 	"""Check if site needs dns records and creates one."""
-	domain = frappe.get_doc("Root Domain", doc.domain)
-	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
-	if doc.cluster == domain.default_cluster and not is_standalone:
+	domain = frappe.get_cached_doc("Root Domain", doc.domain)
+
+	enabled_default_routing = frappe.get_value(
+		"Proxy Server",
+		{"domain": doc.domain, "cluster": doc.cluster},
+		"enabled_default_routing",
+		cache=True,
+	)
+
+	is_standalone = frappe.get_value("Server", doc.server, "is_standalone", cache=True)
+
+	if (
+		doc.cluster == domain.default_cluster and enabled_default_routing
+	) and not is_standalone:
 		return
+
 	if is_standalone:
 		_change_dns_record("UPSERT", domain, doc.server, record_name=record_name)
 	else:
