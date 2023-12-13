@@ -20,14 +20,23 @@
 					@update:selections="handleAppSelection"
 				/>
 				<GenericList
-					v-if="step === 'removed-apps'"
+					v-else-if="step === 'removed-apps'"
 					:options="removedAppOptions"
 				/>
 				<GenericList
-					v-else-if="step === 'select-sites'"
+					v-else-if="
+						step === 'select-sites' &&
+						benchDocResource.doc.deploy_information.sites.length
+					"
 					:options="siteOptions"
 					@update:selections="handleSiteSelection"
 				/>
+				<div
+					class="text-center text-base font-medium text-gray-600"
+					v-else-if="!benchDocResource.doc.deploy_information.sites.length"
+				>
+					No active sites to update
+				</div>
 				<ErrorMessage :message="$resources.deploy.error" />
 			</div>
 		</template>
@@ -95,7 +104,9 @@ export default {
 	computed: {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
-			let appData = deployInformation.apps;
+			let appData = deployInformation.apps.filter(
+				app => app.next_release !== app.current_release
+			);
 
 			return {
 				data: appData,
@@ -265,7 +276,12 @@ export default {
 					}
 				},
 				onSuccess(candidate) {
-					this.$router.push(`/benches/${this.bench}/deploys/${candidate}`);
+					this.$router.push({
+						name: 'Bench Deploy',
+						params: {
+							id: candidate
+						}
+					});
 					this.show = false;
 				}
 			};
