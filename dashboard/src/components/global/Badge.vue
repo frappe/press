@@ -41,7 +41,9 @@ export default {
 				Primary: 'green',
 				'Latest Deployed': 'orange',
 				'Not Deployed': 'orange',
-				'Action Required': 'red'
+				'Action Required': 'red',
+				'First Deploy': 'green',
+				'Will be Uninstalled': 'red'
 			}[this.label];
 		}
 	}

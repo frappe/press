@@ -504,7 +504,8 @@ class ReleaseGroup(Document):
 				frappe._dict(
 					{
 						"title": app.title,
-						"app": app.app,
+						"app": app.app,  # remove this line once dashboard1 is removed
+						"name": app.app,
 						"source": source.name,
 						"repository": source.repository,
 						"repository_owner": source.repository_owner,
