@@ -9,6 +9,8 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
+from oci.core import ComputeClient
+from oci.core.models import CreateImageDetails
 
 
 class VirtualMachineImage(Document):
@@ -22,11 +24,22 @@ class VirtualMachineImage(Document):
 			self.create_image()
 
 	def create_image(self):
-		response = self.client.create_image(
-			InstanceId=self.instance_id,
-			Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
-		)
-		self.image_id = response["ImageId"]
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider == "AWS EC2":
+			response = self.client.create_image(
+				InstanceId=self.instance_id,
+				Name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+			)
+			self.image_id = response["ImageId"]
+		elif cluster.cloud_provider == "OCI":
+			image = self.client.create_image(
+				CreateImageDetails(
+					compartment_id=cluster.oci_tenancy,
+					display_name=f"Frappe Cloud {self.name} - {self.virtual_machine}",
+					instance_id=self.instance_id,
+				)
+			).data
+			self.image_id = image.id
 		self.sync()
 
 	def create_image_from_copy(self):
@@ -47,18 +60,25 @@ class VirtualMachineImage(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
-		if images:
-			image = images[0]
-			self.status = self.get_status_map(image["State"])
-			self.platform = image["Architecture"]
-			volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
-			if volume and "VolumeSize" in volume["Ebs"]:
-				self.size = volume["Ebs"]["VolumeSize"]
-			if volume and "SnapshotId" in volume["Ebs"]:
-				self.snapshot_id = volume["Ebs"]["SnapshotId"]
-		else:
-			self.status = "Unavailable"
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider == "AWS EC2":
+			images = self.client.describe_images(ImageIds=[self.image_id])["Images"]
+			if images:
+				image = images[0]
+				self.status = self.get_aws_status_map(image["State"])
+				self.platform = image["Architecture"]
+				volume = find(image["BlockDeviceMappings"], lambda x: "Ebs" in x.keys())
+				if volume and "VolumeSize" in volume["Ebs"]:
+					self.size = volume["Ebs"]["VolumeSize"]
+				if volume and "SnapshotId" in volume["Ebs"]:
+					self.snapshot_id = volume["Ebs"]["SnapshotId"]
+			else:
+				self.status = "Unavailable"
+		elif cluster.cloud_provider == "OCI":
+			image = self.client.get_image(self.image_id).data
+			self.status = self.get_oci_status_map(image.lifecycle_state)
+			self.size = image.size_in_mbs // 1024
+
 		self.save()
 		return self.status
 
@@ -85,21 +105,34 @@ class VirtualMachineImage(Document):
 			self.client.delete_snapshot(SnapshotId=self.snapshot_id)
 		self.sync()
 
-	def get_status_map(self, status):
+	def get_aws_status_map(self, status):
 		return {
 			"pending": "Pending",
 			"available": "Available",
 		}.get(status, "Unavailable")
 
+	def get_oci_status_map(self, status):
+		return {
+			"PROVISIONING": "Pending",
+			"IMPORTING": "Pending",
+			"AVAILABLE": "Available",
+			"EXPORTING": "Pending",
+			"DISABLED": "Unavailable",
+			"DELETED": "Unavailable",
+		}.get(status, "Unavailable")
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
+		if cluster.cloud_provider == "AWS EC2":
+			return boto3.client(
+				"ec2",
+				region_name=self.region,
+				aws_access_key_id=cluster.aws_access_key_id,
+				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+			)
+		elif cluster.cloud_provider == "OCI":
+			return ComputeClient(cluster.get_oci_config())
 
 	@classmethod
 	def get_available_for_series(
