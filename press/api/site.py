@@ -21,6 +21,9 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
+from press.press.doctype.press_permission_rule.press_permission_rule import (
+	has_user_permission as has_user_permission_from_rule,
+)
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -69,25 +72,36 @@ def protected(doctypes):
 			if owner == team or has_config_permissions:
 				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
 				if is_team_member and hasattr(frappe.local, "request"):
-					groups = frappe.get_all(
-						"Press Permission Group User",
-						{
-							"user": frappe.session.user,
-						},
-						pluck="parent",
-					)
-					name = frappe.db.get_value(doctype, name, "group") if doctype == "Bench" else name
-					doctype = "Release Group" if doctype == "Bench" else doctype
+					if doctype == "Bench":
+						name = frappe.db.get_value(doctype, name, "group")
+						doctype = "Release Group"
+
 					restricted_method = frappe.db.exists(
 						"Press Method Permission", {"method": request_path}
 					)
 					has_permission_set = frappe.db.exists(
 						"Press User Permission", {"user": frappe.session.user}
 					)
+					permission_groups = frappe.get_all(
+						"Press Permission Group User", {"user": frappe.session.user}, pluck="parent"
+					)
+					has_permission_rule_set = frappe.db.exists(
+						"Press Permission Rule User", {"user": frappe.session.user}
+					)
 
-					if (has_permission_set or groups) and restricted_method:
-						if has_user_permission(doctype, name, request_path, groups):
-							return wrapped(*args, **kwargs)
+					if (
+							(has_permission_set or permission_groups)
+							and restricted_method
+							and has_user_permission(doctype, name, request_path, permission_groups)
+					):
+						return wrapped(*args, **kwargs)
+
+					elif (
+							has_permission_rule_set
+							and has_user_permission_from_rule(doctype, name, request_path)
+						):
+						return wrapped(*args, **kwargs)
+
 					else:
 						# has access to everything
 						return wrapped(*args, **kwargs)
