@@ -1,38 +1,40 @@
 <template>
 	<Dialog
 		v-if="app"
-		:modelValue="Boolean(bench && app)"
+		v-model="show"
 		:options="{ title: `Change branch for ${app.title}` }"
 	>
 		<template v-slot:body-content>
-			<div>
+			<div class="flex flex-col items-center">
 				<Button
+					class="w-min"
 					v-if="$resources.branches.loading"
 					:loading="true"
 					loadingText="Loading..."
-				></Button>
-
-				<div v-else>
-					<select class="form-select block w-full" v-model="selectedBranch">
-						<option v-for="branch in branchList()" :key="branch">
-							{{ branch }}
-						</option>
-					</select>
-				</div>
-
-				<ErrorMessage class="mt-2" :message="$resources.changeBranch.error" />
+				/>
+				<FormControl
+					v-else
+					class="w-full"
+					label="Select Branch"
+					type="select"
+					:options="branchList()"
+					v-model="selectedBranch"
+				/>
+				<ErrorMessage
+					class="mt-2 w-full"
+					:message="$resources.changeBranch.error"
+				/>
 			</div>
 		</template>
-		<template v-slot:actions>
+		<template #actions>
 			<Button
 				v-if="!$resources.branches.loading"
-				class="mt-3"
-				appearance="primary"
+				class="w-full"
+				variant="solid"
+				label="Change Branch"
 				:loading="$resources.changeBranch.loading"
 				@click="changeBranch()"
-			>
-				Change Branch
-			</Button>
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -96,6 +98,18 @@ export default {
 		dialogClosed() {
 			this.$emit('update:app', null);
 			this.$resources.changeBranch.reset();
+		}
+	},
+	computed: {
+		show: {
+			get() {
+				return Boolean(this.app && this.bench);
+			},
+			set(value) {
+				if (!value) {
+					this.dialogClosed();
+				}
+			}
 		}
 	}
 };

@@ -1,5 +1,5 @@
 <template>
-	<Card title="Site Config">
+	<Card :title="title || 'Site Config'">
 		<template #actions>
 			<Button
 				class="mr-2"
@@ -178,9 +178,10 @@ export default {
 					if (keys.length !== [...new Set(keys)].length) {
 						return 'Duplicate key';
 					}
-					let invalidKeys = await this.$call('press.api.config.is_valid', {
+					this.$resources.validateKeys.submit({
 						keys: JSON.stringify(keys)
 					});
+					let invalidKeys = this.$resources.validateKeys.data;
 					if (invalidKeys?.length > 0) {
 						return `Invalid key: ${invalidKeys.join(', ')}`;
 					}
@@ -209,6 +210,9 @@ export default {
 			url: 'press.api.config.standard_keys',
 			cache: 'standardConfigKeys',
 			auto: true
+		},
+		validateKeys: {
+			url: 'press.api.config.is_valid'
 		}
 	},
 	computed: {

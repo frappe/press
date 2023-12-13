@@ -7,6 +7,10 @@
  "engine": "InnoDB",
  "field_order": [
   "event_type",
+  "customer_id",
+  "invoice_id",
+  "invoice",
+  "team",
   "payload"
  ],
  "fields": [
@@ -22,10 +26,32 @@
    "fieldtype": "Code",
    "label": "Payload",
    "read_only": 1
+  },
+  {
+   "fieldname": "customer_id",
+   "fieldtype": "Data",
+   "label": "Stripe Customer ID"
+  },
+  {
+   "fieldname": "invoice",
+   "fieldtype": "Link",
+   "label": "Invoice",
+   "options": "Invoice"
+  },
+  {
+   "fieldname": "invoice_id",
+   "fieldtype": "Data",
+   "label": "Stripe Invoice ID"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "links": [],
- "modified": "2022-01-19 22:50:30.082445",
+ "modified": "2023-11-14 17:27:20.550107",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Webhook Log",

@@ -61,6 +61,8 @@ class AppSource(Document):
 
 	def before_save(self):
 		# Assumes repository_url looks like https://github.com/frappe/erpnext
+		self.repository_url = self.repository_url.removesuffix(".git")
+
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
 		# self.create_release()
 
@@ -126,6 +128,13 @@ class AppSource(Document):
 					"last_github_poll_failed": True,
 					"last_synced": frappe.utils.now(),
 				},
+			)
+			self.add_comment(
+				text=f"""Exception occured in create_release:
+{frappe.get_traceback()}
+user: {frappe.session.user}
+team: {frappe.local.team()}
+"""
 			)
 
 

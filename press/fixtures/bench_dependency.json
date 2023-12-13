@@ -243,7 +243,7 @@
   "docstatus": 0,
   "doctype": "Bench Dependency",
   "internal": 0,
-  "modified": "2023-09-27 09:34:34.235495",
+  "modified": "2023-10-28 22:08:23.853052",
   "name": "BENCH_VERSION",
   "supported_versions": [
    {
@@ -308,6 +308,41 @@
     "parenttype": "Bench Dependency",
     "supported_frappe_version": "Version 12",
     "version": "5.17.2"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Nightly",
+    "version": "5.18.0"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 15",
+    "version": "5.18.0"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 14",
+    "version": "5.18.0"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 13",
+    "version": "5.18.0"
+   },
+   {
+    "parent": "BENCH_VERSION",
+    "parentfield": "supported_versions",
+    "parenttype": "Bench Dependency",
+    "supported_frappe_version": "Version 12",
+    "version": "5.18.0"
    }
   ],
   "title": "Bench Version"

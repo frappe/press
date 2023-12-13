@@ -16,7 +16,20 @@ def execute(filters=None):
 
 
 def get_data(filters):
-	cluster = frappe.get_doc("Cluster", filters.cluster)
+	if filters.cluster:
+		clusters = [filters.cluster]
+	else:
+		clusters = frappe.get_all(
+			"Cluster", filters={"public": 1, "cloud_provider": "AWS EC2"}, pluck="name"
+		)
+	data = []
+	for cluster in clusters:
+		data.extend(get_cluster_data(filters, cluster))
+	return data
+
+
+def get_cluster_data(filters, cluster_name):
+	cluster = frappe.get_doc("Cluster", cluster_name)
 	client = boto3.client(
 		"pricing",
 		region_name="ap-south-1",
@@ -44,11 +57,6 @@ def get_data(filters):
 			}
 		)
 
-	if not filters.instance_store:
-		product_filters.append(
-			{"Type": "TERM_MATCH", "Field": "storage", "Value": "EBS only"}
-		)
-
 	response_iterator = paginator.paginate(
 		ServiceCode="AmazonEC2", Filters=product_filters, PaginationConfig={"PageSize": 100}
 	)
@@ -56,22 +64,12 @@ def get_data(filters):
 	for response in response_iterator:
 		for item in response["PriceList"]:
 			product = json.loads(item)
-			if (
-				filters.enhanced_networking
-				and "n." not in product["product"]["attributes"]["instanceType"]
-			):
-				continue
-			if (
-				not filters.enhanced_networking
-				and "n." in product["product"]["attributes"]["instanceType"]
-			):
-				continue
-
 			if filters.processor:
 				if filters.processor not in product["product"]["attributes"]["physicalProcessor"]:
 					continue
 
 			row = {
+				"cluster": cluster.name,
 				"instance_type": product["product"]["attributes"]["instanceType"].split(".")[0],
 				"instance": product["product"]["attributes"]["instanceType"],
 				"vcpu": cint(product["product"]["attributes"]["vcpu"], 0),
@@ -81,7 +79,30 @@ def get_data(filters):
 				row["on_demand"] = (
 					flt(list(term["priceDimensions"].values())[0]["pricePerUnit"]["USD"]) * 750
 				)
+			instance_type = parse_instance_type(row["instance"])
+			if not instance_type:
+				continue
+
+			family, generation, processor, size = instance_type
+
+			row.update(
+				{
+					"family": family,
+					"generation": generation,
+					"processor": processor,
+					"size": size,
+					"size_multiplier": parse_size_multiplier(size),
+				}
+			)
 			rows.append(row)
+
+	latest_generation = max(row["generation"] for row in rows)
+	for row in rows:
+		if row["generation"] == latest_generation:
+			row["is_latest_generation"] = True
+
+	if filters.latest_generation_only:
+		rows = [row for row in rows if row.get("is_latest_generation")]
 
 	client = boto3.client(
 		"savingsplans",
@@ -114,3 +135,75 @@ def get_data(filters):
 
 	rows.sort(key=lambda x: (x["instance_type"], x["vcpu"], x["memory"]))
 	return rows
+
+
+FAMILIES = [
+	"c",
+	"d",
+	"f",
+	"g",
+	"hpc",
+	"inf",
+	"i",
+	"mac",
+	"m",
+	"p",
+	"r",
+	"trn",
+	"t",
+	"u",
+	"vt",
+	"x",
+]
+PREFERRED_FAMILIES = [
+	"c",
+	"m",
+	"r",
+]
+PROCESSORS = ["a", "g", "i"]
+
+
+def parse_instance_type(instance_type):
+	instance_type, size = instance_type.split(".")
+	# Skip metal instances
+	if "metal" in size:
+		return
+
+	family = None
+	for ff in FAMILIES:
+		if instance_type.startswith(ff):
+			family = ff
+			break
+
+	# Ignore other instance families
+	if family not in PREFERRED_FAMILIES:
+		return
+
+	rest = instance_type.removeprefix(family)
+	generation = int(rest[0])
+	rest = rest[1:]
+
+	# If processor isn't mentioned, assume it's an Intel
+	if rest and rest[0] in PROCESSORS:
+		processor = rest[0]
+		rest = rest[1:]
+	else:
+		processor = "i"
+
+	if rest:
+		return
+
+	return family, generation, processor, size
+
+
+def parse_size_multiplier(size):
+	SIZES = {
+		"medium": 1 / 4,
+		"large": 1 / 2,
+		"xlarge": 1,
+	}
+	if size in SIZES:
+		return SIZES[size]
+	else:
+		size = size.removesuffix("xlarge")
+		return float(size)

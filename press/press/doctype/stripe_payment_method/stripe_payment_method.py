@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import log_error
 
 
 class StripePaymentMethod(Document):
@@ -30,6 +31,8 @@ class StripePaymentMethod(Document):
 		self.is_default = 1
 		self.save()
 		frappe.db.set_value("Team", self.team, "default_payment_method", self.name)
+		if not frappe.db.get_value("Team", self.team, "payment_mode"):
+			frappe.db.set_value("Team", self.team, "payment_mode", "Card")
 
 	def on_trash(self):
 		self.remove_address_links()
@@ -68,8 +71,11 @@ class StripePaymentMethod(Document):
 		)
 
 	def after_delete(self):
-		stripe = get_stripe()
-		stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+		try:
+			stripe = get_stripe()
+			stripe.PaymentMethod.detach(self.stripe_payment_method_id)
+		except Exception as e:
+			log_error("Failed to detach payment method from stripe", data=e)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

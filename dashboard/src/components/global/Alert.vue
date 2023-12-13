@@ -1,10 +1,10 @@
 <template>
 	<div class="block w-full">
-		<div class="flex items-start rounded-md p-3 text-base" :class="classes">
+		<div class="flex items-center rounded-md p-3 text-base" :class="classes">
 			<FeatherIcon
 				v-if="type === 'warning'"
 				name="alert-circle"
-				class="mt-1 h-5 w-5 text-gray-900"
+				class="h-5 w-5 text-gray-900"
 			/>
 			<div class="ml-2 w-full">
 				<div class="flex flex-col md:flex-row md:items-baseline">

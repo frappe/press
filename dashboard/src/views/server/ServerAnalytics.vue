@@ -222,7 +222,7 @@ export default {
 	methods: {
 		transformSingleLineChartData(data, percentage = false) {
 			let dataset = [];
-			const name = data.datasets[0].name;
+			const name = data.datasets ? data.datasets[0]?.name : null;
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
 				dataset.push([
 					+new Date(data.labels[index]),

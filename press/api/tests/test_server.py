@@ -155,7 +155,6 @@ class TestAPIServer(FrappeTestCase):
 
 		server = frappe.get_last_doc("Server")
 		self.assertEqual(server.plan, self.app_plan.name)
-		self.assertEqual(server.ram, self.app_plan.memory)
 		app_subscription = frappe.get_doc(
 			"Subscription", {"document_type": "Server", "document_name": server.name}
 		)

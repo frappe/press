@@ -59,6 +59,28 @@
 							}}
 						</td>
 					</tr>
+					<tr v-if="doc.gst > 0">
+						<td></td>
+						<td class="pb-2 pr-2 pt-4 text-right font-semibold">
+							Total (Without Tax)
+						</td>
+						<td
+							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
+						>
+							{{ doc.formatted.total_before_tax }}
+						</td>
+					</tr>
+					<tr v-if="doc.gst > 0">
+						<td></td>
+						<td class="pb-2 pr-2 pt-4 text-right font-semibold">
+							IGST @ {{ Number($account.billing_info.gst_percentage * 100) }}%
+						</td>
+						<td
+							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
+						>
+							{{ doc.formatted.gst }}
+						</td>
+					</tr>
 					<tr>
 						<td></td>
 						<td class="pb-2 pr-2 pt-4 text-right font-semibold">Grand Total</td>

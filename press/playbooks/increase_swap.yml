@@ -6,3 +6,4 @@
   gather_facts: no
   roles:
     - role: swap
+    - role: swap_config

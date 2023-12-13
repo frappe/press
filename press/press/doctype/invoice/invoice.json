@@ -34,11 +34,12 @@
   "total_discount_amount",
   "column_break_15",
   "total",
+  "total_before_tax",
+  "gst",
   "applied_credits",
   "free_credits",
   "amount_due",
   "amount_paid",
-  "payout",
   "section_break_15",
   "credit_allocations",
   "stripe_billing_section",
@@ -392,11 +393,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "payout",
-   "fieldtype": "Currency",
-   "label": "Saas Developer Payout"
-  },
-  {
    "fetch_from": "razorpay_payment_record.payment_id",
    "fieldname": "razorpay_payment_id",
    "fieldtype": "Data",
@@ -421,6 +417,18 @@
    "fieldtype": "Date",
    "label": "Frappe Partnership Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "gst",
+   "fieldtype": "Currency",
+   "label": "GST",
+   "options": "currency"
+  },
+  {
+   "fieldname": "total_before_tax",
+   "fieldtype": "Currency",
+   "label": "Total Before Tax",
+   "options": "currency"
   }
  ],
  "is_submittable": 1,
@@ -439,9 +447,14 @@
    "group": "Documents",
    "link_doctype": "Stripe Payment Event",
    "link_fieldname": "invoice"
+  },
+  {
+   "group": "Webhook Logs",
+   "link_doctype": "Stripe Webhook Log",
+   "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-09-25 12:38:40.289145",
+ "modified": "2023-11-14 12:52:53.654283",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

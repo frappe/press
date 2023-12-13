@@ -70,7 +70,8 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User"
+   "options": "User",
+   "search_index": 1
   },
   {
    "fieldname": "team_members",
@@ -310,7 +311,8 @@
    "fieldname": "parent_team",
    "fieldtype": "Link",
    "label": "Parent Team",
-   "options": "Team"
+   "options": "Team",
+   "search_index": 1
   },
   {
    "fieldname": "section_break_tdm9",
@@ -438,6 +440,11 @@
    "link_fieldname": "team"
   },
   {
+   "group": "Billing",
+   "link_doctype": "Stripe Webhook Log",
+   "link_fieldname": "team"
+  },
+  {
    "group": "Marketplace",
    "link_doctype": "Marketplace App",
    "link_fieldname": "team"
@@ -448,7 +455,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-09-23 17:04:14.045892",
+ "modified": "2023-12-04 17:07:30.774582",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

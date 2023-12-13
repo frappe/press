@@ -163,22 +163,26 @@
 			</template>
 		</Dialog>
 	</Card>
+	<FinalizeInvoicesDialog v-model="showFinalizeInvoicesDialog" />
 </template>
 <script>
 import FileUploader from '@/components/FileUploader.vue';
+import FinalizeInvoicesDialog from '../billing/FinalizeInvoicesDialog.vue';
 import { notify } from '@/utils/toast';
 
 export default {
 	name: 'AccountProfile',
 	components: {
-		FileUploader
+		FileUploader,
+		FinalizeInvoicesDialog
 	},
 	data() {
 		return {
 			showProfileEditDialog: false,
 			showEnableAccountDialog: false,
 			showDisableAccountDialog: false,
-			showBecomePublisherButton: false
+			showBecomePublisherButton: false,
+			showFinalizeInvoicesDialog: false
 		};
 	},
 	computed: {
@@ -204,15 +208,20 @@ export default {
 		},
 		disableAccount: {
 			url: 'press.api.account.disable_account',
-			onSuccess() {
-				notify({
-					title: 'Account disabled',
-					message: 'Your account was disabled successfully',
-					icon: 'check',
-					color: 'green'
-				});
-				this.$account.fetchAccount();
+			onSuccess(data) {
 				this.showDisableAccountDialog = false;
+
+				if (data === 'Unpaid Invoices') {
+					this.showFinalizeInvoicesDialog = true;
+				} else {
+					notify({
+						title: 'Account disabled',
+						message: 'Your account was disabled successfully',
+						icon: 'check',
+						color: 'green'
+					});
+					this.$account.fetchAccount();
+				}
 			}
 		},
 		enableAccount: {

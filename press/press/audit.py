@@ -281,10 +281,14 @@ class UnbilledSubscriptionsCheck(Audit):
 		)
 
 		free_sites = sites_with_free_hosting()
-		# valid susbcriptions without UR for today
+		free_teams = frappe.get_all(
+			"Team", filters={"free_account": True, "enabled": True}, pluck="name"
+		)
+
 		return frappe.db.get_all(
 			"Subscription",
 			filters={
+				"team": ("not in", free_teams),
 				"enabled": True,
 				"plan": ("in", paid_plans()),
 				"name": ("not in", created_usage_records(free_sites, frappe.utils.today())),

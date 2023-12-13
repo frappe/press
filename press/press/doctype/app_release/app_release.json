@@ -30,7 +30,8 @@
    "in_standard_filter": 1,
    "label": "Hash",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "message",
@@ -72,7 +73,8 @@
    "label": "Source",
    "options": "App Source",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_9",
@@ -167,7 +169,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2023-06-04 18:49:35.960020",
+ "modified": "2023-12-06 15:38:30.386183",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

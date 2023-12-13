@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "hostname",
+  "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
   "title",
@@ -55,7 +56,9 @@
   "use_for_new_benches",
   "use_for_new_sites",
   "staging",
+  "column_break_ktkv",
   "new_worker_allocation",
+  "set_bench_memory_limits",
   "ram",
   "standalone_section",
   "is_standalone",
@@ -418,10 +421,25 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "fieldname": "column_break_ktkv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "set_bench_memory_limits",
+   "fieldtype": "Check",
+   "label": "Set Bench Memory Limits"
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
   }
  ],
  "links": [],
- "modified": "2023-09-21 08:28:59.247825",
+ "modified": "2023-11-16 18:22:09.682684",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

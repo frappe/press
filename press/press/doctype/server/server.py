@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from functools import cached_property
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -16,6 +17,10 @@ from frappe.utils.user import is_system_user
 from typing import List, Union
 import boto3
 import json
+import typing
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.press_job.press_job import Bench
 
 
 class BaseServer(Document):
@@ -33,6 +38,12 @@ class BaseServer(Document):
 		self.validate_agent_password()
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
+
+		if not self.hostname_abbreviation:
+			self._set_hostname_abbreviation()
+
+	def _set_hostname_abbreviation(self):
+		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
 		if self.ip:
@@ -518,8 +529,17 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
 
+	@property
+	def real_ram(self):
+		"""Ram detected by OS after h/w reservation"""
+		return 0.972 * self.ram - 218
+
 
 class Server(BaseServer):
+
+	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
+	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):
@@ -886,17 +906,8 @@ class Server(BaseServer):
 		else:
 			self._auto_scale_workers_old()
 
-	def _auto_scale_workers_new(self):
-		usable_ram = max(
-			self.ram - 3000, self.ram * 0.75
-		)  # in MB (leaving some for disk cache + others)
-		usable_ram_for_gunicorn = 0.6 * usable_ram  # 60% of usable ram
-		usable_ram_for_bg = 0.4 * usable_ram  # 40% of usable ram
-		max_gunicorn_workers = (
-			usable_ram_for_gunicorn / 150
-		)  # avg ram usage of 1 gunicorn worker
-		max_bg_workers = usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
-
+	@cached_property
+	def bench_workloads(self) -> dict["Bench", int]:
 		bench_workloads = {}
 		benches = frappe.get_all(
 			"Bench",
@@ -904,40 +915,46 @@ class Server(BaseServer):
 			pluck="name",
 		)
 		for bench_name in benches:
-			bench = frappe.get_doc("Bench", bench_name)
-			bench_workloads[bench_name] = bench.work_load
+			bench = frappe.get_doc("Bench", bench_name, for_update=True)
+			bench_workloads[bench] = bench.workload
+		return bench_workloads
 
-		total_workload = sum(bench_workloads.values())
+	@cached_property
+	def workload(self) -> int:
+		return sum(self.bench_workloads.values())
 
-		for bench_name, workload in bench_workloads.items():
+	@cached_property
+	def usable_ram(self) -> float:
+		return max(
+			self.ram - 3000, self.ram * 0.75
+		)  # in MB (leaving some for disk cache + others)
+
+	@cached_property
+	def max_gunicorn_workers(self) -> int:
+		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
+		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
+
+	@cached_property
+	def max_bg_workers(self) -> int:
+		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
+		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
+
+	def _auto_scale_workers_new(self):
+		for bench in self.bench_workloads.keys():
 			try:
-				bench = frappe.get_doc("Bench", bench_name, for_update=True)
-				try:
-					maximum = frappe.get_value("Release Group", bench.group, "max_gunicorn_workers")
-					minimum = frappe.get_value("Release Group", bench.group, "min_gunicorn_workers")
-					gunicorn_workers = min(
-						maximum or 24,
-						max(
-							minimum or 2, round(workload / total_workload * max_gunicorn_workers)
-						),  # min 2 max 24
-					)
-					maximum = frappe.get_value("Release Group", bench.group, "max_background_workers")
-					minimum = frappe.get_value("Release Group", bench.group, "min_background_workers")
-					background_workers = min(
-						maximum or 8,
-						max(
-							minimum or 1, round(workload / total_workload * max_bg_workers)
-						),  # min 1 max 8
-					)
-				except ZeroDivisionError:  # when total_workload is 0
-					gunicorn_workers = 2
-					background_workers = 1
-				bench.gunicorn_workers = gunicorn_workers
-				bench.background_workers = background_workers
-				bench.save()
+				bench.allocate_workers(
+					self.workload,
+					self.max_gunicorn_workers,
+					self.max_bg_workers,
+					self.set_bench_memory_limits,
+					self.GUNICORN_MEMORY,
+					self.BACKGROUND_JOB_MEMORY,
+				)
 				frappe.db.commit()
 			except Exception:
-				log_error("Bench Auto Scale Worker Error", bench=bench, workload=workload)
+				log_error(
+					"Bench Auto Scale Worker Error", bench=bench, workload=self.bench_workloads[bench]
+				)
 				frappe.db.rollback()
 
 	def _auto_scale_workers_old(self):
@@ -948,21 +965,21 @@ class Server(BaseServer):
 		)
 		for bench_name in benches:
 			bench = frappe.get_doc("Bench", bench_name)
-			work_load = bench.work_load
+			workload = bench.workload
 
-			if work_load <= 10:
+			if workload <= 10:
 				background_workers, gunicorn_workers = 1, 2
-			elif work_load <= 20:
+			elif workload <= 20:
 				background_workers, gunicorn_workers = 2, 4
-			elif work_load <= 30:
+			elif workload <= 30:
 				background_workers, gunicorn_workers = 3, 6
-			elif work_load <= 50:
+			elif workload <= 50:
 				background_workers, gunicorn_workers = 4, 8
-			elif work_load <= 100:
+			elif workload <= 100:
 				background_workers, gunicorn_workers = 6, 12
-			elif work_load <= 250:
+			elif workload <= 250:
 				background_workers, gunicorn_workers = 8, 16
-			elif work_load <= 500:
+			elif workload <= 500:
 				background_workers, gunicorn_workers = 16, 32
 			else:
 				background_workers, gunicorn_workers = 24, 48
@@ -977,6 +994,17 @@ class Server(BaseServer):
 					gunicorn_workers,
 				)
 				bench.save()
+
+	@frappe.whitelist()
+	def reset_sites_usage(self):
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": "Active"},
+			pluck="name",
+		)
+		for site_name in sites:
+			site = frappe.get_doc("Site", site_name)
+			site.reset_site_usage()
 
 
 def scale_workers():
@@ -1005,3 +1033,14 @@ def cleanup_unused_files():
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
+
+
+def get_hostname_abbreviation(hostname):
+	hostname_parts = hostname.split("-")
+
+	abbr = hostname_parts[0]
+
+	for part in hostname_parts[1:]:
+		abbr += part[0]
+
+	return abbr

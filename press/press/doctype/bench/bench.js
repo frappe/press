@@ -39,7 +39,9 @@ frappe.ui.form.on('Bench', {
 				!frm.doc.is_ssh_proxy_setup,
 			],
 			[__('Restart'), 'restart', frm.doc.status === 'Active'],
+			[__('Rebuild'), 'rebuild', frm.doc.status === 'Active'],
 			[__('Retry New Bench'), 'retry_bench', frm.doc.status === 'Broken'],
+			[__('Force Update Limits'), 'force_update_limits'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

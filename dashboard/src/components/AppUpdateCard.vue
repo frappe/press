@@ -19,19 +19,24 @@
 				{{ app.title }}
 			</h3>
 		</div>
-		<Badge v-if="uninstall" theme="red" label="Will Be Uninstalled " />
-		<div v-else class="ml-2 flex flex-row space-x-2">
+		<Badge
+			v-if="uninstall"
+			class="my-1"
+			theme="red"
+			label="Will Be Uninstalled "
+		/>
+		<div v-else class="ml-2 flex flex-row items-center space-x-2">
 			<CommitTag
-				v-if="deployFrom(app)"
-				:tag="deployFrom(app)"
+				v-if="deployFrom"
+				:tag="deployFrom"
 				:link="`${app.repository_url}/commit/${app.current_hash}`"
 			/>
 			<a
-				v-if="deployFrom(app)"
+				v-if="deployFrom"
 				class="flex cursor-pointer flex-col justify-center"
-				:href="`${app.repository_url}/compare/${app.current_hash}...${
-					deployTo(app).hash
-				}`"
+				:href="`${app.repository_url}/compare/${app.current_hash}...${getHash(
+					deployTo.value
+				)}`"
 				target="_blank"
 			>
 				<FeatherIcon name="arrow-right" class="w-4" />
@@ -42,61 +47,75 @@
 				theme="green"
 				class="whitespace-nowrap"
 			/>
-			<CommitTag
-				:tag="deployTo(app).name"
-				:link="`${app.repository_url}/commit/${deployTo(app).hash}`"
-			/>
-			<Dropdown
-				v-if="app.releases.length > 1"
-				:options="dropdownItems(app)"
-				right
-				class="flex cursor-pointer flex-col justify-center"
-			>
-				<template v-slot="{ open }">
-					<FeatherIcon name="chevron-down" class="w-4" />
-				</template>
-			</Dropdown>
+			<CommitChooser :options="autocompleteOptions" v-model="deployTo" />
 		</div>
 	</button>
 </template>
 
 <script>
+import CommitChooser from './utils/CommitChooser.vue';
 import CommitTag from './utils/CommitTag.vue';
 export default {
 	name: 'AppUpdateCard',
 	props: ['app', 'selectable', 'selected', 'uninstall'],
-	methods: {
-		deployFrom(app) {
-			if (app.will_branch_change) {
-				return app.current_branch;
+	data() {
+		return {
+			deployTo: {
+				label: this.initialDeployTo(),
+				value: this.app.next_release
 			}
-			return app.current_hash
-				? app.current_tag || app.current_hash.slice(0, 7)
-				: null;
-		},
-		deployTo(app) {
-			let name = '';
-			let next_release = app.releases.filter(
-				release => release.name === app.next_release
-			)[0];
-			if (app.will_branch_change) {
-				name = app.branch;
-			} else {
-				name = next_release.tag || next_release.hash.slice(0, 7);
-			}
-
-			return { name: name, hash: next_release.hash };
-		},
-		dropdownItems(app) {
-			return app.releases.map(release => ({
-				label: `${release.tag || release.hash.slice(0, 7)}`,
-				onClick: () => {
-					app.next_release = release.name;
-					this.$emit('update:app', app);
-				}
-			}));
+		};
+	},
+	watch: {
+		deployTo(newVal) {
+			this.app.next_release = newVal.value;
+			this.$emit('update:app', this.app);
 		}
 	},
-	components: { CommitTag }
+	computed: {
+		deployFrom() {
+			if (this.app.will_branch_change) {
+				return this.app.current_branch;
+			}
+			return this.app.current_hash
+				? this.app.current_tag || this.app.current_hash.slice(0, 7)
+				: null;
+		},
+		autocompleteOptions() {
+			return this.app.releases.map(release => {
+				const messageMaxLength = 75;
+				let message = release.message.split('\n')[0];
+				message =
+					message.length > messageMaxLength
+						? message.slice(0, messageMaxLength) + '...'
+						: message;
+
+				return {
+					label: release.tag
+						? release.tag
+						: `${message} (${release.hash.slice(0, 7)})`,
+					value: release.name
+				};
+			});
+		}
+	},
+	methods: {
+		initialDeployTo() {
+			if (this.uninstall) return '';
+
+			let next_release = this.app.releases.filter(
+				release => release.name === this.app.next_release
+			)[0];
+			if (this.app.will_branch_change) {
+				return this.app.branch;
+			} else {
+				return next_release.tag || next_release.hash.slice(0, 7);
+			}
+		},
+		getHash(tag) {
+			return this.app.releases.find(release => release.name === tag).hash;
+		}
+	},
+	components: { CommitTag, CommitChooser }
 };
 </script>

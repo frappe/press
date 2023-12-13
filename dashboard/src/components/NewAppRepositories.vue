@@ -43,7 +43,7 @@
 							</button>
 						</div>
 						<div v-show="selectedRepo === repo">
-							<Dropdown class="mt-2 ml-6 text-left" :options="branchOptions">
+							<Dropdown class="ml-6 mt-2 text-left" :options="branchOptions">
 								<template v-slot="{ open }">
 									<Button
 										type="white"
@@ -59,7 +59,7 @@
 					</button>
 					<p class="mt-4 text-sm text-gray-700">
 						Don't see your repository here?
-						<Link :to="installation.url" class="font-medium">
+						<Link :href="installation.url" class="font-medium">
 							Add from GitHub
 						</Link>
 					</p>

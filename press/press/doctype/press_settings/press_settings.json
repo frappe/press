@@ -11,6 +11,8 @@
   "column_break_2",
   "bench_configuration",
   "billing_tab",
+  "invoicing_column",
+  "gst_percentage",
   "stripe_settings_section",
   "stripe_inr_plan_id",
   "stripe_publishable_key",
@@ -130,6 +132,8 @@
   "twilio_phone_number",
   "column_break_kxuj",
   "twilio_auth_token",
+  "section_break_rgly",
+  "docker_remote_builder",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1052,11 +1056,30 @@
    "fieldname": "twilio_phone_number",
    "fieldtype": "Data",
    "label": "Twilio Phone Number"
+	},
+	{
+   "fieldname": "docker_remote_builder",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder"
+  },
+  {
+   "fieldname": "invoicing_column",
+   "fieldtype": "Column Break",
+   "label": "Invoicing"
+  },
+  {
+   "fieldname": "gst_percentage",
+   "fieldtype": "Float",
+   "label": "GST Percentage"
+  },
+  {
+   "fieldname": "section_break_rgly",
+   "fieldtype": "Section Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-10-17 16:55:41.848125",
+ "modified": "2023-11-16 17:44:48.449246",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

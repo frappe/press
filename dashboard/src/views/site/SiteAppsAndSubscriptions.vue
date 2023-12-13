@@ -457,9 +457,19 @@ export default {
 		},
 		dropdownItems(app) {
 			return [
-				app.app != 'frappe' && {
+				{
+					label: 'View in Desk',
+					onClick: () =>
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/app/${app.name}`,
+							'_blank'
+						),
+					condition: () => this.$account.user.user_type == 'System User'
+				},
+				{
 					label: 'Remove App',
-					onClick: () => this.confirmRemoveApp(app)
+					onClick: () => this.confirmRemoveApp(app),
+					condition: () => app.app != 'frappe'
 				},
 				{
 					label: 'Visit Repo',

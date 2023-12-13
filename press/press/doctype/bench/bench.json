@@ -22,8 +22,13 @@
   "gunicorn_workers",
   "port_offset",
   "auto_scale_workers",
+  "skip_memory_limits",
   "is_single_container",
   "is_ssh_enabled",
+  "memory_high",
+  "memory_max",
+  "memory_swap",
+  "vcpu",
   "column_break_11",
   "config",
   "bench_config",
@@ -34,6 +39,8 @@
   "feature_flags_section",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
+  "gunicorn_worker_type",
+  "gunicorn_threads_per_worker",
   "column_break_mtyb",
   "environment_variables"
  ],
@@ -68,6 +75,7 @@
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
    "reqd": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -257,10 +265,55 @@
   {
    "fieldname": "column_break_mtyb",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "memory_high",
+   "fieldtype": "Int",
+   "label": "Memory High (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "memory_max",
+   "fieldtype": "Int",
+   "label": "Memory Max (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU"
+  },
+  {
+   "fieldname": "memory_swap",
+   "fieldtype": "Int",
+   "label": "Memory Swap (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_memory_limits",
+   "fieldtype": "Check",
+   "label": "Skip Memory Limits"
+  },
+  {
+   "fetch_from": "candidate.gunicorn_threads_per_worker",
+   "fieldname": "gunicorn_threads_per_worker",
+   "fieldtype": "Int",
+   "label": "Gunicorn Threads Per Worker",
+   "read_only": 1
+  },
+  {
+   "default": "sync",
+   "fetch_from": "candidate.gunicorn_worker_type",
+   "fieldname": "gunicorn_worker_type",
+   "fieldtype": "Select",
+   "label": "Gunicorn Worker Type",
+   "options": "\nsync\ngthread",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-06-16 13:19:57.747257",
+ "modified": "2023-12-12 11:57:24.929123",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

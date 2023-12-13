@@ -12,4 +12,27 @@ frappe.ui.form.on('Site Update', {
 			};
 		});
 	},
+
+	refresh: function (frm) {
+		[
+			[
+				__('Trigger Recovery Job'),
+				'trigger_recovery_job',
+				!frm.doc.recover_job,
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.confirm(
+							`Are you sure you want to ${label.toLowerCase()} this site update?`,
+							() => frm.call(method).then((r) => frm.refresh()),
+						);
+					},
+					__('Actions'),
+				);
+			}
+		});
+	},
 });

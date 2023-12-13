@@ -8,6 +8,7 @@
 					{
 						label: site.archive_failed ? 'Force Drop Site' : 'Drop Site',
 						variant: 'solid',
+						theme: 'red',
 						loading: $resources.dropSite.loading,
 						onClick: () => $resources.dropSite.submit()
 					}

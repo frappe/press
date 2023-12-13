@@ -12,7 +12,7 @@
 					}
 				"
 			>
-				Change Plan
+				Change
 			</Button>
 		</template>
 

@@ -1,9 +1,12 @@
 import json
+import os
+import time
+import requests
 from unittest.mock import Mock, patch
 
 import frappe
 from frappe.core.utils import find
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, timeout
 from press.press.doctype.agent_job.agent_job import AgentJob
 from press.press.doctype.app.test_app import create_test_app
 
@@ -34,8 +37,6 @@ from press.press.doctype.release_group.test_release_group import (
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
 import docker
-
-import os
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -219,6 +220,7 @@ class TestAPIBench(FrappeTestCase):
 		)
 		self.assertRaises(frappe.exceptions.MandatoryError, deploy, group, [])
 
+	@timeout(20)
 	def _check_if_docker_image_was_built(self, group: str):
 		client = docker.from_env()
 		dc = frappe.get_last_doc("Deploy Candidate")
@@ -228,6 +230,21 @@ class TestAPIBench(FrappeTestCase):
 		except docker.errors.ImageNotFound:
 			self.fail(f"Image {image_name} not found. Found {client.images.list()}")
 		self.assertIn(image_name, [tag for tag in image.tags])
+
+		test_port = 10501
+		client.containers.run(
+			image=image_name, remove=True, detach=True, ports={"8000/tcp": test_port}
+		)
+		while True:
+			# Ensure that gunicorn at least responds. Usually we'll get 404 as there's no site installed *yet*
+			try:
+				response = requests.get(f"http://localhost:{test_port}")
+				print("Received Response", response.text)
+				if response.status_code < 500:
+					break
+			except IOError as e:
+				print("Waitng for container to respond", str(e))
+			time.sleep(0.5)
 
 
 class TestAPIBenchConfig(FrappeTestCase):
@@ -457,6 +474,96 @@ class TestAPIBenchConfig(FrappeTestCase):
 			sorted(active_dependencies, key=lambda x: x["key"]),
 			sorted(deps, key=lambda x: x["key"]),
 		)
+
+	def test_dependencies_shows_dependency_update_available_on_update_of_the_same(self):
+		deps = [
+			{"key": "NODE_VERSION", "value": "16.11"},
+			{"key": "NVM_VERSION", "value": "0.36.0"},
+			{"key": "PYTHON_VERSION", "value": "3.6"},
+			{"key": "WKHTMLTOPDF_VERSION", "value": "0.12.5"},
+			{"key": "BENCH_VERSION", "value": "5.15.2"},
+		]
+		self.assertFalse(dependencies(self.rg.name)["update_available"])
+		create_test_bench(
+			group=self.rg
+		)  # don't show dependency update available for new deploys
+		deps[0]["value"] = "16.12"
+		update_dependencies(
+			self.rg.name,
+			json.dumps(deps),
+		)
+		self.assertTrue(dependencies(self.rg.name)["update_available"])
+
+	def test_setting_limit_fields_creates_update_bench_config_job_as_such(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_high = 1024
+		bench.memory_max = 2048
+		bench.memory_swap = 4096
+		bench.vcpu = 2
+		bench.save()
+
+		job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Update Bench Configuration", "bench": bench.name}
+		)
+		data = json.loads(job.request_data)
+
+		self.assertEqual(data["bench_config"]["memory_high"], 1024)
+		self.assertEqual(data["bench_config"]["memory_max"], 2048)
+		self.assertEqual(data["bench_config"]["memory_swap"], 4096)
+		self.assertEqual(data["bench_config"]["vcpu"], 2)
+
+	def test_memory_swap_cannot_be_set_lower_than_memory_max(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_high = 1024
+		bench.memory_max = 2048
+		bench.memory_swap = 1024
+		self.assertRaises(
+			frappe.exceptions.ValidationError,
+			bench.save,
+		)
+		bench.reload()
+		bench.memory_high = 1024
+		bench.memory_max = 1024
+		bench.memory_swap = -1
+		try:
+			bench.save()
+		except Exception as e:
+			print(e)
+			self.fail("Memory swap should be allowed to be set to -1")
+
+	def test_memory_max_cant_be_set_without_swap(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_max = 2048
+		self.assertRaises(
+			frappe.exceptions.ValidationError,
+			bench.save,
+		)
+
+	def test_memory_high_cant_be_set_higher_than_memory_max(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_max = 2048
+		bench.memory_high = 4096
+		bench.memory_swap = 4096
+		self.assertRaises(
+			frappe.exceptions.ValidationError,
+			bench.save,
+		)
+
+	def test_force_update_limits_creates_job_with_parameters(self):
+		bench = create_test_bench(group=self.rg)
+		bench.memory_high = 1024
+		bench.memory_max = 2048
+		bench.memory_swap = 4096
+		bench.vcpu = 2
+		bench.force_update_limits()
+		job = frappe.get_last_doc(
+			"Agent Job", {"job_type": "Force Update Bench Limits", "bench": bench.name}
+		)
+		job_data = json.loads(job.request_data)
+		self.assertEqual(job_data["memory_high"], 1024)
+		self.assertEqual(job_data["memory_max"], 2048)
+		self.assertEqual(job_data["memory_swap"], 4096)
+		self.assertEqual(job_data["vcpu"], 2)
 
 
 class TestAPIBenchList(FrappeTestCase):

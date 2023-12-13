@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
@@ -29,6 +30,7 @@ def create_test_database_server(ip=None, cluster="Default") -> DatabaseServer:
 			"agent_password": frappe.mock("password"),
 			"hostname": f"m{make_autoname('.##')}",
 			"cluster": cluster,
+			"ram": 16384,
 		}
 	).insert(ignore_if_duplicate=True)
 	server.reload()
@@ -92,6 +94,7 @@ class TestDatabaseServer(FrappeTestCase):
 				"server": server.name,
 				"memory_high": server.memory_high,
 				"memory_max": server.memory_max,
+				"memory_swap_max": 0.1,
 			},
 		)
 
@@ -130,3 +133,25 @@ class TestDatabaseServer(FrappeTestCase):
 		Mock_Ansible.side_effect = Exception()
 		server = create_test_database_server()
 		self.assertRaises(Exception, server.reconfigure_mariadb_exporter)
+
+	@patch("press.press.doctype.database_server.database_server.Ansible", new=Mock())
+	@patch(
+		"press.press.doctype.database_server.database_server.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	def test_adjust_memory_config_sets_memory_limits_with_some_buffer(self):
+		server = create_test_database_server()
+		server.ram = 16384
+		self.assertEqual(server.real_ram, 15707.248)
+		self.assertEqual(server.ram_for_mariadb, 15007.248)
+		server.adjust_memory_config()
+		server.reload()
+		self.assertEqual(server.memory_high, 13.656)
+		self.assertEqual(server.memory_max, 14.656)
+		self.assertEqual(
+			find(
+				server.mariadb_system_variables,
+				lambda x: x.mariadb_variable == "innodb_buffer_pool_size",
+			).value_int,
+			int(15007.248 * 0.685),
+		)

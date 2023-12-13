@@ -130,7 +130,7 @@
 		</Table>
 	</div>
 
-	<Dialog :options="{ title: 'Apps' }" v-model="showAppsDialog">
+	<Dialog :options="{ title: 'Apps', size: 'xl' }" v-model="showAppsDialog">
 		<template #body-content>
 			<ListItem
 				class="mb-3 flex items-center rounded-md border px-4 py-3 shadow ring-1 ring-gray-300"
@@ -321,12 +321,17 @@ export default {
 				}
 			};
 		},
+		rebuildBench() {
+			return {
+				url: 'press.api.bench.rebuild',
+				params: {
+					name: this.versions[this.selectedVersionIndex]?.name
+				}
+			};
+		},
 		updateAllSites() {
 			return {
 				url: 'press.api.bench.update',
-				params: {
-					name: this.versions[this.selectedVersionIndex]?.name
-				},
 				onSuccess() {
 					notify({
 						title: 'Site update scheduled successfully',
@@ -408,8 +413,9 @@ export default {
 				{
 					label: 'Update All Sites',
 					onClick: () => {
-						this.selectedVersionIndex = i;
-						this.$resources.updateAllSites.submit();
+						this.$resources.updateAllSites.submit({
+							name: this.versions[i]?.name
+						});
 					},
 					condition: () =>
 						this.versions[i].status === 'Active' &&
@@ -425,6 +431,17 @@ export default {
 					condition: () =>
 						this.versions[i].status === 'Active' &&
 						this.permissions.restartBench
+				},
+				{
+					label: 'Build Assets',
+					onClick: () => {
+						this.selectedVersionIndex = i;
+						this.confirmRebuild();
+					},
+					condition: () =>
+						this.versions[i].status === 'Active' &&
+						this.permissions.rebuildBench &&
+						false // XXX: This feature is broken in Framework.
 				},
 				{
 					label: 'Create Code Server',
@@ -465,6 +482,21 @@ export default {
 					closeDialog();
 				}
 			});
+		},
+		confirmRebuild() {
+			this.$confirm({
+				title: 'Build Assets',
+				message: `
+					<b>bench build</b> command will be executed on your bench. This will regenerate all static assets. Are you sure
+					you want to run this command?
+				`,
+				actionLabel: 'Build Assets',
+				actionColor: 'red',
+				action: closeDialog => {
+					this.$resources.rebuildBench.submit();
+					closeDialog();
+				}
+			});
 		}
 	},
 	computed: {
@@ -473,6 +505,10 @@ export default {
 				restartBench: this.$account.hasPermission(
 					this.benchName,
 					'press.api.bench.restart'
+				),
+				rebuildBench: this.$account.hasPermission(
+					this.benchName,
+					'press.api.bench.rebuild'
 				),
 				sshAccess: this.$account.hasPermission(
 					this.benchName,

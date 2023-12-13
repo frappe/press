@@ -24,7 +24,8 @@
 
 		<Dialog
 			:options="{
-				title: 'Add App to Marketplace'
+				title: 'Add App to Marketplace',
+				size: 'xl'
 			}"
 			v-model="showAddAppDialog"
 		>

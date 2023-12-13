@@ -20,11 +20,42 @@ from frappe.model.naming import make_autoname
 
 from press.utils import get_current_team, log_error
 from press.press.doctype.server.server import Server
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
+	whitelisted_fields = [
+		"name",
+		"status",
+		"creation",
+		"deployed",
+		"build_steps",
+		"build_start",
+		"build_end",
+		"build_duration",
+		"apps",
+	]
+
+	def get_doc(self, doc):
+		doc.jobs = []
+		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
+		if deploys:
+			deploy = frappe.get_doc("Deploy", deploys[0].name)
+			for bench in deploy.benches:
+				if not bench.bench:
+					continue
+				job = frappe.get_all(
+					"Agent Job",
+					["name", "status", "end", "duration", "bench"],
+					{"bench": bench.bench, "job_type": "New Bench"},
+					limit=1,
+				) or [{}]
+				doc.jobs.append(job[0])
+
 	def autoname(self):
 		group = self.group[6:]
 		series = f"deploy-{group}-.######"
@@ -32,6 +63,12 @@ class DeployCandidate(Document):
 
 	def after_insert(self):
 		return
+
+	def on_trash(self):
+		frappe.db.delete(
+			"Press Notification",
+			{"document_type": self.doctype, "document_name": self.name},
+		)
 
 	def get_unpublished_marketplace_releases(self) -> List[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -374,6 +411,18 @@ class DeployCandidate(Document):
 	def _run_docker_build(self, no_cache=False):
 		import platform
 
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			[
+				"domain",
+				"docker_registry_url",
+				"docker_registry_namespace",
+				"docker_remote_builder",
+			],
+			as_dict=True,
+		)
+
 		# check if it's running on apple silicon mac
 		if (
 			platform.machine() == "arm64"
@@ -382,17 +431,14 @@ class DeployCandidate(Document):
 		):
 			self.command = f"{self.command}x build --platform linux/amd64"
 
-		environment = os.environ
+		environment = os.environ.copy()
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			["domain", "docker_registry_url", "docker_registry_namespace"],
-			as_dict=True,
-		)
+		if settings.docker_remote_builder:
+			# Connect to Remote Docker Host if configured
+			environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
 
 		if settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
@@ -505,6 +551,7 @@ class DeployCandidate(Document):
 			except Exception:
 				import traceback
 
+				print("Error in parsing line:", line)
 				traceback.print_exc()
 
 		self.build_output = "".join(lines)
@@ -539,11 +586,20 @@ class DeployCandidate(Document):
 			settings = frappe.db.get_value(
 				"Press Settings",
 				None,
-				["docker_registry_url", "docker_registry_username", "docker_registry_password"],
+				[
+					"docker_registry_url",
+					"docker_registry_username",
+					"docker_registry_password",
+					"docker_remote_builder",
+				],
 				as_dict=True,
 			)
+			environment = os.environ.copy()
+			if settings.docker_remote_builder:
+				# Connect to Remote Docker Host if configured
+				environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
 
-			client = docker.from_env()
+			client = docker.from_env(environment=environment)
 			client.login(
 				registry=settings.docker_registry_url,
 				username=settings.docker_registry_username,
@@ -689,6 +745,25 @@ class DeployCandidate(Document):
 		return deploy
 
 	def on_update(self):
+		# failure notification
+		if self.status == "Failure":
+			error_msg = " - ".join(
+				frappe.get_value(
+					"Deploy Candidate Build Step",
+					{"parent": self.name, "status": "Failure"},
+					["stage", "step"],
+				)
+				or []
+			)
+			group_title = frappe.get_value("Release Group", self.group, "title")
+
+			create_new_notification(
+				self.team,
+				"Bench Deploy",
+				self.doctype,
+				self.name,
+				f"The scheduled deploy on the bench <b>{group_title}</b> failed at step <b>{error_msg}</b>",
+			)
 		if self.status == "Running":
 			frappe.publish_realtime(
 				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}

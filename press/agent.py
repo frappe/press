@@ -58,6 +58,13 @@ class Agent:
 			bench=bench.name,
 		)
 
+	def rebuild_bench(self, bench):
+		return self.create_agent_job(
+			"Rebuild Bench Assets",
+			f"benches/{bench.name}/rebuild",
+			bench=bench.name,
+		)
+
 	def update_bench_config(self, bench):
 		data = {
 			"bench_config": json.loads(bench.bench_config),
@@ -135,6 +142,14 @@ class Agent:
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def optimize_tables(self, site):
+		return self.create_agent_job(
+			"Optimize Tables",
+			f"benches/{site.bench}/sites/{site.name}/optimize",
 			bench=site.bench,
 			site=site.name,
 		)
@@ -617,11 +632,13 @@ class Agent:
 	def post(self, path, data=None):
 		return self.request("POST", path, data)
 
-	def request(self, method, path, data=None, files=None):
+	def request(self, method, path, data=None, files=None, agent_job=None):
+		agent_job_id = agent_job.name if agent_job else None
+
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
-			headers = {"Authorization": f"bearer {password}"}
+			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
 			intermediate_ca = frappe.db.get_value(
 				"Press Settings", "Press Settings", "backbone_intermediate_ca"
 			)
@@ -651,6 +668,7 @@ class Agent:
 				result.raise_for_status()
 				return json_response
 			except Exception:
+				self.handle_request_failure(agent_job, result)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -660,7 +678,8 @@ class Agent:
 					headers=headers,
 					result=json_response or result.text,
 				)
-		except Exception:
+		except Exception as exce:
+			self.handle_exception(agent_job, exce)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -669,6 +688,24 @@ class Agent:
 				files=files,
 				headers=headers,
 			)
+
+	def handle_request_failure(self, agent_job, result):
+		message = f"""
+			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
+			Response: {getattr(result, 'text', 'Unknown')}
+		"""
+		self.log_failure_reason(agent_job, message)
+		agent_job.flags.status_code = result.status_code
+
+	def handle_exception(self, agent_job, exception):
+		self.log_failure_reason(agent_job, exception)
+
+	def log_failure_reason(self, agent_job=None, message=None):
+		if not agent_job:
+			return
+
+		agent_job.traceback = message
+		agent_job.output = message
 
 	def create_agent_job(
 		self,
@@ -733,6 +770,9 @@ class Agent:
 			return [status]
 		return status
 
+	def get_jobs_id(self, agent_job_ids):
+		return self.get(f"agent-jobs/{agent_job_ids}")
+
 	def get_version(self):
 		return self.get("version")
 
@@ -790,4 +830,9 @@ class Agent:
 			data,
 			bench=site.bench,
 			site=site.name,
+		)
+
+	def force_update_bench_limits(self, bench: str, data: dict):
+		return self.create_agent_job(
+			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)

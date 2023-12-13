@@ -9,7 +9,9 @@
   "database",
   "backups",
   "public",
-  "private"
+  "private",
+  "database_free_tables",
+  "database_free"
  ],
  "fields": [
   {
@@ -45,10 +47,22 @@
    "fieldtype": "Int",
    "label": "Backups",
    "read_only": 1
+  },
+  {
+   "fieldname": "database_free_tables",
+   "fieldtype": "Code",
+   "label": "Database Free Tables",
+   "read_only": 1
+  },
+  {
+   "fieldname": "database_free",
+   "fieldtype": "Int",
+   "label": "Database Free",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2020-11-11 12:50:10.146277",
+ "modified": "2023-10-19 14:31:13.374011",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Usage",
@@ -70,5 +84,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "site"
 }

@@ -6,7 +6,8 @@
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
 					:message="
-						$resources.options.error === 'Bad credentials'
+						$resources.options?.error?.messages &&
+						$resources.options.error.messages.includes('Bad credentials')
 							? 'Access token expired, reauthorization required'
 							: $resources.options.error
 					"
@@ -42,7 +43,7 @@
 					<span class="text-sm text-gray-600">
 						Don't see your organization?
 						<Link
-							:to="options.installation_url + '?state=' + state"
+							:href="options.installation_url + '?state=' + state"
 							class="font-medium"
 						>
 							Add from GitHub
@@ -105,8 +106,8 @@ export default {
 			return {
 				url: 'press.api.github.options',
 				auto: true,
-				onError(message) {
-					if (message === 'Bad credentials') {
+				onError(error) {
+					if (error.messages.includes('Bad credentials')) {
 						this.requiresReAuth = true;
 					}
 				}
@@ -153,7 +154,7 @@ export default {
 				},
 				onError() {
 					// Invalid Frappe App
-					this.$emit('onSelect', null);
+					if (this.$emit) this.$emit('onSelect', null);
 				}
 			};
 		},

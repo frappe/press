@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import frappe
 from frappe.core.utils import find
+from press.api.bench import deploy_information
 from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -234,3 +235,7 @@ class TestReleaseGroup(unittest.TestCase):
 			rg.save()
 		except frappe.ValidationError:
 			self.fail("Should not raise validation error")
+
+	def test_update_available_shows_for_first_deploy(self):
+		rg = create_test_release_group([create_test_app()])
+		self.assertEqual(deploy_information(rg.name).get("update_available"), True)

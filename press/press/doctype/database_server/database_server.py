@@ -37,7 +37,11 @@ class DatabaseServer(BaseServer):
 		if self.flags.in_insert or self.is_new():
 			return
 		self.update_mariadb_system_variables()
-		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+		if (
+			self.has_value_changed("memory_high")
+			or self.has_value_changed("memory_max")
+			or self.has_value_changed("memory_swap_max")
+		):
 			self.update_memory_limits()
 
 		if (
@@ -80,6 +84,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _update_memory_limits(self):
+		self.memory_swap_max = self.memory_swap_max or 0.1
 		if not self.memory_high or not self.memory_max:
 			return
 		ansible = Ansible(
@@ -91,6 +96,7 @@ class DatabaseServer(BaseServer):
 				"server": self.name,
 				"memory_high": self.memory_high,
 				"memory_max": self.memory_max,
+				"memory_swap_max": self.memory_swap_max,
 			},
 		)
 		play = ansible.run()
@@ -524,6 +530,12 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider == "AWS EC2":
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
@@ -575,18 +587,23 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	@property
+	def ram_for_mariadb(self):
+		return self.real_ram - 700  # OS and other services
+
+	@frappe.whitelist()
 	def adjust_memory_config(self):
 		if not self.ram:
 			return
 
-		self.memory_high = max(self.ram // 1024 - 2, 1)
-		self.memory_max = max(self.ram // 1024 - 1, 2)
+		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
+		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 		self.save()
 
 		self.add_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram * 0.685),  # will be rounded up based on chunk_size
+			int(self.ram_for_mariadb * 0.685),  # will be rounded up based on chunk_size
 		)
 
 	@frappe.whitelist()

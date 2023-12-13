@@ -7,6 +7,7 @@ frappe.ui.form.on('Database Server', {
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
+
 		[
 			[__('Ping Agent'), 'ping_agent', false, !frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
@@ -100,6 +101,12 @@ frappe.ui.form.on('Database Server', {
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
 			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[
+				__('Adjust Memory Config'),
+				'adjust_memory_config',
+				true,
+				frm.doc.status === 'Active',
+			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 		].forEach(([label, method, confirm, condition]) => {
@@ -133,5 +140,9 @@ frappe.ui.form.on('Database Server', {
 				);
 			}
 		});
+	},
+
+	hostname: function (frm) {
+		press.set_hostname_abbreviation(frm);
 	},
 });

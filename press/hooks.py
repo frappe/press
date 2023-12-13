@@ -18,6 +18,9 @@ version = app_version
 # include js, css files in header of desk.html
 # app_include_css = "/assets/press/css/press.css"
 # app_include_js = "/assets/press/js/press.js"
+app_include_js = [
+	"press.bundle.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/press/css/press.css"
@@ -63,14 +66,10 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
+	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
 ]
 
 website_redirects = [
-	{
-		"source": r"/deploy(.*)",
-		"target": r"/api/method/press.api.quick_site.deploy\1",
-		"match_with_query_string": True,
-	},
 	{"source": "/dashboard/f-login", "target": get_frappe_io_auth_url() or "/"},
 	{"source": "/f-login", "target": "/dashboard/f-login"},
 	{"source": "/signup", "target": "/erpnext/signup"},
@@ -155,7 +154,7 @@ has_permission = {
 doc_events = {
 	"Stripe Webhook Log": {
 		"after_insert": [
-			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_invoice_webhook_events",
+			"press.press.doctype.invoice.stripe_webhook_handler.handle_stripe_webhook_events",
 			"press.press.doctype.team.team.process_stripe_webhook",
 		],
 	},
@@ -171,7 +170,6 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"press.press.doctype.team.suspend_sites.execute",
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
 	],
@@ -190,10 +188,12 @@ scheduler_events = {
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
+		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
 		"press.press.doctype.subscription.subscription.create_usage_records",
+		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
 		"press.press.doctype.app.app.poll_new_releases",
@@ -216,7 +216,10 @@ scheduler_events = {
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
 		],
-		"* * * * * 0/5": ["press.press.doctype.agent_job.agent_job.poll_pending_jobs"],
+		"* * * * * 0/5": [
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
+		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
@@ -233,7 +236,6 @@ scheduler_events = {
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 		],
 		"*/5 * * * *": [
-			"press.press.doctype.central_site_migration.central_site_migration.start_one_migration",
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
@@ -256,6 +258,7 @@ scheduler_events = {
 		"0 0 1 */3 *": [
 			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
+		"*/30 * 11 * *": ["press.press.doctype.team.suspend_sites.execute"],
 	},
 }
 
@@ -293,7 +296,10 @@ override_whitelisted_methods = {"upload_file": "press.overrides.upload_file"}
 override_doctype_class = {"User": "press.overrides.CustomUser"}
 
 on_session_creation = "press.overrides.on_session_creation"
+# on_logout = "press.overrides.on_logout"
 
+before_request = "press.overrides.before_request"
+before_job = "press.overrides.before_job"
 
 # Data Deletion Privacy Docs
 
