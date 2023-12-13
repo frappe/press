@@ -7,7 +7,13 @@ let router = createRouter({
 		{
 			path: '/',
 			name: 'Home',
-			component: () => import('./pages/Home.vue')
+			component: () => import('./pages/Home.vue'),
+			redirect: { name: 'Welcome' }
+		},
+		{
+			path: '/welcome',
+			name: 'Welcome',
+			component: () => import('./pages/Welcome.vue')
 		},
 		{
 			path: '/login',

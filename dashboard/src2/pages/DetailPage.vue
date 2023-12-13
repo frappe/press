@@ -26,6 +26,8 @@
 </template>
 
 <script>
+import Header from '../components/Header.vue';
+import ActionButton from '../components/ActionButton.vue';
 import { Tabs, Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 
@@ -42,6 +44,8 @@ export default {
 		}
 	},
 	components: {
+		Header,
+		ActionButton,
 		FTabs: Tabs,
 		FBreadcrumbs: Breadcrumbs
 	},

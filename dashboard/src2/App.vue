@@ -28,6 +28,7 @@
 <script setup>
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
+import AppSidebar from './components/AppSidebar.vue';
 </script>
 
 <style src="../src/assets/style.css"></style>

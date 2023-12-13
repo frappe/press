@@ -14,12 +14,16 @@
 </template>
 
 <script>
+import Header from '../components/Header.vue';
+import ObjectList from '../components/ObjectList.vue';
 import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
 import { getObject } from '../objects';
 
 export default {
 	components: {
+		Header,
 		Breadcrumbs,
+		ObjectList,
 		Button,
 		Dropdown,
 		TextInput

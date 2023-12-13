@@ -64,13 +64,24 @@ export default {
 			url: 'press.api.account.country_list',
 			auto: true,
 			onSuccess() {
-				let country = this.countryList.find(
-					d => d.label === this.$account.team.country
-				);
-				if (country) {
-					this.update('country', country.value);
+				// TODO: remove this.$account usage after dashboard2 is merged
+				let userCountry =
+					this.$account?.team.country || this.$team?.doc.country;
+				if (userCountry) {
+					let country = this.countryList.find(d => d.label === userCountry);
+					if (country) {
+						this.update('country', country.value);
+					}
 				}
 			}
+		},
+		validateGST() {
+			return {
+				url: 'press.api.billing.validate_gst',
+				makeParams() {
+					return { address: this.address };
+				}
+			};
 		}
 	},
 	methods: {
@@ -93,11 +104,9 @@ export default {
 			}
 
 			try {
-				await this.$call('press.api.billing.validate_gst', {
-					address: this.address
-				});
+				await this.$resources.validateGST.submit();
 			} catch (error) {
-				return error.messages.join('\n');
+				return error.messages?.join('\n');
 			}
 		}
 	},
