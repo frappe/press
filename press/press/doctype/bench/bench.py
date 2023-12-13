@@ -139,7 +139,6 @@ class Bench(Document):
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
-			"gunicorn_worker_type": self.gunicorn_worker_type,
 			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
 		}
 		self.add_limits(bench_config)
