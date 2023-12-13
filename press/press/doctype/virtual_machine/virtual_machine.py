@@ -15,6 +15,8 @@ from oci.core.models import (
 	InstanceOptions,
 	UpdateBootVolumeDetails,
 	UpdateVolumeDetails,
+	CreateBootVolumeBackupDetails,
+	CreateVolumeBackupDetails,
 )
 
 
@@ -469,6 +471,12 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def create_snapshots(self):
+		if self.cloud_provider == "AWS EC2":
+			self._create_snapshots_aws()
+		elif self.cloud_provider == "OCI":
+			self._create_snapshots_oci()
+
+	def _create_snapshots_aws(self):
 		response = self.client().create_snapshots(
 			InstanceSpecification={"InstanceId": self.instance_id},
 			Description=f"Frappe Cloud - {self.name} - {frappe.utils.now()}",
@@ -488,6 +496,41 @@ class VirtualMachine(Document):
 						"doctype": "Virtual Disk Snapshot",
 						"virtual_machine": self.name,
 						"snapshot_id": snapshot["SnapshotId"],
+					}
+				).insert()
+			except Exception:
+				log_error(
+					title="Virtual Disk Snapshot Error", virtual_machine=self.name, snapshot=snapshot
+				)
+
+	def _create_snapshots_oci(self):
+		for volume in self.volumes:
+			if ".bootvolume." in volume.volume_id:
+				snapshot = (
+					self.client(BlockstorageClient)
+					.create_boot_volume_backup(
+						CreateBootVolumeBackupDetails(
+							boot_volume_id=volume.volume_id,
+							type="INCREMENTAL",
+							display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+						)
+					)
+					.data
+				)
+			else:
+				self.client(BlockstorageClient).create_volume_backup(
+					CreateVolumeBackupDetails(
+						volume_id=volume.volume_id,
+						type="INCREMENTAL",
+						display_name=f"Frappe Cloud - {self.name} - {volume.name} - {frappe.utils.now()}",
+					)
+				).data
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "Virtual Disk Snapshot",
+						"virtual_machine": self.name,
+						"snapshot_id": snapshot.id,
 					}
 				).insert()
 			except Exception:

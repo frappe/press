@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 import boto3
+import pytz
+from oci.core import BlockstorageClient
 from press.utils import log_error
 
 
@@ -23,24 +25,41 @@ class VirtualDiskSnapshot(Document):
 
 	@frappe.whitelist()
 	def sync(self):
-		try:
-			snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])[
-				"Snapshots"
-			]
-			if snapshots:
-				snapshot = snapshots[0]
-				self.volume_id = snapshot["VolumeId"]
-				self.snapshot_id = snapshot["SnapshotId"]
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider == "AWS EC2":
+			try:
+				snapshots = self.client.describe_snapshots(SnapshotIds=[self.snapshot_id])[
+					"Snapshots"
+				]
+				if snapshots:
+					snapshot = snapshots[0]
+					self.volume_id = snapshot["VolumeId"]
+					self.snapshot_id = snapshot["SnapshotId"]
 
-				self.status = self.get_status_map(snapshot["State"])
-				self.description = snapshot["Description"]
-				self.size = snapshot["VolumeSize"]
-				self.start_time = frappe.utils.format_datetime(
-					snapshot["StartTime"], "yyyy-MM-dd HH:mm:ss"
-				)
-				self.progress = snapshot["Progress"]
-		except Exception:
-			self.status = "Unavailable"
+					self.status = self.get_aws_status_map(snapshot["State"])
+					self.description = snapshot["Description"]
+					self.size = snapshot["VolumeSize"]
+					self.start_time = frappe.utils.format_datetime(
+						snapshot["StartTime"], "yyyy-MM-dd HH:mm:ss"
+					)
+					self.progress = snapshot["Progress"]
+			except Exception:
+				self.status = "Unavailable"
+		elif cluster.cloud_provider == "OCI":
+			if ".bootvolumebackup." in self.snapshot_id:
+				snapshot = self.client.get_boot_volume_backup(self.snapshot_id).data
+				self.volume_id = snapshot.boot_volume_id
+			else:
+				snapshot = self.client.get_volume_backup(self.snapshot_id).data
+				self.volume_id = snapshot.volume_id
+			self.status = self.get_oci_status_map(snapshot.lifecycle_state)
+			self.description = snapshot.display_name
+			self.size = snapshot.size_in_gbs
+
+			self.start_time = frappe.utils.format_datetime(
+				snapshot.time_created.astimezone(pytz.timezone(frappe.utils.get_system_timezone())),
+				"yyyy-MM-dd HH:mm:ss",
+			)
 		self.save()
 
 	@frappe.whitelist()
@@ -48,10 +67,17 @@ class VirtualDiskSnapshot(Document):
 		self.sync()
 		if self.status == "Unavailable":
 			return
-		self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider == "AWS EC2":
+			self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+		elif cluster.cloud_provider == "OCI":
+			if ".bootvolumebackup." in self.snapshot_id:
+				self.client.delete_boot_volume_backup(self.snapshot_id)
+			else:
+				self.client.delete_volume_backup(self.snapshot_id)
 		self.sync()
 
-	def get_status_map(self, status):
+	def get_aws_status_map(self, status):
 		return {
 			"pending": "Pending",
 			"completed": "Completed",
@@ -60,15 +86,28 @@ class VirtualDiskSnapshot(Document):
 			"recoverable": "Recoverable",
 		}.get(status, "Unavailable")
 
+	def get_oci_status_map(self, status):
+		return {
+			"CREATING": "Pending",
+			"AVAILABLE": "Completed",
+			"TERMINATING": "Pending",
+			"TERMINATED": "Unavailable",
+			"FAULTY": "Error",
+			"REQUEST_RECEIVED": "Pending",
+		}.get(status, "Unavailable")
+
 	@property
 	def client(self):
 		cluster = frappe.get_doc("Cluster", self.cluster)
-		return boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=cluster.aws_access_key_id,
-			aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
-		)
+		if cluster.cloud_provider == "AWS EC2":
+			return boto3.client(
+				"ec2",
+				region_name=self.region,
+				aws_access_key_id=cluster.aws_access_key_id,
+				aws_secret_access_key=cluster.get_password("aws_secret_access_key"),
+			)
+		elif cluster.cloud_provider == "OCI":
+			return BlockstorageClient(cluster.get_oci_config())
 
 
 def sync_snapshots():
