@@ -158,7 +158,13 @@ class VirtualMachine(Document):
 					shape_config=LaunchInstanceShapeConfigDetails(
 						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
 					),
-					platform_config=LaunchInstancePlatformConfig(type="INTEL_VM"),
+					platform_config=LaunchInstancePlatformConfig(
+						type="INTEL_VM",
+						is_secure_boot_enabled=True,
+						is_trusted_platform_module_enabled=True,
+						is_measured_boot_enabled=True,
+					),
+					is_pv_encryption_in_transit_enabled=True,
 					metadata={
 						"ssh_authorized_keys": frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 						"user_data": base64.b64encode(self.get_cloud_init().encode()).decode()
