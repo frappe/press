@@ -1,0 +1,23 @@
+---
+- name: Copy Authorized Keys from ubuntu to root User
+  copy:
+    src: /home/ubuntu/.ssh/authorized_keys
+    dest: /root/.ssh/authorized_keys
+    mode: 0600
+    remote_src: yes
+
+- name: Remove OPC User
+  user:
+    name: opc
+    state: absent
+    remove: yes
+    force: yes
+  ignore_errors: yes
+
+- name: Remove Ubuntu User
+  user:
+    name: ubuntu
+    state: absent
+    remove: yes
+    force: yes
+  ignore_errors: yes

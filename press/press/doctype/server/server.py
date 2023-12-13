@@ -135,6 +135,8 @@ class BaseServer(Document):
 				)
 			elif self.provider == "AWS EC2":
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+			elif self.provider == "OCI":
+				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 
 			ansible.run()
 			self.reload()
