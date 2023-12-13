@@ -55,7 +55,7 @@
 					>
 						<img
 							class="w-24"
-							src="/assets/press/images/razorpay-logo.svg"
+							:src="`/assets/press/images/razorpay-logo.svg`"
 							alt="Razorpay Logo"
 						/>
 					</button>
@@ -71,7 +71,7 @@
 					>
 						<img
 							class="h-7 w-24"
-							src="/assets/press/images/stripe-logo.svg"
+							:src="`/assets/press/images/stripe-logo.svg`"
 							alt="Stripe Logo"
 						/>
 					</button>
