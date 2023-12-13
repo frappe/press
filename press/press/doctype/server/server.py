@@ -493,6 +493,22 @@ class BaseServer(Document):
 			log_error("MySQLdump Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def set_swappiness(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
+		)
+
+	def _set_swappiness(self):
+		try:
+			ansible = Ansible(
+				playbook="swappiness.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Swappiness Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
