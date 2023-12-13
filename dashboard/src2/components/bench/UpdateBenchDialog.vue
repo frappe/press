@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			size: '3xl',
+			size: '2xl',
 			title: `Deploy new Bench version / ${
 				step === 'select-apps'
 					? 'Apps to update'
@@ -136,7 +136,8 @@ export default {
 				columns: [
 					{
 						label: 'App',
-						field: 'title'
+						field: 'title',
+						width: 1.75
 					},
 					{
 						label: 'From',
@@ -270,6 +271,7 @@ export default {
 					{
 						label: 'Skip failed patches',
 						field: 'skip_failing_patches',
+						width: 0.5,
 						type: 'component',
 						component(site) {
 							return h(Checkbox, {
@@ -280,6 +282,7 @@ export default {
 					{
 						label: 'Skip backup',
 						field: 'skip_backups',
+						width: 0.3,
 						type: 'component',
 						condition() {
 							return !!team.doc.skip_backups;
