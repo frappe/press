@@ -25,7 +25,7 @@
 
 <script>
 export default {
-	name: 'CommitTag',
+	name: 'CommitChooser',
 	props: ['options', 'modelValue'],
 	emits: ['update:modelValue'],
 	methods: {
