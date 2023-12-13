@@ -57,7 +57,12 @@ let router = createRouter({
 			path: '/benches/new',
 			component: () => import('./pages/NewBench.vue')
 		},
-		...generateRoutes()
+		...generateRoutes(),
+		{
+			path: '/:pathMatch(.*)*',
+			name: '404',
+			component: () => import('../src/views/general/404.vue')
+		}
 	]
 });
 

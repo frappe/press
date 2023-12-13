@@ -95,15 +95,15 @@ export default {
 	},
 	computed: {
 		navigation() {
-			if (!this.$route?.name) return [];
 			if (!this.$team?.doc) return [];
+			let routeName = this.$route?.name || '';
 			let disabled = !this.$team.doc.payment_mode;
 			return [
 				{
 					name: 'Welcome',
 					icon: () => h(Home),
 					route: '/welcome',
-					isActive: this.$route.name === 'Welcome',
+					isActive: routeName === 'Welcome',
 					condition: !this.$team.doc.onboarding.complete
 				},
 				{
@@ -111,8 +111,8 @@ export default {
 					icon: () => h(PanelTopInactive),
 					route: '/sites',
 					isActive:
-						['Site List', 'Site Detail'].includes(this.$route.name) ||
-						this.$route.name.startsWith('Site Detail'),
+						['Site List', 'Site Detail'].includes(routeName) ||
+						routeName.startsWith('Site Detail'),
 					disabled
 				},
 				{
@@ -121,8 +121,8 @@ export default {
 					route: '/benches',
 					isActive:
 						['Release Group List', 'Release Group Detail'].includes(
-							this.$route.name
-						) || this.$route.name.startsWith('Release Group Detail'),
+							routeName
+						) || routeName.startsWith('Release Group Detail'),
 					disabled
 				},
 				{
