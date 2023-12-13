@@ -619,7 +619,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
@@ -639,7 +639,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"server_id": self.index,
 			"is_primary": True,
@@ -663,7 +663,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
@@ -679,7 +679,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
@@ -695,7 +695,7 @@ class VirtualMachine(Document):
 			"hostname": f"{self.series}{self.index}-{slug(self.cluster)}",
 			"domain": self.domain,
 			"cluster": self.cluster,
-			"provider": "AWS EC2",
+			"provider": self.cloud_provider,
 			"virtual_machine": self.name,
 			"team": self.team,
 		}
