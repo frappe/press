@@ -67,7 +67,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -198,7 +198,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-08-16 17:19:21.978545",
+ "modified": "2023-12-13 15:09:14.473225",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Log Server",
