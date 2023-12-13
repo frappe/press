@@ -3,7 +3,7 @@
 		v-model="show"
 		:options="{
 			size: '3xl',
-			title: `Update Bench / ${
+			title: `Deploy new Bench version / ${
 				step === 'select-apps'
 					? 'Apps to update'
 					: step === 'removed-apps'
@@ -14,28 +14,36 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<GenericList
-					v-if="step === 'select-apps'"
-					:options="updatableAppOptions"
-					@update:selections="handleAppSelection"
-				/>
+				<div v-if="step === 'select-apps'">
+					<GenericList
+						v-if="
+							benchDocResource.doc.deploy_information.apps.some(
+								app => app.update_available === true
+							)
+						"
+						:options="updatableAppOptions"
+						@update:selections="handleAppSelection"
+					/>
+					<div v-else class="text-center text-base text-gray-600">
+						No apps to update
+					</div>
+				</div>
 				<GenericList
 					v-else-if="step === 'removed-apps'"
 					:options="removedAppOptions"
 				/>
-				<GenericList
-					v-else-if="
-						step === 'select-sites' &&
-						benchDocResource.doc.deploy_information.sites.length
-					"
-					:options="siteOptions"
-					@update:selections="handleSiteSelection"
-				/>
-				<div
-					class="text-center text-base font-medium text-gray-600"
-					v-else-if="!benchDocResource.doc.deploy_information.sites.length"
-				>
-					No active sites to update
+				<div v-else-if="step === 'select-sites'">
+					<GenericList
+						v-if="benchDocResource.doc.deploy_information.sites.length"
+						:options="siteOptions"
+						@update:selections="handleSiteSelection"
+					/>
+					<div
+						class="text-center text-base font-medium text-gray-600"
+						v-else-if="!benchDocResource.doc.deploy_information.sites.length"
+					>
+						No active sites to update
+					</div>
 				</div>
 				<ErrorMessage :message="$resources.deploy.error" />
 			</div>
@@ -59,7 +67,6 @@
 					class="w-full"
 					variant="solid"
 					label="Next"
-					:disabled="!selectedApps.length"
 					@click="
 						benchDocResource.doc.deploy_information.removed_apps.length &&
 						step === 'select-apps'
@@ -72,7 +79,6 @@
 					class="w-full"
 					variant="solid"
 					:label="selectedSites.length > 0 ? 'Update' : 'Skip and Deploy'"
-					:disabled="!selectedApps.length"
 					:loading="$resources.deploy.loading"
 					@click="$resources.deploy.submit()"
 				/>
@@ -85,13 +91,14 @@
 import { h } from 'vue';
 import { Checkbox, getCachedDocumentResource } from 'frappe-ui';
 import CommitChooser from '@/components/utils/CommitChooser.vue';
+import CommitTag from '@/components/utils/CommitTag.vue';
 import GenericList from '../../components/GenericList.vue';
 import { getTeam } from '../../data/team';
 
 export default {
 	name: 'UpdateBenchDialog',
 	props: ['bench'],
-	components: { GenericList, CommitChooser },
+	components: { GenericList, CommitChooser, CommitTag },
 	data() {
 		return {
 			show: true,
@@ -119,10 +126,17 @@ export default {
 					{
 						label: 'From',
 						field: 'current_hash',
-						type: 'commit',
-						format(value, row) {
-							if (!row.next_release) return null;
-							return value.slice(0, 7);
+						type: 'component',
+						component(app) {
+							if (!app.current_hash) return null;
+							let tag = app.will_branch_change
+								? app.current_branch
+								: app.current_hash.slice(0, 7);
+
+							return h(CommitTag, {
+								tag: tag,
+								link: `${app.repository_url}/commit/${tag}`
+							});
 						}
 					},
 					{
@@ -130,6 +144,13 @@ export default {
 						field: 'next_release',
 						type: 'component',
 						component(app) {
+							if (app.will_branch_change) {
+								return h(CommitTag, {
+									tag: app.branch,
+									link: `${app.repository_url}/commit/${app.branch}`
+								});
+							}
+
 							function commitChooserOptions(app) {
 								return app.releases.map(release => {
 									const messageMaxLength = 75;

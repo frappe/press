@@ -30,17 +30,8 @@
 			<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
 				<template v-slot="{ column, item }">
 					<div v-if="column.condition ? column.condition() : true">
-						<CommitTag
-							v-if="column.type === 'commit' && row[column.field]"
-							:tag="formattedValue(row[column.field], column, row)"
-							:link="`${row.repository_url}/commit/${formattedValue(
-								row[column.field],
-								column,
-								row
-							)}`"
-						/>
 						<Badge
-							v-else-if="column.type === 'Badge'"
+							v-if="column.type === 'Badge'"
 							:label="formattedValue(row[column.field], column, row)"
 						/>
 						<component
