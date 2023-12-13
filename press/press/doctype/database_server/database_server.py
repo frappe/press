@@ -532,7 +532,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def reboot(self):
-		if self.provider == "AWS EC2":
+		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 
