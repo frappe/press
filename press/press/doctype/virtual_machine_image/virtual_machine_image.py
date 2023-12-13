@@ -77,7 +77,8 @@ class VirtualMachineImage(Document):
 		elif cluster.cloud_provider == "OCI":
 			image = self.client.get_image(self.image_id).data
 			self.status = self.get_oci_status_map(image.lifecycle_state)
-			self.size = image.size_in_mbs // 1024
+			if image.size_in_mbs:
+				self.size = image.size_in_mbs // 1024
 
 		self.save()
 		return self.status
