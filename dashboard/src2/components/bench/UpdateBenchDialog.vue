@@ -3,18 +3,13 @@
 		v-model="show"
 		:options="{
 			size: '2xl',
-			title: `Deploy new Bench version / ${
-				step === 'select-apps'
-					? 'Apps to update'
-					: step === 'removed-apps'
-					? 'Apps to be removed'
-					: 'Sites to update'
-			}`
+			title: 'Update Bench'
 		}"
 	>
 		<template #body-content>
 			<div class="space-y-4">
 				<div v-if="step === 'select-apps'">
+					<div class="mb-4 text-lg font-medium">Select apps to update</div>
 					<GenericList
 						v-if="
 							benchDocResource.doc.deploy_information.apps.some(
@@ -28,11 +23,12 @@
 						No apps to update
 					</div>
 				</div>
-				<GenericList
-					v-else-if="step === 'removed-apps'"
-					:options="removedAppOptions"
-				/>
+				<div v-else-if="step === 'removed-apps'">
+					<div class="mb-4 text-lg font-medium">These apps will be removed</div>
+					<GenericList :options="removedAppOptions" />
+				</div>
 				<div v-else-if="step === 'select-sites'">
+					<div class="mb-4 text-lg font-medium">Select sites to update</div>
 					<GenericList
 						v-if="benchDocResource.doc.deploy_information.sites.length"
 						:options="siteOptions"
@@ -49,7 +45,8 @@
 			</div>
 		</template>
 		<template #actions>
-			<div class="space-y-2">
+			<div class="flex items-center justify-between space-y-2">
+				<div v-if="step === 'select-apps'"></div>
 				<Button
 					v-if="
 						step !== 'select-apps' &&
@@ -60,7 +57,6 @@
 							)
 						)
 					"
-					class="w-full"
 					label="Back"
 					@click="
 						benchDocResource.doc.deploy_information.removed_apps.length &&
@@ -72,7 +68,6 @@
 				/>
 				<Button
 					v-if="step === 'select-apps' || step === 'removed-apps'"
-					class="w-full"
 					variant="solid"
 					label="Next"
 					@click="
@@ -84,9 +79,16 @@
 				/>
 				<Button
 					v-if="step === 'select-sites'"
-					class="w-full"
 					variant="solid"
-					:label="selectedSites.length > 0 ? 'Update' : 'Skip and Deploy'"
+					:label="
+						selectedSites.length > 0
+							? `Deploy and update ${selectedSites.length} ${$format.plural(
+									selectedSites.length,
+									'site',
+									'sites'
+							  )}`
+							: 'Skip and Deploy'
+					"
 					:loading="$resources.deploy.loading"
 					@click="$resources.deploy.submit()"
 				/>
