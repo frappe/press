@@ -145,7 +145,10 @@ class VirtualMachine(Document):
 					compartment_id=cluster.oci_tenancy,
 					availability_domain=self.availability_zone,
 					display_name=self.name,
-					create_vnic_details=CreateVnicDetails(private_ip=self.private_ip_address),
+					create_vnic_details=CreateVnicDetails(
+						private_ip=self.private_ip_address,
+						nsg_ids=self.get_security_groups(),
+					),
 					subnet_id=self.subnet_id,
 					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
 					source_details=InstanceSourceViaImageDetails(
