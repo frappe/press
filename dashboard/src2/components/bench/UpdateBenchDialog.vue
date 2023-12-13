@@ -51,7 +51,15 @@
 		<template #actions>
 			<div class="space-y-2">
 				<Button
-					v-if="step !== 'select-apps'"
+					v-if="
+						step !== 'select-apps' &&
+						!(
+							step === 'removed-apps' &&
+							!benchDocResource.doc.deploy_information.apps.some(
+								app => app.update_available === true
+							)
+						)
+					"
 					class="w-full"
 					label="Back"
 					@click="
@@ -102,11 +110,18 @@ export default {
 	data() {
 		return {
 			show: true,
-			step: 'select-apps',
+			step: '',
 			benchDocResource: getCachedDocumentResource('Release Group', this.bench),
 			selectedApps: [],
 			selectedSites: []
 		};
+	},
+	mounted() {
+		this.step = this.benchDocResource.doc.deploy_information.apps.some(
+			app => app.update_available === true
+		)
+			? 'select-apps'
+			: 'removed-apps';
 	},
 	computed: {
 		updatableAppOptions() {
