@@ -100,9 +100,13 @@ class VirtualMachineImage(Document):
 
 	@frappe.whitelist()
 	def delete_image(self):
-		self.client.deregister_image(ImageId=self.image_id)
-		if self.snapshot_id:
-			self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		if cluster.cloud_provider == "AWS EC2":
+			self.client.deregister_image(ImageId=self.image_id)
+			if self.snapshot_id:
+				self.client.delete_snapshot(SnapshotId=self.snapshot_id)
+		elif cluster.cloud_provider == "OCI":
+			self.client.delete_image(self.image_id)
 		self.sync()
 
 	def get_aws_status_map(self, status):
