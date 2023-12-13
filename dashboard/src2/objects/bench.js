@@ -665,7 +665,18 @@ export default {
 						bench.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
-						// TODO
+						let UpdateBenchDialog = defineAsyncComponent(() =>
+							import('../components/bench/UpdateBenchDialog.vue')
+						);
+
+						renderDialog(
+							h(UpdateBenchDialog, {
+								bench: bench.name,
+								onSuccess() {
+									bench.reload();
+								}
+							})
+						);
 					}
 				},
 				{

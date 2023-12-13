@@ -8,6 +8,7 @@ import * as formatters from './utils/format';
 
 export default function globals(app) {
 	app.config.globalProperties.$session = session;
+	app.config.globalProperties.$team = session.user ? getTeam() : null;
 	app.config.globalProperties.$toast = toast;
 	app.config.globalProperties.$dayjs = dayjs;
 	app.config.globalProperties.$theme = theme;
@@ -15,7 +16,6 @@ export default function globals(app) {
 	app.config.globalProperties.$format = formatters;
 	app.config.globalProperties.$log = console.log;
 	app.config.globalProperties.$debounce = debounce;
-	app.config.globalProperties.$team = getTeam();
 
 	// legacy globals for old dashboard
 	// TODO: remove later

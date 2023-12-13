@@ -43,9 +43,6 @@
   "column_break_9efq",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
-  "gunicorn_config_section",
-  "gunicorn_worker_type",
-  "gunicorn_threads_per_worker",
   "saas_tab",
   "saas_bench",
   "column_break_26",
@@ -302,28 +299,10 @@
   {
    "fieldname": "column_break_njfg",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "gunicorn_config_section",
-   "fieldtype": "Section Break",
-   "label": "Gunicorn Config"
-  },
-  {
-   "default": "sync",
-   "fieldname": "gunicorn_worker_type",
-   "fieldtype": "Select",
-   "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent"
-  },
-  {
-   "description": "Setting this to non-zero value will convert sync to gthread worker. This doesn't apply to gevent. ",
-   "fieldname": "gunicorn_threads_per_worker",
-   "fieldtype": "Int",
-   "label": "Gunicorn Threads Per Worker"
   }
  ],
  "links": [],
- "modified": "2023-12-03 14:13:58.693402",
+ "modified": "2023-12-12 16:32:30.908063",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

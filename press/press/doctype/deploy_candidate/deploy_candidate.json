@@ -42,9 +42,7 @@
   "is_redisearch_enabled",
   "column_break_tkdd",
   "merge_all_rq_queues",
-  "merge_default_and_short_rq_queues",
-  "gunicorn_worker_type",
-  "gunicorn_threads_per_worker"
+  "merge_default_and_short_rq_queues"
  ],
  "fields": [
   {
@@ -285,26 +283,10 @@
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
    "read_only": 1
-  },
-  {
-   "default": "sync",
-   "fetch_from": "group.gunicorn_worker_type",
-   "fieldname": "gunicorn_worker_type",
-   "fieldtype": "Select",
-   "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "group.gunicorn_threads_per_worker",
-   "fieldname": "gunicorn_threads_per_worker",
-   "fieldtype": "Int",
-   "label": "Gunicorn Threads Per Worker",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-04 16:09:20.194391",
+ "modified": "2023-12-12 16:34:35.392466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

@@ -46,13 +46,13 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Start</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $dayjs(job.start).toLocaleString() }}
+								{{ job.start ? $dayjs(job.start).toLocaleString() : '' }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">End</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $dayjs(job.end).toLocaleString() }}
+								{{ job.end ? $dayjs(job.end).toLocaleString() : '' }}
 							</div>
 						</div>
 					</div>
@@ -69,10 +69,12 @@
 import { FeatherIcon, Tooltip } from 'frappe-ui';
 import { duration } from '../utils/format';
 import { getObject } from '../objects';
+import JobStep from '../components/JobStep.vue';
 
 export default {
 	name: 'JobPage',
 	props: ['id', 'objectType'],
+	components: { Tooltip, FeatherIcon, JobStep },
 	data() {
 		return {
 			isOpen: {}
@@ -103,7 +105,6 @@ export default {
 			return this.$resources.job.doc;
 		}
 	},
-	components: { Tooltip, FeatherIcon },
 	mounted() {
 		this.$socket.on('agent_job_update', data => {
 			if (data.id === this.id) {

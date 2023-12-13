@@ -5,17 +5,18 @@
 				<div
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar />
+					<AppSidebar v-if="$session.user" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
-					<router-view v-if="$team.doc" />
 					<div
-						v-else-if="!$team.get.loading"
-						class="mx-auto my-auto mt-20 w-max rounded border p-20 text-center text-base"
+						v-if="!$session.user && !$route.meta.isLoginPage"
+						class="border bg-red-200 px-5 py-3 text-base text-red-900"
 					>
 						You are not logged in.
-						<a href="/login" class="underline">Login</a> to access dashboard.
+						<router-link to="/login" class="underline">Login</router-link> to
+						access dashboard.
 					</div>
+					<router-view />
 				</div>
 			</div>
 		</div>
@@ -27,6 +28,7 @@
 <script setup>
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
+import AppSidebar from './components/AppSidebar.vue';
 </script>
 
 <style src="../src/assets/style.css"></style>

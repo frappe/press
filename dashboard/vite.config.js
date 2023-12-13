@@ -15,7 +15,7 @@ export default defineConfig({
 		Components({
 			dirs: [
 				'src/components',
-				'src2/components',
+				// 'src2/components',
 				'node_modules/frappe-ui/src/components'
 			],
 			resolvers: [IconsResolver()]

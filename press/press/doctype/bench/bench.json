@@ -20,6 +20,7 @@
   "configuration_section",
   "background_workers",
   "gunicorn_workers",
+  "gunicorn_threads_per_worker",
   "port_offset",
   "auto_scale_workers",
   "skip_memory_limits",
@@ -39,8 +40,6 @@
   "feature_flags_section",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
-  "gunicorn_worker_type",
-  "gunicorn_threads_per_worker",
   "column_break_mtyb",
   "environment_variables"
  ],
@@ -296,24 +295,16 @@
    "label": "Skip Memory Limits"
   },
   {
-   "fetch_from": "candidate.gunicorn_threads_per_worker",
+   "default": "0",
+   "description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
    "fieldname": "gunicorn_threads_per_worker",
    "fieldtype": "Int",
    "label": "Gunicorn Threads Per Worker",
-   "read_only": 1
-  },
-  {
-   "default": "sync",
-   "fetch_from": "candidate.gunicorn_worker_type",
-   "fieldname": "gunicorn_worker_type",
-   "fieldtype": "Select",
-   "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent",
-   "read_only": 1
+   "non_negative": 1
   }
  ],
  "links": [],
- "modified": "2023-12-04 16:44:19.425413",
+ "modified": "2023-12-12 16:45:15.665032",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
