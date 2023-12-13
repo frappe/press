@@ -147,6 +147,7 @@ class VirtualMachine(Document):
 					display_name=self.name,
 					create_vnic_details=CreateVnicDetails(
 						private_ip=self.private_ip_address,
+						assign_private_dns_record=True,
 						nsg_ids=self.get_security_groups(),
 					),
 					subnet_id=self.subnet_id,
