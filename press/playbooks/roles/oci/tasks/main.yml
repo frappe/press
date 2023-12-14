@@ -1,4 +1,11 @@
 ---
+- name: Delete IPTables Block-All Rule
+  iptables:
+    chain: INPUT
+    jump: REJECT
+    reject_with: icmp-host-prohibited
+    state: absent
+
 - name: Copy Authorized Keys from ubuntu to root User
   copy:
     src: /home/ubuntu/.ssh/authorized_keys
