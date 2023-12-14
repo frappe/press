@@ -1,15 +1,14 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import re
+from collections import defaultdict
+
 import frappe
 import requests
 import sqlparse
-
-from frappe.utils import (
-	convert_utc_to_timezone,
-	get_system_timezone,
-)
 from frappe.core.doctype.access_log.access_log import make_access_log
+from frappe.utils import convert_utc_to_timezone, get_system_timezone
 from frappe.utils.password import get_decrypted_password
 
 
@@ -58,6 +57,24 @@ def execute(filters=None):
 		},
 	]
 
+	if filters.normalize_queries:
+		columns = [c for c in columns if c["fieldname"] not in ("timestamp",)]
+		columns.append(
+			{
+				"fieldname": "count",
+				"label": frappe._("Count"),
+				"fieldtype": "Int",
+			},
+		)
+		columns.append(
+			{
+				"fieldname": "example",
+				"label": frappe._("Example Query"),
+				"fieldtype": "Data",
+				"width": 1200,
+			},
+		)
+
 	data = get_data(filters)
 	return columns, data
 
@@ -74,13 +91,15 @@ def get_data(filters):
 	)
 	for row in rows:
 		if filters.format_queries:
-			row["query"] = sqlparse.format(
-				row["query"].strip(), keyword_case="upper", reindent=True
-			)
+			row["query"] = format_query(row["query"])
 		row["timestamp"] = convert_utc_to_timezone(
 			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
 			get_system_timezone(),
 		)
+
+	if filters.normalize_queries:
+		return summarize_by_query(rows)
+
 	return rows
 
 
@@ -105,7 +124,7 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 		"size": size,
 	}
 
-	if search_pattern:
+	if search_pattern and search_pattern != ".*":
 		query["query"]["bool"]["filter"].append(
 			{"regexp": {"mysql.slowlog.query": search_pattern}}
 		)
@@ -119,3 +138,43 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 		data["duration"] = d["_source"].get("event", {}).get("duration", 0) / 1e9
 		out.append(data)
 	return out
+
+
+def normalize_query(query: str) -> str:
+	"""Attempt to normalize query by removing variables.
+	This gives a different view of similar duplicate queries.
+	"""
+	q = sqlparse.parse(query)[0]
+	for token in q.flatten():
+		if "Token.Literal" in str(token.ttype):
+			token.value = "?"
+
+	# Format query consistently so identical queries can be matched
+	q = format_query(q)
+
+	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
+	q = re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
+
+	return q
+
+
+def format_query(q):
+	return sqlparse.format(
+		str(q).strip(), keyword_case="upper", reindent=True, strip_comments=True
+	)
+
+
+def summarize_by_query(data):
+	"""Summarize results by query, this assumes that queries are normalized"""
+	queries = defaultdict(lambda: defaultdict(float))
+	for row in data:
+		normalized_query = normalize_query(row["query"])
+		entry = queries[normalized_query]
+		entry["count"] += 1
+		entry["query"] = normalized_query
+		entry["duration"] += row["duration"]
+		entry["rows_examined"] += row["rows_examined"]
+		entry["rows_sent"] += row["rows_sent"]
+		entry["example"] = row["query"]
+
+	return list(queries.values())
