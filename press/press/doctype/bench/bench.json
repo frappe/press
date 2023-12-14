@@ -43,8 +43,8 @@
   "is_code_server_enabled",
   "column_break_mtyb",
   "environment_variables",
-  "mount_point_section",
-  "mount_point"
+  "mounts_section",
+  "mounts"
  ],
  "fields": [
   {
@@ -316,18 +316,18 @@
   },
   {
    "collapsible": 1,
-   "fieldname": "mount_point_section",
+   "fieldname": "mounts_section",
    "fieldtype": "Section Break",
-   "label": "Mount Point"
+   "label": "Mounts"
   },
   {
-   "fieldname": "mount_point",
+   "fieldname": "mounts",
    "fieldtype": "Table",
-   "options": "Bench Mount Point"
+   "options": "Bench Mount"
   }
  ],
  "links": [],
- "modified": "2023-12-13 15:09:47.521334",
+ "modified": "2023-12-14 13:07:36.811559",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

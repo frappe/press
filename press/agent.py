@@ -27,6 +27,16 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+
+		mounts = [
+			{
+				"source": m.source,
+				"destination": m.destination,
+				"is_absolute_path": m.is_absolute_path,
+			}
+			for m in bench.mounts
+		]
+
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
@@ -36,6 +46,7 @@ class Agent:
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
+			"mounts": mounts,
 		}
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 

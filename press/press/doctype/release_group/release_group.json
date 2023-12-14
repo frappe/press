@@ -38,7 +38,7 @@
   "last_dependency_update",
   "packages",
   "environment_variables",
-  "mount_point",
+  "mounts",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
@@ -319,14 +319,14 @@
    "read_only": 1
   },
   {
-   "fieldname": "mount_point",
+   "fieldname": "mounts",
    "fieldtype": "Table",
-   "label": "Mount Point",
-   "options": "Release Group Mount Point"
+   "label": "Mounts",
+   "options": "Release Group Mount"
   }
  ],
  "links": [],
- "modified": "2023-12-13 15:07:24.700094",
+ "modified": "2023-12-14 13:06:48.556880",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

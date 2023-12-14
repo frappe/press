@@ -19,6 +19,7 @@
   "packages",
   "apt_packages",
   "environment_variables",
+  "mounts",
   "section_break_6",
   "build_start",
   "build_end",
@@ -282,6 +283,28 @@
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
+   "read_only": 1
+  },
+  {
+   "default": "sync",
+   "fetch_from": "group.gunicorn_worker_type",
+   "fieldname": "gunicorn_worker_type",
+   "fieldtype": "Select",
+   "label": "Gunicorn Worker Type",
+   "options": "\nsync\ngthread\ngevent",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "group.gunicorn_threads_per_worker",
+   "fieldname": "gunicorn_threads_per_worker",
+   "fieldtype": "Int",
+   "label": "Gunicorn Threads Per Worker",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Text",
+   "label": "Mounts",
    "read_only": 1
   }
  ],

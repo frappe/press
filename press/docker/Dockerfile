@@ -113,11 +113,10 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
-{% if doc.custom_apt_packages %}
 
-
-{% for p in doc.custom_apt_packages %}
 # Install Additional APT Packages
+{% if doc.custom_apt_packages %}
+{% for p in doc.custom_apt_packages %}
 
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
@@ -133,14 +132,18 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
+
 {% endif %}
 
 {% endfor %}
-
 {% endif %}
 
+
+# symlink mysqldump to mariadb-dump
 RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
+
+# Add frappe user
 RUN useradd -ms /bin/bash frappe
 USER frappe
 WORKDIR /home/frappe
@@ -184,6 +187,7 @@ ENV PYTHONUNBUFFERED 1
 # For the sake of completing the step
 RUN `#stage-bench-env`
 
+# Set environment variables
 {% for v in doc.environment_variables %}
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
@@ -211,6 +215,18 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
+# create custom mounts
+{% if doc.custom_mounts %}
+{% for m in doc.custom_mounts %}
+
+{% if not m.is_absolute_path %}
+RUN mkdir -p {{ m.destination }} \
+  && chown -R frappe:frappe {{ m.destination }} \
+  `#stage-mounts-create`
+{% endif %}
+
+{% endfor %}
+{% endif %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 

@@ -41,10 +41,6 @@ class DeployCandidate(Document):
 		"apps",
 	]
 
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.custom_apt_packages = []
-
 	def get_doc(self, doc):
 		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
@@ -108,10 +104,10 @@ class DeployCandidate(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		self._build()
-		# frappe.enqueue_doc(
-		# 	self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
-		# )
+		# self._build()
+		frappe.enqueue_doc(
+			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
+		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
@@ -152,7 +148,7 @@ class DeployCandidate(Document):
 
 	def _build_and_deploy(self, staging: bool):
 		self._build()
-		# self._deploy(staging)
+		self._deploy(staging)
 
 	def _deploy(self, staging=False):
 		try:
@@ -172,7 +168,7 @@ class DeployCandidate(Document):
 			self._prepare_build_directory()
 			self._prepare_build_context()
 			self._run_docker_build(no_cache)
-			# self._push_docker_image()
+			self._push_docker_image()
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -199,10 +195,12 @@ class DeployCandidate(Document):
 
 	def add_build_steps(self):
 		if self.build_steps:
-			self.custom_apt_packages = json.loads(self.apt_packages)
 			return
 
+		self.apt_package_steps = []
+
 		self._prepare_custom_apt_packages()
+		self._prepare_custom_mounts()
 
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
@@ -212,8 +210,8 @@ class DeployCandidate(Document):
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 		]
 
-		if self.custom_apt_packages:
-			preparation_steps.extend(self._steps)
+		if self.apt_package_steps:
+			preparation_steps.extend(self.apt_package_steps)
 
 		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
@@ -232,12 +230,20 @@ class DeployCandidate(Document):
 			]
 		)
 
+		mounts = (
+			[
+				("mounts", "create", "Setup Mounts", "Create Mounts"),
+			]
+			if self.mounts
+			else []
+		)
+
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
 			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
 
-		steps = clone_steps + preparation_steps + app_install_steps
+		steps = clone_steps + preparation_steps + app_install_steps + mounts
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -263,11 +269,11 @@ class DeployCandidate(Document):
 		self.save()
 
 	def _prepare_custom_apt_packages(self):
-		self._steps = []
+		custom_apt_packages = []
 
 		for p in self.packages:
 			if p.package_manager == "apt":
-				self._steps.append(
+				self.apt_package_steps.append(
 					[
 						"pre",
 						p.package,
@@ -275,11 +281,21 @@ class DeployCandidate(Document):
 						f"Install Additional APT Packages {p.package}",
 					]
 				)
-				self.custom_apt_packages.append(
+				custom_apt_packages.append(
 					{"package": p.package, "prerequisites": p.package_prerequisites}
 				)
 
-		self.apt_packages = json.dumps(self.custom_apt_packages)
+		self.apt_packages = json.dumps(custom_apt_packages)
+
+	def _prepare_custom_mounts(self):
+		custom_mounts = frappe.get_all(
+			"Release Group Mount",
+			{"parent": self.group},
+			["source", "destination", "is_absolute_path"],
+			order_by="idx",
+		)
+
+		self.mounts = json.dumps(custom_mounts)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -344,12 +360,27 @@ class DeployCandidate(Document):
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
+		self._load_apt_packages()
+		self._load_mounts()
 		self._generate_dockerfile()
 		self._copy_config_files()
 		self._generate_redis_cache_config()
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
+
+	def _load_apt_packages(self):
+		try:
+			self.custom_apt_packages = json.loads(self.apt_packages)
+		except Exception:
+			# backward compatibility
+			self.custom_apt_packages = [
+				{"package": p.package} for p in self.packages if p.package_manager == "apt"
+			]
+
+	def _load_mounts(self):
+		if self.mounts:
+			self.custom_mounts = json.loads(self.mounts)
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
