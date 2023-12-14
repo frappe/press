@@ -68,6 +68,14 @@ def execute(filters=None):
 		)
 		columns.append(
 			{
+				"fieldname": "potential_indexes",
+				"label": frappe._("Potential Indexes"),
+				"fieldtype": "Data",
+				"width": 400,
+			},
+		)
+		columns.append(
+			{
 				"fieldname": "example",
 				"label": frappe._("Example Query"),
 				"fieldtype": "Data",
@@ -163,6 +171,8 @@ def format_query(q, strip_comments=False):
 
 
 def summarize_by_query(data):
+	from press.utils.db_optimizer import DBOptimizer
+
 	queries = defaultdict(lambda: defaultdict(float))
 	for row in data:
 		query = row["query"]
@@ -179,4 +189,12 @@ def summarize_by_query(data):
 		entry["rows_sent"] += row["rows_sent"]
 		entry["example"] = query
 
-	return list(queries.values())
+	result = list(queries.values())
+	for row in result:
+		row["potential_indexes"] = ", ".join(
+			DBOptimizer(query=row["example"]).potential_indexes
+		)
+
+	result.sort(key=lambda r: r["duration"], reverse=True)
+
+	return result
