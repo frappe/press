@@ -6,6 +6,12 @@
     reject_with: icmp-host-prohibited
     state: absent
 
+- name: Delete IPTables Block-All Rule from Rules File
+  replace:
+    path: /etc/iptables/rules.v4
+    regexp: '-A INPUT -j REJECT --reject-with icmp-host-prohibited'
+    replace: '#-A INPUT -j REJECT --reject-with icmp-host-prohibited'
+
 - name: Copy Authorized Keys from ubuntu to root User
   copy:
     src: /home/ubuntu/.ssh/authorized_keys
