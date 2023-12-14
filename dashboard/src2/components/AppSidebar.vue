@@ -11,17 +11,12 @@
 					{
 						label: 'Support & Docs',
 						icon: 'help-circle',
-						onClick: () => (window.location.href = '/support')
-					},
-					{
-						label: 'Settings',
-						icon: 'settings',
-						onClick: () => this.$router.push('/settings/profile')
+						onClick: support
 					},
 					{
 						label: 'Logout',
 						icon: 'log-out',
-						onClick: () => this.$auth.logout()
+						onClick: $session.logout.submit
 					}
 				]"
 			>
@@ -30,16 +25,18 @@
 						class="flex w-[204px] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<FCLogo class="h-8 w-8 rounded" />
-						<div class="ml-2 flex flex-col">
+						<FCLogo class="h-8 w-8 shrink-0 rounded" />
+						<div class="ml-2 flex flex-1 flex-col overflow-hidden">
 							<div class="text-base font-medium leading-none text-gray-900">
 								Frappe Cloud
 							</div>
-							<div
-								class="mt-1 hidden text-sm leading-none text-gray-700 sm:inline"
-							>
-								{{ $team.get.loading ? 'Loading...' : $team.doc.user }}
-							</div>
+							<Tooltip :text="$team?.doc?.user || null">
+								<div
+									class="mt-1 hidden overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-none text-gray-700 sm:inline"
+								>
+									{{ $team?.get.loading ? 'Loading...' : $team.doc.user }}
+								</div>
+							</Tooltip>
 						</div>
 						<FeatherIcon
 							name="chevron-down"
@@ -69,150 +66,84 @@
 				<AppSidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
 			</template>
 		</nav>
-		<Dialog :options="{ title: 'Change Team' }" v-model="showTeamSwitcher">
-			<template #body-content>
-				<div class="rounded bg-gray-100 px-2 py-3">
-					<div class="text-base text-gray-900">
-						Viewing Dashboard as
-						<span class="font-medium">{{ $team.doc.user }}</span>
-						<span
-							class="font-mono text-sm text-gray-500"
-							v-if="$team.name != $team.doc.user"
-						>
-							({{ $team.name }})
-						</span>
-					</div>
-				</div>
-				<div class="-mb-3 mt-3 divide-y">
-					<div
-						class="flex items-center justify-between py-3"
-						v-for="team in $team.doc.valid_teams"
-						:key="team.name"
-					>
-						<div>
-							<span class="text-base text-gray-800">
-								{{ team.user }}
-							</span>
-							<span
-								class="font-mono text-sm text-gray-500"
-								v-if="team.name != team.user"
-							>
-								({{ team.name }})
-							</span>
-						</div>
-						<Badge
-							v-if="$team.name === team.name"
-							label="Currently Active"
-							theme="green"
-						/>
-						<Button v-else @click="switchToTeam(team.name)">Change</Button>
-					</div>
-				</div>
-			</template>
-		</Dialog>
+		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
 </template>
 
-<script setup>
-import { computed, h, ref } from 'vue';
+<script>
+import { h } from 'vue';
+import AppSidebarItem from './AppSidebarItem.vue';
+import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import Home from '~icons/lucide/home';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
-import Server from '~icons/lucide/server';
-import LayoutPanelTop from '~icons/lucide/layout-panel-top';
-import LayoutGrid from '~icons/lucide/layout-grid';
-import SquareDashedBottomCode from '~icons/lucide/square-dashed-bottom-code';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
-import { switchToTeam } from '../data/team';
-import { useRoute } from 'vue-router';
+import { Tooltip } from 'frappe-ui';
 
-const $route = useRoute();
-
-const navigation = computed(() => [
-	{
-		name: 'Shared',
-		items: [
-			{
-				name: 'Sites',
-				icon: () => h(PanelTopInactive),
-				route: '/sites',
-				isActive:
-					['Site List', 'Site Detail'].includes($route.name) ||
-					$route.name.startsWith('Site Detail')
-			},
-			{
-				name: 'Benches',
-				icon: () => h(Package),
-				route: '/benches',
-				isActive:
-					['Release Group List', 'Release Group Detail'].includes(
-						$route.name
-					) || $route.name.startsWith('Release Group Detail')
-			}
-		]
+export default {
+	name: 'AppSidebar',
+	components: {
+		AppSidebarItem,
+		SwitchTeamDialog,
+		Tooltip
 	},
-	{
-		name: 'Dedicated',
-		items: [
-			{
-				name: 'Servers',
-				icon: () => h(Server),
-				route: '/servers'
-			},
-			{
-				name: 'Clusters',
-				icon: () => h(LayoutPanelTop),
-				route: '/clusters'
-			}
-		]
+	data() {
+		return {
+			showTeamSwitcher: false
+		};
 	},
-	{
-		name: 'Hybrid',
-		items: [
-			{
-				name: 'Servers',
-				icon: () => h(Server),
-				route: '/servers'
-			},
-			{
-				name: 'Clusters',
-				icon: () => h(LayoutPanelTop),
-				route: '/clusters'
-			}
-		]
+	computed: {
+		navigation() {
+			if (!this.$route?.name) return [];
+			if (!this.$team?.doc) return [];
+			let disabled = !this.$team.doc.payment_mode;
+			return [
+				{
+					name: 'Welcome',
+					icon: () => h(Home),
+					route: '/welcome',
+					isActive: this.$route.name === 'Welcome',
+					condition: !this.$team.doc.onboarding.complete
+				},
+				{
+					name: 'Sites',
+					icon: () => h(PanelTopInactive),
+					route: '/sites',
+					isActive:
+						['Site List', 'Site Detail'].includes(this.$route.name) ||
+						this.$route.name.startsWith('Site Detail'),
+					disabled
+				},
+				{
+					name: 'Benches',
+					icon: () => h(Package),
+					route: '/benches',
+					isActive:
+						['Release Group List', 'Release Group Detail'].includes(
+							this.$route.name
+						) || this.$route.name.startsWith('Release Group Detail'),
+					disabled
+				},
+				{
+					name: 'Billing',
+					icon: () => h(WalletCards),
+					route: '/billing',
+					disabled
+				},
+				{
+					name: 'Settings',
+					icon: () => h(Settings),
+					route: '/settings',
+					disabled
+				}
+			].filter(item => item.condition !== false);
+		}
 	},
-	{
-		name: 'Developer',
-		items: [
-			{
-				name: 'Apps',
-				icon: () => h(LayoutGrid),
-				route: '/apps'
-			},
-			{
-				name: 'Codespaces',
-				icon: () => h(SquareDashedBottomCode),
-				route: '/codespaces'
-			}
-		]
-	},
-	{
-		name: 'Account',
-		items: [
-			{
-				name: 'Billing',
-				icon: () => h(WalletCards),
-				route: '/billing'
-			},
-			{
-				name: 'Settings',
-				icon: () => h(Settings),
-				route: '/settings'
-			}
-		]
+	methods: {
+		support() {
+			window.open('https://frappecloud.com/support', '_blank');
+		}
 	}
-]);
-
-let showTeamSwitcher = ref(false);
+};
 </script>

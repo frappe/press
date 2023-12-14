@@ -34,4 +34,15 @@ def get_boot():
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
 		default_team=get_default_team_for_user(frappe.session.user),
+		verify_cards_with_micro_charge=frappe.db.get_single_value(
+			"Press Settings", "verify_cards_with_micro_charge"
+		),
+		**(
+			frappe.db.get_values(
+				"Press Settings",
+				"Press Settings",
+				["free_credits_inr", "free_credits_usd"],
+				as_dict=True,
+			)[0]
+		),
 	)

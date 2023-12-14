@@ -3,10 +3,13 @@
 		<div class="relative z-10">
 			<div class="flex">
 				<slot name="logo">
-					<FCLogo
-						class="mx-auto inline-block h-12"
-						@dblclick="redirectForFrappeioAuth"
-					/>
+					<div class="mx-auto flex items-center space-x-2">
+						<FCLogo
+							class="inline-block h-8 w-8"
+							@dblclick="redirectForFrappeioAuth"
+						/>
+						<span class="text-2xl font-semibold"> Frappe Cloud </span>
+					</div>
 				</slot>
 			</div>
 			<div

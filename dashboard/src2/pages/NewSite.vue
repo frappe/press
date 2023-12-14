@@ -193,8 +193,10 @@ import {
 	TextInput,
 	debounce
 } from 'frappe-ui';
+import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import router from '../router';
+import SitePlansCards from '../components/SitePlansCards.vue';
 
 // TODO:
 // 1. Marketplace app plans
@@ -207,7 +209,9 @@ export default {
 		TextInput,
 		Autocomplete,
 		FeatherIcon,
-		ErrorMessage
+		ErrorMessage,
+		Header,
+		SitePlansCards
 	},
 	data() {
 		return {
