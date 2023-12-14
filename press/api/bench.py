@@ -727,7 +727,7 @@ def branch_list(name: str, app: str) -> List[Dict]:
 	):
 		return get_branches_for_marketplace_app(app, marketplace_app[0], app_source)
 
-	return branches(installation_id, repo_owner, repo_name)
+	return branches(repo_owner, repo_name, installation_id)
 
 
 def get_branches_for_marketplace_app(
