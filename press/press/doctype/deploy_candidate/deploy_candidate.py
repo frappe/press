@@ -197,21 +197,30 @@ class DeployCandidate(Document):
 
 		self.apt_packages = self.get_apt_packages()
 
-		preparation_steps = (
-			[
-				("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
-				("pre", "redis", "Setup Prerequisites", "Install Redis"),
-				("pre", "python", "Setup Prerequisites", "Install Python"),
-				("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
-				("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
-			]
-			+ (
-				[("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages")]
-				if self.apt_packages
-				else []
+		preparation_steps = [
+			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
+			("pre", "redis", "Setup Prerequisites", "Install Redis"),
+			("pre", "python", "Setup Prerequisites", "Install Python"),
+			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
+			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
+		]
+
+		if self.apt_packages:
+			preparation_steps.extend(
+				[
+					("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages"),
+				]
 			)
-			+ [
-				("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
+
+		if self.is_code_server_enabled:
+			preparation_steps.extend(
+				[
+					("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
+				]
+			)
+
+		preparation_steps.extend(
+			[
 				("pre", "node", "Setup Prerequisites", "Install Node.js"),
 				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
 				("pre", "pip", "Setup Prerequisites", "Install pip"),
