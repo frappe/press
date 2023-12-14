@@ -46,6 +46,13 @@
 							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ this.app.title }} ({{ this.app.name }})
 						</div>
+						<div
+							v-else-if="appValidated === false && selectedBranch"
+							class="flex text-base text-gray-700"
+						>
+							<FeatherIcon name="x-circle" class="mr-2 w-4 text-red-700" />
+							Not a valid Frappe app
+						</div>
 						<ErrorMessage
 							:message="
 								$resources.branches.error ||
@@ -70,23 +77,14 @@
 			</FTabs>
 		</template>
 		<template #actions>
-			<div class="space-y-2">
-				<Button
-					class="w-full"
-					label="Validate App"
-					:disabled="!selectedBranch"
-					:loading="$resources.validateApp.loading"
-					@click="$resources.validateApp.submit()"
-				/>
-				<Button
-					class="w-full"
-					label="Add App to bench"
-					variant="solid"
-					:disabled="!appValidated"
-					:loading="$resources.addApp.loading"
-					@click="$resources.addApp.submit()"
-				/>
-			</div>
+			<Button
+				class="w-full"
+				label="Add App to bench"
+				variant="solid"
+				:disabled="!appValidated"
+				:loading="$resources.addApp.loading"
+				@click="$resources.addApp.submit()"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -109,7 +107,7 @@ export default {
 			tabIndex: 0,
 			githubAppLink: '',
 			selectedBranch: '',
-			appValidated: false,
+			appValidated: null,
 			tabs: [
 				{
 					label: 'Public GitHub App',
@@ -123,12 +121,9 @@ export default {
 		};
 	},
 	watch: {
-		selectedBranch() {
-			this.appValidated = false;
-		},
 		githubAppLink() {
 			this.selectedBranch = '';
-			this.appValidated = false;
+			this.appValidated = null;
 		}
 	},
 	resources: {
@@ -163,6 +158,9 @@ export default {
 							branch: this.selectedBranch.value
 						};
 					}
+				},
+				onError() {
+					this.appValidated = false;
 				}
 			};
 		},
@@ -180,6 +178,12 @@ export default {
 						label: branches[0].name,
 						value: branches[0].name
 					};
+
+					this.$resources.validateApp.submit({
+						owner: this.appOwner,
+						repository: this.appName,
+						branch: branches[0].name
+					});
 				},
 				validate() {
 					if (!this.githubAppLink) {
