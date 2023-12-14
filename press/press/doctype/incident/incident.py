@@ -12,8 +12,14 @@ class Incident(WebsiteGenerator):
 	def on_update(self):
 		pass
 
+	def validate(self):
+		if not hasattr(self, "phone_call"):
+			if frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"):
+				self.phone_call = True
+
 	def after_insert(self):
-		self.call_humans()
+		if self.phone_call:
+			self.call_humans()
 
 	def get_humans(self):
 		"""

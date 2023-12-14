@@ -7,7 +7,8 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "users"
+  "users",
+  "phone_call_alerts"
  ],
  "fields": [
   {
@@ -15,12 +16,18 @@
    "fieldtype": "Table",
    "label": "Users",
    "options": "Incident Settings User"
+  },
+  {
+   "default": "1",
+   "fieldname": "phone_call_alerts",
+   "fieldtype": "Check",
+   "label": "Phone Call Alerts"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-14 09:28:55.165124",
+ "modified": "2023-12-14 16:58:57.953652",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "alerts_tab",
+  "phone_call",
   "alertname",
   "status",
   "type",
@@ -150,13 +151,19 @@
    "fieldtype": "Link",
    "label": "Resolved By",
    "options": "User"
+  },
+  {
+   "default": "1",
+   "fieldname": "phone_call",
+   "fieldtype": "Check",
+   "label": "Phone Call"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2023-10-18 10:52:13.430851",
+ "modified": "2023-12-14 17:03:10.749182",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
