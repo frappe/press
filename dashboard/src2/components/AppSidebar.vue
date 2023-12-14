@@ -66,15 +66,15 @@
 				<AppSidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
 			</template>
 		</nav>
-		<SwitchTeamDialog v-model="showTeamSwitcher" />
+		<!-- TODO: update component name after dashboard2 merges -->
+		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
 </template>
 
 <script>
-import { h } from 'vue';
+import { h, defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
-import SwitchTeamDialog from './SwitchTeamDialog.vue';
-import Home from '~icons/lucide/home';
+import DoorOpen from '~icons/lucide/door-open';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
 import WalletCards from '~icons/lucide/wallet-cards';
@@ -85,7 +85,9 @@ export default {
 	name: 'AppSidebar',
 	components: {
 		AppSidebarItem,
-		SwitchTeamDialog,
+		SwitchTeamDialog2: defineAsyncComponent(() =>
+			import('./SwitchTeamDialog.vue')
+		),
 		Tooltip
 	},
 	data() {
@@ -101,7 +103,7 @@ export default {
 			return [
 				{
 					name: 'Welcome',
-					icon: () => h(Home),
+					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
 					condition: !this.$team.doc.onboarding.complete
@@ -111,7 +113,7 @@ export default {
 					icon: () => h(PanelTopInactive),
 					route: '/sites',
 					isActive:
-						['Site List', 'Site Detail'].includes(routeName) ||
+						['Site List', 'Site Detail', 'NewSite'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
 					disabled
 				},
@@ -120,7 +122,7 @@ export default {
 					icon: () => h(Package),
 					route: '/benches',
 					isActive:
-						['Release Group List', 'Release Group Detail'].includes(
+						['Release Group List', 'Release Group Detail', 'NewBench'].includes(
 							routeName
 						) || routeName.startsWith('Release Group Detail'),
 					disabled
