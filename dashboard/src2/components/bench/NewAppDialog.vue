@@ -200,7 +200,7 @@ export default {
 						name: this.app?.name,
 						title: this.app?.title,
 						repository_url: this.app?.repository_url,
-						branch: this.app?.branch,
+						branch: this.selectedBranch.value,
 						github_installation_id: this.app?.github_installation_id,
 						group: this.benchName
 					}
