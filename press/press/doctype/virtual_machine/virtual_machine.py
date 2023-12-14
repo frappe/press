@@ -741,6 +741,7 @@ get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 )
 
 
+@frappe.whitelist()
 def sync_virtual_machines():
 	machines = frappe.get_all(
 		"Virtual Machine", {"status": ("not in", ("Terminated", "Draft"))}
