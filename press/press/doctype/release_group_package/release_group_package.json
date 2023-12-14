@@ -9,7 +9,8 @@
  "field_order": [
   "package_manager",
   "column_break_r6rj",
-  "package"
+  "package",
+  "package_prerequisites"
  ],
  "fields": [
   {
@@ -30,12 +31,18 @@
   {
    "fieldname": "column_break_r6rj",
    "fieldtype": "Column Break"
+  },
+  {
+   "description": "Use && for multiline prerequisites",
+   "fieldname": "package_prerequisites",
+   "fieldtype": "Text",
+   "label": "Package Prerequisites"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-12 16:25:43.924621",
+ "modified": "2023-12-13 16:03:37.666353",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group Package",

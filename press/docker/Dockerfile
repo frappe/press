@@ -113,13 +113,30 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
-{% if doc.apt_packages %}
+{% if doc.custom_apt_packages %}
+
+
+{% for p in doc.custom_apt_packages %}
 # Install Additional APT Packages
+
+{% if p.prerequisites %}
+RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  {{ p.package }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+
+{% else %}
+
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
-  {{ doc.apt_packages }} \
+  {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-apt-packages`
+  `#stage-pre-{{ p.package }}`
+{% endif %}
+
+{% endfor %}
+
 {% endif %}
 
 RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump

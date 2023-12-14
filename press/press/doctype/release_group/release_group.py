@@ -328,7 +328,12 @@ class ReleaseGroup(Document):
 		]
 
 		packages = [
-			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
+			{
+				"package_manager": p.package_manager,
+				"package": p.package,
+				"package_prerequisites": p.package_prerequisites,
+			}
+			for p in self.packages
 		]
 
 		environment_variables = [

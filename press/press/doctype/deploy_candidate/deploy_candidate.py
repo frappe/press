@@ -10,6 +10,7 @@ import frappe
 import docker
 import dockerfile
 import subprocess
+import json
 
 from typing import List
 from subprocess import Popen
@@ -39,6 +40,10 @@ class DeployCandidate(Document):
 		"build_duration",
 		"apps",
 	]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.custom_apt_packages = []
 
 	def get_doc(self, doc):
 		doc.jobs = []
@@ -103,9 +108,10 @@ class DeployCandidate(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		frappe.enqueue_doc(
-			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
-		)
+		self._build()
+		# frappe.enqueue_doc(
+		# 	self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
+		# )
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
@@ -146,7 +152,7 @@ class DeployCandidate(Document):
 
 	def _build_and_deploy(self, staging: bool):
 		self._build()
-		self._deploy(staging)
+		# self._deploy(staging)
 
 	def _deploy(self, staging=False):
 		try:
@@ -166,7 +172,7 @@ class DeployCandidate(Document):
 			self._prepare_build_directory()
 			self._prepare_build_context()
 			self._run_docker_build(no_cache)
-			self._push_docker_image()
+			# self._push_docker_image()
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -193,9 +199,10 @@ class DeployCandidate(Document):
 
 	def add_build_steps(self):
 		if self.build_steps:
+			self.custom_apt_packages = json.loads(self.apt_packages)
 			return
 
-		self.apt_packages = self.get_apt_packages()
+		self._prepare_custom_apt_packages()
 
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
@@ -205,12 +212,8 @@ class DeployCandidate(Document):
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 		]
 
-		if self.apt_packages:
-			preparation_steps.extend(
-				[
-					("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages"),
-				]
-			)
+		if self.custom_apt_packages:
+			preparation_steps.extend(self._steps)
 
 		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
@@ -258,6 +261,25 @@ class DeployCandidate(Document):
 			},
 		)
 		self.save()
+
+	def _prepare_custom_apt_packages(self):
+		self._steps = []
+
+		for p in self.packages:
+			if p.package_manager == "apt":
+				self._steps.append(
+					[
+						"pre",
+						p.package,
+						"Setup Prerequisites",
+						f"Install Additional APT Packages {p.package}",
+					]
+				)
+				self.custom_apt_packages.append(
+					{"package": p.package, "prerequisites": p.package_prerequisites}
+				)
+
+		self.apt_packages = json.dumps(self.custom_apt_packages)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
