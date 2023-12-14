@@ -38,6 +38,7 @@
   "last_dependency_update",
   "packages",
   "environment_variables",
+  "mount_point",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
@@ -316,10 +317,16 @@
    "fieldtype": "Check",
    "label": "Is Code Server Enabled",
    "read_only": 1
+  },
+  {
+   "fieldname": "mount_point",
+   "fieldtype": "Table",
+   "label": "Mount Point",
+   "options": "Release Group Mount Point"
   }
  ],
  "links": [],
- "modified": "2023-12-19 12:39:50.724606",
+ "modified": "2023-12-13 15:07:24.700094",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
