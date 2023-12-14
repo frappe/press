@@ -290,11 +290,12 @@
    "fetch_from": "group.is_code_server_enabled",
    "fieldname": "is_code_server_enabled",
    "fieldtype": "Check",
-   "label": "Is Code Server Enabled"
+   "label": "Is Code Server Enabled",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-14 13:15:14.755810",
+ "modified": "2023-12-14 13:54:27.922485",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
