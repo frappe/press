@@ -4,6 +4,8 @@
 import frappe
 from twilio.rest import Client
 from frappe.website.website_generator import WebsiteGenerator
+from tenacity import retry, wait_fixed
+from tenacity.retry import retry_if_result
 
 from press.utils import log_error
 
@@ -47,13 +49,26 @@ class Incident(WebsiteGenerator):
 			raise
 		return Client(account_sid, auth_token)
 
+	@retry(
+		retry=retry_if_result(
+			lambda result: result not in ["completed", "failed", "busy", "no-answer"]
+		),
+		wait=wait_fixed(1),
+	)
+	def wait_for_pickup(self, call):
+		call = call.fetch()
+		return call.status  # will eventually be no-answer
+
 	def call_humans(self):
 		for human in self.get_humans():
-			self.twilio_client.calls.create(
+			call = self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
+			self.wait_for_pickup(call)
+			if call.status in ["completed", "answered"]:  # at least one picked up
+				break
 
 	def send_sms_via_twilio(self):
 		"""

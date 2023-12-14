@@ -1,14 +1,14 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import patch, Mock
+from unittest.mock import MagicMock, patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
+
 
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
-@patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 class MockTwilioClient:
 	def __init__(self, account_sid, auth_token):  # noqa
 		pass
@@ -18,9 +18,10 @@ class MockTwilioClient:
 		return frappe._dict({"create": self.create_call})
 
 	def create_call(self, **kwargs):
-		pass
+		return MagicMock()
 
 
+@patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		frappe.db.set_value("Press Settings", None, "twilio_account_sid", "test")
@@ -50,13 +51,14 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	def test_incident_gets_created_on_multiple_alerts(self):
+	def test_incident_gets_created_on_alert_that_meets_conditions(self):
 		# TODO: update for multiple alerts #
 		pass
 
+	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
 	@patch.object(MockTwilioClient, "create_call")
 	@patch("twilio.rest.Client", new=MockTwilioClient)
-	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team(
+	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
 		self, mock_calls_create: Mock
 	):
 		frappe.get_doc(
@@ -76,3 +78,6 @@ class TestIncident(FrappeTestCase):
 			to=self.test_phno_2,
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
+
+	def test_incident_creation_calls_one_person_if_they_pick_up(self):
+		pass
