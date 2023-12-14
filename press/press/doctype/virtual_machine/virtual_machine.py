@@ -419,8 +419,8 @@ class VirtualMachine(Document):
 						virtual_machine=self.name,
 						volume=volume,
 					)
-
-			self.disk_size = self.volumes[0].size
+			if self.volumes:
+				self.disk_size = self.volumes[0].size
 		else:
 			self.status = "Terminated"
 		self.save()
