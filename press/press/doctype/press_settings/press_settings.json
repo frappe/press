@@ -69,6 +69,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
+  "docker_remote_builder",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -122,6 +123,8 @@
   "github_webhook_secret",
   "github_access_token",
   "section_break_41",
+  "column_break_tcmy",
+  "column_break_edst",
   "github_app_private_key",
   "aws_section",
   "aws_access_key_id",
@@ -129,11 +132,9 @@
   "aws_secret_access_key",
   "twilio_section",
   "twilio_account_sid",
-  "twilio_phone_number",
-  "column_break_kxuj",
   "twilio_auth_token",
-  "section_break_rgly",
-  "docker_remote_builder",
+  "column_break_kxuj",
+  "twilio_phone_number",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1054,10 +1055,10 @@
   },
   {
    "fieldname": "twilio_phone_number",
-   "fieldtype": "Data",
+   "fieldtype": "Phone",
    "label": "Twilio Phone Number"
-	},
-	{
+  },
+  {
    "fieldname": "docker_remote_builder",
    "fieldtype": "Data",
    "label": "Docker Remote Builder"
@@ -1073,13 +1074,17 @@
    "label": "GST Percentage"
   },
   {
-   "fieldname": "section_break_rgly",
-   "fieldtype": "Section Break"
+   "fieldname": "column_break_tcmy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_edst",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-11-16 17:44:48.449246",
+ "modified": "2023-12-14 13:58:16.779724",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
