@@ -140,6 +140,7 @@ class Bench(Document):
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
 			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
+			"is_code_server_enabled": self.is_code_server_enabled,
 		}
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
