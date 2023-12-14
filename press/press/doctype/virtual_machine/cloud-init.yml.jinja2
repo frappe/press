@@ -35,6 +35,10 @@ runcmd:
 - systemctl restart mariadb
 - systemctl restart mysqld_exporter
 {% endif %}
+{% if server.provider == 'OCI' %}
+- iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited
+- sed -i 's/^-A INPUT -j REJECT --reject-with icmp-host-prohibited$/#-A INPUT -j REJECT --reject-with icmp-host-prohibited/g' /etc/iptables/rules.v4
+{% endif %}
 
 write_files:
 - path: /etc/systemd/system/statsd_exporter.service
