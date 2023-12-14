@@ -141,16 +141,13 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 
 
 def normalize_query(query: str) -> str:
-	"""Attempt to normalize query by removing variables.
-	This gives a different view of similar duplicate queries.
-	"""
 	q = sqlparse.parse(query)[0]
 	for token in q.flatten():
 		if "Token.Literal" in str(token.ttype):
 			token.value = "?"
 
 	# Format query consistently so identical queries can be matched
-	q = format_query(q)
+	q = format_query(q, strip_comments=True)
 
 	# Transform IN parts like this: IN (?, ?, ?) -> IN (?)
 	q = re.sub(r" IN \(\?[\s\n\?\,]*\)", " IN (?)", q, flags=re.IGNORECASE)
@@ -158,23 +155,27 @@ def normalize_query(query: str) -> str:
 	return q
 
 
-def format_query(q):
+def format_query(q, strip_comments=False):
 	return sqlparse.format(
-		str(q).strip(), keyword_case="upper", reindent=True, strip_comments=True
+		str(q).strip(), keyword_case="upper", reindent=True, strip_comments=strip_comments
 	)
 
 
 def summarize_by_query(data):
-	"""Summarize results by query, this assumes that queries are normalized"""
 	queries = defaultdict(lambda: defaultdict(float))
 	for row in data:
-		normalized_query = normalize_query(row["query"])
+		query = row["query"]
+		if "SQL_NO_CACHE" in query and "WHERE" not in query:
+			# These are mysqldump queries, there's no real way to optimize these, it's just dumping entire table.
+			continue
+
+		normalized_query = normalize_query(query)
 		entry = queries[normalized_query]
 		entry["count"] += 1
 		entry["query"] = normalized_query
 		entry["duration"] += row["duration"]
 		entry["rows_examined"] += row["rows_examined"]
 		entry["rows_sent"] += row["rows_sent"]
-		entry["example"] = row["query"]
+		entry["example"] = query
 
 	return list(queries.values())
