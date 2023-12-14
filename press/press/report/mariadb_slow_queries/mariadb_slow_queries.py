@@ -143,7 +143,8 @@ def get_slow_query_logs(database, start_datetime, end_datetime, search_pattern, 
 def normalize_query(query: str) -> str:
 	q = sqlparse.parse(query)[0]
 	for token in q.flatten():
-		if "Token.Literal" in str(token.ttype):
+		token_type = str(token.ttype)
+		if "Token.Literal" in token_type or token_type == "Token.Keyword.Order":
 			token.value = "?"
 
 	# Format query consistently so identical queries can be matched
