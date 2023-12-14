@@ -9,7 +9,7 @@ from frappe.model.base_document import get_controller
 from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
 from frappe.handler import get_attr, run_doc_method as _run_doc_method
-from press.press.doctype.press_permission_rule.press_permission_rule import get_permitted_methods
+from press.press.doctype.press_permission_group.press_permission_group import get_permitted_methods
 
 
 @frappe.whitelist()
@@ -70,7 +70,7 @@ def get(doctype, name):
 	for fieldname in fields:
 		_doc[fieldname] = doc.get(fieldname)
 
-	permitted_methods = get_permitted_methods(doc)
+	permitted_methods = get_permitted_methods(doc.doctype, doc.name)
 	if permitted_methods and "*" not in permitted_methods:
 		_doc.permitted_methods = permitted_methods
 

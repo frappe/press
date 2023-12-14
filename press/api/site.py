@@ -21,8 +21,8 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
-from press.press.doctype.press_permission_rule.press_permission_rule import (
-	has_user_permission as has_user_permission_from_rule,
+from press.press.doctype.press_permission_group.press_permission_group import (
+	has_user_permission as has_user_permission_from_group,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
@@ -85,8 +85,8 @@ def protected(doctypes):
 					permission_groups = frappe.get_all(
 						"Press Permission Group User", {"user": frappe.session.user}, pluck="parent"
 					)
-					has_permission_rule_set = frappe.db.exists(
-						"Press Permission Rule User", {"user": frappe.session.user}
+					has_group_permissions = frappe.db.exists(
+						"Press Permission Group User", {"user": frappe.session.user, "permissions": ("is", "set")}
 					)
 
 					if (
@@ -97,8 +97,8 @@ def protected(doctypes):
 						return wrapped(*args, **kwargs)
 
 					elif (
-							has_permission_rule_set
-							and has_user_permission_from_rule(doctype, name, request_path)
+							has_group_permissions
+							and has_user_permission_from_group(doctype, name, request_path)
 						):
 						return wrapped(*args, **kwargs)
 
