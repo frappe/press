@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div class="flex">
-			<div>
+			<slot name="actions-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
 					class="w-[20rem]"
@@ -21,13 +21,14 @@
 						</span>
 					</template>
 				</TextInput>
-			</div>
+			</slot>
 			<div class="ml-auto flex items-center space-x-2">
 				<Button label="Refresh" @click="list.reload()" :loading="isLoading">
 					<template #icon>
 						<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
 					</template>
 				</Button>
+				<slot name="actions-right" v-bind="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>

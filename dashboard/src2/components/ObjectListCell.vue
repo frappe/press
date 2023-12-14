@@ -12,7 +12,8 @@
 		<div v-if="column.prefix" class="mr-2">
 			<component :is="column.prefix(row)" />
 		</div>
-		<Badge v-if="column.type === 'Badge'" :label="formattedValue" />
+		<component v-if="column.type === 'Component'" :is="column.component(contextWithRow)" />
+		<Badge v-else-if="column.type === 'Badge'" :label="formattedValue" />
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
