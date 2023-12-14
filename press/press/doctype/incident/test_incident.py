@@ -10,7 +10,7 @@ from press.press.doctype.team.test_team import create_test_press_admin_team
 
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 class MockTwilioClient:
-	def __init__(self, account_sid, auth_token):
+	def __init__(self, account_sid, auth_token):  # noqa
 		pass
 
 	@property

@@ -5,16 +5,49 @@ import frappe
 from twilio.rest import Client
 from frappe.website.website_generator import WebsiteGenerator
 
+from press.utils import log_error
+
 
 class Incident(WebsiteGenerator):
 	def on_update(self):
 		pass
 
-	def validate(self):
-		if self.status == "Confirmed" and self.sms_sent == 0:
-			self.send_sms_via_twilio()
-		if self.status == "Acknowledged" and len(self.updates) < 1:
-			self.add_acknowledgment_update()
+	def after_insert(self):
+		self.call_humans()
+
+	def get_humans(self):
+		"""
+		Returns a list of users who are in the incident team
+		"""
+		incident_settings = frappe.get_cached_doc("Incident Settings")
+		return incident_settings.users
+
+	@property
+	def twilio_phone_number(self):
+		press_settings = frappe.get_cached_doc("Press Settings")
+		return press_settings.twilio_phone_number
+
+	@property
+	def twilio_client(self):
+		press_settings = frappe.get_cached_doc("Press Settings")
+		try:
+			account_sid = press_settings.twilio_account_sid
+			auth_token = press_settings.get_password("twilio_auth_token")
+		except Exception:
+			log_error(
+				"Twilio credentials are not entered in Press Settings.",
+			)
+			frappe.db.commit()  # don't interrupt alert creation
+			raise
+		return Client(account_sid, auth_token)
+
+	def call_humans(self):
+		for human in self.get_humans():
+			self.twilio_client.calls.create(
+				url="http://demo.twilio.com/docs/voice.xml",
+				to=human.phone,
+				from_=self.twilio_phone_number,
+			)
 
 	def send_sms_via_twilio(self):
 		"""
@@ -31,25 +64,12 @@ class Incident(WebsiteGenerator):
 			for x in assigned_users
 			if frappe.db.get_value("User", x, "phone") is not None
 		)  # make a generator object of phone numbers
-		press_settings = frappe.get_doc("Press Settings")
-		try:
-			account_sid = press_settings.twilio_account_sid
-			auth_token = press_settings.get_password("twilio_auth_token")
-		except:
-			frappe.msgprint(
-				"Twilio credentials are not entered in Press Settings.",
-				title="Notification cannot be sent",
-				indicator="Red",
-			)
-			return
 		incident_link = f"https://frappecloud.com/app/incident/{self.name}"
 		message_body = f"New Incident {self.name} Reported\n\nSubject: {self.alertname}\nType: {self.type}\nHosted on: {self.server}\n\nIncident URL: {incident_link}"
-		client = Client(account_sid, auth_token) # Initialize Twilio Client
-		for number in phone_numbers: # Looping the Numbers one by one
-			if number:client.messages.create(
-					to=number,
-					from_=press_settings.twilio_phone_number,
-					body=message_body
+		for number in phone_numbers:  # Looping the Numbers one by one
+			if number:
+				self.twilio_client.messages.create(
+					to=number, from_=self.twilio_phone_number, body=message_body
 				)
 		self.sms_sent = 1
 
