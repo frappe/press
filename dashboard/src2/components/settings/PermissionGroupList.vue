@@ -6,6 +6,7 @@
 import { h, inject, ref } from 'vue';
 import { icon, renderDialog } from '../../utils/components';
 import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';
+import PermissionGroupUserCell from './PermissionGroupUserCell.vue';
 
 const breadcrumbs = inject('breadcrumbs');
 breadcrumbs.value = [
@@ -30,8 +31,11 @@ const listOptions = ref({
 			width: 1
 		},
 		{
-			label: 'User Count',
-			fieldname: 'user_count',
+			label: 'Users',
+			type: 'Component',
+			component: ({ row }) => {
+				return h(PermissionGroupUserCell, { groupId: row.name })
+			},
 			width: 1
 		}
 	],
