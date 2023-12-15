@@ -22,7 +22,7 @@ from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
 from press.press.doctype.press_permission_group.press_permission_group import (
-	has_user_permission as has_user_permission_from_group,
+	has_user_permission as has_user_permission_new,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
@@ -63,6 +63,12 @@ def protected(doctypes):
 		if not isinstance(doctypes, list):
 			doctypes = [doctypes]
 
+		is_method_restrictable = frappe.db.exists(
+			"Press Method Permission", {"method": request_path}
+		)
+		if not is_method_restrictable:
+			return wrapped(*args, **kwargs)
+
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 			has_config_permissions = frappe.db.exists(
@@ -76,29 +82,33 @@ def protected(doctypes):
 						name = frappe.db.get_value(doctype, name, "group")
 						doctype = "Release Group"
 
-					restricted_method = frappe.db.exists(
-						"Press Method Permission", {"method": request_path}
-					)
-					has_permission_set = frappe.db.exists(
+					user_permission_set = frappe.db.exists(
 						"Press User Permission", {"user": frappe.session.user}
 					)
 					permission_groups = frappe.get_all(
 						"Press Permission Group User", {"user": frappe.session.user}, pluck="parent"
 					)
-					has_group_permissions = frappe.db.exists(
-						"Press Permission Group User",
-						{"user": frappe.session.user, "permissions": ("is", "set")},
+					group_permissions_set = frappe.db.exists(
+						"Press User Permission",
+						{"type": "Group", "user": frappe.session.user, "name": ("in", permission_groups)},
 					)
-
 					if (
-						(has_permission_set or permission_groups)
-						and restricted_method
+						(user_permission_set or group_permissions_set)
 						and has_user_permission(doctype, name, request_path, permission_groups)
 					):
 						return wrapped(*args, **kwargs)
 
-					elif has_group_permissions and has_user_permission_from_group(
-						doctype, name, request_path
+					new_group_permissions_set = frappe.get_all(
+						"Press Permission Group",
+						{
+							"name": ("in", permission_groups),
+							"permissions": ("is", "set"),
+							"user": frappe.session.user, # child table field
+						},
+					)
+					if (
+						new_group_permissions_set
+						and has_user_permission_new(doctype, name, request_path)
 					):
 						return wrapped(*args, **kwargs)
 
