@@ -2,6 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Change Plan',
+			size: '5xl',
 			actions: [
 				{
 					label: 'Change plan',
@@ -20,10 +21,12 @@
 	</Dialog>
 </template>
 <script>
-import { ErrorMessage, getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui';
+import SitePlansCards from './SitePlansCards.vue';
 
 export default {
 	name: 'ManageSitePlansDialog',
+	components: { SitePlansCards },
 	props: {
 		site: {
 			type: String,
@@ -65,7 +68,6 @@ export default {
 		$site() {
 			return getCachedDocumentResource('Site', this.site);
 		}
-	},
-	components: { ErrorMessage }
+	}
 };
 </script>
