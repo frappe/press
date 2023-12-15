@@ -86,20 +86,20 @@ def protected(doctypes):
 						"Press Permission Group User", {"user": frappe.session.user}, pluck="parent"
 					)
 					has_group_permissions = frappe.db.exists(
-						"Press Permission Group User", {"user": frappe.session.user, "permissions": ("is", "set")}
+						"Press Permission Group User",
+						{"user": frappe.session.user, "permissions": ("is", "set")},
 					)
 
 					if (
-							(has_permission_set or permission_groups)
-							and restricted_method
-							and has_user_permission(doctype, name, request_path, permission_groups)
+						(has_permission_set or permission_groups)
+						and restricted_method
+						and has_user_permission(doctype, name, request_path, permission_groups)
 					):
 						return wrapped(*args, **kwargs)
 
-					elif (
-							has_group_permissions
-							and has_user_permission_from_group(doctype, name, request_path)
-						):
+					elif has_group_permissions and has_user_permission_from_group(
+						doctype, name, request_path
+					):
 						return wrapped(*args, **kwargs)
 
 					else:

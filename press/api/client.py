@@ -9,7 +9,9 @@ from frappe.model.base_document import get_controller
 from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
 from frappe.handler import get_attr, run_doc_method as _run_doc_method
-from press.press.doctype.press_permission_group.press_permission_group import get_permitted_methods
+from press.press.doctype.press_permission_group.press_permission_group import (
+	get_permitted_methods,
+)
 
 
 @frappe.whitelist()
@@ -76,7 +78,8 @@ def get(doctype, name):
 		_doc[fieldname] = doc.get(fieldname)
 
 	could_have_restricted_methods = frappe.db.exists(
-		"Press Method Permission", {"document_type": doctype},
+		"Press Method Permission",
+		{"document_type": doctype},
 	)
 	if could_have_restricted_methods:
 		permitted_methods = get_permitted_methods(doc.doctype, doc.name)
