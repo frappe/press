@@ -165,9 +165,6 @@ class VirtualMachine(Document):
 					),
 					platform_config=LaunchInstancePlatformConfig(
 						type="INTEL_VM",
-						is_secure_boot_enabled=True,
-						is_trusted_platform_module_enabled=True,
-						is_measured_boot_enabled=True,
 					),
 					is_pv_encryption_in_transit_enabled=True,
 					metadata={
