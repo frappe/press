@@ -136,6 +136,7 @@ def repositories(installation, token):
 					"name": repository["name"],
 					"private": repository["private"],
 					"url": repository["html_url"],
+					"default_branch": repository["default_branch"],
 				}
 			)
 		current_page += 1
