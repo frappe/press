@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="h-screen bg-gray-50">
 		<LoginBox :class="{ 'pointer-events-none': $resources.signup.loading }">
 			<div v-if="!(signupEmailSent || resetPasswordEmailSent)">
 				<div
@@ -113,6 +113,24 @@
 						</div>
 					</Button>
 				</div>
+				<div
+					class="mt-6 text-center"
+					v-if="!(signupEmailSent || resetPasswordEmailSent)"
+				>
+					<router-link
+						class="text-center text-base font-medium"
+						:to="{
+							name: $route.name == 'Login' ? 'Signup' : 'Login',
+							query: { ...$route.query, forgot: undefined }
+						}"
+					>
+						{{
+							$route.name == 'Login'
+								? 'New member? Create a new account.'
+								: 'Already have an account? Log in.'
+						}}
+					</router-link>
+				</div>
 			</div>
 			<div class="text-p-base text-gray-700" v-else>
 				<p v-if="signupEmailSent">
@@ -127,24 +145,6 @@
 				</p>
 			</div>
 		</LoginBox>
-		<div
-			class="text-center"
-			v-if="!(signupEmailSent || resetPasswordEmailSent)"
-		>
-			<router-link
-				class="text-center text-base font-medium"
-				:to="{
-					name: $route.name == 'Login' ? 'Signup' : 'Login',
-					query: { ...$route.query, forgot: undefined }
-				}"
-			>
-				{{
-					$route.name == 'Login'
-						? 'New member? Create a new account.'
-						: 'Already have an account? Log in.'
-				}}
-			</router-link>
-		</div>
 	</div>
 </template>
 
