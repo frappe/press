@@ -1,0 +1,133 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-10-18 13:46:51.308480",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "instance_type",
+  "instance",
+  "alert_comment",
+  "duration_column",
+  "from_time",
+  "to_time",
+  "duration",
+  "silence_id",
+  "section_break_hvst",
+  "alert_previews_column",
+  "total_alerts",
+  "alert_previews"
+ ],
+ "fields": [
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Link",
+   "label": "Instance Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "instance",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Instance",
+   "options": "instance_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "duration_column",
+   "fieldtype": "Column Break",
+   "label": "Duration"
+  },
+  {
+   "default": "now",
+   "fieldname": "from_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "From Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "To Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Data",
+   "label": "Duration",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_hvst",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "alert_comment",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Alert Comment",
+   "reqd": 1
+  },
+  {
+   "default": "Preview",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nPreview\nActive\nExpired",
+   "read_only": 1
+  },
+  {
+   "fieldname": "alert_previews",
+   "fieldtype": "Code",
+   "label": "Alert Previews",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "silence_id",
+   "fieldtype": "Data",
+   "label": "Silence ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "alert_previews_column",
+   "fieldtype": "Column Break",
+   "label": "Alert Previews"
+  },
+  {
+   "fieldname": "total_alerts",
+   "fieldtype": "Data",
+   "label": "Total Alerts",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-10-19 10:56:12.281776",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Silenced Alert",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
