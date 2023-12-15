@@ -414,7 +414,7 @@ class VirtualMachine(Document):
 					row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
 					row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
 
-					if not existing_volume:
+					if not existing_volume and row.volume_id:
 						self.append("volumes", row)
 				except Exception:
 					log_error(
