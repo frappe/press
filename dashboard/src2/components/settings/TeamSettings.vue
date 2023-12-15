@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+import ObjectList from '../ObjectList.vue';
 import { h, inject, ref, computed } from 'vue';
 import { renderDialog } from '../../utils/components';
 import { getTeam } from '../../data/team';

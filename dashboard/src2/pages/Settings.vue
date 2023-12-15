@@ -14,6 +14,7 @@
 </template>
 
 <script setup>
+import Header from '../components/Header.vue';
 import { Breadcrumbs, Tabs } from 'frappe-ui';
 import { onMounted, provide, ref, watch } from 'vue';
 import { onBeforeRouteUpdate, useRouter } from 'vue-router';

@@ -211,7 +211,7 @@ scheduler_events = {
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
-			"press.press.audit.check_unbilled_subscriptions",
+			"press.press.audit.billing_audit",
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",

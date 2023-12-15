@@ -37,6 +37,7 @@
 </template>
 
 <script setup>
+import ObjectList from '../ObjectList.vue';
 import { Dropdown, createDocumentResource } from 'frappe-ui';
 import { computed, h, inject, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window.vue';

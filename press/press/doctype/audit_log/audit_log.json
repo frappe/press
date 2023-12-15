@@ -7,6 +7,8 @@
  "field_order": [
   "audit_type",
   "status",
+  "telegram_group",
+  "telegram_group_topic",
   "log"
  ],
  "fields": [
@@ -22,7 +24,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Audit Type",
-   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check",
+   "options": "Bench Field Check\nBackup Record Check\nOffsite Backup Check\nRestore Offsite Backup of Site\nApp Server Replica Dirs Check\nUnbilled Subscription Check\nBilling Audit",
    "read_only": 1
   },
   {
@@ -30,11 +32,24 @@
    "fieldtype": "Code",
    "label": "Log",
    "read_only": 1
+  },
+  {
+   "fieldname": "telegram_group",
+   "fieldtype": "Link",
+   "label": "Telegram Group",
+   "options": "Telegram Group",
+   "read_only": 1
+  },
+  {
+   "fieldname": "telegram_group_topic",
+   "fieldtype": "Data",
+   "label": "Telegram Group Topic",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-12-15 14:36:51.420831",
+ "modified": "2023-12-12 20:37:01.612896",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Audit Log",

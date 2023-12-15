@@ -59,10 +59,14 @@
 </template>
 <script>
 import { getObject } from '../objects';
+import JobStep from '../components/JobStep.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
+	components: {
+		JobStep
+	},
 	resources: {
 		deploy() {
 			return {

@@ -3,11 +3,16 @@ import json
 from datetime import datetime, timedelta
 from press.press.doctype.server.server import Server
 from typing import Dict, List
-from frappe.utils import rounded
 
 import frappe
+from frappe.utils import rounded
 
 from press.agent import Agent
+from press.press.doctype.subscription.subscription import (
+	paid_plans,
+	sites_with_free_hosting,
+	created_usage_records,
+)
 
 
 class Audit:
@@ -17,13 +22,17 @@ class Audit:
 	`audit_type` member variable needs to be set to log
 	"""
 
-	def log(self, log: dict, status: str):
+	def log(
+		self, log: dict, status: str, telegram_group: str = None, telegram_topic: str = None
+	):
 		frappe.get_doc(
 			{
 				"doctype": "Audit Log",
 				"log": json.dumps(log, indent=2),
 				"status": status,
 				"audit_type": self.audit_type,
+				"telegram_group": telegram_group,
+				"telegram_topic": telegram_topic,
 			}
 		).insert()
 
@@ -259,27 +268,40 @@ class OffsiteBackupCheck(Audit):
 		self.log(log, status)
 
 
-class UnbilledSubscriptionsCheck(Audit):
-	"""Checks daily for enabled/valid subscriptions that don't have any usage records created"""
+class BillingAudit(Audit):
+	"""Daily audit of billing related checks"""
 
-	audit_type = "Unbilled Subscription Check"
-	list_key = "Subscriptions with no usage records created"
+	audit_type = "Billing Audit"
 
 	def __init__(self):
-		log = {self.list_key: []}
+		self.paid_plans = paid_plans()
+		self.teams_with_paid_sites = frappe.get_all(
+			"Site",
+			{
+				"status": ("not in", ("Archived", "Suspended", "Inactive")),
+				"free": False,
+				"trial_end_date": ("is", "not set"),
+			},
+			pluck="team",
+			distinct=True,
+		)
+		audits = {
+			"Subscriptions with no usage records created": self.subscriptions_without_usage_record,
+			"Teams with active sites that don't have payment method set": self.teams_without_payment_method,
+			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
+			"Sites active after trial": self.free_sites_after_trial,
+		}
+
+		log = {a: [] for a in audits.keys()}
 		status = "Success"
-		subscriptions = self.subscriptions_without_usage_record()
-		log[self.list_key] += subscriptions
-		status = "Failure" if len(subscriptions) > 0 else "Success"
-		self.log(log, status)
+		for audit_name in audits.keys():
+			result = audits[audit_name]()
+			log[audit_name] += result
+			status = "Failure" if len(result) > 0 else status
+
+		self.log(log=log, status=status, telegram_group="Billing", telegram_topic="Audits")
 
 	def subscriptions_without_usage_record(self):
-		from press.press.doctype.subscription.subscription import (
-			paid_plans,
-			sites_with_free_hosting,
-			created_usage_records,
-		)
-
 		free_sites = sites_with_free_hosting()
 		free_teams = frappe.get_all(
 			"Team", filters={"free_account": True, "enabled": True}, pluck="name"
@@ -290,11 +312,62 @@ class UnbilledSubscriptionsCheck(Audit):
 			filters={
 				"team": ("not in", free_teams),
 				"enabled": True,
-				"plan": ("in", paid_plans()),
+				"plan": ("in", self.paid_plans),
 				"name": ("not in", created_usage_records(free_sites, frappe.utils.today())),
 				"document_name": ("not in", free_sites),
 			},
 			pluck="name",
+		)
+
+	def teams_without_payment_method(self):
+		teams_with_no_card = frappe.get_all(
+			"Team",
+			{
+				"free_account": False,
+				"name": ("in", self.teams_with_paid_sites),
+				"payment_mode": "Card",
+				"default_payment_method": ("is", "not set"),
+			},
+			pluck="name",
+		)
+		teams_with_no_payment_method = frappe.get_all(
+			"Team",
+			{
+				"free_account": False,
+				"name": ("in", self.teams_with_paid_sites),
+				"payment_mode": ("is", "not set"),
+			},
+			pluck="name",
+		)
+
+		return teams_with_no_card + teams_with_no_payment_method
+
+	def disabled_teams_with_active_sites(self):
+		return frappe.get_all(
+			"Team",
+			{"name": ("in", self.teams_with_paid_sites), "enabled": False},
+			pluck="name",
+		)
+
+	def free_sites_after_trial(self):
+		today = frappe.utils.today()
+		free_teams = frappe.get_all("Team", {"free_account": 1}, pluck="name")
+
+		filters = {
+			"trial_end_date": ["is", "set"],
+			"is_standby": 0,
+			"plan": ["like", "%Trial%"],
+			"status": ("in", ["Active", "Broken"]),
+			"team": ("not in", free_teams),
+		}
+
+		sites = frappe.db.get_all(
+			"Site", filters=filters, fields=["name", "team"], pluck="name"
+		)
+
+		# Flake doesn't allow use of duplicate keys in same dictionary
+		return frappe.get_all(
+			"Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name"
 		)
 
 
@@ -314,5 +387,5 @@ def check_app_server_replica_benches():
 	AppServerReplicaDirsCheck()
 
 
-def check_unbilled_subscriptions():
-	UnbilledSubscriptionsCheck()
+def billing_audit():
+	BillingAudit()

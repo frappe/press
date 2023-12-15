@@ -13,8 +13,7 @@
 	>
 		<template v-slot:target="{ togglePopover }">
 			<Button
-				class="flex w-fit items-center rounded-full bg-gray-100 px-2 py-1 font-mono text-xs font-normal leading-[13px] text-gray-800 hover:bg-gray-200"
-				icon-left="git-commit"
+				class="font-mono text-xs"
 				:label="modelValue.label"
 				icon-right="chevron-down"
 				@click="() => togglePopover()"

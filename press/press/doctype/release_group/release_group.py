@@ -79,7 +79,6 @@ class ReleaseGroup(Document):
 		self.validate_app_versions()
 		self.validate_servers()
 		self.validate_rq_queues()
-		self.validate_gunicorn_config()
 		self.validate_max_min_workers()
 
 	def before_insert(self):
@@ -299,17 +298,6 @@ class ReleaseGroup(Document):
 				frappe.ValidationError,
 			)
 
-	def validate_gunicorn_config(self):
-		if not self.gunicorn_worker_type:
-			self.gunicorn_worker_type = "sync"
-
-		if self.gunicorn_worker_type == "gthread":
-			if self.gunicorn_threads_per_worker < 2:
-				self.gunicorn_threads_per_worker = 4  # GThread with 1 thread is meaningless.
-		else:
-			# This only applies to gthread workers
-			self.gunicorn_threads_per_worker = 0
-
 	def validate_max_min_workers(self):
 		if self.max_gunicorn_workers and self.min_gunicorn_workers:
 			if self.max_gunicorn_workers < self.min_gunicorn_workers:
@@ -516,7 +504,8 @@ class ReleaseGroup(Document):
 				frappe._dict(
 					{
 						"title": app.title,
-						"app": app.app,
+						"app": app.app,  # remove this line once dashboard1 is removed
+						"name": app.app,
 						"source": source.name,
 						"repository": source.repository,
 						"repository_owner": source.repository_owner,

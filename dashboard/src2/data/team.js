@@ -16,6 +16,12 @@ export function getTeam() {
 }
 
 function getCurrentTeam() {
+	if (
+		document.cookie.includes('user_id=Guest;') ||
+		!document.cookie.includes('user_id')
+	) {
+		throw new Error('Not logged in');
+	}
 	return localStorage.getItem('current_team') || window.default_team;
 }
 

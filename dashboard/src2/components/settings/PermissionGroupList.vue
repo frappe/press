@@ -3,6 +3,7 @@
 </template>
 
 <script setup>
+import ObjectList from '../ObjectList.vue';
 import { h, inject, ref } from 'vue';
 import { icon, renderDialog } from '../../utils/components';
 import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';

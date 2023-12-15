@@ -38,6 +38,17 @@
 							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</template>
 					</Button>
+					<Button
+						@click="
+							showDialog = false;
+							showNewAppDialog = true;
+						"
+					>
+						<template #prefix>
+							<i-lucide-github class="h-4 w-4" />
+							Add from GitHub
+						</template>
+					</Button>
 				</div>
 			</div>
 			<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
@@ -102,6 +113,7 @@
 			</div>
 		</template>
 	</Dialog>
+	<NewAppDialog :benchName="benchName" v-model="showNewAppDialog" />
 </template>
 
 <script>
@@ -115,6 +127,7 @@ import {
 	TextInput
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import NewAppDialog from './NewAppDialog.vue';
 
 export default {
 	name: 'AddAppDialog',
@@ -126,13 +139,14 @@ export default {
 		ListRow,
 		ListRows,
 		ListRowItem,
-		TextInput
+		TextInput,
+		NewAppDialog
 	},
 	emits: ['appAdd'],
 	data() {
 		return {
 			searchQuery: '',
-			showDialog: true,
+			showNewAppDialog: false,
 			selectedAppSources: [],
 			showDialog: true,
 			columns: [

@@ -97,6 +97,8 @@
 	</div>
 </template>
 <script>
+import ActionButton from './ActionButton.vue';
+import ObjectListCell from './ObjectListCell.vue';
 import {
 	Dropdown,
 	ListView,
@@ -107,8 +109,7 @@ import {
 	ListRowItem,
 	ListSelectBanner,
 	TextInput,
-	FeatherIcon,
-	debounce
+	FeatherIcon
 } from 'frappe-ui';
 import { onDocUpdate } from 'frappe-ui/src/resources/realtime';
 
@@ -116,6 +117,8 @@ export default {
 	name: 'ObjectList',
 	props: ['options'],
 	components: {
+		ActionButton,
+		ObjectListCell,
 		Dropdown,
 		ListView,
 		ListHeader,
@@ -154,7 +157,12 @@ export default {
 				],
 				filters: this.options.filters || {},
 				orderBy: this.options.orderBy,
-				auto: true
+				auto: true,
+				onError: e => {
+					if (this.$resources.list.data) {
+						this.$resources.list.data = [];
+					}
+				}
 			};
 		}
 	},

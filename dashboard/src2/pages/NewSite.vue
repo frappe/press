@@ -39,13 +39,13 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="selectedVersion?.group?.apps?.length">
+			<div class="flex flex-col" v-if="selectedVersionApps.length">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">Select Apps</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
 						<button
-							v-for="app in selectedVersion.group.apps"
-							:key="app.app"
+							v-for="app in selectedVersionApps"
+							:key="app"
 							@click="toggleApp(app)"
 							:class="[
 								apps.includes(app.app)
@@ -57,9 +57,22 @@
 							<img :src="app.image" class="h-10 w-10 shrink-0" />
 							<div class="w-full">
 								<div class="flex w-full items-center justify-between">
-									<span class="text-sm font-medium">
-										{{ app.app_title }}
-									</span>
+									<div class="flex items-center">
+										<div class="text-base font-medium">
+											{{ app.app_title }}
+										</div>
+										<Tooltip
+											v-if="app.total_installs > 1"
+											:text="`${app.total_installs} installs`"
+										>
+											<div class="ml-2 flex items-center text-sm text-gray-600">
+												<i-lucide-download class="h-3 w-3" />
+												<span class="ml-0.5 leading-3">
+													{{ $format.numberK(app.total_installs || '') }}
+												</span>
+											</div>
+										</Tooltip>
+									</div>
 									<a
 										:href="`/${app.route}`"
 										target="_blank"
@@ -111,15 +124,15 @@
 			</div>
 			<div v-if="selectedVersion && cluster">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">Select Plan</h2>
-				<div class="mt-2">
+				<div class="mt-2 overflow-hidden">
 					<SitePlansCards v-model="plan" />
 				</div>
 			</div>
-			<div v-if="selectedVersion && plan && cluster">
+			<div v-if="selectedVersion && plan && cluster" class="w-1/2">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Enter Subdomain
 				</h2>
-				<div class="mt-2 grid grid-cols-2 items-center gap-3 sm:grid-cols-4">
+				<div class="mt-2 items-center">
 					<div class="col-span-2 flex w-full">
 						<TextInput
 							class="flex-1 rounded-r-none"
@@ -157,9 +170,59 @@
 					</template>
 				</div>
 			</div>
+			<div class="w-1/2" v-if="selectedVersion && cluster && plan">
+				<h2 class="text-sm font-medium leading-6 text-gray-900">Summary</h2>
+				<div
+					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
+					style="grid-template-columns: 1fr 4fr"
+				>
+					<div>Version:</div>
+					<div class="font-medium">{{ selectedVersion.name }}</div>
+					<div>Apps:</div>
+					<div class="font-medium">
+						{{
+							selectedVersionApps
+								.filter(app => apps.includes(app.app))
+								.map(app => app.app_title)
+								.join(', ')
+						}}
+					</div>
+					<div>Plan:</div>
+					<div v-if="selectedPlan">
+						<div>
+							<span class="font-medium">
+								{{
+									$format.userCurrency(
+										$team.doc.currency == 'INR'
+											? selectedPlan.price_inr
+											: selectedPlan.price_usd
+									)
+								}}
+								per month
+							</span>
+							<span class="text-gray-700" v-if="selectedPlan.support_included">
+								(Support included)
+							</span>
+						</div>
+						<div class="text-gray-700">
+							{{
+								$format.userCurrency(
+									$team.doc.currency == 'INR'
+										? selectedPlan.price_per_day_inr
+										: selectedPlan.price_per_day_usd
+								)
+							}}
+							per day
+						</div>
+					</div>
+                    <div v-else>{{ plan }}</div>
+					<div>Region:</div>
+					<div class="font-medium">{{ selectedClusterTitle }}</div>
+				</div>
+			</div>
 			<div
 				v-if="selectedVersion && cluster && plan"
-				class="flex flex-col space-y-4"
+				class="flex w-1/2 flex-col space-y-4"
 			>
 				<FormControl
 					type="checkbox"
@@ -172,8 +235,10 @@
 					@change="val => (shareDetailsConsent = val.target.checked)"
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
+			</div>
+			<div class="w-1/2" v-if="selectedVersion && cluster && plan">
 				<Button
-					class="w-1/2"
+					class="w-full"
 					variant="solid"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
@@ -191,10 +256,14 @@ import {
 	FeatherIcon,
 	FormControl,
 	TextInput,
-	debounce
+	Tooltip,
+	debounce,
+	getCachedResource
 } from 'frappe-ui';
+import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import router from '../router';
+import SitePlansCards from '../components/SitePlansCards.vue';
 
 // TODO:
 // 1. Marketplace app plans
@@ -207,7 +276,10 @@ export default {
 		TextInput,
 		Autocomplete,
 		FeatherIcon,
-		ErrorMessage
+		ErrorMessage,
+		Header,
+		SitePlansCards,
+		Tooltip
 	},
 	data() {
 		return {
@@ -313,6 +385,36 @@ export default {
 			return this.selectedVersion?.group?.clusters?.find(
 				c => c.name === this.cluster
 			)?.title;
+		},
+		selectedVersionApps() {
+			if (!this.selectedVersion?.group?.bench_app_sources) return [];
+			// sorted by total installs and then by name
+			return this.selectedVersion.group.bench_app_sources
+				.map(app_source => {
+					let app_source_details = this.options.app_source_details[app_source];
+					let marketplace_details = app_source_details
+						? this.options.marketplace_details[app_source_details.app]
+						: {};
+					return {
+						app_title: app_source,
+						...app_source_details,
+						...marketplace_details
+					};
+				})
+				.sort((a, b) => {
+					if (a.total_installs > b.total_installs) {
+						return -1;
+					} else if (a.total_installs < b.total_installs) {
+						return 1;
+					} else {
+						return a.app_title.localeCompare(b.app_title);
+					}
+				});
+		},
+		selectedPlan() {
+			let plans = getCachedResource('site.plans');
+			if (!plans?.data) return;
+			return plans.data.find(p => p.name === this.plan);
 		}
 	},
 	methods: {
