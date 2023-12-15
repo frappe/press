@@ -83,7 +83,7 @@ class SilencedAlert(Document):
 			"id": None,
 		}
 		res = requests.post(
-			f"https://monitor.frappe.cloud/alertmanager/api/v2/silences",
+			"https://monitor.frappe.cloud/alertmanager/api/v2/silences",
 			headers={"Authorization": f"Basic {auth_token}"},
 			json=data,
 		)
