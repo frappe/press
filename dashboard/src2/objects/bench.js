@@ -668,7 +668,6 @@ export default {
 						let UpdateBenchDialog = defineAsyncComponent(() =>
 							import('../components/bench/UpdateBenchDialog.vue')
 						);
-
 						renderDialog(
 							h(UpdateBenchDialog, {
 								bench: bench.name,

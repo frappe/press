@@ -277,8 +277,13 @@ class BillingAudit(Audit):
 		self.paid_plans = paid_plans()
 		self.teams_with_paid_sites = frappe.get_all(
 			"Site",
-			{"status": ("not in", ("Archived", "Suspended", "Inactive")), "free": False},
+			{
+				"status": ("not in", ("Archived", "Suspended", "Inactive")),
+				"free": False,
+				"trial_end_date": ("is", "not set"),
+			},
 			pluck="team",
+			distinct=True,
 		)
 		audits = {
 			"Subscriptions with no usage records created": self.subscriptions_without_usage_record,
@@ -292,7 +297,7 @@ class BillingAudit(Audit):
 		for audit_name in audits.keys():
 			result = audits[audit_name]()
 			log[audit_name] += result
-			status = "Failure" if len(result) > 0 else "Success"
+			status = "Failure" if len(result) > 0 else status
 
 		self.log(log=log, status=status, telegram_group="Billing", telegram_topic="Audits")
 

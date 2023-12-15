@@ -487,8 +487,12 @@ def signup_settings(product=None):
 	saas_product = None
 	if product:
 		saas_product = frappe.db.get_value(
-			"SaaS Product", {"name": product, "published": 1}, ["title", "logo"], as_dict=1
+			"SaaS Product",
+			{"name": product, "published": 1},
+			["title", "description", "logo"],
+			as_dict=1,
 		)
+		saas_product.description = frappe.utils.md_to_html(saas_product.description)
 
 	return {
 		"enable_google_oauth": settings.enable_google_oauth,

@@ -18,7 +18,13 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
-							<span class="text-base font-medium"> Account created </span>
+							<span class="text-base font-medium">
+								{{
+									$team.doc.is_saas_user
+										? 'Trial site created'
+										: 'Account created'
+								}}
+							</span>
 						</div>
 
 						<div
@@ -26,6 +32,13 @@
 						>
 							<i-lucide-check class="h-3 w-3 text-white" />
 						</div>
+					</div>
+					<div v-if="$team.doc.is_saas_user" class="pl-7">
+						<p class="mt-2 text-p-base text-gray-800">
+							Your trial will expire on [date]. After that you won't be able to
+							access your site. Set up a payment method to enjoy uninterrupted
+							service.
+						</p>
 					</div>
 				</div>
 			</div>
@@ -75,6 +88,7 @@
 				</div>
 			</div>
 			<div
+				v-if="!$team.doc.is_saas_user"
 				class="rounded-md"
 				:class="{ 'pointer-events-none opacity-50': !$team.doc.payment_mode }"
 			>

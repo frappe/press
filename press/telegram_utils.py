@@ -16,9 +16,10 @@ class Telegram:
 			["telegram_bot_token", "telegram_alerts_chat_group"],
 			as_dict=True,
 		)
-		self.token = settings.telegram_bot_token
 		self.group = group or settings.telegram_alerts_chat_group
-		self.chat_id = frappe.db.get_value("Telegram Group", self.group, "chat_id")
+		token, chat_id = frappe.get_value("Telegram Group", self.group, ["token", "chat_id"])
+		self.token = token or settings.telegram_bot_token
+		self.chat_id = chat_id
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
 		)

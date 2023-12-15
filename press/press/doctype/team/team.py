@@ -41,6 +41,7 @@ class Team(Document):
 		"payment_mode",
 		"default_payment_method",
 		"skip_backups",
+		"is_saas_user",
 	]
 
 	def get_doc(self, doc):
@@ -758,8 +759,14 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account or self.parent_team or self.is_saas_user or self.billing_team:
+		if self.free_account or self.parent_team or self.billing_team:
 			return allow
+
+		if self.is_saas_user and not self.payment_mode:
+			if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+				return allow
+			else:
+				why = "You have already created trial site in the past"
 
 		if self.payment_mode == "Partner Credits":
 			if self.get_available_partner_credits() > 0:
@@ -847,6 +854,7 @@ class Team(Document):
 				"erpnext_site": erpnext_site,
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
+				"saas_site_request": self.get_pending_saas_site_request(),
 				"complete": billing_setup and site_created,
 			}
 		)
@@ -866,8 +874,9 @@ class Team(Document):
 		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
 			return frappe.db.get_value(
 				"SaaS Product Site Request",
-				{"team": self.name, "status": "Pending"},
-				"saas_product",
+				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},
+				"name",
+				order_by="creation desc",
 			)
 
 	@frappe.whitelist()

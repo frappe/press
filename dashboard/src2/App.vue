@@ -5,7 +5,7 @@
 				<div
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
-					<AppSidebar v-if="$session.user" />
+					<AppSidebar v-if="$session.user && $route.name != 'NewAppSite'" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<div
