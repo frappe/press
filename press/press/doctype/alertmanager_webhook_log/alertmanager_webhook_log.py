@@ -182,28 +182,16 @@ class AlertmanagerWebhookLog(Document):
 				"Incident",
 				{
 					"alert": self.alert,
-					"bench": self.bench,
-					"server": self.server,
-					"cluster": self.cluster,
+					INCIDENT_SCOPE: self.server,
 					"status": "Validating",
-					"creation": ["<=", add_to_date(frappe.utils.now(), minutes=-10)],
 				},
 			):
 				incident = frappe.get_doc("Incident", incident_exists)
 			else:
 				incident = frappe.new_doc("Incident")
 				incident.alert = self.alert
-				incident.bench = self.bench
 				incident.server = self.server
 				incident.cluster = self.cluster
-
-			incident.append(
-				"alerts",
-				{
-					"alert": self.name,
-					"combined_alerts": self.combined_alerts,
-				},
-			)
-			incident.save()
+				incident.save()
 		except Exception as e:
 			log_error("Failed to create incident", e)
