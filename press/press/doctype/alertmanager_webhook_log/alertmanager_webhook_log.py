@@ -67,7 +67,7 @@ class AlertmanagerWebhookLog(Document):
 				"alert": self.alert,
 				"severity": self.severity,
 				"status": self.status,
-				"group_key": ("like", f"%{self.group_labels.get(INCIDENT_SCOPE)}%"),
+				"group_key": ("like", f"%{self.parsed_group_labels.get(INCIDENT_SCOPE)}%"),
 				"creation": [
 					">",
 					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
@@ -79,14 +79,13 @@ class AlertmanagerWebhookLog(Document):
 		instances = []
 		for alert in past_alerts:
 			payload = json.loads(alert["payload"])
-			instances.extend(
-				[alert["alerts"]["labels"]["instance"] for alert in payload["alerts"]]
-			)
+			instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])
 		return set(instances)
 
 	def total_instances(self) -> int:
 		return frappe.db.count(
-			"Site", {"status": "Active", INCIDENT_SCOPE: self.group_labels.get(INCIDENT_SCOPE)}
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.parsed_group_labels.get(INCIDENT_SCOPE)},
 		)
 
 	def validate_and_create_incident(self):
@@ -160,18 +159,18 @@ class AlertmanagerWebhookLog(Document):
 
 	@property
 	def bench(self):
-		return self.group_labels.get("bench")
+		return self.parsed_group_labels.get("bench")
 
 	@property
 	def cluster(self):
-		return self.group_labels.get("cluster")
+		return self.parsed_group_labels.get("cluster")
 
 	@property
 	def server(self):
-		return self.group_labels.get("server")
+		return self.parsed_group_labels.get("server")
 
 	@cached_property
-	def group_labels(self) -> dict:
+	def parsed_group_labels(self) -> dict:
 		parsed = json.loads(self.payload)
 		return parsed["groupLabels"]
 
@@ -179,7 +178,7 @@ class AlertmanagerWebhookLog(Document):
 		try:
 			if incident_exists := frappe.db.exists(
 				"Incident",
-				filters={
+				{
 					"alert": self.alert,
 					"bench": self.bench,
 					"server": self.server,
