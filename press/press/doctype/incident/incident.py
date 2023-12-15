@@ -4,7 +4,7 @@
 import frappe
 from twilio.rest import Client
 from frappe.website.website_generator import WebsiteGenerator
-from tenacity import retry, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
 from press.utils import log_error
@@ -54,6 +54,7 @@ class Incident(WebsiteGenerator):
 			lambda result: result not in ["completed", "failed", "busy", "no-answer"]
 		),
 		wait=wait_fixed(1),
+		stop=stop_after_attempt(25),
 	)
 	def wait_for_pickup(self, call):
 		call = call.fetch()
