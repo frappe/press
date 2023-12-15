@@ -113,6 +113,8 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
+# Add frappe user
+RUN useradd -ms /bin/bash frappe
 
 # Install Additional APT Packages
 {% if doc.custom_apt_packages %}
@@ -124,6 +126,12 @@ RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
   {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
+
+{% if p.after_install %}
+RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+{% endif %}
 
 {% else %}
 
@@ -142,9 +150,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 # symlink mysqldump to mariadb-dump
 RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
-
-# Add frappe user
-RUN useradd -ms /bin/bash frappe
+# Switch to frappe
 USER frappe
 WORKDIR /home/frappe
 

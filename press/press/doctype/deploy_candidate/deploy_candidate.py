@@ -282,7 +282,11 @@ class DeployCandidate(Document):
 					]
 				)
 				custom_apt_packages.append(
-					{"package": p.package, "prerequisites": p.package_prerequisites}
+					{
+						"package": p.package,
+						"prerequisites": p.package_prerequisites,
+						"after_install": p.after_install,
+					}
 				)
 
 		self.apt_packages = json.dumps(custom_apt_packages)
