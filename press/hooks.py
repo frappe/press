@@ -212,6 +212,7 @@ scheduler_events = {
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
 			"press.press.audit.billing_audit",
+			"press.press.audit.partner_billing_audit",
 		],
 		"0 3 * * *": [
 			"press.press.doctype.drip_email.drip_email.send_drip_emails",
