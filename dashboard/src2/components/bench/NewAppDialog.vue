@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Add a New App to your Bench',
+			title: 'Add a new app to your Bench',
 			size: 'xl'
 		}"
 		:modelValue="modelValue"
@@ -9,11 +9,11 @@
 	>
 		<template #body-content>
 			<FTabs :tabs="tabs" v-model="tabIndex" v-slot="{ tab }">
-				<div class="mx-2 my-4">
+				<div class="mx-2">
 					<div v-if="tab.value === 'public-github-app'" class="space-y-4">
-						<div class="flex items-end space-x-2">
+						<div class="mt-4 flex items-end space-x-2">
 							<FormControl
-								class="grow"
+								class="mb-0.5 grow"
 								label="Enter the app's GitHub url"
 								v-model="githubAppLink"
 							/>
@@ -21,16 +21,16 @@
 								v-if="!selectedBranch"
 								label="Fetch Branches"
 								:loading="$resources.branches.loading"
-								@click="$resources.branches.submit()"
+								@click="
+									$resources.branches.submit({
+										owner: appOwner,
+										name: appName
+									})
+								"
 							/>
 							<Autocomplete
 								v-else
-								:options="
-									$resources.branches.data.map(b => ({
-										label: b.name,
-										value: b.name
-									}))
-								"
+								:options="branchOptions"
 								v-model="selectedBranch"
 							>
 								<template v-slot:target="{ togglePopover }">
@@ -42,16 +42,109 @@
 								</template>
 							</Autocomplete>
 						</div>
+					</div>
+					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
+						<div class="flex justify-center pt-2" v-if="!options?.authorized">
+							<Button
+								v-if="requiresReAuth"
+								variant="solid"
+								icon-left="github"
+								label="Re-authorize GitHub"
+								@click="$resources.clearAccessToken.submit()"
+								:loading="$resources.clearAccessToken.loading"
+							/>
+							<Button
+								v-if="needsAuthorization"
+								variant="solid"
+								icon-left="github"
+								label="Connect To GitHub"
+								:link="options.installation_url + '?state=' + state"
+							/>
+						</div>
+						<div v-else class="space-y-4">
+							<FormControl
+								type="autocomplete"
+								label="Choose GitHub User / Organization"
+								:options="
+									options.installations.map(i => ({
+										label: i.login,
+										value: i
+									}))
+								"
+								v-model="selectedGithubUser"
+							>
+								<template #prefix>
+									<img
+										v-if="selectedGithubUser"
+										:src="selectedGithubUser?.value?.image"
+										class="mr-2 h-4 w-4 rounded-full"
+									/>
+									<FeatherIcon v-else name="users" class="mr-2 h-4 w-4" />
+								</template>
+								<template #item-prefix="{ active, selected, option }">
+									<img
+										v-if="option.value?.image"
+										:src="option.value.image"
+										class="mr-2 h-4 w-4 rounded-full"
+									/>
+									<FeatherIcon v-else name="user" class="mr-2 h-4 w-4" />
+								</template>
+							</FormControl>
+							<span class="text-sm text-gray-600">
+								Don't see your organization?
+								<Link
+									:href="options.installation_url + '?state=' + state"
+									class="font-medium"
+								>
+									Add from GitHub
+								</Link>
+							</span>
+							<FormControl
+								type="autocomplete"
+								v-if="selectedGithubUser"
+								label="Choose GitHub Repository"
+								:options="
+									selectedGithubUser.value.repos.map(r => ({
+										label: r.name,
+										value: r
+									}))
+								"
+								v-model="selectedGithubRepository"
+							>
+								<template #prefix>
+									<FeatherIcon name="book" class="mr-2 h-4 w-4" />
+								</template>
+								<template #item-prefix="{ active, selected, option }">
+									<FeatherIcon
+										:name="option.value.private ? 'lock' : 'book'"
+										class="mr-2 h-4 w-4"
+									/>
+								</template>
+							</FormControl>
+
+							<p v-if="selectedGithubUser" class="!mt-2 text-sm text-gray-600">
+								Don't see your repository here?
+								<Link :href="selectedGithubUser.value.url" class="font-medium">
+									Add from GitHub
+								</Link>
+							</p>
+							<FormControl
+								v-if="selectedGithubRepository"
+								type="autocomplete"
+								label="Choose Branch"
+								:options="branchOptions"
+								v-model="selectedBranch"
+							>
+								<template #prefix>
+									<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
+								</template>
+							</FormControl>
+						</div>
+					</div>
+					<div class="mt-4 space-y-2">
 						<div v-if="appValidated" class="flex text-base text-gray-700">
 							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ this.app.title }} ({{ this.app.name }})
-						</div>
-						<div
-							v-else-if="appValidated === false && selectedBranch"
-							class="flex text-base text-gray-700"
-						>
-							<FeatherIcon name="x-circle" class="mr-2 w-4 text-red-700" />
-							Not a valid Frappe app
 						</div>
 						<ErrorMessage
 							:message="
@@ -60,18 +153,6 @@
 								$resources.addApp.error
 							"
 						/>
-					</div>
-					<div v-else-if="tab.value === 'your-github-app'" class="space-y-4">
-						<GetAppFromGithub @onSelect="d => (app = d)" />
-
-						<ErrorMessage :message="$resources.addApp.error" />
-
-						<Button
-							v-if="app"
-							:loading="$resources.addApp.loading"
-							@click="$resources.addApp.submit()"
-							>Add to bench</Button
-						>
 					</div>
 				</div>
 			</FTabs>
@@ -90,14 +171,13 @@
 </template>
 
 <script>
-import GetAppFromGithub from './GetAppFromGithub.vue';
-import { Tabs } from 'frappe-ui';
+import { FormControl, Tabs } from 'frappe-ui';
 
 export default {
 	name: 'NewAppDialog',
 	components: {
-		GetAppFromGithub,
-		FTabs: Tabs
+		FTabs: Tabs,
+		FormControl
 	},
 	props: ['benchName', 'modelValue'],
 	emits: ['update:modelValue'],
@@ -107,7 +187,10 @@ export default {
 			tabIndex: 0,
 			githubAppLink: '',
 			selectedBranch: '',
-			appValidated: null,
+			appValidated: false,
+			requiresReAuth: false,
+			selectedGithubUser: null,
+			selectedGithubRepository: null,
 			tabs: [
 				{
 					label: 'Public GitHub App',
@@ -121,9 +204,30 @@ export default {
 		};
 	},
 	watch: {
+		tabIndex() {
+			this.app = null;
+			this.appValidated = false;
+			this.selectedBranch = '';
+			this.githubAppLink = '';
+			this.selectedGithubUser = null;
+			this.selectedGithubRepository = null;
+			this.$resources.branches.reset();
+		},
 		githubAppLink() {
 			this.selectedBranch = '';
-			this.appValidated = null;
+			this.appValidated = false;
+		},
+		selectedGithubUser() {
+			this.selectedBranch = '';
+			this.appValidated = false;
+		},
+		selectedGithubRepository(val) {
+			this.selectedBranch = '';
+			this.appValidated = false;
+			this.$resources.branches.submit({
+				owner: this.selectedGithubUser?.label,
+				name: val?.label
+			});
 		}
 	},
 	resources: {
@@ -139,40 +243,39 @@ export default {
 				}
 			};
 		},
-		validateApp() {
-			let params = {
-				owner: this.appOwner,
-				repository: this.appName,
-				branch: this.selectedBranch.value
+		options() {
+			return {
+				url: 'press.api.github.options',
+				auto: true,
+				onError(error) {
+					if (error.messages.includes('Bad credentials')) {
+						this.requiresReAuth = true;
+					}
+				}
 			};
+		},
+		validateApp() {
 			return {
 				url: 'press.api.github.app',
-				params,
 				onSuccess(data) {
 					this.appValidated = true;
 					if (data) {
+						console.log(data);
 						this.app = {
 							name: data.name,
 							title: data.title,
-							repository_url: this.githubAppLink,
+							repository_url:
+								this.githubAppLink ||
+								`https://github.com/${this.selectedGithubUser.label}/${data.name}`,
 							branch: this.selectedBranch.value
 						};
 					}
-				},
-				onError() {
-					this.appValidated = false;
 				}
 			};
 		},
 		branches() {
-			let params = {
-				owner: this.appOwner,
-				name: this.appName
-			};
-
 			return {
 				url: 'press.api.github.branches',
-				params,
 				onSuccess(branches) {
 					this.selectedBranch = {
 						label: branches[0].name,
@@ -186,9 +289,34 @@ export default {
 					});
 				},
 				validate() {
-					if (!this.githubAppLink) {
+					if (this.tabIndex === 0 && !this.githubAppLink) {
 						return 'Please enter a valid github link';
 					}
+				}
+			};
+		},
+		repository() {
+			let auto = this.selectedInstallation && this.selectedRepo;
+			let params = {
+				installation: this.selectedInstallation?.id,
+				owner: this.selectedInstallation?.login,
+				name: this.selectedRepo?.name
+			};
+
+			return {
+				url: 'press.api.github.repository',
+				params,
+				auto,
+				onSuccess(repository) {
+					this.selectedBranch = repository.default_branch;
+				}
+			};
+		},
+		clearAccessToken() {
+			return {
+				url: 'press.api.github.clear_token_and_get_installation_url',
+				onSuccess(installation_url) {
+					window.location.href = installation_url + '?state=' + this.state;
 				}
 			};
 		},
@@ -213,11 +341,41 @@ export default {
 		}
 	},
 	computed: {
+		options() {
+			return this.$resources.options.data;
+		},
 		appOwner() {
-			return this.githubAppLink.split('/')[3];
+			if (this.tabIndex === 1) {
+				return this.selectedGithubUser?.label;
+			} else {
+				return this.githubAppLink.split('/')[3];
+			}
 		},
 		appName() {
-			return this.githubAppLink.split('/')[4];
+			if (this.tabIndex === 1) {
+				return this.selectedGithubRepository?.label;
+			} else {
+				return this.githubAppLink.split('/')[4];
+			}
+		},
+		branchOptions() {
+			return (this.$resources.branches.data || []).map(branch => ({
+				label: branch.name,
+				value: branch.name
+			}));
+		},
+		needsAuthorization() {
+			if (this.$resources.options.loading) return false;
+			return (
+				this.$resources.options.data &&
+				(!this.$resources.options.data.authorized ||
+					this.$resources.options.data.installations.length === 0)
+			);
+		},
+		state() {
+			let location = window.location.href;
+			let state = { team: this.$team.name, url: location };
+			return btoa(JSON.stringify(state));
 		}
 	}
 };
