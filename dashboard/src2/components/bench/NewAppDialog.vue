@@ -8,8 +8,13 @@
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<template #body-content>
-			<FTabs :tabs="tabs" v-model="tabIndex" v-slot="{ tab }">
-				<div>
+			<FTabs
+				class="[&>div]:pl-0"
+				:tabs="tabs"
+				v-model="tabIndex"
+				v-slot="{ tab }"
+			>
+				<div class="-ml-0.5 pl-1">
 					<div v-if="tab.value === 'public-github-app'" class="space-y-4">
 						<div class="mt-4 flex items-end space-x-2">
 							<FormControl
