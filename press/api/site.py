@@ -82,34 +82,10 @@ def protected(doctypes):
 						name = frappe.db.get_value(doctype, name, "group")
 						doctype = "Release Group"
 
-					user_permission_set = frappe.db.exists(
-						"Press User Permission", {"user": frappe.session.user}
-					)
-					permission_groups = frappe.get_all(
-						"Press Permission Group User", {"user": frappe.session.user}, pluck="parent"
-					)
-					group_permissions_set = frappe.db.exists(
-						"Press User Permission",
-						{"type": "Group", "user": frappe.session.user, "name": ("in", permission_groups)},
-					)
-					if (
-						(user_permission_set or group_permissions_set)
-						and has_user_permission(doctype, name, request_path, permission_groups)
-					):
+					if has_user_permission(doctype, name, request_path):
 						return wrapped(*args, **kwargs)
 
-					new_group_permissions_set = frappe.get_all(
-						"Press Permission Group",
-						{
-							"name": ("in", permission_groups),
-							"permissions": ("is", "set"),
-							"user": frappe.session.user, # child table field
-						},
-					)
-					if (
-						new_group_permissions_set
-						and has_user_permission_new(doctype, name, request_path)
-					):
+					elif has_user_permission_new(doctype, name, request_path):
 						return wrapped(*args, **kwargs)
 
 					else:
