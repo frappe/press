@@ -54,12 +54,12 @@ class TestPressUserPermission(FrappeTestCase):
 
 		self.assertTrue(
 			has_user_permission(
-				"Site", self.site.name, "press.api.site.overview", permission_groups=[group.name]
+				"Site", self.site.name, "press.api.site.overview", groups=[group.name]
 			)
 		)
 		self.assertFalse(
 			has_user_permission(
-				"Site", self.site.name, "press.api.site.migrate", permission_groups=[group.name]
+				"Site", self.site.name, "press.api.site.migrate", groups=[group.name]
 			)
 		)
 
