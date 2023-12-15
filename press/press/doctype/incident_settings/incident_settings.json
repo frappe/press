@@ -8,7 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "users",
-  "phone_call_alerts"
+  "phone_call_alerts",
+  "enable_incident_detection"
  ],
  "fields": [
   {
@@ -22,12 +23,18 @@
    "fieldname": "phone_call_alerts",
    "fieldtype": "Check",
    "label": "Phone Call Alerts"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_incident_detection",
+   "fieldtype": "Check",
+   "label": "Enable Incident Detection"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-14 16:58:57.953652",
+ "modified": "2023-12-15 16:44:01.528498",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

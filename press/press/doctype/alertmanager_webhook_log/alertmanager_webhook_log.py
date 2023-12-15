@@ -89,6 +89,8 @@ class AlertmanagerWebhookLog(Document):
 		)
 
 	def validate_and_create_incident(self):
+		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
+			return
 		if not (
 			self.alert == INCIDENT_ALERT
 			and self.severity == "Critical"
