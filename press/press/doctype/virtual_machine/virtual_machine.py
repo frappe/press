@@ -8,9 +8,11 @@ import boto3
 from oci.core import ComputeClient, BlockstorageClient, VirtualNetworkClient
 from oci.core.models import (
 	LaunchInstanceShapeConfigDetails,
+	UpdateInstanceShapeConfigDetails,
 	LaunchInstancePlatformConfig,
 	CreateVnicDetails,
 	LaunchInstanceDetails,
+	UpdateInstanceDetails,
 	InstanceSourceViaImageDetails,
 	InstanceOptions,
 	UpdateBootVolumeDetails,
@@ -617,10 +619,21 @@ class VirtualMachine(Document):
 
 	@frappe.whitelist()
 	def resize(self, machine_type):
-		self.client().modify_instance_attribute(
-			InstanceId=self.instance_id,
-			InstanceType={"Value": machine_type},
-		)
+		if self.cloud_provider == "AWS EC2":
+			self.client().modify_instance_attribute(
+				InstanceId=self.instance_id,
+				InstanceType={"Value": machine_type},
+			)
+		elif self.cloud_provider == "OCI":
+			vcpu, ram_in_gbs = map(int, machine_type.split("x"))
+			self.client().update_instance(
+				self.instance_id,
+				UpdateInstanceDetails(
+					shape_config=UpdateInstanceShapeConfigDetails(
+						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
+					)
+				),
+			)
 		self.machine_type = machine_type
 		self.save()
 
