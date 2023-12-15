@@ -1,7 +1,16 @@
 <template>
-	<div class="h-6 flex items-center">
-		<AvatarGroup v-if="groupUsers.data" :users="groupUsers.data" />
-		<Spinner v-else-if="groupUsers.loading" class="h-4 w-4 text-gray-500" />
+	<div class="flex h-6 items-center">
+		<Spinner v-if="groupUsers.loading" class="h-4 w-4 text-gray-500" />
+		<AvatarGroup
+			v-else-if="groupUsers.data.length > 0"
+			:users="groupUsers.data"
+		/>
+		<div
+			v-else-if="groupUsers.data.length == 0"
+			class="text-xs text-gray-500"
+		>
+			No users
+		</div>
 	</div>
 </template>
 
