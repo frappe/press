@@ -6,7 +6,10 @@ This is largely based on heuristics and known good practices for indexing.
 from dataclasses import dataclass
 from typing import Literal
 
+import frappe
 from sql_metadata import Parser
+
+INDEX_SCORE_THRESHOLD = 0.65
 
 
 @dataclass
@@ -38,23 +41,106 @@ class DBExplain:
 
 
 @dataclass
+class DBColumn:
+	name: str
+	cardinality: int | None
+	is_nullable: bool
+	default: str
+	data_type: str
+
+	@classmethod
+	def from_frappe_ouput(cls, data) -> "DBColumn":
+		"Parse DBColumn from output of describe-database-table command in Frappe"
+		return cls(
+			name=data["column"],
+			cardinality=data.get("cardinality"),
+			is_nullable=data["is_nullable"],
+			default=data["default"],
+			data_type=data["type"],
+		)
+
+
+@dataclass
+class DBIndex:
+	name: str
+	column: str
+	table: str
+	unique: bool | None = None
+	cardinality: int | None = None
+	sequence: int = 1
+	nullable: bool = True
+	_score: float = 0.0
+
+	def __eq__(self, other: "DBIndex") -> bool:
+		return (
+			self.column == other.column
+			and self.sequence == other.sequence
+			and self.table == other.table
+		)
+
+	@classmethod
+	def from_frappe_ouput(cls, data, table) -> "DBIndex":
+		"Parse DBIndex from output of describe-database-table command in Frappe"
+		return cls(
+			name=data["name"],
+			table=table,
+			unique=data["unique"],
+			cardinality=data["cardinality"],
+			sequence=data["sequence"],
+			nullable=data["nullable"],
+			column=data["column"],
+		)
+
+
+@dataclass
+class DBTable:
+	name: str
+	total_rows: int
+	schema: list[DBColumn] | None = None
+	indexes: list[DBIndex] | None = None
+
+	def __post_init__(self):
+		if not self.schema:
+			self.schema = []
+		if not self.indexes:
+			self.indexes = []
+
+	@classmethod
+	def from_frappe_ouput(cls, data) -> "DBTable":
+		"Parse DBTable from output of describe-database-table command in Frappe"
+		table_name = data["table_name"]
+		return cls(
+			name=table_name,
+			total_rows=data["total_rows"],
+			schema=[DBColumn.from_frappe_ouput(c) for c in data["schema"]],
+			indexes=[DBIndex.from_frappe_ouput(i, table_name) for i in data["indexes"]],
+		)
+
+
+@dataclass
 class DBOptimizer:
 	query: str  # raw query in string format
 	explain_plan: list[DBExplain] = None
+	tables: dict[str, DBTable] = None
 
 	def __post_init__(self):
 		if not self.explain_plan:
 			self.explain_plan = []
+		if not self.tables:
+			self.tables = {}
 		for explain_entry in self.explain_plan:
 			explain_entry.select_type = explain_entry.select_type.upper()
 			explain_entry.scan_type = explain_entry.scan_type.upper()
 		self.parsed_query = Parser(self.query)
 
+	@property
 	def tables_examined(self):
 		return self.parsed_query.tables
 
-	@property
-	def potential_indexes(self) -> list[str]:
+	def set_table_status(self, table: DBTable):
+		self.tables[table.name] = table
+
+	def potential_indexes(self) -> list[DBIndex]:
 		"""Get all columns that can potentially be indexed to speed up this query."""
 
 		possible_indexes = []
@@ -78,4 +164,55 @@ class DBOptimizer:
 			if self.parsed_query.limit_and_offset:
 				possible_indexes.extend(order_by_columns)
 
-		return possible_indexes
+		def convert_to_db_index(i: str) -> DBIndex:
+			column_name = i
+			# TODO: Index without table prefix COULD be from some other joined table. MySQL only has a problem with it when there's conflict.
+			table = self.parsed_query.tables[0]
+			if "." in column_name:
+				table, column_name = column_name.split(".")
+			return DBIndex(column=column_name, name=column_name, table=table)
+
+		return [convert_to_db_index(i) for i in possible_indexes]
+
+	def suggest_index(self) -> DBIndex | None:
+		"""Suggest best possible column to index given query and table stats."""
+		if missing_tables := (set(self.tables_examined) - set(self.tables.keys())):
+			frappe.throw("DBTable infomation missing for: " + ", ".join(missing_tables))
+
+		potential_indexes = self.potential_indexes()
+
+		for index in list(potential_indexes):
+			table = self.tables[index.table]
+
+			# Index already exists
+			if index in table.indexes:
+				potential_indexes.remove(index)
+
+			# Data type is not easily indexable - skip
+			column = [c for c in table.schema if c.name == index.column][0]
+			if "text" in column.data_type.lower() or "json" in column.data_type.lower():
+				potential_indexes.remove(index)
+			# Update cardinality from column so scoring can be done
+			index.cardinality = column.cardinality
+
+		for index in potential_indexes:
+			index._score = self.index_score(index)
+
+		potential_indexes.sort(key=lambda i: i._score, reverse=True)
+		if (
+			potential_indexes
+			and (best_index := potential_indexes[0])
+			and best_index._score > INDEX_SCORE_THRESHOLD
+		):
+			return best_index
+
+	def index_score(self, index: DBIndex) -> float:
+		"""Score an index from 0 to 1 based on usefulness."""
+		table = self.tables[index.table]
+
+		cardinality = index.cardinality or 2
+
+		# We assume most unique values are evenly distirbuted, this is
+		# definitely not the case IRL but it should be good enough assumptions
+		# Score is rouhgly what percentage of table we will end up reading on typical query
+		return cardinality / (table.total_rows or 1)
