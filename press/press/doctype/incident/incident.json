@@ -9,7 +9,7 @@
  "field_order": [
   "alerts_tab",
   "phone_call",
-  "alertname",
+  "alert",
   "status",
   "type",
   "acknowledged_by",
@@ -67,11 +67,6 @@
    "fieldtype": "Select",
    "label": "Type",
    "options": "Site Down\nBench Down\nServer Down"
-  },
-  {
-   "fieldname": "alertname",
-   "fieldtype": "Data",
-   "label": "Alertname"
   },
   {
    "fieldname": "section_break_bjjy",
@@ -157,13 +152,19 @@
    "fieldname": "phone_call",
    "fieldtype": "Check",
    "label": "Phone Call"
+  },
+  {
+   "fieldname": "alert",
+   "fieldtype": "Link",
+   "label": "Alert",
+   "options": "Prometheus Alert Rule"
   }
  ],
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2023-12-14 17:03:10.749182",
+ "modified": "2023-12-15 17:16:30.418163",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
