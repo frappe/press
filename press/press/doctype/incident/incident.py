@@ -22,7 +22,6 @@ class Incident(WebsiteGenerator):
 	def after_insert(self):
 		if self.phone_call:
 			frappe.enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
-			self._call_humans()
 
 	def get_humans(self):
 		"""
