@@ -29,7 +29,7 @@ def get_list(
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
 
-	if frappe.get_meta(doctype).has_field("team"):
+	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 

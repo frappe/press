@@ -5,7 +5,7 @@
 		</div>
 	</Header>
 	<div>
-		<Tabs v-model="currentTab" :tabs="tabs">
+		<Tabs v-model="currentTab" :tabs="tabs" @update:model-value="handleTabChange($event)">
 			<template #default="{ tab }">
 				<router-view :key="tab.routeName"></router-view>
 			</template>
@@ -50,9 +50,7 @@ onBeforeRouteUpdate((to, from, next) => {
 onMounted(() => {
 	const route = router.currentRoute.value;
 	setTabToRoute(route);
-	watch(currentTab, tabIndex =>
-		router.replace({ name: tabs[tabIndex].routeName })
-	);
+	handleTabChange(currentTab.value);
 });
 function setTabToRoute(route) {
 	tabs.some((tab, index) => {
@@ -64,5 +62,8 @@ function setTabToRoute(route) {
 			return true;
 		}
 	});
+}
+function handleTabChange(tabIndex) {
+	router.replace({ name: tabs[tabIndex].routeName });
 }
 </script>

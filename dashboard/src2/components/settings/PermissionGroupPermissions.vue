@@ -1,6 +1,6 @@
 <template>
 	<ObjectList :options="listOptions">
-		<template #actions-left="{ listResource }">
+		<template #header-left="{ listResource }">
 			<Dropdown :options="getDropdownOptions(listResource)">
 				<Button>
 					<template #prefix>
@@ -14,7 +14,7 @@
 			</Dropdown>
 		</template>
 
-		<template #actions-right="{ listResource }">
+		<template #header-right="{ listResource }">
 			<Dropdown
 				:options="[
 					{ label: 'Allow All', onClick: () => toggleAll(listResource, true) },

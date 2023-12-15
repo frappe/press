@@ -1,17 +1,13 @@
 <template>
-	<div class="flex">
-		<Avatar
-			v-for="user in groupUsers.data"
-			:image="user.user_image"
-			:label="user.full_name"
-			class="-ml-1 ring-2 ring-white"
-			size="md"
-		/>
+	<div class="h-6 flex items-center">
+		<AvatarGroup v-if="groupUsers.data" :users="groupUsers.data" />
+		<Spinner v-else-if="groupUsers.loading" class="h-4 w-4 text-gray-500" />
 	</div>
 </template>
 
 <script setup>
-import { Avatar, createResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui';
+import AvatarGroup from '../AvatarGroup.vue';
 const props = defineProps({
 	groupId: { type: String, required: true }
 });
@@ -26,9 +22,6 @@ const groupUsers = createResource({
 			method: 'get_users'
 		};
 	},
-	transform: data => {
-		console.log(data);
-		return data.message;
-	}
+	transform: data => data.message
 });
 </script>

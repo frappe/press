@@ -11,6 +11,8 @@ DEFAULT_PERMISSIONS = {
 
 
 class PressPermissionGroup(Document):
+	whitelisted_fields = ["title"]
+
 	@staticmethod
 	def get_list_query(query):
 		Group = frappe.qb.DocType("Press Permission Group")
