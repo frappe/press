@@ -4,6 +4,9 @@
 from unittest.mock import MagicMock, patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
+	create_test_alertmanager_webhook_log,
+)
 from press.utils.test import foreground_enqueue_doc
 
 
@@ -31,6 +34,9 @@ class TestIncident(FrappeTestCase):
 
 		self._create_test_incident_settings()
 
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def _create_test_incident_settings(self):
 		user1 = create_test_press_admin_team().user
 		user2 = create_test_press_admin_team().user
@@ -51,10 +57,6 @@ class TestIncident(FrappeTestCase):
 				],
 			}
 		).insert()
-
-	def test_incident_gets_created_on_alert_that_meets_conditions(self):
-		# TODO: update for multiple alerts #
-		pass
 
 	@patch(
 		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
@@ -85,3 +87,11 @@ class TestIncident(FrappeTestCase):
 
 	def test_incident_creation_calls_one_person_if_they_pick_up(self):
 		pass
+
+	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
+	@patch.object(MockTwilioClient, "create_call", new=Mock())
+	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	def test_incident_gets_created_on_alert_that_meets_conditions(self):
+		incident_count = frappe.db.count("Incident")
+		create_test_alertmanager_webhook_log()
+		self.assertEqual(frappe.db.count("Incident") - incident_count, 1)
