@@ -97,7 +97,7 @@ class AlertmanagerWebhookLog(Document):
 			return
 
 		instances = self.get_past_alert_instances()
-		if len(instances) > 0.8 * self.total_instances():
+		if len(instances) > min(0.4 * self.total_instances(), 25):
 			self.create_incident()
 
 	def get_repeat_interval(self):
