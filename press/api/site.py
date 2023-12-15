@@ -425,6 +425,8 @@ def options_for_new():
 		)
 		version.group = release_group
 		if version.group:
+			# here we get the last created bench for the release group
+			# assuming the last created bench is the latest one
 			bench = frappe.db.get_value(
 				"Bench",
 				filters={"status": "Active", "group": version.group.name},
@@ -432,38 +434,9 @@ def options_for_new():
 			)
 			if bench:
 				version.group.bench = bench
-				bench_app_sources = frappe.db.get_all(
-					"Bench App", {"parent": bench}, pluck="source"
+				version.group.bench_app_sources = frappe.db.get_all(
+					"Bench App", {"parent": bench, "app": ("!=", "frappe")}, pluck="source"
 				)
-				app_sources = frappe.db.get_all(
-					"App Source",
-					[
-						"name",
-						"app",
-						"repository_url",
-						"repository",
-						"repository_owner",
-						"branch",
-						"team",
-						"public",
-						"app_title",
-						"frappe",
-					],
-					filters={"name": ("in", bench_app_sources), "frappe": 0, "public": True},
-				)
-				version.group.apps = app_sources
-				if version.group.apps:
-					marketplace_apps = frappe.db.get_all(
-						"Marketplace App",
-						fields=["title", "image", "description", "app", "route"],
-						filters={"app": ("in", [app.app for app in version.group.apps])},
-					)
-					for app in version.group.apps:
-						marketplace_details = find(marketplace_apps, lambda x: x.app == app.app)
-						if marketplace_details:
-							app.update(marketplace_details)
-							app.plans = get_plans_for_app(app.app, version.name)
-
 				cluster_names = unique(
 					frappe.db.get_all(
 						"Bench",
@@ -481,9 +454,64 @@ def options_for_new():
 				if version.group and version.group.bench and version.group.clusters:
 					available_versions.append(version)
 
+
+	unique_app_sources = []
+	for version in available_versions:
+		for app_source in version.group.bench_app_sources:
+			if app_source not in unique_app_sources:
+				unique_app_sources.append(app_source)
+
+	app_source_details = frappe.db.get_all(
+		"App Source",
+		[
+			"name",
+			"app",
+			"repository_url",
+			"repository",
+			"repository_owner",
+			"branch",
+			"team",
+			"public",
+			"app_title",
+			"frappe"
+		],
+		filters={"name": ("in", unique_app_sources), "public": True},
+	)
+
+	unique_apps = []
+	app_source_details_grouped = {}
+	for app_source in app_source_details:
+		if app_source.app not in unique_apps:
+			unique_apps.append(app_source.app)
+		app_source_details_grouped[app_source.name] = app_source
+
+	marketplace_apps = frappe.db.get_all(
+		"Marketplace App",
+		fields=["title", "image", "description", "app", "route"],
+		filters={"app": ("in", unique_apps)},
+	)
+	total_installs_by_app = frappe.db.get_all(
+		"Site App",
+		fields=["app", "count(*) as count"],
+		filters={"app": ("in", unique_apps)},
+		group_by="app",
+	)
+	marketplace_details = {}
+	for app in unique_apps:
+		details = find(marketplace_apps, lambda x: x.app == app)
+		if details:
+			details["plans"] = get_plans_for_app(app)
+			installs = find(
+				total_installs_by_app, lambda x: x.app == app
+			)
+			details["total_installs"] = installs.count if installs else None
+			marketplace_details[app] = details
+
 	return {
 		"versions": available_versions,
 		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+		"marketplace_details": marketplace_details,
+		"app_source_details": app_source_details_grouped,
 	}
 
 

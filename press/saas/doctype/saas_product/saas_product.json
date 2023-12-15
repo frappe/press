@@ -9,11 +9,12 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "team",
+  "description",
   "column_break_bqrh",
   "logo",
   "published",
   "section_break_rvnt",
+  "team",
   "domain",
   "plan",
   "column_break_cpkv",
@@ -147,11 +148,16 @@
    "fieldtype": "Table",
    "label": "Signup Fields",
    "options": "SaaS Product Signup Field"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Markdown Editor",
+   "label": "Description"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-11 16:08:25.559870",
+ "modified": "2023-12-13 18:06:15.058201",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",

@@ -62,3 +62,22 @@ export function userCurrency(value) {
 	let symbol = india ? '₹' : '$';
 	return `${symbol}${value}`;
 }
+
+export function numberK(number) {
+	if (number < 1000) {
+		return number;
+	} else {
+		let value = Math.round(number / 1000, 1);
+
+		// To handle cases like 8.0, 9.0 etc.
+		if (value == number / 1000) {
+			value = parseInt(value);
+		}
+		// To handle cases like 8999 -> 9k and not 9.0k
+		else if (value - 1 == number / 1000) {
+			value = parseInt(value);
+		}
+
+		return `${value}k`;
+	}
+}
