@@ -454,7 +454,6 @@ def options_for_new():
 				if version.group and version.group.bench and version.group.clusters:
 					available_versions.append(version)
 
-
 	unique_app_sources = []
 	for version in available_versions:
 		for app_source in version.group.bench_app_sources:
@@ -473,7 +472,7 @@ def options_for_new():
 			"team",
 			"public",
 			"app_title",
-			"frappe"
+			"frappe",
 		],
 		filters={"name": ("in", unique_app_sources), "public": True},
 	)
@@ -501,9 +500,7 @@ def options_for_new():
 		details = find(marketplace_apps, lambda x: x.app == app)
 		if details:
 			details["plans"] = get_plans_for_app(app)
-			installs = find(
-				total_installs_by_app, lambda x: x.app == app
-			)
+			installs = find(total_installs_by_app, lambda x: x.app == app)
 			details["total_installs"] = installs.count if installs else None
 			marketplace_details[app] = details
 

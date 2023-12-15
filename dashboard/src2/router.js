@@ -83,6 +83,7 @@ router.beforeEach(async (to, from, next) => {
 		let $team = getTeam();
 		let onboardingIncomplete = !$team.doc.payment_mode;
 		let onboardingComplete = $team.doc.onboarding.complete;
+		let defaultRoute = 'Site List';
 		let onboardingRoute = $team.doc.onboarding.saas_site_request
 			? 'NewAppSite'
 			: 'Welcome';
@@ -92,12 +93,12 @@ router.beforeEach(async (to, from, next) => {
 		}
 
 		if (to.name == onboardingRoute && onboardingComplete) {
-			next({ name: 'Home' });
+			next({ name: defaultRoute });
 			return;
 		}
 
 		if (goingToLoginPage) {
-			next({ name: 'Home' });
+			next({ name: defaultRoute });
 		} else {
 			next();
 		}

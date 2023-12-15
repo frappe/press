@@ -9,14 +9,6 @@ export default {
 	name: 'Welcome',
 	components: {
 		Onboarding
-	},
-	beforeRouteEnter(to, from, next) {
-		next(async vm => {
-			await vm.$team.get.promise;
-			if (vm.$team?.doc?.onboarding.complete) {
-				vm.$router.replace({ name: 'Site List' });
-			}
-		});
 	}
 };
 </script>
