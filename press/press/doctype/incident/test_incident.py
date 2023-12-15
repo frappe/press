@@ -7,6 +7,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
+from press.press.doctype.site.test_site import create_test_site
 from press.utils.test import foreground_enqueue_doc
 
 
@@ -85,7 +86,7 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	def test_incident_creation_calls_one_person_if_they_pick_up(self):
+	def test_incident_creation_calls_only_one_person_if_first_person_picks_up(self):
 		pass
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
@@ -95,3 +96,23 @@ class TestIncident(FrappeTestCase):
 		incident_count = frappe.db.count("Incident")
 		create_test_alertmanager_webhook_log()
 		self.assertEqual(frappe.db.count("Incident") - incident_count, 1)
+
+	def test_incident_not_created_when_sites_very_less_than_scope_is_down(self):
+		"""1 out of 3 sites on server down"""
+		incident_count_before = frappe.db.count("Incident")
+		site = create_test_site()
+		create_test_site(server=site.server)
+		create_test_site(server=site.server)
+		create_test_alertmanager_webhook_log(site=site)
+		self.assertEqual(frappe.db.count("Incident"), incident_count_before)
+
+	def test_incident_created_when_sites_within_scope_is_down(self):
+		"""3 out of 3 sites on server down"""
+		incident_count_before = frappe.db.count("Incident")
+		site = create_test_site()
+		site2 = create_test_site(server=site.server)
+		site3 = create_test_site(server=site.server)
+		create_test_alertmanager_webhook_log(site=site)
+		create_test_alertmanager_webhook_log(site=site2)
+		create_test_alertmanager_webhook_log(site=site3)
+		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
