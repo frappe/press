@@ -78,6 +78,50 @@ frappe.ui.form.on('Virtual Machine', {
 				);
 			}
 		});
+		[
+			[
+				__('Update EBS Performance'),
+				'update_ebs_performance',
+				frm.doc.cloud_provider == 'AWS EC2',
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Int',
+									label: 'IOPS',
+									fieldname: 'iops',
+									reqd: 1,
+									default: frm.doc.volumes[0].iops,
+								},
+								{
+									fieldtype: 'Int',
+									label: 'Throughput (MB/s)',
+									fieldname: 'throughput',
+									reqd: 1,
+									default: frm.doc.volumes[0].throughput,
+								},
+							],
+							({ iops, throughput }) => {
+								console.log(iops, throughput);
+								frm
+									.call(method, {
+										iops,
+										throughput,
+									})
+									.then((r) => frm.refresh());
+							},
+							__('Update EBS Performance'),
+						);
+					},
+					__('Actions'),
+				);
+			}
+		});
 		if (frm.doc.instance_id) {
 			if (frm.doc.cloud_provider === 'AWS EC2') {
 				frm.add_web_link(

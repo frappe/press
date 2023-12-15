@@ -637,6 +637,25 @@ class VirtualMachine(Document):
 		self.machine_type = machine_type
 		self.save()
 
+	@frappe.whitelist()
+	def get_ebs_performance(self):
+		if self.cloud_provider == "AWS EC2":
+			volume = self.volumes[0]
+			return volume.iops, volume.throughput
+
+	@frappe.whitelist()
+	def update_ebs_performance(self, iops, throughput):
+		if self.cloud_provider == "AWS EC2":
+			volume = self.volumes[0]
+			new_iops = int(iops) or volume.iops
+			new_throughput = int(throughput) or volume.throughput
+			self.client().modify_volume(
+				VolumeId=volume.volume_id,
+				Iops=new_iops,
+				Throughput=new_throughput,
+			)
+		self.sync()
+
 	def client(self, client_type=None):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if self.cloud_provider == "AWS EC2":
