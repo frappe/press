@@ -108,7 +108,9 @@ class Cluster(Document):
 			self.provision_on_oci()
 
 	def on_trash(self):
-		machines = frappe.get_all("Virtual Machine", {"status": "Terminated"}, pluck="name")
+		machines = frappe.get_all(
+			"Virtual Machine", {"cluster": self.name, "status": "Terminated"}, pluck="name"
+		)
 		for machine in machines:
 			frappe.delete_doc("Virtual Machine", machine)
 
