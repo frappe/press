@@ -290,6 +290,8 @@ class BillingAudit(Audit):
 			"Teams with active sites that don't have payment method set": self.teams_without_payment_method,
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
+			"Unpaid Invoices with no payment method set from last quarter": self.unpaid_invoices_with_no_payment_method,
+			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
 		}
 
 		log = {a: [] for a in audits.keys()}
@@ -370,6 +372,82 @@ class BillingAudit(Audit):
 			"Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name"
 		)
 
+	def unpaid_invoices_with_no_payment_method(self):
+		return frappe.get_all(
+			"Invoice",
+			{
+				"status": "Unpaid",
+				"payment_mode": ("is", "not set"),
+				"type": "Subscription",
+				"period_end": [">", frappe.utils.add_months(frappe.utils.today(), -3)],
+			},
+			pluck="name",
+			order_by="period_end desc",
+		)
+
+	def prepaid_unpaid_invoices_with_stripe_invoice_id_set(self):
+		return frappe.get_all(
+			"Invoice",
+			{
+				"status": "Unpaid",
+				"payment_mode": "Prepaid Credits",
+				"type": "Subscription",
+				"stripe_invoice_id": ("is", "set"),
+			},
+			pluck="name",
+		)
+
+
+class PartnerBillingAudit(Audit):
+	"""Daily Audit of Partner Billings"""
+
+	audit_type = "Partner Billing Audit"
+
+	def __init__(self):
+		audits = {
+			"Teams with Paid By Partner mode and billing team not set": self.teams_with_paid_by_partner_and_billing_team_not_set,
+			"Paid By Partner Teams with Unpaid Invoices": self.paid_by_partner_teams_with_unpaid_invoices,
+		}
+
+		log = {a: [] for a in audits.keys()}
+		status = "Success"
+		for audit_name in audits.keys():
+			result = audits[audit_name]()
+			log[audit_name] += result
+			status = "Failure" if len(result) > 0 else status
+
+		self.log(log=log, status=status, telegram_group="Billing", telegram_topic="Audits")
+
+	def teams_with_paid_by_partner_and_billing_team_not_set(self):
+		return frappe.get_all(
+			"Team",
+			{
+				"enabled": True,
+				"payment_mode": "Paid By Partner",
+				"billing_team": ("is", "not set"),
+			},
+			pluck="name",
+		)
+
+	def paid_by_partner_teams_with_unpaid_invoices(self):
+		paid_by_partner_teams = frappe.get_all(
+			"Team",
+			{
+				"enabled": True,
+				"payment_mode": "Paid By Partner",
+			},
+			pluck="name",
+		)
+		return frappe.get_all(
+			"Invoice",
+			{
+				"status": "Unpaid",
+				"team": ("in", paid_by_partner_teams),
+				"type": "Subscription",
+			},
+			pluck="name",
+		)
+
 
 def check_bench_fields():
 	BenchFieldCheck()
@@ -389,3 +467,7 @@ def check_app_server_replica_benches():
 
 def billing_audit():
 	BillingAudit()
+
+
+def partner_billing_audit():
+	PartnerBillingAudit()
