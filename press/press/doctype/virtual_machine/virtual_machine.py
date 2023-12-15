@@ -656,6 +656,29 @@ class VirtualMachine(Document):
 			)
 		self.sync()
 
+	@frappe.whitelist()
+	def get_oci_volume_performance(self):
+		if self.cloud_provider == "OCI":
+			volume = self.volumes[0]
+			vpus = ((volume.iops / volume.size) - 45) / 1.5
+			return vpus
+
+	@frappe.whitelist()
+	def update_oci_volume_performance(self, vpus):
+		if self.cloud_provider == "OCI":
+			volume = self.volumes[0]
+			if ".bootvolume." in volume.volume_id:
+				self.client(BlockstorageClient).update_boot_volume(
+					boot_volume_id=volume.volume_id,
+					update_boot_volume_details=UpdateBootVolumeDetails(vpus_per_gb=int(vpus)),
+				)
+			else:
+				self.client(BlockstorageClient).update_volume(
+					volume_id=volume.volume_id,
+					update_volume_details=UpdateVolumeDetails(vpus_per_gb=int(vpus)),
+				)
+		self.sync()
+
 	def client(self, client_type=None):
 		cluster = frappe.get_doc("Cluster", self.cluster)
 		if self.cloud_provider == "AWS EC2":

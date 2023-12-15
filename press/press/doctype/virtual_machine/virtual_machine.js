@@ -107,7 +107,6 @@ frappe.ui.form.on('Virtual Machine', {
 								},
 							],
 							({ iops, throughput }) => {
-								console.log(iops, throughput);
 								frm
 									.call(method, {
 										iops,
@@ -116,6 +115,43 @@ frappe.ui.form.on('Virtual Machine', {
 									.then((r) => frm.refresh());
 							},
 							__('Update EBS Performance'),
+						);
+					},
+					__('Actions'),
+				);
+			}
+		});
+		[
+			[
+				__('Update OCI Volume Performance'),
+				'update_oci_volume_performance',
+				frm.doc.cloud_provider == 'OCI',
+			],
+		].forEach(([label, method, condition]) => {
+			if (typeof condition === 'undefined' || condition) {
+				frm.add_custom_button(
+					label,
+					() => {
+						frappe.prompt(
+							[
+								{
+									fieldtype: 'Int',
+									label: 'VPUs / GB',
+									fieldname: 'vpus',
+									reqd: 1,
+									default:
+										(frm.doc.volumes[0].iops / frm.doc.volumes[0].size - 45) /
+										1.5,
+								},
+							],
+							({ vpus }) => {
+								frm
+									.call(method, {
+										vpus,
+									})
+									.then((r) => frm.refresh());
+							},
+							__('Update OCI Volume Performance'),
 						);
 					},
 					__('Actions'),
