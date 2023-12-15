@@ -227,6 +227,7 @@ class Team(Document):
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
 
+	@frappe.whitelist()
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -701,6 +702,7 @@ class Team(Document):
 		from press.api.account import add_team_member
 
 		add_team_member(email)
+
 
 	@frappe.whitelist()
 	def get_balance(self):

@@ -8,7 +8,8 @@ export function getTeam() {
 			doctype: 'Team',
 			name: getCurrentTeam(),
 			whitelistedMethods: {
-				getTeamMembers: 'get_team_members'
+				getTeamMembers: 'get_team_members',
+				removeTeamMember: 'remove_team_member',
 			}
 		});
 	}
