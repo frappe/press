@@ -21,7 +21,8 @@ class Incident(WebsiteGenerator):
 
 	def after_insert(self):
 		if self.phone_call:
-			self.call_humans()
+			frappe.enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
+			self._call_humans()
 
 	def get_humans(self):
 		"""
@@ -59,7 +60,7 @@ class Incident(WebsiteGenerator):
 		call = call.fetch()
 		return call.status  # will eventually be no-answer
 
-	def call_humans(self):
+	def _call_humans(self):
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",

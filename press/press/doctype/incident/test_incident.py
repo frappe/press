@@ -4,6 +4,7 @@
 from unittest.mock import MagicMock, patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from press.utils.test import foreground_enqueue_doc
 
 
 from press.press.doctype.team.test_team import create_test_press_admin_team
@@ -55,9 +56,12 @@ class TestIncident(FrappeTestCase):
 		# TODO: update for multiple alerts #
 		pass
 
+	@patch(
+		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
+	)
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
 	@patch.object(MockTwilioClient, "create_call")
-	@patch("twilio.rest.Client", new=MockTwilioClient)
+	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
 	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
 		self, mock_calls_create: Mock
 	):
