@@ -37,7 +37,7 @@ def create_test_virtual_machine_image(
 			"virtual_machine": vm.name,
 			"region": vm.region,
 			"status": "Available",
-			"aws_ami_id": "ami-1234567890",
+			"image_id": "ami-1234567890",
 			"mariadb_root_password": "password",
 		}
 	).insert(ignore_if_duplicate=True)

@@ -4,9 +4,30 @@
 
 
 import ipaddress
+import base64
+import time
+import re
+import hashlib
+from textwrap import wrap
 from typing import Dict, Generator, List, Optional
 
 import boto3
+from oci.core import VirtualNetworkClient
+from oci.identity import IdentityClient
+from oci.config import validate_config
+from oci.core.models import (
+	CreateVcnDetails,
+	CreateSubnetDetails,
+	CreateInternetGatewayDetails,
+	UpdateRouteTableDetails,
+	RouteRule,
+	CreateNetworkSecurityGroupDetails,
+	AddNetworkSecurityGroupSecurityRulesDetails,
+	AddSecurityRuleDetails,
+	TcpOptions,
+	PortRange,
+)
+
 import frappe
 from frappe.model.document import Document
 from press.press.doctype.virtual_machine_image.virtual_machine_image import (
@@ -53,6 +74,8 @@ class Cluster(Document):
 		self.validate_cidr_block()
 		if self.cloud_provider == "AWS EC2":
 			self.validate_aws_credentials()
+		elif self.cloud_provider == "OCI":
+			self.set_oci_availability_zone()
 
 	def validate_aws_credentials(self):
 		settings: "PressSettings" = frappe.get_single("Press Settings")
@@ -81,6 +104,13 @@ class Cluster(Document):
 	def after_insert(self):
 		if self.cloud_provider == "AWS EC2":
 			self.provision_on_aws_ec2()
+		elif self.cloud_provider == "OCI":
+			self.provision_on_oci()
+
+	def on_trash(self):
+		machines = frappe.get_all("Virtual Machine", {"status": "Terminated"}, pluck="name")
+		for machine in machines:
+			frappe.delete_doc("Virtual Machine", machine)
 
 	@frappe.whitelist()
 	def add_images(self):
@@ -146,9 +176,9 @@ class Cluster(Document):
 			],
 			CidrBlock=self.cidr_block,
 		)
-		self.aws_vpc_id = response["Vpc"]["VpcId"]
+		self.vpc_id = response["Vpc"]["VpcId"]
 
-		client.modify_vpc_attribute(VpcId=self.aws_vpc_id, EnableDnsHostnames={"Value": True})
+		client.modify_vpc_attribute(VpcId=self.vpc_id, EnableDnsHostnames={"Value": True})
 
 		response = client.create_subnet(
 			TagSpecifications=[
@@ -158,10 +188,10 @@ class Cluster(Document):
 				},
 			],
 			AvailabilityZone=self.availability_zone,
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			CidrBlock=self.subnet_cidr_block,
 		)
-		self.aws_subnet_id = response["Subnet"]["SubnetId"]
+		self.subnet_id = response["Subnet"]["SubnetId"]
 
 		response = client.create_internet_gateway(
 			TagSpecifications=[
@@ -174,41 +204,41 @@ class Cluster(Document):
 			],
 		)
 
-		self.aws_internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
+		self.internet_gateway_id = response["InternetGateway"]["InternetGatewayId"]
 
 		client.attach_internet_gateway(
-			InternetGatewayId=self.aws_internet_gateway_id, VpcId=self.aws_vpc_id
+			InternetGatewayId=self.internet_gateway_id, VpcId=self.vpc_id
 		)
 
 		response = client.describe_route_tables(
-			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
-		self.aws_route_table_id = response["RouteTables"][0]["RouteTableId"]
+		self.route_table_id = response["RouteTables"][0]["RouteTableId"]
 
 		client.create_route(
 			DestinationCidrBlock="0.0.0.0/0",
-			GatewayId=self.aws_internet_gateway_id,
-			RouteTableId=self.aws_route_table_id,
+			GatewayId=self.internet_gateway_id,
+			RouteTableId=self.route_table_id,
 		)
 
 		client.create_tags(
-			Resources=[self.aws_route_table_id],
+			Resources=[self.route_table_id],
 			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Route Table"}],
 		)
 
 		response = client.describe_network_acls(
-			Filters=[{"Name": "vpc-id", "Values": [self.aws_vpc_id]}],
+			Filters=[{"Name": "vpc-id", "Values": [self.vpc_id]}],
 		)
-		self.aws_network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
+		self.network_acl_id = response["NetworkAcls"][0]["NetworkAclId"]
 		client.create_tags(
-			Resources=[self.aws_network_acl_id],
+			Resources=[self.network_acl_id],
 			Tags=[{"Key": "Name", "Value": f"Frappe Cloud - {self.name} - Network ACL"}],
 		)
 
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Security Group",
 			Description="Allow Everything",
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			TagSpecifications=[
 				{
 					"ResourceType": "security-group",
@@ -218,10 +248,10 @@ class Cluster(Document):
 				},
 			],
 		)
-		self.aws_security_group_id = response["GroupId"]
+		self.security_group_id = response["GroupId"]
 
 		client.authorize_security_group_ingress(
-			GroupId=self.aws_security_group_id,
+			GroupId=self.security_group_id,
 			IpPermissions=[
 				{
 					"FromPort": 80,
@@ -290,7 +320,7 @@ class Cluster(Document):
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Proxy - Security Group",
 			Description="Allow Everything on Proxy",
-			VpcId=self.aws_vpc_id,
+			VpcId=self.vpc_id,
 			TagSpecifications=[
 				{
 					"ResourceType": "security-group",
@@ -300,10 +330,10 @@ class Cluster(Document):
 				},
 			],
 		)
-		self.aws_proxy_security_group_id = response["GroupId"]
+		self.proxy_security_group_id = response["GroupId"]
 
 		client.authorize_security_group_ingress(
-			GroupId=self.aws_proxy_security_group_id,
+			GroupId=self.proxy_security_group_id,
 			IpPermissions=[
 				{
 					"FromPort": 2222,
@@ -319,6 +349,204 @@ class Cluster(Document):
 				},
 			],
 		)
+
+	def get_oci_public_key_fingerprint(self):
+		match = re.match(
+			r"-*BEGIN PUBLIC KEY-*(.*?)-*END PUBLIC KEY-*",
+			"".join(self.oci_public_key.splitlines()),
+		)
+		base64_key = match.group(1).encode("utf-8")
+		binary_key = base64.b64decode(base64_key)
+		digest = hashlib.md5(binary_key).hexdigest()
+		return ":".join(wrap(digest, 2))
+
+	def get_oci_config(self):
+		# Stupid Password field, replaces newines with spaces
+		private_key = (
+			self.get_password("oci_private_key")
+			.replace(" ", "\n")
+			.replace("\nPRIVATE\n", " PRIVATE ")
+		)
+
+		config = {
+			"user": self.oci_user,
+			"fingerprint": self.get_oci_public_key_fingerprint(),
+			"tenancy": self.oci_tenancy,
+			"region": self.region,
+			"key_content": private_key,
+		}
+		validate_config(config)
+		return config
+
+	def set_oci_availability_zone(self):
+		identiy_client = IdentityClient(self.get_oci_config())
+		availibility_domain = (
+			identiy_client.list_availability_domains(self.oci_tenancy).data[0].name
+		)
+		self.availability_zone = availibility_domain
+
+	def provision_on_oci(self):
+		vcn_client = VirtualNetworkClient(self.get_oci_config())
+		vcn = vcn_client.create_vcn(
+			CreateVcnDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name}",
+				cidr_block=self.subnet_cidr_block,
+			)
+		).data
+		self.vpc_id = vcn.id
+		self.route_table_id = vcn.default_route_table_id
+		self.network_acl_id = vcn.default_security_list_id
+
+		time.sleep(1)
+		# https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+		# 1 ICMP
+		# 6 TCP
+		# 17 UDP
+		security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Security Group",
+				vcn_id=self.vpc_id,
+			)
+		).data
+		self.security_group_id = security_group.id
+
+		time.sleep(1)
+		vcn_client.add_network_security_group_security_rules(
+			self.security_group_id,
+			AddNetworkSecurityGroupSecurityRulesDetails(
+				security_rules=[
+					AddSecurityRuleDetails(
+						description="HTTP from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=80, max=80)),
+					),
+					AddSecurityRuleDetails(
+						description="HTTPS from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=443, max=443)),
+					),
+					AddSecurityRuleDetails(
+						description="SSH from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=22, max=22)),
+					),
+					AddSecurityRuleDetails(
+						description="MariaDB from private network",
+						direction="INGRESS",
+						protocol="6",
+						source=self.subnet_cidr_block,
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=3306, max=3306)),
+					),
+					AddSecurityRuleDetails(
+						description="SSH from private network",
+						direction="INGRESS",
+						protocol="6",
+						source=self.subnet_cidr_block,
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=22000, max=22999)),
+					),
+					AddSecurityRuleDetails(
+						description="ICMP from anywhere",
+						direction="INGRESS",
+						protocol="1",
+						source="0.0.0.0/0",
+						# Ignoring IcmpOptions for now. https://docs.oracle.com/en-us/iaas/tools/python/2.117.0/api/core/models/oci.core.models.IcmpOptions.html#oci.core.models.IcmpOptions
+					),
+					AddSecurityRuleDetails(
+						description="Everything to anywhere",
+						direction="EGRESS",
+						protocol="all",
+						destination="0.0.0.0/0",
+					),
+				],
+			),
+		)
+
+		time.sleep(1)
+		proxy_security_group = vcn_client.create_network_security_group(
+			CreateNetworkSecurityGroupDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Proxy - Security Group",
+				vcn_id=self.vpc_id,
+			)
+		).data
+		self.proxy_security_group_id = proxy_security_group.id
+
+		time.sleep(1)
+		vcn_client.add_network_security_group_security_rules(
+			self.proxy_security_group_id,
+			AddNetworkSecurityGroupSecurityRulesDetails(
+				security_rules=[
+					AddSecurityRuleDetails(
+						description="SSH proxy from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=2222, max=2222)),
+					),
+					AddSecurityRuleDetails(
+						description="MariaDB from anywhere",
+						direction="INGRESS",
+						protocol="6",
+						source="0.0.0.0/0",
+						tcp_options=TcpOptions(destination_port_range=PortRange(min=3306, max=3306)),
+					),
+					AddSecurityRuleDetails(
+						description="Everything to anywhere",
+						direction="EGRESS",
+						protocol="all",
+						destination="0.0.0.0/0",
+					),
+				],
+			),
+		).data
+
+		time.sleep(1)
+		subnet = vcn_client.create_subnet(
+			CreateSubnetDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Public Subnet",
+				vcn_id=self.vpc_id,
+				cidr_block=self.subnet_cidr_block,
+				route_table_id=self.route_table_id,
+				security_list_ids=[self.network_acl_id],
+			)
+		).data
+		self.subnet_id = subnet.id
+
+		time.sleep(1)
+		# Don't associate IGW with any route table Otherwise it fails with "Rules in the route table must use private IP"
+		internet_gateway = vcn_client.create_internet_gateway(
+			CreateInternetGatewayDetails(
+				compartment_id=self.oci_tenancy,
+				display_name=f"Frappe Cloud - {self.name} - Internet Gateway",
+				is_enabled=True,
+				vcn_id=self.vpc_id,
+			)
+		).data
+		self.internet_gateway_id = internet_gateway.id
+
+		time.sleep(1)
+		vcn_client.update_route_table(
+			self.route_table_id,
+			UpdateRouteTableDetails(
+				route_rules=[
+					RouteRule(
+						destination="0.0.0.0/0",
+						network_entity_id=self.internet_gateway_id,
+					)
+				]
+			),
+		)
+
+		self.save()
 
 	def get_available_vmi(self, series) -> Optional[str]:
 		"""Virtual Machine Image available in region for given series"""

@@ -20,6 +20,7 @@ frappe.ui.form.on('Virtual Machine', {
 				'enable_termination_protection',
 				!frm.doc.termination_protection,
 			],
+			[__('Increase Disk Size'), 'increase_disk_size'],
 			[__('Create Image'), 'create_image', frm.doc.status == 'Stopped'],
 			[__('Create Snapshots'), 'create_snapshots', frm.doc.status == 'Running'],
 			[__('Create Server'), 'create_server', frm.doc.series === 'f'],
@@ -72,11 +73,18 @@ frappe.ui.form.on('Virtual Machine', {
 				}
 			},
 		);
-		if (frm.doc.aws_instance_id) {
-			frm.add_web_link(
-				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.aws_instance_id}`,
-				__('Visit AWS Dashboard'),
-			);
+		if (frm.doc.instance_id) {
+			if (frm.doc.cloud_provider === 'AWS EC2') {
+				frm.add_web_link(
+					`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#InstanceDetails:instanceId=${frm.doc.instance_id}`,
+					__('Visit AWS Dashboard'),
+				);
+			} else if (frm.doc.cloud_provider === 'OCI') {
+				frm.add_web_link(
+					`https://cloud.oracle.com/compute/instances/${frm.doc.instance_id}?region=${frm.doc.region}`,
+					__('Visit OCI Dashboard'),
+				);
+			}
 		}
 	},
 });

@@ -67,7 +67,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -200,7 +200,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-08-16 17:20:05.594416",
+ "modified": "2023-12-13 15:09:06.458740",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

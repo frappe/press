@@ -9,7 +9,7 @@ def execute():
 		machine = frappe.get_doc("Virtual Machine", machine)
 		for volume in machine.get_volumes():
 			row = {
-				"aws_volume_id": volume["VolumeId"],
+				"volume_id": volume["VolumeId"],
 				"volume_type": volume["VolumeType"],
 				"size": volume["Size"],
 				"iops": volume["Iops"],

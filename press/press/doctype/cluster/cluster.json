@@ -7,31 +7,39 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "image",
   "description",
   "column_break_2",
-  "monitoring_password",
+  "status",
   "public",
   "column_break_fsht",
-  "status",
+  "monitoring_password",
+  "image",
   "provisioning_section",
   "cloud_provider",
   "region",
-  "availability_zone",
   "column_break_5",
-  "aws_access_key_id",
-  "aws_secret_access_key",
   "ssh_key",
+  "availability_zone",
+  "aws_section",
+  "aws_access_key_id",
+  "column_break_qpia",
+  "aws_secret_access_key",
+  "oci_section",
+  "oci_user",
+  "oci_public_key",
+  "column_break_bpar",
+  "oci_tenancy",
+  "oci_private_key",
   "networking_section",
   "cidr_block",
   "subnet_cidr_block",
   "column_break_12",
-  "aws_vpc_id",
-  "aws_subnet_id",
-  "aws_security_group_id",
-  "aws_proxy_security_group_id",
-  "aws_network_acl_id",
-  "aws_route_table_id"
+  "vpc_id",
+  "subnet_id",
+  "security_group_id",
+  "proxy_security_group_id",
+  "network_acl_id",
+  "route_table_id"
  ],
  "fields": [
   {
@@ -52,7 +60,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "AWS EC2\nGeneric",
+   "options": "AWS EC2\nGeneric\nOCI",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -80,11 +88,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "region",
    "fieldtype": "Link",
    "label": "Region",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "Cloud Region",
    "set_only_once": 1
   },
@@ -108,25 +116,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "aws_vpc_id",
-   "fieldtype": "Data",
-   "label": "AWS VPC ID",
-   "read_only": 1
-  },
-  {
    "fieldname": "subnet_cidr_block",
    "fieldtype": "Data",
    "label": "Subnet CIDR Block",
    "read_only": 1
   },
   {
-   "fieldname": "aws_subnet_id",
-   "fieldtype": "Data",
-   "label": "AWS Subnet ID",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "availability_zone",
    "fieldtype": "Data",
    "label": "Availability Zone",
@@ -134,29 +130,11 @@
    "set_only_once": 1
   },
   {
-   "fieldname": "aws_security_group_id",
-   "fieldtype": "Data",
-   "label": "AWS Security Group ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "aws_network_acl_id",
-   "fieldtype": "Data",
-   "label": "AWS Network ACL ID",
-   "read_only": 1
-  },
-  {
-   "fieldname": "aws_route_table_id",
-   "fieldtype": "Data",
-   "label": "AWS Route Table ID",
-   "read_only": 1
-  },
-  {
-   "depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "fieldname": "ssh_key",
    "fieldtype": "Link",
    "label": "SSH Key",
-   "mandatory_depends_on": "eval:doc.cloud_provider === \"AWS EC2\"",
+   "mandatory_depends_on": "eval:doc.cloud_provider !== \"Generic\"",
    "options": "SSH Key",
    "set_only_once": 1
   },
@@ -178,12 +156,6 @@
    "label": "Image"
   },
   {
-   "fieldname": "aws_proxy_security_group_id",
-   "fieldtype": "Data",
-   "label": "AWS Proxy Security Group ID",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_fsht",
    "fieldtype": "Column Break"
   },
@@ -195,6 +167,95 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Active\nCopying Images\nArchived"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "oci_section",
+   "fieldtype": "Section Break",
+   "label": "OCI"
+  },
+  {
+   "fieldname": "column_break_bpar",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "aws_section",
+   "fieldtype": "Section Break",
+   "label": "AWS"
+  },
+  {
+   "fieldname": "column_break_qpia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_user",
+   "fieldtype": "Data",
+   "label": "OCI User",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_public_key",
+   "fieldtype": "Code",
+   "label": " OCI Public Key",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_tenancy",
+   "fieldtype": "Data",
+   "label": "OCI Tenancy",
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "fieldname": "oci_private_key",
+   "fieldtype": "Password",
+   "label": "OCI Private Key",
+   "length": 4096,
+   "mandatory_depends_on": "eval:doc.cloud_provider === \"OCI\"",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "vpc_id",
+   "fieldtype": "Data",
+   "label": "VPC ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "subnet_id",
+   "fieldtype": "Data",
+   "label": "Subnet ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "proxy_security_group_id",
+   "fieldtype": "Data",
+   "label": "Proxy Security Group ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "security_group_id",
+   "fieldtype": "Data",
+   "label": "Security Group ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "route_table_id",
+   "fieldtype": "Data",
+   "label": "Route Table ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "network_acl_id",
+   "fieldtype": "Data",
+   "label": "Network ACL ID",
+   "read_only": 1
   }
  ],
  "image_field": "image",
@@ -226,7 +287,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-08-18 05:46:14.895927",
+ "modified": "2023-12-11 17:45:05.626912",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
