@@ -77,14 +77,6 @@ def get(doctype, name):
 	for fieldname in fields:
 		_doc[fieldname] = doc.get(fieldname)
 
-	could_have_restricted_methods = frappe.db.exists(
-		"Press Method Permission",
-		{"document_type": doctype},
-	)
-	if could_have_restricted_methods:
-		permitted_methods = get_permitted_methods(doc.doctype, doc.name)
-		_doc.permitted_methods = permitted_methods
-
 	if hasattr(doc, "get_doc"):
 		result = doc.get_doc(_doc)
 		if isinstance(result, dict):
