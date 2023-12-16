@@ -1017,7 +1017,7 @@ def get_team_members(team):
 	if member_emails:
 		users = frappe.db.sql(
 			"""
-				select 
+				select
 					u.name,
 					u.first_name,
 					u.last_name,
