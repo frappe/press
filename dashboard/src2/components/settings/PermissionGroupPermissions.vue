@@ -116,7 +116,7 @@ const listOptions = ref({
 			label: 'Permissions',
 			fieldname: 'permissions',
 			type: 'Component',
-			width: '700px',
+			width: 1,
 			component: ({ row }) => {
 				return h(PermissionGroupPermissionCell, {
 					permissions: row.permissions,
