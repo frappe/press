@@ -479,6 +479,14 @@ def get_permissions():
 	}
 
 
+@frappe.whitelist()
+def has_method_permission(doctype, docname, method):
+	from press.press.doctype.press_permission_group.press_permission_group import (
+		has_user_permission
+	)
+
+	return has_user_permission(doctype, docname, method)
+
 @frappe.whitelist(allow_guest=True)
 def signup_settings(product=None):
 	settings = frappe.get_single("Press Settings")

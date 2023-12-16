@@ -1545,36 +1545,44 @@ class Site(Document):
 				"description": "Deactivated site is not accessible on the internet",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
+				"method": "press.api.site.deactivate",
 			},
 			{
 				"action": "Activate site",
 				"description": "Activate site to make it accessible on the internet",
 				"button_label": "Activate",
 				"condition": self.status in ["Inactive", "Broken"],
+				"method": "press.api.site.activate",
 			},
 			{
 				"action": "Restore from backup",
 				"description": "Restore your database from database, public and private files",
 				"button_label": "Restore",
+				"method": "press.api.site.restore",
 			},
 			{
 				"action": "Migrate site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
+				"method": "press.api.site.migrate",
 			},
 			{
 				"action": "Reset site",
 				"description": "Reset your site database to a clean state",
 				"button_label": "Reset",
+				"method": "press.api.site.reset",
 			},
 			{
 				"action": "Access site database",
 				"description": "Enable read/write access to your site database",
 				"button_label": "Enable Access",
+				"method": "press.api.site.enable_database_access",
 			},
 			{
 				"action": "Drop site",
 				"description": "When you drop site your site, all it's data is deleted forever",
+				"button_label": "Drop",
+				"method": "press.api.site.archive",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

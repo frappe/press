@@ -1,15 +1,15 @@
-import { defineAsyncComponent, h } from 'vue';
 import { frappeRequest } from 'frappe-ui';
+import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import { bytes, duration } from '../utils/format';
-import dayjs from '../utils/dayjs';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import { confirmDialog, renderDialog, icon } from '../utils/components';
 import { getTeam } from '../data/team';
 import router from '../router';
-import BadgeDollarSign from '~icons/lucide/badge-dollar-sign';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
+import dayjs from '../utils/dayjs';
+import { bytes, duration } from '../utils/format';
+import SiteActionCell from '../components/SiteActionCell.vue';
 
 export default {
 	doctype: 'Site',
@@ -674,42 +674,17 @@ export default {
 					columns: [
 						{
 							label: 'Action',
-							fieldname: 'button_label',
-							type: 'Button',
-							width: 1,
-							Button({ row, documentResource: site }) {
-								let actionDialogs = {
-									'Activate site': null, // TODO
-									'Deactivate site': null, // TODO
-									'Restore from backup': defineAsyncComponent(() =>
-										import('../components/SiteDatabaseRestoreDialog.vue')
-									),
-									'Migrate site': defineAsyncComponent(() =>
-										import('../components/SiteMigrateDialog.vue')
-									),
-									'Reset site': defineAsyncComponent(() =>
-										import('../components/SiteResetDialog.vue')
-									),
-									'Access site database': defineAsyncComponent(() =>
-										import('../components/SiteDatabaseAccessDialog.vue')
-									),
-									'Drop site': null // TODO
-								};
-								return {
-									label: row.action,
-									onClick() {
-										let dialog = actionDialogs[row.action];
-										if (!dialog) return;
-										renderDialog(h(dialog, { site: site.name }));
-									}
-								};
+							fieldname: 'action',
+							type: 'Component',
+							component: ({ row, documentResource: site }) => {
+								return h(SiteActionCell, {
+									siteName: site.doc.name,
+									actionLabel: row.action,
+									method: row.method,
+									description: row.description,
+									buttonLabel: row.button_label
+								});
 							}
-						},
-						{
-							label: 'Description',
-							fieldname: 'description',
-							class: 'text-gray-600',
-							width: 3
 						}
 					]
 				}
