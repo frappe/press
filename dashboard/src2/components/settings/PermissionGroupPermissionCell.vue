@@ -1,5 +1,5 @@
 <template>
-	<div class="flex flex-wrap gap-x-4 gap-y-2 text-base">
+	<div class="flex flex-wrap gap-x-4 gap-y-2 text-base max-w-[36rem] lg:max-w-[56rem]">
 		<div class="mb-2 mr-4 flex w-[12rem] items-center truncate">
 			<FormControl
 				type="checkbox"

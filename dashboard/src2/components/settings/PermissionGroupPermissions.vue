@@ -110,13 +110,13 @@ const listOptions = ref({
 		{
 			label: computed(() => currentDropdownOption.value.label.split(' ')[0]),
 			fieldname: 'document_name',
-			width: 1
+			width: 1,
 		},
 		{
 			label: 'Permissions',
 			fieldname: 'permissions',
 			type: 'Component',
-			width: 1,
+			width: 3,
 			component: ({ row }) => {
 				return h(PermissionGroupPermissionCell, {
 					permissions: row.permissions,
