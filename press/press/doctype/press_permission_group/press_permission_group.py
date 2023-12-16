@@ -157,6 +157,10 @@ def has_user_permission(doctype: str, name: str, method: str, group_names: list 
 	if not group_names:
 		group_names = get_permission_groups(user)
 
+	if not group_names:
+		# user does not have any restricted permissions set in any group
+		return True
+
 	for group_name in set(group_names):
 		user_belongs_to_group = frappe.db.exists(
 			"Press Permission Group User", {"parent": group_name, "user": user}
