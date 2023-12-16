@@ -25,9 +25,7 @@ def has_user_permission(doc: str, name: str, action: str, groups: list = None):
 	allowed = False
 
 	if not groups:
-		groups = frappe.get_all(
-			"Press Permission Group User", {"user": user}, pluck="parent"
-		)
+		groups = frappe.get_all("Press Permission Group User", {"user": user}, pluck="parent")
 
 	# part of a group with access
 	if frappe.db.exists(

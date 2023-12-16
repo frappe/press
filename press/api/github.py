@@ -146,7 +146,7 @@ def repositories(installation, token):
 
 @frappe.whitelist()
 def repository(owner, name, installation=None):
-	token = ''
+	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
 	else:

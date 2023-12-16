@@ -703,7 +703,6 @@ class Team(Document):
 
 		add_team_member(email)
 
-
 	@frappe.whitelist()
 	def get_balance(self):
 		res = frappe.get_all(
