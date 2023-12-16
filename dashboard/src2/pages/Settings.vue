@@ -51,7 +51,6 @@ onBeforeRouteUpdate((to, from, next) => {
 onMounted(() => {
 	const route = router.currentRoute.value;
 	setTabToRoute(route);
-	handleTabChange(currentTab.value);
 });
 function setTabToRoute(route) {
 	tabs.some((tab, index) => {
