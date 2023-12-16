@@ -25,7 +25,8 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "User",
-   "options": "User"
+   "options": "User",
+   "search_index": 1
   },
   {
    "depends_on": "eval: doc.type != 'Config';",
@@ -82,7 +83,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-03 14:34:58.554059",
+ "modified": "2023-12-15 15:48:28.325993",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press User Permission",

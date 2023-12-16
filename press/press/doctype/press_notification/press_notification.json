@@ -32,7 +32,7 @@
   },
   {
    "fieldname": "message",
-   "fieldtype": "Data",
+   "fieldtype": "Long Text",
    "label": "Message",
    "read_only": 1
   },
@@ -66,7 +66,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-21 09:02:49.646079",
+ "modified": "2023-12-15 13:12:13.826348",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

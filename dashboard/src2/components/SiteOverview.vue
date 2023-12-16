@@ -41,9 +41,9 @@
 <script>
 import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
-import LucideGaugeCircle from '~icons/lucide/gauge-circle.vue';
-import LucideHardDrive from '~icons/lucide/hard-drive.vue';
-import LucideDatabase from '~icons/lucide/database.vue';
+import LucideGaugeCircle from '~icons/lucide/gauge-circle';
+import LucideHardDrive from '~icons/lucide/hard-drive';
+import LucideDatabase from '~icons/lucide/database';
 import { renderDialog } from '../utils/components';
 
 export default {

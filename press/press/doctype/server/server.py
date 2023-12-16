@@ -135,6 +135,8 @@ class BaseServer(Document):
 				)
 			elif self.provider == "AWS EC2":
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+			elif self.provider == "OCI":
+				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 
 			ansible.run()
 			self.reload()
@@ -260,7 +262,7 @@ class BaseServer(Document):
 					server=self,
 					user="ubuntu",
 				)
-			elif self.provider == "AWS EC2":
+			elif self.provider in ("AWS EC2", "OCI"):
 				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
@@ -283,7 +285,7 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
@@ -293,14 +295,14 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
 		self.extend_ec2_volume()
 
 	def update_virtual_machine_name(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
@@ -858,7 +860,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def reboot(self):
-		if self.provider == "AWS EC2":
+		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 

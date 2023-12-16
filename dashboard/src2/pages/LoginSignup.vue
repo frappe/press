@@ -1,7 +1,7 @@
 <template>
-	<div class="flex h-screen">
+	<div class="flex h-screen bg-gray-50">
 		<div
-			class="order-1 flex w-[45%] shrink-0 justify-center bg-blue-50 px-10 pt-20"
+			class="order-1 flex w-[45%] shrink-0 justify-center bg-white px-10 pt-32"
 			v-if="saasProduct"
 		>
 			<div class="max-w-[480px]">
@@ -111,7 +111,6 @@
 						</div>
 						<Button
 							variant="solid"
-							v-if="$resources.signupSettings.data?.enable_google_oauth === 1"
 							:loading="$resources.googleLogin.loading"
 							@click="$resources.googleLogin.submit()"
 						>
@@ -193,9 +192,14 @@ export default {
 		},
 		googleLogin() {
 			return {
-				url: 'press.api.oauth.google_login',
-				onSuccess(r) {
-					window.location = r;
+				url: 'press.api.google.login',
+				makeParams() {
+					return {
+						product: this.$route.query.product
+					};
+				},
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		},

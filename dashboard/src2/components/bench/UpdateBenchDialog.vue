@@ -113,7 +113,6 @@ export default {
 		return {
 			show: true,
 			step: '',
-			benchDocResource: getCachedDocumentResource('Release Group', this.bench),
 			selectedApps: [],
 			selectedSites: []
 		};
@@ -297,6 +296,12 @@ export default {
 					}
 				]
 			};
+		},
+		benchDocResource() {
+			return getCachedDocumentResource('Release Group', this.bench);
+		},
+		deployInformation() {
+			return this.benchDocResource?.doc.deploy_information;
 		}
 	},
 	resources: {

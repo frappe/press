@@ -101,3 +101,8 @@ execute:frappe.delete_doc('Central Site Migration')
 execute:frappe.delete_doc('Central Server')
 execute:frappe.delete_doc('Feature Traction')
 press.patches.v0_7_0.set_hostname_abbreviation
+press.press.doctype.cluster.patches.rename_aws_fields
+press.press.doctype.virtual_machine.patches.rename_aws_fields
+press.press.doctype.virtual_machine_image.patches.rename_aws_fields
+press.press.doctype.virtual_disk_snapshot.patches.rename_aws_fields
+press.press.doctype.virtual_machine_volume.patches.rename_aws_fields

@@ -206,7 +206,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -403,7 +403,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-16 18:21:59.143044",
+ "modified": "2023-12-13 15:08:56.278451",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

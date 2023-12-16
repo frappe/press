@@ -1,0 +1,30 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <p class="h3">{{ title }}</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <p class="badge badge-success">{{status}}</p>
+        </div>
+    </div>
+</div>
+<table class="table table-striped">
+    <tr>
+        <th>Time</th>
+        <th>Update</th>
+      </tr>
+{% for update in updates %}
+<tr>
+    <td>{{ update.update_time }}</td>
+    <td>{{ update.update_note }}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}
+
+<!-- this is a sample default web page template -->

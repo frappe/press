@@ -8,13 +8,18 @@
 		@update:modelValue="$emit('update:modelValue', $event)"
 	>
 		<template #body-content>
-			<FTabs :tabs="tabs" v-model="tabIndex" v-slot="{ tab }">
-				<div class="mx-2">
+			<FTabs
+				class="[&>div]:pl-0"
+				:tabs="tabs"
+				v-model="tabIndex"
+				v-slot="{ tab }"
+			>
+				<div class="-ml-0.5 pl-1">
 					<div v-if="tab.value === 'public-github-app'" class="space-y-4">
 						<div class="mt-4 flex items-end space-x-2">
 							<FormControl
 								class="mb-0.5 grow"
-								label="Enter the app's GitHub url"
+								label="GitHub URL"
 								v-model="githubAppLink"
 							/>
 							<Button
@@ -142,6 +147,13 @@
 						</div>
 					</div>
 					<div class="mt-4 space-y-2">
+						<div
+							v-if="$resources.validateApp.loading && !appValidated"
+							class="flex text-base text-gray-700"
+						>
+							<LoadingIndicator class="mr-2 w-4" />
+							Validating app...
+						</div>
 						<div v-if="appValidated" class="flex text-base text-gray-700">
 							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ this.app.title }} ({{ this.app.name }})
@@ -222,12 +234,18 @@ export default {
 			this.appValidated = false;
 		},
 		selectedGithubRepository(val) {
-			this.selectedBranch = '';
 			this.appValidated = false;
 			this.$resources.branches.submit({
 				owner: this.selectedGithubUser?.label,
 				name: val?.label
 			});
+
+			if (this.selectedGithubUser) {
+				let defaultBranch = this.selectedGithubUser.value.repos.find(
+					r => r.name === val.label
+				).default_branch;
+				this.selectedBranch = { label: defaultBranch, value: defaultBranch };
+			} else this.selectedBranch = '';
 		}
 	},
 	resources: {
@@ -260,7 +278,6 @@ export default {
 				onSuccess(data) {
 					this.appValidated = true;
 					if (data) {
-						console.log(data);
 						this.app = {
 							name: data.name,
 							title: data.title,
@@ -277,10 +294,11 @@ export default {
 			return {
 				url: 'press.api.github.branches',
 				onSuccess(branches) {
-					this.selectedBranch = {
-						label: branches[0].name,
-						value: branches[0].name
-					};
+					if (this.githubAppLink)
+						this.selectedBranch = {
+							label: branches[0].name,
+							value: branches[0].name
+						};
 
 					this.$resources.validateApp.submit({
 						owner: this.appOwner,
@@ -292,23 +310,6 @@ export default {
 					if (this.tabIndex === 0 && !this.githubAppLink) {
 						return 'Please enter a valid github link';
 					}
-				}
-			};
-		},
-		repository() {
-			let auto = this.selectedInstallation && this.selectedRepo;
-			let params = {
-				installation: this.selectedInstallation?.id,
-				owner: this.selectedInstallation?.login,
-				name: this.selectedRepo?.name
-			};
-
-			return {
-				url: 'press.api.github.repository',
-				params,
-				auto,
-				onSuccess(repository) {
-					this.selectedBranch = repository.default_branch;
 				}
 			};
 		},

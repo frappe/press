@@ -134,7 +134,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -204,7 +204,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-06-16 22:27:50.409392",
+ "modified": "2023-12-13 15:09:46.909110",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Registry Server",
