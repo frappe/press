@@ -37,11 +37,12 @@
 </template>
 
 <script setup>
-import ObjectList from '../ObjectList.vue';
 import { Dropdown, createDocumentResource } from 'frappe-ui';
 import { computed, h, inject, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window.vue';
+import ObjectList from '../ObjectList.vue';
 import PermissionGroupPermissionCell from './PermissionGroupPermissionCell.vue';
+import { toast } from 'vue-sonner';
 
 const props = defineProps({
 	groupId: { type: String, required: true }
@@ -156,23 +157,36 @@ const listOptions = ref({
 
 const updatedPermissions = ref({});
 function updatePermissions() {
-	return permissionGroup.updatePermissions.submit({
-		updated_permissions: updatedPermissions.value
-	});
+	return permissionGroup.updatePermissions
+		.submit({
+			updated_permissions: updatedPermissions.value
+		})
+		.then(() => {
+			toast.success('Permissions Updated');
+			updatedPermissions.value = {};
+		});
 }
 
-const doctypeAllowedPerm = { '*': { '*': true } };
-const doctypeRestrictedPerm = { '*': { '*': false } };
-const docAllowedPerm = { '*': true };
-const docRestrictedPerm = { '*': false };
+const allDocAllMethodAllowedPerm = { '*': { '*': true } };
+const allDocAllMethodRestrictedPerm = { '*': { '*': false } };
+const allMethodAllowedPerm = { '*': true };
+const allMethodRestrictedPerm = { '*': false };
 
 function handlePermissionChange(doctype, doc_name, method, permitted) {
 	const updated = updatedPermissions.value;
-	updated[doctype] = updated[doctype] || { ...doctypeAllowedPerm };
-	updated[doctype][doc_name] = updated[doctype][doc_name] || {
-		...docAllowedPerm
-	};
+	if (method === '*') {
+		// allow all the methods for this document
+		updated[doctype] = updated[doctype] || {};
+		updated[doctype][doc_name] = permitted
+			? allMethodAllowedPerm
+			: allMethodRestrictedPerm
+		return;
+	}
+	// allow only this method for this document
+	updated[doctype] = updated[doctype] || {};
+	updated[doctype][doc_name] = updated[doctype][doc_name] || {};
 	updated[doctype][doc_name][method] = permitted;
+
 	updatedPermissions.value = updated;
 }
 
@@ -185,11 +199,7 @@ function toggleAll(listResource, value) {
 	});
 	const updated = updatedPermissions.value;
 	const doctype = currentDropdownOption.value.doctype;
-	const defaultDoctypePerm = value ? doctypeAllowedPerm : doctypeRestrictedPerm;
-	const defaultDocumentPerm = value ? docAllowedPerm : docRestrictedPerm;
-	updated[doctype] = updated[doctype] || { ...defaultDoctypePerm };
-	updated[doctype]['*'] = updated[doctype]['*'] || { ...defaultDocumentPerm };
-	updated[doctype]['*']['*'] = value;
+	updated[doctype] = value ? allDocAllMethodAllowedPerm : allDocAllMethodRestrictedPerm;
 	updatedPermissions.value = updated;
 }
 
