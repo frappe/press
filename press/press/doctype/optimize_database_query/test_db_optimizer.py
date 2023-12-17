@@ -23,8 +23,8 @@ class TestDBOptimizer(FrappeTestCase):
 			]
 
 		self.assertEqual(
-			["modified"],
-			possible_indexes("select `name` from `tabUser` order by `modified` desc limit 1"),
+			["creation"],
+			possible_indexes("select `name` from `tabUser` order by `creation` desc limit 1"),
 		)
 
 		self.assertEqual(
@@ -33,9 +33,9 @@ class TestDBOptimizer(FrappeTestCase):
 		)
 
 		self.assertIn(
-			"parent",
+			"user",
 			possible_indexes(
-				"select `name` from `tabUser` u join `tabHas Role` h on h.parent = u.name"
+				"select `name` from `tabUser` u join `tabHas Role` h on h.user = u.name"
 			),
 		)
 

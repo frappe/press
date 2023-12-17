@@ -179,7 +179,8 @@ class DBOptimizer:
 			i for i in possible_db_indexes if i.column not in ("*", "name")
 		]
 		possible_db_indexes.sort(key=lambda i: (i.table, i.column))
-		return possible_db_indexes
+
+		return self._remove_existing_indexes(possible_db_indexes)
 
 	def _convert_to_db_index(self, column: str) -> DBIndex:
 
@@ -244,7 +245,6 @@ class DBOptimizer:
 			frappe.throw("DBTable infomation missing for: " + ", ".join(missing_tables))
 
 		potential_indexes = self.potential_indexes()
-		potential_indexes = self._remove_existing_indexes(potential_indexes)
 
 		for index in list(potential_indexes):
 			table = self.tables[index.table]
