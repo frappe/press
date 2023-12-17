@@ -9,10 +9,7 @@ DEFAULT_PERMISSIONS = {
 	"*": {"*": {"*": True}}  # all doctypes  # all documents  # all methods
 }
 
-RESTRICTABLE_DOCTYPES = [
-	"Site",
-	"Release Group"
-]
+RESTRICTABLE_DOCTYPES = ["Site", "Release Group"]
 
 
 class PressPermissionGroup(Document):
@@ -66,7 +63,6 @@ class PressPermissionGroup(Document):
 				for method, permitted in doc_perms.items():
 					if method != "*" and method not in restrictable_methods:
 						frappe.throw(f"{method} is not a valid method for {doctype}.")
-
 
 	@frappe.whitelist()
 	def get_permissions(self, doctype: str) -> list:
@@ -148,13 +144,15 @@ class PressPermissionGroup(Document):
 		)
 
 
-def has_method_permission(doctype: str, name: str, method: str, group_names: list = None):
+def has_method_permission(
+	doctype: str, name: str, method: str, group_names: list = None
+):
 	user = frappe.session.user
 	allowed = False
 
 	if doctype not in RESTRICTABLE_DOCTYPES:
 		return True
-	
+
 	RESTRICTED_METHODS = get_all_restrictable_methods(doctype)
 	if method not in RESTRICTED_METHODS:
 		return True
@@ -268,7 +266,7 @@ def get_all_restrictable_methods(doctype: str) -> list:
 		},
 		"Release Group": {
 			"restart": "Restart",
-		}
+		},
 	}
 	return methods.get(doctype, {})
 
