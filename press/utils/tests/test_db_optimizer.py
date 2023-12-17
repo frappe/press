@@ -68,6 +68,26 @@ class TestDBOptimizer(FrappeTestCase):
 		self.assertEqual(index.column, "role")
 		self.assertEqual(index.table, "tabHas Role")
 
+	def test_complex_sub_query_aliases(self):
+		"""Check if table identification is correct for subqueries."""
+
+		q = """SELECT *,
+					(SELECT COUNT(*) FROM `tabHD Ticket Comment` WHERE `tabHD Ticket Comment`.`reference_ticket`=`tabHD Ticket`.`name`) `count_comment`,
+					(SELECT COUNT(*) FROM `tabCommunication` WHERE `tabCommunication`.`reference_doctype`='HD Ticket' AND `tabCommunication`.`reference_name`=`tabHD Ticket`.`name`) `count_msg`,
+				FROM `tabHD Ticket`
+				WHERE `agent_group`='L2'
+				ORDER BY `modified` DESC
+				LIMIT 20
+			"""
+		optimizer = DBOptimizer(query=q)
+		optimizer.update_table_data(DBTable.from_frappe_ouput(HD_TICKET_TABLE))
+		optimizer.update_table_data(DBTable.from_frappe_ouput(HD_TICKET_COMMENT_TABLE))
+		optimizer.update_table_data(DBTable.from_frappe_ouput(COMMUNICATION_TABLE))
+
+		index = optimizer.suggest_index()
+		self.assertEqual(index.table, "HD Ticket Comment")
+		self.assertEqual(index.column, "reference_ticket")
+
 
 # Table stats extracted using describe-database-table for testing.
 
@@ -242,6 +262,345 @@ HAS_ROLE_TABLE = {
 			"sequence": 1,
 			"nullable": "YES",
 			"column": "parent",
+			"type": "BTREE",
+		},
+	],
+}
+
+
+HD_TICKET_TABLE = {
+	"table_name": "tabHD Ticket",
+	"total_rows": 3820,
+	"schema": [
+		{
+			"column": "name",
+			"type": "bigint(20)",
+			"is_nullable": False,
+			"default": None,
+			"cardinality": 3529,
+		},
+		{"column": "creation", "type": "datetime(6)", "is_nullable": True, "default": None},
+		{
+			"column": "modified",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 3529,
+		},
+		{
+			"column": "modified_by",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "owner", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{"column": "docstatus", "type": "int(1)", "is_nullable": False, "default": "0"},
+		{"column": "idx", "type": "int(8)", "is_nullable": False, "default": "0"},
+		{"column": "subject", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{"column": "raised_by", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{
+			"column": "status",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": "Open",
+			"cardinality": 8,
+		},
+		{"column": "priority", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{
+			"column": "ticket_type",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "agent_group",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": "L1",
+			"cardinality": 9,
+		},
+		{
+			"column": "ticket_split_from",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "description", "type": "longtext", "is_nullable": True, "default": None},
+		{"column": "template", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{"column": "sla", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{
+			"column": "response_by",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "response_by_variance",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "agreement_status",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "resolution_by",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "resolution_by_variance",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "service_level_agreement_creation",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "on_hold_since",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "total_hold_time",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "first_response_time",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "first_responded_on",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "avg_response_time",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "resolution_details",
+			"type": "longtext",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "opening_date", "type": "date", "is_nullable": True, "default": None},
+		{"column": "opening_time", "type": "time(6)", "is_nullable": True, "default": None},
+		{
+			"column": "resolution_date",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "resolution_time",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{
+			"column": "user_resolution_time",
+			"type": "decimal(21,9)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "contact", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{"column": "customer", "type": "varchar(140)", "is_nullable": True, "default": None},
+		{
+			"column": "email_account",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "attachment", "type": "text", "is_nullable": True, "default": None},
+		{"column": "_user_tags", "type": "text", "is_nullable": True, "default": None},
+		{"column": "_comments", "type": "text", "is_nullable": True, "default": None},
+		{"column": "_assign", "type": "text", "is_nullable": True, "default": None},
+		{"column": "_liked_by", "type": "text", "is_nullable": True, "default": None},
+		{"column": "_seen", "type": "text", "is_nullable": True, "default": None},
+	],
+	"indexes": [
+		{
+			"unique": True,
+			"cardinality": 3529,
+			"name": "PRIMARY",
+			"sequence": 1,
+			"nullable": False,
+			"column": "name",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 8,
+			"name": "status",
+			"sequence": 1,
+			"nullable": True,
+			"column": "status",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 3529,
+			"name": "modified",
+			"sequence": 1,
+			"nullable": True,
+			"column": "modified",
+			"type": "BTREE",
+		},
+	],
+}
+
+
+HD_TICKET_COMMENT_TABLE = {
+	"table_name": "tabHD Ticket Comment",
+	"total_rows": 2683,
+	"schema": [
+		{
+			"column": "name",
+			"type": "varchar(140)",
+			"is_nullable": False,
+			"default": None,
+			"cardinality": 2683,
+		},
+		{"column": "creation", "type": "datetime(6)", "is_nullable": True, "default": None},
+		{
+			"column": "modified",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 2345,
+		},
+		{
+			"column": "reference_ticket",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 1379,
+		},
+		{
+			"column": "commented_by",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+		},
+		{"column": "content", "type": "longtext", "is_nullable": True, "default": None},
+		{"column": "is_pinned", "type": "int(1)", "is_nullable": False, "default": "0"},
+	],
+	"indexes": [
+		{
+			"unique": True,
+			"cardinality": 2345,
+			"name": "PRIMARY",
+			"sequence": 1,
+			"nullable": False,
+			"column": "name",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 2345,
+			"name": "modified",
+			"sequence": 1,
+			"nullable": True,
+			"column": "modified",
+			"type": "BTREE",
+		},
+	],
+}
+
+
+COMMUNICATION_TABLE = {
+	"table_name": "tabCommunication",
+	"total_rows": 20727,
+	"schema": [
+		{
+			"column": "name",
+			"type": "varchar(140)",
+			"is_nullable": False,
+			"default": None,
+			"cardinality": 19713,
+		},
+		{"column": "creation", "type": "datetime(6)", "is_nullable": True, "default": None},
+		{
+			"column": "modified",
+			"type": "datetime(6)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 19713,
+		},
+		{
+			"column": "reference_doctype",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 1,
+		},
+		{
+			"column": "reference_name",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 3798,
+		},
+		{
+			"column": "reference_owner",
+			"type": "varchar(140)",
+			"is_nullable": True,
+			"default": None,
+			"cardinality": 1314,
+		},
+	],
+	"indexes": [
+		{
+			"unique": True,
+			"cardinality": 19713,
+			"name": "PRIMARY",
+			"sequence": 1,
+			"nullable": False,
+			"column": "name",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 19713,
+			"name": "modified",
+			"sequence": 1,
+			"nullable": True,
+			"column": "modified",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 2,
+			"name": "reference_doctype_reference_name_index",
+			"sequence": 1,
+			"nullable": True,
+			"column": "reference_doctype",
+			"type": "BTREE",
+		},
+		{
+			"unique": False,
+			"cardinality": 9856,
+			"name": "reference_doctype_reference_name_index",
+			"sequence": 2,
+			"nullable": True,
+			"column": "reference_name",
 			"type": "BTREE",
 		},
 	],

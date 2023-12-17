@@ -9,7 +9,7 @@ from typing import Literal
 import frappe
 from sql_metadata import Parser
 
-INDEX_SCORE_THRESHOLD = 0.65
+INDEX_SCORE_THRESHOLD = 0.3
 
 
 @dataclass
@@ -78,6 +78,9 @@ class DBIndex:
 			and self.table == other.table
 		)
 
+	def __repr__(self):
+		return f"DBIndex(`{self.table}`.`{self.column}`)"
+
 	@classmethod
 	def from_frappe_ouput(cls, data, table) -> "DBIndex":
 		"Parse DBIndex from output of describe-database-table command in Frappe"
@@ -116,6 +119,12 @@ class DBTable:
 			indexes=[DBIndex.from_frappe_ouput(i, table_name) for i in data["indexes"]],
 		)
 
+	def has_column(self, column: str) -> bool:
+		for col in self.schema:
+			if col.name == column:
+				return True
+		return False
+
 
 @dataclass
 class DBOptimizer:
@@ -134,10 +143,10 @@ class DBOptimizer:
 		self.parsed_query = Parser(self.query)
 
 	@property
-	def tables_examined(self):
+	def tables_examined(self) -> list[str]:
 		return self.parsed_query.tables
 
-	def set_table_status(self, table: DBTable):
+	def update_table_data(self, table: DBTable):
 		self.tables[table.name] = table
 
 	def potential_indexes(self) -> list[DBIndex]:
@@ -164,15 +173,26 @@ class DBOptimizer:
 			if self.parsed_query.limit_and_offset:
 				possible_indexes.extend(order_by_columns)
 
-		def convert_to_db_index(i: str) -> DBIndex:
-			column_name = i
-			# TODO: Index without table prefix COULD be from some other joined table. MySQL only has a problem with it when there's conflict.
-			table = self.parsed_query.tables[0]
-			if "." in column_name:
-				table, column_name = column_name.split(".")
-			return DBIndex(column=column_name, name=column_name, table=table)
+		possible_db_indexes = [self._convert_to_db_index(i) for i in possible_indexes]
+		possible_db_indexes = [
+			i for i in possible_db_indexes if i.column not in ("*", "name")
+		]
+		possible_db_indexes.sort(key=lambda i: (i.table, i.column))
+		return possible_db_indexes
 
-		return [convert_to_db_index(i) for i in possible_indexes]
+	def _convert_to_db_index(self, column: str) -> DBIndex:
+
+		column_name, table = None, None
+
+		if "." in column:
+			table, column_name = column.split(".")
+		else:
+			column_name = column
+			for table_name, db_table in self.tables.items():
+				if db_table.has_column(column):
+					table = table_name
+					break
+		return DBIndex(column=column_name, name=column_name, table=table)
 
 	def suggest_index(self) -> DBIndex | None:
 		"""Suggest best possible column to index given query and table stats."""
@@ -198,21 +218,25 @@ class DBOptimizer:
 		for index in potential_indexes:
 			index._score = self.index_score(index)
 
-		potential_indexes.sort(key=lambda i: i._score, reverse=True)
+		potential_indexes.sort(key=lambda i: i._score)
 		if (
 			potential_indexes
 			and (best_index := potential_indexes[0])
-			and best_index._score > INDEX_SCORE_THRESHOLD
+			and best_index._score < INDEX_SCORE_THRESHOLD
 		):
 			return best_index
 
 	def index_score(self, index: DBIndex) -> float:
-		"""Score an index from 0 to 1 based on usefulness."""
+		"""Score an index from 0 to 1 based on usefulness.
+
+		A score of 0.5 indicates on average this index will read 50% of the table. (e.g. checkboxes)"""
 		table = self.tables[index.table]
 
 		cardinality = index.cardinality or 2
+		total_rows = table.total_rows or cardinality or 1
 
-		# We assume most unique values are evenly distirbuted, this is
+		# We assume most unique values are evenly distributed, this is
 		# definitely not the case IRL but it should be good enough assumptions
 		# Score is rouhgly what percentage of table we will end up reading on typical query
-		return cardinality / (table.total_rows or 1)
+		rows_fetched_on_average = (table.total_rows or cardinality) / cardinality
+		return rows_fetched_on_average / total_rows
