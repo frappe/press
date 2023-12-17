@@ -20,7 +20,7 @@ import { call, createDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import RestrictedAction from '../components/RestrictedAction.vue';
-import { renderDialog } from '../utils/components';
+import { confirmDialog, renderDialog } from '../utils/components';
 
 const props = defineProps({
 	siteName: { type: String, required: true },
@@ -29,6 +29,7 @@ const props = defineProps({
 	description: { type: String, required: true },
 	buttonLabel: { type: String, required: true }
 });
+console;
 
 const site = createDocumentResource({
 	doctype: 'Site',
@@ -36,18 +37,21 @@ const site = createDocumentResource({
 });
 
 function getSiteActionHandler(action) {
-	const actionDialogPaths = {
-		'Restore from backup': './SiteDatabaseRestoreDialog.vue',
-		'Migrate site': './SiteMigrateDialog.vue',
-		'Reset site': './SiteResetDialog.vue',
-		'Access site database': './SiteDatabaseAccessDialog.vue',
-		Drop: './SiteDropDialog.vue'
+	const actionDialogs = {
+		'Restore from backup': defineAsyncComponent(() =>
+			import('./SiteDatabaseRestoreDialog.vue')
+		),
+		'Migrate site': defineAsyncComponent(() =>
+			import('./SiteMigrateDialog.vue')
+		),
+		'Reset site': defineAsyncComponent(() => import('./SiteResetDialog.vue')),
+		'Access site database': defineAsyncComponent(() =>
+			import('./SiteDatabaseAccessDialog.vue')
+		),
+		Drop: defineAsyncComponent(() => import('./SiteDropDialog.vue'))
 	};
-	if (actionDialogPaths[action]) {
-		const dialog = h(
-			defineAsyncComponent(() => import(actionDialogPaths[action])),
-			{ site: site.doc.name }
-		);
+	if (actionDialogs[action]) {
+		const dialog = h(actionDialogs[action], { site: site.doc.name });
 		renderDialog(dialog);
 	}
 
@@ -56,60 +60,66 @@ function getSiteActionHandler(action) {
 		'Deactivate site': onDeactivateSite
 	};
 	if (actionHandlers[action]) {
-		return actionHandlers[action];
+		actionHandlers[action].call(this);
 	}
 }
 
 function onDeactivateSite() {
-	return this.$confirm({
+	return confirmDialog({
 		title: 'Deactivate Site',
 		message: `
 			Are you sure you want to deactivate this site? The site will go in an inactive state.
 			It won't be accessible and background jobs won't run. You will <strong>still be charged</strong> for it.
 		`,
-		actionLabel: 'Deactivate',
-		actionColor: 'red',
-		async action() {
-			return toast.promise(
-				call('press.api.site.deactivate', { name: site.doc.name }),
-				{
-					loading: 'Deactivating site...',
-					success: () => {
-						setTimeout(() => window.location.reload(), 1000);
-						return 'Site deactivated successfully!';
-					},
-					error: e => {
-						return e.messages.length ? e.messages.join('\n') : e.message;
+		primaryAction: {
+			label: 'Deactivate',
+			variant: 'solid',
+			theme: 'red',
+			onClick() {
+				return toast.promise(
+					site.deactivate.submit(),
+					{
+						loading: 'Deactivating site...',
+						success: () => {
+							setTimeout(() => window.location.reload(), 1000);
+							return 'Site deactivated successfully!';
+						},
+						error: e => {
+							return e.messages.length ? e.messages.join('\n') : e.message;
+						}
 					}
-				}
-			);
+				);
+			}
 		}
 	});
 }
 
 function onActivateSite() {
-	return this.$confirm({
+	return confirmDialog({
 		title: 'Activate Site',
 		message: `
 			Are you sure you want to activate this site?
 			<br><br>
 			<strong>Note: Use this as last resort if site is broken and inaccessible</strong>
 		`,
-		actionLabel: 'Activate',
-		async action() {
-			return toast.promise(
-				call('press.api.site.activate', { name: site.doc.name }),
-				{
-					loading: 'Activating site...',
-					success: () => {
-						setTimeout(() => window.location.reload(), 1000);
-						return 'Site activated successfully!';
-					},
-					error: e => {
-						return e.messages.length ? e.messages.join('\n') : e.message;
+		primaryAction: {
+			label: 'Activate',
+			variant: 'solid',
+			onClick() {
+				return toast.promise(
+					site.activate.submit(),
+					{
+						loading: 'Activating site...',
+						success: () => {
+							setTimeout(() => window.location.reload(), 1000);
+							return 'Site activated successfully!';
+						},
+						error: e => {
+							return e.messages.length ? e.messages.join('\n') : e.message;
+						}
 					}
-				}
-			);
+				);
+			}
 		}
 	});
 }

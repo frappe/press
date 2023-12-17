@@ -9,9 +9,6 @@ from frappe.model.base_document import get_controller
 from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
 from frappe.handler import get_attr, run_doc_method as _run_doc_method
-from press.press.doctype.press_permission_group.press_permission_group import (
-	get_permitted_methods,
-)
 
 
 @frappe.whitelist()
@@ -126,6 +123,7 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
+	check_method_permissions(dt, dn, method)
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
 
@@ -215,4 +213,12 @@ def check_permissions(doctype):
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)
 
+	return True
+
+def check_method_permissions(doctype, docname, method) -> None:
+	from press.press.doctype.press_permission_group.press_permission_group import (
+		has_method_permission
+	)
+	if not has_method_permission(doctype, docname, method):
+		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
 	return True

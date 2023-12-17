@@ -9,6 +9,11 @@ DEFAULT_PERMISSIONS = {
 	"*": {"*": {"*": True}}  # all doctypes  # all documents  # all methods
 }
 
+RESTRICTABLE_DOCTYPES = [
+	"Site",
+	"Release Group"
+]
+
 
 class PressPermissionGroup(Document):
 	whitelisted_fields = ["title"]
@@ -39,12 +44,8 @@ class PressPermissionGroup(Document):
 			self.permissions = DEFAULT_PERMISSIONS
 			return
 
-		RESTRICTED_DOCTYPES = frappe.get_all(
-			"Press Method Permission", pluck="document_type", distinct=True
-		)
-
 		for doctype, doctype_perms in permissions.items():
-			if doctype not in RESTRICTED_DOCTYPES and doctype != "*":
+			if doctype not in RESTRICTABLE_DOCTYPES and doctype != "*":
 				frappe.throw(f"{doctype} is not a valid doctype.")
 
 			if not isinstance(doctype_perms, dict):
@@ -55,10 +56,17 @@ class PressPermissionGroup(Document):
 			for doc_name, doc_perms in doctype_perms.items():
 				if not isinstance(doc_perms, dict):
 					frappe.throw(
-						f"Invalid perms for {doctype} > {doc_name}. Rule must be key-value pairs of allow or restrict."
+						f"Invalid perms for {doctype} {doc_name}. Rule must be key-value pairs of method and permission."
 					)
 
-				# TODO: validate allow and restrict values
+				restrictable_methods = get_all_restrictable_methods(doctype)
+				if not restrictable_methods:
+					frappe.throw(f"{doctype} does not have any restrictable methods.")
+
+				for method, permitted in doc_perms.items():
+					if method != "*" and method not in restrictable_methods:
+						frappe.throw(f"{method} is not a valid method for {doctype}.")
+
 
 	@frappe.whitelist()
 	def get_permissions(self, doctype: str) -> list:
@@ -75,32 +83,29 @@ class PressPermissionGroup(Document):
 		if not user_belongs_to_group and user != "Administrator":
 			frappe.throw(f"{user} does not belong to {self.name}")
 
-		restrictable_methods = frappe.get_all(
-			"Press Method Permission",
-			fields=["document_type", "checkbox_label", "method"],
-			distinct="method",
-		)
-		restrictable_doctypes = set(method.document_type for method in restrictable_methods)
-		if doctype and doctype not in restrictable_doctypes:
-			frappe.throw(f"Create a Press Method Permission for {doctype} to restrict it.")
+		if doctype not in RESTRICTABLE_DOCTYPES:
+			frappe.throw(f"{doctype} is not a valid restrictable doctype.")
 
 		options = []
 		fields = ["name", "title"] if doctype != "Site" else ["name"]
 		docs = get_list(doctype=doctype, fields=fields)
 
+		restrictable_methods = get_all_restrictable_methods(doctype)
+		if not restrictable_methods:
+			frappe.throw(f"{doctype} does not have any restrictable methods.")
+
 		for doc in docs:
 			permitted_methods = get_permitted_methods(doctype, doc.name, group_names=[self.name])
 			doc_perms = []
-			for ui_action in restrictable_methods:
-				if ui_action.document_type == doctype:
-					is_permitted = ui_action.method in permitted_methods
-					doc_perms.append(
-						{
-							"method": ui_action.method,
-							"label": ui_action.checkbox_label,
-							"permitted": is_permitted,
-						}
-					)
+			for method, label in restrictable_methods.items():
+				is_permitted = method in permitted_methods
+				doc_perms.append(
+					{
+						"label": label,
+						"method": method,
+						"permitted": is_permitted,
+					}
+				)
 			options.append(
 				{
 					"document_type": doctype,
@@ -143,15 +148,15 @@ class PressPermissionGroup(Document):
 		)
 
 
-def has_user_permission(doctype: str, name: str, method: str, group_names: list = None):
+def has_method_permission(doctype: str, name: str, method: str, group_names: list = None):
 	user = frappe.session.user
 	allowed = False
 
-	RESTRICTED_DOCTYPES = frappe.get_all(
-		"Press Method Permission", pluck="document_type", distinct=True
-	)
-
-	if doctype not in RESTRICTED_DOCTYPES:
+	if doctype not in RESTRICTABLE_DOCTYPES:
+		return True
+	
+	RESTRICTED_METHODS = get_all_restrictable_methods(doctype)
+	if method not in RESTRICTED_METHODS:
 		return True
 
 	if not group_names:
@@ -189,8 +194,8 @@ def has_user_permission(doctype: str, name: str, method: str, group_names: list 
 def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> list:
 	user = frappe.session.user
 
-	if not frappe.db.exists("Press Method Permission", {"document_type": doctype}):
-		frappe.throw(f"Create a Press Method Permission for {doctype} to restrict it.")
+	if doctype not in RESTRICTABLE_DOCTYPES:
+		frappe.throw(f"{doctype} is not a valid restrictable doctype.")
 
 	permissions_by_group = {}
 	permission_groups = group_names or get_permission_groups(user)
@@ -249,21 +254,23 @@ def get_method_perms_for_group(doctype: str, name: str, group_name: str) -> list
 		return all_allowed
 
 
-def get_all_restrictable_methods(doctype: str = None) -> list:
-	filters = {}
-	if doctype:
-		filters["document_type"] = doctype
-	else:
-		filters["document_type"] = [
-			"in",
-			frappe.get_all("Press Method Permission", pluck="document_type", distinct=True),
-		]
-
-	return frappe.get_all(
-		"Press Method Permission",
-		filters=filters,
-		pluck="method",
-	)
+def get_all_restrictable_methods(doctype: str) -> list:
+	methods = {
+		"Site": {
+			# method: label,
+			"archive": "Drop",
+			"migrate": "Migrate",
+			"activate": "Activate",
+			"reinstall": "Reinstall",
+			"deactivate": "Deactivate",
+			"enable_database_access": "Database",
+			"restore_site_from_files": "Restore",
+		},
+		"Release Group": {
+			"restart": "Restart",
+		}
+	}
+	return methods.get(doctype, {})
 
 
 def get_permission_groups(user: str = None) -> list:

@@ -680,7 +680,7 @@ export default {
 								return h(SiteActionCell, {
 									siteName: site.doc.name,
 									actionLabel: row.action,
-									method: row.method,
+									method: row.doc_method,
 									description: row.description,
 									buttonLabel: row.button_label
 								});

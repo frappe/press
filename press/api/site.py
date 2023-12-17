@@ -21,9 +21,6 @@ from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
-from press.press.doctype.press_permission_group.press_permission_group import (
-	has_user_permission as has_user_permission_new,
-)
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
@@ -63,12 +60,6 @@ def protected(doctypes):
 		if not isinstance(doctypes, list):
 			doctypes = [doctypes]
 
-		is_method_restrictable = frappe.db.exists(
-			"Press Method Permission", {"method": request_path}
-		)
-		if not is_method_restrictable:
-			return wrapped(*args, **kwargs)
-
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 			has_config_permissions = frappe.db.exists(
@@ -78,14 +69,17 @@ def protected(doctypes):
 			if owner == team or has_config_permissions:
 				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
 				if is_team_member and hasattr(frappe.local, "request"):
+					is_method_restrictable = frappe.db.exists(
+						"Press Method Permission", {"method": request_path}
+					)
+					if not is_method_restrictable:
+						return wrapped(*args, **kwargs)
+
 					if doctype == "Bench":
 						name = frappe.db.get_value(doctype, name, "group")
 						doctype = "Release Group"
 
 					if has_user_permission(doctype, name, request_path):
-						return wrapped(*args, **kwargs)
-
-					elif has_user_permission_new(doctype, name, request_path):
 						return wrapped(*args, **kwargs)
 
 					else:
@@ -1599,8 +1593,7 @@ def get_database_access_info(name):
 @protected("Site")
 def enable_database_access(name, mode="read_only"):
 	site_doc = frappe.get_doc("Site", name)
-	enable_access_job = site_doc.enable_database_access(mode)
-	return enable_access_job.name
+	return site_doc.enable_database_access(mode)
 
 
 @frappe.whitelist()
