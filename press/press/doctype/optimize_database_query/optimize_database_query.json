@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-12-17 16:23:52.856453",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "site",
+  "query",
+  "explain",
+  "suggested_index",
+  "add_suggested_index",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Code",
+   "label": "Query",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "explain",
+   "fieldtype": "Code",
+   "label": "Explain Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "suggested_index",
+   "fieldtype": "Data",
+   "label": "Suggested Index",
+   "read_only": 1
+  },
+  {
+   "depends_on": "doc.suggested_index",
+   "fieldname": "add_suggested_index",
+   "fieldtype": "Button",
+   "label": "Add Suggested Index"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "status",
+   "options": "Queued\nStarted\nCompleted"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-12-17 16:47:30.570712",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Optimize Database Query",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
