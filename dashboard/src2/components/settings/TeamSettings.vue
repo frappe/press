@@ -55,10 +55,10 @@ breadcrumbs.value = [
 ];
 
 const team = getTeam();
-team.getTeamMembers.submit();
+team.getTeamMembers.submit()
 const teamMembersListOptions = ref({
 	list: {
-		data: computed(() => team.getTeamMembers.data?.message || []),
+		data: computed(() => team.getTeamMembers.data || []),
 		reload: () => team.getTeamMembers.submit(),
 		loading: computed(() => team.getTeamMembers.loading)
 	},
