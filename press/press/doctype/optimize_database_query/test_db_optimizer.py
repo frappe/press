@@ -3,7 +3,10 @@
 
 from frappe.tests.utils import FrappeTestCase
 
-from press.utils.db_optimizer import DBOptimizer, DBTable
+from press.press.doctype.optimize_database_query.db_optimizer import (
+	DBOptimizer,
+	DBTable,
+)
 
 
 class TestDBOptimizer(FrappeTestCase):
