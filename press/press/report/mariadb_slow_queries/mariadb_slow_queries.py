@@ -179,4 +179,7 @@ def summarize_by_query(data):
 		entry["rows_sent"] += row["rows_sent"]
 		entry["example"] = query
 
-	return list(queries.values())
+	result = list(queries.values())
+	result.sort(key=lambda r: r["duration"] * r["count"], reverse=True)
+
+	return result

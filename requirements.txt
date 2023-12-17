@@ -19,3 +19,4 @@ responses==0.23.1
 twilio==8.10.3
 paramiko==3.3.1
 oci==2.116.0
+sql_metadata==2.10.0
