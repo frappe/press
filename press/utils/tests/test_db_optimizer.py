@@ -85,7 +85,7 @@ class TestDBOptimizer(FrappeTestCase):
 		optimizer.update_table_data(DBTable.from_frappe_ouput(COMMUNICATION_TABLE))
 
 		index = optimizer.suggest_index()
-		self.assertEqual(index.table, "HD Ticket Comment")
+		self.assertEqual(index.table, "tabHD Ticket Comment")
 		self.assertEqual(index.column, "reference_ticket")
 
 

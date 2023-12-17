@@ -3,6 +3,7 @@
 This is largely based on heuristics and known good practices for indexing.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
 
@@ -194,19 +195,59 @@ class DBOptimizer:
 					break
 		return DBIndex(column=column_name, name=column_name, table=table)
 
+	def _remove_existing_indexes(self, potential_indexes: list[DBIndex]) -> list[DBIndex]:
+		"""Given list of potential index candidates remove the ones that already exist.
+
+		This also removes multi-column indexes for parts that are applicable to query.
+		Example: If multi-col index A+B+C exists and query utilizes A+B then
+		A+B are removed from potential indexes.
+		"""
+
+		def remove_maximum_indexes(idx: list[DBIndex]):
+			"""Try to remove entire index from potential indexes, if not possible, reduce one part and try again until no parts are left."""
+			if not idx:
+				return
+			matched_sub_index = []
+			for idx_part in idx:
+				matching_part = [
+					i
+					for i in potential_indexes
+					if i.column == idx_part.column and i.table == idx_part.table
+				]
+				if not matching_part:
+					# pop and recurse
+					idx.pop()
+					return remove_maximum_indexes(idx)
+				else:
+					matched_sub_index.extend(matching_part)
+
+			# Every part matched now, lets remove those parts
+			for i in matched_sub_index:
+				potential_indexes.remove(i)
+
+		# Reconstruct multi-col index
+		for table in self.tables.values():
+			merged_indexes = defaultdict(list)
+			for index in table.indexes:
+				merged_indexes[index.name].append(index)
+
+			for idx in merged_indexes.values():
+				idx.sort(key=lambda x: x.sequence)
+
+			for idx in merged_indexes.values():
+				remove_maximum_indexes(idx)
+		return potential_indexes
+
 	def suggest_index(self) -> DBIndex | None:
 		"""Suggest best possible column to index given query and table stats."""
 		if missing_tables := (set(self.tables_examined) - set(self.tables.keys())):
 			frappe.throw("DBTable infomation missing for: " + ", ".join(missing_tables))
 
 		potential_indexes = self.potential_indexes()
+		potential_indexes = self._remove_existing_indexes(potential_indexes)
 
 		for index in list(potential_indexes):
 			table = self.tables[index.table]
-
-			# Index already exists
-			if index in table.indexes:
-				potential_indexes.remove(index)
 
 			# Data type is not easily indexable - skip
 			column = [c for c in table.schema if c.name == index.column][0]
