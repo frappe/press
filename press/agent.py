@@ -765,7 +765,7 @@ class Agent:
 		return self.get(f"benches/{bench.name}/analytics")
 
 	def describe_database_table(self, site, doctype, columns):
-		data = {"doctype": doctype, "columns": columns}
+		data = {"doctype": doctype, "columns": list(columns)}
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/describe-database-table",
 			data=data,

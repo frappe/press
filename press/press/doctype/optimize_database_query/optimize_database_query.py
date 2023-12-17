@@ -48,7 +48,7 @@ class OptimizeDatabaseQuery(Document):
 
 	@staticmethod
 	def get_doctype_name(table_name: str) -> str:
-		table_name.removeprefix("tab")
+		return table_name.removeprefix("tab")
 
 	def fetch_table_stats(self, table: str, columns: list[str] | None = None):
 		if not columns:
