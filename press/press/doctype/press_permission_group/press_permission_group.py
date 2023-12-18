@@ -34,6 +34,7 @@ class PressPermissionGroup(Document):
 
 	def validate(self):
 		self.validate_permissions()
+		self.validate_users()
 
 	def validate_permissions(self):
 		permissions = frappe.parse_json(self.permissions)
@@ -56,6 +57,9 @@ class PressPermissionGroup(Document):
 						f"Invalid perms for {doctype} {doc_name}. Rule must be key-value pairs of method and permission."
 					)
 
+				if doctype == "*":
+					continue
+
 				restrictable_methods = get_all_restrictable_methods(doctype)
 				if not restrictable_methods:
 					frappe.throw(f"{doctype} does not have any restrictable methods.")
@@ -63,6 +67,57 @@ class PressPermissionGroup(Document):
 				for method, permitted in doc_perms.items():
 					if method != "*" and method not in restrictable_methods:
 						frappe.throw(f"{method} is not a valid method for {doctype}.")
+
+	def validate_users(self):
+		for user in self.users:
+			if user == "Administrator":
+				continue
+			user_belongs_to_team = frappe.db.exists(
+				"Team Member", {"parent": self.team, "user": user.user}
+			)
+			if not user_belongs_to_team:
+				frappe.throw(f"{user.user} does not belong to {self.team}")
+
+	@frappe.whitelist()
+	def get_users(self):
+		from press.api.client import get_list
+
+		user_names = [user.user for user in self.users]
+		if not user_names:
+			return []
+
+		return get_list(
+			"User",
+			filters={"name": ["in", user_names], "enabled": 1},
+			fields=["name", "first_name", "last_name", "full_name", "user_image", "name as email"],
+		)
+	
+	@frappe.whitelist()
+	def add_user(self, user):
+		user_belongs_to_team = frappe.db.exists(
+			"Team Member", {"parent": self.team, "user": user}
+		)
+		if not user_belongs_to_team:
+			frappe.throw(f"{user} does not belong to {frappe.local.team().team_title}")
+
+		user_belongs_to_group = self.get("users", {"user": user})
+		if user_belongs_to_group:
+			frappe.throw(f"{user} already belongs to {self.title}")
+
+		self.append("users", {"user": user})
+		self.save()
+
+	@frappe.whitelist()
+	def remove_user(self, user):
+		user_belongs_to_group = self.get("users", {"user": user})
+		if not user_belongs_to_group:
+			frappe.throw(f"{user} does not belong to {self.name}")
+
+		for row in self.users:
+			if row.user == user:
+				self.remove(row)
+				break
+		self.save()
 
 	@frappe.whitelist()
 	def get_permissions(self, doctype: str) -> list:

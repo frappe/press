@@ -3,11 +3,12 @@
 </template>
 
 <script setup>
-import ObjectList from '../ObjectList.vue';
 import { h, inject, ref } from 'vue';
-import { icon, renderDialog } from '../../utils/components';
+import { icon, renderDialog, confirmDialog } from '../../utils/components';
+import ObjectList from '../ObjectList.vue';
 import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';
 import PermissionGroupUserCell from './PermissionGroupUserCell.vue';
+import PermissionGroupMembersDialog from './PermissionGroupMembersDialog.vue';
 
 const breadcrumbs = inject('breadcrumbs');
 breadcrumbs.value = [
@@ -35,11 +36,44 @@ const listOptions = ref({
 			label: 'Users',
 			type: 'Component',
 			component: ({ row }) => {
-				return h(PermissionGroupUserCell, { groupId: row.name })
+				return h(PermissionGroupUserCell, { groupId: row.name });
 			},
 			width: 1
 		}
 	],
+	rowActions({ row, listResource: groupsListResource }) {
+		return [
+			{
+				label: 'Manage Group',
+				onClick() {
+					renderDialog(h(PermissionGroupMembersDialog, { groupId: row.name }));
+				}
+			},
+			{
+				label: 'Delete Group',
+				onClick() {
+					if (groupsListResource.delete.loading) return;
+					confirmDialog({
+						title: 'Delete Permission Group',
+						message: `Are you sure you want to delete the permission group <b>${row.title}</b>?`,
+						onSuccess({ hide }) {
+							if (groupsListResource.delete.loading) return;
+							toast.promise(groupsListResource.delete.submit(row.name), {
+								loading: 'Deleting Group...',
+								success: () => {
+									`Permission Group ${row.title} Deleted`;
+									groupsListResource.reload();
+									hide();
+								},
+								error: e =>
+									e.messages.length ? e.messages.join('\n') : e.message
+							});
+						}
+					});
+				}
+			}
+		];
+	},
 	route(row) {
 		return {
 			name: 'PermissionGroupPermissions',

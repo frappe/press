@@ -1,39 +1,6 @@
 <template>
-	<div class="grid grid-cols-1 items-start gap-5 p-4 sm:grid-cols-2">
-		<div class="rounded-md border p-4">
-			<ObjectList :options="teamMembersListOptions">
-				<template #header-left>
-					<div class="flex items-center">
-						<h2 class="pl-1 text-lg font-medium text-gray-900">Members</h2>
-					</div>
-				</template>
-				<template #header-right="{ listResource: membersListResource }">
-					<Button
-						iconLeft="plus"
-						@click="() => handleNewMemberClick(membersListResource)"
-					>
-						Add Member
-					</Button>
-				</template>
-			</ObjectList>
-		</div>
-		<div class="rounded-md border p-4">
-			<ObjectList :options="permissionGroupsListOptions">
-				<template #header-left>
-					<div class="flex items-center">
-						<h2 class="pl-1 text-lg font-medium text-gray-900">Groups</h2>
-					</div>
-				</template>
-				<template #header-right="{ listResource: groupsListResource }">
-					<Button
-						iconLeft="plus"
-						@click="() => handleNewGroupClick(groupsListResource)"
-					>
-						Add Group
-					</Button>
-				</template>
-			</ObjectList>
-		</div>
+	<div class="p-4">
+		<ObjectList :options="teamMembersListOptions"> </ObjectList>
 	</div>
 </template>
 
@@ -55,7 +22,7 @@ breadcrumbs.value = [
 ];
 
 const team = getTeam();
-team.getTeamMembers.submit()
+team.getTeamMembers.submit();
 const teamMembersListOptions = ref({
 	list: {
 		data: computed(() => team.getTeamMembers.data || []),
@@ -108,6 +75,16 @@ const teamMembersListOptions = ref({
 				}
 			}
 		];
+	},
+	primaryAction({ listResource }) {
+		return {
+			label: 'Add Member',
+			variant: 'solid',
+			iconLeft: 'plus',
+			onClick() {
+				handleNewMemberClick(listResource);
+			}
+		};
 	}
 });
 
@@ -115,66 +92,6 @@ function handleNewMemberClick(membersListResource) {
 	renderDialog(
 		h(AddTeamMemberDialog, {
 			onMemberAdded: () => membersListResource.reload()
-		})
-	);
-}
-
-const permissionGroupsListOptions = ref({
-	resource() {
-		return {
-			type: 'list',
-			doctype: 'Press Permission Group',
-			fields: ['title', 'name'],
-			auto: true
-		};
-	},
-	columns: [
-		{
-			label: 'Title',
-			fieldname: 'title',
-			width: 1
-		},
-		{
-			label: 'Users',
-			type: 'Component',
-			component: ({ row }) => {
-				return h(PermissionGroupUserCell, { groupId: row.name });
-			},
-			width: 1
-		}
-	],
-	rowActions({ row, listResource: groupsListResource }) {
-		return [
-			{
-				label: 'Delete Group',
-				onClick() {
-					if (groupsListResource.delete.loading) return;
-					confirmDialog({
-						title: 'Delete Permission Group',
-						message: `Are you sure you want to delete the permission group <b>${row.title}</b>?`,
-						onSuccess({ hide }) {
-							if (groupsListResource.delete.loading) return;
-							toast.promise(groupsListResource.delete.submit(row.name), {
-								loading: 'Deleting Group...',
-								success: () => {
-									`Permission Group ${row.title} Deleted`;
-									groupsListResource.reload();
-									hide();
-								},
-								error: e =>
-									e.messages.length ? e.messages.join('\n') : e.message
-							});
-						}
-					});
-				}
-			}
-		];
-	}
-});
-function handleNewGroupClick(groupsListResource) {
-	renderDialog(
-		h(NewPermissionGroupDialog, {
-			onGroupCreated: () => groupsListResource.reload()
 		})
 	);
 }
