@@ -9,8 +9,6 @@ DEFAULT_PERMISSIONS = {
 	"*": {"*": {"*": True}}  # all doctypes  # all documents  # all methods
 }
 
-RESTRICTABLE_DOCTYPES = ["Site", "Release Group"]
-
 
 class PressPermissionGroup(Document):
 	whitelisted_fields = ["title"]
@@ -43,7 +41,7 @@ class PressPermissionGroup(Document):
 			return
 
 		for doctype, doctype_perms in permissions.items():
-			if doctype not in RESTRICTABLE_DOCTYPES and doctype != "*":
+			if doctype not in get_all_restrictable_doctypes() and doctype != "*":
 				frappe.throw(f"{doctype} is not a valid doctype.")
 
 			if not isinstance(doctype_perms, dict):
@@ -141,7 +139,7 @@ class PressPermissionGroup(Document):
 		if not user_belongs_to_group and user != "Administrator":
 			frappe.throw(f"{user} does not belong to {self.name}")
 
-		if doctype not in RESTRICTABLE_DOCTYPES:
+		if doctype not in get_all_restrictable_doctypes():
 			frappe.throw(f"{doctype} is not a valid restrictable doctype.")
 
 		options = []
@@ -199,13 +197,11 @@ def has_method_permission(
 	doctype: str, name: str, method: str, group_names: list = None
 ):
 	user = frappe.session.user
-	allowed = False
 
-	if doctype not in RESTRICTABLE_DOCTYPES:
+	if doctype not in get_all_restrictable_doctypes():
 		return True
 
-	RESTRICTED_METHODS = get_all_restrictable_methods(doctype)
-	if method not in RESTRICTED_METHODS:
+	if method not in get_all_restrictable_methods(doctype):
 		return True
 
 	if not group_names:
@@ -215,35 +211,16 @@ def has_method_permission(
 		# user does not have any restricted permissions set in any group
 		return True
 
-	for group_name in set(group_names):
-		user_belongs_to_group = frappe.db.exists(
-			"Press Permission Group User", {"parent": group_name, "user": user}
-		)
-		if not user_belongs_to_group:
-			continue
+	if method in get_permitted_methods(doctype, name, group_names):
+		return True
 
-		group_perms = frappe.db.get_value("Press Permission Group", group_name, "permissions")
-		group_perms = frappe.parse_json(group_perms)
-		doctype_perms = group_perms.get(doctype, None) or group_perms.get("*", None)
-		if not doctype_perms:
-			allowed = True
-			continue
-
-		doc_perms = doctype_perms.get(name, None) or doctype_perms.get("*", None)
-		if not doc_perms:
-			allowed = True
-			continue
-
-		method_perm = doc_perms.get(method, None) or doc_perms.get("*", None)
-		allowed = True if method_perm is None else method_perm
-
-	return allowed
+	return False
 
 
 def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> list:
 	user = frappe.session.user
 
-	if doctype not in RESTRICTABLE_DOCTYPES:
+	if doctype not in get_all_restrictable_doctypes():
 		frappe.throw(f"{doctype} is not a valid restrictable doctype.")
 
 	permissions_by_group = {}
@@ -264,24 +241,25 @@ def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> 
 
 def get_method_perms_for_group(doctype: str, name: str, group_name: str) -> list:
 	permissions = frappe.db.get_value("Press Permission Group", group_name, "permissions")
+
+	all_methods = get_all_restrictable_methods(doctype)
+	all_allowed = {method: True for method in all_methods}
+	all_restricted = {method: False for method in all_methods}
+
 	if not permissions:
 		# this group allows all methods of all documents
-		return {"*": True}
+		return all_allowed
 
 	permissions = frappe.parse_json(permissions)
 	doctype_perms = permissions.get(doctype, None) or permissions.get("*", None)
 	if not doctype_perms:
 		# this group allows all methods of all documents
-		return {"*": True}
+		return all_allowed
 
 	doc_perms = doctype_perms.get(name, None) or doctype_perms.get("*", None)
 	if not doc_perms:
 		# this group allows all methods of this document
-		return {"*": True}
-
-	all_methods = get_all_restrictable_methods(doctype)
-	all_allowed = {method: True for method in all_methods}
-	all_restricted = {method: False for method in all_methods}
+		return all_allowed
 
 	wildcard_not_present = doc_perms.get("*", None) is None
 	wildcard_restricted = doc_perms.get("*", None) is False
@@ -320,6 +298,10 @@ def get_all_restrictable_methods(doctype: str) -> list:
 		},
 	}
 	return methods.get(doctype, {})
+
+
+def get_all_restrictable_doctypes() -> list:
+	return list(get_all_restrictable_methods().keys())
 
 
 def get_permission_groups(user: str = None) -> list:
