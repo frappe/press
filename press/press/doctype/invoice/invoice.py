@@ -52,7 +52,7 @@ class Invoice(Document):
 		team = frappe.get_doc("Team", self.team)
 		if not team.enabled:
 			self.status = "Uncollectible"
-			self.submit()
+			self.save()
 			self.add_comment("Info", "Skipping finalize invoice because team is disabled")
 			return
 
