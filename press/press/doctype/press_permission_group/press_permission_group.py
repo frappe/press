@@ -70,7 +70,7 @@ class PressPermissionGroup(Document):
 
 	def validate_users(self):
 		for user in self.users:
-			if user == "Administrator":
+			if user.user == "Administrator":
 				continue
 			user_belongs_to_team = frappe.db.exists(
 				"Team Member", {"parent": self.team, "user": user.user}
@@ -89,9 +89,16 @@ class PressPermissionGroup(Document):
 		return get_list(
 			"User",
 			filters={"name": ["in", user_names], "enabled": 1},
-			fields=["name", "first_name", "last_name", "full_name", "user_image", "name as email"],
+			fields=[
+				"name",
+				"first_name",
+				"last_name",
+				"full_name",
+				"user_image",
+				"name as email",
+			],
 		)
-	
+
 	@frappe.whitelist()
 	def add_user(self, user):
 		user_belongs_to_team = frappe.db.exists(
