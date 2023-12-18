@@ -14,7 +14,17 @@ def targets(token):
 	if token != monitor_token:
 		return
 
-	sites = frappe.get_all("Site", ["name", "bench"], {"status": "Active"})
+	self_hosted_stand_alone_servers = frappe.get_all(
+		"Server",
+		{"is_standalone": True, "is_self_hosted": True, "status": "Active"},
+		pluck="name",
+	)
+	sites = frappe.get_all(
+		"Site",
+		["name", "bench"],
+		{"status": "Active", "server": ("not in", self_hosted_stand_alone_servers)},
+		ignore_ifnull=True,
+	)
 	sites.sort(key=lambda x: (x.bench, x.name))
 
 	bench_map = {
