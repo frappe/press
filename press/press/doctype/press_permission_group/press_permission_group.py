@@ -194,17 +194,6 @@ class PressPermissionGroup(Document):
 		self.permissions = cur_permissions
 		self.save()
 
-	@frappe.whitelist()
-	def get_users(self):
-		user_names = [user.user for user in self.users]
-		if not user_names:
-			return []
-		return frappe.get_list(
-			"User",
-			filters={"name": ["in", user_names], "enabled": 1},
-			fields=["name", "first_name", "last_name", "full_name", "user_image"],
-		)
-
 
 def has_method_permission(
 	doctype: str, name: str, method: str, group_names: list = None
