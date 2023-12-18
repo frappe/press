@@ -161,12 +161,12 @@ class VirtualMachine(Document):
 					source_details=InstanceSourceViaImageDetails(
 						image_id=self.machine_image, boot_volume_size_in_gbs=max(self.disk_size, 50)
 					),
-					shape="VM.Standard3.Flex",
+					shape="VM.Standard.E4.Flex",
 					shape_config=LaunchInstanceShapeConfigDetails(
 						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
 					),
 					platform_config=LaunchInstancePlatformConfig(
-						type="INTEL_VM",
+						type="AMD_VM",
 					),
 					is_pv_encryption_in_transit_enabled=True,
 					metadata={
