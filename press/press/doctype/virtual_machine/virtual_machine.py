@@ -431,7 +431,7 @@ class VirtualMachine(Document):
 
 			for volume in list(self.volumes):
 				if volume.volume_id not in available_volumes:
-					self.remove("volumes", volume)
+					self.remove(volume)
 
 		else:
 			self.status = "Terminated"
