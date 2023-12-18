@@ -57,7 +57,6 @@ def suspend_sites_and_send_email(team):
 		)
 
 
-@frappe.whitelist()
 def get_teams_with_unpaid_invoices():
 	"""Find out teams which has active sites and unpaid invoices and not a free account"""
 	plan = frappe.qb.DocType("Plan")
