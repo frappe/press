@@ -97,6 +97,14 @@ class DBIndex:
 
 
 @dataclass
+class ColumnStat:
+	column_name: str
+	avg_frequency: float
+	avg_length: float
+	nulls_ratio: float | None = None
+
+
+@dataclass
 class DBTable:
 	name: str
 	total_rows: int
@@ -108,6 +116,18 @@ class DBTable:
 			self.schema = []
 		if not self.indexes:
 			self.indexes = []
+
+	def update_cardinality(self, column_stat: ColumnStat) -> None:
+		"""Estimate cardinality using mysql.column_stat"""
+		for col in self.schema:
+			if (
+				col.name == column_stat.column_name
+				and not col.cardinality
+				and column_stat.avg_frequency
+			):
+				# "hack" or "math" - average frequency is on average how frequently a row value appears.
+				# Avg = total_rows / cardinality, so...
+				col.cardinality = self.total_rows / column_stat.avg_frequency
 
 	@classmethod
 	def from_frappe_ouput(cls, data) -> "DBTable":

@@ -1,12 +1,12 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-from collections import defaultdict
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
 
 from press.press.doctype.optimize_database_query.db_optimizer import (
+	ColumnStat,
 	DBOptimizer,
 	DBTable,
 )
@@ -25,17 +25,10 @@ class OptimizeDatabaseQuery(Document):
 
 		for table in tables:
 			stats = self.fetch_table_stats(table)
-			optimizer.update_table_data(DBTable.from_frappe_ouput(stats))
-
-		# Fetch table info again because now we know potential columns
-		indexes_to_evaluate = optimizer.potential_indexes()
-		table_columns = defaultdict(set)
-		for idx in indexes_to_evaluate:
-			table_columns[idx.table].add(idx.column)
-
-		for table, columns in table_columns.items():
-			stats = self.fetch_table_stats(table, columns)
-			optimizer.update_table_data(DBTable.from_frappe_ouput(stats))
+			db_table = DBTable.from_frappe_ouput(stats)
+			for column_stat in self.fetch_column_stats(table):
+				db_table.update_cardinality(column_stat)
+			optimizer.update_table_data(db_table)
 
 		index = optimizer.suggest_index()
 		self.db_set("suggested_index", str(index))
@@ -50,13 +43,29 @@ class OptimizeDatabaseQuery(Document):
 	def get_doctype_name(table_name: str) -> str:
 		return table_name.removeprefix("tab")
 
-	def fetch_table_stats(self, table: str, columns: list[str] | None = None):
-		if not columns:
-			columns = []
+	def fetch_table_stats(self, table: str):
 		site = frappe.get_cached_doc("Site", self.site)
 		agent = Agent(site.server)
 		return agent.describe_database_table(
 			site,
 			doctype=self.get_doctype_name(table),
-			columns=columns,
+			columns=[],
 		)
+
+	def fetch_column_stats(self, table: str) -> list[ColumnStat]:
+		site = frappe.get_cached_doc("Site", self.site)
+		db_server_name = frappe.db.get_value(
+			"Server", site.server, "database_server", cache=True
+		)
+		database_server = frappe.get_cached_doc("Database Server", db_server_name)
+		agent = Agent(database_server.name, "Database Server")
+
+		data = {
+			"schema": site.database_name,
+			"table": table,
+			"private_ip": database_server.private_ip,
+			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		}
+
+		column_stats = agent.post("database/column-stats", data=data)
+		return [ColumnStat(**c) for c in column_stats]
