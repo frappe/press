@@ -389,6 +389,7 @@ class VirtualMachine(Document):
 						vnic_attachment=vnic_attachment,
 					)
 
+			available_volumes = []
 			for volume in self.get_volumes():
 				try:
 					if hasattr(volume, "volume_id"):
@@ -414,6 +415,9 @@ class VirtualMachine(Document):
 					row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
 					row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
 
+					if row.volume_id:
+						available_volumes.append(row.volume_id)
+
 					if not existing_volume and row.volume_id:
 						self.append("volumes", row)
 				except Exception:
@@ -424,6 +428,11 @@ class VirtualMachine(Document):
 					)
 			if self.volumes:
 				self.disk_size = self.volumes[0].size
+
+			for volume in list(self.volumes):
+				if volume.volume_id not in available_volumes:
+					self.remove("volumes", volume)
+
 		else:
 			self.status = "Terminated"
 		self.save()
