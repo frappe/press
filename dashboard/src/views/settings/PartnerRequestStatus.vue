@@ -95,6 +95,11 @@ export default {
 				},
 				onSuccess() {
 					this.showDateEditDialog = false;
+				},
+				validate() {
+					if (!$account.team.partner_email) {
+						return 'Please link your account with Partner Code first.';
+					}
 				}
 			};
 		}
