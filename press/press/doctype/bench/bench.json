@@ -306,7 +306,7 @@
   },
   {
    "default": "0",
-   "fetch_from": "candidate.is_code_server_enabled",
+   "fetch_from": "team.is_code_server_user",
    "fieldname": "is_code_server_enabled",
    "fieldtype": "Check",
    "label": "Is Code Server Enabled",

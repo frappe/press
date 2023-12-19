@@ -40,7 +40,6 @@
   "environment_variables",
   "feature_flags_tab",
   "is_redisearch_enabled",
-  "is_code_server_enabled",
   "is_push_to_deploy_enabled",
   "column_break_9efq",
   "merge_all_rq_queues",

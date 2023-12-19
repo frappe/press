@@ -212,7 +212,7 @@ class DeployCandidate(Document):
 				]
 			)
 
-		if self.is_code_server_enabled:
+		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
 				[
 					("pre", "code-server", "Setup Prerequisites", "Install Code Server"),

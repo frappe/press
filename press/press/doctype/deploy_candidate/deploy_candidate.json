@@ -40,7 +40,6 @@
   "user_certificate",
   "feature_flags_section",
   "is_redisearch_enabled",
-  "is_code_server_enabled",
   "column_break_tkdd",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues"
@@ -284,18 +283,10 @@
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "fetch_from": "group.is_code_server_enabled",
-   "fieldname": "is_code_server_enabled",
-   "fieldtype": "Check",
-   "label": "Is Code Server Enabled",
-   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-14 13:54:27.922485",
+ "modified": "2023-12-19 14:26:02.786216",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
