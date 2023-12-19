@@ -153,5 +153,5 @@ class TestDatabaseServer(FrappeTestCase):
 				server.mariadb_system_variables,
 				lambda x: x.mariadb_variable == "innodb_buffer_pool_size",
 			).value_int,
-			int(15007.248 * 0.685),
+			int(15007.248 * 0.65),
 		)
