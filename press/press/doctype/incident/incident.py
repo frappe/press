@@ -10,6 +10,13 @@ from tenacity.retry import retry_if_result
 
 from press.utils import log_error
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.incident_settings_user.incident_settings_user import (
+		IncidentSettingsUser,
+	)
+
 
 class Incident(WebsiteGenerator):
 	def on_update(self):
@@ -24,7 +31,7 @@ class Incident(WebsiteGenerator):
 		if self.phone_call:
 			frappe.enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
 
-	def get_humans(self):
+	def get_humans(self) -> list["IncidentSettingsUser"]:
 		"""
 		Returns a list of users who are in the incident team
 		"""
@@ -70,7 +77,10 @@ class Incident(WebsiteGenerator):
 			with contextlib.suppress(RetryError):
 				status = self.wait_for_pickup(call)
 			if status == "completed":  # call was picked up
+				self.add_acknowledgment_update(human)
 				break
+			else:
+				self.add_acknowledgment_update(human, acknowledged=False)
 
 	def send_sms_via_twilio(self):
 		"""
@@ -96,17 +106,22 @@ class Incident(WebsiteGenerator):
 				)
 		self.sms_sent = 1
 
-	def add_acknowledgment_update(self):
+	def add_acknowledgment_update(self, human: "IncidentSettingsUser", acknowledged=True):
 		"""
 		Adds a new update to the Incident Document
 		"""
+		if acknowledged:
+			update_note = f"Acknowledged by {human.user}"
+		else:
+			update_note = f"Acknowledgement failed for {human.user}"
 		self.append(
 			"updates",
 			{
-				"update_note": f"Incident Acknowledged by {self.acknowledged_by} and have started working on the Incident",
+				"update_note": update_note,
 				"update_time": frappe.utils.frappe.utils.now(),
 			},
 		)
+		self.save()
 
 	def set_acknowledgement(self, acknowledged_by):
 		"""

@@ -144,3 +144,28 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site2)
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
+
+	@patch(
+		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
+	)
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
+	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	def test_call_event_creates_acknowledgement_update(self):
+		with patch.object(MockTwilioCallList, "get_status", new=lambda self: "completed"):
+			incident = frappe.get_doc(
+				{
+					"doctype": "Incident",
+					"alertname": "Test Alert",
+				}
+			).insert()
+			incident.reload()
+			self.assertEqual(len(incident.updates), 1)
+		with patch.object(MockTwilioCallList, "get_status", new=lambda self: "no-answer"):
+			incident = frappe.get_doc(
+				{
+					"doctype": "Incident",
+					"alertname": "Test Alert",
+				}
+			).insert()
+			incident.reload()
+			self.assertEqual(len(incident.updates), 2)
