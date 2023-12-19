@@ -381,7 +381,7 @@ def options():
 	regions = frappe.get_all(
 		"Cluster",
 		{"cloud_provider": ("!=", "Generic"), "public": True},
-		["name", "title", "image"],
+		["name", "title", "image", "beta"],
 	)
 	return {
 		"regions": regions,

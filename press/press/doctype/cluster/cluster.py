@@ -64,7 +64,7 @@ class Cluster(Document):
 			cluster_names = rg.get_clusters()
 			clusters = frappe.get_all(
 				"Cluster",
-				fields=["name", "title", "image"],
+				fields=["name", "title", "image", "beta"],
 				filters={"name": ("in", cluster_names)},
 			)
 			return clusters

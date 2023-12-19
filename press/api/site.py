@@ -447,7 +447,7 @@ def options_for_new():
 				clusters = frappe.db.get_all(
 					"Cluster",
 					filters={"name": ("in", cluster_names), "public": True},
-					fields=["name", "title", "image"],
+					fields=["name", "title", "image", "beta"],
 				)
 				version.group.clusters = clusters
 
@@ -587,7 +587,7 @@ def get_new_site_options(group: str = None):
 		rg["clusters"] = frappe.db.get_all(
 			"Cluster",
 			filters={"name": ("in", cluster_names), "public": True},
-			fields=["name", "title", "image"],
+			fields=["name", "title", "image", "beta"],
 		)
 		version["group"] = rg
 		apps.update([source.app for source in app_sources])
