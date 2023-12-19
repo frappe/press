@@ -52,14 +52,13 @@ class Incident(WebsiteGenerator):
 
 	@retry(
 		retry=retry_if_result(
-			lambda result: result not in ["completed", "failed", "busy", "no-answer"]
+			lambda result: result not in ["canceled", "completed", "failed", "busy", "no-answer"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(25),
 	)
 	def wait_for_pickup(self, call):
-		call = call.fetch()
-		return call.status  # will eventually be no-answer
+		return call.fetch().status  # will eventually be no-answer
 
 	def _call_humans(self):
 		for human in self.get_humans():
@@ -69,8 +68,8 @@ class Incident(WebsiteGenerator):
 				from_=self.twilio_phone_number,
 			)
 			with contextlib.suppress(RetryError):
-				self.wait_for_pickup(call)
-			if call.status in ["completed", "answered"]:  # at least one picked up
+				status = self.wait_for_pickup(call)
+			if status == "completed":  # call was picked up
 				break
 
 	def send_sms_via_twilio(self):
