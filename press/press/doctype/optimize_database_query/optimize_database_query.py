@@ -26,8 +26,8 @@ class OptimizeDatabaseQuery(Document):
 		for table in tables:
 			stats = self.fetch_table_stats(table)
 			db_table = DBTable.from_frappe_ouput(stats)
-			for column_stat in self.fetch_column_stats(table):
-				db_table.update_cardinality(column_stat)
+			column_stats = self.fetch_column_stats(table)
+			db_table.update_cardinality(column_stats)
 			optimizer.update_table_data(db_table)
 
 		index = optimizer.suggest_index()
@@ -68,4 +68,4 @@ class OptimizeDatabaseQuery(Document):
 		}
 
 		column_stats = agent.post("database/column-stats", data=data)
-		return [ColumnStat(**c) for c in column_stats]
+		return [ColumnStat.from_frappe_ouput(c) for c in column_stats]

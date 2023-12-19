@@ -9,6 +9,7 @@ from typing import Literal
 
 import frappe
 from sql_metadata import Parser
+from frappe.utils import flt
 
 INDEX_SCORE_THRESHOLD = 0.3
 
@@ -102,6 +103,20 @@ class ColumnStat:
 	avg_frequency: float
 	avg_length: float
 	nulls_ratio: float | None = None
+	histogram: list[float] = None
+
+	def __post_init__(self):
+		if not self.histogram:
+			self.histogram = []
+
+	@classmethod
+	def from_frappe_ouput(cls, data) -> "ColumnStat":
+		return cls(
+			column_name=data["column_name"],
+			avg_frequency=data["avg_frequency"],
+			nulls_ratio=data["nulls_ratio"],
+			histogram=[flt(bin) for bin in data["histogram"]],
+		)
 
 
 @dataclass
@@ -117,17 +132,18 @@ class DBTable:
 		if not self.indexes:
 			self.indexes = []
 
-	def update_cardinality(self, column_stat: ColumnStat) -> None:
+	def update_cardinality(self, column_stats: list[ColumnStat]) -> None:
 		"""Estimate cardinality using mysql.column_stat"""
-		for col in self.schema:
-			if (
-				col.name == column_stat.column_name
-				and not col.cardinality
-				and column_stat.avg_frequency
-			):
-				# "hack" or "math" - average frequency is on average how frequently a row value appears.
-				# Avg = total_rows / cardinality, so...
-				col.cardinality = self.total_rows / column_stat.avg_frequency
+		for column_stat in column_stats:
+			for col in self.schema:
+				if (
+					col.name == column_stat.column_name
+					and not col.cardinality
+					and column_stat.avg_frequency
+				):
+					# "hack" or "math" - average frequency is on average how frequently a row value appears.
+					# Avg = total_rows / cardinality, so...
+					col.cardinality = self.total_rows / column_stat.avg_frequency
 
 	@classmethod
 	def from_frappe_ouput(cls, data) -> "DBTable":
