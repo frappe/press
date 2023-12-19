@@ -6,7 +6,7 @@ import frappe
 import json
 from frappe.model.document import Document
 from press.telegram_utils import Telegram
-from press.utils import log_error
+from press.utils import get_last_doc, log_error
 from frappe.utils import get_url_to_form
 from frappe.utils.data import add_to_date
 
@@ -178,16 +178,15 @@ class AlertmanagerWebhookLog(Document):
 
 	def create_incident(self):
 		try:
-			if incident_exists := frappe.db.exists(
+			if not get_last_doc(
 				"Incident",
 				{
 					"alert": self.alert,
 					INCIDENT_SCOPE: self.server,
 					"status": "Validating",
 				},
+				for_update=True,
 			):
-				incident = frappe.get_doc("Incident", incident_exists)
-			else:
 				incident = frappe.new_doc("Incident")
 				incident.alert = self.alert
 				incident.server = self.server
