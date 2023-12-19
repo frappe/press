@@ -224,55 +224,73 @@ def get_permitted_methods(doctype: str, name: str, group_names: list = None) -> 
 			doctype, name, group_name
 		)
 
-	permitted_methods = []
-	for group_name, method_perms in permissions_by_group.items():
-		for method, permitted in method_perms.items():
-			if permitted:
-				permitted_methods.append(method)
-
+	method_perms = resolve_doc_permissions(doctype, permissions_by_group)
+	permitted_methods = [method for method, permitted in method_perms.items() if permitted]
 	return list(set(permitted_methods))
 
 
 def get_method_perms_for_group(doctype: str, name: str, group_name: str) -> list:
 	permissions = frappe.db.get_value("Press Permission Group", group_name, "permissions")
 
-	all_methods = get_all_restrictable_methods(doctype)
-	all_allowed = {method: True for method in all_methods}
-	all_restricted = {method: False for method in all_methods}
-
 	if not permissions:
 		# this group allows all methods of all documents
-		return all_allowed
+		return {"*": True}
 
 	permissions = frappe.parse_json(permissions)
 	doctype_perms = permissions.get(doctype, None) or permissions.get("*", None)
 	if not doctype_perms:
 		# this group allows all methods of all documents
-		return all_allowed
+		return {"*": True}
 
 	doc_perms = doctype_perms.get(name, None) or doctype_perms.get("*", None)
 	if not doc_perms:
 		# this group allows all methods of this document
-		return all_allowed
+		return {"*": True}
 
-	wildcard_not_present = doc_perms.get("*", None) is None
-	wildcard_restricted = doc_perms.get("*", None) is False
-	wildcard_allowed = doc_perms.get("*", None) is True
+	return doc_perms
 
-	if wildcard_not_present or wildcard_restricted:
-		# * not present so only allow or restrict those that are explicitly false
-		# OR all methods are restricted except those that are explicitly true
-		for method, permitted in all_restricted.items():
-			if method in doc_perms and doc_perms[method]:
-				all_restricted[method] = True
-		return all_restricted
 
-	elif wildcard_allowed:
-		# all methods are allowed except those that are explicitly false
-		for method, permitted in all_allowed.items():
-			if method in doc_perms and not doc_perms[method]:
-				all_allowed[method] = False
-		return all_allowed
+def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
+	"""
+	Permission Resolution Logic:
+	- if a group has *: True and another group has *: False, then all the methods are allowed
+	- if a group has *: True and another group has 'method': False, then that method is restricted
+	- if a group has 'method': True and another group has 'method': False, then that method is allowed
+	"""
+
+	all_methods = get_all_restrictable_methods(doctype)
+	all_restricted = {method: False for method in all_methods}
+	all_allowed = {method: True for method in all_methods}
+
+	# first we parse the wildcard permissions
+	# if any group has *: True, then all methods are allowed
+	for group_name, permissions in permissions_by_group.items():
+		if permissions.get("*", None) is None:
+			continue
+		if permissions.get("*", None) is True:
+			method_perms = all_allowed
+			break
+		if permissions.get("*", None) is False:
+			method_perms = all_restricted
+
+	# now we restrict all the methods that are explicitly restricted
+	# so that we can allow all the methods that are explicitly allowed later
+	for group_name, permissions in permissions_by_group.items():
+		for method, permitted in permissions.items():
+			if not permitted and method != "*":
+				method_perms[method] = False
+
+	# now we allow all the methods that are explicitly allowed
+	for group_name, permissions in permissions_by_group.items():
+		for method, permitted in permissions.items():
+			if permitted and method != "*":
+				method_perms[method] = True
+
+	return method_perms
+
+
+def get_all_restrictable_doctypes() -> list:
+	return ["Site", "Release Group"]
 
 
 def get_all_restrictable_methods(doctype: str) -> list:
@@ -292,10 +310,6 @@ def get_all_restrictable_methods(doctype: str) -> list:
 		},
 	}
 	return methods.get(doctype, {})
-
-
-def get_all_restrictable_doctypes() -> list:
-	return list(get_all_restrictable_methods().keys())
 
 
 def get_permission_groups(user: str = None) -> list:
