@@ -19,7 +19,14 @@ class MockTwilioCallList:
 		pass
 
 	def create(self, **kwargs):
-		return frappe._dict({"sid": "test", "status": self.queued, "fetch": self.create})
+		return frappe._dict({"sid": "test", "status": self.get_status(), "fetch": self.fetch})
+
+	def fetch(self, **kwargs):
+		return frappe._dict({"status": self.get_status()})
+
+	@staticmethod
+	def get_status(**kwargs):
+		return "queued"
 
 
 class MockTwilioClient:
@@ -97,19 +104,19 @@ class TestIncident(FrappeTestCase):
 	@patch(
 		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
 	)
-	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
 	def test_incident_creation_calls_only_one_person_if_first_person_picks_up(self):
 		with patch.object(
-			MockTwilioCallList, "create", return_value=frappe._dict({"status": "completed"})
-		) as mock_calls_create:
+			MockTwilioCallList, "get_status", return_value="completed"
+		) as mock_get_status:
 			frappe.get_doc(
 				{
 					"doctype": "Incident",
 					"alertname": "Test Alert",
 				}
 			).insert()
-			self.assertEqual(mock_calls_create.call_count, 1)
+			self.assertEqual(mock_get_status.call_count, 2)  # during creation and fetch
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
 	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
