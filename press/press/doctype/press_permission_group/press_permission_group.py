@@ -99,12 +99,6 @@ class PressPermissionGroup(Document):
 
 	@frappe.whitelist()
 	def add_user(self, user):
-		user_belongs_to_team = frappe.db.exists(
-			"Team Member", {"parent": self.team, "user": user}
-		)
-		if not user_belongs_to_team:
-			frappe.throw(f"{user} does not belong to {frappe.local.team().team_title}")
-
 		user_belongs_to_group = self.get("users", {"user": user})
 		if user_belongs_to_group:
 			frappe.throw(f"{user} already belongs to {self.title}")
