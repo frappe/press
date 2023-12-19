@@ -1,7 +1,7 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
@@ -14,16 +14,21 @@ from press.utils.test import foreground_enqueue_doc
 from press.press.doctype.team.test_team import create_test_press_admin_team
 
 
+class MockTwilioCallList:
+	def __init__(self):
+		pass
+
+	def create(self, **kwargs):
+		return frappe._dict({"sid": "test", "status": self.queued, "fetch": self.create})
+
+
 class MockTwilioClient:
 	def __init__(self, account_sid, auth_token):  # noqa
 		pass
 
 	@property
 	def calls(self):
-		return frappe._dict({"create": self.create_call})
-
-	def create_call(self, **kwargs):
-		return MagicMock()
+		return MockTwilioCallList()
 
 
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
@@ -63,7 +68,10 @@ class TestIncident(FrappeTestCase):
 		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
 	)
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
-	@patch.object(MockTwilioClient, "create_call")
+	@patch.object(
+		MockTwilioCallList,
+		"create",
+	)
 	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
 	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
 		self, mock_calls_create: Mock
@@ -86,11 +94,24 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
+	@patch(
+		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
+	)
+	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
+	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
 	def test_incident_creation_calls_only_one_person_if_first_person_picks_up(self):
-		pass
+		with patch.object(
+			MockTwilioCallList, "create", return_value=frappe._dict({"status": "completed"})
+		) as mock_calls_create:
+			frappe.get_doc(
+				{
+					"doctype": "Incident",
+					"alertname": "Test Alert",
+				}
+			).insert()
+			self.assertEqual(mock_calls_create.call_count, 1)
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
-	@patch.object(MockTwilioClient, "create_call", new=Mock())
 	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
 	def test_incident_gets_created_on_alert_that_meets_conditions(self):
 		incident_count = frappe.db.count("Incident")
