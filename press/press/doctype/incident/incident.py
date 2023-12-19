@@ -1,10 +1,11 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+import contextlib
 import frappe
 from twilio.rest import Client
 from frappe.website.website_generator import WebsiteGenerator
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
 
 from press.utils import log_error
@@ -67,7 +68,8 @@ class Incident(WebsiteGenerator):
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
-			self.wait_for_pickup(call)
+			with contextlib.suppress(RetryError):
+				self.wait_for_pickup(call)
 			if call.status in ["completed", "answered"]:  # at least one picked up
 				break
 
