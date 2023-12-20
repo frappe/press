@@ -39,6 +39,10 @@ class MockTwilioClient:
 
 
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
+@patch(
+	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.frappe.enqueue_doc",
+	new=foreground_enqueue_doc,
+)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		frappe.db.set_value("Press Settings", None, "twilio_account_sid", "test")
