@@ -4,6 +4,10 @@
 from unittest.mock import patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log import (
+	AlertmanagerWebhookLog,
+)
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
@@ -38,17 +42,21 @@ class MockTwilioClient:
 		return MockTwilioCallList()
 
 
-@patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 @patch(
-	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.frappe.enqueue_doc",
+	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.enqueue_doc",
 	new=foreground_enqueue_doc,
 )
+@patch.object(AlertmanagerWebhookLog, "send_telegram_notification", new=Mock())
+@patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestIncident(FrappeTestCase):
 	def setUp(self):
+		self.from_ = "+911234567892"
 		frappe.db.set_value("Press Settings", None, "twilio_account_sid", "test")
 		frappe.db.set_value("Press Settings", None, "twilio_api_key_sid", "test")
 		frappe.db.set_value("Press Settings", None, "twilio_api_key_secret", "test")
-		frappe.db.set_value("Press Settings", None, "twilio_phone_number", "test")
+		frappe.db.set_value("Press Settings", None, "twilio_phone_number", self.from_)
 
 		self._create_test_incident_settings()
 
@@ -76,9 +84,7 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	@patch(
-		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
-	)
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
 	@patch.object(
 		MockTwilioCallList,
@@ -98,19 +104,17 @@ class TestIncident(FrappeTestCase):
 		).insert()
 		self.assertEqual(mock_calls_create.call_count, 2)
 		mock_calls_create.assert_any_call(
-			from_="test",
+			from_=self.from_,
 			to=self.test_phno_1,
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 		mock_calls_create.assert_any_call(
-			from_="test",
+			from_=self.from_,
 			to=self.test_phno_2,
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	@patch(
-		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
-	)
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
@@ -156,9 +160,7 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
 
-	@patch(
-		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
-	)
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient

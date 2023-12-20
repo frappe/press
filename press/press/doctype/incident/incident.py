@@ -3,6 +3,7 @@
 
 import contextlib
 import frappe
+from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
@@ -28,7 +29,7 @@ class Incident(WebsiteGenerator):
 
 	def after_insert(self):
 		if self.phone_call:
-			frappe.enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
+			enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
 
 	def get_humans(self) -> list["IncidentSettingsUser"]:
 		"""
