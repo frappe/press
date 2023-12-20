@@ -48,7 +48,8 @@
 						$resources.changeRegionOptions.data.regions.map(r => ({
 							label: r.title || r.name,
 							value: r.name,
-							image: r.image
+							image: r.image,
+							beta: r.beta
 						}))
 					"
 				/>

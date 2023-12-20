@@ -85,7 +85,7 @@ def get_data(filters):
 	rows = get_slow_query_logs(
 		filters.database,
 		convert_user_timezone_to_utc(filters.start_datetime),
-		convert_user_timezone_to_utc(filters.end_datetime),
+		convert_user_timezone_to_utc(filters.stop_datetime),
 		filters.search_pattern,
 		int(filters.max_lines) or 100,
 	)
@@ -179,4 +179,7 @@ def summarize_by_query(data):
 		entry["rows_sent"] += row["rows_sent"]
 		entry["example"] = query
 
-	return list(queries.values())
+	result = list(queries.values())
+	result.sort(key=lambda r: r["duration"] * r["count"], reverse=True)
+
+	return result

@@ -11,6 +11,7 @@
   "column_break_2",
   "status",
   "public",
+  "beta",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -256,6 +257,12 @@
    "fieldtype": "Data",
    "label": "Network ACL ID",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "beta",
+   "fieldtype": "Check",
+   "label": "Beta"
   }
  ],
  "image_field": "image",
@@ -287,7 +294,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-11 17:45:05.626912",
+ "modified": "2023-12-19 19:58:39.284714",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

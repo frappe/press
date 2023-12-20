@@ -541,6 +541,7 @@ def mariadb_slow_queries(site, start, end, pattern=".*", max_lines=100):
 	from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 		get_slow_query_logs,
 	)
+	from press.utils import convert_user_timezone_to_utc
 
 	db_name = frappe.db.get_value("Site", site, "database_name")
 	rows = get_slow_query_logs(

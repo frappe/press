@@ -2070,7 +2070,7 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 				clusters = frappe.db.get_all(
 					"Cluster",
 					filters={"name": ("in", cluster_names), "public": True},
-					fields=["name", "title", "image"],
+					fields=["name", "title", "image", "beta"],
 				)
 				for cluster in clusters:
 					cluster.label = cluster.title

@@ -159,14 +159,16 @@ class VirtualMachine(Document):
 					subnet_id=self.subnet_id,
 					instance_options=InstanceOptions(are_legacy_imds_endpoints_disabled=True),
 					source_details=InstanceSourceViaImageDetails(
-						image_id=self.machine_image, boot_volume_size_in_gbs=max(self.disk_size, 50)
+						image_id=self.machine_image,
+						boot_volume_size_in_gbs=max(self.disk_size, 50),
+						boot_volume_vpus_per_gb=30,
 					),
-					shape="VM.Standard3.Flex",
+					shape="VM.Standard.E4.Flex",
 					shape_config=LaunchInstanceShapeConfigDetails(
 						ocpus=vcpu // 2, vcpus=vcpu, memory_in_gbs=ram_in_gbs
 					),
 					platform_config=LaunchInstancePlatformConfig(
-						type="INTEL_VM",
+						type="AMD_VM",
 					),
 					is_pv_encryption_in_transit_enabled=True,
 					metadata={
@@ -389,6 +391,7 @@ class VirtualMachine(Document):
 						vnic_attachment=vnic_attachment,
 					)
 
+			available_volumes = []
 			for volume in self.get_volumes():
 				try:
 					if hasattr(volume, "volume_id"):
@@ -414,6 +417,9 @@ class VirtualMachine(Document):
 					row.iops = min(1.5 * vpus + 45, 2500 * vpus) * row.size
 					row.throughput = min(12 * vpus + 360, 20 * vpus + 280) * row.size // 1000
 
+					if row.volume_id:
+						available_volumes.append(row.volume_id)
+
 					if not existing_volume and row.volume_id:
 						self.append("volumes", row)
 				except Exception:
@@ -424,6 +430,11 @@ class VirtualMachine(Document):
 					)
 			if self.volumes:
 				self.disk_size = self.volumes[0].size
+
+			for volume in list(self.volumes):
+				if volume.volume_id not in available_volumes:
+					self.remove(volume)
+
 		else:
 			self.status = "Terminated"
 		self.save()

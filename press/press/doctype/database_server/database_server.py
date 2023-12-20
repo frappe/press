@@ -603,7 +603,7 @@ class DatabaseServer(BaseServer):
 		self.add_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram_for_mariadb * 0.685),  # will be rounded up based on chunk_size
+			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
 		)
 
 	@frappe.whitelist()
