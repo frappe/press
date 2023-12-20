@@ -212,16 +212,6 @@ def check_permissions(doctype):
 	return True
 
 
-def check_method_permissions(doctype, docname, method) -> None:
-	from press.press.doctype.press_permission_group.press_permission_group import (
-		has_method_permission,
-	)
-
-	if not has_method_permission(doctype, docname, method):
-		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
-	return True
-
-
 def apply_team_filters(query: QueryBuilder) -> QueryBuilder:
 	"""Apply team filter to the tables and joined tables that have team field"""
 
