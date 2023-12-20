@@ -117,7 +117,7 @@ class ColumnStat:
 			avg_length=data["avg_length"],
 			nulls_ratio=data["nulls_ratio"],
 			histogram=[flt(bin) for bin in data["histogram"].split(",")]
-			if bin["histogram"]
+			if data["histogram"]
 			else [],
 		)
 
