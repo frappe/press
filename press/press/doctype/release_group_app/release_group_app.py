@@ -5,7 +5,14 @@
 
 # import frappe
 from frappe.model.document import Document
+from frappe.utils import cstr
+
+from press.api.bench import apps
 
 
 class ReleaseGroupApp(Document):
-	pass
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		if filters and filters.get("parent"):
+			group_name = cstr(filters.get("parent"))
+			return apps(group_name)

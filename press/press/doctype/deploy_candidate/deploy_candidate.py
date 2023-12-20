@@ -28,8 +28,20 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 class DeployCandidate(Document):
-	def get_doc(self):
-		jobs = []
+	whitelisted_fields = [
+		"name",
+		"status",
+		"creation",
+		"deployed",
+		"build_steps",
+		"build_start",
+		"build_end",
+		"build_duration",
+		"apps",
+	]
+
+	def get_doc(self, doc):
+		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)
 		if deploys:
 			deploy = frappe.get_doc("Deploy", deploys[0].name)
@@ -42,20 +54,7 @@ class DeployCandidate(Document):
 					{"bench": bench.bench, "job_type": "New Bench"},
 					limit=1,
 				) or [{}]
-				jobs.append(job[0])
-
-		return {
-			"name": self.name,
-			"status": self.status,
-			"creation": self.creation,
-			"deployed": False,
-			"build_steps": self.build_steps,
-			"build_start": self.build_start,
-			"build_end": self.build_end,
-			"build_duration": self.build_duration,
-			"apps": self.apps,
-			"jobs": jobs,
-		}
+				doc.jobs.append(job[0])
 
 	def autoname(self):
 		group = self.group[6:]
@@ -552,6 +551,7 @@ class DeployCandidate(Document):
 			except Exception:
 				import traceback
 
+				print("Error in parsing line:", line)
 				traceback.print_exc()
 
 		self.build_output = "".join(lines)

@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-10-17 18:01:33.787818",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "update_note",
+  "update_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "update_note",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Update Note"
+  },
+  {
+   "default": "now",
+   "fieldname": "update_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Update Time"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-12-20 00:46:20.068124",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Incident Updates",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

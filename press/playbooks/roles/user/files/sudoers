@@ -1,6 +1,8 @@
 frappe ALL = (root) /bin/systemctl
 frappe ALL = (root) NOPASSWD: /bin/systemctl * nginx
 frappe ALL = (root) NOPASSWD: /bin/systemctl * supervisord
+frappe ALL = (root) NOPASSWD: /bin/systemctl * prometheus
+frappe ALL = (root) NOPASSWD: /bin/systemctl * alertmanager
 frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
 frappe ALL = (root) NOPASSWD: /usr/sbin/nginx
 frappe ALL = (root) NOPASSWD: /usr/local/bin/bench

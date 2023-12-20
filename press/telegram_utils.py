@@ -9,16 +9,20 @@ from press.utils import log_error
 
 
 class Telegram:
-	def __init__(self, topic: str = None):
+	def __init__(self, topic: str = None, group: str = None):
 		settings = frappe.db.get_value(
 			"Press Settings",
 			None,
 			["telegram_bot_token", "telegram_alerts_chat_group"],
 			as_dict=True,
 		)
-		self.token = settings.telegram_bot_token
-		self.group = settings.telegram_alerts_chat_group
-		self.chat_id = frappe.db.get_value("Telegram Group", self.group, "chat_id")
+		self.group = group or settings.telegram_alerts_chat_group
+		telegram_group = frappe.db.get_value(
+			"Telegram Group", self.group, ["token", "chat_id"]
+		)
+		token, chat_id = telegram_group if telegram_group else (None, None)
+		self.token = token or settings.telegram_bot_token
+		self.chat_id = chat_id
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
 		)
@@ -94,12 +98,16 @@ class Telegram:
 			doctype, name, action, key = arguments
 			commands = {"get": get_value, "execute": execute}
 			return commands.get(action, what)(frappe.unscrub(doctype), name, key)
-		elif len(arguments) == 5:
-			doctype, name, action, key, value = arguments
+		elif len(arguments) >= 5:
+			doctype, name, action, key, *values = arguments
 			commands = {
 				"set": set_value,
+				"execute": execute,
 			}
-			return commands.get(action, what)(frappe.unscrub(doctype), name, key, value)
+			if action == "set" and len(values) == 1:
+				return commands.get(action, what)(frappe.unscrub(doctype), name, key, values[0])
+			else:
+				return commands.get(action, what)(frappe.unscrub(doctype), name, key, *values)
 		return what()
 
 
@@ -123,7 +131,7 @@ def execute(doctype, name, method, *args):
 	# return "EXECUTE", doctype, name, method
 	try:
 		document = frappe.get_doc(doctype, name)
-		return document.run_method(method)
+		return document.run_method(method, *args)
 	except Exception:
 		return f"```{frappe.get_traceback()}```"
 
@@ -141,6 +149,7 @@ HELP_MESSAGE = """Try one of these
 doctype name execute method
 doctype name get field
 doctype name set field value
+doctype name execute method argument1 argument2 ...
 
 doctype = site|bench|server|proxy-server|database-server
 
@@ -150,4 +159,6 @@ server f17.frappe.cloud execute reboot```
 site docs.frappe.cloud get status```
 ```
 bench docs.frappe.cloud set auto_scale_workers 0```
+```
+server f17.frappe.cloud execute increase_disk_size 25```
 """

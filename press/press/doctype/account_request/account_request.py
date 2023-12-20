@@ -65,7 +65,10 @@ class AccountRequest(Document):
 		subject = "Verify your email for Frappe"
 		args = {}
 
-		if self.saas_product:
+		custom_template = self.saas_app and frappe.db.get_value(
+			"Marketplace App", self.saas_app, "custom_verify_template"
+		)
+		if self.saas_product or custom_template:
 			template = "saas_verify_account"
 		else:
 			template = "verify_account"

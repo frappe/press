@@ -87,19 +87,20 @@ class CodeServer(Document):
 
 
 def process_new_code_server_job_update(job):
-	frappe.db.get_value("Code Server", job.code_server, "status")
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
 
-	other_job_types = {
-		"Add Code Server to Upstream": ("Setup Code Server"),
-		"Setup Code Server": ("Add Code Server to Upstream"),
+	other_job_type = {
+		"Add Code Server to Upstream": "Setup Code Server",
+		"Setup Code Server": "Add Code Server to Upstream",
 	}[job.job_type]
 
 	first = job.status
-	second = frappe.get_all(
+	second = frappe.get_value(
 		"Agent Job",
-		fields=["status"],
-		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
-	)[0].status
+		{"job_type": other_job_type, "code_server": job.code_server},
+		"status",
+		for_update=True,
+	)
 
 	if "Success" == first == second:
 		updated_status = "Running"
@@ -122,19 +123,20 @@ def process_stop_code_server_job_update(job):
 
 
 def process_archive_code_server_job_update(job):
-	frappe.db.get_value("Code Server", job.code_server, "status")
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
 
-	other_job_types = {
-		"Remove Code Server from Upstream": ("Archive Code Server"),
-		"Archive Code Server": ("Remove Code Server from Upstream"),
+	other_job_type = {
+		"Remove Code Server from Upstream": "Archive Code Server",
+		"Archive Code Server": "Remove Code Server from Upstream",
 	}[job.job_type]
 
 	first = job.status
-	second = frappe.get_all(
+	second = frappe.get_value(
 		"Agent Job",
-		fields=["status"],
-		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
-	)[0].status
+		{"job_type": other_job_type, "code_server": job.code_server},
+		"status",
+		for_update=True,
+	)
 
 	if "Success" == first == second:
 		updated_status = "Archived"

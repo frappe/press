@@ -51,19 +51,16 @@ class BackupTest:
 	def get_benches(self, server: str) -> List[str]:
 		benches = get_benches_in_server(server)
 
-		# select all benches
-		release_groups = frappe.get_all(
-			"Release Group", dict(enabled=1, public=1), pluck="name"
-		)
-		central_groups = frappe.get_all(
+		# select all benches from central benches
+		# TODO: provision to run for all release groups
+		groups = frappe.get_all(
 			"Release Group", dict(enabled=1, central_bench=1), pluck="name"
 		)
-		groups = release_groups + central_groups
 
 		bench_list = []
 		for group in groups:
 			group_benches = frappe.get_all(
-				"Bench", dict(status="Active", group=group), pluck="name"
+				"Bench", dict(status="Active", group=group, server=server), pluck="name"
 			)
 
 			for bench in benches.keys():

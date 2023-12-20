@@ -69,6 +69,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
+  "docker_remote_builder",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -122,11 +123,19 @@
   "github_webhook_secret",
   "github_access_token",
   "section_break_41",
+  "column_break_tcmy",
+  "column_break_edst",
   "github_app_private_key",
   "aws_section",
   "aws_access_key_id",
   "column_break_agig",
   "aws_secret_access_key",
+  "twilio_section",
+  "twilio_account_sid",
+  "twilio_api_key_sid",
+  "twilio_api_key_secret",
+  "column_break_kxuj",
+  "twilio_phone_number",
   "marketplace_tab",
   "marketplace_settings_section",
   "max_allowed_screenshots",
@@ -1027,6 +1036,30 @@
    "label": "AWS Secret Access Key"
   },
   {
+   "fieldname": "twilio_section",
+   "fieldtype": "Section Break",
+   "label": "Twilio"
+  },
+  {
+   "fieldname": "twilio_account_sid",
+   "fieldtype": "Data",
+   "label": "Twilio Account SID"
+  },
+  {
+   "fieldname": "column_break_kxuj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "twilio_phone_number",
+   "fieldtype": "Phone",
+   "label": "Twilio Phone Number"
+  },
+  {
+   "fieldname": "docker_remote_builder",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder"
+  },
+  {
    "fieldname": "invoicing_column",
    "fieldtype": "Column Break",
    "label": "Invoicing"
@@ -1035,11 +1068,29 @@
    "fieldname": "gst_percentage",
    "fieldtype": "Float",
    "label": "GST Percentage"
+  },
+  {
+   "fieldname": "column_break_tcmy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_edst",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "twilio_api_key_sid",
+   "fieldtype": "Data",
+   "label": "Twilio API Key SID"
+  },
+  {
+   "fieldname": "twilio_api_key_secret",
+   "fieldtype": "Password",
+   "label": "Twilio API Key Secret"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-11-08 17:03:04.819861",
+ "modified": "2023-12-20 08:59:12.583012",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

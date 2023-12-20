@@ -1,0 +1,91 @@
+{
+ "actions": [
+  {
+   "action": "/app/ansible-console-log",
+   "action_type": "Route",
+   "label": "Logs"
+  },
+  {
+   "action": "press.press.doctype.ansible_console.ansible_console.execute_command",
+   "action_type": "Server Action",
+   "hidden": 1,
+   "label": "Execute"
+  }
+ ],
+ "creation": "2023-11-08 14:10:51.358824",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "inventory_section",
+  "inventory",
+  "nonce",
+  "command",
+  "output",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "inventory_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "inventory",
+   "fieldtype": "Code",
+   "label": "Inventory",
+   "max_height": "40px"
+  },
+  {
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "label": "Command",
+   "max_height": "40px",
+   "options": "Shell"
+  },
+  {
+   "fieldname": "nonce",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Nonce"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Table",
+   "label": "Output",
+   "options": "Ansible Console Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "options": "Shell",
+   "read_only": 1
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2023-11-24 14:46:36.102377",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Ansible Console",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

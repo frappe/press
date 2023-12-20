@@ -52,10 +52,49 @@
 		</div>
 	</Card>
 	<FinalizeInvoicesDialog v-model="showFinalizeDialog" />
+	<Dialog
+		:options="{
+			title: 'Remove Payment Method',
+			actions: [
+				{
+					label: 'Remove',
+					variant: 'solid',
+					theme: 'red',
+					onClick: () => {
+						$resources.remove.submit({ name: cardToRemove.name }).then(() => {
+							$resources.paymentMethods.reload();
+							this.showRemoveCardDialog = false;
+						});
+					}
+				},
+				{
+					label: 'Cancel',
+					onClick: () => (this.showRemoveCardDialog = false)
+				}
+			]
+		}"
+		v-model="showRemoveCardDialog"
+	>
+		<template v-slot:body-content>
+			<span>Are you sure you want to remove this payment method?</span>
+			<br /><br />
+			<span v-if="$resources.paymentMethods.data.length === 1">
+				If you intend to close your account please check the docs for
+				<Link
+					target="_blank"
+					href="https://frappecloud.com/docs/billing/disable-account"
+					>cancelling subscription.</Link
+				>
+				Frappe Cloud is not responsible for any refund if the account is not
+				closed properly.
+			</span>
+		</template>
+	</Dialog>
 </template>
 
 <script>
 import { defineAsyncComponent } from 'vue';
+import Link from '@/components/Link.vue';
 import FinalizeInvoicesDialog from './FinalizeInvoicesDialog.vue';
 
 export default {
@@ -63,7 +102,9 @@ export default {
 	data() {
 		return {
 			showAddCardDialog: false,
-			showFinalizeDialog: false
+			showRemoveCardDialog: false,
+			showFinalizeDialog: false,
+			cardToRemove: null
 		};
 	},
 	resources: {
@@ -103,7 +144,7 @@ export default {
 		},
 		cardBrand() {
 			return {
-				'master-card': defineAsyncComponent(() =>
+				mastercard: defineAsyncComponent(() =>
 					import('@/components/icons/cards/MasterCard.vue')
 				),
 				visa: defineAsyncComponent(() =>
@@ -133,7 +174,10 @@ export default {
 				},
 				{
 					label: 'Remove',
-					onClick: () => this.confirmRemove(card)
+					onClick: () => {
+						this.cardToRemove = card;
+						this.showRemoveCardDialog = true;
+					}
 				}
 			];
 		},
@@ -145,21 +189,6 @@ export default {
 				resource: this.$resources.setAsDefault,
 				action: closeDialog => {
 					this.$resources.setAsDefault.submit({ name: card.name }).then(() => {
-						this.$resources.paymentMethods.reload();
-						closeDialog();
-					});
-				}
-			});
-		},
-		confirmRemove(card) {
-			this.$confirm({
-				title: 'Remove payment method',
-				message: 'Are you sure you want to remove this payment method?',
-				actionLabel: 'Remove',
-				actionColor: 'red',
-				resource: this.$resources.remove,
-				action: closeDialog => {
-					this.$resources.remove.submit({ name: card.name }).then(() => {
 						this.$resources.paymentMethods.reload();
 						closeDialog();
 					});

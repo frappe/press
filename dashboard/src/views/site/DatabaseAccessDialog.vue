@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{ title: 'Access Database' }"
 		v-if="site"
-		:modelValue="Boolean(site) && show"
+		v-model="showDialog"
 		@close="dialogClosed"
 	>
 		<template v-slot:body-content>
@@ -111,24 +111,17 @@
 						class="mb-2"
 					>
 						<!-- Enable Read-Write Access -->
-						<input
-							id="enable-read-write-access"
+						<FormControl
 							type="checkbox"
-							class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+							label="Enable Read-Write Access"
 							v-model="enableReadWriteAccess"
 						/>
-						<label
-							for="enable-read-write-access"
-							class="ml-1 text-sm text-gray-900"
-						>
-							Enable Read-Write Access
-						</label>
 						<ErrorMessage
 							class="mt-2"
 							:message="
+								error ||
 								(enableReadWriteAccess &&
-									'Your credentials can be used to modify or wipe your database') ||
-								error
+									'Your credentials can be used to modify or wipe your database')
 							"
 						/>
 					</div>
@@ -170,9 +163,11 @@
 import ClickToCopyField from '@/components/ClickToCopyField.vue';
 import SitePlansTable from '@/components/SitePlansTable.vue';
 import { notify } from '@/utils/toast';
+import { frappeRequest } from 'frappe-ui';
 
 export default {
-	props: ['site', 'show'],
+	props: ['site', 'modelValue'],
+	emits: ['update:modelValue'],
 	data() {
 		return {
 			pollingAgentJob: false,
@@ -285,6 +280,14 @@ export default {
 			});
 
 			return processedPlans;
+		},
+		showDialog: {
+			get() {
+				return this.modelValue;
+			},
+			set(value) {
+				this.$emit('update:modelValue', value);
+			}
 		}
 	},
 	methods: {
@@ -294,9 +297,13 @@ export default {
 		pollDatabaseAccessJob(jobName) {
 			this.pollingAgentJob = true;
 
-			this.$call('press.api.site.get_job_status', {
-				job_name: jobName
+			frappeRequest({
+				url: 'press.api.site.get_job_status',
+				params: {
+					job_name: jobName
+				}
 			}).then(message => {
+				console.log(message);
 				if (message.status === 'Success') {
 					this.pollingAgentJob = false;
 					this.$resources.fetchDatabaseAccessInfo.fetch();

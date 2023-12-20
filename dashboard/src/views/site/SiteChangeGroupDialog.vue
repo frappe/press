@@ -4,8 +4,17 @@
 			title: 'Move Site to another Bench',
 			actions: [
 				{
-					label: 'Submit',
+					label: 'Clone current Bench',
+					loading: $resources.cloneGroup.loading,
+					onClick: () =>
+						$resources.cloneGroup.submit({
+							name: site?.name
+						})
+				},
+				{
+					label: 'Change Bench',
 					loading: this.$resources.changeGroup.loading,
+					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
 					onClick: () =>
 						$resources.changeGroup.submit({
@@ -34,10 +43,14 @@
 				"
 				v-model="targetGroup"
 			/>
-			<p v-else class="text-base">
-				There are no other benches that you own for this site to move to.
+			<p v-else class="text-md text-base text-gray-800">
+				There are no other benches that you own for this site to move to. You
+				can clone this bench to move the site.
 			</p>
-			<ErrorMessage class="mt-3" :message="$resources.changeGroup.error" />
+			<ErrorMessage
+				class="mt-3"
+				:message="$resources.changeGroup.error || $resources.cloneGroup.error"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -99,8 +112,30 @@ export default {
 				params: {
 					name: this.site?.name
 				},
+				initialData: [],
 				onSuccess(data) {
 					if (data.length > 0) this.targetGroup = data[0].name;
+				}
+			};
+		},
+		cloneGroup() {
+			return {
+				url: 'press.api.site.clone_group',
+				onSuccess(data) {
+					notify({
+						title: 'Cloned Bench',
+						message: `The current bench has been cloned successfully. Redirecting to the new bench...`,
+						color: 'green',
+						icon: 'check'
+					});
+					this.$emit('update:modelValue', false);
+					this.$router.push({
+						name: 'BenchDeploys',
+						params: {
+							benchName: data.bench_name,
+							candidateName: data.candidate_name
+						}
+					});
 				}
 			};
 		}

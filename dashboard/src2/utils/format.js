@@ -1,6 +1,7 @@
 import dayjs from '../utils/dayjs';
+import { getTeam } from '../data/team';
 
-export function formatBytes(bytes, decimals = 2, current = 0) {
+export function bytes(bytes, decimals = 2, current = 0) {
 	if (bytes === 0) return '0 Bytes';
 
 	const k = 1024;
@@ -13,7 +14,7 @@ export function formatBytes(bytes, decimals = 2, current = 0) {
 	);
 }
 
-export function formatDuration(value) {
+export function duration(value) {
 	if (!value) return;
 
 	let [hours, minutes, seconds] = value.split(':');
@@ -34,6 +35,49 @@ export function formatDuration(value) {
 	return dayjs.duration({ hours, minutes, seconds }).format(format);
 }
 
-export function formatDateTime(value) {
+export function datetime(value) {
 	return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
+}
+
+export function plural(number, singular, plural) {
+	if (number === 1) {
+		return singular;
+	}
+	return plural;
+}
+
+export function planTitle(plan) {
+	let $team = getTeam();
+	let india = $team.doc.country == 'India';
+	let currency = india ? '₹' : '$';
+	let price_field = india ? 'price_inr' : 'price_usd';
+	let price =
+		plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
+	return price > 0 ? `${currency}${price}` : plan.plan_title;
+}
+
+export function userCurrency(value) {
+	let $team = getTeam();
+	let india = $team.doc.currency == 'INR';
+	let symbol = india ? '₹' : '$';
+	return `${symbol}${value}`;
+}
+
+export function numberK(number) {
+	if (number < 1000) {
+		return number;
+	} else {
+		let value = Math.round(number / 1000, 1);
+
+		// To handle cases like 8.0, 9.0 etc.
+		if (value == number / 1000) {
+			value = parseInt(value);
+		}
+		// To handle cases like 8999 -> 9k and not 9.0k
+		else if (value - 1 == number / 1000) {
+			value = parseInt(value);
+		}
+
+		return `${value}k`;
+	}
 }

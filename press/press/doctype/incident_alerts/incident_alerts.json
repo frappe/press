@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-10-17 13:25:42.597749",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "alert",
+  "alert_type",
+  "combined_alerts"
+ ],
+ "fields": [
+  {
+   "fieldname": "alert",
+   "fieldtype": "Link",
+   "label": "Alert",
+   "options": "Alertmanager Webhook Log"
+  },
+  {
+   "fetch_from": "alert.combined_alerts",
+   "fieldname": "combined_alerts",
+   "fieldtype": "Data",
+   "label": "Combined Alerts",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "alert.alert",
+   "fieldname": "alert_type",
+   "fieldtype": "Data",
+   "label": "Alert Type",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-10-18 10:40:59.417560",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Incident Alerts",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

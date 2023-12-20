@@ -12,12 +12,16 @@
 						:class="{
 							'bg-green-500': step.status === 'Success',
 							'bg-red-500': step.status === 'Failure',
-							'bg-gray-400': ['Skipped', 'Running', 'Pending'].includes(
-								step.status
-							)
+							'bg-transparent': step.status === 'Running',
+							'bg-gray-400': ['Skipped', 'Pending'].includes(step.status)
 						}"
 					>
+						<LoadingIndicator
+							class="h-3.5 w-3.5 text-gray-900"
+							v-if="step.status === 'Running'"
+						/>
 						<FeatherIcon
+							v-else
 							:name="
 								{
 									Success: 'check',
@@ -42,7 +46,7 @@
 			</div>
 		</button>
 		<div
-			class="overflow-x-auto border px-2.5 py-2 text-sm text-gray-800"
+			class="overflow-x-auto rounded-b border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
 			v-show="step.isOpen"
 		>
 			<pre>{{ step.output || 'No output' }}</pre>
@@ -50,6 +54,8 @@
 	</div>
 </template>
 <script setup>
+import { LoadingIndicator } from 'frappe-ui';
+
 const props = defineProps({
 	step: {
 		type: Object,

@@ -52,6 +52,7 @@
    "label": "Release Group",
    "options": "Release Group",
    "reqd": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -285,7 +286,7 @@
   }
  ],
  "links": [],
- "modified": "2023-07-28 16:00:52.623701",
+ "modified": "2023-12-12 16:34:35.392466",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

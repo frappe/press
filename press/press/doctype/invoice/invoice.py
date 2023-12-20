@@ -118,7 +118,18 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
-			if frappe.db.count("Invoice", {"status": "Unpaid", "team": self.team}) < 2:
+			if (
+				frappe.db.count(
+					"Invoice",
+					{
+						"status": "Unpaid",
+						"team": self.team,
+						"type": "Subscription",
+						"docstatus": ("<", 2),
+					},
+				)
+				== 0
+			):
 				# unsuspend sites only if all invoices are paid
 				team = frappe.get_cached_doc("Team", self.team)
 				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
@@ -241,7 +252,7 @@ class Invoice(Document):
 		if self.period_start and self.period_end and self.is_new():
 			query = (
 				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" docstatus < 2 and ('{self.period_start}' between `period_start` and"
+				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
 				f" `period_end` or '{self.period_end}' between `period_start` and"
 				" `period_end`)"
 			)

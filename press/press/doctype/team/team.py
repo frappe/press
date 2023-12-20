@@ -9,7 +9,7 @@ from frappe import _
 from frappe.core.utils import find
 from typing import List
 from hashlib import blake2b
-from press.utils import log_error
+from press.utils import log_error, get_valid_teams_for_user
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
@@ -27,8 +27,56 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
+	whitelisted_fields = [
+		"enabled",
+		"team_title",
+		"user",
+		"partner_email",
+		"billing_team",
+		"team_members",
+		"child_team_members",
+		"notify_email",
+		"country",
+		"currency",
+		"payment_mode",
+		"default_payment_method",
+		"skip_backups",
+		"is_saas_user",
+	]
+
+	def get_doc(self, doc):
+		if (
+			not frappe.local.system_user()
+			and self.user != frappe.session.user
+			and self.user not in self.get_user_list()
+		):
+			frappe.throw("You are not allowed to access this document")
+
+		user = frappe.db.get_value(
+			"User",
+			self.user,
+			["first_name", "last_name", "user_image", "user_type"],
+			as_dict=True,
+		)
+		doc.user_info = user
+		doc.balance = self.get_balance()
+		doc.is_desk_user = user.user_type == "System User"
+		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
+		doc.onboarding = self.get_onboarding()
+		doc.billing_info = self.billing_info()
+
 	def onload(self):
 		load_address_and_contact(self)
+
+	@frappe.whitelist()
+	def get_home_data(self):
+		return {
+			"sites": frappe.db.get_all(
+				"Site",
+				{"team": self.name, "status": ["!=", "Archived"]},
+				["name", "host_name", "status"],
+			),
+		}
 
 	def validate(self):
 		self.validate_duplicate_members()
@@ -36,6 +84,7 @@ class Team(Document):
 		self.set_default_user()
 		self.set_billing_name()
 		self.set_partner_email()
+		self.validate_disable()
 
 	def before_insert(self):
 		if not self.notify_email:
@@ -52,6 +101,17 @@ class Team(Document):
 	def set_partner_email(self):
 		if self.erpnext_partner and not self.partner_email:
 			self.partner_email = self.user
+
+	def validate_disable(self):
+		if self.has_value_changed("enabled"):
+			has_unpaid_invoices = frappe.get_all(
+				"Invoice",
+				{"team": self.name, "status": ("in", ["Draft", "Unpaid"]), "type": "Subscription"},
+			)
+			if self.enabled == 0 and has_unpaid_invoices:
+				frappe.throw(
+					"Cannot disable team with Draft or Unpaid invoices. Please finalize and settle the pending invoices first"
+				)
 
 	def delete(self, force=False, workflow=False):
 		if force:
@@ -319,6 +379,11 @@ class Team(Document):
 		After enabling partner privileges, new invoice should be created
 		to track the partner achivements
 		"""
+		# check if any active user with an invoice
+		if not frappe.get_all(
+			"Invoice", {"team": self.name, "docstatus": ("<", 2)}, pluck="name"
+		):
+			return
 		today = frappe.utils.getdate()
 		current_invoice = frappe.db.get_value(
 			"Invoice",
@@ -330,6 +395,9 @@ class Team(Document):
 			},
 			"name",
 		)
+
+		if not current_invoice:
+			return
 
 		current_inv_doc = frappe.get_doc("Invoice", current_invoice)
 
@@ -395,13 +463,20 @@ class Team(Document):
 			return False
 
 		try:
-			last_invoice = frappe.get_last_doc(
-				"Invoice", filters={"docstatus": 0, "team": self.name}
+			unpaid_invoices = frappe.get_all(
+				"Invoice",
+				{
+					"status": "Unpaid",
+					"team": self.name,
+					"docstatus": ("<", 2),
+					"type": "Subscription",
+				},
+				pluck="name",
 			)
 		except frappe.DoesNotExistError:
 			return False
 
-		return last_invoice.status == "Unpaid"
+		return unpaid_invoices
 
 	def create_stripe_customer(self):
 		if not self.stripe_customer_id:
@@ -452,6 +527,9 @@ class Team(Document):
 			frappe.get_doc("Invoice", draft_invoice).save()
 
 	def update_billing_details_on_frappeio(self):
+		if frappe.flags.in_install:
+			return
+
 		try:
 			frappeio_client = get_frappe_io_connection()
 		except FrappeioServerNotSet as e:
@@ -574,6 +652,9 @@ class Team(Document):
 			invoice.formatted_total = frappe.utils.fmt_money(invoice.total, 2, invoice.currency)
 			invoice.stripe_link_expired = False
 			if invoice.status == "Unpaid":
+				invoice.formatted_amount_due = frappe.utils.fmt_money(
+					invoice.amount_due, 2, invoice.currency
+				)
 				days_diff = frappe.utils.date_diff(frappe.utils.now(), invoice.due_date)
 				if days_diff > 30:
 					invoice.stripe_link_expired = True
@@ -613,7 +694,7 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def get_balance(self):
-		res = frappe.db.get_all(
+		res = frappe.get_all(
 			"Balance Transaction",
 			filters={"team": self.name, "docstatus": 1},
 			order_by="creation desc",
@@ -678,8 +759,14 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
-		if self.free_account or self.parent_team or self.is_saas_user or self.billing_team:
+		if self.free_account or self.parent_team or self.billing_team:
 			return allow
+
+		if self.is_saas_user and not self.payment_mode:
+			if not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+				return allow
+			else:
+				why = "You have already created trial site in the past"
 
 		if self.payment_mode == "Partner Credits":
 			if self.get_available_partner_credits() > 0:
@@ -730,12 +817,14 @@ class Team(Document):
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
+		elif self.payment_mode == "Prepaid Credits" and self.get_balance() > 0:
+			billing_setup = True
+		elif (
+			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
+		):
+			billing_setup = True
 		else:
-			billing_setup = bool(
-				self.payment_mode in ["Card", "Prepaid Credits"]
-				and (self.default_payment_method or self.get_balance() > 0)
-				and self.billing_address
-			)
+			billing_setup = False
 
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 
@@ -765,7 +854,8 @@ class Team(Document):
 				"erpnext_site": erpnext_site,
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
-				"complete": billing_setup and site_created and erpnext_site_plan_set,
+				"saas_site_request": self.get_pending_saas_site_request(),
+				"complete": billing_setup and site_created,
 			}
 		)
 
@@ -784,21 +874,41 @@ class Team(Document):
 		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
 			return frappe.db.get_value(
 				"SaaS Product Site Request",
-				{"team": self.name, "status": "Pending"},
-				"saas_product",
+				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},
+				"name",
+				order_by="creation desc",
 			)
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
 		sites_to_suspend = self.get_sites_to_suspend()
 		for site in sites_to_suspend:
-			frappe.get_doc("Site", site).suspend(reason)
+			try:
+				frappe.get_doc("Site", site).suspend(reason)
+			except Exception:
+				log_error("Failed to Suspend Sites", traceback=frappe.get_traceback())
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
+		plan = frappe.qb.DocType("Plan")
+		query = (
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where(
+				(plan.enabled == 1)
+				& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
+			)
+		).run(as_dict=True)
+		dedicated_or_frappe_plans = [d.name for d in query]
+
 		return frappe.db.get_all(
 			"Site",
-			{"team": self.name, "status": ("in", ("Active", "Inactive")), "free": 0},
+			{
+				"team": self.name,
+				"status": ("in", ("Active", "Inactive")),
+				"free": 0,
+				"plan": ("not in", dedicated_or_frappe_plans),
+			},
 			pluck="name",
 		)
 
@@ -859,7 +969,7 @@ class Team(Document):
 		invoice = frappe.get_doc("Invoice", invoice)
 		email = (
 			frappe.db.get_value(
-				"Communication Email", {"parent": self.user, "type": "invoices"}, ["value"]
+				"Communication Email", {"parent": self.name, "type": "invoices"}, "value"
 			)
 			or self.user
 		)
@@ -965,9 +1075,15 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
+	if frappe.db.exists(
+		"Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}
+	):
+		# ignore creating if already allocated
+		return
+
 	team: Team = frappe.get_doc("Team", {"stripe_customer_id": payment_intent["customer"]})
 	amount = payment_intent["amount"] / 100
-	gst = float(metadata.get("gst"))
+	gst = float(metadata.get("gst", 0))
 	balance_transaction = team.allocate_credit_amount(
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
@@ -985,6 +1101,7 @@ def process_stripe_webhook(doc, method):
 		due_date=datetime.fromtimestamp(payment_intent["created"]),
 		amount_paid=amount,
 		gst=gst or 0,
+		total_before_tax=amount - gst,
 		amount_due=amount,
 		stripe_payment_intent_id=payment_intent["id"],
 	)

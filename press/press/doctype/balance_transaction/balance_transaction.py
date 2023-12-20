@@ -14,20 +14,33 @@ class BalanceTransaction(Document):
 			frappe.throw("Amount cannot be 0")
 
 	def before_submit(self):
-		res = frappe.db.get_all(
+		last_balance = frappe.db.get_all(
 			"Balance Transaction",
 			filters={"team": self.team, "docstatus": 1},
 			fields=["sum(amount) as ending_balance"],
 			group_by="team",
 			pluck="ending_balance",
 		)
-		if res:
-			self.ending_balance = (res[0] or 0) + self.amount
+		last_balance = last_balance[0] if last_balance else 0
+		if last_balance:
+			self.ending_balance = (last_balance or 0) + self.amount
 		else:
 			self.ending_balance = self.amount
 
 		if self.type == "Adjustment":
 			self.unallocated_amount = self.amount
+			if self.unallocated_amount < 0:
+				# in case of credit transfer
+				self.consume_unallocated_amount()
+				self.unallocated_amount = 0
+			elif last_balance < 0 and abs(last_balance) <= self.amount:
+				# previously the balance was negative
+				# settle the negative balance
+				self.unallocated_amount = self.amount - abs(last_balance)
+				self.add_comment(text=f"Settling negative balance of {abs(last_balance)}")
+			elif last_balance < 0 and abs(last_balance) > self.amount:
+				# doesn't make sense to throw because payment happens before creating BT
+				pass
 
 	def before_update_after_submit(self):
 		total_allocated = sum([d.amount for d in self.allocated_to])
@@ -35,6 +48,53 @@ class BalanceTransaction(Document):
 
 	def on_submit(self):
 		frappe.publish_realtime("balance_updated", user=self.team)
+
+	def consume_unallocated_amount(self):
+		self.validate_total_unallocated_amount()
+
+		allocation_map = {}
+		remaining_amount = abs(self.amount)
+		transactions = frappe.get_all(
+			"Balance Transaction",
+			filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
+			fields=["name", "unallocated_amount"],
+			order_by="creation asc",
+		)
+		for transaction in transactions:
+			if remaining_amount <= 0:
+				break
+			allocated_amount = min(remaining_amount, transaction.unallocated_amount)
+			remaining_amount -= allocated_amount
+			allocation_map[transaction.name] = allocated_amount
+
+		for transaction, amount in allocation_map.items():
+			doc = frappe.get_doc("Balance Transaction", transaction)
+			doc.append(
+				"allocated_to",
+				{
+					"amount": abs(amount),
+					"currency": self.currency,
+					"balance_transaction": self.name,
+				},
+			)
+			doc.save(ignore_permissions=True)
+
+	def validate_total_unallocated_amount(self):
+		total_unallocated_amount = (
+			frappe.get_all(
+				"Balance Transaction",
+				filters={"docstatus": 1, "team": self.team, "unallocated_amount": (">", 0)},
+				fields=["sum(unallocated_amount) as total_unallocated_amount"],
+				pluck="total_unallocated_amount",
+			)
+			or []
+		)
+		if not total_unallocated_amount:
+			frappe.throw("Cannot create transaction as no unallocated amount found")
+		if total_unallocated_amount[0] < abs(self.amount):
+			frappe.throw(
+				f"Cannot create transaction as unallocated amount {total_unallocated_amount[0]} is less than {self.amount}"
+			)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

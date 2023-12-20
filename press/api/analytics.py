@@ -41,17 +41,25 @@ def get(name, timezone, duration="7d"):
 	}[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
+	request_count_by_path_data = get_request_by_path(
+		name, "count", timezone, timespan, timegrain
+	)
+	request_duration_by_path_data = get_request_by_path(
+		name, "duration", timezone, timespan, timegrain
+	)
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
 
 	plan = frappe.get_cached_doc("Site", name).plan
-	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
+	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
 
 	return {
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
+		"request_count_by_path": request_count_by_path_data,
+		"request_duration_by_path": request_duration_by_path_data,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
@@ -110,6 +118,178 @@ def get_uptime(site, timezone, timespan, timegrain):
 			)
 		)
 	return buckets
+
+
+def get_request_by_path(site, query_type, timezone, timespan, timegrain):
+	MAX_NO_OF_PATHS = 10
+
+	log_server = frappe.db.get_single_value("Press Settings", "log_server")
+	if not log_server:
+		return {"datasets": [], "labels": []}
+
+	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
+	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+	count_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "json.request.path",
+					"order": {"request_count": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"request_count": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"json.site": site}},
+									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+								],
+								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+							}
+						}
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"request_count": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"json.site": site}},
+											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+										],
+										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+									}
+								}
+							}
+						},
+					},
+				},
+			}
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+	}
+
+	duration_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "json.request.path",
+					"order": {"methods>sum": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"methods": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"json.site": site}},
+									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+								],
+								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+							}
+						},
+						"aggs": {
+							"sum": {
+								"sum": {
+									"field": "json.duration",
+								}
+							}
+						},
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"methods": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"json.site": site}},
+											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+										],
+										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+									}
+								},
+								"aggs": {
+									"sum": {
+										"sum": {
+											"field": "json.duration",
+										}
+									}
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+	}
+
+	if query_type == "count":
+		query = count_query
+	else:
+		query = duration_query
+
+	response = requests.post(url, json=query, auth=("frappe", password)).json()
+
+	if not response["aggregations"]["method_path"]["buckets"]:
+		return {"datasets": [], "labels": []}
+
+	buckets = []
+	labels = [
+		get_datetime(data["key_as_string"]).replace(tzinfo=None)
+		for data in response["aggregations"]["method_path"]["buckets"][0][
+			"histogram_of_method"
+		]["buckets"]
+	]
+	for bucket in response["aggregations"]["method_path"]["buckets"]:
+		buckets.append(
+			frappe._dict(
+				{
+					"path": bucket["key"],
+					"values": [
+						data["request_count"]["doc_count"]
+						if query_type == "count"
+						else data["methods"]["sum"]["value"] / 1000000
+						if query_type == "duration"
+						else 0
+						for data in bucket["histogram_of_method"]["buckets"]
+					],
+					"stack": "path",
+				}
+			)
+		)
+
+	return {"datasets": buckets, "labels": labels}
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
@@ -361,6 +541,7 @@ def mariadb_slow_queries(site, start, end, pattern=".*", max_lines=100):
 	from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
 		get_slow_query_logs,
 	)
+	from press.utils import convert_user_timezone_to_utc
 
 	db_name = frappe.db.get_value("Site", site, "database_name")
 	rows = get_slow_query_logs(

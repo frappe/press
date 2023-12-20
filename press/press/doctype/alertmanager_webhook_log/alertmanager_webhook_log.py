@@ -1,11 +1,15 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from functools import cached_property
 import frappe
 import json
 from frappe.model.document import Document
+from frappe.utils.background_jobs import enqueue_doc
 from press.telegram_utils import Telegram
+from press.utils import get_last_doc, log_error
 from frappe.utils import get_url_to_form
+from frappe.utils.data import add_to_date
 
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
@@ -27,6 +31,9 @@ Labels:
 
 """
 
+INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
+INCIDENT_SCOPE = "server"
+
 
 class AlertmanagerWebhookLog(Document):
 	def validate(self):
@@ -47,9 +54,63 @@ class AlertmanagerWebhookLog(Document):
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
-		frappe.enqueue_doc(
+	def after_insert(self):
+		enqueue_doc(
 			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 		)
+		enqueue_doc(
+			self.doctype, self.name, "validate_and_create_incident", enqueue_after_commit=True
+		)
+
+	def get_past_alert_instances(self):
+		past_alerts = frappe.get_all(
+			self.doctype,
+			fields=["payload"],
+			filters={
+				"alert": self.alert,
+				"severity": self.severity,
+				"status": self.status,
+				"group_key": ("like", f"%{self.parsed_group_labels.get(INCIDENT_SCOPE)}%"),
+				"creation": [
+					">",
+					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
+				],
+			},
+			group_by="group_key",
+		)  # get site down alerts grouped by benches
+
+		instances = []
+		for alert in past_alerts:
+			payload = json.loads(alert["payload"])
+			instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])
+		return set(instances)
+
+	def total_instances(self) -> int:
+		return frappe.db.count(
+			"Site",
+			{"status": "Active", INCIDENT_SCOPE: self.parsed_group_labels.get(INCIDENT_SCOPE)},
+		)
+
+	def validate_and_create_incident(self):
+		if not frappe.db.get_single_value("Incident Settings", "enable_incident_detection"):
+			return
+		if not (
+			self.alert == INCIDENT_ALERT
+			and self.severity == "Critical"
+			and self.status == "Firing"
+		):
+			return
+
+		instances = self.get_past_alert_instances()
+		if len(instances) > min(0.4 * self.total_instances(), 15):
+			self.create_incident()
+
+	def get_repeat_interval(self):
+		repeat_interval = frappe.db.get_value(
+			"Prometheus Alert Rule", self.alert, "repeat_interval"
+		)
+		hours = repeat_interval.split("h")[0]  # assume hours
+		return int(hours)
 
 	def generate_telegram_message(self):
 		context = self.as_dict()
@@ -100,3 +161,39 @@ class AlertmanagerWebhookLog(Document):
 		message = self.generate_telegram_message()
 		client = Telegram(self.severity)
 		client.send(message)
+
+	@property
+	def bench(self):
+		return self.parsed_group_labels.get("bench")
+
+	@property
+	def cluster(self):
+		return self.parsed_group_labels.get("cluster")
+
+	@property
+	def server(self):
+		return self.parsed_group_labels.get("server")
+
+	@cached_property
+	def parsed_group_labels(self) -> dict:
+		parsed = json.loads(self.payload)
+		return parsed["groupLabels"]
+
+	def create_incident(self):
+		try:
+			if not get_last_doc(
+				"Incident",
+				{
+					"alert": self.alert,
+					INCIDENT_SCOPE: self.server,
+					"status": "Validating",
+				},
+				for_update=True,
+			):
+				incident = frappe.new_doc("Incident")
+				incident.alert = self.alert
+				incident.server = self.server
+				incident.cluster = self.cluster
+				incident.save()
+		except Exception:
+			log_error("Incident creation failed")

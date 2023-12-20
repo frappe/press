@@ -1003,7 +1003,7 @@ def branches(name):
 	repo_owner = app_source.repository_owner
 	repo_name = app_source.repository
 
-	return git_branches(installation_id, repo_owner, repo_name)
+	return git_branches(repo_owner, repo_name, installation_id)
 
 
 @protected("Marketplace App")

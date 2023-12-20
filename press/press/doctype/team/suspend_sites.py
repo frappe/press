@@ -8,83 +8,90 @@ This module deals with suspending sites of defaulters.
 
 Defaulters are identified based on the following conditions:
 - Is not a free account
-- Is not an ERPNext Partner
-- Card not added
-- Does not have enough credit balance
+- Is not a Legacy Partner account with payment mode as Partner Credits
+- Has at least one unpaid invoice
+- Has an active site
 
-The `execute` method is the main method which is run by the scheduler daily.
+The `execute` method is the main method which is run by the scheduler on every 10th day of the month.
 """
 
 
 import frappe
-from frappe.utils.data import flt
+from press.utils import log_error
 
 
 def execute():
-	teams_with_total_usage = get_teams_with_total_usage()
+	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
-	for d in teams_with_total_usage:
-		total_usage = d.total_usage
+	for d in teams_with_unpaid_invoices[:30]:
 		team = frappe.get_doc("Team", d.team)
 
-		if team.free_account or not total_usage or team.get_balance() > 0:
+		if team.payment_mode == "Partner Credits":
 			continue
 
-		total_usage_limit = get_total_free_usage_limit(team)
-
-		# if total usage has crossed the allotted free credits, suspend their sites
-		if total_usage > total_usage_limit:
-			suspend_sites_and_send_email(team)
+		# suspend sites
+		suspend_sites_and_send_email(team)
 
 
 def suspend_sites_and_send_email(team):
-	sites = team.suspend_sites(reason="Card not added and free credits exhausted")
+	try:
+		sites = team.suspend_sites(reason="Unpaid Invoices")
+		frappe.db.commit()
+	except Exception:
+		log_error(
+			f"Error while suspending sites for team {team.name}",
+			traceback=frappe.get_traceback(),
+		)
+		frappe.db.rollback()
 	# send email
 	if sites:
 		email = team.user
-		account_update_link = frappe.utils.get_url("/dashboard")
 		frappe.sendmail(
 			recipients=email,
 			subject="Your sites have been suspended on Frappe Cloud",
-			template="payment_failed",
+			template="suspended_sites",
 			args={
 				"subject": "Your sites have been suspended on Frappe Cloud",
-				"account_update_link": account_update_link,
-				"card_not_added": True,
 				"sites": sites,
-				"team": team,
 			},
 		)
 
 
-def get_teams_with_total_usage():
-	"""Find out teams which don't have a card, not a free account, not an erpnext partner with their total usage"""
-	return frappe.db.sql(
-		"""
-		SELECT
-			SUM(i.total) as total_usage,
-			i.team
-		FROM
-			`tabInvoice` i
-			LEFT JOIN `tabTeam` t ON t.name = i.team
-		WHERE
-			i.docstatus < 2
-			AND ifnull(t.default_payment_method, '') = ''
-			AND t.free_account = 0
-			AND t.erpnext_partner = 0
-		GROUP BY
-			i.team
-	""",
-		as_dict=True,
+def get_teams_with_unpaid_invoices():
+	"""Find out teams which has active sites and unpaid invoices and not a free account"""
+	plan = frappe.qb.DocType("Plan")
+	query = (
+		frappe.qb.from_(plan)
+		.select(plan.name)
+		.where(
+			(plan.enabled == 1)
+			& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
+		)
+	).run(as_dict=True)
+	dedicated_or_frappe_plans = [d.name for d in query]
+
+	invoice = frappe.qb.DocType("Invoice")
+	team = frappe.qb.DocType("Team")
+	site = frappe.qb.DocType("Site")
+
+	query = (
+		frappe.qb.from_(invoice)
+		.inner_join(team)
+		.on(invoice.team == team.name)
+		.inner_join(site)
+		.on(site.team == team.name)
+		.where(
+			(site.status).isin(["Active", "Inactive"])
+			& (team.enabled == 1)
+			& (team.free_account == 0)
+			& (invoice.status == "Unpaid")
+			& (invoice.docstatus < 2)
+			& (invoice.type == "Subscription")
+			& (site.free == 0)
+			& (site.plan).notin(dedicated_or_frappe_plans)
+		)
+		.select(invoice.team)
+		.distinct()
 	)
 
-
-def get_total_free_usage_limit(team):
-	"""Returns the total free credits allocated to the team"""
-	if not team.free_credits_allocated:
-		return 0
-
-	settings = frappe.get_cached_doc("Press Settings", "Press Settings")
-	return flt(
-		settings.free_credits_inr if team.currency == "INR" else settings.free_credits_usd
-	)
+	return query.run(as_dict=True)

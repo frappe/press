@@ -1,8 +1,10 @@
 [
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-06-16 20:39:50.568363",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.228754",
   "name": "Rename Upstream",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{ip}/rename",
@@ -28,9 +30,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-01-27 10:42:40.678534",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.057519",
   "name": "Rename Site",
   "request_method": "POST",
   "request_path": "benches/{site.bench}/sites/{site.name}/rename",
@@ -86,9 +90,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-21 12:34:39.569810",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.549528",
   "name": "Recover Failed Site Migration",
   "request_method": null,
   "request_path": null,
@@ -114,9 +120,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-08-11 12:17:23.658693",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.927111",
   "name": "Add Domain",
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/domains",
@@ -142,9 +150,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-08-11 12:17:43.993040",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.946695",
   "name": "Remove Domain",
   "request_method": "DELETE",
   "request_path": "benches/{bench}/sites/{site}/domains/{domain}",
@@ -170,9 +180,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-27 19:18:17.532920",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.762138",
   "name": "Update Site Pull",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/pull",
@@ -222,9 +234,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-05-04 14:15:26.755183",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.585210",
   "name": "Update Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate",
@@ -304,9 +318,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-08-14 16:44:10.920737",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.781844",
   "name": "New Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites",
@@ -350,9 +366,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 23:20:55.186989",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.646447",
   "name": "Add Host to Proxy",
   "request_method": "POST",
   "request_path": "/proxy/hosts",
@@ -378,9 +396,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.626647",
   "name": "Add Site to Upstream",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites",
@@ -406,9 +426,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.671517",
   "name": "Add Code Server to Upstream",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites",
@@ -434,9 +456,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.651948",
   "name": "Remove Code Server from Upstream",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites",
@@ -462,9 +486,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.724970",
   "name": "Setup Code Server",
   "request_method": "POST",
   "request_path": "benches/{bench}/codeserver",
@@ -496,9 +522,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.707766",
   "name": "Start Code Server",
   "request_method": "POST",
   "request_path": "benches/{bench}/codeserver/start",
@@ -512,9 +540,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.743617",
   "name": "Stop Code Server",
   "request_method": "POST",
   "request_path": "benches/{bench}/codeserver/stop",
@@ -528,9 +558,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-21 23:20:14.208716",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.690936",
   "name": "Archive Code Server",
   "request_method": "POST",
   "request_path": "benches/{bench}/codeserver/archive",
@@ -556,9 +588,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 23:20:08.170631",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.607088",
   "name": "Add Upstream to Proxy",
   "request_method": "POST",
   "request_path": "/proxy/upstreams",
@@ -584,9 +618,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-08 15:02:15.559811",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.677444",
   "name": "Install App on Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/apps",
@@ -600,9 +636,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-30 10:46:32.814468",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.839292",
   "name": "New Site from Backup",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/restore",
@@ -676,9 +714,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-05-06 11:08:03.470650",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.690831",
   "name": "Reinstall Site",
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/reinstall",
@@ -692,9 +732,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-05-14 09:39:59.938256",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.470276",
   "name": "Restore Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/restore",
@@ -756,9 +798,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-05-21 14:43:42.827772",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.706871",
   "name": "Update Site Status",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}/status",
@@ -784,9 +828,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-26 15:27:03.310761",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.740351",
   "name": "Uninstall App from Site",
   "request_method": "DELETE",
   "request_path": "/benches/{bench}/sites/{site}/apps",
@@ -800,9 +846,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-27 20:49:03.616821",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.805097",
   "name": "Recover Failed Site Pull",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/pull/recover",
@@ -840,9 +888,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-07-27 20:48:53.225074",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.786058",
   "name": "Recover Failed Site Update",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/recover",
@@ -856,9 +906,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-05-04 14:15:56.315104",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.625189",
   "name": "Recover Failed Site Migrate",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate/recover",
@@ -908,9 +960,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-08-05 17:32:00.556643",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.893005",
   "name": "Remove Host from Proxy",
   "request_method": "DELETE",
   "request_path": "/proxy/hosts/{host}",
@@ -936,9 +990,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-08-06 10:47:06.751838",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.911153",
   "name": "Migrate Site",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/migrate",
@@ -952,9 +1008,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-10-02 15:34:23.594712",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.963183",
   "name": "Fetch Sites Info",
   "request_method": "POST",
   "request_path": "/benches/{bench}/info",
@@ -968,9 +1026,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-11-30 12:12:41.282921",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.000340",
   "name": "Setup Redirects on Hosts",
   "request_method": "POST",
   "request_path": "/proxy/hosts/redirects",
@@ -1002,9 +1062,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-11-30 12:12:21.595092",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.979580",
   "name": "Remove Redirects on Hosts",
   "request_method": "DELETE",
   "request_path": "/proxy/hosts/redirects",
@@ -1030,9 +1092,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-01-29 11:14:16.705614",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.100535",
   "name": "Rename Site on Upstream",
   "request_method": "POST",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}/rename",
@@ -1070,9 +1134,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-03-25 22:42:47.808999",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.131920",
   "name": "Add Wildcard Hosts to Proxy",
   "request_method": "POST",
   "request_path": "/proxy/wildcards",
@@ -1098,9 +1164,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-04-05 16:24:05.014172",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.180358",
   "name": "Setup ERPNext",
   "request_method": "POST",
   "request_path": "/benches/{site.bench}/sites/{site.name}/erpnext",
@@ -1120,9 +1188,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-04-04 12:27:30.772719",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.157390",
   "name": "Clear Cache",
   "request_method": "DELETE",
   "request_path": "/benches/{bench}/sites/{site}/cache",
@@ -1142,9 +1212,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-04-12 22:01:07.809393",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.203468",
   "name": "Restore Site Tables",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/migrate/restore",
@@ -1164,9 +1236,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-01-16 13:37:05.759970",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.283667",
   "name": "Add User to Proxy",
   "request_method": "POST",
   "request_path": "/ssh/users",
@@ -1192,9 +1266,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-01-16 13:38:57.132558",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.308026",
   "name": "Remove User from Proxy",
   "request_method": "DELETE",
   "request_path": "/ssh/users/{user}",
@@ -1214,9 +1290,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-07 12:43:09.605095",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.327716",
   "name": "Add User to ProxySQL",
   "request_method": "POST",
   "request_path": "/proxysql/users",
@@ -1230,9 +1308,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-07 12:43:46.446468",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.345276",
   "name": "Remove User from ProxySQL",
   "request_method": "DELETE",
   "request_path": "/proxysql/users/{username}",
@@ -1246,9 +1326,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-13 14:26:09.458148",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.362722",
   "name": "Create Minio User",
   "request_method": "POST",
   "request_path": "/minio/create",
@@ -1274,9 +1356,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-13 14:26:41.239106",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.379874",
   "name": "Remove Minio User",
   "request_method": "POST",
   "request_path": "/minio/remove",
@@ -1290,9 +1374,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-15 14:21:09.184479",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.392780",
   "name": "Enable Minio User",
   "request_method": "POST",
   "request_path": "/minio/update",
@@ -1306,9 +1392,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-15 14:21:14.416719",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.405690",
   "name": "Disable Minio User",
   "request_method": "POST",
   "request_path": "/minio/update",
@@ -1322,9 +1410,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2021-10-14 09:27:02.587048",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.256524",
   "name": "Cleanup Unused Files",
   "request_method": "POST",
   "request_path": "server/cleanup",
@@ -1350,9 +1440,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-05-11 13:02:45.175768",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.446023",
   "name": "Add Backend to ProxySQL",
   "request_method": "POST",
   "request_path": "/proxysql/backends",
@@ -1366,9 +1458,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-02-15 14:21:14.416719",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.419313",
   "name": "Update Saas Plan",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/update/saas",
@@ -1382,9 +1476,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-11-17 10:12:13.952175",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.502147",
   "name": "Run After Migrate Steps",
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/run_after_migrate_steps",
@@ -1422,9 +1518,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-12-02 07:54:16.581300",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.531987",
   "name": "Move Site to Bench",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/move_to_bench",
@@ -1480,9 +1578,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-03-14 12:29:53.005324",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.556954",
   "name": "Reset Site Usage",
   "request_method": "DELETE",
   "request_path": "benches/{bench}/sites/{site}/usage",
@@ -1496,9 +1596,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-07-25 15:25:39.121963",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.759939",
   "name": "Reload NGINX Job",
   "request_method": "POST",
   "request_path": "/proxy/reload",
@@ -1518,9 +1620,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-06-17 16:44:12.364275",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.725087",
   "name": "Backup Site",
   "request_method": null,
   "request_path": null,
@@ -1540,9 +1644,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2022-04-26 12:43:33.641886",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.432717",
   "name": "Bench Restart",
   "request_method": "POST",
   "request_path": "/benches/{bench}/restart",
@@ -1556,9 +1662,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 20:16:04.843363",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.568610",
   "name": "Archive Bench",
   "request_method": "POST",
   "request_path": "/benches/{bench}/archive",
@@ -1578,9 +1686,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-07 16:10:22.420615",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.663533",
   "name": "Update Site Configuration",
   "request_method": "POST",
   "request_path": "/benches/{bench}/sites/{site}/config",
@@ -1594,9 +1704,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-12-11 14:03:35.053168",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.023648",
   "name": "New Bench",
   "request_method": "POST",
   "request_path": "/benches",
@@ -1628,9 +1740,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-04-03 23:19:43.720292",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.587094",
   "name": "Remove Site from Upstream",
   "request_method": "DELETE",
   "request_path": "/proxy/upstreams/{upstream}/sites/{site}",
@@ -1656,9 +1770,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2020-02-20 10:19:17.561733",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:18.510770",
   "name": "Archive Site",
   "request_method": null,
   "request_path": null,
@@ -1684,9 +1800,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-10-17 16:59:09.138319",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.845251",
   "name": "Force Update Bench Limits",
   "request_method": "POST",
   "request_path": "benches/{bench}/limit",
@@ -1712,9 +1830,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-10-17 11:31:50.531377",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.822202",
   "name": "Update Bench Configuration",
   "request_method": "POST",
   "request_path": "/benches/{bench}/config",
@@ -1752,9 +1872,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-09-27 15:51:45.010890",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.803361",
   "name": "Rebuild Bench Assets",
   "request_method": "POST",
   "request_path": "benches/{bench}/rebuild",
@@ -1768,9 +1890,11 @@
   ]
  },
  {
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
-  "modified": "2023-10-19 14:54:11.470559",
+  "max_retry_count": 3,
+  "modified": "2023-11-06 07:28:19.861985",
   "name": "Optimize Tables",
   "request_method": "POST",
   "request_path": "benches/{bench}/sites/{site}/optimize",

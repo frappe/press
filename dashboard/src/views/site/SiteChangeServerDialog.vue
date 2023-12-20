@@ -1,18 +1,31 @@
 <template>
 	<Dialog
 		v-model="show"
+		@close="resetValues"
 		:options="{
 			title: 'Move Site to another Server',
 			actions: [
 				{
-					label: 'Submit',
-					loading: this.$resources.changeServer.loading,
+					label: 'Add Server to Bench',
+					loading: $resources.addServerToReleaseGroup.loading,
+					disabled: $resources.isServerAddedInGroup.data || !targetServer,
+					onClick: () => $resources.addServerToReleaseGroup.submit()
+				},
+				{
+					label: 'Change Server',
+					loading: $resources.changeServer.loading,
 					variant: 'solid',
-					onClick: () =>
+					disabled:
+						!$resources.changeServerOptions?.data?.length ||
+						!targetServer ||
+						!$resources.isServerAddedInGroup.data,
+					onClick: () => {
 						$resources.changeServer.submit({
+							name: site?.name,
 							server: targetServer,
-							name: site?.name
-						})
+							scheduled_datetime: datetimeInIST
+						});
+					}
 				}
 			]
 		}"
@@ -28,11 +41,33 @@
 				type="select"
 				:options="$resources.changeServerOptions.data"
 				v-model="targetServer"
+				@change="
+					e =>
+						$resources.isServerAddedInGroup.fetch({
+							name: site?.name,
+							server: e.target.value
+						})
+				"
 			/>
-			<p v-else class="text-base">
-				There are no servers available to move this site.
+			<FormControl
+				class="mt-4"
+				v-if="$resources.isServerAddedInGroup.data"
+				label="Schedule Site Migration"
+				type="datetime-local"
+				:min="new Date().toISOString().slice(0, 16)"
+				v-model="targetDateTime"
+			/>
+			<p class="mt-4 text-sm text-gray-700">
+				{{ message }}
 			</p>
-			<ErrorMessage class="mt-4" :message="$resources.changeServer.error" />
+			<ErrorMessage
+				class="mt-4"
+				:message="
+					$resources.changeServer.error ||
+					$resources.isServerAddedInGroup.error ||
+					$resources.addServerToReleaseGroup.error
+				"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -46,7 +81,8 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			targetServer: ''
+			targetServer: '',
+			targetDateTime: null
 		};
 	},
 	watch: {
@@ -62,6 +98,24 @@ export default {
 			set(value) {
 				this.$emit('update:modelValue', value);
 			}
+		},
+		message() {
+			if (this.targetServer && !this.$resources.isServerAddedInGroup.data) {
+				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
+			} else if (
+				this.targetServer &&
+				this.$resources.isServerAddedInGroup.data
+			) {
+				return 'The chosen server is already added to the bench. You can now migrate the site to the server.';
+			} else return '';
+		},
+		datetimeInIST() {
+			if (!this.targetDateTime) return null;
+			const datetimeInIST = this.$dayjs(this.targetDateTime)
+				.tz('Asia/Kolkata')
+				.format('YYYY-MM-DDTHH:mm');
+
+			return datetimeInIST;
 		}
 	},
 	resources: {
@@ -73,32 +127,65 @@ export default {
 				},
 				transform(d) {
 					return d.map(s => ({
-						label: s,
-						value: s
+						label: s.title || s.name,
+						value: s.name
 					}));
-				},
-				onSuccess(data) {
-					this.targetServer = data[0].value;
 				}
+			};
+		},
+		isServerAddedInGroup() {
+			return {
+				url: 'press.api.site.is_server_added_in_group',
+				initialData: false
 			};
 		},
 		changeServer() {
 			return {
 				url: 'press.api.site.change_server',
-				params: {
-					name: this.site?.name,
-					server: this.targetServer
-				},
 				onSuccess() {
 					notify({
 						title: 'Site Change Server',
-						message: `Site ${this.site?.name} has been scheduled to move to ${this.targetServer}`,
+						message: `Site <b>${this.site?.name}</b> has been scheduled to move to <b>${this.targetServer}</b>`,
 						icon: 'check',
 						color: 'green'
 					});
 					this.$emit('update:modelValue', false);
 				}
 			};
+		},
+		addServerToReleaseGroup() {
+			return {
+				url: 'press.api.site.add_server_to_release_group',
+				params: {
+					name: this.site?.name,
+					group_name: this.site?.group,
+					server: this.targetServer
+				},
+				onSuccess(data) {
+					notify({
+						title: 'Server Added to the Bench',
+						message: `Added <b>${this.targetServer}</b> to current bench. Please wait for the deploy to be completed.`,
+						icon: 'check',
+						color: 'green'
+					});
+					this.$router.push({
+						name: 'BenchJobs',
+						params: {
+							benchName: this.site?.group,
+							jobName: data
+						}
+					});
+					this.resetValues();
+					this.$emit('update:modelValue', false);
+				}
+			};
+		}
+	},
+	methods: {
+		resetValues() {
+			this.targetServer = '';
+			this.targetDateTime = null;
+			this.$resources.isServerAddedInGroup.reset();
 		}
 	}
 };

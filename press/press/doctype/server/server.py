@@ -39,6 +39,12 @@ class BaseServer(Document):
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
+		if not self.hostname_abbreviation:
+			self._set_hostname_abbreviation()
+
+	def _set_hostname_abbreviation(self):
+		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
+
 	def after_insert(self):
 		if self.ip:
 			if (
@@ -129,6 +135,8 @@ class BaseServer(Document):
 				)
 			elif self.provider == "AWS EC2":
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+			elif self.provider == "OCI":
+				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 
 			ansible.run()
 			self.reload()
@@ -254,7 +262,7 @@ class BaseServer(Document):
 					server=self,
 					user="ubuntu",
 				)
-			elif self.provider == "AWS EC2":
+			elif self.provider in ("AWS EC2", "OCI"):
 				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
@@ -277,7 +285,7 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
@@ -287,14 +295,14 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
 		self.extend_ec2_volume()
 
 	def update_virtual_machine_name(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
@@ -487,6 +495,22 @@ class BaseServer(Document):
 			log_error("MySQLdump Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def set_swappiness(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
+		)
+
+	def _set_swappiness(self):
+		try:
+			ansible = Ansible(
+				playbook="swappiness.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Swappiness Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
@@ -522,6 +546,11 @@ class BaseServer(Document):
 			ansible.run()
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
+
+	@property
+	def real_ram(self):
+		"""Ram detected by OS after h/w reservation"""
+		return 0.972 * self.ram - 218
 
 
 class Server(BaseServer):
@@ -831,7 +860,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def reboot(self):
-		if self.provider == "AWS EC2":
+		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 
@@ -984,6 +1013,17 @@ class Server(BaseServer):
 				)
 				bench.save()
 
+	@frappe.whitelist()
+	def reset_sites_usage(self):
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": "Active"},
+			pluck="name",
+		)
+		for site_name in sites:
+			site = frappe.get_doc("Site", site_name)
+			site.reset_site_usage()
+
 
 def scale_workers():
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
@@ -1011,3 +1051,14 @@ def cleanup_unused_files():
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
+
+
+def get_hostname_abbreviation(hostname):
+	hostname_parts = hostname.split("-")
+
+	abbr = hostname_parts[0]
+
+	for part in hostname_parts[1:]:
+		abbr += part[0]
+
+	return abbr

@@ -26,6 +26,7 @@
   "common_site_config",
   "column_break_14",
   "bench_config",
+  "gunicorn_threads_per_worker",
   "automatic_worker_allocation_section",
   "min_gunicorn_workers",
   "min_background_workers",
@@ -80,7 +81,8 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "version",
@@ -222,7 +224,8 @@
   },
   {
    "fieldname": "column_break_9efq",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "RQ Worker Config"
   },
   {
    "default": "0",
@@ -297,10 +300,18 @@
   {
    "fieldname": "column_break_njfg",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
+   "fieldname": "gunicorn_threads_per_worker",
+   "fieldtype": "Int",
+   "label": "Gunicorn Threads Per Worker",
+   "non_negative": 1
   }
  ],
  "links": [],
- "modified": "2023-09-21 09:17:28.956768",
+ "modified": "2023-12-19 12:39:50.724606",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

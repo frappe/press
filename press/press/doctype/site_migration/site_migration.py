@@ -8,6 +8,9 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
 from press.utils.dns import create_dns_record
@@ -50,6 +53,32 @@ class SiteMigration(Document):
 				f"Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
 				frappe.ValidationError,
 			)
+
+	def on_update(self):
+		if self.status not in ["Success", "Failure"]:
+			return
+
+		site = frappe.get_doc("Site", self.site)
+
+		message = agent_job_id = ""
+		if self.status == "Success":
+			message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
+			agent_job_id = find(
+				self.steps, lambda x: x.step_title == "Restore site on destination"
+			).step_job
+		elif self.status == "Failure":
+			message = (
+				f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
+			)
+			agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+
+		create_new_notification(
+			site.team,
+			"Site Migrate",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
 
 	def start(self):
 		self.db_set("status", "Pending")
@@ -328,7 +357,7 @@ class SiteMigration(Document):
 		"""Backup site on source"""
 		site = frappe.get_doc("Site", self.site)
 
-		backup = site.backup(with_files=True, offsite=True)
+		backup = site.backup(with_files=True, offsite=True, force=True)
 		backup.reload()
 		self.backup = backup.name
 		self.save()

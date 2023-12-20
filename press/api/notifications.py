@@ -29,7 +29,9 @@ def get_notifications(filters=None):
 			notification.route = f"benches/{rg_name}/deploys/{notification.document_name}"
 		elif notification.document_type == "Agent Job":
 			site_name = frappe.db.get_value("Agent Job", notification.document_name, "site")
-			notification.route = f"sites/{site_name}/jobs/{notification.document_name}"
+			notification.route = (
+				f"sites/{site_name}/jobs/{notification.document_name}" if site_name else None
+			)
 		else:
 			notification.route = None
 

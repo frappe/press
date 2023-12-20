@@ -313,8 +313,8 @@ export default {
 			this.showReasonForAdminLoginDialog = false;
 		},
 		handlePlanChange() {
-			$resources.site.reload();
-			$resources.plan.reload();
+			this.$resources.site.reload();
+			this.$resources.plan.reload();
 		},
 		onActivateClick() {
 			this.$confirm({
@@ -424,18 +424,14 @@ export default {
 				{
 					label: 'Upgrade Version',
 					icon: 'arrow-up',
-					condition: () =>
-						this.site?.frappe_version !== 'Nightly' &&
-						this.site?.frappe_version !== this.site?.latest_frappe_version &&
-						this.site?.status === 'Active',
+					condition: () => this.site?.status === 'Active',
 					onClick: () => (this.showVersionUpgradeDialog = true)
 				},
 				{
 					label: 'Change Server',
 					icon: 'server',
 					condition: () =>
-						this.$account.user.user_type === 'System User' &&
-						this.site?.status === 'Active',
+						this.site?.status === 'Active' && !this.site?.is_public,
 					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];

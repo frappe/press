@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "hostname",
+  "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
   "title",
@@ -240,7 +241,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -430,10 +431,15 @@
    "fieldname": "set_bench_memory_limits",
    "fieldtype": "Check",
    "label": "Set Bench Memory Limits"
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
   }
  ],
  "links": [],
- "modified": "2023-10-20 14:02:26.796669",
+ "modified": "2023-12-13 15:08:53.873858",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

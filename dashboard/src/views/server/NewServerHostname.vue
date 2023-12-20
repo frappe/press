@@ -51,7 +51,8 @@ export default {
 			return this.options.regions.map(d => ({
 				label: d.title,
 				value: d.name,
-				image: d.image
+				image: d.image,
+				beta: d.beta
 			}));
 		}
 	},

@@ -94,7 +94,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-11-07 16:13:44.351361",
+ "modified": "2023-11-24 13:17:52.110070",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Version Upgrade",
@@ -119,7 +119,8 @@
    "print": 1,
    "report": 1,
    "role": "Press Admin",
-   "share": 1
+   "share": 1,
+   "write": 1
   },
   {
    "create": 1,
@@ -128,7 +129,8 @@
    "print": 1,
    "report": 1,
    "role": "Press Member",
-   "share": 1
+   "share": 1,
+   "write": 1
   }
  ],
  "sort_field": "modified",

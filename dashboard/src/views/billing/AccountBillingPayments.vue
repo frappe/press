@@ -10,19 +10,20 @@
 		</template>
 		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-7"
 			>
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
 				<span class="hidden md:inline">Amount</span>
+				<span class="hidden md:inline">Amount Due</span>
 				<span>Status</span>
 				<span class="hidden md:inline">Payment Date</span>
-				<span></span>
+				<span>Download</span>
 			</div>
 			<div
 				:key="invoice.name"
 				v-for="invoice in filteredInvoices"
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-7"
 			>
 				<div>
 					<div>
@@ -59,6 +60,10 @@
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
+				<span v-if="invoice.formatted_amount_due" class="hidden md:inline">{{
+					invoice.formatted_amount_due
+				}}</span>
+				<span v-else>-</span>
 				<span>
 					<Badge :label="invoice.status" />
 				</span>
@@ -78,6 +83,7 @@
 							})
 						}}
 					</span>
+					<span v-else>-</span>
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button

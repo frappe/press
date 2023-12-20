@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "hostname",
+  "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
   "title",
@@ -55,6 +56,8 @@
   "memory_high",
   "column_break_eiyu",
   "memory_max",
+  "column_break_wbbi",
+  "memory_swap_max",
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables"
@@ -203,7 +206,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -332,7 +335,7 @@
   },
   {
    "fieldname": "memory_high",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory High (GB)",
    "non_negative": 1
   },
@@ -342,7 +345,7 @@
   },
   {
    "fieldname": "memory_max",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory Max (GB)",
    "non_negative": 1
   },
@@ -380,11 +383,27 @@
   {
    "fieldname": "column_break_apox",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wbbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0.1",
+   "fieldname": "memory_swap_max",
+   "fieldtype": "Float",
+   "label": "Memory Swap Max (GB)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-24 09:11:57.951188",
+ "modified": "2023-12-13 15:08:56.278451",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

@@ -1,0 +1,20 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+	<div class="p-8 bg-white">
+		<p class="mb-4 font-bold">
+			Insufficient Balance for upcoming Frappe Cloud payment
+		</p>
+		<p class="mb-6">
+			Greetings from Frappe! We noticed that your Frappe Cloud account does not have sufficient credits to pay for the upcoming invoice.
+			Please consider adding credits to your account or update the payment mode to Card and add a card with sufficient balance from {{ utils.link('Billing Settings', '/dashboard/billing') }} in your Frappe Cloud dashboard.
+		</p>
+		{{ utils.separator() }}
+		{{ utils.signature() }}
+	</div>
+</td>
+
+{% endblock %}

@@ -332,9 +332,6 @@ export default {
 		updateAllSites() {
 			return {
 				url: 'press.api.bench.update',
-				params: {
-					name: this.versions[this.selectedVersionIndex]?.name
-				},
 				onSuccess() {
 					notify({
 						title: 'Site update scheduled successfully',
@@ -416,8 +413,9 @@ export default {
 				{
 					label: 'Update All Sites',
 					onClick: () => {
-						this.selectedVersionIndex = i;
-						this.$resources.updateAllSites.submit();
+						this.$resources.updateAllSites.submit({
+							name: this.versions[i]?.name
+						});
 					},
 					condition: () =>
 						this.versions[i].status === 'Active' &&
@@ -442,7 +440,8 @@ export default {
 					},
 					condition: () =>
 						this.versions[i].status === 'Active' &&
-						this.permissions.rebuildBench
+						this.permissions.rebuildBench &&
+						false // XXX: This feature is broken in Framework.
 				},
 				{
 					label: 'Create Code Server',

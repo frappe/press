@@ -69,6 +69,16 @@ class PressJob(Document):
 
 		frappe.enqueue_doc("Press Job Step", next_step, "execute", enqueue_after_commit=True)
 
+	@frappe.whitelist()
+	def force_continue(self):
+		for step in frappe.get_all(
+			"Press Job Step",
+			{"job": self.name, "status": ("in", ("Failure", "Skipped"))},
+			pluck="name",
+		):
+			frappe.db.set_value("Press Job Step", step, "status", "Pending")
+		self.next()
+
 	@property
 	def next_step(self):
 		return frappe.db.get_value(
@@ -103,3 +113,6 @@ class PressJob(Document):
 
 	def publish_update(self):
 		frappe.publish_realtime("press_job_update", self.detail())
+
+	def on_trash(self):
+		frappe.db.delete("Press Job Step", {"job": self.name})

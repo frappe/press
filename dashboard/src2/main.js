@@ -1,5 +1,4 @@
 import { createApp } from 'vue';
-import { toast } from 'vue-sonner';
 import {
 	setConfig,
 	frappeRequest,
@@ -8,14 +7,22 @@ import {
 } from 'frappe-ui';
 import App from './App.vue';
 import router from './router';
-import dayjs from './utils/dayjs';
-import session from './data/session';
-import theme from '../tailwind.theme.json';
+import { initSocket } from './socket';
 
-setConfig('resourceFetcher', frappeRequest);
+let request = options => {
+	let _options = options || {};
+	_options.headers = options.headers || {};
+	let currentTeam = localStorage.getItem('current_team') || window.default_team;
+	if (currentTeam) {
+		_options.headers['X-Press-Team'] = currentTeam;
+	}
+	return frappeRequest(_options);
+};
+setConfig('resourceFetcher', request);
 setConfig('defaultListUrl', 'press.api.client.get_list');
 setConfig('defaultDocGetUrl', 'press.api.client.get');
-// setConfig('defaultDocInsertUrl', 'press.api.list.insert');
+setConfig('defaultDocInsertUrl', 'press.api.client.insert');
+setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
 // setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
@@ -24,19 +31,29 @@ app.use(router);
 app.use(resourcesPlugin);
 app.use(pageMetaPlugin);
 
-app.config.globalProperties.$session = session;
-app.config.globalProperties.$toast = toast;
-app.config.globalProperties.$dayjs = dayjs;
-app.config.globalProperties.$theme = theme;
+let socket;
 
-fetchTeam().then(() => {
+getInitialData().then(() => {
+	socket = initSocket();
+	app.config.globalProperties.$socket = socket;
+	window.$socket = socket;
 	app.mount('#app');
 });
 
-function fetchTeam() {
-	return import('./data/team.js');
+function getInitialData() {
+	if (import.meta.env.DEV) {
+		return frappeRequest({
+			url: '/api/method/press.www.dashboard.get_context_for_dev'
+		})
+			.then(values => Object.assign(window, values))
+			.then(importGlobals);
+	} else {
+		return importGlobals();
+	}
 }
 
-// import('./data/team.js').then(() => {
-// 	app.mount('#app');
-// });
+function importGlobals() {
+	return import('./globals.js').then(globals => {
+		app.use(globals.default);
+	});
+}

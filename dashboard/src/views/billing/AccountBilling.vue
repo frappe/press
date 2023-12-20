@@ -6,7 +6,7 @@
 			/>
 			<Tabs :tabs="tabs" class="-mb-px pl-0.5" />
 		</header>
-		<div class="mx-auto max-w-4xl py-5">
+		<div class="mx-auto max-w-5xl py-5">
 			<router-view />
 		</div>
 	</div>

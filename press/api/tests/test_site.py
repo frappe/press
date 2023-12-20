@@ -117,7 +117,9 @@ class TestAPISite(FrappeTestCase):
 				"group": None,  # because group is public
 				"team": site.team,
 				"frappe_version": group.version,
-				"latest_frappe_version": group.version,
+				"latest_frappe_version": frappe.db.get_value(
+					"Frappe Version", {"status": "Stable"}, order_by="name desc"
+				),
 				"is_public": group.public,
 				"server": site.server,
 				"server_region_info": frappe.db.get_value(
@@ -144,6 +146,8 @@ class TestAPISite(FrappeTestCase):
 					["name", "tag"],
 				),
 				"pending_for_long": False,
+				"site_migration": None,
+				"version_upgrade": None,
 			},
 			site_details,
 		)
@@ -463,8 +467,8 @@ erpnext 0.8.3	    HEAD
 		from press.api.site import change_region, change_region_options
 
 		app = create_test_app()
-		tokyo_cluster = create_test_cluster("Tokyo")
-		seoul_cluster = create_test_cluster("Seoul")
+		tokyo_cluster = create_test_cluster("Tokyo", public=True)
+		seoul_cluster = create_test_cluster("Seoul", public=True)
 		tokyo_server = create_test_server(cluster=tokyo_cluster.name)
 		seoul_server = create_test_server(cluster=seoul_cluster.name)
 		group = create_test_release_group([app])
@@ -488,16 +492,19 @@ erpnext 0.8.3	    HEAD
 		create_test_bench(group=group, server=seoul_server.name)
 		site = create_test_site(bench=bench.name)
 
-		self.assertEqual(
-			change_region_options(site.name),
-			{
-				"regions": [
-					{"name": tokyo_server.cluster, "title": None, "image": None},
-					{"name": seoul_server.cluster, "title": None, "image": None},
-				],
-				"current_region": site.cluster,
-			},
+		options = change_region_options(site.name)
+
+		self.assertCountEqual(
+			(options["regions"]),
+			[
+				{"name": seoul_server.cluster, "title": None, "image": None},
+				{"name": tokyo_server.cluster, "title": None, "image": None},
+			],
 		)
+		self.assertCountEqual(
+			options["group_regions"], [seoul_server.cluster, tokyo_server.cluster]
+		)
+		self.assertEqual(options["current_region"], tokyo_server.cluster)
 
 		with fake_agent_job("Update Site Migrate"):
 			responses.post(
@@ -575,17 +582,29 @@ erpnext 0.8.3	    HEAD
 		new=Mock(),
 	)
 	def test_site_change_server(self):
-		from press.api.site import change_server, change_server_options
+		from press.api.site import (
+			change_server,
+			change_server_options,
+			is_server_added_in_group,
+		)
 		from press.utils import get_current_team
 
 		app = create_test_app()
 		team = get_current_team()
 		server = create_test_server(team=team)
+
 		group = create_test_release_group([app])
-		other_group = create_test_release_group([app])
+		group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		group.save()
+
 		bench = create_test_bench(group=group, server=server.name)
 		other_server = create_test_server(team=team)
-		create_test_bench(group=other_group, server=other_server.name)
+		create_test_bench(group=group, server=other_server.name)
 
 		group.append(
 			"servers",
@@ -599,7 +618,12 @@ erpnext 0.8.3	    HEAD
 
 		self.assertEqual(
 			change_server_options(site.name),
-			[other_server.name],
+			[{"name": other_server.name, "title": None}],
+		)
+
+		self.assertEqual(
+			is_server_added_in_group(site.name, other_server.name),
+			True,
 		)
 
 		with fake_agent_job("Update Site Migrate"):

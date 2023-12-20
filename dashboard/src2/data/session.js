@@ -11,17 +11,16 @@ let session = reactive({
 				pwd: password
 			};
 		},
-		onSuccess(data) {
-			session.user = getSessionUser();
-			session.login.reset();
-			router.replace(data.default_route || '/');
+		onSuccess() {
+			window.location.reload();
 		}
 	}),
 	logout: createResource({
 		url: 'logout',
-		onSuccess() {
+		async onSuccess() {
 			session.user = getSessionUser();
-			router.replace({ name: 'Login' });
+			await router.replace({ name: 'Login' });
+			window.location.reload();
 		}
 	}),
 	user: getSessionUser(),
@@ -33,7 +32,7 @@ export default session;
 export function getSessionUser() {
 	let cookies = new URLSearchParams(document.cookie.split('; ').join('&'));
 	let sessionUser = cookies.get('user_id');
-	if (sessionUser === 'Guest') {
+	if (!sessionUser || sessionUser === 'Guest') {
 		sessionUser = null;
 	}
 	return sessionUser;
