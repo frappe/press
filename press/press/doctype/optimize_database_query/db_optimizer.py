@@ -114,6 +114,7 @@ class ColumnStat:
 		return cls(
 			column_name=data["column_name"],
 			avg_frequency=data["avg_frequency"],
+			avg_length=data["avg_length"],
 			nulls_ratio=data["nulls_ratio"],
 			histogram=[flt(bin) for bin in data["histogram"]],
 		)
