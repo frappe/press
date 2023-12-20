@@ -1,12 +1,11 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
-import contextlib
 import frappe
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
-from tenacity.retry import retry_if_result
+from tenacity.retry import retry_if_not_result
 
 from press.utils import log_error
 
@@ -54,8 +53,8 @@ class Incident(WebsiteGenerator):
 			raise
 
 	@retry(
-		retry=retry_if_result(
-			lambda result: result not in ["canceled", "completed", "failed", "busy", "no-answer"]
+		retry=retry_if_not_result(
+			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(25),
@@ -70,13 +69,18 @@ class Incident(WebsiteGenerator):
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
-			with contextlib.suppress(RetryError):
+			acknowledged = False
+			status = call.status
+			try:
 				status = self.wait_for_pickup(call)
-			if status == "completed":  # call was picked up
-				self.add_acknowledgment_update(human)
-				break
+			except RetryError:
+				status = "no-answer"
 			else:
-				self.add_acknowledgment_update(human, acknowledged=False)
+				if status == "completed":  # call was picked up
+					acknowledged = True
+					break
+			finally:
+				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
 
 	def send_sms_via_twilio(self):
 		"""
@@ -102,7 +106,9 @@ class Incident(WebsiteGenerator):
 				)
 		self.sms_sent = 1
 
-	def add_acknowledgment_update(self, human: "IncidentSettingsUser", acknowledged=True):
+	def add_acknowledgment_update(
+		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
+	):
 		"""
 		Adds a new update to the Incident Document
 		"""
@@ -110,6 +116,8 @@ class Incident(WebsiteGenerator):
 			update_note = f"Acknowledged by {human.user}"
 		else:
 			update_note = f"Acknowledgement failed for {human.user}"
+		if call_status:
+			update_note += f" with call status {call_status}"
 		self.append(
 			"updates",
 			{
