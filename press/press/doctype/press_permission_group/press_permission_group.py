@@ -64,7 +64,7 @@ class PressPermissionGroup(Document):
 
 				for method, permitted in doc_perms.items():
 					if method != "*" and method not in restrictable_methods:
-						frappe.throw(f"{method} is not a valid method for {doctype}.")
+						frappe.throw(f"{method} is not a restrictable method of {doctype}")
 
 	def validate_users(self):
 		for user in self.users:
@@ -257,6 +257,7 @@ def resolve_doc_permissions(doctype, permissions_by_group: dict) -> dict:
 	- if a group has *: True and another group has 'method': False, then that method is restricted
 	- if a group has 'method': True and another group has 'method': False, then that method is allowed
 	"""
+	method_perms = {}
 
 	all_methods = get_all_restrictable_methods(doctype)
 	all_restricted = {method: False for method in all_methods}
