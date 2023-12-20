@@ -58,7 +58,9 @@ class AlertmanagerWebhookLog(Document):
 		enqueue_doc(
 			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 		)
-		enqueue_doc(self.doctype, self.name, "validate_and_create_incident")
+		enqueue_doc(
+			self.doctype, self.name, "validate_and_create_incident", enqueue_after_commit=True
+		)
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(

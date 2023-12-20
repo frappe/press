@@ -29,7 +29,9 @@ class Incident(WebsiteGenerator):
 
 	def after_insert(self):
 		if self.phone_call:
-			enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
+			enqueue_doc(
+				self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
+			)
 
 	def get_humans(self) -> list["IncidentSettingsUser"]:
 		"""
