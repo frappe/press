@@ -5,6 +5,7 @@ from functools import cached_property
 import frappe
 import json
 from frappe.model.document import Document
+from frappe.utils.background_jobs import enqueue_doc
 from press.telegram_utils import Telegram
 from press.utils import get_last_doc, log_error
 from frappe.utils import get_url_to_form
@@ -52,12 +53,12 @@ class AlertmanagerWebhookLog(Document):
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
-		frappe.enqueue_doc(
-			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-		)
 
 	def after_insert(self):
-		self.validate_and_create_incident()
+		enqueue_doc(
+			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
+		)
+		enqueue_doc(self.doctype, self.name, "validate_and_create_incident")
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
@@ -192,5 +193,5 @@ class AlertmanagerWebhookLog(Document):
 				incident.server = self.server
 				incident.cluster = self.cluster
 				incident.save()
-		except Exception as e:
-			log_error("Failed to create incident", e)
+		except Exception:
+			log_error("Incident creation failed")
