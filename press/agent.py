@@ -771,6 +771,13 @@ class Agent:
 			data=data,
 		)["data"]
 
+	def add_database_index(self, site, doctype, columns):
+		data = {"doctype": doctype, "columns": list(columns)}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/add-database-index",
+			data=data,
+		)["data"]
+
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
 		if len(ids) == 1:

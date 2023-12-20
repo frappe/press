@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from press.agent import Agent
+from press.api.site import protected
 
 from press.press.doctype.optimize_database_query.db_optimizer import (
 	ColumnStat,
@@ -30,8 +31,8 @@ class OptimizeDatabaseQuery(Document):
 			db_table.update_cardinality(column_stats)
 			optimizer.update_table_data(db_table)
 
-		index = optimizer.suggest_index()
-		self.db_set("suggested_index", str(index))
+		if index := optimizer.suggest_index():
+			self.db_set("suggested_index", f"{index.table}.{index.column}")
 		frappe.msgprint("Query analysis successful", alert=True)
 		self.db_set("status", "Completed", commit=True)
 
@@ -69,3 +70,22 @@ class OptimizeDatabaseQuery(Document):
 
 		column_stats = agent.post("database/column-stats", data=data)
 		return [ColumnStat.from_frappe_ouput(c) for c in column_stats]
+
+	def add_suggested_index(self):
+		if not self.suggested_index:
+			frappe.throw("No index suggested")
+
+		table, column = self.suggested_index.split(".")
+		doctype = self.get_doctype_name(table)
+
+		site = frappe.get_cached_doc("Site", self.site)
+		agent = Agent(site.server)
+		agent.add_database_index(site, doctype=doctype, columns=[column])
+
+
+@frappe.whitelist()
+@protected("Site")
+def add_suggested_index(name: str, optimizer: str):
+	optimizer = frappe.get_doc("Optimize Database Query", optimizer)
+	if optimizer.site == name:
+		optimizer.add_suggested_index()
