@@ -74,6 +74,9 @@ class Invoice(Document):
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
+			if self.payment_mode == "Prepaid Credits" and self.stripe_invoice_id:
+				# void an existing stripe invoice if payment was done via credits
+				self.change_stripe_invoice_status("Paid")
 
 		self.update_item_descriptions()
 
