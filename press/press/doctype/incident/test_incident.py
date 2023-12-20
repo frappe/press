@@ -30,7 +30,7 @@ class MockTwilioCallList:
 
 
 class MockTwilioClient:
-	def __init__(self, account_sid, auth_token):  # noqa
+	def __init__(self, *args, **kwargs):
 		pass
 
 	@property
@@ -42,7 +42,8 @@ class MockTwilioClient:
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		frappe.db.set_value("Press Settings", None, "twilio_account_sid", "test")
-		frappe.db.set_value("Press Settings", None, "twilio_auth_token", "test")
+		frappe.db.set_value("Press Settings", None, "twilio_api_key_sid", "test")
+		frappe.db.set_value("Press Settings", None, "twilio_api_key_secret", "test")
 		frappe.db.set_value("Press Settings", None, "twilio_phone_number", "test")
 
 		self._create_test_incident_settings()
@@ -79,7 +80,9 @@ class TestIncident(FrappeTestCase):
 		MockTwilioCallList,
 		"create",
 	)
-	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
 		self, mock_calls_create: Mock
 	):
@@ -105,7 +108,9 @@ class TestIncident(FrappeTestCase):
 		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
 	)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_incident_creation_calls_only_one_person_if_first_person_picks_up(self):
 		with patch.object(
 			MockTwilioCallList, "get_status", return_value="completed"
@@ -119,7 +124,9 @@ class TestIncident(FrappeTestCase):
 			self.assertEqual(mock_get_status.call_count, 2)  # during creation and fetch
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
-	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_incident_gets_created_on_alert_that_meets_conditions(self):
 		incident_count = frappe.db.count("Incident")
 		create_test_alertmanager_webhook_log()
@@ -149,7 +156,9 @@ class TestIncident(FrappeTestCase):
 		"press.press.doctype.incident.incident.frappe.enqueue_doc", new=foreground_enqueue_doc
 	)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch("press.press.doctype.incident.incident.Client", new=MockTwilioClient)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_call_event_creates_acknowledgement_update(self):
 		with patch.object(MockTwilioCallList, "get_status", new=lambda self: "completed"):
 			incident = frappe.get_doc(
