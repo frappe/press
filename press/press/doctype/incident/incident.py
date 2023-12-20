@@ -3,7 +3,6 @@
 
 import contextlib
 import frappe
-from twilio.rest import Client
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_result
@@ -47,15 +46,11 @@ class Incident(WebsiteGenerator):
 	def twilio_client(self):
 		press_settings = frappe.get_cached_doc("Press Settings")
 		try:
-			account_sid = press_settings.twilio_account_sid
-			auth_token = press_settings.get_password("twilio_auth_token")
+			return press_settings.twilio_client
 		except Exception:
-			log_error(
-				"Twilio credentials are not entered in Press Settings.",
-			)
-			frappe.db.commit()  # don't interrupt alert creation
+			log_error("Twilio Client not configured in Press Settings")
+			frappe.db.commit()
 			raise
-		return Client(account_sid, auth_token)
 
 	@retry(
 		retry=retry_if_result(
