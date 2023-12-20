@@ -9,9 +9,12 @@ from typing import Literal
 
 import frappe
 from sql_metadata import Parser
-from frappe.utils import flt
+from frappe.utils import flt, cint, cstr
 
+# Any index that reads more than 30% table on average is not "useful"
 INDEX_SCORE_THRESHOLD = 0.3
+# Anything reading less than this percent of table is considered optimal
+OPTIMIZATION_THRESHOLD = 0.1
 
 
 @dataclass
@@ -39,7 +42,20 @@ class DBExplain:
 	ref: str | None = None  # is reference constant or some other column
 	rows: int = 0  # roughly how many rows will be examined
 	extra: str | None = None
-	parsed_query: Parser = None
+
+	@classmethod
+	def from_frappe_ouput(cls, data) -> "DBExplain":
+		return cls(
+			select_type=cstr(data["select_type"]).upper(),
+			table=data["table"],
+			scan_type=cstr(data["type"]).upper(),
+			possible_keys=data["possible_keys"],
+			key=data["key"],
+			key_len=cint(data["key_len"]) if data["key_len"] else None,
+			ref=data["ref"],
+			rows=cint(data["rows"]),
+			extra=data.get("Extra"),
+		)
 
 
 @dataclass
@@ -171,6 +187,7 @@ class DBOptimizer:
 	query: str  # raw query in string format
 	explain_plan: list[DBExplain] = None
 	tables: dict[str, DBTable] = None
+	parsed_query: Parser = None
 
 	def __post_init__(self):
 		if not self.explain_plan:
@@ -320,3 +337,17 @@ class DBOptimizer:
 		# Score is rouhgly what percentage of table we will end up reading on typical query
 		rows_fetched_on_average = (table.total_rows or cardinality) / cardinality
 		return rows_fetched_on_average / total_rows
+
+	def can_be_optimized(self) -> bool:
+		"""Return true if it's worth optimizeing.
+
+		Few cases can not be optimized any further. E.g. ref/eq_ref/cost type
+		of queries. Assume that anything that reads <10% of table already is
+		not possible to truly optimize with these heuristics."""
+		for explain in self.explain_plan:
+			for table in self.tables.values():
+				if table.name != explain.table:
+					continue
+				if (explain.rows / table.total_rows) > OPTIMIZATION_THRESHOLD:
+					return True
+		return False

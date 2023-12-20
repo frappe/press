@@ -15,25 +15,15 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldname: 'start_datetime',
 			label: __('Start From'),
 			fieldtype: 'Datetime',
+			default: frappe.datetime.add_days(frappe.datetime.now_datetime(), -1),
 			reqd: 1,
 		},
 		{
 			fieldname: 'stop_datetime',
 			label: __('End At'),
 			fieldtype: 'Datetime',
+			default: frappe.datetime.now_datetime(),
 			reqd: 1,
-		},
-		{
-			fieldname: 'search_pattern',
-			label: __('Search Pattern'),
-			fieldtype: 'Data',
-			default: '.*',
-			reqd: 1,
-		},
-		{
-			fieldname: 'format_queries',
-			label: __('Format Queries'),
-			fieldtype: 'Check',
 		},
 		{
 			fieldname: 'normalize_queries',
@@ -41,10 +31,22 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldtype: 'Check',
 		},
 		{
+			fieldname: 'analyze',
+			label: __('Suggest Indexes'),
+			fieldtype: 'Check',
+			depends_on: 'eval: doc.normalize_queries',
+		},
+		{
 			fieldname: 'max_lines',
 			label: __('Max Lines'),
 			default: 100,
 			fieldtype: 'Int',
+		},
+		{
+			fieldname: 'search_pattern',
+			label: __('Search Pattern'),
+			fieldtype: 'Data',
+			default: '.*',
 		},
 	],
 };

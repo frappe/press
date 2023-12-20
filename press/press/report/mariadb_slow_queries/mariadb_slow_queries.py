@@ -3,13 +3,25 @@
 
 import re
 from collections import defaultdict
-
-import frappe
+from dataclasses import dataclass
 import requests
 import sqlparse
+
+import frappe
 from frappe.core.doctype.access_log.access_log import make_access_log
+from frappe.utils.caching import redis_cache
 from frappe.utils import convert_utc_to_timezone, get_system_timezone
 from frappe.utils.password import get_decrypted_password
+
+from press.api.site import protected
+from press.agent import Agent
+from press.press.report.mariadb_slow_queries.db_optimizer import (
+	ColumnStat,
+	DBExplain,
+	DBIndex,
+	DBOptimizer,
+	DBTable,
+)
 
 
 def execute(filters=None):
@@ -75,6 +87,15 @@ def execute(filters=None):
 			},
 		)
 
+	if filters.analyze:
+		columns.append(
+			{
+				"fieldname": "suggested_index",
+				"label": frappe._("Suggest Index"),
+				"fieldtype": "Data",
+			},
+		)
+
 	data = get_data(filters)
 	return columns, data
 
@@ -98,7 +119,10 @@ def get_data(filters):
 		)
 
 	if filters.normalize_queries:
-		return summarize_by_query(rows)
+		rows = summarize_by_query(rows)
+
+	if filters.analyze:
+		rows = analyze_queries(rows, filters.site)
 
 	return rows
 
@@ -183,3 +207,103 @@ def summarize_by_query(data):
 	result.sort(key=lambda r: r["duration"] * r["count"], reverse=True)
 
 	return result
+
+
+def analyze_queries(data, site):
+	# TODO: handle old framework and old agents and general failures
+	for row in data:
+		analyzer = OptimizeDatabaseQuery(site, row["example"])
+		if index := analyzer.analyze():
+			row["suggested_index"] = f"{index.table}.{index.column}"
+	return data
+
+
+@frappe.whitelist()
+@protected("Site")
+def add_suggested_index(name: str, index: str):
+	frappe.enqueue(_add_suggested_index, index=index, site_name=name)
+
+
+def _add_suggested_index(site_name, index):
+	if not index:
+		frappe.throw("No index suggested")
+
+	table, column = index.split(".")
+	doctype = get_doctype_name(table)
+
+	site = frappe.get_cached_doc("Site", site_name)
+	agent = Agent(site.server)
+	agent.add_database_index(site, doctype=doctype, columns=[column])
+	frappe.msgprint(f"Index {index} added on site {site_name} successfully", realtime=True)
+
+
+@dataclass
+class OptimizeDatabaseQuery:
+	site: str
+	query: str
+
+	def analyze(self) -> DBIndex | None:
+		explain_output = self.fetch_explain()
+
+		explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
+		optimizer = DBOptimizer(query=self.query, explain_output=explain_output)
+		tables = optimizer.tables_examined
+
+		for table in tables:
+			stats = _fetch_table_stats(self.site, table)
+			db_table = DBTable.from_frappe_ouput(stats)
+			column_stats = _fetch_column_stats(self.site, table)
+			db_table.update_cardinality(column_stats)
+			optimizer.update_table_data(db_table)
+
+		return optimizer.suggest_index()
+
+	def fetch_explain(self) -> list[dict]:
+		site = frappe.get_cached_doc("Site", self.site)
+		db_server_name = frappe.db.get_value("Server", site.server, "database_server")
+		database_server = frappe.get_cached_doc("Database Server", db_server_name)
+		agent = Agent(database_server.name, "Database Server")
+
+		data = {
+			"schema": site.database_name,
+			"query": self.query,
+			"private_ip": database_server.private_ip,
+			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		}
+
+		return agent.post("database/explain", data=data)
+
+
+@redis_cache(ttl=60 * 5)
+def _fetch_table_stats(site: str, table: str):
+	site = frappe.get_cached_doc("Site", site)
+	agent = Agent(site.server)
+	return agent.describe_database_table(
+		site,
+		doctype=get_doctype_name(table),
+		columns=[],
+	)
+
+
+@redis_cache(ttl=60 * 5)
+def _fetch_column_stats(site, table):
+	site = frappe.get_cached_doc("Site", site)
+	db_server_name = frappe.db.get_value(
+		"Server", site.server, "database_server", cache=True
+	)
+	database_server = frappe.get_cached_doc("Database Server", db_server_name)
+	agent = Agent(database_server.name, "Database Server")
+
+	data = {
+		"schema": site.database_name,
+		"table": table,
+		"private_ip": database_server.private_ip,
+		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+	}
+
+	column_stats = agent.post("database/column-stats", data=data)
+	return [ColumnStat.from_frappe_ouput(c) for c in column_stats]
+
+
+def get_doctype_name(table_name: str) -> str:
+	return table_name.removeprefix("tab")
