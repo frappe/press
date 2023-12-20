@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
+import json
 
 import frappe
 from frappe.model.document import Document
@@ -21,6 +22,9 @@ class OptimizeDatabaseQuery(Document):
 
 	def analyze(self):
 		self.db_set("status", "Started", commit=True)
+		explain_output = self.fetch_explain()
+		self.db_set("explain", json.dumps(explain_output))
+
 		optimizer = DBOptimizer(query=self.query)
 		tables = optimizer.tables_examined
 
@@ -43,6 +47,21 @@ class OptimizeDatabaseQuery(Document):
 	@staticmethod
 	def get_doctype_name(table_name: str) -> str:
 		return table_name.removeprefix("tab")
+
+	def fetch_explain(self) -> dict[str, str]:
+		site = frappe.get_cached_doc("Site", self.site)
+		db_server_name = frappe.db.get_value("Server", site.server, "database_server")
+		database_server = frappe.get_cached_doc("Database Server", db_server_name)
+		agent = Agent(database_server.name, "Database Server")
+
+		data = {
+			"schema": site.database_name,
+			"query": self.query,
+			"private_ip": database_server.private_ip,
+			"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		}
+
+		return agent.post("database/explain", data=data)
 
 	def fetch_table_stats(self, table: str):
 		site = frappe.get_cached_doc("Site", self.site)
@@ -82,10 +101,14 @@ class OptimizeDatabaseQuery(Document):
 		agent = Agent(site.server)
 		agent.add_database_index(site, doctype=doctype, columns=[column])
 
+		# Update explain output
+		explain_output = self.fetch_explain()
+		self.db_set("explain", json.dumps(explain_output))
+
 
 @frappe.whitelist()
 @protected("Site")
 def add_suggested_index(name: str, optimizer: str):
 	optimizer = frappe.get_doc("Optimize Database Query", optimizer)
 	if optimizer.site == name:
-		optimizer.add_suggested_index()
+		frappe.enqueue(optimizer.add_suggested_index)

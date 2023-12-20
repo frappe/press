@@ -10,6 +10,7 @@
   "explain",
   "suggested_index",
   "add_suggested_index",
+  "explain_after",
   "status"
  ],
  "fields": [
@@ -22,7 +23,7 @@
   {
    "fieldname": "explain",
    "fieldtype": "Code",
-   "label": "Explain Output",
+   "label": "Explain Output (Before)",
    "read_only": 1
   },
   {
@@ -50,11 +51,17 @@
    "hidden": 1,
    "label": "status",
    "options": "Queued\nStarted\nCompleted"
+  },
+  {
+   "fieldname": "explain_after",
+   "fieldtype": "Code",
+   "label": "Explain Output (After)",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-17 16:47:30.570712",
+ "modified": "2023-12-20 19:34:10.976096",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Optimize Database Query",
