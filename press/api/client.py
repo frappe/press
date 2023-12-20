@@ -4,7 +4,8 @@
 from __future__ import unicode_literals
 import frappe
 import inspect
-from pypika.queries import QueryBuilder
+from frappe.database.utils import get_doctype_name
+from pypika.queries import QueryBuilder, Table, Join
 from frappe.model.base_document import get_controller
 from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
@@ -44,6 +45,7 @@ def get_list(
 		debug=debug,
 	)
 	query = apply_custom_filters(doctype, query, **list_args)
+	query = apply_team_filters(query)
 	if isinstance(query, QueryBuilder):
 		return query.run(as_dict=1, debug=debug)
 	elif isinstance(query, list):
@@ -208,3 +210,48 @@ def check_permissions(doctype):
 		)
 
 	return True
+
+
+def check_method_permissions(doctype, docname, method) -> None:
+	from press.press.doctype.press_permission_group.press_permission_group import (
+		has_method_permission,
+	)
+
+	if not has_method_permission(doctype, docname, method):
+		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
+	return True
+
+
+def apply_team_filters(query: QueryBuilder) -> QueryBuilder:
+	"""Apply team filter to the tables and joined tables that have team field"""
+
+	team = frappe.local.team()
+
+	def get_doctype(table: str | Table | Join) -> str:
+		try:
+			if isinstance(table, Table):
+				return get_doctype_name(table._table_name)
+			elif isinstance(table, Join):
+				return get_doctype_name(table.item._table_name)
+			elif isinstance(table, str):
+				return get_doctype_name(table)
+		except Exception:
+			return None
+
+	def apply_team_filter_to_table(
+		query: QueryBuilder, table: str | Table | Join
+	) -> QueryBuilder:
+		doctype = get_doctype(table)
+		if not doctype:
+			return query
+		if doctype == "Team":
+			return query.where(frappe.qb.DocType(doctype).name == team.name)
+		if frappe.get_meta(doctype).has_field("team"):
+			return query.where(frappe.qb.DocType(doctype).team == team.name)
+		return query
+
+	tables = query._from + query._joins
+	for table in tables:
+		query = apply_team_filter_to_table(query, table)
+
+	return query
