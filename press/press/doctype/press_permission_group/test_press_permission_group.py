@@ -5,7 +5,9 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.team.test_team import create_test_team
 
-from press.press.doctype.press_permission_group.press_permission_group import has_method_permission
+from press.press.doctype.press_permission_group.press_permission_group import (
+	has_method_permission,
+)
 
 
 class TestPressPermissionGroup(FrappeTestCase):
@@ -21,27 +23,35 @@ class TestPressPermissionGroup(FrappeTestCase):
 		self.perm_group2 = create_permission_group(self.team.name)
 
 	def tearDown(self):
-			frappe.set_user("Administrator")
-			frappe.delete_doc("Press Permission Group", self.perm_group.name, force=True)
-			frappe.delete_doc("Press Permission Group", self.perm_group2.name, force=True)
-			frappe.delete_doc("Team", self.team.name, force=True)
-			frappe.delete_doc("User", self.team_member.name, force=True)
-			frappe.delete_doc("User", self.team_user.name, force=True)
+		frappe.set_user("Administrator")
+		frappe.delete_doc("Press Permission Group", self.perm_group.name, force=True)
+		frappe.delete_doc("Press Permission Group", self.perm_group2.name, force=True)
+		frappe.delete_doc("Team", self.team.name, force=True)
+		frappe.delete_doc("User", self.team_member.name, force=True)
+		frappe.delete_doc("User", self.team_user.name, force=True)
 
 	def test_add_user(self):
 		self.perm_group.add_user(self.team_member.name)
 		perm_group_users = self.perm_group.get_users()
-		perm_group_user_exists = any(self.team_member.name == pg_user.name for pg_user in perm_group_users)
+		perm_group_user_exists = any(
+			self.team_member.name == pg_user.name for pg_user in perm_group_users
+		)
 		self.assertTrue(perm_group_user_exists)
-		self.assertRaises(frappe.ValidationError, self.perm_group.add_user, self.team_member.name)
+		self.assertRaises(
+			frappe.ValidationError, self.perm_group.add_user, self.team_member.name
+		)
 
 	def test_remove_user(self):
 		self.perm_group.add_user(self.team_member.name)
 		self.perm_group.remove_user(self.team_member.name)
 		perm_group_users = self.perm_group.get_users()
-		perm_group_user_exists = any(self.team_member.name == pg_user.name for pg_user in perm_group_users)
+		perm_group_user_exists = any(
+			self.team_member.name == pg_user.name for pg_user in perm_group_users
+		)
 		self.assertFalse(perm_group_user_exists)
-		self.assertRaises(frappe.ValidationError, self.perm_group.remove_user, self.team_member.name)
+		self.assertRaises(
+			frappe.ValidationError, self.perm_group.remove_user, self.team_member.name
+		)
 
 	def test_update_permissions(self):
 		frappe.set_user("Administrator")
@@ -51,17 +61,27 @@ class TestPressPermissionGroup(FrappeTestCase):
 		self.assertEqual(has_method_permission("Site", "site1.test", "reinstall"), True)
 
 		frappe.set_user("Administrator")
-		self.perm_group.update_permissions({"Site": {"site1.test": {"*": True, "reinstall": False}}})
+		self.perm_group.update_permissions(
+			{"Site": {"site1.test": {"*": True, "reinstall": False}}}
+		)
 		frappe.set_user(self.team_member.name)
 		self.assertEqual(has_method_permission("Site", "site1.test", "reinstall"), False)
 
 	def test_update_permissions_with_invalid_doctype(self):
 		frappe.set_user("Administrator")
-		self.assertRaises(frappe.ValidationError, self.perm_group.update_permissions, {"Invalid Doctype": {"*": {"*": True}}})
+		self.assertRaises(
+			frappe.ValidationError,
+			self.perm_group.update_permissions,
+			{"Invalid Doctype": {"*": {"*": True}}},
+		)
 
 	def test_update_permissions_with_invalid_method(self):
 		frappe.set_user("Administrator")
-		self.assertRaises(frappe.ValidationError, self.perm_group.update_permissions, {"Site": {"*": {"invalid_method": True}}})
+		self.assertRaises(
+			frappe.ValidationError,
+			self.perm_group.update_permissions,
+			{"Site": {"*": {"invalid_method": True}}},
+		)
 
 	def test_unrestricted_method_should_be_allowed(self):
 		frappe.set_user("Administrator")
