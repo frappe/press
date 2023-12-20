@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 	from press.press.doctype.incident_settings_user.incident_settings_user import (
 		IncidentSettingsUser,
 	)
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class Incident(WebsiteGenerator):
@@ -44,7 +45,7 @@ class Incident(WebsiteGenerator):
 
 	@property
 	def twilio_client(self):
-		press_settings = frappe.get_cached_doc("Press Settings")
+		press_settings: "PressSettings" = frappe.get_cached_doc("Press Settings")
 		try:
 			return press_settings.twilio_client
 		except Exception:
@@ -57,7 +58,7 @@ class Incident(WebsiteGenerator):
 			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer"]
 		),
 		wait=wait_fixed(1),
-		stop=stop_after_attempt(25),
+		stop=stop_after_attempt(30),
 	)
 	def wait_for_pickup(self, call):
 		return call.fetch().status  # will eventually be no-answer
@@ -74,7 +75,7 @@ class Incident(WebsiteGenerator):
 			try:
 				status = self.wait_for_pickup(call)
 			except RetryError:
-				status = "no-answer"
+				status = "timeout"  # not twilio's status; mostly no-answer
 			else:
 				if status == "completed":  # call was picked up
 					acknowledged = True

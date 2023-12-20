@@ -99,7 +99,7 @@ class PressSettings(Document):
 		return Telegram
 
 	@property
-	def twilio_client(self):
+	def twilio_client(self) -> Client:
 		account_sid = self.twilio_account_sid
 		api_key_sid = self.twilio_api_key_sid
 		api_key_secret = self.get_password("twilio_api_key_secret")
