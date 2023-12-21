@@ -248,7 +248,7 @@ class DBOptimizer:
 			if not idx:
 				return
 			matched_sub_index = []
-			for idx_part in idx:
+			for idx_part in list(idx):
 				matching_part = [
 					i
 					for i in potential_indexes
