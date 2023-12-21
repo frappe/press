@@ -19,6 +19,12 @@ frappe.ui.form.on('Database Server', {
 			],
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
+				__('Update Agent Ansible'),
+				'update_agent_ansible',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				true,
