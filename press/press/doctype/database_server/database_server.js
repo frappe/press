@@ -19,6 +19,12 @@ frappe.ui.form.on('Database Server', {
 			],
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[
+				__('Update Agent Ansible'),
+				'update_agent_ansible',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				true,
@@ -92,6 +98,18 @@ frappe.ui.form.on('Database Server', {
 				'setup_deadlock_logger',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup Percona Stalk'),
+				'setup_pt_stalk',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
+			],
+			[
+				__('Fetch MariaDB Stalks'),
+				'fetch_stalks',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_stalk_setup,
 			],
 			[
 				__('Fetch Keys'),
