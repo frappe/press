@@ -280,6 +280,7 @@ class BillingAudit(Audit):
 			{
 				"status": ("not in", ("Archived", "Suspended", "Inactive")),
 				"free": False,
+				"plan": ("in", self.paid_plans),
 				"trial_end_date": ("is", "not set"),
 			},
 			pluck="team",
