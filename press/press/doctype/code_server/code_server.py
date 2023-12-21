@@ -15,6 +15,9 @@ class CodeServer(Document):
 		self.name = self.subdomain + "." + self.domain
 
 	def validate(self):
+		if not frappe.get_value("Bench", self.bench, "is_code_server_enabled"):
+			frappe.throw(f"Code Server not enabled for the selected Bench {self.bench}")
+
 		if self.has_value_changed("subdomain"):
 			if frappe.db.exists("Code Server", self.name):
 				frappe.throw(

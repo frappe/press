@@ -13,6 +13,7 @@
   "account_request",
   "is_developer",
   "is_saas_user",
+  "is_code_server_user",
   "free_account",
   "via_erpnext",
   "column_break_6",
@@ -401,6 +402,13 @@
    "fieldtype": "Date",
    "label": "Frappe Partnership Date",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "If checked, code server is enabled on created benches.",
+   "fieldname": "is_code_server_user",
+   "fieldtype": "Check",
+   "label": "Is Code Server User"
   }
  ],
  "links": [
@@ -455,7 +463,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-12-04 17:07:30.774582",
+ "modified": "2023-12-19 12:53:24.914882",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

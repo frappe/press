@@ -308,6 +308,14 @@
    "fieldtype": "Int",
    "label": "Gunicorn Threads Per Worker",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "team.is_code_server_user",
+   "fieldname": "is_code_server_enabled",
+   "fieldtype": "Check",
+   "label": "Is Code Server Enabled",
+   "read_only": 1
   }
  ],
  "links": [],

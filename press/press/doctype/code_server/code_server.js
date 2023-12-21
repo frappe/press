@@ -2,6 +2,18 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Code Server', {
+	setup(frm) {
+		frm.set_query('bench', () => ({
+			filters: {
+				is_code_server_enabled: true,
+			},
+		}));
+		frm.set_query('group', () => ({
+			filters: {
+				is_code_server_enabled: true,
+			},
+		}));
+	},
 	refresh(frm) {
 		[
 			[__('Start'), 'start'],
