@@ -98,7 +98,7 @@ const listOptions = ref({
 				return {
 					dt: 'Press Permission Group',
 					dn: props.groupId,
-					method: 'get_permissions',
+					method: 'get_all_document_permissions',
 					args: {
 						doctype: currentDropdownOption.value.doctype
 					}

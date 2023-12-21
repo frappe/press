@@ -102,7 +102,7 @@ class PressPermissionGroup(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def get_permissions(self, doctype: str) -> list:
+	def get_all_document_permissions(self, doctype: str) -> list:
 		"""
 		Get the permissions for the specified document type or all restrictable document types.
 
@@ -119,13 +119,14 @@ class PressPermissionGroup(Document):
 		if doctype not in get_all_restrictable_doctypes():
 			frappe.throw(f"{doctype} is not a valid restrictable doctype.")
 
-		options = []
-		fields = ["name", "title"] if doctype != "Site" else ["name"]
-		docs = get_list(doctype=doctype, fields=fields)
-
 		restrictable_methods = get_all_restrictable_methods(doctype)
 		if not restrictable_methods:
 			frappe.throw(f"{doctype} does not have any restrictable methods.")
+
+		options = []
+		fields = ["name", "title"] if doctype != "Site" else ["name"]
+		docs = get_list(doctype=doctype, fields=fields)
+		print(docs)
 
 		for doc in docs:
 			permitted_methods = get_permitted_methods(doctype, doc.name, group_names=[self.name])
