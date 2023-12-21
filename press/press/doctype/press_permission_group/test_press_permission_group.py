@@ -6,6 +6,7 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.team.test_team import create_test_team
 
 from press.press.doctype.press_permission_group.press_permission_group import (
+	get_all_restrictable_methods,
 	has_method_permission,
 )
 
@@ -109,6 +110,36 @@ class TestPressPermissionGroup(FrappeTestCase):
 		frappe.set_user(self.team_member.name)
 		self.assertEqual(has_method_permission("Site", "site1.test", "reinstall"), True)
 
+	def test_get_all_document_permissions(self):
+		# Test case 1: User belongs to the permission group
+		frappe.set_user("Administrator")
+		self.perm_group.add_user(self.team_member.name)
+		self.perm_group.update_permissions({"Site": {"*": {"*": True}}})
+
+		site = frappe.new_doc("Site")
+		site.name = "site1.test"
+		site.team = self.team.name
+		site.db_insert()
+
+		frappe.set_user(self.team_member.name)
+		frappe.local.team = lambda: self.team
+		permissions = self.perm_group.get_all_document_permissions("Site")
+		self.assertEqual(len(permissions), 1)
+		self.assertEqual(permissions[0]["document_type"], "Site")
+		self.assertEqual(permissions[0]["document_name"], "site1.test")
+		site_restrictable_methods = get_all_restrictable_methods("Site")
+		self.assertEqual(len(permissions[0]["permissions"]), len(site_restrictable_methods))
+
+		# Test case 2: User does not belong to the permission group
+		frappe.set_user("user@example.com")
+		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "Site")
+
+		# Test case 3: Invalid restrictable doctype
+		frappe.set_user("Administrator")
+		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "InvalidDoctype")
+
+		# Test case 4: No restrictable methods for the doctype
+		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "DocType2")
 
 # utils
 def create_permission_group(team):
