@@ -547,6 +547,13 @@ class DatabaseServer(BaseServer):
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def fetch_stalks(self):
+		return self.agent.get("database/stalks") or []
+
+	def fetch_stalk(self, name):
+		return self.agent.get(f"database/stalks/{name}")
+
+	@frappe.whitelist()
 	def reboot(self):
 		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)

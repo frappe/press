@@ -106,6 +106,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
 			],
 			[
+				__('Fetch MariaDB Stalks'),
+				'fetch_stalks',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_stalk_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				false,
