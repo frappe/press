@@ -30,6 +30,7 @@ export default class Auth {
 
 			if (last_used_team && last_used_team != team) {
 				team = last_used_team;
+				window.$account.switchTeam(last_used_team);
 			}
 			localStorage.setItem('current_team', team);
 			this.isLoggedIn = true;

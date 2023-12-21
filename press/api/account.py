@@ -707,7 +707,7 @@ def switch_team(team):
 	)
 	user_is_system_user = frappe.session.data.user_type == "System User"
 	if user_is_part_of_team or user_is_system_user:
-		frappe.db.set_value("Team", frappe.session.user, "last_used_team", team)
+		frappe.db.set_value("Team", {"user": frappe.session.user}, "last_used_team", team)
 		frappe.cache.delete_value("cached-account.get", user=frappe.session.user)
 		return {
 			"team": frappe.get_doc("Team", team),
