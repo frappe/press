@@ -212,7 +212,10 @@ def summarize_by_query(data):
 def analyze_queries(data, site):
 	# TODO: handle old framework and old agents and general failures
 	for row in data:
-		analyzer = OptimizeDatabaseQuery(site, row["example"])
+		query = row["example"]
+		if not query.lower().startswith(("select", "update", "delete")):
+			continue
+		analyzer = OptimizeDatabaseQuery(site, query)
 		if index := analyzer.analyze():
 			row["suggested_index"] = f"{index.table}.{index.column}"
 	return data
@@ -243,10 +246,10 @@ class OptimizeDatabaseQuery:
 	query: str
 
 	def analyze(self) -> DBIndex | None:
-		explain_output = self.fetch_explain()
+		explain_output = self.fetch_explain() or []
 
 		explain_output = [DBExplain.from_frappe_ouput(e) for e in explain_output]
-		optimizer = DBOptimizer(query=self.query, explain_output=explain_output)
+		optimizer = DBOptimizer(query=self.query, explain_plan=explain_output)
 		tables = optimizer.tables_examined
 
 		for table in tables:
@@ -260,7 +263,9 @@ class OptimizeDatabaseQuery:
 
 	def fetch_explain(self) -> list[dict]:
 		site = frappe.get_cached_doc("Site", self.site)
-		db_server_name = frappe.db.get_value("Server", site.server, "database_server")
+		db_server_name = frappe.db.get_value(
+			"Server", site.server, "database_server", cache=True
+		)
 		database_server = frappe.get_cached_doc("Database Server", db_server_name)
 		agent = Agent(database_server.name, "Database Server")
 
