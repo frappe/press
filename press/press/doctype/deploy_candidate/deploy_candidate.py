@@ -18,7 +18,9 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_release.app_release import AppRelease
+from press.press.doctype.app_release.app_release import (
+	get_changed_files_between_hashes,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -811,14 +813,23 @@ class DeployCandidate(Document):
 		pull_update: dict[str, PullUpdate] = {}
 
 		for app in bench_apps:
-			release: AppRelease = frappe.get_doc("App Release", app["release"])
+			source, release_hash = frappe.get_value(
+				"App Release",
+				app["release"],
+				["source", "hash"],
+			)
+
 			app_name = app["app"]
 			update_hash = update_app_hashes[app_name]
 
-			if release.hash == update_hash:
+			if release_hash == update_hash:
 				continue
 
-			file_diff = release.get_changed_files_against_hash(update_hash)
+			file_diff = get_changed_files_between_hashes(
+				source,
+				release_hash,
+				update_hash,
+			)
 			if not can_pull_update(file_diff):
 				"""
 				If current app is not being pull_updated, then no need to
@@ -829,7 +840,7 @@ class DeployCandidate(Document):
 				"""
 				break
 
-			pull_update[app_name] = {"old": release.hash, "new": update_hash}
+			pull_update[app_name] = {"old": release_hash, "new": update_hash}
 		return pull_update
 
 

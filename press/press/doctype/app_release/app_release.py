@@ -6,12 +6,12 @@ import os
 import shlex
 import shutil
 import subprocess
-import frappe
 
+import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
-from press.utils import log_error
 from press.press.doctype.app_source.app_source import AppSource
+from press.utils import log_error
 
 
 class AppRelease(Document):
@@ -49,22 +49,12 @@ class AppRelease(Document):
 	def clone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
-	def get_changed_files_against_hash(self, hash: str) -> list[str]:
-		if self.hash == hash:
-			return []
-
-		if not self.cloned:
-			self._clone()
-
-		self.run(f"git fetch --depth 1 origin {hash}")
-		diff = self.run(f"git diff --name-only {hash}")
-		return diff.splitlines()
-
 	def _clone(self):
 		try:
 			if self.cloned:
 				return
-			self._prepare_clone_directory()
+			self._set_prepared_clone_directory()
+			self._set_code_server_url()
 			self._clone_repo()
 			self.cloned = True
 			self.save(ignore_permissions=True)
@@ -73,9 +63,7 @@ class AppRelease(Document):
 
 	def run(self, command):
 		try:
-			return subprocess.check_output(
-				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
-			).decode()
+			return run(command, self.clone_directory)
 		except Exception as e:
 			self.cleanup()
 			log_error("App Release Command Exception", command=command, output=e.output.decode())
@@ -87,26 +75,11 @@ class AppRelease(Document):
 			clone_directory, self.app, self.source, self.hash[:10]
 		)
 
-	def _prepare_clone_directory(self):
-		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+	def _set_prepared_clone_directory(self):
+		self.clone_directory = get_prepared_clone_directory(self.app, self.source, self.hash)
+
+	def _set_code_server_url(self) -> None:
 		code_server = frappe.db.get_single_value("Press Settings", "code_server")
-		if not os.path.exists(clone_directory):
-			os.mkdir(clone_directory)
-
-		app_directory = os.path.join(clone_directory, self.app)
-		if not os.path.exists(app_directory):
-			os.mkdir(app_directory)
-
-		source_directory = os.path.join(app_directory, self.source)
-		if not os.path.exists(source_directory):
-			os.mkdir(source_directory)
-
-		self.clone_directory = os.path.join(
-			clone_directory, self.app, self.source, self.hash[:10]
-		)
-		if not os.path.exists(self.clone_directory):
-			os.mkdir(self.clone_directory)
-
 		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.app}/{self.source}/{self.hash[:10]}"
 		self.code_server_url = code_server_url
 
@@ -270,3 +243,65 @@ def has_permission(doc, ptype, user):
 		return True
 
 	return False
+
+
+def get_prepared_clone_directory(self, app: str, source: str, hash: str) -> str:
+	clone_directory: str = frappe.db.get_single_value("Press Settings", "clone_directory")
+	if not os.path.exists(clone_directory):
+		os.mkdir(clone_directory)
+
+	app_directory = os.path.join(clone_directory, app)
+	if not os.path.exists(app_directory):
+		os.mkdir(app_directory)
+
+	source_directory = os.path.join(app_directory, source)
+	if not os.path.exists(source_directory):
+		os.mkdir(source_directory)
+
+	clone_directory = os.path.join(clone_directory, app, source, hash[:10])
+	if not os.path.exists(self.clone_directory):
+		os.mkdir(clone_directory)
+
+	return clone_directory
+
+
+def get_changed_files_between_hashes(source, old_hash, new_hash) -> list[str]:
+	"""
+	Checks diff between two App Releases, if they have not been cloned
+	the App Releases are cloned this is because the commit needs to be
+	fetched to diff since it happens locally.
+
+	Note: order of passed hashes do not matter.
+	"""
+	hashes = [old_hash, new_hash]
+	releases = frappe.get_list(
+		"App Release",
+		fields=["cloned", "name", "clone_directory"],
+		filters={"source": source, "hash": ["in", hashes]},
+	)
+
+	if len(releases) != 2:
+		frappe.throw("Invalid number of App Releases found.")
+
+	for release in releases:
+		if release["cloned"]:
+			continue
+
+		release_doc: AppRelease = frappe.get_doc("App Release", release["name"])
+		release_doc._clone()
+
+	old, new = releases
+	cwd = old.clone_directory
+
+	run(f"git remote add -f diff_temp {new.clone_directory}", cwd)
+	run(f"git fetch --depth 1 diff_temp {new_hash}", cwd)
+	diff = run(f"git diff --name-only {old_hash} {new_hash}", cwd)
+	run("git remote remove diff_temp", cwd)
+
+	return diff.splitlines()
+
+
+def run(command, cwd):
+	return subprocess.check_output(
+		shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd
+	).decode()
