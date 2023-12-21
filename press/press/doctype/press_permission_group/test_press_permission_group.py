@@ -132,14 +132,23 @@ class TestPressPermissionGroup(FrappeTestCase):
 
 		# Test case 2: User does not belong to the permission group
 		frappe.set_user("user@example.com")
-		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "Site")
+		self.assertRaises(
+			frappe.ValidationError, self.perm_group.get_all_document_permissions, "Site"
+		)
 
 		# Test case 3: Invalid restrictable doctype
 		frappe.set_user("Administrator")
-		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "InvalidDoctype")
+		self.assertRaises(
+			frappe.ValidationError,
+			self.perm_group.get_all_document_permissions,
+			"InvalidDoctype",
+		)
 
 		# Test case 4: No restrictable methods for the doctype
-		self.assertRaises(frappe.ValidationError, self.perm_group.get_all_document_permissions, "DocType2")
+		self.assertRaises(
+			frappe.ValidationError, self.perm_group.get_all_document_permissions, "DocType2"
+		)
+
 
 # utils
 def create_permission_group(team):
