@@ -6,25 +6,27 @@ import os
 import re
 import shlex
 import shutil
-import frappe
+import subprocess
+from subprocess import Popen
+from typing import List, TypedDict
+
 import docker
 import dockerfile
-import subprocess
-
-from typing import List
-from subprocess import Popen
+import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.utils import now_datetime as now
 from frappe.model.naming import make_autoname
-
-from press.utils import get_current_team, log_error
-from press.press.doctype.server.server import Server
+from frappe.utils import now_datetime as now
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.app_release.app_release import AppRelease
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
-from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.press.doctype.server.server import Server
+from press.utils import get_current_team, log_error
+
+PullUpdate = TypedDict("PullUpdate", {"old": str, "new": str})
 
 
 class DeployCandidate(Document):
@@ -777,6 +779,78 @@ class DeployCandidate(Document):
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
 		return f"{dependency} {version}"
+
+	def get_pull_update_dict(self) -> dict[str, PullUpdate]:
+		"""
+		Returns a dict of apps with:
+
+		`old` hash: for which there already exist cached layers from previously
+		deployed Benches that have been created from this Deploy Candidate.
+
+		`new` hash: which can just be 'git pull' updated, i.e. a new layer does
+		not need to be built for them from scratch.
+		"""
+
+		# Deployed Benches from current DC with (potentially) cached layers
+		benches = frappe.get_list(
+			"Bench", filters={"group": self.group, "status": "Active"}, limit=1
+		)
+		if not benches:
+			return {}
+
+		bench_name = benches[0]["name"]
+
+		# db.sql used cause get_list wasn't working as expected
+		bench_apps = frappe.db.sql(
+			"SELECT `app`, `source`, `release`, `hash` FROM `tabBench App` WHERE parent=%s",
+			(bench_name),
+			as_dict=1,
+		)
+
+		update_app_hashes = {app.app: app.hash for app in self.apps}
+		pull_update: dict[str, PullUpdate] = {}
+
+		for app in bench_apps:
+			release: AppRelease = frappe.get_doc("App Release", app["release"])
+			app_name = app["app"]
+			update_hash = update_app_hashes[app_name]
+
+			if release.hash == update_hash:
+				continue
+
+			file_diff = release.get_changed_files_against_hash(update_hash)
+			if not can_pull_update(file_diff):
+				"""
+				If current app is not being pull_updated, then no need to
+				pull update apps later in the sequence.
+
+				This is because once an image layer hash changes all layers
+				after it have to be rebuilt.
+				"""
+				break
+
+			pull_update[app_name] = {"old": release.hash, "new": update_hash}
+		return pull_update
+
+
+def can_pull_update(changed_files: list[str]) -> bool:
+	for file in changed_files:
+		# Requires database migration
+		if file.endswith(".json") and "doctype" in file:
+			return False
+
+		# Requires frontend assets to be rebuilt
+		elif file.endswith(".vue"):
+			return False
+
+		# Requires updated dependencies
+		elif file.endswith("pyproject.toml"):
+			return False
+
+		# Potential change in post get-app fs
+		elif file.endswith("setup.py"):
+			return False
+	return True
 
 
 def cleanup_build_directories():

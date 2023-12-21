@@ -49,6 +49,17 @@ class AppRelease(Document):
 	def clone(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
+	def get_changed_files_against_hash(self, hash: str) -> list[str]:
+		if self.hash == hash:
+			return []
+
+		if not self.cloned:
+			self._clone()
+
+		self.run(f"git fetch --depth 1 origin {hash}")
+		diff = self.run(f"git diff --name-only {hash}")
+		return diff.splitlines()
+
 	def _clone(self):
 		try:
 			if self.cloned:
