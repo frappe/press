@@ -13,23 +13,6 @@ DEFAULT_PERMISSIONS = {
 class PressPermissionGroup(Document):
 	whitelisted_fields = ["title"]
 
-	@staticmethod
-	def get_list_query(query):
-		Group = frappe.qb.DocType("Press Permission Group")
-		GroupUser = frappe.qb.DocType("Press Permission Group User")
-
-		user_count = (
-			frappe.qb.from_(GroupUser)
-			.select(Count(GroupUser.user))
-			.where(GroupUser.parent == Group.name)
-		)
-
-		query = query.where(Group.team == frappe.local.team().name).select(
-			user_count.as_("user_count")
-		)
-
-		return query
-
 	def validate(self):
 		self.validate_permissions()
 		self.validate_users()
