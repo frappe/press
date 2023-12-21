@@ -3,7 +3,6 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.query_builder.functions import Count
 
 DEFAULT_PERMISSIONS = {
 	"*": {"*": {"*": True}}  # all doctypes  # all documents  # all methods
