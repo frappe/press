@@ -543,6 +543,7 @@ class DatabaseServer(BaseServer):
 			self.reload()
 			if play.status == "Success":
 				self.is_stalk_setup = True
+				self.save()
 		except Exception:
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
 
