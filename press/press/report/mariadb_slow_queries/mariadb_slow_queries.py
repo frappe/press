@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import re
+import json
 from collections import defaultdict
 from dataclasses import dataclass
 import requests
@@ -221,25 +222,6 @@ def analyze_queries(data, site):
 	return data
 
 
-@frappe.whitelist()
-@protected("Site")
-def add_suggested_index(name: str, index: str):
-	frappe.enqueue(_add_suggested_index, index=index, site_name=name)
-
-
-def _add_suggested_index(site_name, index):
-	if not index:
-		frappe.throw("No index suggested")
-
-	table, column = index.split(".")
-	doctype = get_doctype_name(table)
-
-	site = frappe.get_cached_doc("Site", site_name)
-	agent = Agent(site.server)
-	agent.add_database_index(site, doctype=doctype, columns=[column])
-	frappe.msgprint(f"Index {index} added on site {site_name} successfully", realtime=True)
-
-
 @dataclass
 class OptimizeDatabaseQuery:
 	site: str
@@ -312,3 +294,27 @@ def _fetch_column_stats(site, table):
 
 def get_doctype_name(table_name: str) -> str:
 	return table_name.removeprefix("tab")
+
+
+@frappe.whitelist()
+@protected("Site")
+def add_suggested_index(name, indexes):
+	if isinstance(indexes, str):
+		indexes = json.loads(indexes)
+	frappe.enqueue(_add_suggested_index, indexes=indexes, site_name=name)
+
+
+def _add_suggested_index(site_name, indexes):
+	if not indexes:
+		frappe.throw("No index suggested")
+
+	for index in indexes:
+		table, column = index.split(".")
+		doctype = get_doctype_name(table)
+
+		site = frappe.get_cached_doc("Site", site_name)
+		agent = Agent(site.server)
+		agent.add_database_index(site, doctype=doctype, columns=[column])
+		frappe.msgprint(
+			f"Index {index} added on site {site_name} successfully", realtime=True
+		)
