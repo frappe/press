@@ -1,0 +1,21 @@
+[Unit]
+Description=Percona Stalk
+After=network-online.target
+
+[Service]
+Type=simple
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/usr/bin/pt-stalk --defaults-file /root/.my.cnf \
+    --interval 1 \
+    --sleep 300 \
+    --function status \
+    --variable Threads_running \
+    --threshold 25
+
+SyslogIdentifier=pt_stalk
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

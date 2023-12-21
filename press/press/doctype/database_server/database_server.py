@@ -531,6 +531,22 @@ class DatabaseServer(BaseServer):
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_pt_stalk(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200
+		)
+
+	def _setup_pt_stalk(self):
+		try:
+			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_stalk_setup = True
+		except Exception:
+			log_error("Percona Stalk Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def reboot(self):
 		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)

@@ -1,0 +1,8 @@
+---
+- name: Setup Percona Stalk
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: pt_stalk

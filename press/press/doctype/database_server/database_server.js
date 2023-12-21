@@ -94,6 +94,12 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Percona Stalk'),
+				'setup_pt_stalk',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
+			],
+			[
 				__('Fetch Keys'),
 				'fetch_keys',
 				false,
