@@ -497,7 +497,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def add_domain(self, domain):
-		domain = domain.lower()
+		domain = domain.lower().strip(".")
 		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
