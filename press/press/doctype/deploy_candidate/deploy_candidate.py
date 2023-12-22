@@ -98,6 +98,7 @@ class DeployCandidate(Document):
 
 	def pre_build(self, method, **kwargs):
 		self.status = "Pending"
+		self._update_app_releases()
 		self.add_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -167,7 +168,6 @@ class DeployCandidate(Document):
 
 		try:
 			self._prepare_build_directory()
-			self._update_app_releases()
 			self._prepare_build_context()
 			self._run_docker_build(no_cache)
 			self._push_docker_image()
@@ -201,6 +201,7 @@ class DeployCandidate(Document):
 
 		self.apt_packages = self.get_apt_packages()
 
+		# stage_slug, step_slug, stage, step
 		preparation_steps = (
 			[
 				("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
@@ -224,12 +225,18 @@ class DeployCandidate(Document):
 			]
 		)
 
-		clone_steps, app_install_steps = [], []
+		clone_steps = []
+		app_install_steps = []
+		pull_update_steps = []
+
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
 			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
 
-		steps = clone_steps + preparation_steps + app_install_steps
+			if app.pullable_release:
+				pull_update_steps.append(("pull", app.app, "Pull Updates", app.title))
+
+		steps = clone_steps + preparation_steps + app_install_steps + pull_update_steps
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -334,6 +341,19 @@ class DeployCandidate(Document):
 			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target, symlinks=True)
 			app.app_name = self._get_app_name(app.app)
+
+			"""
+			Repository with pullable update gets cloned in
+			app_release.get_changed_files_between_hashes when
+			file diff is checked to see if pullable update is
+			possible.
+			"""
+			if app.pullable_release:
+				update_source = frappe.get_value(
+					"App Release", app.pullable_release, "clone_directory"
+				)
+				update_target = os.path.join(self.build_directory, "app_updates", app.app)
+				shutil.copytree(update_source, update_target, symlinks=True)
 
 			self.save(ignore_version=True)
 			frappe.db.commit()
@@ -815,7 +835,7 @@ class DeployCandidate(Document):
 		"""
 
 		# Deployed Benches from current DC with (potentially) cached layers
-		benches = frappe.get_list(
+		benches = frappe.get_all(
 			"Bench", filters={"group": self.group, "status": "Active"}, limit=1
 		)
 		if not benches:
