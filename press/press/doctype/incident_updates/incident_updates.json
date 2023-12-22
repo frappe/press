@@ -11,12 +11,14 @@
  ],
  "fields": [
   {
+   "columns": 6,
    "fieldname": "update_note",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Update Note"
   },
   {
+   "columns": 2,
    "default": "now",
    "fieldname": "update_time",
    "fieldtype": "Datetime",
@@ -27,7 +29,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-12-20 00:46:20.068124",
+ "modified": "2023-12-22 07:17:00.449557",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Updates",
