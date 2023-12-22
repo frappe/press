@@ -7,7 +7,7 @@ import json
 from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue_doc
 from press.telegram_utils import Telegram
-from press.utils import get_last_doc, log_error
+from press.utils import log_error
 from frappe.utils import get_url_to_form
 from frappe.utils.data import add_to_date
 
@@ -185,12 +185,12 @@ class AlertmanagerWebhookLog(Document):
 
 	@cached_property
 	def parsed_group_labels(self) -> dict:
-		parsed = json.loads(self.payload)
-		return parsed["groupLabels"]
+		parsed = json.loads(self.group_labels)
+		return parsed
 
 	def create_incident(self):
 		try:
-			if not get_last_doc(
+			if not frappe.db.get_all(
 				"Incident",
 				{
 					"alert": self.alert,
