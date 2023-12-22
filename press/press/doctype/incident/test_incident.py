@@ -229,3 +229,23 @@ class TestIncident(FrappeTestCase):
 			).insert()
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
+
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
+	@patch.object(
+		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+	)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
+	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(
+		self, mock_calls_create
+	):
+		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 0)
+		frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+			}
+		).insert()
+		mock_calls_create.assert_not_called()
