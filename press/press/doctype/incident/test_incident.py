@@ -87,11 +87,11 @@ class TestIncident(FrappeTestCase):
 		).insert()
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
-	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList,
 		"create",
-		wraps=MockTwilioCallList("completed").create,
+		wraps=MockTwilioCallList("busy").create,
 	)
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
