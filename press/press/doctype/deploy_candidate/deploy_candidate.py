@@ -18,9 +18,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_release.app_release import (
-	get_changed_files_between_hashes,
-)
+from press.press.doctype.app_release.app_release import get_changed_files_between_hashes
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -803,10 +801,10 @@ class DeployCandidate(Document):
 		bench_name = benches[0]["name"]
 
 		# db.sql used cause get_list wasn't working as expected
-		bench_apps = frappe.db.sql(
-			"SELECT `app`, `source`, `release`, `hash` FROM `tabBench App` WHERE parent=%s",
-			(bench_name),
-			as_dict=1,
+		bench_apps = frappe.get_all(
+			"Bench App",
+			filters={"parent": bench_name},
+			fields=["app", "source", "release", "hash"],
 		)
 
 		update_app_hashes = {app.app: app.hash for app in self.apps}
@@ -844,24 +842,31 @@ class DeployCandidate(Document):
 		return pull_update
 
 
-def can_pull_update(changed_files: list[str]) -> bool:
-	for file in changed_files:
-		# Requires database migration
-		if file.endswith(".json") and "doctype" in file:
-			return False
+def can_pull_update(file_paths: list[str]) -> bool:
+	"""
+	Updated app files between current and previous build
+	that do not cause get-app to update the filesystem can
+	be git pulled.
 
-		# Requires frontend assets to be rebuilt
-		elif file.endswith(".vue"):
-			return False
+	Function returns True ONLY if all files are of this kind.
+	"""
+	return all(pull_update_file_filter(fp) for fp in file_paths)
 
-		# Requires updated dependencies
-		elif file.endswith("pyproject.toml"):
-			return False
 
-		# Potential change in post get-app fs
-		elif file.endswith("setup.py"):
-			return False
-	return True
+def pull_update_file_filter(file_path: str) -> bool:
+	# Requires migrate but should not change image filesystem
+	if file_path.endswith(".json") and "/doctype/" in file_path:
+		return True
+
+	# Dependency change, requires rebuild
+	elif file_path.endswith("setup.py"):
+		return False
+
+	# Controller file
+	elif file_path.endswith(".py") and "/doctype/" in file_path:
+		return True
+
+	return False
 
 
 def cleanup_build_directories():
