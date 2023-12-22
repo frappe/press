@@ -138,7 +138,7 @@
   },
   {
    "fieldname": "description",
-   "fieldtype": "Small Text",
+   "fieldtype": "Text Editor",
    "label": "Description"
   },
   {
@@ -164,7 +164,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2023-12-15 17:16:30.418163",
+ "modified": "2023-12-22 11:30:15.002554",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
