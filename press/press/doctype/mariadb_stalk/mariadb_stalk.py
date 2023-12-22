@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 from press.utils import log_error
 from datetime import datetime
-from frappe.utils import convert_utc_to_system_timezone
+from frappe.utils import convert_utc_to_system_timezone, add_to_date, now_datetime
 
 
 class MariaDBStalk(Document):
@@ -29,6 +29,9 @@ def fetch_server_stalks(server):
 		timestamp = convert_utc_to_system_timezone(
 			datetime.fromisoformat(stalk["timestamp"])
 		).replace(tzinfo=None)
+		# To avoid fetching incomplete stalks, wait for 2 minutes
+		if not now_datetime > add_to_date(timestamp, minutes=2):
+			continue
 		if frappe.db.exists("MariaDB Stalk", {"server": server.name, "timestamp": timestamp}):
 			continue
 		try:
