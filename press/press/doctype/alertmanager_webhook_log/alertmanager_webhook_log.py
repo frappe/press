@@ -32,7 +32,7 @@ Labels:
 """
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = "server"
+INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
 
 class AlertmanagerWebhookLog(Document):
@@ -54,12 +54,21 @@ class AlertmanagerWebhookLog(Document):
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
 
+	@property
+	def incident_scope(self):
+		return self.parsed_group_labels.get(INCIDENT_SCOPE)
+
 	def after_insert(self):
 		enqueue_doc(
 			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 		)
 		enqueue_doc(
-			self.doctype, self.name, "validate_and_create_incident", enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"validate_and_create_incident",
+			job_id=f"validate_and_create_incident:{self.incident_scope}",
+			deduplicate=True,
+			enqueue_after_commit=True,
 		)
 
 	def get_past_alert_instances(self):
@@ -70,7 +79,7 @@ class AlertmanagerWebhookLog(Document):
 				"alert": self.alert,
 				"severity": self.severity,
 				"status": self.status,
-				"group_key": ("like", f"%{self.parsed_group_labels.get(INCIDENT_SCOPE)}%"),
+				"group_key": ("like", f"%{self.incident_scope}%"),
 				"creation": [
 					">",
 					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
@@ -88,7 +97,7 @@ class AlertmanagerWebhookLog(Document):
 	def total_instances(self) -> int:
 		return frappe.db.count(
 			"Site",
-			{"status": "Active", INCIDENT_SCOPE: self.parsed_group_labels.get(INCIDENT_SCOPE)},
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
 
 	def validate_and_create_incident(self):
@@ -185,7 +194,7 @@ class AlertmanagerWebhookLog(Document):
 				"Incident",
 				{
 					"alert": self.alert,
-					INCIDENT_SCOPE: self.server,
+					INCIDENT_SCOPE: self.incident_scope,
 					"status": "Validating",
 				},
 				for_update=True,
