@@ -12,6 +12,22 @@ from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
+from typing import TypedDict
+
+
+AppReleaseDict = TypedDict(
+	"AppReleaseDict",
+	name=str,
+	source=str,
+	hash=str,
+	cloned=int,
+	clone_directory=str,
+)
+AppReleasePair = TypedDict(
+	"AppReleasePair",
+	old=AppReleaseDict,
+	new=AppReleaseDict,
+)
 
 
 class AppRelease(Document):
@@ -265,7 +281,9 @@ def get_prepared_clone_directory(self, app: str, source: str, hash: str) -> str:
 	return clone_directory
 
 
-def get_changed_files_between_hashes(source, old_hash, new_hash) -> list[str]:
+def get_changed_files_between_hashes(
+	source: str, old_hash: str, new_hash: str
+) -> tuple[list[str], AppReleasePair]:
 	"""
 	Checks diff between two App Releases, if they have not been cloned
 	the App Releases are cloned this is because the commit needs to be
@@ -273,32 +291,38 @@ def get_changed_files_between_hashes(source, old_hash, new_hash) -> list[str]:
 
 	Note: order of passed hashes do not matter.
 	"""
-	hashes = [old_hash, new_hash]
-	releases = frappe.get_list(
-		"App Release",
-		fields=["cloned", "name", "clone_directory"],
-		filters={"source": source, "hash": ["in", hashes]},
-	)
+	old = get_release_by_source_and_hash(source, old_hash)
+	new = get_release_by_source_and_hash(source, new_hash)
 
-	if len(releases) != 2:
-		frappe.throw("Invalid number of App Releases found.")
-
-	for release in releases:
-		if release["cloned"]:
+	for release in [old, new]:
+		if release.cloned:
 			continue
 
 		release_doc: AppRelease = frappe.get_doc("App Release", release["name"])
 		release_doc._clone()
 
-	old, new = releases
-	cwd = old.clone_directory
+	cwd = old["clone_directory"]
 
-	run(f"git remote add -f diff_temp {new.clone_directory}", cwd)
+	run(f"git remote add -f diff_temp {new['clone_directory']}", cwd)
 	run(f"git fetch --depth 1 diff_temp {new_hash}", cwd)
 	diff = run(f"git diff --name-only {old_hash} {new_hash}", cwd)
 	run("git remote remove diff_temp", cwd)
 
-	return diff.splitlines()
+	return diff.splitlines(), dict(old=old, new=new)
+
+
+def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
+	releases: list[AppReleaseDict] = frappe.get_all(
+		"App Release",
+		filters={"hash": hash, "source": source},
+		fields=["name", "source", "hash", "cloned", "clone_directory"],
+		limit=1,
+	)
+
+	if not releases:
+		frappe.throw(f"App Release not found with source: {source} and hash: {hash}")
+
+	return releases[0]
 
 
 def run(command, cwd):

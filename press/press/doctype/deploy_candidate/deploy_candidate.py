@@ -8,7 +8,7 @@ import shlex
 import shutil
 import subprocess
 from subprocess import Popen
-from typing import List, TypedDict
+from typing import List
 
 import docker
 import dockerfile
@@ -18,15 +18,16 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_release.app_release import get_changed_files_between_hashes
+from press.press.doctype.app_release.app_release import (
+	get_changed_files_between_hashes,
+	AppReleasePair,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
-
-PullUpdate = TypedDict("PullUpdate", {"old": str, "new": str})
 
 
 class DeployCandidate(Document):
@@ -166,6 +167,7 @@ class DeployCandidate(Document):
 
 		try:
 			self._prepare_build_directory()
+			self._update_app_releases()
 			self._prepare_build_context()
 			self._run_docker_build(no_cache)
 			self._push_docker_image()
@@ -274,6 +276,27 @@ class DeployCandidate(Document):
 				shutil.rmtree(self.build_directory)
 			self.build_directory = None
 			self.save()
+
+	def _update_app_releases(self) -> None:
+		try:
+			update = self.get_pull_update_dict()
+		except Exception as e:
+			log_error(title="Failed to get Pull Update Dict", data=e)
+			return
+
+		for app in self.apps:
+			if app.app not in update:
+				continue
+
+			release_pair = update[app.app]
+
+			# Previously deployed release used for get-app
+			app.hash = release_pair["old"]["hash"]
+			app.release = release_pair["old"]["name"]
+
+			# New release to be pulled after get-app
+			app.pullable_hash = release_pair["new"]["hash"]
+			app.pullable_release = release_pair["new"]["name"]
 
 	def _prepare_build_context(self):
 		# Create apps directory
@@ -780,7 +803,7 @@ class DeployCandidate(Document):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
 		return f"{dependency} {version}"
 
-	def get_pull_update_dict(self) -> dict[str, PullUpdate]:
+	def get_pull_update_dict(self) -> dict[str, AppReleasePair]:
 		"""
 		Returns a dict of apps with:
 
@@ -808,7 +831,7 @@ class DeployCandidate(Document):
 		)
 
 		update_app_hashes = {app.app: app.hash for app in self.apps}
-		pull_update: dict[str, PullUpdate] = {}
+		pull_update: dict[str, AppReleasePair] = {}
 
 		for app in bench_apps:
 			source, release_hash = frappe.get_value(
@@ -823,7 +846,7 @@ class DeployCandidate(Document):
 			if release_hash == update_hash:
 				continue
 
-			file_diff = get_changed_files_between_hashes(
+			file_diff, pair = get_changed_files_between_hashes(
 				source,
 				release_hash,
 				update_hash,
@@ -838,7 +861,7 @@ class DeployCandidate(Document):
 				"""
 				break
 
-			pull_update[app_name] = {"old": release_hash, "new": update_hash}
+			pull_update[app_name] = pair
 		return pull_update
 
 
