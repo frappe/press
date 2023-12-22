@@ -138,6 +138,25 @@ class TestIncident(FrappeTestCase):
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
+	@patch.object(
+		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+	)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
+	def test_incident_creation_calls_stop_for_in_progress_state(self, mock_calls_create):
+		incident = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+			}
+		).insert()
+		self.assertEqual(mock_calls_create.call_count, 1)
+		incident.reload()
+		self.assertEqual(len(incident.updates), 1)
+
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient

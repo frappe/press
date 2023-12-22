@@ -57,7 +57,8 @@ class Incident(WebsiteGenerator):
 
 	@retry(
 		retry=retry_if_not_result(
-			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer"]
+			lambda result: result
+			in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(30),
@@ -77,9 +78,9 @@ class Incident(WebsiteGenerator):
 			try:
 				status = self.wait_for_pickup(call)
 			except RetryError:
-				status = "timeout"  # not twilio's status; mostly no-answer
+				status = "timeout"  # not twilio's status; mostly translates to no-answer
 			else:
-				if status == "completed":  # call was picked up
+				if status in ["in-progress", "completed"]:  # call was picked up
 					acknowledged = True
 					break
 			finally:
