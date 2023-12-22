@@ -66,8 +66,6 @@ class AlertmanagerWebhookLog(Document):
 			self.doctype,
 			self.name,
 			"validate_and_create_incident",
-			job_id=f"validate_and_create_incident:{self.incident_scope}",
-			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 
@@ -188,21 +186,27 @@ class AlertmanagerWebhookLog(Document):
 		parsed = json.loads(self.group_labels)
 		return parsed
 
+	def ongoing_incident_exists(self) -> bool:
+		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+			"Incident",
+			{
+				"alert": self.alert,
+				INCIDENT_SCOPE: self.incident_scope,
+				"status": "Validating",
+			},
+			"status",
+			for_update=True,
+		)
+		return bool(ongoing_incident_status)
+
 	def create_incident(self):
 		try:
-			if not frappe.db.get_all(
-				"Incident",
-				{
-					"alert": self.alert,
-					INCIDENT_SCOPE: self.incident_scope,
-					"status": "Validating",
-				},
-				for_update=True,
-			):
-				incident = frappe.new_doc("Incident")
-				incident.alert = self.alert
-				incident.server = self.server
-				incident.cluster = self.cluster
-				incident.save()
+			if self.ongoing_incident_exists():
+				return
+			incident = frappe.new_doc("Incident")
+			incident.alert = self.alert
+			incident.server = self.server
+			incident.cluster = self.cluster
+			incident.save()
 		except Exception:
 			log_error("Incident creation failed")

@@ -249,3 +249,14 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 		mock_calls_create.assert_not_called()
+
+	def test_duplicate_incidents_arent_created_for_same_alert(self):
+		incident_count_before = frappe.db.count("Incident")
+		site = create_test_site()
+		site2 = create_test_site(server=site.server)
+		create_test_alertmanager_webhook_log(site=site)
+		create_test_alertmanager_webhook_log(site=site2)
+		self.assertEqual(frappe.db.count("Incident") - 1, incident_count_before)
+		site3 = create_test_site()  # new server
+		create_test_alertmanager_webhook_log(site=site3)
+		self.assertEqual(frappe.db.count("Incident") - 2, incident_count_before)
