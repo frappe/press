@@ -42,7 +42,14 @@
 						</strong>
 						more in credits.
 						<template #actions>
-							<Button @click="showPrepaidCreditsDialog = true" variant="solid">
+							<Button
+								@click="
+									$account.team.billing_address
+										? (showPrepaidCreditsDialog = true)
+										: (showAddressDialog = true)
+								"
+								variant="solid"
+							>
 								Add Credits
 							</Button>
 						</template>
@@ -58,6 +65,16 @@
 							</router-link>
 						</template>
 					</Alert>
+
+					<UpdateBillingDetails
+						v-if="showAddressDialog"
+						v-model="showAddressDialog"
+						@updated="
+							showAddressDialog = false;
+							showPrepaidCreditsDialog = true;
+							$resources.billingDetails.reload();
+						"
+					/>
 
 					<PrepaidCreditsDialog
 						v-if="showPrepaidCreditsDialog"
@@ -280,7 +297,10 @@ export default {
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		),
-		AlertBillingInformation
+		AlertBillingInformation,
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		)
 	},
 	data() {
 		return {
@@ -292,7 +312,8 @@ export default {
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null,
 			site_status: 'All',
-			site_tag: ''
+			site_tag: '',
+			showAddressDialog: false
 		};
 	},
 	resources: {
@@ -318,7 +339,8 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
-		}
+		},
+		billingDetails: 'press.api.billing.details'
 	},
 	mounted() {
 		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
