@@ -30,7 +30,7 @@ def fetch_server_stalks(server):
 			datetime.fromisoformat(stalk["timestamp"])
 		).replace(tzinfo=None)
 		# To avoid fetching incomplete stalks, wait for 2 minutes
-		if not now_datetime > add_to_date(timestamp, minutes=2):
+		if not now_datetime() > add_to_date(timestamp, minutes=2):
 			continue
 		if frappe.db.exists("MariaDB Stalk", {"server": server.name, "timestamp": timestamp}):
 			continue
