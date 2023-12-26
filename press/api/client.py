@@ -233,7 +233,7 @@ def apply_team_filters(query: QueryBuilder) -> QueryBuilder:
 	) -> QueryBuilder:
 		doctype = get_doctype(table)
 		if not doctype:
-			return query
+			frappe.throw("Doctype not found for table: {}".format(table), frappe.PermissionError)
 		if doctype == "Team":
 			return query.where(frappe.qb.DocType(doctype).name == team.name)
 		if frappe.get_meta(doctype).has_field("team"):
