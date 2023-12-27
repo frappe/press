@@ -301,7 +301,7 @@ class Team(Document):
 				self.update_billing_details_on_frappeio()
 
 	def validate_partnership_date(self):
-		if self.erpnext_partner:
+		if self.erpnext_partner and not self.partnership_date:
 			return
 
 		if partner_email := self.partner_email:
