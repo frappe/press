@@ -199,8 +199,8 @@ class DeployCandidate(Document):
 
 		self.apt_package_steps = []
 
-		self._prepare_custom_apt_packages()
-		self._prepare_custom_mounts()
+		self._prepare_packages()
+		self._prepare_mounts()
 
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
@@ -268,11 +268,15 @@ class DeployCandidate(Document):
 		)
 		self.save()
 
-	def _prepare_custom_apt_packages(self):
-		custom_apt_packages = []
+	def _prepare_packages(self):
+		packages = []
+		_variables = {d.dependency: d.version for d in self.dependencies}
 
 		for p in self.packages:
-			if p.package_manager == "apt":
+			_package_manager = p.package_manager.split("/")[-1]
+
+			if _package_manager in ["apt", "pip"]:
+
 				self.apt_package_steps.append(
 					[
 						"pre",
@@ -281,25 +285,26 @@ class DeployCandidate(Document):
 						f"Install Additional APT Packages {p.package}",
 					]
 				)
-				custom_apt_packages.append(
+				packages.append(
 					{
+						"package_manager": p.package_manager,
 						"package": p.package,
-						"prerequisites": p.package_prerequisites,
+						"prerequisites": frappe.render_template(p.package_prerequisites, _variables),
 						"after_install": p.after_install,
 					}
 				)
 
-		self.apt_packages = json.dumps(custom_apt_packages)
+		self.apt_packages = json.dumps(packages)
 
-	def _prepare_custom_mounts(self):
-		custom_mounts = frappe.get_all(
+	def _prepare_mounts(self):
+		_mounts = frappe.get_all(
 			"Release Group Mount",
 			{"parent": self.group},
 			["source", "destination", "is_absolute_path"],
 			order_by="idx",
 		)
 
-		self.mounts = json.dumps(custom_mounts)
+		self.mounts = json.dumps(_mounts)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -364,7 +369,7 @@ class DeployCandidate(Document):
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
-		self._load_apt_packages()
+		self._load_packages()
 		self._load_mounts()
 		self._generate_dockerfile()
 		self._copy_config_files()
@@ -373,18 +378,18 @@ class DeployCandidate(Document):
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
 
-	def _load_apt_packages(self):
+	def _load_packages(self):
 		try:
-			self.custom_apt_packages = json.loads(self.apt_packages)
+			self.additional_packages = json.loads(self.apt_packages)
 		except Exception:
 			# backward compatibility
-			self.custom_apt_packages = [
+			self.additional_packages = [
 				{"package": p.package} for p in self.packages if p.package_manager == "apt"
 			]
 
 	def _load_mounts(self):
 		if self.mounts:
-			self.custom_mounts = json.loads(self.mounts)
+			self.container_mounts = json.loads(self.mounts)
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -838,7 +843,9 @@ class DeployCandidate(Document):
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
 
 	def get_apt_packages(self):
-		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
+		return " ".join(
+			p.package for p in self.packages if p.package_manager in ["apt", "pip"]
+		)
 
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version

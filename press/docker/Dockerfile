@@ -117,21 +117,18 @@ RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf
 RUN useradd -ms /bin/bash frappe
 
 # Install Additional APT Packages
-{% if doc.custom_apt_packages %}
-{% for p in doc.custom_apt_packages %}
+{% if doc.additional_packages %}
+{% for p in doc.additional_packages %}
 
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
-  && apt-get install --yes --no-install-suggests --no-install-recommends \
-  {{ p.package }} \
-  && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-{{ p.package }}`
-
-{% if p.after_install %}
-RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
-  && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-{{ p.package }}`
+ `#stage-pre-{{ p.package }}`
 {% endif %}
+
+{% if p.package_manager not in ["apt-get", "apt"] %}
+
+RUN {{ p.package_manager }} install {{ p.package }} \
+ `#stage-pre-{{ p.package }}`
 
 {% else %}
 
@@ -141,6 +138,12 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
 
+{% endif %}
+
+{% if p.after_install %}
+RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
 {% endif %}
 
 {% endfor %}
@@ -222,8 +225,8 @@ COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
 # create custom mounts
-{% if doc.custom_mounts %}
-{% for m in doc.custom_mounts %}
+{% if doc.mounts %}
+{% for m in doc.container_mounts %}
 
 {% if not m.is_absolute_path %}
 RUN mkdir -p {{ m.destination }} \

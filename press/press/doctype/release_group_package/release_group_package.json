@@ -34,12 +34,13 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "Use && for multiline prerequisites",
+   "description": "Use &amp;&amp; for multiline prerequisites\n<br><br>\nUse jinja syntax to define dependancy variables <br>\neg: python{{ PYTHON_VERSION }} ",
    "fieldname": "package_prerequisites",
    "fieldtype": "Text",
    "label": "Package Prerequisites"
   },
   {
+   "description": "Use && for multiline prerequisites\n",
    "fieldname": "after_install",
    "fieldtype": "Text",
    "label": "After Install"
@@ -48,7 +49,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-12-14 16:22:38.250985",
+ "modified": "2023-12-26 18:17:13.374441",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group Package",
