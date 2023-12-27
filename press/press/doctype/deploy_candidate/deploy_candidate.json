@@ -286,15 +286,6 @@
    "read_only": 1
   },
   {
-   "default": "sync",
-   "fetch_from": "group.gunicorn_worker_type",
-   "fieldname": "gunicorn_worker_type",
-   "fieldtype": "Select",
-   "label": "Gunicorn Worker Type",
-   "options": "\nsync\ngthread\ngevent",
-   "read_only": 1
-  },
-  {
    "fetch_from": "group.gunicorn_threads_per_worker",
    "fieldname": "gunicorn_threads_per_worker",
    "fieldtype": "Int",

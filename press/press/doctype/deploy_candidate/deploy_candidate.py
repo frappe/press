@@ -197,7 +197,8 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		self.apt_package_steps = []
+		self.steps_additional_packages = []
+		self._mounts = []
 
 		self._prepare_packages()
 		self._prepare_mounts()
@@ -210,8 +211,8 @@ class DeployCandidate(Document):
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 		]
 
-		if self.apt_package_steps:
-			preparation_steps.extend(self.apt_package_steps)
+		if self.steps_additional_packages:
+			preparation_steps.extend(self.steps_additional_packages)
 
 		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
@@ -230,20 +231,21 @@ class DeployCandidate(Document):
 			]
 		)
 
-		mounts = (
-			[
-				("mounts", "create", "Setup Mounts", "Create Mounts"),
-			]
-			if self.mounts
-			else []
-		)
+		mount_step = []
+
+		if self._mounts:
+			mount_step.extend(
+				[
+					("mounts", "create", "Setup Mounts", "Prepare Mounts"),
+				]
+			)
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
 			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
 
-		steps = clone_steps + preparation_steps + app_install_steps + mounts
+		steps = clone_steps + preparation_steps + app_install_steps + mount_step
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -277,12 +279,12 @@ class DeployCandidate(Document):
 
 			if _package_manager in ["apt", "pip"]:
 
-				self.apt_package_steps.append(
+				self.steps_additional_packages.append(
 					[
 						"pre",
 						p.package,
 						"Setup Prerequisites",
-						f"Install Additional APT Packages {p.package}",
+						f"Install package {p.package}",
 					]
 				)
 				packages.append(
@@ -297,14 +299,14 @@ class DeployCandidate(Document):
 		self.apt_packages = json.dumps(packages)
 
 	def _prepare_mounts(self):
-		_mounts = frappe.get_all(
+		self._mounts = frappe.get_all(
 			"Release Group Mount",
 			{"parent": self.group},
 			["source", "destination", "is_absolute_path"],
 			order_by="idx",
 		)
 
-		self.mounts = json.dumps(_mounts)
+		self.mounts = json.dumps(self._mounts)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
