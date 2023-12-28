@@ -19,6 +19,7 @@
   "team",
   "section_break_8",
   "ip",
+  "enabled_default_routing",
   "column_break_10",
   "private_ip",
   "private_mac_address",
@@ -369,6 +370,14 @@
    "fieldname": "hostname_abbreviation",
    "fieldtype": "Data",
    "label": "Hostname Abbreviation"
+  },
+  {
+   "default": "0",
+   "description": "Wildcard routing eg. *.root-domain",
+   "fieldname": "enabled_default_routing",
+   "fieldtype": "Check",
+   "label": "Enabled Default Routing",
+   "read_only": 1
   }
  ],
  "links": [],

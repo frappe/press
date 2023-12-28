@@ -34,6 +34,17 @@ frappe.ui.form.on('Virtual Machine', {
 				'create_proxy_server',
 				frm.doc.series === 'n',
 			],
+			[
+				__('Create Registry Server'),
+				'create_registry_server',
+				frm.doc.series === 'r',
+			],
+			[
+				__('Create Monitor Server'),
+				'create_monitor_server',
+				frm.doc.series === 'm',
+			],
+			[__('Create Log Server'), 'create_log_server', frm.doc.series === 'e'],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

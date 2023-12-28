@@ -38,6 +38,7 @@
   "last_dependency_update",
   "packages",
   "environment_variables",
+  "mounts",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
@@ -316,10 +317,16 @@
    "fieldtype": "Check",
    "label": "Is Code Server Enabled",
    "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Release Group Mount"
   }
  ],
  "links": [],
- "modified": "2023-12-19 12:39:50.724606",
+ "modified": "2023-12-14 13:06:48.556880",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
