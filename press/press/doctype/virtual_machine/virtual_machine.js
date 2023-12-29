@@ -5,52 +5,88 @@ frappe.ui.form.on('Virtual Machine', {
 	refresh: function (frm) {
 		[
 			[__('Sync'), 'sync'],
-			[__('Provision'), 'provision', frm.doc.status == 'Draft'],
-			[__('Reboot'), 'reboot', frm.doc.status == 'Running'],
-			[__('Stop'), 'stop', frm.doc.status == 'Running'],
-			[__('Start'), 'start', frm.doc.status == 'Stopped'],
-			[__('Terminate'), 'terminate', !frm.doc.termination_protection],
+			[__('Provision'), 'provision', true, frm.doc.status == 'Draft'],
+			[__('Reboot'), 'reboot', true, frm.doc.status == 'Running'],
+			[__('Stop'), 'stop', true, frm.doc.status == 'Running'],
+			[__('Start'), 'start', true, frm.doc.status == 'Stopped'],
+			[__('Terminate'), 'terminate', true, !frm.doc.termination_protection],
 			[
 				__('Disable Termination Protection'),
 				'disable_termination_protection',
+				true,
 				frm.doc.termination_protection,
 			],
 			[
 				__('Enable Termination Protection'),
 				'enable_termination_protection',
+				true,
 				!frm.doc.termination_protection,
 			],
-			[__('Increase Disk Size'), 'increase_disk_size'],
-			[__('Create Image'), 'create_image', frm.doc.status == 'Stopped'],
-			[__('Create Snapshots'), 'create_snapshots', frm.doc.status == 'Running'],
-			[__('Create Server'), 'create_server', frm.doc.series === 'f'],
+			[__('Increase Disk Size'), 'increase_disk_size', true],
+			[__('Create Image'), 'create_image', true, frm.doc.status == 'Stopped'],
+			[
+				__('Create Snapshots'),
+				'create_snapshots',
+				true,
+				frm.doc.status == 'Running',
+			],
+			[__('Create Server'), 'create_server', true, frm.doc.series === 'f'],
 			[
 				__('Create Database Server'),
 				'create_database_server',
+				false,
 				frm.doc.series === 'm',
 			],
 			[
 				__('Create Proxy Server'),
 				'create_proxy_server',
+				false,
 				frm.doc.series === 'n',
 			],
 			[
 				__('Create Registry Server'),
 				'create_registry_server',
+				false,
 				frm.doc.series === 'r',
 			],
 			[
 				__('Create Monitor Server'),
 				'create_monitor_server',
+				false,
 				frm.doc.series === 'm',
 			],
-			[__('Create Log Server'), 'create_log_server', frm.doc.series === 'e'],
-		].forEach(([label, method, condition]) => {
+			[
+				__('Create Log Server'),
+				'create_log_server',
+				false,
+				frm.doc.series === 'e',
+			],
+		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
 					label,
 					() => {
-						frm.call(method).then((r) => frm.refresh());
+						if (confirm) {
+							frappe.confirm(
+								`Are you sure you want to ${label.toLowerCase()}?`,
+								() =>
+									frm.call(method).then((r) => {
+										if (r.message) {
+											frappe.msgprint(r.message);
+										} else {
+											frm.refresh();
+										}
+									}),
+							);
+						} else {
+							frm.call(method).then((r) => {
+								if (r.message) {
+									frappe.msgprint(r.message);
+								} else {
+									frm.refresh();
+								}
+							});
+						}
 					},
 					__('Actions'),
 				);
