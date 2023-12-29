@@ -40,13 +40,21 @@ class SerialConsoleLog(Document):
 		ssh.send("h")
 		ssh.expect(["sysrq: HELP", pexpect.TIMEOUT], timeout=1)
 
-		# Send ~B and then b for reboot
-		time.sleep(0.5)
-		ssh.sendline("")
-		ssh.send("~B")
-		time.sleep(0.1)
-		ssh.send("b")
-		ssh.expect(["sysrq: Resetting", pexpect.TIMEOUT], timeout=1)
+		break_attempt = 0
+		while True:
+			break_attempt += 1
+
+			# Send ~B and then b for reboot
+			time.sleep(0.5)
+			ssh.sendline("")
+			ssh.send("~B")
+			time.sleep(0.1)
+			ssh.send("b")
+
+			# Wait for reboot
+			index = ssh.expect(["sysrq: Resetting", pexpect.TIMEOUT], timeout=1)
+			if index == 0 or break_attempt > 10:
+				break
 
 		# Wait for login prompt
 		ssh.expect("login:", timeout=300)
