@@ -129,6 +129,12 @@ frappe.ui.form.on('Server', {
 				true,
 				frm.doc.is_server_setup,
 			],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

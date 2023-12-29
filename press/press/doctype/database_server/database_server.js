@@ -127,6 +127,12 @@ frappe.ui.form.on('Database Server', {
 			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
