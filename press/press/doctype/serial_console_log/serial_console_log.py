@@ -58,3 +58,11 @@ class SerialConsoleLog(Document):
 
 		# Wait for login prompt
 		ssh.expect("login:", timeout=300)
+
+
+@frappe.whitelist()
+def run_reboot(doc):
+	frappe.only_for("System Manager")
+	parsed_doc = frappe.parse_json(doc)
+	frappe.get_doc(parsed_doc.doctype, parsed_doc.name).run_reboot()
+	return doc
