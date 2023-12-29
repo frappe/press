@@ -28,15 +28,6 @@ class Agent:
 			as_dict=True,
 		)
 
-		mounts = [
-			{
-				"source": m.source,
-				"destination": m.destination,
-				"is_absolute_path": m.is_absolute_path,
-			}
-			for m in bench.mounts
-		]
-
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
@@ -46,8 +37,18 @@ class Agent:
 				"username": settings.docker_registry_username,
 				"password": settings.docker_registry_password,
 			},
-			"mounts": mounts,
 		}
+
+		if bench.mounts:
+			data["mounts"] = [
+				{
+					"source": m.source,
+					"destination": m.destination,
+					"is_absolute_path": m.is_absolute_path,
+				}
+				for m in bench.mounts
+			]
+
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
