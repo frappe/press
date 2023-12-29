@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from io import StringIO
 import time
 
 import pexpect
@@ -26,6 +27,7 @@ class SerialConsoleLog(Document):
 		).get_serial_console_credentials()["command"]
 
 		ssh = pexpect.spawn(command, encoding="utf-8")
+		ssh.logfile = FakeIO(self)
 
 		# Send a newline and wait for login prompt
 		# We don't want to send break too soon
@@ -58,6 +60,30 @@ class SerialConsoleLog(Document):
 
 		# Wait for login prompt
 		ssh.expect("login:", timeout=300)
+
+
+class FakeIO(StringIO):
+	def __init__(self, serial_console_log, *args, **kwargs):
+		self.console = serial_console_log.name
+		super().__init__(*args, **kwargs)
+
+	def flush(self):
+		super().flush()
+		output = self.getvalue()
+		frappe.db.set_value(
+			"Serial Console Log", self.console, "output", output, update_modified=False
+		)
+
+		message = {"name": self.console, "output": output}
+		frappe.publish_realtime(
+			event="serial_console_log_update",
+			doctype="Serial Console Log",
+			docname=self.console,
+			user=frappe.session.user,
+			message=message,
+		)
+
+		frappe.db.commit()
 
 
 @frappe.whitelist()
