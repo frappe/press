@@ -8,6 +8,7 @@ import pexpect
 
 import frappe
 from frappe.model.document import Document
+from press.press.doctype.deploy_candidate.deploy_candidate import ansi_escape
 
 
 class SerialConsoleLog(Document):
@@ -69,7 +70,7 @@ class FakeIO(StringIO):
 
 	def flush(self):
 		super().flush()
-		output = self.getvalue()
+		output = ansi_escape(self.getvalue())
 		frappe.db.set_value(
 			"Serial Console Log", self.console, "output", output, update_modified=False
 		)
