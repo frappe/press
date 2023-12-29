@@ -61,6 +61,12 @@ frappe.ui.form.on('Virtual Machine', {
 				false,
 				frm.doc.series === 'e',
 			],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.status === 'Running',
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

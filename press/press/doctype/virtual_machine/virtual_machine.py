@@ -833,6 +833,12 @@ class VirtualMachine(Document):
 			"command": f"ssh {username}@{host}",
 		}
 
+	@frappe.whitelist()
+	def reboot_with_serial_console(self):
+		if self.cloud_provider == "AWS EC2":
+			self.get_server().reboot_with_serial_console()
+		self.sync()
+
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Virtual Machine"
