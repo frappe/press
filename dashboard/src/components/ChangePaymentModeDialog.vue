@@ -122,7 +122,10 @@ export default {
 			}[this.paymentMode];
 		},
 		paymentModeOptions() {
-			if (this.$account.team.erpnext_partner) {
+			if (
+				this.$account.team.erpnext_partner ||
+				!this.$account.team.partner_email
+			) {
 				return ['Card', 'Prepaid Credits'];
 			}
 			return ['Card', 'Prepaid Credits', 'Paid By Partner'];
