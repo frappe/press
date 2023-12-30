@@ -552,6 +552,17 @@ class BaseServer(Document):
 		"""Ram detected by OS after h/w reservation"""
 		return 0.972 * self.ram - 218
 
+	@frappe.whitelist()
+	def reboot_with_serial_console(self):
+		if self.provider in ("AWS EC2",):
+			console = frappe.new_doc("Serial Console Log")
+			console.server_type = self.doctype
+			console.server = self.name
+			console.virtual_machine = self.virtual_machine
+			console.save()
+			console.reload()
+			console.run_reboot()
+
 
 class Server(BaseServer):
 
@@ -863,17 +874,6 @@ class Server(BaseServer):
 		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
-
-	@frappe.whitelist()
-	def reboot_with_serial_console(self):
-		if self.provider in ("AWS EC2"):
-			console = frappe.new_doc("Serial Console Log")
-			console.server_type = self.doctype
-			console.server = self.name
-			console.virtual_machine = self.virtual_machine
-			console.save()
-			console.reload()
-			console.run_reboot()
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
