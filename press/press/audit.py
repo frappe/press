@@ -401,12 +401,14 @@ class BillingAudit(Audit):
 		)
 
 	def prepaid_unpaid_invoices_with_stripe_invoice_id_set(self):
+		active_teams = frappe.get_all("Team", {"enabled": 1, "free_account": 0}, pluck="name")
 		return frappe.get_all(
 			"Invoice",
 			{
 				"status": "Unpaid",
 				"payment_mode": "Prepaid Credits",
 				"type": "Subscription",
+				"team": ("in", active_teams),
 				"stripe_invoice_id": ("is", "set"),
 			},
 			pluck="name",
