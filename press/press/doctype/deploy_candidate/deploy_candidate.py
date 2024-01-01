@@ -285,6 +285,12 @@ class DeployCandidate(Document):
 			self.save()
 
 	def _update_app_releases(self) -> None:
+		should_update = frappe.get_value(
+			"Release Group", self.group, "is_delta_build_enabled"
+		)
+		if not should_update:
+			return
+
 		try:
 			update = self.get_pull_update_dict()
 		except Exception as e:
@@ -343,10 +349,11 @@ class DeployCandidate(Document):
 			app.app_name = self._get_app_name(app.app)
 
 			"""
-			Repository with pullable update gets cloned in
-			app_release.get_changed_files_between_hashes when
-			file diff is checked to see if pullable update is
-			possible.
+			Pullable updates don't need cloning as they get cloned when
+			the app is checked for possible pullable updates in:
+
+			self.get_pull_update_dict
+				└─ app_release.get_changed_files_between_hashes
 			"""
 			if app.pullable_release:
 				update_source = frappe.get_value(
@@ -842,8 +849,6 @@ class DeployCandidate(Document):
 			return {}
 
 		bench_name = benches[0]["name"]
-
-		# db.sql used cause get_list wasn't working as expected
 		bench_apps = frappe.get_all(
 			"Bench App",
 			filters={"parent": bench_name},
