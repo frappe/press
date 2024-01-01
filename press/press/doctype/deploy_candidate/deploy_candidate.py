@@ -98,7 +98,8 @@ class DeployCandidate(Document):
 
 	def pre_build(self, method, **kwargs):
 		self.status = "Pending"
-		self._update_app_releases()
+		if not kwargs.get("no_cache"):
+			self._update_app_releases()
 		self.add_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -863,7 +864,7 @@ class DeployCandidate(Document):
 
 			"""
 			If True, new app added to the Release Group. Downstream layers will
-			be re-built regardless of layer change.
+			be rebuilt regardless of layer change.
 			"""
 			if app_name not in deployed_apps_map:
 				break

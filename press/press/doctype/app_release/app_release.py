@@ -303,10 +303,23 @@ def get_changed_files_between_hashes(
 
 	cwd = old["clone_directory"]
 
+	"""
+	Setting remote and fetching alters .git contents, hence it has to be
+	restored to before the commands had been run. Without this layer will
+	be rebuilt.
+	"""
+
+	# Save repo state
+	run("cp -r .git .git.bak", cwd)
+
+	# Calculate diff against local remote
 	run(f"git remote add -f diff_temp {new['clone_directory']}", cwd)
 	run(f"git fetch --depth 1 diff_temp {new_hash}", cwd)
 	diff = run(f"git diff --name-only {old_hash} {new_hash}", cwd)
-	run("git remote remove diff_temp", cwd)
+
+	# Restore repo state
+	run("rm -rf .git", cwd)
+	run("mv .git.bak .git", cwd)
 
 	return diff.splitlines(), dict(old=old, new=new)
 
