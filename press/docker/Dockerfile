@@ -26,6 +26,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   vim \
   less \
   htop \
+  iputils-ping \
+  telnet \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
