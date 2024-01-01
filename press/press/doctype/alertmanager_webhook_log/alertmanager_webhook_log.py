@@ -5,6 +5,7 @@ from functools import cached_property
 import frappe
 import json
 from frappe.model.document import Document
+from frappe.utils.background_jobs import enqueue_doc
 from press.telegram_utils import Telegram
 from press.utils import log_error
 from frappe.utils import get_url_to_form
@@ -31,7 +32,7 @@ Labels:
 """
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = "server"
+INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
 
 class AlertmanagerWebhookLog(Document):
@@ -52,12 +53,21 @@ class AlertmanagerWebhookLog(Document):
 		self.common_labels = json.dumps(self.parsed["commonLabels"], indent=2, sort_keys=True)
 
 		self.payload = json.dumps(self.parsed, indent=2, sort_keys=True)
-		frappe.enqueue_doc(
-			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-		)
+
+	@property
+	def incident_scope(self):
+		return self.parsed_group_labels.get(INCIDENT_SCOPE)
 
 	def after_insert(self):
-		self.validate_and_create_incident()
+		enqueue_doc(
+			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
+		)
+		enqueue_doc(
+			self.doctype,
+			self.name,
+			"validate_and_create_incident",
+			enqueue_after_commit=True,
+		)
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
@@ -67,7 +77,7 @@ class AlertmanagerWebhookLog(Document):
 				"alert": self.alert,
 				"severity": self.severity,
 				"status": self.status,
-				"group_key": ("like", f"%{self.parsed_group_labels.get(INCIDENT_SCOPE)}%"),
+				"group_key": ("like", f"%{self.incident_scope}%"),
 				"creation": [
 					">",
 					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
@@ -85,7 +95,7 @@ class AlertmanagerWebhookLog(Document):
 	def total_instances(self) -> int:
 		return frappe.db.count(
 			"Site",
-			{"status": "Active", INCIDENT_SCOPE: self.parsed_group_labels.get(INCIDENT_SCOPE)},
+			{"status": "Active", INCIDENT_SCOPE: self.incident_scope},
 		)
 
 	def validate_and_create_incident(self):
@@ -99,7 +109,7 @@ class AlertmanagerWebhookLog(Document):
 			return
 
 		instances = self.get_past_alert_instances()
-		if len(instances) > min(0.4 * self.total_instances(), 25):
+		if len(instances) > min(0.4 * self.total_instances(), 15):
 			self.create_incident()
 
 	def get_repeat_interval(self):
@@ -173,25 +183,30 @@ class AlertmanagerWebhookLog(Document):
 
 	@cached_property
 	def parsed_group_labels(self) -> dict:
-		parsed = json.loads(self.payload)
-		return parsed["groupLabels"]
+		parsed = json.loads(self.group_labels)
+		return parsed
+
+	def ongoing_incident_exists(self) -> bool:
+		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+			"Incident",
+			{
+				"alert": self.alert,
+				INCIDENT_SCOPE: self.incident_scope,
+				"status": "Validating",
+			},
+			"status",
+			for_update=True,
+		)
+		return bool(ongoing_incident_status)
 
 	def create_incident(self):
 		try:
-			if incident_exists := frappe.db.exists(
-				"Incident",
-				{
-					"alert": self.alert,
-					INCIDENT_SCOPE: self.server,
-					"status": "Validating",
-				},
-			):
-				incident = frappe.get_doc("Incident", incident_exists)
-			else:
-				incident = frappe.new_doc("Incident")
-				incident.alert = self.alert
-				incident.server = self.server
-				incident.cluster = self.cluster
-				incident.save()
-		except Exception as e:
-			log_error("Failed to create incident", e)
+			if self.ongoing_incident_exists():
+				return
+			incident = frappe.new_doc("Incident")
+			incident.alert = self.alert
+			incident.server = self.server
+			incident.cluster = self.cluster
+			incident.save()
+		except Exception:
+			log_error("Incident creation failed")

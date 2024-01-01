@@ -2,6 +2,7 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 import frappe
@@ -26,6 +27,7 @@ from frappe.utils import cstr
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -268,12 +270,21 @@ class ReleaseGroup(Document):
 
 	def validate_app_versions(self):
 		# App Source should be compatible with Release Group's version
+		with suppress(AttributeError):
+			if (
+				not frappe.flags.in_test
+				and frappe.request.path == "/api/method/press.api.bench.change_branch"
+			):
+				return  # Separate validation exists in set_app_source
 		for app in self.apps:
-			source = frappe.get_doc("App Source", app.source)
-			if all(row.version != self.version for row in source.versions):
-				frappe.throw(
-					f"App Source {app.source} version is not {self.version}", frappe.ValidationError
-				)
+			self.validate_app_version(app)
+
+	def validate_app_version(self, app: "ReleaseGroupApp"):
+		source = frappe.get_doc("App Source", app.source)
+		if all(row.version != self.version for row in source.versions):
+			frappe.throw(
+				f"App Source {app.source} version is not {self.version}", frappe.ValidationError
+			)
 
 	def validate_servers(self):
 		if self.servers:
@@ -328,7 +339,13 @@ class ReleaseGroup(Document):
 		]
 
 		packages = [
-			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
+			{
+				"package_manager": p.package_manager,
+				"package": p.package,
+				"package_prerequisites": p.package_prerequisites,
+				"after_install": p.after_install,
+			}
+			for p in self.packages
 		]
 
 		environment_variables = [
@@ -684,6 +701,7 @@ class ReleaseGroup(Document):
 				app.source = source
 				app.save()
 				break
+		self.validate_app_version(app)
 		self.save()
 
 	def get_marketplace_app_sources(self) -> List[str]:

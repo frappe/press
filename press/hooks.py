@@ -233,6 +233,7 @@ scheduler_events = {
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
+			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
@@ -261,6 +262,9 @@ scheduler_events = {
 		"0 8 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
+		],
+		"0 6 * * *": [
+			"press.press.audit.suspend_sites_with_disabled_team",
 		],
 	},
 }

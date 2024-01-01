@@ -56,7 +56,12 @@ def code_server_domain():
 def code_server_group_options():
 	return frappe.get_all(
 		"Release Group",
-		{"team": get_current_team(), "public": False, "enabled": True},
+		{
+			"team": get_current_team(),
+			"public": False,
+			"enabled": True,
+			"is_code_server_enabled": True,
+		},
 		["name", "title"],
 	)
 
@@ -74,7 +79,12 @@ def code_server_bench_options(group):
 	)
 	return frappe.get_all(
 		"Bench",
-		{"status": "Active", "group": group, "candidate": ("in", valid_candidates)},
+		{
+			"status": "Active",
+			"group": group,
+			"candidate": ("in", valid_candidates),
+			"is_code_server_enabled": True,
+		},
 		pluck="name",
 		order_by="creation desc",
 	)

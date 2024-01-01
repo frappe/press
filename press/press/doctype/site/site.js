@@ -137,6 +137,11 @@ frappe.ui.form.on('Site', {
 				frm.doc.name.includes('.archived'),
 			],
 			[__('Update without Backup'), 'update_without_backup'],
+			[
+				__('Fetch bench from Agent'),
+				'fetch_bench_from_agent',
+				frm.doc.status !== 'Archived',
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

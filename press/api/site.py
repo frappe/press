@@ -1696,7 +1696,7 @@ def clone_group(name):
 	cloned_group.title = f"Clone of {cloned_group.title}"
 	cloned_group.team = get_current_team()
 	cloned_group.public = 0
-	cloned_group.remove(cloned_group.servers[0])
+	cloned_group.servers = []
 	cloned_group.append("servers", {"server": site.server, "default": False})
 	cloned_group.insert()
 

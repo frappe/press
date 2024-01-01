@@ -2,12 +2,20 @@
 # For license information, please see license.txt
 
 import frappe
-from twilio.rest import Client
+from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
-from tenacity import retry, stop_after_attempt, wait_fixed
-from tenacity.retry import retry_if_result
+from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
+from tenacity.retry import retry_if_not_result
 
 from press.utils import log_error
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.incident_settings_user.incident_settings_user import (
+		IncidentSettingsUser,
+	)
+	from press.press.doctype.press_settings.press_settings import PressSettings
 
 
 class Incident(WebsiteGenerator):
@@ -15,15 +23,20 @@ class Incident(WebsiteGenerator):
 		pass
 
 	def validate(self):
-		if not hasattr(self, "phone_call"):
-			if frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"):
-				self.phone_call = True
+		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
+			self.phone_call = True
+
+	@property
+	def global_phone_call_enabled(self) -> bool:
+		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
 
 	def after_insert(self):
 		if self.phone_call:
-			frappe.enqueue_doc(self.doctype, self.name, "_call_humans", queue="long")
+			enqueue_doc(
+				self.doctype, self.name, "call_humans", queue="long", enqueue_after_commit=True
+			)
 
-	def get_humans(self):
+	def get_humans(self) -> list["IncidentSettingsUser"]:
 		"""
 		Returns a list of users who are in the incident team
 		"""
@@ -37,39 +50,46 @@ class Incident(WebsiteGenerator):
 
 	@property
 	def twilio_client(self):
-		press_settings = frappe.get_cached_doc("Press Settings")
+		press_settings: "PressSettings" = frappe.get_cached_doc("Press Settings")
 		try:
-			account_sid = press_settings.twilio_account_sid
-			auth_token = press_settings.get_password("twilio_auth_token")
+			return press_settings.twilio_client
 		except Exception:
-			log_error(
-				"Twilio credentials are not entered in Press Settings.",
-			)
-			frappe.db.commit()  # don't interrupt alert creation
+			log_error("Twilio Client not configured in Press Settings")
+			frappe.db.commit()
 			raise
-		return Client(account_sid, auth_token)
 
 	@retry(
-		retry=retry_if_result(
-			lambda result: result not in ["completed", "failed", "busy", "no-answer"]
+		retry=retry_if_not_result(
+			lambda result: result
+			in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
 		),
 		wait=wait_fixed(1),
-		stop=stop_after_attempt(25),
+		stop=stop_after_attempt(30),
 	)
 	def wait_for_pickup(self, call):
-		call = call.fetch()
-		return call.status  # will eventually be no-answer
+		return call.fetch().status  # will eventually be no-answer
 
-	def _call_humans(self):
+	def call_humans(self):
+		if not self.global_phone_call_enabled:
+			return
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
 				to=human.phone,
 				from_=self.twilio_phone_number,
 			)
-			self.wait_for_pickup(call)
-			if call.status in ["completed", "answered"]:  # at least one picked up
-				break
+			acknowledged = False
+			status = call.status
+			try:
+				status = self.wait_for_pickup(call)
+			except RetryError:
+				status = "timeout"  # not twilio's status; mostly translates to no-answer
+			else:
+				if status in ["in-progress", "completed"]:  # call was picked up
+					acknowledged = True
+					break
+			finally:
+				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
 
 	def send_sms_via_twilio(self):
 		"""
@@ -95,17 +115,26 @@ class Incident(WebsiteGenerator):
 				)
 		self.sms_sent = 1
 
-	def add_acknowledgment_update(self):
+	def add_acknowledgment_update(
+		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
+	):
 		"""
 		Adds a new update to the Incident Document
 		"""
+		if acknowledged:
+			update_note = f"Acknowledged by {human.user}"
+		else:
+			update_note = f"Acknowledgement failed for {human.user}"
+		if call_status:
+			update_note += f" with call status {call_status}"
 		self.append(
 			"updates",
 			{
-				"update_note": f"Incident Acknowledged by {self.acknowledged_by} and have started working on the Incident",
+				"update_note": update_note,
 				"update_time": frappe.utils.frappe.utils.now(),
 			},
 		)
+		self.save()
 
 	def set_acknowledgement(self, acknowledged_by):
 		"""

@@ -506,7 +506,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def add_domain(self, domain):
-		domain = domain.lower()
+		domain = domain.lower().strip(".")
 		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
@@ -1606,6 +1606,16 @@ class Site(Document):
 		return (
 			frappe.utils.now_datetime() - self.modified
 		).total_seconds() > 60 * 60 * 4  # 4 hours
+
+	@frappe.whitelist()
+	def fetch_bench_from_agent(self):
+		agent = Agent(self.server)
+		benches_with_this_site = []
+		for bench in agent.get("server")["benches"].values():
+			if self.name in bench["sites"]:
+				benches_with_this_site.append(bench["name"])
+		if len(benches_with_this_site) == 1:
+			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
 
 def site_cleanup_after_archive(site):

@@ -27,6 +27,7 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
@@ -37,6 +38,17 @@ class Agent:
 				"password": settings.docker_registry_password,
 			},
 		}
+
+		if bench.mounts:
+			data["mounts"] = [
+				{
+					"source": m.source,
+					"destination": m.destination,
+					"is_absolute_path": m.is_absolute_path,
+				}
+				for m in bench.mounts
+			]
+
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
@@ -768,6 +780,13 @@ class Agent:
 		data = {"doctype": doctype, "columns": list(columns)}
 		return self.post(
 			f"benches/{site.bench}/sites/{site.name}/describe-database-table",
+			data=data,
+		)["data"]
+
+	def add_database_index(self, site, doctype, columns):
+		data = {"doctype": doctype, "columns": list(columns)}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/add-database-index",
 			data=data,
 		)["data"]
 
