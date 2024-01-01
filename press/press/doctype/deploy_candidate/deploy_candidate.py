@@ -19,8 +19,8 @@ from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
-	get_changed_files_between_hashes,
 	AppReleasePair,
+	get_changed_files_between_hashes,
 )
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
@@ -849,31 +849,43 @@ class DeployCandidate(Document):
 			return {}
 
 		bench_name = benches[0]["name"]
-		bench_apps = frappe.get_all(
+		deployed_apps = frappe.get_all(
 			"Bench App",
 			filters={"parent": bench_name},
-			fields=["app", "source", "release", "hash"],
+			fields=["app", "source", "hash"],
 		)
+		deployed_apps_map = {app.app: app for app in deployed_apps}
 
-		update_app_hashes = {app.app: app.hash for app in self.apps}
 		pull_update: dict[str, AppReleasePair] = {}
 
-		for app in bench_apps:
-			source, release_hash = frappe.get_value(
-				"App Release",
-				app["release"],
-				["source", "hash"],
-			)
+		for app in self.apps:
+			app_name = app.app
 
-			app_name = app["app"]
-			update_hash = update_app_hashes[app_name]
+			"""
+			If True, new app added to the Release Group. Downstream layers will
+			be re-built regardless of layer change.
+			"""
+			if app_name not in deployed_apps_map:
+				break
 
-			if release_hash == update_hash:
+			deployed_app = deployed_apps_map[app_name]
+
+			"""
+			If True, app source updated in Release Group. Downstream layers may
+			have to be rebuilt. Erring on the side of caution.
+			"""
+			if deployed_app["source"] != app.source:
+				break
+
+			update_hash = app.hash
+			deployed_hash = deployed_app["hash"]
+
+			if update_hash == deployed_hash:
 				continue
 
 			file_diff, pair = get_changed_files_between_hashes(
-				source,
-				release_hash,
+				app.source,
+				deployed_hash,
 				update_hash,
 			)
 			if not can_pull_update(file_diff):

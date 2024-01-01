@@ -261,7 +261,7 @@ def has_permission(doc, ptype, user):
 	return False
 
 
-def get_prepared_clone_directory(self, app: str, source: str, hash: str) -> str:
+def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
 	clone_directory: str = frappe.db.get_single_value("Press Settings", "clone_directory")
 	if not os.path.exists(clone_directory):
 		os.mkdir(clone_directory)
@@ -275,7 +275,7 @@ def get_prepared_clone_directory(self, app: str, source: str, hash: str) -> str:
 		os.mkdir(source_directory)
 
 	clone_directory = os.path.join(clone_directory, app, source, hash[:10])
-	if not os.path.exists(self.clone_directory):
+	if not os.path.exists(clone_directory):
 		os.mkdir(clone_directory)
 
 	return clone_directory
