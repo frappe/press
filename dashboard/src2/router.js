@@ -59,6 +59,43 @@ let router = createRouter({
 			component: () => import('./pages/NewBench.vue')
 		},
 		{
+			path: '/settings',
+			name: 'Settings',
+			redirect: { name: 'ProfileSettings' },
+			component: () => import('./pages/Settings.vue'),
+			children: [
+				{
+					name: 'ProfileSettings',
+					path: 'profile',
+					component: () => import('./components/settings/ProfileSettings.vue')
+				},
+				{
+					name: 'TeamSettings',
+					path: 'team',
+					component: () => import('./components/settings/TeamSettings.vue')
+				},
+				{
+					path: 'permissions',
+					name: 'PermissionsSettings',
+					component: () => import('./components/settings/PermissionsSettings.vue'),
+					redirect: { name: 'PermissionGroupList' },
+					children: [
+						{
+							path: 'groups',
+							name: 'PermissionGroupList',
+							component: () => import('./components/settings/PermissionGroupList.vue'),
+						},
+						{
+							props: true,
+							path: 'groups/:groupId',
+							name: 'PermissionGroupPermissions',
+							component: () => import('./components/settings/PermissionGroupPermissions.vue'),
+						}
+					]
+				},
+			]
+		},
+		{
 			name: 'NewAppSite',
 			path: '/new-app-site',
 			component: () => import('./pages/NewAppSite.vue')
@@ -87,6 +124,7 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingRoute = $team.doc.onboarding.saas_site_request
 			? 'NewAppSite'
 			: 'Welcome';
+
 		if (onboardingIncomplete && to.name != onboardingRoute) {
 			next({ name: onboardingRoute });
 			return;

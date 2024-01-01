@@ -120,7 +120,6 @@ def callback(code=None, state=None):
 			frappe.local.response.location = verification_url
 
 
-
 def invalid_login():
 	frappe.local.response["http_status_code"] = 401
 	return "Invalid state parameter. The session timed out. Please try again or contact  Frappe Cloud support at https://frappecloud.com/support"
