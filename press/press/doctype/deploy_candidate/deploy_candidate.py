@@ -906,10 +906,6 @@ def pull_update_file_filter(file_path: str) -> bool:
 	if file_path.endswith(".json") and "/doctype/" in file_path:
 		return True
 
-	# Dependency change, requires rebuild
-	elif file_path.endswith("setup.py"):
-		return False
-
 	# Controller file
 	elif file_path.endswith(".py") and "/doctype/" in file_path:
 		return True
