@@ -21,6 +21,7 @@ class SerialConsoleLog(Document):
 			queue="long",
 			enqueue_after_commit=True,
 		)
+		frappe.db.commit()
 
 	def _run_reboot(self):
 		credentials = frappe.get_doc(
