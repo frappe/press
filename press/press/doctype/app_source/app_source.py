@@ -2,15 +2,16 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import datetime
+from typing import List
+
 import frappe
 import requests
-
-from typing import List
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
-from press.utils import get_current_team
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import get_current_team
 
 
 class AppSource(Document):
@@ -93,6 +94,7 @@ class AppSource(Document):
 
 			branch = github_response.json()
 			hash = branch["commit"]["sha"]
+			timestamp = branch["commit"]["commit"]["author"]["date"]
 			if not frappe.db.exists(
 				"App Release", {"app": self.app, "source": self.name, "hash": hash}
 			):
@@ -106,6 +108,7 @@ class AppSource(Document):
 						"team": self.team,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["commit"]["author"]["name"],
+						"timestamp": datetime.fromisoformat(timestamp).strftime("%Y-%m-%d %H:%M:%S"),
 						"deployable": bool(is_first_release),
 					}
 				).insert()

@@ -6,13 +6,14 @@ import os
 import shlex
 import shutil
 import subprocess
+from datetime import datetime
 
 import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
-from typing import TypedDict
+from typing import TypedDict, Optional
 
 
 AppReleaseDict = TypedDict(
@@ -22,6 +23,8 @@ AppReleaseDict = TypedDict(
 	hash=str,
 	cloned=int,
 	clone_directory=str,
+	timestamp=Optional[datetime],
+	creation=datetime,
 )
 AppReleasePair = TypedDict(
 	"AppReleasePair",
@@ -282,8 +285,8 @@ def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
 
 
 def get_changed_files_between_hashes(
-	source: str, old_hash: str, new_hash: str
-) -> tuple[list[str], AppReleasePair]:
+	source: str, deployed_hash: str, update_hash: str
+) -> Optional[tuple[list[str], AppReleasePair]]:
 	"""
 	Checks diff between two App Releases, if they have not been cloned
 	the App Releases are cloned this is because the commit needs to be
@@ -291,17 +294,20 @@ def get_changed_files_between_hashes(
 
 	Note: order of passed hashes do not matter.
 	"""
-	old = get_release_by_source_and_hash(source, old_hash)
-	new = get_release_by_source_and_hash(source, new_hash)
+	deployed_release = get_release_by_source_and_hash(source, deployed_hash)
+	update_release = get_release_by_source_and_hash(source, update_hash)
+	is_valid = is_update_after_deployed(update_release, deployed_release)
+	if not is_valid:
+		return None
 
-	for release in [old, new]:
-		if release.cloned:
+	for release in [deployed_release, update_release]:
+		if release["cloned"]:
 			continue
 
 		release_doc: AppRelease = frappe.get_doc("App Release", release["name"])
 		release_doc._clone()
 
-	cwd = old["clone_directory"]
+	cwd = deployed_release["clone_directory"]
 
 	"""
 	Setting remote and fetching alters .git contents, hence it has to be
@@ -313,22 +319,30 @@ def get_changed_files_between_hashes(
 	run("cp -r .git .git.bak", cwd)
 
 	# Calculate diff against local remote
-	run(f"git remote add -f diff_temp {new['clone_directory']}", cwd)
-	run(f"git fetch --depth 1 diff_temp {new_hash}", cwd)
-	diff = run(f"git diff --name-only {old_hash} {new_hash}", cwd)
+	run(f"git remote add -f diff_temp {update_release['clone_directory']}", cwd)
+	run(f"git fetch --depth 1 diff_temp {update_hash}", cwd)
+	diff = run(f"git diff --name-only {deployed_hash} {update_hash}", cwd)
 
 	# Restore repo state
 	run("rm -rf .git", cwd)
 	run("mv .git.bak .git", cwd)
 
-	return diff.splitlines(), dict(old=old, new=new)
+	return diff.splitlines(), dict(old=deployed_release, new=update_release)
 
 
 def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
 	releases: list[AppReleaseDict] = frappe.get_all(
 		"App Release",
 		filters={"hash": hash, "source": source},
-		fields=["name", "source", "hash", "cloned", "clone_directory"],
+		fields=[
+			"name",
+			"source",
+			"hash",
+			"cloned",
+			"clone_directory",
+			"timestamp",
+			"creation",
+		],
 		limit=1,
 	)
 
@@ -336,6 +350,17 @@ def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
 		frappe.throw(f"App Release not found with source: {source} and hash: {hash}")
 
 	return releases[0]
+
+
+def is_update_after_deployed(
+	update_release: AppReleaseDict, deployed_release: AppReleaseDict
+) -> bool:
+	update_timestamp = update_release["timestamp"]
+	deployed_timestamp = deployed_release["timestamp"]
+	if update_timestamp and deployed_timestamp:
+		return update_timestamp > deployed_timestamp
+
+	return update_release["creation"] > deployed_release["creation"]
 
 
 def run(command, cwd):

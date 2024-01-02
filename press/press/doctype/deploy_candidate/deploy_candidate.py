@@ -884,11 +884,16 @@ class DeployCandidate(Document):
 			if update_hash == deployed_hash:
 				continue
 
-			file_diff, pair = get_changed_files_between_hashes(
+			changes = get_changed_files_between_hashes(
 				app.source,
 				deployed_hash,
 				update_hash,
 			)
+			# deployed commit is after update commit
+			if not changes:
+				break
+
+			file_diff, pair = changes
 			if not can_pull_update(file_diff):
 				"""
 				If current app is not being pull_updated, then no need to
