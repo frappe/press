@@ -23,12 +23,16 @@ class SerialConsoleLog(Document):
 		)
 
 	def _run_reboot(self):
-		command = frappe.get_doc(
+		credentials = frappe.get_doc(
 			"Virtual Machine", self.virtual_machine
-		).get_serial_console_credentials()["command"]
-
-		ssh = pexpect.spawn(command, encoding="utf-8")
+		).get_serial_console_credentials()
+		ssh = pexpect.spawn(credentials["command"], encoding="utf-8")
 		ssh.logfile = FakeIO(self)
+
+		index = ssh.expect([credentials["fingerprint"], pexpect.TIMEOUT], timeout=3)
+		if index == 0:
+			ssh.expect("Are you sure you want to continue")
+			ssh.sendline("yes")
 
 		# Send a newline and wait for login prompt
 		# We don't want to send break too soon
