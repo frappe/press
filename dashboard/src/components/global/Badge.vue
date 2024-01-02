@@ -18,7 +18,7 @@ export default {
 				Approved: 'green',
 				Broken: 'red',
 				Installing: 'orange',
-				Running: 'green',
+				Running: 'blue',
 				Pending: 'orange',
 				Failure: 'red',
 				'Update Available': 'blue',

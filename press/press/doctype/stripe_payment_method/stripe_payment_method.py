@@ -15,6 +15,7 @@ class StripePaymentMethod(Document):
 	def onload(self):
 		load_address_and_contact(self)
 
+	@frappe.whitelist()
 	def set_default(self):
 		stripe = get_stripe()
 		# set default payment method on stripe

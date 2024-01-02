@@ -26,7 +26,7 @@ def get_list(
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
 
-	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+	if frappe.get_meta(doctype).has_field("team"):
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 
@@ -103,9 +103,14 @@ def insert(doc=None):
 		return parent
 
 	_doc = frappe.get_doc(doc)
-	if not frappe.local.system_user() and frappe.get_meta(doc.doctype).has_field("team"):
-		# don't allow non system user to set any other team
-		_doc.team = frappe.local.team().name
+
+	if frappe.get_meta(doc.doctype).has_field("team"):
+		if not _doc.team:
+			# set team if not set
+			_doc.team = frappe.local.team().name
+		if not frappe.local.system_user():
+			# don't allow dashboard user to set any other team
+			_doc.team = frappe.local.team().name
 	_doc.insert()
 	return get(_doc.doctype, _doc.name)
 

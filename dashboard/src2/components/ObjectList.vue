@@ -24,11 +24,13 @@
 			</slot>
 			<div class="ml-auto flex items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
-				<Button label="Refresh" @click="list.reload()" :loading="isLoading">
-					<template #icon>
-						<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
-					</template>
-				</Button>
+				<Tooltip text="Refresh">
+					<Button label="Refresh" @click="list.reload()" :loading="isLoading">
+						<template #icon>
+							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
+						</template>
+					</Button>
+				</Tooltip>
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
@@ -38,7 +40,9 @@
 				:rows="filteredRows"
 				:options="{
 					selectable: this.options.selectable || false,
-					onRowClick: () => {},
+					onRowClick: this.options.onRowClick
+						? row => this.options.onRowClick(row)
+						: null,
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
 						: null
@@ -109,7 +113,8 @@ import {
 	ListRowItem,
 	ListSelectBanner,
 	TextInput,
-	FeatherIcon
+	FeatherIcon,
+	Tooltip
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -129,7 +134,8 @@ export default {
 		ListRowItem,
 		ListSelectBanner,
 		TextInput,
-		FeatherIcon
+		FeatherIcon,
+		Tooltip
 	},
 	data() {
 		return {
@@ -172,7 +178,7 @@ export default {
 		}
 	},
 	mounted() {
-		if (this.options.list) return
+		if (this.options.list) return;
 		if (this.options.doctype) {
 			let doctype = this.options.doctype;
 			if (subscribed[doctype]) return;

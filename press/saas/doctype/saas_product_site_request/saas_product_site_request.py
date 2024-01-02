@@ -13,9 +13,10 @@ class SaaSProductSiteRequest(Document):
 		saas_product = frappe.db.get_value(
 			"SaaS Product",
 			{"name": self.saas_product},
-			["name", "title", "logo", "domain"],
+			["name", "title", "logo", "domain", "description"],
 			as_dict=True,
 		)
+		saas_product.description = frappe.utils.md_to_html(saas_product.description)
 		doc.saas_product = saas_product
 		return doc
 

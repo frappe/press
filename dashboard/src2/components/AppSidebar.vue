@@ -106,7 +106,7 @@ export default {
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !this.$team.doc.onboarding.complete
+					condition: !this.$team.doc.onboarding.site_created
 				},
 				{
 					name: 'Sites',
@@ -131,12 +131,14 @@ export default {
 					name: 'Billing',
 					icon: () => h(WalletCards),
 					route: '/billing',
+					isActive: routeName.startsWith('Billing'),
 					disabled
 				},
 				{
 					name: 'Settings',
 					icon: () => h(Settings),
 					route: '/settings',
+					isActive: routeName.startsWith('Settings'),
 					disabled
 				}
 			].filter(item => item.condition !== false);

@@ -4,10 +4,6 @@
 		:options="{
 			title: title,
 			actions: [
-				{
-					label: 'Cancel',
-					onClick: hide
-				},
 				primaryAction
 					? {
 							...primaryAction,
@@ -57,8 +53,12 @@ export default {
 			this.isLoading = true;
 			try {
 				console.log(this.primaryAction);
-				let primaryActionHandler = this.primaryAction?.onClick || this.onSuccess;
-				let result = primaryActionHandler({ hide: this.hide, values: this.values });
+				let primaryActionHandler =
+					this.primaryAction?.onClick || this.onSuccess;
+				let result = primaryActionHandler({
+					hide: this.hide,
+					values: this.values
+				});
 				if (result?.then) {
 					result
 						.then(() => (this.isLoading = false))

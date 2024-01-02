@@ -27,6 +27,47 @@ DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
+	whitelisted_fields = [
+		"period_start",
+		"period_end",
+		"team",
+		"items",
+		"currency",
+		"type",
+		"payment_mode",
+		"total",
+		"total_before_discount",
+		"total_before_tax",
+		"partner_email",
+		"amount_due",
+		"amount_paid",
+		"docstatus",
+		"gst",
+		"applied_credits",
+	]
+
+	def get_doc(self, doc):
+		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
+
+	@frappe.whitelist()
+	def stripe_payment_url(self):
+		if not self.stripe_invoice_id:
+			return
+
+		stripe_link_expired = (
+			self.status == "Unpaid"
+			and frappe.utils.date_diff(frappe.utils.now(), self.due_date) > 30
+		)
+		if stripe_link_expired:
+			stripe = get_stripe()
+			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			url = stripe_invoice.hosted_invoice_url
+		else:
+			url = self.stripe_invoice_url
+
+		frappe.response.location = url
+		frappe.response.type = "redirect"
+
 	def validate(self):
 		self.validate_team()
 		self.validate_dates()

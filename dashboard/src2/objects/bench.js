@@ -139,7 +139,21 @@ export default {
 							width: 1,
 							class: 'text-gray-600'
 						}
-					]
+					],
+					primaryAction({ documentResource: releaseGroup }) {
+						return {
+							label: 'New Site',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								router.push({
+									name: 'NewSite',
+									params: { bench: releaseGroup.doc.name }
+								});
+							}
+						};
+					}
 				}
 			},
 			{
@@ -662,6 +676,7 @@ export default {
 					},
 					variant: 'solid',
 					condition: () =>
+						!bench.doc.deploy_information.deploy_in_progress &&
 						bench.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
@@ -703,6 +718,12 @@ export default {
 			name: 'Bench Job',
 			path: 'job/:id',
 			component: () => import('../pages/JobPage.vue')
+		},
+		{
+			name: 'NewBenchSite',
+			path: 'sites/new',
+			component: () => import('../pages/NewBenchSite.vue'),
+			props: true
 		}
 	]
 };
