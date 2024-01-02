@@ -127,6 +127,16 @@ export default {
 					});
 				}
 			};
+		},
+		confirmPaymentIntent() {
+			return {
+				url: 'press.api.billing.confirm_payment_intent_for_buying_credits',
+				makeParams({ paymentIntentId }) {
+					return {
+						payment_intent_id: paymentIntentId
+					};
+				}
+			};
 		}
 	},
 	methods: {
@@ -141,11 +151,21 @@ export default {
 				}
 			});
 
-			this.paymentInProgress = false;
 			if (payload.error) {
 				this.errorMessage = payload.error.message;
+				this.paymentInProgress = false;
 			} else {
-				this.$emit('success');
+				this.$resources.confirmPaymentIntent.submit(
+					{
+						paymentIntentId: payload.paymentIntent.id
+					},
+					{
+						onSuccess() {
+							this.paymentInProgress = false;
+							this.$emit('success');
+						}
+					}
+				);
 				this.errorMessage = null;
 			}
 		}
