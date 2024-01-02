@@ -44,6 +44,7 @@ class SitePool:
 			}
 		)
 		site.insert()
+		return site
 
 	def create_standby_sites(self):
 		if (

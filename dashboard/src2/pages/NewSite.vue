@@ -14,33 +14,35 @@
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
-					<h2 class="text-sm font-medium leading-6 text-gray-900">
+					<h2 class="text-base font-medium leading-6 text-gray-900">
 						Select Frappe Framework Version
 					</h2>
 				</div>
 				<div class="mt-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 						<button
-							v-for="version in options.versions"
-							:key="version.name"
+							v-for="v in options.versions"
+							:key="v.name"
 							:class="[
-								selectedVersion === version
+								version === v.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 									: 'bg-white text-gray-900  hover:bg-gray-50',
 								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
 							]"
-							@click="selectedVersion = version"
+							@click="version = v.name"
 						>
-							<span class="font-medium">{{ version.name }} </span>
+							<span class="font-medium">{{ v.name }} </span>
 							<span class="ml-1 text-gray-600">
-								{{ version.status }}
+								{{ v.status }}
 							</span>
 						</button>
 					</div>
 				</div>
 			</div>
 			<div class="flex flex-col" v-if="selectedVersionApps.length">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">Select Apps</h2>
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Select Apps
+				</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
 						<button
@@ -96,7 +98,7 @@
 				class="flex flex-col"
 				v-if="selectedVersion?.group?.clusters?.length"
 			>
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
@@ -123,13 +125,25 @@
 				</div>
 			</div>
 			<div v-if="selectedVersion && cluster">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">Select Plan</h2>
-				<div class="mt-2 overflow-hidden">
+				<div class="flex items-center justify-between">
+					<h2 class="text-base font-medium leading-6 text-gray-900">
+						Select Plan
+					</h2>
+					<div>
+						<Button link="https://frappecloud.com/pricing" variant="ghost">
+							<template #prefix>
+								<i-lucide-help-circle class="h-4 w-4 text-gray-700" />
+							</template>
+							Help
+						</Button>
+					</div>
+				</div>
+				<div class="mt-2">
 					<SitePlansCards v-model="plan" />
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster" class="w-1/2">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Enter Subdomain
 				</h2>
 				<div class="mt-2 items-center">
@@ -170,8 +184,8 @@
 					</template>
 				</div>
 			</div>
-			<div class="w-1/2" v-if="selectedVersion && cluster && plan">
-				<h2 class="text-sm font-medium leading-6 text-gray-900">Summary</h2>
+			<div class="w-1/2" v-if="selectedVersion && cluster && plan && subdomain">
+				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
 					style="grid-template-columns: 1fr 4fr"
@@ -181,10 +195,12 @@
 					<div>Apps:</div>
 					<div class="font-medium">
 						{{
-							selectedVersionApps
-								.filter(app => apps.includes(app.app))
-								.map(app => app.app_title)
-								.join(', ')
+							apps.length
+								? selectedVersionApps
+										.filter(app => apps.includes(app.app))
+										.map(app => app.app_title)
+										.join(', ')
+								: 'No apps selected'
 						}}
 					</div>
 					<div>Plan:</div>
@@ -215,9 +231,11 @@
 							per day
 						</div>
 					</div>
-                    <div v-else>{{ plan }}</div>
+					<div v-else>{{ plan }}</div>
 					<div>Region:</div>
 					<div class="font-medium">{{ selectedClusterTitle }}</div>
+					<div>Site URL:</div>
+					<div class="font-medium">{{ subdomain }}.{{ options.domain }}</div>
 				</div>
 			</div>
 			<div
@@ -225,11 +243,13 @@
 				class="flex w-1/2 flex-col space-y-4"
 			>
 				<FormControl
+					class="checkbox"
 					type="checkbox"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me (${selectedClusterTitle}) shall stand applicable to me and Frappe.`"
 				/>
 				<FormControl
+					class="checkbox"
 					type="checkbox"
 					label="I am okay if my details are shared with local partner"
 					@change="val => (shareDetailsConsent = val.target.checked)"
@@ -264,6 +284,7 @@ import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import router from '../router';
 import SitePlansCards from '../components/SitePlansCards.vue';
+import { plans } from '../data/plans';
 
 // TODO:
 // 1. Marketplace app plans
@@ -283,7 +304,7 @@ export default {
 	},
 	data() {
 		return {
-			selectedVersion: null,
+			version: null,
 			subdomain: '',
 			cluster: null,
 			plan: null,
@@ -293,7 +314,7 @@ export default {
 		};
 	},
 	watch: {
-		selectedVersion() {
+		version() {
 			// reset all selections when version changes
 			this.apps = [];
 			this.cluster = null;
@@ -350,12 +371,6 @@ export default {
 					}
 				},
 				validate() {
-					// let canCreate =
-					// 	this.subdomainValid &&
-					// 	this.selectedApps.length > 0 &&
-					// 	this.selectedPlan &&
-					// 	(!this.wantsToRestore || this.selectedFiles.database);
-
 					if (!this.subdomain) {
 						return 'Please enter a subdomain';
 					}
@@ -363,10 +378,6 @@ export default {
 					if (!this.agreedToRegionConsent) {
 						return 'Please agree to the above consent to create site';
 					}
-
-					// if (!canCreate) {
-					// 	return 'Cannot create site';
-					// }
 				},
 				onSuccess: site => {
 					router.push({
@@ -380,6 +391,9 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		selectedVersion() {
+			return this.options?.versions.find(v => v.name === this.version);
 		},
 		selectedClusterTitle() {
 			return this.selectedVersion?.group?.clusters?.find(
@@ -412,7 +426,6 @@ export default {
 				});
 		},
 		selectedPlan() {
-			let plans = getCachedResource('site.plans');
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan);
 		}
@@ -431,3 +444,9 @@ export default {
 	}
 };
 </script>
+<style scoped>
+.checkbox:deep(label) {
+	color: theme('colors.gray.700') !important;
+	line-height: 1.5;
+}
+</style>

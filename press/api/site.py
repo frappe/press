@@ -409,11 +409,7 @@ def options_for_new():
 		release_group = frappe.db.get_value(
 			"Release Group",
 			fieldname=["name", "`default`", "title"],
-			filters={
-				"enabled": 1,
-				"public": 1,
-				"version": version.name,
-			},
+			filters={"enabled": 1, "public": 1, "version": version.name},
 			order_by="creation desc",
 			as_dict=1,
 		)
@@ -613,6 +609,9 @@ def get_plans(name=None, rg=None):
 			"max_database_usage",
 			"database_access",
 			"support_included",
+			"offsite_backups",
+			"private_benches",
+			"monitor_access",
 			"`tabHas Role`.role",
 		],
 		filters=filters,

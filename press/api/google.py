@@ -89,8 +89,7 @@ def callback(code=None, state=None):
 		frappe.db.commit()
 
 		frappe.local.response.type = "redirect"
-		verification_url = account_request.get_verification_url()
-		verification_url = verification_url.replace("dashboard", "dashboard2")
+		verification_url = account_request.get_verification_url(dashboard2=True)
 		frappe.local.response.location = verification_url
 	else:
 		# Frappe Cloud User Login
@@ -115,8 +114,7 @@ def callback(code=None, state=None):
 			).insert(ignore_permissions=True)
 			frappe.db.commit()
 			frappe.local.response.type = "redirect"
-			verification_url = account_request.get_verification_url()
-			verification_url = verification_url.replace("dashboard", "dashboard2")
+			verification_url = account_request.get_verification_url(dashboard2=True)
 			frappe.local.response.location = verification_url
 
 

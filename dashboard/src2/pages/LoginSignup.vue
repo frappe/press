@@ -1,20 +1,7 @@
 <template>
-	<div class="flex h-screen bg-gray-50">
-		<div
-			class="order-1 flex w-[45%] shrink-0 justify-center bg-white px-10 pt-32"
-			v-if="saasProduct"
-		>
-			<div class="max-w-[480px]">
-				<div class="flex items-center justify-center space-x-2">
-					<img :src="saasProduct.logo" :alt="saasProduct.title" class="h-7" />
-					<h1 class="text-center text-2xl font-semibold tracking-tight">
-						{{ saasProduct.title }}
-					</h1>
-				</div>
-				<div class="prose prose-sm mt-4" v-html="saasProduct.description" />
-			</div>
-		</div>
-		<div class="w-full">
+	<div class="flex h-screen overflow-hidden bg-gray-50">
+		<ProductSignupPitch :saasProduct="saasProduct" class="w-[40%]" />
+		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="title"
 				:class="{ 'pointer-events-none': $resources.signup.loading }"
@@ -160,12 +147,14 @@
 <script>
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
+import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 
 export default {
 	name: 'Signup',
 	components: {
 		LoginBox,
-		GoogleIconSolid
+		GoogleIconSolid,
+		ProductSignupPitch
 	},
 	data() {
 		return {

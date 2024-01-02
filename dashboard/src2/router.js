@@ -59,40 +59,70 @@ let router = createRouter({
 			component: () => import('./pages/NewBench.vue')
 		},
 		{
+			name: 'Billing',
+			path: '/billing',
+			component: () => import('./pages/Billing.vue'),
+			children: [
+				{
+					name: 'BillingOverview',
+					path: '',
+					component: () => import('./pages/BillingOverview.vue')
+				},
+				{
+					name: 'BillingInvoices',
+					path: 'invoices',
+					component: () => import('./pages/BillingInvoices.vue')
+				},
+				{
+					name: 'BillingBalances',
+					path: 'balances',
+					component: () => import('./pages/BillingBalances.vue')
+				},
+				{
+					name: 'BillingPaymentMethods',
+					path: 'payment-methods',
+					component: () => import('./pages/BillingPaymentMethods.vue')
+				}
+			]
+		},
+		{
 			path: '/settings',
 			name: 'Settings',
-			redirect: { name: 'ProfileSettings' },
+			redirect: { name: 'SettingsProfile' },
 			component: () => import('./pages/Settings.vue'),
 			children: [
 				{
-					name: 'ProfileSettings',
+					name: 'SettingsProfile',
 					path: 'profile',
 					component: () => import('./components/settings/ProfileSettings.vue')
 				},
 				{
-					name: 'TeamSettings',
+					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue')
 				},
 				{
+					name: 'SettingsPermission',
 					path: 'permissions',
-					name: 'PermissionsSettings',
-					component: () => import('./components/settings/PermissionsSettings.vue'),
-					redirect: { name: 'PermissionGroupList' },
+					component: () =>
+						import('./components/settings/PermissionsSettings.vue'),
+					redirect: { name: 'SettingsPermissionGroupList' },
 					children: [
 						{
 							path: 'groups',
-							name: 'PermissionGroupList',
-							component: () => import('./components/settings/PermissionGroupList.vue'),
+							name: 'SettingsPermissionGroupList',
+							component: () =>
+								import('./components/settings/PermissionGroupList.vue')
 						},
 						{
-							props: true,
+							name: 'SettingsPermissionGroupPermissions',
 							path: 'groups/:groupId',
-							name: 'PermissionGroupPermissions',
-							component: () => import('./components/settings/PermissionGroupPermissions.vue'),
+							component: () =>
+								import('./components/settings/PermissionGroupPermissions.vue'),
+							props: true
 						}
 					]
-				},
+				}
 			]
 		},
 		{

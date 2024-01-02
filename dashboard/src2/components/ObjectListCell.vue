@@ -3,7 +3,7 @@
 		:is="column.link ? 'a' : 'div'"
 		:href="column.link ? column.link(value, row) : undefined"
 		:target="column.link ? '_blank' : undefined"
-		class="flex text-gray-900"
+		class="flex items-center text-gray-900"
 		:class="{
 			'justify-end': column.align === 'right',
 			'justify-center': column.align === 'center'
@@ -12,15 +12,17 @@
 		<div v-if="column.prefix" class="mr-2">
 			<component :is="column.prefix(row)" />
 		</div>
-		<component v-if="column.type === 'Component'" :is="column.component(contextWithRow)" />
+		<component
+			v-if="column.type === 'Component'"
+			:is="column.component(contextWithRow)"
+		/>
 		<Badge v-else-if="column.type === 'Badge'" :label="formattedValue" />
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
-		<Button
-			v-else-if="column.type === 'Button'"
-			v-bind="column.Button(contextWithRow)"
-		/>
+		<template v-else-if="column.type === 'Button'">
+			<ActionButton v-if="button" v-bind="button" />
+		</template>
 		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="value">
@@ -47,6 +49,7 @@
 </template>
 <script>
 import { Tooltip } from 'frappe-ui';
+import ActionButton from './ActionButton.vue';
 
 export default {
 	name: 'ObjectListCell',
@@ -77,6 +80,10 @@ export default {
 			let actions = this.column.actions(this.row);
 			return actions;
 		},
+		button() {
+			if (!this.column.type === 'Button') return;
+			return this.column.Button(this.contextWithRow);
+		},
 		contextWithRow() {
 			return {
 				...this.context,
@@ -84,6 +91,6 @@ export default {
 			};
 		}
 	},
-	components: { Tooltip }
+	components: { Tooltip, ActionButton }
 };
 </script>
