@@ -718,12 +718,6 @@ export default {
 			name: 'Bench Job',
 			path: 'job/:id',
 			component: () => import('../pages/JobPage.vue')
-		},
-		{
-			name: 'NewBenchSite',
-			path: 'sites/new',
-			component: () => import('../pages/NewBenchSite.vue'),
-			props: true
 		}
 	]
 };
