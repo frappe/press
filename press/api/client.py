@@ -171,7 +171,7 @@ def validate_filters(doctype, filters):
 	if not filters:
 		return filters
 
-	out = {}
+	out = frappe._dict()
 	for fieldname, value in filters.items():
 		if is_valid_field(doctype, fieldname):
 			out[fieldname] = value
