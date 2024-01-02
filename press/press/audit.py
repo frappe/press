@@ -268,6 +268,20 @@ class OffsiteBackupCheck(Audit):
 		self.log(log, status)
 
 
+def get_teams_with_paid_sites():
+	return frappe.get_all(
+		"Site",
+		{
+			"status": ("not in", ("Archived", "Suspended", "Inactive")),
+			"free": False,
+			"plan": ("in", paid_plans()),
+			"trial_end_date": ("is", "not set"),
+		},
+		pluck="team",
+		distinct=True,
+	)
+
+
 class BillingAudit(Audit):
 	"""Daily audit of billing related checks"""
 
@@ -280,6 +294,7 @@ class BillingAudit(Audit):
 			{
 				"status": ("not in", ("Archived", "Suspended", "Inactive")),
 				"free": False,
+				"plan": ("in", self.paid_plans),
 				"trial_end_date": ("is", "not set"),
 			},
 			pluck="team",
@@ -386,12 +401,14 @@ class BillingAudit(Audit):
 		)
 
 	def prepaid_unpaid_invoices_with_stripe_invoice_id_set(self):
+		active_teams = frappe.get_all("Team", {"enabled": 1, "free_account": 0}, pluck="name")
 		return frappe.get_all(
 			"Invoice",
 			{
 				"status": "Unpaid",
 				"payment_mode": "Prepaid Credits",
 				"type": "Subscription",
+				"team": ("in", active_teams),
 				"stripe_invoice_id": ("is", "set"),
 			},
 			pluck="name",
@@ -471,3 +488,22 @@ def billing_audit():
 
 def partner_billing_audit():
 	PartnerBillingAudit()
+
+
+def suspend_sites_with_disabled_team():
+	teams_with_paid_sites = get_teams_with_paid_sites()
+	disabled_teams = frappe.get_all(
+		"Team",
+		{"name": ("in", teams_with_paid_sites), "enabled": False},
+		pluck="name",
+	)
+
+	if disabled_teams:
+		for team in disabled_teams:
+			sites = frappe.get_all(
+				"Site",
+				{"team": team, "status": ("not in", ("Archived", "Suspended", "Inactive"))},
+				pluck="name",
+			)
+			for site in sites:
+				frappe.get_doc("Site", site).suspend(reason="Disabled Team")

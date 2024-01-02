@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div class="flex">
-			<div>
+			<slot name="header-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
 					class="w-[20rem]"
@@ -21,8 +21,9 @@
 						</span>
 					</template>
 				</TextInput>
-			</div>
+			</slot>
 			<div class="ml-auto flex items-center space-x-2">
+				<slot name="header-right" v-bind="context" />
 				<Button label="Refresh" @click="list.reload()" :loading="isLoading">
 					<template #icon>
 						<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
@@ -138,6 +139,7 @@ export default {
 	},
 	resources: {
 		list() {
+			if (this.options.list) return {};
 			if (this.options.resource) {
 				return this.options.resource(this.context);
 			}
@@ -170,6 +172,7 @@ export default {
 		}
 	},
 	mounted() {
+		if (this.options.list) return
 		if (this.options.doctype) {
 			let doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
@@ -198,7 +201,7 @@ export default {
 	},
 	computed: {
 		list() {
-			return this.$resources.list;
+			return this.options.list || this.$resources.list;
 		},
 		columns() {
 			let columns = [];

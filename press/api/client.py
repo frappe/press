@@ -25,6 +25,11 @@ def get_list(
 	check_permissions(doctype)
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
+
+	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+		valid_filters = valid_filters or frappe._dict()
+		valid_filters.team = frappe.local.team().name
+
 	query = frappe.qb.get_query(
 		doctype,
 		filters=valid_filters,
@@ -118,6 +123,7 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
+	check_method_permissions(dt, dn, method)
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
 
@@ -207,4 +213,14 @@ def check_permissions(doctype):
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)
 
+	return True
+
+
+def check_method_permissions(doctype, docname, method) -> None:
+	from press.press.doctype.press_permission_group.press_permission_group import (
+		has_method_permission,
+	)
+
+	if not has_method_permission(doctype, docname, method):
+		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
 	return True

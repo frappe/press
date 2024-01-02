@@ -8,12 +8,17 @@
 					label: 'Cancel',
 					onClick: hide
 				},
-				{
-					label: 'Confirm',
-					variant: 'solid',
-					onClick: onConfirm,
-					loading: isLoading
-				}
+				primaryAction
+					? {
+							...primaryAction,
+							onClick: onConfirm
+					  }
+					: {
+							label: 'Confirm',
+							variant: 'solid',
+							onClick: onConfirm,
+							loading: isLoading
+					  }
 			]
 		}"
 	>
@@ -36,7 +41,7 @@ import { ErrorMessage, FormControl } from 'frappe-ui';
 
 export default {
 	name: 'ConfirmDialog',
-	props: ['title', 'message', 'fields', 'onSuccess'],
+	props: ['title', 'message', 'fields', 'primaryAction', 'onSuccess'],
 	data() {
 		return {
 			show: true,
@@ -51,7 +56,9 @@ export default {
 			this.error = null;
 			this.isLoading = true;
 			try {
-				let result = this.onSuccess({ hide: this.hide, values: this.values });
+				console.log(this.primaryAction);
+				let primaryActionHandler = this.primaryAction?.onClick || this.onSuccess;
+				let result = primaryActionHandler({ hide: this.hide, values: this.values });
 				if (result?.then) {
 					result
 						.then(() => (this.isLoading = false))

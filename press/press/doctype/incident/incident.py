@@ -23,14 +23,17 @@ class Incident(WebsiteGenerator):
 		pass
 
 	def validate(self):
-		if not hasattr(self, "phone_call"):
-			if frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"):
-				self.phone_call = True
+		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
+			self.phone_call = True
+
+	@property
+	def global_phone_call_enabled(self) -> bool:
+		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
 
 	def after_insert(self):
 		if self.phone_call:
 			enqueue_doc(
-				self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
+				self.doctype, self.name, "call_humans", queue="long", enqueue_after_commit=True
 			)
 
 	def get_humans(self) -> list["IncidentSettingsUser"]:
@@ -57,7 +60,8 @@ class Incident(WebsiteGenerator):
 
 	@retry(
 		retry=retry_if_not_result(
-			lambda result: result in ["canceled", "completed", "failed", "busy", "no-answer"]
+			lambda result: result
+			in ["canceled", "completed", "failed", "busy", "no-answer", "in-progress"]
 		),
 		wait=wait_fixed(1),
 		stop=stop_after_attempt(30),
@@ -65,7 +69,9 @@ class Incident(WebsiteGenerator):
 	def wait_for_pickup(self, call):
 		return call.fetch().status  # will eventually be no-answer
 
-	def _call_humans(self):
+	def call_humans(self):
+		if not self.global_phone_call_enabled:
+			return
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(
 				url="http://demo.twilio.com/docs/voice.xml",
@@ -77,9 +83,9 @@ class Incident(WebsiteGenerator):
 			try:
 				status = self.wait_for_pickup(call)
 			except RetryError:
-				status = "timeout"  # not twilio's status; mostly no-answer
+				status = "timeout"  # not twilio's status; mostly translates to no-answer
 			else:
-				if status == "completed":  # call was picked up
+				if status in ["in-progress", "completed"]:  # call was picked up
 					acknowledged = True
 					break
 			finally:

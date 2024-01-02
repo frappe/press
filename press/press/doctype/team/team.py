@@ -227,6 +227,7 @@ class Team(Document):
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
 
+	@frappe.whitelist()
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -301,7 +302,7 @@ class Team(Document):
 				self.update_billing_details_on_frappeio()
 
 	def validate_partnership_date(self):
-		if self.erpnext_partner:
+		if self.erpnext_partner or not self.partnership_date:
 			return
 
 		if partner_email := self.partner_email:
@@ -693,6 +694,16 @@ class Team(Document):
 		return balance
 
 	@frappe.whitelist()
+	def get_team_members(self):
+		return get_team_members(self.name)
+
+	@frappe.whitelist()
+	def invite_team_member(self, email):
+		from press.api.account import add_team_member
+
+		add_team_member(email)
+
+	@frappe.whitelist()
 	def get_balance(self):
 		res = frappe.get_all(
 			"Balance Transaction",
@@ -1006,7 +1017,14 @@ def get_team_members(team):
 	if member_emails:
 		users = frappe.db.sql(
 			"""
-				select u.name, u.first_name, u.last_name, GROUP_CONCAT(r.`role`) as roles
+				select
+					u.name,
+					u.first_name,
+					u.last_name,
+					u.full_name,
+					u.user_image,
+					u.name as email,
+					GROUP_CONCAT(r.`role`) as roles
 				from `tabUser` u
 				left join `tabHas Role` r
 				on (r.parent = u.name)

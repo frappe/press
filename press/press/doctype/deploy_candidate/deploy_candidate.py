@@ -6,13 +6,15 @@ import os
 import re
 import shlex
 import shutil
-import subprocess
-from subprocess import Popen
-from typing import List
 
 import docker
 import dockerfile
 import frappe
+import subprocess
+import json
+
+from typing import List
+from subprocess import Popen
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -108,6 +110,7 @@ class DeployCandidate(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
+		# self._build()
 		frappe.enqueue_doc(
 			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
 		)
@@ -200,24 +203,33 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		self.apt_packages = self.get_apt_packages()
+		self.steps_additional_packages = []
+		self._mounts = []
+
+		self._prepare_packages()
+		self._prepare_mounts()
 
 		# stage_slug, step_slug, stage, step
-		preparation_steps = (
-			[
-				("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
-				("pre", "redis", "Setup Prerequisites", "Install Redis"),
-				("pre", "python", "Setup Prerequisites", "Install Python"),
-				("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
-				("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
-			]
-			+ (
-				[("pre", "apt-packages", "Setup Prerequisites", "Install Additional APT Packages")]
-				if self.apt_packages
-				else []
+		preparation_steps = [
+			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
+			("pre", "redis", "Setup Prerequisites", "Install Redis"),
+			("pre", "python", "Setup Prerequisites", "Install Python"),
+			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
+			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
+		]
+
+		if self.steps_additional_packages:
+			preparation_steps.extend(self.steps_additional_packages)
+
+		if frappe.get_value("Team", self.team, "is_code_server_user"):
+			preparation_steps.extend(
+				[
+					("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
+				]
 			)
-			+ [
-				("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
+
+		preparation_steps.extend(
+			[
 				("pre", "node", "Setup Prerequisites", "Install Node.js"),
 				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
 				("pre", "pip", "Setup Prerequisites", "Install pip"),
@@ -229,6 +241,14 @@ class DeployCandidate(Document):
 		clone_steps = []
 		app_install_steps = []
 		pull_update_steps = []
+		mount_step = []
+
+		if self._mounts:
+			mount_step.extend(
+				[
+					("mounts", "create", "Setup Mounts", "Prepare Mounts"),
+				]
+			)
 
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
@@ -237,7 +257,13 @@ class DeployCandidate(Document):
 			if app.pullable_release:
 				pull_update_steps.append(("pull", app.app, "Pull Updates", app.title))
 
-		steps = clone_steps + preparation_steps + app_install_steps + pull_update_steps
+		steps = [
+			*clone_steps,
+			*preparation_steps,
+			*app_install_steps,
+			*pull_update_steps,
+			*mount_step,
+		]
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -261,6 +287,44 @@ class DeployCandidate(Document):
 			},
 		)
 		self.save()
+
+	def _prepare_packages(self):
+		packages = []
+		_variables = {d.dependency: d.version for d in self.dependencies}
+
+		for p in self.packages:
+			_package_manager = p.package_manager.split("/")[-1]
+
+			if _package_manager in ["apt", "pip"]:
+
+				self.steps_additional_packages.append(
+					[
+						"pre",
+						p.package,
+						"Setup Prerequisites",
+						f"Install package {p.package}",
+					]
+				)
+				packages.append(
+					{
+						"package_manager": p.package_manager,
+						"package": p.package,
+						"prerequisites": frappe.render_template(p.package_prerequisites, _variables),
+						"after_install": p.after_install,
+					}
+				)
+
+		self.apt_packages = json.dumps(packages)
+
+	def _prepare_mounts(self):
+		self._mounts = frappe.get_all(
+			"Release Group Mount",
+			{"parent": self.group},
+			["source", "destination", "is_absolute_path"],
+			order_by="idx",
+		)
+
+		self.mounts = json.dumps(self._mounts)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -366,12 +430,27 @@ class DeployCandidate(Document):
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
+		self._load_packages()
+		self._load_mounts()
 		self._generate_dockerfile()
 		self._copy_config_files()
 		self._generate_redis_cache_config()
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
+
+	def _load_packages(self):
+		try:
+			self.additional_packages = json.loads(self.apt_packages)
+		except Exception:
+			# backward compatibility
+			self.additional_packages = [
+				{"package": p.package} for p in self.packages if p.package_manager == "apt"
+			]
+
+	def _load_mounts(self):
+		if self.mounts:
+			self.container_mounts = json.loads(self.mounts)
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -825,7 +904,9 @@ class DeployCandidate(Document):
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
 
 	def get_apt_packages(self):
-		return " ".join(p.package for p in self.packages if p.package_manager == "apt")
+		return " ".join(
+			p.package for p in self.packages if p.package_manager in ["apt", "pip"]
+		)
 
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version

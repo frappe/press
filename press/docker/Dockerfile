@@ -26,6 +26,8 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   vim \
   less \
   htop \
+  iputils-ping \
+  telnet \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
@@ -97,7 +99,9 @@ RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkh
   `#stage-pre-wkhtmltopdf`
 {% endif %}
 
+{% if doc.is_code_server_enabled %}
 RUN curl -fsSL https://code-server.dev/install.sh | sh `#stage-pre-code-server`
+{% endif %}
 
 # Install Fonts
 RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/fonts \
@@ -111,18 +115,47 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
-{% if doc.apt_packages %}
+# Add frappe user
+RUN useradd -ms /bin/bash frappe
+
 # Install Additional APT Packages
-RUN --mount=type=cache,target=/var/cache/apt apt-get update \
-  && apt-get install --yes --no-install-suggests --no-install-recommends \
-  {{ doc.apt_packages }} \
-  && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-apt-packages`
+{% if doc.additional_packages %}
+{% for p in doc.additional_packages %}
+
+{% if p.prerequisites %}
+RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
+ `#stage-pre-{{ p.package }}`
 {% endif %}
 
+{% if p.package_manager not in ["apt-get", "apt"] %}
+
+RUN {{ p.package_manager }} install {{ p.package }} \
+ `#stage-pre-{{ p.package }}`
+
+{% else %}
+
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  {{ p.package }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+
+{% endif %}
+
+{% if p.after_install %}
+RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+
+# symlink mysqldump to mariadb-dump
 RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
 
-RUN useradd -ms /bin/bash frappe
+# Switch to frappe
 USER frappe
 WORKDIR /home/frappe
 
@@ -165,6 +198,7 @@ ENV PYTHONUNBUFFERED 1
 # For the sake of completing the step
 RUN `#stage-bench-env`
 
+# Set environment variables
 {% for v in doc.environment_variables %}
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
@@ -206,6 +240,18 @@ RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/conte
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
+# create custom mounts
+{% if doc.mounts %}
+{% for m in doc.container_mounts %}
+
+{% if not m.is_absolute_path %}
+RUN mkdir -p {{ m.destination }} \
+  && chown -R frappe:frappe {{ m.destination }} \
+  `#stage-mounts-create`
+{% endif %}
+
+{% endfor %}
+{% endif %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 

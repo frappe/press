@@ -418,6 +418,15 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	def restore_site_from_files(self, files, skip_failing_patches=False):
+		self.remote_database_file = files["database"]
+		self.remote_public_file = files["public"]
+		self.remote_private_file = files["private"]
+		self.save()
+		self.reload()
+		return self.restore_site(skip_failing_patches=skip_failing_patches)
+
+	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
 		return frappe.get_doc(
 			{
@@ -497,7 +506,7 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def add_domain(self, domain):
-		domain = domain.lower()
+		domain = domain.lower().strip(".")
 		if check_dns(self.name, domain)["matched"]:
 			log_site_activity(self.name, "Add Domain")
 			frappe.get_doc(
@@ -1302,13 +1311,16 @@ class Site(Document):
 		database_server_name = frappe.db.get_value("Server", self.server, "database_server")
 		database_server = frappe.get_doc("Database Server", database_server_name)
 
-		return agent.add_proxysql_user(
+		job = agent.add_proxysql_user(
 			self,
 			credentials["database"],
 			credentials["user"],
 			credentials["password"],
 			database_server,
 		)
+		# BREAKING CHANGE: This may cause problems for
+		# serverscripts that rely on the return value of this function
+		return job.name
 
 	@frappe.whitelist()
 	def disable_database_access(self):
@@ -1545,36 +1557,44 @@ class Site(Document):
 				"description": "Deactivated site is not accessible on the internet",
 				"button_label": "Deactivate",
 				"condition": self.status == "Active",
+				"doc_method": "deactivate",
 			},
 			{
 				"action": "Activate site",
 				"description": "Activate site to make it accessible on the internet",
 				"button_label": "Activate",
 				"condition": self.status in ["Inactive", "Broken"],
+				"doc_method": "activate",
 			},
 			{
 				"action": "Restore from backup",
 				"description": "Restore your database from database, public and private files",
 				"button_label": "Restore",
+				"doc_method": "restore_site_from_files",
 			},
 			{
 				"action": "Migrate site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
+				"doc_method": "migrate",
 			},
 			{
 				"action": "Reset site",
 				"description": "Reset your site database to a clean state",
 				"button_label": "Reset",
+				"doc_method": "reinstall",
 			},
 			{
 				"action": "Access site database",
 				"description": "Enable read/write access to your site database",
 				"button_label": "Enable Access",
+				"doc_method": "enable_database_access",
 			},
 			{
 				"action": "Drop site",
 				"description": "When you drop site your site, all it's data is deleted forever",
+				"button_label": "Drop",
+				"doc_method": "archive",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]
@@ -1586,6 +1606,16 @@ class Site(Document):
 		return (
 			frappe.utils.now_datetime() - self.modified
 		).total_seconds() > 60 * 60 * 4  # 4 hours
+
+	@frappe.whitelist()
+	def fetch_bench_from_agent(self):
+		agent = Agent(self.server)
+		benches_with_this_site = []
+		for bench in agent.get("server")["benches"].values():
+			if self.name in bench["sites"]:
+				benches_with_this_site.append(bench["name"])
+		if len(benches_with_this_site) == 1:
+			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
 
 
 def site_cleanup_after_archive(site):

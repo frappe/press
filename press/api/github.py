@@ -146,7 +146,7 @@ def repositories(installation, token):
 
 @frappe.whitelist()
 def repository(owner, name, installation=None):
-	token = ''
+	token = ""
 	if not installation:
 		token = frappe.db.get_value("Press Settings", "github_access_token")
 	else:
@@ -237,6 +237,8 @@ def app(owner, repository, branch, installation=None):
 				match = re.search('app_title = "(.*)"', content)
 				if match:
 					title = match.group(1)
+				else:
+					reason_for_invalidation = f"File {frappe.bold('hooks.py')} does not have {frappe.bold('app_title')} defined."
 				break
 			else:
 				reason_for_invalidation = (

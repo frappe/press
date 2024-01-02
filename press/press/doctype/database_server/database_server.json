@@ -19,6 +19,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "is_stalk_setup",
   "billing_section",
   "team",
   "column_break_11",
@@ -399,11 +400,18 @@
    "fieldname": "hostname_abbreviation",
    "fieldtype": "Data",
    "label": "Hostname Abbreviation"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_stalk_setup",
+   "fieldtype": "Check",
+   "label": "Is Stalk Setup",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-13 15:08:56.278451",
+ "modified": "2023-12-21 19:00:35.047273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

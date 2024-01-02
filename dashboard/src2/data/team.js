@@ -6,7 +6,11 @@ export function getTeam() {
 	if (!team) {
 		team = createDocumentResource({
 			doctype: 'Team',
-			name: getCurrentTeam()
+			name: getCurrentTeam(),
+			whitelistedMethods: {
+				getTeamMembers: 'get_team_members',
+				removeTeamMember: 'remove_team_member',
+			}
 		});
 	}
 	return team;

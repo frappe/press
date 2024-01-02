@@ -28,7 +28,7 @@ def create_test_alertmanager_webhook_log(
 		{
 			"doctype": "Alertmanager Webhook Log",
 			"alert": alert.name,
-			"creation": creation or datetime.now(),
+			"creation": creation or frappe.utils.now_datetime(),
 			"payload": json.dumps(
 				{
 					"alerts": [

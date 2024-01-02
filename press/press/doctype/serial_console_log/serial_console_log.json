@@ -1,0 +1,91 @@
+{
+ "actions": [
+  {
+   "action": "press.press.doctype.serial_console_log.serial_console_log.run_reboot",
+   "action_type": "Server Action",
+   "group": "Actions",
+   "label": "Run Reboot Sequence"
+  }
+ ],
+ "allow_rename": 1,
+ "creation": "2023-12-29 13:02:05.574172",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "server",
+  "column_break_oypq",
+  "virtual_machine",
+  "section_break_vvrg",
+  "output"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Server Type",
+   "link_filters": "[[{\"fieldname\":\"server_type\",\"field_option\":\"DocType\"},\"name\",\"like\",\"%Server\"]]",
+   "options": "DocType",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Server",
+   "options": "server_type",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "server.virtual_machine",
+   "fetch_if_empty": 1,
+   "fieldname": "virtual_machine",
+   "fieldtype": "Link",
+   "label": "Virtual Machine",
+   "options": "Virtual Machine",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_oypq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_vvrg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2023-12-29 14:36:46.095832",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Serial Console Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

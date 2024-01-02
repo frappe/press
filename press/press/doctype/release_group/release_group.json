@@ -38,6 +38,7 @@
   "last_dependency_update",
   "packages",
   "environment_variables",
+  "mounts",
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
@@ -316,6 +317,20 @@
    "fieldname": "is_delta_build_enabled",
    "fieldtype": "Check",
    "label": "Delta Builds"
+  },
+  {
+   "default": "0",
+   "fetch_from": "team.is_code_server_user",
+   "fieldname": "is_code_server_enabled",
+   "fieldtype": "Check",
+   "label": "Is Code Server Enabled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "label": "Mounts",
+   "options": "Release Group Mount"
   }
  ],
  "links": [],

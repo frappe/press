@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestOptimizeDatabaseQuery(FrappeTestCase):
+class TestSerialConsoleLog(FrappeTestCase):
 	pass

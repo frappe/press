@@ -87,11 +87,11 @@ class TestIncident(FrappeTestCase):
 		).insert()
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
-	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList,
 		"create",
-		wraps=MockTwilioCallList("completed").create,
+		wraps=MockTwilioCallList("busy").create,
 	)
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
@@ -135,6 +135,25 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 		self.assertEqual(mock_calls_create.call_count, 1)
+
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
+	@patch.object(
+		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+	)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
+	def test_incident_creation_calls_stop_for_in_progress_state(self, mock_calls_create):
+		incident = frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+			}
+		).insert()
+		self.assertEqual(mock_calls_create.call_count, 1)
+		incident.reload()
+		self.assertEqual(len(incident.updates), 1)
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
@@ -210,3 +229,34 @@ class TestIncident(FrappeTestCase):
 			).insert()
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
+
+	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
+	@patch("tenacity.nap.time", new=Mock())  # no sleep
+	@patch.object(
+		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+	)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
+	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(
+		self, mock_calls_create
+	):
+		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 0)
+		frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+			}
+		).insert()
+		mock_calls_create.assert_not_called()
+
+	def test_duplicate_incidents_arent_created_for_same_alert(self):
+		incident_count_before = frappe.db.count("Incident")
+		site = create_test_site()
+		site2 = create_test_site(server=site.server)
+		create_test_alertmanager_webhook_log(site=site)
+		create_test_alertmanager_webhook_log(site=site2)
+		self.assertEqual(frappe.db.count("Incident") - 1, incident_count_before)
+		site3 = create_test_site()  # new server
+		create_test_alertmanager_webhook_log(site=site3)
+		self.assertEqual(frappe.db.count("Incident") - 2, incident_count_before)

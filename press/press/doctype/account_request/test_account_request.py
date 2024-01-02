@@ -4,7 +4,6 @@
 
 
 import unittest
-from datetime import datetime
 from typing import Optional
 from unittest.mock import patch
 
@@ -21,10 +20,8 @@ def create_test_account_request(
 	saas: bool = False,
 	saas_app: Optional[str] = None,
 ):
-	if not creation:
-		creation = datetime.now()
-	if not email:
-		email = frappe.mock("email")
+	creation = creation or frappe.utils.now_datetime()
+	email = email or frappe.mock("email")
 	with patch.object(AccountRequest, "send_verification_email"):
 		account_request = frappe.get_doc(
 			{

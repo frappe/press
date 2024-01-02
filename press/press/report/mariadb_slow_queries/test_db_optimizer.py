@@ -1,9 +1,11 @@
 # Copyright (c) 2019, Frappe Technologies Pvt. Ltd. and Contributors
 # License: MIT. See LICENSE
 
+import json
 from frappe.tests.utils import FrappeTestCase
 
-from press.press.doctype.optimize_database_query.db_optimizer import (
+from press.press.report.mariadb_slow_queries.db_optimizer import (
+	DBExplain,
 	DBOptimizer,
 	DBTable,
 )
@@ -82,11 +84,13 @@ class TestDBOptimizer(FrappeTestCase):
 				ORDER BY `modified` DESC
 				LIMIT 20
 			"""
-		optimizer = DBOptimizer(query=q)
+		explain = [DBExplain.from_frappe_ouput(e) for e in json.loads(EXPLAIN_OUTPUT)]
+		optimizer = DBOptimizer(query=q, explain_plan=explain)
 		optimizer.update_table_data(DBTable.from_frappe_ouput(HD_TICKET_TABLE))
 		optimizer.update_table_data(DBTable.from_frappe_ouput(HD_TICKET_COMMENT_TABLE))
 		optimizer.update_table_data(DBTable.from_frappe_ouput(COMMUNICATION_TABLE))
 
+		self.assertTrue(optimizer.can_be_optimized())
 		index = optimizer.suggest_index()
 		self.assertEqual(index.table, "tabHD Ticket Comment")
 		self.assertEqual(index.column, "reference_ticket")
@@ -608,3 +612,6 @@ COMMUNICATION_TABLE = {
 		},
 	],
 }
+
+
+EXPLAIN_OUTPUT = """[{"Extra": "", "id": 1, "key": "modified", "key_len": "9", "possible_keys": null, "ref": null, "rows": "20", "select_type": "PRIMARY", "table": "tabHD Ticket", "type": "index"}, {"Extra": "Using index condition; Using where", "id": 4, "key": "reference_doctype_reference_name_index", "key_len": "563", "possible_keys": "reference_doctype_reference_name_index", "ref": "const", "rows": "10236", "select_type": "DEPENDENT SUBQUERY", "table": "tabCommunication", "type": "ref"}, {"Extra": "Using index condition; Using where", "id": 3, "key": "reference_doctype_reference_name_index", "key_len": "563", "possible_keys": "reference_doctype_reference_name_index", "ref": "const", "rows": "10236", "select_type": "DEPENDENT SUBQUERY", "table": "tabCommunication", "type": "ref"}, {"Extra": "Using where; Using index", "id": 2, "key": "reference_ticket_index", "key_len": "563", "possible_keys": "reference_ticket_index", "ref": null, "rows": "2823", "select_type": "DEPENDENT SUBQUERY", "table": "tabHD Ticket Comment", "type": "index"}]"""

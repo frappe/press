@@ -63,6 +63,12 @@ frappe.ui.form.on('Proxy Server', {
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
 			[__('Setup Wireguard'), 'setup_wireguard', true],
 			[__('Reload Wireguard'), 'reload_wireguard', true],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

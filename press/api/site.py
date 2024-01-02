@@ -69,25 +69,19 @@ def protected(doctypes):
 			if owner == team or has_config_permissions:
 				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
 				if is_team_member and hasattr(frappe.local, "request"):
-					groups = frappe.get_all(
-						"Press Permission Group User",
-						{
-							"user": frappe.session.user,
-						},
-						pluck="parent",
-					)
-					name = frappe.db.get_value(doctype, name, "group") if doctype == "Bench" else name
-					doctype = "Release Group" if doctype == "Bench" else doctype
-					restricted_method = frappe.db.exists(
+					is_method_restrictable = frappe.db.exists(
 						"Press Method Permission", {"method": request_path}
 					)
-					has_permission_set = frappe.db.exists(
-						"Press User Permission", {"user": frappe.session.user}
-					)
+					if not is_method_restrictable:
+						return wrapped(*args, **kwargs)
 
-					if (has_permission_set or groups) and restricted_method:
-						if has_user_permission(doctype, name, request_path, groups):
-							return wrapped(*args, **kwargs)
+					if doctype == "Bench":
+						name = frappe.db.get_value(doctype, name, "group")
+						doctype = "Release Group"
+
+					if has_user_permission(doctype, name, request_path):
+						return wrapped(*args, **kwargs)
+
 					else:
 						# has access to everything
 						return wrapped(*args, **kwargs)
@@ -1599,8 +1593,7 @@ def get_database_access_info(name):
 @protected("Site")
 def enable_database_access(name, mode="read_only"):
 	site_doc = frappe.get_doc("Site", name)
-	enable_access_job = site_doc.enable_database_access(mode)
-	return enable_access_job.name
+	return site_doc.enable_database_access(mode)
 
 
 @frappe.whitelist()
@@ -1703,7 +1696,7 @@ def clone_group(name):
 	cloned_group.title = f"Clone of {cloned_group.title}"
 	cloned_group.team = get_current_team()
 	cloned_group.public = 0
-	cloned_group.remove(cloned_group.servers[0])
+	cloned_group.servers = []
 	cloned_group.append("servers", {"server": site.server, "default": False})
 	cloned_group.insert()
 

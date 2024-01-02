@@ -17,6 +17,7 @@ export function confirmDialog({
 	title = 'Untitled',
 	fields = [],
 	message,
+	primaryAction,
 	onSuccess
 }) {
 	renderDialog(
@@ -24,6 +25,7 @@ export function confirmDialog({
 			title,
 			message,
 			fields,
+			primaryAction,
 			onSuccess
 		})
 	);

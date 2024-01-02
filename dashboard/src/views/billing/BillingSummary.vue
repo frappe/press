@@ -13,7 +13,11 @@
 						<div class="flex justify-between text-base">
 							<div>Total Unpaid Amount</div>
 							<Button
-								@click="showPrepaidCreditsDialog = true"
+								@click="
+									$account.team.billing_address
+										? (showPrepaidCreditsDialog = true)
+										: (showAddressDialog = true)
+								"
 								theme="gray"
 								iconLeft="credit-card"
 								>Pay</Button
@@ -31,7 +35,11 @@
 						<div class="flex justify-between text-base">
 							<div>Account Balance</div>
 							<Button
-								@click="showPrepaidCreditsDialog = true"
+								@click="
+									$account.team.billing_address
+										? (showPrepaidCreditsDialog = true)
+										: (showAddressDialog = true)
+								"
 								theme="gray"
 								iconLeft="plus"
 								>Add</Button
@@ -74,6 +82,16 @@
 
 			<ChangePaymentModeDialog v-model="showChangeModeDialog" />
 
+			<UpdateBillingDetails
+				v-if="showAddressDialog"
+				v-model="showAddressDialog"
+				@updated="
+					showAddressDialog = false;
+					showPrepaidCreditsDialog = true;
+					$resources.billingDetails.reload();
+				"
+			/>
+
 			<PrepaidCreditsDialog
 				v-if="showPrepaidCreditsDialog"
 				v-model:show="showPrepaidCreditsDialog"
@@ -109,6 +127,9 @@ export default {
 		),
 		ChangePaymentModeDialog: defineAsyncComponent(() =>
 			import('@/components/ChangePaymentModeDialog.vue')
+		),
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
 		)
 	},
 	resources: {
@@ -123,12 +144,14 @@ export default {
 				url: 'press.api.billing.total_unpaid_amount',
 				auto: true
 			};
-		}
+		},
+		billingDetails: 'press.api.billing.details'
 	},
 	data() {
 		return {
 			showPrepaidCreditsDialog: false,
-			showChangeModeDialog: false
+			showChangeModeDialog: false,
+			showAddressDialog: false
 		};
 	},
 	mounted() {
