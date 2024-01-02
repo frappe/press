@@ -96,7 +96,7 @@ def create_test_site(
 
 	Installs all apps present in bench.
 	"""
-	creation = creation or datetime.now()
+	creation = creation or frappe.utils.now_datetime()
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
