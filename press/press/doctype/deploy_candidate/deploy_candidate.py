@@ -928,6 +928,17 @@ def pull_update_file_filter(file_path: str) -> bool:
 	elif file_path.endswith(".py") and "/doctype/" in file_path:
 		return True
 
+	# Non build requiring frontend files
+	for ext in [".html", ".js", ".css"]:
+		if not file_path.endswith(ext):
+			continue
+
+		if "/public/" in file_path:
+			return True
+
+		elif "/www/" in file_path:
+			return True
+
 	return False
 
 
