@@ -25,19 +25,7 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 	"""
 	Create Test Deploy Candidate doc
 	"""
-	deploy_candidate = frappe.get_doc(
-		{
-			"doctype": "Deploy Candidate",
-			"team": group.team,
-			"group": group.name,
-			"dependencies": group.dependencies,
-		}
-	)
-	for app in group.apps:
-		deploy_candidate.append("apps", app.as_dict())
-
-	deploy_candidate.insert()
-	return deploy_candidate
+	return group.create_deploy_candidate()
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
