@@ -30,10 +30,12 @@ def create_test_deploy_candidate(group: ReleaseGroup) -> DeployCandidate:
 			"doctype": "Deploy Candidate",
 			"team": group.team,
 			"group": group.name,
-			"apps": group.apps,
 			"dependencies": group.dependencies,
 		}
 	)
+	for app in group.apps:
+		deploy_candidate.append("apps", app.as_dict())
+
 	deploy_candidate.insert()
 	return deploy_candidate
 
