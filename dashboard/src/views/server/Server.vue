@@ -199,7 +199,7 @@ export default {
 					icon: 'external-link',
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
+							`${window.location.protocol}//${window.location.host}/app/${this.server.type}/${this.server.name}`,
 							'_blank'
 						);
 					}

@@ -27,7 +27,9 @@ class StripeWebhookLog(Document):
 
 		if invoice_id:
 			self.invoice_id = invoice_id
-			self.invoice = frappe.db.get_value("Invoice", {"stripe_invoice_id": invoice_id}, "name")
+			self.invoice = frappe.db.get_value(
+				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
+			)
 
 
 @frappe.whitelist(allow_guest=True)
