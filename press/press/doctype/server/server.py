@@ -1046,6 +1046,23 @@ def scale_workers():
 			log_error("Auto Scale Worker Error", server=server)
 			frappe.db.rollback()
 
+	def install_earlyoom(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_earlyoom",
+		)
+
+	def _install_earlyoom(self):
+		try:
+			ansible = Ansible(
+				playbook="server_memory_limits.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Earlyoom Install Exception", server=self.as_dict())
+
 
 def process_new_server_job_update(job):
 	if job.status == "Success":
