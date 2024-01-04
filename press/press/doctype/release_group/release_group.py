@@ -282,9 +282,11 @@ class ReleaseGroup(Document):
 	def validate_app_version(self, app: "ReleaseGroupApp"):
 		source = frappe.get_doc("App Source", app.source)
 		if all(row.version != self.version for row in source.versions):
-			frappe.throw(
-				f"App Source {app.source} version is not {self.version}", frappe.ValidationError
-			)
+			branch, repo = frappe.db.get_values(
+				"App Source", app.source, ("branch", "repository")
+			)[0]
+			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with {self.version} version of Frappe"
+			frappe.throw(msg, frappe.ValidationError)
 
 	def validate_servers(self):
 		if self.servers:
