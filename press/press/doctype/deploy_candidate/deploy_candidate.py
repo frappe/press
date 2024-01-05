@@ -6,9 +6,10 @@ import os
 import re
 import shlex
 import shutil
-import frappe
+
 import docker
 import dockerfile
+import frappe
 import subprocess
 import json
 
@@ -16,16 +17,19 @@ from typing import List
 from subprocess import Popen
 from frappe.core.utils import find
 from frappe.model.document import Document
-from frappe.utils import now_datetime as now
 from frappe.model.naming import make_autoname
-
-from press.utils import get_current_team, log_error
-from press.press.doctype.server.server import Server
+from frappe.utils import now_datetime as now
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.app_release.app_release import (
+	AppReleasePair,
+	get_changed_files_between_hashes,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
-from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.press.doctype.server.server import Server
+from press.utils import get_current_team, log_error
 
 
 class DeployCandidate(Document):
@@ -96,6 +100,8 @@ class DeployCandidate(Document):
 
 	def pre_build(self, method, **kwargs):
 		self.status = "Pending"
+		if not kwargs.get("no_cache"):
+			self._update_app_releases()
 		self.add_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -203,6 +209,7 @@ class DeployCandidate(Document):
 		self._prepare_packages()
 		self._prepare_mounts()
 
+		# stage_slug, step_slug, stage, step
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
 			("pre", "redis", "Setup Prerequisites", "Install Redis"),
@@ -231,6 +238,9 @@ class DeployCandidate(Document):
 			]
 		)
 
+		clone_steps = []
+		app_install_steps = []
+		pull_update_steps = []
 		mount_step = []
 
 		if self._mounts:
@@ -240,12 +250,20 @@ class DeployCandidate(Document):
 				]
 			)
 
-		clone_steps, app_install_steps = [], []
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
 			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
 
-		steps = clone_steps + preparation_steps + app_install_steps + mount_step
+			if app.pullable_release:
+				pull_update_steps.append(("pull", app.app, "Pull Updates", app.title))
+
+		steps = [
+			*clone_steps,
+			*preparation_steps,
+			*app_install_steps,
+			*pull_update_steps,
+			*mount_step,
+		]
 
 		for stage_slug, step_slug, stage, step in steps:
 			self.append(
@@ -331,6 +349,33 @@ class DeployCandidate(Document):
 			self.build_directory = None
 			self.save()
 
+	def _update_app_releases(self) -> None:
+		should_update = frappe.get_value(
+			"Release Group", self.group, "is_delta_build_enabled"
+		)
+		if not should_update:
+			return
+
+		try:
+			update = self.get_pull_update_dict()
+		except Exception as e:
+			log_error(title="Failed to get Pull Update Dict", data=e)
+			return
+
+		for app in self.apps:
+			if app.app not in update:
+				continue
+
+			release_pair = update[app.app]
+
+			# Previously deployed release used for get-app
+			app.hash = release_pair["old"]["hash"]
+			app.release = release_pair["old"]["name"]
+
+			# New release to be pulled after get-app
+			app.pullable_hash = release_pair["new"]["hash"]
+			app.pullable_release = release_pair["new"]["name"]
+
 	def _prepare_build_context(self):
 		# Create apps directory
 		apps_directory = os.path.join(self.build_directory, "apps")
@@ -367,6 +412,20 @@ class DeployCandidate(Document):
 			target = os.path.join(self.build_directory, "apps", app.app)
 			shutil.copytree(source, target, symlinks=True)
 			app.app_name = self._get_app_name(app.app)
+
+			"""
+			Pullable updates don't need cloning as they get cloned when
+			the app is checked for possible pullable updates in:
+
+			self.get_pull_update_dict
+				└─ app_release.get_changed_files_between_hashes
+			"""
+			if app.pullable_release:
+				update_source = frappe.get_value(
+					"App Release", app.pullable_release, "clone_directory"
+				)
+				update_target = os.path.join(self.build_directory, "app_updates", app.app)
+				shutil.copytree(update_source, update_target, symlinks=True)
 
 			self.save(ignore_version=True)
 			frappe.db.commit()
@@ -852,6 +911,116 @@ class DeployCandidate(Document):
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
 		return f"{dependency} {version}"
+
+	def get_pull_update_dict(self) -> dict[str, AppReleasePair]:
+		"""
+		Returns a dict of apps with:
+
+		`old` hash: for which there already exist cached layers from previously
+		deployed Benches that have been created from this Deploy Candidate.
+
+		`new` hash: which can just be 'git pull' updated, i.e. a new layer does
+		not need to be built for them from scratch.
+		"""
+
+		# Deployed Benches from current DC with (potentially) cached layers
+		benches = frappe.get_all(
+			"Bench", filters={"group": self.group, "status": "Active"}, limit=1
+		)
+		if not benches:
+			return {}
+
+		bench_name = benches[0]["name"]
+		deployed_apps = frappe.get_all(
+			"Bench App",
+			filters={"parent": bench_name},
+			fields=["app", "source", "hash"],
+		)
+		deployed_apps_map = {app.app: app for app in deployed_apps}
+
+		pull_update: dict[str, AppReleasePair] = {}
+
+		for app in self.apps:
+			app_name = app.app
+
+			"""
+			If True, new app added to the Release Group. Downstream layers will
+			be rebuilt regardless of layer change.
+			"""
+			if app_name not in deployed_apps_map:
+				break
+
+			deployed_app = deployed_apps_map[app_name]
+
+			"""
+			If True, app source updated in Release Group. Downstream layers may
+			have to be rebuilt. Erring on the side of caution.
+			"""
+			if deployed_app["source"] != app.source:
+				break
+
+			update_hash = app.hash
+			deployed_hash = deployed_app["hash"]
+
+			if update_hash == deployed_hash:
+				continue
+
+			changes = get_changed_files_between_hashes(
+				app.source,
+				deployed_hash,
+				update_hash,
+			)
+			# deployed commit is after update commit
+			if not changes:
+				break
+
+			file_diff, pair = changes
+			if not can_pull_update(file_diff):
+				"""
+				If current app is not being pull_updated, then no need to
+				pull update apps later in the sequence.
+
+				This is because once an image layer hash changes all layers
+				after it have to be rebuilt.
+				"""
+				break
+
+			pull_update[app_name] = pair
+		return pull_update
+
+
+def can_pull_update(file_paths: list[str]) -> bool:
+	"""
+	Updated app files between current and previous build
+	that do not cause get-app to update the filesystem can
+	be git pulled.
+
+	Function returns True ONLY if all files are of this kind.
+	"""
+	return all(pull_update_file_filter(fp) for fp in file_paths)
+
+
+def pull_update_file_filter(file_path: str) -> bool:
+	# Requires migrate but should not change image filesystem
+	if file_path.endswith(".json") and "/doctype/" in file_path:
+		return True
+
+	# Controller file
+	elif file_path.endswith(".py") and "/doctype/" in file_path:
+		return True
+
+	# Non build requiring frontend files
+	for ext in [".html", ".js", ".css"]:
+		if not file_path.endswith(ext):
+			continue
+
+		if "/public/" in file_path:
+			return True
+
+		elif "/www/" in file_path:
+			return True
+
+	return False
 
 
 def cleanup_build_directories():

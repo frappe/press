@@ -13,6 +13,7 @@
   "column_break_3",
   "hash",
   "author",
+  "timestamp",
   "message",
   "clone_section",
   "clone_directory",
@@ -134,6 +135,12 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Draft\nApproved\nAwaiting Approval\nRejected"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp",
+   "read_only": 1
   }
  ],
  "in_create": 1,
@@ -169,7 +176,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2023-12-06 15:38:30.386183",
+ "modified": "2024-01-02 12:57:26.450172",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

@@ -42,6 +42,7 @@
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
+  "is_delta_build_enabled",
   "column_break_9efq",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -312,6 +313,13 @@
   },
   {
    "default": "0",
+   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
+   "fieldname": "is_delta_build_enabled",
+   "fieldtype": "Check",
+   "label": "Delta Builds"
+  },
+  {
+   "default": "0",
    "fetch_from": "team.is_code_server_user",
    "fieldname": "is_code_server_enabled",
    "fieldtype": "Check",
@@ -326,7 +334,7 @@
   }
  ],
  "links": [],
- "modified": "2023-12-14 13:06:48.556880",
+ "modified": "2024-01-01 12:44:40.902468",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
