@@ -171,6 +171,46 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
 
+	@frappe.whitelist()
+	def stop_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb")
+
+	def _stop_mariadb(self):
+		ansible = Ansible(
+			playbook="stop_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Stop Error", server=self.name)
+
+	@frappe.whitelist()
+	def run_upgrade_mariadb_job(self):
+		self.run_press_job("Upgrade MariaDB")
+
+	@frappe.whitelist()
+	def upgrade_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb")
+
+	def _upgrade_mariadb(self):
+		ansible = Ansible(
+			playbook="upgrade_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Upgrade Error", server=self.name)
+
 	def add_mariadb_variable(
 		self,
 		variable: str,

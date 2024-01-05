@@ -5,6 +5,7 @@ frappe.ui.form.on('Press Job', {
 	refresh: function (frm) {
 		[
 			[__('Force Continue'), 'force_continue', frm.doc.status === 'Failure'],
+			[__('Force Fail'), 'force_fail', frm.doc.status === 'Running'],
 		].forEach(([label, method, condition]) => {
 			if (condition) {
 				frm.add_custom_button(

@@ -222,5 +222,53 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-01-05 13:40:21.038901",
+  "name": "Upgrade MariaDB",
+  "steps": [
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.stop_mariadb()",
+    "step_name": "Stop MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Stop MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for MariaDB to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots()\nsnapshot = frappe.get_last_doc(\"Virtual Disk Snapshot\", {\"virtual_machine\": doc.virtual_machine})\nsnapshot.add_comment(text=\"Before MariaDB Upgrade\")",
+    "step_name": "Create Server Snapshot",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]

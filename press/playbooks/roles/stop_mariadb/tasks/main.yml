@@ -1,0 +1,5 @@
+---
+- name: Stop MariaDB Service
+  systemd:
+    name: mariadb
+    state: stopped
