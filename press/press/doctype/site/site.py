@@ -16,6 +16,7 @@ from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours
+from press.exceptions import CannotChangePlan
 from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
@@ -1053,18 +1054,22 @@ class Site(Document):
 			team = frappe.get_doc("Team", team.parent_team)
 
 		if team.is_defaulter():
-			frappe.throw("Cannot change plan because you have unpaid invoices")
+			frappe.throw("Cannot change plan because you have unpaid invoices", CannotChangePlan)
 
 		if team.payment_mode == "Partner Credits" and (
 			not team.get_available_partner_credits() > 0
 		):
-			frappe.throw("Cannot change plan because you don't have sufficient partner credits")
+			frappe.throw(
+				"Cannot change plan because you don't have sufficient partner credits",
+				CannotChangePlan,
+			)
 
 		if team.payment_mode != "Partner Credits" and not (
 			team.default_payment_method or team.get_balance()
 		):
 			frappe.throw(
-				"Cannot change plan because you haven't added a card and not have enough balance"
+				"Cannot change plan because you haven't added a card and not have enough balance",
+				CannotChangePlan,
 			)
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
