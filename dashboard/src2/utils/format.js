@@ -58,9 +58,14 @@ export function planTitle(plan) {
 
 export function userCurrency(value) {
 	let $team = getTeam();
-	let india = $team.doc.currency == 'INR';
-	let symbol = india ? '₹' : '$';
-	return `${symbol}${value}`;
+	return currency(value, $team.doc.currency);
+}
+
+export function currency(value, currency) {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency
+	}).format(value);
 }
 
 export function numberK(number) {

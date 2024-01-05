@@ -322,6 +322,7 @@ def validate_request_key(key, timezone=None):
 				"title": saas_product_doc.title,
 				"logo": saas_product_doc.logo,
 				"signup_fields": saas_product_doc.signup_fields,
+				"description": frappe.utils.md_to_html(saas_product_doc.description)
 			}
 			if saas_product_doc
 			else None,

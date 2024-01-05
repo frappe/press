@@ -1,92 +1,102 @@
 <template>
-	<LoginBox
+	<div
+		class="flex h-screen overflow-hidden bg-gray-50"
 		v-if="!$resources.validateRequestKey.loading && email"
-		:title="
-			!isInvitation
-				? 'Set up your account'
-				: `Invitation to join team: ${invitationToTeam}`
-		"
 	>
-		<form
-			class="flex flex-col"
-			@submit.prevent="$resources.setupAccount.submit()"
-		>
-			<div class="space-y-4">
-				<FormControl
-					v-if="oauthSignup == 0"
-					label="Email"
-					type="text"
-					:modelValue="email"
-					disabled
-				/>
-				<template v-if="oauthSignup == 0">
-					<FormControl
-						label="First Name"
-						type="text"
-						v-model="firstName"
-						name="fname"
-						autocomplete="given-name"
-						required
-					/>
-					<FormControl
-						label="Last Name"
-						type="text"
-						v-model="lastName"
-						name="lname"
-						autocomplete="family-name"
-						required
-					/>
-					<FormControl
-						label="Password"
-						type="password"
-						v-model="password"
-						name="password"
-						autocomplete="new-password"
-						required
-					/>
-				</template>
-				<FormControl
-					type="select"
-					:options="countries"
-					v-if="!isInvitation"
-					label="Country"
-					v-model="country"
-					required
-				/>
-				<Form
-					v-if="signupFields.length > 0"
-					:fields="signupFields"
-					v-model="signupValues"
-				/>
-				<div class="mt-4 flex items-start">
-					<label class="text-base text-gray-900">
-						<FormControl type="checkbox" v-model="termsAccepted" />
-						By clicking on
-						<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
-						>, you accept our
-						<Link href="https://frappecloud.com/terms" target="_blank"
-							>Terms of Service </Link
-						>,
-						<Link href="https://frappecloud.com/privacy" target="_blank">
-							Privacy Policy
-						</Link>
-						&#38;
-						<Link href="https://frappecloud.com/cookie-policy" target="_blank">
-							Cookie Policy
-						</Link>
-					</label>
-				</div>
-			</div>
-			<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
-			<Button
-				class="mt-4"
-				variant="solid"
-				:loading="$resources.setupAccount.loading"
+		<ProductSignupPitch :saasProduct="saasProduct" class="w-[40%]" />
+		<div class="w-full overflow-auto">
+			<LoginBox
+				:title="
+					!isInvitation
+						? 'Set up your account'
+						: `Invitation to join team: ${invitationToTeam}`
+				"
 			>
-				{{ isInvitation ? 'Accept' : 'Create account' }}
-			</Button>
-		</form>
-	</LoginBox>
+				<form
+					class="flex flex-col"
+					@submit.prevent="$resources.setupAccount.submit()"
+				>
+					<div class="space-y-4">
+						<FormControl
+							v-if="oauthSignup == 0"
+							label="Email"
+							type="text"
+							:modelValue="email"
+							disabled
+						/>
+						<template v-if="oauthSignup == 0">
+							<FormControl
+								label="First Name"
+								type="text"
+								v-model="firstName"
+								name="fname"
+								autocomplete="given-name"
+								required
+							/>
+							<FormControl
+								label="Last Name"
+								type="text"
+								v-model="lastName"
+								name="lname"
+								autocomplete="family-name"
+								required
+							/>
+							<FormControl
+								label="Password"
+								type="password"
+								v-model="password"
+								name="password"
+								autocomplete="new-password"
+								required
+							/>
+						</template>
+						<FormControl
+							type="select"
+							:options="countries"
+							v-if="!isInvitation"
+							label="Country"
+							v-model="country"
+							required
+						/>
+						<Form
+							v-if="signupFields.length > 0"
+							:fields="signupFields"
+							v-model="signupValues"
+						/>
+						<div class="mt-4 flex items-start">
+							<label class="text-base text-gray-900">
+								<FormControl type="checkbox" v-model="termsAccepted" />
+								By clicking on
+								<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
+								>, you accept our
+								<Link href="https://frappecloud.com/terms" target="_blank"
+									>Terms of Service </Link
+								>,
+								<Link href="https://frappecloud.com/privacy" target="_blank">
+									Privacy Policy
+								</Link>
+								&#38;
+								<Link
+									href="https://frappecloud.com/cookie-policy"
+									target="_blank"
+								>
+									Cookie Policy
+								</Link>
+							</label>
+						</div>
+					</div>
+					<ErrorMessage class="mt-4" :message="$resources.setupAccount.error" />
+					<Button
+						class="mt-4"
+						variant="solid"
+						:loading="$resources.setupAccount.loading"
+					>
+						{{ isInvitation ? 'Accept' : 'Create account' }}
+					</Button>
+				</form>
+			</LoginBox>
+		</div>
+	</div>
 	<div
 		class="mt-20 px-6 text-center"
 		v-else-if="!$resources.validateRequestKey.loading && !email"
@@ -102,13 +112,15 @@
 import LoginBox from '@/views/partials/LoginBox.vue';
 import Link from '@/components/Link.vue';
 import Form from '@/components/Form.vue';
+import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 
 export default {
 	name: 'SetupAccount',
 	components: {
 		LoginBox,
 		Link,
-		Form
+		Form,
+		ProductSignupPitch
 	},
 	props: ['requestKey', 'joinRequest'],
 	data() {

@@ -1,102 +1,177 @@
 <template>
-	<div class="min-h-screen bg-gray-50" v-if="siteRequest.doc && saasProduct">
-		<LoginBox
-			:title="siteRequest.doc.status == 'Pending' ? 'Create your site' : ''"
-		>
-			<template #logo>
-				<div class="mx-auto">
-					<div class="flex items-center justify-center space-x-2">
-						<img :src="saasProduct.logo" :alt="saasProduct.title" class="h-7" />
-						<h1 class="text-center text-2xl font-semibold tracking-tight">
-							{{ saasProduct.title }}
-						</h1>
-					</div>
-					<div class="mt-2 text-base text-gray-700">
-						Powered by Frappe Cloud
-					</div>
-				</div>
-			</template>
-			<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
-				<FormControl
-					label="Your Email"
-					:modelValue="$team.doc.user"
-					:disabled="true"
-				/>
-				<FormControl
-					class="subdomain mt-2"
-					label="Site Name"
-					v-model="subdomain"
-					@keydown.enter="siteRequest.createSite.submit()"
-				>
-					<template #suffix>
-						<div
-							ref="domainSuffix"
-							v-element-size="onResize"
-							class="flex select-none items-center text-base text-gray-600"
-						>
-							.{{ saasProduct.domain || 'frappe.cloud' }}
+	<div
+		class="flex min-h-screen bg-gray-50"
+		v-if="siteRequest.doc && saasProduct"
+	>
+		<ProductSignupPitch :saasProduct="saasProduct" class="w-[40%]" />
+		<div class="w-full">
+			<LoginBox
+				:title="
+					siteRequest.doc.status == 'Pending'
+						? `Create your ${saasProduct.title} site`
+						: ''
+				"
+			>
+				<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
+					<FormControl
+						label="Your Email"
+						:modelValue="$team.doc.user"
+						:disabled="true"
+					/>
+					<div class="cursor-pointer" @click.stop="showPlanDialog = true">
+						<label class="text-xs text-gray-600">Choose a plan</label>
+						<Button class="w-full">
+							<span class="text-base text-gray-900" v-if="plan">
+								{{ selectedPlanDescription }}
+							</span>
+							<span class="text-base text-gray-600" v-else>
+								No plan selected
+							</span>
+						</Button>
+						<div class="mt-1 text-xs text-gray-600">
+							{{
+								plan === 'Trial'
+									? ''
+									: `You won't be charged during the 14-day trial period`
+							}}
 						</div>
-					</template>
-				</FormControl>
-				<ErrorMessage :message="siteRequest.createSite.error" />
-				<Button
-					class="w-full"
-					variant="solid"
-					@click="siteRequest.createSite.submit()"
-					:loading="siteRequest.createSite.loading"
-				>
-					Create
-				</Button>
-			</div>
-			<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
-				<Progress
-					label="Creating site"
-					:value="siteRequest.getProgress.data?.progress || 0"
-					size="md"
-				/>
-				<ErrorMessage
-					:message="
-						siteRequest.getProgress.data?.error ? 'An error occurred' : null
-					"
-				/>
-			</div>
-			<div v-else-if="siteRequest.doc.status == 'Site Created'">
-				<div class="text-base text-gray-900">
-					Your site
-					<span class="font-semibold text-gray-900">{{
-						siteRequest.doc.site
-					}}</span>
-					is ready.
-				</div>
-				<div class="py-3 text-base text-gray-900">
+					</div>
+					<FormControl
+						class="subdomain mt-2"
+						label="Site Name"
+						v-model="subdomain"
+						@keydown.enter="siteRequest.createSite.submit()"
+					>
+						<template #suffix>
+							<div
+								ref="domainSuffix"
+								v-element-size="onResize"
+								class="flex select-none items-center text-base text-gray-600"
+							>
+								.{{ saasProduct.domain || 'frappe.cloud' }}
+							</div>
+						</template>
+					</FormControl>
+					<ErrorMessage :message="siteRequest.createSite.error" />
 					<Button
-						:loading="siteRequest.getLoginSid.loading"
-						:link="
-							siteRequest.getLoginSid.data
-								? `https://${siteRequest.doc.site}/desk?sid=${siteRequest.getLoginSid.data.sid}`
-								: null
+						class="w-full"
+						variant="solid"
+						@click="siteRequest.createSite.submit()"
+						:loading="siteRequest.createSite.loading"
+					>
+						Create
+					</Button>
+				</div>
+				<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
+					<Progress
+						label="Creating site"
+						:value="siteRequest.getProgress.data?.progress || 0"
+						size="md"
+					/>
+					<ErrorMessage
+						:message="
+							siteRequest.getProgress.data?.error ? 'An error occurred' : null
+						"
+					/>
+				</div>
+				<div v-else-if="siteRequest.doc.status == 'Site Created'">
+					<div class="text-base text-gray-900">
+						Your site
+						<span class="font-semibold text-gray-900">{{
+							siteRequest.doc.site
+						}}</span>
+						is ready.
+					</div>
+					<div class="py-3 text-base text-gray-900">
+						<Button
+							:loading="siteRequest.getLoginSid.loading"
+							:link="
+								siteRequest.getLoginSid.data
+									? `https://${siteRequest.doc.site}/desk?sid=${siteRequest.getLoginSid.data.sid}`
+									: null
+							"
+						>
+							<template #prefix>
+								<i-lucide-external-link class="h-4 w-4 text-gray-700" />
+							</template>
+							{{
+								siteRequest.getLoginSid.loading
+									? 'Generating login URL...'
+									: `Login to your site`
+							}}
+						</Button>
+					</div>
+					<div>
+						<Button @click="goToDashboard">
+							<template #prefix>
+								<i-lucide-home class="h-4 w-4 text-gray-700" />
+							</template>
+							Go to Frappe Cloud Dashboard
+						</Button>
+					</div>
+				</div>
+			</LoginBox>
+		</div>
+		<Dialog
+			:options="{
+				title: 'Choose Plan',
+				size: '4xl',
+				actions: [
+					{
+						label: 'Select plan',
+						variant: 'solid',
+						onClick: () => {
+							this.plan = this.selectedPlan;
+							this.showPlanDialog = false;
+						}
+					},
+					{
+						label: 'Cancel',
+						onClick: () => {
+							this.plan = null;
+							this.showPlanDialog = false;
+						}
+					}
+				]
+			}"
+			v-model="showPlanDialog"
+		>
+			<template #body-content>
+				<p class="text-p-base text-gray-900">
+					You won't be charged during the 14-day trial period. The plan you
+					select here will become active after the trial period.
+				</p>
+				<SitePlansCards v-model="selectedPlan" class="mt-4" />
+			</template>
+			<template #actions>
+				<div class="flex items-center">
+					<Button
+						class="order-1 ml-2"
+						variant="solid"
+						@click="
+							() => {
+								this.plan = this.selectedPlan;
+								this.showPlanDialog = false;
+							}
 						"
 					>
-						<template #prefix>
-							<i-lucide-external-link class="h-4 w-4 text-gray-700" />
-						</template>
-						{{
-							siteRequest.getLoginSid.loading
-								? 'Generating login URL...'
-								: `Login to your site`
-						}}
+						Select Plan
+					</Button>
+					<Button
+						class="ml-auto"
+						@click="
+							() => {
+								this.plan = null;
+								this.selectedPlan = null;
+								this.showPlanDialog = false;
+							}
+						"
+					>
+						Cancel
 					</Button>
 				</div>
-				<div>
-					<Button @click="goToDashboard">
-						<template #prefix>
-							<i-lucide-home class="h-4 w-4 text-gray-700" />
-						</template>
-						Go to Frappe Cloud Dashboard
-					</Button>
-				</div>
-			</div>
-		</LoginBox>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -104,6 +179,9 @@ import { ErrorMessage, Progress } from 'frappe-ui';
 import LoginBox from '@/views/partials/LoginBox.vue';
 import { vElementSize } from '@vueuse/components';
 import { validateSubdomain } from '@/utils';
+import SitePlansCards from '../components/SitePlansCards.vue';
+import ProductSignupPitch from '../components/ProductSignupPitch.vue';
+import { plans } from '../data/plans';
 
 export default {
 	name: 'NewAppSite',
@@ -111,12 +189,17 @@ export default {
 		'element-size': vElementSize
 	},
 	components: {
-		LoginBox
+		LoginBox,
+		SitePlansCards,
+		ProductSignupPitch
 	},
 	data() {
 		return {
 			subdomain: null,
-			inputPaddingRight: null
+			plan: null,
+			inputPaddingRight: null,
+			showPlanDialog: false,
+			selectedPlan: null
 		};
 	},
 	resources: {
@@ -182,6 +265,18 @@ export default {
 		},
 		saasProduct() {
 			return this.$resources.siteRequest.doc.saas_product;
+		},
+		selectedPlanDescription() {
+			if (!this.plan) return;
+			if (!plans?.data) {
+				return this.plan;
+			}
+			let plan = plans.data.find(plan => plan.name == this.plan);
+			let country = this.$team.doc.country;
+			let pricePerMonth = this.$format.userCurrency(
+				country === 'India' ? plan.price_inr : plan.price_usd
+			);
+			return `${pricePerMonth} per month`;
 		}
 	}
 };

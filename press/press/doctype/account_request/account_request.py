@@ -96,13 +96,15 @@ class AccountRequest(Document):
 			now=True,
 		)
 
-	def get_verification_url(self):
+	def get_verification_url(self, dashboard2=False):
 		if self.saas:
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
 
-		return get_url(f"/dashboard/setup-account/{self.request_key}")
+		return get_url(
+			f"/dashboard{'2' if dashboard2 else ''}/setup-account/{self.request_key}"
+		)
 
 	@property
 	def full_name(self):

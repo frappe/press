@@ -824,12 +824,13 @@ class VirtualMachine(Document):
 			InstanceId=self.instance_id,
 			SSHPublicKey=frappe.db.get_value("SSH Key", self.ssh_key, "public_key"),
 		)
-		serial_console_endpoint = AWS_SERIAL_CONSOLE_ENDPOINT_MAP[self.region]["endpoint"]
+		serial_console_endpoint = AWS_SERIAL_CONSOLE_ENDPOINT_MAP[self.region]
 		username = f"{self.instance_id}.port0"
-		host = serial_console_endpoint
+		host = serial_console_endpoint["endpoint"]
 		return {
 			"username": username,
 			"host": host,
+			"fingerprint": serial_console_endpoint["fingerprint"],
 			"command": f"ssh {username}@{host}",
 		}
 

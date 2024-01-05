@@ -42,6 +42,7 @@ class Team(Document):
 		"default_payment_method",
 		"skip_backups",
 		"is_saas_user",
+		"billing_name",
 	]
 
 	def get_doc(self, doc):
@@ -64,6 +65,20 @@ class Team(Document):
 		doc.valid_teams = get_valid_teams_for_user(frappe.session.user)
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
+		doc.billing_details = self.billing_details()
+		doc.payment_method = frappe.db.get_value(
+			"Stripe Payment Method",
+			{"team": self.name, "name": self.default_payment_method},
+			[
+				"name",
+				"last_4",
+				"name_on_card",
+				"expiry_month",
+				"expiry_year",
+				"brand",
+			],
+			as_dict=True,
+		)
 
 	def onload(self):
 		load_address_and_contact(self)
@@ -486,6 +501,7 @@ class Team(Document):
 			self.stripe_customer_id = customer.id
 			self.save()
 
+	@frappe.whitelist()
 	def update_billing_details(self, billing_details):
 		if self.billing_address:
 			address_doc = frappe.get_doc("Address", self.billing_address)
@@ -825,10 +841,25 @@ class Team(Document):
 			),
 		}
 
+	def billing_details(self, timezone=None):
+		billing_details = frappe._dict()
+		if self.billing_address:
+			billing_details = frappe.get_doc("Address", self.billing_address).as_dict()
+			billing_details.billing_name = self.billing_name
+
+		if not billing_details.country and timezone:
+			from press.utils.country_timezone import get_country_from_timezone
+
+			billing_details.country = get_country_from_timezone(timezone)
+
+		return billing_details
+
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
-		elif self.payment_mode == "Prepaid Credits" and self.get_balance() > 0:
+		elif self.payment_mode == "Prepaid Credits" and frappe.db.get_all(
+			"Invoice", {"team": self.name, "status": "Paid", "type": "Prepaid Credits"}, limit=1
+		):
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
@@ -1075,7 +1106,6 @@ def get_default_team(user):
 
 def process_stripe_webhook(doc, method):
 	"""This method runs after a Stripe Webhook Log is created"""
-	from datetime import datetime
 
 	if doc.event_type not in ["payment_intent.succeeded"]:
 		return
@@ -1093,6 +1123,17 @@ def process_stripe_webhook(doc, method):
 		process_micro_debit_test_charge(event)
 		return
 
+	handle_payment_intent_succeeded(payment_intent)
+
+
+def handle_payment_intent_succeeded(payment_intent):
+	from datetime import datetime
+
+	if isinstance(payment_intent, str):
+		stripe = get_stripe()
+		payment_intent = stripe.PaymentIntent.retrieve(payment_intent)
+
+	metadata = payment_intent.get("metadata")
 	if frappe.db.exists(
 		"Invoice", {"stripe_payment_intent_id": payment_intent["id"], "status": "Paid"}
 	):
@@ -1106,8 +1147,7 @@ def process_stripe_webhook(doc, method):
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
 
-	# Give them free credits too (only first time)
-	team.allocate_free_credits()
+	# team.allocate_free_credits()
 
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
@@ -1135,11 +1175,17 @@ def process_stripe_webhook(doc, method):
 	)
 	invoice.insert()
 	invoice.reload()
-	# there should only be one charge object
-	charge = payment_intent["charges"]["data"][0]["id"]
-	# update transaction amount, fee and exchange rate
-	invoice.update_transaction_details(charge)
-	invoice.submit()
+
+	# latest stripe API sets charge id in latest_charge
+	charge = payment_intent.get("latest_charge")
+	if not charge:
+		# older stripe API sets charge id in charges.data
+		charges = payment_intent.get("charges", {}).get("data", [])
+		charge = charges[0]["id"] if charges else None
+	if charge:
+		# update transaction amount, fee and exchange rate
+		invoice.update_transaction_details(charge)
+		invoice.submit()
 
 	enqueue_finalize_unpaid_for_team(team.name)
 

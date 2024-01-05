@@ -76,7 +76,7 @@ const listOptions = ref({
 	},
 	route(row) {
 		return {
-			name: 'PermissionGroupPermissions',
+			name: 'SettingsPermissionGroupPermissions',
 			params: { groupId: row.name }
 		};
 	},

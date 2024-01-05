@@ -46,10 +46,12 @@
 			</div>
 		</button>
 		<div
-			class="overflow-x-auto rounded-b border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
+			class="overflow-auto rounded-b border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
 			v-show="step.isOpen"
 		>
-			<pre>{{ step.output || 'No output' }}</pre>
+			<pre ref="output" class="max-h-[50vh]">{{
+				step.output || 'No output'
+			}}</pre>
 		</div>
 	</div>
 </template>
@@ -60,6 +62,19 @@ const props = defineProps({
 	step: {
 		type: Object,
 		required: true
+	},
+	watch: {
+		step: {
+			deep: true,
+			handler(step, oldStep) {
+				console.log(step);
+				if (step.output !== oldStep.output) {
+					this.$nextTick(() => {
+						this.$refs.output.scrollTop = this.$refs.output.scrollHeight;
+					});
+				}
+			}
+		}
 	}
 });
 </script>

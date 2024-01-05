@@ -88,7 +88,8 @@
    "fieldname": "unallocated_amount",
    "fieldtype": "Currency",
    "label": "Unallocated Amount",
-   "options": "currency"
+   "options": "currency",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -96,13 +97,14 @@
    "fieldname": "allocated_to",
    "fieldtype": "Table",
    "label": "Allocated To",
-   "options": "Balance Transaction Allocation"
+   "options": "Balance Transaction Allocation",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-12-06 15:52:44.971950",
+ "modified": "2024-01-04 22:28:44.740627",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",

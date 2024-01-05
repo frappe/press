@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-12-13 16:07:54.907147",
+  "modified": "2024-01-04 11:59:04.201894",
   "name": "Create Server",
   "steps": [
    {
@@ -65,7 +65,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
     "step_name": "Set additional config",
     "wait_until_true": 0
    }

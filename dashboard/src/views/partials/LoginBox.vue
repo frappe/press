@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-full">
-		<div class="relative z-10 mx-auto w-max pt-32">
+		<div class="relative z-10 mx-auto w-max py-32">
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">

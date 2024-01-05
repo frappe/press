@@ -5,7 +5,11 @@
 		</div>
 	</Header>
 	<div>
-		<Tabs v-model="currentTab" :tabs="tabs" @update:model-value="handleTabChange($event)">
+		<Tabs
+			v-model="currentTab"
+			:tabs="tabs"
+			@update:model-value="handleTabChange($event)"
+		>
 			<template #default="{ tab }">
 				<router-view :key="tab.routeName"></router-view>
 			</template>
@@ -24,17 +28,17 @@ const tabs = [
 	// {
 	// 	label: 'Profile',
 	// 	icon: icon('user'),
-	// 	routeName: 'ProfileSettings'
+	// 	routeName: 'SettingsProfile'
 	// },
 	{
 		label: 'Team',
 		icon: icon('users'),
-		routeName: 'TeamSettings'
+		routeName: 'SettingsTeam'
 	},
 	{
 		label: 'Permissions',
 		icon: icon('lock'),
-		routeName: 'PermissionsSettings'
+		routeName: 'SettingsPermission'
 	}
 ];
 
