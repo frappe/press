@@ -12,6 +12,7 @@ frappe.ui.form.on('Ansible Console', {
 		});
 	},
 	refresh: function (frm) {
+		frm.fields_dict.output.grid.grid_pagination.page_length = 500;
 		frm.disable_save();
 		frm.page.set_primary_action(__('Execute'), ($btn) => {
 			frm.set_value('nonce', Math.random());
