@@ -77,6 +77,7 @@ def get_saas_bench(app):
 		pluck="name",
 	)
 	release_group = get_saas_group(app)
+	cluster = get_saas_cluster(app)
 	bench_servers = frappe.db.sql(
 		"""
 		SELECT
@@ -88,18 +89,16 @@ def get_saas_bench(app):
 		ON
 			bench.server = server.name
 		WHERE
-			server.proxy_server in %s AND bench.status = "Active" AND bench.group = %s
+			server.proxy_server in %s AND server.cluster = %s AND bench.status = "Active" AND bench.group = %s
 		ORDER BY
 			server.use_for_new_sites DESC, bench.creation DESC
 	""",
-		[proxy_servers, release_group],
+		[proxy_servers, cluster, release_group],
 		as_dict=True,
 	)
 
-	signup_servers = tuple([bs["server"] for bs in bench_servers])
-	signup_server_sub_str = (
-		tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
-	)
+	signup_servers = [bs["server"] for bs in bench_servers]
+	signup_server_sub_str = ",".join(signup_servers)
 	lowest_cpu_server = frappe.db.sql(
 		f"""
 		SELECT
