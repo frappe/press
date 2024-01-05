@@ -79,6 +79,15 @@ class PressJob(Document):
 			frappe.db.set_value("Press Job Step", step, "status", "Pending")
 		self.next()
 
+	@frappe.whitelist()
+	def force_fail(self):
+		for step in frappe.get_all(
+			"Press Job Step",
+			{"job": self.name, "status": "Pending"},
+			pluck="name",
+		):
+			frappe.db.set_value("Press Job Step", step, "status", "Failure")
+
 	@property
 	def next_step(self):
 		return frappe.db.get_value(
