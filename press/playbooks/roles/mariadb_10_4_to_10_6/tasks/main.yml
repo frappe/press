@@ -1,0 +1,74 @@
+- name: Remove MariaDB Repository File
+  file:
+    path: /etc/apt/sources.list.d/mariadb.list
+    state: absent
+
+- name: Add MariaDB Repository Key
+  apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.pgp
+    state: present
+
+- name: Add MariaDB Repository
+  apt_repository:
+    repo: deb https://deb.mariadb.org/10.6/ubuntu {{ ansible_distribution_release }} main
+    state: present
+    update_cache: true
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Stop MariaDB Service
+  systemd:
+    name: mariadb
+    state: stopped
+
+- name: Install MariaDB
+  apt:
+    pkg:
+      - mariadb-server
+      - mariadb-client
+      - libmariadbclient18
+    state: latest
+
+# In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
+# /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
+- name: Remove /etc/mysql/conf.d/ from the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    regexp: '^(!includedir /etc/mysql/conf.d/)$'
+    state: absent
+
+- name: Add /etc/mysql/conf.d/ to the end of the file
+  lineinfile:
+    path: /etc/mysql/my.cnf
+    line: '!includedir /etc/mysql/conf.d/'
+
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: 'LimitNOFILE = infinity'
+    insertafter: '\[Service\]'
+    state: present
+
+- name: Start MariaDB Service
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Run MariaDB Upgrade
+  command: mariadb-upgrade
+
+- name: Restart MariaDB Service
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    state: restarted
+    enabled: yes

@@ -1,0 +1,8 @@
+---
+- name: Upgrade Mariadb
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: mariadb_10_4_to_10_6
