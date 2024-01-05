@@ -98,7 +98,7 @@ def get_saas_bench(app):
 	)
 
 	signup_servers = [bs["server"] for bs in bench_servers]
-	signup_server_sub_str = ",".join(signup_servers)
+	signup_server_sub_str = "(" + ",".join(signup_servers) + ")"
 	lowest_cpu_server = frappe.db.sql(
 		f"""
 		SELECT
