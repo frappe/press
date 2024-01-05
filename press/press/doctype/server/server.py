@@ -1035,17 +1035,6 @@ class Server(BaseServer):
 			site = frappe.get_doc("Site", site_name)
 			site.reset_site_usage()
 
-
-def scale_workers():
-	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
-	for server in servers:
-		try:
-			frappe.get_doc("Server", server.name).auto_scale_workers()
-			frappe.db.commit()
-		except Exception:
-			log_error("Auto Scale Worker Error", server=server)
-			frappe.db.rollback()
-
 	def install_earlyoom(self):
 		frappe.enqueue_doc(
 			self.doctype,
@@ -1062,6 +1051,26 @@ def scale_workers():
 			ansible.run()
 		except Exception:
 			log_error("Earlyoom Install Exception", server=self.as_dict())
+
+	@property
+	def is_shared(self) -> bool:
+		public_groups = frappe.get_all("Release Group", {"public": True}, pluck="name")
+		return bool(
+			frappe.db.exists(
+				"Release Group Server", {"server": self.name, "parent": ("in", public_groups)}
+			)
+		)
+
+
+def scale_workers():
+	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
+	for server in servers:
+		try:
+			frappe.get_doc("Server", server.name).auto_scale_workers()
+			frappe.db.commit()
+		except Exception:
+			log_error("Auto Scale Worker Error", server=server)
+			frappe.db.rollback()
 
 
 def process_new_server_job_update(job):

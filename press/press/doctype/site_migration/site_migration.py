@@ -8,9 +8,11 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.exceptions import CannotChangePlan
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
+from press.press.doctype.server.server import Server
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
 from press.utils.dns import create_dns_record
@@ -442,15 +444,24 @@ class SiteMigration(Document):
 		site = frappe.get_doc("Site", self.site)
 		return site.update_site_status_on_proxy("activated")
 
+	@property
+	def scheduled_by_consultant(self):
+		return self.owner.endswith("@erpnext.com") or self.owner.endswith("@frappe.io")
+
 	def adjust_plan_if_required(self):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site = frappe.get_doc("Site", self.site)
-		destination_server_team = frappe.db.get_value(
-			"Server", self.destination_server, "team"
-		)
-		if site.team == destination_server_team:
-			site.change_plan("Unlimited")
-			self.update_next_step_status("Success")
+		dest_server: Server = frappe.get_doc("Server", self.destination_server)
+		if not dest_server.is_shared and site.team == dest_server.team:
+			try:
+				site.change_plan(
+					"Unlimited",
+					ignore_card_setup=self.scheduled_by_consultant,
+				)
+			except CannotChangePlan:
+				self.update_next_step_status("Failure")
+			else:
+				self.update_next_step_status("Success")
 		else:
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
@@ -462,7 +473,7 @@ def process_required_job_callbacks(job):
 
 
 def process_site_migration_job_update(job, site_migration_name: str):
-	site_migration = frappe.get_doc("Site Migration", site_migration_name)
+	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name == site_migration.next_step.step_job:
 		process_required_job_callbacks(job)
 		site_migration.update_next_step_status(job.status)
