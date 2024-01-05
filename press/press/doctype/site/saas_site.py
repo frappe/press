@@ -97,8 +97,10 @@ def get_saas_bench(app):
 		as_dict=True,
 	)
 
-	signup_servers = [bs["server"] for bs in bench_servers]
-	signup_server_sub_str = "(" + ",".join(signup_servers) + ")"
+	signup_servers = tuple([bs["server"] for bs in bench_servers])
+	signup_server_sub_str = (
+		tuple(signup_servers) if len(signup_servers) > 1 else f"('{signup_servers[0]}')"
+	)
 	lowest_cpu_server = frappe.db.sql(
 		f"""
 		SELECT
