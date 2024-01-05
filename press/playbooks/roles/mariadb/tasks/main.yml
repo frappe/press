@@ -1,26 +1,13 @@
-- name: Add MariaDB Repository File
-  template:
-    src: mariadb.list
-    dest: /etc/apt/sources.list.d/mariadb.list
-    owner: root
-    group: root
-    mode: 0644
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "focal"
-  
-- name: Add MariaDB Repository File
-  template:
-    src: mariadb-10.6.list
-    dest: /etc/apt/sources.list.d/mariadb.list
-    owner: root
-    group: root
-    mode: 0644
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
-
 - name: Add MariaDB Repository Key
   apt_key:
-    id: C74CD1D8
-    url: http://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF1656F24C74CD1D8
+    url: https://mariadb.org/mariadb_release_signing_key.pgp
     state: present
+
+- name: Add MariaDB Repository
+  apt_repository:
+    repo: deb https://deb.mariadb.org/10.6/ubuntu {{ ansible_distribution_release }} main
+    state: present
+    update_cache: true
 
 - name: Update APT Cache
   apt:
@@ -51,11 +38,11 @@
     owner: root
     group: root
     mode: 0644
-    
+
 - name: Set my.cnf to load frappe.cnf file
   lineinfile:
     dest: /etc/mysql/my.cnf
-    line: "!includedir /etc/mysql/conf.d/"
+    line: '!includedir /etc/mysql/conf.d/'
 
 # In Mariadb 10.6, /etc/mysql/mariadb.conf.d/ superseds /etc/mysql/conf.d/. The way to fix it to add !includedir /etc/mysql/conf.d/ to the end of /etc/mysql/my.cnf
 # /etc/mysql/conf.d/ is in the second last line of /etc/mysql/my.cnf. Swapping is the way to go.
@@ -64,19 +51,17 @@
     path: /etc/mysql/my.cnf
     regexp: '^(!includedir /etc/mysql/conf.d/)$'
     state: absent
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy"
 
 - name: Add /etc/mysql/conf.d/ to the end of the file
   lineinfile:
     path: /etc/mysql/my.cnf
     line: '!includedir /etc/mysql/conf.d/'
-  when: ansible_distribution == "Ubuntu" and ansible_distribution_release == "jammy" 
 
 - name: Set Open Files Count Limit for MariaDB
   lineinfile:
     dest: /lib/systemd/system/mariadb.service
     regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
-    line: "LimitNOFILE = infinity"
+    line: 'LimitNOFILE = infinity'
     insertafter: '\[Service\]'
     state: present
 
@@ -90,18 +75,18 @@
 - name: Set MariaDB root Password
   mysql_user:
     login_user: root
-    login_password: "{{ mariadb_root_password }}"
+    login_password: '{{ mariadb_root_password }}'
     check_implicit_admin: yes
     name: root
-    host: "{{ item }}"
-    priv: "*.*:ALL,GRANT"
-    password: "{{ mariadb_root_password }}"
+    host: '{{ item }}'
+    priv: '*.*:ALL,GRANT'
+    password: '{{ mariadb_root_password }}'
     state: present
   with_items:
     - localhost
     - 127.0.0.1
     - ::1
-    - "%"
+    - '%'
 
 - name: Add .my.cnf MariaDB Configuration File
   template:
@@ -123,7 +108,7 @@
 
 - name: Remove Anonymous MariaDB Users
   mysql_user:
-    name: ""
+    name: ''
     state: absent
 
 - name: Add Frappe User to MySQL Group
@@ -136,10 +121,10 @@
 - name: Create Monitor User
   mysql_user:
     login_user: root
-    login_password: "{{ mariadb_root_password }}"
+    login_password: '{{ mariadb_root_password }}'
     check_implicit_admin: yes
     name: monitor
-    host: "%"
-    priv: "sys.*:SELECT"
-    password: "monitor"
+    host: '%'
+    priv: 'sys.*:SELECT'
+    password: 'monitor'
     state: present
