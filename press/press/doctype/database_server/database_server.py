@@ -173,7 +173,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def stop_mariadb(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb")
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb", timeout=1800)
 
 	def _stop_mariadb(self):
 		ansible = Ansible(
@@ -195,7 +195,7 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def upgrade_mariadb(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb")
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
 
 	def _upgrade_mariadb(self):
 		ansible = Ansible(
