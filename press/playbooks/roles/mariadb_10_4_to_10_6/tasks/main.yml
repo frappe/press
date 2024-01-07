@@ -10,7 +10,7 @@
 
 - name: Add MariaDB Repository
   apt_repository:
-    repo: deb https://deb.mariadb.org/10.6/ubuntu {{ ansible_distribution_release }} main
+    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
     state: present
     update_cache: true
 
