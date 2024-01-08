@@ -4,16 +4,8 @@
 			title: 'Move Site to another Bench',
 			actions: [
 				{
-					label: 'Clone current Bench',
-					loading: $resources.cloneGroup.loading,
-					onClick: () =>
-						$resources.cloneGroup.submit({
-							name: site?.name
-						})
-				},
-				{
 					label: 'Change Bench',
-					loading: this.$resources.changeGroup.loading,
+					loading: $resources.changeGroup.loading,
 					disabled: !$resources.changeGroupOptions?.data?.length,
 					variant: 'solid',
 					onClick: () =>
@@ -21,6 +13,13 @@
 							group: targetGroup,
 							name: site?.name
 						})
+				},
+				{
+					label: 'Clone current Bench',
+					onClick: () => {
+						$emit('update:modelValue', false);
+						showCloneBenchDialog = true;
+					}
 				}
 			]
 		}"
@@ -53,6 +52,29 @@
 			/>
 		</template>
 	</Dialog>
+	<Dialog
+		:options="{
+			title: 'Clone Bench',
+			actions: [
+				{
+					label: 'Clone Bench',
+					variant: 'solid',
+					loading: $resources.cloneGroup.loading,
+					onClick: () =>
+						$resources.cloneGroup.submit({
+							name: site?.name,
+							new_group_title: newGroupTitle
+						})
+				}
+			]
+		}"
+		v-model="showCloneBenchDialog"
+	>
+		<template #body-content>
+			<FormControl label="New Bench Name" v-model="newGroupTitle" />
+			<ErrorMessage :message="$resources.cloneGroup.error" />
+		</template>
+	</Dialog>
 </template>
 
 <script>
@@ -64,7 +86,9 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
-			targetGroup: null
+			targetGroup: null,
+			newGroupTitle: '',
+			showCloneBenchDialog: false
 		};
 	},
 	watch: {
@@ -128,7 +152,7 @@ export default {
 						color: 'green',
 						icon: 'check'
 					});
-					this.$emit('update:modelValue', false);
+					this.showCloneBenchDialog = false;
 					this.$router.push({
 						name: 'BenchDeploys',
 						params: {

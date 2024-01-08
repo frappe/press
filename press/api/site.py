@@ -1688,11 +1688,11 @@ def change_group_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def clone_group(name):
+def clone_group(name, new_group_title):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
 	cloned_group = frappe.copy_doc(group)
-	cloned_group.title = f"Clone of {cloned_group.title}"
+	cloned_group.title = new_group_title
 	cloned_group.team = get_current_team()
 	cloned_group.public = 0
 	cloned_group.servers = []
