@@ -1697,6 +1697,11 @@ def clone_group(name, new_group_title):
 	cloned_group.public = 0
 	cloned_group.servers = []
 	cloned_group.append("servers", {"server": site.server, "default": False})
+
+	# add apps to rg if they are installed in site
+	apps_installed_in_site = [app.app for app in site.apps]
+	cloned_group.apps = [app for app in group.apps if app.app in apps_installed_in_site]
+
 	cloned_group.insert()
 
 	candidate = cloned_group.create_deploy_candidate()
