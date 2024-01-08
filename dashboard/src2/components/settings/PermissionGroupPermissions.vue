@@ -90,6 +90,7 @@ function getDropdownOptions(listResource) {
 }
 
 const listOptions = ref({
+	onRowClick: () => {},
 	resource() {
 		return {
 			auto: true,

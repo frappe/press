@@ -24,10 +24,11 @@ breadcrumbs.value = [
 const team = getTeam();
 team.getTeamMembers.submit();
 const teamMembersListOptions = ref({
+	onRowClick: () => {},
 	list: {
 		data: computed(() => team.getTeamMembers.data || []),
 		reload: () => team.getTeamMembers.submit(),
-		loading: computed(() => team.getTeamMembers.loading)
+		loading: computed(() => team.getTeamMembers.loading),
 	},
 	columns: [
 		{
