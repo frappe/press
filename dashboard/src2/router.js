@@ -88,14 +88,14 @@ let router = createRouter({
 		{
 			path: '/settings',
 			name: 'Settings',
-			redirect: { name: 'SettingsProfile' },
+			redirect: { name: 'SettingsTeam' },
 			component: () => import('./pages/Settings.vue'),
 			children: [
-				{
-					name: 'SettingsProfile',
-					path: 'profile',
-					component: () => import('./components/settings/ProfileSettings.vue')
-				},
+				// {
+				// 	name: 'SettingsProfile',
+				// 	path: 'profile',
+				// 	component: () => import('./components/settings/ProfileSettings.vue')
+				// },
 				{
 					name: 'SettingsTeam',
 					path: 'team',
