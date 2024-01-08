@@ -1,5 +1,5 @@
 <template>
-	<div class="p-4">
+	<div class="p-5">
 		<ObjectList :options="teamMembersListOptions"> </ObjectList>
 	</div>
 </template>

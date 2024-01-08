@@ -859,7 +859,7 @@ export default {
 											site.loginAsAdmin
 												.submit({ reason: values.reason })
 												.then(result => {
-													let url = result.message;
+													let url = result;
 													window.open(url, '_blank');
 													hide();
 												}),

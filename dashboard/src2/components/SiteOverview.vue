@@ -78,7 +78,7 @@ export default {
 				},
 				{
 					label: 'Last updated',
-					value: this.$site.doc.last_updated
+					value: this.$site.doc.last_updated || 'Never'
 				}
 			];
 		},

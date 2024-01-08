@@ -49,7 +49,7 @@ class Team(Document):
 		if (
 			not frappe.local.system_user()
 			and self.user != frappe.session.user
-			and self.user not in self.get_user_list()
+			and frappe.session.user not in self.get_user_list()
 		):
 			frappe.throw("You are not allowed to access this document")
 
@@ -897,7 +897,7 @@ class Team(Document):
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
 				"saas_site_request": self.get_pending_saas_site_request(),
-				"complete": billing_setup and site_created,
+				"complete": billing_setup and site_created or frappe.local.system_user(),
 			}
 		)
 
@@ -1250,7 +1250,6 @@ def validate_site_creation(doc, method):
 	# validate site creation for team
 	team = frappe.get_doc("Team", doc.team)
 	[allow_creation, why] = team.can_create_site()
-	print(allow_creation, why)
 	if not allow_creation:
 		frappe.throw(why)
 

@@ -8,7 +8,7 @@ import { defineAsyncComponent, h } from 'vue';
 import ObjectList from '../components/ObjectList.vue';
 import { Badge } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import { confirmDialog } from '../utils/components';
+import { confirmDialog, renderDialog, icon } from '../utils/components';
 
 export default {
 	name: 'BillingPaymentMethods',
@@ -108,7 +108,21 @@ export default {
 						}
 					];
 				},
-				orderBy: 'creation desc'
+				orderBy: 'creation desc',
+				primaryAction() {
+					return {
+						label: 'Add Card',
+						slots: {
+							prefix: icon('plus')
+						},
+						onClick: () => {
+							let StripeCardDialog = defineAsyncComponent(() =>
+								import('../components/StripeCardDialog.vue')
+							);
+							renderDialog(StripeCardDialog);
+						}
+					};
+				}
 			};
 		}
 	},

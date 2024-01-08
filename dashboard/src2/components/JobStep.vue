@@ -48,33 +48,31 @@
 		<div
 			class="overflow-auto rounded-b border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
 			v-show="step.isOpen"
+			ref="output"
 		>
-			<pre ref="output" class="max-h-[50vh]">{{
-				step.output || 'No output'
-			}}</pre>
+			<pre class="max-h-[50vh]">{{ step.output || 'No output' }}</pre>
 		</div>
 	</div>
 </template>
-<script setup>
+<script>
 import { LoadingIndicator } from 'frappe-ui';
 
-const props = defineProps({
-	step: {
-		type: Object,
-		required: true
+export default {
+	name: 'JobStep',
+	props: {
+		step: {
+			type: Object,
+			required: true
+		}
 	},
 	watch: {
-		step: {
-			deep: true,
-			handler(step, oldStep) {
-				console.log(step);
-				if (step.output !== oldStep.output) {
-					this.$nextTick(() => {
-						this.$refs.output.scrollTop = this.$refs.output.scrollHeight;
-					});
-				}
+		'step.output': function (val, oldVal) {
+			if (val !== oldVal) {
+				this.$nextTick(() => {
+					this.$refs.output.scrollTop = this.$refs.output.scrollHeight;
+				});
 			}
 		}
 	}
-});
+};
 </script>

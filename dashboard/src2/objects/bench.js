@@ -8,7 +8,7 @@ import { getTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
-import LucideAppWindow from '~icons/lucide/app-window.vue';
+import LucideAppWindow from '~icons/lucide/app-window';
 
 export default {
 	doctype: 'Release Group',
@@ -323,6 +323,7 @@ export default {
 										benchName: group.name,
 										onAppAdd() {
 											apps.reload();
+											group.reload();
 										}
 									})
 								);

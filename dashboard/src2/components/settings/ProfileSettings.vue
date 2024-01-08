@@ -1,4 +1,6 @@
-<template></template>
+<template>
+	<div class="p-5"></div>
+</template>
 
 <script setup>
 import { inject } from 'vue';
