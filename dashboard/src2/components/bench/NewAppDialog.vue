@@ -307,7 +307,11 @@ export default {
 					});
 				},
 				validate() {
-					if (this.tabIndex === 0 && !this.githubAppLink) {
+					const githubUrlRegex =
+						/^(https?:\/\/)?(www\.)?github\.com\/([a-zA-Z0-9-]+)\/([a-zA-Z0-9-]+)(\/)?$/;
+					const isValidUrl = githubUrlRegex.test(this.githubAppLink);
+
+					if (this.tabIndex === 0 && !isValidUrl) {
 						return 'Please enter a valid github link';
 					}
 				}
