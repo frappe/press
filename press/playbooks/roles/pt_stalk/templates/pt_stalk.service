@@ -6,7 +6,8 @@ After=network-online.target
 Type=simple
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=/usr/bin/pt-stalk --defaults-file /root/.my.cnf \
-    --interval 1 \
+    --interval 0.3 \
+    --cycles 3 \
     --sleep 300 \
     --function status \
     --variable Threads_running \
