@@ -156,11 +156,11 @@ export default {
 					class: 'font-medium'
 				},
 				{
-					label: 'Repo',
+					label: 'Repository',
 					key: 'source',
 					class: 'text-gray-600',
 					format(value, row) {
-						return value.repository_owner;
+						return value.repository_owner + '/' + value.repository;
 					}
 				},
 				{

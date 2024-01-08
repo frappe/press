@@ -3,7 +3,11 @@
 		<template #body-content>
 			<div class="rounded bg-gray-100 px-2 py-3">
 				<div class="text-base text-gray-900">
-					Viewing Dashboard as
+					You are logged in as
+					<span class="font-medium">{{ $session.user }}</span>
+				</div>
+				<div class="mt-2 text-base text-gray-900">
+					You are viewing dashboard for
 					<span class="font-medium">{{ $team.doc.user }}</span>
 					<span
 						class="font-mono text-sm text-gray-500"

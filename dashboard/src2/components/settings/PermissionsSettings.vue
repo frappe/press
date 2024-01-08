@@ -1,8 +1,7 @@
 <template>
-	<div class="p-4">
+	<div class="p-5">
 		<router-view />
 	</div>
 </template>
 
-<script setup>
-</script>
+<script setup></script>

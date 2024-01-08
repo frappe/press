@@ -128,11 +128,7 @@
 			"
 		/>
 
-		<Dialog v-model="showAddCardDialog" :options="{ title: 'Add new card' }">
-			<template #body-content>
-				<StripeCard2 />
-			</template>
-		</Dialog>
+		<StripeCardDialog v-model="showAddCardDialog" />
 
 		<Dialog
 			v-if="upcomingInvoice?.name"
@@ -161,8 +157,8 @@ export default {
 		BuyPrepaidCreditsDialog: defineAsyncComponent(() =>
 			import('../components/BuyPrepaidCreditsDialog.vue')
 		),
-		StripeCard2: defineAsyncComponent(() =>
-			import('../components/StripeCard.vue')
+		StripeCardDialog: defineAsyncComponent(() =>
+			import('../components/StripeCardDialog.vue')
 		)
 	},
 	resources: {

@@ -99,14 +99,14 @@ export default {
 		navigation() {
 			if (!this.$team?.doc) return [];
 			let routeName = this.$route?.name || '';
-			let disabled = !this.$team.doc.payment_mode;
+			let disabled = !this.$team.doc.onboarding.complete;
 			return [
 				{
 					name: 'Welcome',
 					icon: () => h(DoorOpen),
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
-					condition: !this.$team.doc.onboarding.site_created
+					condition: !this.$team.doc.onboarding.complete
 				},
 				{
 					name: 'Sites',

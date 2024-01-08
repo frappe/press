@@ -148,8 +148,8 @@ router.beforeEach(async (to, from, next) => {
 	if (isLoggedIn) {
 		await waitUntilTeamLoaded();
 		let $team = getTeam();
-		let onboardingIncomplete = !$team.doc.payment_mode;
 		let onboardingComplete = $team.doc.onboarding.complete;
+		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = $team.doc.onboarding.saas_site_request
 			? 'NewAppSite'

@@ -39,7 +39,7 @@
 <script setup>
 import { Dropdown, createDocumentResource } from 'frappe-ui';
 import { computed, h, inject, ref } from 'vue';
-import LucideAppWindow from '~icons/lucide/app-window.vue';
+import LucideAppWindow from '~icons/lucide/app-window';
 import ObjectList from '../ObjectList.vue';
 import PermissionGroupPermissionCell from './PermissionGroupPermissionCell.vue';
 import { toast } from 'vue-sonner';
@@ -111,7 +111,7 @@ const listOptions = ref({
 		{
 			label: computed(() => currentDropdownOption.value.label.split(' ')[0]),
 			fieldname: 'document_name',
-			width: 1,
+			width: 1
 		},
 		{
 			label: 'Permissions',
@@ -179,7 +179,7 @@ function handlePermissionChange(doctype, doc_name, method, permitted) {
 		updated[doctype] = updated[doctype] || {};
 		updated[doctype][doc_name] = permitted
 			? allMethodAllowedPerm
-			: allMethodRestrictedPerm
+			: allMethodRestrictedPerm;
 		return;
 	}
 	// allow only this method for this document
@@ -199,7 +199,9 @@ function toggleAll(listResource, value) {
 	});
 	const updated = updatedPermissions.value;
 	const doctype = currentDropdownOption.value.doctype;
-	updated[doctype] = value ? allDocAllMethodAllowedPerm : allDocAllMethodRestrictedPerm;
+	updated[doctype] = value
+		? allDocAllMethodAllowedPerm
+		: allDocAllMethodRestrictedPerm;
 	updatedPermissions.value = updated;
 }
 

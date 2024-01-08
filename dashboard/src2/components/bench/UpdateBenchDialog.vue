@@ -70,12 +70,7 @@
 					v-if="step === 'select-apps' || step === 'removed-apps'"
 					variant="solid"
 					label="Next"
-					@click="
-						benchDocResource.doc.deploy_information.removed_apps.length &&
-						step === 'select-apps'
-							? (step = 'removed-apps')
-							: (step = 'select-sites')
-					"
+					@click="next"
 				/>
 				<Button
 					v-if="step === 'select-sites'"
@@ -334,6 +329,19 @@ export default {
 		}
 	},
 	methods: {
+		next() {
+			if (this.step === 'select-apps' && this.selectedApps.length === 0) {
+				return;
+			}
+			if (
+				this.benchDocResource.doc.deploy_information.removed_apps.length &&
+				this.step === 'select-apps'
+			) {
+				this.step = 'removed-apps';
+			} else {
+				this.step = 'select-sites';
+			}
+		},
 		handleAppSelection(apps) {
 			apps = Array.from(apps);
 			let appData = this.benchDocResource.doc.deploy_information.apps;

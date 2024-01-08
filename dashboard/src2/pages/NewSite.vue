@@ -10,7 +10,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl">
+	<div class="mx-auto max-w-4xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
@@ -188,12 +188,12 @@
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 1fr 4fr"
+					style="grid-template-columns: 2fr 4fr"
 				>
-					<div>Version:</div>
-					<div class="font-medium">{{ selectedVersion.name }}</div>
-					<div>Apps:</div>
-					<div class="font-medium">
+					<div class="text-gray-600">Version:</div>
+					<div class="text-gray-900">{{ selectedVersion.name }}</div>
+					<div class="text-gray-600">Apps:</div>
+					<div class="text-gray-900">
 						{{
 							apps.length
 								? selectedVersionApps
@@ -203,10 +203,10 @@
 								: 'No apps selected'
 						}}
 					</div>
-					<div>Plan:</div>
+					<div class="text-gray-600">Plan:</div>
 					<div v-if="selectedPlan">
 						<div>
-							<span class="font-medium">
+							<span class="text-gray-900">
 								{{
 									$format.userCurrency(
 										$team.doc.currency == 'INR'
@@ -216,11 +216,8 @@
 								}}
 								per month
 							</span>
-							<span class="text-gray-700" v-if="selectedPlan.support_included">
-								(Support included)
-							</span>
 						</div>
-						<div class="text-gray-700">
+						<div class="text-gray-600">
 							{{
 								$format.userCurrency(
 									$team.doc.currency == 'INR'
@@ -232,10 +229,14 @@
 						</div>
 					</div>
 					<div v-else>{{ plan }}</div>
-					<div>Region:</div>
-					<div class="font-medium">{{ selectedClusterTitle }}</div>
-					<div>Site URL:</div>
-					<div class="font-medium">{{ subdomain }}.{{ options.domain }}</div>
+					<div class="text-gray-600">Product Warranty</div>
+					<div class="text-gray-900">
+						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
+					</div>
+					<div class="text-gray-600">Region:</div>
+					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
+					<div class="text-gray-600">Site URL:</div>
+					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
 				</div>
 			</div>
 			<div
