@@ -10,9 +10,17 @@
 					loading: groupDocResource.addRegion.loading,
 					disabled: !selectedRegion,
 					onClick: () =>
-						groupDocResource.addRegion.submit({
-							region: selectedRegion.value
-						})
+						groupDocResource.addRegion.submit(
+							{
+								region: selectedRegion.value
+							},
+							{
+								onSuccess: () => {
+									this.$emit('success');
+									this.showDialog = false;
+								}
+							}
+						)
 				}
 			]
 		}"
