@@ -94,7 +94,7 @@ class AppSource(Document):
 
 			branch = github_response.json()
 			hash = branch["commit"]["sha"]
-			timestamp = branch["commit"]["commit"]["author"]["date"]
+			timestamp = branch["commit"]["commit"]["author"]["date"].replace("Z", "+00:00")
 			if not frappe.db.exists(
 				"App Release", {"app": self.app, "source": self.name, "hash": hash}
 			):
