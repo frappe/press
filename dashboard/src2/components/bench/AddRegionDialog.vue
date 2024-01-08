@@ -11,7 +11,7 @@
 					disabled: !selectedRegion,
 					onClick: () =>
 						groupDocResource.addRegion.submit({
-							region: selectedRegion
+							region: selectedRegion.value
 						})
 				}
 			]
@@ -19,11 +19,19 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<RichSelect
-					:value="selectedRegion"
-					@change="selectedRegion = $event"
+				<FormControl
+					type="autocomplete"
+					label="Choose Region"
 					:options="regionOptions"
-				/>
+					v-model="selectedRegion"
+				>
+					<template #prefix>
+						<img :src="selectedRegion?.image" class="mr-2 h-4" />
+					</template>
+					<template #item-prefix="{ active, selected, option }">
+						<img v-if="option?.image" :src="option.image" class="mr-2 h-4" />
+					</template>
+				</FormControl>
 				<ErrorMessage :message="groupDocResource.addRegion.error" />
 			</div>
 		</template>
@@ -32,12 +40,10 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import RichSelect from '@/components/RichSelect.vue';
 
 export default {
 	name: 'AddRegionDialog',
 	props: ['group'],
-	components: { RichSelect },
 	data() {
 		return {
 			showDialog: true,
