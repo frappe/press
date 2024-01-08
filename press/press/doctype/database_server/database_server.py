@@ -589,9 +589,16 @@ class DatabaseServer(BaseServer):
 
 	@frappe.whitelist()
 	def fetch_stalks(self):
+		frappe.enqueue(
+			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
+			server=self.name,
+			job_id=f"fetch_mariadb_stalk:{self.name}",
+		)
+
+	def get_stalks(self):
 		return self.agent.get("database/stalks") or []
 
-	def fetch_stalk(self, name):
+	def get_stalk(self, name):
 		return self.agent.get(f"database/stalks/{name}")
 
 	@frappe.whitelist()

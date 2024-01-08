@@ -25,7 +25,7 @@ def fetch_stalks():
 
 def fetch_server_stalks(server):
 	server = frappe.get_cached_doc("Database Server", server)
-	for stalk in server.fetch_stalks():
+	for stalk in server.get_stalks():
 		timestamp = convert_utc_to_system_timezone(
 			datetime.fromisoformat(stalk["timestamp"])
 		).replace(tzinfo=None)
@@ -38,7 +38,7 @@ def fetch_server_stalks(server):
 			doc = frappe.new_doc("MariaDB Stalk")
 			doc.server = server.name
 			doc.timestamp = timestamp
-			for diagnostic in server.fetch_stalk(stalk["name"]):
+			for diagnostic in server.get_stalk(stalk["name"]):
 				doc.append("diagnostics", diagnostic)
 			doc.insert()
 			frappe.db.commit()
