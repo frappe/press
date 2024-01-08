@@ -56,32 +56,6 @@ class SiteMigration(Document):
 				frappe.ValidationError,
 			)
 
-	def on_update(self):
-		if self.status not in ["Success", "Failure"]:
-			return
-
-		site = frappe.get_doc("Site", self.site)
-
-		message = agent_job_id = ""
-		if self.status == "Success":
-			message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
-			agent_job_id = find(
-				self.steps, lambda x: x.step_title == "Restore site on destination"
-			).step_job
-		elif self.status == "Failure":
-			message = (
-				f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
-			)
-			agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
-
-		create_new_notification(
-			site.team,
-			"Site Migrate",
-			"Agent Job",
-			agent_job_id,
-			message,
-		)
-
 	def start(self):
 		self.db_set("status", "Pending")
 		frappe.db.commit()
@@ -227,9 +201,39 @@ class SiteMigration(Document):
 		self.status = "Failure"
 		self.save()
 
+		site = frappe.get_doc("Site", self.site)
+
+		message = (
+			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
+		)
+		agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+
+		create_new_notification(
+			site.team,
+			"Site Migrate",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
+
 	def succeed(self):
 		self.status = "Success"
 		self.save()
+
+		site = frappe.get_doc("Site", self.site)
+
+		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
+		agent_job_id = find(
+			self.steps, lambda x: x.step_title == "Restore site on destination"
+		).step_job
+
+		create_new_notification(
+			site.team,
+			"Site Migrate",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
 
 	def add_steps_for_cluster_migration(self):
 		steps = [
