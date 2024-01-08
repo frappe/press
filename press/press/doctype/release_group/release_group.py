@@ -84,7 +84,9 @@ class ReleaseGroup(Document):
 		self.validate_max_min_workers()
 
 	def before_insert(self):
-		self.fetch_dependencies()
+		# to avoid ading deps while cloning a release group
+		if len(self.dependencies) == 0:
+			self.fetch_dependencies()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
