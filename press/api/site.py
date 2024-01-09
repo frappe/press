@@ -1646,7 +1646,17 @@ def change_team(team, name):
 def add_server_to_release_group(name, group_name, server=None):
 	if not server:
 		server = frappe.db.get_value("Site", name, "server")
-	deploy = frappe.get_doc("Release Group", group_name).add_server(server, deploy=True)
+
+	rg = frappe.get_doc("Release Group", group_name)
+
+	if not frappe.db.exists(
+		"Deploy Candidate", {"status": "Success", "group": group_name}
+	):
+		frappe.throw(
+			f"There should be atleast one deploy in the bench {frappe.bold(rg.title)} to do a site migration or a site version upgrade."
+		)
+
+	deploy = rg.add_server(server, deploy=True)
 
 	bench = find(deploy.benches, lambda bench: bench.server == server).bench
 	return frappe.get_value("Agent Job", {"bench": bench, "job_type": "New Bench"}, "name")
