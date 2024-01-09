@@ -168,6 +168,21 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	def get_status(self):
+		agent = Agent(self.server, server_type=self.server_type)
+
+		if self.job_id == 0:
+			job = agent.get_jobs_id(self.name)
+			if len(job) > 0:
+				self.job_id = job[0]["id"]
+				self.status = job[0]["status"]
+		else:
+			job_details = agent.get_job_status(self.job_id)
+			self.status = job_details["status"]
+
+		self.save()
+
+	@frappe.whitelist()
 	def retry_skip_failing_patches(self):
 		# Add the skip flag and update request data
 		updated_request_data = json.loads(self.request_data) if self.request_data else {}
