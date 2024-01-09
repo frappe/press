@@ -8,6 +8,16 @@ frappe.ui.form.on('Agent Job', {
 			__('Visit Agent Endpoint'),
 		);
 
+		if (!['Success', 'Failure', 'Delivery Failure'].includes(frm.doc.status)) {
+			frm.add_custom_button(
+				__('Get Status'),
+				() => {
+					frm.call('get_status').then(() => frm.refresh());
+				},
+				__('Actions'),
+			);
+		}
+
 		frm.add_custom_button(
 			__('Retry'),
 			() => {
@@ -27,6 +37,7 @@ frappe.ui.form.on('Agent Job', {
 			},
 			__('Actions'),
 		);
+
 		[
 			[__('Retry In-Place'), 'retry_in_place'],
 			[__('Process Job Updates'), 'process_job_updates'],
