@@ -734,25 +734,64 @@ class Agent:
 		upstream=None,
 		host=None,
 	):
-		job = frappe.get_doc(
-			{
-				"doctype": "Agent Job",
-				"server_type": self.server_type,
-				"server": self.server,
-				"bench": bench,
-				"host": host,
-				"site": site,
-				"code_server": code_server,
-				"upstream": upstream,
-				"status": "Undelivered",
-				"request_method": method,
-				"request_path": path,
-				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
-				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
-				"job_type": job_type,
-			}
-		).insert()
+
+		"""
+		Check if job already exists in Undelivered, Pending, Running state
+		don't add new job until its gets comleted
+		"""
+
+		job = self.get_duplicate_in_execution_job(
+			job_type, bench, site, code_server, upstream, host
+		)
+
+		if not job:
+			job = frappe.get_doc(
+				{
+					"doctype": "Agent Job",
+					"server_type": self.server_type,
+					"server": self.server,
+					"bench": bench,
+					"host": host,
+					"site": site,
+					"code_server": code_server,
+					"upstream": upstream,
+					"status": "Undelivered",
+					"request_method": method,
+					"request_path": path,
+					"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
+					"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
+					"job_type": job_type,
+				}
+			).insert()
+
 		return job
+
+	def get_duplicate_in_execution_job(
+		self, job_type, bench, site, code_server, upstream, host
+	):
+		filteres = {
+			"server_type": self.server_type,
+			"server": self.server,
+			"job_type": job_type,
+			"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+		}
+
+		if bench:
+			filteres["bench"] = bench
+
+		if site:
+			filteres["site"] = site
+
+		if code_server:
+			filteres["code_server"] = code_server
+
+		if upstream:
+			filteres["upstream"] = upstream
+
+		if host:
+			filteres["host"] = host
+
+		return frappe.db.exists("Agent Job", filteres)
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
