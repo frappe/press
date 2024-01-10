@@ -3,7 +3,7 @@
 
 
 import frappe
-from press.utils import get_default_team_for_user
+from press.utils import get_default_team_for_user, get_valid_teams_for_user
 
 base_template_path = "templates/www/dashboard.html"
 no_cache = 1
@@ -34,6 +34,8 @@ def get_boot():
 		press_site_name=frappe.conf.site,
 		site_name=frappe.local.site,
 		default_team=get_default_team_for_user(frappe.session.user),
+		valid_teams=get_valid_teams_for_user(frappe.session.user),
+		is_system_user=frappe.session.data.user_type == "System User",
 		verify_cards_with_micro_charge=frappe.db.get_single_value(
 			"Press Settings", "verify_cards_with_micro_charge"
 		),

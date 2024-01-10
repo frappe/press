@@ -9,7 +9,7 @@ export function getTeam() {
 			name: getCurrentTeam(),
 			whitelistedMethods: {
 				getTeamMembers: 'get_team_members',
-				removeTeamMember: 'remove_team_member',
+				removeTeamMember: 'remove_team_member'
 			}
 		});
 	}
@@ -23,7 +23,17 @@ function getCurrentTeam() {
 	) {
 		throw new Error('Not logged in');
 	}
-	return localStorage.getItem('current_team') || window.default_team;
+	let currentTeam = localStorage.getItem('current_team');
+	if (
+		!currentTeam ||
+		(currentTeam !== window.default_team &&
+			!window.valid_teams.map(t => t.name).includes(currentTeam) &&
+			!window.is_system_user)
+	) {
+		currentTeam = window.default_team;
+		localStorage.setItem('current_team', currentTeam);
+	}
+	return currentTeam;
 }
 
 export async function switchToTeam(team) {

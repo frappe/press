@@ -130,6 +130,12 @@ let router = createRouter({
 			path: '/new-app-site',
 			component: () => import('./pages/NewAppSite.vue')
 		},
+		{
+			name: 'Impersonate',
+			path: '/impersonate/:teamId',
+			component: () => import('./pages/Impersonate.vue'),
+			props: true
+		},
 		...generateRoutes(),
 		{
 			path: '/:pathMatch(.*)*',
