@@ -104,7 +104,7 @@ class TestIncident(FrappeTestCase):
 				"doctype": "Incident",
 				"alertname": "Test Alert",
 			}
-		).insert()
+		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 2)
 		mock_calls_create.assert_any_call(
 			from_=self.from_,
@@ -125,7 +125,7 @@ class TestIncident(FrappeTestCase):
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
 	)
-	def test_incident_creation_calls_only_one_person_if_first_person_picks_up(
+	def test_incident_calls_only_one_person_if_first_person_picks_up(
 		self, mock_calls_create: Mock
 	):
 		frappe.get_doc(
@@ -133,7 +133,7 @@ class TestIncident(FrappeTestCase):
 				"doctype": "Incident",
 				"alertname": "Test Alert",
 			}
-		).insert()
+		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
@@ -144,13 +144,14 @@ class TestIncident(FrappeTestCase):
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
 	)
-	def test_incident_creation_calls_stop_for_in_progress_state(self, mock_calls_create):
+	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
 			{
 				"doctype": "Incident",
 				"alertname": "Test Alert",
 			}
 		).insert()
+		incident.call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 		incident.reload()
 		self.assertEqual(len(incident.updates), 1)
@@ -161,15 +162,13 @@ class TestIncident(FrappeTestCase):
 	@patch(
 		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
 	)
-	def test_incident_creation_calls_next_person_after_retry_limit(
-		self, mock_calls_create
-	):
+	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
 		frappe.get_doc(
 			{
 				"doctype": "Incident",
 				"alertname": "Test Alert",
 			}
-		).insert()
+		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 2)
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
@@ -216,6 +215,7 @@ class TestIncident(FrappeTestCase):
 					"alertname": "Test Alert",
 				}
 			).insert()
+			incident.call_humans()
 			incident.reload()
 			self.assertEqual(len(incident.updates), 1)
 		with patch.object(
@@ -227,6 +227,7 @@ class TestIncident(FrappeTestCase):
 					"alertname": "Test Alert",
 				}
 			).insert()
+			incident.call_humans()
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
 

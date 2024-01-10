@@ -30,11 +30,10 @@ class Incident(WebsiteGenerator):
 	def global_phone_call_enabled(self) -> bool:
 		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
 
-	def after_insert(self):
-		if self.phone_call:
-			enqueue_doc(
-				self.doctype, self.name, "call_humans", queue="long", enqueue_after_commit=True
-			)
+	def call_humans(self):
+		enqueue_doc(
+			self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
+		)
 
 	def get_humans(self) -> list["IncidentSettingsUser"]:
 		"""
@@ -69,8 +68,8 @@ class Incident(WebsiteGenerator):
 	def wait_for_pickup(self, call):
 		return call.fetch().status  # will eventually be no-answer
 
-	def call_humans(self):
-		if not self.global_phone_call_enabled:
+	def _call_humans(self):
+		if not self.phone_call and not self.global_phone_call_enabled:
 			return
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(
