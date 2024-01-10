@@ -1,8 +1,7 @@
-import { FeatherIcon, LoadingIndicator, Tooltip } from 'frappe-ui';
+import { LoadingIndicator, Tooltip } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import dayjs from '../utils/dayjs';
-import { duration } from '../utils/format';
+import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam } from '../data/team';
 import router from '../router';
@@ -352,7 +351,7 @@ export default {
 							label: 'Deploy',
 							fieldname: 'creation',
 							format(value) {
-								return `Deploy on ${dayjs(value).toLocaleString()}`;
+								return `Deploy on ${date(value, 'llll')}`;
 							},
 							width: '25rem'
 						},
@@ -389,7 +388,6 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
-					userFilters: {},
 					filters: group => {
 						return { group: group.doc.name };
 					},
@@ -399,11 +397,13 @@ export default {
 							params: { id: row.name }
 						};
 					},
+					fields: ['end'],
 					orderBy: 'creation desc',
 					columns: [
 						{
 							label: 'Job Type',
-							fieldname: 'job_type'
+							fieldname: 'job_type',
+							width: '13rem'
 						},
 						{
 							label: 'Status',
@@ -426,31 +426,17 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
-							width: '7rem',
+							width: '4rem',
 							format(value, row) {
-								if (row.job_id === 0) return;
+								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
 						},
 						{
-							label: 'Start Time',
-							fieldname: 'start',
-							class: 'text-gray-600',
-							format(value) {
-								if (!value) return;
-								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
-							},
-							width: '10rem'
-						},
-						{
-							label: 'End Time',
-							fieldname: 'end',
-							class: 'text-gray-600',
-							format(value) {
-								if (!value) return;
-								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
-							},
-							width: '10rem'
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right'
 						}
 					]
 				}

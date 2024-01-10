@@ -7,7 +7,6 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import dayjs from '../utils/dayjs';
 import { bytes, duration } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 
@@ -52,6 +51,8 @@ export default {
 		title: 'Sites',
 		fields: [
 			'plan.plan_title as plan_title',
+			'plan.price_usd as price_usd',
+			'plan.price_inr as price_inr',
 			'group.title as group_title',
 			'group.version as version',
 			'cluster.image as cluster_image',
@@ -66,7 +67,15 @@ export default {
 				fieldname: 'plan',
 				width: 1,
 				format(value, row) {
-					return row.plan_title || value;
+					let $team = getTeam();
+					if (row.price_usd > 0) {
+						let india = $team.doc.country == 'India';
+						let currencySymbol = $team.doc.currency == 'INR' ? '₹' : '$';
+						return `${currencySymbol}${
+							india ? row.price_inr : row.price_usd
+						} /mo`;
+					}
+					return row.plan_title;
 				}
 			},
 			{
@@ -161,7 +170,6 @@ export default {
 				route: 'apps',
 				type: 'list',
 				list: {
-					url: 'press.api.site.installed_apps',
 					doctype: 'Site App',
 					filters: site => {
 						return { site: site.doc.name };
@@ -709,7 +717,7 @@ export default {
 						};
 					},
 					orderBy: 'creation desc',
-					fields: ['site'],
+					fields: ['site', 'end'],
 					columns: [
 						{
 							label: 'Job Type',
@@ -729,28 +737,17 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
+							width: '4rem',
 							format(value, row) {
-								if (row.job_id == 0) return;
+								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
 						},
 						{
-							label: 'Start Time',
-							fieldname: 'start',
-							class: 'text-gray-600',
-							format(value) {
-								if (!value) return;
-								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
-							}
-						},
-						{
-							label: 'End Time',
-							fieldname: 'end',
-							class: 'text-gray-600',
-							format(value) {
-								if (!value) return;
-								return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
-							}
+							label: '',
+							fieldname: 'creation',
+							type: 'Timestamp',
+							align: 'right'
 						}
 					]
 				}

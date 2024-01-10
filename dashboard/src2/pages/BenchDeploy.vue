@@ -26,7 +26,7 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $dayjs(deploy.creation).toLocaleString() }}
+							{{ $format.date(deploy.creation) }}
 						</div>
 					</div>
 					<div>
@@ -38,19 +38,21 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.duration(deploy.build_duration) }}
+							{{
+								deploy.build_end ? $format.duration(deploy.build_duration) : ''
+							}}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $dayjs(deploy.build_start).toLocaleString() }}
+							{{ $format.date(deploy.build_start, 'llll') }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">End</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $dayjs(deploy.build_end).toLocaleString() }}
+							{{ $format.date(deploy.build_end, 'llll') }}
 						</div>
 					</div>
 				</div>

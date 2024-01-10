@@ -74,11 +74,11 @@ export default {
 				},
 				{
 					label: 'Created on',
-					value: this.$site.doc.creation
+					value: this.$format.date(this.$site.doc.creation)
 				},
 				{
 					label: 'Last updated',
-					value: this.$site.doc.last_updated || 'Never'
+					value: this.$format.date(this.$site.doc.last_updated) || 'Never'
 				}
 			];
 		},

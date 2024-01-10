@@ -1,5 +1,5 @@
 import { toast } from 'vue-sonner';
-import dayjs from './utils/dayjs';
+import { dayjsLocal } from './utils/dayjs';
 import session from './data/session';
 import theme from '../tailwind.theme.json';
 import { debounce } from 'frappe-ui';
@@ -10,7 +10,7 @@ export default function globals(app) {
 	app.config.globalProperties.$session = session;
 	app.config.globalProperties.$team = session.user ? getTeam() : null;
 	app.config.globalProperties.$toast = toast;
-	app.config.globalProperties.$dayjs = dayjs;
+	app.config.globalProperties.$dayjs = dayjsLocal;
 	app.config.globalProperties.$theme = theme;
 	app.config.globalProperties.$platform = getPlatform();
 	app.config.globalProperties.$format = formatters;

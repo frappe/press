@@ -25,7 +25,7 @@
 		</template>
 		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
-				<Tooltip :text="value">
+				<Tooltip :text="$format.date(value)">
 					{{ value ? $dayjs(value).fromNow() : '' }}
 				</Tooltip>
 			</div>

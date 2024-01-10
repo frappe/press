@@ -1,4 +1,4 @@
-import dayjs from '../utils/dayjs';
+import dayjs, { dayjsLocal } from '../utils/dayjs';
 import { getTeam } from '../data/team';
 
 export function bytes(bytes, decimals = 2, current = 0) {
@@ -33,10 +33,6 @@ export function duration(value) {
 		format = 's[s]';
 	}
 	return dayjs.duration({ hours, minutes, seconds }).format(format);
-}
-
-export function datetime(value) {
-	return dayjs(value).format('DD/MM/YYYY HH:mm:ss');
 }
 
 export function plural(number, singular, plural) {
@@ -85,4 +81,9 @@ export function numberK(number) {
 
 		return `${value}k`;
 	}
+}
+
+export function date(dateTimeString, format = 'LLLL') {
+	if (!dateTimeString) return;
+	return dayjsLocal(dateTimeString).format(format);
 }
