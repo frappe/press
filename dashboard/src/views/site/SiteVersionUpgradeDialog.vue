@@ -124,11 +124,11 @@ export default {
 				return 'This site is already on the latest version.';
 			} else if (this.site.frappe_version === 'Nightly') {
 				return "This site is on a nightly version and doesn't need to be upgraded.";
-			} else if (!this.privateReleaseGroup) {
-				return '';
-			} else if (!this.site.is_public && !this.privateReleaseGroups.length)
+			} else if (!this.site.is_public && this.privateReleaseGroups.length === 0)
 				return `Your team don't own any private benches available to upgrade this site to ${this.nextVersion}.`;
-			else if (!this.site.is_public && !this.benchHasCommonServer)
+			else if (!this.privateReleaseGroup) {
+				return '';
+			} else if (!this.site.is_public && !this.benchHasCommonServer)
 				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
 			else if (!this.site.is_public && this.benchHasCommonServer)
 				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
