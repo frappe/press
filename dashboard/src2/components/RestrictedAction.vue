@@ -1,5 +1,6 @@
 <template>
-	<Tooltip
+	<component
+		:is="!hasMethodPermission.data ? 'Tooltip' : 'div'"
 		:text="
 			!hasMethodPermission.data
 				? `You don't have enough permissions to perform this action`
@@ -9,7 +10,7 @@
 		<slot v-bind="{ hasMethodPermission: hasMethodPermission.data }">
 			<Button v-bind="$attrs" :disabled="!hasMethodPermission.data"></Button>
 		</slot>
-	</Tooltip>
+	</component>
 </template>
 
 <script setup>
