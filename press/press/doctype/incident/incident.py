@@ -30,6 +30,9 @@ class Incident(WebsiteGenerator):
 	def global_phone_call_enabled(self) -> bool:
 		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
 
+	def after_insert(self):
+		self.send_sms_via_twilio()
+
 	def call_humans(self):
 		enqueue_doc(
 			self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
@@ -99,20 +102,20 @@ class Incident(WebsiteGenerator):
 		Sending one SMS to one number
 		Ref: https://support.twilio.com/hc/en-us/articles/223181548-Can-I-set-up-one-API-call-to-send-messages-to-a-list-of-people-
 		"""
-		assigned_users = self.get_assigned_users()
-		phone_numbers = (
-			frappe.db.get_value("User", x, "phone")
-			for x in assigned_users
-			if frappe.db.get_value("User", x, "phone") is not None
-		)  # make a generator object of phone numbers
-		incident_link = f"https://frappecloud.com/app/incident/{self.name}"
-		message_body = f"New Incident {self.name} Reported\n\nSubject: {self.alertname}\nType: {self.type}\nHosted on: {self.server}\n\nIncident URL: {incident_link}"
-		for number in phone_numbers:  # Looping the Numbers one by one
-			if number:
-				self.twilio_client.messages.create(
-					to=number, from_=self.twilio_phone_number, body=message_body
-				)
+		domain = frappe.db.get_value("Press Settings", None, "domain")
+		incident_link = f"{domain}{self.get_url()}"
+
+		message_body = f"""New Incident {self.name} Reported
+
+Hosted on: {self.server}
+
+Incident URL: {incident_link}"""
+		for human in self.get_humans():
+			self.twilio_client.messages.create(
+				to=human.phone, from_=self.twilio_phone_number, body=message_body
+			)
 		self.sms_sent = 1
+		self.save()
 
 	def add_acknowledgment_update(
 		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
