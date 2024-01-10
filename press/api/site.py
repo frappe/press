@@ -836,7 +836,7 @@ def get(name):
 		"team": site.team,
 		"is_public": rg_info.public,
 		"latest_frappe_version": frappe.db.get_value(
-			"Frappe Version", {"status": "Stable"}, order_by="name desc"
+			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		),
 		"frappe_version": frappe_version,
 		"server": site.server,
@@ -1802,7 +1802,9 @@ def get_private_groups_for_upgrade(name, version):
 	team = get_current_team()
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
-		"Frappe Version", {"number": version_number + 1, "status": "Stable"}, "name"
+		"Frappe Version",
+		{"number": version_number + 1, "status": "Stable", "public": True},
+		"name",
 	)
 
 	ReleaseGroup = frappe.qb.DocType("Release Group")
