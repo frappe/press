@@ -741,8 +741,9 @@ class Agent:
 		"""
 
 		job = self.get_duplicate_in_execution_job(
-			job_type, bench, site, code_server, upstream, host
+			job_type, bench, site, code_server, upstream, host, method, path
 		)
+		print(job)
 
 		if not job:
 			job = frappe.get_doc(
@@ -767,13 +768,15 @@ class Agent:
 		return job
 
 	def get_duplicate_in_execution_job(
-		self, job_type, bench, site, code_server, upstream, host
+		self, job_type, bench, site, code_server, upstream, host, method, path
 	):
 		filteres = {
 			"server_type": self.server_type,
 			"server": self.server,
 			"job_type": job_type,
 			"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+			"request_method": method,
+			"request_path": path,
 		}
 
 		if bench:
@@ -791,7 +794,9 @@ class Agent:
 		if host:
 			filteres["host"] = host
 
-		return frappe.db.exists("Agent Job", filteres)
+		print(filteres)
+
+		return frappe.db.get_value("Agent Job", filteres, as_dict=1)
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
