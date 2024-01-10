@@ -206,6 +206,7 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
+		"press.press.doctype.incident.incident.validate_incidents",
 	],
 	"cron": {
 		"0 4 * * *": [

@@ -17,6 +17,12 @@ if TYPE_CHECKING:
 	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
+INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
+INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
+
+CALL_THRESHOLD_MINUTES = 15  # time after which humans are called
+AUTO_RESOLVE_SILENCE_MINUTES = 5  # time for which alerts aren't firing
+
 
 class Incident(WebsiteGenerator):
 	def on_update(self):
@@ -145,3 +151,68 @@ Incident URL: {incident_link}"""
 		self.status = "Acknowledged"
 		self.acknowledged_by = acknowledged_by
 		self.save()
+
+	@property
+	def incident_scope(self):
+		return getattr(self, INCIDENT_SCOPE)
+
+	def get_last_alert_status_for_each_group(self):
+		return frappe.db.sql_list(
+			f"""
+select
+	last_alert_per_group.status
+from
+	(
+		select
+			name,
+			status,
+			group_key,
+			creation,
+			ROW_NUMBER() OVER (
+				PARTITION BY
+					`group_key`
+				ORDER BY
+					`creation` DESC
+			) AS rank
+		from
+			`tabAlertmanager Webhook Log`
+		where
+			creation >= {self.creation}
+			and group_key like "%{self.incident_scope}%"
+	) last_alert_per_group
+where
+	last_alert_per_group.rank = 1
+
+			"""
+		)  # status of the sites down in each bench
+
+	def check_auto_resolved(self):
+		"""
+		Checks if the Incident is auto-resolved
+		"""
+		if "Firing" in self.get_last_alert_status_for_each_group():
+			# all should be "resolved" for auto-resolve
+			return
+		self.status = "Auto-Resolved"
+		self.save()
+
+
+def validate_incidents():
+	ongoing_incidents = frappe.get_all(
+		"Incident",
+		filters={
+			"status": "Validating",
+		},
+		fields=["name", "creation"],
+	)
+	for incident in ongoing_incidents:
+		if incident.creation > frappe.utils.add_to_date(
+			frappe.utils.frappe.utils.now_datetime(), minutes=-CALL_THRESHOLD_MINUTES
+		):
+			incident_doc = frappe.get_doc("Incident", incident.name)
+			incident_doc.status = "Confirmed"
+			incident_doc.save()
+			incident_doc.call_humans()
+		else:
+			incident_doc = frappe.get_doc("Incident", incident.name)
+			incident_doc.check_auto_resolved()
