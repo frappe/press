@@ -369,7 +369,6 @@ class Team(Document):
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
-		self.servers_enabled = 0
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
