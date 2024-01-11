@@ -1744,14 +1744,20 @@ def change_group(name, group):
 def change_region_options(name):
 	group, cluster = frappe.db.get_value("Site", name, ["group", "cluster"])
 
-	cluster_names = frappe.get_doc("Release Group", group).get_clusters()
+	group = frappe.get_doc("Release Group", group)
+	cluster_names = group.get_clusters()
 	group_regions = frappe.get_all(
 		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
 	)
 
 	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
 
-	return {"regions": regions, "group_regions": group_regions, "current_region": cluster}
+	return {
+		"regions": regions,
+		"group_regions": group_regions,
+		"current_region": cluster,
+		"group_team": group.team,
+	}
 
 
 @frappe.whitelist()

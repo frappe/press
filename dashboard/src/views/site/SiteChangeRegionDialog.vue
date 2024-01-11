@@ -8,7 +8,7 @@
 					loading: $resources.addRegionToReleaseGroup.loading,
 					disabled:
 						!selectedRegion ||
-						site?.is_public ||
+						$account.team.name !== changeRegionOptions?.data?.group_team ||
 						$resources.changeRegionOptions.data.group_regions.includes(
 							selectedRegion
 						),
@@ -119,7 +119,10 @@ export default {
 					this.selectedRegion
 				)
 			) {
-				if (this.site?.is_public)
+				if (
+					this.$resources.changeRegionOptions?.data?.group_name !==
+					this.$account.team.name
+				)
 					return 'Selected region is not available in the bench. Get in touch with support to add this region.';
 				else
 					return 'Selected region is not available in the bench. You can add this region to the bench and then schedule the site migration later.';
