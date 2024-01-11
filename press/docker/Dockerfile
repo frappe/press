@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   wget \
   curl \
   supervisor \
+  file \
   # Dependencies for SSH access
   openssh-server \
   nano \
