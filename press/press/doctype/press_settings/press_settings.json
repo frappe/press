@@ -1099,6 +1099,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Fetched from frappe.io",
    "fieldname": "print_format",
    "fieldtype": "Data",
    "label": "Print Format"
@@ -1106,7 +1107,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-01-11 14:39:12.985900",
+ "modified": "2024-01-11 23:28:22.862640",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
