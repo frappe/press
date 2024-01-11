@@ -6,6 +6,7 @@ import frappe
 import json
 from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue_doc
+from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
 from press.telegram_utils import Telegram
 from press.utils import log_error
 from frappe.utils import get_url_to_form
@@ -30,9 +31,6 @@ Labels:
 {%- endif %}
 
 """
-
-INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
-INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
 
 class AlertmanagerWebhookLog(Document):
@@ -92,7 +90,9 @@ class AlertmanagerWebhookLog(Document):
 		instances = []
 		for alert in past_alerts:
 			payload = json.loads(alert["payload"])
-			instances.extend([alert["labels"]["instance"] for alert in payload["alerts"]])
+			instances.extend(
+				[alert["labels"]["instance"] for alert in payload["alerts"]]
+			)  # sites
 		return set(instances)
 
 	def total_instances(self) -> int:
@@ -195,7 +195,7 @@ class AlertmanagerWebhookLog(Document):
 			{
 				"alert": self.alert,
 				INCIDENT_SCOPE: self.incident_scope,
-				"status": "Validating",
+				"status": ("in", ["Validating", "Confirmed"]),
 			},
 			"status",
 			for_update=True,
