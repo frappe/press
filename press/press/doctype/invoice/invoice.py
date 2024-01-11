@@ -759,10 +759,11 @@ class Invoice(Document):
 	def fetch_invoice_pdf(self):
 		if self.frappe_invoice:
 			client = self.get_frappeio_connection()
+			print_format = frappe.db.get_single_value("Press Setting", "print_format")
 			url = (
 				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
 				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
-				"format=Frappe%20Cloud&no_letterhead=0"
+				f"format={print_format}&no_letterhead=0"
 			)
 
 			with client.session.get(url, headers=client.headers, stream=True) as r:
