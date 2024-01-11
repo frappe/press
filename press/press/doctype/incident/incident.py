@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import timedelta
 import frappe
 from frappe.utils.background_jobs import enqueue_doc
 from frappe.website.website_generator import WebsiteGenerator
@@ -22,6 +23,9 @@ INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor
 
 CALL_THRESHOLD_MINUTES = 15  # time after which humans are called
 AUTO_RESOLVE_SILENCE_MINUTES = 5  # time for which alerts aren't firing
+PAST_ALERT_COVER_MINUTES = (
+	15  # to cover alerts that fired before/triggered the incident
+)
 
 
 class Incident(WebsiteGenerator):
@@ -177,12 +181,11 @@ from
 		from
 			`tabAlertmanager Webhook Log`
 		where
-			creation >= {self.creation}
-			and group_key like "%{self.incident_scope}%"
+			creation >= "{self.creation - timedelta(minutes=PAST_ALERT_COVER_MINUTES)}"
+			and group_key like "%%{self.incident_scope}%%"
 	) last_alert_per_group
 where
 	last_alert_per_group.rank = 1
-
 			"""
 		)  # status of the sites down in each bench
 
@@ -206,7 +209,7 @@ def validate_incidents():
 		fields=["name", "creation"],
 	)
 	for incident in ongoing_incidents:
-		if incident.creation > frappe.utils.add_to_date(
+		if incident.creation < frappe.utils.add_to_date(
 			frappe.utils.frappe.utils.now_datetime(), minutes=-CALL_THRESHOLD_MINUTES
 		):
 			incident_doc = frappe.get_doc("Incident", incident.name)

@@ -11,6 +11,10 @@ from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log impor
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
+from press.press.doctype.incident.incident import validate_incidents
+from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
+	create_test_prometheus_alert_rule,
+)
 from press.press.doctype.site.test_site import create_test_site
 from press.utils.test import foreground_enqueue_doc
 
@@ -69,6 +73,7 @@ class MockTwilioClient:
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
+@patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		self.from_ = "+911234567892"
@@ -110,9 +115,6 @@ class TestIncident(FrappeTestCase):
 		"create",
 		wraps=MockTwilioCallList("busy").create,
 	)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_creation_places_phone_call_to_all_humans_in_incident_team_if_no_one_picks_up(
 		self, mock_calls_create: Mock
 	):
@@ -139,9 +141,6 @@ class TestIncident(FrappeTestCase):
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
 	)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_calls_only_one_person_if_first_person_picks_up(
 		self, mock_calls_create: Mock
 	):
@@ -158,9 +157,6 @@ class TestIncident(FrappeTestCase):
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
 	)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_calls_stop_for_in_progress_state(self, mock_calls_create):
 		incident = frappe.get_doc(
 			{
@@ -176,9 +172,6 @@ class TestIncident(FrappeTestCase):
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
 		frappe.get_doc(
 			{
@@ -189,9 +182,6 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(mock_calls_create.call_count, 2)
 
 	@patch("press.press.doctype.incident.incident.Incident.wait_for_pickup", new=Mock())
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_gets_created_on_alert_that_meets_conditions(self):
 		incident_count = frappe.db.count("Incident")
 		create_test_alertmanager_webhook_log()
@@ -206,9 +196,6 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site)
 		self.assertEqual(frappe.db.count("Incident"), incident_count_before)
 
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_created_when_sites_within_scope_is_down(self):
 		"""3 out of 3 sites on server down"""
 		incident_count_before = frappe.db.count("Incident")
@@ -222,9 +209,6 @@ class TestIncident(FrappeTestCase):
 
 	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_call_event_creates_acknowledgement_update(self):
 		with patch.object(
 			MockTwilioCallList, "create", new=MockTwilioCallList("completed").create
@@ -256,9 +240,6 @@ class TestIncident(FrappeTestCase):
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
 	)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_global_phone_call_alerts_disabled_wont_create_phone_calls(
 		self, mock_calls_create
 	):
@@ -271,9 +252,6 @@ class TestIncident(FrappeTestCase):
 		).insert()
 		mock_calls_create.assert_not_called()
 
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_duplicate_incidents_arent_created_for_same_alert(self):
 		incident_count_before = frappe.db.count("Incident")
 		site = create_test_site()
@@ -290,9 +268,6 @@ class TestIncident(FrappeTestCase):
 		"create",
 		wraps=MockTwilioMessageList().create,
 	)
-	@patch(
-		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
-	)
 	def test_incident_creation_sends_text_message(self, mock_messages_create: Mock):
 		frappe.get_doc(
 			{
@@ -301,3 +276,40 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 		self.assertEqual(mock_messages_create.call_count, 2)
+
+	def test_incident_gets_auto_resolved_when_resolved_alerts_fire(self):
+		site = create_test_site()
+		alert = create_test_prometheus_alert_rule()
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="firing")
+		incident = frappe.get_last_doc("Incident")
+		self.assertEqual(incident.status, "Validating")
+		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Auto-Resolved")
+
+	def test_incident_does_not_auto_resolve_when_other_alerts_are_still_firing(self):
+		site = create_test_site()
+		site2 = create_test_site(server=site.server)
+		alert = create_test_prometheus_alert_rule()
+		create_test_alertmanager_webhook_log(
+			site=site, alert=alert, status="firing"
+		)  # 50% sites down
+		incident = frappe.get_last_doc("Incident")
+		self.assertEqual(incident.status, "Validating")
+		create_test_alertmanager_webhook_log(
+			site=site2, status="firing"
+		)  # other site down, nothing resolved
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")
+		create_test_alertmanager_webhook_log(
+			site=site2, status="resolved"
+		)  # other site resolved, first site still down
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")
+		create_test_alertmanager_webhook_log(site=site, status="resolved")
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Auto-Resolved")
