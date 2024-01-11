@@ -35,6 +35,19 @@ class MockTwilioCallList:
 		return MockTwilioCallInstance(status=self.status)
 
 
+class MockTwilioMessageInstance:
+	def __init__(self, *args, **kwargs):
+		pass
+
+
+class MockTwilioMessageList:
+	def __init__(self, *args, **kwargs):
+		pass
+
+	def create(self, *args, **kwargs):
+		return MockTwilioMessageInstance()
+
+
 class MockTwilioClient:
 	def __init__(self, *args, **kwargs):
 		pass
@@ -42,6 +55,10 @@ class MockTwilioClient:
 	@property
 	def calls(self):
 		return MockTwilioCallList()
+
+	@property
+	def messages(self):
+		return MockTwilioMessageList()
 
 
 @patch(
@@ -189,6 +206,9 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site)
 		self.assertEqual(frappe.db.count("Incident"), incident_count_before)
 
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_incident_created_when_sites_within_scope_is_down(self):
 		"""3 out of 3 sites on server down"""
 		incident_count_before = frappe.db.count("Incident")
@@ -251,6 +271,9 @@ class TestIncident(FrappeTestCase):
 		).insert()
 		mock_calls_create.assert_not_called()
 
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
 	def test_duplicate_incidents_arent_created_for_same_alert(self):
 		incident_count_before = frappe.db.count("Incident")
 		site = create_test_site()
