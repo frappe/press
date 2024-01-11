@@ -284,3 +284,20 @@ class TestIncident(FrappeTestCase):
 		site3 = create_test_site()  # new server
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - 2, incident_count_before)
+
+	@patch.object(
+		MockTwilioMessageList,
+		"create",
+		wraps=MockTwilioMessageList().create,
+	)
+	@patch(
+		"press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient
+	)
+	def test_incident_creation_sends_text_message(self, mock_messages_create: Mock):
+		frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+			}
+		).insert()
+		self.assertEqual(mock_messages_create.call_count, 2)
