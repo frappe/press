@@ -607,14 +607,21 @@ class ReleaseGroup(Document):
 			upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
 
 			if bench_app:
-				current_release_creation = frappe.db.get_value(
-					"App Release", bench_app.release, "creation"
-				)
-				upcoming_releases = [
-					release
-					for release in latest_app_releases
-					if release.creation > current_release_creation
-				]
+				new_branch = frappe.db.get_value("App Source", app.source, "branch")
+				old_branch = frappe.db.get_value("App Source", bench_app.source, "branch")
+
+				# if there's a branch change return all releases
+				if new_branch != old_branch:
+					upcoming_releases = latest_app_releases
+				else:
+					current_release_creation = frappe.db.get_value(
+						"App Release", bench_app.release, "creation"
+					)
+					upcoming_releases = [
+						release
+						for release in latest_app_releases
+						if release.creation > current_release_creation
+					]
 			else:
 				upcoming_releases = latest_app_releases
 
