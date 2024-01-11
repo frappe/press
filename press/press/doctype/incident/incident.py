@@ -196,12 +196,17 @@ where
 			"""
 		)  # status of the sites down in each bench
 
+	def try_interfering(self):
+		# reserved for @adityahase to try reboot and other stuff on the servers intelligently
+		pass
+
 	def check_auto_resolved(self):
 		"""
 		Checks if the Incident is auto-resolved
 		"""
 		if "Firing" in self.get_last_alert_status_for_each_group():
 			# all should be "resolved" for auto-resolve
+			self.try_interfering()
 			return
 		self.status = "Auto-Resolved"
 		self.save()
