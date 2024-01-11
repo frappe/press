@@ -11,11 +11,7 @@
 				<div v-if="step === 'select-apps'">
 					<div class="mb-4 text-lg font-medium">Select apps to update</div>
 					<GenericList
-						v-if="
-							benchDocResource.doc.deploy_information.apps.some(
-								app => app.update_available === true
-							)
-						"
+						v-if="benchDocResource.doc.deploy_information.update_available"
 						:options="updatableAppOptions"
 						@update:selections="handleAppSelection"
 					/>
@@ -123,7 +119,7 @@ export default {
 		updatableAppOptions() {
 			let deployInformation = this.benchDocResource.doc.deploy_information;
 			let appData = deployInformation.apps.filter(
-				app => app.next_release !== app.current_release
+				app => app.update_available === true
 			);
 
 			return {
