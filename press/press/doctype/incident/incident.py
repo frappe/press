@@ -89,7 +89,7 @@ class Incident(WebsiteGenerator):
 		return call.fetch().status  # will eventually be no-answer
 
 	def _call_humans(self):
-		if not self.phone_call and not self.global_phone_call_enabled:
+		if not self.phone_call or not self.global_phone_call_enabled:
 			return
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(

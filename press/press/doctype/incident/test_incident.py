@@ -249,7 +249,24 @@ class TestIncident(FrappeTestCase):
 				"doctype": "Incident",
 				"alertname": "Test Alert",
 			}
-		).insert()
+		).insert().call_humans()
+		mock_calls_create.assert_not_called()
+		frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+				"phone_call": False,
+			}
+		).insert().call_humans()
+		mock_calls_create.assert_not_called()
+		frappe.db.set_value("Incident Settings", None, "phone_call_alerts", 1)
+		frappe.get_doc(
+			{
+				"doctype": "Incident",
+				"alertname": "Test Alert",
+				"phone_call": False,
+			}
+		).insert().call_humans()
 		mock_calls_create.assert_not_called()
 
 	def test_duplicate_incidents_arent_created_for_same_alert(self):
