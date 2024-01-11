@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "users",
+  "self_hosted_users",
   "phone_call_alerts",
   "enable_incident_detection"
  ],
@@ -29,12 +30,18 @@
    "fieldname": "enable_incident_detection",
    "fieldtype": "Check",
    "label": "Enable Incident Detection"
+  },
+  {
+   "fieldname": "self_hosted_users",
+   "fieldtype": "Table",
+   "label": "Self Hosted Users",
+   "options": "Incident Settings Self Hosted User"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2023-12-15 16:44:01.528498",
+ "modified": "2024-01-11 19:16:33.484613",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

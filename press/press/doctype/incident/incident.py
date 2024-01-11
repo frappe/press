@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 	from press.press.doctype.incident_settings_user.incident_settings_user import (
 		IncidentSettingsUser,
 	)
+	from press.press.doctype.incident_settings_self_hosted_user.incident_settings_self_hosted_user import (
+		IncidentSettingsSelfHostedUser,
+	)
 	from press.press.doctype.press_settings.press_settings import PressSettings
 
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
@@ -48,11 +51,15 @@ class Incident(WebsiteGenerator):
 			self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
 		)
 
-	def get_humans(self) -> list["IncidentSettingsUser"]:
+	def get_humans(
+		self,
+	) -> list["IncidentSettingsUser"] | list["IncidentSettingsSelfHostedUser"]:
 		"""
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
+		if frappe.db.exists("Self Hosted Server", {"server": self.server}):
+			return incident_settings.self_hosted_users
 		return incident_settings.users
 
 	@property
