@@ -7,3 +7,4 @@ frappe ALL = (root) NOPASSWD: /usr/bin/supervisorctl
 frappe ALL = (root) NOPASSWD: /usr/sbin/nginx
 frappe ALL = (root) NOPASSWD: /usr/local/bin/bench
 
+frappe ALL = (mysql) NOPASSWD: /usr/bin/mariabackup
