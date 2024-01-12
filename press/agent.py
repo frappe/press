@@ -406,6 +406,21 @@ class Agent:
 			site=site.name,
 		)
 
+	def backup_schema(self, site, offsite=False):
+		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+		}
+
+		return self.create_agent_job(
+			"Backup MariaDB Schema",
+			f"database/backup/{site.database_name}",
+			data=data,
+			site=site.name,
+		)
+
 	def add_domain(self, site, domain):
 		data = {
 			"domain": domain,

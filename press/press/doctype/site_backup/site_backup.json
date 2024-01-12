@@ -11,6 +11,7 @@
   "column_break_zwsb",
   "with_files",
   "offsite",
+  "physical",
   "job",
   "data_7",
   "database_file",
@@ -251,10 +252,17 @@
   {
    "fieldname": "column_break_blkb",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "physical",
+   "fieldtype": "Check",
+   "label": "Physical",
+   "search_index": 1
   }
  ],
  "links": [],
- "modified": "2024-01-12 12:29:20.190615",
+ "modified": "2024-01-12 15:03:24.919731",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
