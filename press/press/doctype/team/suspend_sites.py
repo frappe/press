@@ -63,12 +63,9 @@ def get_teams_with_unpaid_invoices():
 	query = (
 		frappe.qb.from_(plan)
 		.select(plan.name)
-		.where(
-			(plan.enabled == 1)
-			& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
-		)
+		.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 	).run(as_dict=True)
-	dedicated_or_frappe_plans = [d.name for d in query]
+	frappe_plans = [d.name for d in query]
 
 	invoice = frappe.qb.DocType("Invoice")
 	team = frappe.qb.DocType("Team")
@@ -88,7 +85,7 @@ def get_teams_with_unpaid_invoices():
 			& (invoice.docstatus < 2)
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
-			& (site.plan).notin(dedicated_or_frappe_plans)
+			& (site.plan).notin(frappe_plans)
 		)
 		.select(invoice.team)
 		.distinct()
