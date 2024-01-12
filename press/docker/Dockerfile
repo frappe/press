@@ -212,7 +212,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe
 
 # Install Redisearch 2.0 from precompiled binaries
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
-
+COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 # Install other apps
