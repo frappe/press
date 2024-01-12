@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -16,6 +17,9 @@ from press.press.doctype.server.server import Server
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
 from press.utils.dns import create_dns_record
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -150,7 +154,7 @@ class SiteMigration(Document):
 
 	def setup_redirects(self):
 		"""Setup redirects of site in proxy"""
-		site = frappe.get_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		ret = site._update_redirects_for_all_site_domains()
 		if ret:
 			# could be no jobs
@@ -200,7 +204,29 @@ class SiteMigration(Document):
 	def fail(self):
 		self.status = "Failure"
 		self.save()
+		self.send_fail_notification()
+		self.activate_site_if_appropriate()
 
+	@property
+	def failed_step(self):
+		return find(self.steps, lambda x: x.status == "Failure")
+
+	def activate_site_if_appropriate(self):
+		site: "Site" = frappe.get_doc("Site", self.site)
+		if (
+			self.failed_step.method_name
+			in [
+				"backup_source_site",
+				"archive_site_on_destination_server",
+				"restore_site_on_destination_server",
+				"restore_site_on_destination_proxy",
+			]
+			and site.status_before_update == "Active"
+		):
+			site.activate()
+			site.status_before_update = None
+
+	def send_fail_notification(self):
 		site = frappe.get_doc("Site", self.site)
 
 		message = (
@@ -219,7 +245,9 @@ class SiteMigration(Document):
 	def succeed(self):
 		self.status = "Success"
 		self.save()
+		self.send_success_notification()
 
+	def send_success_notification(self):
 		site = frappe.get_doc("Site", self.site)
 
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
@@ -486,7 +514,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 				site_migration.run_next_step()
 			except Exception:
 				log_error("Site Migration Step Error")
-		elif job.status == "Failure":
+		elif job.status in ["Failure", "Delivery Failure"]:
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
