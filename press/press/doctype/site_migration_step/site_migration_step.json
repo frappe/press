@@ -18,7 +18,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped",
+   "options": "Pending\nRunning\nSuccess\nFailure\nSkipped\nDelivery Failure",
    "reqd": 1
   },
   {
@@ -50,7 +50,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-05-11 15:32:38.205462",
+ "modified": "2024-01-12 16:30:57.497115",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Migration Step",
@@ -58,5 +58,6 @@
  "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

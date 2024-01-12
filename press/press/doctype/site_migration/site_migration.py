@@ -514,7 +514,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 				site_migration.run_next_step()
 			except Exception:
 				log_error("Site Migration Step Error")
-		elif job.status == "Failure":
+		elif job.status in ["Failure", "Delivery Failure"]:
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
