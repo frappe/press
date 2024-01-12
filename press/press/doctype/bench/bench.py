@@ -553,6 +553,53 @@ def process_remove_ssh_user_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False)
 
 
+def get_archive_jobs(bench: str):
+	frappe.db.commit()
+	return frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "Archive Bench",
+			"bench": bench,
+			"status": ("in", ("Pending", "Running", "Success")),
+		},
+		limit=1,
+		ignore_ifnull=True,
+		order_by="job_type",
+	)
+
+
+def get_ongoing_jobs(bench: str):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Agent Job", {"bench": bench, "status": ("in", ["Running", "Pending"])}
+	)
+
+
+def get_active_site_updates(bench: str):
+	frappe.db.commit()
+	return frappe.get_all(
+		"Site Update",
+		{
+			"status": ("in", ["Pending", "Running", "Failure"]),
+		},
+		or_filters={
+			"source_bench": bench.name,
+			"destination_bench": bench.name,
+		},
+		limit=1,
+		ignore_ifnull=True,
+		order_by="destination_bench",
+	)
+
+
+def get_unfinished_site_migrations(bench: str):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Site Migration",
+		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": bench},
+	)
+
+
 def archive_obsolete_benches():
 	benches = frappe.get_all(
 		"Bench",
@@ -566,44 +613,16 @@ def archive_obsolete_benches():
 		):
 			continue
 		# If this bench is already being archived then don't do anything.
-		frappe.db.commit()
-		active_archival_jobs = frappe.get_all(
-			"Agent Job",
-			{
-				"job_type": "Archive Bench",
-				"bench": bench.name,
-				"status": ("in", ("Pending", "Running", "Success")),
-			},
-			limit=1,
-			ignore_ifnull=True,
-			order_by="job_type",
-		)
-		if active_archival_jobs:
+		if get_archive_jobs(bench.name):
 			continue
 
-		frappe.db.commit()
-		ongoing_jobs = frappe.db.exists(
-			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
-		)
-		if ongoing_jobs:
+		if get_ongoing_jobs(bench.name):
 			continue
 
-		frappe.db.commit()
-		active_site_updates = frappe.get_all(
-			"Site Update",
-			{
-				"status": ("in", ["Pending", "Running", "Failure"]),
-			},
-			or_filters={
-				"source_bench": bench.name,
-				"destination_bench": bench.name,
-			},
-			limit=1,
-			ignore_ifnull=True,
-			order_by="destination_bench",
-		)
+		if get_active_site_updates(bench.name):
+			continue
 
-		if active_site_updates:
+		if get_unfinished_site_migrations(bench.name):
 			continue
 
 		frappe.db.commit()
