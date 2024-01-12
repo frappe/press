@@ -8,30 +8,36 @@
   "status",
   "files_availability",
   "site",
-  "job",
+  "column_break_zwsb",
   "with_files",
   "offsite",
+  "job",
+  "column_break_noav",
   "database",
   "size",
   "url",
   "data_7",
   "database_file",
   "database_url",
+  "column_break_wiuq",
   "remote_database_file",
   "database_size",
-  "column_break_wiuq",
+  "config_section",
   "config_file",
   "config_file_url",
+  "column_break_qnqz",
   "remote_config_file",
   "config_file_size",
   "data_12",
   "public_file",
   "public_url",
+  "column_break_16",
   "remote_public_file",
   "public_size",
-  "column_break_16",
+  "private_section",
   "private_file",
   "private_url",
+  "column_break_blkb",
   "remote_private_file",
   "private_size",
   "section_break_21",
@@ -148,12 +154,16 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "data_7",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Database"
   },
   {
+   "collapsible": 1,
    "fieldname": "data_12",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Public"
   },
   {
    "fieldname": "column_break_16",
@@ -169,6 +179,7 @@
    "set_only_once": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_21",
    "fieldtype": "Section Break"
   },
@@ -237,10 +248,38 @@
    "label": "Remote File",
    "options": "Remote File",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zwsb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_noav",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "config_section",
+   "fieldtype": "Section Break",
+   "label": "Config"
+  },
+  {
+   "fieldname": "column_break_qnqz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "private_section",
+   "fieldtype": "Section Break",
+   "label": "Private"
+  },
+  {
+   "fieldname": "column_break_blkb",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [],
- "modified": "2023-12-06 17:33:23.890696",
+ "modified": "2024-01-12 12:26:10.740889",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",
