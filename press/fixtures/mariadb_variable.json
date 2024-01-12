@@ -240,13 +240,13 @@
   "skippable": 0
  },
  {
-  "datatype": "Int",
+  "datatype": "Str",
   "default_value": null,
   "doc_section": "server",
   "docstatus": 0,
   "doctype": "MariaDB Variable",
   "dynamic": 1,
-  "modified": "2023-12-19 09:23:48.535638",
+  "modified": "2024-01-12 14:21:03.949888",
   "name": "max_user_connections",
   "set_on_new_servers": 0,
   "skippable": 0
