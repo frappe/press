@@ -216,6 +216,7 @@ class SiteMigration(Document):
 		if (
 			self.failed_step.method_name
 			in [
+				"backup_source_site",
 				"archive_site_on_destination_server",
 				"restore_site_on_destination_server",
 				"restore_site_on_destination_proxy",
