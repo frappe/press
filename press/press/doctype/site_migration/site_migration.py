@@ -200,7 +200,9 @@ class SiteMigration(Document):
 	def fail(self):
 		self.status = "Failure"
 		self.save()
+		self.send_fail_notification()
 
+	def send_fail_notification(self):
 		site = frappe.get_doc("Site", self.site)
 
 		message = (
@@ -219,7 +221,9 @@ class SiteMigration(Document):
 	def succeed(self):
 		self.status = "Success"
 		self.save()
+		self.send_success_notification()
 
+	def send_success_notification(self):
 		site = frappe.get_doc("Site", self.site)
 
 		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
