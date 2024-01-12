@@ -2011,10 +2011,14 @@ def options_for_new(group: str = None, selected_values=None) -> Dict:
 	apps = []
 	clusters = []
 
+	versions_filters = {"public": True}
+	if not group:
+		versions_filters.update({"status": ("!=", "End of Life")})
+
 	versions = frappe.db.get_all(
 		"Frappe Version",
 		["name", "default", "status", "number"],
-		{"public": True},
+		versions_filters,
 		order_by="number desc",
 	)
 	for v in versions:
