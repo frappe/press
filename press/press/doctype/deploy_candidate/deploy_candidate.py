@@ -465,7 +465,7 @@ class DeployCandidate(Document):
 			f.write(content)
 
 	def _copy_config_files(self):
-		for target in ["common_site_config.json", "supervisord.conf"]:
+		for target in ["common_site_config.json", "supervisord.conf", ".vimrc"]:
 			shutil.copy(
 				os.path.join(frappe.get_app_path("press", "docker"), target), self.build_directory
 			)
