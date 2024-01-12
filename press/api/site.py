@@ -510,18 +510,22 @@ def get_domain():
 @frappe.whitelist()
 def get_new_site_options(group: str = None):
 	team = get_current_team()
-	versions = frappe.get_all(
-		"Frappe Version",
-		["name", "number", "default", "status"],
-		{"public": True},
-		order_by="`default` desc, number desc",
-	)
 	apps = set()
 	filters = {"enabled": True}
+	versions_filters = {"public": True}
+
 	if group:  # private bench
 		filters.update({"name": group, "team": team})
 	else:
 		filters.update({"public": True})
+		versions_filters.update({"status": ("!=", "End of Life")})
+
+	versions = frappe.get_all(
+		"Frappe Version",
+		["name", "number", "default", "status"],
+		filters=versions_filters,
+		order_by="`default` desc, number desc",
+	)
 
 	for version in versions:
 		filters.update({"version": version.name})
