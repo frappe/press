@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
-DAYTIME_CALL_THRESHOLD_MINUTES = 10  # time after which humans are called
+DAYTIME_CALL_THRESHOLD_MINUTES = 5  # time after which humans are called
 NIGHTTIME_CALL_THRESHOLD_MINUTES = 15  # time after which humans are called
 PAST_ALERT_COVER_MINUTES = (
 	15  # to cover alerts that fired before/triggered the incident
