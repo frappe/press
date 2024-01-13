@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import generateRoutes from './objects/generateRoutes';
 import { getTeam } from './data/team';
+import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
 	history: createWebHistory('/dashboard2/'),
@@ -88,14 +88,15 @@ let router = createRouter({
 		{
 			path: '/settings',
 			name: 'Settings',
-			redirect: { name: 'SettingsTeam' },
+			redirect: { name: 'SettingsProfile' },
 			component: () => import('./pages/Settings.vue'),
 			children: [
-				// {
-				// 	name: 'SettingsProfile',
-				// 	path: 'profile',
-				// 	component: () => import('./components/settings/ProfileSettings.vue')
-				// },
+				{
+					name: 'SettingsProfile',
+					path: 'profile',
+					component: () =>
+						import('./components/settings/profile/ProfileSettings.vue')
+				},
 				{
 					name: 'SettingsTeam',
 					path: 'team',

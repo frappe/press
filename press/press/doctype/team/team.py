@@ -43,6 +43,7 @@ class Team(Document):
 		"skip_backups",
 		"is_saas_user",
 		"billing_name",
+		"referrer_id",
 	]
 
 	def get_doc(self, doc):
