@@ -176,6 +176,9 @@ class Site(Document):
 
 		self.update_subscription()
 
+		if self.has_value_changed("team"):
+			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
 		):
