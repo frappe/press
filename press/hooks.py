@@ -316,3 +316,5 @@ user_data_fields = [
 ]
 
 auth_hooks = ["press.auth.hook"]
+
+page_renderer = ["press.metrics.MetricsRenderer"]
