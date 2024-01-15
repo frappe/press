@@ -216,10 +216,10 @@ class SiteMigration(Document):
 		if (
 			self.failed_step.method_name
 			in [
-				"backup_source_site",
-				"archive_site_on_destination_server",
-				"restore_site_on_destination_server",
-				"restore_site_on_destination_proxy",
+				self.backup_source_site.__name__,
+				self.archive_site_on_destination_server.__name__,
+				self.restore_site_on_destination_server.__name__,
+				self.restore_site_on_destination_proxy.__name__,
 			]
 			and site.status_before_update == "Active"
 		):
