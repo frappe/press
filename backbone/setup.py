@@ -21,7 +21,7 @@ def main(args):
 
 def prepare():
 	shell.execute("sudo apt update")
-	apt_install("build-essential")
+	apt_install("build-essential pkg-config")
 
 
 def setup_vagrant():
