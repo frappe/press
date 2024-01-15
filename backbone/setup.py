@@ -25,8 +25,8 @@ def prepare():
 
 
 def setup_vagrant():
-	VAGRANT_SERVER = "https://releases.hashicorp.com/vagrant/2.2.10"
-	VAGRANT_PACKAGE = "vagrant_2.2.10_x86_64.deb"
+	VAGRANT_SERVER = "https://releases.hashicorp.com/vagrant/2.4.0"
+	VAGRANT_PACKAGE = "vagrant_2.4.0-1_amd64.deb"
 	shell.execute(f"wget {VAGRANT_SERVER}/{VAGRANT_PACKAGE} -O {VAGRANT_PACKAGE}")
 	shell.execute(f"sudo dpkg -i {VAGRANT_PACKAGE}")
 
