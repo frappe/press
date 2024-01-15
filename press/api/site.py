@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded, get_url
+from frappe.utils import flt, time_diff_in_hours, rounded
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -1623,41 +1623,7 @@ def change_notify_email(name, email):
 @frappe.whitelist()
 @protected("Site")
 def send_change_team_request(name, team_mail_id):
-	if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
-		frappe.throw("No Active Team record found.")
-
-	host_name, old_team = frappe.db.get_value("Site", name, ["host_name", "team"])
-	old_team = frappe.db.get_value("Team", old_team, "user")
-
-	if old_team == team_mail_id:
-		frappe.throw(f"Site is already owned by the team {team_mail_id}")
-
-	key = frappe.generate_hash("Site Transfer Link", 20)
-	minutes = 20
-	frappe.cache.set_value(
-		f"site_transfer_key:{key}", team_mail_id, expires_in_sec=minutes * 60
-	)
-	frappe.cache.set_value(
-		f"site_transfer_site_name:{key}", name, expires_in_sec=minutes * 60
-	)
-
-	link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
-
-	if frappe.conf.developer_mode:
-		print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
-
-	frappe.sendmail(
-		recipients=team_mail_id,
-		subject=f"Transfer Site Ownership Confirmation for site {host_name}",
-		template="transfer_site_confirmation",
-		args={
-			"site": host_name or name,
-			"old_team": old_team,
-			"new_team": team_mail_id,
-			"transfer_url": link,
-			"minutes": minutes,
-		},
-	)
+	frappe.get_doc("Site", name).send_change_team_request(team_mail_id)
 
 
 @frappe.whitelist(allow_guest=True)

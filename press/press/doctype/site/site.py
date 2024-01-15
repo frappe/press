@@ -15,7 +15,7 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours
+from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours, get_url
 from press.exceptions import CannotChangePlan
 from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -708,6 +708,43 @@ class Site(Document):
 		)
 
 		return delete_remote_backup_objects(sites_remote_files)
+
+	@frappe.whitelist()
+	def send_change_team_request(self, team_mail_id: str):
+		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
+			frappe.throw("No Active Team record found.")
+
+		old_team = frappe.db.get_value("Team", self.team, "user")
+
+		# if old_team == team_mail_id:
+		# 	frappe.throw(f"Site is already owned by the team {team_mail_id}")
+
+		key = frappe.generate_hash("Site Transfer Link", 20)
+		minutes = 20
+		frappe.cache.set_value(
+			f"site_transfer_key:{key}", team_mail_id, expires_in_sec=minutes * 60
+		)
+		frappe.cache.set_value(
+			f"site_transfer_site_name:{key}", self.name, expires_in_sec=minutes * 60
+		)
+
+		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
+
+		if frappe.conf.developer_mode:
+			print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
+
+		frappe.sendmail(
+			recipients=team_mail_id,
+			subject=f"Transfer Site Ownership Confirmation for site { self.host_name}",
+			template="transfer_site_confirmation",
+			args={
+				"site": self.host_name or self.name,
+				"old_team": old_team,
+				"new_team": team_mail_id,
+				"transfer_url": link,
+				"minutes": minutes,
+			},
+		)
 
 	@frappe.whitelist()
 	def login_as_admin(self, reason=None):
@@ -1600,6 +1637,12 @@ class Site(Document):
 				"description": "When you drop site your site, all it's data is deleted forever",
 				"button_label": "Drop",
 				"doc_method": "archive",
+			},
+			{
+				"action": "Transfer site",
+				"description": "Transfer ownership of this site to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]
