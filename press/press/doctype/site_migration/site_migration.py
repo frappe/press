@@ -225,6 +225,8 @@ class SiteMigration(Document):
 		):
 			site.activate()
 			site.status_before_update = None
+			if self.migration_type == "Cluster":
+				site.create_dns_record()
 
 	def send_fail_notification(self):
 		site = frappe.get_doc("Site", self.site)
