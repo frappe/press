@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded
+from frappe.utils import flt, time_diff_in_hours, rounded, get_url
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -1622,27 +1622,69 @@ def change_notify_email(name, email):
 
 @frappe.whitelist()
 @protected("Site")
-def change_team(team, name):
-
-	if not (
-		frappe.db.exists("Team", {"team_title": team})
-		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
-	):
+def send_change_team_request(name, team_mail_id):
+	if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
 		frappe.throw("No Active Team record found.")
 
-	from press.press.doctype.team.team import get_child_team_members
+	host_name, old_team = frappe.db.get_value("Site", name, ["host_name", "team"])
+	old_team = frappe.db.get_value("Team", old_team, "user")
 
-	current_team = get_current_team(True)
-	child_teams = [team.team_title for team in get_child_team_members(current_team.name)]
-	teams = [current_team.team_title] + child_teams
+	if old_team == team_mail_id:
+		frappe.throw(f"Site is already owned by the team {team_mail_id}")
 
-	if team not in teams:
-		frappe.throw(f"{team} is not part of your organization.")
+	key = frappe.generate_hash("Site Transfer Link", 20)
+	minutes = 20
+	frappe.cache.set_value(
+		f"site_transfer_key:{key}", team_mail_id, expires_in_sec=minutes * 60
+	)
+	frappe.cache.set_value(
+		f"site_transfer_site_name:{key}", name, expires_in_sec=minutes * 60
+	)
 
-	child_team = frappe.get_doc("Team", {"team_title": team})
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.team = child_team.name
-	site_doc.save(ignore_permissions=True)
+	link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
+
+	if frappe.conf.developer_mode:
+		print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
+
+	frappe.sendmail(
+		recipients=team_mail_id,
+		subject=f"Transfer Site Ownership Confirmation for site {host_name}",
+		template="transfer_site_confirmation",
+		args={
+			"site": host_name or name,
+			"old_team": old_team,
+			"new_team": team_mail_id,
+			"transfer_url": link,
+			"minutes": minutes,
+		},
+	)
+
+
+@frappe.whitelist(allow_guest=True)
+def confirm_site_transfer(key):
+	email = frappe.cache.get_value(f"site_transfer_key:{key}")
+	site = frappe.cache.get_value(f"site_transfer_site_name:{key}")
+
+	if email and site:
+		frappe.cache.delete_value(f"site_transfer_key:{key}")
+		frappe.cache.delete_value(f"site_transfer_site_name:{key}")
+
+		team = frappe.db.get_value("Team", {"user": email, "enabled": 1})
+		site_doc = frappe.get_doc("Site", site)
+		site_doc.team = team
+		site_doc.save(ignore_permissions=True)
+
+		frappe.response.type = "redirect"
+		frappe.response.location = f"/dashboard/sites/{site}"
+	else:
+		from frappe import _
+
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)
 
 
 @frappe.whitelist()

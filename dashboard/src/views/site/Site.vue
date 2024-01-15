@@ -132,7 +132,7 @@
 						variant: 'solid',
 						onClick: () =>
 							$resources.transferSite.submit({
-								team: emailOfChildTeam,
+								team_mail_id: emailOfTransferTeam,
 								name: siteName
 							})
 					}
@@ -142,11 +142,10 @@
 		>
 			<template #body-content>
 				<FormControl
-					label="Enter title of the child team"
-					v-model="emailOfChildTeam"
+					label="Enter email of the team for transfer of site ownership"
+					v-model="emailOfTransferTeam"
 					required
 				/>
-
 				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
 			</template>
 		</Dialog>
@@ -194,7 +193,7 @@ export default {
 			showChangeRegionDialog: false,
 			showChangeServerDialog: false,
 			showVersionUpgradeDialog: false,
-			emailOfChildTeam: null,
+			emailOfTransferTeam: '',
 			errorMessage: ''
 		};
 	},
@@ -231,13 +230,13 @@ export default {
 		},
 		transferSite() {
 			return {
-				url: 'press.api.site.change_team',
+				url: 'press.api.site.send_change_team_request',
 				onSuccess() {
 					this.showTransferSiteDialog = false;
-					this.emailOfChildTeam = null;
+					this.emailOfTransferTeam = '';
 					notify({
-						title: 'Site Transferred to Child Team',
-						message: 'Site Transferred to Child Team',
+						title: 'Site transfer request sent',
+						message: `The team ${this.emailOfTransferTeam} will receive a request to accept the site transfer.`,
 						color: 'green',
 						icon: 'check'
 					});
