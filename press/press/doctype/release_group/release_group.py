@@ -904,7 +904,6 @@ class ReleaseGroup(Document):
 
 	@frappe.whitelist()
 	def archive(self):
-		import time; time.sleep(5)
 		benches = frappe.get_all(
 			"Bench", filters={"group": self.name, "status": "Active"}, pluck="name"
 		)
