@@ -1705,11 +1705,14 @@ def change_group_options(name):
 def clone_group(name, new_group_title):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
-	cloned_group = frappe.copy_doc(group)
+	cloned_group = frappe.new_doc("Release Group")
 	cloned_group.title = new_group_title
 	cloned_group.team = get_current_team()
 	cloned_group.public = 0
-	cloned_group.servers = []
+	cloned_group.enabled = 1
+	cloned_group.version = group.version
+	cloned_group.dependencies = group.dependencies
+	cloned_group.is_redisearch_enabled = group.is_redisearch_enabled
 	cloned_group.append("servers", {"server": site.server, "default": False})
 
 	# add apps to rg if they are installed in site
