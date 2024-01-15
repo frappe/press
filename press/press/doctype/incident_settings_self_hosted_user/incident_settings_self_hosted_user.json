@@ -1,14 +1,13 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2023-12-14 09:27:19.932797",
- "default_view": "List",
+ "creation": "2024-01-11 19:05:21.521739",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "column_break_fmmd",
+  "column_break_ggho",
   "phone"
  ],
  "fields": [
@@ -21,10 +20,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "column_break_fmmd",
-   "fieldtype": "Column Break"
-  },
-  {
    "fetch_from": "user.phone",
    "fetch_if_empty": 1,
    "fieldname": "phone",
@@ -32,15 +27,19 @@
    "in_list_view": 1,
    "label": "Phone",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ggho",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-11 19:09:25.518329",
+ "modified": "2024-01-11 19:09:17.571549",
  "modified_by": "Administrator",
  "module": "Press",
- "name": "Incident Settings User",
+ "name": "Incident Settings Self Hosted User",
  "owner": "Administrator",
  "permissions": [],
  "sort_field": "modified",

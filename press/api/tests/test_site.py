@@ -505,6 +505,7 @@ erpnext 0.8.3	    HEAD
 			options["group_regions"], [seoul_server.cluster, tokyo_server.cluster]
 		)
 		self.assertEqual(options["current_region"], tokyo_server.cluster)
+		self.assertEqual(options["group_team"], group.team)
 
 		with fake_agent_job("Update Site Migrate"):
 			responses.post(

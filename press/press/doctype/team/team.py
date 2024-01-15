@@ -369,7 +369,6 @@ class Team(Document):
 	@frappe.whitelist()
 	def disable_erpnext_partner_privileges(self):
 		self.erpnext_partner = 0
-		self.servers_enabled = 0
 		self.save(ignore_permissions=True)
 
 	def create_partner_referral_code(self):
@@ -382,9 +381,7 @@ class Team(Document):
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
-		data = client.get_value(
-			"Partner", "start_date", {"email": self.partner_email, "enabled": 1}
-		)
+		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
 		start_date = frappe.utils.getdate(data.get("start_date"))
@@ -837,6 +834,11 @@ class Team(Document):
 			"has_paid_before": bool(
 				frappe.db.exists(
 					"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
+				)
+			),
+			"has_unpaid_invoices": bool(
+				frappe.db.exists(
+					"Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}
 				)
 			),
 		}

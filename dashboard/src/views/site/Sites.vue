@@ -11,7 +11,7 @@
 							icon-left="plus"
 							class="ml-2"
 							label="Create"
-							@click="showBillingDialog"
+							@click="validateCreateSite"
 						>
 						</Button>
 					</template>
@@ -351,9 +351,16 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		showBillingDialog() {
+		validateCreateSite() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
+			} else if (this.$account.billing_info.has_unpaid_invoices) {
+				notify({
+					title:
+						'Please settle your unpaid invoices from the billing tab in order to create new sites',
+					icon: 'info',
+					color: 'yellow'
+				});
 			} else {
 				this.$router.replace('/sites/new');
 			}

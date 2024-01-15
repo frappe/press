@@ -20,7 +20,10 @@ if typing.TYPE_CHECKING:
 
 
 def create_test_alertmanager_webhook_log(
-	alert: "PrometheusAlertRule" = None, creation: datetime = None, site: "Site" = None
+	alert: "PrometheusAlertRule" = None,
+	creation: datetime = None,
+	site: "Site" = None,
+	status: str = "firing",
 ):
 	alert = alert or create_test_prometheus_alert_rule()
 	site = site or create_test_site()
@@ -49,7 +52,7 @@ def create_test_alertmanager_webhook_log(
 								"severity": alert.severity.lower(),
 							},
 							"startsAt": "2023-12-15T01:02:56.363Z",
-							"status": "firing",
+							"status": status,
 						}
 					],
 					"commonAnnotations": {
@@ -58,7 +61,7 @@ def create_test_alertmanager_webhook_log(
 					"commonLabels": {
 						"alertname": alert.name,
 						"severity": alert.severity.lower(),
-						"status": "firing",
+						"status": status,
 						"bench": site.bench,
 						"cluster": site.cluster,
 						"job": "site",
@@ -72,7 +75,7 @@ def create_test_alertmanager_webhook_log(
 						"server": site.server,
 					},
 					"receiver": "web\\.hook",
-					"status": "firing",
+					"status": status,
 					"truncatedAlerts": 0,
 					"version": "4",
 					"externalURL": "http://localhost:9093",

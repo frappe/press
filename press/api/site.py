@@ -510,18 +510,22 @@ def get_domain():
 @frappe.whitelist()
 def get_new_site_options(group: str = None):
 	team = get_current_team()
-	versions = frappe.get_all(
-		"Frappe Version",
-		["name", "number", "default", "status"],
-		{"public": True},
-		order_by="`default` desc, number desc",
-	)
 	apps = set()
 	filters = {"enabled": True}
+	versions_filters = {"public": True}
+
 	if group:  # private bench
 		filters.update({"name": group, "team": team})
 	else:
 		filters.update({"public": True})
+		versions_filters.update({"status": ("!=", "End of Life")})
+
+	versions = frappe.get_all(
+		"Frappe Version",
+		["name", "number", "default", "status"],
+		filters=versions_filters,
+		order_by="`default` desc, number desc",
+	)
 
 	for version in versions:
 		filters.update({"version": version.name})
@@ -1701,12 +1705,22 @@ def change_group_options(name):
 def clone_group(name, new_group_title):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
-	cloned_group = frappe.copy_doc(group)
-	cloned_group.title = new_group_title
-	cloned_group.team = get_current_team()
-	cloned_group.public = 0
-	cloned_group.servers = []
-	cloned_group.append("servers", {"server": site.server, "default": False})
+	cloned_group = frappe.new_doc("Release Group")
+
+	cloned_group.update(
+		{
+			"title": new_group_title,
+			"team": get_current_team(),
+			"public": 0,
+			"enabled": 1,
+			"version": group.version,
+			"dependencies": group.dependencies,
+			"is_redisearch_enabled": group.is_redisearch_enabled,
+			"merge_all_rq_queues": group.merge_all_rq_queues,
+			"merge_default_and_short_rq_queues": group.merge_default_and_short_rq_queues,
+			"servers": [{"server": site.server, "default": False}],
+		}
+	)
 
 	# add apps to rg if they are installed in site
 	apps_installed_in_site = [app.app for app in site.apps]
@@ -1744,14 +1758,20 @@ def change_group(name, group):
 def change_region_options(name):
 	group, cluster = frappe.db.get_value("Site", name, ["group", "cluster"])
 
-	cluster_names = frappe.get_doc("Release Group", group).get_clusters()
+	group = frappe.get_doc("Release Group", group)
+	cluster_names = group.get_clusters()
 	group_regions = frappe.get_all(
 		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
 	)
 
 	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
 
-	return {"regions": regions, "group_regions": group_regions, "current_region": cluster}
+	return {
+		"regions": regions,
+		"group_regions": group_regions,
+		"current_region": cluster,
+		"group_team": group.team,
+	}
 
 
 @frappe.whitelist()

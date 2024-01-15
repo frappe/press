@@ -63,13 +63,8 @@ export default {
 		],
 		orderBy: 'creation desc',
 		columns: [
-			{ label: 'Site', fieldname: 'name', width: 2 },
-			{
-				label: 'Status',
-				fieldname: 'status',
-				type: 'Badge',
-				width: 1
-			},
+			{ label: 'Site', fieldname: 'name', width: 1.5 },
+			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
 				label: 'Plan',
 				fieldname: 'plan',

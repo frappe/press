@@ -481,7 +481,8 @@ export default {
 		confirmRemoveApp(app) {
 			this.$confirm({
 				title: 'Remove App',
-				message: `Are you sure you want to uninstall app ${app.title} from site?`,
+				message: `Are you sure you want to uninstall app ${app.title} from <b>site</b>?<br><br>
+				<b>All doctypes and modules pertaining to this app will be removed.</b>`,
 				actionLabel: 'Remove App',
 				actionColor: 'red',
 				action: closeDialog => {

@@ -11,8 +11,11 @@
   "column_break_2",
   "bench_configuration",
   "billing_tab",
+  "invoicing_section",
   "invoicing_column",
   "gst_percentage",
+  "column_break_qfwx",
+  "print_format",
   "stripe_settings_section",
   "stripe_inr_plan_id",
   "stripe_publishable_key",
@@ -1061,8 +1064,7 @@
   },
   {
    "fieldname": "invoicing_column",
-   "fieldtype": "Column Break",
-   "label": "Invoicing"
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "gst_percentage",
@@ -1086,11 +1088,26 @@
    "fieldname": "twilio_api_key_secret",
    "fieldtype": "Password",
    "label": "Twilio API Key Secret"
+  },
+  {
+   "fieldname": "invoicing_section",
+   "fieldtype": "Section Break",
+   "label": "Invoicing"
+  },
+  {
+   "fieldname": "column_break_qfwx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Fetched from frappe.io",
+   "fieldname": "print_format",
+   "fieldtype": "Data",
+   "label": "Print Format"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2023-12-20 08:59:12.583012",
+ "modified": "2024-01-11 23:28:22.862640",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
