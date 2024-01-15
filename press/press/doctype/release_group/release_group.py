@@ -273,8 +273,10 @@ class ReleaseGroup(Document):
 	def validate_app_versions(self):
 		# App Source should be compatible with Release Group's version
 		with suppress(AttributeError):
-			path = frappe.form_dict.cmd or frappe.request.path
-			if not frappe.flags.in_test and path == "/api/method/press.api.bench.change_branch":
+			if (
+				not frappe.flags.in_test
+				and frappe.request.path == "/api/method/press.api.bench.change_branch"
+			):
 				return  # Separate validation exists in set_app_source
 		for app in self.apps:
 			self.validate_app_version(app)
