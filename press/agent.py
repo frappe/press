@@ -148,8 +148,10 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str):
+	def rename_site(self, site, new_name: str, create_user: dict = None):
 		data = {"new_name": new_name}
+		if create_user:
+			data["create_user"] = create_user
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
@@ -761,8 +763,13 @@ class Agent:
 		status = self.get(f"jobs/{id}")
 		return status
 
-	def get_site_sid(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
+	def get_site_sid(self, site, user=None):
+		if user:
+			data = {"user": user}
+			result = self.post(f"benches/{site.bench}/sites/{site.name}/sid", data=data)
+		else:
+			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
+		return result.get("sid")
 
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]

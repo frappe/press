@@ -16,7 +16,9 @@
 			v-if="column.type === 'Component'"
 			:is="column.component(contextWithRow)"
 		/>
-		<Badge v-else-if="column.type === 'Badge'" :label="formattedValue" />
+		<template v-else-if="column.type === 'Badge'">
+			<Badge :label="formattedValue" v-if="formattedValue" />
+		</template>
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
 		</template>
@@ -39,7 +41,7 @@
 				</button>
 			</Dropdown>
 		</div>
-		<div v-else class="truncate text-base" :class="column.class">
+		<div v-else class="truncate text-base" :class="cellClass">
 			{{ formattedValue }}
 		</div>
 		<div v-if="column.suffix" class="ml-2">
@@ -83,6 +85,11 @@ export default {
 		button() {
 			if (!this.column.type === 'Button') return;
 			return this.column.Button(this.contextWithRow);
+		},
+		cellClass() {
+			if (!this.column.class) return;
+			if (typeof this.column.class == 'string') return this.column.class;
+			return this.column.class(this.contextWithRow);
 		},
 		contextWithRow() {
 			return {

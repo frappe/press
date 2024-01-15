@@ -31,7 +31,7 @@ from frappe.utils.password import get_decrypted_password
 from frappe.utils.user import is_system_user
 
 from press.agent import Agent
-from press.api.site import check_dns
+from press.api.site import check_dns, get_updates_between_current_and_next_apps
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
@@ -68,11 +68,12 @@ class Site(Document):
 		group = frappe.db.get_value(
 			"Release Group", self.group, ["title", "public"], as_dict=1
 		)
-		doc["group_title"] = group.title
-		doc["group_public"] = group.public
-		doc["current_usage"] = self.current_usage
-		doc["current_plan"] = get("Plan", self.plan) if self.plan else None
-		doc["last_updated"] = self.last_updated
+		doc.group_title = group.title
+		doc.group_public = group.public
+		doc.current_usage = self.current_usage
+		doc.current_plan = get("Plan", self.plan) if self.plan else None
+		doc.last_updated = self.last_updated
+		doc.update_information = self.get_update_information()
 
 		return doc
 
@@ -175,6 +176,9 @@ class Site(Document):
 
 		self.update_subscription()
 
+		if self.has_value_changed("team"):
+			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
 		):
@@ -207,7 +211,11 @@ class Site(Document):
 	def rename(self, new_name: str):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		agent.rename_site(self, new_name)
+		if self.account_request:
+			create_user = self.get_account_request_user()
+			agent.rename_site(self, new_name, create_user)
+		else:
+			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
 		self.status = "Pending"
 		self.save()
@@ -725,18 +733,20 @@ class Site(Document):
 
 		return conn
 
-	def get_login_sid(self):
-		password = get_decrypted_password("Site", self.name, "admin_password")
-		response = requests.post(
-			f"https://{self.name}/api/method/login",
-			data={"usr": "Administrator", "pwd": password},
-		)
-		sid = response.cookies.get("sid")
+	def get_login_sid(self, user="Administrator"):
+		sid = None
+		if user == "Administrator":
+			password = get_decrypted_password("Site", self.name, "admin_password")
+			response = requests.post(
+				f"https://{self.name}/api/method/login",
+				data={"usr": "Administrator", "pwd": password},
+			)
+			sid = response.cookies.get("sid")
 		if not sid:
 			agent = Agent(self.server)
-			sid = agent.get_site_sid(self)
+			sid = agent.get_site_sid(self, user)
 		if not sid or sid == "Guest":
-			frappe.throw("Could not login as Administrator", frappe.ValidationError)
+			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
 		return sid
 
 	def fetch_info(self):
@@ -1196,6 +1206,19 @@ class Site(Document):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
+	def get_account_request_user(self):
+		if not self.account_request:
+			return
+		account_request = frappe.get_doc("Account Request", self.account_request)
+		user = frappe.db.get_value(
+			"User", {"email": account_request.email}, ["first_name", "last_name"], as_dict=True
+		)
+		return {
+			"email": account_request.email,
+			"first_name": user.first_name,
+			"last_name": user.last_name,
+		}
+
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)
 		agent = Agent(self.server)
@@ -1388,6 +1411,37 @@ class Site(Document):
 			"update_on_day_of_month",
 		]
 		return {field: self.get(field) for field in fields}
+
+	def get_update_information(self):
+		from press.press.doctype.site_update.site_update import benches_with_available_update
+
+		out = frappe._dict()
+		out.update_available = self.bench in benches_with_available_update(site=self.name)
+		if not out.update_available:
+			return out
+
+		bench = frappe.get_doc("Bench", self.bench)
+		source = bench.candidate
+		destinations = frappe.get_all(
+			"Deploy Candidate Difference",
+			filters={"source": source},
+			limit=1,
+			pluck="destination",
+		)
+		if not destinations:
+			out.update_available = False
+			return out
+
+		destination = destinations[0]
+
+		destination_candidate = frappe.get_doc("Deploy Candidate", destination)
+
+		out.installed_apps = self.apps
+		out.apps = get_updates_between_current_and_next_apps(
+			bench.apps, destination_candidate.apps
+		)
+		out.update_available = any([app["update_available"] for app in out.apps])
+		return out
 
 	@frappe.whitelist()
 	def optimize_tables(self):
@@ -1597,7 +1651,7 @@ class Site(Document):
 			},
 			{
 				"action": "Drop site",
-				"description": "When you drop site your site, all it's data is deleted forever",
+				"description": "When you drop your site, all site data is deleted forever",
 				"button_label": "Drop",
 				"doc_method": "archive",
 			},

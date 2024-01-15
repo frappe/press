@@ -7,8 +7,9 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration } from '../utils/format';
+import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
+import { dayjsLocal } from '../utils/dayjs';
 
 export default {
 	doctype: 'Site',
@@ -54,9 +55,11 @@ export default {
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
 			'group.title as group_title',
+			'group.public as group_public',
 			'group.version as version',
 			'cluster.image as cluster_image',
-			'cluster.title as cluster_title'
+			'cluster.title as cluster_title',
+			'trial_end_date'
 		],
 		orderBy: 'creation desc',
 		columns: [
@@ -67,6 +70,12 @@ export default {
 				fieldname: 'plan',
 				width: 1,
 				format(value, row) {
+					if (row.trial_end_date) {
+						let trialEndDate = dayjsLocal(row.trial_end_date);
+						if (trialEndDate.isAfter(dayjsLocal())) {
+							return 'Trial';
+						}
+					}
 					let $team = getTeam();
 					if (row.price_usd > 0) {
 						let india = $team.doc.country == 'India';
@@ -98,7 +107,7 @@ export default {
 				fieldname: 'group',
 				width: 1,
 				format(value, row) {
-					return row.group_title || value;
+					return row.group_public ? 'Shared' : row.group_title || value;
 				}
 			},
 			{
@@ -419,10 +428,9 @@ export default {
 						{
 							label: 'Timestamp',
 							fieldname: 'creation',
-							width: 0.8,
+							width: 1,
 							format(value) {
-								let timestamp = new Date(value);
-								return `Backup on ${timestamp.toLocaleDateString()} at ${timestamp.toLocaleTimeString()}`;
+								return `Backup on ${date(value, 'llll')}`;
 							}
 						},
 
@@ -700,8 +708,7 @@ export default {
 			{
 				label: 'Jobs',
 				icon: icon('truck'),
-				// highlight: route =>
-				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
+				childrenRoutes: ['Site Job'],
 				route: 'jobs',
 				type: 'list',
 				list: {
@@ -721,7 +728,8 @@ export default {
 					columns: [
 						{
 							label: 'Job Type',
-							fieldname: 'job_type'
+							fieldname: 'job_type',
+							width: 2
 						},
 						{
 							label: 'Status',
@@ -737,7 +745,6 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							class: 'text-gray-600',
-							width: '4rem',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -796,6 +803,28 @@ export default {
 			let $team = getTeam();
 			return [
 				{
+					label: 'Update Available',
+					variant: 'solid',
+					slots: {
+						prefix: icon('alert-circle')
+					},
+					condition() {
+						return (
+							site.doc.update_information?.update_available &&
+							['Active', 'Inactive', 'Suspended', 'Broken'].includes(
+								site.doc.status
+							)
+						);
+					},
+
+					onClick() {
+						let SiteUpdateDialog = defineAsyncComponent(() =>
+							import('../components/SiteUpdateDialog.vue')
+						);
+						renderDialog(h(SiteUpdateDialog, { site: site.doc.name }));
+					}
+				},
+				{
 					label: 'Visit Site',
 					slots: {
 						prefix: icon('external-link')
@@ -852,24 +881,13 @@ export default {
 										if (!values.reason && $team.name != site.doc.team) {
 											throw new Error('Reason is required');
 										}
-										toast.promise(
-											site.loginAsAdmin
+										return site.loginAsAdmin
 												.submit({ reason: values.reason })
 												.then(result => {
 													let url = result;
 													window.open(url, '_blank');
 													hide();
-												}),
-											{
-												loading: 'Attempting to login...',
-												success: () => 'Opening site in a new tab...',
-												error: e => {
-													return e.messages.length
-														? e.messages.join('\n')
-														: e.message;
-												}
-											}
-										);
+											});
 									}
 								});
 							}
