@@ -352,7 +352,7 @@ class Site(Document):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
@@ -423,7 +423,7 @@ class Site(Document):
 		agent.clear_site_cache(self)
 
 	@frappe.whitelist()
-	@site_action(["Active", "Broken", "Suspended"])
+	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -438,7 +438,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
@@ -663,7 +663,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
-	@site_action(["Active", "Broken"])
+	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
@@ -1168,7 +1168,7 @@ class Site(Document):
 			self.unsuspend(reason="Plan Upgraded")
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
@@ -1176,7 +1176,7 @@ class Site(Document):
 		self.update_site_status_on_proxy("deactivated")
 
 	@frappe.whitelist()
-	@site_action(["Inactive", "Suspended", "Broken"])
+	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
@@ -1185,7 +1185,6 @@ class Site(Document):
 		self.reactivate_app_subscriptions()
 
 	@frappe.whitelist()
-	@site_action(["Active", "Broken"])
 	def suspend(self, reason=None, skip_reload=False):
 		log_site_activity(self.name, "Suspend Site", reason)
 		self.status = "Suspended"
