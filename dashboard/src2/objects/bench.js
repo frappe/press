@@ -18,7 +18,10 @@ export default {
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
 		updateDependency: 'update_dependency',
-		addRegion: 'add_region'
+		addRegion: 'add_region',
+		deployedVersions: 'deployed_versions',
+		getAppVersions: 'get_app_versions',
+		archive: 'archive'
 	},
 	list: {
 		route: '/benches',
@@ -78,81 +81,12 @@ export default {
 				label: 'Sites',
 				icon: icon(LucideAppWindow),
 				route: 'sites',
-				type: 'list',
-				list: {
-					doctype: 'Site',
-					fields: [
-						'plan.plan_title as plan_title',
-						'group.title as group_title',
-						'group.version as version',
-						'cluster.image as cluster_image',
-						'cluster.title as cluster_title'
-					],
-					orderBy: 'creation desc',
-					filters: group => {
-						return { group: group.doc.name };
-					},
-					route(row) {
-						return {
-							name: 'Site Detail',
-							params: { name: row.name }
-						};
-					},
-					columns: [
-						{ label: 'Site', fieldname: 'name', width: 2 },
-						{ label: 'Status', fieldname: 'status', type: 'Badge', width: 1 },
-						{
-							label: 'Plan',
-							fieldname: 'plan',
-							width: 1,
-							format(value, row) {
-								return row.plan_title || value;
-							}
-						},
-						{
-							label: 'Cluster',
-							fieldname: 'cluster',
-							width: 1,
-							format(value, row) {
-								return row.cluster_title || value;
-							},
-							prefix(row) {
-								return h('img', {
-									src: row.cluster_image,
-									class: 'w-4 h-4',
-									alt: row.cluster_title
-								});
-							}
-						},
-						{
-							label: 'Bench',
-							fieldname: 'group',
-							width: 1,
-							format(value, row) {
-								return row.group_title || value;
-							}
-						},
-						{
-							label: 'Version',
-							fieldname: 'version',
-							width: 1,
-							class: 'text-gray-600'
-						}
-					],
-					primaryAction({ documentResource: releaseGroup }) {
-						return {
-							label: 'New Site',
-							slots: {
-								prefix: icon('plus')
-							},
-							onClick() {
-								router.push({
-									name: 'NewSite',
-									params: { bench: releaseGroup.doc.name }
-								});
-							}
-						};
-					}
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../pages/ReleaseGroupBenchSites.vue')
+				),
+				props: releaseGroup => {
+					return { releaseGroup: releaseGroup.doc.name };
 				}
 			},
 			{
@@ -161,15 +95,15 @@ export default {
 				route: 'apps',
 				type: 'list',
 				list: {
-					resource({ documentResource: group }) {
+					resource({ documentResource: releaseGroup }) {
 						return {
 							type: 'list',
 							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App', group.name],
+							cache: ['ObjectList', 'Release Group App', releaseGroup.name],
 							parent: 'Release Group',
 							filters: {
 								parenttype: 'Release Group',
-								parent: group.name
+								parent: releaseGroup.name
 							},
 							auto: true
 						};
@@ -226,7 +160,11 @@ export default {
 							width: 1
 						}
 					],
-					rowActions({ row, listResource: apps, documentResource: group }) {
+					rowActions({
+						row,
+						listResource: apps,
+						documentResource: releaseGroup
+					}) {
 						let team = getTeam();
 						return [
 							{
@@ -234,7 +172,7 @@ export default {
 								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
-										`${window.location.protocol}//${window.location.host}/app/release-group/${group.name}`,
+										`${window.location.protocol}//${window.location.host}/app/release-group/${releaseGroup.name}`,
 										'_blank'
 									);
 								}
@@ -243,7 +181,7 @@ export default {
 								label: 'Fetch Latest Updates',
 								onClick() {
 									toast.promise(
-										group.fetchLatestAppUpdates.submit({
+										releaseGroup.fetchLatestAppUpdates.submit({
 											app: row.name
 										}),
 										{
@@ -266,7 +204,7 @@ export default {
 								onClick() {
 									renderDialog(
 										h(ChangeAppBranchDialog, {
-											bench: group.name,
+											bench: releaseGroup.name,
 											app: row,
 											onBranchChange() {
 												apps.reload();
@@ -279,9 +217,9 @@ export default {
 								label: 'Remove App',
 								condition: () => row.name !== 'frappe',
 								onClick() {
-									if (group.removeApp.loading) return;
+									if (releaseGroup.removeApp.loading) return;
 									toast.promise(
-										group.removeApp.submit({
+										releaseGroup.removeApp.submit({
 											app: row.name
 										}),
 										{
@@ -310,7 +248,10 @@ export default {
 							}
 						];
 					},
-					primaryAction({ listResource: apps, documentResource: group }) {
+					primaryAction({
+						listResource: apps,
+						documentResource: releaseGroup
+					}) {
 						return {
 							label: 'Add App',
 							slots: {
@@ -319,10 +260,10 @@ export default {
 							onClick() {
 								renderDialog(
 									h(AddAppDialog, {
-										benchName: group.name,
+										benchName: releaseGroup.name,
 										onAppAdd() {
 											apps.reload();
-											group.reload();
+											releaseGroup.reload();
 										}
 									})
 								);
@@ -339,9 +280,9 @@ export default {
 				list: {
 					doctype: 'Deploy Candidate',
 					route: row => ({ name: 'Bench Deploy', params: { id: row.name } }),
-					filters: group => {
+					filters: releaseGroup => {
 						return {
-							group: group.name
+							group: releaseGroup.name
 						};
 					},
 					orderBy: 'creation desc',
@@ -388,8 +329,8 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
-					filters: group => {
-						return { group: group.doc.name };
+					filters: releaseGroup => {
+						return { group: releaseGroup.doc.name };
 					},
 					route(row) {
 						return {
@@ -448,8 +389,8 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Common Site Config',
-					filters: group => {
-						return { group: group.name };
+					filters: releaseGroup => {
+						return { group: releaseGroup.name };
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
@@ -473,7 +414,10 @@ export default {
 							fieldname: 'value'
 						}
 					],
-					primaryAction({ listResource: configs, documentResource: group }) {
+					primaryAction({
+						listResource: configs,
+						documentResource: releaseGroup
+					}) {
 						return {
 							label: 'Add Config',
 							slots: {
@@ -485,7 +429,7 @@ export default {
 								);
 								renderDialog(
 									h(ConfigEditorDialog, {
-										group: group.doc.name,
+										group: releaseGroup.doc.name,
 										onSuccess() {
 											configs.reload();
 										}
@@ -494,7 +438,11 @@ export default {
 							}
 						};
 					},
-					rowActions({ row, listResource: configs, documentResource: group }) {
+					rowActions({
+						row,
+						listResource: configs,
+						documentResource: releaseGroup
+					}) {
 						return [
 							{
 								label: 'Edit',
@@ -504,7 +452,7 @@ export default {
 									);
 									renderDialog(
 										h(ConfigEditorDialog, {
-											group: group.doc.name,
+											group: releaseGroup.doc.name,
 											config: row,
 											onSuccess() {
 												configs.reload();
@@ -520,9 +468,9 @@ export default {
 										title: 'Delete Config',
 										message: `Are you sure you want to delete the config <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (group.deleteConfig.loading) return;
+											if (releaseGroup.deleteConfig.loading) return;
 											toast.promise(
-												group.deleteConfig.submit(
+												releaseGroup.deleteConfig.submit(
 													{ key: row.key },
 													{
 														onSuccess: () => {
@@ -556,8 +504,8 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Release Group Dependency',
-					filters: group => {
-						return { group: group.doc.name };
+					filters: releaseGroup => {
+						return { group: releaseGroup.doc.name };
 					},
 					columns: [
 						{
@@ -575,7 +523,7 @@ export default {
 					rowActions({
 						row,
 						listResource: dependencies,
-						documentResource: group
+						documentResource: releaseGroup
 					}) {
 						return [
 							{
@@ -586,7 +534,7 @@ export default {
 									);
 									renderDialog(
 										h(DependencyEditorDialog, {
-											group: group.doc,
+											group: releaseGroup.doc,
 											dependency: row,
 											onSuccess() {
 												dependencies.reload();
@@ -606,8 +554,8 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Cluster',
-					filters: group => {
-						return { group: group.name };
+					filters: releaseGroup => {
+						return { group: releaseGroup.name };
 					},
 					columns: [
 						{
@@ -629,7 +577,10 @@ export default {
 							}
 						}
 					],
-					primaryAction({ listResource: clusters, documentResource: group }) {
+					primaryAction({
+						listResource: clusters,
+						documentResource: releaseGroup
+					}) {
 						return {
 							label: 'Add Region',
 							slots: {
@@ -641,7 +592,7 @@ export default {
 								);
 								renderDialog(
 									h(AddRegionDialog, {
-										group: group.doc.name,
+										group: releaseGroup.doc.name,
 										onSuccess() {
 											clusters.reload();
 										}
@@ -691,6 +642,50 @@ export default {
 						name: 'Bench Deploy',
 						params: { id: bench.doc?.deploy_information?.last_deploy?.name }
 					}
+				},
+				{
+					label: 'Options',
+					button: {
+						label: 'Options',
+						slots: {
+							default: icon('more-horizontal')
+						}
+					},
+					options: [
+						{
+							label: 'Drop Bench',
+							onClick() {
+								confirmDialog({
+									title: 'Drop Bench',
+									message: `Are you sure you want to drop this bench <b>${bench.doc.title}</b>? All the sites on this bench should be dropped manually before dropping the bench. This action cannot be undone.`,
+									fields: [
+										{
+											label:
+												'Please type the exact bench name below to confirm',
+											fieldname: 'confirmBenchName',
+											autocomplete: 'off'
+										}
+									],
+									primaryAction: {
+										label: 'Drop Bench',
+										theme: 'red'
+									},
+									onSuccess({ hide, values }) {
+										if (bench.archive.loading) return;
+										if (values.confirmBenchName !== bench.doc.title) {
+											throw new Error('Bench name does not match');
+										}
+										return bench.archive.submit(null, {
+											onSuccess: () => {
+												hide();
+												router.push({ name: 'Release Group List' });
+											}
+										});
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}

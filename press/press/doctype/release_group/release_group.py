@@ -12,6 +12,7 @@ from typing import List
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
+from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.server.server import Server
 from press.utils import (
 	get_last_doc,
@@ -51,7 +52,7 @@ class ReleaseGroup(Document):
 			frappe.qb.from_(Site)
 			.select(frappe.query_builder.functions.Count("*"))
 			.where(Site.group == ReleaseGroup.name)
-			.where(Site.status == "Active")
+			.where(Site.status != "Archived")
 		)
 
 		active_benches = (
@@ -452,6 +453,95 @@ class ReleaseGroup(Document):
 
 		return out
 
+	@frappe.whitelist()
+	def deployed_versions(self):
+		Bench = frappe.qb.DocType("Bench")
+		Server = frappe.qb.DocType("Server")
+		deployed_versions = (
+			frappe.qb.from_(Bench)
+			.left_join(Server)
+			.on(Server.name == Bench.server)
+			.where((Bench.group == self.name) & (Bench.status != "Archived"))
+			.groupby(Bench.name)
+			.select(Bench.name, Bench.status, Bench.is_ssh_proxy_setup, Server.proxy_server)
+			.orderby(Bench.creation, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+
+		rg_version = self.version
+
+		sites_in_group_details = frappe.db.get_all(
+			"Site",
+			filters={
+				"group": self.name,
+				"status": ("not in", ("Archived", "Suspended")),
+				"is_standby": 0,
+			},
+			fields=["name", "status", "cluster", "plan", "creation", "bench"],
+		)
+
+		Cluster = frappe.qb.DocType("Cluster")
+		cluster_data = (
+			frappe.qb.from_(Cluster)
+			.select(Cluster.name, Cluster.title, Cluster.image)
+			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		Plan = frappe.qb.DocType("Plan")
+		plan_data = (
+			frappe.qb.from_(Plan)
+			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		ResourceTag = frappe.qb.DocType("Resource Tag")
+		tag_data = (
+			frappe.qb.from_(ResourceTag)
+			.select(ResourceTag.tag_name, ResourceTag.parent)
+			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		for version in deployed_versions:
+			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+			for site in version.sites:
+				site.version = rg_version
+				site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
+				site.plan = find(plan_data, lambda x: x.name == site.plan)
+				tags = find_all(tag_data, lambda x: x.parent == site.name)
+				site.tags = [tag.tag_name for tag in tags]
+
+			version.deployed_on = frappe.db.get_value(
+				"Agent Job",
+				{"bench": version.name, "job_type": "New Bench", "status": "Success"},
+				"end",
+			)
+
+		return deployed_versions
+
+	@frappe.whitelist()
+	def get_app_versions(self, bench):
+		apps = frappe.db.get_all(
+			"Bench App",
+			{"parent": bench},
+			["name", "app", "hash", "source"],
+			order_by="idx",
+		)
+		for app in apps:
+			app.update(
+				frappe.db.get_value(
+					"App Source",
+					app.source,
+					("branch", "repository", "repository_owner", "repository_url"),
+					as_dict=1,
+					cache=True,
+				)
+			)
+			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
+		return apps
+
 	@property
 	def dependency_update_pending(self):
 		if not self.last_dependency_update or not self.last_dc_info:
@@ -811,6 +901,22 @@ class ReleaseGroup(Document):
 	def fetch_latest_app_update(self, app: str):
 		app_source = self.get_app_source(app)
 		app_source.create_release(force=True)
+
+	@frappe.whitelist()
+	def archive(self):
+		import time; time.sleep(5)
+		benches = frappe.get_all(
+			"Bench", filters={"group": self.name, "status": "Active"}, pluck="name"
+		)
+		for bench in benches:
+			frappe.get_doc("Bench", bench).archive()
+
+		new_name = f"{self.title}.archived"
+		self.title = append_number_if_name_exists(
+			"Release Group", new_name, "title", separator="."
+		)
+		self.enabled = 0
+		self.save()
 
 
 def new_release_group(

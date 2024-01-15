@@ -26,29 +26,31 @@ setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
 // setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
 
-let app = createApp(App);
-app.use(router);
-app.use(resourcesPlugin);
-app.use(pageMetaPlugin);
-
+let app;
 let socket;
 
 getInitialData().then(() => {
+	app = createApp(App);
+	app.use(router);
+	app.use(resourcesPlugin);
+	app.use(pageMetaPlugin);
+
 	socket = initSocket();
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
-	app.mount('#app');
+
+	importGlobals().then(() => {
+		app.mount('#app');
+	});
 });
 
 function getInitialData() {
 	if (import.meta.env.DEV) {
 		return frappeRequest({
 			url: '/api/method/press.www.dashboard.get_context_for_dev'
-		})
-			.then(values => Object.assign(window, values))
-			.then(importGlobals);
+		}).then(values => Object.assign(window, values));
 	} else {
-		return importGlobals();
+		return Promise.resolve();
 	}
 }
 

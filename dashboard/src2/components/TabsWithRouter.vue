@@ -1,7 +1,9 @@
 <template>
 	<FTabs v-model="currentTab" :tabs="tabs">
 		<template #default="{ tab }">
-			<router-view :tab="tab" />
+			<slot name="tab-content" :tab="tab">
+				<router-view :tab="tab" />
+			</slot>
 		</template>
 	</FTabs>
 </template>
@@ -21,7 +23,12 @@ export default {
 	watch: {
 		currentTab(value) {
 			let tab = this.tabs[value];
-			this.$router.replace(tab.route);
+			if (
+				this.$route.name !== tab.routeName &&
+				!tab.childrenRoutes?.includes(this.$route.name)
+			) {
+				this.$router.replace({ name: tab.routeName });
+			}
 		}
 	},
 	beforeRouteUpdate(to, from, next) {
@@ -34,7 +41,10 @@ export default {
 	methods: {
 		setTabToRoute(route) {
 			for (let tab of this.tabs) {
-				if (route.name === tab.route.name) {
+				if (
+					route.name === tab.routeName ||
+					tab.childrenRoutes?.includes(route.name)
+				) {
 					this.currentTab = this.tabs.indexOf(tab);
 					break;
 				}

@@ -5,17 +5,14 @@
 		:options="{
 			selectable: options.selectable || false,
 			onRowClick: () => {},
-			getRowRoute: options.route ? row => options.route(row) : null
+			getRowRoute: options.route ? getRowRoute : null
 		}"
 		row-key="name"
 		@update:selections="e => this.$emit('update:selections', e)"
 	>
 		<ListHeader>
 			<template v-for="column in columns" :key="column.field">
-				<ListHeaderItem
-					v-if="column.condition ? column.condition() : true"
-					:item="column"
-				>
+				<ListHeaderItem :item="column">
 					<template #prefix>
 						<FeatherIcon
 							v-if="column.icon"
@@ -29,19 +26,12 @@
 		<ListRows>
 			<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
 				<template v-slot="{ column, item }">
-					<div v-if="column.condition ? column.condition() : true">
-						<Badge
-							v-if="column.type === 'Badge'"
-							:label="formattedValue(row[column.field], column, row)"
-						/>
-						<component
-							v-else-if="column.type === 'component' && column.component"
-							:is="column.component(row)"
-						/>
-						<div v-else class="truncate text-base" :class="column.class">
-							{{ formattedValue(row[column.field], column, row) }}
-						</div>
-					</div>
+					<ObjectListCell
+						:row="row"
+						:column="column"
+						:idx="i"
+						:context="context"
+					/>
 				</template>
 			</ListRow>
 		</ListRows>
@@ -56,7 +46,7 @@ import {
 	ListRow,
 	ListSelectBanner
 } from 'frappe-ui';
-import CommitChooser from '@/components/utils/CommitChooser.vue';
+import ObjectListCell from './ObjectListCell.vue';
 
 export default {
 	name: 'GenericList',
@@ -66,13 +56,35 @@ export default {
 		ListHeaderItem,
 		ListRow,
 		ListSelectBanner,
-		CommitChooser
+		ObjectListCell
 	},
 	props: ['options'],
 	emits: ['update:selections'],
 	computed: {
 		columns() {
-			return this.options.columns;
+			if (!this.options.columns && this.options.data.length > 0) {
+				console.log(Object.keys(this.options.data[0]));
+				return Object.keys(this.options.data[0]).map(fieldname => {
+					return {
+						fieldname,
+						key: fieldname,
+						label: fieldname
+					};
+				});
+			}
+			return this.options.columns
+				.filter(column => {
+					if (column.condition) {
+						return column.condition(this.context);
+					}
+					return true;
+				})
+				.map(column => {
+					if (!column.key) {
+						column.key = column.fieldname;
+					}
+					return column;
+				});
 		},
 		rows() {
 			return this.options.data;
@@ -82,6 +94,13 @@ export default {
 		}
 	},
 	methods: {
+		getRowRoute(row) {
+			if (this.options.route) {
+				let route = this.options.route(row);
+				return route || this.$route;
+			}
+			return null;
+		},
 		formattedValue(value, column, row) {
 			let formattedValue =
 				column.format && value ? column.format(value, row) : value;

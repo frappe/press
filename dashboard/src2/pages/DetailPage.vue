@@ -13,23 +13,26 @@
 		</div>
 	</Header>
 	<div>
-		<FTabs v-model="currentTab" :tabs="object.detail.tabs">
-			<template #default="{ tab }">
+		<TabsWithRouter :tabs="object.detail.tabs">
+			<template #tab-content="{ tab }">
+				<!-- this div is required for some reason -->
+				<div></div>
 				<router-view
+					v-if="$resources.document?.doc"
 					:tab="tab"
 					:document="$resources.document"
-					v-if="$resources.document?.doc"
 				/>
 			</template>
-		</FTabs>
+		</TabsWithRouter>
 	</div>
 </template>
 
 <script>
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
-import { Tabs, Breadcrumbs } from 'frappe-ui';
+import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
+import TabsWithRouter from '../components/TabsWithRouter.vue';
 
 export default {
 	name: 'DetailPage',
@@ -46,26 +49,8 @@ export default {
 	components: {
 		Header,
 		ActionButton,
-		FTabs: Tabs,
+		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
-	},
-	data() {
-		return {
-			currentTab: 0
-		};
-	},
-	beforeRouteUpdate(to, from, next) {
-		this.setTabToRoute(to);
-		next();
-	},
-	mounted() {
-		this.setTabToRoute(this.$route);
-	},
-	watch: {
-		currentTab(value) {
-			let tab = this.object.detail.tabs[value];
-			this.$router.replace({ name: tab.routeName });
-		}
 	},
 	resources: {
 		document() {
@@ -75,16 +60,6 @@ export default {
 				name: this.name,
 				whitelistedMethods: this.object.whitelistedMethods || {}
 			};
-		}
-	},
-	methods: {
-		setTabToRoute(route) {
-			for (let tab of this.object.detail.tabs) {
-				if (route.name === tab.routeName) {
-					this.currentTab = this.object.detail.tabs.indexOf(tab);
-					break;
-				}
-			}
 		}
 	},
 	computed: {
@@ -144,3 +119,8 @@ export default {
 	}
 };
 </script>
+<style scoped>
+:deep(button[role='tab']) {
+	white-space: nowrap;
+}
+</style>
