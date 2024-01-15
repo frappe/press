@@ -1706,14 +1706,21 @@ def clone_group(name, new_group_title):
 	site = frappe.get_doc("Site", name)
 	group = frappe.get_doc("Release Group", site.group)
 	cloned_group = frappe.new_doc("Release Group")
-	cloned_group.title = new_group_title
-	cloned_group.team = get_current_team()
-	cloned_group.public = 0
-	cloned_group.enabled = 1
-	cloned_group.version = group.version
-	cloned_group.dependencies = group.dependencies
-	cloned_group.is_redisearch_enabled = group.is_redisearch_enabled
-	cloned_group.append("servers", {"server": site.server, "default": False})
+
+	cloned_group.update(
+		{
+			"title": new_group_title,
+			"team": get_current_team(),
+			"public": 0,
+			"enabled": 1,
+			"version": group.version,
+			"dependencies": group.dependencies,
+			"is_redisearch_enabled": group.is_redisearch_enabled,
+			"merge_all_rq_queues": group.merge_all_rq_queues,
+			"merge_default_and_short_rq_queues": group.merge_default_and_short_rq_queues,
+			"servers": [{"server": site.server, "default": False}],
+		}
+	)
 
 	# add apps to rg if they are installed in site
 	apps_installed_in_site = [app.app for app in site.apps]
