@@ -207,7 +207,11 @@ class Site(Document):
 	def rename(self, new_name: str):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		agent.rename_site(self, new_name)
+		if self.account_request:
+			create_user = self.get_account_request_user()
+			agent.rename_site(self, new_name, create_user)
+		else:
+			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
 		self.status = "Pending"
 		self.save()
@@ -725,18 +729,20 @@ class Site(Document):
 
 		return conn
 
-	def get_login_sid(self):
-		password = get_decrypted_password("Site", self.name, "admin_password")
-		response = requests.post(
-			f"https://{self.name}/api/method/login",
-			data={"usr": "Administrator", "pwd": password},
-		)
-		sid = response.cookies.get("sid")
+	def get_login_sid(self, user="Administrator"):
+		sid = None
+		if user == "Administrator":
+			password = get_decrypted_password("Site", self.name, "admin_password")
+			response = requests.post(
+				f"https://{self.name}/api/method/login",
+				data={"usr": "Administrator", "pwd": password},
+			)
+			sid = response.cookies.get("sid")
 		if not sid:
 			agent = Agent(self.server)
-			sid = agent.get_site_sid(self)
+			sid = agent.get_site_sid(self, user)
 		if not sid or sid == "Guest":
-			frappe.throw("Could not login as Administrator", frappe.ValidationError)
+			frappe.throw(f"Could not login as {user}", frappe.ValidationError)
 		return sid
 
 	def fetch_info(self):
@@ -1195,6 +1201,19 @@ class Site(Document):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)
+
+	def get_account_request_user(self):
+		if not self.account_request:
+			return
+		account_request = frappe.get_doc("Account Request", self.account_request)
+		user = frappe.db.get_value(
+			"User", {"email": account_request.email}, ["first_name", "last_name"], as_dict=True
+		)
+		return {
+			"email": account_request.email,
+			"first_name": user.first_name,
+			"last_name": user.last_name,
+		}
 
 	def setup_erpnext(self):
 		account_request = frappe.get_doc("Account Request", self.account_request)

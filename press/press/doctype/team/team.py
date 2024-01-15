@@ -913,7 +913,7 @@ class Team(Document):
 		return "/sites"
 
 	def get_pending_saas_site_request(self):
-		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+		if self.is_saas_user:
 			return frappe.db.get_value(
 				"SaaS Product Site Request",
 				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},

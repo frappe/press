@@ -21,18 +21,21 @@ class SaaSProductSiteRequest(Document):
 		return doc
 
 	@frappe.whitelist()
-	def create_site(self, subdomain):
+	def create_site(self, subdomain, plan):
 		pool = SitePool(self.saas_product)
-		site = pool.create_or_rename(subdomain, self.team)
+		site = pool.create_or_rename(subdomain, self.team, self.account_request)
+		site.create_subscription(plan)
+		site.reload()
+		site.trial_end_date = frappe.utils.add_days(None, 14)
+		site.save(ignore_permissions=True)
 		self.site = site.name
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def get_login_sid(self):
-		from press.api.site import login
-
-		return login(self.site)
+		email = frappe.db.get_value("Account Request", self.account_request, "email")
+		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
 
 	@frappe.whitelist()
 	def get_progress(self, current_progress=None):

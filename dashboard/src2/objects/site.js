@@ -7,7 +7,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration } from '../utils/format';
+import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 
 export default {
@@ -419,10 +419,9 @@ export default {
 						{
 							label: 'Timestamp',
 							fieldname: 'creation',
-							width: 0.8,
+							width: 1,
 							format(value) {
-								let timestamp = new Date(value);
-								return `Backup on ${timestamp.toLocaleDateString()} at ${timestamp.toLocaleTimeString()}`;
+								return `Backup on ${date(value, 'llll')}`;
 							}
 						},
 
