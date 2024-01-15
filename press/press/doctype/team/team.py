@@ -836,6 +836,11 @@ class Team(Document):
 					"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
 				)
 			),
+			"has_unpaid_invoices": bool(
+				frappe.db.exists(
+					"Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}
+				)
+			),
 		}
 
 	def billing_details(self, timezone=None):

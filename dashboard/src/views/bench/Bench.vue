@@ -21,7 +21,7 @@
 							v-if="bench?.status === 'Active'"
 							icon-left="plus"
 							label="New Site"
-							@click="$router.push(`/${this.bench.name}/new`)"
+							@click="validateCreateSite"
 						/>
 						<Dropdown :options="benchActions">
 							<template v-slot="{ open }">
@@ -129,6 +129,18 @@ export default {
 		this.$socket.off('list_update', this.onSocketUpdate);
 	},
 	methods: {
+		validateCreateSite() {
+			if (this.$account.billing_info.has_unpaid_invoices) {
+				notify({
+					title:
+						'Please settle your unpaid invoices from the billing tab in order to create new sites',
+					icon: 'info',
+					color: 'yellow'
+				});
+			} else {
+				this.$router.push(`/${this.bench.name}/new`);
+			}
+		},
 		onSocketUpdate({ doctype, name }) {
 			if (doctype == 'Release Group' && name == this.bench.name) {
 				this.reloadBench();
