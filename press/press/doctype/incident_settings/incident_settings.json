@@ -9,7 +9,11 @@
  "field_order": [
   "users",
   "self_hosted_users",
+  "section_break_rnxb",
+  "daytime_threshold",
   "phone_call_alerts",
+  "column_break_voyg",
+  "nighttime_threshold",
   "enable_incident_detection"
  ],
  "fields": [
@@ -36,12 +40,30 @@
    "fieldtype": "Table",
    "label": "Self Hosted Users",
    "options": "Incident Settings Self Hosted User"
+  },
+  {
+   "fieldname": "section_break_rnxb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_voyg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "daytime_threshold",
+   "fieldtype": "Duration",
+   "label": "Daytime Threshold"
+  },
+  {
+   "fieldname": "nighttime_threshold",
+   "fieldtype": "Duration",
+   "label": "Nighttime Threshold"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-01-11 19:16:33.484613",
+ "modified": "2024-01-15 10:24:55.212911",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

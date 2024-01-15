@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
-DAYTIME_CALL_THRESHOLD_MINUTES = 5  # time after which humans are called
-NIGHTTIME_CALL_THRESHOLD_MINUTES = 15  # time after which humans are called
+DAYTIME_CALL_THRESHOLD_SECONDS = 300  # 5 minutes;time after which humans are called
+NIGHTTIME_CALL_THRESHOLD_SECONDS = 900  # 15 minutes; time after which humans are called
 PAST_ALERT_COVER_MINUTES = (
 	15  # to cover alerts that fired before/triggered the incident
 )
@@ -212,11 +212,17 @@ where
 		self.save()
 
 
-def get_call_threshold_minutes():
+def get_call_threshold_duration():
 	day_hours = range(9, 18)
 	if frappe.utils.now_datetime().hour in day_hours:
-		return DAYTIME_CALL_THRESHOLD_MINUTES
-	return NIGHTTIME_CALL_THRESHOLD_MINUTES
+		return (
+			frappe.db.get_value("Incident Settings", None, "daytime_threshold")
+			or DAYTIME_CALL_THRESHOLD_SECONDS
+		)
+	return (
+		frappe.db.get_value("Incident Settings", None, "nighttime_threshold")
+		or NIGHTTIME_CALL_THRESHOLD_SECONDS
+	)
 
 
 def validate_incidents():
@@ -229,7 +235,7 @@ def validate_incidents():
 	)
 	for incident in ongoing_incidents:
 		if incident.creation <= frappe.utils.add_to_date(
-			frappe.utils.frappe.utils.now_datetime(), minutes=-get_call_threshold_minutes()
+			frappe.utils.frappe.utils.now_datetime(), seconds=-get_call_threshold_duration()
 		):
 			incident_doc = frappe.get_doc("Incident", incident.name)
 			incident_doc.status = "Confirmed"
