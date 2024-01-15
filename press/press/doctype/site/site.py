@@ -211,7 +211,9 @@ class Site(Document):
 	def rename(self, new_name: str):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.account_request:
+		if self.account_request and frappe.db.get_value(
+			"Account Request", self.account_request, "saas_product"
+		):
 			create_user = self.get_account_request_user()
 			agent.rename_site(self, new_name, create_user)
 		else:
