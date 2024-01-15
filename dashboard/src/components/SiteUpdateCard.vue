@@ -50,7 +50,7 @@ export default {
 		toggleProperty(value, prop, site) {
 			this.selectedSites.map(selectedSite => {
 				if (site == selectedSite.name) {
-					selectedSite[prop] = value;
+					selectedSite[prop] = value.target.checked;
 				}
 			});
 			this.$emit('update:selectedSites', this.selectedSites);
