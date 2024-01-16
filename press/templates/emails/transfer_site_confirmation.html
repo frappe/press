@@ -1,0 +1,32 @@
+{% extends "templates/emails/base.html" %}
+{% import "templates/emails/macros.html" as utils %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white">
+        <p class="mb-4 font-bold">
+            Site Transfer Confirmation
+        </p>
+        <p class="mb-6">
+            The team, {{old_team}} have requested to transfer the site {{site}} to your team {{new_team}}. Click on the
+            button below to give consent for this transfer. Please note that on giving consent, the following changes
+            will happen:
+            <br>
+            <br>
+            1. The site {{ site }} under {{ old_team }}, will be transferred to your team
+            <br>
+            2. You will be billed for this site under the team {{ new_team }}
+            <br>
+            <br>
+            If you are not aware of this request, ignore the confirmation email.
+            <br>
+            Note: The temporary link will expire in {{ minutes }} minutes.
+        </p>
+        {{ utils.button('Accept Site Transfer', transfer_url, true) }}
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}

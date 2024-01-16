@@ -48,6 +48,9 @@ function getSiteActionHandler(action) {
 		'Access site database': defineAsyncComponent(() =>
 			import('./SiteDatabaseAccessDialog.vue')
 		),
+		'Transfer site': defineAsyncComponent(() =>
+			import('./SiteTransferDialog.vue')
+		),
 		Drop: defineAsyncComponent(() => import('./SiteDropDialog.vue'))
 	};
 	if (actionDialogs[action]) {
@@ -76,19 +79,16 @@ function onDeactivateSite() {
 			variant: 'solid',
 			theme: 'red',
 			onClick() {
-				return toast.promise(
-					site.deactivate.submit(),
-					{
-						loading: 'Deactivating site...',
-						success: () => {
-							setTimeout(() => window.location.reload(), 1000);
-							return 'Site deactivated successfully!';
-						},
-						error: e => {
-							return e.messages.length ? e.messages.join('\n') : e.message;
-						}
+				return toast.promise(site.deactivate.submit(), {
+					loading: 'Deactivating site...',
+					success: () => {
+						setTimeout(() => window.location.reload(), 1000);
+						return 'Site deactivated successfully!';
+					},
+					error: e => {
+						return e.messages.length ? e.messages.join('\n') : e.message;
 					}
-				);
+				});
 			}
 		}
 	});
@@ -106,19 +106,16 @@ function onActivateSite() {
 			label: 'Activate',
 			variant: 'solid',
 			onClick() {
-				return toast.promise(
-					site.activate.submit(),
-					{
-						loading: 'Activating site...',
-						success: () => {
-							setTimeout(() => window.location.reload(), 1000);
-							return 'Site activated successfully!';
-						},
-						error: e => {
-							return e.messages.length ? e.messages.join('\n') : e.message;
-						}
+				return toast.promise(site.activate.submit(), {
+					loading: 'Activating site...',
+					success: () => {
+						setTimeout(() => window.location.reload(), 1000);
+						return 'Site activated successfully!';
+					},
+					error: e => {
+						return e.messages.length ? e.messages.join('\n') : e.message;
 					}
-				);
+				});
 			}
 		}
 	});

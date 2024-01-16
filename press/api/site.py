@@ -1622,27 +1622,35 @@ def change_notify_email(name, email):
 
 @frappe.whitelist()
 @protected("Site")
-def change_team(team, name):
+def send_change_team_request(name, team_mail_id, reason):
+	frappe.get_doc("Site", name).send_change_team_request(team_mail_id, reason)
 
-	if not (
-		frappe.db.exists("Team", {"team_title": team})
-		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
-	):
-		frappe.throw("No Active Team record found.")
 
-	from press.press.doctype.team.team import get_child_team_members
+@frappe.whitelist(allow_guest=True)
+def confirm_site_transfer(key):
+	cache = frappe.cache.get_value(f"site_transfer_data:{key}")
 
-	current_team = get_current_team(True)
-	child_teams = [team.team_title for team in get_child_team_members(current_team.name)]
-	teams = [current_team.team_title] + child_teams
+	if cache:
+		site, team_change = cache
 
-	if team not in teams:
-		frappe.throw(f"{team} is not part of your organization.")
+		team_change = frappe.get_doc("Team Change", team_change)
+		team_change.transfer_completed = True
+		team_change.save()
+		frappe.db.commit()
 
-	child_team = frappe.get_doc("Team", {"team_title": team})
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.team = child_team.name
-	site_doc.save(ignore_permissions=True)
+		frappe.cache.delete_value(f"site_transfer_data:{key}")
+
+		frappe.response.type = "redirect"
+		frappe.response.location = f"/dashboard/sites/{site}"
+	else:
+		from frappe import _
+
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)
 
 
 @frappe.whitelist()
