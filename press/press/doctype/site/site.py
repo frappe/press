@@ -717,7 +717,7 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	@frappe.whitelist()
-	def send_change_team_request(self, team_mail_id: str):
+	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept site transfer request"""
 
 		if self.team != get_current_team():
@@ -733,14 +733,24 @@ class Site(Document):
 		if old_team == team_mail_id:
 			frappe.throw(f"Site is already owned by the team {team_mail_id}")
 
+		team_change = frappe.get_doc(
+			{
+				"doctype": "Team Change",
+				"document_type": "Site",
+				"document_name": self.name,
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"from_team": self.team,
+				"reason": reason,
+			}
+		).insert()
+
 		key = frappe.generate_hash("Site Transfer Link", 20)
 		minutes = 20
 		frappe.cache.set_value(
 			f"site_transfer_data:{key}",
 			(
 				self.name,
-				team_mail_id,
-				frappe.db.get_value("Team", self.team, "user"),
+				team_change.name,
 			),
 			expires_in_sec=minutes * 60,
 		)

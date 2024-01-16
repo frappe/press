@@ -9,7 +9,8 @@
 					onClick: () =>
 						$resources.transferSite.submit({
 							team_mail_id: emailOfTransferTeam,
-							name: site?.name || site // site is siteName in d2
+							name: site?.name || site, // site is siteName in d2
+							reason
 						})
 				}
 			]
@@ -17,12 +18,18 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<FormControl
-				label="Enter email of the team for transfer of site ownership"
-				v-model="emailOfTransferTeam"
-				required
-			/>
-			<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
+			<div class="space-y-4">
+				<FormControl
+					label="Enter email of the team for transfer of site ownership"
+					v-model="emailOfTransferTeam"
+				/>
+				<FormControl
+					label="Reason for transfer"
+					v-model="reason"
+					type="textarea"
+				/>
+				<ErrorMessage :message="$resources.transferSite.error" />
+			</div>
 		</template>
 	</Dialog>
 </template>
@@ -36,6 +43,7 @@ export default {
 	emits: ['update:modelValue'],
 	data() {
 		return {
+			reason: '',
 			emailOfTransferTeam: ''
 		};
 	},
@@ -53,7 +61,15 @@ export default {
 		transferSite() {
 			return {
 				url: 'press.api.site.send_change_team_request',
+				validate() {
+					if (!this.emailOfTransferTeam) {
+						return 'Please enter email of the team for transfer of site ownership';
+					} else if (!this.reason) {
+						return 'Please enter reason for transfer';
+					}
+				},
 				onSuccess() {
+					this.reason = '';
 					this.emailOfTransferTeam = '';
 					this.$emit('update:modelValue', false);
 					notify({

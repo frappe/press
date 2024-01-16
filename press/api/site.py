@@ -1622,8 +1622,8 @@ def change_notify_email(name, email):
 
 @frappe.whitelist()
 @protected("Site")
-def send_change_team_request(name, team_mail_id):
-	frappe.get_doc("Site", name).send_change_team_request(team_mail_id)
+def send_change_team_request(name, team_mail_id, reason):
+	frappe.get_doc("Site", name).send_change_team_request(team_mail_id, reason)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1631,19 +1631,11 @@ def confirm_site_transfer(key):
 	cache = frappe.cache.get_value(f"site_transfer_data:{key}")
 
 	if cache:
-		site, to_email, from_email = cache
-		to_team = frappe.db.get_value("Team", {"user": to_email, "enabled": 1})
-		from_team = frappe.db.get_value("Team", {"user": from_email, "enabled": 1})
+		site, team_change = cache
 
-		frappe.get_doc(
-			{
-				"doctype": "Team Change",
-				"document_type": "Site",
-				"document_name": site,
-				"to_team": to_team,
-				"from_team": from_team,
-			}
-		).insert()
+		team_change = frappe.get_doc("Team Change", team_change)
+		team_change.transfer_completed = True
+		team_change.save()
 		frappe.db.commit()
 
 		frappe.cache.delete_value(f"site_transfer_data:{key}")
