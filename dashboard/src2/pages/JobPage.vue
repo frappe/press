@@ -75,11 +75,6 @@ export default {
 	name: 'JobPage',
 	props: ['id', 'objectType'],
 	components: { Tooltip, FeatherIcon, JobStep },
-	data() {
-		return {
-			isOpen: {}
-		};
-	},
 	resources: {
 		job() {
 			return {
@@ -93,6 +88,9 @@ export default {
 						step.isOpen = false;
 					}
 					return job;
+				},
+				onSuccess() {
+					this.lastLoaded = Date.now();
 				}
 			};
 		}
@@ -108,21 +106,28 @@ export default {
 	mounted() {
 		this.$socket.on('agent_job_update', data => {
 			if (data.id === this.id) {
-				if (!this.$resources.job.loading) {
-					this.$resources.job.reload();
-				}
+				this.reload();
 			}
 		});
 		// reload job every minute, in case socket is not working
 		this.reloadInterval = setInterval(() => {
-			if (!this.$resources.job.loading) {
-				this.$resources.job.reload();
-			}
+			this.reload();
 		}, 1000 * 60);
 	},
 	beforeUnmount() {
 		this.$socket.off('agent_job_update');
 		clearInterval(this.reloadInterval);
+	},
+	methods: {
+		reload() {
+			if (
+				!this.$resources.job.loading &&
+				// reload if job was loaded more than 5 seconds ago
+				Date.now() - this.lastLoaded > 5000
+			) {
+				this.$resources.job.reload();
+			}
+		}
 	}
 };
 </script>

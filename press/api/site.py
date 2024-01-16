@@ -884,7 +884,7 @@ def get(name):
 def check_for_updates(name):
 	site = frappe.get_doc("Site", name)
 	out = frappe._dict()
-	out.update_available = site.bench in benches_with_available_update()
+	out.update_available = site.bench in benches_with_available_update(site=name)
 	if not out.update_available:
 		return out
 

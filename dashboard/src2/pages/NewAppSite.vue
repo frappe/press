@@ -68,11 +68,7 @@
 						:value="siteRequest.getProgress.data?.progress || 0"
 						size="md"
 					/>
-					<ErrorMessage
-						:message="
-							siteRequest.getProgress.data?.error ? 'An error occurred' : null
-						"
-					/>
+					<ErrorMessage class="mt-2" :message="progressError" />
 				</div>
 				<div v-else-if="siteRequest.doc.status == 'Site Created'">
 					<div class="text-base text-gray-900">
@@ -83,31 +79,11 @@
 						is ready.
 					</div>
 					<div class="py-3 text-base text-gray-900">
-						<Button
-							:loading="siteRequest.getLoginSid.loading"
-							:link="
-								siteRequest.getLoginSid.data
-									? `https://${siteRequest.doc.site}/desk?sid=${siteRequest.getLoginSid.data.sid}`
-									: null
-							"
-						>
-							<template #prefix>
-								<i-lucide-external-link class="h-4 w-4 text-gray-700" />
-							</template>
-							{{
-								siteRequest.getLoginSid.loading
-									? 'Generating login URL...'
-									: `Login to your site`
-							}}
-						</Button>
-					</div>
-					<div>
-						<Button @click="goToDashboard">
-							<template #prefix>
-								<i-lucide-home class="h-4 w-4 text-gray-700" />
-							</template>
-							Go to Frappe Cloud Dashboard
-						</Button>
+						{{
+							siteRequest.getLoginSid.loading
+								? 'Logging in to your site...'
+								: ''
+						}}
 					</div>
 				</div>
 			</LoginBox>
@@ -199,7 +175,8 @@ export default {
 			plan: null,
 			inputPaddingRight: null,
 			showPlanDialog: false,
-			selectedPlan: null
+			selectedPlan: null,
+			progressErrorCount: 0
 		};
 	},
 	resources: {
@@ -219,7 +196,7 @@ export default {
 					createSite: {
 						method: 'create_site',
 						makeParams() {
-							return { subdomain: this.subdomain };
+							return { subdomain: this.subdomain, plan: this.plan };
 						},
 						validate() {
 							return validateSubdomain(this.subdomain);
@@ -237,16 +214,24 @@ export default {
 							};
 						},
 						onSuccess(data) {
+							this.progressErrorCount += 1;
 							if (data.progress == 100) {
 								this.siteRequest.getLoginSid.fetch();
-							} else {
+							} else if (this.progressErrorCount <= 10) {
 								setTimeout(() => {
 									this.siteRequest.getProgress.reload();
 								}, 2000);
 							}
 						}
 					},
-					getLoginSid: 'get_login_sid'
+					getLoginSid: {
+						method: 'get_login_sid',
+						onSuccess(data) {
+							let sid = data;
+							let loginURL = `https://${this.siteRequest.doc.site}/desk?sid=${sid}`;
+							window.location.href = loginURL;
+						}
+					}
 				}
 			};
 		}
@@ -277,6 +262,16 @@ export default {
 				country === 'India' ? plan.price_inr : plan.price_usd
 			);
 			return `${pricePerMonth} per month`;
+		},
+		progressError() {
+			if (!this.siteRequest.getProgress.data?.error) return;
+			if (this.progressErrorCount > 9) {
+				return 'An error occurred. Please contact Frappe Cloud Support.';
+			}
+			if (this.progressErrorCount > 4) {
+				return 'An error occurred';
+			}
+			return null;
 		}
 	}
 };

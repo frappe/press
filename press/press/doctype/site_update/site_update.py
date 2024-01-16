@@ -226,13 +226,16 @@ def trigger_recovery_job(site_update_name):
 
 
 @site_cache(ttl=60)
-def benches_with_available_update():
+def benches_with_available_update(site=None):
+	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
 	source_benches_info = frappe.db.sql(
-		"""
+		f"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
+		{'AND sb.name = %(site_bench)s' if site else ''}
 		""",
+		values={"site_bench": site_bench} if site else {},
 		as_dict=True,
 	)
 

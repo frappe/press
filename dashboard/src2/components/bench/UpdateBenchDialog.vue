@@ -128,14 +128,14 @@ export default {
 				columns: [
 					{
 						label: 'App',
-						field: 'title',
+						fieldname: 'title',
 						width: 1.75
 					},
 					{
 						label: 'From',
-						field: 'current_hash',
-						type: 'component',
-						component(app) {
+						fieldname: 'current_hash',
+						type: 'Component',
+						component({ row: app }) {
 							if (!app.current_hash) return null;
 							let tag = app.will_branch_change
 								? app.current_branch
@@ -149,9 +149,9 @@ export default {
 					},
 					{
 						label: 'To',
-						field: 'next_release',
-						type: 'component',
-						component(app) {
+						fieldname: 'next_release',
+						type: 'Component',
+						component({ row: app }) {
 							if (app.will_branch_change) {
 								return h(CommitTag, {
 									tag: app.branch,
@@ -207,7 +207,7 @@ export default {
 					},
 					{
 						label: 'Status',
-						field: 'title',
+						fieldname: 'title',
 						type: 'Badge',
 						format(value, row) {
 							if (
@@ -234,11 +234,11 @@ export default {
 				columns: [
 					{
 						label: 'App',
-						field: 'title'
+						fieldname: 'title'
 					},
 					{
 						label: 'Status',
-						field: 'name',
+						fieldname: 'name',
 						type: 'Badge',
 						format() {
 							return 'Will be Uninstalled';
@@ -258,30 +258,30 @@ export default {
 				columns: [
 					{
 						label: 'Site',
-						field: 'name'
+						fieldname: 'name'
 					},
 					{
 						label: 'Skip failed patches',
-						field: 'skip_failing_patches',
+						fieldname: 'skip_failing_patches',
 						width: 0.5,
-						type: 'component',
-						component(site) {
+						type: 'Component',
+						component({ row }) {
 							return h(Checkbox, {
-								modelValue: site.skip_failing_patches
+								modelValue: row.skip_failing_patches
 							});
 						}
 					},
 					{
 						label: 'Skip backup',
-						field: 'skip_backups',
+						fieldname: 'skip_backups',
 						width: 0.3,
-						type: 'component',
+						type: 'Component',
 						condition() {
 							return !!team.doc.skip_backups;
 						},
-						component(site) {
+						component({ row }) {
 							return h(Checkbox, {
-								modelValue: site.skip_backups
+								modelValue: row.skip_backups
 							});
 						}
 					}
