@@ -54,6 +54,12 @@ let router = createRouter({
 			component: () => import('./pages/NewSite.vue')
 		},
 		{
+			name: 'NewBenchSite',
+			path: '/benches/:bench/sites/new',
+			component: () => import('./pages/NewSite.vue'),
+			props: true
+		},
+		{
 			name: 'NewBench',
 			path: '/benches/new',
 			component: () => import('./pages/NewBench.vue')

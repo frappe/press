@@ -137,13 +137,14 @@ export default {
 	},
 	computed: {
 		totalAmount() {
+			let creditsToBuy = this.creditsToBuy || 0;
 			if (this.$team.doc.currency === 'INR') {
 				return (
-					this.creditsToBuy +
-					this.creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
+					creditsToBuy +
+					creditsToBuy * (this.$team.doc.billing_info.gst_percentage || 0)
 				).toFixed(2);
 			} else {
-				return this.creditsToBuy;
+				return creditsToBuy;
 			}
 		},
 		showDialog: {

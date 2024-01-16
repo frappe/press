@@ -1,18 +1,19 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
-			<Breadcrumbs
-				:items="[
-					{ label: 'Sites', route: '/sites' },
-					{ label: 'New Site', route: '/sites/new' }
-				]"
-			/>
+			<FBreadcrumbs :items="breadcrumbs" />
 		</Header>
 	</div>
 
 	<div class="mx-auto max-w-4xl px-5">
-		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
-			<div>
+		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
+			Loading...
+		</div>
+		<div v-if="$route.name === 'NewBenchSite' && !bench">
+			<div class="py-4 text-base text-gray-600">Something went wrong</div>
+		</div>
+		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
+			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
 						Select Frappe Framework Version
@@ -279,7 +280,8 @@ import {
 	TextInput,
 	Tooltip,
 	debounce,
-	getCachedResource
+	Breadcrumbs,
+	getCachedDocumentResource
 } from 'frappe-ui';
 import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
@@ -293,6 +295,7 @@ import { plans } from '../data/plans';
 
 export default {
 	name: 'NewSite',
+	props: ['bench'],
 	components: {
 		FormControl,
 		TextInput,
@@ -301,7 +304,8 @@ export default {
 		ErrorMessage,
 		Header,
 		SitePlansCards,
-		Tooltip
+		Tooltip,
+		FBreadcrumbs: Breadcrumbs
 	},
 	data() {
 		return {
@@ -335,7 +339,14 @@ export default {
 		options() {
 			return {
 				url: 'press.api.site.options_for_new',
-				cache: 'site.options_for_new',
+				makeParams() {
+					return { for_bench: this.bench };
+				},
+				onSuccess() {
+					if (this.bench) {
+						this.version = this.options.versions[0].name;
+					}
+				},
 				auto: true
 			};
 		},
@@ -429,6 +440,29 @@ export default {
 		selectedPlan() {
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan);
+		},
+		breadcrumbs() {
+			if (this.bench) {
+				let group = getCachedDocumentResource('Release Group', this.bench);
+				return [
+					{ label: 'Benches', route: '/benches' },
+					{
+						label: group ? group.doc.title : this.bench,
+						route: {
+							name: 'Release Group Detail',
+							params: { name: this.bench }
+						}
+					},
+					{
+						label: 'New Site',
+						route: { name: 'NewBenchSite', params: { bench: this.bench } }
+					}
+				];
+			}
+			return [
+				{ label: 'Sites', route: '/sites' },
+				{ label: 'New Site', route: '/sites/new' }
+			];
 		}
 	},
 	methods: {

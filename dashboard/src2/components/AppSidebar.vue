@@ -122,9 +122,13 @@ export default {
 					icon: () => h(Package),
 					route: '/benches',
 					isActive:
-						['Release Group List', 'Release Group Detail', 'NewBench'].includes(
-							routeName
-						) || routeName.startsWith('Release Group Detail'),
+						[
+							'Release Group List',
+							'Release Group Detail',
+							'NewBench',
+							'NewBenchSite'
+						].includes(routeName) ||
+						routeName.startsWith('Release Group Detail'),
 					disabled
 				},
 				{

@@ -115,10 +115,23 @@ export default {
 							width: 1
 						},
 						{
+							label: 'Repo',
+							width: 1,
+							format(value, row) {
+								return `${row.repository_owner}/${row.repository}`;
+							},
+							link(value, row) {
+								return row.repository_url;
+							}
+						},
+						{
 							label: 'Branch',
 							fieldname: 'branch',
 							type: 'Badge',
-							width: 1
+							width: 1,
+							link(value, row) {
+								return `${row.repository_url}/tree/${value}`;
+							}
 						},
 						{
 							label: 'Status',
@@ -276,6 +289,7 @@ export default {
 				label: 'Deploys',
 				route: 'deploys',
 				icon: icon('package'),
+				childrenRoutes: ['Bench Deploy'],
 				type: 'list',
 				list: {
 					doctype: 'Deploy Candidate',

@@ -1,7 +1,17 @@
 <template>
 	<div>
-		<GenericList :options="options" />
-
+		<div class="flex items-center justify-between">
+			<div></div>
+			<Button
+				:route="{ name: 'NewBenchSite', params: { bench: this.releaseGroup } }"
+			>
+				<template #prefix>
+					<i-lucide-plus class="h-4 w-4 text-gray-600" />
+				</template>
+				New Site
+			</Button>
+		</div>
+		<GenericList class="mt-3" :options="options" />
 		<Dialog
 			v-model="showAppVersionDialog"
 			:options="{ title: 'Apps', size: '3xl' }"
@@ -19,6 +29,7 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import GenericList from '../components/GenericList.vue';
 import { icon } from '../utils/components';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
@@ -94,30 +105,8 @@ export default {
 						label: '',
 						type: 'Button',
 						align: 'right',
-						Button: ({ row }) => {
-							if (!row.isBench) return;
-							return {
-								label: 'Show apps',
-								variant: 'ghost',
-								loading:
-									this.$releaseGroup.getAppVersions.loading &&
-									this.$releaseGroup.getAppVersions.params.args.bench ==
-										row.name,
-								onClick: async () => {
-									await this.$releaseGroup.getAppVersions.submit({
-										bench: row.name
-									});
-									this.showAppVersionDialog = true;
-								}
-							};
-						}
-					},
-					{
-						label: '',
-						type: 'Button',
-						align: 'right',
 						width: '44px',
-						Button({ row }) {
+						Button: ({ row }) => {
 							if (!row.isBench) return;
 							return {
 								label: 'Options',
@@ -131,9 +120,28 @@ export default {
 								options: [
 									{
 										label: 'Delete',
-										variant: 'ghost',
 										onClick: () => {
 											console.log('delete');
+										}
+									},
+									{
+										label: 'Show apps',
+										onClick: () => {
+											toast.promise(
+												this.$releaseGroup.getAppVersions
+													.submit({
+														bench: row.name
+													})
+													.then(() => {
+														this.showAppVersionDialog = true;
+													}),
+												{
+													loading: 'Fetching apps...',
+													success: 'Fetched apps with versions',
+													error: 'Failed to fetch apps',
+													duration: 1000
+												}
+											);
 										}
 									}
 								]

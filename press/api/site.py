@@ -397,19 +397,32 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 
 @frappe.whitelist()
-def options_for_new():
-	versions = frappe.db.get_all(
-		"Frappe Version",
-		["name", "default", "status", "number"],
-		{"public": True},
-		order_by="number desc",
-	)
+def options_for_new(for_bench: str = None):
+	for_bench = str(for_bench) if for_bench else None
+	if for_bench:
+		version = frappe.db.get_value("Release Group", for_bench, "version")
+		versions = frappe.db.get_all(
+			"Frappe Version",
+			["name", "default", "status", "number"],
+			{"name": version},
+			order_by="number desc",
+		)
+	else:
+		versions = frappe.db.get_all(
+			"Frappe Version",
+			["name", "default", "status", "number"],
+			{"public": True},
+			order_by="number desc",
+		)
 	available_versions = []
 	for version in versions:
+		filters = (
+			{"name": for_bench} if for_bench else {"enabled": 1, "public": 1, "version": version.name}
+		)
 		release_group = frappe.db.get_value(
 			"Release Group",
 			fieldname=["name", "`default`", "title"],
-			filters={"enabled": 1, "public": 1, "version": version.name},
+			filters=filters,
 			order_by="creation desc",
 			as_dict=1,
 		)

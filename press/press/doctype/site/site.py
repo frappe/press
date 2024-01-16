@@ -68,6 +68,7 @@ class Site(Document):
 		"notify_email",
 		"team",
 		"plan",
+		"archive_failed"
 	]
 
 	@staticmethod
@@ -90,6 +91,7 @@ class Site(Document):
 		doc.current_plan = get("Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
+		doc.actions = self.get_actions()
 
 		return doc
 

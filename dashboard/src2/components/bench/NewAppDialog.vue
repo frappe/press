@@ -21,6 +21,7 @@
 								class="mb-0.5 grow"
 								label="GitHub URL"
 								v-model="githubAppLink"
+								autocomplete="off"
 							/>
 							<Button
 								v-if="!selectedBranch"
@@ -341,6 +342,7 @@ export default {
 				onSuccess() {
 					this.$resources.appList.reload();
 					this.$emit('update:modelValue', false);
+					this.$emit('appAdd');
 				}
 			};
 		}

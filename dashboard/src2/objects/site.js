@@ -672,21 +672,8 @@ export default {
 				route: 'actions',
 				type: 'list',
 				list: {
-					onRowClick: () => {},
-					resource({ documentResource: site }) {
-						return {
-							url: 'press.api.client.run_doc_method',
-							params: {
-								dt: 'Site',
-								dn: site.doc.name,
-								method: 'get_actions'
-							},
-							transform(data) {
-								return data.message;
-							},
-							cache: ['Site Actions', site.name],
-							auto: true
-						};
+					data({ documentResource: site }) {
+						return site.doc.actions;
 					},
 					columns: [
 						{
@@ -883,11 +870,11 @@ export default {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin
-												.submit({ reason: values.reason })
-												.then(result => {
-													let url = result;
-													window.open(url, '_blank');
-													hide();
+											.submit({ reason: values.reason })
+											.then(result => {
+												let url = result;
+												window.open(url, '_blank');
+												hide();
 											});
 									}
 								});
