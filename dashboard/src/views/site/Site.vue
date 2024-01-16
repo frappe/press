@@ -170,7 +170,6 @@ export default {
 			showChangeRegionDialog: false,
 			showChangeServerDialog: false,
 			showVersionUpgradeDialog: false,
-			emailOfTransferTeam: '',
 			errorMessage: ''
 		};
 	},
