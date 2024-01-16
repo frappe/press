@@ -735,7 +735,7 @@ class Site(Document):
 
 		frappe.sendmail(
 			recipients=team_mail_id,
-			subject=f"Transfer Site Ownership Confirmation for site { self.host_name}",
+			subject="Transfer Site Ownership Confirmation",
 			template="transfer_site_confirmation",
 			args={
 				"site": self.host_name or self.name,
