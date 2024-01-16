@@ -20,3 +20,6 @@ class TeamChange(Document):
 				"team",
 				self.to_team,
 			)
+			frappe.db.set_value(
+				"Site Domain", {"site": self.document_name}, "team", self.to_team
+			)
