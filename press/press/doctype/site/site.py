@@ -6,6 +6,7 @@ import json
 import re
 from collections import defaultdict
 from datetime import datetime
+from functools import wraps
 from typing import Any, Dict, List
 
 import dateutil.parser
@@ -15,7 +16,15 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, flt, get_datetime, get_url, time_diff_in_hours
+from frappe.utils import (
+	cint,
+	comma_and,
+	cstr,
+	flt,
+	get_datetime,
+	get_url,
+	time_diff_in_hours,
+)
 
 from press.exceptions import CannotChangePlan
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
@@ -83,6 +92,20 @@ class Site(Document):
 		doc.update_information = self.get_update_information()
 
 		return doc
+
+	def site_action(allowed_status: List[str]):
+		def outer_wrapper(func):
+			@wraps(func)
+			def wrapper(inst, *args, **kwargs):
+				if inst.status not in allowed_status:
+					frappe.throw(
+						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+					)
+				return func(inst, *args, **kwargs)
+
+			return wrapper
+
+		return outer_wrapper
 
 	def _get_site_name(self, subdomain: str):
 		"""Get full site domain name given subdomain."""
@@ -353,6 +376,7 @@ class Site(Document):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
@@ -362,6 +386,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
@@ -422,6 +447,7 @@ class Site(Document):
 		agent.clear_site_cache(self)
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -436,6 +462,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
@@ -457,6 +484,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
@@ -509,6 +537,7 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update without Backup")
 		self.status_before_update = self.status
@@ -658,6 +687,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
@@ -784,6 +814,7 @@ class Site(Document):
 		)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
@@ -1012,6 +1043,7 @@ class Site(Document):
 			self.save()
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def update_config(self, config=None):
 		"""Updates site.configuration, meant for dashboard and API users"""
 		if config is None:
@@ -1046,6 +1078,7 @@ class Site(Document):
 		self.update_site_config(sanitized_config)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
@@ -1218,6 +1251,7 @@ class Site(Document):
 			self.unsuspend(reason="Plan Upgraded")
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
@@ -1225,6 +1259,7 @@ class Site(Document):
 		self.update_site_status_on_proxy("deactivated")
 
 	@frappe.whitelist()
+	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
@@ -1255,6 +1290,7 @@ class Site(Document):
 		)
 
 	@frappe.whitelist()
+	@site_action(["Suspended"])
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
@@ -1387,6 +1423,7 @@ class Site(Document):
 		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
@@ -1417,6 +1454,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def disable_database_access(self):
 		log_site_activity(self.name, "Disable Database Access")
 
