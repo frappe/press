@@ -16,13 +16,20 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, comma_and, cstr, flt, get_datetime, get_url, time_diff_in_hours
+from frappe.utils import (
+	cint,
+	comma_and,
+	cstr,
+	flt,
+	get_datetime,
+	get_url,
+	time_diff_in_hours,
+)
 
 from press.exceptions import CannotChangePlan
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
-from press.utils import unique
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
