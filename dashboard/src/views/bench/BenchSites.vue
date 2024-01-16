@@ -440,8 +440,7 @@ export default {
 					},
 					condition: () =>
 						this.versions[i].status === 'Active' &&
-						this.permissions.rebuildBench &&
-						false // XXX: This feature is broken in Framework.
+						this.permissions.rebuildBench
 				},
 				{
 					label: 'Create Code Server',

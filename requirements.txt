@@ -9,6 +9,7 @@ oci==2.116.0
 paramiko==3.3.1
 pexpect==4.8.0
 posthog==3.0.1
+prometheus-client==0.19.0
 PyGithub==1.44.1
 pyOpenSSL~=23.2.0
 python-telegram-bot==13.15

@@ -1,34 +1,21 @@
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: title,
-			actions: [
-				primaryAction
-					? {
-							...primaryAction,
-							onClick: onConfirm
-					  }
-					: {
-							label: 'Confirm',
-							variant: 'solid',
-							onClick: onConfirm,
-							loading: isLoading
-					  }
-			]
-		}"
-	>
+	<Dialog v-model="show" :options="{ title }">
 		<template #body-content>
-			<p class="text-base text-gray-800" v-if="message" v-html="message" />
 			<div class="space-y-4">
-				<FormControl
-					v-for="field in fields"
-					v-bind="field"
-					v-model="values[field.fieldname]"
-					:key="field.fieldname"
-				/>
+				<p class="text-p-base text-gray-800" v-if="message" v-html="message" />
+				<div class="space-y-4">
+					<FormControl
+						v-for="field in fields"
+						v-bind="field"
+						v-model="values[field.fieldname]"
+						:key="field.fieldname"
+					/>
+				</div>
 			</div>
 			<ErrorMessage class="mt-2" :message="error" />
+		</template>
+		<template #actions>
+			<Button class="w-full" v-bind="primaryActionProps" />
 		</template>
 	</Dialog>
 </template>
@@ -52,7 +39,6 @@ export default {
 			this.error = null;
 			this.isLoading = true;
 			try {
-				console.log(this.primaryAction);
 				let primaryActionHandler =
 					this.primaryAction?.onClick || this.onSuccess;
 				let result = primaryActionHandler({
@@ -62,16 +48,29 @@ export default {
 				if (result?.then) {
 					result
 						.then(() => (this.isLoading = false))
-						.catch(error => (this.error = error));
+						.catch(error => {
+							this.error = error;
+							this.isLoading = false;
+						});
 				}
 			} catch (error) {
 				this.error = error;
-			} finally {
 				this.isLoading = false;
 			}
 		},
 		hide() {
 			this.show = false;
+		}
+	},
+	computed: {
+		primaryActionProps() {
+			return {
+				label: 'Confirm',
+				variant: 'solid',
+				...this.primaryAction,
+				loading: this.isLoading,
+				onClick: this.onConfirm
+			};
 		}
 	}
 };

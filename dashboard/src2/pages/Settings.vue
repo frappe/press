@@ -25,11 +25,11 @@ import { onBeforeRouteUpdate, useRouter } from 'vue-router';
 import { icon } from '../utils/components';
 
 const tabs = [
-	// {
-	// 	label: 'Profile',
-	// 	icon: icon('user'),
-	// 	routeName: 'SettingsProfile'
-	// },
+	{
+		label: 'Profile',
+		icon: icon('user'),
+		routeName: 'SettingsProfile'
+	},
 	{
 		label: 'Team',
 		icon: icon('users'),

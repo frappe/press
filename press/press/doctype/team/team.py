@@ -43,6 +43,7 @@ class Team(Document):
 		"skip_backups",
 		"is_saas_user",
 		"billing_name",
+		"referrer_id",
 	]
 
 	def get_doc(self, doc):
@@ -381,9 +382,7 @@ class Team(Document):
 			return frappe.utils.getdate()
 
 		client = get_frappe_io_connection()
-		data = client.get_value(
-			"Partner", "start_date", {"email": self.partner_email, "enabled": 1}
-		)
+		data = client.get_value("Partner", "start_date", {"email": self.partner_email})
 		if not data:
 			frappe.throw("Partner not found on frappe.io")
 		start_date = frappe.utils.getdate(data.get("start_date"))
@@ -838,6 +837,11 @@ class Team(Document):
 					"Invoice", {"team": self.name, "amount_paid": (">", 0), "status": "Paid"}
 				)
 			),
+			"has_unpaid_invoices": bool(
+				frappe.db.exists(
+					"Invoice", {"team": self.name, "status": "Unpaid", "type": "Subscription"}
+				)
+			),
 		}
 
 	def billing_details(self, timezone=None):
@@ -912,7 +916,7 @@ class Team(Document):
 		return "/sites"
 
 	def get_pending_saas_site_request(self):
-		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
+		if self.is_saas_user:
 			return frappe.db.get_value(
 				"SaaS Product Site Request",
 				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},
