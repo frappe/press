@@ -54,8 +54,7 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Transfer Completed",
-   "read_only": 1
+   "label": "Transfer Completed"
   },
   {
    "fieldname": "reason",
@@ -65,7 +64,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-16 14:57:12.418793",
+ "modified": "2024-01-16 18:11:15.948763",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team Change",
