@@ -15,9 +15,9 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours
+from frappe.utils import cint, cstr, flt, get_datetime, get_url, time_diff_in_hours
+
 from press.exceptions import CannotChangePlan
-from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -40,8 +40,15 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
-from press.utils.dns import create_dns_record, _change_dns_record
+from press.utils import (
+	convert,
+	get_client_blacklisted_keys,
+	get_current_team,
+	guess_type,
+	log_error,
+	unique,
+)
+from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document):
@@ -718,6 +725,63 @@ class Site(Document):
 		)
 
 		return delete_remote_backup_objects(sites_remote_files)
+
+	@frappe.whitelist()
+	def send_change_team_request(self, team_mail_id: str, reason: str):
+		"""Send email to team to accept site transfer request"""
+
+		if self.team != get_current_team():
+			frappe.throw(
+				"You should belong to the team owning the site to initiate a site ownership transfer."
+			)
+
+		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
+			frappe.throw("No Active Team record found.")
+
+		old_team = frappe.db.get_value("Team", self.team, "user")
+
+		if old_team == team_mail_id:
+			frappe.throw(f"Site is already owned by the team {team_mail_id}")
+
+		team_change = frappe.get_doc(
+			{
+				"doctype": "Team Change",
+				"document_type": "Site",
+				"document_name": self.name,
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"from_team": self.team,
+				"reason": reason,
+			}
+		).insert()
+
+		key = frappe.generate_hash("Site Transfer Link", 20)
+		minutes = 20
+		frappe.cache.set_value(
+			f"site_transfer_data:{key}",
+			(
+				self.name,
+				team_change.name,
+			),
+			expires_in_sec=minutes * 60,
+		)
+
+		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
+
+		if frappe.conf.developer_mode:
+			print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
+
+		frappe.sendmail(
+			recipients=team_mail_id,
+			subject="Transfer Site Ownership Confirmation",
+			template="transfer_site_confirmation",
+			args={
+				"site": self.host_name or self.name,
+				"old_team": old_team,
+				"new_team": team_mail_id,
+				"transfer_url": link,
+				"minutes": minutes,
+			},
+		)
 
 	@frappe.whitelist()
 	def login_as_admin(self, reason=None):
@@ -1656,6 +1720,12 @@ class Site(Document):
 				"description": "When you drop your site, all site data is deleted forever",
 				"button_label": "Drop",
 				"doc_method": "archive",
+			},
+			{
+				"action": "Transfer site",
+				"description": "Transfer ownership of this site to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

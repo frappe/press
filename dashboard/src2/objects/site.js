@@ -672,6 +672,7 @@ export default {
 				route: 'actions',
 				type: 'list',
 				list: {
+					onRowClick: () => {},
 					resource({ documentResource: site }) {
 						return {
 							url: 'press.api.client.run_doc_method',

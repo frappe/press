@@ -123,33 +123,7 @@
 			</template>
 		</Dialog>
 
-		<Dialog
-			:options="{
-				title: 'Transfer Site to Team',
-				actions: [
-					{
-						label: 'Submit',
-						variant: 'solid',
-						onClick: () =>
-							$resources.transferSite.submit({
-								team: emailOfChildTeam,
-								name: siteName
-							})
-					}
-				]
-			}"
-			v-model="showTransferSiteDialog"
-		>
-			<template #body-content>
-				<FormControl
-					label="Enter title of the child team"
-					v-model="emailOfChildTeam"
-					required
-				/>
-
-				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
-			</template>
-		</Dialog>
+		<SiteTransferDialog :site="site" v-model="showTransferSiteDialog" />
 
 		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
 		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
@@ -163,6 +137,7 @@ import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
+import SiteTransferDialog from './SiteTransferDialog.vue';
 import SiteChangeGroupDialog from './SiteChangeGroupDialog.vue';
 import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
 import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
@@ -179,6 +154,7 @@ export default {
 	components: {
 		SiteAlerts,
 		Tabs,
+		SiteTransferDialog,
 		SiteChangeGroupDialog,
 		SiteChangeRegionDialog,
 		SiteChangeServerDialog,
@@ -194,7 +170,6 @@ export default {
 			showChangeRegionDialog: false,
 			showChangeServerDialog: false,
 			showVersionUpgradeDialog: false,
-			emailOfChildTeam: null,
 			errorMessage: ''
 		};
 	},
@@ -228,21 +203,6 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin(this.siteName);
-		},
-		transferSite() {
-			return {
-				url: 'press.api.site.change_team',
-				onSuccess() {
-					this.showTransferSiteDialog = false;
-					this.emailOfChildTeam = null;
-					notify({
-						title: 'Site Transferred to Child Team',
-						message: 'Site Transferred to Child Team',
-						color: 'green',
-						icon: 'check'
-					});
-				}
-			};
 		},
 		plan() {
 			return {
@@ -402,7 +362,6 @@ export default {
 				{
 					label: 'Transfer Site',
 					icon: 'tool',
-					loading: this.$resources.transferSite.loading,
 					condition: () =>
 						this.site?.status === 'Active' && !this.$account.parent_team,
 					onClick: () => {
