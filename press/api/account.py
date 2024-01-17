@@ -29,7 +29,7 @@ from pypika.terms import ValueWrapper
 
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, product=None, referrer=None):
+def signup(email, product=None, referrer=None, new_signup_flow=False):
 	frappe.utils.validate_email_address(email, True)
 
 	current_user = frappe.session.user
@@ -53,6 +53,7 @@ def signup(email, product=None, referrer=None):
 				"referrer_id": referrer,
 				"saas_product": product,
 				"send_email": True,
+				"new_signup_flow": new_signup_flow,
 			}
 		).insert()
 

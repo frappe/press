@@ -686,11 +686,12 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
-		# change payment mode to prepaid credits if default is card or not set
-		self.payment_mode = (
-			"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
-		)
-		self.save()
+		if not self.default_payment_method:
+			# change payment mode to prepaid credits if default is card or not set
+			self.payment_mode = (
+				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
+			)
+			self.save()
 		return doc
 
 	def get_available_credits(self):
@@ -892,6 +893,15 @@ class Team(Document):
 			erpnext_site = None
 			erpnext_site_plan_set = True
 
+		saas_site_request = self.get_pending_saas_site_request()
+		complete = False
+		if saas_site_request:
+			complete = False
+		elif frappe.local.system_user():
+			complete = True
+		elif billing_setup:
+			complete = True
+
 		return frappe._dict(
 			{
 				"account_created": True,
@@ -899,8 +909,8 @@ class Team(Document):
 				"erpnext_site": erpnext_site,
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
-				"saas_site_request": self.get_pending_saas_site_request(),
-				"complete": billing_setup and site_created or frappe.local.system_user(),
+				"saas_site_request": saas_site_request,
+				"complete": complete,
 			}
 		)
 

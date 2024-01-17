@@ -38,6 +38,7 @@
   "saas_product",
   "saas_app",
   "saas_signup_values",
+  "new_signup_flow",
   "referrer_data",
   "referral_source",
   "url_args",
@@ -258,11 +259,17 @@
    "fieldtype": "Link",
    "label": "Saas App",
    "options": "Marketplace App"
+  },
+  {
+   "default": "0",
+   "fieldname": "new_signup_flow",
+   "fieldtype": "Check",
+   "label": "New Signup Flow"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-09-17 15:42:31.892347",
+ "modified": "2024-01-17 13:06:04.677149",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Account Request",

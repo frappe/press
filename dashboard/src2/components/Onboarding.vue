@@ -46,25 +46,40 @@
 				<div v-if="!$team.doc.payment_mode">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
-						<span class="text-base font-medium"> Set up payment method </span>
+						<span class="text-base font-medium"> Set up billing </span>
 					</div>
 
 					<div class="pl-7">
 						<p class="mt-2 text-p-base text-gray-800">
-							If you select Postpaid as your payment method, you need to add a
-							card on file. If you do this, we give you
+							If you select this option, you need to add a card on file. If you
+							do this, we give you
 							<span class="font-medium">{{ free_credits }}</span>
 							free credits so that you can create sites and test them without
 							any upfront cost.
 						</p>
+						<div class="mt-2">
+							<Button @click="showAddCardDialog = true">
+								Add card for automatic billing
+							</Button>
+						</div>
+						<div
+							class="relative mt-2 py-4 text-base uppercase tracking-wide text-gray-700"
+						>
+							<div class="h-px border-b"></div>
+							<div
+								class="absolute left-1/2 inline-block -translate-x-1/2 -translate-y-1/2 bg-white px-2"
+							>
+								Or
+							</div>
+						</div>
 						<p class="mt-2 text-p-base text-gray-800">
-							If you don't want to add your card on file, you can select Prepaid
-							as your payment method and buy credits upfront.
+							If you don't want to add your card on file, you can add money to
+							your wallet and use it to create sites.
 						</p>
-
-						<div class="mt-4 flex items-center space-x-2">
-							<Button @click="showAddCardDialog = true">Postpaid</Button>
-							<Button @click="showBuyCreditsDialog = true">Prepaid</Button>
+						<div class="mt-2 flex items-center space-x-2">
+							<Button @click="showBuyCreditsDialog = true">
+								Add money to your wallet
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -72,8 +87,17 @@
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>2</TextInsideCircle>
-							<span class="text-base font-medium">
-								Payment method set as {{ $team.doc.payment_mode }}
+							<span
+								class="text-base font-medium"
+								v-if="$team.doc.payment_mode === 'Card'"
+							>
+								Automatic billing setup complete
+							</span>
+							<span
+								class="text-base font-medium"
+								v-if="$team.doc.payment_mode === 'Prepaid Credits'"
+							>
+								Wallet balance updated
 							</span>
 						</div>
 						<div
@@ -110,10 +134,10 @@
 		</div>
 		<Dialog
 			v-model="showAddCardDialog"
-			:options="{ title: 'Add card for postpaid setup' }"
+			:options="{ title: 'Add card for automatic billing' }"
 		>
 			<template #body-content>
-				<StripeCard2 />
+				<StripeCard2 @complete="onAddCardSuccess" />
 			</template>
 		</Dialog>
 		<BuyPrepaidCreditsDialog
@@ -148,6 +172,10 @@ export default {
 		onBuyCreditsSuccess() {
 			this.$team.reload();
 			this.showBuyCreditsDialog = false;
+		},
+		onAddCardSuccess() {
+			this.$team.reload();
+			this.showAddCardDialog = false;
 		}
 	},
 	computed: {

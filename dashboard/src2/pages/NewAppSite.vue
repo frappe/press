@@ -199,6 +199,9 @@ export default {
 							return { subdomain: this.subdomain, plan: this.plan };
 						},
 						validate() {
+							if (!this.plan) {
+								return 'Please select a plan';
+							}
 							return validateSubdomain(this.subdomain);
 						},
 						onSuccess() {
