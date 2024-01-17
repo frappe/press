@@ -8,7 +8,7 @@ import random
 
 from press.agent import Agent
 from press.utils import log_error
-from frappe.utils import cint, convert_utc_to_system_timezone
+from frappe.utils import cint, convert_utc_to_system_timezone, create_batch, add_days
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.site_migration.site_migration import (
@@ -365,26 +365,35 @@ def poll_pending_jobs():
 
 
 def fail_old_jobs():
-	frappe.db.set_value(
+	def update_status(jobs: list[str], status: str):
+		for batch in create_batch(jobs or [], 100):
+			frappe.db.set_value("Agent Job", {"name": ("in", batch)}, "status", status)
+			frappe.db.commit()
+
+	failed_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"modified": ("<", frappe.utils.add_days(None, -2)),
+			"modified": ("<", add_days(None, -2)),
 		},
-		"status",
-		"Failure",
+		"name",
+		pluck=True,
 	)
+	update_status(failed_jobs, "Failure")
 
-	frappe.db.set_value(
+	undelivered_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"job_id": 0,
-			"modified": ("<", frappe.utils.add_days(None, -2)),
+			"modified": ("<", add_days(None, -2)),
+			"status": ("!=", "Undelivered"),
 		},
-		"status",
-		"Undelivered",
+		"name",
+		pluck=True,
 	)
+
+	update_status(undelivered_jobs, "Undelivered")
 
 
 def get_pair_jobs() -> tuple[str]:
