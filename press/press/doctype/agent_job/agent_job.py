@@ -163,20 +163,16 @@ class AgentJob(Document):
 			self.status = "Pending"
 			self.save()
 		except Exception:
-			self.status = "Failure"
-			self.save()
+			if 400 <= cint(self.flags.status_code) <= 499:
+				self.status = "Failure"
+				self.save()
+				process_job_updates(self.name)
 
-			process_job_updates(self.name)
-
-			self.reload()
-			self.set_status_and_next_retry_at()
+			else:
+				self.set_status_and_next_retry_at()
 
 	def set_status_and_next_retry_at(self):
-		if 400 <= cint(self.flags.status_code) <= 499:
-			return
-
 		try:
-
 			next_retry_at = get_next_retry_at(self.retry_count)
 
 			if not self.retry_count:
@@ -192,7 +188,6 @@ class AgentJob(Document):
 				},
 				update_modified=False,
 			)
-
 		except Exception:
 			log_error(
 				"Agent Job Set Status Exception",
@@ -646,10 +641,7 @@ def retry_undelivered_jobs():
 
 		for job in undelivered_jobs:
 			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count = max_retry_per_job_type[job_doc.job_type]
-
-			if not max_retry_count:
-				continue
+			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
 			if job_doc.retry_count < max_retry_count:
 				retry = job_doc.retry_count + 1
@@ -682,6 +674,8 @@ def update_job_and_step_status(job):
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
 		agent_job_step.agent_job == job
 	).run()
+
+	process_job_updates(job)
 
 
 def get_server_wise_undelivered_jobs(job_types):

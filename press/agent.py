@@ -753,7 +753,6 @@ class Agent:
 		job = self.get_duplicate_in_execution_job(
 			job_type, bench, site, code_server, upstream, host, method, path
 		)
-		print(job)
 
 		if not job:
 			job = frappe.get_doc(
@@ -803,8 +802,6 @@ class Agent:
 
 		if host:
 			filteres["host"] = host
-
-		print(filteres)
 
 		return frappe.db.get_value("Agent Job", filteres, as_dict=1)
 
