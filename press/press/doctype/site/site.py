@@ -405,7 +405,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
