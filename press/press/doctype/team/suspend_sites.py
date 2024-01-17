@@ -98,7 +98,7 @@ def get_teams_with_unpaid_invoices():
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
 			& (site.plan).notin(frappe_plans)
-			& (invoice.period_end < last_day)
+			& (invoice.period_end <= last_day)
 		)
 		.select(invoice.team)
 		.distinct()

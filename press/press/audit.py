@@ -420,7 +420,7 @@ class BillingAudit(Audit):
 				& (invoice.type == "Subscription")
 				& (site.free == 0)
 				& (site.plan).notin(frappe_plans)
-				& (invoice.period_end < last_day)
+				& (invoice.period_end <= last_day)
 			)
 			.select(invoice.team)
 			.distinct()
