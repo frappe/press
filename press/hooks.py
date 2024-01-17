@@ -248,7 +248,10 @@ scheduler_events = {
 			"press.saas.doctype.saas_product.pooling.create",
 			"press.press.doctype.site.saas_pool.create",
 		],
-		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
+		"*/30 * * * *": [
+			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
+			"press.press.doctype.team.suspend_sites.execute",
+		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",
@@ -259,7 +262,6 @@ scheduler_events = {
 		"0 0 1 */3 *": [
 			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
-		"*/30 * 10 * *": ["press.press.doctype.team.suspend_sites.execute"],
 		"0 8 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",
