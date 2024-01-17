@@ -12,15 +12,23 @@ Defaulters are identified based on the following conditions:
 - Has at least one unpaid invoice
 - Has an active site
 
-The `execute` method is the main method which is run by the scheduler on every 10th day of the month.
+The `execute` method is the main method which is run by the scheduler on every day of the month.
 """
 
 
 import frappe
 from press.utils import log_error
+from frappe.utils import getdate, add_days, get_first_day, get_last_day
 
 
 def execute():
+	today = getdate()
+	first_day_of_month = get_first_day(today)
+	nineth_day_of_month = add_days(first_day_of_month, 8)
+
+	if today >= first_day_of_month and today <= nineth_day_of_month:
+		return
+
 	teams_with_unpaid_invoices = get_teams_with_unpaid_invoices()
 
 	for d in teams_with_unpaid_invoices[:30]:
@@ -59,6 +67,10 @@ def suspend_sites_and_send_email(team):
 
 def get_teams_with_unpaid_invoices():
 	"""Find out teams which has active sites and unpaid invoices and not a free account"""
+	today = getdate()
+	# last day of previous month
+	last_day = get_last_day(frappe.utils.add_months(today, -1))
+
 	plan = frappe.qb.DocType("Plan")
 	query = (
 		frappe.qb.from_(plan)
@@ -86,6 +98,7 @@ def get_teams_with_unpaid_invoices():
 			& (invoice.type == "Subscription")
 			& (site.free == 0)
 			& (site.plan).notin(frappe_plans)
+			& (invoice.period_end <= last_day)
 		)
 		.select(invoice.team)
 		.distinct()

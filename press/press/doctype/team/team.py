@@ -939,12 +939,9 @@ class Team(Document):
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)
-			.where(
-				(plan.enabled == 1)
-				& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
-			)
+			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 		).run(as_dict=True)
-		dedicated_or_frappe_plans = [d.name for d in query]
+		frappe_plans = [d.name for d in query]
 
 		return frappe.db.get_all(
 			"Site",
@@ -952,7 +949,7 @@ class Team(Document):
 				"team": self.name,
 				"status": ("in", ("Active", "Inactive")),
 				"free": 0,
-				"plan": ("not in", dedicated_or_frappe_plans),
+				"plan": ("not in", frappe_plans),
 			},
 			pluck="name",
 		)
