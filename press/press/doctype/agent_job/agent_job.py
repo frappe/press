@@ -387,6 +387,7 @@ def fail_old_jobs():
 		{
 			"job_id": 0,
 			"modified": ("<", add_days(None, -2)),
+			"status": ("!=", "Undelivered"),
 		},
 		"name",
 		pluck=True,
