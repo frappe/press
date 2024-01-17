@@ -305,6 +305,7 @@ class BillingAudit(Audit):
 			"Teams with active sites that don't have payment method set": self.teams_without_payment_method,
 			"Disabled teams with active sites": self.disabled_teams_with_active_sites,
 			"Sites active after trial": self.free_sites_after_trial,
+			"Teams with active sites and unpaid Invoices": self.teams_with_active_sites_and_unpaid_invoices,
 			"Unpaid Invoices with no payment method set from last quarter": self.unpaid_invoices_with_no_payment_method,
 			"Prepaid Unpaid Invoices with Stripe Invoice ID set": self.prepaid_unpaid_invoices_with_stripe_invoice_id_set,
 		}
@@ -386,6 +387,46 @@ class BillingAudit(Audit):
 		return frappe.get_all(
 			"Site", {"trial_end_date": ["<", today], "name": ("in", sites)}, pluck="name"
 		)
+
+	def teams_with_active_sites_and_unpaid_invoices(self):
+		today = frappe.utils.getdate()
+		# last day of previous month
+		last_day = frappe.utils.get_last_day(frappe.utils.add_months(today, -1))
+
+		plan = frappe.qb.DocType("Plan")
+		query = (
+			frappe.qb.from_(plan)
+			.select(plan.name)
+			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
+		).run(as_dict=True)
+		frappe_plans = [d.name for d in query]
+
+		invoice = frappe.qb.DocType("Invoice")
+		team = frappe.qb.DocType("Team")
+		site = frappe.qb.DocType("Site")
+
+		query = (
+			frappe.qb.from_(invoice)
+			.inner_join(team)
+			.on(invoice.team == team.name)
+			.inner_join(site)
+			.on(site.team == team.name)
+			.where(
+				(site.status).isin(["Active", "Inactive"])
+				& (team.enabled == 1)
+				& (team.free_account == 0)
+				& (invoice.status == "Unpaid")
+				& (invoice.docstatus < 2)
+				& (invoice.type == "Subscription")
+				& (site.free == 0)
+				& (site.plan).notin(frappe_plans)
+				& (invoice.period_end < last_day)
+			)
+			.select(invoice.team)
+			.distinct()
+		).run(as_dict=True)
+
+		return [d.team for d in query]
 
 	def unpaid_invoices_with_no_payment_method(self):
 		return frappe.get_all(
