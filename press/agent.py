@@ -803,7 +803,7 @@ class Agent:
 		if host:
 			filteres["host"] = host
 
-		return frappe.db.get_value("Agent Job", filteres, as_dict=1)
+		return frappe.db.get_value("Agent Job", filteres, ["name", "status"], as_dict=1)
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
