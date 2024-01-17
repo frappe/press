@@ -9,7 +9,7 @@
 					onClick: () =>
 						$resources.transferSite.submit({
 							team_mail_id: emailOfTransferTeam,
-							name: site?.name || site, // site is siteName in d2
+							name: site?.name,
 							reason
 						})
 				}

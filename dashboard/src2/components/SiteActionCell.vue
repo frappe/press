@@ -40,9 +40,6 @@ function getSiteActionHandler(action) {
 		),
 		'Access site database': defineAsyncComponent(() =>
 			import('./SiteDatabaseAccessDialog.vue')
-		),
-		'Transfer site': defineAsyncComponent(() =>
-			import('./SiteTransferDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {
@@ -56,6 +53,7 @@ function getSiteActionHandler(action) {
 		'Deactivate site': onDeactivateSite,
 		'Drop site': onDropSite,
 		'Migrate site': onMigrateSite,
+		'Transfer site': onTransferSite,
 		'Reset site': onSiteReset
 	};
 	if (actionHandlers[action]) {
@@ -184,6 +182,37 @@ function onSiteReset() {
 					throw new Error('Site name does not match.');
 				}
 				return site.reinstall.submit().then(hide);
+			}
+		}
+	});
+}
+
+function onTransferSite() {
+	return confirmDialog({
+		title: 'Transfer Site Ownership',
+		fields: [
+			{
+				label: 'Enter email address of the team for transfer of site ownership',
+				fieldname: 'email'
+			},
+			{
+				label: 'Reason for transfer',
+				fieldname: 'reason',
+				type: 'textarea'
+			}
+		],
+		primaryAction: {
+			label: 'Transfer',
+			variant: 'solid',
+			onClick: ({ hide, values }) => {
+				return site.sendTransferRequest
+					.submit({ team_mail_id: values.email, reason: values.reason })
+					.then(() => {
+						hide();
+						toast.success(
+							`Transfer request sent to ${values.email} successfully.`
+						);
+					});
 			}
 		}
 	});

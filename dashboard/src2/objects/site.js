@@ -45,7 +45,8 @@ export default {
 		updateSiteConfig: 'update_site_config',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		updateWithoutBackup: 'update_without_backup'
+		updateWithoutBackup: 'update_without_backup',
+		sendTransferRequest: 'send_change_team_request'
 	},
 	list: {
 		route: '/sites',
