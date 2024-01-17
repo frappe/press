@@ -26,6 +26,7 @@ export default {
 		enableReadWrite: 'enable_read_write',
 		getDatabaseCredentials: 'get_database_credentials',
 		installApp: 'install_app',
+		uninstallApp: 'uninstall_app',
 		migrate: 'migrate',
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
@@ -319,6 +320,52 @@ export default {
 								);
 							}
 						};
+					},
+					rowActions({ row, listResource: apps, documentResource: site }) {
+						return [
+							{
+								label: 'Uninstall',
+								condition: () => row.app !== 'frappe',
+								onClick() {
+									confirmDialog({
+										title: `Uninstall App`,
+										message: `Are you sure you want to uninstall the app <b>${row.title}</b> from the site <b>${site.doc.name}</b>?<br>
+										All doctypes and modules related to this app will be removed.`,
+										onSuccess({ hide }) {
+											if (site.uninstallApp.loading) return;
+											toast.promise(
+												site.uninstallApp.submit(
+													{
+														app: row.app
+													},
+													{
+														onSuccess: () => {
+															hide();
+															apps.reload();
+														}
+													}
+												),
+												{
+													loading: 'Uninstalling app...',
+													success: () => 'App uninstalled successfully',
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'View in Desk',
+								onClick() {
+									window.open(`/app/app-source/${row.name}`, '_blank');
+								}
+							}
+						];
 					}
 				}
 			},

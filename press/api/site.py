@@ -417,7 +417,9 @@ def options_for_new(for_bench: str = None):
 	available_versions = []
 	for version in versions:
 		filters = (
-			{"name": for_bench} if for_bench else {"enabled": 1, "public": 1, "version": version.name}
+			{"name": for_bench}
+			if for_bench
+			else {"enabled": 1, "public": 1, "version": version.name}
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
@@ -1392,22 +1394,6 @@ def install_app(name, app, plan=None):
 @protected("Site")
 def uninstall_app(name, app):
 	frappe.get_doc("Site", name).uninstall_app(app)
-	disable_marketplace_plan_if_exists(name, app)
-
-
-def disable_marketplace_plan_if_exists(site_name, app_name):
-	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
-	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
-	)
-	if marketplace_app_name and app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
-			for_update=True,
-		)
-		app_subscription.status = "Disabled"
-		app_subscription.save(ignore_permissions=True)
 
 
 @frappe.whitelist()

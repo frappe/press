@@ -294,6 +294,7 @@ class Site(Document):
 		self.config = json.dumps(new_config, indent=4)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
@@ -317,6 +318,8 @@ class Site(Document):
 		if plan:
 			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
 
+	@frappe.whitelist()
+	@site_action(["Active"])
 	def uninstall_app(self, app):
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
@@ -325,6 +328,20 @@ class Site(Document):
 		self.save()
 
 		marketplace_app_hook(app=app, site=self.name, op="uninstall")
+
+		# disable marketplace plan if it exists
+		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
+		app_subscription = frappe.db.exists(
+			"Marketplace App Subscription", {"site": self.name, "app": marketplace_app_name}
+		)
+		if marketplace_app_name and app_subscription:
+			app_subscription = frappe.get_doc(
+				"Marketplace App Subscription",
+				app_subscription,
+				for_update=True,
+			)
+			app_subscription.status = "Disabled"
+			app_subscription.save(ignore_permissions=True)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
