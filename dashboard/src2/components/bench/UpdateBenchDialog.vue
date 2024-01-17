@@ -320,6 +320,7 @@ export default {
 						}
 					});
 					this.show = false;
+					this.$emit('success', candidate);
 				}
 			};
 		}

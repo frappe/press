@@ -638,8 +638,9 @@ export default {
 						renderDialog(
 							h(UpdateBenchDialog, {
 								bench: bench.name,
-								onSuccess() {
-									bench.reload();
+								onSuccess(candidate) {
+									bench.doc.deploy_information.deploy_in_progress = true;
+									bench.doc.deploy_information.last_deploy.name = candidate;
 								}
 							})
 						);

@@ -69,6 +69,7 @@
 	</div>
 </template>
 <script>
+import { getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 
@@ -110,6 +111,14 @@ export default {
 			if (data.name === this.id && this.$resources.deploy.doc) {
 				this.$resources.deploy.reload();
 			}
+		});
+		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
+			let rgDoc = getCachedDocumentResource(
+				'Release Group',
+				this.$resources.deploy.doc.group
+			);
+			this.$resources.deploy.reload();
+			rgDoc.reload();
 		});
 	},
 	beforeUnmount() {

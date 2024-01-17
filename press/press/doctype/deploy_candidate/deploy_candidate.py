@@ -43,6 +43,7 @@ class DeployCandidate(Document):
 		"build_end",
 		"build_duration",
 		"apps",
+		"group",
 	]
 
 	def get_doc(self, doc):
