@@ -133,6 +133,37 @@ let router = createRouter({
 			]
 		},
 		{
+			name: 'Partners',
+			path: '/partners',
+			redirect: { name: 'PartnerOverview' },
+			component: () => import('./pages/Partners.vue'),
+			children: [
+				{
+					name: 'PartnerOverview',
+					path: 'overview',
+					component: () => import('./components/partners/PartnerOverview.vue')
+				},
+				{
+					name: 'PartnerCustomers',
+					path: 'customers',
+					component: () => import('./components/partners/PartnerCustomers.vue')
+				},
+				{
+					name: 'PartnerContribution',
+					path: 'contributions',
+					component: () =>
+						import('./components/partners/PartnerContribution.vue'),
+					props: true
+				},
+				{
+					name: 'PartnerApprovalRequests',
+					path: 'approval-requests',
+					component: () =>
+						import('./components/partners/PartnerApprovalRequests.vue')
+				}
+			]
+		},
+		{
 			name: 'NewAppSite',
 			path: '/new-app-site',
 			component: () => import('./pages/NewAppSite.vue')
