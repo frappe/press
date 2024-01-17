@@ -68,7 +68,7 @@ class Site(Document):
 		"notify_email",
 		"team",
 		"plan",
-		"archive_failed"
+		"archive_failed",
 	]
 
 	@staticmethod
