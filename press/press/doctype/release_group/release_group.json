@@ -46,12 +46,14 @@
   "column_break_9efq",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
+  "use_rq_workerpool",
   "saas_tab",
   "saas_bench",
   "column_break_26",
   "saas_app",
   "miscellaneous_tab",
-  "tags"
+  "tags",
+  "is_code_server_enabled"
  ],
  "fields": [
   {
@@ -331,10 +333,16 @@
    "fieldtype": "Table",
    "label": "Mounts",
    "options": "Release Group Mount"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_rq_workerpool",
+   "fieldtype": "Check",
+   "label": "Use RQ WorkerPool"
   }
  ],
  "links": [],
- "modified": "2024-01-01 12:44:40.902468",
+ "modified": "2024-01-18 13:18:18.493796",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
