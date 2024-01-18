@@ -40,6 +40,7 @@
   "feature_flags_section",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
+  "use_rq_workerpool",
   "is_code_server_enabled",
   "column_break_mtyb",
   "environment_variables",
@@ -324,10 +325,17 @@
    "fieldname": "mounts",
    "fieldtype": "Table",
    "options": "Bench Mount"
+  },
+  {
+   "default": "0",
+   "fetch_from": "candidate.use_rq_workerpool",
+   "fieldname": "use_rq_workerpool",
+   "fieldtype": "Check",
+   "label": "Use RQ WorkerPool"
   }
  ],
  "links": [],
- "modified": "2023-12-14 13:07:36.811559",
+ "modified": "2024-01-18 14:52:55.486620",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
