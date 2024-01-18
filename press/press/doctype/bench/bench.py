@@ -584,8 +584,8 @@ def get_active_site_updates(bench: str):
 			"status": ("in", ["Pending", "Running", "Failure"]),
 		},
 		or_filters={
-			"source_bench": bench.name,
-			"destination_bench": bench.name,
+			"source_bench": bench,
+			"destination_bench": bench,
 		},
 		limit=1,
 		ignore_ifnull=True,
