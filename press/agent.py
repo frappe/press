@@ -750,8 +750,8 @@ class Agent:
 		don't add new job until its gets comleted
 		"""
 
-		job = self.get_duplicate_in_execution_job(
-			job_type, bench, site, code_server, upstream, host, method, path
+		job = self.get_similar_in_execution_job(
+			job_type, path, bench, site, code_server, upstream, host, method
 		)
 
 		if not job:
@@ -776,8 +776,16 @@ class Agent:
 
 		return job
 
-	def get_duplicate_in_execution_job(
-		self, job_type, bench, site, code_server, upstream, host, method, path
+	def get_similar_in_execution_job(
+		self,
+		job_type,
+		path,
+		bench=None,
+		site=None,
+		code_server=None,
+		upstream=None,
+		host=None,
+		method="POST",
 	):
 		filteres = {
 			"server_type": self.server_type,
