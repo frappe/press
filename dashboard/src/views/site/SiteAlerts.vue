@@ -41,6 +41,36 @@ const trialEndsText = computed(() => {
 	return utils.methods.trialEndsInDaysText(props.site.trial_end_date);
 });
 
+const siteMigrationText = computed(() => {
+	const status = props.site?.site_migration.status;
+
+	if (status === 'Running') {
+		return 'Your Site Migration is in progress';
+	} else if (status === 'Pending') {
+		return 'Your Site Migration will start shortly';
+	} else if (status === 'Scheduled') {
+		return `Your Site Migration is scheduled to happen ${utils.methods.formatDate(
+			props.site?.site_migration.scheduled_time,
+			'relative'
+		)}.`;
+	}
+});
+
+const siteVersionUpgradeText = computed(() => {
+	const status = props.site?.version_upgrade.status;
+
+	if (status === 'Running') {
+		return 'Your Site Version Upgrade is in progress';
+	} else if (status === 'Pending') {
+		return 'Your Site Version Upgrade will start shortly';
+	} else if (status === 'Scheduled') {
+		return `Your Site Version Upgrade is scheduled to happen ${utils.methods.formatDate(
+			props.site?.version_upgrade.scheduled_time,
+			'relative'
+		)}.`;
+	}
+});
+
 const marketplacePromotionalBanners = createResource({
 	url: 'press.api.marketplace.get_promotional_banners',
 	auto: true
@@ -81,7 +111,7 @@ const marketplacePromotionalBanners = createResource({
 				</template>
 			</Alert>
 		</div>
-		<Alert title="Trial" v-if="isInTrial && $account.needsCard">
+		<Alert title="Trial" v-if="isInTrial && $account.hasBillingInfo">
 			Your trial ends {{ trialEndsText }} after which your site will get
 			suspended. Add your billing information to avoid suspension.
 
@@ -116,6 +146,46 @@ const marketplacePromotionalBanners = createResource({
 		<Alert title="Attention Required" v-else-if="closeToLimits">
 			Your site has exceeded 80% of the allowed usage for your plan. Upgrade
 			your plan now.
+		</Alert>
+
+		<Alert title="Site Migration" v-if="site?.site_migration">
+			{{ siteMigrationText }}
+			<template #actions>
+				<Button
+					v-if="
+						site.site_migration.status === 'Running' &&
+						site.site_migration.job_id
+					"
+					class="whitespace-nowrap"
+					variant="solid"
+					:route="{
+						name: 'SiteJobs',
+						params: { jobName: site.site_migration.job_id }
+					}"
+				>
+					View Job
+				</Button>
+			</template>
+		</Alert>
+
+		<Alert title="Version Upgrade" v-if="site?.version_upgrade">
+			{{ siteVersionUpgradeText }}
+			<template #actions>
+				<Button
+					v-if="
+						site.version_upgrade.status === 'Running' &&
+						site.version_upgrade.job_id
+					"
+					class="whitespace-nowrap"
+					variant="solid"
+					:route="{
+						name: 'SiteJobs',
+						params: { jobName: site.version_upgrade.job_id }
+					}"
+				>
+					View Job
+				</Button>
+			</template>
 		</Alert>
 
 		<Dialog

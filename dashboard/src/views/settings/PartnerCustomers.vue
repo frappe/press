@@ -19,7 +19,7 @@
 				class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-900"
 			>
 				<span>{{ customer.billing_name }}</span>
-				<span>{{ customer.email }}</span>
+				<span class="break-all">{{ customer.email }}</span>
 				<span>{{ customer.currency }}</span>
 				<span>
 					{{ customer.payment_mode }}

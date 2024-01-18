@@ -60,6 +60,25 @@
 				:chartTheme="[$theme.colors.blue[500]]"
 				:loading="$resources.analytics.loading"
 			/>
+
+			<BarChart
+				class="col-span-2"
+				title="Request Count by Path"
+				:key="requestCountByPathData"
+				:data="requestCountByPathData"
+				unit="requests"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+			<BarChart
+				class="col-span-2"
+				title="Request Duration by Path"
+				:key="requestDurationByPathData"
+				:data="requestDurationByPathData"
+				unit="seconds"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
 		</div>
 	</div>
 </template>
@@ -67,12 +86,14 @@
 <script>
 import { DateTime } from 'luxon';
 import LineChart from '@/components/charts/LineChart.vue';
+import BarChart from '@/components/charts/BarChart.vue';
 import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
 	props: ['site'],
 	components: {
+		BarChart,
 		LineChart,
 		SiteAnalyticsUptime
 	},
@@ -103,6 +124,20 @@ export default {
 		}
 	},
 	computed: {
+		requestChartColors() {
+			return [
+				this.$theme.colors.green[500],
+				this.$theme.colors.red[500],
+				this.$theme.colors.yellow[500],
+				this.$theme.colors.pink[500],
+				this.$theme.colors.purple[500],
+				this.$theme.colors.blue[500],
+				this.$theme.colors.teal[500],
+				this.$theme.colors.cyan[500],
+				this.$theme.colors.gray[500],
+				this.$theme.colors.orange[500]
+			];
+		},
 		usageCounterData() {
 			let data = this.$resources.analytics.data?.usage_counter;
 			if (!data) return;
@@ -137,6 +172,20 @@ export default {
 			return {
 				datasets: [requestCount.map(d => [+new Date(d.date), d.value])]
 			};
+		},
+		requestCountByPathData() {
+			let requestCountByPath =
+				this.$resources.analytics.data?.request_count_by_path;
+			if (!requestCountByPath) return;
+
+			return requestCountByPath;
+		},
+		requestDurationByPathData() {
+			let requestDurationByPath =
+				this.$resources.analytics.data?.request_duration_by_path;
+			if (!requestDurationByPath) return;
+
+			return requestDurationByPath;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;

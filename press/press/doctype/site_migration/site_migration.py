@@ -3,14 +3,23 @@
 # For license information, please see license.txt
 
 
+from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
+from press.exceptions import CannotChangePlan
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
+from press.press.doctype.server.server import Server
 from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 from press.utils import log_error
 from press.utils.dns import create_dns_record
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -37,6 +46,19 @@ class SiteMigration(Document):
 		self.set_migration_type()
 		self.add_steps()
 		self.save()
+
+	def validate(self):
+		self.validate_apps()
+
+	def validate_apps(self):
+		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
+		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
+
+		if diff := set(site_apps) - set(bench_apps):
+			frappe.throw(
+				f"Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				frappe.ValidationError,
+			)
 
 	def start(self):
 		self.db_set("status", "Pending")
@@ -132,7 +154,7 @@ class SiteMigration(Document):
 
 	def setup_redirects(self):
 		"""Setup redirects of site in proxy"""
-		site = frappe.get_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		ret = site._update_redirects_for_all_site_domains()
 		if ret:
 			# could be no jobs
@@ -182,10 +204,66 @@ class SiteMigration(Document):
 	def fail(self):
 		self.status = "Failure"
 		self.save()
+		self.send_fail_notification()
+		self.activate_site_if_appropriate()
+
+	@property
+	def failed_step(self):
+		return find(self.steps, lambda x: x.status == "Failure")
+
+	def activate_site_if_appropriate(self):
+		site: "Site" = frappe.get_doc("Site", self.site)
+		if (
+			self.failed_step.method_name
+			in [
+				self.backup_source_site.__name__,
+				self.archive_site_on_destination_server.__name__,
+				self.restore_site_on_destination_server.__name__,
+				self.restore_site_on_destination_proxy.__name__,
+			]
+			and site.status_before_update == "Active"
+		):
+			site.activate()
+			site.status_before_update = None
+			if self.migration_type == "Cluster":
+				site.create_dns_record()
+
+	def send_fail_notification(self):
+		site = frappe.get_doc("Site", self.site)
+
+		message = (
+			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
+		)
+		agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+
+		create_new_notification(
+			site.team,
+			"Site Migrate",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
 
 	def succeed(self):
 		self.status = "Success"
 		self.save()
+		self.send_success_notification()
+
+	def send_success_notification(self):
+		site = frappe.get_doc("Site", self.site)
+
+		message = f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> completed successfully"
+		agent_job_id = find(
+			self.steps, lambda x: x.step_title == "Restore site on destination"
+		).step_job
+
+		create_new_notification(
+			site.team,
+			"Site Migrate",
+			"Agent Job",
+			agent_job_id,
+			message,
+		)
 
 	def add_steps_for_cluster_migration(self):
 		steps = [
@@ -315,7 +393,7 @@ class SiteMigration(Document):
 		"""Backup site on source"""
 		site = frappe.get_doc("Site", self.site)
 
-		backup = site.backup(with_files=True, offsite=True)
+		backup = site.backup(with_files=True, offsite=True, force=True)
 		backup.reload()
 		self.backup = backup.name
 		self.save()
@@ -400,15 +478,24 @@ class SiteMigration(Document):
 		site = frappe.get_doc("Site", self.site)
 		return site.update_site_status_on_proxy("activated")
 
+	@property
+	def scheduled_by_consultant(self):
+		return self.owner.endswith("@erpnext.com") or self.owner.endswith("@frappe.io")
+
 	def adjust_plan_if_required(self):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
 		site = frappe.get_doc("Site", self.site)
-		destination_server_team = frappe.db.get_value(
-			"Server", self.destination_server, "team"
-		)
-		if site.team == destination_server_team:
-			site.change_plan("Unlimited")
-			self.update_next_step_status("Success")
+		dest_server: Server = frappe.get_doc("Server", self.destination_server)
+		if not dest_server.is_shared and site.team == dest_server.team:
+			try:
+				site.change_plan(
+					"Unlimited",
+					ignore_card_setup=self.scheduled_by_consultant,
+				)
+			except CannotChangePlan:
+				self.update_next_step_status("Failure")
+			else:
+				self.update_next_step_status("Success")
 		else:
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
@@ -420,7 +507,7 @@ def process_required_job_callbacks(job):
 
 
 def process_site_migration_job_update(job, site_migration_name: str):
-	site_migration = frappe.get_doc("Site Migration", site_migration_name)
+	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name == site_migration.next_step.step_job:
 		process_required_job_callbacks(job)
 		site_migration.update_next_step_status(job.status)
@@ -429,7 +516,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 				site_migration.run_next_step()
 			except Exception:
 				log_error("Site Migration Step Error")
-		elif job.status == "Failure":
+		elif job.status in ["Failure", "Delivery Failure"]:
 			site_migration.fail()
 	else:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())

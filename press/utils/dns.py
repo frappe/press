@@ -13,6 +13,7 @@ def create_dns_record(doc, record_name=None):
 	is_standalone = frappe.get_value("Server", doc.server, "is_standalone")
 	if doc.cluster == domain.default_cluster and not is_standalone:
 		return
+
 	if is_standalone:
 		_change_dns_record("UPSERT", domain, doc.server, record_name=record_name)
 	else:

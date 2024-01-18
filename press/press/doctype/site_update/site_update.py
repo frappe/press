@@ -8,7 +8,7 @@ import frappe
 
 from press.agent import Agent
 from datetime import datetime
-from press.utils import log_error
+from press.utils import log_error, get_last_doc
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
@@ -186,6 +186,10 @@ class SiteUpdate(Document):
 		):
 			server.auto_scale_workers()
 
+	@frappe.whitelist()
+	def trigger_recovery_job(self):
+		trigger_recovery_job(self.name)
+
 
 def trigger_recovery_job(site_update_name):
 	site_update = frappe.get_doc("Site Update", site_update_name)
@@ -222,13 +226,16 @@ def trigger_recovery_job(site_update_name):
 
 
 @site_cache(ttl=60)
-def benches_with_available_update():
+def benches_with_available_update(site=None):
+	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
 	source_benches_info = frappe.db.sql(
-		"""
+		f"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
+		{'AND sb.name = %(site_bench)s' if site else ''}
 		""",
+		values={"site_bench": site_bench} if site else {},
 		as_dict=True,
 	)
 
@@ -328,9 +335,7 @@ def should_try_update(site):
 
 	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
 	dest_apps = []
-	if dest_bench := frappe.get_last_doc(
-		"Bench", dict(candidate=destination, status="Active")
-	):
+	if dest_bench := get_last_doc("Bench", dict(candidate=destination, status="Active")):
 		dest_apps = [app.app for app in dest_bench.apps]
 
 	if set(source_apps) - set(dest_apps):

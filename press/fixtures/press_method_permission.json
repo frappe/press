@@ -1,5 +1,23 @@
 [
  {
+  "checkbox_label": "View",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Server",
+  "method": "press.api.server.overview",
+  "modified": "2023-10-30 00:06:29.049045",
+  "name": "592c9b7d00"
+ },
+ {
+  "checkbox_label": "Reboot",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Server",
+  "method": "press.api.server.reboot",
+  "modified": "2023-10-28 20:24:00.088011",
+  "name": "bae89e803c"
+ },
+ {
   "checkbox_label": "Login as Admin",
   "docstatus": 0,
   "doctype": "Press Method Permission",
@@ -41,7 +59,7 @@
   "doctype": "Press Method Permission",
   "document_type": "Site",
   "method": "press.api.site.overview",
-  "modified": "2023-09-26 00:03:50.779625",
+  "modified": "2023-10-30 00:28:47.065270",
   "name": "10805b1854"
  },
  {
@@ -151,5 +169,50 @@
   "method": "press.api.site.get_backup_link",
   "modified": "2023-09-25 21:46:24.621413",
   "name": "084fe1db67"
+ },
+ {
+  "checkbox_label": "View",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Database Server",
+  "method": "press.api.server.overview",
+  "modified": "2023-10-30 00:06:13.793641",
+  "name": "3376d83172"
+ },
+ {
+  "checkbox_label": "Drop",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Server",
+  "method": "press.api.server.archive",
+  "modified": "2023-10-30 00:04:57.685127",
+  "name": "f636248627"
+ },
+ {
+  "checkbox_label": "Drop",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Database Server",
+  "method": "press.api.server.archive",
+  "modified": "2023-10-30 00:05:06.341786",
+  "name": "3eacc28055"
+ },
+ {
+  "checkbox_label": "Reboot",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Database Server",
+  "method": "press.api.server.reboot",
+  "modified": "2023-10-30 00:05:29.046083",
+  "name": "58dee80d9c"
+ },
+ {
+  "checkbox_label": "View",
+  "docstatus": 0,
+  "doctype": "Press Method Permission",
+  "document_type": "Marketplace App",
+  "method": "press.api.marketplace.get_app",
+  "modified": "2023-10-30 00:15:04.814190",
+  "name": "fbec67f5d7"
  }
 ]

@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-12-14 09:23:55.912233",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "users",
+  "self_hosted_users",
+  "section_break_rnxb",
+  "daytime_threshold",
+  "phone_call_alerts",
+  "column_break_voyg",
+  "nighttime_threshold",
+  "enable_incident_detection"
+ ],
+ "fields": [
+  {
+   "fieldname": "users",
+   "fieldtype": "Table",
+   "label": "Users",
+   "options": "Incident Settings User"
+  },
+  {
+   "default": "1",
+   "fieldname": "phone_call_alerts",
+   "fieldtype": "Check",
+   "label": "Phone Call Alerts"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_incident_detection",
+   "fieldtype": "Check",
+   "label": "Enable Incident Detection"
+  },
+  {
+   "fieldname": "self_hosted_users",
+   "fieldtype": "Table",
+   "label": "Self Hosted Users",
+   "options": "Incident Settings Self Hosted User"
+  },
+  {
+   "fieldname": "section_break_rnxb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_voyg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "daytime_threshold",
+   "fieldtype": "Duration",
+   "label": "Daytime Threshold"
+  },
+  {
+   "fieldname": "nighttime_threshold",
+   "fieldtype": "Duration",
+   "label": "Nighttime Threshold"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-01-15 10:24:55.212911",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Incident Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

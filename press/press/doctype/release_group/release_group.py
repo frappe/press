@@ -2,14 +2,17 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from contextlib import suppress
 from functools import cached_property
 from itertools import chain
 import frappe
+from frappe.utils import comma_and, flt
 import json
 from typing import List
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
+from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.server.server import Server
 from press.utils import (
 	get_last_doc,
@@ -25,6 +28,7 @@ from frappe.utils import cstr
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+	from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -36,6 +40,41 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
+	whitelisted_fields = ["title", "version"]
+
+	@staticmethod
+	def get_list_query(query):
+		ReleaseGroup = frappe.qb.DocType("Release Group")
+		Bench = frappe.qb.DocType("Bench")
+		Site = frappe.qb.DocType("Site")
+
+		site_count = (
+			frappe.qb.from_(Site)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Site.group == ReleaseGroup.name)
+			.where(Site.status != "Archived")
+		)
+
+		active_benches = (
+			frappe.qb.from_(Bench)
+			.select(frappe.query_builder.functions.Count("*"))
+			.where(Bench.group == ReleaseGroup.name)
+			.where(Bench.status == "Active")
+		)
+
+		query = (
+			query.where(ReleaseGroup.team == frappe.local.team().name)
+			.where(ReleaseGroup.enabled == 1)
+			.where(ReleaseGroup.public == 0)
+			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
+		)
+
+		return query
+
+	def get_doc(self, doc):
+		doc.deploy_information = self.deploy_information()
+		doc.status = self.status
+
 	def validate(self):
 		self.validate_title()
 		self.validate_frappe_app()
@@ -46,7 +85,9 @@ class ReleaseGroup(Document):
 		self.validate_max_min_workers()
 
 	def before_insert(self):
-		self.fetch_dependencies()
+		# to avoid ading deps while cloning a release group
+		if len(self.dependencies) == 0:
+			self.fetch_dependencies()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -96,6 +137,79 @@ class ReleaseGroup(Document):
 			new_config[row.key] = key_value
 
 		self.common_site_config = json.dumps(new_config, indent=4)
+
+	@frappe.whitelist()
+	def update_dependency(self, dependency_name, version):
+		"""Updates a dependency version in the Release Group Dependency table"""
+
+		for dependency in self.dependencies:
+			if dependency.name == dependency_name:
+				dependency.version = version
+				self.save()
+				return
+
+	@frappe.whitelist()
+	def delete_config(self, key):
+		"""Deletes a key from the common_site_config_table"""
+
+		if key in get_client_blacklisted_keys():
+			return
+
+		updated_common_site_config = []
+		for row in self.common_site_config_table:
+			if row.key != key and not row.internal:
+				updated_common_site_config.append(
+					{"key": row.key, "value": row.value, "type": row.type}
+				)
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(updated_common_site_config, ())
+
+	@frappe.whitelist()
+	def update_config(self, config):
+		sanitized_common_site_config = [
+			{"key": c.key, "type": c.type, "value": c.value}
+			for c in self.common_site_config_table
+		]
+
+		config = frappe.parse_json(config)
+
+		for key, value in config.items():
+			if key in get_client_blacklisted_keys():
+				continue
+
+			if isinstance(value, (dict, list)):
+				_type = "JSON"
+			elif isinstance(value, bool):
+				_type = "Boolean"
+			elif isinstance(value, (int, float)):
+				_type = "Number"
+			else:
+				_type = "String"
+
+			if frappe.db.exists("Site Config Key", key):
+				_type = frappe.db.get_value("Site Config Key", key, "type")
+
+			if _type == "Number":
+				value = flt(value)
+			elif _type == "Boolean":
+				value = bool(value)
+			elif _type == "JSON":
+				value = frappe.parse_json(value)
+
+			# update existing key
+			for row in sanitized_common_site_config:
+				if row["key"] == key:
+					row["value"] = value
+					row["type"] = _type
+					break
+			else:
+				sanitized_common_site_config.append({"key": key, "value": value, "type": _type})
+
+		# using a tuple to avoid updating bench_config
+		# TODO: remove tuple when bench_config is removed and field for http_timeout is added
+		self.update_config_in_release_group(sanitized_common_site_config, ())
 
 	def update_config_in_release_group(self, common_site_config, bench_config):
 		"""Updates bench_config and common_site_config in the Release Group
@@ -159,12 +273,23 @@ class ReleaseGroup(Document):
 
 	def validate_app_versions(self):
 		# App Source should be compatible with Release Group's version
+		with suppress(AttributeError):
+			if (
+				not frappe.flags.in_test
+				and frappe.request.path == "/api/method/press.api.bench.change_branch"
+			):
+				return  # Separate validation exists in set_app_source
 		for app in self.apps:
-			source = frappe.get_doc("App Source", app.source)
-			if all(row.version != self.version for row in source.versions):
-				frappe.throw(
-					f"App Source {app.source} version is not {self.version}", frappe.ValidationError
-				)
+			self.validate_app_version(app)
+
+	def validate_app_version(self, app: "ReleaseGroupApp"):
+		source = frappe.get_doc("App Source", app.source)
+		if all(row.version != self.version for row in source.versions):
+			branch, repo = frappe.db.get_values(
+				"App Source", app.source, ("branch", "repository")
+			)[0]
+			msg = f"{repo.rsplit('/')[-1] or repo.rsplit('/')[-2]}:{branch} branch is no longer compatible with {self.version} version of Frappe"
+			frappe.throw(msg, frappe.ValidationError)
 
 	def validate_servers(self):
 		if self.servers:
@@ -219,7 +344,13 @@ class ReleaseGroup(Document):
 		]
 
 		packages = [
-			{"package_manager": p.package_manager, "package": p.package} for p in self.packages
+			{
+				"package_manager": p.package_manager,
+				"package": p.package,
+				"package_prerequisites": p.package_prerequisites,
+				"after_install": p.after_install,
+			}
+			for p in self.packages
 		]
 
 		environment_variables = [
@@ -322,6 +453,95 @@ class ReleaseGroup(Document):
 
 		return out
 
+	@frappe.whitelist()
+	def deployed_versions(self):
+		Bench = frappe.qb.DocType("Bench")
+		Server = frappe.qb.DocType("Server")
+		deployed_versions = (
+			frappe.qb.from_(Bench)
+			.left_join(Server)
+			.on(Server.name == Bench.server)
+			.where((Bench.group == self.name) & (Bench.status != "Archived"))
+			.groupby(Bench.name)
+			.select(Bench.name, Bench.status, Bench.is_ssh_proxy_setup, Server.proxy_server)
+			.orderby(Bench.creation, order=frappe.qb.desc)
+			.run(as_dict=True)
+		)
+
+		rg_version = self.version
+
+		sites_in_group_details = frappe.db.get_all(
+			"Site",
+			filters={
+				"group": self.name,
+				"status": ("not in", ("Archived", "Suspended")),
+				"is_standby": 0,
+			},
+			fields=["name", "status", "cluster", "plan", "creation", "bench"],
+		)
+
+		Cluster = frappe.qb.DocType("Cluster")
+		cluster_data = (
+			frappe.qb.from_(Cluster)
+			.select(Cluster.name, Cluster.title, Cluster.image)
+			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		Plan = frappe.qb.DocType("Plan")
+		plan_data = (
+			frappe.qb.from_(Plan)
+			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		ResourceTag = frappe.qb.DocType("Resource Tag")
+		tag_data = (
+			frappe.qb.from_(ResourceTag)
+			.select(ResourceTag.tag_name, ResourceTag.parent)
+			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+
+		for version in deployed_versions:
+			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+			for site in version.sites:
+				site.version = rg_version
+				site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
+				site.plan = find(plan_data, lambda x: x.name == site.plan)
+				tags = find_all(tag_data, lambda x: x.parent == site.name)
+				site.tags = [tag.tag_name for tag in tags]
+
+			version.deployed_on = frappe.db.get_value(
+				"Agent Job",
+				{"bench": version.name, "job_type": "New Bench", "status": "Success"},
+				"end",
+			)
+
+		return deployed_versions
+
+	@frappe.whitelist()
+	def get_app_versions(self, bench):
+		apps = frappe.db.get_all(
+			"Bench App",
+			{"parent": bench},
+			["name", "app", "hash", "source"],
+			order_by="idx",
+		)
+		for app in apps:
+			app.update(
+				frappe.db.get_value(
+					"App Source",
+					app.source,
+					("branch", "repository", "repository_owner", "repository_url"),
+					as_dict=1,
+					cache=True,
+				)
+			)
+			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
+		return apps
+
 	@property
 	def dependency_update_pending(self):
 		if not self.last_dependency_update or not self.last_dc_info:
@@ -333,6 +553,13 @@ class ReleaseGroup(Document):
 	@property
 	def deploy_in_progress(self):
 		return self.last_dc_info and self.last_dc_info.status in ("Running", "Scheduled")
+
+	@property
+	def status(self):
+		active_benches = frappe.db.get_all(
+			"Bench", {"group": self.name, "status": "Active"}, limit=1, order_by="creation desc"
+		)
+		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
 	def last_dc_info(self):
@@ -379,11 +606,17 @@ class ReleaseGroup(Document):
 				release.tag = get_app_tag(source.repository, source.repository_owner, release.hash)
 
 			next_hash = app.hash
+
+			update_available = not current_hash or current_hash != next_hash
+			if not app.releases:
+				update_available = False
+
 			apps.append(
 				frappe._dict(
 					{
 						"title": app.title,
-						"app": app.app,
+						"app": app.app,  # remove this line once dashboard1 is removed
+						"name": app.app,
 						"source": source.name,
 						"repository": source.repository,
 						"repository_owner": source.repository_owner,
@@ -396,7 +629,7 @@ class ReleaseGroup(Document):
 						"next_release": app.release,
 						"will_branch_change": will_branch_change,
 						"current_branch": current_branch,
-						"update_available": not current_hash or current_hash != next_hash,
+						"update_available": update_available,
 					}
 				)
 			)
@@ -446,6 +679,9 @@ class ReleaseGroup(Document):
 
 			if app.source in only_approved_for_sources:
 				latest_app_release = find(latest_app_releases, lambda x: x.status == "Approved")
+				latest_app_releases = find_all(
+					latest_app_releases, lambda x: x.status == "Approved"
+				)
 			else:
 				latest_app_release = find(latest_app_releases, lambda x: x.source == app.source)
 
@@ -460,17 +696,20 @@ class ReleaseGroup(Document):
 			)
 			upcoming_hash = latest_app_release.hash if latest_app_release else bench_app.hash
 
+			upcoming_releases = latest_app_releases
 			if bench_app:
-				current_release_creation = frappe.db.get_value(
-					"App Release", bench_app.release, "creation"
-				)
-				upcoming_releases = [
-					release
-					for release in latest_app_releases
-					if release.creation > current_release_creation
-				]
-			else:
-				upcoming_releases = latest_app_releases
+				new_branch = frappe.db.get_value("App Source", app.source, "branch")
+				old_branch = frappe.db.get_value("App Source", bench_app.source, "branch")
+
+				if new_branch == old_branch:
+					current_release_creation = frappe.db.get_value(
+						"App Release", bench_app.release, "creation"
+					)
+					upcoming_releases = [
+						release
+						for release in latest_app_releases
+						if release.creation > current_release_creation
+					]
 
 			next_apps.append(
 				frappe._dict(
@@ -508,6 +747,7 @@ class ReleaseGroup(Document):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
+	@frappe.whitelist()
 	def change_app_branch(self, app: str, to_branch: str) -> None:
 		current_app_source = self.get_app_source(app)
 
@@ -558,6 +798,7 @@ class ReleaseGroup(Document):
 				app.source = source
 				app.save()
 				break
+		self.validate_app_version(app)
 		self.save()
 
 	def get_marketplace_app_sources(self) -> List[str]:
@@ -576,6 +817,16 @@ class ReleaseGroup(Document):
 		return frappe.get_all(
 			"Server", {"name": ("in", servers)}, pluck="cluster", distinct=True
 		)
+
+	@frappe.whitelist()
+	def add_region(self, region):
+		"""
+		Add new region to release group (limits to 2). Meant for dashboard use only.
+		"""
+
+		if len(self.get_clusters()) >= 2:
+			frappe.throw("More than 2 regions for bench not allowed")
+		self.add_cluster(region)
 
 	def add_cluster(self, cluster: str):
 		"""
@@ -600,7 +851,7 @@ class ReleaseGroup(Document):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			self.get_last_successful_candidate()._create_deploy([server], staging=False)
+			return self.get_last_successful_candidate()._create_deploy([server], staging=False)
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -620,6 +871,54 @@ class ReleaseGroup(Document):
 		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
 		for bench in benches:
 			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+
+	@frappe.whitelist()
+	def remove_app(self, app: str):
+		"""Remove app from release group"""
+
+		sites = frappe.get_all(
+			"Site", filters={"group": self.name, "status": ("!=", "Archived")}, pluck="name"
+		)
+
+		site_apps = frappe.get_all(
+			"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
+		)
+
+		if site_apps:
+			installed_on_sites = ", ".join(
+				frappe.bold(site_app["parent"]) for site_app in site_apps
+			)
+			frappe.throw(
+				"Cannot remove this app, it is already installed on the"
+				f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
+			)
+
+		app_doc_to_remove = find(self.apps, lambda x: x.app == app)
+		if app_doc_to_remove:
+			self.remove(app_doc_to_remove)
+
+		self.save()
+		return app
+
+	@frappe.whitelist()
+	def fetch_latest_app_update(self, app: str):
+		app_source = self.get_app_source(app)
+		app_source.create_release(force=True)
+
+	@frappe.whitelist()
+	def archive(self):
+		benches = frappe.get_all(
+			"Bench", filters={"group": self.name, "status": "Active"}, pluck="name"
+		)
+		for bench in benches:
+			frappe.get_doc("Bench", bench).archive()
+
+		new_name = f"{self.title}.archived"
+		self.title = append_number_if_name_exists(
+			"Release Group", new_name, "title", separator="."
+		)
+		self.enabled = 0
+		self.save()
 
 
 def new_release_group(

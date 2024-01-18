@@ -20,8 +20,10 @@
   "configuration_section",
   "background_workers",
   "gunicorn_workers",
+  "gunicorn_threads_per_worker",
   "port_offset",
   "auto_scale_workers",
+  "skip_memory_limits",
   "is_single_container",
   "is_ssh_enabled",
   "memory_high",
@@ -38,8 +40,11 @@
   "feature_flags_section",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
+  "is_code_server_enabled",
   "column_break_mtyb",
-  "environment_variables"
+  "environment_variables",
+  "mounts_section",
+  "mounts"
  ],
  "fields": [
   {
@@ -72,6 +77,7 @@
    "label": "Deploy Candidate",
    "options": "Deploy Candidate",
    "reqd": 1,
+   "search_index": 1,
    "set_only_once": 1
   },
   {
@@ -284,10 +290,44 @@
    "fieldname": "memory_swap",
    "fieldtype": "Int",
    "label": "Memory Swap (MB)"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_memory_limits",
+   "fieldtype": "Check",
+   "label": "Skip Memory Limits"
+  },
+  {
+   "default": "0",
+   "description": "Setting this to non-zero value will set Gunicorn worker class to gthread.",
+   "fetch_from": "group.gunicorn_threads_per_worker",
+   "fieldname": "gunicorn_threads_per_worker",
+   "fieldtype": "Int",
+   "label": "Gunicorn Threads Per Worker",
+   "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "team.is_code_server_user",
+   "fieldname": "is_code_server_enabled",
+   "fieldtype": "Check",
+   "label": "Is Code Server Enabled",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "mounts_section",
+   "fieldtype": "Section Break",
+   "label": "Mounts"
+  },
+  {
+   "fieldname": "mounts",
+   "fieldtype": "Table",
+   "options": "Bench Mount"
   }
  ],
  "links": [],
- "modified": "2023-10-17 11:45:33.339042",
+ "modified": "2023-12-14 13:07:36.811559",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

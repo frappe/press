@@ -57,7 +57,7 @@ class Subscription(Document):
 		if team.parent_team:
 			team = frappe.get_cached_doc("Team", team.parent_team)
 
-		if team.billing_team:
+		if team.billing_team and team.payment_mode == "Paid By Partner":
 			team = frappe.get_cached_doc("Team", team.billing_team)
 
 		if not team.get_upcoming_invoice():
@@ -244,7 +244,10 @@ def created_usage_records(free_sites, date=None):
 	return frappe.get_all(
 		"Usage Record",
 		filters={
-			"document_type": ("in", ("Site", "Server", "Database Server", "Self Hosted Server")),
+			"document_type": (
+				"in",
+				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
+			),
 			"date": date,
 			"document_name": ("not in", free_sites),
 		},

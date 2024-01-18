@@ -35,10 +35,22 @@ class Bench(Document):
 		return benches
 
 	def autoname(self):
-		server_name = frappe.db.get_value("Server", self.server, "hostname")
+		server_name_abbreviation, server_name = frappe.db.get_value(
+			"Server", self.server, ["hostname_abbreviation", "hostname"]
+		)
 		candidate_name = self.candidate[7:]
+
+		self.name = self.get_bench_name(candidate_name, server_name, server_name_abbreviation)
+
+	def get_bench_name(self, candidate_name, server_name, server_name_abbreviation):
 		bench_name = f"bench-{candidate_name}-{server_name}"
-		self.name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
+		if len(bench_name) > 32:
+			bench_name = f"bench-{candidate_name}-{server_name_abbreviation}"
+
+		bench_name = append_number_if_name_exists("Bench", bench_name, separator="-")
+
+		return bench_name
 
 	def update_config_with_rg_config(self, config: dict):
 		release_group_common_site_config = frappe.db.get_value(
@@ -127,6 +139,8 @@ class Bench(Document):
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
+			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
+			"is_code_server_enabled": self.is_code_server_enabled,
 		}
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
@@ -263,7 +277,6 @@ class Bench(Document):
 			{
 				"bench": self.name,
 				"status": ("in", ("Active", "Inactive", "Suspended")),
-				"skip_auto_updates": False,
 			},
 			pluck="name",
 		)
@@ -364,6 +377,10 @@ class Bench(Document):
 		candidate._create_deploy([self.server])
 
 	@frappe.whitelist()
+	def rebuild(self):
+		return Agent(self.server).rebuild_bench(self)
+
+	@frappe.whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
@@ -371,30 +388,56 @@ class Bench(Document):
 	def get_environment_variables(self):
 		return {v.key: v.value for v in self.environment_variables}
 
-	def allocate_workers(self, server_workload, max_gunicorn_workers, max_bg_workers):
+	def allocate_workers(
+		self,
+		server_workload,
+		max_gunicorn_workers,
+		max_bg_workers,
+		set_memory_limits=False,
+		gunicorn_memory=150,
+		bg_memory=3 * 80,
+	):
 		"""
 		Mostly makes sense when called from Server's auto_scale_workers
+
+		Allocates workers and memory if required
 		"""
 		try:
-			maximum = frappe.get_value("Release Group", self.group, "max_gunicorn_workers")
-			minimum = frappe.get_value("Release Group", self.group, "min_gunicorn_workers")
+			max_gn, min_gn, max_bg, min_bg = frappe.db.get_values(
+				"Release Group",
+				self.group,
+				(
+					"max_gunicorn_workers",
+					"min_gunicorn_workers",
+					"max_background_workers",
+					"min_background_workers",
+				),
+			)[0]
 			self.gunicorn_workers = min(
-				maximum or 24,
+				max_gn or 24,
 				max(
-					minimum or 2, round(self.workload / server_workload * max_gunicorn_workers)
+					min_gn or 2, round(self.workload / server_workload * max_gunicorn_workers)
 				),  # min 2 max 24
 			)
-			maximum = frappe.get_value("Release Group", self.group, "max_background_workers")
-			minimum = frappe.get_value("Release Group", self.group, "min_background_workers")
 			self.background_workers = min(
-				maximum or 8,
+				max_bg or 8,
 				max(
-					minimum or 1, round(self.workload / server_workload * max_bg_workers)
+					min_bg or 1, round(self.workload / server_workload * max_bg_workers)
 				),  # min 1 max 8
 			)
 		except ZeroDivisionError:  # when total_workload is 0
 			self.gunicorn_workers = 2
 			self.background_workers = 1
+		if set_memory_limits:
+			if self.skip_memory_limits:
+				self.memory_max = frappe.db.get_value("Server", self.server, "ram")
+				self.memory_high = self.memory_max - 1024
+			else:
+				self.memory_high = 512 + (
+					self.gunicorn_workers * gunicorn_memory + self.background_workers * bg_memory
+				)
+				self.memory_max = self.memory_high + gunicorn_memory + bg_memory
+			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 
@@ -510,6 +553,53 @@ def process_remove_ssh_user_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "is_ssh_proxy_setup", False)
 
 
+def get_archive_jobs(bench: str):
+	frappe.db.commit()
+	return frappe.get_all(
+		"Agent Job",
+		{
+			"job_type": "Archive Bench",
+			"bench": bench,
+			"status": ("in", ("Pending", "Running", "Success")),
+		},
+		limit=1,
+		ignore_ifnull=True,
+		order_by="job_type",
+	)
+
+
+def get_ongoing_jobs(bench: str):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Agent Job", {"bench": bench, "status": ("in", ["Running", "Pending"])}
+	)
+
+
+def get_active_site_updates(bench: str):
+	frappe.db.commit()
+	return frappe.get_all(
+		"Site Update",
+		{
+			"status": ("in", ["Pending", "Running", "Failure"]),
+		},
+		or_filters={
+			"source_bench": bench.name,
+			"destination_bench": bench.name,
+		},
+		limit=1,
+		ignore_ifnull=True,
+		order_by="destination_bench",
+	)
+
+
+def get_unfinished_site_migrations(bench: str):
+	frappe.db.commit()
+	return frappe.db.exists(
+		"Site Migration",
+		{"status": ("in", ["Scheduled", "Pending", "Running"]), "destination_bench": bench},
+	)
+
+
 def archive_obsolete_benches():
 	benches = frappe.get_all(
 		"Bench",
@@ -523,44 +613,16 @@ def archive_obsolete_benches():
 		):
 			continue
 		# If this bench is already being archived then don't do anything.
-		frappe.db.commit()
-		active_archival_jobs = frappe.get_all(
-			"Agent Job",
-			{
-				"job_type": "Archive Bench",
-				"bench": bench.name,
-				"status": ("in", ("Pending", "Running", "Success")),
-			},
-			limit=1,
-			ignore_ifnull=True,
-			order_by="job_type",
-		)
-		if active_archival_jobs:
+		if get_archive_jobs(bench.name):
 			continue
 
-		frappe.db.commit()
-		ongoing_jobs = frappe.db.exists(
-			"Agent Job", {"bench": bench.name, "status": ("in", ["Running", "Pending"])}
-		)
-		if ongoing_jobs:
+		if get_ongoing_jobs(bench.name):
 			continue
 
-		frappe.db.commit()
-		active_site_updates = frappe.get_all(
-			"Site Update",
-			{
-				"status": ("in", ["Pending", "Running", "Failure"]),
-			},
-			or_filters={
-				"source_bench": bench.name,
-				"destination_bench": bench.name,
-			},
-			limit=1,
-			ignore_ifnull=True,
-			order_by="destination_bench",
-		)
+		if get_active_site_updates(bench.name):
+			continue
 
-		if active_site_updates:
+		if get_unfinished_site_migrations(bench.name):
 			continue
 
 		frappe.db.commit()

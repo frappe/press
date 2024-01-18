@@ -84,8 +84,10 @@ export default {
 		updateBillingInformation() {
 			return {
 				url: 'press.api.account.update_billing_information',
-				params: {
-					billing_details: this.billingInformation
+				makeParams() {
+					return {
+						billing_details: this.billingInformation
+					};
 				},
 				onSuccess() {
 					this.$emit('update:show', false);

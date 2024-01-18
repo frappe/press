@@ -51,6 +51,13 @@ def account_request(
 	if not country:
 		frappe.throw("Country field should be a valid country name")
 
+	team = frappe.db.get_value("Team", {"user": email})
+	if team:
+		if frappe.db.exists(
+			"Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}
+		):
+			frappe.throw(f"Account {email} already exists with unpaid invoices")
+
 	try:
 		account_request = frappe.get_doc(
 			{
@@ -106,7 +113,6 @@ def create_or_rename_saas_site(app, account_request):
 				account_request=account_request, app=app, hybrid_saas_pool=hybrid_saas_pool
 			).insert(ignore_permissions=True)
 			set_site_in_subscription_docs(saas_site.subscription_docs, saas_site.name)
-			saas_site.create_subscription(get_saas_site_plan(app))
 
 		capture("completed_server_site_created", "fc_saas", account_request.get_site_name())
 	except Exception as e:

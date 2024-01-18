@@ -199,19 +199,23 @@ export default {
 					icon: 'external-link',
 					onClick: () => {
 						window.open(
-							`${window.location.protocol}//${window.location.host}/app/server/${this.server.name}`,
+							`${window.location.protocol}//${window.location.host}/app/${this.server.type}/${this.server.name}`,
 							'_blank'
 						);
 					}
 				},
-				this.server.status === 'Active' && {
-					label: 'Reboot',
-					icon: 'tool',
-					loading: this.$resources.reboot.loading,
-					onClick: () => {
-						return this.$resources.reboot.submit();
-					}
-				},
+				this.server.status === 'Active' &&
+					this.$account.hasPermission(
+						this.server.name,
+						'press.api.server.reboot'
+					) && {
+						label: 'Reboot',
+						icon: 'tool',
+						loading: this.$resources.reboot.loading,
+						onClick: () => {
+							return this.$resources.reboot.submit();
+						}
+					},
 				this.$account.user.user_type == 'System User' && {
 					label: 'Impersonate Team',
 					icon: 'tool',

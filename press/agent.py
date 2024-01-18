@@ -27,6 +27,7 @@ class Agent:
 			["docker_registry_url", "docker_registry_username", "docker_registry_password"],
 			as_dict=True,
 		)
+
 		data = {
 			"name": bench.name,
 			"bench_config": json.loads(bench.bench_config),
@@ -37,6 +38,17 @@ class Agent:
 				"password": settings.docker_registry_password,
 			},
 		}
+
+		if bench.mounts:
+			data["mounts"] = [
+				{
+					"source": m.source,
+					"destination": m.destination,
+					"is_absolute_path": m.is_absolute_path,
+				}
+				for m in bench.mounts
+			]
+
 		return self.create_agent_job("New Bench", "benches", data, bench=bench.name)
 
 	def archive_bench(self, bench):
@@ -55,6 +67,13 @@ class Agent:
 			"Bench Restart",
 			f"benches/{bench.name}/restart",
 			data={"web_only": web_only},
+			bench=bench.name,
+		)
+
+	def rebuild_bench(self, bench):
+		return self.create_agent_job(
+			"Rebuild Bench Assets",
+			f"benches/{bench.name}/rebuild",
 			bench=bench.name,
 		)
 
@@ -129,12 +148,22 @@ class Agent:
 			site=site.name,
 		)
 
-	def rename_site(self, site, new_name: str):
+	def rename_site(self, site, new_name: str, create_user: dict = None):
 		data = {"new_name": new_name}
+		if create_user:
+			data["create_user"] = create_user
 		return self.create_agent_job(
 			"Rename Site",
 			f"benches/{site.bench}/sites/{site.name}/rename",
 			data,
+			bench=site.bench,
+			site=site.name,
+		)
+
+	def optimize_tables(self, site):
+		return self.create_agent_job(
+			"Optimize Tables",
+			f"benches/{site.bench}/sites/{site.name}/optimize",
 			bench=site.bench,
 			site=site.name,
 		)
@@ -617,11 +646,13 @@ class Agent:
 	def post(self, path, data=None):
 		return self.request("POST", path, data)
 
-	def request(self, method, path, data=None, files=None):
+	def request(self, method, path, data=None, files=None, agent_job=None):
+		agent_job_id = agent_job.name if agent_job else None
+
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
 			password = get_decrypted_password(self.server_type, self.server, "agent_password")
-			headers = {"Authorization": f"bearer {password}"}
+			headers = {"Authorization": f"bearer {password}", "X-Agent-Job-Id": agent_job_id}
 			intermediate_ca = frappe.db.get_value(
 				"Press Settings", "Press Settings", "backbone_intermediate_ca"
 			)
@@ -651,6 +682,7 @@ class Agent:
 				result.raise_for_status()
 				return json_response
 			except Exception:
+				self.handle_request_failure(agent_job, result)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -660,7 +692,8 @@ class Agent:
 					headers=headers,
 					result=json_response or result.text,
 				)
-		except Exception:
+		except Exception as exce:
+			self.handle_exception(agent_job, exce)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -669,6 +702,24 @@ class Agent:
 				files=files,
 				headers=headers,
 			)
+
+	def handle_request_failure(self, agent_job, result):
+		message = f"""
+			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
+			Response: {getattr(result, 'text', 'Unknown')}
+		"""
+		self.log_failure_reason(agent_job, message)
+		agent_job.flags.status_code = result.status_code
+
+	def handle_exception(self, agent_job, exception):
+		self.log_failure_reason(agent_job, exception)
+
+	def log_failure_reason(self, agent_job=None, message=None):
+		if not agent_job:
+			return
+
+		agent_job.traceback = message
+		agent_job.output = message
 
 	def create_agent_job(
 		self,
@@ -712,8 +763,13 @@ class Agent:
 		status = self.get(f"jobs/{id}")
 		return status
 
-	def get_site_sid(self, site):
-		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
+	def get_site_sid(self, site, user=None):
+		if user:
+			data = {"user": user}
+			result = self.post(f"benches/{site.bench}/sites/{site.name}/sid", data=data)
+		else:
+			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
+		return result.get("sid")
 
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]
@@ -727,11 +783,28 @@ class Agent:
 	def get_sites_analytics(self, bench):
 		return self.get(f"benches/{bench.name}/analytics")
 
+	def describe_database_table(self, site, doctype, columns):
+		data = {"doctype": doctype, "columns": list(columns)}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/describe-database-table",
+			data=data,
+		)["data"]
+
+	def add_database_index(self, site, doctype, columns):
+		data = {"doctype": doctype, "columns": list(columns)}
+		return self.post(
+			f"benches/{site.bench}/sites/{site.name}/add-database-index",
+			data=data,
+		)["data"]
+
 	def get_jobs_status(self, ids):
 		status = self.get(f"jobs/{','.join(map(str, ids))}")
 		if len(ids) == 1:
 			return [status]
 		return status
+
+	def get_jobs_id(self, agent_job_ids):
+		return self.get(f"agent-jobs/{agent_job_ids}")
 
 	def get_version(self):
 		return self.get("version")

@@ -15,25 +15,26 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			fieldname: 'start_datetime',
 			label: __('Start From'),
 			fieldtype: 'Datetime',
+			default: frappe.datetime.add_days(frappe.datetime.now_datetime(), -1),
 			reqd: 1,
 		},
 		{
 			fieldname: 'stop_datetime',
 			label: __('End At'),
 			fieldtype: 'Datetime',
+			default: frappe.datetime.now_datetime(),
 			reqd: 1,
 		},
 		{
-			fieldname: 'search_pattern',
-			label: __('Search Pattern'),
-			fieldtype: 'Data',
-			default: '.*',
-			reqd: 1,
-		},
-		{
-			fieldname: 'format_queries',
-			label: __('Format Queries'),
+			fieldname: 'normalize_queries',
+			label: __('Normalize Queries'),
 			fieldtype: 'Check',
+		},
+		{
+			fieldname: 'analyze',
+			label: __('Suggest Indexes'),
+			fieldtype: 'Check',
+			depends_on: 'eval: doc.normalize_queries',
 		},
 		{
 			fieldname: 'max_lines',
@@ -41,5 +42,42 @@ frappe.query_reports['MariaDB Slow Queries'] = {
 			default: 100,
 			fieldtype: 'Int',
 		},
+		{
+			fieldname: 'search_pattern',
+			label: __('Search Pattern'),
+			fieldtype: 'Data',
+			default: '.*',
+		},
 	],
+	get_datatable_options(options) {
+		return Object.assign(options, {
+			checkboxColumn: true,
+		});
+	},
+
+	onload(report) {
+		report.page.add_inner_button(__('Add Selected Indexes'), () => {
+			let site = report.get_values().site;
+			let checked_rows =
+				frappe.query_report.datatable.rowmanager.getCheckedRows();
+			let indexes = checked_rows
+				.map((i) => frappe.query_report.data[i])
+				.map((row) => row.suggested_index)
+				.filter(Boolean);
+
+			if (!indexes.length) {
+				frappe.throw(__('Please select rows to create indexes'));
+			}
+
+			frappe.confirm('Are you sure you want to add these indexes?', () => {
+				frappe.xcall(
+					'press.press.report.mariadb_slow_queries.mariadb_slow_queries.add_suggested_index',
+					{
+						indexes,
+						name: site,
+					},
+				);
+			});
+		});
+	},
 };

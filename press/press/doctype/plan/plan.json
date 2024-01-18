@@ -20,6 +20,19 @@
   "price_inr",
   "attributes_section",
   "attributes",
+  "features_section",
+  "cpu_time_per_day",
+  "max_database_usage",
+  "max_storage_usage",
+  "column_break_13",
+  "is_trial_plan",
+  "offsite_backups",
+  "private_benches",
+  "database_access",
+  "monitor_access",
+  "support_included",
+  "dedicated_server_plan",
+  "is_frappe_plan",
   "servers",
   "cluster",
   "instance_type",
@@ -154,11 +167,30 @@
    "fieldname": "private_benches",
    "fieldtype": "Check",
    "label": "Private Benches"
+  },
+  {
+   "default": "0",
+   "fieldname": "support_included",
+   "fieldtype": "Check",
+   "label": "Support Included"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_server_plan",
+   "fieldtype": "Check",
+   "label": "Dedicated Server Plan"
+  },
+  {
+   "default": "0",
+   "description": "Enterprise, Central, Frappe Team etc",
+   "fieldname": "is_frappe_plan",
+   "fieldtype": "Check",
+   "label": "Is Frappe Plan"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-10-22 13:23:36.094473",
+ "modified": "2023-11-14 10:33:12.531395",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan",

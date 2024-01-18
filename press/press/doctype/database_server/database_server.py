@@ -37,7 +37,11 @@ class DatabaseServer(BaseServer):
 		if self.flags.in_insert or self.is_new():
 			return
 		self.update_mariadb_system_variables()
-		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+		if (
+			self.has_value_changed("memory_high")
+			or self.has_value_changed("memory_max")
+			or self.has_value_changed("memory_swap_max")
+		):
 			self.update_memory_limits()
 
 		if (
@@ -80,6 +84,7 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _update_memory_limits(self):
+		self.memory_swap_max = self.memory_swap_max or 0.1
 		if not self.memory_high or not self.memory_max:
 			return
 		ansible = Ansible(
@@ -91,6 +96,7 @@ class DatabaseServer(BaseServer):
 				"server": self.name,
 				"memory_high": self.memory_high,
 				"memory_max": self.memory_max,
+				"memory_swap_max": self.memory_swap_max,
 			},
 		)
 		play = ansible.run()
@@ -164,6 +170,46 @@ class DatabaseServer(BaseServer):
 		play = ansible.run()
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
+
+	@frappe.whitelist()
+	def stop_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb", timeout=1800)
+
+	def _stop_mariadb(self):
+		ansible = Ansible(
+			playbook="stop_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Stop Error", server=self.name)
+
+	@frappe.whitelist()
+	def run_upgrade_mariadb_job(self):
+		self.run_press_job("Upgrade MariaDB")
+
+	@frappe.whitelist()
+	def upgrade_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
+
+	def _upgrade_mariadb(self):
+		ansible = Ansible(
+			playbook="upgrade_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Upgrade Error", server=self.name)
 
 	def add_mariadb_variable(
 		self,
@@ -525,8 +571,39 @@ class DatabaseServer(BaseServer):
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_pt_stalk(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200
+		)
+
+	def _setup_pt_stalk(self):
+		try:
+			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_stalk_setup = True
+				self.save()
+		except Exception:
+			log_error("Percona Stalk Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def fetch_stalks(self):
+		frappe.enqueue(
+			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
+			server=self.name,
+			job_id=f"fetch_mariadb_stalk:{self.name}",
+		)
+
+	def get_stalks(self):
+		return self.agent.get("database/stalks") or []
+
+	def get_stalk(self, name):
+		return self.agent.get(f"database/stalks/{name}")
+
+	@frappe.whitelist()
 	def reboot(self):
-		if self.provider == "AWS EC2":
+		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 
@@ -581,18 +658,23 @@ class DatabaseServer(BaseServer):
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
 
+	@property
+	def ram_for_mariadb(self):
+		return self.real_ram - 700  # OS and other services
+
+	@frappe.whitelist()
 	def adjust_memory_config(self):
 		if not self.ram:
 			return
 
-		self.memory_high = max(self.ram // 1024 - 2, 1)
-		self.memory_max = max(self.ram // 1024 - 1, 2)
+		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
+		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
 		self.save()
 
 		self.add_mariadb_variable(
 			"innodb_buffer_pool_size",
 			"value_int",
-			int(self.ram * 0.685),  # will be rounded up based on chunk_size
+			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
 		)
 
 	@frappe.whitelist()

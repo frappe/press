@@ -33,7 +33,7 @@ def create_test_virtual_machine(
 			"machine_type": "r5.xlarge",
 			"disk_size": 100,
 			"cluster": cluster.name,
-			"aws_instance_id": "i-1234567890",
+			"instance_id": "i-1234567890",
 		}
 	).insert(ignore_if_duplicate=True)
 

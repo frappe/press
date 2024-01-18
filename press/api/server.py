@@ -128,6 +128,7 @@ def get(name):
 		"tags": frappe.get_all(
 			"Press Tag", {"team": server.team, "doctype_name": "Server"}, ["name", "tag"]
 		),
+		"type": "database-server" if server.meta.name == "Database Server" else "server",
 	}
 
 
@@ -380,7 +381,9 @@ def options():
 	if not get_current_team(get_doc=True).servers_enabled:
 		frappe.throw("Servers feature is not yet enabled on your account")
 	regions = frappe.get_all(
-		"Cluster", {"cloud_provider": "AWS EC2", "public": True}, ["name", "title", "image"]
+		"Cluster",
+		{"cloud_provider": ("!=", "Generic"), "public": True},
+		["name", "title", "image", "beta"],
 	)
 	return {
 		"regions": regions,

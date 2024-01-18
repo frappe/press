@@ -123,33 +123,12 @@
 			</template>
 		</Dialog>
 
-		<Dialog
-			:options="{
-				title: 'Transfer Site to Team',
-				actions: [
-					{
-						label: 'Submit',
-						variant: 'solid',
-						onClick: () =>
-							$resources.transferSite.submit({
-								team: emailOfChildTeam,
-								name: siteName
-							})
-					}
-				]
-			}"
-			v-model="showTransferSiteDialog"
-		>
-			<template #body-content>
-				<FormControl
-					label="Enter title of the child team"
-					v-model="emailOfChildTeam"
-					required
-				/>
+		<SiteTransferDialog :site="site" v-model="showTransferSiteDialog" />
 
-				<ErrorMessage class="mt-3" :message="$resources.transferSite.error" />
-			</template>
-		</Dialog>
+		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
+		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
+		<SiteChangeServerDialog :site="site" v-model="showChangeServerDialog" />
+		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
 	</div>
 </template>
 
@@ -158,6 +137,11 @@ import Tabs from '@/components/Tabs.vue';
 import { loginAsAdmin } from '@/controllers/loginAsAdmin';
 import SiteAlerts from './SiteAlerts.vue';
 import { notify } from '@/utils/toast';
+import SiteTransferDialog from './SiteTransferDialog.vue';
+import SiteChangeGroupDialog from './SiteChangeGroupDialog.vue';
+import SiteChangeRegionDialog from './SiteChangeRegionDialog.vue';
+import SiteVersionUpgradeDialog from './SiteVersionUpgradeDialog.vue';
+import SiteChangeServerDialog from './SiteChangeServerDialog.vue';
 
 export default {
 	name: 'Site',
@@ -169,7 +153,12 @@ export default {
 	props: ['siteName'],
 	components: {
 		SiteAlerts,
-		Tabs
+		Tabs,
+		SiteTransferDialog,
+		SiteChangeGroupDialog,
+		SiteChangeRegionDialog,
+		SiteChangeServerDialog,
+		SiteVersionUpgradeDialog
 	},
 	data() {
 		return {
@@ -177,7 +166,10 @@ export default {
 			reasonForAdminLogin: '',
 			showReasonForAdminLoginDialog: false,
 			showTransferSiteDialog: false,
-			emailOfChildTeam: null,
+			showChangeGroupDialog: false,
+			showChangeRegionDialog: false,
+			showChangeServerDialog: false,
+			showVersionUpgradeDialog: false,
 			errorMessage: ''
 		};
 	},
@@ -211,21 +203,6 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin(this.siteName);
-		},
-		transferSite() {
-			return {
-				url: 'press.api.site.change_team',
-				onSuccess() {
-					this.showTransferSiteDialog = false;
-					this.emailOfChildTeam = null;
-					notify({
-						title: 'Site Transferred to Child Team',
-						message: 'Site Transferred to Child Team',
-						color: 'green',
-						icon: 'check'
-					});
-				}
-			};
 		},
 		plan() {
 			return {
@@ -296,8 +273,8 @@ export default {
 			this.showReasonForAdminLoginDialog = false;
 		},
 		handlePlanChange() {
-			$resources.site.reload();
-			$resources.plan.reload();
+			this.$resources.site.reload();
+			this.$resources.plan.reload();
 		},
 		onActivateClick() {
 			this.$confirm({
@@ -385,12 +362,36 @@ export default {
 				{
 					label: 'Transfer Site',
 					icon: 'tool',
-					loading: this.$resources.transferSite.loading,
 					condition: () =>
 						this.site?.status === 'Active' && !this.$account.parent_team,
 					onClick: () => {
 						this.showTransferSiteDialog = true;
 					}
+				},
+				{
+					label: 'Change Bench',
+					icon: 'package',
+					condition: () => this.site?.status === 'Active',
+					onClick: () => (this.showChangeGroupDialog = true)
+				},
+				{
+					label: 'Change Region',
+					icon: 'globe',
+					condition: () => this.site?.status === 'Active',
+					onClick: () => (this.showChangeRegionDialog = true)
+				},
+				{
+					label: 'Upgrade Version',
+					icon: 'arrow-up',
+					condition: () => this.site?.status === 'Active',
+					onClick: () => (this.showVersionUpgradeDialog = true)
+				},
+				{
+					label: 'Change Server',
+					icon: 'server',
+					condition: () =>
+						this.site?.status === 'Active' && !this.site?.is_public,
+					onClick: () => (this.showChangeServerDialog = true)
 				}
 			];
 		},

@@ -96,7 +96,7 @@ export default {
 				},
 				onSuccess(r) {
 					this.fuse = new Fuse(r.options, {
-						keys: ['name'],
+						keys: ['doctype', 'name', 'title'],
 						threshold: 0.3
 					});
 					this.filteredList = r.options;

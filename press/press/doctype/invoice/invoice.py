@@ -27,6 +27,47 @@ DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
+	whitelisted_fields = [
+		"period_start",
+		"period_end",
+		"team",
+		"items",
+		"currency",
+		"type",
+		"payment_mode",
+		"total",
+		"total_before_discount",
+		"total_before_tax",
+		"partner_email",
+		"amount_due",
+		"amount_paid",
+		"docstatus",
+		"gst",
+		"applied_credits",
+	]
+
+	def get_doc(self, doc):
+		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
+
+	@frappe.whitelist()
+	def stripe_payment_url(self):
+		if not self.stripe_invoice_id:
+			return
+
+		stripe_link_expired = (
+			self.status == "Unpaid"
+			and frappe.utils.date_diff(frappe.utils.now(), self.due_date) > 30
+		)
+		if stripe_link_expired:
+			stripe = get_stripe()
+			stripe_invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			url = stripe_invoice.hosted_invoice_url
+		else:
+			url = self.stripe_invoice_url
+
+		frappe.response.location = url
+		frappe.response.type = "redirect"
+
 	def validate(self):
 		self.validate_team()
 		self.validate_dates()
@@ -74,6 +115,9 @@ class Invoice(Document):
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
+			if self.payment_mode == "Prepaid Credits" and self.stripe_invoice_id:
+				# void an existing stripe invoice if payment was done via credits
+				self.change_stripe_invoice_status("Paid")
 
 		self.update_item_descriptions()
 
@@ -115,7 +159,18 @@ class Invoice(Document):
 		if self.status == "Paid":
 			self.submit()
 
-			if frappe.db.count("Invoice", {"status": "Unpaid", "team": self.team}) < 2:
+			if (
+				frappe.db.count(
+					"Invoice",
+					{
+						"status": "Unpaid",
+						"team": self.team,
+						"type": "Subscription",
+						"docstatus": ("<", 2),
+					},
+				)
+				== 0
+			):
 				# unsuspend sites only if all invoices are paid
 				team = frappe.get_cached_doc("Team", self.team)
 				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
@@ -238,7 +293,7 @@ class Invoice(Document):
 		if self.period_start and self.period_end and self.is_new():
 			query = (
 				f"select `name` from `tabInvoice` where team = '{self.team}' and"
-				f" docstatus < 2 and ('{self.period_start}' between `period_start` and"
+				f" status = 'Draft' and ('{self.period_start}' between `period_start` and"
 				f" `period_end` or '{self.period_end}' between `period_start` and"
 				" `period_end`)"
 			)
@@ -703,12 +758,19 @@ class Invoice(Document):
 	@frappe.whitelist()
 	def fetch_invoice_pdf(self):
 		if self.frappe_invoice:
+			from urllib.parse import urlencode
+
 			client = self.get_frappeio_connection()
-			url = (
-				client.url + "/api/method/frappe.utils.print_format.download_pdf?"
-				f"doctype=Sales%20Invoice&name={self.frappe_invoice}&"
-				"format=Frappe%20Cloud&no_letterhead=0"
+			print_format = frappe.db.get_single_value("Press Settings", "print_format")
+			params = urlencode(
+				{
+					"doctype": "Sales Invoice",
+					"name": self.frappe_invoice,
+					"format": print_format,
+					"no_letterhead": 0,
+				}
 			)
+			url = client.url + "/api/method/frappe.utils.print_format.download_pdf?" + params
 
 			with client.session.get(url, headers=client.headers, stream=True) as r:
 				r.raise_for_status()

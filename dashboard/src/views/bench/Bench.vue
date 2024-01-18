@@ -21,7 +21,7 @@
 							v-if="bench?.status === 'Active'"
 							icon-left="plus"
 							label="New Site"
-							@click="$router.push(`/${this.bench.name}/new`)"
+							@click="validateCreateSite"
 						/>
 						<Dropdown :options="benchActions">
 							<template v-slot="{ open }">
@@ -103,6 +103,21 @@ export default {
 				url: 'press.api.bench.update_all_sites',
 				params: {
 					name: this.benchName
+				},
+				onSuccess() {
+					notify({
+						title: 'Switched Team',
+						message: `Switched to ${this.bench.team}`,
+						icon: 'check',
+						color: 'green'
+					});
+				},
+				onError(e) {
+					notify({
+						title: e,
+						icon: 'x',
+						color: 'red'
+					});
 				}
 			};
 		}
@@ -114,6 +129,18 @@ export default {
 		this.$socket.off('list_update', this.onSocketUpdate);
 	},
 	methods: {
+		validateCreateSite() {
+			if (this.$account.billing_info.has_unpaid_invoices) {
+				notify({
+					title:
+						'Please settle your unpaid invoices from the billing tab in order to create new sites',
+					icon: 'info',
+					color: 'yellow'
+				});
+			} else {
+				this.$router.push(`/${this.bench.name}/new`);
+			}
+		},
 		onSocketUpdate({ doctype, name }) {
 			if (doctype == 'Release Group' && name == this.bench.name) {
 				this.reloadBench();
@@ -192,16 +219,10 @@ export default {
 					condition: () => this.$account.user.user_type == 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.bench.team);
-						notify({
-							title: 'Switched Team',
-							message: `Switched to ${this.bench.team}`,
-							icon: 'check',
-							color: 'green'
-						});
 					}
 				},
 				{
-					label: 'Update All Sites to Latest Version',
+					label: 'Update All Sites',
 					icon: 'arrow-up-circle',
 					condition: () => this.bench.status == 'Active' && !this.bench.public,
 					onClick: async () => {
@@ -218,7 +239,7 @@ export default {
 				{
 					label: 'Drop Bench',
 					icon: 'trash',
-					condition: () => this.bench.status == 'Active' && !this.bench.public,
+					condition: () => !this.bench.public,
 					onClick: () => (this.showDropBenchDialog = true)
 				}
 			];

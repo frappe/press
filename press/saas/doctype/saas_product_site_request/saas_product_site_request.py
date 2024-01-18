@@ -7,15 +7,39 @@ from press.saas.doctype.saas_product.pooling import SitePool
 
 
 class SaaSProductSiteRequest(Document):
-	def create_site(self, subdomain):
+	whitelisted_fields = ["site", "status", "saas_product"]
+
+	def get_doc(self, doc):
+		saas_product = frappe.db.get_value(
+			"SaaS Product",
+			{"name": self.saas_product},
+			["name", "title", "logo", "domain", "description"],
+			as_dict=True,
+		)
+		saas_product.description = frappe.utils.md_to_html(saas_product.description)
+		doc.saas_product = saas_product
+		return doc
+
+	@frappe.whitelist()
+	def create_site(self, subdomain, plan):
 		pool = SitePool(self.saas_product)
-		site = pool.create_or_rename(subdomain, self.team)
+		site = pool.create_or_rename(subdomain, self.team, self.account_request)
+		site.create_subscription(plan)
+		site.reload()
+		site.trial_end_date = frappe.utils.add_days(None, 14)
+		site.save(ignore_permissions=True)
 		self.site = site.name
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
-		return self.get_progress()
 
-	def get_progress(self):
+	@frappe.whitelist()
+	def get_login_sid(self):
+		email = frappe.db.get_value("Account Request", self.account_request, "email")
+		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
+
+	@frappe.whitelist()
+	def get_progress(self, current_progress=None):
+		current_progress = current_progress or 0
 		job_name, status = frappe.db.get_value(
 			"Agent Job",
 			{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
@@ -34,8 +58,10 @@ class SaaSProductSiteRequest(Document):
 			)
 			done = [s for s in steps if s.status in ("Success", "Skipped", "Failure")]
 			progress = len(done) / len(steps) * 100
+			if progress <= current_progress:
+				progress = current_progress + 1
 			return {"progress": progress}
 		elif status in ("Failure", "Undelivered"):
-			return {"progress": 0, "error": True}
+			return {"progress": current_progress, "error": True}
 
-		return {"progress": 0}
+		return {"progress": current_progress + 1}

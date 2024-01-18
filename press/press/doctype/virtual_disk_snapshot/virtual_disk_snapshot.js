@@ -15,9 +15,9 @@ frappe.ui.form.on('Virtual Disk Snapshot', {
 				__('Actions'),
 			);
 		});
-		if (frm.doc.aws_snapshot_id) {
+		if (frm.doc.snapshot_id) {
 			frm.add_web_link(
-				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#SnapshotDetails:snapshotId=${frm.doc.aws_snapshot_id}`,
+				`https://${frm.doc.region}.console.aws.amazon.com/ec2/v2/home?region=${frm.doc.region}#SnapshotDetails:snapshotId=${frm.doc.snapshot_id}`,
 				__('Visit AWS Dashboard'),
 			);
 		}

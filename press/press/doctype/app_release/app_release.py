@@ -6,12 +6,31 @@ import os
 import shlex
 import shutil
 import subprocess
-import frappe
+from datetime import datetime
 
+import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
-from press.utils import log_error
 from press.press.doctype.app_source.app_source import AppSource
+from press.utils import log_error
+from typing import TypedDict, Optional
+
+
+AppReleaseDict = TypedDict(
+	"AppReleaseDict",
+	name=str,
+	source=str,
+	hash=str,
+	cloned=int,
+	clone_directory=str,
+	timestamp=Optional[datetime],
+	creation=datetime,
+)
+AppReleasePair = TypedDict(
+	"AppReleasePair",
+	old=AppReleaseDict,
+	new=AppReleaseDict,
+)
 
 
 class AppRelease(Document):
@@ -53,7 +72,8 @@ class AppRelease(Document):
 		try:
 			if self.cloned:
 				return
-			self._prepare_clone_directory()
+			self._set_prepared_clone_directory()
+			self._set_code_server_url()
 			self._clone_repo()
 			self.cloned = True
 			self.save(ignore_permissions=True)
@@ -62,9 +82,7 @@ class AppRelease(Document):
 
 	def run(self, command):
 		try:
-			return subprocess.check_output(
-				shlex.split(command), stderr=subprocess.STDOUT, cwd=self.clone_directory
-			).decode()
+			return run(command, self.clone_directory)
 		except Exception as e:
 			self.cleanup()
 			log_error("App Release Command Exception", command=command, output=e.output.decode())
@@ -76,26 +94,11 @@ class AppRelease(Document):
 			clone_directory, self.app, self.source, self.hash[:10]
 		)
 
-	def _prepare_clone_directory(self):
-		clone_directory = frappe.db.get_single_value("Press Settings", "clone_directory")
+	def _set_prepared_clone_directory(self):
+		self.clone_directory = get_prepared_clone_directory(self.app, self.source, self.hash)
+
+	def _set_code_server_url(self) -> None:
 		code_server = frappe.db.get_single_value("Press Settings", "code_server")
-		if not os.path.exists(clone_directory):
-			os.mkdir(clone_directory)
-
-		app_directory = os.path.join(clone_directory, self.app)
-		if not os.path.exists(app_directory):
-			os.mkdir(app_directory)
-
-		source_directory = os.path.join(app_directory, self.source)
-		if not os.path.exists(source_directory):
-			os.mkdir(source_directory)
-
-		self.clone_directory = os.path.join(
-			clone_directory, self.app, self.source, self.hash[:10]
-		)
-		if not os.path.exists(self.clone_directory):
-			os.mkdir(self.clone_directory)
-
 		code_server_url = f"{code_server}/?folder=/home/coder/project/{self.app}/{self.source}/{self.hash[:10]}"
 		self.code_server_url = code_server_url
 
@@ -259,3 +262,108 @@ def has_permission(doc, ptype, user):
 		return True
 
 	return False
+
+
+def get_prepared_clone_directory(app: str, source: str, hash: str) -> str:
+	clone_directory: str = frappe.db.get_single_value("Press Settings", "clone_directory")
+	if not os.path.exists(clone_directory):
+		os.mkdir(clone_directory)
+
+	app_directory = os.path.join(clone_directory, app)
+	if not os.path.exists(app_directory):
+		os.mkdir(app_directory)
+
+	source_directory = os.path.join(app_directory, source)
+	if not os.path.exists(source_directory):
+		os.mkdir(source_directory)
+
+	clone_directory = os.path.join(clone_directory, app, source, hash[:10])
+	if not os.path.exists(clone_directory):
+		os.mkdir(clone_directory)
+
+	return clone_directory
+
+
+def get_changed_files_between_hashes(
+	source: str, deployed_hash: str, update_hash: str
+) -> Optional[tuple[list[str], AppReleasePair]]:
+	"""
+	Checks diff between two App Releases, if they have not been cloned
+	the App Releases are cloned this is because the commit needs to be
+	fetched to diff since it happens locally.
+
+	Note: order of passed hashes do not matter.
+	"""
+	deployed_release = get_release_by_source_and_hash(source, deployed_hash)
+	update_release = get_release_by_source_and_hash(source, update_hash)
+	is_valid = is_update_after_deployed(update_release, deployed_release)
+	if not is_valid:
+		return None
+
+	for release in [deployed_release, update_release]:
+		if release["cloned"]:
+			continue
+
+		release_doc: AppRelease = frappe.get_doc("App Release", release["name"])
+		release_doc._clone()
+
+	cwd = deployed_release["clone_directory"]
+
+	"""
+	Setting remote and fetching alters .git contents, hence it has to be
+	restored to before the commands had been run. Without this layer will
+	be rebuilt.
+	"""
+
+	# Save repo state
+	run("cp -r .git .git.bak", cwd)
+
+	# Calculate diff against local remote
+	run(f"git remote add -f diff_temp {update_release['clone_directory']}", cwd)
+	run(f"git fetch --depth 1 diff_temp {update_hash}", cwd)
+	diff = run(f"git diff --name-only {deployed_hash} {update_hash}", cwd)
+
+	# Restore repo state
+	run("rm -rf .git", cwd)
+	run("mv .git.bak .git", cwd)
+
+	return diff.splitlines(), dict(old=deployed_release, new=update_release)
+
+
+def get_release_by_source_and_hash(source: str, hash: str) -> AppReleaseDict:
+	releases: list[AppReleaseDict] = frappe.get_all(
+		"App Release",
+		filters={"hash": hash, "source": source},
+		fields=[
+			"name",
+			"source",
+			"hash",
+			"cloned",
+			"clone_directory",
+			"timestamp",
+			"creation",
+		],
+		limit=1,
+	)
+
+	if not releases:
+		frappe.throw(f"App Release not found with source: {source} and hash: {hash}")
+
+	return releases[0]
+
+
+def is_update_after_deployed(
+	update_release: AppReleaseDict, deployed_release: AppReleaseDict
+) -> bool:
+	update_timestamp = update_release["timestamp"]
+	deployed_timestamp = deployed_release["timestamp"]
+	if update_timestamp and deployed_timestamp:
+		return update_timestamp > deployed_timestamp
+
+	return update_release["creation"] > deployed_release["creation"]
+
+
+def run(command, cwd):
+	return subprocess.check_output(
+		shlex.split(command), stderr=subprocess.STDOUT, cwd=cwd
+	).decode()

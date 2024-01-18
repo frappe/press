@@ -1,12 +1,10 @@
 <template>
-	<div class="flex items-center justify-center">
-		<div class="flex flex-col items-center">
-			<img class="md:w-2/5 w-fit" src="../../assets/404.png" />
-			<h2 class="mt-5 text-5xl font-bold text-gray-900">Not Found</h2>
-			<h3 class="text-lg font-semibold text-gray-700">
-				Maybe someone gave you a wrong address?
-			</h3>
-		</div>
+	<div class="flex h-screen flex-col items-center justify-center p-5">
+		<div class="text-[4rem] text-gray-900">404</div>
+		<div class="text-base text-gray-600">Page not found</div>
+		<Button class="mt-4" route="/sites" variant="outline">
+			Go to Site list
+		</Button>
 	</div>
 </template>
 

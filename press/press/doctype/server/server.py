@@ -39,6 +39,12 @@ class BaseServer(Document):
 		if self.doctype == "Database Server" and not self.self_hosted_mariadb_server:
 			self.self_hosted_mariadb_server = self.private_ip
 
+		if not self.hostname_abbreviation:
+			self._set_hostname_abbreviation()
+
+	def _set_hostname_abbreviation(self):
+		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
+
 	def after_insert(self):
 		if self.ip:
 			if (
@@ -129,6 +135,8 @@ class BaseServer(Document):
 				)
 			elif self.provider == "AWS EC2":
 				ansible = Ansible(playbook="aws.yml", server=self, user="ubuntu")
+			elif self.provider == "OCI":
+				ansible = Ansible(playbook="oci.yml", server=self, user="ubuntu")
 
 			ansible.run()
 			self.reload()
@@ -254,7 +262,7 @@ class BaseServer(Document):
 					server=self,
 					user="ubuntu",
 				)
-			elif self.provider == "AWS EC2":
+			elif self.provider in ("AWS EC2", "OCI"):
 				ansible = Ansible(playbook="ping.yml", server=self, user="ubuntu")
 			ansible.run()
 		except Exception:
@@ -277,7 +285,7 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def extend_ec2_volume(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
@@ -287,14 +295,14 @@ class BaseServer(Document):
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
 		self.extend_ec2_volume()
 
 	def update_virtual_machine_name(self):
-		if self.provider != "AWS EC2":
+		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		return virtual_machine.update_name_tag(self.name)
@@ -487,6 +495,22 @@ class BaseServer(Document):
 			log_error("MySQLdump Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def set_swappiness(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
+		)
+
+	def _set_swappiness(self):
+		try:
+			ansible = Ansible(
+				playbook="swappiness.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Swappiness Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def update_tls_certificate(self):
 		from press.press.doctype.tls_certificate.tls_certificate import (
 			update_server_tls_certifcate,
@@ -523,8 +547,28 @@ class BaseServer(Document):
 		except Exception:
 			log_error("Set SSH Session Logging Exception", server=self.as_dict())
 
+	@property
+	def real_ram(self):
+		"""Ram detected by OS after h/w reservation"""
+		return 0.972 * self.ram - 218
+
+	@frappe.whitelist()
+	def reboot_with_serial_console(self):
+		if self.provider in ("AWS EC2",):
+			console = frappe.new_doc("Serial Console Log")
+			console.server_type = self.doctype
+			console.server = self.name
+			console.virtual_machine = self.virtual_machine
+			console.save()
+			console.reload()
+			console.run_reboot()
+
 
 class Server(BaseServer):
+
+	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
+	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers
+
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
 		if not self.is_new() and self.has_value_changed("database_server"):
@@ -827,7 +871,7 @@ class Server(BaseServer):
 
 	@frappe.whitelist()
 	def reboot(self):
-		if self.provider == "AWS EC2":
+		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 
@@ -917,18 +961,23 @@ class Server(BaseServer):
 	@cached_property
 	def max_gunicorn_workers(self) -> int:
 		usable_ram_for_gunicorn = 0.6 * self.usable_ram  # 60% of usable ram
-		return usable_ram_for_gunicorn / 150  # avg ram usage of 1 gunicorn worker
+		return usable_ram_for_gunicorn / self.GUNICORN_MEMORY
 
 	@cached_property
 	def max_bg_workers(self) -> int:
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
-		return usable_ram_for_bg / (3 * 80)  # avg ram usage of 3 sets of bg workers
+		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
 	def _auto_scale_workers_new(self):
 		for bench in self.bench_workloads.keys():
 			try:
 				bench.allocate_workers(
-					self.workload, self.max_gunicorn_workers, self.max_bg_workers
+					self.workload,
+					self.max_gunicorn_workers,
+					self.max_bg_workers,
+					self.set_bench_memory_limits,
+					self.GUNICORN_MEMORY,
+					self.BACKGROUND_JOB_MEMORY,
 				)
 				frappe.db.commit()
 			except Exception:
@@ -975,6 +1024,43 @@ class Server(BaseServer):
 				)
 				bench.save()
 
+	@frappe.whitelist()
+	def reset_sites_usage(self):
+		sites = frappe.get_all(
+			"Site",
+			filters={"server": self.name, "status": "Active"},
+			pluck="name",
+		)
+		for site_name in sites:
+			site = frappe.get_doc("Site", site_name)
+			site.reset_site_usage()
+
+	def install_earlyoom(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_install_earlyoom",
+		)
+
+	def _install_earlyoom(self):
+		try:
+			ansible = Ansible(
+				playbook="server_memory_limits.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Earlyoom Install Exception", server=self.as_dict())
+
+	@property
+	def is_shared(self) -> bool:
+		public_groups = frappe.get_all("Release Group", {"public": True}, pluck="name")
+		return bool(
+			frappe.db.exists(
+				"Release Group Server", {"server": self.name, "parent": ("in", public_groups)}
+			)
+		)
+
 
 def scale_workers():
 	servers = frappe.get_all("Server", {"status": "Active", "is_primary": True})
@@ -1002,3 +1088,14 @@ def cleanup_unused_files():
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Server")
+
+
+def get_hostname_abbreviation(hostname):
+	hostname_parts = hostname.split("-")
+
+	abbr = hostname_parts[0]
+
+	for part in hostname_parts[1:]:
+		abbr += part[0]
+
+	return abbr

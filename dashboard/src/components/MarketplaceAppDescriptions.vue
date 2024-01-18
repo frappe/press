@@ -88,7 +88,6 @@
 		</div>
 		<template #actions>
 			<Button
-				v-if="app.status == 'Draft'"
 				:loading="$resources.fetchReadme.loading"
 				@click="$resources.fetchReadme.submit()"
 			>

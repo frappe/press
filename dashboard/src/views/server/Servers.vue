@@ -271,7 +271,10 @@ export default {
 				return [];
 			}
 
-			let servers = this.$resources.allServers.data;
+			let servers = this.$resources.allServers.data.filter(server =>
+				this.$account.hasPermission(server.name, '', true)
+			);
+
 			if (this.searchTerm)
 				servers = servers.filter(
 					server =>

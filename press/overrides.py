@@ -8,6 +8,7 @@ from frappe.utils import cint
 from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
+from press.utils import _get_current_team, _system_user
 
 
 @frappe.whitelist(allow_guest=True)
@@ -65,9 +66,22 @@ def on_session_creation():
 	):
 		return
 
-	team = get_current_team(get_doc=True)
-	route = team.get_route_on_login()
-	frappe.local.response.update({"dashboard_route": route})
+	try:
+		team = get_current_team(get_doc=True)
+		route = team.get_route_on_login()
+		frappe.local.response.update({"dashboard_route": route})
+	except Exception:
+		pass
+
+
+def before_job():
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
+
+
+def before_request():
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
 
 
 def update_website_context(context):

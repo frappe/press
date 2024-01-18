@@ -11,7 +11,7 @@
 							icon-left="plus"
 							class="ml-2"
 							label="Create"
-							@click="showBillingDialog"
+							@click="validateCreateSite"
 						>
 						</Button>
 					</template>
@@ -42,7 +42,14 @@
 						</strong>
 						more in credits.
 						<template #actions>
-							<Button @click="showPrepaidCreditsDialog = true" variant="solid">
+							<Button
+								@click="
+									$account.team.billing_address
+										? (showPrepaidCreditsDialog = true)
+										: (showAddressDialog = true)
+								"
+								variant="solid"
+							>
 								Add Credits
 							</Button>
 						</template>
@@ -58,6 +65,16 @@
 							</router-link>
 						</template>
 					</Alert>
+
+					<UpdateBillingDetails
+						v-if="showAddressDialog"
+						v-model="showAddressDialog"
+						@updated="
+							showAddressDialog = false;
+							showPrepaidCreditsDialog = true;
+							$resources.billingDetails.reload();
+						"
+					/>
 
 					<PrepaidCreditsDialog
 						v-if="showPrepaidCreditsDialog"
@@ -96,9 +113,9 @@
 					<Table
 						:columns="[
 							{ label: 'Site Name', name: 'name', width: 2 },
-							{ label: 'Status', name: 'status' },
+							{ label: 'Status', name: 'status', width: 1 },
 							{ label: 'Region', name: 'region', width: 0.5 },
-							{ label: 'Tags', name: 'tags' },
+							{ label: 'Tags', name: 'tags', width: 1 },
 							{ label: 'Plan', name: 'plan', width: 1.5 },
 							{ label: '', name: 'actions', width: 0.5 }
 						]"
@@ -280,7 +297,10 @@ export default {
 		StripeCard: defineAsyncComponent(() =>
 			import('@/components/StripeCard.vue')
 		),
-		AlertBillingInformation
+		AlertBillingInformation,
+		UpdateBillingDetails: defineAsyncComponent(() =>
+			import('@/components/UpdateBillingDetails.vue')
+		)
 	},
 	data() {
 		return {
@@ -292,7 +312,8 @@ export default {
 			showReasonForAdminLoginDialog: false,
 			siteForLogin: null,
 			site_status: 'All',
-			site_tag: ''
+			site_tag: '',
+			showAddressDialog: false
 		};
 	},
 	resources: {
@@ -318,7 +339,8 @@ export default {
 		},
 		loginAsAdmin() {
 			return loginAsAdmin('placeholderSite'); // So that RM does not yell at first load
-		}
+		},
+		billingDetails: 'press.api.billing.details'
 	},
 	mounted() {
 		this.$socket.on('agent_job_update', this.onAgentJobUpdate);
@@ -329,9 +351,16 @@ export default {
 		this.$socket.off('list_update', this.onSiteUpdate);
 	},
 	methods: {
-		showBillingDialog() {
+		validateCreateSite() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
+			} else if (this.$account.billing_info.has_unpaid_invoices) {
+				notify({
+					title:
+						'Please settle your unpaid invoices from the billing tab in order to create new sites',
+					icon: 'info',
+					color: 'yellow'
+				});
 			} else {
 				this.$router.replace('/sites/new');
 			}

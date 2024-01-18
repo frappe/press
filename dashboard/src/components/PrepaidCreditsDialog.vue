@@ -20,13 +20,23 @@
 			/>
 
 			<div v-if="paymentGateway === 'razorpay'">
-				<Input
+				<FormControl
 					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					class="mb-2"
 					v-model.number="creditsToBuy"
 					name="amount"
 					autocomplete="off"
 					type="number"
 					:min="minimumAmount"
+				/>
+
+				<FormControl
+					label="Total Amount + GST(if applicable)"
+					disabled
+					v-model="total"
+					name="total"
+					autocomplete="off"
+					type="number"
 				/>
 
 				<p class="mt-3 text-xs">
@@ -94,7 +104,8 @@ export default {
 	data() {
 		return {
 			paymentGateway: null,
-			creditsToBuy: 0
+			creditsToBuy: this.minimumAmount,
+			total: this.minimumAmount
 		};
 	},
 	mounted() {
@@ -111,6 +122,13 @@ export default {
 			!this.$account.team.razorpay_enabled
 		) {
 			this.paymentGateway = 'stripe';
+		}
+
+		this.updateTotal();
+	},
+	watch: {
+		creditsToBuy() {
+			this.updateTotal();
 		}
 	},
 	props: {
@@ -158,6 +176,18 @@ export default {
 		}
 	},
 	methods: {
+		updateTotal() {
+			if (this.$account.team.currency === 'INR') {
+				this.total = Number(
+					(
+						this.creditsToBuy +
+						this.creditsToBuy * this.$account.billing_info.gst_percentage
+					).toFixed(2)
+				);
+			} else {
+				this.total = this.creditsToBuy;
+			}
+		},
 		buyCreditsWithRazorpay() {
 			this.$resources.createRazorpayOrder.submit();
 		},
@@ -189,11 +219,6 @@ export default {
 
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
-		}
-	},
-	watch: {
-		minimumAmount(amt) {
-			console.log(amt);
 		}
 	}
 };

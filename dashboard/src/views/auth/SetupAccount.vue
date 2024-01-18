@@ -62,7 +62,7 @@
 					<label class="text-base text-gray-900">
 						<FormControl type="checkbox" v-model="termsAccepted" />
 						By clicking on
-						<span>{{ isInvitation ? 'Accept' : 'Submit' }}</span
+						<span>{{ isInvitation ? 'Accept' : 'Create account' }}</span
 						>, you accept our
 						<Link href="https://frappecloud.com/terms" target="_blank"
 							>Terms of Service </Link

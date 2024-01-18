@@ -7,14 +7,14 @@
 						class="flex w-[15rem] items-center rounded-md px-2 py-2 text-left"
 						:class="open ? 'bg-white shadow-sm' : 'hover:bg-gray-200'"
 					>
-						<FCLogo class="w-8 h-8 rounded" />
+						<FCLogo class="h-8 w-8 rounded" />
 						<div class="ml-2 flex flex-col">
-							<div class="text-base font-medium text-gray-900 leading-none">
+							<div class="text-base font-medium leading-none text-gray-900">
 								Frappe Cloud
 							</div>
 							<div
 								v-if="$account.user"
-								class="mt-1 hidden text-sm text-gray-700 sm:inline leading-none"
+								class="mt-1 hidden text-sm leading-none text-gray-700 sm:inline"
 							>
 								{{ $account.user.full_name }}
 							</div>
@@ -27,23 +27,55 @@
 				</template>
 			</Dropdown>
 			<div class="mt-2 flex flex-col space-y-0.5">
-				<button
-					v-if="$account.number_of_sites > 3"
-					class="rounded text-gray-900 hover:bg-gray-100"
-					@click="show = true"
-				>
-					<div class="flex w-full items-center px-2 py-1">
-						<span class="mr-1.5">
-							<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
-						</span>
-						<span class="text-sm">Search</span>
-						<span class="ml-auto text-sm text-gray-500">
-							<template v-if="$platform === 'mac'">⌘K</template>
-							<template v-else>Ctrl+K</template>
-						</span>
-					</div>
-				</button>
-				<CommandPalette :show="show" @close="show = false" />
+				<div class="mb-2 flex flex-col space-y-0.5">
+					<button
+						v-if="$account.number_of_sites > 3"
+						class="rounded text-gray-900 hover:bg-gray-100"
+						@click="show = true"
+					>
+						<div class="flex w-full items-center px-2 py-1">
+							<span class="mr-1.5">
+								<FeatherIcon name="search" class="h-5 w-5 text-gray-700" />
+							</span>
+							<span class="text-sm">Search</span>
+							<span class="ml-auto text-sm text-gray-500">
+								<template v-if="$platform === 'mac'">⌘K</template>
+								<template v-else>Ctrl+K</template>
+							</span>
+						</div>
+					</button>
+					<button
+						class="rounded text-gray-900 hover:bg-gray-100"
+						@click="this.$router.push({ name: 'Notifications' })"
+					>
+						<div
+							class="flex w-full items-center rounded-md px-2 py-1"
+							:class="{
+								'bg-white shadow-sm':
+									this.$route.fullPath.startsWith('/notifications')
+							}"
+						>
+							<span class="mr-1.5">
+								<FeatherIcon name="inbox" class="h-4.5 w-4.5 text-gray-700" />
+							</span>
+							<span class="text-sm">Notifications </span>
+							<span
+								v-if="unreadNotificationsCount > 0"
+								class="ml-auto rounded bg-gray-400 px-1.5 py-0.5 text-xs text-white"
+							>
+								{{
+									unreadNotificationsCount > 99
+										? '99+'
+										: unreadNotificationsCount
+								}}
+							</span>
+						</div>
+					</button>
+				</div>
+				<CommandPalette
+					:show="showCommandPalette"
+					@close="showCommandPalette = false"
+				/>
 				<router-link
 					v-for="item in items"
 					:key="item.label"
@@ -77,21 +109,20 @@
 <script>
 import { FCIcons } from '@/components/icons';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
-import FrappeCloudLogo from '@/components/icons/FrappeCloudLogo.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
+import { unreadNotificationsCount } from '@/data/notifications';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
-		FrappeCloudLogo,
 		SwitchTeamDialog,
 		CommandPalette
 	},
 	data() {
 		return {
-			show: false,
+			showCommandPalette: false,
 			showTeamSwitcher: false,
 			dropdownItems: [
 				{
@@ -120,15 +151,26 @@ export default {
 	mounted() {
 		window.addEventListener('keydown', e => {
 			if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
-				this.show = !this.show;
+				this.showCommandPalette = !this.showCommandPalette;
 				e.preventDefault();
 			}
 			if (e.key === 'Escape') {
-				this.show = false;
+				this.showCommandPalette = false;
 			}
 		});
+
+		this.$socket.on('press_notification', data => {
+			if (data.team === this.$account.team.name) {
+				unreadNotificationsCount.setData(data => data + 1);
+			}
+		});
+
+		unreadNotificationsCount.fetch();
 	},
 	computed: {
+		unreadNotificationsCount() {
+			return unreadNotificationsCount.data;
+		},
 		items() {
 			return [
 				{
@@ -187,8 +229,13 @@ export default {
 				{
 					label: 'Billing',
 					route: '/billing',
-					highlight: () => this.$route.name === 'BillingScreen',
-					icon: FCIcons.BillingIcon
+					highlight: () => {
+						return this.$route.fullPath.startsWith('/billing');
+					},
+					icon: FCIcons.BillingIcon,
+					condition: () =>
+						$account.user?.name === $account.team?.user ||
+						$account.user?.user_type === 'System User'
 				},
 				{
 					label: 'Settings',

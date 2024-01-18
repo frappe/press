@@ -57,6 +57,11 @@ const routes = [
 		props: true
 	},
 	{
+		path: '/notifications',
+		name: 'Notifications',
+		component: () => import('../views/notifications/Notifications.vue')
+	},
+	{
 		path: '/benches',
 		name: 'BenchesScreen',
 		component: () => import('../views/bench/Benches.vue')
@@ -93,11 +98,6 @@ const routes = [
 				props: true
 			},
 			{
-				name: 'BenchOverview',
-				path: 'overview',
-				component: () => import('../views/bench/BenchOverview.vue')
-			},
-			{
 				path: 'apps',
 				component: () => import('../views/bench/BenchApps.vue'),
 				props: true
@@ -108,6 +108,7 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'BenchDeploys',
 				path: 'deploys/:candidateName?',
 				component: () => import('../views/bench/BenchDeploys.vue'),
 				props: true
@@ -118,6 +119,7 @@ const routes = [
 				props: true
 			},
 			{
+				name: 'BenchJobs',
 				path: 'jobs/:jobName?',
 				component: () => import('../views/bench/BenchJobs.vue'),
 				props: true
@@ -200,6 +202,7 @@ const routes = [
 				component: () => import('../views/site/SiteConsole.vue')
 			},
 			{
+				name: 'SiteJobs',
 				path: 'jobs/:jobName?',
 				component: () => import('../views/site/SiteJobs.vue'),
 				props: true
@@ -457,10 +460,35 @@ const routes = [
 		}
 	},
 	{
-		name: 'BillingScreen',
 		path: '/billing/:invoiceName?',
+		name: 'BillingScreen',
 		props: true,
-		component: () => import('../views/billing/AccountBilling.vue')
+		redirect: { name: 'BillingOverview' },
+		component: () => import('../views/billing/AccountBilling.vue'),
+		children: [
+			{
+				name: 'BillingOverview',
+				path: 'overview',
+				component: () => import('../views/billing/BillingOverview.vue')
+			},
+			{
+				name: 'Payment Methods',
+				path: 'payment',
+				component: () => import('../views/billing/PaymentMethods.vue')
+			},
+			{
+				name: 'Invoices',
+				path: 'invoices',
+				props: true,
+				component: () => import('../views/billing/AccountBillingPayments.vue')
+			},
+			{
+				name: 'Credit Balance',
+				path: 'credit-balance',
+				component: () =>
+					import('../views/billing/AccountBillingCreditBalance.vue')
+			}
+		]
 	},
 	{
 		path: '/settings',

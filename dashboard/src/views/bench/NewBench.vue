@@ -234,7 +234,8 @@ export default {
 			return clusters.map(d => ({
 				label: d.title,
 				value: d.name,
-				image: d.image
+				image: d.image,
+				beta: d.beta
 			}));
 		}
 	}

@@ -65,7 +65,10 @@ class AccountRequest(Document):
 		subject = "Verify your email for Frappe"
 		args = {}
 
-		if self.saas_product:
+		custom_template = self.saas_app and frappe.db.get_value(
+			"Marketplace App", self.saas_app, "custom_verify_template"
+		)
+		if self.saas_product or custom_template:
 			template = "saas_verify_account"
 		else:
 			template = "verify_account"
@@ -98,8 +101,10 @@ class AccountRequest(Document):
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
-
-		return get_url(f"/dashboard/setup-account/{self.request_key}")
+		dashboard_url = "dashboard2" if self.new_signup_flow else "dashboard"
+		return get_url(
+			f"/{dashboard_url}/setup-account/{self.request_key}"
+		)
 
 	@property
 	def full_name(self):

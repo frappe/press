@@ -406,9 +406,19 @@ export default {
 
 		dropdownItems(app) {
 			return [
-				app.app != 'frappe' && {
+				{
+					label: 'View in Desk',
+					onClick: () =>
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/app/${app.name}`,
+							'_blank'
+						),
+					condition: () => this.$account.user.user_type == 'System User'
+				},
+				{
 					label: 'Remove App',
-					onClick: () => this.confirmRemoveApp(app)
+					onClick: () => this.confirmRemoveApp(app),
+					condition: () => app.app != 'frappe'
 				},
 				{
 					label: 'Visit Repo',
@@ -421,7 +431,8 @@ export default {
 		confirmRemoveApp(app) {
 			this.$confirm({
 				title: 'Remove App',
-				message: `Are you sure you want to uninstall app ${app.title} from site?`,
+				message: `Are you sure you want to uninstall app ${app.title} from <b>site</b>?<br><br>
+				<b>All doctypes and modules pertaining to this app will be removed.</b>`,
 				actionLabel: 'Remove App',
 				actionColor: 'red',
 				action: closeDialog => {
