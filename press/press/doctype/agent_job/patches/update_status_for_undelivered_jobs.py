@@ -4,7 +4,6 @@ from frappe.utils import now_datetime, add_to_date
 
 def execute():
 	one_minute_ago = add_to_date(now_datetime(), minutes=-1)
-	print(one_minute_ago)
 
 	frappe.db.sql(
 		"""
