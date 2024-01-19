@@ -12,10 +12,12 @@
   "section_break_rnxb",
   "confirmation_threshold_day",
   "call_threshold_day",
+  "call_repeat_interval_day",
   "phone_call_alerts",
   "column_break_voyg",
   "confirmation_threshold_night",
   "call_threshold_night",
+  "call_repeat_interval_night",
   "enable_incident_detection"
  ],
  "fields": [
@@ -74,12 +76,24 @@
    "fieldtype": "Duration",
    "hide_days": 1,
    "label": "Call Threshold Night"
+  },
+  {
+   "fieldname": "call_repeat_interval_day",
+   "fieldtype": "Duration",
+   "hide_days": 1,
+   "label": "Call Repeat Interval Day"
+  },
+  {
+   "fieldname": "call_repeat_interval_night",
+   "fieldtype": "Duration",
+   "hide_days": 1,
+   "label": "Call Repeat Interval Night"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-01-19 17:09:50.249574",
+ "modified": "2024-01-19 17:38:00.616147",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident Settings",

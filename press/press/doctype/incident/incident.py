@@ -26,23 +26,24 @@ INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere 
 INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
 DAY_HOURS = range(9, 18)
-CONFIRMATION_THRESHOLD_SECONDS_DAY = 300  # 5 minutes;time after which humans are called
+CONFIRMATION_THRESHOLD_SECONDS_DAY = (
+	5 * 60
+)  # 5 minutes;time after which humans are called
 CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
-	600  # 10 minutes; time after which humans are called
+	10 * 60  # 10 minutes; time after which humans are called
 )
 CALL_THRESHOLD_SECONDS_DAY = 0  # 0 minutes;time after which humans are called
 CALL_THRESHOLD_SECONDS_NIGHT = (
-	900  # 15 minutes; time after confirmation after which humans are called
+	15 * 60  # 15 minutes; time after confirmation after which humans are called
 )
+CALL_REPEAT_INTERVAL_DAY = 15 * 60
+CALL_REPEAT_INTERVAL_NIGHT = 20 * 60
 PAST_ALERT_COVER_MINUTES = (
 	15  # to cover alerts that fired before/triggered the incident
 )
 
 
 class Incident(WebsiteGenerator):
-	def on_update(self):
-		pass
-
 	def validate(self):
 		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
 			self.phone_call = True
@@ -114,6 +115,7 @@ class Incident(WebsiteGenerator):
 			else:
 				if status in ["in-progress", "completed"]:  # call was picked up
 					acknowledged = True
+					self.status = "Acknowledged"
 					break
 			finally:
 				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
@@ -221,6 +223,20 @@ where
 			self.status = "Resolved"
 		self.save()
 
+	@property
+	def time_to_call_for_help(self) -> bool:
+		return self.status == "Confirmed" and self.creation <= frappe.utils.add_to_date(
+			frappe.utils.now_datetime(),
+			seconds=-(get_confirmation_threshold_duration() + get_call_threshold_duration()),
+		)
+
+	@property
+	def time_to_call_for_help_again(self) -> bool:
+		return self.status == "Acknowledged" and self.modified <= frappe.utils.add_to_date(
+			frappe.utils.now_datetime(),
+			seconds=-(get_call_repeat_interval() + get_call_threshold_duration()),
+		)
+
 
 def get_confirmation_threshold_duration():
 	if frappe.utils.now_datetime().hour in DAY_HOURS:
@@ -246,21 +262,16 @@ def get_call_threshold_duration():
 	)
 
 
-def call_for_help():
-	ongoing_incidents = frappe.get_all(
-		"Incident",
-		filters={
-			"status": "Confirmed",
-		},
-		fields=["name", "creation"],
+def get_call_repeat_interval():
+	if frappe.utils.now_datetime().hour in DAY_HOURS:
+		return (
+			cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_day"))
+			or CALL_REPEAT_INTERVAL_DAY
+		)
+	return (
+		cint(frappe.db.get_value("Incident Settings", None, "call_repeat_interval_night"))
+		or CALL_REPEAT_INTERVAL_NIGHT
 	)
-	for incident in ongoing_incidents:
-		if incident.creation <= frappe.utils.add_to_date(
-			frappe.utils.now_datetime(),
-			seconds=-(get_confirmation_threshold_duration() + get_call_threshold_duration()),
-		):
-			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
-			incident_doc.call_humans()
 
 
 def validate_incidents():
@@ -271,24 +282,27 @@ def validate_incidents():
 		},
 		fields=["name", "creation"],
 	)
-	for incident in confirmed_incidents:
-		if incident.creation <= frappe.utils.add_to_date(
+	for incident_dict in confirmed_incidents:
+		if incident_dict.creation <= frappe.utils.add_to_date(
 			frappe.utils.frappe.utils.now_datetime(),
 			seconds=-get_confirmation_threshold_duration(),
 		):
-			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
-			incident_doc.status = "Confirmed"
-			incident_doc.save()
+			incident: Incident = frappe.get_doc("Incident", incident_dict.name)
+			incident.status = "Confirmed"
+			incident.save()
 
 
-def check_resolved():
+def resolve_incidents():
 	ongoing_incidents = frappe.get_all(
 		"Incident",
 		filters={
 			"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
 		},
-		fields=["name", "creation"],
+		pluck="name",
 	)
-	for incident in ongoing_incidents:
-		incident_doc: Incident = frappe.get_doc("Incident", incident.name)
-		incident_doc.check_resolved()
+	for incident_name in ongoing_incidents:
+		incident: Incident = frappe.get_doc("Incident", incident_name)
+		incident.check_resolved()
+		incident.reload()
+		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
+			incident.call_humans()

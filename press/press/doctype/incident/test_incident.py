@@ -11,7 +11,7 @@ from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log impor
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
-from press.press.doctype.incident.incident import check_resolved, validate_incidents
+from press.press.doctype.incident.incident import resolve_incidents, validate_incidents
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
 )
@@ -221,6 +221,7 @@ class TestIncident(FrappeTestCase):
 			).insert()
 			incident.call_humans()
 			incident.reload()
+			self.assertEqual(incident.status, "Acknowledged")
 			self.assertEqual(len(incident.updates), 1)
 		with patch.object(
 			MockTwilioCallList, "create", new=MockTwilioCallList("no-answer").create
@@ -301,7 +302,7 @@ class TestIncident(FrappeTestCase):
 		incident = frappe.get_last_doc("Incident")
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
-		check_resolved()
+		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
@@ -317,17 +318,17 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(
 			site=site2, status="firing"
 		)  # other site down, nothing resolved
-		check_resolved()
+		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(
 			site=site2, status="resolved"
 		)  # other site resolved, first site still down
-		check_resolved()
+		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(site=site, status="resolved")
-		check_resolved()
+		resolve_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
