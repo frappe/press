@@ -257,7 +257,7 @@ def call_for_help():
 	for incident in ongoing_incidents:
 		if incident.creation <= frappe.utils.add_to_date(
 			frappe.utils.now_datetime(),
-			seconds=-get_call_threshold_duration(),
+			seconds=-(get_confirmation_threshold_duration() + get_call_threshold_duration()),
 		):
 			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
 			incident_doc.call_humans()
