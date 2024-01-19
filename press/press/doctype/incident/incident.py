@@ -25,8 +25,15 @@ if TYPE_CHECKING:
 INCIDENT_ALERT = "Sites Down"  # TODO: make it a field or child table somewhere #
 INCIDENT_SCOPE = "server"  # can be bench, cluster, server, etc. Not site, minor code changes required for that
 
-DAYTIME_CALL_THRESHOLD_SECONDS = 300  # 5 minutes;time after which humans are called
-NIGHTTIME_CALL_THRESHOLD_SECONDS = 900  # 15 minutes; time after which humans are called
+DAY_HOURS = range(9, 18)
+CONFIRMATION_THRESHOLD_SECONDS_DAY = 300  # 5 minutes;time after which humans are called
+CONFIRMATION_THRESHOLD_SECONDS_NIGHT = (
+	600  # 10 minutes; time after which humans are called
+)
+CALL_THRESHOLD_SECONDS_DAY = 0  # 0 minutes;time after which humans are called
+CALL_THRESHOLD_SECONDS_NIGHT = (
+	900  # 15 minutes; time after confirmation after which humans are called
+)
 PAST_ALERT_COVER_MINUTES = (
 	15  # to cover alerts that fired before/triggered the incident
 )
@@ -197,8 +204,7 @@ where
 			"""
 		)  # status of the sites down in each bench
 
-	def try_interfering(self):
-		# reserved for @adityahase to try reboot and other stuff on the servers intelligently
+	def intervene(self):
 		pass
 
 	def check_resolved(self):
@@ -207,7 +213,7 @@ where
 		"""
 		if "Firing" in self.get_last_alert_status_for_each_group():
 			# all should be "resolved" for auto-resolve
-			self.try_interfering()
+			self.intervene()
 			return
 		if self.status == "Validating":
 			self.status = "Auto-Resolved"
@@ -216,35 +222,63 @@ where
 		self.save()
 
 
-def get_call_threshold_duration():
-	day_hours = range(9, 18)
-	if frappe.utils.now_datetime().hour in day_hours:
+def get_confirmation_threshold_duration():
+	if frappe.utils.now_datetime().hour in DAY_HOURS:
 		return (
-			cint(frappe.db.get_value("Incident Settings", None, "daytime_threshold"))
-			or DAYTIME_CALL_THRESHOLD_SECONDS
+			cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_day"))
+			or CONFIRMATION_THRESHOLD_SECONDS_DAY
 		)
 	return (
-		cint(frappe.db.get_value("Incident Settings", None, "nighttime_threshold"))
-		or NIGHTTIME_CALL_THRESHOLD_SECONDS
+		cint(frappe.db.get_value("Incident Settings", None, "confirmation_threshold_night"))
+		or CONFIRMATION_THRESHOLD_SECONDS_NIGHT
 	)
 
 
-def validate_incidents():
+def get_call_threshold_duration():
+	if frappe.utils.now_datetime().hour in DAY_HOURS:
+		return (
+			cint(frappe.db.get_value("Incident Settings", None, "call_threshold_day"))
+			or CALL_THRESHOLD_SECONDS_DAY
+		)
+	return (
+		cint(frappe.db.get_value("Incident Settings", None, "call_threshold_night"))
+		or CALL_THRESHOLD_SECONDS_NIGHT
+	)
+
+
+def call_for_help():
 	ongoing_incidents = frappe.get_all(
+		"Incident",
+		filters={
+			"status": "Confirmed",
+		},
+		fields=["name", "creation"],
+	)
+	for incident in ongoing_incidents:
+		if incident.creation <= frappe.utils.add_to_date(
+			frappe.utils.now_datetime(),
+			seconds=-get_call_threshold_duration(),
+		):
+			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
+			incident_doc.call_humans()
+
+
+def validate_incidents():
+	confirmed_incidents = frappe.get_all(
 		"Incident",
 		filters={
 			"status": "Validating",
 		},
 		fields=["name", "creation"],
 	)
-	for incident in ongoing_incidents:
+	for incident in confirmed_incidents:
 		if incident.creation <= frappe.utils.add_to_date(
-			frappe.utils.frappe.utils.now_datetime(), seconds=-get_call_threshold_duration()
+			frappe.utils.frappe.utils.now_datetime(),
+			seconds=-get_confirmation_threshold_duration(),
 		):
 			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
 			incident_doc.status = "Confirmed"
 			incident_doc.save()
-			incident_doc.call_humans()
 
 
 def check_resolved():
