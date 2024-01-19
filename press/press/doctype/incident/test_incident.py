@@ -330,3 +330,22 @@ class TestIncident(FrappeTestCase):
 		validate_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
+
+	def test_threshold_field_is_checked_before_calling(self):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-1))
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")  # default min threshold is 5 mins
+		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-17))
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Confirmed")
+		incident.db_set("status", "Validating")
+		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-19))
+		frappe.db.set_value("Incident Settings", None, "daytime_threshold", str(21 * 60))
+		frappe.db.set_value("Incident Settings", None, "nighttime_threshold", str(21 * 60))
+		validate_incidents()
+		incident.reload()
+		self.assertEqual(incident.status, "Validating")
