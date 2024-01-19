@@ -201,7 +201,7 @@ where
 		# reserved for @adityahase to try reboot and other stuff on the servers intelligently
 		pass
 
-	def check_auto_resolved(self):
+	def check_resolved(self):
 		"""
 		Checks if the Incident is auto-resolved
 		"""
@@ -209,7 +209,10 @@ where
 			# all should be "resolved" for auto-resolve
 			self.try_interfering()
 			return
-		self.status = "Auto-Resolved"
+		if self.status == "Validating":
+			self.status = "Auto-Resolved"
+		else:
+			self.status = "Resolved"
 		self.save()
 
 
@@ -238,10 +241,20 @@ def validate_incidents():
 		if incident.creation <= frappe.utils.add_to_date(
 			frappe.utils.frappe.utils.now_datetime(), seconds=-get_call_threshold_duration()
 		):
-			incident_doc = frappe.get_doc("Incident", incident.name)
+			incident_doc: Incident = frappe.get_doc("Incident", incident.name)
 			incident_doc.status = "Confirmed"
 			incident_doc.save()
 			incident_doc.call_humans()
-		else:
-			incident_doc = frappe.get_doc("Incident", incident.name)
-			incident_doc.check_auto_resolved()
+
+
+def check_resolved():
+	ongoing_incidents = frappe.get_all(
+		"Incident",
+		filters={
+			"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
+		},
+		fields=["name", "creation"],
+	)
+	for incident in ongoing_incidents:
+		incident_doc: Incident = frappe.get_doc("Incident", incident.name)
+		incident_doc.check_resolved()

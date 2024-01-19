@@ -206,9 +206,14 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
-		"press.press.doctype.incident.incident.validate_incidents",
 	],
 	"cron": {
+		"1-59/2 * * * *": [
+			"press.press.doctype.incident.incident.validate_incidents",
+		],
+		"*/2 * * * *": [
+			"press.press.doctype.incident.incident.check_resolved",
+		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
