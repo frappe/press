@@ -11,7 +11,7 @@ from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log impor
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
-from press.press.doctype.incident.incident import validate_incidents
+from press.press.doctype.incident.incident import check_resolved, validate_incidents
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
 )
@@ -301,7 +301,7 @@ class TestIncident(FrappeTestCase):
 		incident = frappe.get_last_doc("Incident")
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(site=site, alert=alert, status="resolved")
-		validate_incidents()
+		check_resolved()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
@@ -317,17 +317,17 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(
 			site=site2, status="firing"
 		)  # other site down, nothing resolved
-		validate_incidents()
+		check_resolved()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(
 			site=site2, status="resolved"
 		)  # other site resolved, first site still down
-		validate_incidents()
+		check_resolved()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
 		create_test_alertmanager_webhook_log(site=site, status="resolved")
-		validate_incidents()
+		check_resolved()
 		incident.reload()
 		self.assertEqual(incident.status, "Auto-Resolved")
 
@@ -344,8 +344,12 @@ class TestIncident(FrappeTestCase):
 		self.assertEqual(incident.status, "Confirmed")
 		incident.db_set("status", "Validating")
 		incident.db_set("creation", frappe.utils.add_to_date(frappe.utils.now(), minutes=-19))
-		frappe.db.set_value("Incident Settings", None, "daytime_threshold", str(21 * 60))
-		frappe.db.set_value("Incident Settings", None, "nighttime_threshold", str(21 * 60))
+		frappe.db.set_value(
+			"Incident Settings", None, "confirmation_threshold_day", str(21 * 60)
+		)
+		frappe.db.set_value(
+			"Incident Settings", None, "confirmation_threshold_night", str(21 * 60)
+		)
 		validate_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
