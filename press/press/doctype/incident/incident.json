@@ -59,7 +59,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved"
+   "options": "Validating\nConfirmed\nAcknowledged\nInvestigating\nResolved\nAuto-Resolved\nPress-Resolved"
   },
   {
    "default": "Site Down",
@@ -164,7 +164,7 @@
  "index_web_pages_for_search": 1,
  "is_published_field": "show_in_website",
  "links": [],
- "modified": "2024-01-10 22:09:57.018637",
+ "modified": "2024-01-19 16:54:40.322437",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Incident",
