@@ -183,7 +183,7 @@ export default {
 				list: {
 					doctype: 'Site App',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parenttype: 'Site', parent: site.doc.name };
 					},
 					columns: [
 						{
@@ -218,20 +218,6 @@ export default {
 							width: '34rem'
 						}
 					],
-					resource({ documentResource: site }) {
-						return {
-							type: 'list',
-							doctype: 'Site App',
-							cache: ['Site Apps', site.name],
-							fields: ['name', 'app'],
-							parent: 'Site',
-							filters: {
-								parenttype: 'Site',
-								parent: site.doc.name
-							},
-							auto: true
-						};
-					},
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
@@ -611,7 +597,7 @@ export default {
 				list: {
 					doctype: 'Site Config',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parent: site.doc.name, parenttype: 'Site' };
 					},
 					fields: ['name'],
 					pageLength: 999,
@@ -771,7 +757,6 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
-					userFilters: {},
 					filters: site => {
 						return { site: site.doc.name };
 					},

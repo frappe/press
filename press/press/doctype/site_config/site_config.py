@@ -8,15 +8,12 @@ from frappe.model.document import Document
 
 
 class SiteConfig(Document):
+	whitelisted_fields = ["key", "value", "type"]
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		Config = frappe.qb.DocType("Site Config")
-		if filters and filters.get("site"):
-			query = (
-				query.where(Config.parent == filters.get("site"))
-				.where(Config.parenttype == "Site")
-				.where(Config.internal == 0)
-			)
+		query = query.where(Config.internal == 0)
 		configs = query.run(as_dict=True)
 		config_key_titles = frappe.db.get_all(
 			"Site Config Key",

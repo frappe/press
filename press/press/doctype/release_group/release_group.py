@@ -40,7 +40,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
-	whitelisted_fields = ["title", "version"]
+	whitelisted_fields = ["title", "version", "apps"]
 
 	@staticmethod
 	def get_list_query(query):

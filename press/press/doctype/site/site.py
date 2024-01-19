@@ -69,6 +69,7 @@ class Site(Document):
 		"team",
 		"plan",
 		"archive_failed",
+		"cluster"
 	]
 
 	@staticmethod

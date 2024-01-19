@@ -6,16 +6,12 @@ from frappe.model.document import Document
 
 
 class CommonSiteConfig(Document):
+	whitelisted_fields = ["key", "type", "value"]
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		Config = frappe.qb.DocType("Common Site Config")
-		if filters and filters.get("group"):
-			query = (
-				query.where(Config.parent == filters.get("group"))
-				.where(Config.parenttype == "Release Group")
-				.where(Config.internal == 0)
-				.orderby(Config.key, order=frappe.qb.asc)
-			)
+		query = query.where(Config.internal == 0).orderby(Config.key, order=frappe.qb.asc)
 		configs = query.run(as_dict=True)
 		config_key_titles = frappe.db.get_all(
 			"Site Config Key",
