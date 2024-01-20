@@ -2,7 +2,7 @@
 	<component
 		:is="showCard ? Card : 'div'"
 		:title="title"
-		class="h-80"
+		:class="showCard ? 'h-80' : ''"
 		:loading="loading"
 		:stopOverflow="true"
 	>
