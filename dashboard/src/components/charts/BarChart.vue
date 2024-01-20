@@ -98,6 +98,12 @@ const initOptions = {
 };
 
 const options = ref({
+	grid: {
+		top: 20,
+		left: 60,
+		right: 40,
+		bottom: 50
+	},
 	tooltip: {
 		trigger: 'axis',
 		formatter: params => {

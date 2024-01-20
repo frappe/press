@@ -3,6 +3,7 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
+		<SiteDailyUsage :site="$site.doc" />
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
 				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
@@ -45,10 +46,12 @@ import LucideGaugeCircle from '~icons/lucide/gauge-circle';
 import LucideHardDrive from '~icons/lucide/hard-drive';
 import LucideDatabase from '~icons/lucide/database';
 import { renderDialog } from '../utils/components';
+import SiteDailyUsage from './SiteDailyUsage.vue';
 
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
+	components: { SiteDailyUsage },
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(() =>
@@ -95,7 +98,6 @@ export default {
 			} else {
 				planDescription = currentPlan.plan_title;
 			}
-
 			return [
 				{
 					label: 'Current Plan',
