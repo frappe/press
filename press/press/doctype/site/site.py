@@ -503,7 +503,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
