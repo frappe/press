@@ -144,7 +144,8 @@ const options = ref({
 					else if (value >= 1000) return `${value / 1000}K`;
 					return value;
 				}
-			}
+			},
+			padding: 5
 		}
 	},
 	labelLine: {
