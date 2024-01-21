@@ -118,7 +118,7 @@ const options = ref({
 		top: 20,
 		left: 40,
 		right: 20,
-		bottom: 30
+		bottom: data.value.datasets.length > 1 ? 60 : 30 // if there's legend show more space for it
 	},
 	tooltip: {
 		trigger: 'axis',
