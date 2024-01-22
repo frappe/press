@@ -322,6 +322,8 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: apps, documentResource: site }) {
+						let $team = getTeam();
+
 						return [
 							{
 								label: 'Uninstall',
@@ -361,6 +363,7 @@ export default {
 							},
 							{
 								label: 'View in Desk',
+								condition: () => $team.doc.is_desk_user,
 								onClick() {
 									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
