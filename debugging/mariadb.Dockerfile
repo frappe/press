@@ -25,10 +25,15 @@ RUN --mount=type=cache,target=/var/cache/apt curl -fsSL 'https://mariadb.org/mar
     && rm -rf /var/lib/apt/lists/*
 
 # Install debug symbols for libc and libstdc++.
-RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt echo "deb http://ddebs.ubuntu.com focal main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list \ 
+    && echo "deb http://ddebs.ubuntu.com focal-updates main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list \ 
+    && echo "deb http://ddebs.ubuntu.com focal-proposed main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list \ 
+    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F2EDC64DC5AEE1F6B9C621F0C8CAB6595FDFF622 \
+    && apt-get update \
     && apt-get install --yes --no-install-suggests --no-install-recommends \
     libc6-dbg \
     libstdc++6-10-dbg \
     lib32stdc++6-10-dbg \
     libx32stdc++6-10-dbg \
+    libstdc++6-dbgsym \
     && rm -rf /var/lib/apt/lists/*
