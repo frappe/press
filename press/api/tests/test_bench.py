@@ -100,6 +100,11 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
 	)
 	def test_deploy_fn_deploys_bench_container(self):
+		# mark frappe as approved so that the deploy can happen
+		release = frappe.get_last_doc("App Release", {"source": self.app_source.name})
+		release.status = "Approved"
+		release.save()
+
 		self._set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
 		group = new(
