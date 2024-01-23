@@ -188,7 +188,7 @@ export default {
 											condition: () =>
 												row.status === 'Active' &&
 												rowIndex !== 0 &&
-												!data[rowIndex + 1].isBench,
+												!data[rowIndex + 1].isBench, // check for empty bench
 											onClick: () => {
 												confirmDialog({
 													title: 'Update All Sites',
