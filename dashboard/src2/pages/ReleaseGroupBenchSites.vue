@@ -52,6 +52,7 @@ export default {
 					name: version.name,
 					status: version.status,
 					proxyServer: version.proxy_server,
+					isSSHProxySetup: version.is_ssh_proxy_setup,
 					isBench: true
 				});
 				for (let site of version.sites) {
@@ -86,7 +87,18 @@ export default {
 					},
 					{
 						label: 'Region',
-						fieldname: 'cluster'
+						fieldname: 'server_region_info',
+						format(value) {
+							return value?.title || '';
+						},
+						prefix(row) {
+							if (row.server_region_info)
+								return h('img', {
+									src: row.server_region_info.image,
+									class: 'w-4 h-4',
+									alt: row.server_region_info.title
+								});
+						}
 					},
 					{
 						label: 'Plan',
