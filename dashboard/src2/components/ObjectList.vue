@@ -31,6 +31,7 @@
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
@@ -260,6 +261,12 @@ export default {
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
+			if (!props) return null;
+			return props;
+		},
+		secondaryAction() {
+			if (!this.options.secondaryAction) return null;
+			let props = this.options.secondaryAction(this.context);
 			if (!props) return null;
 			return props;
 		},
