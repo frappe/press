@@ -679,10 +679,10 @@ class ReleaseGroup(Document):
 		if current_team.parent_team:
 			app_publishers_team.append(current_team.parent_team)
 
-		only_approved_for_sources = []
+		only_approved_for_sources = [self.apps[0].source]  # add frappe app source
 		if marketplace_app_sources:
 			AppSource = frappe.qb.DocType("App Source")
-			only_approved_for_sources = (
+			only_approved_for_sources.append(
 				frappe.qb.from_(AppSource)
 				.where(AppSource.name.isin(marketplace_app_sources))
 				.where(AppSource.team.notin(app_publishers_team))
