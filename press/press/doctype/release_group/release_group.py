@@ -542,6 +542,38 @@ class ReleaseGroup(Document):
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 		return apps
 
+	@frappe.whitelist()
+	def generate_certificate(self):
+		user_ssh_key = frappe.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+		)[0]
+		return frappe.get_doc(
+			{
+				"doctype": "SSH Certificate",
+				"certificate_type": "User",
+				"group": self.name,
+				"user": frappe.session.user,
+				"user_ssh_key": user_ssh_key,
+				"validity": "6h",
+			}
+		).insert()
+
+	@frappe.whitelist()
+	def get_certificate(self):
+		certificates = frappe.get_all(
+			"SSH Certificate",
+			{
+				"user": frappe.session.user,
+				"valid_until": [">", frappe.utils.now()],
+				"group": self.name,
+			},
+			pluck="name",
+			limit=1,
+		)
+		if certificates:
+			return frappe.get_doc("SSH Certificate", certificates[0])
+		return False
+
 	@property
 	def dependency_update_pending(self):
 		if not self.last_dependency_update or not self.last_dc_info:
