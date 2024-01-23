@@ -201,7 +201,7 @@ export default {
 											condition: () =>
 												row.status === 'Active' &&
 												rowIndex !== 0 &&
-												!data[rowIndex + 1].isBench, // check for empty bench
+												data[rowIndex + 1]?.name !== 'No sites', // check for empty bench
 											onClick: () => {
 												confirmDialog({
 													title: 'Update All Sites',
@@ -212,7 +212,7 @@ export default {
 														onClick: ({ hide }) => {
 															toast.promise(
 																this.$resources.updateAllSites.submit({
-																	bench: row.name
+																	name: row.name
 																}),
 																{
 																	loading: 'Updating sites...',
