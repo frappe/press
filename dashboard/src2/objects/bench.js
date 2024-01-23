@@ -21,7 +21,9 @@ export default {
 		addRegion: 'add_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
-		archive: 'archive'
+		archive: 'archive',
+		getCertificate: 'get_certificate',
+		generateCertificate: 'generate_certificate'
 	},
 	list: {
 		route: '/benches',
