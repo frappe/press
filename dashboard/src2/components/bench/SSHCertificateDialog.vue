@@ -48,8 +48,10 @@
 			<Button
 				:loading="$releaseGroup.generateCertificate.loading"
 				@click="
-					$releaseGroup.generateCertificate.fetch();
-					$releaseGroup.getCertificate.reload();
+					async () => {
+						await $releaseGroup.generateCertificate.fetch();
+						await $releaseGroup.getCertificate.reload();
+					}
 				"
 				variant="solid"
 				class="w-full"
