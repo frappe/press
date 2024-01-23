@@ -504,7 +504,11 @@ class ReleaseGroup(Document):
 			.run(as_dict=True)
 		)
 
+		cur_user_ssh_key = frappe.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
+		)
 		for version in deployed_versions:
+			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
 				site.version = rg_version

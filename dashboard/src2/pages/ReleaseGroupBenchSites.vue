@@ -52,7 +52,7 @@ export default {
 					name: version.name,
 					status: version.status,
 					proxyServer: version.proxy_server,
-					isSSHProxySetup: version.is_ssh_proxy_setup,
+					hasSSHAcess: version.has_ssh_access,
 					isBench: true
 				});
 				for (let site of version.sites) {
@@ -185,7 +185,8 @@ export default {
 										},
 										{
 											label: 'SSH Access',
-											condition: () => row.status === 'Active',
+											condition: () =>
+												row.status === 'Active' && row.hasSSHAcess,
 											onClick: () => {
 												renderDialog(
 													h(SSHCertificateDialog, {
