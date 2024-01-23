@@ -112,155 +112,174 @@ export default {
 						Button: ({ row }) => {
 							let rowIndex = data.findIndex(r => r === row);
 
-							if (!row.isBench) return;
-							return {
-								label: 'Options',
-								button: {
+							if (!row.isBench)
+								return {
 									label: 'Options',
-									variant: 'ghost',
-									slots: {
-										default: icon('more-horizontal')
-									}
-								},
-								options: [
-									{
-										label: 'View in Desk',
-										condition: () => this.$team.doc.is_desk_user,
-										onClick: () =>
-											window.open(
-												`${window.location.protocol}//${window.location.host}/app/bench/${row.name}`,
-												'_blank'
-											)
+									button: {
+										label: 'Options',
+										variant: 'ghost',
+										slots: {
+											default: icon('more-horizontal')
+										}
 									},
-									{
-										label: 'Show Apps',
-										onClick: () => {
-											toast.promise(
-												this.$releaseGroup.getAppVersions
-													.submit({
-														bench: row.name
+									options: [
+										{
+											label: 'Visit Site',
+											condition: () => row.status === 'Active',
+											onClick: () =>
+												window.open(`https://${row.name}`, '_blank')
+										}
+									]
+								};
+							else
+								return {
+									label: 'Options',
+									button: {
+										label: 'Options',
+										variant: 'ghost',
+										slots: {
+											default: icon('more-horizontal')
+										}
+									},
+									options: [
+										{
+											label: 'View in Desk',
+											condition: () => this.$team.doc.is_desk_user,
+											onClick: () =>
+												window.open(
+													`${window.location.protocol}//${window.location.host}/app/bench/${row.name}`,
+													'_blank'
+												)
+										},
+										{
+											label: 'Show Apps',
+											onClick: () => {
+												toast.promise(
+													this.$releaseGroup.getAppVersions
+														.submit({
+															bench: row.name
+														})
+														.then(() => {
+															this.showAppVersionDialog = true;
+														}),
+													{
+														loading: 'Fetching apps...',
+														success: 'Fetched apps with versions',
+														error: 'Failed to fetch apps',
+														duration: 1000
+													}
+												);
+											}
+										},
+										{
+											label: 'SSH Access',
+											condition: () => row.status === 'Active',
+											onClick: () => {
+												renderDialog(
+													h(SSHCertificateDialog, {
+														bench: row,
+														releaseGroup: this.$releaseGroup.name
 													})
-													.then(() => {
-														this.showAppVersionDialog = true;
-													}),
-												{
-													loading: 'Fetching apps...',
-													success: 'Fetched apps with versions',
-													error: 'Failed to fetch apps',
-													duration: 1000
-												}
-											);
-										}
-									},
-									{
-										label: 'SSH Access',
-										condition: () => row.status === 'Active',
-										onClick: () => {
-											renderDialog(
-												h(SSHCertificateDialog, {
-													bench: row,
-													releaseGroup: this.$releaseGroup.name
-												})
-											);
-										}
-									},
-									{
-										label: 'Update All Sites',
-										condition: () =>
-											row.status === 'Active' &&
-											rowIndex !== 0 &&
-											!data[rowIndex + 1].isBench,
-										onClick: () => {
-											confirmDialog({
-												title: 'Update All Sites',
-												message: `Are you sure you want to update all sites in the bench <b>${row.name}</b> to the latest bench?`,
-												primaryAction: {
-													label: 'Update',
-													variant: 'solid',
-													onClick: ({ hide }) => {
-														toast.promise(
-															this.$resources.updateAllSites.submit({
-																bench: row.name
-															}),
-															{
-																loading: 'Updating sites...',
-																success: () => {
-																	hide();
-																	return 'Sites updated';
-																},
-																error: 'Failed to update sites',
-																duration: 1000
-															}
-														);
+												);
+											}
+										},
+										{
+											label: 'Update All Sites',
+											condition: () =>
+												row.status === 'Active' &&
+												rowIndex !== 0 &&
+												!data[rowIndex + 1].isBench,
+											onClick: () => {
+												confirmDialog({
+													title: 'Update All Sites',
+													message: `Are you sure you want to update all sites in the bench <b>${row.name}</b> to the latest bench?`,
+													primaryAction: {
+														label: 'Update',
+														variant: 'solid',
+														onClick: ({ hide }) => {
+															toast.promise(
+																this.$resources.updateAllSites.submit({
+																	bench: row.name
+																}),
+																{
+																	loading: 'Updating sites...',
+																	success: () => {
+																		hide();
+																		return 'Sites updated';
+																	},
+																	error: 'Failed to update sites',
+																	duration: 1000
+																}
+															);
+														}
 													}
-												}
-											});
-										}
-									},
-									{
-										label: 'Restart Bench',
-										condition: () => row.status === 'Active',
-										onClick: () => {
-											confirmDialog({
-												title: 'Restart Bench',
-												message: `Are you sure you want to restart the bench <b>${row.name}</b>?`,
-												primaryAction: {
-													label: 'Restart',
-													variant: 'solid',
-													theme: 'red',
-													onClick: ({ hide }) => {
-														toast.promise(
-															this.$resources.restartBench.submit({
-																name: row.name
-															}),
-															{
-																loading: 'Restarting bench...',
-																success: () => {
-																	hide();
-																	return 'Bench restarted';
-																},
-																error: 'Failed to restart bench',
-																duration: 1000
-															}
-														);
+												});
+											}
+										},
+										{
+											label: 'Restart Bench',
+											condition: () => row.status === 'Active',
+											onClick: () => {
+												confirmDialog({
+													title: 'Restart Bench',
+													message: `Are you sure you want to restart the bench <b>${row.name}</b>?`,
+													primaryAction: {
+														label: 'Restart',
+														variant: 'solid',
+														theme: 'red',
+														onClick: ({ hide }) => {
+															toast.promise(
+																this.$resources.restartBench.submit({
+																	name: row.name
+																}),
+																{
+																	loading: 'Restarting bench...',
+																	success: () => {
+																		hide();
+																		return 'Bench restarted';
+																	},
+																	error: 'Failed to restart bench',
+																	duration: 1000
+																}
+															);
+														}
 													}
-												}
-											});
-										}
-									},
-									{
-										label: 'Rebuild Assets',
-										condition: () => row.status === 'Active',
-										onClick: () => {
-											confirmDialog({
-												title: 'Rebuild Assets',
-												message: `Are you sure you want to rebuild assets for the bench <b>${row.name}</b>?`,
-												primaryAction: {
-													label: 'Rebuild',
-													variant: 'solid',
-													theme: 'red',
-													onClick: ({ hide }) => {
-														toast.promise(
-															this.$resources.rebuildBench.submit({
-																name: row.name
-															}),
-															{
-																loading: 'Rebuilding assets...',
-																success: () => {
-																	hide();
-																	return 'Assets rebuilt';
-																},
-																error: 'Failed to rebuild assets',
-																duration: 1000
-															}
-														);
+												});
+											}
+										},
+										{
+											label: 'Rebuild Assets',
+											condition: () => row.status === 'Active',
+											onClick: () => {
+												confirmDialog({
+													title: 'Rebuild Assets',
+													message: `Are you sure you want to rebuild assets for the bench <b>${row.name}</b>?`,
+													primaryAction: {
+														label: 'Rebuild',
+														variant: 'solid',
+														theme: 'red',
+														onClick: ({ hide }) => {
+															toast.promise(
+																this.$resources.rebuildBench.submit({
+																	name: row.name
+																}),
+																{
+																	loading: 'Rebuilding assets...',
+																	success: () => {
+																		hide();
+																		return 'Assets rebuilt';
+																	},
+																	error: 'Failed to rebuild assets',
+																	duration: 1000
+																}
+															);
+														}
 													}
-												}
-											});
+												});
+											}
 										}
-									}
-								]
-							};
+									]
+								};
 						}
 					}
 				],
