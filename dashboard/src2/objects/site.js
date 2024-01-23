@@ -662,6 +662,24 @@ export default {
 							}
 						};
 					},
+					secondaryAction({ listResource: configs }) {
+						return {
+							label: 'Show Config Preview',
+							slots: {
+								prefix: icon('eye')
+							},
+							onClick() {
+								let ConfigPreviewDialog = defineAsyncComponent(() =>
+									import('../components/ConfigPreviewDialog.vue')
+								);
+								renderDialog(
+									h(ConfigPreviewDialog, {
+										configs: configs.data
+									})
+								);
+							}
+						};
+					},
 					rowActions({ row, listResource: configs, documentResource: site }) {
 						return [
 							{
