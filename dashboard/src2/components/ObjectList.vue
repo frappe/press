@@ -160,6 +160,7 @@ export default {
 				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
+				pageLength: this.options.pageLength || 20,
 				fields: [
 					'name',
 					...(this.options.fields || []),

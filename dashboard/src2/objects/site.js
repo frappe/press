@@ -614,6 +614,7 @@ export default {
 						return { site: site.doc.name };
 					},
 					fields: ['name'],
+					pageLength: 999,
 					orderBy: 'creation desc',
 					columns: [
 						{

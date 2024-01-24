@@ -410,6 +410,7 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
+					pageLength: 999,
 					columns: [
 						{
 							label: 'Config Name',
@@ -642,7 +643,7 @@ export default {
 			let { documentResource: bench } = context;
 			return [
 				{
-					label: 'Update available',
+					label: 'Update Available',
 					slots: {
 						prefix: icon('alert-circle')
 					},
