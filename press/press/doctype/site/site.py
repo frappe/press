@@ -99,6 +99,11 @@ class Site(Document):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
+				user_type = frappe.session.data.user_type or frappe.get_cached_value(
+					"User", frappe.session.user, "user_type"
+				)
+				if user_type == "System User":
+					return func(inst, *args, **kwargs)
 				if inst.status not in allowed_status:
 					frappe.throw(
 						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
