@@ -7,4 +7,3 @@ set complete-=i
 set smarttab
 set incsearch
 set ruler
-filetype plugin indent on
