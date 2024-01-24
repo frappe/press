@@ -10,6 +10,7 @@
 			</router-link>
 		</div>
 		<LineChart
+			title="Daily Usage"
 			type="time"
 			:key="dailyUsageData"
 			:data="dailyUsageData"
@@ -19,16 +20,7 @@
 			:error="$resources.requestCounter.error"
 			:showCard="false"
 			class="h-52 p-2"
-		>
-			<template #actions>
-				<router-link
-					class="text-base text-gray-600 hover:text-gray-700"
-					:to="`/sites/${site.name}/analytics`"
-				>
-					All analytics →
-				</router-link>
-			</template>
-		</LineChart>
+		/>
 	</div>
 </template>
 <script>
