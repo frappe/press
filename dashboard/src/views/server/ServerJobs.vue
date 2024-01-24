@@ -11,22 +11,25 @@
 import AgentJobs from '@/views/general/AgentJobs.vue';
 export default {
 	name: 'ServerJobs',
-	props: ['server', 'jobName'],
+	props: ['serverName', 'jobName'],
 	components: {
 		AgentJobs
 	},
 	methods: {
-		jobResource(start) {
+		jobResource() {
 			return {
-				method: 'press.api.server.jobs',
-				params: { name: this.server?.name, start },
+				type: 'list',
+				doctype: 'Agent Job',
+				url: 'press.api.server.jobs',
+				filters: { server: this.serverName },
+				orderBy: 'creation desc',
+				start: 0,
 				pageLength: 10,
-				keepData: true,
 				auto: true
 			};
 		},
 		jobRoute(job) {
-			return `/servers/${this.server.name}/jobs/${job.name}`;
+			return `/servers/${this.serverName}/jobs/${job.name}`;
 		}
 	}
 };

@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-08-14 15:59:21.127979",
+  "modified": "2024-01-04 11:59:04.201894",
   "name": "Create Server",
   "steps": [
    {
@@ -41,7 +41,7 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for TLS Certificate to be updated",
     "wait_until_true": 1
    },
@@ -57,16 +57,24 @@
     "parent": "Create Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Agent to be updated",
     "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    default_variables = frappe.get_all(\"MariaDB Variable\", {\"set_on_new_servers\":1}, pluck=\"name\")\n    for var_name in default_variables:\n        var = frappe.get_doc(\"MariaDB Variable\", var_name)\n        var.set_on_server(doc.server)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nserver.set_swappiness()\n\nif doc.server_type == \"Server\":\n    server.setup_mysqldump()\n    server.install_earlyoom()\n",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
    }
   ]
  },
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-01 14:38:02.723500",
+  "modified": "2023-11-17 17:25:50.325082",
   "name": "Resize Server",
   "steps": [
    {
@@ -108,6 +116,22 @@
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Running\", False)",
     "step_name": "Wait for Virtual Machine to Start",
     "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.ping_ansible()\n\nplays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Ping Server\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for Server to be accessible",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()",
+    "step_name": "Set additional config",
+    "wait_until_true": 0
    }
   ]
  },
@@ -195,6 +219,54 @@
     "parenttype": "Press Job Type",
     "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.sync()\nresult = (machine.status == \"Terminated\", False)",
     "step_name": "Wait for Virtual Machine to Terminate",
+    "wait_until_true": 1
+   }
+  ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-01-05 13:40:21.038901",
+  "name": "Upgrade MariaDB",
+  "steps": [
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.stop_mariadb()",
+    "step_name": "Stop MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Stop MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", False)\n",
+    "step_name": "Wait for MariaDB to Stop",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.create_snapshots()\nsnapshot = frappe.get_last_doc(\"Virtual Disk Snapshot\", {\"virtual_machine\": doc.virtual_machine})\nsnapshot.add_comment(text=\"Before MariaDB Upgrade\")",
+    "step_name": "Create Server Snapshot",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(\"Database Server\", doc.server)\nserver.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Upgrade MariaDB",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
     "wait_until_true": 1
    }
   ]

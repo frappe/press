@@ -8,6 +8,7 @@ from frappe.utils import cint
 from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
+from press.utils import _get_current_team, _system_user
 
 
 @frappe.whitelist(allow_guest=True)
@@ -57,7 +58,7 @@ def upload_file():
 
 
 def on_session_creation():
-	from press.utils import get_default_team_for_user
+	from press.utils import get_current_team
 
 	if (
 		not frappe.db.exists("Team", {"user": frappe.session.user})
@@ -65,18 +66,22 @@ def on_session_creation():
 	):
 		return
 
-	onboarding_complete = frappe.cache().hget("onboarding_complete", frappe.session.user)
-	if not onboarding_complete:
-		team = get_default_team_for_user(frappe.session.user)
-		onboarding = frappe.get_doc("Team", team).get_onboarding()
-		onboarding_complete = onboarding["complete"]
+	try:
+		team = get_current_team(get_doc=True)
+		route = team.get_route_on_login()
+		frappe.local.response.update({"dashboard_route": route})
+	except Exception:
+		pass
 
-		if onboarding_complete:
-			# cache if onboarding is complete
-			frappe.cache().hset("onboarding_complete", frappe.session.user, True)
 
-	route = "/sites" if onboarding_complete else "/welcome"
-	frappe.local.response.update({"dashboard_route": route})
+def before_job():
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
+
+
+def before_request():
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
 
 
 def update_website_context(context):

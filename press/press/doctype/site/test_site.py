@@ -24,8 +24,17 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.site import Site, process_rename_site_job_update
 
+from press.press.doctype.remote_file.remote_file import RemoteFile
 from press.press.doctype.release_group.release_group import ReleaseGroup
+from press.press.doctype.remote_file.test_remote_file import (
+	create_test_remote_file,
+)
 from press.utils import get_current_team
+
+import typing
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.bench.bench import Bench
 
 
 def create_test_bench(
@@ -33,7 +42,7 @@ def create_test_bench(
 	group: ReleaseGroup = None,
 	server: str = None,
 	apps: Optional[list[dict]] = None,
-):
+) -> "Bench":
 	"""
 	Create test Bench doc.
 
@@ -77,12 +86,17 @@ def create_test_site(
 	team: str = None,
 	standby_for: Optional[str] = None,
 	apps: Optional[list[str]] = None,
+	remote_database_file=None,
+	remote_public_file=None,
+	remote_private_file=None,
+	remote_config_file=None,
+	**kwargs,
 ) -> Site:
 	"""Create test Site doc.
 
 	Installs all apps present in bench.
 	"""
-	creation = creation or datetime.now()
+	creation = creation or frappe.utils.now_datetime()
 	subdomain = subdomain or make_autoname("test-site-.#####")
 	apps = [{"app": app} for app in apps] if apps else None
 	if not bench:
@@ -105,14 +119,21 @@ def create_test_site(
 			"apps": apps or [{"app": app.app} for app in group.apps],
 			"admin_password": "admin",
 			"standby_for": standby_for,
+			"remote_database_file": remote_database_file,
+			"remote_public_file": remote_public_file,
+			"remote_private_file": remote_private_file,
+			"remote_config_file": remote_config_file,
 		}
-	).insert()
+	)
+	site.update(kwargs)
+	site.insert()
 	site.db_set("creation", creation)
 	site.reload()
 	return site
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
+@patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 class TestSite(unittest.TestCase):
 	"""Tests for Site Document methods."""
 
@@ -365,3 +386,29 @@ class TestSite(unittest.TestCase):
 
 		job = frappe.get_doc("Agent Job", {"site": site.name})
 		self.assertFalse(json.loads(job.request_data).get("skip_reload"))
+
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	@patch.object(RemoteFile, "get_content", new=lambda x: {"a": "test"})
+	def test_new_site_with_backup_files(self):
+		# no asserts here, just checking if it doesn't fail
+		database = create_test_remote_file().name
+		public = create_test_remote_file().name
+		private = create_test_remote_file().name
+		config = create_test_remote_file().name
+		plan = frappe.get_doc(
+			doctype="Plan",
+			name="Plan-10",
+			document_type="Site",
+			interval="Daily",
+			price_usd=30,
+			price_inr=30,
+			period=30,
+		).insert()
+		create_test_site(
+			"test-site-restore",
+			remote_database_file=database,
+			remote_public_file=public,
+			remote_private_file=private,
+			remote_config_file=config,
+			subscription_plan=plan.name,
+		)

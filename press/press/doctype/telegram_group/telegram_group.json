@@ -9,6 +9,7 @@
  "engine": "InnoDB",
  "field_order": [
   "chat_id",
+  "token",
   "topics"
  ],
  "fields": [
@@ -24,11 +25,17 @@
    "fieldtype": "Table",
    "label": "Topics",
    "options": "Telegram Group Topic"
+  },
+  {
+   "fieldname": "token",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Token"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-11 17:40:05.778395",
+ "modified": "2023-12-14 12:49:59.132352",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Telegram Group",

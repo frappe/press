@@ -38,6 +38,8 @@
 </template>
 <script>
 import { h } from 'vue';
+import Badge from '@/components/global/Badge.vue';
+
 export default {
 	name: 'RichSelect',
 	props: ['options', 'value', 'placeholder'],
@@ -72,7 +74,10 @@ export default {
 										src: option.image
 								  })
 								: null,
-							h('span', option.label)
+							h('span', option.label),
+							option.beta
+								? h(Badge, { theme: 'subtle', class: 'ml-auto', label: 'Beta' })
+								: null
 						]
 					);
 				}

@@ -1,0 +1,22 @@
+---
+- name: Install Percona Toolkit
+  apt:
+    pkg:
+      - percona-toolkit
+      - net-tools # Needed for netstat
+    state: present
+
+- name: Create Stak Systemd Service File
+  template:
+    src: pt_stalk.service
+    dest: /etc/systemd/system/pt_stalk.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Restart Stak Service
+  systemd:
+    daemon_reload: true
+    name: pt_stalk
+    enabled: yes
+    state: restarted

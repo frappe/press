@@ -18,10 +18,10 @@ DEFAULT_DEPENDENCIES = [
 
 
 class FrappeVersion(Document):
-	def validate(self):
-		self.validate_dependencies()
+	def before_insert(self):
+		self.set_dependencies()
 
-	def validate_dependencies(self):
+	def set_dependencies(self):
 		dependencies = copy.deepcopy(DEFAULT_DEPENDENCIES)
 		if not hasattr(self, "dependencies") or not self.dependencies:
 			self.extend("dependencies", dependencies)

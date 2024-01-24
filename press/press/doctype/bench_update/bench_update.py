@@ -1,6 +1,5 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
-import json
 
 import frappe
 from frappe.model.document import Document
@@ -31,17 +30,15 @@ class BenchUpdate(Document):
 			):
 				frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
-	def deploy(self, apps_to_ignore):
-		if isinstance(apps_to_ignore, str):
-			apps_to_ignore = json.loads(self.apps_to_ignore)
-
+	def deploy(self):
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
-		candidate = rg.create_deploy_candidate(apps_to_ignore)
+		candidate = rg.create_deploy_candidate(self.apps)
 		candidate.deploy_to_production()
 
 		self.status = "Running"
 		self.candidate = candidate.name
 		self.save()
+		return candidate.name
 
 	def update_sites_on_server(self, bench, server):
 		if frappe.get_value("Bench", bench, "status") != "Active":
@@ -79,3 +76,9 @@ class BenchUpdate(Document):
 				except Exception as e:
 					log_error("Bench Update: Failed to create Site Update", exception=e)
 					frappe.db.rollback()
+					site.status = "Failure"
+					self.save(ignore_permissions=True)
+					traceback = frappe.get_traceback(with_context=True)
+					comment = f"Failed to schedule update for {site.site} <br><br><pre><code>{traceback}</pre></code>"
+					self.add_comment(text=comment)
+					frappe.db.commit()

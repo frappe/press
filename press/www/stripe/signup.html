@@ -1,4 +1,4 @@
-{%- extends "templates/erpnextsmb_signup_layout.html" -%} 
+{%- extends "templates/erpnextsmb_signup_layout.html" -%}
 
 {%- block content -%}
 
@@ -124,7 +124,7 @@
 		</div>
 	</div>
 </div>
-{%- endblock -%} 
+{%- endblock -%}
 
 {%- block script -%}
 <script src="/assets/press/js/form_controller.js"></script>
@@ -143,7 +143,7 @@
 	// this needs to be on global scope
 	var field_validators = {
 		subdomain: (value) => {
-			let MIN_LENGTH = 4;
+			let MIN_LENGTH = 5;
 			let MAX_LENGTH = 20;
 			if (value.length < MIN_LENGTH) {
 				return `Site name cannot have less than ${MIN_LENGTH} characters`;

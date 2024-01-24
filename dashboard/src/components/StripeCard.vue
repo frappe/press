@@ -2,23 +2,23 @@
 	<div class="relative">
 		<div
 			v-if="!ready"
-			class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-8 transform"
+			class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-8 transform"
 		>
 			<Spinner class="h-5 w-5 text-gray-600" />
 		</div>
 		<div :class="{ 'opacity-0': !ready }">
 			<div v-show="!tryingMicroCharge">
 				<label class="block">
-					<span class="text-sm leading-4 text-gray-700">
+					<span class="block text-xs text-gray-600">
 						Credit or Debit Card
 					</span>
 					<div
-						class="form-input mt-2 block w-full py-2 pl-3"
+						class="form-input mt-2 block h-[unset] w-full py-2 pl-3"
 						ref="card-element"
 					></div>
 					<ErrorMessage class="mt-1" :message="cardErrorMessage" />
 				</label>
-				<Input
+				<FormControl
 					class="mt-4"
 					label="Name on Card"
 					type="text"
@@ -47,7 +47,7 @@
 
 			<div class="mt-6 flex items-center justify-between">
 				<StripeLogo />
-				<Button appearance="primary" @click="submit" :loading="addingCard">
+				<Button variant="solid" @click="submit" :loading="addingCard">
 					Save Card
 				</Button>
 			</div>
@@ -87,24 +87,27 @@ export default {
 	async mounted() {
 		this.setupCard();
 
-		let { first_name, last_name } = this.$account.user;
+		let { first_name, last_name = '' } = this.$account.user;
 		let fullname = first_name + ' ' + last_name;
-		this.billingInformation.cardHolderName = fullname;
+		this.billingInformation.cardHolderName = fullname.trimEnd();
 	},
 	resources: {
 		countryList: 'press.api.account.country_list',
-		billingAddress: {
-			method: 'press.api.account.get_billing_information',
-			auto: true,
-			onSuccess(data) {
-				if (data) {
-					this.billingInformation.address = data.address_line1;
-					this.billingInformation.city = data.city;
-					this.billingInformation.state = data.state;
-					this.billingInformation.country = data.country;
-					this.billingInformation.postal_code = data.pincode;
+		billingAddress() {
+			return {
+				url: 'press.api.account.get_billing_information',
+				params: {
+					timezone: this.browserTimezone
+				},
+				auto: true,
+				onSuccess(data) {
+					this.billingInformation.country = data?.country;
+					this.billingInformation.address = data?.address_line1;
+					this.billingInformation.city = data?.city;
+					this.billingInformation.state = data?.state;
+					this.billingInformation.postal_code = data?.pincode;
 				}
-			}
+			};
 		}
 	},
 	methods: {
@@ -266,6 +269,12 @@ export default {
 		formattedMicroChargeAmount() {
 			const isINR = this.$account.team.currency === 'INR';
 			return isINR ? '₹50' : '$0.5';
+		},
+		browserTimezone() {
+			if (!window.Intl) {
+				return null;
+			}
+			return Intl.DateTimeFormat().resolvedOptions().timeZone;
 		}
 	}
 };

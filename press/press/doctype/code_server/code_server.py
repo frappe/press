@@ -15,6 +15,9 @@ class CodeServer(Document):
 		self.name = self.subdomain + "." + self.domain
 
 	def validate(self):
+		if not frappe.get_value("Bench", self.bench, "is_code_server_enabled"):
+			frappe.throw(f"Code Server not enabled for the selected Bench {self.bench}")
+
 		if self.has_value_changed("subdomain"):
 			if frappe.db.exists("Code Server", self.name):
 				frappe.throw(
@@ -87,17 +90,20 @@ class CodeServer(Document):
 
 
 def process_new_code_server_job_update(job):
-	other_job_types = {
-		"Add Code Server to Upstream": ("Setup Code Server"),
-		"Setup Code Server": ("Add Code Server to Upstream"),
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
+
+	other_job_type = {
+		"Add Code Server to Upstream": "Setup Code Server",
+		"Setup Code Server": "Add Code Server to Upstream",
 	}[job.job_type]
 
 	first = job.status
-	second = frappe.get_all(
+	second = frappe.get_value(
 		"Agent Job",
-		fields=["status"],
-		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
-	)[0].status
+		{"job_type": other_job_type, "code_server": job.code_server},
+		"status",
+		for_update=True,
+	)
 
 	if "Success" == first == second:
 		updated_status = "Running"
@@ -120,17 +126,20 @@ def process_stop_code_server_job_update(job):
 
 
 def process_archive_code_server_job_update(job):
-	other_job_types = {
-		"Remove Code Server from Upstream": ("Archive Code Server"),
-		"Archive Code Server": ("Remove Code Server from Upstream"),
+	frappe.db.get_value("Code Server", job.code_server, "status", for_update=True)
+
+	other_job_type = {
+		"Remove Code Server from Upstream": "Archive Code Server",
+		"Archive Code Server": "Remove Code Server from Upstream",
 	}[job.job_type]
 
 	first = job.status
-	second = frappe.get_all(
+	second = frappe.get_value(
 		"Agent Job",
-		fields=["status"],
-		filters={"job_type": ("in", other_job_types), "code_server": job.code_server},
-	)[0].status
+		{"job_type": other_job_type, "code_server": job.code_server},
+		"status",
+		for_update=True,
+	)
 
 	if "Success" == first == second:
 		updated_status = "Archived"

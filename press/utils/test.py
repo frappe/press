@@ -12,6 +12,8 @@ def foreground_enqueue_doc(
 	timeout=None,
 	now=False,  # default args unused to avoid them from going to kwargs
 	enqueue_after_commit=False,
+	job_id=None,
+	deduplicate=False,
 	**kwargs,
 ):
 	"""

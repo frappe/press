@@ -1,0 +1,23 @@
+{% extends "templates/emails/base.html" %}
+{% import "templates/emails/macros.html" as utils %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p>Hi,</p>
+        <p class="mb-4">
+            {{ message }}
+        </p>
+        <p>
+            If you have any concerns or questions, please do not hesitate to reach out to our support team at
+            {{ utils.link('support.frappe.io', 'https://support.frappe.io')}}
+        </p>
+        {{ utils.button('View Deploy Job', link, true) }}
+        {{ utils.separator() }}
+        {{ utils.signature() }}
+    </div>
+</td>
+
+
+{% endblock %}

@@ -1,0 +1,38 @@
+{% import "templates/emails/macros.html" as utils %}
+{% extends "templates/emails/base.html" %}
+
+{% block content %}
+
+<td class="text-base leading-6 text-gray-900">
+    <div class="p-8 bg-white from-markdown">
+        <p class="mb-4 font-bold">
+            {{ subject }}
+        </p>
+        <p class="mb-6">
+            Unfortunately, we must bring to your attention that your site hosted on Frappe Cloud has been temporarily <strong>suspended</strong> due to an unpaid invoice.<br>
+            <br>
+            To continue using your Frappe Cloud site, please settle your invoices by going to your <a href="https://frappecloud.com/dashboard/billing/overview">Frappe Cloud Dashboard.</a><br>
+            <br>
+            <strong>Once your invoices are settled, your site will be activated immediately.</strong><br>
+            <br>
+            Please complete the above steps before <strong>20th of this month</strong>, failing which your site will be dropped and if you have subscribed to $10 plan you might lose your data permanently.<br>
+            <br>
+            If you have any concerns or questions, contact our support team at support.frappe.io.
+        </p>
+
+        {%- if sites -%}
+		{{ utils.separator() }}
+		<p class="mt-0 mb-2">Following sites were suspended:</p>
+		<ul class="list-disc">
+			{%- for site in sites -%}
+			<li class="text-sm font-medium">{{ site }}</li>
+			{%- endfor -%}
+		</ul>
+		{%- endif -%}
+
+        {{ utils.separator() }}
+		{{ utils.signature() }}
+    </div>
+</td>
+
+{% endblock %}

@@ -3,6 +3,7 @@
 # For license information, please see license.txt
 
 
+from typing import Any
 import frappe
 from frappe.core.doctype.version.version import get_diff
 
@@ -36,13 +37,54 @@ class DatabaseServer(BaseServer):
 		if self.flags.in_insert or self.is_new():
 			return
 		self.update_mariadb_system_variables()
-		if self.has_value_changed("memory_high") or self.has_value_changed("memory_max"):
+		if (
+			self.has_value_changed("memory_high")
+			or self.has_value_changed("memory_max")
+			or self.has_value_changed("memory_swap_max")
+		):
 			self.update_memory_limits()
 
+		if (
+			self.has_value_changed("team")
+			and self.subscription
+			and self.subscription.team != self.team
+		):
+
+			self.subscription.disable()
+
+			# enable subscription if exists
+			if subscription := frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan": self.plan,
+				},
+			):
+				frappe.db.set_value("Subscription", subscription, "enabled", 1)
+			else:
+				try:
+					# create new subscription
+					frappe.get_doc(
+						{
+							"doctype": "Subscription",
+							"document_type": self.doctype,
+							"document_name": self.name,
+							"team": self.team,
+							"plan": self.plan,
+						}
+					).insert()
+				except Exception:
+					frappe.log_error("Database Subscription Creation Error")
+
 	def update_memory_limits(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_update_memory_limits")
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_update_memory_limits", enqueue_after_commit=True
+		)
 
 	def _update_memory_limits(self):
+		self.memory_swap_max = self.memory_swap_max or 0.1
 		if not self.memory_high or not self.memory_max:
 			return
 		ansible = Ansible(
@@ -54,6 +96,7 @@ class DatabaseServer(BaseServer):
 				"server": self.name,
 				"memory_high": self.memory_high,
 				"memory_max": self.memory_max,
+				"memory_swap_max": self.memory_swap_max,
 			},
 		)
 		play = ansible.run()
@@ -66,6 +109,7 @@ class DatabaseServer(BaseServer):
 			self.name,
 			"_update_mariadb_system_variables",
 			queue="long",
+			enqueue_after_commit=True,
 			variables=self.get_variables_to_update(),
 		)
 
@@ -127,6 +171,74 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Restart Error", server=self.name)
 
+	@frappe.whitelist()
+	def stop_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_stop_mariadb", timeout=1800)
+
+	def _stop_mariadb(self):
+		ansible = Ansible(
+			playbook="stop_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Stop Error", server=self.name)
+
+	@frappe.whitelist()
+	def run_upgrade_mariadb_job(self):
+		self.run_press_job("Upgrade MariaDB")
+
+	@frappe.whitelist()
+	def upgrade_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb", timeout=1800)
+
+	def _upgrade_mariadb(self):
+		ansible = Ansible(
+			playbook="upgrade_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Upgrade Error", server=self.name)
+
+	def add_mariadb_variable(
+		self,
+		variable: str,
+		value_type: str,
+		value: Any,
+		skip: bool = False,
+		persist: bool = True,
+	):
+		"""Add or update MariaDB variable on the server"""
+		existing = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == variable
+		)
+		if existing:
+			existing.set(value_type, value)
+			existing.set("skip", skip)
+			existing.set("persist", persist)
+		else:
+			self.append(
+				"mariadb_system_variables",
+				{
+					"mariadb_variable": variable,
+					value_type: value,
+					"skip": skip,
+					"persist": persist,
+				},
+			)
+		self.save()
+
 	def validate_server_id(self):
 		if self.is_new() and not self.server_id:
 			server_ids = frappe.get_all(
@@ -186,6 +298,10 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+				if self.is_self_hosted:
+					server = frappe.get_doc("Server", self.name)
+					if server.status != "Active":
+						server.setup_server()  # Setup App server after DB server setup
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -454,6 +570,43 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			log_error("Deadlock Logger Setup Exception", server=self.as_dict())
 
+	@frappe.whitelist()
+	def setup_pt_stalk(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_pt_stalk", queue="long", timeout=1200
+		)
+
+	def _setup_pt_stalk(self):
+		try:
+			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.is_stalk_setup = True
+				self.save()
+		except Exception:
+			log_error("Percona Stalk Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def fetch_stalks(self):
+		frappe.enqueue(
+			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
+			server=self.name,
+			job_id=f"fetch_mariadb_stalk:{self.name}",
+		)
+
+	def get_stalks(self):
+		return self.agent.get("database/stalks") or []
+
+	def get_stalk(self, name):
+		return self.agent.get(f"database/stalks/{name}")
+
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider in ("AWS EC2", "OCI"):
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()
@@ -504,6 +657,48 @@ class DatabaseServer(BaseServer):
 			self.status = "Broken"
 			log_error("Database Server Rename Exception", server=self.as_dict())
 		self.save()
+
+	@property
+	def ram_for_mariadb(self):
+		return self.real_ram - 700  # OS and other services
+
+	@frappe.whitelist()
+	def adjust_memory_config(self):
+		if not self.ram:
+			return
+
+		self.memory_high = round(max(self.ram_for_mariadb / 1024 - 1, 1), 3)
+		self.memory_max = round(max(self.ram_for_mariadb / 1024, 2), 3)
+		self.save()
+
+		self.add_mariadb_variable(
+			"innodb_buffer_pool_size",
+			"value_int",
+			int(self.ram_for_mariadb * 0.65),  # will be rounded up based on chunk_size
+		)
+
+	@frappe.whitelist()
+	def reconfigure_mariadb_exporter(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_reconfigure_mariadb_exporter", queue="long", timeout=1200
+		)
+
+	def _reconfigure_mariadb_exporter(self):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="reconfigure_mysqld_exporter.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_root_password": mariadb_root_password,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error(
+				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
+			)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(

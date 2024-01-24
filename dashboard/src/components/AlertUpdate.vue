@@ -14,13 +14,13 @@
 		<template #actions>
 			<Button
 				v-if="deployInformation.deploy_in_progress"
-				appearance="primary"
+				variant="solid"
 				:route="`/benches/${bench.name}/deploys/${deployInformation.last_deploy.name}`"
 				>View Progress</Button
 			>
 			<Button
 				v-else
-				appearance="primary"
+				variant="solid"
 				@click="
 					() => {
 						showDeployDialog = true;
@@ -49,6 +49,7 @@
 					:removedApps="deployInformation.removed_apps"
 				/>
 				<BenchSiteUpdates
+					class="p-1"
 					v-if="step == 'Sites'"
 					:sites="deployInformation.sites"
 					v-model:selectedSites="selectedSites"
@@ -56,16 +57,19 @@
 				<ErrorMessage class="mt-2" :message="errorMessage" />
 			</template>
 			<template v-slot:actions>
+				<Button v-if="step == 'Sites'" class="w-full" @click="step = 'Apps'">
+					Back
+				</Button>
 				<Button
 					v-if="step == 'Sites'"
-					appearance="primary"
+					variant="solid"
+					class="mt-2 w-full"
 					@click="$resources.deploy.submit()"
 					:loading="$resources.deploy.loading"
 				>
 					{{ selectedSites.length > 0 ? 'Update' : 'Skip and Deploy' }}
 				</Button>
-				<Button v-if="step == 'Sites'" @click="step = 'Apps'"> Back </Button>
-				<Button v-else appearance="primary" @click="step = 'Sites'">
+				<Button v-else variant="solid" class="w-full" @click="step = 'Sites'">
 					Next
 				</Button>
 			</template>
@@ -76,6 +80,8 @@
 import BenchAppUpdates from './BenchAppUpdates.vue';
 import BenchSiteUpdates from './BenchSiteUpdates.vue';
 import SwitchTeamDialog from './SwitchTeamDialog.vue';
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AlertBenchUpdate',
 	props: ['bench'],
@@ -96,7 +102,7 @@ export default {
 	resources: {
 		deployInformation() {
 			return {
-				method: 'press.api.bench.deploy_information',
+				url: 'press.api.bench.deploy_information',
 				params: {
 					name: this.bench?.name
 				},
@@ -104,20 +110,11 @@ export default {
 			};
 		},
 		deploy() {
-			let appsToIgnore = [];
-			if (this.deployInformation) {
-				appsToIgnore = Array.from(
-					this.deployInformation.apps.filter(
-						app => app.update_available && !this.selectedApps.includes(app.app)
-					)
-				);
-			}
-
 			return {
-				method: 'press.api.bench.deploy_and_update',
+				url: 'press.api.bench.deploy_and_update',
 				params: {
 					name: this.bench?.name,
-					apps_to_ignore: appsToIgnore,
+					apps: this.selectedApps,
 					sites: this.selectedSites
 				},
 				validate() {
@@ -128,9 +125,14 @@ export default {
 						return 'You must select atleast 1 app to proceed with update.';
 					}
 				},
-				onSuccess() {
+				onSuccess(new_candidate_name) {
 					this.showDeployDialog = false;
-					this.$notify({
+					this.$resources.deployInformation.setData({
+						...this.$resources.deployInformation.data,
+						deploy_in_progress: true,
+						last_deploy: { name: new_candidate_name, status: 'Running' }
+					});
+					notify({
 						title: 'Updates scheduled successfully',
 						icon: 'check',
 						color: 'green'

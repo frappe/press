@@ -1,28 +1,42 @@
 <template>
 	<Dialog
 		:modelValue="modelValue"
-		@update:modelValue="$emit('update:modelValue', $event)"
-		:options="{
-			title: 'Buy Credits',
-			subtitle: paymentGateway ? '' : 'Choose your payment gateway'
-		}"
+		@update:modelValue="$emit('update:show', $event)"
 	>
+		<template #body-title>
+			<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+				Add money to your account
+			</h3>
+			<p class="mt-1 text-base text-gray-600">
+				{{ paymentGateway ? '' : 'Choose your payment gateway' }}
+			</p>
+		</template>
 		<template v-slot:body-content>
 			<BuyPrepaidCredits
 				v-if="paymentGateway === 'stripe'"
 				:minimumAmount="minimumAmount"
 				@success="$emit('success')"
-				@cancel="$emit('update:modelValue', false)"
+				@cancel="$emit('update:show', false)"
 			/>
 
 			<div v-if="paymentGateway === 'razorpay'">
-				<Input
+				<FormControl
 					:label="`Amount (Minimum Amount: ${minimumAmount})`"
+					class="mb-2"
 					v-model.number="creditsToBuy"
 					name="amount"
 					autocomplete="off"
 					type="number"
 					:min="minimumAmount"
+				/>
+
+				<FormControl
+					label="Total Amount + GST(if applicable)"
+					disabled
+					v-model="total"
+					name="total"
+					autocomplete="off"
+					type="number"
 				/>
 
 				<p class="mt-3 text-xs">
@@ -39,7 +53,7 @@
 					<Button @click="paymentGateway = null">Go Back</Button>
 					<div>
 						<Button
-							appearance="primary"
+							variant="solid"
 							:loading="$resources.createRazorpayOrder.loading"
 							@click="buyCreditsWithRazorpay"
 						>
@@ -90,7 +104,8 @@ export default {
 	data() {
 		return {
 			paymentGateway: null,
-			creditsToBuy: 0
+			creditsToBuy: this.minimumAmount,
+			total: this.minimumAmount
 		};
 	},
 	mounted() {
@@ -108,6 +123,13 @@ export default {
 		) {
 			this.paymentGateway = 'stripe';
 		}
+
+		this.updateTotal();
+	},
+	watch: {
+		creditsToBuy() {
+			this.updateTotal();
+		}
 	},
 	props: {
 		modelValue: {
@@ -118,11 +140,11 @@ export default {
 			default: 0
 		}
 	},
-	emits: ['update:modelValue', 'success'],
+	emits: ['update:show', 'success'],
 	resources: {
 		createRazorpayOrder() {
 			return {
-				method: 'press.api.billing.create_razorpay_order',
+				url: 'press.api.billing.create_razorpay_order',
 				params: {
 					amount: this.creditsToBuy
 				},
@@ -138,7 +160,7 @@ export default {
 		},
 		handlePaymentSuccess() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_success',
+				url: 'press.api.billing.handle_razorpay_payment_success',
 				onSuccess() {
 					this.$emit('success');
 				}
@@ -146,7 +168,7 @@ export default {
 		},
 		handlePaymentFailed() {
 			return {
-				method: 'press.api.billing.handle_razorpay_payment_failed',
+				url: 'press.api.billing.handle_razorpay_payment_failed',
 				onSuccess() {
 					console.log('Payment Failed.');
 				}
@@ -154,6 +176,18 @@ export default {
 		}
 	},
 	methods: {
+		updateTotal() {
+			if (this.$account.team.currency === 'INR') {
+				this.total = Number(
+					(
+						this.creditsToBuy +
+						this.creditsToBuy * this.$account.billing_info.gst_percentage
+					).toFixed(2)
+				);
+			} else {
+				this.total = this.creditsToBuy;
+			}
+		},
 		buyCreditsWithRazorpay() {
 			this.$resources.createRazorpayOrder.submit();
 		},
@@ -185,11 +219,6 @@ export default {
 
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
-		}
-	},
-	watch: {
-		minimumAmount(amt) {
-			console.log(amt);
 		}
 	}
 };

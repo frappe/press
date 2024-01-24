@@ -77,7 +77,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -267,7 +267,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2022-06-28 13:50:52.368111",
+ "modified": "2023-12-13 15:09:34.499141",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Trace Server",

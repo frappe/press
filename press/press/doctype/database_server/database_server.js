@@ -7,6 +7,7 @@ frappe.ui.form.on('Database Server', {
 			`/dashboard/servers/${frm.doc.name}`,
 			__('Visit Dashboard'),
 		);
+
 		[
 			[__('Ping Agent'), 'ping_agent', false, !frm.doc.is_server_setup],
 			[__('Ping Ansible'), 'ping_ansible', true, frm.doc.is_server_prepared],
@@ -17,6 +18,12 @@ frappe.ui.form.on('Database Server', {
 				!frm.doc.is_server_prepared,
 			],
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
+			[
+				__('Update Agent Ansible'),
+				'update_agent_ansible',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Fetch Keys'),
 				'fetch_keys',
@@ -80,11 +87,37 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup && frm.doc.is_performance_schema_enabled,
 			],
 			[__('Restart MariaDB'), 'restart_mariadb', true, frm.doc.is_server_setup],
+			[__('Stop MariaDB'), 'stop_mariadb', true, frm.doc.is_server_setup],
+			[
+				__('Run Upgrade MariaDB Job'),
+				'run_upgrade_mariadb_job',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[__('Upgrade MariaDB'), 'upgrade_mariadb', true, frm.doc.is_server_setup],
+			[
+				__('Reconfigure MariaDB Exporter'),
+				'reconfigure_mariadb_exporter',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Setup Deadlock Logger'),
 				'setup_deadlock_logger',
 				true,
 				frm.doc.is_server_setup,
+			],
+			[
+				__('Setup Percona Stalk'),
+				'setup_pt_stalk',
+				true,
+				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
+			],
+			[
+				__('Fetch MariaDB Stalks'),
+				'fetch_stalks',
+				true,
+				frm.doc.is_server_setup && frm.doc.is_stalk_setup,
 			],
 			[
 				__('Fetch Keys'),
@@ -94,8 +127,20 @@ frappe.ui.form.on('Database Server', {
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
 			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[
+				__('Adjust Memory Config'),
+				'adjust_memory_config',
+				true,
+				frm.doc.status === 'Active',
+			],
 			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -127,5 +172,9 @@ frappe.ui.form.on('Database Server', {
 				);
 			}
 		});
+	},
+
+	hostname: function (frm) {
+		press.set_hostname_abbreviation(frm);
 	},
 });

@@ -3,43 +3,33 @@
 		<template #actions>
 			<Button icon-left="edit" @click="showEditLinksDialog = true">Edit</Button>
 		</template>
-		<Dialog :options="{ title: 'Update Links' }" v-model="showEditLinksDialog">
+		<Dialog
+			:options="{
+				title: 'Update Links',
+				actions: [
+					{
+						variant: 'solid',
+						label: 'Save Changes',
+						loading: $resources.updateAppLinks.loading,
+						onClick: () => $resources.updateAppLinks.submit()
+					}
+				]
+			}"
+			v-model="showEditLinksDialog"
+		>
 			<template v-slot:body-content>
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Input label="Website" type="text" v-model="app.website" />
-					<Input label="Support" type="text" v-model="app.support" />
-					<Input
-						label="Documentation"
-						type="text"
-						v-model="app.documentation"
-					/>
-					<Input
-						label="Privacy Policy"
-						type="text"
-						v-model="app.privacy_policy"
-					/>
-					<Input
+					<FormControl label="Website" v-model="app.website" />
+					<FormControl label="Support" v-model="app.support" />
+					<FormControl label="Documentation" v-model="app.documentation" />
+					<FormControl label="Privacy Policy" v-model="app.privacy_policy" />
+					<FormControl
 						label="Terms of Service"
-						type="text"
 						v-model="app.terms_of_service"
 					/>
 				</div>
 
 				<ErrorMessage class="mt-4" :message="$resources.updateAppLinks.error" />
-			</template>
-
-			<template #actions>
-				<div class="space-x-2">
-					<Button @click="showEditLinksDialog = false">Cancel</Button>
-					<Button
-						appearance="primary"
-						:loading="$resources.updateAppLinks.loading"
-						loadingText="Saving..."
-						@click="$resources.updateAppLinks.submit()"
-					>
-						Save changes
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 		<div class="divide-y" v-if="app">
@@ -62,6 +52,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'MarketplaceAppLinks',
 	props: {
@@ -75,7 +67,7 @@ export default {
 	resources: {
 		updateAppLinks() {
 			return {
-				method: 'press.api.marketplace.update_app_links',
+				url: 'press.api.marketplace.update_app_links',
 				params: {
 					name: this.app.name,
 					links: {
@@ -88,7 +80,7 @@ export default {
 				},
 				onSuccess() {
 					this.showEditLinksDialog = false;
-					this.$notify({
+					notify({
 						title: 'Links Updated!',
 						icon: 'check',
 						color: 'green'

@@ -8,9 +8,13 @@
   "title",
   "column_break_3",
   "source",
+  "app_name",
+  "release_section",
   "release",
+  "pullable_release",
+  "column_break_azgf",
   "hash",
-  "app_name"
+  "pullable_hash"
  ],
  "fields": [
   {
@@ -65,11 +69,33 @@
    "fieldtype": "Data",
    "label": "App Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "release_section",
+   "fieldtype": "Section Break",
+   "label": "Release"
+  },
+  {
+   "fieldname": "pullable_release",
+   "fieldtype": "Link",
+   "label": "Pullable Release",
+   "options": "App Release",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_azgf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pullable_hash",
+   "fieldtype": "Data",
+   "label": "Pullable Hash",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2023-01-18 16:40:49.477241",
+ "modified": "2023-12-22 13:59:01.558580",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate App",

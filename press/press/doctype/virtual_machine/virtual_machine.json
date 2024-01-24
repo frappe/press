@@ -20,14 +20,17 @@
   "index",
   "section_break_5",
   "machine_type",
+  "instance_id",
+  "column_break_hgcr",
   "disk_size",
-  "aws_instance_id",
+  "vcpu",
+  "ram",
   "column_break_8",
   "virtual_machine_image",
   "machine_image",
   "ssh_key",
   "networking_section",
-  "aws_subnet_id",
+  "subnet_id",
   "private_ip_address",
   "public_ip_address",
   "column_break_15",
@@ -35,7 +38,7 @@
   "public_dns_name",
   "private_dns_name",
   "security_section",
-  "aws_security_group_id",
+  "security_group_id",
   "column_break_18",
   "termination_protection",
   "volumes_section",
@@ -48,7 +51,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Cloud Provider",
-   "options": "\nAWS EC2",
+   "options": "\nAWS EC2\nOCI",
    "read_only": 1,
    "reqd": 1
   },
@@ -90,7 +93,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "virtual_machine_image.aws_ami_id",
+   "fetch_from": "virtual_machine_image.image_id",
    "fetch_if_empty": 1,
    "fieldname": "machine_image",
    "fieldtype": "Data",
@@ -105,22 +108,9 @@
    "reqd": 1
   },
   {
-   "fieldname": "aws_instance_id",
-   "fieldtype": "Data",
-   "label": "AWS Instance ID",
-   "read_only": 1
-  },
-  {
    "fieldname": "networking_section",
    "fieldtype": "Section Break",
    "label": "Networking"
-  },
-  {
-   "fetch_from": "cluster.aws_subnet_id",
-   "fieldname": "aws_subnet_id",
-   "fieldtype": "Data",
-   "label": "AWS Subnet ID",
-   "read_only": 1
   },
   {
    "fetch_from": "cluster.subnet_cidr_block",
@@ -152,13 +142,6 @@
   {
    "fieldname": "column_break_18",
    "fieldtype": "Column Break"
-  },
-  {
-   "fetch_from": "cluster.aws_security_group_id",
-   "fieldname": "aws_security_group_id",
-   "fieldtype": "Data",
-   "label": "AWS Security Group ID",
-   "read_only": 1
   },
   {
    "fieldname": "public_ip_address",
@@ -260,6 +243,42 @@
    "label": "Domain",
    "options": "Root Domain",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hgcr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Int",
+   "label": "RAM (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "cluster.subnet_id",
+   "fieldname": "subnet_id",
+   "fieldtype": "Data",
+   "label": "Subnet ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "cluster.security_group_id",
+   "fieldname": "security_group_id",
+   "fieldtype": "Data",
+   "label": "Security Group ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "instance_id",
+   "fieldtype": "Data",
+   "label": "Instance ID",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -290,7 +309,7 @@
    "link_fieldname": "virtual_machine"
   }
  ],
- "modified": "2023-08-08 12:24:39.699485",
+ "modified": "2023-12-12 12:18:00.680292",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Virtual Machine",

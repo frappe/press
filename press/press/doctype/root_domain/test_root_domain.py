@@ -46,8 +46,7 @@ class TestRootDomain(unittest.TestCase):
 			create_test_database_server,
 		)
 
-		if not creation:
-			creation = datetime.now()
+		creation = creation or frappe.utils.now_datetime()
 		server = create_test_server(
 			create_test_proxy_server().name, create_test_database_server().name
 		)

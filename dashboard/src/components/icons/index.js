@@ -5,6 +5,7 @@ import ServerIcon from './ServerIcon.vue';
 import BillingIcon from './BillingIcon.vue';
 import SettingsIcon from './SettingsIcon.vue';
 import SpacesIcon from './SpacesIcon.vue';
+import SecurityIcon from './SecurityIcon.vue';
 
 export const FCIcons = {
 	SiteIcon,
@@ -13,5 +14,6 @@ export const FCIcons = {
 	AppsIcon,
 	BillingIcon,
 	SettingsIcon,
-	SpacesIcon
+	SpacesIcon,
+	SecurityIcon
 };

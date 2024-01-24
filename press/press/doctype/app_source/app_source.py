@@ -2,15 +2,16 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+from datetime import datetime
+from typing import List
+
 import frappe
 import requests
-
-from typing import List
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
-from press.utils import get_current_team
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.utils import get_current_team
 
 
 class AppSource(Document):
@@ -61,6 +62,8 @@ class AppSource(Document):
 
 	def before_save(self):
 		# Assumes repository_url looks like https://github.com/frappe/erpnext
+		self.repository_url = self.repository_url.removesuffix(".git")
+
 		_, self.repository_owner, self.repository = self.repository_url.rsplit("/", 2)
 		# self.create_release()
 
@@ -91,6 +94,7 @@ class AppSource(Document):
 
 			branch = github_response.json()
 			hash = branch["commit"]["sha"]
+			timestamp = branch["commit"]["commit"]["author"]["date"].replace("Z", "+00:00")
 			if not frappe.db.exists(
 				"App Release", {"app": self.app, "source": self.name, "hash": hash}
 			):
@@ -104,6 +108,7 @@ class AppSource(Document):
 						"team": self.team,
 						"message": branch["commit"]["commit"]["message"],
 						"author": branch["commit"]["commit"]["author"]["name"],
+						"timestamp": datetime.fromisoformat(timestamp).strftime("%Y-%m-%d %H:%M:%S"),
 						"deployable": bool(is_first_release),
 					}
 				).insert()
@@ -126,6 +131,13 @@ class AppSource(Document):
 					"last_github_poll_failed": True,
 					"last_synced": frappe.utils.now(),
 				},
+			)
+			self.add_comment(
+				text=f"""Exception occured in create_release:
+{frappe.get_traceback()}
+user: {frappe.session.user}
+team: {frappe.local.team()}
+"""
 			)
 
 

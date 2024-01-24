@@ -1,5 +1,5 @@
 {% extends "templates/marketplace/base.html" %}
-{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_blue, badge_green,
+{%- from "templates/marketplace/macros.html" import button, link, breadcrumbs, badge_gray, badge_green,
 five_star_rating -%}
 
 {%- block title -%}
@@ -38,7 +38,7 @@ five_star_rating -%}
 	{%- if publisher_profile -%}
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Publisher</h5>
-		<a class="text-base text-blue-500 hover:text-blue-700"
+		<a class="text-base text-gray-800 hover:text-gray-900"
 			href="{{ 'mailto:{}'.format(publisher_profile.contact_email) if  publisher_profile.contact_email else '#'}}">
 			{{ publisher_profile.display_name }}
 		</a>
@@ -51,10 +51,10 @@ five_star_rating -%}
 			<!-- Hard-coded for now -->
 			{%- if app.subscription_type == 'Freemium'-%} {{ badge_green('Freemium')
 			}} {%- elif app.subscription_type == 'Paid'-%} {{ badge_green('Paid') }}
-			{%- else -%} {{ badge_blue('Free') }} {%- endif -%} {%- for category in
+			{%- else -%} {{ badge_gray('Free') }} {%- endif -%} {%- for category in
 			app.categories -%}
-			<div class="inline-flex flex-row mt-2 mr-2">
-				{{ badge_blue(category.category) }}
+			<div class="inline-flex flex-row mt-4 mr-2">
+				{{ badge_gray(category.category) }}
 			</div>
 			{%- endfor -%}
 		</div>
@@ -62,7 +62,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Learn more & Support</h5>
-		<ul class="flex flex-col mt-2 space-y-3">
+		<ul class="flex flex-col mt-4 space-y-3">
 			{%- for label, icon, href in [ ('Visit Website', 'external-link',
 			app.website), ('Support', 'life-buoy', app.support), ('Documentation',
 			'file-text', app.documentation), ('Privacy Policy', 'lock',
@@ -80,7 +80,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-xl font-semibold text-gray-900">Supported Versions</h5>
-		<ul class="mt-2 space-y-1 text-base text-gray-600">
+		<ul class="mt-4 space-y-1 text-base text-gray-600">
 			{%- for supported_version in supported_versions -%}
 			<li>
 				{{
@@ -105,7 +105,7 @@ five_star_rating -%}
 		</h1>
 	</div>
 	<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
-	<div class="mt-2 flex flex-row justify-items-center">
+	<div class="mt-4 flex flex-row justify-items-center">
 		{{ button('Install Now', '/dashboard/install-app/' + app.name, 'primary') }}
 		<div class="ml-2 mt-2 flex flex-row text-sm text-gray-600 justify-items-end">
 			<i class="w-4 h-4 mx-2" data-feather="download"></i>
@@ -189,7 +189,7 @@ five_star_rating -%}
 					<div class="text-base text-gray-600">
 						{{ review.user_name }} &bull; {{ frappe.utils.pretty_date(review.creation) }}
 						&bull; {{ link('Reply', url='/dashboard/developer-reply/' + app.name + '/' + review.name + '?title=' + app.title) }}
-						<div class="flex flex-col mt-2">
+						<div class="flex flex-col mt-4">
 							{% for reply in review.developer_reply %}
 							<div class="flex flex-row text-gray-900 mb-2">
 

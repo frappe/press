@@ -28,8 +28,7 @@ def create_test_site_backup(
 
 	Makes offsite backups by default along with remote files.
 	"""
-	if not creation:
-		creation = datetime.now()
+	creation = creation or frappe.utils.now_datetime()
 	params_dict = {
 		"doctype": "Site Backup",
 		"status": status,

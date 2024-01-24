@@ -16,7 +16,7 @@
 				class="mr-2"
 				size="lg"
 				shape="square"
-				:imageURL="appInfo.image"
+				:image="appInfo.image"
 				:label="appInfo.title"
 			/>
 
@@ -57,7 +57,7 @@ export default {
 	resources: {
 		getAppPlans() {
 			return {
-				method: 'press.api.marketplace.get_app_plans',
+				url: 'press.api.marketplace.get_app_plans',
 				params: {
 					app: this.app,
 					include_disabled: false,
@@ -79,7 +79,7 @@ export default {
 		},
 		getMarketplaceAppInfo() {
 			return {
-				method: 'press.api.marketplace.get_app_info',
+				url: 'press.api.marketplace.get_app_info',
 				params: {
 					app: this.app
 				},

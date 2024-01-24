@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<Button
-			v-if="$resources.apps.loading"
+			v-if="$resources.apps.loading && !$resources.apps.data"
 			:loading="true"
 			loadingText="Loading..."
 		></Button>
@@ -15,10 +15,10 @@
 			</p>
 		</div>
 		<div v-else>
-			<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 md:grid-cols-2">
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<MarketplaceAppCard
 					@click.native="routeToAppPage(app.name, app.status)"
-					v-for="app in $resources.apps.data"
+					v-for="app in apps"
 					:key="app.name"
 					:app="app"
 				/>
@@ -41,7 +41,8 @@ export default {
 	resources: {
 		apps() {
 			return {
-				method: 'press.api.marketplace.get_apps',
+				url: 'press.api.marketplace.get_apps',
+				cache: ['MarketplaceAppList', this.$account.team.name],
 				auto: true
 			};
 		}
@@ -53,6 +54,17 @@ export default {
 			} else {
 				this.$router.push(`/marketplace/apps/${appName}`);
 			}
+		}
+	},
+	computed: {
+		apps() {
+			if (!this.$resources.apps.data) return [];
+
+			let apps = this.$resources.apps.data.filter(app =>
+				this.$account.hasPermission(app.name, '', true)
+			);
+
+			return apps;
 		}
 	}
 };

@@ -3,9 +3,9 @@
 		<div v-if="publisherProfileInfo && !publisherProfileInfo.profile_created">
 			<Alert title="You have not created your profile yet.">
 				<template #actions>
-					<Button appearance="primary" @click="showEditDialog = true"
-						>Create</Button
-					>
+					<Button variant="solid" @click="showEditDialog = true">
+						Create
+					</Button>
 				</template>
 			</Alert>
 		</div>
@@ -40,7 +40,7 @@ export default {
 	resources: {
 		getPublisherProfileInfo() {
 			return {
-				method: 'press.api.marketplace.get_publisher_profile_info',
+				url: 'press.api.marketplace.get_publisher_profile_info',
 				auto: true
 			};
 		}

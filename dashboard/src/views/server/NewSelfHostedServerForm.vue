@@ -3,22 +3,19 @@
 		<h2 class="space-y-1 text-lg font-semibold">Enter the Server Details</h2>
 		<div class="mt-6 flex flex-col gap-4">
 			<p class="text-black-900 text-base">Public IP of the Server</p>
-			<Input
+			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="publicIP"
-				@change="$emit('update:publicIP', $event)"
-				type="text"
+				@change="$emit('update:publicIP', $event.target.value)"
 			/>
 			<p class="text-black-900 text-base">Private IP of the Server</p>
-			<Input
+			<FormControl
 				class="z-10 w-full rounded-r-none"
 				:value="privateIP"
-				@change="$emit('update:privateIP', $event)"
-				type="text"
+				@change="$emit('update:privateIP', $event.target.value)"
 			/>
 			<div class="mt-2">
 				<ErrorMessage :message="publicIpErrorMessage" />
-				<ErrorMessage :message="privateIpErrorMessage" />
 			</div>
 		</div>
 	</div>
@@ -26,8 +23,8 @@
 <script>
 export default {
 	name: 'SelfHostedServerForm',
-	props: ['privateIP', 'publicIP', 'error'],
-	emits: ['update:publicIP', 'update:privateIP', 'update:error'],
+	props: ['publicIP', 'error'],
+	emits: ['update:publicIP', 'update:error'],
 	watch: {
 		hasError() {
 			this.$emit('update:error', this.hasError);
@@ -37,17 +34,11 @@ export default {
 		this.$emit('update:error', this.hasError);
 	},
 	computed: {
-		privateIpErrorMessage() {
-			return this.validateIP(this.privateIP, 'Private');
-		},
 		publicIpErrorMessage() {
 			return this.validateIP(this.publicIP, 'Public');
 		},
 		hasError() {
-			return (
-				this.privateIpErrorMessage !== null ||
-				this.publicIpErrorMessage !== null
-			);
+			return this.publicIpErrorMessage !== null;
 		}
 	},
 	methods: {

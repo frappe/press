@@ -21,8 +21,11 @@ class RazorpayPaymentRecord(Document):
 		client = get_razorpay_client()
 		payment = client.payment.fetch(self.payment_id)
 		amount = payment["amount"] / 100
+		gst = float(payment["notes"].get("gst", 0))
 		balance_transaction = team.allocate_credit_amount(
-			amount, source="Prepaid Credits", remark=f"Razorpay: {self.payment_id}"
+			amount - gst if gst else amount,
+			source="Prepaid Credits",
+			remark=f"Razorpay: {self.payment_id}",
 		)
 
 		# Add a field to track razorpay event
@@ -33,6 +36,8 @@ class RazorpayPaymentRecord(Document):
 			status="Paid",
 			due_date=datetime.fromtimestamp(payment["created_at"]),
 			amount_paid=amount,
+			gst=gst or 0,
+			total_before_tax=amount - gst,
 			amount_due=amount,
 			razorpay_order_id=self.order_id,
 			razorpay_payment_record=self.name,

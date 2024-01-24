@@ -11,6 +11,24 @@ from frappe.utils import rounded
 
 
 class Plan(Document):
+	whitelisted_fields = [
+		"name",
+		"plan_title",
+		"document_type",
+		"document_name",
+		"price_inr",
+		"price_usd",
+		"period",
+		"cpu_time_per_day",
+		"max_database_usage",
+		"max_storage_usage",
+	]
+
+	def get_doc(self, doc):
+		doc["price_per_day_inr"] = self.get_price_per_day("INR")
+		doc["price_per_day_usd"] = self.get_price_per_day("USD")
+		return doc
+
 	@property
 	def period(self):
 		return frappe.utils.get_last_day(None).day
