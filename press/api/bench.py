@@ -211,7 +211,7 @@ def options(only_by_current_team=False):
 	ON
 		source_version.version = version.name
 	WHERE
-		version.public = 1 AND
+		version.public = 1 AND source.enabled=1 AND
 		(source.team = %(team)s {or_conditions})
 	ORDER BY source.creation
 	""",
