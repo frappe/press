@@ -383,14 +383,19 @@ def get_account_request_from_key(key):
 
 @frappe.whitelist()
 def get():
-	cached = frappe.cache.get_value("cached-account.get", user=frappe.session.user)
+	cached = None
+	try:
+		cached = frappe.cache.get_value("cached-account.get", user=frappe.session.user)
+	except: 
+		pass
+	
 	if cached:
 		return cached
 	else:
 		value = _get()
 		frappe.cache.set_value(
-			"cached-account.get", value, user=frappe.session.user, expires_in_sec=60
-		)
+				"cached-account.get", value, user=frappe.session.user, expires_in_sec=60
+			)
 		return value
 
 
