@@ -6,7 +6,7 @@
 import frappe
 import json
 from frappe.model.document import Document
-from frappe.utils import formataddr, random_string, get_url
+from frappe.utils import random_string, get_url
 from press.utils import get_country_info
 
 
@@ -55,10 +55,6 @@ class AccountRequest(Document):
 	@frappe.whitelist()
 	def send_verification_email(self):
 		url = self.get_verification_url()
-		signature, message, image_path = "", "", ""
-		app_title = "ERPNext" if self.saas_app == "erpnext" else "Frappe Cloud"
-		sender = ""
-		args = {}
 
 		if frappe.conf.developer_mode:
 			print(f"\nSetup account URL for {self.email}:")
@@ -66,34 +62,16 @@ class AccountRequest(Document):
 			print()
 			return
 
-		if self.saas_app and frappe.db.get_value(
-			"Marketplace App", self.saas_app, "custom_verify_template"
-		):
-			app_title, subject, message, signature = frappe.db.get_value(
-				"Marketplace App", self.saas_app, ["title", "subject", "message", "signature"]
-			)
-			message = frappe.render_template(message, {})
-			signature = frappe.render_template(signature, {})
-			image_path = frappe.db.get_value(
-				"Saas Signup Generator", self.saas_app, "image_path"
-			)
-			template = "saas_verify_account"
+		subject = "Verify your email for Frappe"
+		args = {}
 
-			outgoing_email, outgoing_sender_name = frappe.db.get_value(
-				"Marketplace App", self.saas_app, ["outgoing_email", "outgoing_sender_name"]
-			)
-			if outgoing_email:
-				sender = formataddr((outgoing_sender_name, outgoing_email))
+		custom_template = self.saas_app and frappe.db.get_value(
+			"Marketplace App", self.saas_app, "custom_verify_template"
+		)
+		if self.saas_product or custom_template:
+			template = "saas_verify_account"
 		else:
-			subject = "Verify your account"
 			template = "verify_account"
-			args.update(
-				{
-					"read_pixel_path": get_url(
-						f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
-					)
-				}
-			)
 
 			if self.invited_by and self.role != "Press Admin":
 				subject = f"You are invited by {self.invited_by} to join Frappe Cloud"
@@ -101,15 +79,16 @@ class AccountRequest(Document):
 
 		args.update(
 			{
+				"invited_by": self.invited_by,
 				"link": url,
-				"title": app_title,
-				"message": message,
-				"signature_text": signature,
-				"image_path": image_path,
+				# "image_path": "/assets/press/images/frappe-logo-black.png",
+				"image_path": "https://github.com/frappe/gameplan/assets/9355208/447035d0-0686-41d2-910a-a3d21928ab94",
+				"read_pixel_path": get_url(
+					f"/api/method/press.utils.telemetry.capture_read_event?name={self.name}"
+				),
 			}
 		)
 		frappe.sendmail(
-			sender=sender,
 			recipients=self.email,
 			subject=subject,
 			template=template,
@@ -122,12 +101,12 @@ class AccountRequest(Document):
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
-
-		return get_url(f"/dashboard/setup-account/{self.request_key}")
+		dashboard_url = "dashboard2" if self.new_signup_flow else "dashboard"
+		return get_url(f"/{dashboard_url}/setup-account/{self.request_key}")
 
 	@property
 	def full_name(self):
-		return self.first_name + " " + self.last_name
+		return " ".join(filter(None, [self.first_name, self.last_name]))
 
 	def get_site_name(self):
 		return (

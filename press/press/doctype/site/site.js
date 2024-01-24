@@ -106,6 +106,7 @@ frappe.ui.form.on('Site', {
 			[__('Activate'), 'activate', frm.doc.status !== 'Archived'],
 			[__('Reset Site Usage'), 'reset_site_usage'],
 			[__('Clear Cache'), 'clear_site_cache'],
+			[__('Optimize Tables'), 'optimize_tables'],
 			[__('Update Site Config'), 'update_site_config'],
 			[
 				__('Enable Database Access'),
@@ -136,6 +137,11 @@ frappe.ui.form.on('Site', {
 				frm.doc.name.includes('.archived'),
 			],
 			[__('Update without Backup'), 'update_without_backup'],
+			[
+				__('Fetch bench from Agent'),
+				'fetch_bench_from_agent',
+				frm.doc.status !== 'Archived',
+			],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

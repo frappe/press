@@ -42,6 +42,7 @@ frappe.ui.form.on('Proxy Server', {
 					(!frm.doc.frappe_public_key || !frm.doc.root_public_key),
 			],
 			[__('Update TLS Certificate'), 'update_tls_certificate', true],
+			[__('Create Image'), 'create_image', true, frm.doc.status == 'Active'],
 			[
 				__('Setup Replication'),
 				'setup_replication',
@@ -60,6 +61,14 @@ frappe.ui.form.on('Proxy Server', {
 			],
 			[__('Archive'), 'archive', true, frm.doc.status !== 'Archived'],
 			[__('Setup Fail2ban'), 'setup_fail2ban', true, frm.doc.is_server_setup],
+			[__('Setup Wireguard'), 'setup_wireguard', true],
+			[__('Reload Wireguard'), 'reload_wireguard', true],
+			[
+				__('Reboot with serial console'),
+				'reboot_with_serial_console',
+				true,
+				frm.doc.virtual_machine,
+			],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(
@@ -91,5 +100,9 @@ frappe.ui.form.on('Proxy Server', {
 				);
 			}
 		});
+	},
+
+	hostname: function (frm) {
+		press.set_hostname_abbreviation(frm);
 	},
 });

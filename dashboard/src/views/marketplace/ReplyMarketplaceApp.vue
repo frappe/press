@@ -1,7 +1,6 @@
 <script setup>
 import { reactive } from 'vue';
-import useResource from '@/composables/resource';
-import StarRatingInput from '@/components/StarRatingInput.vue';
+import { createResource } from 'frappe-ui';
 
 const props = defineProps({
 	marketplaceApp: String,
@@ -18,8 +17,8 @@ const reply = reactive({
 	reply: ''
 });
 
-const submitReply = useResource({
-	method: 'press.api.marketplace.submit_developer_reply',
+const submitReply = createResource({
+	url: 'press.api.marketplace.submit_developer_reply',
 	validate() {
 		if (!reply.reply) {
 			return 'Reply cannot be empty';
@@ -42,13 +41,17 @@ const submitReply = useResource({
 
 		<div class="mt-2 sm:grid sm:grid-cols-2">
 			<div>
-				<Input v-model="reply.reply" type="textarea" label="Write Reply" />
+				<FormControl
+					v-model="reply.reply"
+					type="textarea"
+					label="Write Reply"
+				/>
 
 				<ErrorMessage class="mt-2" :message="submitReply.error" />
 				<Button
-					class="mt-4"
+					class="mt-4 w-full"
 					:loading="submitReply.loading"
-					appearance="primary"
+					variant="solid"
 					@click="submitReply.submit({ ...reply })"
 					>Submit</Button
 				>

@@ -5,11 +5,27 @@
 import frappe
 import requests
 import json
+import sqlparse
 from press.api.site import protected
 from press.press.doctype.plan.plan import get_plan_config
-from frappe.utils import convert_utc_to_timezone, get_datetime
+from frappe.utils import (
+	convert_utc_to_timezone,
+	get_datetime,
+	get_datetime_str,
+	get_system_timezone,
+)
 from frappe.utils.password import get_decrypted_password
 from datetime import datetime
+from press.agent import Agent
+from press.press.report.binary_log_browser.binary_log_browser import (
+	get_files_in_timespan,
+	convert_user_timezone_to_utc,
+)
+
+try:
+	from frappe.utils import convert_utc_to_user_timezone
+except ImportError:
+	from frappe.utils import convert_utc_to_system_timezone as convert_utc_to_user_timezone
 
 
 @frappe.whitelist()
@@ -25,17 +41,25 @@ def get(name, timezone, duration="7d"):
 	}[duration]
 
 	request_data = get_usage(name, "request", timezone, timespan, timegrain)
+	request_count_by_path_data = get_request_by_path(
+		name, "count", timezone, timespan, timegrain
+	)
+	request_duration_by_path_data = get_request_by_path(
+		name, "duration", timezone, timespan, timegrain
+	)
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
 
 	plan = frappe.get_cached_doc("Site", name).plan
-	plan_limit = get_plan_config(plan)["rate_limit"]["limit"]
+	plan_limit = get_plan_config(plan).get("rate_limit", {}).get("limit") if plan else 0
 
 	return {
 		"usage_counter": [{"value": r.max, "date": r.date} for r in request_data],
 		"request_count": [{"value": r.count, "date": r.date} for r in request_data],
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
+		"request_count_by_path": request_count_by_path_data,
+		"request_duration_by_path": request_duration_by_path_data,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
@@ -94,6 +118,178 @@ def get_uptime(site, timezone, timespan, timegrain):
 			)
 		)
 	return buckets
+
+
+def get_request_by_path(site, query_type, timezone, timespan, timegrain):
+	MAX_NO_OF_PATHS = 10
+
+	log_server = frappe.db.get_single_value("Press Settings", "log_server")
+	if not log_server:
+		return {"datasets": [], "labels": []}
+
+	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
+	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+	count_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "json.request.path",
+					"order": {"request_count": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"request_count": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"json.site": site}},
+									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+								],
+								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+							}
+						}
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"request_count": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"json.site": site}},
+											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+										],
+										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+									}
+								}
+							}
+						},
+					},
+				},
+			}
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+	}
+
+	duration_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "json.request.path",
+					"order": {"methods>sum": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"methods": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"json.site": site}},
+									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+								],
+								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+							}
+						},
+						"aggs": {
+							"sum": {
+								"sum": {
+									"field": "json.duration",
+								}
+							}
+						},
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"methods": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"json.site": site}},
+											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+										],
+										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+									}
+								},
+								"aggs": {
+									"sum": {
+										"sum": {
+											"field": "json.duration",
+										}
+									}
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+	}
+
+	if query_type == "count":
+		query = count_query
+	else:
+		query = duration_query
+
+	response = requests.post(url, json=query, auth=("frappe", password)).json()
+
+	if not response["aggregations"]["method_path"]["buckets"]:
+		return {"datasets": [], "labels": []}
+
+	buckets = []
+	labels = [
+		get_datetime(data["key_as_string"]).replace(tzinfo=None)
+		for data in response["aggregations"]["method_path"]["buckets"][0][
+			"histogram_of_method"
+		]["buckets"]
+	]
+	for bucket in response["aggregations"]["method_path"]["buckets"]:
+		buckets.append(
+			frappe._dict(
+				{
+					"path": bucket["key"],
+					"values": [
+						data["request_count"]["doc_count"]
+						if query_type == "count"
+						else data["methods"]["sum"]["value"] / 1000000
+						if query_type == "duration"
+						else 0
+						for data in bucket["histogram_of_method"]["buckets"]
+					],
+					"stack": "path",
+				}
+			)
+		)
+
+	return {"datasets": buckets, "labels": labels}
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
@@ -270,6 +466,128 @@ def request_logs(name, timezone, date, sort=None, start=0):
 			frappe.utils.get_datetime(data["timestamp"]).replace(tzinfo=None), timezone
 		)
 		out.append(data)
+
+	return out
+
+
+@frappe.whitelist()
+@protected("Site")
+def binary_logs(name, start_time, end_time, pattern=".*", max_lines=4000):
+	site_doc = frappe.get_doc("Site", name)
+
+	db_server = frappe.db.get_value("Server", site_doc.server, "database_server")
+	agent = Agent(db_server, "Database Server")
+
+	data = {
+		"database": site_doc.database_name,
+		"start_datetime": convert_user_timezone_to_utc(start_time),
+		"stop_datetime": convert_user_timezone_to_utc(end_time),
+		"search_pattern": pattern,
+		"max_lines": max_lines,
+	}
+
+	files = agent.get("database/binary/logs")
+
+	files_in_timespan = get_files_in_timespan(files, start_time, end_time)
+
+	out = []
+	for file in files_in_timespan:
+		print(file)
+		rows = agent.post(f"database/binary/logs/{file}", data=data)
+		print(rows)
+		for row in rows:
+			row["query"] = sqlparse.format(
+				row["query"].strip(), keyword_case="upper", reindent=True
+			)
+			row["timestamp"] = get_datetime_str(
+				convert_utc_to_user_timezone(get_datetime(row["timestamp"]))
+			)
+			out.append(row)
+
+			if len(out) >= max_lines:
+				return out
+
+	return out
+
+
+@frappe.whitelist()
+@protected("Site")
+def mariadb_processlist(site):
+	site = frappe.get_doc("Site", site)
+	dbserver = frappe.db.get_value("Server", site.server, "database_server")
+	db_doc = frappe.get_doc("Database Server", dbserver)
+	agent = Agent(db_doc.name, "Database Server")
+
+	data = {
+		"private_ip": db_doc.private_ip,
+		"mariadb_root_password": db_doc.get_password("mariadb_root_password"),
+	}
+	rows = agent.post("database/processes", data=data)
+
+	out = []
+	for row in rows:
+		row["Info"] = sqlparse.format(
+			(row["Info"] or "").strip(), keyword_case="upper", reindent=True
+		)
+		if row["db"] == site.database_name:
+			out.append(row)
+
+	return out
+
+
+@frappe.whitelist()
+@protected("Site")
+def mariadb_slow_queries(site, start, end, pattern=".*", max_lines=100):
+	from press.press.report.mariadb_slow_queries.mariadb_slow_queries import (
+		get_slow_query_logs,
+	)
+	from press.utils import convert_user_timezone_to_utc
+
+	db_name = frappe.db.get_value("Site", site, "database_name")
+	rows = get_slow_query_logs(
+		db_name,
+		convert_user_timezone_to_utc(start),
+		convert_user_timezone_to_utc(end),
+		pattern,
+		max_lines,
+	)
+
+	for row in rows:
+		row["query"] = sqlparse.format(
+			row["query"].strip(), keyword_case="upper", reindent=True
+		)
+		row["timestamp"] = convert_utc_to_timezone(
+			frappe.utils.get_datetime(row["timestamp"]).replace(tzinfo=None),
+			get_system_timezone(),
+		)
+	return rows
+
+
+@frappe.whitelist()
+@protected("Site")
+def deadlock_report(site, start, end, max_lines=20):
+	from press.press.report.mariadb_deadlock_browser.mariadb_deadlock_browser import (
+		post_process,
+	)
+
+	server = frappe.db.get_value("Site", site, "server")
+	db_server_name = frappe.db.get_value("Server", server, "database_server")
+	database_server = frappe.get_doc("Database Server", db_server_name)
+	agent = Agent(database_server.name, "Database Server")
+
+	data = {
+		"private_ip": database_server.private_ip,
+		"mariadb_root_password": database_server.get_password("mariadb_root_password"),
+		"database": database_server.name,
+		"start_datetime": convert_user_timezone_to_utc(start),
+		"stop_datetime": convert_user_timezone_to_utc(end),
+		"max_lines": max_lines,
+	}
+
+	results = agent.post("database/deadlocks", data=data)
+
+	out = post_process(results)
+
 	return out
 
 

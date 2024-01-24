@@ -1,8 +1,9 @@
 <template>
 	<div>
-		<Input
+		<FormControl
 			v-if="step == 'Get Amount'"
-			:label="`Amount (Minimum Amount: ${minimumAmount})`"
+			class="mb-2"
+			label="Credits"
 			v-model.number="creditsToBuy"
 			name="amount"
 			autocomplete="off"
@@ -25,6 +26,17 @@
 			></div>
 			<ErrorMessage class="mt-1" :message="cardErrorMessage" />
 		</label>
+
+		<FormControl
+			v-if="step == 'Get Amount'"
+			label="Total Amount + GST(if applicable)"
+			disabled
+			v-model="total"
+			name="total"
+			autocomplete="off"
+			type="number"
+		/>
+
 		<div v-if="step == 'Setting up Stripe'" class="mt-8 flex justify-center">
 			<Spinner class="h-4 w-4 text-gray-600" />
 		</div>
@@ -32,11 +44,11 @@
 			class="mt-2"
 			:message="$resources.createPaymentIntent.error || errorMessage"
 		/>
-		<div class="mt-2 flex w-full justify-between">
+		<div class="mt-4 flex w-full justify-between">
 			<StripeLogo />
 			<div v-if="step == 'Get Amount'">
 				<Button
-					appearance="primary"
+					variant="solid"
 					@click="$resources.createPaymentIntent.submit()"
 					:loading="$resources.createPaymentIntent.loading"
 				>
@@ -47,7 +59,7 @@
 				<Button @click="$emit('cancel')"> Cancel </Button>
 				<Button
 					class="ml-2"
-					appearance="primary"
+					variant="solid"
 					@click="onBuyClick"
 					:loading="paymentInProgress"
 				>
@@ -71,11 +83,20 @@ export default {
 			default: 0
 		}
 	},
+	mounted() {
+		this.updateTotal();
+	},
+	watch: {
+		creditsToBuy() {
+			this.updateTotal();
+		}
+	},
 	data() {
 		return {
 			step: 'Get Amount', // Get Amount / Add Card Details
 			clientSecret: null,
 			creditsToBuy: this.minimumAmount || null,
+			total: this.minimumAmount,
 			cardErrorMessage: null,
 			errorMessage: null,
 			paymentInProgress: false
@@ -84,7 +105,7 @@ export default {
 	resources: {
 		createPaymentIntent() {
 			return {
-				method: 'press.api.billing.create_payment_intent_for_buying_credits',
+				url: 'press.api.billing.create_payment_intent_for_buying_credits',
 				params: {
 					amount: this.creditsToBuy
 				},
@@ -140,6 +161,18 @@ export default {
 		}
 	},
 	methods: {
+		updateTotal() {
+			if (this.$account.team.currency === 'INR') {
+				this.total = Number(
+					(
+						this.creditsToBuy +
+						this.creditsToBuy * this.$account.billing_info.gst_percentage
+					).toFixed(2)
+				);
+			} else {
+				this.total = this.creditsToBuy;
+			}
+		},
 		setupStripe() {
 			this.$resources.createPaymentIntent.submit();
 		},

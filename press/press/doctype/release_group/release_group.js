@@ -13,6 +13,7 @@ frappe.ui.form.on('Release Group', {
 				__('Create Duplicate Deploy Candidate'),
 				'create_duplicate_deploy_candidate',
 			],
+			[__('Update Benches Configuration'), 'update_benches_config'],
 		].forEach(([label, method]) => {
 			frm.add_custom_button(
 				label,

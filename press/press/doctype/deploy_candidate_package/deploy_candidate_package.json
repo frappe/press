@@ -8,8 +8,10 @@
  "engine": "InnoDB",
  "field_order": [
   "package_manager",
+  "package_prerequisites",
   "column_break_jhn9",
-  "package"
+  "package",
+  "after_install"
  ],
  "fields": [
   {
@@ -30,12 +32,22 @@
   {
    "fieldname": "column_break_jhn9",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "package_prerequisites",
+   "fieldtype": "Text",
+   "label": "Package Prerequisites"
+  },
+  {
+   "fieldname": "after_install",
+   "fieldtype": "Text",
+   "label": "After Install"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2023-05-12 16:25:11.937913",
+ "modified": "2023-12-14 16:22:57.324933",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate Package",

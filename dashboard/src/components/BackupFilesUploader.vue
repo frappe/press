@@ -71,10 +71,10 @@ export default {
 				{
 					icon: '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.33325 9.33333V22.6667C5.33325 25.6133 10.1093 28 15.9999 28C21.8906 28 26.6666 25.6133 26.6666 22.6667V9.33333M5.33325 9.33333C5.33325 12.28 10.1093 14.6667 15.9999 14.6667C21.8906 14.6667 26.6666 12.28 26.6666 9.33333M5.33325 9.33333C5.33325 6.38667 10.1093 4 15.9999 4C21.8906 4 26.6666 6.38667 26.6666 9.33333M26.6666 16C26.6666 18.9467 21.8906 21.3333 15.9999 21.3333C10.1093 21.3333 5.33325 18.9467 5.33325 16" stroke="#1F272E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 					type: 'database',
-					ext: 'application/x-gzip',
+					ext: 'application/x-gzip,application/sql,.sql',
 					title: 'Database Backup',
 					description:
-						'Upload the database backup file. Usually file name ends in .sql.gz',
+						'Upload the database backup file. Usually file name ends in .sql.gz or .sql',
 					file: null
 				},
 				{
@@ -115,12 +115,18 @@ export default {
 		},
 		async databaseBackupChecker(file, type) {
 			if (type === 'database') {
-				if (!file.name.endsWith('.sql.gz')) {
+				if (!file.name.endsWith('.sql.gz') && !file.name.endsWith('.sql')) {
 					throw new Error(
-						'Database backup file should end with the name "database.sql.gz"'
+						'Database backup file should end with the name "database.sql.gz" or "database.sql"'
 					);
 				}
-				if (!['application/x-gzip', 'application/gzip'].includes(file.type)) {
+				if (
+					![
+						'application/x-gzip',
+						'application/gzip',
+						'application/sql'
+					].includes(file.type)
+				) {
 					throw new Error('Invalid database backup file');
 				}
 			}

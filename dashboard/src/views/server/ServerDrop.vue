@@ -1,7 +1,21 @@
 <template>
 	<div class="shrink-0">
 		<slot v-bind="{ showDialog }"></slot>
-		<Dialog :options="{ title: 'Drop Server' }" v-model="dialogOpen">
+		<Dialog
+			:options="{
+				title: 'Drop Server',
+				actions: [
+					{
+						label: 'Drop Server',
+						variant: 'solid',
+						theme: 'red',
+						loading: $resources.dropServer.loading,
+						onClick: () => $resources.dropServer.submit()
+					}
+				]
+			}"
+			v-model="dialogOpen"
+		>
 			<template v-slot:body-content>
 				<p class="text-base">
 					Are you sure you want to drop your server? The server will be archived
@@ -12,22 +26,8 @@
 					Please type
 					<span class="font-semibold">{{ server.name }}</span> to confirm.
 				</p>
-				<Input type="text" class="mt-4 w-full" v-model="confirmServerName" />
+				<FormControl class="mt-4 w-full" v-model="confirmServerName" />
 				<ErrorMessage class="mt-2" :message="$resources.dropServer.error" />
-			</template>
-
-			<template v-slot:actions>
-				<div>
-					<Button @click="dialogOpen = false"> Cancel </Button>
-					<Button
-						class="ml-3"
-						appearance="danger"
-						@click="$resources.dropServer.submit()"
-						:loading="$resources.dropServer.loading"
-					>
-						Drop Server
-					</Button>
-				</div>
 			</template>
 		</Dialog>
 	</div>
@@ -46,7 +46,7 @@ export default {
 	resources: {
 		dropServer() {
 			return {
-				method: 'press.api.server.archive',
+				url: 'press.api.server.archive',
 				params: {
 					name: this.server?.name
 				},

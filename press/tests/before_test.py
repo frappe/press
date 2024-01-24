@@ -6,7 +6,8 @@ import os
 
 import frappe
 from frappe.model.document import Document
-import press.utils
+from press.utils import _get_current_team, _system_user
+from frappe import set_user as _set_user
 
 
 def doc_equal(self: Document, other: Document) -> bool:
@@ -16,10 +17,6 @@ def doc_equal(self: Document, other: Document) -> bool:
 	if self.doctype == other.doctype and self.name == other.name:
 		return True
 	return False
-
-
-def raise_error(title, **kwargs):
-	raise
 
 
 def execute():
@@ -33,7 +30,18 @@ def execute():
 
 	# Monkey patch certain methods for when tests are running
 	Document.__eq__ = doc_equal
-	press.utils.log_error = raise_error
+
+	# patch frappe.set_user that
+	frappe.set_user = set_user_with_current_team
+
+	# frappe.local.team helper
+	frappe.local.team = _get_current_team
+	frappe.local.system_user = _system_user
+
+
+def set_user_with_current_team(user):
+	_set_user(user)
+	frappe.local._current_team = None
 
 
 def create_test_stripe_credentials():

@@ -22,9 +22,13 @@ class SecurityUpdateCheck(Document):
 
 	def _start(self):
 		try:
+			_server = frappe.get_doc(self.server_type, self.server)
 			ansible = Ansible(
 				playbook="security_update_check.yml",
-				server=frappe.get_doc(self.server_type, self.server),
+				server=_server,
+				user=_server.ssh_user or "root",
+				port=_server.ssh_port or 22,
+				variables={"validate_pending_security_updates": True},
 			)
 			self.reload()
 			self.play = ansible.play

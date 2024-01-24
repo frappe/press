@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "hostname",
+  "hostname_abbreviation",
   "domain",
   "self_hosted_server_domain",
   "title",
@@ -18,6 +19,7 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
+  "is_stalk_setup",
   "billing_section",
   "team",
   "column_break_11",
@@ -45,6 +47,9 @@
   "ssh_user",
   "ssh_port",
   "root_public_key",
+  "section_break_cees",
+  "ram",
+  "column_break_apox",
   "tags_section",
   "tags",
   "mariadb_settings_tab",
@@ -52,6 +57,8 @@
   "memory_high",
   "column_break_eiyu",
   "memory_max",
+  "column_break_wbbi",
+  "memory_swap_max",
   "section_break_ladc",
   "is_performance_schema_enabled",
   "mariadb_system_variables"
@@ -200,7 +207,7 @@
    "fieldname": "provider",
    "fieldtype": "Select",
    "label": "Provider",
-   "options": "Generic\nScaleway\nAWS EC2",
+   "options": "Generic\nScaleway\nAWS EC2\nOCI",
    "set_only_once": 1
   },
   {
@@ -329,7 +336,7 @@
   },
   {
    "fieldname": "memory_high",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory High (GB)",
    "non_negative": 1
   },
@@ -339,7 +346,7 @@
   },
   {
    "fieldname": "memory_max",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Memory Max (GB)",
    "non_negative": 1
   },
@@ -364,11 +371,47 @@
    "fieldtype": "Table",
    "label": "Tags",
    "options": "Resource Tag"
+  },
+  {
+   "fieldname": "section_break_cees",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "ram",
+   "fieldtype": "Float",
+   "label": "RAM (MB)"
+  },
+  {
+   "fieldname": "column_break_apox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wbbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0.1",
+   "fieldname": "memory_swap_max",
+   "fieldtype": "Float",
+   "label": "Memory Swap Max (GB)",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "hostname_abbreviation",
+   "fieldtype": "Data",
+   "label": "Hostname Abbreviation"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_stalk_setup",
+   "fieldtype": "Check",
+   "label": "Is Stalk Setup",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-07-30 22:29:30.346012",
+ "modified": "2023-12-21 19:00:35.047273",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

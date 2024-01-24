@@ -1,0 +1,13 @@
+---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Fetch packages due for security updates
+  shell: apt list --upgradable 2>/dev/null
+  register: security_updates
+
+# - name: Ensure no security updates are pending
+#   debug: var=security_updates
+#   failed_when: "'-security' in security_updates.stdout"
+#   when: validate_pending_security_updates

@@ -13,6 +13,7 @@
   "column_break_3",
   "hash",
   "author",
+  "timestamp",
   "message",
   "clone_section",
   "clone_directory",
@@ -30,7 +31,8 @@
    "in_standard_filter": 1,
    "label": "Hash",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "message",
@@ -72,7 +74,8 @@
    "label": "Source",
    "options": "App Source",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "column_break_9",
@@ -132,6 +135,12 @@
    "in_list_view": 1,
    "label": "Status",
    "options": "Draft\nApproved\nAwaiting Approval\nRejected"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Timestamp",
+   "read_only": 1
   }
  ],
  "in_create": 1,
@@ -167,7 +176,7 @@
    "link_fieldname": "destination_release"
   }
  ],
- "modified": "2023-06-04 18:49:35.960020",
+ "modified": "2024-01-02 12:57:26.450172",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Release",

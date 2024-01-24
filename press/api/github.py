@@ -136,6 +136,7 @@ def repositories(installation, token):
 					"name": repository["name"],
 					"private": repository["private"],
 					"url": repository["html_url"],
+					"default_branch": repository["default_branch"],
 				}
 			)
 		current_page += 1
@@ -144,8 +145,12 @@ def repositories(installation, token):
 
 
 @frappe.whitelist()
-def repository(installation, owner, name):
-	token = get_access_token(installation)
+def repository(owner, name, installation=None):
+	token = ""
+	if not installation:
+		token = frappe.db.get_value("Press Settings", "github_access_token")
+	else:
+		token = get_access_token(installation)
 	headers = {
 		"Authorization": f"token {token}",
 	}
@@ -177,7 +182,7 @@ def repository(installation, owner, name):
 
 
 @frappe.whitelist()
-def app(installation, owner, repository, branch):
+def app(owner, repository, branch, installation=None):
 	def _construct_tree(tree, children, children_map):
 		for file in children:
 			if file.path in children_map:
@@ -195,7 +200,10 @@ def app(installation, owner, repository, branch):
 			)
 		return _construct_tree({}, children["."], children)
 
-	token = get_access_token(installation)
+	if not installation:
+		token = frappe.db.get_value("Press Settings", None, "github_access_token")
+	else:
+		token = get_access_token(installation)
 	headers = {
 		"Authorization": f"token {token}",
 	}
@@ -229,6 +237,8 @@ def app(installation, owner, repository, branch):
 				match = re.search('app_title = "(.*)"', content)
 				if match:
 					title = match.group(1)
+				else:
+					reason_for_invalidation = f"File {frappe.bold('hooks.py')} does not have {frappe.bold('app_title')} defined."
 				break
 			else:
 				reason_for_invalidation = (
@@ -247,7 +257,7 @@ def app(installation, owner, repository, branch):
 
 
 @frappe.whitelist()
-def branches(installation, owner, name):
+def branches(owner, name, installation=None):
 	if installation:
 		token = get_access_token(installation)
 	else:

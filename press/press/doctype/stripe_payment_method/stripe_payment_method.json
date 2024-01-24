@@ -11,6 +11,7 @@
   "last_4",
   "expiry_month",
   "expiry_year",
+  "brand",
   "stripe_customer_id",
   "stripe_payment_method_id",
   "is_default",
@@ -84,11 +85,16 @@
    "in_list_view": 1,
    "label": "Verified with Micro Charge",
    "read_only": 1
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Card Brand"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-17 17:20:24.776635",
+ "modified": "2023-10-19 11:55:22.183101",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Stripe Payment Method",

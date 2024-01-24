@@ -1,16 +1,6 @@
 # syntax = docker/dockerfile:experimental
 FROM ubuntu:20.04
 
-{% for d in doc.dependencies %}
-ENV {{ d.dependency }} {{ d.version }}
-{% else %}
-ENV NVM_VERSION 0.36.0
-ENV NODE_VERSION 14.19.0
-ENV PYTHON_VERSION 3.10
-ENV WKHTMLTOPDF_VERSION 0.12.5
-ENV BENCH_VERSION 5.15.2
-{% endfor %}
-
 ENV LANG C.UTF-8
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -30,12 +20,15 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   wget \
   curl \
   supervisor \
+  file \
   # Dependencies for SSH access
   openssh-server \
   nano \
   vim \
   less \
   htop \
+  iputils-ping \
+  telnet \
   # Dependencies for adding Python PPA
   software-properties-common \
   gnupg \
@@ -67,13 +60,15 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update \
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
-RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:redislabs/redis \
+RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+  && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   redis-server \
   && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
 # Install Python from DeadSnakes PPA
+ENV {{ doc.get_dependency_version("PYTHON_VERSION") }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -86,12 +81,28 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 
 # Install wkhtmltopdf
-RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
-  && dpkg -i wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
-  && rm wkhtmltox_${WKHTMLTOPDF_VERSION}-1.focal_amd64.deb \
+ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
+{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.6' %}
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
+  && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
+  && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
+  && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
+  `#stage-pre-wkhtmltopdf`
+{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.4' %}
+RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+  && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+  && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
+  && rm -rf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz wkhtmltox \
+  `#stage-pre-wkhtmltopdf`
+{% endif %}
 
+{% if doc.is_code_server_enabled %}
 RUN curl -fsSL https://code-server.dev/install.sh | sh `#stage-pre-code-server`
+{% endif %}
 
 # Install Fonts
 RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/fonts \
@@ -105,22 +116,56 @@ RUN git clone --progress --depth 1 https://github.com/frappe/fonts.git /tmp/font
 # Set max_allowed_packet to 512 MB for mysqldump
 RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf.d/mysqldump.cnf
 
-{% if doc.apt_packages %}
+# Add frappe user
+RUN useradd -ms /bin/bash frappe
+
 # Install Additional APT Packages
-RUN --mount=type=cache,target=/var/cache/apt apt-get update \
-  && apt-get install --yes --no-install-suggests --no-install-recommends \
-  {{ doc.apt_packages }} \
-  && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-apt-packages`
+{% if doc.additional_packages %}
+{% for p in doc.additional_packages %}
+
+{% if p.prerequisites %}
+RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
+ `#stage-pre-{{ p.package }}`
 {% endif %}
 
-RUN useradd -ms /bin/bash frappe
+{% if p.package_manager not in ["apt-get", "apt"] %}
+
+RUN {{ p.package_manager }} install {{ p.package }} \
+ `#stage-pre-{{ p.package }}`
+
+{% else %}
+
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
+  && apt-get install --yes --no-install-suggests --no-install-recommends \
+  {{ p.package }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+
+{% endif %}
+
+{% if p.after_install %}
+RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
+  && rm -rf /var/lib/apt/lists/* \
+  `#stage-pre-{{ p.package }}`
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+
+# symlink mysqldump to mariadb-dump
+RUN ln -s /usr/bin/mysqldump /usr/bin/mariadb-dump
+
+# Switch to frappe
 USER frappe
 WORKDIR /home/frappe
 
 
 # Install Node using NVM
 ENV NVM_DIR /home/frappe/.nvm
+ENV {{ doc.get_dependency_version("NVM_VERSION") }}
+ENV {{ doc.get_dependency_version("NODE_VERSION") }}
+
 RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh \
   && bash install.sh \
   && . "/home/frappe/.nvm/nvm.sh" \
@@ -141,6 +186,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
+ENV {{ doc.get_dependency_version("BENCH_VERSION") }}
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
@@ -153,6 +199,7 @@ ENV PYTHONUNBUFFERED 1
 # For the sake of completing the step
 RUN `#stage-bench-env`
 
+# Set environment variables
 {% for v in doc.environment_variables %}
 ENV {{v.key}} {{ v.value }}
 {% endfor %}
@@ -165,7 +212,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe
 
 # Install Redisearch 2.0 from precompiled binaries
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis
-
+COPY --chown=frappe:frappe .vimrc /home/frappe/.vimrc
 COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sites/common_site_config.json
 
 # Install other apps
@@ -177,9 +224,35 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type
 {% endif %}
 {% endfor %}
 
+# Pull app updates from mounted repository
+{% for app in doc.apps %}
+{% if app.pullable_release %}
+RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/context/app_updates/{{ app.app }} \
+  cd /home/frappe/frappe-bench/apps/{{ app.app }} \
+  && git remote add -f app_update /home/frappe/context/app_updates/{{ app.app }} \
+  && git fetch --depth 1 app_update {{ app.pullable_hash }} \
+  && git checkout {{ app.pullable_hash }} \
+  && git remote remove app_update \
+  `#stage-pull-{{ app.app }}`
+{% endif %}
+{% endfor %}
+
+
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
+# create custom mounts
+{% if doc.mounts %}
+{% for m in doc.container_mounts %}
+
+{% if not m.is_absolute_path %}
+RUN mkdir -p {{ m.destination }} \
+  && chown -R frappe:frappe {{ m.destination }} \
+  `#stage-mounts-create`
+{% endif %}
+
+{% endfor %}
+{% endif %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 

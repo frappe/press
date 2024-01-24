@@ -7,6 +7,7 @@ import frappe
 import press.utils
 from press.api.billing import get_stripe
 from frappe.model.document import Document
+import re
 
 
 class InvalidStripeWebhookEvent(Exception):
@@ -14,7 +15,21 @@ class InvalidStripeWebhookEvent(Exception):
 
 
 class StripeWebhookLog(Document):
-	pass
+	def before_insert(self):
+		payload = frappe.parse_json(self.payload)
+		self.name = payload.get("id")
+		self.event_type = payload.get("type")
+		customer_id = get_customer_id(payload)
+		invoice_id = get_invoice_id(payload)
+		if customer_id:
+			self.customer_id = customer_id
+			self.team = frappe.db.get_value("Team", {"stripe_customer_id": customer_id}, "name")
+
+		if invoice_id:
+			self.invoice_id = invoice_id
+			self.invoice = frappe.db.get_value(
+				"Invoice", {"stripe_invoice_id": invoice_id}, "name"
+			)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -28,20 +43,39 @@ def stripe_webhook_handler():
 		event = parse_payload(payload, signature)
 		# set user to Administrator, to not have to do ignore_permissions everywhere
 		frappe.set_user("Administrator")
-
 		frappe.get_doc(
-			{
-				"doctype": "Stripe Webhook Log",
-				"name": event.id,
-				"payload": frappe.as_json(form_dict),
-				"event_type": event.type,
-			}
+			doctype="Stripe Webhook Log",
+			payload=frappe.as_json(event),
 		).insert(ignore_if_duplicate=True)
 	except Exception:
 		frappe.db.rollback()
 		press.utils.log_error(title="Stripe Webhook Handler", stripe_event_id=form_dict.id)
 		frappe.set_user(current_user)
 		raise Exception
+
+
+def get_customer_id(form_dict):
+	try:
+		form_dict_str = frappe.as_json(form_dict)
+		customer_id = re.search(r"cus_\w+", form_dict_str)
+		if customer_id:
+			return customer_id.group(0)
+		else:
+			return None
+	except Exception:
+		frappe.log_error(title="Failed to capture customer id from stripe webhook log")
+
+
+def get_invoice_id(form_dict):
+	try:
+		form_dict_str = frappe.as_json(form_dict)
+		invoice_id = re.search(r"in_\w+", form_dict_str)
+		if invoice_id:
+			return invoice_id.group(0)
+		else:
+			return None
+	except Exception:
+		frappe.log_error(title="Failed to capture invoice id from stripe webhook log")
 
 
 def parse_payload(payload, signature):

@@ -17,6 +17,7 @@ from press.press.doctype.press_settings.test_press_settings import (
 )
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
+from press.press.doctype.team.test_team import create_test_team
 
 
 @patch.object(BaseServer, "after_insert", new=Mock())
@@ -24,12 +25,15 @@ def create_test_server(
 	proxy_server=None,
 	database_server=None,
 	cluster: str = "Default",
+	team: str = None,
 ):
 	"""Create test Server doc."""
 	if not proxy_server:
 		proxy_server = create_test_proxy_server().name
 	if not database_server:
 		database_server = create_test_database_server().name
+	if not team:
+		team = create_test_team().name
 	server = frappe.get_doc(
 		{
 			"doctype": "Server",
@@ -43,6 +47,7 @@ def create_test_server(
 			"cluster": cluster,
 			"new_worker_allocation": True,
 			"ram": 16000,
+			"team": team,
 		}
 	).insert()
 	server.reload()

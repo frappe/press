@@ -6,6 +6,7 @@ import json
 import traceback
 import os
 
+
 PRESS_AUTH_KEY = "press-auth-logs"
 PRESS_AUTH_MAX_ENTRIES = 1000000
 
@@ -32,11 +33,10 @@ ALLOWED_PATHS = [
 	"/api/method/press.utils.telemetry.capture_read_event",
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
-
+	"/api/method/press.www.dashboard.get_context_for_dev",
 ]
 
 ALLOWED_WILDCARD_PATHS = [
-	"/api/method/helpdesk.",
 	"/api/method/press.api.",
 	"/api/method/wiki.",
 ]

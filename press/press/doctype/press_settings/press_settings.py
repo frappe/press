@@ -6,6 +6,7 @@
 import boto3
 import frappe
 from boto3.session import Session
+from twilio.rest import Client
 from frappe.model.document import Document
 from frappe.utils import get_url
 
@@ -96,3 +97,10 @@ class PressSettings(Document):
 	@property
 	def telegram(self):
 		return Telegram
+
+	@property
+	def twilio_client(self) -> Client:
+		account_sid = self.twilio_account_sid
+		api_key_sid = self.twilio_api_key_sid
+		api_key_secret = self.get_password("twilio_api_key_secret")
+		return Client(api_key_sid, api_key_secret, account_sid)

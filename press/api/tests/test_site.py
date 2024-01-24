@@ -6,21 +6,23 @@ import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+import responses
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.site import all
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
-from press.press.doctype.agent_job.test_agent_job import (
-	fake_agent_job,
-)
+from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.bench.test_bench import create_test_bench
+from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.remote_file.remote_file import RemoteFile
+from press.press.doctype.remote_file.test_remote_file import create_test_remote_file
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_press_admin_team
@@ -79,6 +81,7 @@ class TestAPISite(FrappeTestCase):
 				"group": group.name,
 				"plan": plan.name,
 				"apps": [app.name],
+				"cluster": bench.cluster,
 			}
 		)
 
@@ -114,12 +117,27 @@ class TestAPISite(FrappeTestCase):
 				"group": None,  # because group is public
 				"team": site.team,
 				"frappe_version": group.version,
+				"latest_frappe_version": frappe.db.get_value(
+					"Frappe Version", {"status": "Stable"}, order_by="name desc"
+				),
+				"is_public": group.public,
+				"server": site.server,
 				"server_region_info": frappe.db.get_value(
 					"Cluster", site.cluster, ["title", "image"], as_dict=True
 				),
 				"can_change_plan": True,
 				"hide_config": site.hide_config,
 				"notify_email": site.notify_email,
+				"info": {
+					"auto_updates_enabled": True,
+					"created_on": site.creation,
+					"last_deployed": None,
+					"owner": {
+						"first_name": "Frappe",
+						"last_name": None,
+						"user_image": None,
+					},
+				},
 				"ip": frappe.get_last_doc("Proxy Server").ip,
 				"site_tags": [{"name": x.tag, "tag": x.tag_name} for x in site.tags],
 				"tags": frappe.get_all(
@@ -127,6 +145,9 @@ class TestAPISite(FrappeTestCase):
 					{"team": self.team.name, "doctype_name": "Site"},
 					["name", "tag"],
 				),
+				"pending_for_long": False,
+				"site_migration": None,
+				"version_upgrade": None,
 			},
 			site_details,
 		)
@@ -207,8 +228,7 @@ class TestAPISite(FrappeTestCase):
 		)  # app3 shouldn't show in available_apps
 
 		frappe.set_user(self.team.user)
-		site = create_test_site(bench=bench.name)
-		site.uninstall_app(app2.name)
+		site = create_test_site(bench=bench.name, apps=[app1.name])
 		out = available_apps(site.name)
 		self.assertEqual(len(out), 1)
 		self.assertEqual(out[0]["name"], group.apps[1].source)
@@ -267,6 +287,360 @@ class TestAPISite(FrappeTestCase):
 		self.assertEqual(len(site.apps), 2)
 		self.assertEqual(site.status, "Active")
 
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_job_updates_apps_table_with_output_from_job(self):
+		from press.api.site import restore
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		app3 = create_test_app("insights", "Insights")
+		group = create_test_release_group([app, app2, app3])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		database = create_test_remote_file(site.name).name
+		public = create_test_remote_file(site.name).name
+		private = create_test_remote_file(site.name).name
+
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job(
+			"Restore Site",
+			"Success",
+			data=frappe._dict(
+				output="""frappe	15.0.0-dev HEAD
+insights 0.8.3	    HEAD
+"""
+			),
+		):
+			restore(
+				site.name,
+				{
+					"database": database,
+					"public": public,
+					"private": private,
+				},
+			)
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "insights")
+		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_restore_job_updates_apps_table_when_only_frappe_is_installed(self):
+		from press.api.site import restore
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		bench = create_test_bench(group=group)
+
+		frappe.set_user(self.team.user)
+		site = create_test_site(bench=bench.name, apps=[app.name, app2.name])
+		database = create_test_remote_file(site.name).name
+		public = create_test_remote_file(site.name).name
+		private = create_test_remote_file(site.name).name
+
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+		with fake_agent_job(
+			"Restore Site", "Success", data=frappe._dict(output="""frappe 15.0.0-dev HEAD""")
+		):
+			restore(
+				site.name,
+				{
+					"database": database,
+					"public": public,
+					"private": private,
+				},
+			)
+			poll_pending_jobs()
+
+		site.reload()
+		self.assertEqual(len(site.apps), 1)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.status, "Active")
+
+	@patch.object(RemoteFile, "exists", new=Mock(return_value=True))
+	@patch.object(RemoteFile, "download_link", new="http://test.com")
+	def test_new_site_from_backup_job_updates_apps_table_with_output_from_job(self):
+		from press.api.site import new
+
+		app = create_test_app()
+		app2 = create_test_app("erpnext", "ERPNext")
+		group = create_test_release_group([app, app2])
+		plan = create_test_plan("Site")
+		create_test_bench(group=group)
+
+		# frappe.set_user(self.team.user) # can't this due to weird perm error with ignore_perimssions in new site
+		database = create_test_remote_file().name
+		public = create_test_remote_file().name
+		private = create_test_remote_file().name
+		with fake_agent_job(
+			"New Site from Backup",
+			"Success",
+			data=frappe._dict(
+				output="""frappe	15.0.0-dev HEAD
+erpnext 0.8.3	    HEAD
+"""
+			),
+		):
+			new(
+				{
+					"name": "testsite",
+					"group": group.name,
+					"plan": plan.name,
+					"apps": [app.name],
+					"files": {
+						"database": database,
+						"public": public,
+						"private": private,
+					},
+					"cluster": "Default",
+				}
+			)
+			poll_pending_jobs()
+
+		site = frappe.get_last_doc("Site")
+		self.assertEqual(len(site.apps), 2)
+		self.assertEqual(site.apps[0].app, "frappe")
+		self.assertEqual(site.apps[1].app, "erpnext")
+		self.assertEqual(site.status, "Active")
+
+	def test_site_change_group(self):
+		from press.api.site import change_group, change_group_options
+		from press.press.doctype.site_update.site_update import process_update_site_job_update
+
+		app = create_test_app()
+		server = create_test_server()
+		group1 = create_test_release_group([app])
+		group2 = create_test_release_group([app])
+		bench1 = create_test_bench(group=group1, server=server)
+		bench2 = create_test_bench(group=group2, server=server)
+		site = create_test_site(bench=bench1.name)
+
+		self.assertEqual(
+			change_group_options(site.name), [{"name": group2.name, "title": group2.title}]
+		)
+
+		with fake_agent_job(
+			"Update Site Migrate",
+			"Success",
+			steps=[{"name": "Move Site", "status": "Success"}],
+		):
+			change_group(site.name, group2.name)
+
+			responses.get(
+				f"https://{site.host_name}/",
+				status=200,
+			)
+			poll_pending_jobs()
+
+			site_update = frappe.get_last_doc("Site Update")
+			job = frappe.get_doc("Agent Job", site_update.update_job)
+
+			process_update_site_job_update(job)
+
+		site.reload()
+
+		self.assertEqual(site.group, group2.name)
+		self.assertEqual(site.bench, bench2.name)
+
+	@patch(
+		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
+		new=Mock(),
+	)
+	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
+	def test_site_change_region(self):
+		from press.api.site import change_region, change_region_options
+
+		app = create_test_app()
+		tokyo_cluster = create_test_cluster("Tokyo", public=True)
+		seoul_cluster = create_test_cluster("Seoul", public=True)
+		tokyo_server = create_test_server(cluster=tokyo_cluster.name)
+		seoul_server = create_test_server(cluster=seoul_cluster.name)
+		group = create_test_release_group([app])
+		group.append(
+			"servers",
+			{
+				"server": tokyo_server.name,
+			},
+		)
+		group.save()
+		bench = create_test_bench(group=group, server=tokyo_server.name)
+
+		group.append(
+			"servers",
+			{
+				"server": seoul_server.name,
+			},
+		)
+		group.save()
+
+		create_test_bench(group=group, server=seoul_server.name)
+		site = create_test_site(bench=bench.name)
+
+		options = change_region_options(site.name)
+
+		self.assertCountEqual(
+			(options["regions"]),
+			[
+				{"name": seoul_server.cluster, "title": None, "image": None},
+				{"name": tokyo_server.cluster, "title": None, "image": None},
+			],
+		)
+		self.assertCountEqual(
+			options["group_regions"], [seoul_server.cluster, tokyo_server.cluster]
+		)
+		self.assertEqual(options["current_region"], tokyo_server.cluster)
+		self.assertEqual(options["group_team"], group.team)
+
+		with fake_agent_job("Update Site Migrate"):
+			responses.post(
+				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
+				json={"jobs": []},
+				status=200,
+			)
+			change_region(site.name, seoul_server.cluster)
+			site_migration = frappe.get_last_doc("Site Migration")
+			site_migration.update_site_record_fields()
+
+		site.reload()
+		self.assertEqual(site.cluster, seoul_server.cluster)
+
+	def test_site_version_upgrade(self):
+		from press.api.site import version_upgrade, get_private_groups_for_upgrade
+		from press.press.doctype.site_update.site_update import process_update_site_job_update
+
+		app = create_test_app()
+		server = create_test_server()
+
+		v14_group = create_test_release_group([app], frappe_version="Version 14")
+		v14_group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		v14_group.save()
+
+		v15_group = create_test_release_group([app], frappe_version="Version 15")
+		v15_group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		v15_group.save()
+
+		v14_bench = create_test_bench(group=v14_group, server=server)
+		create_test_bench(group=v15_group, server=server)
+		site = create_test_site(bench=v14_bench.name)
+
+		self.assertEqual(
+			get_private_groups_for_upgrade(site.name, v14_group.version),
+			[
+				{"name": v15_group.name, "title": v15_group.title},
+			],
+		)
+
+		with fake_agent_job(
+			"Update Site Migrate",
+			"Success",
+			steps=[{"name": "Move Site", "status": "Success"}],
+		):
+			version_upgrade(site.name, v15_group.name)
+
+			responses.get(
+				f"https://{site.host_name}/",
+				status=200,
+			)
+			poll_pending_jobs()
+
+			site_update = frappe.get_last_doc("Site Update")
+			job = frappe.get_doc("Agent Job", site_update.update_job)
+
+			process_update_site_job_update(job)
+
+		site.reload()
+		site_version = frappe.db.get_value("Release Group", site.group, "version")
+		self.assertEqual(site_version, v15_group.version)
+
+	@patch(
+		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
+		new=Mock(),
+	)
+	def test_site_change_server(self):
+		from press.api.site import (
+			change_server,
+			change_server_options,
+			is_server_added_in_group,
+		)
+		from press.utils import get_current_team
+
+		app = create_test_app()
+		team = get_current_team()
+		server = create_test_server(team=team)
+
+		group = create_test_release_group([app])
+		group.append(
+			"servers",
+			{
+				"server": server,
+			},
+		)
+		group.save()
+
+		bench = create_test_bench(group=group, server=server.name)
+		other_server = create_test_server(team=team)
+		create_test_bench(group=group, server=other_server.name)
+
+		group.append(
+			"servers",
+			{
+				"server": other_server,
+			},
+		)
+		group.save()
+
+		site = create_test_site(bench=bench.name)
+
+		self.assertEqual(
+			change_server_options(site.name),
+			[{"name": other_server.name, "title": None}],
+		)
+
+		self.assertEqual(
+			is_server_added_in_group(site.name, other_server.name),
+			True,
+		)
+
+		with fake_agent_job("Update Site Migrate"):
+			responses.post(
+				f"https://{site.server}:443/agent/benches/{site.bench}/sites/{site.host_name}/config",
+				json={"jobs": []},
+				status=200,
+			)
+
+			change_server(site.name, other_server.name)
+			site_migration = frappe.get_last_doc("Site Migration")
+			site_migration.update_site_record_fields()
+
+		site.reload()
+		self.assertEqual(site.server, other_server.name)
+
 	def test_update_config(self):
 		pass
 
@@ -288,6 +662,12 @@ class TestAPISiteList(FrappeTestCase):
 		broken_site.save()
 		self.broken_site_dict = {
 			"name": broken_site.name,
+			"cluster": broken_site.cluster,
+			"group": broken_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": [],
 			"host_name": broken_site.host_name,
 			"status": broken_site.status,
 			"creation": broken_site.creation,
@@ -307,6 +687,12 @@ class TestAPISiteList(FrappeTestCase):
 
 		self.trial_site_dict = {
 			"name": trial_site.name,
+			"cluster": trial_site.cluster,
+			"group": trial_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": [],
 			"host_name": trial_site.host_name,
 			"status": trial_site.status,
 			"creation": trial_site.creation,
@@ -325,6 +711,12 @@ class TestAPISiteList(FrappeTestCase):
 
 		self.tagged_site_dict = {
 			"name": tagged_site.name,
+			"cluster": tagged_site.cluster,
+			"group": tagged_site.group,
+			"plan": None,
+			"public": 0,
+			"server_region_info": {"image": None, "title": None},
+			"tags": ["test_tag"],
 			"host_name": tagged_site.host_name,
 			"status": tagged_site.status,
 			"creation": tagged_site.creation,
@@ -347,10 +739,16 @@ class TestAPISiteList(FrappeTestCase):
 		)
 
 	def test_list_broken_sites(self):
-		self.assertEqual(all(site_filter="Broken"), [self.broken_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "Broken", "tag": ""}), [self.broken_site_dict]
+		)
 
 	def test_list_trial_sites(self):
-		self.assertEqual(all(site_filter="Trial"), [self.trial_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "Trial", "tag": ""}), [self.trial_site_dict]
+		)
 
 	def test_list_tagged_sites(self):
-		self.assertEqual(all(site_filter="tag:test_tag"), [self.tagged_site_dict])
+		self.assertEqual(
+			all(site_filter={"status": "", "tag": "test_tag"}), [self.tagged_site_dict]
+		)

@@ -8,15 +8,66 @@ import random
 
 from press.agent import Agent
 from press.utils import log_error
+from frappe.utils import cint, convert_utc_to_system_timezone, create_batch, add_days
 from frappe.core.utils import find
 from frappe.model.document import Document
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 
 
 class AgentJob(Document):
+	whitelisted_fields = [
+		"name",
+		"job_type",
+		"creation",
+		"status",
+		"start",
+		"end",
+		"duration",
+		"bench",
+		"site",
+		"server",
+	]
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		if filters.group:
+			AgentJob = frappe.qb.DocType("Agent Job")
+			Bench = frappe.qb.DocType("Bench")
+			benches = (
+				frappe.qb.from_(Bench).select(Bench.name).where(Bench.group == filters.group)
+			)
+			query = query.where(AgentJob.bench.isin(benches))
+
+		results = query.run(as_dict=1)
+		for result in results:
+			# agent job start and end are in utc
+			if result.start:
+				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
+			if result.end:
+				result.end = convert_utc_to_system_timezone(result.end).replace(tzinfo=None)
+		return results
+
+	def get_doc(self, doc):
+		doc["steps"] = frappe.get_all(
+			"Agent Job Step",
+			filters={"agent_job": self.name},
+			fields=["step_name", "status", "start", "end", "duration", "output"],
+			order_by="creation",
+		)
+		# agent job start and end are in utc
+		if doc.start:
+			doc.start = convert_utc_to_system_timezone(doc.start).replace(tzinfo=None)
+		if doc.end:
+			doc.end = convert_utc_to_system_timezone(doc.end).replace(tzinfo=None)
+
+		return doc
+
 	def after_insert(self):
 		self.create_agent_job_steps()
 		self.enqueue_http_request()
@@ -36,18 +87,45 @@ class AgentJob(Document):
 			data = json.loads(self.request_data)
 			files = json.loads(self.request_files)
 
-			self.job_id = agent.request(self.request_method, self.request_path, data, files)[
-				"job"
-			]
+			self.job_id = agent.request(
+				self.request_method, self.request_path, data, files, agent_job=self
+			)["job"]
+
 			self.status = "Pending"
 			self.save()
 		except Exception:
 			self.status = "Failure"
 			self.save()
+
 			process_job_updates(self.name)
+
+			self.reload()
+			self.set_status_and_next_retry_at()
+
+	def set_status_and_next_retry_at(self):
+		if 400 <= cint(self.flags.status_code) <= 499:
+			return
+
+		try:
+
+			next_retry_at = get_next_retry_at(self.retry_count)
+
+			if not self.retry_count:
+				self.retry_count = 1
+
 			frappe.db.set_value(
-				"Agent Job", self.name, "status", "Undelivered", for_update=False
+				"Agent Job",
+				self.name,
+				{
+					"status": "Undelivered",
+					"next_retry_at": next_retry_at,
+					"retry_count": self.retry_count,
+				},
+				update_modified=False,
 			)
+
+		except Exception:
+			log_error("Agent Job Set Status Exception", job=self)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -90,6 +168,21 @@ class AgentJob(Document):
 		frappe.db.commit()
 
 	@frappe.whitelist()
+	def get_status(self):
+		agent = Agent(self.server, server_type=self.server_type)
+
+		if self.job_id == 0:
+			job = agent.get_jobs_id(self.name)
+			if len(job) > 0:
+				self.job_id = job[0]["id"]
+				self.status = job[0]["status"]
+		else:
+			job_details = agent.get_job_status(self.job_id)
+			self.status = job_details["status"]
+
+		self.save()
+
+	@frappe.whitelist()
 	def retry_skip_failing_patches(self):
 		# Add the skip flag and update request data
 		updated_request_data = json.loads(self.request_data) if self.request_data else {}
@@ -99,6 +192,18 @@ class AgentJob(Document):
 		return self.retry()
 
 	@frappe.whitelist()
+	def succeed_and_process_job_updates(self):
+		self.status = "Success"
+		self.save()
+		self.process_job_updates()
+
+	@frappe.whitelist()
+	def fail_and_process_job_updates(self):
+		self.status = "Failure"
+		self.save()
+		self.process_job_updates()
+
+	@frappe.whitelist()
 	def process_job_updates(self):
 		process_job_updates(self.name)
 
@@ -106,6 +211,11 @@ class AgentJob(Document):
 		steps = frappe.get_all("Agent Job Step", filters={"agent_job": self.name})
 		for step in steps:
 			frappe.delete_doc("Agent Job Step", step.name)
+
+		frappe.db.delete(
+			"Press Notification",
+			{"document_type": self.doctype, "document_name": self.name},
+		)
 
 
 def job_detail(job):
@@ -196,6 +306,7 @@ def poll_pending_jobs_server(server):
 		order_by="job_id",
 		ignore_ifnull=True,
 	)
+
 	if not pending_jobs:
 		return
 
@@ -216,6 +327,7 @@ def poll_pending_jobs_server(server):
 			# Update Job Status
 			# If it is worthy of an update
 			if job.status != polled_job["status"]:
+				lock_doc_updated_by_job(job.name)
 				update_job(job.name, polled_job)
 
 			# Update Steps' Status
@@ -240,36 +352,93 @@ def poll_pending_jobs():
 		order_by="count desc",
 		ignore_ifnull=True,
 	)
+
 	for server in servers:
-		try:
-			poll_pending_jobs_server(server)
-			frappe.db.commit()
-		except Exception:
-			log_error("Server Agent Job Poll Exception", server=server)
-			frappe.db.rollback()
+		server.pop("count")
+		frappe.enqueue(
+			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
+			queue="short",
+			server=server,
+			job_id=f"poll_pending_jobs:{server.server}",
+			deduplicate=True,
+		)
 
 
 def fail_old_jobs():
-	frappe.db.set_value(
+	def update_status(jobs: list[str], status: str):
+		for batch in create_batch(jobs or [], 100):
+			frappe.db.set_value("Agent Job", {"name": ("in", batch)}, "status", status)
+			frappe.db.commit()
+
+	failed_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"modified": ("<", frappe.utils.add_days(None, -2)),
+			"modified": ("<", add_days(None, -2)),
 		},
-		"status",
-		"Failure",
+		"name",
+		pluck=True,
 	)
+	update_status(failed_jobs, "Failure")
 
-	frappe.db.set_value(
+	undelivered_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"job_id": 0,
-			"modified": ("<", frappe.utils.add_days(None, -2)),
+			"modified": ("<", add_days(None, -2)),
+			"status": ("!=", "Undelivered"),
 		},
-		"status",
-		"Undelivered",
+		"name",
+		pluck=True,
 	)
+
+	update_status(undelivered_jobs, "Undelivered")
+
+
+def get_pair_jobs() -> tuple[str]:
+	"""Return list of jobs who's callback depend on another"""
+	return (
+		"New Site",
+		"New Site from Backup",
+		"Add Site to Upstream",
+		"Archive Site",
+		"Remove Site from Upstream",
+		"Rename Site",
+		"Rename Site on Upstream",
+	)
+
+
+def lock_doc_updated_by_job(job_name):
+	"""
+	Ensure serializability of callback of jobs associated with the same document
+
+	All select queries in this transaction should have for_update True for this to work correctly
+	"""
+	field_values = frappe.db.get_values(
+		"Agent Job",
+		job_name,
+		["site", "bench", "server", "server_type", "job_type"],
+		as_dict=True,
+	)[
+		0
+	]  # relies on order of values to be site, bench..
+
+	if field_values["job_type"] not in get_pair_jobs():
+		return
+
+	for field, value in field_values.items():
+		doctype = field.capitalize()
+		if field == "server":
+			doctype = field_values["server_type"]
+		elif field in (
+			"server_type",
+			"job_type",
+		):  # ideally will never happen, but for sanity
+			return
+		if value:
+			frappe.db.get_value(doctype, value, "modified", for_update=True)
+			return value
 
 
 def update_job(job_name, job):
@@ -286,8 +455,31 @@ def update_job(job_name, job):
 			"output": job["data"].get("output"),
 			"traceback": job["data"].get("traceback"),
 		},
-		for_update=False,
 	)
+
+	# send notification if job failed
+	if job["status"] == "Failure":
+		job_site, job_type = frappe.db.get_value("Agent Job", job_name, ["site", "job_type"])
+		notification_type, message = "", ""
+
+		if job_type == "Update Site Migrate":
+			notification_type = "Site Migrate"
+			message = f"Site <b>{job_site}</b> failed to migrate"
+		elif job_type == "Update Site Pull":
+			notification_type = "Site Update"
+			message = f"Site <b>{job_site}</b> failed to update"
+		elif job_type.startswith("Recover Failed"):
+			notification_type = "Site Recovery"
+			message = f"Site <b>{job_site}</b> failed to recover after a failed update/migration"
+
+		if notification_type:
+			create_new_notification(
+				frappe.get_value("Site", job_site, "team"),
+				notification_type,
+				"Agent Job",
+				job_name,
+				message,
+			)
 
 
 def update_steps(job_name, job):
@@ -304,6 +496,7 @@ def update_steps(job_name, job):
 	for polled_step in job["steps"]:
 		step = find(steps, lambda x: x.step_name == polled_step["name"])
 		if step and step.status != polled_step["status"]:
+			lock_doc_updated_by_job(job_name)
 			update_step(step.name, polled_step)
 
 
@@ -321,7 +514,6 @@ def update_step(step_name, step):
 			"output": step["data"].get("output"),
 			"traceback": step["data"].get("traceback"),
 		},
-		for_update=False,
 	)
 
 
@@ -331,6 +523,114 @@ def skip_pending_steps(job_name):
 		WHERE status = 'Pending' AND agent_job = %s""",
 		job_name,
 	)
+
+
+def get_next_retry_at(job_retry_count):
+	from frappe.utils import add_to_date, now_datetime
+
+	backoff_in_seconds = 2
+	retry_in_seconds = job_retry_count**backoff_in_seconds
+
+	return add_to_date(now_datetime(), seconds=retry_in_seconds)
+
+
+def retry_undelivered_jobs():
+	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
+	server_jobs = get_server_wise_undelivered_jobs(job_types)
+
+	for server in server_jobs:
+		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
+
+		if delivered_jobs:
+			update_job_ids_for_delivered_jobs(delivered_jobs)
+
+		undelivered_jobs = list(set(server_jobs[server]) - set(delivered_jobs))
+
+		for job in undelivered_jobs:
+			job_doc = frappe.get_doc("Agent Job", job)
+			max_retry_count = max_retry_per_job_type[job_doc.job_type]
+
+			if not max_retry_count:
+				continue
+
+			if job_doc.retry_count < max_retry_count:
+				retry = job_doc.retry_count + 1
+				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
+				job_doc.retry_in_place()
+			else:
+				update_job_and_step_status(job)
+
+
+def get_retryable_job_types_and_max_retry_count():
+	job_types, max_retry_per_job_type = [], {}
+	for job_type in frappe.get_all(
+		"Agent Job Type",
+		filters={"disabled_auto_retry": 0, "max_retry_count": [">", 0]},
+		fields=["name", "max_retry_count"],
+	):
+		job_types.append(job_type["name"])
+		max_retry_per_job_type[job_type["name"]] = job_type["max_retry_count"]
+
+	return job_types, max_retry_per_job_type
+
+
+def update_job_and_step_status(job):
+	agent_job = frappe.qb.DocType("Agent Job")
+	frappe.qb.update(agent_job).set(agent_job.status, "Delivery Failure").where(
+		agent_job.name == job
+	).run()
+
+	agent_job_step = frappe.qb.DocType("Agent Job Step")
+	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
+		agent_job_step.agent_job == job
+	).run()
+
+
+def get_server_wise_undelivered_jobs(job_types):
+	jobs = frappe._dict()
+
+	if not job_types:
+		return jobs
+
+	for job in frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Undelivered",
+			"job_id": 0,
+			"retry_count": [">=", 1],
+			"next_retry_at": ("<=", frappe.utils.now_datetime()),
+			"job_type": ("in", job_types),
+		},
+		["name", "server", "server_type"],
+		ignore_ifnull=True,  # job type is mandatory and next_retry_at has to be set for retry
+	):
+		jobs.setdefault((job.server, job.server_type), []).append(job["name"])
+
+	return jobs
+
+
+def get_jobs_delivered_to_server(server, jobs):
+	agent = Agent(server[0], server_type=server[1])
+
+	random_undelivered_ids = random.sample(jobs, k=min(100, len(jobs)))
+	delivered_jobs = agent.get_jobs_id(random_undelivered_ids)
+
+	return delivered_jobs or []
+
+
+def update_job_ids_for_delivered_jobs(delivered_jobs):
+	for job in delivered_jobs:
+		frappe.db.set_value(
+			"Agent Job",
+			job["agent_job_id"],
+			{
+				"job_id": job["id"],
+				"status": "Pending",
+				"next_retry_at": None,
+				"retry_count": 0,
+			},
+			update_modified=False,
+		)
 
 
 def process_job_updates(job_name):
@@ -361,6 +661,7 @@ def process_job_updates(job_name):
 			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
 			process_move_site_to_bench_job_update,
+			process_restore_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -388,8 +689,9 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Restore Site":
-			process_reinstall_site_job_update(job)
+			process_restore_job_update(job)
 		elif job.job_type == "Reinstall Site":
 			process_reinstall_site_job_update(job)
 		elif job.job_type == "Migrate Site":
@@ -454,3 +756,38 @@ def process_job_updates(job_name):
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
 		raise e
+
+
+def update_job_step_status():
+	from frappe.query_builder.custom import GROUP_CONCAT
+
+	agent_job = frappe.qb.DocType("Agent Job")
+	agent_job_step = frappe.qb.DocType("Agent Job Step")
+
+	steps_to_update = (
+		frappe.qb.from_(agent_job)
+		.join(agent_job_step)
+		.on(agent_job.name == agent_job_step.agent_job)
+		.select(
+			agent_job.name.as_("agent_job"),
+			agent_job.status.as_("job_status"),
+			GROUP_CONCAT(agent_job_step.name, alias="step_names"),
+		)
+		.where(
+			(agent_job.status.isin(["Failure", "Delivery Failure"]))
+			& (agent_job_step.status == "Pending")
+		)
+		.groupby(agent_job.name)
+		.limit(100)
+	).run(as_dict=True)
+
+	for step in steps_to_update:
+		(
+			frappe.qb.update(agent_job_step)
+			.where(
+				(agent_job_step.agent_job == step.agent_job)
+				& (agent_job_step.name.isin(step.step_names.split(",")))
+				& (agent_job_step.status.isin(["Pending", "Running"]))
+			)
+			.set(agent_job_step.status, step.job_status)
+		).run()

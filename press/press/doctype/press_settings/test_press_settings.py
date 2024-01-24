@@ -35,16 +35,13 @@ def create_test_press_settings():
 		}
 	).insert(ignore_if_duplicate=True)
 
-	settings = frappe.get_doc(
-		{
-			"doctype": "Press Settings",
-			"domain": "fc.dev",
-			"bench_configuration": "{}",
-			"rsa_key_size": "2048",
-			"certbot_directory": ".certbot",
-			"eff_registration_email": frappe.mock("email"),
-		}
-	).insert()
+	settings = frappe.get_single("Press Settings")
+	settings.domain = "fc.dev"
+	settings.bench_configuration = "{}"
+	settings.rsa_key_size = 2048
+	settings.certbot_directory = ".certbot"
+	settings.eff_registration_email = frappe.mock("email")
+	settings.save()
 	return settings
 
 

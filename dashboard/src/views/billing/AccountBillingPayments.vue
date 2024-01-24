@@ -1,7 +1,7 @@
 <template>
-	<Card title="Billing history" :subtitle="subtitle" v-if="!invoiceName">
+	<Card title="Past Invoices" :subtitle="subtitle" v-if="!invoiceName">
 		<template #actions>
-			<Input
+			<FormControl
 				v-if="$resources.pastInvoices.data?.length"
 				type="select"
 				:options="selectItems"
@@ -10,19 +10,20 @@
 		</template>
 		<div class="max-h-96 divide-y" v-if="filteredInvoices?.length">
 			<div
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-7"
 			>
 				<span>Date</span>
 				<span class="hidden md:inline">Description</span>
 				<span class="hidden md:inline">Amount</span>
+				<span class="hidden md:inline">Amount Due</span>
 				<span>Status</span>
 				<span class="hidden md:inline">Payment Date</span>
-				<span></span>
+				<span>Download</span>
 			</div>
 			<div
 				:key="invoice.name"
 				v-for="invoice in filteredInvoices"
-				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
+				class="grid grid-cols-3 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-7"
 			>
 				<div>
 					<div>
@@ -41,7 +42,7 @@
 				<span class="hidden md:inline">
 					<Link
 						v-if="invoice.type == 'Subscription'"
-						:to="'/billing/' + invoice.name"
+						:to="'/billing/' + invoice.name + '/invoices'"
 					>
 						Invoice for
 						{{
@@ -59,10 +60,12 @@
 					</span>
 				</span>
 				<span class="hidden md:inline">{{ invoice.formatted_total }}</span>
+				<span v-if="invoice.formatted_amount_due" class="hidden md:inline">{{
+					invoice.formatted_amount_due
+				}}</span>
+				<span v-else>-</span>
 				<span>
-					<Badge v-bind="getStatusBadgeProps(invoice)">
-						{{ invoice.status }}
-					</Badge>
+					<Badge :label="invoice.status" />
 				</span>
 				<span class="hidden md:inline">
 					<span
@@ -80,6 +83,7 @@
 							})
 						}}
 					</span>
+					<span v-else>-</span>
 				</span>
 				<div class="flex items-center justify-end space-x-2">
 					<Button
@@ -106,6 +110,7 @@
 </template>
 <script>
 import InvoiceUsageCard from '@/components/InvoiceUsageCard.vue';
+
 export default {
 	name: 'AccountBillingPayments',
 	props: ['invoiceName'],
@@ -159,16 +164,6 @@ export default {
 		}
 	},
 	methods: {
-		getStatusBadgeProps(invoice) {
-			return {
-				status: invoice.status,
-				color: {
-					Paid: 'green',
-					Unpaid: 'yellow',
-					'Invoice Created': 'blue'
-				}[invoice.status]
-			};
-		},
 		async refreshLink(invoiceName) {
 			let refreshed_link = await this.$call(
 				'press.api.billing.refresh_invoice_link',

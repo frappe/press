@@ -7,3 +7,7 @@ class CentralServerNotSet(ValidationError):
 
 class FrappeioServerNotSet(ValidationError):
 	pass
+
+
+class CannotChangePlan(ValidationError):
+	pass

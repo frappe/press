@@ -26,6 +26,3 @@
     name: clamav-freshclam
     state: stopped
     enabled: no
-
-- name: Update freshclam
-  command: freshclam

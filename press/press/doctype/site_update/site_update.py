@@ -8,7 +8,7 @@ import frappe
 
 from press.agent import Agent
 from datetime import datetime
-from press.utils import log_error
+from press.utils import log_error, get_last_doc
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.utils.caching import site_cache
@@ -178,13 +178,17 @@ class SiteUpdate(Document):
 		source_bench = frappe.get_doc("Bench", self.source_bench)
 		dest_bench = frappe.get_doc("Bench", self.destination_bench)
 
-		work_load_diff = dest_bench.work_load - source_bench.work_load
+		workload_diff = dest_bench.workload - source_bench.workload
 		if (
 			server.new_worker_allocation
-			and work_load_diff
+			and workload_diff
 			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
 			server.auto_scale_workers()
+
+	@frappe.whitelist()
+	def trigger_recovery_job(self):
+		trigger_recovery_job(self.name)
 
 
 def trigger_recovery_job(site_update_name):
@@ -222,13 +226,16 @@ def trigger_recovery_job(site_update_name):
 
 
 @site_cache(ttl=60)
-def benches_with_available_update():
+def benches_with_available_update(site=None):
+	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
 	source_benches_info = frappe.db.sql(
-		"""
+		f"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
+		{'AND sb.name = %(site_bench)s' if site else ''}
 		""",
+		values={"site_bench": site_bench} if site else {},
 		as_dict=True,
 	)
 
@@ -327,9 +334,9 @@ def should_try_update(site):
 	)[0].destination
 
 	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
-	dest_apps = [
-		app.app for app in frappe.get_doc("Bench", dict(candidate=destination)).apps
-	]
+	dest_apps = []
+	if dest_bench := get_last_doc("Bench", dict(candidate=destination, status="Active")):
+		dest_apps = [app.app for app in dest_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
 		return False
@@ -380,13 +387,19 @@ def process_update_site_job_update(job):
 		if site_bench != site_update.destination_bench and move_site_step_status == "Success":
 			frappe.db.set_value("Site", job.site, "bench", site_update.destination_bench)
 			frappe.db.set_value("Site", job.site, "group", site_update.destination_group)
+		site_enable_step_status = frappe.db.get_value(
+			"Agent Job Step",
+			{"step_name": "Disable Maintenance Mode", "agent_job": job.name},
+			"status",
+		)
+		if site_enable_step_status == "Success":
+			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
 
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
 		elif updated_status == "Success":
 			frappe.get_doc("Site", job.site).reset_previous_status()
-			frappe.get_doc("Site Update", site_update.name).reallocate_workers()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):

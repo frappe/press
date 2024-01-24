@@ -9,8 +9,27 @@ import posthog from 'posthog-js';
 import { BrowserTracing } from '@sentry/tracing';
 import router from './router/index';
 import dayjs from 'dayjs';
+import { notify } from '@/utils/toast';
+import {
+	setConfig,
+	frappeRequest,
+	pageMetaPlugin,
+	resourcesPlugin
+} from 'frappe-ui';
 
 const app = createApp(App);
+let request = options => {
+	let _options = options || {};
+	_options.headers = options.headers || {};
+	let currentTeam = localStorage.getItem('current_team');
+	if (currentTeam) {
+		_options.headers['X-Press-Team'] = currentTeam;
+	}
+	return frappeRequest(_options);
+};
+setConfig('resourceFetcher', request);
+app.use(resourcesPlugin);
+app.use(pageMetaPlugin);
 
 registerPlugins(app);
 registerGlobalComponents(app);
@@ -18,7 +37,7 @@ const { auth, account } = registerControllers(app);
 registerRouter(app, auth, account);
 
 // sentry
-if (window.press_frontend_sentry_dsn.includes('https://')) {
+if (window.press_frontend_sentry_dsn?.includes('https://')) {
 	Sentry.init({
 		app,
 		dsn: window.press_frontend_sentry_dsn,
@@ -34,7 +53,7 @@ if (window.press_frontend_sentry_dsn.includes('https://')) {
 }
 
 // posthog
-if (window.press_frontend_posthog_host.includes('https://')) {
+if (window.press_frontend_posthog_host?.includes('https://')) {
 	try {
 		posthog.init(window.press_frontend_posthog_project_id, {
 			api_host: window.press_frontend_posthog_host,
@@ -49,15 +68,28 @@ if (window.press_frontend_posthog_host.includes('https://')) {
 	}
 }
 
-app.mount('#app');
+if (import.meta.env.DEV) {
+	request({
+		url: '/api/method/press.www.dashboard.get_context_for_dev'
+	}).then(values => {
+		for (let key in values) {
+			window[key] = values[key];
+		}
+		app.mount('#app');
+	});
+} else {
+	app.mount('#app');
+}
 
 app.config.globalProperties.$dayjs = dayjs;
 app.config.errorHandler = (error, instance) => {
 	if (instance) {
-		instance.$notify({
+		let errorMessage = error.message;
+		if (error.messages) errorMessage = error.messages.join('\n');
+		notify({
 			icon: 'x',
 			title: 'An error occurred',
-			message: error.messages?.join('\n'),
+			message: errorMessage,
 			color: 'red'
 		});
 	}

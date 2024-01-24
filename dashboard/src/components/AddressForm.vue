@@ -7,8 +7,8 @@
 			@update:modelValue="$emit('update:address', $event)"
 		/>
 		<div class="mt-4" v-show="address.country == 'India'">
-			<span class="mb-2 block text-sm leading-4 text-gray-700"> GSTIN </span>
-			<Input
+			<FormControl
+				label="GSTIN"
 				v-if="gstApplicable"
 				type="text"
 				v-model="address.gstin"
@@ -40,6 +40,7 @@
 
 <script>
 import Form from '@/components/Form.vue';
+import { indianStates } from '@/utils/billing';
 
 export default {
 	name: 'AddressForm',
@@ -53,32 +54,34 @@ export default {
 			gstApplicable: true
 		};
 	},
+	watch: {
+		'address.gstin'(gstin) {
+			this.update('gstin', gstin);
+		}
+	},
 	resources: {
 		countryList: {
-			method: 'press.api.account.country_list',
+			url: 'press.api.account.country_list',
 			auto: true,
 			onSuccess() {
-				let country = this.countryList.find(
-					d => d.label === this.$account.team.country
-				);
-				if (country) {
-					this.update('country', country.value);
+				// TODO: remove this.$account usage after dashboard2 is merged
+				let userCountry =
+					this.$account?.team.country || this.$team?.doc.country;
+				if (userCountry) {
+					let country = this.countryList.find(d => d.label === userCountry);
+					if (country) {
+						this.update('country', country.value);
+					}
 				}
 			}
 		},
-		indianStates: {
-			method: 'press.api.billing.indian_states'
-		}
-	},
-	watch: {
-		'address.country': {
-			handler(value) {
-				if (value === 'India') {
-					this.$resources.indianStates.fetch();
-					this.update('state', '');
+		validateGST() {
+			return {
+				url: 'press.api.billing.validate_gst',
+				makeParams() {
+					return { address: this.address };
 				}
-			},
-			immediate: true
+			};
 		}
 	},
 	methods: {
@@ -101,11 +104,9 @@ export default {
 			}
 
 			try {
-				await this.$call('press.api.billing.validate_gst', {
-					address: this.address
-				});
+				await this.$resources.validateGST.submit();
 			} catch (error) {
-				return error.messages.join('\n');
+				return error.messages?.join('\n');
 			}
 		}
 	},
@@ -117,7 +118,7 @@ export default {
 			}));
 		},
 		indianStates() {
-			return (this.$resources.indianStates.data || []).map(d => ({
+			return indianStates.map(d => ({
 				label: d,
 				value: d
 			}));
@@ -137,27 +138,25 @@ export default {
 					fieldname: 'address',
 					required: 1
 				},
-				[
-					{
-						fieldtype: 'Data',
-						label: 'City',
-						fieldname: 'city',
-						required: 1
-					},
-					{
-						fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
-						label: 'State / Province / Region',
-						fieldname: 'state',
-						required: 1,
-						options: this.address.country === 'India' ? this.indianStates : null
-					},
-					{
-						fieldtype: 'Data',
-						label: 'Postal Code',
-						fieldname: 'postal_code',
-						required: 1
-					}
-				]
+				{
+					fieldtype: 'Data',
+					label: 'City',
+					fieldname: 'city',
+					required: 1
+				},
+				{
+					fieldtype: this.address.country === 'India' ? 'Select' : 'Data',
+					label: 'State / Province / Region',
+					fieldname: 'state',
+					required: 1,
+					options: this.address.country === 'India' ? this.indianStates : null
+				},
+				{
+					fieldtype: 'Data',
+					label: 'Postal Code',
+					fieldname: 'postal_code',
+					required: 1
+				}
 			];
 		}
 	}

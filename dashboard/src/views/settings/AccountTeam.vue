@@ -16,7 +16,7 @@
 		>
 			<template #actions>
 				<div v-if="$account.team.name === team.name">
-					<Badge color="blue">Active</Badge>
+					<Badge label="Active" theme="blue" />
 				</div>
 				<div v-else class="flex flex-row justify-end">
 					<Dropdown class="ml-2" :options="dropdownItems(team.name)" right>
@@ -36,7 +36,7 @@
 					:key="member.name"
 				>
 					<template #actions>
-						<ErrorMessage :message="$resourceErrors" />
+						<ErrorMessage :message="$resources.removeMember.error" />
 						<Button
 							class="ml-2 p-4"
 							@click="
@@ -50,21 +50,22 @@
 				</ListItem>
 				<div v-if="showManageTeamForm">
 					<h5 class="mt-5 text-sm font-semibold">Create child team</h5>
-					<Input
+					<FormControl
 						label="Enter name to create a new child team for shared access."
-						type="text"
 						class="mt-2"
 						placeholder="e.g Accounts Team"
 						v-model="childTeamTitle"
 						required
 					/>
-					<ErrorMessage :message="$resourceErrors" />
+					<ErrorMessage :message="$resources.addChildTeam.error" />
 
-					<div class="mt-5 flex flex-row justify-end">
-						<Button @click="showManageTeamForm = false"> Cancel </Button>
+					<div class="mt-5">
+						<Button class="w-full" @click="showManageTeamForm = false">
+							Cancel
+						</Button>
 						<Button
-							class="ml-2"
-							appearance="primary"
+							class="mt-2 w-full"
+							variant="solid"
 							:loading="$resources.addChildTeam.loading"
 							@click="$resources.addChildTeam.submit({ title: childTeamTitle })"
 						>
@@ -72,8 +73,12 @@
 						</Button>
 					</div>
 				</div>
-				<div v-else class="mt-5 flex flex-row justify-end">
-					<Button appearance="primary" @click="showManageTeamForm = true">
+				<div v-else class="mt-5">
+					<Button
+						class="w-full"
+						variant="solid"
+						@click="showManageTeamForm = true"
+					>
 						Add Child team
 					</Button>
 				</div>
@@ -83,6 +88,8 @@
 </template>
 
 <script>
+import { notify } from '@/utils/toast';
+
 export default {
 	name: 'AccountTeam',
 	data() {
@@ -107,17 +114,17 @@ export default {
 	resources: {
 		leaveTeam() {
 			return {
-				method: 'press.api.account.leave_team',
+				url: 'press.api.account.leave_team',
 				onSuccess() {
 					this.$account.fetchAccount();
-					this.$notify({
+					notify({
 						title: 'Successfully Left Team',
 						icon: 'check',
 						color: 'green'
 					});
 				},
 				onError() {
-					this.$notify({
+					notify({
 						title: 'Cannot leave this Team.',
 						icon: 'x',
 						color: 'red'
@@ -127,12 +134,12 @@ export default {
 		},
 		addChildTeam() {
 			return {
-				method: 'press.api.account.create_child_team',
+				url: 'press.api.account.create_child_team',
 				onSuccess(data) {
 					this.showManageTeamDialog = false;
 					this.childTeamTitle = null;
 					this.$account.fetchAccount();
-					this.$notify({
+					notify({
 						title: this.newChildTeamTitle,
 						message: this.newChildTeamMessage,
 						color: 'green',
@@ -143,7 +150,7 @@ export default {
 		},
 		removeMember() {
 			return {
-				method: 'press.api.account.remove_child_team',
+				url: 'press.api.account.remove_child_team',
 				onSuccess() {
 					this.$account.fetchAccount();
 				}
@@ -155,11 +162,11 @@ export default {
 			return [
 				{
 					label: 'Switch to Team',
-					handler: () => this.$account.switchToTeam(team_name)
+					onClick: () => this.$account.switchToTeam(team_name)
 				},
 				{
 					label: 'Leave Team',
-					handler: () => this.confirmLeaveTeam(team_name)
+					onClick: () => this.confirmLeaveTeam(team_name)
 				}
 			];
 		},
@@ -168,7 +175,7 @@ export default {
 				title: 'Leave Team',
 				message: `Are you sure you want to leave team <strong>${team_name}</strong>?`,
 				actionLabel: 'Leave Team',
-				actionType: 'danger',
+				actionColor: 'red',
 				action: closeDialog => {
 					closeDialog();
 					this.$resources.leaveTeam.submit({ team: team_name });

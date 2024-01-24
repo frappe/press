@@ -1,11 +1,12 @@
 import time
 
-import dns.resolver
 import frappe
+from dns.resolver import Resolver
 
 from press.api.server import plans
 from press.runner import Ansible
 from press.utils import get_current_team
+from press.api.site import NAMESERVERS
 
 
 @frappe.whitelist()
@@ -13,18 +14,21 @@ def new(server):
 	team = get_current_team(get_doc=True)
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
+	if not team.self_hosted_servers_enabled:
+		frappe.throw(
+			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
+		)
 	cluster = "Hybrid"
 	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 	self_hosted_server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
-			"private_ip": server["privateIP"].strip(),
 			"ip": server["publicIP"].strip(),
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
 			"team": team.name,
-			"plan": server["plan"]["name"],
+			"plan": "Unlimited",
 			"server_url": server["url"],
 			"new_server": True,
 		}
@@ -47,7 +51,10 @@ def verify(server):
 	)
 	play = ansible.run()
 	if play.status == "Success":
+		server_doc.fetch_private_ip()
 		server_doc.fetch_system_ram(play.name)
+		server_doc.fetch_system_specifications(play.name)
+		server_doc.check_minimum_specs()
 		server_doc.status = "Pending"
 		server_doc.save()
 		server_doc.create_db_server()
@@ -84,7 +91,9 @@ def get_plans():
 @frappe.whitelist()
 def check_dns(domain, ip):
 	try:
-		domain_ip = dns.resolver.query(domain, "A")[0].to_text()
+		resolver = Resolver(configure=False)
+		resolver.nameservers = NAMESERVERS
+		domain_ip = resolver.query(domain, "A")[0].to_text()
 		if domain_ip == ip:
 			return True
 	except Exception:

@@ -97,7 +97,7 @@ export default {
 						item.doctype.toLowerCase() + (item.doctype === 'Bench' ? 'es' : 's')
 					}/` +
 					item.route +
-					'/overview';
+					(item.doctype === 'Bench' ? '/sites' : '/overview');
 			}
 
 			const options = {

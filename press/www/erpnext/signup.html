@@ -39,7 +39,7 @@
 				<div class="form-group">
 					<label for="email">Email address</label>
 					<input type="email" id="email" class="form-control" name="email" autocomplete="email">
-				</div>				
+				</div>
 				<div class="form-group">
 					<label for="password">Password</label>
 					<input type="password" id="password" class="form-control" name="password" onkeyup="validate_password(this)">
@@ -101,7 +101,7 @@
 	// this needs to be on global scope
 	var field_validators = {
 		subdomain: (value) => {
-			let MIN_LENGTH = 4;
+			let MIN_LENGTH = 5;
 			let MAX_LENGTH = 20;
 			if (value.length < MIN_LENGTH) {
 				return `Site name cannot have less than ${MIN_LENGTH} characters`;

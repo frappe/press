@@ -22,7 +22,7 @@ class BackupRestorationTest(Document):
 		# check if another backup restoration is already running
 		backups = frappe.get_all(
 			"Backup Restoration Test",
-			dict(status=("in", ["Running", "Started"]), site=self.site, name=("!=", self.name)),
+			dict(status="Running", site=self.site, name=("!=", self.name)),
 			pluck="name",
 		)
 		if backups:
@@ -31,7 +31,11 @@ class BackupRestorationTest(Document):
 	def check_duplicate_active_site(self):
 		# check if any active backup restoration test site is active
 		sites = frappe.get_all(
-			"Site", dict(status="Active", name=self.test_site), pluck="name"
+			"Site",
+			dict(
+				status=("in", ["Active", "Inactive", "Broken", "Suspended"]), name=self.test_site
+			),
+			pluck="name",
 		)
 		if sites:
 			frappe.throw(
@@ -39,12 +43,14 @@ class BackupRestorationTest(Document):
 			)
 
 	def create_test_site(self) -> None:
-		self.status = "Running"
 		site_dict = prepare_site(self.site)
 		server = frappe.get_value("Site", self.site, "server")
 		try:
-			site_job = _new(site_dict, server)
+			site_job = _new(site_dict, server, True)
 			self.test_site = site_job.get("site")
+			self.status = "Running"
 			self.save()
+			frappe.db.commit()
 		except Exception:
+			frappe.db.rollback()
 			frappe.log_error("Site Creation Error")

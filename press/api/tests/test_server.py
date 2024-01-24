@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import change_plan, new, all
@@ -154,7 +155,6 @@ class TestAPIServer(FrappeTestCase):
 
 		server = frappe.get_last_doc("Server")
 		self.assertEqual(server.plan, self.app_plan.name)
-		self.assertEqual(server.ram, self.app_plan.memory)
 		app_subscription = frappe.get_doc(
 			"Subscription", {"document_type": "Server", "document_name": server.name}
 		)
@@ -227,6 +227,37 @@ class TestAPIServer(FrappeTestCase):
 		self.assertTrue(db_subscription.enabled)
 		self.assertEqual(db_server.plan, db_plan_2.name)
 
+	@patch(
+		"press.press.doctype.press_job.press_job.frappe.enqueue_doc",
+		new=foreground_enqueue_doc,
+	)
+	@patch.object(VirtualMachine, "provision", new=successful_provision)
+	@patch.object(VirtualMachine, "sync", new=successful_sync)
+	def test_creation_of_db_server_adds_default_mariadb_variables(self):
+		create_test_virtual_machine_image(cluster=self.cluster, series="m")
+		create_test_virtual_machine_image(
+			cluster=self.cluster, series="f"
+		)  # call from here and not setup, so mocks work
+		frappe.set_user(self.team.user)
+
+		new(
+			{
+				"cluster": self.cluster.name,
+				"db_plan": self.db_plan.name,
+				"app_plan": self.app_plan.name,
+				"title": "Test Server",
+			}
+		)
+
+		db_server = frappe.get_last_doc("Database Server")
+		self.assertEqual(
+			find(
+				db_server.mariadb_system_variables,
+				lambda x: x.mariadb_variable == "tmp_disk_table_size",
+			).value_int,
+			5120,
+		)
+
 
 class TestAPIServerList(FrappeTestCase):
 	def setUp(self):
@@ -245,6 +276,10 @@ class TestAPIServerList(FrappeTestCase):
 
 		self.db_server_dict = {
 			"name": database_server.name,
+			"cluster": database_server.cluster,
+			"plan": None,
+			"region_info": {"image": None, "title": None},
+			"tags": [],
 			"title": "Database Server",
 			"status": database_server.status,
 			"creation": database_server.creation,
@@ -260,6 +295,10 @@ class TestAPIServerList(FrappeTestCase):
 
 		self.app_server_dict = {
 			"name": app_server.name,
+			"cluster": app_server.cluster,
+			"plan": None,
+			"region_info": {"image": None, "title": None},
+			"tags": ["test_tag"],
 			"title": "App Server",
 			"status": app_server.status,
 			"creation": app_server.creation,
@@ -273,10 +312,18 @@ class TestAPIServerList(FrappeTestCase):
 		self.assertEqual(all(), [self.app_server_dict, self.db_server_dict])
 
 	def test_list_app_servers(self):
-		self.assertEqual(all(server_filter="App Servers"), [self.app_server_dict])
+		self.assertEqual(
+			all(server_filter={"server_type": "App Servers", "tag": ""}), [self.app_server_dict]
+		)
 
 	def test_list_db_servers(self):
-		self.assertEqual(all(server_filter="Database Servers"), [self.db_server_dict])
+		self.assertEqual(
+			all(server_filter={"server_type": "Database Servers", "tag": ""}),
+			[self.db_server_dict],
+		)
 
 	def test_list_tagged_servers(self):
-		self.assertEqual(all(server_filter="tag:test_tag"), [self.app_server_dict])
+		self.assertEqual(
+			all(server_filter={"server_type": "", "tag": "test_tag"}),
+			[self.app_server_dict],
+		)

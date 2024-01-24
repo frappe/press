@@ -6,7 +6,8 @@
 			<div class="flex flex-col items-center gap-2">
 				<ErrorMessage
 					:message="
-						$resources.options.error === 'Bad credentials'
+						$resources.options?.error?.messages &&
+						$resources.options.error.messages.includes('Bad credentials')
 							? 'Access token expired, reauthorization required'
 							: $resources.options.error
 					"
@@ -14,7 +15,7 @@
 
 				<Button
 					v-if="requiresReAuth"
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					@click="$resources.clearAccessToken.submit()"
 					:loading="$resources.clearAccessToken.loading"
@@ -27,7 +28,7 @@
 
 			<div v-if="needsAuthorization">
 				<Button
-					appearance="primary"
+					variant="solid"
 					icon-left="github"
 					:link="options.installation_url + '?state=' + state"
 				>
@@ -42,7 +43,7 @@
 					<span class="text-sm text-gray-600">
 						Don't see your organization?
 						<Link
-							:to="options.installation_url + '?state=' + state"
+							:href="options.installation_url + '?state=' + state"
 							class="font-medium"
 						>
 							Add from GitHub
@@ -68,9 +69,10 @@
 					</div>
 				</div>
 				<div>
-					<ErrorMessage class="mb-2" :message="$resourceErrors" />
+					<ErrorMessage class="mb-2" :message="$resources.validateApp.error" />
 					<Button
-						appearance="primary"
+						class="mt-2"
+						variant="solid"
 						v-if="selectedRepo && selectedBranch && !validatedApp"
 						@click="$resources.validateApp.submit()"
 						:loading="$resources.validateApp.loading"
@@ -102,10 +104,10 @@ export default {
 	resources: {
 		options() {
 			return {
-				method: 'press.api.github.options',
+				url: 'press.api.github.options',
 				auto: true,
-				onError(message) {
-					if (message === 'Bad credentials') {
+				onError(error) {
+					if (error.messages.includes('Bad credentials')) {
 						this.requiresReAuth = true;
 					}
 				}
@@ -120,7 +122,7 @@ export default {
 			};
 
 			return {
-				method: 'press.api.github.repository',
+				url: 'press.api.github.repository',
 				params,
 				auto,
 				onSuccess(repository) {
@@ -136,7 +138,7 @@ export default {
 				branch: this.selectedBranch
 			};
 			return {
-				method: 'press.api.github.app',
+				url: 'press.api.github.app',
 				params,
 				onSuccess(data) {
 					if (data) {
@@ -152,13 +154,13 @@ export default {
 				},
 				onError() {
 					// Invalid Frappe App
-					this.$emit('onSelect', null);
+					if (this.$emit) this.$emit('onSelect', null);
 				}
 			};
 		},
 		clearAccessToken() {
 			return {
-				method: 'press.api.github.clear_token_and_get_installation_url',
+				url: 'press.api.github.clear_token_and_get_installation_url',
 				onSuccess(installation_url) {
 					window.location.href = installation_url + '?state=' + this.state;
 				}

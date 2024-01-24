@@ -9,6 +9,7 @@ from unittest.mock import patch
 import frappe
 
 from press.press.doctype.site.test_site import create_test_site
+from press.press.doctype.subscription.subscription import sites_with_free_hosting
 from press.press.doctype.team.test_team import create_test_team
 
 
@@ -32,8 +33,11 @@ def create_test_subscription(
 class TestSubscription(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team()
+		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		frappe.set_user(self.team.user)
 
 	def tearDown(self):
+		frappe.set_user("Administrator")
 		frappe.db.rollback()
 
 	def test_subscription_daily(self):
@@ -151,3 +155,22 @@ class TestSubscription(unittest.TestCase):
 
 		invoice = frappe.get_doc("Invoice", {"team": self.team.name, "status": "Draft"})
 		self.assertEqual(invoice.total, 0)
+
+	def test_sites_with_free_hosting(self):
+		self.team.create_upcoming_invoice()
+
+		site1 = create_test_site(team=self.team.name)
+		site1.free = 1
+		site1.save()
+		create_test_site(team=self.team.name)
+
+		# test: site marked as free
+		free_sites = sites_with_free_hosting()
+		self.assertEqual(len(free_sites), 1)
+
+		self.team.free_account = True
+		self.team.save()
+
+		# test: site owned by free account
+		free_sites = sites_with_free_hosting()
+		self.assertEqual(len(free_sites), 2)

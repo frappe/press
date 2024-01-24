@@ -6,12 +6,23 @@ import frappe
 import functools
 import json
 import requests
+import pytz
 
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
+from frappe.utils import get_system_timezone, get_datetime
+from frappe.utils.caching import site_cache
 
 
 def log_error(title, **kwargs):
+	if frappe.flags.in_test:
+		try:
+			raise
+		except RuntimeError as e:
+			if e.args[0] == "No active exception to reraise":
+				pass
+			else:
+				raise
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
@@ -38,9 +49,11 @@ def get_current_team(get_doc=False):
 			)
 		)
 
-	user_is_system_user = frappe.session.data.user_type == "System User"
+	system_user = frappe.session.data.user_type == "System User"
+
 	# get team passed via request header
 	team = frappe.get_request_header("X-Press-Team")
+
 	user_is_press_admin = frappe.db.exists(
 		"Has Role", {"parent": frappe.session.user, "role": "Press Admin"}
 	)
@@ -58,34 +71,37 @@ def get_current_team(get_doc=False):
 		)
 
 	if not team:
-		# if team is not passed via header, get the first team that this user is part of
-		team_dict = frappe.db.sql(
-			"""select t.name from `tabTeam` t
-			inner join `tabTeam Member` tm on tm.parent = t.name
-			where tm.user = %s and tm.parenttype = 'Team' and t.enabled = 1
-			order by t.creation asc
-			limit 1""",
-			frappe.session.user,
-			as_dict=True,
-		)
-		team = team_dict[0].name
+		# if team is not passed via header, get the default team for user
+		team = get_default_team_for_user(frappe.session.user)
 
-	if not frappe.db.exists("Team", team):
+	if not system_user and not is_user_part_of_team(frappe.session.user, team):
+		# if user is not part of the team, get the default team for user
+		team = get_default_team_for_user(frappe.session.user)
+		if not team:
+			frappe.throw(
+				"User {0} does not belong to Team {1}".format(frappe.session.user, team),
+				frappe.PermissionError,
+			)
+
+	if not frappe.db.exists("Team", {"name": team, "enabled": 1}):
 		frappe.throw("Invalid Team", frappe.PermissionError)
-
-	valid_team = frappe.db.exists(
-		"Team Member", {"parenttype": "Team", "parent": team, "user": frappe.session.user}
-	)
-	if not valid_team and not user_is_system_user:
-		frappe.throw(
-			"User {0} does not belong to Team {1}".format(frappe.session.user, team),
-			frappe.PermissionError,
-		)
 
 	if get_doc:
 		return frappe.get_doc("Team", team)
 
 	return team
+
+
+def _get_current_team():
+	if not getattr(frappe.local, "_current_team", None):
+		frappe.local._current_team = get_current_team(get_doc=True)
+	return frappe.local._current_team
+
+
+def _system_user():
+	return (
+		frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+	)
 
 
 @functools.lru_cache(maxsize=1024)
@@ -98,15 +114,35 @@ def get_app_tag(repository, repository_owner, hash):
 
 
 def get_default_team_for_user(user):
-	"""Returns the Team if user has one, or returns the Team to which they belong"""
-	if frappe.db.exists("Team", {"user": user}):
-		return frappe.db.get_value("Team", {"user": user}, "name")
+	"""Returns the Team if user has one, or returns the Team in which they belong"""
+	if frappe.db.exists("Team", {"user": user, "enabled": 1}):
+		return frappe.db.get_value("Team", {"user": user, "enabled": 1}, "name")
 
-	team = frappe.db.get_value(
-		"Team Member", filters={"parenttype": "Team", "user": user}, fieldname="parent"
+	teams = frappe.db.get_values(
+		"Team Member",
+		filters={"parenttype": "Team", "user": user},
+		fieldname="parent",
+		pluck="parent",
 	)
-	if team:
-		return team
+	for team in teams:
+		# if user is part of multiple teams, send the first enabled one
+		if frappe.db.exists("Team", {"name": team, "enabled": 1}):
+			return team
+
+
+def get_valid_teams_for_user(user):
+	teams = frappe.db.get_all("Team Member", filters={"user": user}, pluck="parent")
+	valid_teams = frappe.db.get_all(
+		"Team", filters={"name": ("in", teams), "enabled": 1}, fields=["name", "user"]
+	)
+	return valid_teams
+
+
+def is_user_part_of_team(user, team):
+	"""Returns True if user is part of the team"""
+	return frappe.db.exists(
+		"Team Member", {"parenttype": "Team", "parent": team, "user": user}
+	)
 
 
 def get_country_info():
@@ -324,6 +360,7 @@ class RemoteFrappeSite:
 			self._remote_backup_links[file_type] = self.__process_frappe_url(file_path)
 
 
+@site_cache(ttl=5 * 60)
 def get_client_blacklisted_keys() -> list:
 	"""Returns list of blacklisted Site Config Keys accessible to Press /dashboard users."""
 	return list(
@@ -438,3 +475,9 @@ def group_children_in_result(result, child_field_map):
 			out[d.name][target].append(d.get(child_field))
 			out[d.name].pop(child_field, "")
 	return out.values()
+
+
+def convert_user_timezone_to_utc(datetime):
+	timezone = pytz.timezone(get_system_timezone())
+	datetime_obj = get_datetime(datetime)
+	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()

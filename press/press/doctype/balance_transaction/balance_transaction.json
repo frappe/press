@@ -25,7 +25,8 @@
    "in_list_view": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "default": "Adjustment",
@@ -87,7 +88,8 @@
    "fieldname": "unallocated_amount",
    "fieldtype": "Currency",
    "label": "Unallocated Amount",
-   "options": "currency"
+   "options": "currency",
+   "read_only": 1
   },
   {
    "allow_on_submit": 1,
@@ -95,13 +97,14 @@
    "fieldname": "allocated_to",
    "fieldtype": "Table",
    "label": "Allocated To",
-   "options": "Balance Transaction Allocation"
+   "options": "Balance Transaction Allocation",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-10-29 14:58:09.158731",
+ "modified": "2024-01-04 22:28:44.740627",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Balance Transaction",
