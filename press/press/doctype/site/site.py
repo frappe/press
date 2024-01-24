@@ -145,8 +145,7 @@ class Site(Document):
 		if len(self.subdomain) > 32:
 			frappe.throw("Subdomain too long. Use 32 or less characters")
 
-		if len(self.subdomain) < 5:
-			frappe.throw("Subdomain too short. Use 5 or more characters")
+	
 
 	def set_site_admin_password(self):
 		# set site.admin_password if doesn't exist
@@ -372,16 +371,9 @@ class Site(Document):
 	@frappe.whitelist()
 	def create_dns_record(self):
 		"""Check if site needs dns records and creates one."""
-		domain = frappe.get_doc("Root Domain", self.domain)
-
-		is_standalone = frappe.get_value("Server", self.server, "is_standalone")
-		if self.cluster == domain.default_cluster and not is_standalone:
-			return
-		if is_standalone:
-			self._change_dns_record("UPSERT", domain, self.server)
-		else:
-			proxy_server = frappe.get_value("Server", self.server, "proxy_server")
-			self._change_dns_record("UPSERT", domain, proxy_server)
+		
+		create_dns_record(self, record_name=self._get_site_name(self.subdomain))
+		
 
 
 
