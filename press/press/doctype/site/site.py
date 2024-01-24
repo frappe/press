@@ -728,13 +728,13 @@ class Site(Document):
 
 		self.db_set("host_name", None)
 
-		self.delete_offsite_backups()
-		frappe.db.set_value(
-			"Site Backup",
-			{"site": self.name, "offsite": False},
-			"files_availability",
-			"Unavailable",
-		)
+		#self.delete_offsite_backups()
+		# frappe.db.set_value(
+		# 	"Site Backup",
+		# 	{"site": self.name, "offsite": False},
+		# 	"files_availability",
+		# 	"Unavailable",
+		# )
 		self.disable_subscription()
 		self.disable_marketplace_subscriptions()
 
@@ -743,6 +743,7 @@ class Site(Document):
 		site_cleanup_after_archive(self.name)
 
 	def delete_offsite_backups(self):
+		
 		from press.press.doctype.remote_file.remote_file import delete_remote_backup_objects
 
 		log_site_activity(self.name, "Drop Offsite Backups")
@@ -840,7 +841,7 @@ class Site(Document):
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
-
+ 
 	@frappe.whitelist()
 	def login(self, reason=None):
 		log_site_activity(self.name, "Login as Administrator", reason=reason)
