@@ -1768,30 +1768,13 @@ def change_region_options(name):
 	group = frappe.get_doc("Release Group", group)
 	cluster_names = group.get_clusters()
 	group_regions = frappe.get_all(
-		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
+		"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
 	)
 
-	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
-
 	return {
-		"regions": regions,
-		"group_regions": group_regions,
+		"regions": [region for region in group_regions if region.name != cluster],
 		"current_region": cluster,
-		"group_team": group.team,
 	}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def add_region_to_group(name, region):
-	from press.api.bench import add_region
-
-	add_region(name, region)
-	group = frappe.get_doc("Release Group", name)
-	candidate = group.create_deploy_candidate()
-	candidate.deploy_to_production()
-
-	return candidate.name
 
 
 @frappe.whitelist()
