@@ -22,7 +22,8 @@ class SSHCertificateAuthority(Document):
 		self.save()
 
 	def setup_directory(self):
-		os.mkdir(self.directory)
+		if not os.path.exists(self.directory):
+			os.mkdir(self.directory)
 
 	def run(self, command, directory, environment=None):
 		return subprocess.check_output(
@@ -30,10 +31,14 @@ class SSHCertificateAuthority(Document):
 		).decode()
 
 	def generate_key_pair(self):
-		domain = frappe.db.get_value("Press Settings", None, "domain")
-		self.run(
-			f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory
-		)
+		if not os.path.exists(self.private_key_file) and not os.path.exists(
+			self.public_key_file
+		):
+			domain = frappe.db.get_value("Press Settings", None, "domain")
+			self.run(
+				f"ssh-keygen -C ca@{domain} -t rsa -b 4096 -f ca -N ''", directory=self.directory
+			)
+
 		os.chmod(self.public_key_file, 0o400)
 		os.chmod(self.private_key_file, 0o400)
 
