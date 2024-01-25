@@ -494,18 +494,15 @@ erpnext 0.8.3	    HEAD
 
 		options = change_region_options(site.name)
 
-		self.assertCountEqual(
-			(options["regions"]),
+		self.assertEqual(
+			options["regions"],
 			[
-				{"name": seoul_server.cluster, "title": None, "image": None},
-				{"name": tokyo_server.cluster, "title": None, "image": None},
+				frappe.get_value(
+					"Cluster", seoul_server.cluster, ["name", "title", "image"], as_dict=True
+				)
 			],
 		)
-		self.assertCountEqual(
-			options["group_regions"], [seoul_server.cluster, tokyo_server.cluster]
-		)
 		self.assertEqual(options["current_region"], tokyo_server.cluster)
-		self.assertEqual(options["group_team"], group.team)
 
 		with fake_agent_job("Update Site Migrate"):
 			responses.post(
