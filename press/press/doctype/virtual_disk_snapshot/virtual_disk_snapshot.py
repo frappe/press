@@ -124,7 +124,7 @@ def sync_snapshots():
 def delete_old_snapshots():
 	snapshots = frappe.get_all(
 		"Virtual Disk Snapshot",
-		{"status": "Completed", "creation": ("<=", frappe.utils.add_days(None, -2))},
+		{"status": "Completed", "creation": ("<=", frappe.utils.add_days(None, -7))},
 		pluck="name",
 		order_by="creation asc",
 		limit=50,
