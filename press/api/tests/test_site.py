@@ -120,7 +120,7 @@ class TestAPISite(FrappeTestCase):
 				"latest_frappe_version": frappe.db.get_value(
 					"Frappe Version", {"status": "Stable"}, order_by="name desc"
 				),
-				"is_public": group.public,
+				"group_public": group.public,
 				"server": site.server,
 				"server_region_info": frappe.db.get_value(
 					"Cluster", site.cluster, ["title", "image"], as_dict=True
