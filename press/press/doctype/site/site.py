@@ -1805,6 +1805,13 @@ class Site(Document):
 				"doc_method": "change_region",
 				"condition": self.status == "Active",
 			},
+			{
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
+				"button_label": "Change",
+				"doc_method": "change_bench",
+				"condition": self.status == "Active",
+			},
 		]
 		return [d for d in actions if d.get("condition", True)]
 
