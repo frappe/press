@@ -853,7 +853,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
-		"is_public": rg_info.public,
+		"group_public": rg_info.public,
 		"latest_frappe_version": frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		),
