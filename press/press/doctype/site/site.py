@@ -1798,6 +1798,13 @@ class Site(Document):
 				"doc_method": "upgrade",
 				"condition": self.status == "Active",
 			},
+			{
+				"action": "Change region",
+				"description": "Move your site to a different region",
+				"button_label": "Change",
+				"doc_method": "change_region",
+				"condition": self.status == "Active",
+			},
 		]
 		return [d for d in actions if d.get("condition", True)]
 
