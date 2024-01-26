@@ -1791,6 +1791,13 @@ class Site(Document):
 				"button_label": "Transfer",
 				"doc_method": "send_change_team_request",
 			},
+			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status == "Active",
+			},
 		]
 		return [d for d in actions if d.get("condition", True)]
 

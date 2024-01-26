@@ -40,6 +40,9 @@ function getSiteActionHandler(action) {
 		),
 		'Access site database': defineAsyncComponent(() =>
 			import('./SiteDatabaseAccessDialog.vue')
+		),
+		'Version upgrade': defineAsyncComponent(() =>
+			import('./SiteVersionUpgradeDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {
