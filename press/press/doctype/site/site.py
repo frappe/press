@@ -1812,6 +1812,13 @@ class Site(Document):
 				"doc_method": "change_bench",
 				"condition": self.status == "Active",
 			},
+			{
+				"action": "Change server",
+				"description": "Move your site to a different server",
+				"button_label": "Change",
+				"doc_method": "change_server",
+				"condition": self.status == "Active",
+			},
 		]
 		return [d for d in actions if d.get("condition", True)]
 
