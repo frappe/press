@@ -49,6 +49,9 @@ function getSiteActionHandler(action) {
 		),
 		'Change region': defineAsyncComponent(() =>
 			import('./SiteChangeRegionDialog.vue')
+		),
+		'Change server': defineAsyncComponent(() =>
+			import('./SiteChangeServerDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {
