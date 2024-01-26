@@ -43,6 +43,9 @@ function getSiteActionHandler(action) {
 		),
 		'Version upgrade': defineAsyncComponent(() =>
 			import('./SiteVersionUpgradeDialog.vue')
+		),
+		'Change region': defineAsyncComponent(() =>
+			import('./SiteChangeRegionDialog.vue')
 		)
 	};
 	if (actionDialogs[action]) {

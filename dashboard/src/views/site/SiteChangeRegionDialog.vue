@@ -11,7 +11,7 @@
 					onClick: () =>
 						$resources.changeRegion.submit({
 							name: site?.name,
-							cluster: selectedRegion,
+							cluster: selectedRegion?.value,
 							scheduled_datetime: datetimeInIST
 						})
 				}
@@ -79,11 +79,6 @@ export default {
 			selectedRegion: null
 		};
 	},
-	watch: {
-		show(value) {
-			if (value) this.$resources.changeRegionOptions.fetch();
-		}
-	},
 	computed: {
 		show: {
 			get() {
@@ -108,16 +103,13 @@ export default {
 				url: 'press.api.site.change_region_options',
 				params: {
 					name: this.site?.name
-				}
+				},
+				auto: true
 			};
 		},
 		changeRegion() {
 			return {
 				url: 'press.api.site.change_region',
-				params: {
-					name: this.site?.name,
-					cluster: this.selectedRegion
-				},
 				validate() {
 					if (
 						this.$resources.changeRegionOptions.data.current_region ===
