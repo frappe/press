@@ -1,4 +1,4 @@
-import { frappeRequest } from 'frappe-ui';
+import { frappeRequest, LoadingIndicator } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
@@ -10,6 +10,7 @@ import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 import { dayjsLocal } from '../utils/dayjs';
+import { getRunningJobs } from '../utils/agentJob';
 
 export default {
 	doctype: 'Site',
@@ -834,7 +835,28 @@ export default {
 		actions(context) {
 			let { documentResource: site } = context;
 			let $team = getTeam();
+			let runningJobs = getRunningJobs({ site: site.doc.name });
+
 			return [
+				{
+					label: 'Jobs in progress',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' })
+					},
+					condition() {
+						return (
+							runningJobs.filter(job =>
+								['Pending', 'Running'].includes(job.status)
+							).length > 0
+						);
+					},
+					onClick() {
+						router.push({
+							name: 'Site Detail Jobs',
+							params: { name: site.name }
+						});
+					}
+				},
 				{
 					label: 'Update Available',
 					variant: 'solid',
