@@ -8,7 +8,7 @@ from frappe.model.document import Document
 
 
 class SiteActivity(Document):
-	whitelisted_fields = ["action", "reason"]
+	dashboard_fields = ["action", "reason"]
 
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:

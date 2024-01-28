@@ -28,7 +28,7 @@ from press.press.doctype.press_notification.press_notification import (
 
 
 class AgentJob(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"name",
 		"job_type",
 		"creation",

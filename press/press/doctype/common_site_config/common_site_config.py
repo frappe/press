@@ -6,7 +6,7 @@ from frappe.model.document import Document
 
 
 class CommonSiteConfig(Document):
-	whitelisted_fields = ["key", "type", "value"]
+	dashboard_fields = ["key", "type", "value"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

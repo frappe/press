@@ -45,7 +45,7 @@ if typing.TYPE_CHECKING:
 
 
 class Cluster(Document):
-	whitelisted_fields = ["title", "image"]
+	dashboard_fields = ["title", "image"]
 
 	base_servers = {
 		"Proxy Server": "n",

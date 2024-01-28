@@ -14,7 +14,7 @@ from press.agent import Agent
 
 
 class SiteBackup(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"status",
 		"database_url",
 		"public_url",

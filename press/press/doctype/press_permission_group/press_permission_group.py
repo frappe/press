@@ -10,7 +10,8 @@ DEFAULT_PERMISSIONS = {
 
 
 class PressPermissionGroup(Document):
-	whitelisted_fields = ["title"]
+	dashboard_fields = ["title"]
+	dashboard_actions = ["get_users", "add_user", "remove_user", "update_permissions"]
 
 	def validate(self):
 		self.validate_permissions()

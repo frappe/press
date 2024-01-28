@@ -11,7 +11,7 @@ from press.api.bench import apps
 
 
 class ReleaseGroupApp(Document):
-	whitelisted_fields = ["app"]
+	dashboard_fields = ["app"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

@@ -61,7 +61,7 @@ from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"ip",
 		"status",
 		"group",
@@ -69,7 +69,30 @@ class Site(Document):
 		"team",
 		"plan",
 		"archive_failed",
-		"cluster"
+		"cluster",
+		"is_database_access_enabled",
+	]
+	dashboard_actions = [
+		"activate",
+		"add_domain",
+		"archive",
+		"backup",
+		"clear_site_cache",
+		"deactivate",
+		"enable_database_access",
+		"disable_database_access",
+		"get_database_credentials",
+		"install_app",
+		"uninstall_app",
+		"migrate",
+		"login_as_admin",
+		"reinstall",
+		"remove_domain",
+		"restore_site",
+		"schedule_update",
+		"set_plan",
+		"update_config",
+		"delete_config",
 	]
 
 	@staticmethod
@@ -498,6 +521,24 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
+		if self.status == "Suspended":
+			activity = frappe.db.get_all(
+				"Site Activity",
+				filters={"site": self.name, "action": "Suspend Site"},
+				order_by="creation desc",
+				limit=1,
+			)
+			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+			if (
+				frappe.db.count(
+					"Site Backup",
+					filters=dict(site=self.name, status="Success", creation=(">=", suspension_time)),
+				)
+				> 3
+			):
+				frappe.throw("You cannot take more than 3 backups after site suspension")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
@@ -1819,6 +1860,12 @@ class Site(Document):
 				"button_label": "Change",
 				"doc_method": "change_server",
 				"condition": self.status == "Active",
+			},
+			{
+				"action": "Clear cache",
+				"description": "Clear cache on your site",
+				"button_label": "Clear cache",
+				"doc_method": "clear_site_cache",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

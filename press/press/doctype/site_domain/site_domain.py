@@ -12,7 +12,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class SiteDomain(Document):
-	whitelisted_fields = ["domain", "status", "dns_type", "site"]
+	dashboard_fields = ["domain", "status", "dns_type", "site"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

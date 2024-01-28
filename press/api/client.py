@@ -106,11 +106,11 @@ def get(doctype, name):
 
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
-			frappe.throw("Not permitted", frappe.PermissionError)
+			raise_not_permitted()
 
 	fields = list(default_fields)
-	if hasattr(doc, "whitelisted_fields"):
-		fields += doc.whitelisted_fields
+	if hasattr(doc, "dashboard_fields"):
+		fields += doc.dashboard_fields
 
 	_doc = frappe._dict()
 	for fieldname in fields:
@@ -170,6 +170,17 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
+
+	if not frappe.local.system_user() and frappe.get_meta(dt).has_field("team"):
+		doc_team = frappe.db.get_value(dt, dn, "team")
+		if doc_team != frappe.local.team().name:
+			raise_not_permitted()
+
+	controller = get_controller(dt)
+	dashboard_actions = getattr(controller, "dashboard_actions", [])
+	if method not in dashboard_actions:
+		raise_not_permitted()
+
 	check_method_permissions(dt, dn, method)
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
@@ -240,9 +251,9 @@ def is_allowed_field(doctype, field):
 		return False
 
 	controller = get_controller(doctype)
-	whitelisted_fields = getattr(controller, "whitelisted_fields", [])
+	dashboard_fields = getattr(controller, "dashboard_fields", [])
 
-	if field in whitelisted_fields:
+	if field in dashboard_fields:
 		return True
 	elif "." in field and is_allowed_linked_field(doctype, field):
 		return True
@@ -286,7 +297,7 @@ def is_allowed_table_field(doctype, field):
 
 def check_permissions(doctype):
 	if doctype not in ALLOWED_DOCTYPES:
-		frappe.throw("Not permitted", frappe.PermissionError)
+		raise_not_permitted()
 
 	if not frappe.local.team():
 		frappe.throw(
@@ -313,5 +324,9 @@ def is_owned_by_team(doctype, docname, raise_exception=True):
 	docname = cstr(docname)
 	owned = frappe.db.get_value(doctype, docname, "team") == frappe.local.team().name
 	if not owned and raise_exception:
-		frappe.throw("Not permitted", frappe.PermissionError)
+		raise_not_permitted()
 	return owned
+
+
+def raise_not_permitted():
+	frappe.throw("Not permitted", frappe.PermissionError)

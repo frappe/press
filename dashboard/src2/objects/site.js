@@ -20,11 +20,11 @@ export default {
 		backup: 'backup',
 		clearSiteCache: 'clear_site_cache',
 		deactivate: 'deactivate',
-		disableDatabaseAccess: 'disable_database_access',
-		disableReadWrite: 'disable_read_write',
 		enableDatabaseAccess: 'enable_database_access',
-		enableReadWrite: 'enable_read_write',
+		disableDatabaseAccess: 'disable_database_access',
 		getDatabaseCredentials: 'get_database_credentials',
+		disableReadWrite: 'disable_read_write',
+		enableReadWrite: 'enable_read_write',
 		installApp: 'install_app',
 		uninstallApp: 'uninstall_app',
 		migrate: 'migrate',
@@ -33,20 +33,11 @@ export default {
 		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
-		resetSiteUsage: 'reset_site_usage',
 		restoreSite: 'restore_site',
-		restoreTables: 'restore_tables',
-		retryArchive: 'retry_archive',
-		retryRename: 'retry_rename',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
-		suspend: 'suspend',
-		sync_info: 'sync_info',
-		unsuspend: 'unsuspend',
-		updateSiteConfig: 'update_site_config',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		updateWithoutBackup: 'update_without_backup',
 		sendTransferRequest: 'send_change_team_request'
 	},
 	list: {
@@ -566,20 +557,18 @@ export default {
 							slots: {
 								prefix: icon('upload-cloud')
 							},
-							loading: backups.insert.loading,
+							loading: site.backup.loading,
 							onClick() {
-								return backups.insert.submit(
+								return site.backup.submit(
 									{
-										site: site.doc.name
+										with_files: true
 									},
 									{
 										onError(e) {
-											let messages = e.messages || ['Something went wrong'];
-											for (let message of messages) {
-												toast.error(message);
-											}
+											showErrorToast(e);
 										},
 										onSuccess() {
+											backups.reload();
 											toast.success('Backup scheduled');
 										}
 									}
@@ -829,7 +818,8 @@ export default {
 						},
 						{
 							label: 'Reason',
-							fieldname: 'reason'
+							fieldname: 'reason',
+							class: 'text-gray-600'
 						},
 						{
 							label: '',

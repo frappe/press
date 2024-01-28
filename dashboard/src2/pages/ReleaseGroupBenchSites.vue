@@ -331,6 +331,9 @@ export default {
 						type: 'Badge',
 						format(value, row) {
 							return value.slice(0, 7);
+						},
+						link: (value, row) => {
+							return `https://github.com/${row.repository_owner}/${row.repository}/commit/${value}`;
 						}
 					},
 					{

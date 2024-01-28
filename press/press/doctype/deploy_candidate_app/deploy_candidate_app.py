@@ -8,4 +8,4 @@ from frappe.model.document import Document
 
 
 class DeployCandidateApp(Document):
-	whitelisted_fields = ["app"]
+	dashboard_fields = ["app"]
