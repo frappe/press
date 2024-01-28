@@ -532,6 +532,85 @@ class DatabaseServer(BaseServer):
 		self.is_performance_schema_enabled = False
 		self.save()
 
+	@frappe.whitelist()
+	def fetch_performance_report(self):
+		if self.is_performance_schema_enabled:
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"_fetch_performance_report",
+				queue="long",
+				timeout=1200,
+			)
+			frappe.msgprint("Performance Schema Report Fetching Started")
+		else:
+			frappe.throw("Performance Schema is not enabled")
+
+	def _fetch_performance_report(self):
+		try:
+			reports = self.get_performance_report()
+			record = frappe.new_doc("Performance Report")
+			record.server = self.name
+			record.recorded_on = frappe.utils.now_datetime()
+			record.total_allocated_memory = self._bytes_to_mb(reports.get("total_allocated_memory"))
+			record.top_memory_by_user = []
+			for r in reports.get("top_memory_by_user", []):
+				record.append("top_memory_by_user", {
+					"user": r.get("user"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.top_memory_by_host = []
+			for r in reports.get("top_memory_by_host", []):
+				record.append("top_memory_by_host", {
+					"host": r.get("host"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.top_memory_by_event = []
+			for r in reports.get("top_memory_by_event", []):
+				record.append("top_memory_by_event", {
+					"event_type": r.get("event_name"),
+					"count": r.get("current_count"),
+					"max_count": r.get("high_count"),
+					"memory": self._bytes_to_mb(r.get("current_alloc")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"max_memory": self._bytes_to_mb(r.get("high_alloc")),
+					"max_avg_memory": self._bytes_to_mb(r.get("high_avg_alloc")),
+				})
+			record.top_memory_by_thread = []
+			for r in reports.get("top_memory_by_thread", []):
+				record.append("top_memory_by_thread", {
+					"thread_id": r.get("thread_id"),
+					"user": r.get("user"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.save()
+		except Exception:
+			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
+			raise
+
+	def get_performance_report(self):
+		return self.agent.post("database/performance_report", {
+			"private_ip": self.private_ip,
+			"mariadb_root_password": self.get_password("mariadb_root_password"),
+			"reports": [] # fetch all reports
+		}) or {}
+
+	def _bytes_to_mb(self, bytes_val):
+		print(bytes_val)
+		return round(bytes_val / 1024 / 1024, 2)
+
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		self.mariadb_root_password = primary.get_password("mariadb_root_password")
@@ -717,4 +796,7 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-waits-current": "ON",
 	"performance-schema-consumer-events-waits-history": "ON",
 	"performance-schema-consumer-events-waits-history-long": "ON",
+	"performance-schema-consumer-events-transactions-current": "ON",
+	"performance-schema-consumer-events-transactions-history": "ON",
+	"performance-schema-consumer-events-transactions-history-long": "ON"
 }

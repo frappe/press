@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-26 16:06:33.989913",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_tab",
+  "server",
+  "recorded_on",
+  "memory_usage_tab",
+  "total_allocated_memory",
+  "top_memory_by_user",
+  "top_memory_by_host",
+  "top_memory_by_thread",
+  "top_memory_by_event",
+  "hot_spots_for_io_tab",
+  "high_cost_sql_statements_tab",
+  "database_schema_statistics_tab",
+  "wait_event_times_tab",
+  "innodb_statistics_tab",
+  "user_resource_use_tab"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_tab",
+   "fieldtype": "Tab Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "recorded_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Recorded On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "memory_usage_tab",
+   "fieldtype": "Tab Break",
+   "label": "Memory Usage"
+  },
+  {
+   "fieldname": "hot_spots_for_io_tab",
+   "fieldtype": "Tab Break",
+   "label": "Hot Spots for I/O"
+  },
+  {
+   "fieldname": "high_cost_sql_statements_tab",
+   "fieldtype": "Tab Break",
+   "label": "High Cost SQL Statements"
+  },
+  {
+   "fieldname": "database_schema_statistics_tab",
+   "fieldtype": "Tab Break",
+   "label": "Database Schema Statistics"
+  },
+  {
+   "fieldname": "wait_event_times_tab",
+   "fieldtype": "Tab Break",
+   "label": "Wait Event Times"
+  },
+  {
+   "fieldname": "innodb_statistics_tab",
+   "fieldtype": "Tab Break",
+   "label": "InnoDB Statistics"
+  },
+  {
+   "fieldname": "user_resource_use_tab",
+   "fieldtype": "Tab Break",
+   "label": "User Resource Use"
+  },
+  {
+   "fieldname": "top_memory_by_user",
+   "fieldtype": "Table",
+   "label": "Top Memory By User",
+   "options": "Top Memory By User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "top_memory_by_host",
+   "fieldtype": "Table",
+   "label": "Top Memory By Host",
+   "options": "Top Memory By Host",
+   "read_only": 1
+  },
+  {
+   "fieldname": "top_memory_by_event",
+   "fieldtype": "Table",
+   "label": "Top Memory By Event",
+   "options": "Top Memory By Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "top_memory_by_thread",
+   "fieldtype": "Table",
+   "label": "Top Memory By Thread",
+   "options": "Top Memory By Thread",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_allocated_memory",
+   "fieldtype": "Float",
+   "label": "Total Allocated Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-28 14:48:52.010031",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Performance Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
