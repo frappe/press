@@ -240,6 +240,7 @@ scheduler_events = {
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
+			"press.press.doctype.database_server.database_server.fetch_performance_schema_reports",
 		],
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",

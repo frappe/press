@@ -608,7 +608,6 @@ class DatabaseServer(BaseServer):
 		}) or {}
 
 	def _bytes_to_mb(self, bytes_val):
-		print(bytes_val)
 		return round(bytes_val / 1024 / 1024, 2)
 
 	def reset_root_password_secondary(self):
@@ -800,3 +799,8 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-transactions-history": "ON",
 	"performance-schema-consumer-events-transactions-history-long": "ON"
 }
+
+def fetch_performance_schema_reports():
+	for server in frappe.get_all("Database Server", {"is_performance_schema_enabled": 1}):
+		server = frappe.get_doc("Database Server", server.name)
+		server.fetch_performance_report()
