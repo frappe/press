@@ -60,6 +60,8 @@
   "new_worker_allocation",
   "set_bench_memory_limits",
   "ram",
+  "backups_section",
+  "skip_scheduled_backups",
   "standalone_section",
   "is_standalone",
   "column_break_edyf",
@@ -95,6 +97,7 @@
    "set_only_once": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "agent_section",
    "fieldtype": "Section Break",
    "label": "Agent"
@@ -133,6 +136,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "reverse_proxy_section",
    "fieldtype": "Section Break",
    "label": "Reverse Proxy"
@@ -149,6 +153,7 @@
    "options": "Database Server"
   },
   {
+   "collapsible": 1,
    "fieldname": "ssh_section",
    "fieldtype": "Section Break",
    "label": "SSH"
@@ -216,6 +221,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "networking_section",
    "fieldtype": "Section Break",
    "label": "Networking"
@@ -251,6 +257,7 @@
    "set_only_once": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "replication",
    "fieldtype": "Section Break",
    "label": "Replication"
@@ -288,11 +295,11 @@
    "label": "Staging"
   },
   {
-   "depends_on": "eval:doc.provider == \"AWS EC2\"",
+   "depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "fieldname": "virtual_machine",
    "fieldtype": "Link",
    "label": "Virtual Machine",
-   "mandatory_depends_on": "eval:doc.provider == \"AWS EC2\"",
+   "mandatory_depends_on": "eval:[\"AWS EC2\", \"OCI\"].includes(doc.provider)",
    "options": "Virtual Machine"
   },
   {
@@ -436,10 +443,22 @@
    "fieldname": "hostname_abbreviation",
    "fieldtype": "Data",
    "label": "Hostname Abbreviation"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups"
+  },
+  {
+   "default": "0",
+   "fieldname": "skip_scheduled_backups",
+   "fieldtype": "Check",
+   "label": "Skip Scheduled Backups"
   }
  ],
  "links": [],
- "modified": "2023-12-13 15:08:53.873858",
+ "modified": "2024-01-29 21:08:48.112153",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

@@ -1656,9 +1656,16 @@ class Site(Document):
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
+		servers_with_backups = frappe.get_all(
+			"Server", {"status": "Active", "skip_scheduled_backups": False}, pluck="name"
+		)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites), "skip_scheduled_backups": False},
+			{
+				"name": ("in", sites),
+				"skip_scheduled_backups": False,
+				"server": ("in", servers_with_backups),
+			},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
