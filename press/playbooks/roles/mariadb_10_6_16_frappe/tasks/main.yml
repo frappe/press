@@ -3,6 +3,11 @@
     path: /etc/apt/sources.list.d/mariadb.list
     state: absent
 
+- name: Remove MariaDB Repository File
+  file:
+    path: /etc/apt/sources.list.d/mirror_rackspace_com_mariadb_repo_10_6_ubuntu.list
+    state: absent
+
 - name: Add MariaDB Repository Key
   apt_key:
     url: https://packages.frappe.cloud/frappe.gpg.key
@@ -25,8 +30,10 @@
 - name: Install MariaDB
   apt:
     pkg:
-      - mariadb-server
-      - mariadb-client
+      - mariadb-server-10.6
+      - mariadb-server-core-10.6/
+      - mariadb-client-10.6
+      - mariadb-client-core-10.6/
       - libmariadbclient18
     state: latest
 
