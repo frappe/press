@@ -31,9 +31,9 @@
   apt:
     pkg:
       - mariadb-server-10.6
-      - mariadb-server-core-10.6/
+      - mariadb-server-core-10.6
       - mariadb-client-10.6
-      - mariadb-client-core-10.6/
+      - mariadb-client-core-10.6
       - libmariadbclient18
     state: latest
 
