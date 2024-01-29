@@ -411,7 +411,7 @@ def options_for_new(for_bench: str = None):
 		versions = frappe.db.get_all(
 			"Frappe Version",
 			["name", "default", "status", "number"],
-			{"public": True},
+			{"public": True, "status": ("!=", "End of Life")},
 			order_by="number desc",
 		)
 	available_versions = []
