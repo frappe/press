@@ -601,10 +601,48 @@ class DatabaseServer(BaseServer):
 			raise
 
 	def get_performance_report(self):
+		"""
+		Available Reports:
+		-total_allocated_memory
+		-top_memory_by_event
+		-top_memory_by_user
+		-top_memory_by_host
+		-top_memory_by_thread
+		-top_io_by_file_activity_report
+		-top_io_by_file_by_time
+		-top_io_by_event_category
+		-top_io_in_time_by_event_category
+		-top_io_by_user_or_thread
+		-statement_analysis
+		-statements_in_highest_5_percentile
+		-statements_using_temp_tables
+		-statements_with_sorting
+		-statements_with_full_table_scans
+		-statements_with_errors_or_warnings
+		-schema_index_statistics
+		-schema_table_statistics
+		-schema_table_statistics_with_buffer
+		-schema_tables_with_full_table_scans
+		-schema_unused_indexes
+		-global_waits_by_time
+		-waits_by_user_by_time
+		-wait_classes_by_time
+		-waits_classes_by_avg_time
+		-innodb_buffer_stats_by_schema
+		-innodb_buffer_stats_by_table
+		-user_resource_use_overview
+		-user_resource_use_io_statistics
+		"""
 		return self.agent.post("database/performance_report", {
 			"private_ip": self.private_ip,
 			"mariadb_root_password": self.get_password("mariadb_root_password"),
-			"reports": [] # fetch all reports
+			"reports": [
+				"total_allocated_memory",
+				"top_memory_by_event",
+				"top_memory_by_user",
+				"top_memory_by_host",
+				"top_memory_by_thread",
+			]
 		}) or {}
 
 	def _bytes_to_mb(self, bytes_val):
