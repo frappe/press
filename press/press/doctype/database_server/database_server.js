@@ -96,6 +96,12 @@ frappe.ui.form.on('Database Server', {
 			],
 			[__('Upgrade MariaDB'), 'upgrade_mariadb', true, frm.doc.is_server_setup],
 			[
+				__('Upgrade MariaDB Patched'),
+				'upgrade_mariadb_patched',
+				true,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Reconfigure MariaDB Exporter'),
 				'reconfigure_mariadb_exporter',
 				true,

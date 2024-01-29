@@ -1,0 +1,46 @@
+- name: Remove MariaDB Repository File
+  file:
+    path: /etc/apt/sources.list.d/mariadb.list
+    state: absent
+
+- name: Add MariaDB Repository Key
+  apt_key:
+    url: https://packages.frappe.cloud/frappe.gpg.key
+    state: present
+
+- name: Add MariaDB Repository
+  apt_repository:
+    repo: deb https://packages.frappe.cloud/mariadb/10.6 focal main
+    state: present
+    update_cache: true
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Install MariaDB
+  apt:
+    pkg:
+      - mariadb-server
+      - mariadb-client
+      - libmariadbclient18
+    state: latest
+
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: 'LimitNOFILE = infinity'
+    insertafter: '\[Service\]'
+    state: present
+
+- name: Restart MariaDB Service
+  systemd:
+    daemon_reload: true
+    name: mariadb
+    state: restarted
+    enabled: yes
