@@ -833,9 +833,6 @@ PERFORMANCE_SCHEMA_VARIABLES = {
 	"performance-schema-consumer-events-waits-current": "ON",
 	"performance-schema-consumer-events-waits-history": "ON",
 	"performance-schema-consumer-events-waits-history-long": "ON",
-	"performance-schema-consumer-events-transactions-current": "ON",
-	"performance-schema-consumer-events-transactions-history": "ON",
-	"performance-schema-consumer-events-transactions-history-long": "ON"
 }
 
 def fetch_performance_schema_reports():
