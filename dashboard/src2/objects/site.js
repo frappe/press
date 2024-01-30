@@ -304,6 +304,33 @@ export default {
 
 						return [
 							{
+								label: 'View in Desk',
+								condition: () => $team.doc.is_desk_user,
+								onClick() {
+									window.open(`/app/app-source/${row.name}`, '_blank');
+								}
+							},
+							{
+								label: 'Change Plan',
+								condition: () => row.plan_info && row.plans.length > 1,
+								onClick() {
+									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
+										import('../components/site/SiteAppPlanChangeDialog.vue')
+									);
+									renderDialog(
+										h(SiteAppPlanChangeDialog, {
+											app: row,
+											currentPlan: row.plans.find(
+												plan => plan.plan === row.plan_info.name
+											),
+											onPlanChanged() {
+												apps.reload();
+											}
+										})
+									);
+								}
+							},
+							{
 								label: 'Uninstall',
 								condition: () => row.app !== 'frappe',
 								onClick() {
@@ -337,13 +364,6 @@ export default {
 											);
 										}
 									});
-								}
-							},
-							{
-								label: 'View in Desk',
-								condition: () => $team.doc.is_desk_user,
-								onClick() {
-									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
 							}
 						];

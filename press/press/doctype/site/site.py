@@ -391,6 +391,12 @@ class Site(Document):
 			self.create_subscription(self.subscription_plan)
 			self.reload()
 
+		if hasattr(self, "app_plans") and self.app_plans:
+			for app, plan in self.app_plans.items():
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan["name"], True
+				)
+
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()

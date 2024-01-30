@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded
+from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -662,11 +662,8 @@ def get_plans(name=None, rg=None):
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
 
-		days_in_month = frappe.utils.get_last_day(None).day
 		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
 			plan.pop("roles", "")
-			plan["price_per_day_inr"] = rounded(plan["price_inr"] / days_in_month, 2)
-			plan["price_per_day_usd"] = rounded(plan["price_usd"] / days_in_month, 2)
 			out.append(plan)
 	return out
 
@@ -1038,8 +1035,10 @@ def get_installed_apps(site):
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+				"Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
 			)
+
+			app_source.plans = get_plans_for_app(app.app)
 
 			app_source.is_free = frappe.db.get_value(
 				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
