@@ -9,6 +9,16 @@
 </template>
 <script>
 import { Tabs } from 'frappe-ui';
+import router from '../router';
+
+let current;
+router.beforeEach((to, from, next) => {
+	if (current) {
+		current.setTabToRoute(to);
+	}
+	next();
+});
+
 export default {
 	name: 'TabsWithRouter',
 	props: ['tabs'],
@@ -32,12 +42,12 @@ export default {
 			}
 		}
 	},
-	beforeRouteUpdate(to, from, next) {
-		this.setTabToRoute(to);
-		next();
-	},
-	mounted() {
+	beforeMount() {
 		this.setTabToRoute(this.$route);
+		current = this;
+	},
+	beforeUnmount() {
+		current = null;
 	},
 	methods: {
 		setTabToRoute(route) {

@@ -3,7 +3,7 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
-		<SiteDailyUsage :site="$site.doc" />
+		<SiteDailyUsage :site="site" />
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
 				<h2 class="text-lg font-medium text-gray-900">Site information</h2>

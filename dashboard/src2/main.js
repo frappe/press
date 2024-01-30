@@ -8,6 +8,7 @@ import {
 import App from './App.vue';
 import router from './router';
 import { initSocket } from './socket';
+import { subscribeToJobUpdates } from './utils/agentJob';
 
 let request = options => {
 	let _options = options || {};
@@ -38,6 +39,7 @@ getInitialData().then(() => {
 	socket = initSocket();
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
+	subscribeToJobUpdates(socket);
 
 	importGlobals().then(() => {
 		app.mount('#app');

@@ -85,6 +85,9 @@
 				>
 					Loading...
 				</div>
+				<div v-else-if="$list.list.error" class="py-4 text-center">
+					<ErrorMessage :message="$list.list.error" />
+				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
@@ -115,7 +118,8 @@ import {
 	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
-	Tooltip
+	Tooltip,
+	ErrorMessage
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -136,7 +140,8 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
-		Tooltip
+		Tooltip,
+		ErrorMessage
 	},
 	data() {
 		return {
