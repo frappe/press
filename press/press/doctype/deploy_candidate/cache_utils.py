@@ -7,12 +7,19 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
+from typing import TypedDict
+
+CommandOutput = TypedDict(
+	"CommandOutput",
+	returncode=int,
+	output=str,
+)
 
 
 def run_command_in_docker_cache(
 	command: str = "ls -A",
 	cache_target: str = "/home/frappe/.cache",
-) -> str:
+) -> CommandOutput:
 	"""
 	This function works by capturing the output of the given `command`
 	by running it in the cache dir (`cache_target`) while building a
@@ -38,11 +45,17 @@ def run_command_in_docker_cache(
 
 
 def get_cache_check_dockerfile(command: str, cache_target: str) -> str:
+	"""
+	Note: Mount cache is identified by different attributes, hence it should
+	be the same as the Dockerfile else it will always result in a cache miss.
+
+	Ref: https://docs.docker.com/engine/reference/builder/#run---mounttypecache
+	"""
 	df = f"""
 		FROM ubuntu:20.04
 		ARG CACHE_BUST=1
 		WORKDIR {cache_target}
-		RUN --mount=type=cache,target={cache_target} {command}
+		RUN --mount=type=cache,target={cache_target},uid=1000,gid=1000 {command}
 	"""
 	return dedent(df).strip()
 
@@ -60,7 +73,7 @@ def prep_dockerfile_path(dockerfile: str) -> Path:
 	return df_path
 
 
-def run_build_command(df_path: Path) -> str:
+def run_build_command(df_path: Path) -> CommandOutput:
 	command = get_cache_check_build_command()
 	env = os.environ.copy()
 	env["DOCKER_BUILDKIT"] = "1"
@@ -74,7 +87,7 @@ def run_build_command(df_path: Path) -> str:
 		stderr=subprocess.STDOUT,
 		text=True,
 	)
-	return strip_build_output(output.stdout)
+	return dict(returncode=output.returncode, output=strip_build_output(output.stdout))
 
 
 def get_cache_check_build_command() -> str:
@@ -107,3 +120,32 @@ def strip_build_output(stdout: str) -> str:
 		elif "--mount=type=cache,target=" in line:
 			is_output = True
 	return "\n".join(output)
+
+
+def get_cached_apps() -> dict[str, list[str]]:
+	result = run_command_in_docker_cache(
+		command="ls -A bench/apps",
+		cache_target="/home/frappe/.cache",
+	)
+
+	apps = dict()
+	if result["returncode"] != 0:
+		return apps
+
+	for line in result["output"].split("\n"):
+		# File Name: app_name-cache_key.ext
+		splits = line.split("-", 1)
+		if len(splits) != 2:
+			continue
+
+		app_name, suffix = splits
+		suffix_splits = suffix.split(".", 1)
+		if len(suffix_splits) != 2 or suffix_splits[1] not in ["tar", "tgz"]:
+			continue
+
+		if app_name not in apps:
+			apps[app_name] = []
+
+		app_hash = suffix_splits[0]
+		apps[app_name].append(app_hash)
+	return apps

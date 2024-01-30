@@ -2,19 +2,19 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import os
 import re
 import shlex
 import shutil
+import subprocess
+from subprocess import Popen
+from typing import List
 
 import docker
 import dockerfile
 import frappe
-import subprocess
-import json
-
-from typing import List
-from subprocess import Popen
+from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -24,6 +24,7 @@ from press.press.doctype.app_release.app_release import (
 	AppReleasePair,
 	get_changed_files_between_hashes,
 )
+from press.press.doctype.deploy_candidate.cache_utils import get_cached_apps
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -75,6 +76,10 @@ class DeployCandidate(Document):
 			"Press Notification",
 			{"document_type": self.doctype, "document_name": self.name},
 		)
+
+	def validate(self):
+		if self.use_app_cache and not self.can_use_get_app_cache():
+			frappe.throw(_("Use App Cache cannot be set. BENCH_VERSION must be 5.21.0 or later"))
 
 	def get_unpublished_marketplace_releases(self) -> List[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -168,6 +173,8 @@ class DeployCandidate(Document):
 		self.build_start = now()
 		self.is_single_container = True
 		self.is_ssh_enabled = True
+		if not no_cache and self.use_app_cache:
+			self._set_app_cached_flags()
 		self.save()
 		frappe.db.commit()
 
@@ -326,6 +333,14 @@ class DeployCandidate(Document):
 		)
 
 		self.mounts = json.dumps(self._mounts)
+
+	def _set_app_cached_flags(self) -> None:
+		cached = get_cached_apps()
+		for app in self.apps:
+			if app.hash[:10] not in cached.get(app.app, []):
+				continue
+
+			app.use_cached = True
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -988,6 +1003,21 @@ class DeployCandidate(Document):
 
 			pull_update[app_name] = pair
 		return pull_update
+
+	def can_use_get_app_cache(self) -> bool:
+		version = find(
+			self.dependencies,
+			lambda x: x.dependency == "BENCH_VERSION",
+		).version
+		parts = {i: int(p) for i, p in enumerate(version.split("."))}
+
+		if parts[0] > 5:
+			return True
+
+		if parts[0] == 5 and parts[1] >= 21:
+			return True
+
+		return False
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
