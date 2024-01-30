@@ -1,2 +1,2 @@
 pre-commit
-moto[all]
+moto[all]==4.2.14
