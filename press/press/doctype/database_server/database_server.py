@@ -595,6 +595,19 @@ class DatabaseServer(BaseServer):
 					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
 					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
 				})
+			record.top_io_by_file_activity_report = []
+			for r in reports.get("top_io_by_file_activity_report", []):
+				record.append("top_io_by_file_activity_report", {
+					"file": r.get("file"),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_requests": r.get("count_read"),
+					"total_read_io": self._bytes_to_mb(r.get("total_read")),
+					"avg_read_io": self._bytes_to_mb(r.get("avg_read")),
+					"write_requests": r.get("count_write"),
+					"total_write_io": self._bytes_to_mb(r.get("total_written")),
+					"avg_write_io": self._bytes_to_mb(r.get("avg_write")),
+					"write_percentage": r.get("write_pct"),
+				})
 			record.save()
 		except Exception:
 			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
@@ -642,6 +655,7 @@ class DatabaseServer(BaseServer):
 				"top_memory_by_user",
 				"top_memory_by_host",
 				"top_memory_by_thread",
+				"top_io_by_file_activity_report"
 			]
 		}) or {}
 

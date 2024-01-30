@@ -15,6 +15,7 @@
   "top_memory_by_thread",
   "top_memory_by_event",
   "hot_spots_for_io_tab",
+  "top_io_by_file_activity_report",
   "high_cost_sql_statements_tab",
   "database_schema_statistics_tab",
   "wait_event_times_tab",
@@ -112,12 +113,19 @@
    "options": "Database Server",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "fieldname": "top_io_by_file_activity_report",
+   "fieldtype": "Table",
+   "label": "Top File I/O Activity Report",
+   "options": "Top File IO Activity Report",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-28 14:48:52.010031",
+ "modified": "2024-01-30 12:22:04.598451",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Performance Report",
