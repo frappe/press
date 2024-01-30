@@ -13,7 +13,7 @@ from press.api.site import (
 	is_prepaid_marketplace_app,
 	protected,
 )
-from press.press.doctype.plan.plan import Plan
+from press.press.doctype.plan.plan import Plan, plan_attribute
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
@@ -548,7 +548,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 		)
 
-		subscription.is_free = frappe.db.get_value("Plan", subscription.plan, "is_trial_plan")
+		subscription.is_free = plan_attribute(subscription.plan, "is_trial_plan")
 		subscription.billing_type = is_prepaid_marketplace_app(subscription.app)
 
 	return subscriptions
@@ -597,7 +597,7 @@ def get_apps_with_plans(apps, release_group: str):
 
 @frappe.whitelist()
 def change_app_plan(subscription, new_plan):
-	is_free = frappe.db.get_value("Plan", new_plan, "is_trial_plan")
+	is_free = plan_attribute(new_plan, "is_trial_plan")
 	if not is_free:
 		team = get_current_team(get_doc=True)
 		if not team.can_install_paid_apps():
@@ -606,9 +606,7 @@ def change_app_plan(subscription, new_plan):
 			)
 
 	subscription = frappe.get_doc("Subscription", subscription)
-	subscription.status = (
-		"Active" if subscription.status != "Active" else subscription.status
-	)
+	subscription.enabled = 1
 	subscription.plan = new_plan
 	subscription.save(ignore_permissions=True)
 

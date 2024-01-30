@@ -445,7 +445,7 @@ def get_plans_for_app(
 	filters = {"document_type": "Marketplace App", "document_name": app_name}
 
 	if not include_free:
-		filters["is_trial_plan"] = False
+		filters["price_usd"] = (">", 0)
 
 	if not include_disabled:
 		filters["enabled"] = True

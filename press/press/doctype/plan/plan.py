@@ -137,11 +137,11 @@ def get_plans_with_attributes(filters):
 			attr_value = cast(attr["fieldtype"], attr["value"])
 
 			# make a list if attributes with same fieldname
-			if attr_name in plan:
-				if isinstance(plan[attr_name], list):
+			if attr_name in plan or attr_name.lower() in ["feature", "version"]:
+				if isinstance(plan.get(attr_name, None), list):
 					plan[attr_name].append(attr_value)
 				else:
-					plan[attr_name] = [plan[attr_name], attr_value]
+					plan[attr_name] = [attr_value]
 			else:
 				plan[attr_name] = attr_value
 

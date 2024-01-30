@@ -27,9 +27,6 @@ from frappe.utils import (
 )
 
 from press.exceptions import CannotChangePlan
-from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
-	MarketplaceAppPlan,
-)
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -298,7 +295,7 @@ class Site(Document):
 	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
-			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
+			is_free = frappe.db.get_value("Plan", plan, "price_usd") == 0
 			if not is_free:
 				if not frappe.local.team().can_install_paid_apps():
 					frappe.throw(
@@ -317,7 +314,27 @@ class Site(Document):
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
+			# enable subscription if exists else create one
+			exists = frappe.db.exists(
+				"Subscription", {"document_type": "Marketplace App", "document_name": app}
+			)
+
+			if exists:
+				sub = frappe.get_doc("Subscription", exists)
+				sub.enabled = 1
+				sub.plan = plan
+				sub.save(ignore_permissions=True)
+			else:
+				frappe.get_doc(
+					{
+						"doctype": "Subscription",
+						"document_type": "Marketplace App",
+						"document_name": app,
+						"plan": plan,
+						"site": self.name,
+						"team": get_current_team(),
+					}
+				).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	@site_action(["Active"])
@@ -332,17 +349,11 @@ class Site(Document):
 
 		# disable marketplace plan if it exists
 		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
-		app_subscription = frappe.db.exists(
-			"Marketplace App Subscription", {"site": self.name, "app": marketplace_app_name}
+		subscription = frappe.db.exists(
+			"Subscription", {"site": self.name, "app": marketplace_app_name}
 		)
-		if marketplace_app_name and app_subscription:
-			app_subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				app_subscription,
-				for_update=True,
-			)
-			app_subscription.status = "Disabled"
-			app_subscription.save(ignore_permissions=True)
+		if marketplace_app_name and subscription:
+			frappe.db.set_value("Subscription", subscription, "enabled", 0)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""

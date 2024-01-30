@@ -173,7 +173,7 @@
 					v-if="appToInstall?.app"
 					:app="appToInstall.app"
 					:frappeVersion="site?.frappe_version"
-					:currentPlan="appToChangePlan.plan"
+					:currentPlan="appToChangePlan?.plan"
 					class="mb-9"
 					@change="
 						plan => {

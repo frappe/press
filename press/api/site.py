@@ -34,6 +34,7 @@ from press.utils import (
 )
 from press.press.doctype.plan.plan import (
 	get_plans_with_attributes,
+	plan_attribute,
 )
 
 NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
@@ -178,8 +179,8 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
-		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
-		site._update_configuration(secret_keys, save=False)
+		# secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+		# site._update_configuration(secret_keys, save=False)
 
 	site.insert(ignore_permissions=True)
 
@@ -225,11 +226,11 @@ def new(site):
 	return _new(site)
 
 
-def get_app_subscriptions(app_plans, team: str, site: str):
+def get_app_subscriptions(app_plans, team: str):
 	subscriptions = []
 
 	for app_name, plan_name in app_plans.items():
-		trial_plan = frappe.db.get_value("Plan", plan_name, "is_trial_plan")
+		trial_plan = frappe.db.get_value("Plan", plan_name, "price_usd") == 0
 		if not trial_plan:
 			team = get_current_team(get_doc=True)
 			if not team.can_install_paid_apps():
@@ -244,7 +245,6 @@ def get_app_subscriptions(app_plans, team: str, site: str):
 				"document_name": app_name,
 				"plan": plan_name,
 				"team": team,
-				"site": site,
 				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
@@ -1030,7 +1030,7 @@ def get_installed_apps(site):
 		app_source.subscription_available = bool(
 			frappe.db.exists(
 				"Plan",
-				{"is_trial_plan": 0, "document_name": app.app, "enabled": 1, "price_usd": (">", 0)},
+				{"document_name": app.app, "enabled": 1, "price_usd": (">", 0)},
 			)
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
@@ -1054,7 +1054,7 @@ def get_installed_apps(site):
 				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 			)
 
-			app_source.is_free = frappe.db.get_value("Plan", subscription.plan, "is_trial_plan")
+			app_source.is_free = plan_attribute(subscription.plan, "is_trial_plan")
 		else:
 			app_source.subscription = {}
 
@@ -1156,12 +1156,14 @@ def current_plan(name):
 	hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
 	plan = get_plans_with_attributes({"document_type": "Site", "name": site.plan})
 
-	return plan[0].update(
+	plan = plan[0]
+	return plan.update(
 		{
+			"current_plan": plan.copy(),
 			"total_cpu_usage_hours": total_cpu_usage_hours,
 			"hours_until_reset": hours_left_today,
-			"max_database_usage": plan.max_database_usage if plan else None,
-			"max_storage_usage": plan.max_storage_usage if plan else None,
+			"max_database_usage": plan["max_database_usage"] if plan else None,
+			"max_storage_usage": plan["max_storage_usage"] if plan else None,
 			"total_database_usage": total_database_usage,
 			"total_storage_usage": total_storage_usage,
 			"usage_in_percent": {
