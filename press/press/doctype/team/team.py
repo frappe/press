@@ -687,6 +687,8 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
+
+		self.reload()
 		if not self.default_payment_method:
 			# change payment mode to prepaid credits if default is card or not set
 			self.payment_mode = (
