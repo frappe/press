@@ -102,7 +102,6 @@
 						plan => {
 							apps.push(selectedApp.app);
 							appPlans[selectedApp.app] = plan;
-							console.log(appPlans);
 							showAppPlanSelectorDialog = false;
 						}
 					"
