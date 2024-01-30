@@ -23,6 +23,7 @@
       - mariadb-server
       - mariadb-client
       - libmariadbclient18
+      - mariadb-backup
     state: present
 
 - name: Install MySQLdb Python Package

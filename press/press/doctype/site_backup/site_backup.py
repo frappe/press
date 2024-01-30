@@ -14,6 +14,10 @@ from press.agent import Agent
 
 
 class SiteBackup(Document):
+	def validate(self):
+		if self.physical and self.with_files:
+			frappe.throw("Physical backup cannot be taken with files")
+
 	def before_insert(self):
 		if getattr(self, "force", False):
 			return
@@ -30,8 +34,13 @@ class SiteBackup(Document):
 
 	def after_insert(self):
 		site = frappe.get_doc("Site", self.site)
-		agent = Agent(site.server)
-		job = agent.backup_site(site, self.with_files, self.offsite)
+		if self.physical:
+			database_server = frappe.db.get_value("Server", site.server, "database_server")
+			agent = Agent(database_server, server_type="Database Server")
+			job = agent.backup_schema(site, self.offsite)
+		else:
+			agent = Agent(site.server)
+			job = agent.backup_site(site, self.with_files, self.offsite, self.phyiscal)
 		frappe.db.set_value("Site Backup", self.name, "job", job.name)
 
 	def after_delete(self):
@@ -159,3 +168,9 @@ def get_backup_bucket(cluster, region=False):
 		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
 	else:
 		return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site Backup", ["site", "status"])
+	frappe.db.add_index("Site Backup", ["site", "creation"])
+	frappe.db.add_index("Site Backup", ["site", "files_availability", "creation"])
