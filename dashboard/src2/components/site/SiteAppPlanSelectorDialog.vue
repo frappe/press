@@ -59,11 +59,11 @@
 
 <script>
 export default {
-	props: ['app', 'modelValue'],
+	props: ['app', 'modelValue', 'currentPlan'],
 	emits: ['plan-select', 'update:modelValue'],
 	data() {
 		return {
-			selectedPlan: null
+			selectedPlan: this.currentPlan
 		};
 	},
 	computed: {
