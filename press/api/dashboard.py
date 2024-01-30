@@ -51,8 +51,6 @@ def add_tag(name, doctype, tag):
 @protected(["Site", "Release Group", "Server", "Database Server"])
 def remove_tag(name, doctype, tag):
 	doc = frappe.get_doc(doctype, name)
-	for resource_tag in doc.tags:
-		if resource_tag.tag == tag:
-			doc.tags.remove(resource_tag)
-			doc.save()
-			return tag
+	doc.tags = [resource_tag for resource_tag in doc.tags if resource_tag.tag != tag]
+	doc.save()
+	return tag
