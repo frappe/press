@@ -217,81 +217,56 @@
 								: 'No apps selected'
 						}}
 					</div>
-					<div v-if="Object.keys(appPlans).length !== 0" class="text-gray-600">
-						App Plans:
-					</div>
-					<div v-if="Object.keys(appPlans).length !== 0" class="text-gray-900">
-						<div v-for="app in Object.keys(appPlans)">
-							{{ selectedVersionApps.find(a => app === a.app).app_title }}:
-							{{ appPlans[app].plan }}
-						</div>
-						<div class="mt-1 text-gray-900">
+
+					<div class="text-gray-600">Region:</div>
+					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
+					<div class="text-gray-600">Site URL:</div>
+					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
+				</div>
+				<div
+					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
+					style="grid-template-columns: 2fr 4fr"
+				>
+					<div class="text-gray-600">Site Plan:</div>
+					<div v-if="selectedPlan">
+						<span class="text-gray-900">
 							{{
 								$format.userCurrency(
 									$team.doc.currency == 'INR'
-										? Object.values(appPlans).reduce(
-												(a, b) => a + b.price_inr,
-												0
-										  )
-										: Object.values(appPlans).reduce(
-												(a, b) => a + b.price_usd,
-												0
-										  )
+										? selectedPlan.price_inr
+										: selectedPlan.price_usd
 								)
 							}}
 							per month
-						</div>
-						<div class="text-gray-600">
-							{{
-								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? Object.values(appPlans).reduce(
-												(a, b) => a + b.price_inr,
-												0
-										  ) / 30
-										: Object.values(appPlans).reduce(
-												(a, b) => a + b.price_usd,
-												0
-										  ) / 30
-								)
-							}}
-							per day
-						</div>
+						</span>
 					</div>
-					<div class="text-gray-600">Plan:</div>
-					<div v-if="selectedPlan">
+					<div v-else>{{ plan }}</div>
+					<div class="text-gray-600">Product Warranty:</div>
+					<div class="text-gray-900">
+						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
+					</div>
+					<template v-for="app in Object.keys(appPlans)" :key="app">
+						<div class="text-gray-600">
+							{{ selectedVersionApps.find(a => app === a.app).app_title }} Plan:
+						</div>
 						<div>
 							<span class="text-gray-900">
 								{{
 									$format.userCurrency(
 										$team.doc.currency == 'INR'
-											? selectedPlan.price_inr
-											: selectedPlan.price_usd
+											? appPlans[app].price_inr
+											: appPlans[app].price_usd
 									)
 								}}
 								per month
 							</span>
 						</div>
-						<div class="text-gray-600">
-							{{
-								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? selectedPlan.price_per_day_inr
-										: selectedPlan.price_per_day_usd
-								)
-							}}
-							per day
-						</div>
+					</template>
+					<div class="text-gray-600">Total:</div>
+					<div>
+						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
+						<div class="text-gray-600">{{ totalPerDay }} per day</div>
 					</div>
-					<div v-else>{{ plan }}</div>
-					<div class="text-gray-600">Product Warranty</div>
-					<div class="text-gray-900">
-						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
-					</div>
-					<div class="text-gray-600">Region:</div>
-					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
-					<div class="text-gray-600">Site URL:</div>
-					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
 				</div>
 			</div>
 			<div
@@ -523,6 +498,32 @@ export default {
 				{ label: 'Sites', route: '/sites' },
 				{ label: 'New Site', route: '/sites/new' }
 			];
+		},
+		_totalPerMonth() {
+			let total =
+				this.$team.doc.currency == 'INR'
+					? this.selectedPlan.price_inr
+					: this.selectedPlan.price_usd;
+
+			for (let appPlan of Object.values(this.appPlans)) {
+				total +=
+					this.$team.doc.currency == 'INR'
+						? appPlan.price_inr
+						: appPlan.price_usd;
+			}
+
+			return total;
+		},
+		totalPerMonth() {
+			return this.$format.userCurrency(this._totalPerMonth);
+		},
+		totalPerDay() {
+			let daysInThisMonth = new Date(
+				new Date().getFullYear(),
+				new Date().getMonth() + 1,
+				0
+			).getDate();
+			return this.$format.userCurrency(this._totalPerMonth / daysInThisMonth);
 		}
 	},
 	methods: {
