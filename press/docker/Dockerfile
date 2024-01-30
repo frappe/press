@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
+ENV NODE_ENV production
 
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
