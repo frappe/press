@@ -17,10 +17,9 @@
 						@click="$resources.job.reload()"
 						:loading="$resources.job.loading"
 					>
-						<template #prefix>
+						<template #icon>
 							<i-lucide-refresh-ccw class="h-4 w-4" />
 						</template>
-						Refresh
 					</Button>
 				</div>
 				<div>

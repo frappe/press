@@ -252,7 +252,7 @@ export default {
 			return this.$resources.siteRequest;
 		},
 		saasProduct() {
-			return this.$resources.siteRequest.doc.saas_product;
+			return this.siteRequest?.doc.saas_product;
 		},
 		selectedPlanDescription() {
 			if (!this.plan) return;
@@ -267,7 +267,7 @@ export default {
 			return `${pricePerMonth} per month`;
 		},
 		progressError() {
-			if (!this.siteRequest.getProgress.data?.error) return;
+			if (!this.siteRequest?.getProgress.data?.error) return;
 			if (this.progressErrorCount > 9) {
 				return 'An error occurred. Please contact Frappe Cloud Support.';
 			}

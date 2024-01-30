@@ -27,7 +27,7 @@ DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"period_start",
 		"period_end",
 		"team",
@@ -44,6 +44,8 @@ class Invoice(Document):
 		"docstatus",
 		"gst",
 		"applied_credits",
+		"status",
+		"due_date",
 	]
 
 	def get_doc(self, doc):

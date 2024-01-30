@@ -97,17 +97,11 @@ export default {
 				route: 'apps',
 				type: 'list',
 				list: {
-					resource({ documentResource: releaseGroup }) {
+					doctype: 'Release Group App',
+					filters: releaseGroup => {
 						return {
-							type: 'list',
-							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App', releaseGroup.name],
-							parent: 'Release Group',
-							filters: {
-								parenttype: 'Release Group',
-								parent: releaseGroup.name
-							},
-							auto: true
+							parenttype: 'Release Group',
+							parent: releaseGroup.doc.name
 						};
 					},
 					columns: [
@@ -320,7 +314,6 @@ export default {
 						},
 						{
 							label: 'Apps',
-							fieldname: 'apps',
 							format(value, row) {
 								return (row.apps || []).map(d => d.app).join(', ');
 							},
@@ -406,7 +399,10 @@ export default {
 				list: {
 					doctype: 'Common Site Config',
 					filters: releaseGroup => {
-						return { group: releaseGroup.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
@@ -540,7 +536,10 @@ export default {
 				list: {
 					doctype: 'Release Group Dependency',
 					filters: releaseGroup => {
-						return { group: releaseGroup.doc.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					columns: [
 						{

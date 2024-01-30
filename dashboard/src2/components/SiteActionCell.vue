@@ -66,7 +66,8 @@ function getSiteActionHandler(action) {
 		'Drop site': onDropSite,
 		'Migrate site': onMigrateSite,
 		'Transfer site': onTransferSite,
-		'Reset site': onSiteReset
+		'Reset site': onSiteReset,
+		'Clear cache': onClearCache
 	};
 	if (actionHandlers[action]) {
 		actionHandlers[action].call(this);
@@ -158,6 +159,10 @@ function onMigrateSite() {
 				label: 'Skip patches if they fail during migration (Not recommended)',
 				fieldname: 'skipFailingPatches',
 				type: 'checkbox'
+			},
+			{
+				label: 'Please type the site name to confirm.',
+				fieldname: 'confirmSiteName'
 			}
 		],
 		primaryAction: {
@@ -165,6 +170,9 @@ function onMigrateSite() {
 			variant: 'solid',
 			theme: 'red',
 			onClick: ({ hide, values }) => {
+				if (values.confirmSiteName !== site.doc.name) {
+					throw new Error('Site name does not match');
+				}
 				return site.migrate
 					.submit({ skip_failing_patches: values.skipFailingPatches })
 					.then(hide);
@@ -225,6 +233,22 @@ function onTransferSite() {
 							`Transfer request sent to ${values.email} successfully.`
 						);
 					});
+			}
+		}
+	});
+}
+
+function onClearCache() {
+	return confirmDialog({
+		title: 'Clear Cache',
+		message: `<span class="rounded-sm bg-gray-100 p-0.5 font-mono text-sm font-semibold">bench clear-cache</span> and
+            <span class="rounded-sm bg-gray-100 p-0.5 font-mono text-sm font-semibold">bench clear-website-cache</span> commands
+            will be executed on your site. Are you sure you want to run these commands?`,
+		primaryAction: {
+			label: 'Clear Cache',
+			variant: 'solid',
+			onClick: ({ hide }) => {
+				return site.clearSiteCache.submit().then(hide);
 			}
 		}
 	});

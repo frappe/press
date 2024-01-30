@@ -4,11 +4,37 @@
 from __future__ import unicode_literals
 import frappe
 import inspect
+from frappe.utils import cstr
 from pypika.queries import QueryBuilder
 from frappe.model.base_document import get_controller
 from frappe.model import default_fields, child_table_fields
 from frappe import is_whitelisted
 from frappe.handler import get_attr, run_doc_method as _run_doc_method
+
+ALLOWED_DOCTYPES = [
+	"Site",
+	"Site App",
+	"Site Domain",
+	"Site Backup",
+	"Site Activity",
+	"Site Config",
+	"Site Config Key",
+	"Plan",
+	"Invoice",
+	"Balance Transaction",
+	"Stripe Payment Method",
+	"Bench Dependency Version",
+	"Release Group",
+	"Release Group App",
+	"Release Group Dependency",
+	"Cluster",
+	"Press Permission Group",
+	"Team",
+	"SaaS Product Site Request",
+	"Deploy Candidate",
+	"Agent Job",
+	"Common Site Config",
+]
 
 
 @frappe.whitelist()
@@ -26,7 +52,11 @@ def get_list(
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
 
-	if frappe.get_meta(doctype).has_field("team"):
+	meta = frappe.get_meta(doctype)
+	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
+		frappe.throw("parenttype and parent are required to get child records")
+
+	if meta.has_field("team"):
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 
@@ -38,6 +68,18 @@ def get_list(
 		limit=limit,
 		order_by=order_by,
 	)
+
+	if meta.istable:
+		parentmeta = frappe.get_meta(filters.get("parenttype"))
+		if parentmeta.has_field("team"):
+			ParentDocType = frappe.qb.DocType(filters.get("parenttype"))
+			ChildDocType = frappe.qb.DocType(doctype)
+			query = (
+				query.join(ParentDocType)
+				.on(ParentDocType.name == ChildDocType.parent)
+				.where(ParentDocType.team == frappe.local.team().name)
+			)
+
 	filters = frappe._dict(filters or {})
 	list_args = dict(
 		fields=fields,
@@ -64,11 +106,11 @@ def get(doctype, name):
 
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
-			frappe.throw("Not permitted", frappe.PermissionError)
+			raise_not_permitted()
 
 	fields = list(default_fields)
-	if hasattr(doc, "whitelisted_fields"):
-		fields += doc.whitelisted_fields
+	if hasattr(doc, "dashboard_fields"):
+		fields += doc.dashboard_fields
 
 	_doc = frappe._dict()
 	for fieldname in fields:
@@ -128,6 +170,17 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
+
+	if not frappe.local.system_user() and frappe.get_meta(dt).has_field("team"):
+		doc_team = frappe.db.get_value(dt, dn, "team")
+		if doc_team != frappe.local.team().name:
+			raise_not_permitted()
+
+	controller = get_controller(dt)
+	dashboard_actions = getattr(controller, "dashboard_actions", [])
+	if method not in dashboard_actions:
+		raise_not_permitted()
+
 	check_method_permissions(dt, dn, method)
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
@@ -173,7 +226,7 @@ def validate_filters(doctype, filters):
 
 	out = frappe._dict()
 	for fieldname, value in filters.items():
-		if is_valid_field(doctype, fieldname):
+		if is_allowed_field(doctype, fieldname):
 			out[fieldname] = value
 
 	return out
@@ -186,32 +239,65 @@ def validate_fields(doctype, fields):
 
 	filtered_fields = []
 	for field in fields:
-		if is_valid_field(doctype, field):
+		if is_allowed_field(doctype, field):
 			filtered_fields.append(field)
 
 	return filtered_fields
 
 
-def is_valid_field(doctype, field):
+def is_allowed_field(doctype, field):
 	"""Check if field is valid"""
 	if not field:
 		return False
 
-	if field == "*" or "." in field:
+	controller = get_controller(doctype)
+	dashboard_fields = getattr(controller, "dashboard_fields", [])
+
+	if field in dashboard_fields:
 		return True
-	elif isinstance(field, dict) or field in [*default_fields, *child_table_fields]:
+	elif "." in field and is_allowed_linked_field(doctype, field):
 		return True
-	elif df := frappe.get_meta(doctype).get_field(field):
-		if df.fieldtype not in frappe.model.table_fields:
-			return True
+	elif isinstance(field, dict) and is_allowed_table_field(doctype, field):
+		return True
+	elif field in [*default_fields, *child_table_fields]:
+		return True
 
 	return False
 
 
+def is_allowed_linked_field(doctype, field):
+	linked_field = linked_field_fieldname = None
+	if " as " in field:
+		linked_field, _ = field.split(" as ")
+	else:
+		linked_field = field
+
+	linked_field, linked_field_fieldname = linked_field.split(".")
+	if not is_allowed_field(doctype, linked_field):
+		return False
+
+	linked_field_doctype = frappe.get_meta(doctype).get_field(linked_field).options
+	if not is_allowed_field(linked_field_doctype, linked_field_fieldname):
+		return False
+
+	return True
+
+
+def is_allowed_table_field(doctype, field):
+	for table_fieldname, table_fields in field.items():
+		if not is_allowed_field(doctype, table_fieldname):
+			return False
+
+		table_doctype = frappe.get_meta(doctype).get_field(table_fieldname).options
+		for table_field in table_fields:
+			if not is_allowed_field(table_doctype, table_field):
+				return False
+	return True
+
+
 def check_permissions(doctype):
-	# TODO: remove this when we have proper permission checking
-	if not (frappe.conf.developer_mode or frappe.local.dev_server):
-		frappe.only_for("System Manager")
+	if doctype not in ALLOWED_DOCTYPES:
+		raise_not_permitted()
 
 	if not frappe.local.team():
 		frappe.throw(
@@ -229,3 +315,18 @@ def check_method_permissions(doctype, docname, method) -> None:
 	if not has_method_permission(doctype, docname, method):
 		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
 	return True
+
+
+def is_owned_by_team(doctype, docname, raise_exception=True):
+	if not frappe.local.team():
+		return False
+
+	docname = cstr(docname)
+	owned = frappe.db.get_value(doctype, docname, "team") == frappe.local.team().name
+	if not owned and raise_exception:
+		raise_not_permitted()
+	return owned
+
+
+def raise_not_permitted():
+	frappe.throw("Not permitted", frappe.PermissionError)
