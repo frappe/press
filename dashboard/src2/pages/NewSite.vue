@@ -94,6 +94,19 @@
 						</button>
 					</div>
 				</div>
+				<SiteAppPlanSelectorDialog
+					v-if="selectedApp"
+					v-model="showAppPlanSelectorDialog"
+					:app="selectedApp"
+					@plan-select="
+						plan => {
+							apps.push(selectedApp.app);
+							appPlans[selectedApp.app] = plan;
+							console.log(appPlans);
+							showAppPlanSelectorDialog = false;
+						}
+					"
+				/>
 			</div>
 			<div
 				class="flex flex-col"
@@ -204,6 +217,47 @@
 								: 'No apps selected'
 						}}
 					</div>
+					<div v-if="Object.keys(appPlans).length !== 0" class="text-gray-600">
+						App Plans:
+					</div>
+					<div v-if="Object.keys(appPlans).length !== 0" class="text-gray-900">
+						<div v-for="app in Object.keys(appPlans)">
+							{{ selectedVersionApps.find(a => app === a.app).app_title }}:
+							{{ appPlans[app].plan }}
+						</div>
+						<div class="mt-1 text-gray-900">
+							{{
+								$format.userCurrency(
+									$team.doc.currency == 'INR'
+										? Object.values(appPlans).reduce(
+												(a, b) => a + b.price_inr,
+												0
+										  )
+										: Object.values(appPlans).reduce(
+												(a, b) => a + b.price_usd,
+												0
+										  )
+								)
+							}}
+							per month
+						</div>
+						<div class="text-gray-600">
+							{{
+								$format.userCurrency(
+									$team.doc.currency == 'INR'
+										? Object.values(appPlans).reduce(
+												(a, b) => a + b.price_inr,
+												0
+										  ) / 30
+										: Object.values(appPlans).reduce(
+												(a, b) => a + b.price_usd,
+												0
+										  ) / 30
+								)
+							}}
+							per day
+						</div>
+					</div>
 					<div class="text-gray-600">Plan:</div>
 					<div v-if="selectedPlan">
 						<div>
@@ -287,6 +341,7 @@ import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import router from '../router';
 import SitePlansCards from '../components/SitePlansCards.vue';
+import SiteAppPlanSelectorDialog from '../components/site/SiteAppPlanSelectorDialog.vue';
 import { plans } from '../data/plans';
 
 // TODO:
@@ -305,7 +360,8 @@ export default {
 		Header,
 		SitePlansCards,
 		Tooltip,
-		FBreadcrumbs: Breadcrumbs
+		FBreadcrumbs: Breadcrumbs,
+		SiteAppPlanSelectorDialog
 	},
 	data() {
 		return {
@@ -314,6 +370,9 @@ export default {
 			cluster: null,
 			plan: null,
 			apps: [],
+			appPlans: {},
+			selectedApp: null,
+			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false
 		};
@@ -376,6 +435,7 @@ export default {
 						team: this.$team.doc.name,
 						subdomain: this.subdomain,
 						apps: apps.map(app => ({ app })),
+						app_plans: this.appPlans,
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
 						subscription_plan: this.plan,
@@ -472,8 +532,14 @@ export default {
 			}
 			if (this.apps.includes(app.app)) {
 				this.apps = this.apps.filter(a => a !== app.app);
+				delete this.appPlans[app.app];
 			} else {
-				this.apps.push(app.app);
+				if (app.plans.length > 0) {
+					this.selectedApp = app;
+					this.showAppPlanSelectorDialog = true;
+				} else {
+					this.apps.push(app.app);
+				}
 			}
 		}
 	}
