@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-30 16:37:12.860618",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_hlgh"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_hlgh",
+   "fieldtype": "Section Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-30 16:37:12.860618",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Top IO by Event Category",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

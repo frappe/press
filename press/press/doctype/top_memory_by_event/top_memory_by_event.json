@@ -15,6 +15,7 @@
  ],
  "fields": [
   {
+   "columns": 4,
    "fieldname": "event_type",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -23,6 +24,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "count",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -31,6 +33,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "max_count",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -39,6 +42,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -47,6 +51,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "avg_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -55,6 +60,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "max_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -63,6 +69,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "max_avg_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -74,7 +81,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-26 17:14:54.192143",
+ "modified": "2024-01-30 15:59:14.089808",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Top Memory By Event",

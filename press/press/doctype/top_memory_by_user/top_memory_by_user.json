@@ -22,6 +22,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "count",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -30,6 +31,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -38,6 +40,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "avg_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -46,6 +49,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "total_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -54,6 +58,7 @@
    "read_only": 1
   },
   {
+   "columns": 1,
    "fieldname": "max_memory",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -65,7 +70,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-30 11:55:41.213166",
+ "modified": "2024-01-30 16:30:09.455648",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Top Memory By User",

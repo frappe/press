@@ -608,6 +608,19 @@ class DatabaseServer(BaseServer):
 					"avg_write_io": self._bytes_to_mb(r.get("avg_write")),
 					"write_percentage": r.get("write_pct"),
 				})
+			record.top_io_by_file_by_time = []
+			for r in reports.get("top_io_by_file_by_time", []):
+				record.append("top_io_by_file_by_time", {
+					"file": r.get("file"),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_requests": r.get("count_read"),
+					"write_requests": r.get("count_write"),
+					"misc_requests": r.get("count_misc"),
+					"total_time": self._convert_to_us(r.get("total_latency")),
+					"read_time": self._convert_to_us(r.get("read_latency")),
+					"write_time": self._convert_to_us(r.get("write_latency")),
+					"misc_time": self._convert_to_us(r.get("misc_latency")),
+				})
 			record.save()
 		except Exception:
 			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
@@ -655,12 +668,18 @@ class DatabaseServer(BaseServer):
 				"top_memory_by_user",
 				"top_memory_by_host",
 				"top_memory_by_thread",
-				"top_io_by_file_activity_report"
+				"top_io_by_file_activity_report",
+				"top_io_by_file_by_time",
+				"top_io_by_event_category",
+				"top_io_in_time_by_event_category",
 			]
 		}) or {}
 
 	def _bytes_to_mb(self, bytes_val):
 		return round(bytes_val / 1024 / 1024, 2)
+
+	def _convert_to_us(self, duration):
+		return round(duration / 1000000, 2)
 
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)

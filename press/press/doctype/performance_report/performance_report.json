@@ -10,12 +10,19 @@
   "recorded_on",
   "memory_usage_tab",
   "total_allocated_memory",
+  "top_memory_by_user_section",
   "top_memory_by_user",
+  "top_memory_by_host_section",
   "top_memory_by_host",
+  "top_memory_by_thread_section",
   "top_memory_by_thread",
+  "top_memory_by_event_section",
   "top_memory_by_event",
   "hot_spots_for_io_tab",
+  "top_file_io_activity_report_section",
   "top_io_by_file_activity_report",
+  "top_io_by_file_by_time_section",
+  "top_io_by_file_by_time",
   "high_cost_sql_statements_tab",
   "database_schema_statistics_tab",
   "wait_event_times_tab",
@@ -74,28 +81,24 @@
   {
    "fieldname": "top_memory_by_user",
    "fieldtype": "Table",
-   "label": "Top Memory By User",
    "options": "Top Memory By User",
    "read_only": 1
   },
   {
    "fieldname": "top_memory_by_host",
    "fieldtype": "Table",
-   "label": "Top Memory By Host",
    "options": "Top Memory By Host",
    "read_only": 1
   },
   {
    "fieldname": "top_memory_by_event",
    "fieldtype": "Table",
-   "label": "Top Memory By Event",
    "options": "Top Memory By Event",
    "read_only": 1
   },
   {
    "fieldname": "top_memory_by_thread",
    "fieldtype": "Table",
-   "label": "Top Memory By Thread",
    "options": "Top Memory By Thread",
    "read_only": 1
   },
@@ -117,15 +120,62 @@
   {
    "fieldname": "top_io_by_file_activity_report",
    "fieldtype": "Table",
-   "label": "Top File I/O Activity Report",
    "options": "Top File IO Activity Report",
    "read_only": 1
+  },
+  {
+   "fieldname": "top_io_by_file_by_time",
+   "fieldtype": "Table",
+   "options": "Top IO by File by Time",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_memory_by_event_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Event"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_memory_by_user_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By User"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_memory_by_host_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Host"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_memory_by_thread_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Thread"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_file_io_activity_report_section",
+   "fieldtype": "Section Break",
+   "label": "Top File I/O Activity Report"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "top_io_by_file_by_time_section",
+   "fieldtype": "Section Break",
+   "label": "Top IO by File by Time"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-30 12:22:04.598451",
+ "modified": "2024-01-30 16:34:38.595383",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Performance Report",
