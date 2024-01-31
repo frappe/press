@@ -193,7 +193,7 @@ export default {
 		FormControl
 	},
 	props: ['benchName', 'modelValue'],
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'appAdd'],
 	data() {
 		return {
 			app: null,
