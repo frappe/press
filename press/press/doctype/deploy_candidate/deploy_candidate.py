@@ -406,7 +406,7 @@ class DeployCandidate(Document):
 			)
 			step.command = f"git clone {app.app}"
 
-			if cloned:
+			if cloned or app.use_cached:
 				step.cached = True
 				step.status = "Success"
 			else:
