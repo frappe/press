@@ -41,14 +41,24 @@
 						<div class="flex items-center justify-between">
 							<div class="text-lg">
 								<span class="font-medium text-gray-900">
-									{{ plan.plan }}
+									{{
+										$format.userCurrency(
+											$team.doc.currency === 'INR'
+												? plan.price_inr
+												: plan.price_usd
+										)
+									}}
 								</span>
+								<span class="font-medium text-gray-600">/mo </span>
 							</div>
 						</div>
 					</div>
 					<div class="p-3 text-p-sm text-gray-800">
-						<div v-for="feature in plan.features">
-							<span>{{ feature }}</span>
+						<div class="flex" v-for="feature in plan.features">
+							<i-lucide-check-circle
+								class="mt-1 h-3 w-4 shrink-0 text-gray-900"
+							/>
+							<span class="ml-2">{{ feature }}</span>
 						</div>
 					</div>
 				</button>
