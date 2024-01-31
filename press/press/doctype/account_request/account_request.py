@@ -101,7 +101,7 @@ class AccountRequest(Document):
 			return get_url(
 				f"/api/method/press.api.saas.validate_account_request?key={self.request_key}"
 			)
-		dashboard_url = "dashboard2" if self.new_signup_flow else "dashboard"
+		dashboard_url = "dashboard-beta" if self.new_signup_flow else "dashboard"
 		return get_url(f"/{dashboard_url}/setup-account/{self.request_key}")
 
 	@property
