@@ -213,7 +213,6 @@ export default {
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -407,7 +406,6 @@ export default {
 					primaryAction({ listResource: domains, documentResource: site }) {
 						return {
 							label: 'Add Domain',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -574,7 +572,6 @@ export default {
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
 							label: 'Schedule Backup',
-							variant: 'solid',
 							slots: {
 								prefix: icon('upload-cloud')
 							},
@@ -640,7 +637,6 @@ export default {
 					primaryAction({ listResource: configs, documentResource: site }) {
 						return {
 							label: 'Add Config',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
