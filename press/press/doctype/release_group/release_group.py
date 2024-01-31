@@ -52,6 +52,8 @@ class ReleaseGroup(Document):
 		"deployed_versions",
 		"get_app_versions",
 		"archive",
+		"get_certificate",
+		"generate_certificate",
 	]
 
 	@staticmethod
