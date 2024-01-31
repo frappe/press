@@ -647,7 +647,7 @@ class DatabaseServer(BaseServer):
 		-statements_with_errors_or_warnings
 		-schema_index_statistics
 		-schema_table_statistics
-		-schema_table_statistics_with_buffer
+		-schema_table_statistics_with_innodb_buffer
 		-schema_tables_with_full_table_scans
 		-schema_unused_indexes
 		-global_waits_by_time

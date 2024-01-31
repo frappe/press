@@ -61,7 +61,39 @@
   "memory_swap_max",
   "section_break_ladc",
   "is_performance_schema_enabled",
-  "mariadb_system_variables"
+  "mariadb_system_variables",
+  "performance_schema_report_section",
+  "is_total_allocated_memory_perf_report_enabled",
+  "is_top_memory_by_event_perf_report_enabled",
+  "is_top_memory_by_user_perf_report_enabled",
+  "is_top_memory_by_host_perf_report_enabled",
+  "is_top_memory_by_thread_perf_report_enabled",
+  "is_top_io_by_file_activity_report_perf_report_enabled",
+  "is_top_io_by_file_by_time_perf_report_enabled",
+  "is_top_io_by_event_category_perf_report_enabled",
+  "is_top_io_in_time_by_event_category_perf_report_enabled",
+  "is_top_io_by_user_or_thread_perf_report_enabled",
+  "is_statement_analysis_perf_report_enabled",
+  "is_statements_in_highest_5_percentile_perf_report_enabled",
+  "is_statements_using_temp_tables_perf_report_enabled",
+  "is_statements_with_sorting_perf_report_enabled",
+  "is_statements_with_full_table_scans_perf_report_enabled",
+  "is_statements_with_errors_or_warnings_perf_report_enabled",
+  "column_break_ggah",
+  "is_schema_index_statistics_perf_report_enabled",
+  "is_schema_table_statistics_perf_report_enabled",
+  "is_schema_table_statistics_with_innodb_perf_report_enabled",
+  "is_schema_tables_with_full_table_scans_perf_report_enabled",
+  "is_schema_unused_indexes_perf_report_enabled",
+  "is_global_waits_by_time_perf_report_enabled",
+  "is_waits_by_user_by_time_perf_report_enabled",
+  "is_wait_classes_by_time_perf_report_enabled",
+  "is_waits_classes_by_avg_time_perf_report_enabled",
+  "is_innodb_buffer_stats_by_schema_perf_report_enabled",
+  "is_innodb_buffer_stats_by_table_perf_report_enabled",
+  "is_user_resource_use_overview_perf_report_enabled",
+  "is_user_resource_use_io_statistics_perf_report_enabled",
+  "is_user_resource_use_statement_statistics_perf_report_enabled"
  ],
  "fields": [
   {
@@ -407,11 +439,200 @@
    "fieldtype": "Check",
    "label": "Is Stalk Setup",
    "read_only": 1
+  },
+  {
+   "fieldname": "performance_schema_report_section",
+   "fieldtype": "Section Break",
+   "label": "Performance Schema Report"
+  },
+  {
+   "fieldname": "column_break_ggah",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_total_allocated_memory_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Total Allocated Memory"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_memory_by_event_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top Memory By Event"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_memory_by_user_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top Memory By User"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_memory_by_host_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top Memory By Host"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_memory_by_thread_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top Memory By Thread"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_io_by_file_activity_report_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top File I/O Activity Report"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_io_by_file_by_time_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top I/O by File by Time"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_io_by_event_category_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top I/O by Event Category"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_io_in_time_by_event_category_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top I/O in Time by Event Category"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_top_io_by_user_or_thread_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Top I/O Time by User/Thread"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statement_analysis_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statement Analysis"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statements_in_highest_5_percentile_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statements in Highest 5 Percent by Runtime"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statements_using_temp_tables_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statements using Temp Tables"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statements_with_sorting_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statements with Sorting"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statements_with_full_table_scans_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statements With Full Table Scans"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_statements_with_errors_or_warnings_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Statements With Errors or Warnings"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_schema_index_statistics_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Schema Index Statistics"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_schema_table_statistics_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Schema Table Statistics"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_schema_table_statistics_with_innodb_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Schema Table Statistics (With InnoDB buffer)"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_schema_tables_with_full_table_scans_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Tables with Full Table Scans"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_schema_unused_indexes_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Unused Indexes"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_global_waits_by_time_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Global Waits by Time"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_waits_by_user_by_time_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Waits by User by Time"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_wait_classes_by_time_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Wait Classes by Time"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_waits_classes_by_avg_time_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "Waits Classes by Average Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_innodb_buffer_stats_by_schema_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "InnoDB Buffer Stats by Schema"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_innodb_buffer_stats_by_table_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "InnoDB Buffer Stats by Table"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_user_resource_use_overview_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "User Resource Use Overview"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_user_resource_use_io_statistics_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "User Resource Use I/O Statistics"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_user_resource_use_statement_statistics_perf_report_enabled",
+   "fieldtype": "Check",
+   "label": "User Resource Use Statement Statistics"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-21 19:00:35.047273",
+ "modified": "2024-01-31 16:56:02.827370",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
