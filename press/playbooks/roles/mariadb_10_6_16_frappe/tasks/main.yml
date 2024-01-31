@@ -8,6 +8,11 @@
     path: /etc/apt/sources.list.d/mirror_rackspace_com_mariadb_repo_10_6_ubuntu.list
     state: absent
 
+- name: Remove MariaDB Repository File
+  file:
+    path: /etc/apt/sources.list.d/deb_mariadb_org_10_6_ubuntu.list
+    state: absent
+
 - name: Add MariaDB Repository Key
   apt_key:
     url: https://packages.frappe.cloud/frappe.gpg.key
