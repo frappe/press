@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 13:00:23.122105",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schema",
+  "object",
+  "full_scanned_rows",
+  "time_us"
+ ],
+ "fields": [
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Schema",
+   "read_only": 1
+  },
+  {
+   "fieldname": "object",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_scanned_rows",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Full Scanned Rows",
+   "read_only": 1
+  },
+  {
+   "fieldname": "time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Time (us)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 13:09:25.052904",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Tables with Full Table Scans",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

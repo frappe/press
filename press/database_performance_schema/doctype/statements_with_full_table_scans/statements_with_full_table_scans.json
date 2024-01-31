@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 15:17:29.456185",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "query",
+  "executed_count",
+  "no_index_used_count",
+  "no_good_index_used_count",
+  "no_index_used_percentage"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "executed_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_index_used_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "No Index Used Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_good_index_used_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "No Good Index Used Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_index_used_percentage",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "No Index Used Percentage",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 15:19:12.039251",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Statements With Full Table Scans",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

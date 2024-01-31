@@ -658,6 +658,7 @@ class DatabaseServer(BaseServer):
 		-innodb_buffer_stats_by_table
 		-user_resource_use_overview
 		-user_resource_use_io_statistics
+		-user_resource_use_statement_statistics
 		"""
 		return self.agent.post("database/performance_report", {
 			"private_ip": self.private_ip,

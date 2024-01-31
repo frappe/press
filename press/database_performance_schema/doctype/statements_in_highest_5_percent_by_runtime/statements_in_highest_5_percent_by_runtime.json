@@ -1,0 +1,132 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 15:35:37.965896",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "query",
+  "full_table",
+  "executed_count",
+  "errors_count",
+  "warnings_count",
+  "total_time",
+  "max_time",
+  "avg_time",
+  "rows_sent",
+  "avg_rows",
+  "rows_scanned",
+  "avg_rows_scanned"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_table",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Full Table",
+   "read_only": 1
+  },
+  {
+   "fieldname": "executed_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "errors_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Errors Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warnings_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Warnings Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_sent",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_rows",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Rows",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_scanned",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Scanned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_rows_scanned",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Rows Scanned",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 15:38:29.467507",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Statements in Highest 5 Percent by Runtime",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

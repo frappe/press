@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 15:23:29.883101",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "query",
+  "executed_count",
+  "tmp_tables_in_memory",
+  "tmp_tables_in_disk",
+  "avg_tmp_tables_per_query",
+  "percent_tmp_tables_to_disk"
+ ],
+ "fields": [
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "executed_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_in_memory",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Tables in Memory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_in_disk",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Tables in Disk",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_tmp_tables_per_query",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Tmp Tables Per Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "percent_tmp_tables_to_disk",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Percent Tmp Tables to Disk (%)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 15:25:39.776832",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Statements Using Temp Tables",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

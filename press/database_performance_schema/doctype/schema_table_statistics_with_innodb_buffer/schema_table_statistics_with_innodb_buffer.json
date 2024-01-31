@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 13:39:11.467178",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schema",
+  "table",
+  "rows_fetched",
+  "fetch_time",
+  "rows_inserted",
+  "insert_time",
+  "rows_updated",
+  "update_time",
+  "rows_deleted",
+  "delete_time",
+  "io_read_requests",
+  "io_read",
+  "io_read_time",
+  "io_write_requests",
+  "io_write",
+  "io_write_time",
+  "io_misc_requests",
+  "io_misc_time",
+  "innodb_buffer_section",
+  "buffer_allocated",
+  "buffer_data",
+  "buffer_free",
+  "buffer_pages",
+  "buffer_pages_hashed",
+  "buffer_pages_old",
+  "buffer_pages_cached"
+ ],
+ "fields": [
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "label": "Schema"
+  },
+  {
+   "fieldname": "table",
+   "fieldtype": "Data",
+   "label": "Table"
+  },
+  {
+   "fieldname": "rows_fetched",
+   "fieldtype": "Int",
+   "label": "Rows Fetched"
+  },
+  {
+   "fieldname": "fetch_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Fetch Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_inserted",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Inserted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "insert_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Insert Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_updated",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Updated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "update_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Update Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_deleted",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Deleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delete_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Delete Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_read_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Read Requests",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_read",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Read (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_read_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Read Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_write_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Write Requests",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_write",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Write (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_write_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Write Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_misc_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Misc Requests",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_misc_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Misc Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "innodb_buffer_section",
+   "fieldtype": "Section Break",
+   "label": "InnoDB Buffer"
+  },
+  {
+   "fieldname": "buffer_pages",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_hashed",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Hashed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_old",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Old",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_cached",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Cached",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_allocated",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Allocated (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_data",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Data (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_free",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Free (MB)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 13:43:56.803785",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Schema Table Statistics With InnoDB Buffer",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

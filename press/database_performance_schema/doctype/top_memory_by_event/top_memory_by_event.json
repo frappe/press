@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-26 16:57:53.388269",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_type",
+  "count",
+  "max_count",
+  "memory",
+  "avg_memory",
+  "max_memory",
+  "max_avg_memory"
+ ],
+ "fields": [
+  {
+   "columns": 4,
+   "fieldname": "event_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Event Type",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Count",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Count",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "memory",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_memory",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_memory",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_avg_memory",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Avg Memory (MB)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 12:46:10.194218",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Top Memory By Event",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

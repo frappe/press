@@ -1,0 +1,122 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 14:08:24.840956",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "statement",
+  "total_occurances",
+  "total_time_us",
+  "max_time_us",
+  "lock_time_us",
+  "cpu_time_us",
+  "rows_sent",
+  "rows_examined",
+  "rows_affected",
+  "full_scans"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "statement",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Statement",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_occurances",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Occurances",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lock_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Lock Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cpu_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "CPU Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_sent",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_examined",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Examined",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_affected",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Affected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_scans",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Full Scans",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 14:10:31.368143",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "User Resource Use Statement Statistics",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-30 15:29:04.944737",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "file",
+  "io_count_section",
+  "total_io",
+  "column_break_xxhq",
+  "read_requests",
+  "column_break_rzrc",
+  "write_requests",
+  "column_break_qckc",
+  "misc_requests",
+  "request_time_section",
+  "total_time",
+  "column_break_xkyd",
+  "read_time",
+  "column_break_bmbz",
+  "write_time",
+  "column_break_hfre",
+  "misc_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "file",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_count_section",
+   "fieldtype": "Section Break",
+   "label": "IO Count"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_io",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total IO Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xxhq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "read_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Read Request Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rzrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "write_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Write Request Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qckc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "misc_requests",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Misc Request Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_time_section",
+   "fieldtype": "Section Break",
+   "label": "Request Time"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xkyd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "read_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Read Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bmbz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "write_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Write Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hfre",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "misc_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Misc Time (us)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 12:46:47.759517",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Top IO by File by Time",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,68 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 13:46:00.595175",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_class",
+  "total_occurances",
+  "total_time",
+  "avg_time",
+  "max_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "event_class",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Event Class",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_occurances",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Occurances",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (us)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 13:52:43.120022",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Global Waits By Time",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

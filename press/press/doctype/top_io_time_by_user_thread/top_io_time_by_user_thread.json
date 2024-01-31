@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 12:30:44.658579",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "column_break_bwkb",
+  "thread_id",
+  "column_break_wpmq",
+  "process_list_id",
+  "section_break_jvyi",
+  "total_io",
+  "section_break_fkmu",
+  "total_time_us",
+  "column_break_wwye",
+  "avg_time_us",
+  "column_break_qbkg",
+  "min_time_us",
+  "column_break_qicb",
+  "max_time_us"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bwkb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "thread_id",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Thread Id",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wpmq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "process_list_id",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Process List Id",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_jvyi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_io",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total IO",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fkmu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wwye",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qbkg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "min_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Min Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qicb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_time_us",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (us)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 12:40:21.527146",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Top IO Time by User Thread",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

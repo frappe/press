@@ -1,0 +1,590 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-26 16:06:33.989913",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_tab",
+  "server",
+  "recorded_on",
+  "memory_usage_tab",
+  "total_allocated_memory",
+  "top_memory_by_user_section",
+  "top_memory_by_user",
+  "top_memory_by_host_section",
+  "top_memory_by_host",
+  "top_memory_by_thread_section",
+  "top_memory_by_thread",
+  "top_memory_by_event_section",
+  "top_memory_by_event",
+  "hot_spots_for_io_tab",
+  "top_file_io_activity_report_section",
+  "top_io_by_file_activity_report",
+  "top_io_by_file_by_time_section",
+  "top_io_by_file_by_time",
+  "top_io_by_event_category_section",
+  "top_io_by_event_category",
+  "top_io_in_time_by_event_category_section",
+  "top_io_in_time_by_event_category",
+  "top_io_time_by_userthread_section",
+  "top_io_by_user_or_thread",
+  "high_cost_sql_statements_tab",
+  "statement_analysis_section",
+  "statement_analysis",
+  "statements_in_highest_5_percent_by_runtime_section",
+  "statements_in_highest_5_percentile",
+  "statements_using_temp_tables_section",
+  "statements_using_temp_tables",
+  "statements_with_sorting_section",
+  "statements_with_sorting",
+  "statements_with_full_table_scans_section",
+  "statements_with_full_table_scans",
+  "statements_with_errors_or_warnings_section",
+  "statements_with_errors_or_warnings",
+  "database_schema_statistics_tab",
+  "schema_index_statistics_section",
+  "schema_index_statistics",
+  "schema_table_statistics_section",
+  "schema_table_statistics",
+  "schema_table_statistics_with_innodb_buffer_section",
+  "schema_table_statistics_with_buffer",
+  "tables_with_full_table_scans_section",
+  "schema_tables_with_full_table_scans",
+  "unused_indexes_section",
+  "schema_unused_indexes",
+  "wait_event_times_tab",
+  "global_waits_by_time_section",
+  "global_waits_by_time",
+  "waits_by_user_by_time_section",
+  "waits_by_user_by_time",
+  "wait_classes_by_time_section",
+  "wait_classes_by_time",
+  "waits_classes_by_average_time_section",
+  "waits_classes_by_avg_time",
+  "innodb_statistics_tab",
+  "innodb_buffer_stats_by_schema_section",
+  "innodb_buffer_stats_by_schema",
+  "innodb_buffer_stats_by_table_section",
+  "innodb_buffer_stats_by_table",
+  "user_resource_use_tab",
+  "overview_section",
+  "user_resource_use_overview",
+  "io_statistics_section",
+  "user_resource_use_io_statistics",
+  "statement_statistics_section",
+  "user_resource_use_statement_statistics"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_tab",
+   "fieldtype": "Tab Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Database Server",
+   "options": "Database Server",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "recorded_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Recorded On",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "memory_usage_tab",
+   "fieldtype": "Tab Break",
+   "label": "Memory Usage"
+  },
+  {
+   "description": "Shows total memory allocated",
+   "fieldname": "total_allocated_memory",
+   "fieldtype": "Float",
+   "label": "Total Allocated Memory (MB)",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows users consuming the most memory",
+   "fieldname": "top_memory_by_user_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By User"
+  },
+  {
+   "fieldname": "top_memory_by_user",
+   "fieldtype": "Table",
+   "options": "Top Memory By User",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows hosts consuming the most memory",
+   "fieldname": "top_memory_by_host_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Host"
+  },
+  {
+   "fieldname": "top_memory_by_host",
+   "fieldtype": "Table",
+   "options": "Top Memory By Host",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows threads consuming the most memory",
+   "fieldname": "top_memory_by_thread_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Thread"
+  },
+  {
+   "fieldname": "top_memory_by_thread",
+   "fieldtype": "Table",
+   "options": "Top Memory By Thread",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows events consuming the most memory",
+   "fieldname": "top_memory_by_event_section",
+   "fieldtype": "Section Break",
+   "label": "Top Memory By Event"
+  },
+  {
+   "fieldname": "top_memory_by_event",
+   "fieldtype": "Table",
+   "options": "Top Memory By Event",
+   "read_only": 1
+  },
+  {
+   "fieldname": "hot_spots_for_io_tab",
+   "fieldtype": "Tab Break",
+   "label": "Hot Spots for I/O"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Show the Files doing the most IOs",
+   "fieldname": "top_file_io_activity_report_section",
+   "fieldtype": "Section Break",
+   "label": "Top File I/O Activity Report"
+  },
+  {
+   "fieldname": "top_io_by_file_activity_report",
+   "fieldtype": "Table",
+   "options": "Top File IO Activity Report",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Show highest IO usage by file and latency",
+   "fieldname": "top_io_by_file_by_time_section",
+   "fieldtype": "Section Break",
+   "label": "Top I/O by File by Time"
+  },
+  {
+   "fieldname": "top_io_by_file_by_time",
+   "fieldtype": "Table",
+   "options": "Top IO by File by Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "high_cost_sql_statements_tab",
+   "fieldtype": "Tab Break",
+   "label": "High Cost SQL Statements"
+  },
+  {
+   "fieldname": "database_schema_statistics_tab",
+   "fieldtype": "Tab Break",
+   "label": "Database Schema Statistics"
+  },
+  {
+   "fieldname": "wait_event_times_tab",
+   "fieldtype": "Tab Break",
+   "label": "Wait Event Times"
+  },
+  {
+   "fieldname": "innodb_statistics_tab",
+   "fieldtype": "Tab Break",
+   "label": "InnoDB Statistics"
+  },
+  {
+   "fieldname": "user_resource_use_tab",
+   "fieldtype": "Tab Break",
+   "label": "User Resource Use"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Show the highest IO Data usage by event categories",
+   "fieldname": "top_io_by_event_category_section",
+   "fieldtype": "Section Break",
+   "label": "Top I/O by Event Category"
+  },
+  {
+   "fieldname": "top_io_by_event_category",
+   "fieldtype": "Table",
+   "options": "Top IO by Event Category",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Show the highest IO time consumers by event categories",
+   "fieldname": "top_io_in_time_by_event_category_section",
+   "fieldtype": "Section Break",
+   "label": "Top I/O in Time by Event Category"
+  },
+  {
+   "fieldname": "top_io_in_time_by_event_category",
+   "fieldtype": "Table",
+   "options": "Top IO in Time by Event Category",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows the highest IO time consumers by event categories",
+   "fieldname": "top_io_time_by_userthread_section",
+   "fieldtype": "Section Break",
+   "label": "Top I/O Time by User/Thread"
+  },
+  {
+   "fieldname": "top_io_by_user_or_thread",
+   "fieldtype": "Table",
+   "options": "Top IO Time by User Thread",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "List statements with various aggregated statistics",
+   "fieldname": "statement_analysis_section",
+   "fieldtype": "Section Break",
+   "label": "Statement Analysis"
+  },
+  {
+   "fieldname": "statement_analysis",
+   "fieldtype": "Table",
+   "options": "Statement Analysis",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "List all statements whose average runtime, in microseconds is in highest 5 percent",
+   "fieldname": "statements_in_highest_5_percent_by_runtime_section",
+   "fieldtype": "Section Break",
+   "label": "Statements in Highest 5 Percent by Runtime"
+  },
+  {
+   "fieldname": "statements_in_highest_5_percentile",
+   "fieldtype": "Table",
+   "options": "Statements in Highest 5 Percent by Runtime",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists all statements that use temporary tables - access the highest # of disk temporary tables, then memory temp tables",
+   "fieldname": "statements_using_temp_tables_section",
+   "fieldtype": "Section Break",
+   "label": "Statements Using Temp Tables"
+  },
+  {
+   "fieldname": "statements_using_temp_tables",
+   "fieldtype": "Table",
+   "options": "Statements Using Temp Tables",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "List all normalized statements that have done sorts",
+   "fieldname": "statements_with_sorting_section",
+   "fieldtype": "Section Break",
+   "label": "Statements With Sorting"
+  },
+  {
+   "fieldname": "statements_with_sorting",
+   "fieldtype": "Table",
+   "options": "Statements With Sorting",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists statements that have performed a full table scan",
+   "fieldname": "statements_with_full_table_scans_section",
+   "fieldtype": "Section Break",
+   "label": "Statements With Full Table Scans"
+  },
+  {
+   "fieldname": "statements_with_full_table_scans",
+   "fieldtype": "Table",
+   "options": "Statements With Full Table Scans",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "List statements that have raised errors or warnings",
+   "fieldname": "statements_with_errors_or_warnings_section",
+   "fieldtype": "Section Break",
+   "label": "Statements With Errors or Warnings"
+  },
+  {
+   "fieldname": "statements_with_errors_or_warnings",
+   "fieldtype": "Table",
+   "options": "Statements With Error or Warnings",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "schema_index_statistics_section",
+   "fieldtype": "Section Break",
+   "label": "Schema Index Statistics"
+  },
+  {
+   "fieldname": "schema_index_statistics",
+   "fieldtype": "Table",
+   "options": "Schema Index Statistics",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "schema_table_statistics_section",
+   "fieldtype": "Section Break",
+   "label": "Schema Table Statistics"
+  },
+  {
+   "fieldname": "schema_table_statistics",
+   "fieldtype": "Table",
+   "options": "Schema Table Statistics",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "schema_table_statistics_with_innodb_buffer_section",
+   "fieldtype": "Section Break",
+   "label": "Schema Table Statistics (with InnoDB Buffer)"
+  },
+  {
+   "fieldname": "schema_table_statistics_with_buffer",
+   "fieldtype": "Table",
+   "options": "Schema Table Statistics With InnoDB Buffer",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Find tables that are beign accesses by full table scans",
+   "fieldname": "tables_with_full_table_scans_section",
+   "fieldtype": "Section Break",
+   "label": "Tables with Full Table Scans"
+  },
+  {
+   "fieldname": "schema_tables_with_full_table_scans",
+   "fieldtype": "Table",
+   "options": "Tables with Full Table Scans",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "fieldname": "unused_indexes_section",
+   "fieldtype": "Section Break",
+   "label": "Unused Indexes"
+  },
+  {
+   "fieldname": "schema_unused_indexes",
+   "fieldtype": "Table",
+   "options": "Unused Indexes",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists the top wait events by theit total time, ignoring idle",
+   "fieldname": "global_waits_by_time_section",
+   "fieldtype": "Section Break",
+   "label": "Global Waits by Time"
+  },
+  {
+   "fieldname": "global_waits_by_time",
+   "fieldtype": "Table",
+   "options": "Global Waits By Time",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists the top wait events by theit total time, ignoring idle",
+   "fieldname": "waits_by_user_by_time_section",
+   "fieldtype": "Section Break",
+   "label": "Waits by User by Time"
+  },
+  {
+   "fieldname": "waits_by_user_by_time",
+   "fieldtype": "Table",
+   "options": "Waits by User by Time"
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists the top wait classes by total time, ignoring idle",
+   "fieldname": "wait_classes_by_time_section",
+   "fieldtype": "Section Break",
+   "label": "Wait Classes by Time"
+  },
+  {
+   "fieldname": "wait_classes_by_time",
+   "fieldtype": "Table",
+   "options": "Wait Classes by Time",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Lists the top wait classes by average time, ignoring idle",
+   "fieldname": "waits_classes_by_average_time_section",
+   "fieldtype": "Section Break",
+   "label": "Waits Classes by Average Time"
+  },
+  {
+   "fieldname": "waits_classes_by_avg_time",
+   "fieldtype": "Table",
+   "options": "Wait Classes by Average Time",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Summarizes the output of the INFORMATION_SCHEMA.INNODB_BUFFER_PAGE table, aggregating by schema",
+   "fieldname": "innodb_buffer_stats_by_schema_section",
+   "fieldtype": "Section Break",
+   "label": "InnoDB Buffer Stats by Schema"
+  },
+  {
+   "fieldname": "innodb_buffer_stats_by_schema",
+   "fieldtype": "Table",
+   "options": "InnoDB Buffer Stats by Schema",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Summarizes the output of the INFORMATION_SCHEMA.INNODB_BUFFER_PAGE table, aggregating by schema and table name",
+   "fieldname": "innodb_buffer_stats_by_table_section",
+   "fieldtype": "Section Break",
+   "label": "InnoDB Buffer Stats by Table"
+  },
+  {
+   "fieldname": "innodb_buffer_stats_by_table",
+   "fieldtype": "Table",
+   "options": "InnoDB Buffer Stats by Table",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows resource use summary for each user",
+   "fieldname": "overview_section",
+   "fieldtype": "Section Break",
+   "label": "Overview"
+  },
+  {
+   "fieldname": "user_resource_use_overview",
+   "fieldtype": "Table",
+   "options": "User Resource Use Overview",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shoes I/O usage for each user",
+   "fieldname": "io_statistics_section",
+   "fieldtype": "Section Break",
+   "label": "I/O Statistics"
+  },
+  {
+   "fieldname": "user_resource_use_io_statistics",
+   "fieldtype": "Table",
+   "options": "User Resource Use IO Statistics",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "collapsible_depends_on": "true",
+   "description": "Shows statement execution statistics for each user",
+   "fieldname": "statement_statistics_section",
+   "fieldtype": "Section Break",
+   "label": "Statement Statistics"
+  },
+  {
+   "fieldname": "user_resource_use_statement_statistics",
+   "fieldtype": "Table",
+   "options": "User Resource Use Statement Statistics",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-31 16:27:23.359378",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Performance Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 15:08:37.466460",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "column_break_onlr",
+  "query",
+  "executed_count",
+  "errors_count",
+  "warnings_count",
+  "error_percentage",
+  "warning_percentage"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_onlr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "executed_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "errors_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Errors Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warnings_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Warnings Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_percentage",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Error Percentage",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warning_percentage",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Warning Percentage",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 15:12:18.273618",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Statements With Error or Warnings",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

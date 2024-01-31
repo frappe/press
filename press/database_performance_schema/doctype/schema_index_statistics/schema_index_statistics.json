@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 12:50:52.831632",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schema",
+  "column_break_shqw",
+  "table",
+  "column_break_wtim",
+  "index",
+  "section_break_aafz",
+  "rows_selected",
+  "column_break_aeku",
+  "select_time",
+  "section_break_kcdh",
+  "rows_inserted",
+  "column_break_scfk",
+  "insert_time",
+  "section_break_tqle",
+  "rows_updated",
+  "column_break_mzmi",
+  "update_time",
+  "section_break_rdqn",
+  "rows_deleted",
+  "column_break_sajh",
+  "delete_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Schema",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_shqw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "table",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Table",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wtim",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "index",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Index",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_aafz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rows_selected",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Selected",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_aeku",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_kcdh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rows_inserted",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Inserted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_scfk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_tqle",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rows_updated",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Updated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mzmi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rdqn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rows_deleted",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Deleted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sajh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "select_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Select Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "insert_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Insert Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "update_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Update Time (us)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delete_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Delete Time (us)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 12:59:18.493459",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Schema Index Statistics",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

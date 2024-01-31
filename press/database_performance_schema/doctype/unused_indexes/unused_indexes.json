@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-31 13:08:26.433448",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schema",
+  "object",
+  "index"
+ ],
+ "fields": [
+  {
+   "fieldname": "schema",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Schema",
+   "read_only": 1
+  },
+  {
+   "fieldname": "object",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Object",
+   "read_only": 1
+  },
+  {
+   "fieldname": "index",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Index",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-31 13:09:04.485183",
+ "modified_by": "Administrator",
+ "module": "Database Performance Schema",
+ "name": "Unused Indexes",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
