@@ -1,5 +1,6 @@
 import os
 import platform
+import random
 import re
 import shlex
 import shutil
@@ -7,7 +8,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from textwrap import dedent
-from typing import TypedDict
+from typing import Tuple, TypedDict
 
 CommandOutput = TypedDict(
 	"CommandOutput",
@@ -74,7 +75,7 @@ def prep_dockerfile_path(dockerfile: str) -> Path:
 
 
 def run_build_command(df_path: Path) -> CommandOutput:
-	command = get_cache_check_build_command()
+	command, image_tag = get_cache_check_build_command()
 	env = os.environ.copy()
 	env["DOCKER_BUILDKIT"] = "1"
 	env["BUILDKIT_PROGRESS"] = "plain"
@@ -87,10 +88,11 @@ def run_build_command(df_path: Path) -> CommandOutput:
 		stderr=subprocess.STDOUT,
 		text=True,
 	)
+	remove_image(image_tag)
 	return dict(returncode=output.returncode, output=strip_build_output(output.stdout))
 
 
-def get_cache_check_build_command() -> str:
+def get_cache_check_build_command() -> Tuple[str, str]:
 	command = "docker build"
 	if (
 		platform.machine() == "arm64"
@@ -100,8 +102,18 @@ def get_cache_check_build_command() -> str:
 		command += "x build --platform linux/amd64"
 
 	now_ts = datetime.timestamp(datetime.today())
-	command += f" --build-arg CACHE_BUST={now_ts} ."
-	return command
+	command += f" --build-arg CACHE_BUST={now_ts}"
+
+	image_tag = f"cache_check:id-{random.getrandbits(40):x}"
+	command += f" --tag {image_tag} ."
+	return command, image_tag
+
+
+def remove_image(image_tag):
+	command = f"docker image rm {image_tag}"
+	subprocess.run(
+		shlex.split(command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+	)
 
 
 def strip_build_output(stdout: str) -> str:

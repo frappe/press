@@ -333,7 +333,7 @@ class ReleaseGroup(Document):
 
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
-			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.1 or later"))
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.2 or later"))
 
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
