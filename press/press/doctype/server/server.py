@@ -24,6 +24,31 @@ if typing.TYPE_CHECKING:
 
 
 class BaseServer(Document):
+	dashboard_fields = [
+		"plan",
+		"cluster",
+		"status",
+		"team",
+	]
+
+	@staticmethod
+	def get_list_query(query):
+		Server = frappe.qb.DocType("Server")
+
+		query = query.where(Server.status != "Archived").where(
+			Server.team == frappe.local.team().name
+		)
+		return query
+
+	def get_doc(self, doc):
+		from press.api.client import get
+		from press.api.server import usage
+
+		doc.current_plan = get("Plan", self.plan) if self.plan else None
+		doc.usage = usage(self.name)
+
+		return doc
+
 	def autoname(self):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")

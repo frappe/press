@@ -91,7 +91,7 @@ import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
-	props: ['server', 'serverName'],
+	props: ['serverName'],
 	components: {
 		LineChart
 	},

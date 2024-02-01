@@ -34,6 +34,8 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate",
 	"Agent Job",
 	"Common Site Config",
+	"Server",
+	"Ansible Play",
 ]
 
 
