@@ -302,14 +302,15 @@
   },
   {
    "default": "0",
-   "description": "App cache can be used for faster image builds if Bench version is 5.21.0 or later.",
+   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.21.1 or later.",
+   "fetch_from": "group.use_app_cache",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
    "label": "Use App Cache"
   }
  ],
  "links": [],
- "modified": "2024-01-30 13:14:34.976937",
+ "modified": "2024-02-01 13:19:16.023638",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

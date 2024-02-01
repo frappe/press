@@ -42,6 +42,7 @@
   "feature_flags_tab",
   "is_redisearch_enabled",
   "is_push_to_deploy_enabled",
+  "use_app_cache",
   "is_delta_build_enabled",
   "column_break_9efq",
   "merge_all_rq_queues",
@@ -339,10 +340,17 @@
    "fieldname": "use_rq_workerpool",
    "fieldtype": "Check",
    "label": "Use RQ WorkerPool"
+  },
+  {
+   "default": "0",
+   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.21.1 or later.",
+   "fieldname": "use_app_cache",
+   "fieldtype": "Check",
+   "label": "Use App Cache"
   }
  ],
  "links": [],
- "modified": "2024-01-18 13:18:18.493796",
+ "modified": "2024-02-01 13:29:02.158747",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

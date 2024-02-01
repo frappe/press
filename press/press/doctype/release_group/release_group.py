@@ -25,6 +25,8 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from typing import TYPE_CHECKING
 from frappe.utils import cstr
+from frappe import _
+import semantic_version as sv
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -83,6 +85,7 @@ class ReleaseGroup(Document):
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
+		self.validate_feature_flags()
 
 	def before_insert(self):
 		# to avoid ading deps while cloning a release group
@@ -327,6 +330,21 @@ class ReleaseGroup(Document):
 					"Max Background Workers can't be less than Min Background Workers",
 					frappe.ValidationError,
 				)
+
+	def validate_feature_flags(self) -> None:
+		if self.use_app_cache and not self.can_use_get_app_cache():
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.1 or later"))
+
+	def can_use_get_app_cache(self) -> bool:
+		version = find(
+			self.dependencies,
+			lambda x: x.dependency == "BENCH_VERSION",
+		).version
+
+		try:
+			return sv.Version(version) in sv.SimpleSpec(">=5.21.1")
+		except ValueError:
+			return False
 
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
