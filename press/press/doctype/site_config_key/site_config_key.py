@@ -7,6 +7,8 @@ from frappe.model.document import Document
 
 
 class SiteConfigKey(Document):
+	dashboard_fields = ["key", "title", "description", "type"]
+
 	def validate(self):
 		import frappe
 

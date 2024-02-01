@@ -21,7 +21,9 @@ export default {
 		addRegion: 'add_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
-		archive: 'archive'
+		archive: 'archive',
+		getCertificate: 'get_certificate',
+		generateCertificate: 'generate_certificate'
 	},
 	list: {
 		route: '/benches',
@@ -95,17 +97,11 @@ export default {
 				route: 'apps',
 				type: 'list',
 				list: {
-					resource({ documentResource: releaseGroup }) {
+					doctype: 'Release Group App',
+					filters: releaseGroup => {
 						return {
-							type: 'list',
-							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App', releaseGroup.name],
-							parent: 'Release Group',
-							filters: {
-								parenttype: 'Release Group',
-								parent: releaseGroup.name
-							},
-							auto: true
+							parenttype: 'Release Group',
+							parent: releaseGroup.doc.name
 						};
 					},
 					columns: [
@@ -318,7 +314,6 @@ export default {
 						},
 						{
 							label: 'Apps',
-							fieldname: 'apps',
 							format(value, row) {
 								return (row.apps || []).map(d => d.app).join(', ');
 							},
@@ -404,10 +399,14 @@ export default {
 				list: {
 					doctype: 'Common Site Config',
 					filters: releaseGroup => {
-						return { group: releaseGroup.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
+					pageLength: 999,
 					columns: [
 						{
 							label: 'Config Name',
@@ -447,6 +446,24 @@ export default {
 										onSuccess() {
 											configs.reload();
 										}
+									})
+								);
+							}
+						};
+					},
+					secondaryAction({ listResource: configs }) {
+						return {
+							label: 'Show Config Preview',
+							slots: {
+								prefix: icon('eye')
+							},
+							onClick() {
+								let ConfigPreviewDialog = defineAsyncComponent(() =>
+									import('../components/ConfigPreviewDialog.vue')
+								);
+								renderDialog(
+									h(ConfigPreviewDialog, {
+										configs: configs.data
 									})
 								);
 							}
@@ -519,7 +536,10 @@ export default {
 				list: {
 					doctype: 'Release Group Dependency',
 					filters: releaseGroup => {
-						return { group: releaseGroup.doc.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					columns: [
 						{
@@ -622,7 +642,7 @@ export default {
 			let { documentResource: bench } = context;
 			return [
 				{
-					label: 'Update available',
+					label: 'Update Available',
 					slots: {
 						prefix: icon('alert-circle')
 					},

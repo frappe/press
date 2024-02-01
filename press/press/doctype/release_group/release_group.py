@@ -40,7 +40,21 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
-	whitelisted_fields = ["title", "version"]
+	dashboard_fields = ["title", "version", "apps"]
+	dashboard_actions = [
+		"remove_app",
+		"change_app_branch",
+		"fetch_latest_app_update",
+		"delete_config",
+		"update_config",
+		"update_dependency",
+		"add_region",
+		"deployed_versions",
+		"get_app_versions",
+		"archive",
+		"get_certificate",
+		"generate_certificate",
+	]
 
 	@staticmethod
 	def get_list_query(query):
@@ -504,7 +518,11 @@ class ReleaseGroup(Document):
 			.run(as_dict=True)
 		)
 
+		cur_user_ssh_key = frappe.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
+		)
 		for version in deployed_versions:
+			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
 				site.version = rg_version
@@ -541,6 +559,38 @@ class ReleaseGroup(Document):
 			)
 			app.tag = get_app_tag(app.repository, app.repository_owner, app.hash)
 		return apps
+
+	@frappe.whitelist()
+	def generate_certificate(self):
+		user_ssh_key = frappe.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+		)[0]
+		return frappe.get_doc(
+			{
+				"doctype": "SSH Certificate",
+				"certificate_type": "User",
+				"group": self.name,
+				"user": frappe.session.user,
+				"user_ssh_key": user_ssh_key,
+				"validity": "6h",
+			}
+		).insert()
+
+	@frappe.whitelist()
+	def get_certificate(self):
+		certificates = frappe.get_all(
+			"SSH Certificate",
+			{
+				"user": frappe.session.user,
+				"valid_until": [">", frappe.utils.now()],
+				"group": self.name,
+			},
+			pluck="name",
+			limit=1,
+		)
+		if certificates:
+			return frappe.get_doc("SSH Certificate", certificates[0])
+		return False
 
 	@property
 	def dependency_update_pending(self):
@@ -643,10 +693,10 @@ class ReleaseGroup(Document):
 		if current_team.parent_team:
 			app_publishers_team.append(current_team.parent_team)
 
-		only_approved_for_sources = []
+		only_approved_for_sources = [self.apps[0].source]  # add frappe app source
 		if marketplace_app_sources:
 			AppSource = frappe.qb.DocType("App Source")
-			only_approved_for_sources = (
+			only_approved_for_sources.append(
 				frappe.qb.from_(AppSource)
 				.where(AppSource.name.isin(marketplace_app_sources))
 				.where(AppSource.team.notin(app_publishers_team))

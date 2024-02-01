@@ -9,7 +9,9 @@ from frappe.model.document import Document
 
 class MarketplaceAppPlan(Document):
 	@staticmethod
-	def create_marketplace_app_subscription(site_name, app_name, plan_name):
+	def create_marketplace_app_subscription(
+		site_name, app_name, plan_name, while_site_creation=False
+	):
 		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
 		app_subscription = frappe.db.exists(
 			"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
@@ -37,6 +39,7 @@ class MarketplaceAppPlan(Document):
 				"app": app_name,
 				"site": site_name,
 				"team": frappe.local.team().name,
+				"while_site_creation": while_site_creation,
 			}
 		).insert(ignore_permissions=True)
 

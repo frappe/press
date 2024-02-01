@@ -59,7 +59,7 @@ from press.press.doctype.plan.plan import plan_attribute
 
 
 class Site(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"ip",
 		"status",
 		"group",
@@ -67,6 +67,30 @@ class Site(Document):
 		"team",
 		"plan",
 		"archive_failed",
+		"cluster",
+		"is_database_access_enabled",
+	]
+	dashboard_actions = [
+		"activate",
+		"add_domain",
+		"archive",
+		"backup",
+		"clear_site_cache",
+		"deactivate",
+		"enable_database_access",
+		"disable_database_access",
+		"get_database_credentials",
+		"install_app",
+		"uninstall_app",
+		"migrate",
+		"login_as_admin",
+		"reinstall",
+		"remove_domain",
+		"restore_site",
+		"schedule_update",
+		"set_plan",
+		"update_config",
+		"delete_config",
 	]
 
 	@staticmethod
@@ -97,6 +121,11 @@ class Site(Document):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
+				user_type = frappe.session.data.user_type or frappe.get_cached_value(
+					"User", frappe.session.user, "user_type"
+				)
+				if user_type == "System User":
+					return func(inst, *args, **kwargs)
 				if inst.status not in allowed_status:
 					frappe.throw(
 						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
@@ -504,6 +533,24 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
+		if self.status == "Suspended":
+			activity = frappe.db.get_all(
+				"Site Activity",
+				filters={"site": self.name, "action": "Suspend Site"},
+				order_by="creation desc",
+				limit=1,
+			)
+			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+			if (
+				frappe.db.count(
+					"Site Backup",
+					filters=dict(site=self.name, status="Success", creation=(">=", suspension_time)),
+				)
+				> 3
+			):
+				frappe.throw("You cannot take more than 3 backups after site suspension")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
@@ -515,7 +562,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
-	@site_action(["Active"])
+	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
@@ -1171,14 +1218,11 @@ class Site(Document):
 
 	def disable_marketplace_subscriptions(self):
 		app_subscriptions = frappe.get_all(
-			"Marketplace App Subscription",
-			filters={"site": self.name, "status": "Active"},
+			"Subscription",
+			filters={"site": self.name, "document_type": "Marketplace App"},
 			pluck="name",
 		)
-
-		for subscription in app_subscriptions:
-			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
-			subscription_doc.disable()
+		frappe.db.set_value("Subscription", app_subscriptions, "enabled", False)
 
 	def can_change_plan(self, ignore_card_setup):
 		if is_system_user(frappe.session.user):
@@ -1226,7 +1270,8 @@ class Site(Document):
 
 		if (
 			frappe.db.exists(
-				"Marketplace App Subscription", {"status": "Active", "site": self.name}
+				"Subscription",
+				{"enabled": 1, "site": self.name, "document_type": "Marketplace App"},
 			)
 			and self.trial_end_date
 		):
@@ -1308,16 +1353,16 @@ class Site(Document):
 
 	def deactivate_app_subscriptions(self):
 		frappe.db.set_value(
-			"Marketplace App Subscription",
-			{"status": "Active", "site": self.name},
-			{"status": "Inactive"},
+			"Subscription",
+			{"enabled": 1, "site": self.name, "document_type": "Marketplace App"},
+			{"enabled": 0},
 		)
 
 	def reactivate_app_subscriptions(self):
 		frappe.db.set_value(
-			"Marketplace App Subscription",
-			{"status": "Inactive", "site": self.name},
-			{"status": "Active"},
+			"Subscription",
+			{"enabled": 0, "site": self.name, "document_type": "Marketplace App"},
+			{"enabled": 1},
 		)
 
 	@frappe.whitelist()
@@ -1663,9 +1708,16 @@ class Site(Document):
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
+		servers_with_backups = frappe.get_all(
+			"Server", {"status": "Active", "skip_scheduled_backups": False}, pluck="name"
+		)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites), "skip_scheduled_backups": False},
+			{
+				"name": ("in", sites),
+				"skip_scheduled_backups": False,
+				"server": ("in", servers_with_backups),
+			},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1797,6 +1849,40 @@ class Site(Document):
 				"description": "Transfer ownership of this site to another team",
 				"button_label": "Transfer",
 				"doc_method": "send_change_team_request",
+			},
+			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change region",
+				"description": "Move your site to a different region",
+				"button_label": "Change",
+				"doc_method": "change_region",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
+				"button_label": "Change",
+				"doc_method": "change_bench",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change server",
+				"description": "Move your site to a different server",
+				"button_label": "Change",
+				"doc_method": "change_server",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Clear cache",
+				"description": "Clear cache on your site",
+				"button_label": "Clear cache",
+				"doc_method": "clear_site_cache",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

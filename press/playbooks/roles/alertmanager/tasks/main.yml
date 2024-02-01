@@ -40,14 +40,17 @@
     mode: 0644
 
 - name: Configure Alertmanager
-  become: yes
-  become_user: frappe
   template:
     src: alertmanager.yml
     dest: /home/frappe/alertmanager/alertmanager.yml
-    force: true
-    mode: 0600
     validate: "/home/frappe/alertmanager/amtool check-config %s"
+
+- name: Configure ownership permissions on alertmanager.yml
+  file:
+    path: /home/frappe/alertmanager/alertmanager.yml
+    owner: frappe
+    group: frappe
+    mode: 0600
 
 - name: Create Alertmanager Systemd Service File
   template:

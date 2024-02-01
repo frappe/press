@@ -141,6 +141,7 @@ class Bench(Document):
 			"single_container": bool(self.is_single_container),
 			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
 			"is_code_server_enabled": self.is_code_server_enabled,
+			"use_rq_workerpool": self.use_rq_workerpool,
 		}
 		self.add_limits(bench_config)
 		self.update_bench_config_with_rg_config(bench_config)
@@ -577,8 +578,8 @@ def get_active_site_updates(bench: str):
 			"status": ("in", ["Pending", "Running", "Failure"]),
 		},
 		or_filters={
-			"source_bench": bench.name,
-			"destination_bench": bench.name,
+			"source_bench": bench,
+			"destination_bench": bench,
 		},
 		limit=1,
 		ignore_ifnull=True,

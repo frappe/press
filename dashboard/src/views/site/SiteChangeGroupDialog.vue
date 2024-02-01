@@ -91,11 +91,6 @@ export default {
 			showCloneBenchDialog: false
 		};
 	},
-	watch: {
-		show(value) {
-			if (value) this.$resources.changeGroupOptions.fetch();
-		}
-	},
 	computed: {
 		show: {
 			get() {
@@ -139,7 +134,8 @@ export default {
 				initialData: [],
 				onSuccess(data) {
 					if (data.length > 0) this.targetGroup = data[0].name;
-				}
+				},
+				auto: true
 			};
 		},
 		cloneGroup() {

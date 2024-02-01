@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from press.api.client import is_owned_by_team
 
 
 class ReleaseGroupDependency(Document):
@@ -10,16 +11,14 @@ class ReleaseGroupDependency(Document):
 	def get_list_query(query, filters=None, **list_args):
 		RGDependency = frappe.qb.DocType("Release Group Dependency")
 		BenchDependency = frappe.qb.DocType("Bench Dependency")
-
-		if filters and filters.get("group"):
+		group = filters.get("parent") if filters else None
+		if group:
+			is_owned_by_team("Release Group", group, raise_exception=True)
 			query = (
 				query.join(BenchDependency)
 				.on(BenchDependency.name == RGDependency.dependency)
-				.where(RGDependency.parent == filters.get("group"))
-				.where(RGDependency.parenttype == "Release Group")
 				.where(BenchDependency.internal == 0)
 				.select(RGDependency.dependency, RGDependency.version, BenchDependency.title)
 			)
-		dependencies = query.run(as_dict=True)
-
-		return dependencies
+			dependencies = query.run(as_dict=True)
+			return dependencies

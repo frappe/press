@@ -31,6 +31,7 @@
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
@@ -84,6 +85,9 @@
 				>
 					Loading...
 				</div>
+				<div v-else-if="$list.list.error" class="py-4 text-center">
+					<ErrorMessage :message="$list.list.error" />
+				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
@@ -114,7 +118,8 @@ import {
 	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
-	Tooltip
+	Tooltip,
+	ErrorMessage
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -135,7 +140,8 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
-		Tooltip
+		Tooltip,
+		ErrorMessage
 	},
 	data() {
 		return {
@@ -159,6 +165,7 @@ export default {
 				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
+				pageLength: this.options.pageLength || 20,
 				fields: [
 					'name',
 					...(this.options.fields || []),
@@ -260,6 +267,12 @@ export default {
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
+			if (!props) return null;
+			return props;
+		},
+		secondaryAction() {
+			if (!this.options.secondaryAction) return null;
+			let props = this.options.secondaryAction(this.context);
 			if (!props) return null;
 			return props;
 		},

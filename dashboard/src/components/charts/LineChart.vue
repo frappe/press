@@ -1,5 +1,11 @@
 <template>
-	<Card :title="title" class="h-80" :loading="loading" :stopOverflow="true">
+	<component
+		:is="showCard ? Card : 'div'"
+		:title="title"
+		:class="showCard ? 'h-80' : ''"
+		:loading="loading"
+		:stopOverflow="true"
+	>
 		<template #actions>
 			<slot name="actions"></slot>
 		</template>
@@ -21,10 +27,11 @@
 			:option="options"
 			:init-options="initOptions"
 		/>
-	</Card>
+	</component>
 </template>
 
 <script setup>
+import Card from '../global/Card.vue';
 import { ref, toRefs } from 'vue';
 import { DateTime } from 'luxon';
 import { use, graphic } from 'echarts/core';
@@ -41,6 +48,11 @@ import theme from '../../../tailwind.theme.json';
 import { formatBytes, getUnit } from './utils';
 
 const props = defineProps({
+	showCard: {
+		type: Boolean,
+		required: false,
+		default: () => true
+	},
 	title: {
 		type: String,
 		required: true
@@ -102,6 +114,12 @@ const initOptions = {
 };
 
 const options = ref({
+	grid: {
+		top: 20,
+		left: 40,
+		right: 20,
+		bottom: data.value.datasets.length > 1 ? 60 : 30 // if there's legend show more space for it
+	},
 	tooltip: {
 		trigger: 'axis',
 		formatter: params => {

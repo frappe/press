@@ -211,7 +211,7 @@ def options(only_by_current_team=False):
 	ON
 		source_version.version = version.name
 	WHERE
-		version.public = 1 AND
+		version.public = 1 AND source.enabled=1 AND
 		(source.team = %(team)s {or_conditions})
 	ORDER BY source.creation
 	""",
@@ -856,36 +856,13 @@ def log(name, bench, log):
 @frappe.whitelist()
 @protected("Release Group")
 def certificate(name):
-	certificates = frappe.get_all(
-		"SSH Certificate",
-		{
-			"user": frappe.session.user,
-			"valid_until": [">", frappe.utils.now()],
-			"group": name,
-		},
-		pluck="name",
-		limit=1,
-	)
-	if certificates:
-		return frappe.get_doc("SSH Certificate", certificates[0])
+	return frappe.get_doc("Release Group", name).get_certificate()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def generate_certificate(name):
-	user_ssh_key = frappe.get_all(
-		"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-	)[0]
-	return frappe.get_doc(
-		{
-			"doctype": "SSH Certificate",
-			"certificate_type": "User",
-			"group": name,
-			"user": frappe.session.user,
-			"user_ssh_key": user_ssh_key,
-			"validity": "6h",
-		}
-	).insert()
+	return frappe.get_doc("Release Group", name).generate_certificate()
 
 
 @frappe.whitelist()

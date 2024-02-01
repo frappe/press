@@ -641,16 +641,11 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "Central Site Migration",
-   "link_fieldname": "site"
-  },
-  {
-   "group": "Related Documents",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-12-06 15:36:26.281669",
+ "modified": "2024-01-29 15:36:26.281669",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

@@ -1,4 +1,4 @@
-import { frappeRequest } from 'frappe-ui';
+import { frappeRequest, LoadingIndicator } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
@@ -10,6 +10,7 @@ import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 import { dayjsLocal } from '../utils/dayjs';
+import { getRunningJobs } from '../utils/agentJob';
 
 export default {
 	doctype: 'Site',
@@ -20,11 +21,11 @@ export default {
 		backup: 'backup',
 		clearSiteCache: 'clear_site_cache',
 		deactivate: 'deactivate',
-		disableDatabaseAccess: 'disable_database_access',
-		disableReadWrite: 'disable_read_write',
 		enableDatabaseAccess: 'enable_database_access',
-		enableReadWrite: 'enable_read_write',
+		disableDatabaseAccess: 'disable_database_access',
 		getDatabaseCredentials: 'get_database_credentials',
+		disableReadWrite: 'disable_read_write',
+		enableReadWrite: 'enable_read_write',
 		installApp: 'install_app',
 		uninstallApp: 'uninstall_app',
 		migrate: 'migrate',
@@ -33,20 +34,11 @@ export default {
 		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
-		resetSiteUsage: 'reset_site_usage',
 		restoreSite: 'restore_site',
-		restoreTables: 'restore_tables',
-		retryArchive: 'retry_archive',
-		retryRename: 'retry_rename',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
-		suspend: 'suspend',
-		sync_info: 'sync_info',
-		unsuspend: 'unsuspend',
-		updateSiteConfig: 'update_site_config',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		updateWithoutBackup: 'update_without_backup',
 		sendTransferRequest: 'send_change_team_request'
 	},
 	list: {
@@ -183,7 +175,7 @@ export default {
 				list: {
 					doctype: 'Site App',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parenttype: 'Site', parent: site.doc.name };
 					},
 					columns: [
 						{
@@ -218,24 +210,9 @@ export default {
 							width: '34rem'
 						}
 					],
-					resource({ documentResource: site }) {
-						return {
-							type: 'list',
-							doctype: 'Site App',
-							cache: ['Site Apps', site.name],
-							fields: ['name', 'app'],
-							parent: 'Site',
-							filters: {
-								parenttype: 'Site',
-								parent: site.doc.name
-							},
-							auto: true
-						};
-					},
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -322,7 +299,36 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: apps, documentResource: site }) {
+						let $team = getTeam();
+
 						return [
+							{
+								label: 'View in Desk',
+								condition: () => $team.doc.is_desk_user,
+								onClick() {
+									window.open(`/app/app-source/${row.name}`, '_blank');
+								}
+							},
+							{
+								label: 'Change Plan',
+								condition: () => row.plan_info && row.plans.length > 1,
+								onClick() {
+									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
+										import('../components/site/SiteAppPlanChangeDialog.vue')
+									);
+									renderDialog(
+										h(SiteAppPlanChangeDialog, {
+											app: row,
+											currentPlan: row.plans.find(
+												plan => plan.plan === row.plan_info.name
+											),
+											onPlanChanged() {
+												apps.reload();
+											}
+										})
+									);
+								}
+							},
 							{
 								label: 'Uninstall',
 								condition: () => row.app !== 'frappe',
@@ -357,12 +363,6 @@ export default {
 											);
 										}
 									});
-								}
-							},
-							{
-								label: 'View in Desk',
-								onClick() {
-									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
 							}
 						];
@@ -406,7 +406,6 @@ export default {
 					primaryAction({ listResource: domains, documentResource: site }) {
 						return {
 							label: 'Add Domain',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -573,24 +572,21 @@ export default {
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
 							label: 'Schedule Backup',
-							variant: 'solid',
 							slots: {
 								prefix: icon('upload-cloud')
 							},
-							loading: backups.insert.loading,
+							loading: site.backup.loading,
 							onClick() {
-								return backups.insert.submit(
+								return site.backup.submit(
 									{
-										site: site.doc.name
+										with_files: true
 									},
 									{
 										onError(e) {
-											let messages = e.messages || ['Something went wrong'];
-											for (let message of messages) {
-												toast.error(message);
-											}
+											showErrorToast(e);
 										},
 										onSuccess() {
+											backups.reload();
 											toast.success('Backup scheduled');
 										}
 									}
@@ -608,9 +604,10 @@ export default {
 				list: {
 					doctype: 'Site Config',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parent: site.doc.name, parenttype: 'Site' };
 					},
 					fields: ['name'],
+					pageLength: 999,
 					orderBy: 'creation desc',
 					columns: [
 						{
@@ -640,7 +637,6 @@ export default {
 					primaryAction({ listResource: configs, documentResource: site }) {
 						return {
 							label: 'Add Config',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -654,6 +650,24 @@ export default {
 										onSuccess() {
 											configs.reload();
 										}
+									})
+								);
+							}
+						};
+					},
+					secondaryAction({ listResource: configs }) {
+						return {
+							label: 'Show Config Preview',
+							slots: {
+								prefix: icon('eye')
+							},
+							onClick() {
+								let ConfigPreviewDialog = defineAsyncComponent(() =>
+									import('../components/ConfigPreviewDialog.vue')
+								);
+								renderDialog(
+									h(ConfigPreviewDialog, {
+										configs: configs.data
 									})
 								);
 							}
@@ -749,7 +763,6 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
-					userFilters: {},
 					filters: site => {
 						return { site: site.doc.name };
 					},
@@ -822,7 +835,8 @@ export default {
 						},
 						{
 							label: 'Reason',
-							fieldname: 'reason'
+							fieldname: 'reason',
+							class: 'text-gray-600'
 						},
 						{
 							label: '',
@@ -837,7 +851,28 @@ export default {
 		actions(context) {
 			let { documentResource: site } = context;
 			let $team = getTeam();
+			let runningJobs = getRunningJobs({ site: site.doc.name });
+
 			return [
+				{
+					label: 'Jobs in progress',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' })
+					},
+					condition() {
+						return (
+							runningJobs.filter(job =>
+								['Pending', 'Running'].includes(job.status)
+							).length > 0
+						);
+					},
+					onClick() {
+						router.push({
+							name: 'Site Detail Jobs',
+							params: { name: site.name }
+						});
+					}
+				},
 				{
 					label: 'Update Available',
 					variant: 'solid',
