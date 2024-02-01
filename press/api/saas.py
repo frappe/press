@@ -335,15 +335,20 @@ def create_marketplace_subscription(account_request):
 		frappe.db.set_value("Subscription", subscription, "team", team_doc.name)
 
 	marketplace_subscriptions = frappe.get_all(
-		"Marketplace App Subscription",
-		{"site": site_name, "status": "Disabled"},
+		"Subscription",
+		{
+			"site": site_name,
+			"enabled": 0,
+			"document_type": "Marketplace App",
+			"document_name": account_request.saas_app,
+		},
 		pluck="name",
 	)
 	for subscription in marketplace_subscriptions:
 		frappe.db.set_value(
-			"Marketplace App Subscription",
+			"Subscription",
 			subscription,
-			{"status": "Active", "team": team_doc.name},
+			{"enabled": 1, "team": team_doc.name},
 		)
 
 	frappe.set_user(team_doc.user)
