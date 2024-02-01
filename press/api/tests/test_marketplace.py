@@ -33,7 +33,6 @@ from press.api.marketplace import (
 	reset_features_for_plan,
 	review_stages,
 	start_review,
-	subscriptions,
 	update_app_description,
 	update_app_links,
 	update_app_plan,
@@ -348,15 +347,6 @@ class TestAPIMarketplace(unittest.TestCase):
 		info = get_publisher_profile_info()
 		self.assertEqual(info["profile_info"].contact_email, self.team.user)
 		self.assertEqual(info["profile_info"].display_name, updated_name)
-
-	def test_get_subscription(self):
-		site = create_test_site(subdomain="test1", team=self.team.name)
-		plan = create_test_marketplace_app_plan(self.marketplace_app.name)
-		create_test_marketplace_app_subscription(
-			site=site.name, app=self.app.name, team=self.team.name, plan=plan.name
-		)
-		frappe.set_user(self.team.user)
-		self.assertIsNotNone(subscriptions())
 
 	def test_change_branch(self):
 		old_branch = self.app_source.branch

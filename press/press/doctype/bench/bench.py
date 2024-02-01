@@ -315,25 +315,19 @@ class Bench(Document):
 
 		= sum of cpu time per day
 		"""
-		return (
-			frappe.db.sql_list(
-				# minimum plan is taken as 10
-				f"""
-			SELECT SUM(plan.cpu_time_per_day)
-			FROM tabSite site
+		return frappe.db.sql(
+			"""SELECT DISTINCT(site.name), SUM(CAST(attr.value AS INTEGER)) as cpu_time
+				FROM tabSite site
 
-			JOIN tabSubscription subscription
-			ON site.name = subscription.document_name
+				JOIN `tabPlan Attribute` attr
+				ON site.plan = attr.parent
 
-			JOIN tabPlan plan
-			ON subscription.plan = plan.name
-
-			WHERE site.bench = "{self.name}"
-			AND site.status in ("Active", "Pending", "Updating")
-				"""
-			)[0]
-			or 0
-		)
+				WHERE site.bench = "bench-0002-000025-f2"
+				AND site.status in ("Active", "Pending", "Updating")
+				AND attr.fieldname = "cpu_time_per_day"
+			""",
+			as_dict=True,
+		)[0].get("cpu_time", 0)
 
 	@property
 	def server_logs(self):
