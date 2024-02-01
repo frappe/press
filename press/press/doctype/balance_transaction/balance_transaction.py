@@ -9,6 +9,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class BalanceTransaction(Document):
+	dashboard_fields = ["type", "amount", "ending_balance", "invoice"]
 	def validate(self):
 		if self.amount == 0:
 			frappe.throw("Amount cannot be 0")
