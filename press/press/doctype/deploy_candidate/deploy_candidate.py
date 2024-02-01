@@ -14,6 +14,8 @@ from typing import List
 import docker
 import dockerfile
 import frappe
+import semantic_version as sv
+
 from frappe import _
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -79,7 +81,7 @@ class DeployCandidate(Document):
 
 	def validate(self):
 		if self.use_app_cache and not self.can_use_get_app_cache():
-			frappe.throw(_("Use App Cache cannot be set. BENCH_VERSION must be 5.21.0 or later"))
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.1 or later"))
 
 	def get_unpublished_marketplace_releases(self) -> List[str]:
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
@@ -1009,15 +1011,11 @@ class DeployCandidate(Document):
 			self.dependencies,
 			lambda x: x.dependency == "BENCH_VERSION",
 		).version
-		parts = {i: int(p) for i, p in enumerate(version.split("."))}
 
-		if parts[0] > 5:
-			return True
-
-		if parts[0] == 5 and parts[1] >= 21:
-			return True
-
-		return False
+		try:
+			return sv.Version(version) in sv.SimpleSpec(">=5.21.1")
+		except ValueError:
+			return False
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
