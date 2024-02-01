@@ -48,7 +48,7 @@
   "schema_table_statistics_section",
   "schema_table_statistics",
   "schema_table_statistics_with_innodb_buffer_section",
-  "schema_table_statistics_with_buffer",
+  "schema_table_statistics_with_innodb_buffer",
   "tables_with_full_table_scans_section",
   "schema_tables_with_full_table_scans",
   "unused_indexes_section",
@@ -384,12 +384,6 @@
    "label": "Schema Table Statistics (with InnoDB Buffer)"
   },
   {
-   "fieldname": "schema_table_statistics_with_buffer",
-   "fieldtype": "Table",
-   "options": "Schema Table Statistics With InnoDB Buffer",
-   "read_only": 1
-  },
-  {
    "collapsible": 1,
    "collapsible_depends_on": "true",
    "description": "Find tables that are beign accesses by full table scans",
@@ -540,12 +534,18 @@
    "fieldtype": "Table",
    "options": "User Resource Use Statement Statistics",
    "read_only": 1
+  },
+  {
+   "fieldname": "schema_table_statistics_with_innodb_buffer",
+   "fieldtype": "Table",
+   "options": "Schema Table Statistics With InnoDB Buffer",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-31 16:27:23.359378",
+ "modified": "2024-02-01 11:33:37.491652",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Performance Report",

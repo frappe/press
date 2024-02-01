@@ -13,13 +13,13 @@
   "section_break_jvyi",
   "total_io",
   "section_break_fkmu",
-  "total_time_us",
+  "total_time",
   "column_break_wwye",
-  "avg_time_us",
+  "avg_time",
   "column_break_qbkg",
-  "min_time_us",
+  "min_time",
   "column_break_qicb",
-  "max_time_us"
+  "max_time"
  ],
  "fields": [
   {
@@ -74,39 +74,12 @@
    "fieldtype": "Section Break"
   },
   {
-   "columns": 1,
-   "fieldname": "total_time_us",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_wwye",
    "fieldtype": "Column Break"
   },
   {
-   "columns": 1,
-   "fieldname": "avg_time_us",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Avg Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_qbkg",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "min_time_us",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Min Time (us)",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_qicb",
@@ -114,7 +87,34 @@
   },
   {
    "columns": 1,
-   "fieldname": "max_time_us",
+   "fieldname": "total_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (us)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (us)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "min_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Min Time (us)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_time",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -125,7 +125,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 12:47:06.821334",
+ "modified": "2024-02-01 12:15:22.724869",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top IO Time by User Thread",

@@ -532,156 +532,6 @@ class DatabaseServer(BaseServer):
 		self.is_performance_schema_enabled = False
 		self.save()
 
-	@frappe.whitelist()
-	def fetch_performance_report(self):
-		if self.is_performance_schema_enabled:
-			frappe.enqueue_doc(
-				self.doctype,
-				self.name,
-				"_fetch_performance_report",
-				queue="long",
-				timeout=1200,
-			)
-			frappe.msgprint("Performance Schema Report Fetching Started")
-		else:
-			frappe.throw("Performance Schema is not enabled")
-
-	def _fetch_performance_report(self):
-		try:
-			reports = self.get_performance_report()
-			record = frappe.new_doc("Performance Report")
-			record.server = self.name
-			record.recorded_on = frappe.utils.now_datetime()
-			record.total_allocated_memory = self._bytes_to_mb(reports.get("total_allocated_memory"))
-			record.top_memory_by_user = []
-			for r in reports.get("top_memory_by_user", []):
-				record.append("top_memory_by_user", {
-					"user": r.get("user"),
-					"count": r.get("current_count_used"),
-					"memory": self._bytes_to_mb(r.get("current_allocated")),
-					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
-					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
-					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
-				})
-			record.top_memory_by_host = []
-			for r in reports.get("top_memory_by_host", []):
-				record.append("top_memory_by_host", {
-					"host": r.get("host"),
-					"count": r.get("current_count_used"),
-					"memory": self._bytes_to_mb(r.get("current_allocated")),
-					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
-					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
-					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
-				})
-			record.top_memory_by_event = []
-			for r in reports.get("top_memory_by_event", []):
-				record.append("top_memory_by_event", {
-					"event_type": r.get("event_name"),
-					"count": r.get("current_count"),
-					"max_count": r.get("high_count"),
-					"memory": self._bytes_to_mb(r.get("current_alloc")),
-					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
-					"max_memory": self._bytes_to_mb(r.get("high_alloc")),
-					"max_avg_memory": self._bytes_to_mb(r.get("high_avg_alloc")),
-				})
-			record.top_memory_by_thread = []
-			for r in reports.get("top_memory_by_thread", []):
-				record.append("top_memory_by_thread", {
-					"thread_id": r.get("thread_id"),
-					"user": r.get("user"),
-					"count": r.get("current_count_used"),
-					"memory": self._bytes_to_mb(r.get("current_allocated")),
-					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
-					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
-					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
-				})
-			record.top_io_by_file_activity_report = []
-			for r in reports.get("top_io_by_file_activity_report", []):
-				record.append("top_io_by_file_activity_report", {
-					"file": r.get("file"),
-					"total_io": self._bytes_to_mb(r.get("total")),
-					"read_requests": r.get("count_read"),
-					"total_read_io": self._bytes_to_mb(r.get("total_read")),
-					"avg_read_io": self._bytes_to_mb(r.get("avg_read")),
-					"write_requests": r.get("count_write"),
-					"total_write_io": self._bytes_to_mb(r.get("total_written")),
-					"avg_write_io": self._bytes_to_mb(r.get("avg_write")),
-					"write_percentage": r.get("write_pct"),
-				})
-			record.top_io_by_file_by_time = []
-			for r in reports.get("top_io_by_file_by_time", []):
-				record.append("top_io_by_file_by_time", {
-					"file": r.get("file"),
-					"total_io": self._bytes_to_mb(r.get("total")),
-					"read_requests": r.get("count_read"),
-					"write_requests": r.get("count_write"),
-					"misc_requests": r.get("count_misc"),
-					"total_time": self._convert_to_us(r.get("total_latency")),
-					"read_time": self._convert_to_us(r.get("read_latency")),
-					"write_time": self._convert_to_us(r.get("write_latency")),
-					"misc_time": self._convert_to_us(r.get("misc_latency")),
-				})
-			record.save()
-		except Exception:
-			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
-			raise
-
-	def get_performance_report(self):
-		"""
-		Available Reports:
-		-total_allocated_memory
-		-top_memory_by_event
-		-top_memory_by_user
-		-top_memory_by_host
-		-top_memory_by_thread
-		-top_io_by_file_activity_report
-		-top_io_by_file_by_time
-		-top_io_by_event_category
-		-top_io_in_time_by_event_category
-		-top_io_by_user_or_thread
-		-statement_analysis
-		-statements_in_highest_5_percentile
-		-statements_using_temp_tables
-		-statements_with_sorting
-		-statements_with_full_table_scans
-		-statements_with_errors_or_warnings
-		-schema_index_statistics
-		-schema_table_statistics
-		-schema_table_statistics_with_innodb_buffer
-		-schema_tables_with_full_table_scans
-		-schema_unused_indexes
-		-global_waits_by_time
-		-waits_by_user_by_time
-		-wait_classes_by_time
-		-waits_classes_by_avg_time
-		-innodb_buffer_stats_by_schema
-		-innodb_buffer_stats_by_table
-		-user_resource_use_overview
-		-user_resource_use_io_statistics
-		-user_resource_use_statement_statistics
-		"""
-		return self.agent.post("database/performance_report", {
-			"private_ip": self.private_ip,
-			"mariadb_root_password": self.get_password("mariadb_root_password"),
-			"reports": [
-				"total_allocated_memory",
-				"top_memory_by_event",
-				"top_memory_by_user",
-				"top_memory_by_host",
-				"top_memory_by_thread",
-				"top_io_by_file_activity_report",
-				"top_io_by_file_by_time",
-				"top_io_by_event_category",
-				"top_io_in_time_by_event_category",
-			]
-		}) or {}
-
-	def _bytes_to_mb(self, bytes_val):
-		return round(bytes_val / 1024 / 1024, 2)
-
-	def _convert_to_us(self, duration):
-		return round(duration / 1000000, 2)
-
 	def reset_root_password_secondary(self):
 		primary = frappe.get_doc("Database Server", self.primary)
 		self.mariadb_root_password = primary.get_password("mariadb_root_password")
@@ -850,6 +700,246 @@ class DatabaseServer(BaseServer):
 				"Database Server MariaDB Exporter Reconfigure Exception", server=self.as_dict()
 			)
 
+	@frappe.whitelist()
+	def fetch_performance_report(self):
+		if self.is_performance_schema_enabled:
+			frappe.enqueue_doc(
+				self.doctype,
+				self.name,
+				"_fetch_performance_report",
+				queue="long",
+				timeout=1200,
+			)
+			frappe.msgprint("Performance Schema Report Fetching Started")
+		else:
+			frappe.throw("Performance Schema is not enabled")
+
+	def _fetch_performance_report(self):
+		try:
+			reports = self.get_performance_report()
+			record = frappe.new_doc("Performance Report")
+			record.server = self.name
+			record.recorded_on = frappe.utils.now_datetime()
+			record.total_allocated_memory = self._bytes_to_mb(reports.get("total_allocated_memory", 0))
+			record.top_memory_by_user = []
+			for r in reports.get("top_memory_by_user", []):
+				record.append("top_memory_by_user", {
+					"user": r.get("user"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.top_memory_by_host = []
+			for r in reports.get("top_memory_by_host", []):
+				record.append("top_memory_by_host", {
+					"host": r.get("host"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.top_memory_by_event = []
+			for r in reports.get("top_memory_by_event", []):
+				record.append("top_memory_by_event", {
+					"event_type": r.get("event_name"),
+					"count": r.get("current_count"),
+					"max_count": r.get("high_count"),
+					"memory": self._bytes_to_mb(r.get("current_alloc")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"max_memory": self._bytes_to_mb(r.get("high_alloc")),
+					"max_avg_memory": self._bytes_to_mb(r.get("high_avg_alloc")),
+				})
+			record.top_memory_by_thread = []
+			for r in reports.get("top_memory_by_thread", []):
+				record.append("top_memory_by_thread", {
+					"thread_id": r.get("thread_id"),
+					"user": r.get("user"),
+					"count": r.get("current_count_used"),
+					"memory": self._bytes_to_mb(r.get("current_allocated")),
+					"avg_memory": self._bytes_to_mb(r.get("current_avg_alloc")),
+					"total_memory": self._bytes_to_mb(r.get("total_allocated")),
+					"max_memory": self._bytes_to_mb(r.get("current_max_alloc")),
+				})
+			record.top_io_by_file_activity_report = []
+			for r in reports.get("top_io_by_file_activity_report", []):
+				record.append("top_io_by_file_activity_report", {
+					"file": r.get("file"),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_requests": r.get("count_read"),
+					"total_read_io": self._bytes_to_mb(r.get("total_read")),
+					"avg_read_io": self._bytes_to_mb(r.get("avg_read")),
+					"write_requests": r.get("count_write"),
+					"total_write_io": self._bytes_to_mb(r.get("total_written")),
+					"avg_write_io": self._bytes_to_mb(r.get("avg_write")),
+					"write_percentage": r.get("write_pct"),
+				})
+			record.top_io_by_file_by_time = []
+			for r in reports.get("top_io_by_file_by_time", []):
+				record.append("top_io_by_file_by_time", {
+					"file": r.get("file"),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_requests": r.get("count_read"),
+					"write_requests": r.get("count_write"),
+					"misc_requests": r.get("count_misc"),
+					"total_time": self._convert_to_us(r.get("total_latency")),
+					"read_time": self._convert_to_us(r.get("read_latency")),
+					"write_time": self._convert_to_us(r.get("write_latency")),
+					"misc_time": self._convert_to_us(r.get("misc_latency")),
+				})
+			record.top_io_by_event_category = []
+			for r in reports.get("top_io_by_event_category", []):
+				record.append("top_io_by_event_category", {
+					"event_type": r.get("event_name"),
+					"total_requested": self._bytes_to_mb(r.get("total_requested")),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_count": r.get("count_read"),
+					"write_count": r.get("count_write"),
+					"total_read": self._bytes_to_mb(r.get("total_read")),
+					"avg_read": self._bytes_to_mb(r.get("avg_read")),
+					"total_written": self._bytes_to_mb(r.get("total_written")),
+					"avg_written": self._bytes_to_mb(r.get("avg_written")),
+					"total_time": self._convert_to_us(r.get("total_latency")),
+					"min_time": self._convert_to_us(r.get("min_latency")),
+					"avg_time": self._convert_to_us(r.get("avg_latency")),
+					"max_time": self._convert_to_us(r.get("max_latency")),
+				})
+			record.top_io_in_time_by_event_category = []
+			for r in reports.get("top_io_in_time_by_event_category", []):
+				record.append("top_io_in_time_by_event_category", {
+					"event_type": r.get("event_name"),
+					"total_requested": self._bytes_to_mb(r.get("total_requested")),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"read_count": r.get("count_read"),
+					"write_count": r.get("count_write"),
+					"total_read": self._bytes_to_mb(r.get("total_read")),
+					"avg_read": self._bytes_to_mb(r.get("avg_read")),
+					"total_written": self._bytes_to_mb(r.get("total_written")),
+					"avg_written": self._bytes_to_mb(r.get("avg_written")),
+					"total_time": self._convert_to_us(r.get("total_latency")),
+					"min_time": self._convert_to_us(r.get("min_latency")),
+					"avg_time": self._convert_to_us(r.get("avg_latency")),
+					"max_time": self._convert_to_us(r.get("max_latency")),
+				})
+			record.top_io_by_user_or_thread = []
+			for r in reports.get("top_io_by_user_or_thread", []):
+				record.append("top_io_by_user_or_thread", {
+					"user": r.get("user"),
+					"thread_id": r.get("thread_id"),
+					"process_list_id": r.get("processlist_id"),
+					"total_io": self._bytes_to_mb(r.get("total")),
+					"total_time": self._convert_to_us(r.get("total_latency")),
+					"avg_time": self._convert_to_us(r.get("avg_latency")),
+					"max_time": self._convert_to_us(r.get("max_latency")),
+					"min_time": self._convert_to_us(r.get("min_latency")),
+				})
+			record.statement_analysis = []
+			record.statements_in_highest_5_percentile = []
+			record.statements_using_temp_tables = []
+			record.statements_with_sorting = []
+			record.statements_with_full_table_scans = []
+			record.statements_with_errors_or_warnings = []
+			record.schema_index_statistics = []
+			record.schema_table_statistics = []
+			record.schema_table_statistics_with_innodb_buffer = []
+			record.schema_tables_with_full_table_scans = []
+			record.schema_unused_indexes = []
+			record.global_waits_by_time = []
+			record.waits_by_user_by_time = []
+			record.wait_classes_by_time = []
+			record.waits_classes_by_avg_time = []
+			record.innodb_buffer_stats_by_schema = []
+			record.innodb_buffer_stats_by_table = []
+			record.user_resource_use_overview = []
+			record.user_resource_use_io_statistics = []
+			record.user_resource_use_statement_statistics = []
+			record.save()
+		except Exception:
+			log_error("Performance Schema Report Fetch Exception", server=self.as_dict())
+			raise
+
+	def get_performance_report(self):
+		"""
+		Available Reports:
+		-total_allocated_memory
+		-top_memory_by_event
+		-top_memory_by_user
+		-top_memory_by_host
+		-top_memory_by_thread
+		-top_io_by_file_activity_report
+		-top_io_by_file_by_time
+		-top_io_by_event_category
+		-top_io_in_time_by_event_category
+		-top_io_by_user_or_thread
+		-statement_analysis
+		-statements_in_highest_5_percentile
+		-statements_using_temp_tables
+		-statements_with_sorting
+		-statements_with_full_table_scans
+		-statements_with_errors_or_warnings
+		-schema_index_statistics
+		-schema_table_statistics
+		-schema_table_statistics_with_innodb_buffer
+		-schema_tables_with_full_table_scans
+		-schema_unused_indexes
+		-global_waits_by_time
+		-waits_by_user_by_time
+		-wait_classes_by_time
+		-waits_classes_by_avg_time
+		-innodb_buffer_stats_by_schema
+		-innodb_buffer_stats_by_table
+		-user_resource_use_overview
+		-user_resource_use_io_statistics
+		-user_resource_use_statement_statistics
+		"""
+		return self.agent.post("database/performance_report", {
+			"private_ip": self.private_ip,
+			"mariadb_root_password": self.get_password("mariadb_root_password"),
+			"reports": [
+				"total_allocated_memory",
+				"top_memory_by_event",
+				"top_memory_by_user",
+				"top_memory_by_host",
+				"top_memory_by_thread",
+				"top_io_by_file_activity_report",
+				"top_io_by_file_by_time",
+				"top_io_by_event_category",
+				"top_io_in_time_by_event_category",
+				"top_io_by_user_or_thread",
+				"statement_analysis",
+				"statements_in_highest_5_percentile",
+				"statements_using_temp_tables",
+				"statements_with_sorting",
+				"statements_with_full_table_scans",
+				"statements_with_errors_or_warnings",
+				"schema_index_statistics",
+				"schema_table_statistics",
+				"schema_table_statistics_with_innodb_buffer",
+				"schema_tables_with_full_table_scans",
+				"schema_unused_indexes",
+				"global_waits_by_time",
+				"waits_by_user_by_time",
+				"wait_classes_by_time",
+				"waits_classes_by_avg_time",
+				"innodb_buffer_stats_by_schema",
+				"innodb_buffer_stats_by_table",
+				"user_resource_use_overview",
+				"user_resource_use_io_statistics",
+				"user_resource_use_statement_statistics",
+			]
+		}) or {}
+
+	def _bytes_to_mb(self, bytes_val):
+		if bytes_val is None:
+			return None
+		return round(bytes_val / 1024 / 1024, 2)
+
+	def _convert_to_us(self, duration):
+		if duration is None:
+			return None
+		return round(duration / 1000000, 2)
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Database Server"
