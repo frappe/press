@@ -13,7 +13,7 @@ from press.api.site import (
 	is_prepaid_marketplace_app,
 	protected,
 )
-from press.press.doctype.plan.plan import Plan, plan_attribute
+from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
@@ -548,7 +548,7 @@ def get_marketplace_subscriptions_for_site(site: str):
 			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 		)
 
-		subscription.is_free = plan_attribute(subscription.plan, "is_trial_plan")
+		subscription.is_free = frappe.db.get_value(subscription.plan, "is_trial_plan")
 		subscription.billing_type = is_prepaid_marketplace_app(subscription.app)
 
 	return subscriptions
@@ -597,7 +597,7 @@ def get_apps_with_plans(apps, release_group: str):
 
 @frappe.whitelist()
 def change_app_plan(subscription, new_plan):
-	is_free = plan_attribute(new_plan, "is_trial_plan")
+	is_free = frappe.db.get_value(new_plan, "is_trial_plan")
 	if not is_free:
 		team = get_current_team(get_doc=True)
 		if not team.can_install_paid_apps():
@@ -720,7 +720,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 def create_app_plan(marketplace_app: str, plan_data: Dict):
 	plan = create_new_plan(marketplace_app, plan_data)
 	plan.reload()
-	feature_list = plan_data.get("feature")
+	feature_list = plan_data.get("attributes", [])
 	reset_features_for_plan(plan, feature_list, save=True)
 
 	return plan
@@ -762,7 +762,7 @@ def update_app_plan(plan_name: str, updated_plan_data: Dict):
 	plan_doc.save(ignore_permissions=True)
 
 
-def reset_features_for_plan(plan_doc: Plan, feature_list: List[str], save=False):
+def reset_features_for_plan(plan_doc: Plan, feature_list: List[str] = [], save=False):
 	non_feature_attributes = []
 	# Clear the already existing feature attributes
 	for attr in plan_doc.attributes:

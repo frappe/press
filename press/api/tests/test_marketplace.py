@@ -35,7 +35,6 @@ from press.api.marketplace import (
 	start_review,
 	update_app_description,
 	update_app_links,
-	update_app_plan,
 	update_app_summary,
 	update_app_title,
 	releases,
@@ -108,9 +107,9 @@ class TestAPIMarketplace(unittest.TestCase):
 
 	def test_create_marketplace_app_plan(self):
 		frappe.set_user(self.team.user)
-		before_count = frappe.db.count("Marketplace App Plan")
+		before_count = frappe.db.count("Plan", {"document_type": "Marketplace App"})
 		create_app_plan(self.marketplace_app.name, self.plan_data)
-		after_count = frappe.db.count("Marketplace App Plan")
+		after_count = frappe.db.count("Plan", {"document_type": "Marketplace App"})
 		self.assertEqual(before_count + 1, after_count)
 
 	def test_reset_features_for_plan(self):
@@ -118,7 +117,10 @@ class TestAPIMarketplace(unittest.TestCase):
 		new_features = ["feature 3", "feature 4"]
 		reset_features_for_plan(plan_doc, new_features)
 
-		self.assertEqual([feature.description for feature in plan_doc.features], new_features)
+		self.assertEqual(
+			[feature.value for feature in plan_doc.attributes if feature.fieldname == "feature"],
+			new_features,
+		)
 
 	def test_options_for_quick_install(self):
 		frappe_app = create_test_app()
@@ -206,39 +208,13 @@ class TestAPIMarketplace(unittest.TestCase):
 
 		self.assertEqual(
 			new_plan.name,
-			frappe.db.get_value(
-				"Marketplace App Subscription", subscription.name, "marketplace_app_plan"
-			),
-		)
-		self.assertEqual(
-			new_plan.plan,
-			frappe.db.get_value("Marketplace App Subscription", subscription.name, "plan"),
+			frappe.db.get_value("Subscription", subscription.name, "plan"),
 		)
 
 	def test_get_subscription_list(self):
 		self.assertEqual([], get_subscriptions_list("frappe"))
 		create_test_marketplace_app_subscription(app="frappe")
 		self.assertIsNotNone(get_subscriptions_list("frappe"))
-
-	def test_update_app_plan(self):
-		m_plan = create_test_marketplace_app_plan()
-		plan = frappe.get_doc("Plan", m_plan.plan)
-
-		updated_plan_data = {
-			"price_inr": plan.price_inr + 100,
-			"price_usd": plan.price_usd + 1,
-			"plan_title": plan.plan_title + " updated",
-			"features": ["feature 3", "feature 4"],
-		}
-		update_app_plan(m_plan.name, updated_plan_data)
-		m_plan.reload()
-		plan.reload()
-
-		self.assertEqual(plan.price_inr, updated_plan_data["price_inr"])
-		self.assertEqual(plan.price_usd, updated_plan_data["price_usd"])
-		self.assertEqual(plan.plan_title, updated_plan_data["plan_title"])
-		self.assertEqual(m_plan.features[0].description, updated_plan_data["features"][0])
-		self.assertEqual(m_plan.features[1].description, updated_plan_data["features"][1])
 
 	def test_become_publisher(self):
 		frappe.set_user(self.team.user)

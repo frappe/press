@@ -13,16 +13,7 @@ def create_test_marketplace_app_plan(app: str = "frappe"):
 	if not frappe.db.exists("Marketplace App", app):
 		create_test_app(name=app)
 
-	return frappe.get_doc(
-		{
-			"doctype": "Marketplace App Plan",
-			"plan": create_test_plan("Marketplace App").name,
-			"app": app,
-			"versions": [{"version": "Version 14"}],
-			"features": [{"description": "Feature 1"}],
-			"enabled": 1,
-		}
-	).insert(ignore_permissions=True)
+	return create_test_plan("Marketplace App", app)
 
 
 class TestMarketplaceAppPlan(unittest.TestCase):

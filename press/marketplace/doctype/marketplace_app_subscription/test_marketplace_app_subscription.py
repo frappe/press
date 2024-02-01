@@ -9,9 +9,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.marketplace_app.test_marketplace_app import (
 	create_test_marketplace_app,
 )
-from press.marketplace.doctype.marketplace_app_plan.test_marketplace_app_plan import (
-	create_test_marketplace_app_plan,
-)
+from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.team.test_team import create_test_team
 
@@ -23,14 +21,15 @@ def create_test_marketplace_app_subscription(
 		app if app and frappe.db.exists("Marketplace App", app) else create_test_app().name
 	)
 	create_test_marketplace_app(app)
-	plan = plan if plan else create_test_marketplace_app_plan().name
+	plan = plan if plan else create_test_plan("Marketplace App").name
 	team = team if team else create_test_team().name
 	site = site if site else create_test_site(team=team).name
 	subscription = frappe.get_doc(
 		{
-			"doctype": "Marketplace App Subscription",
-			"app": app,
-			"marketplace_app_plan": plan,
+			"doctype": "Subscription",
+			"document_type": "Marketplace App",
+			"document_name": app,
+			"plan": plan,
 			"site": site,
 			"team": team,
 		}

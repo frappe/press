@@ -12,6 +12,7 @@ from frappe.model.naming import make_autoname
 
 def create_test_plan(
 	document_type: str,
+	document_name: str = None,
 	price_usd: float = 10.0,
 	price_inr: float = 750.0,
 	cpu_time: int = 1,
@@ -25,15 +26,18 @@ def create_test_plan(
 		{
 			"doctype": "Plan",
 			"document_type": document_type,
+			# "document_name": document_name,
 			"name": plan_name,
 			"plan_title": plan_title,
 			"price_inr": price_inr,
 			"price_usd": price_usd,
-			"cpu_time_per_day": cpu_time,
-			"disk": 50,
 			"instance_type": "t2.micro",
 		}
-	).insert(ignore_if_duplicate=True)
+	)
+	plan.append(
+		"attributes", {"fieldname": "cpu_time_per_day", "fieldtype": "Int", "value": cpu_time}
+	)
+	plan.insert(ignore_if_duplicate=True)
 	plan.reload()
 	return plan
 
