@@ -6,7 +6,7 @@
 		"dev": "yarn generate-theme-config && vite",
 		"build": "yarn generate-theme-config && vite build --base=/assets/press/dashboard/ && yarn copy-html-entry && yarn copy-html-entry2",
 		"copy-html-entry": "cp ../press/public/dashboard/index.html ../press/www/dashboard.html",
-		"copy-html-entry2": "cp ../press/public/dashboard/dashboard2.html ../press/www/dashboard2.html",
+		"copy-html-entry2": "cp ../press/public/dashboard/dashboard-beta.html ../press/www/dashboard-beta.html",
 		"generate-theme-config": "node ./generateThemeConfig.js",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
