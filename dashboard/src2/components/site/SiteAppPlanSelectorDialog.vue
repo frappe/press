@@ -42,14 +42,20 @@
 							<div class="text-lg">
 								<span class="font-medium text-gray-900">
 									{{
-										$format.userCurrency(
-											$team.doc.currency === 'INR'
-												? plan.price_inr
-												: plan.price_usd
-										)
+										plan.price_inr === 0 || plan.price_usd === 0
+											? 'Free'
+											: $format.userCurrency(
+													$team.doc.currency === 'INR'
+														? plan.price_inr
+														: plan.price_usd
+											  )
 									}}
 								</span>
-								<span class="font-medium text-gray-600">/mo </span>
+								<span
+									v-if="plan.price_inr !== 0 && plan.price_usd !== 0"
+									class="font-medium text-gray-600"
+									>/mo
+								</span>
 							</div>
 						</div>
 					</div>

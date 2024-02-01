@@ -423,7 +423,7 @@ def options_for_new(for_bench: str = None):
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
-			fieldname=["name", "`default`", "title"],
+			fieldname=["name", "`default`", "title", "public"],
 			filters=filters,
 			order_by="creation desc",
 			as_dict=1,
@@ -465,6 +465,10 @@ def options_for_new(for_bench: str = None):
 			if app_source not in unique_app_sources:
 				unique_app_sources.append(app_source)
 
+	filters = {"name": ("in", unique_app_sources)}
+	if not for_bench:
+		filters["public"] = True
+
 	app_source_details = frappe.db.get_all(
 		"App Source",
 		[
@@ -479,7 +483,7 @@ def options_for_new(for_bench: str = None):
 			"app_title",
 			"frappe",
 		],
-		filters={"name": ("in", unique_app_sources), "public": True},
+		filters=filters,
 	)
 
 	unique_apps = []
@@ -491,7 +495,7 @@ def options_for_new(for_bench: str = None):
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
+		fields=["title", "image", "description", "app", "route", "subscription_type"],
 		filters={"app": ("in", unique_apps)},
 	)
 	total_installs_by_app = frappe.db.get_all(

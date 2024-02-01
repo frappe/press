@@ -40,14 +40,14 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="selectedVersionApps.length">
+			<div class="flex flex-col" v-if="selectedVersionPublicApps.length">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Select Apps
+					Select Marketplace Apps
 				</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
 						<button
-							v-for="app in selectedVersionApps"
+							v-for="app in selectedVersionPublicApps"
 							:key="app"
 							@click="toggleApp(app)"
 							:class="[
@@ -60,7 +60,7 @@
 							<img :src="app.image" class="h-10 w-10 shrink-0" />
 							<div class="w-full">
 								<div class="flex w-full items-center justify-between">
-									<div class="flex items-center">
+									<div class="flex items-center space-x-2">
 										<div class="text-base font-medium">
 											{{ app.app_title }}
 										</div>
@@ -68,13 +68,14 @@
 											v-if="app.total_installs > 1"
 											:text="`${app.total_installs} installs`"
 										>
-											<div class="ml-2 flex items-center text-sm text-gray-600">
+											<div class="flex items-center text-sm text-gray-600">
 												<i-lucide-download class="h-3 w-3" />
 												<span class="ml-0.5 leading-3">
 													{{ $format.numberK(app.total_installs || '') }}
 												</span>
 											</div>
 										</Tooltip>
+										<Badge theme="gray" :label="app.subscription_type" />
 									</div>
 									<a
 										:href="`/${app.route}`"
@@ -106,6 +107,30 @@
 						}
 					"
 				/>
+			</div>
+			<div class="flex flex-col" v-if="selectedVersionPrivateApps.length">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Select Private Apps
+				</h2>
+				<div class="mt-2 w-full space-y-2">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
+						<button
+							v-for="app in selectedVersionPrivateApps"
+							:key="app"
+							@click="toggleApp(app)"
+							:class="[
+								apps.includes(app.app)
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									: 'bg-white text-gray-900  hover:bg-gray-50',
+								'flex h-12 w-full items-center space-x-2 rounded border p-2 text-left text-base text-gray-900'
+							]"
+						>
+							<div class="text-base font-medium">
+								{{ app.app_title }}
+							</div>
+						</button>
+					</div>
+				</div>
 			</div>
 			<div
 				class="flex flex-col"
@@ -209,7 +234,7 @@
 					<div class="text-gray-900">
 						{{
 							apps.length
-								? selectedVersionApps
+								? selectedVersionPublicApps
 										.filter(app => apps.includes(app.app))
 										.map(app => app.app_title)
 										.join(', ')
@@ -246,7 +271,8 @@
 					</div>
 					<template v-for="app in Object.keys(appPlans)" :key="app">
 						<div class="text-gray-600">
-							{{ selectedVersionApps.find(a => app === a.app).app_title }} Plan:
+							{{ selectedVersionPublicApps.find(a => app === a.app).app_title }}
+							Plan:
 						</div>
 						<div>
 							<span class="text-gray-900">
@@ -471,6 +497,14 @@ export default {
 					}
 				});
 		},
+		selectedVersionPublicApps() {
+			return this.selectedVersionApps.filter(app => app.public);
+		},
+		selectedVersionPrivateApps() {
+			if (this.selectedVersion?.group?.public) return [];
+
+			return this.selectedVersionApps.filter(app => !app.public);
+		},
 		selectedPlan() {
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan);
@@ -534,7 +568,7 @@ export default {
 				this.apps = this.apps.filter(a => a !== app.app);
 				delete this.appPlans[app.app];
 			} else {
-				if (app.plans.length > 0) {
+				if (app.plans?.length) {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
