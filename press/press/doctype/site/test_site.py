@@ -403,7 +403,13 @@ class TestSite(unittest.TestCase):
 			price_usd=30,
 			price_inr=30,
 			period=30,
-		).insert()
+		)
+		plan.append(
+			"attributes",
+			{"fieldname": "cpu_time_per_day", "fieldtype": "Int", "value": 2},
+		)
+
+		plan.insert()
 		create_test_site(
 			"test-site-restore",
 			remote_database_file=database,
