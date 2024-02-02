@@ -6,11 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "host",
-  "count",
-  "memory",
-  "avg_memory",
-  "total_memory",
-  "max_memory"
+  "count_billion",
+  "memory_mb",
+  "avg_memory_mb",
+  "total_memory_mb",
+  "max_memory_mb"
  ],
  "fields": [
   {
@@ -23,16 +23,16 @@
   },
   {
    "columns": 1,
-   "fieldname": "count",
-   "fieldtype": "Int",
+   "fieldname": "count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Count",
+   "label": "Count (Billion)",
    "read_only": 1
   },
   {
    "columns": 1,
-   "fieldname": "memory",
+   "fieldname": "memory_mb",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_preview": 1,
@@ -41,7 +41,7 @@
   },
   {
    "columns": 1,
-   "fieldname": "avg_memory",
+   "fieldname": "avg_memory_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -50,7 +50,7 @@
   },
   {
    "columns": 1,
-   "fieldname": "total_memory",
+   "fieldname": "total_memory_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -59,7 +59,7 @@
   },
   {
    "columns": 1,
-   "fieldname": "max_memory",
+   "fieldname": "max_memory_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -70,7 +70,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 12:46:26.406050",
+ "modified": "2024-02-02 12:13:13.129481",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top Memory By Host",

@@ -7,21 +7,21 @@
  "field_order": [
   "file",
   "io_count_section",
-  "total_io",
+  "total_count_billion",
   "column_break_xxhq",
-  "read_requests",
+  "read_count_billion",
   "column_break_rzrc",
-  "write_requests",
+  "write_count_billion",
   "column_break_qckc",
-  "misc_requests",
+  "misc_count_billion",
   "request_time_section",
-  "total_time",
+  "total_time_billion_ps",
   "column_break_xkyd",
-  "read_time",
+  "read_time_billion_ps",
   "column_break_bmbz",
-  "write_time",
+  "write_time_billion_ps",
   "column_break_hfre",
-  "misc_time"
+  "misc_time_billion_ps"
  ],
  "fields": [
   {
@@ -38,52 +38,16 @@
    "label": "IO Count"
   },
   {
-   "columns": 1,
-   "fieldname": "total_io",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total IO Count",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_xxhq",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "read_requests",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Read Request Count",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_rzrc",
    "fieldtype": "Column Break"
   },
   {
-   "columns": 1,
-   "fieldname": "write_requests",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Write Request Count",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_qckc",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "misc_requests",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Misc Request Count",
-   "read_only": 1
   },
   {
    "fieldname": "request_time_section",
@@ -91,39 +55,12 @@
    "label": "Request Time"
   },
   {
-   "columns": 1,
-   "fieldname": "total_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_xkyd",
    "fieldtype": "Column Break"
   },
   {
-   "columns": 1,
-   "fieldname": "read_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Read Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_bmbz",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "write_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Write Time (us)",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_hfre",
@@ -131,18 +68,81 @@
   },
   {
    "columns": 1,
-   "fieldname": "misc_time",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Misc Time (us)",
+   "label": "Total Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "read_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Read Time (us)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "write_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Write Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "misc_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Misc Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "read_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Read Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "write_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Write Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "misc_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Misc Count (Billion)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 12:46:47.759517",
+ "modified": "2024-02-02 12:37:21.646968",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top IO by File by Time",

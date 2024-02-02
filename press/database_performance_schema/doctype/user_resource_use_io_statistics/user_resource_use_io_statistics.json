@@ -7,9 +7,9 @@
  "field_order": [
   "user",
   "event_type",
-  "total_io",
-  "total_time",
-  "max_time"
+  "total_io_count_billion",
+  "total_time_billion_ps",
+  "max_time_billion_ps"
  ],
  "fields": [
   {
@@ -21,14 +21,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_io",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total IO",
-   "read_only": 1
-  },
-  {
    "fieldname": "event_type",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -37,26 +29,34 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_time",
+   "fieldname": "total_io_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Total Time (us)",
+   "label": "Total IO Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "max_time",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Total Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (billion ps)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 14:06:08.553204",
+ "modified": "2024-02-02 15:37:25.369595",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "User Resource Use IO Statistics",

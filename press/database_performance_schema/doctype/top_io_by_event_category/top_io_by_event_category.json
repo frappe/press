@@ -6,29 +6,29 @@
  "engine": "InnoDB",
  "field_order": [
   "event_type",
-  "total_requested",
+  "total_requested_mb",
   "section_break_aszx",
-  "total_io",
+  "total_count_billion",
   "column_break_vcjy",
-  "read_count",
+  "read_count_billion",
   "column_break_owft",
-  "write_count",
+  "write_count_billion",
   "section_break_xlar",
-  "total_read",
+  "total_read_mb",
   "column_break_smtc",
-  "avg_read",
+  "avg_read_mb",
   "section_break_cwqk",
-  "total_written",
+  "total_written_mb",
   "column_break_mwut",
-  "avg_written",
+  "avg_written_mb",
   "section_break_tjsh",
-  "total_time",
+  "total_time_billion_ps",
   "column_break_iaaq",
-  "min_time",
+  "min_time_billion_ps",
   "column_break_hevz",
-  "avg_time",
+  "avg_time_billion_ps",
   "column_break_nqej",
-  "max_time"
+  "max_time_billion_ps"
  ],
  "fields": [
   {
@@ -40,143 +40,44 @@
    "read_only": 1
   },
   {
-   "columns": 1,
-   "fieldname": "total_requested",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Requested (MB)",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_aszx",
    "fieldtype": "Section Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "total_io",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total IO",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_vcjy",
    "fieldtype": "Column Break"
   },
   {
-   "columns": 1,
-   "fieldname": "read_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Read Count",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_owft",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "write_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Write Count",
-   "read_only": 1
   },
   {
    "fieldname": "section_break_xlar",
    "fieldtype": "Section Break"
   },
   {
-   "columns": 1,
-   "fieldname": "total_read",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Read",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_smtc",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "avg_read",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Avg Read",
-   "read_only": 1
   },
   {
    "fieldname": "section_break_cwqk",
    "fieldtype": "Section Break"
   },
   {
-   "columns": 1,
-   "fieldname": "total_written",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Written",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_mwut",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "avg_written",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Avg Written",
-   "read_only": 1
   },
   {
    "fieldname": "section_break_tjsh",
    "fieldtype": "Section Break"
   },
   {
-   "columns": 1,
-   "fieldname": "total_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_iaaq",
    "fieldtype": "Column Break"
   },
   {
-   "columns": 1,
-   "fieldname": "min_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Min Time (us)",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_hevz",
    "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
-   "fieldname": "avg_time",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Avg Time (us)",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_nqej",
@@ -184,18 +85,117 @@
   },
   {
    "columns": 1,
-   "fieldname": "max_time",
+   "fieldname": "total_requested_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Total Requested (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_count_billion",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "read_count_billion",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Read Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "write_count_billion",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Write Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_read_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Read (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_read_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Read (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_written_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Written (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_written_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Written (MB)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Total Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "min_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Min Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "avg_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (billion ps)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 12:46:54.870449",
+ "modified": "2024-02-02 12:40:25.018930",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top IO by Event Category",

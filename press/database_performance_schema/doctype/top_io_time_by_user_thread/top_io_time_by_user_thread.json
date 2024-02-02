@@ -11,15 +11,15 @@
   "column_break_wpmq",
   "process_list_id",
   "section_break_jvyi",
-  "total_io",
+  "total_count_billion",
   "section_break_fkmu",
-  "total_time",
+  "total_time_billion_ps",
   "column_break_wwye",
-  "avg_time",
+  "avg_time_billion_ps",
   "column_break_qbkg",
-  "min_time",
+  "min_time_billion_ps",
   "column_break_qicb",
-  "max_time"
+  "max_time_billion_ps"
  ],
  "fields": [
   {
@@ -61,15 +61,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "columns": 1,
-   "fieldname": "total_io",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total IO",
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_fkmu",
    "fieldtype": "Section Break"
   },
@@ -87,45 +78,55 @@
   },
   {
    "columns": 1,
-   "fieldname": "total_time",
+   "description": "The total number of I/O events for the thread.\n\n",
+   "fieldname": "total_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Total Time (us)",
+   "label": "Total Count (Billion)",
    "read_only": 1
   },
   {
    "columns": 1,
-   "fieldname": "avg_time",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Avg Time (us)",
+   "label": "Total Time (billion ps)",
    "read_only": 1
   },
   {
    "columns": 1,
-   "fieldname": "min_time",
+   "fieldname": "avg_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Min Time (us)",
+   "label": "Avg Time (billion ps)",
    "read_only": 1
   },
   {
    "columns": 1,
-   "fieldname": "max_time",
+   "fieldname": "min_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Min Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "max_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Max Time (billion ps)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-02-01 12:15:22.724869",
+ "modified": "2024-02-02 12:54:24.007112",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top IO Time by User Thread",

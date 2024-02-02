@@ -6,11 +6,11 @@
  "engine": "InnoDB",
  "field_order": [
   "query",
-  "executed_count",
-  "tmp_tables_in_memory",
-  "tmp_tables_in_disk",
+  "executed_count_billion",
+  "tmp_tables_in_memory_count_billion",
+  "tmp_tables_in_disk_count_billion",
   "avg_tmp_tables_per_query",
-  "percent_tmp_tables_to_disk"
+  "tmp_tables_to_disk_percent"
  ],
  "fields": [
   {
@@ -22,30 +22,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "executed_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Executed Count",
-   "read_only": 1
-  },
-  {
-   "fieldname": "tmp_tables_in_memory",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Tmp Tables in Memory",
-   "read_only": 1
-  },
-  {
-   "fieldname": "tmp_tables_in_disk",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Tmp Tables in Disk",
-   "read_only": 1
-  },
-  {
    "fieldname": "avg_tmp_tables_per_query",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -54,7 +30,31 @@
    "read_only": 1
   },
   {
-   "fieldname": "percent_tmp_tables_to_disk",
+   "fieldname": "executed_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Executed Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_in_memory_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Tables in Memory (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_in_disk_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Tables in Disk",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_to_disk_percent",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -65,7 +65,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 15:25:39.776832",
+ "modified": "2024-02-02 13:26:02.475935",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Statements Using Temp Tables",

@@ -7,11 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "event_class",
-  "total_occurances",
-  "total_time",
-  "avg_time",
-  "max_time",
-  "min_time"
+  "total_occurances_count_billion",
+  "total_time_billion_ps",
+  "avg_time_billion_ps",
+  "max_time_billion_ps",
+  "min_time_billion_ps"
  ],
  "fields": [
   {
@@ -23,50 +23,50 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_occurances",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Occurances",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_time",
+   "fieldname": "total_occurances_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Total Time (us)",
+   "label": "Total Occurances Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "avg_time",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Avg Time (us)",
+   "label": "Total Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "max_time",
+   "fieldname": "avg_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Avg Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "min_time",
+   "fieldname": "max_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Min Time (us)",
+   "label": "Max Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "min_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Min Time (billion ps)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 13:51:58.971427",
+ "modified": "2024-02-02 14:51:21.125618",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Wait Classes by Average Time",

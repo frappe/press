@@ -6,156 +6,156 @@
  "engine": "InnoDB",
  "field_order": [
   "query",
-  "full_table",
-  "executed_count",
-  "errors_count",
-  "warnings_count",
-  "total_time",
-  "max_time",
-  "avg_time",
-  "rows_sent",
-  "avg_rows",
-  "rows_scanned",
-  "avg_rows_scanned",
-  "tmp_tables",
-  "tmp_disk_tables",
-  "rows_sorted",
-  "sort_merge_passes"
+  "full_table_scan",
+  "executed_count_billion",
+  "errors_count_billion",
+  "warnings_count_billion",
+  "total_time_billion_ps",
+  "max_time_billion_ps",
+  "avg_time_billion_ps",
+  "rows_sent_count_billion",
+  "avg_rows_sent_count_billion",
+  "rows_scanned_count_billion",
+  "avg_rows_scanned_count_billion",
+  "tmp_tables_count_billion",
+  "tmp_disk_tables_count_billion",
+  "rows_sorted_count_billion",
+  "sort_merge_passes_count_billion"
  ],
  "fields": [
   {
-   "fieldname": "query",
+   "fieldname": "full_table_scan",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Full Table Scan",
+   "read_only": 1
+  },
+  {
+   "fieldname": "query",
+   "fieldtype": "Text",
    "in_list_view": 1,
    "in_preview": 1,
    "label": "Query",
    "read_only": 1
   },
   {
-   "fieldname": "full_table",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Full Table",
-   "read_only": 1
-  },
-  {
-   "fieldname": "executed_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Executed Count",
-   "read_only": 1
-  },
-  {
-   "fieldname": "errors_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Errors Count",
-   "read_only": 1
-  },
-  {
-   "fieldname": "warnings_count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Warnings Count",
-   "read_only": 1
-  },
-  {
-   "fieldname": "rows_sent",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Sent",
-   "read_only": 1
-  },
-  {
-   "fieldname": "avg_rows",
+   "fieldname": "executed_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Avg Rows",
+   "label": "Executed Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "tmp_tables",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Tmp Tables",
-   "read_only": 1
-  },
-  {
-   "fieldname": "tmp_disk_tables",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Tmp Disk Tables",
-   "read_only": 1
-  },
-  {
-   "fieldname": "rows_sorted",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Sorted",
-   "read_only": 1
-  },
-  {
-   "fieldname": "sort_merge_passes",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Sort Merge Passes",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_time",
+   "fieldname": "errors_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Total Time (us)",
+   "label": "Errors Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "max_time",
+   "fieldname": "warnings_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Warnings Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "avg_time",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Avg Time (us)",
+   "label": "Total Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_scanned",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Scanned",
-   "read_only": 1
-  },
-  {
-   "fieldname": "avg_rows_scanned",
+   "fieldname": "max_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Avg Rows Scanned",
+   "label": "Max Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_sent_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Sent Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_rows_sent_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Rows Sent Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_scanned_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Scanned Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "avg_rows_scanned_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Avg Rows Scanned Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_tables_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Tables Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tmp_disk_tables_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Tmp Disk Tables Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_sorted_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Sorted Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sort_merge_passes_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Sort Merge Passes Count (Billion)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 15:37:32.659433",
+ "modified": "2024-02-02 13:01:06.218841",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Statement Analysis",

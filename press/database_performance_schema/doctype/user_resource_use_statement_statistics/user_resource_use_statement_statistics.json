@@ -7,15 +7,15 @@
  "field_order": [
   "user",
   "statement",
-  "total_occurances",
-  "total_time_us",
-  "max_time_us",
-  "lock_time_us",
-  "cpu_time_us",
-  "rows_sent",
-  "rows_examined",
-  "rows_affected",
-  "full_scans"
+  "total_occurances_count_billion",
+  "total_time_billion_ps",
+  "max_time_billion_ps",
+  "lock_time_billion_ps",
+  "cpu_time_billion_ps",
+  "rows_sent_count_billion",
+  "rows_examined_count_billion",
+  "rows_affected_count_billion",
+  "full_scans_count_billion"
  ],
  "fields": [
   {
@@ -35,82 +35,82 @@
    "read_only": 1
   },
   {
-   "fieldname": "total_occurances",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Total Occurances",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_time_us",
+   "fieldname": "total_occurances_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Total Time (us)",
+   "label": "Total Occurances Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "max_time_us",
+   "fieldname": "total_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Max Time (us)",
+   "label": "Total Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "lock_time_us",
+   "fieldname": "max_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Lock Time (us)",
+   "label": "Max Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "cpu_time_us",
+   "fieldname": "lock_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "CPU Time (us)",
+   "label": "Lock Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_sent",
-   "fieldtype": "Int",
+   "fieldname": "cpu_time_billion_ps",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Rows Sent",
+   "label": "CPU Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_examined",
-   "fieldtype": "Int",
+   "fieldname": "rows_sent_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Rows Examined",
+   "label": "Rows Sent Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_affected",
-   "fieldtype": "Int",
+   "fieldname": "rows_examined_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Rows Affected",
+   "label": "Rows Examined Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "full_scans",
-   "fieldtype": "Int",
+   "fieldname": "rows_affected_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Full Scans",
+   "label": "Rows Affected Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_scans_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Full Scans Count (Billion)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 14:10:31.368143",
+ "modified": "2024-02-02 15:43:08.836358",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "User Resource Use Statement Statistics",

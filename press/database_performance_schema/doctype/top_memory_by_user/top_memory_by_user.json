@@ -7,7 +7,7 @@
  "field_order": [
   "section_break_rpkk",
   "user",
-  "count",
+  "count_billion",
   "memory",
   "avg_memory",
   "total_memory",
@@ -20,15 +20,6 @@
    "in_list_view": 1,
    "in_preview": 1,
    "label": "User",
-   "read_only": 1
-  },
-  {
-   "columns": 1,
-   "fieldname": "count",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Count",
    "read_only": 1
   },
   {
@@ -70,12 +61,21 @@
   {
    "fieldname": "section_break_rpkk",
    "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Count (Billion)",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 15:39:50.494418",
+ "modified": "2024-02-02 12:03:31.601266",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Top Memory By User",

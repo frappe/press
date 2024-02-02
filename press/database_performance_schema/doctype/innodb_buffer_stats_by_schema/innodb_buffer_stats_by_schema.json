@@ -6,66 +6,75 @@
  "engine": "InnoDB",
  "field_order": [
   "schema",
-  "allocated",
-  "data",
-  "pages_hashed",
-  "pages_old",
-  "rows_cached"
+  "allocated_mb",
+  "data_mb",
+  "pages_count_billion",
+  "pages_hashed_count_billion",
+  "pages_old_count_billion",
+  "rows_cached_count_billion"
  ],
  "fields": [
   {
    "fieldname": "schema",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "in_list_view": 1,
    "in_preview": 1,
    "label": "Schema",
    "read_only": 1
   },
   {
-   "fieldname": "allocated",
+   "fieldname": "pages_hashed_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Allocated",
+   "label": "Pages Hashed Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "data",
+   "fieldname": "pages_old_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Data",
+   "label": "Pages Old Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "pages_hashed",
-   "fieldtype": "Int",
+   "fieldname": "rows_cached_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Pages Hashed",
+   "label": "Rows Cached Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "pages_old",
-   "fieldtype": "Int",
+   "fieldname": "pages_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Pages Old",
+   "label": "Pages Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_cached",
-   "fieldtype": "Int",
+   "fieldname": "allocated_mb",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Rows Cached",
+   "label": "Allocated (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "data_mb",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Data (MB)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 13:55:37.644301",
+ "modified": "2024-02-02 14:57:55.770131",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "InnoDB Buffer Stats by Schema",

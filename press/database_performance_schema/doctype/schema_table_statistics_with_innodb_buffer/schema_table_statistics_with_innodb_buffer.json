@@ -8,30 +8,30 @@
  "field_order": [
   "schema",
   "table",
-  "rows_fetched",
-  "fetch_time",
-  "rows_inserted",
-  "insert_time",
-  "rows_updated",
-  "update_time",
-  "rows_deleted",
-  "delete_time",
-  "io_read_requests",
-  "io_read",
-  "io_read_time",
-  "io_write_requests",
-  "io_write",
-  "io_write_time",
-  "io_misc_requests",
-  "io_misc_time",
+  "rows_fetched_count_billion",
+  "fetch_time_billion_ps",
+  "rows_inserted_count_billion",
+  "insert_time_billion_ps",
+  "rows_updated_count_billion",
+  "update_time_billion_ps",
+  "rows_deleted_count_billion",
+  "delete_time_billion_ps",
+  "io_read_requests_count_billion",
+  "io_read_mb",
+  "io_read_time_billion_ps",
+  "io_write_requests_count_billion",
+  "io_write_mb",
+  "io_write_time_billion_ps",
+  "io_misc_requests_count_billion",
+  "io_misc_time_billion_ps",
   "innodb_buffer_section",
-  "buffer_allocated",
-  "buffer_data",
-  "buffer_free",
-  "buffer_pages",
-  "buffer_pages_hashed",
-  "buffer_pages_old",
-  "buffer_pages_cached"
+  "buffer_allocated_mb",
+  "buffer_data_mb",
+  "buffer_free_mb",
+  "buffer_pages_count_billion",
+  "buffer_pages_hashed_count_billion",
+  "buffer_pages_old_count_billion",
+  "buffer_pages_cached_count_billion"
  ],
  "fields": [
   {
@@ -45,76 +45,81 @@
    "label": "Table"
   },
   {
-   "fieldname": "rows_fetched",
-   "fieldtype": "Int",
-   "label": "Rows Fetched"
+   "fieldname": "innodb_buffer_section",
+   "fieldtype": "Section Break",
+   "label": "InnoDB Buffer"
   },
   {
-   "fieldname": "fetch_time",
+   "fieldname": "rows_fetched_count_billion",
+   "fieldtype": "Float",
+   "label": "Rows Fetched Count (Billion)"
+  },
+  {
+   "fieldname": "fetch_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Fetch Time (us)",
+   "label": "Fetch Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_inserted",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Inserted",
-   "read_only": 1
-  },
-  {
-   "fieldname": "insert_time",
+   "fieldname": "rows_inserted_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Insert Time (us)",
+   "label": "Rows Inserted Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_updated",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Updated",
-   "read_only": 1
-  },
-  {
-   "fieldname": "update_time",
+   "fieldname": "insert_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Update Time (us)",
+   "label": "Insert Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "rows_deleted",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Deleted",
-   "read_only": 1
-  },
-  {
-   "fieldname": "delete_time",
+   "fieldname": "rows_updated_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Delete Time (us)",
+   "label": "Rows Updated Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "io_read_requests",
-   "fieldtype": "Int",
+   "fieldname": "update_time_billion_ps",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "IO Read Requests",
+   "label": "Update Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "io_read",
+   "fieldname": "rows_deleted_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Deleted Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delete_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Delete Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_read_requests_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "IO Read Requests Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "io_read_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -122,23 +127,23 @@
    "read_only": 1
   },
   {
-   "fieldname": "io_read_time",
+   "fieldname": "io_read_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "IO Read Time (us)",
+   "label": "IO Read Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "io_write_requests",
-   "fieldtype": "Int",
+   "fieldname": "io_write_requests_count_billion",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "IO Write Requests",
+   "label": "IO Write Requests Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "io_write",
+   "fieldname": "io_write_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -146,68 +151,31 @@
    "read_only": 1
   },
   {
-   "fieldname": "io_write_time",
+   "fieldname": "io_write_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "IO Write Time (us)",
+   "label": "IO Write Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "io_misc_requests",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "IO Misc Requests",
-   "read_only": 1
-  },
-  {
-   "fieldname": "io_misc_time",
+   "fieldname": "io_misc_requests_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "IO Misc Time (us)",
+   "label": "IO Misc Requests Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "innodb_buffer_section",
-   "fieldtype": "Section Break",
-   "label": "InnoDB Buffer"
-  },
-  {
-   "fieldname": "buffer_pages",
-   "fieldtype": "Int",
+   "fieldname": "io_misc_time_billion_ps",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Buffer Pages",
+   "label": "IO Misc Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "buffer_pages_hashed",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Buffer Pages Hashed",
-   "read_only": 1
-  },
-  {
-   "fieldname": "buffer_pages_old",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Buffer Pages Old",
-   "read_only": 1
-  },
-  {
-   "fieldname": "buffer_pages_cached",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Buffer Pages Cached",
-   "read_only": 1
-  },
-  {
-   "fieldname": "buffer_allocated",
+   "fieldname": "buffer_allocated_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -215,7 +183,7 @@
    "read_only": 1
   },
   {
-   "fieldname": "buffer_data",
+   "fieldname": "buffer_data_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
@@ -223,18 +191,50 @@
    "read_only": 1
   },
   {
-   "fieldname": "buffer_free",
+   "fieldname": "buffer_free_mb",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
    "label": "Buffer Free (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_hashed_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Hashed Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_old_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Old Count (billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "buffer_pages_cached_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Buffer Pages Cached Count (Billion)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 13:43:56.803785",
+ "modified": "2024-02-02 14:26:21.901894",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Schema Table Statistics With InnoDB Buffer",

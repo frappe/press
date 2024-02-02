@@ -11,21 +11,21 @@
   "column_break_wtim",
   "index",
   "section_break_aafz",
-  "rows_selected",
+  "rows_selected_count_billion",
   "column_break_aeku",
-  "select_time",
+  "select_time_billion_ps",
   "section_break_kcdh",
-  "rows_inserted",
+  "rows_inserted_count_billion",
   "column_break_scfk",
-  "insert_time",
+  "insert_time_billion_ps",
   "section_break_tqle",
-  "rows_updated",
+  "rows_updated_count_billion",
   "column_break_mzmi",
-  "update_time",
+  "update_time_billion_ps",
   "section_break_rdqn",
-  "rows_deleted",
+  "rows_deleted_count_billion",
   "column_break_sajh",
-  "delete_time"
+  "delete_time_billion_ps"
  ],
  "fields": [
   {
@@ -65,28 +65,12 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "rows_selected",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Selected",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_aeku",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_kcdh",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "rows_inserted",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Inserted",
-   "read_only": 1
   },
   {
    "fieldname": "column_break_scfk",
@@ -97,14 +81,6 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "rows_updated",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Updated",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_mzmi",
    "fieldtype": "Column Break"
   },
@@ -113,54 +89,78 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "rows_deleted",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "in_preview": 1,
-   "label": "Rows Deleted",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_sajh",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "select_time",
+   "fieldname": "rows_selected_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Select Time (us)",
+   "label": "Rows Selected Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "insert_time",
+   "fieldname": "select_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Insert Time (us)",
+   "label": "Select Time (billion ps)",
    "read_only": 1
   },
   {
-   "fieldname": "update_time",
+   "fieldname": "rows_inserted_count_billion",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Update Time (us)",
+   "label": "Rows Inserted Count (Billion)",
    "read_only": 1
   },
   {
-   "fieldname": "delete_time",
+   "fieldname": "insert_time_billion_ps",
    "fieldtype": "Float",
    "in_list_view": 1,
    "in_preview": 1,
-   "label": "Delete Time (us)",
+   "label": "Insert Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_updated_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Updated Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "update_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Update Time (billion ps)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows_deleted_count_billion",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Rows Deleted Count (Billion)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delete_time_billion_ps",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Delete Time (billion ps)",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-31 12:59:18.493459",
+ "modified": "2024-02-02 14:05:05.822134",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Schema Index Statistics",
