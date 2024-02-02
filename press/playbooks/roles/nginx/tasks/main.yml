@@ -8,19 +8,15 @@
       - libpcre3-dev
     state: present
 
-- name: Setup NGINX Source Repository
-  copy:
-    content: "deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx"
-    dest: /etc/apt/sources.list.d/nginx.list
-
 - name: Add NGINX Repository Key
-  apt_key:
+  get_url:
     url: https://nginx.org/keys/nginx_signing.key
-    state: present
+    dest: /etc/apt/keyrings/nginx.asc
 
-- name: Update APT Cache
-  apt:
-    update_cache: yes
+- name: Setup NGINX Source Repository
+  apt_repository:
+    repo: deb-src [signed-by=/etc/apt/keyrings/nginx.asc] http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx
+    filename: nginx
 
 - name: Install NGINX Build Dependencies
   apt:
@@ -53,18 +49,18 @@
   register: nginx_compile_flags
 
 - name: Configure NGINX Modules
-  shell: "./configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts"
+  shell: './configure {{ nginx_compile_flags.stdout }} --add-dynamic-module=/opt/nginx-modules/nginx-module-vts'
   args:
-    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
 
 - name: Compile NGINX modules
-  shell: "make modules"
+  shell: 'make modules'
   args:
-    chdir: "/opt/nginx/nginx-{{ nginx_version.stdout }}"
+    chdir: '/opt/nginx/nginx-{{ nginx_version.stdout }}'
 
 - name: Copy NGINX VTS Module Shared Object File
   copy:
-    src: "/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so"
+    src: '/opt/nginx/nginx-{{ nginx_version.stdout }}/objs/ngx_http_vhost_traffic_status_module.so'
     dest: /usr/lib/nginx/modules
     remote_src: yes
 
