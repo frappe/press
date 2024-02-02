@@ -19,3 +19,10 @@
       - pkg-config
       - vagrant
     state: present
+
+- name: Install Packer
+  apt:
+    pkg:
+      - packer
+      - cloud-utils
+    state: present
