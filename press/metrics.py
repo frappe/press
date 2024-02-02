@@ -19,7 +19,10 @@ class MetricsRenderer:
 	def get_status(self, metric, doctype, status_field="status"):
 		c = Gauge(metric, "", [status_field], registry=self.registry)
 		rows = frappe.get_all(
-			doctype, fields=[status_field, "count(*) as count"], group_by=status_field
+			doctype,
+			fields=[status_field, "count(*) as count"],
+			group_by=status_field,
+			order_by=f"{status_field} asc",
 		)
 		for row in rows:
 			c.labels(row[status_field]).set(row.count)
