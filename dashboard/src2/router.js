@@ -149,13 +149,6 @@ let router = createRouter({
 					component: () => import('./components/partners/PartnerCustomers.vue')
 				},
 				{
-					name: 'PartnerContribution',
-					path: 'contributions',
-					component: () =>
-						import('./components/partners/PartnerContribution.vue'),
-					props: true
-				},
-				{
 					name: 'PartnerApprovalRequests',
 					path: 'approval-requests',
 					component: () =>

@@ -323,7 +323,7 @@ def validate_request_key(key, timezone=None):
 				"title": saas_product_doc.title,
 				"logo": saas_product_doc.logo,
 				"signup_fields": saas_product_doc.signup_fields,
-				"description": frappe.utils.md_to_html(saas_product_doc.description)
+				"description": frappe.utils.md_to_html(saas_product_doc.description),
 			}
 			if saas_product_doc
 			else None,
@@ -343,6 +343,32 @@ def update_partnership_date(team, partnership_date):
 		team_doc = frappe.get_doc("Team", team)
 		team_doc.partnership_date = partnership_date
 		team_doc.save()
+
+
+@frappe.whitelist()
+def get_partner_details(partner_email):
+	from press.utils.billing import get_frappe_io_connection
+
+	client = get_frappe_io_connection()
+	# print(partner_email)
+	data = client.get_doc(
+		"Partner",
+		filters={"email": partner_email},
+		fields=[
+			"email",
+			"partner_type",
+			"company_name",
+			"custom_ongoing_period_fc_invoice_contribution",
+			"custom_ongoing_period_enterprise_invoice_contribution",
+			"custom_ongoing_period_revenue_contribution",
+			"partner_name",
+		],
+	)
+	# print(data)
+	if data:
+		return data[0]
+	else:
+		frappe.throw("Partner Details not found")
 
 
 @frappe.whitelist(allow_guest=True)

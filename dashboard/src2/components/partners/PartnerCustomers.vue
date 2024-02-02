@@ -16,7 +16,7 @@
 					>
 						Nothing to show
 					</div>
-					<InvoiceTable v-else :invoiceId="showInvoice.name" />
+					<PartnerCustomerInvoices :customerTeam="showInvoice.name" />
 				</template>
 			</template>
 		</Dialog>
@@ -24,13 +24,13 @@
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
-import InvoiceTable from '../InvoiceTable.vue';
+import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
 import { Dialog } from 'frappe-ui';
 export default {
 	name: 'PartnerCustomers',
 	components: {
 		ObjectList,
-		InvoiceTable,
+		PartnerCustomerInvoices,
 		Dialog
 	},
 	data() {
@@ -43,7 +43,7 @@ export default {
 		options() {
 			return {
 				doctype: 'Team',
-				fields: ['user', 'billing_name', 'payment_mode', 'currency'],
+				fields: ['user', 'billing_name', 'payment_mode', 'currency', 'name'],
 				columns: [
 					{
 						label: 'Name',
@@ -68,7 +68,7 @@ export default {
 					erpnext_partner: 0
 				},
 				onRowClick: row => {
-					this.contributionDialog = row;
+					this.contributionDialog = true;
 					this.showInvoice = row;
 				}
 			};

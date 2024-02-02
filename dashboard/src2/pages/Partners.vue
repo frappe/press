@@ -28,7 +28,6 @@ export default {
 			tabs: [
 				{ label: 'Overview', route: { name: 'PartnerOverview' } },
 				{ label: 'Customers', route: { name: 'PartnerCustomers' } },
-				{ label: 'Contributions', route: { name: 'PartnerContribution' } },
 				{
 					label: 'Approval Requests',
 					route: { name: 'PartnerApprovalRequests' }

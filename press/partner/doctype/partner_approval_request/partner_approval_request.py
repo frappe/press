@@ -7,12 +7,41 @@ from frappe.utils import get_url
 
 
 class PartnerApprovalRequest(Document):
+	dashboard_fields = ["requested_by", "partner", "status"]
+	dashboard_actions = ["approve_partner_request"]
+
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		data = query.run(as_dict=True)
+		for d in data:
+			user = frappe.db.get_value("Team", d.requested_by, "user")
+			d.update({"customer_email": user})
+		return list(data)
+
 	def before_insert(self):
 		self.key = frappe.generate_hash(15)
 
 	def after_insert(self):
 		if self.send_mail:
 			self.send_approval_request_email()
+
+	@frappe.whitelist()
+	def approve_partner_request(self):
+		if self.status == "Pending":
+			self.status = "Approved"
+			self.save(ignore_permissions=True)
+
+			partner = frappe.db.get_value(
+				"Team", self.partner, ["partner_email", "user"], as_dict=True
+			)
+
+			customer_team = frappe.get_doc("Team", self.requested_by)
+			customer_team.partner_email = partner.partner_email
+			team_members = [d.user for d in customer_team.team_members]
+			if partner.user not in team_members:
+				customer_team.append("team_members", {"user": partner.user})
+			customer_team.save(ignore_permissions=True)
+			frappe.db.commit()
 
 	def send_approval_request_email(self):
 		email = frappe.db.get_value("Team", self.partner, "user")
