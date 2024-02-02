@@ -1120,74 +1120,42 @@ class DatabaseServer(BaseServer):
 			raise
 
 	def get_performance_report(self):
-		"""
-		Available Reports:
-		-total_allocated_memory
-		-top_memory_by_event
-		-top_memory_by_user
-		-top_memory_by_host
-		-top_memory_by_thread
-		-top_io_by_file_activity_report
-		-top_io_by_file_by_time
-		-top_io_by_event_category
-		-top_io_in_time_by_event_category
-		-top_io_by_user_or_thread
-		-statement_analysis
-		-statements_in_highest_5_percentile
-		-statements_using_temp_tables
-		-statements_with_sorting
-		-statements_with_full_table_scans
-		-statements_with_errors_or_warnings
-		-schema_index_statistics
-		-schema_table_statistics
-		-schema_table_statistics_with_innodb_buffer
-		-schema_tables_with_full_table_scans
-		-schema_unused_indexes
-		-global_waits_by_time
-		-waits_by_user_by_time
-		-wait_classes_by_time
-		-waits_classes_by_avg_time
-		-innodb_buffer_stats_by_schema
-		-innodb_buffer_stats_by_table
-		-user_resource_use_overview
-		-user_resource_use_io_statistics
-		-user_resource_use_statement_statistics
-		"""
+		reports_is_enabled_status = {
+			"total_allocated_memory": self.is_total_allocated_memory_perf_report_enabled,
+			"top_memory_by_event": self.is_top_memory_by_event_perf_report_enabled,
+			"top_memory_by_user": self.is_top_memory_by_user_perf_report_enabled,
+			"top_memory_by_host": self.is_top_memory_by_host_perf_report_enabled,
+			"top_memory_by_thread": self.is_top_memory_by_thread_perf_report_enabled,
+			"top_io_by_file_activity_report": self.is_top_io_by_file_activity_report_perf_report_enabled,
+			"top_io_by_file_by_time": self.is_top_io_by_file_by_time_perf_report_enabled,
+			"top_io_by_event_category": self.is_top_io_by_event_category_perf_report_enabled,
+			"top_io_in_time_by_event_category": self.is_top_io_in_time_by_event_category_perf_report_enabled,
+			"top_io_by_user_or_thread": self.is_top_io_by_user_or_thread_perf_report_enabled,
+			"statement_analysis": self.is_statement_analysis_perf_report_enabled,
+			"statements_in_highest_5_percentile": self.is_statements_in_highest_5_percentile_perf_report_enabled,
+			"statements_using_temp_tables": self.is_statements_using_temp_tables_perf_report_enabled,
+			"statements_with_sorting": self.is_statements_with_sorting_perf_report_enabled,
+			"statements_with_full_table_scans": self.is_statements_with_full_table_scans_perf_report_enabled,
+			"statements_with_errors_or_warnings": self.is_statements_with_errors_or_warnings_perf_report_enabled,
+			"schema_index_statistics": self.is_schema_index_statistics_perf_report_enabled,
+			"schema_table_statistics": self.is_schema_table_statistics_perf_report_enabled,
+			"schema_table_statistics_with_innodb_buffer": self.is_schema_table_statistics_with_innodb_perf_report_enabled,
+			"schema_tables_with_full_table_scans": self.is_schema_tables_with_full_table_scans_perf_report_enabled,
+			"schema_unused_indexes": self.is_schema_unused_indexes_perf_report_enabled,
+			"global_waits_by_time": self.is_global_waits_by_time_perf_report_enabled,
+			"waits_by_user_by_time": self.is_waits_by_user_by_time_perf_report_enabled,
+			"wait_classes_by_time": self.is_wait_classes_by_time_perf_report_enabled,
+			"waits_classes_by_avg_time": self.is_waits_classes_by_avg_time_perf_report_enabled,
+			"innodb_buffer_stats_by_schema": self.is_innodb_buffer_stats_by_schema_perf_report_enabled,
+			"innodb_buffer_stats_by_table": self.is_innodb_buffer_stats_by_table_perf_report_enabled,
+			"user_resource_use_overview": self.is_user_resource_use_overview_perf_report_enabled,
+			"user_resource_use_io_statistics": self.is_user_resource_use_io_statistics_perf_report_enabled,
+			"user_resource_use_statement_statistics": self.is_user_resource_use_statement_statistics_perf_report_enabled,
+		}
 		return self.agent.post("database/performance_report", {
 			"private_ip": self.private_ip,
 			"mariadb_root_password": self.get_password("mariadb_root_password"),
-			"reports": [
-				"total_allocated_memory",
-				"top_memory_by_event",
-				"top_memory_by_user",
-				"top_memory_by_host",
-				"top_memory_by_thread",
-				"top_io_by_file_activity_report",
-				"top_io_by_file_by_time",
-				"top_io_by_event_category",
-				"top_io_in_time_by_event_category",
-				"top_io_by_user_or_thread",
-				"statement_analysis",
-				"statements_in_highest_5_percentile",
-				"statements_using_temp_tables",
-				"statements_with_sorting",
-				"statements_with_full_table_scans",
-				"statements_with_errors_or_warnings",
-				"schema_index_statistics",
-				"schema_table_statistics",
-				"schema_table_statistics_with_innodb_buffer",
-				"schema_tables_with_full_table_scans",
-				"schema_unused_indexes",
-				"global_waits_by_time",
-				"waits_by_user_by_time",
-				"wait_classes_by_time",
-				"waits_classes_by_avg_time",
-				"innodb_buffer_stats_by_schema",
-				"innodb_buffer_stats_by_table",
-				"user_resource_use_overview",
-				"user_resource_use_io_statistics",
-				"user_resource_use_statement_statistics",
-			]
+			"reports": [report for report, enabled in reports_is_enabled_status.items() if enabled]
 		}) or {}
 
 	def _bytes_to_mb(self, bytes_val):
