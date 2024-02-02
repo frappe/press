@@ -30,6 +30,7 @@ class BaseServer(Document):
 		"status",
 		"team",
 	]
+	dashboard_actions = ["change_plan"]
 
 	@staticmethod
 	def get_list_query(query):

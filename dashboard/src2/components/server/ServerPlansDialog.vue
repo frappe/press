@@ -44,7 +44,7 @@ export default {
 			handler(serverName) {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
-						this.plan = this.$server.doc.current_plan;
+						this.plan = this.$server.doc.current_plan.name;
 					}
 				}
 			}
