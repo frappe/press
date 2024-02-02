@@ -34,3 +34,9 @@
   labels:
     job: gunicorn
     __metrics_path__: /metrics/gunicorn
+
+- targets:
+    - '{{ press_app_server }}'
+  labels:
+    job: press
+    __metrics_path__: /metrics/press
