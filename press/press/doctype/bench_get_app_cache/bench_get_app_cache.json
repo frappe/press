@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-01 16:42:30.143539",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tab_2_tab",
+  "file_name",
+  "size",
+  "accessed",
+  "column_break_uoai",
+  "app",
+  "is_compressed",
+  "section_break_fbua",
+  "raw"
+ ],
+ "fields": [
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Tab 2"
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "File Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Size (MB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accessed",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Accessed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uoai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "App",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_compressed",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Compressed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fbua",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "raw",
+   "fieldtype": "Code",
+   "label": "Raw",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 1,
+ "is_virtual": 1,
+ "links": [],
+ "modified": "2024-02-02 11:26:40.306600",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Get App Cache",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "accessed",
+ "sort_order": "DESC",
+ "states": []
+}
