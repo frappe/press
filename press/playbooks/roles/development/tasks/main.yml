@@ -57,3 +57,6 @@
 
 - name: Install Vagrant Libvirt Plugin
   shell: vagrant plugin install vagrant-libvirt
+
+- name: Install Vagrant Hostmanager Plugin
+  shell: vagrant plugin install vagrant-hostmanager
