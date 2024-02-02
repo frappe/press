@@ -1,7 +1,7 @@
 import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
-import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date } from '../utils/format';
+import { icon } from '../utils/components';
+import { duration } from '../utils/format';
+import { getTeam } from '../data/team';
 
 export default {
 	doctype: 'Server',
@@ -13,6 +13,8 @@ export default {
 		title: 'Servers',
 		fields: [
 			'plan.plan_title as plan_title',
+			'plan.price_usd as price_usd',
+			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title'
 		],
@@ -24,7 +26,21 @@ export default {
 				width: 1.5
 			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
-			{ label: 'Plan', fieldname: 'plan_title', width: 1 },
+			{
+				label: 'Plan',
+				width: 1,
+				format(value, row) {
+					let $team = getTeam();
+					if (row.price_usd > 0) {
+						let india = $team.doc.country == 'India';
+						let currencySymbol = $team.doc.currency === 'INR' ? '₹' : '$';
+						return `${currencySymbol}${
+							india ? row.price_inr : row.price_usd
+						} /mo`;
+					}
+					return row.plan_title;
+				}
+			},
 			{
 				label: 'Region',
 				fieldname: 'cluster',
