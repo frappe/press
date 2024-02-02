@@ -2,10 +2,18 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<Breadcrumbs
-				:items="[
-					{ label: 'Benches', route: '/benches' },
-					{ label: 'New Bench', route: '/benches/new' }
-				]"
+				:items="
+					server
+						? [
+								{ label: 'Servers', route: '/servers' },
+								{ label: server, route: `/servers/${server}` },
+								{ label: 'New Bench', route: '/benches/new' }
+						  ]
+						: [
+								{ label: 'Benches', route: '/benches' },
+								{ label: 'New Bench', route: '/benches/new' }
+						  ]
+				"
 			/>
 		</Header>
 	</div>
@@ -39,7 +47,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="options?.clusters.length">
+			<div class="flex flex-col" v-if="options?.clusters.length && !server">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Select Region
 				</h2>
@@ -73,7 +81,7 @@
 				</h2>
 				<div class="mt-2">
 					<FormControl
-						:disabled="!benchVersion || !benchRegion"
+						:disabled="!benchVersion || (!benchRegion && !server)"
 						v-model="benchTitle"
 						type="text"
 						class="block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
@@ -83,7 +91,7 @@
 			<div class="flex flex-col space-y-4">
 				<FormControl
 					type="checkbox"
-					:disabled="!benchVersion || !benchRegion || !benchTitle"
+					:disabled="!benchVersion || (!benchRegion && !server) || !benchTitle"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me shall stand applicable to me and Frappe.`"
 				/>
@@ -91,7 +99,7 @@
 				<Button
 					class="w-1/2"
 					variant="solid"
-					:disabled="!benchVersion || !benchRegion || !benchTitle"
+					:disabled="!benchVersion || (!benchRegion && !server) || !benchTitle"
 					@click="
 						$resources.createBench.submit({
 							bench: {
@@ -110,7 +118,7 @@
 										source: app.source.name
 									};
 								}),
-								server: null
+								server: server || null
 							}
 						})
 					"
@@ -126,6 +134,7 @@
 import Header from '../components/Header.vue';
 export default {
 	name: 'NewBench',
+	props: ['server'],
 	components: {
 		Header
 	},

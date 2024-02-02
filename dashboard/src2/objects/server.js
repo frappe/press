@@ -2,6 +2,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
+import router from '../router';
 
 export default {
 	doctype: 'Server',
@@ -151,6 +152,20 @@ export default {
 						return {
 							name: 'Release Group Detail',
 							params: { name: row.name }
+						};
+					},
+					primaryAction({ listResource: benches, documentResource: server }) {
+						return {
+							label: 'New Bench',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								router.push({
+									name: 'NewServerBench',
+									params: { server: server.doc.name }
+								});
+							}
 						};
 					}
 				}
