@@ -235,12 +235,12 @@ scheduler_events = {
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
+			"press.press.doctype.database_server.database_server.fetch_performance_schema_reports",
 		],
 		"*/5 * * * *": [
 			"press.press.doctype.version_upgrade.version_upgrade.update_from_site_update",
 			"press.press.doctype.site_replication.site_replication.update_from_site",
 			"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.sync_snapshots",
-			"press.press.doctype.database_server.database_server.fetch_performance_schema_reports",
 		],
 		"* * * * *": [
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
