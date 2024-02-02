@@ -45,6 +45,8 @@ if typing.TYPE_CHECKING:
 
 
 class Cluster(Document):
+	dashboard_fields = ["title", "image"]
+
 	base_servers = {
 		"Proxy Server": "n",
 		"Database Server": "m",

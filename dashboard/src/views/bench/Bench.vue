@@ -130,7 +130,10 @@ export default {
 	},
 	methods: {
 		validateCreateSite() {
-			if (this.$account.billing_info.has_unpaid_invoices) {
+			if (
+				this.$account.billing_info.has_unpaid_invoices &&
+				!this.$account.team.free_account
+			) {
 				notify({
 					title:
 						'Please settle your unpaid invoices from the billing tab in order to create new sites',

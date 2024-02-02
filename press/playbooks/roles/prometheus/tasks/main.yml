@@ -89,14 +89,17 @@
   loop: "{{ log_servers }}"
 
 - name: Configure Prometheus
-  become: yes
-  become_user: frappe
   template:
     src: prometheus.yml
     dest: /home/frappe/prometheus/prometheus.yml
-    force: true
-    mode: 0600
     validate: "/home/frappe/prometheus/promtool check config %s"
+
+- name: Configure ownership permissions on prometheus.yml
+  file:
+    path: /home/frappe/prometheus/prometheus.yml
+    owner: frappe
+    group: frappe
+    mode: 0600
 
 - name: Create Prometheus Systemd Service File
   template:

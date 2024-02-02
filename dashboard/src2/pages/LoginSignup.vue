@@ -176,7 +176,8 @@ export default {
 				params: {
 					email: this.email,
 					referrer: this.getReferrerIfAny(),
-					product: this.$route.query.product
+					product: this.$route.query.product,
+					new_signup_flow: true
 				},
 				onSuccess() {
 					this.signupEmailSent = true;

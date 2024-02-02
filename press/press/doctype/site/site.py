@@ -6,6 +6,7 @@ import json
 import re
 from collections import defaultdict
 from datetime import datetime
+from functools import wraps
 from typing import Any, Dict, List
 
 import dateutil.parser
@@ -15,9 +16,17 @@ from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import cint, cstr, get_datetime, flt, time_diff_in_hours
+from frappe.utils import (
+	cint,
+	comma_and,
+	cstr,
+	flt,
+	get_datetime,
+	get_url,
+	time_diff_in_hours,
+)
+
 from press.exceptions import CannotChangePlan
-from press.utils import unique
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -40,18 +49,50 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
-from press.utils import convert, get_client_blacklisted_keys, guess_type, log_error
-from press.utils.dns import create_dns_record, _change_dns_record
+from press.utils import (
+	convert,
+	get_client_blacklisted_keys,
+	get_current_team,
+	guess_type,
+	log_error,
+	unique,
+)
+from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"ip",
 		"status",
 		"group",
 		"notify_email",
 		"team",
 		"plan",
+		"archive_failed",
+		"cluster",
+		"is_database_access_enabled",
+	]
+	dashboard_actions = [
+		"activate",
+		"add_domain",
+		"archive",
+		"backup",
+		"clear_site_cache",
+		"deactivate",
+		"enable_database_access",
+		"disable_database_access",
+		"get_database_credentials",
+		"install_app",
+		"uninstall_app",
+		"migrate",
+		"login_as_admin",
+		"reinstall",
+		"remove_domain",
+		"restore_site",
+		"schedule_update",
+		"set_plan",
+		"update_config",
+		"delete_config",
 	]
 
 	@staticmethod
@@ -74,8 +115,28 @@ class Site(Document):
 		doc.current_plan = get("Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
+		doc.actions = self.get_actions()
 
 		return doc
+
+	def site_action(allowed_status: List[str]):
+		def outer_wrapper(func):
+			@wraps(func)
+			def wrapper(inst, *args, **kwargs):
+				user_type = frappe.session.data.user_type or frappe.get_cached_value(
+					"User", frappe.session.user, "user_type"
+				)
+				if user_type == "System User":
+					return func(inst, *args, **kwargs)
+				if inst.status not in allowed_status:
+					frappe.throw(
+						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+					)
+				return func(inst, *args, **kwargs)
+
+			return wrapper
+
+		return outer_wrapper
 
 	def _get_site_name(self, subdomain: str):
 		"""Get full site domain name given subdomain."""
@@ -262,6 +323,7 @@ class Site(Document):
 		self.config = json.dumps(new_config, indent=4)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
 			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
@@ -285,6 +347,8 @@ class Site(Document):
 		if plan:
 			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
 
+	@frappe.whitelist()
+	@site_action(["Active"])
 	def uninstall_app(self, app):
 		log_site_activity(self.name, "Uninstall App")
 		agent = Agent(self.server)
@@ -293,6 +357,20 @@ class Site(Document):
 		self.save()
 
 		marketplace_app_hook(app=app, site=self.name, op="uninstall")
+
+		# disable marketplace plan if it exists
+		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
+		app_subscription = frappe.db.exists(
+			"Marketplace App Subscription", {"site": self.name, "app": marketplace_app_name}
+		)
+		if marketplace_app_name and app_subscription:
+			app_subscription = frappe.get_doc(
+				"Marketplace App Subscription",
+				app_subscription,
+				for_update=True,
+			)
+			app_subscription.status = "Disabled"
+			app_subscription.save(ignore_permissions=True)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
@@ -312,6 +390,12 @@ class Site(Document):
 			# create subscription
 			self.create_subscription(self.subscription_plan)
 			self.reload()
+
+		if hasattr(self, "app_plans") and self.app_plans:
+			for app, plan in self.app_plans.items():
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan["name"], True
+				)
 
 		# log activity
 		log_site_activity(self.name, "Create")
@@ -346,6 +430,7 @@ class Site(Document):
 		agent.new_upstream_file(server=self.server, site=self.name)
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
 		agent = Agent(self.server)
@@ -355,6 +440,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
 		agent = Agent(self.server)
@@ -415,6 +501,7 @@ class Site(Document):
 		agent.clear_site_cache(self)
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
 			raise Exception(
@@ -429,6 +516,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
 		self.remote_public_file = files["public"]
@@ -439,6 +527,24 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
+		if self.status == "Suspended":
+			activity = frappe.db.get_all(
+				"Site Activity",
+				filters={"site": self.name, "action": "Suspend Site"},
+				order_by="creation desc",
+				limit=1,
+			)
+			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+			if (
+				frappe.db.count(
+					"Site Backup",
+					filters=dict(site=self.name, status="Success", creation=(">=", suspension_time)),
+				)
+				> 3
+			):
+				frappe.throw("You cannot take more than 3 backups after site suspension")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
@@ -450,6 +556,7 @@ class Site(Document):
 		).insert()
 
 	@frappe.whitelist()
+	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
 		log_site_activity(self.name, "Update")
 		self.status_before_update = self.status
@@ -502,6 +609,7 @@ class Site(Document):
 		self.save()
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update without Backup")
 		self.status_before_update = self.status
@@ -651,6 +759,7 @@ class Site(Document):
 		site_domain.remove_redirect()
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
 		agent = Agent(self.server)
@@ -720,6 +829,64 @@ class Site(Document):
 		return delete_remote_backup_objects(sites_remote_files)
 
 	@frappe.whitelist()
+	def send_change_team_request(self, team_mail_id: str, reason: str):
+		"""Send email to team to accept site transfer request"""
+
+		if self.team != get_current_team():
+			frappe.throw(
+				"You should belong to the team owning the site to initiate a site ownership transfer."
+			)
+
+		if not frappe.db.exists("Team", {"user": team_mail_id, "enabled": 1}):
+			frappe.throw("No Active Team record found.")
+
+		old_team = frappe.db.get_value("Team", self.team, "user")
+
+		if old_team == team_mail_id:
+			frappe.throw(f"Site is already owned by the team {team_mail_id}")
+
+		team_change = frappe.get_doc(
+			{
+				"doctype": "Team Change",
+				"document_type": "Site",
+				"document_name": self.name,
+				"to_team": frappe.db.get_value("Team", {"user": team_mail_id}),
+				"from_team": self.team,
+				"reason": reason,
+			}
+		).insert()
+
+		key = frappe.generate_hash("Site Transfer Link", 20)
+		minutes = 20
+		frappe.cache.set_value(
+			f"site_transfer_data:{key}",
+			(
+				self.name,
+				team_change.name,
+			),
+			expires_in_sec=minutes * 60,
+		)
+
+		link = get_url(f"/api/method/press.api.site.confirm_site_transfer?key={key}")
+
+		if frappe.conf.developer_mode:
+			print(f"\nSite transfer link for {team_mail_id}\n{link}\n")
+
+		frappe.sendmail(
+			recipients=team_mail_id,
+			subject="Transfer Site Ownership Confirmation",
+			template="transfer_site_confirmation",
+			args={
+				"site": self.host_name or self.name,
+				"old_team": old_team,
+				"new_team": team_mail_id,
+				"transfer_url": link,
+				"minutes": minutes,
+			},
+		)
+
+	@frappe.whitelist()
+	@site_action(["Active"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
 		return f"https://{self.host_name or self.name}/desk?sid={sid}"
@@ -948,6 +1115,7 @@ class Site(Document):
 			self.save()
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def update_config(self, config=None):
 		"""Updates site.configuration, meant for dashboard and API users"""
 		if config is None:
@@ -982,6 +1150,7 @@ class Site(Document):
 		self.update_site_config(sanitized_config)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
 		if key in get_client_blacklisted_keys():
@@ -1154,6 +1323,7 @@ class Site(Document):
 			self.unsuspend(reason="Plan Upgraded")
 
 	@frappe.whitelist()
+	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
@@ -1161,6 +1331,7 @@ class Site(Document):
 		self.update_site_status_on_proxy("deactivated")
 
 	@frappe.whitelist()
+	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
 		self.status = "Active"
@@ -1191,6 +1362,7 @@ class Site(Document):
 		)
 
 	@frappe.whitelist()
+	@site_action(["Suspended"])
 	def unsuspend(self, reason=None):
 		log_site_activity(self.name, "Unsuspend Site", reason)
 		self.status = "Active"
@@ -1323,6 +1495,7 @@ class Site(Document):
 		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
@@ -1353,6 +1526,7 @@ class Site(Document):
 		return job.name
 
 	@frappe.whitelist()
+	@site_action(["Active"])
 	def disable_database_access(self):
 		log_site_activity(self.name, "Disable Database Access")
 
@@ -1508,7 +1682,9 @@ class Site(Document):
 		hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
 
 		return {
-			"cpu": get_current_cpu_usage(self.name),  # hours
+			"cpu": round(
+				get_current_cpu_usage(self.name) / (100000 * 60 * 60), 4
+			),  # micro seconds to hours
 			"storage": usage.get("public", 0) + usage.get("private", 0),
 			"database": usage.get("database", 0),
 			"hours_until_cpu_usage_resets": hours_left_today,
@@ -1528,9 +1704,16 @@ class Site(Document):
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
+		servers_with_backups = frappe.get_all(
+			"Server", {"status": "Active", "skip_scheduled_backups": False}, pluck="name"
+		)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites), "skip_scheduled_backups": False},
+			{
+				"name": ("in", sites),
+				"skip_scheduled_backups": False,
+				"server": ("in", servers_with_backups),
+			},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1656,6 +1839,46 @@ class Site(Document):
 				"description": "When you drop your site, all site data is deleted forever",
 				"button_label": "Drop",
 				"doc_method": "archive",
+			},
+			{
+				"action": "Transfer site",
+				"description": "Transfer ownership of this site to another team",
+				"button_label": "Transfer",
+				"doc_method": "send_change_team_request",
+			},
+			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change region",
+				"description": "Move your site to a different region",
+				"button_label": "Change",
+				"doc_method": "change_region",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
+				"button_label": "Change",
+				"doc_method": "change_bench",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change server",
+				"description": "Move your site to a different server",
+				"button_label": "Change",
+				"doc_method": "change_server",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Clear cache",
+				"description": "Clear cache on your site",
+				"button_label": "Clear cache",
+				"doc_method": "clear_site_cache",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

@@ -27,7 +27,7 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"enabled",
 		"team_title",
 		"user",
@@ -45,6 +45,7 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 	]
+	dashboard_actions = ["get_team_members", "remove_team_member"]
 
 	def get_doc(self, doc):
 		if (
@@ -686,11 +687,14 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
-		# change payment mode to prepaid credits if default is card or not set
-		self.payment_mode = (
-			"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
-		)
-		self.save()
+
+		self.reload()
+		if not self.default_payment_method:
+			# change payment mode to prepaid credits if default is card or not set
+			self.payment_mode = (
+				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
+			)
+			self.save()
 		return doc
 
 	def get_available_credits(self):
@@ -892,6 +896,15 @@ class Team(Document):
 			erpnext_site = None
 			erpnext_site_plan_set = True
 
+		saas_site_request = self.get_pending_saas_site_request()
+		complete = False
+		if saas_site_request:
+			complete = False
+		elif frappe.local.system_user():
+			complete = True
+		elif billing_setup:
+			complete = True
+
 		return frappe._dict(
 			{
 				"account_created": True,
@@ -899,8 +912,8 @@ class Team(Document):
 				"erpnext_site": erpnext_site,
 				"erpnext_site_plan_set": erpnext_site_plan_set,
 				"site_created": site_created,
-				"saas_site_request": self.get_pending_saas_site_request(),
-				"complete": billing_setup and site_created or frappe.local.system_user(),
+				"saas_site_request": saas_site_request,
+				"complete": complete,
 			}
 		)
 
@@ -939,12 +952,9 @@ class Team(Document):
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)
-			.where(
-				(plan.enabled == 1)
-				& ((plan.is_frappe_plan == 1) | (plan.dedicated_server_plan == 1))
-			)
+			.where((plan.enabled == 1) & (plan.is_frappe_plan == 1))
 		).run(as_dict=True)
-		dedicated_or_frappe_plans = [d.name for d in query]
+		frappe_plans = [d.name for d in query]
 
 		return frappe.db.get_all(
 			"Site",
@@ -952,7 +962,7 @@ class Team(Document):
 				"team": self.name,
 				"status": ("in", ("Active", "Inactive")),
 				"free": 0,
-				"plan": ("not in", dedicated_or_frappe_plans),
+				"plan": ("not in", frappe_plans),
 			},
 			pluck="name",
 		)

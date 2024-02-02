@@ -1,18 +1,19 @@
 <template>
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
-			<Breadcrumbs
-				:items="[
-					{ label: 'Sites', route: '/sites' },
-					{ label: 'New Site', route: '/sites/new' }
-				]"
-			/>
+			<FBreadcrumbs :items="breadcrumbs" />
 		</Header>
 	</div>
 
 	<div class="mx-auto max-w-4xl px-5">
-		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
-			<div>
+		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
+			Loading...
+		</div>
+		<div v-if="$route.name === 'NewBenchSite' && !bench">
+			<div class="py-4 text-base text-gray-600">Something went wrong</div>
+		</div>
+		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
+			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
 						Select Frappe Framework Version
@@ -39,14 +40,14 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="selectedVersionApps.length">
+			<div class="flex flex-col" v-if="selectedVersionPublicApps.length">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Select Apps
+					Select Marketplace Apps
 				</h2>
 				<div class="mt-2 w-full space-y-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
 						<button
-							v-for="app in selectedVersionApps"
+							v-for="app in selectedVersionPublicApps"
 							:key="app"
 							@click="toggleApp(app)"
 							:class="[
@@ -59,7 +60,7 @@
 							<img :src="app.image" class="h-10 w-10 shrink-0" />
 							<div class="w-full">
 								<div class="flex w-full items-center justify-between">
-									<div class="flex items-center">
+									<div class="flex items-center space-x-2">
 										<div class="text-base font-medium">
 											{{ app.app_title }}
 										</div>
@@ -67,13 +68,14 @@
 											v-if="app.total_installs > 1"
 											:text="`${app.total_installs} installs`"
 										>
-											<div class="ml-2 flex items-center text-sm text-gray-600">
+											<div class="flex items-center text-sm text-gray-600">
 												<i-lucide-download class="h-3 w-3" />
 												<span class="ml-0.5 leading-3">
 													{{ $format.numberK(app.total_installs || '') }}
 												</span>
 											</div>
 										</Tooltip>
+										<Badge theme="gray" :label="app.subscription_type" />
 									</div>
 									<a
 										:href="`/${app.route}`"
@@ -89,6 +91,42 @@
 								>
 									{{ app.description }}
 								</div>
+							</div>
+						</button>
+					</div>
+				</div>
+				<SiteAppPlanSelectorDialog
+					v-if="selectedApp"
+					v-model="showAppPlanSelectorDialog"
+					:app="selectedApp"
+					@plan-select="
+						plan => {
+							apps.push(selectedApp.app);
+							appPlans[selectedApp.app] = plan;
+							showAppPlanSelectorDialog = false;
+						}
+					"
+				/>
+			</div>
+			<div class="flex flex-col" v-if="selectedVersionPrivateApps.length">
+				<h2 class="text-base font-medium leading-6 text-gray-900">
+					Select Private Apps
+				</h2>
+				<div class="mt-2 w-full space-y-2">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
+						<button
+							v-for="app in selectedVersionPrivateApps"
+							:key="app"
+							@click="toggleApp(app)"
+							:class="[
+								apps.includes(app.app)
+									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+									: 'bg-white text-gray-900  hover:bg-gray-50',
+								'flex h-12 w-full items-center space-x-2 rounded border p-2 text-left text-base text-gray-900'
+							]"
+						>
+							<div class="text-base font-medium">
+								{{ app.app_title }}
 							</div>
 						</button>
 					</div>
@@ -196,47 +234,64 @@
 					<div class="text-gray-900">
 						{{
 							apps.length
-								? selectedVersionApps
+								? selectedVersionPublicApps
 										.filter(app => apps.includes(app.app))
 										.map(app => app.app_title)
 										.join(', ')
 								: 'No apps selected'
 						}}
 					</div>
-					<div class="text-gray-600">Plan:</div>
+
+					<div class="text-gray-600">Region:</div>
+					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
+					<div class="text-gray-600">Site URL:</div>
+					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
+				</div>
+				<div
+					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
+					style="grid-template-columns: 2fr 4fr"
+				>
+					<div class="text-gray-600">Site Plan:</div>
 					<div v-if="selectedPlan">
+						<span class="text-gray-900">
+							{{
+								$format.userCurrency(
+									$team.doc.currency == 'INR'
+										? selectedPlan.price_inr
+										: selectedPlan.price_usd
+								)
+							}}
+							per month
+						</span>
+					</div>
+					<div v-else>{{ plan }}</div>
+					<div class="text-gray-600">Product Warranty:</div>
+					<div class="text-gray-900">
+						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
+					</div>
+					<template v-for="app in Object.keys(appPlans)" :key="app">
+						<div class="text-gray-600">
+							{{ selectedVersionPublicApps.find(a => app === a.app).app_title }}
+							Plan:
+						</div>
 						<div>
 							<span class="text-gray-900">
 								{{
 									$format.userCurrency(
 										$team.doc.currency == 'INR'
-											? selectedPlan.price_inr
-											: selectedPlan.price_usd
+											? appPlans[app].price_inr
+											: appPlans[app].price_usd
 									)
 								}}
 								per month
 							</span>
 						</div>
-						<div class="text-gray-600">
-							{{
-								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? selectedPlan.price_per_day_inr
-										: selectedPlan.price_per_day_usd
-								)
-							}}
-							per day
-						</div>
+					</template>
+					<div class="text-gray-600">Total:</div>
+					<div>
+						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
+						<div class="text-gray-600">{{ totalPerDay }} per day</div>
 					</div>
-					<div v-else>{{ plan }}</div>
-					<div class="text-gray-600">Product Warranty</div>
-					<div class="text-gray-900">
-						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
-					</div>
-					<div class="text-gray-600">Region:</div>
-					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
-					<div class="text-gray-600">Site URL:</div>
-					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
 				</div>
 			</div>
 			<div
@@ -279,12 +334,14 @@ import {
 	TextInput,
 	Tooltip,
 	debounce,
-	getCachedResource
+	Breadcrumbs,
+	getCachedDocumentResource
 } from 'frappe-ui';
 import Header from '../components/Header.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import router from '../router';
 import SitePlansCards from '../components/SitePlansCards.vue';
+import SiteAppPlanSelectorDialog from '../components/site/SiteAppPlanSelectorDialog.vue';
 import { plans } from '../data/plans';
 
 // TODO:
@@ -293,6 +350,7 @@ import { plans } from '../data/plans';
 
 export default {
 	name: 'NewSite',
+	props: ['bench'],
 	components: {
 		FormControl,
 		TextInput,
@@ -301,7 +359,9 @@ export default {
 		ErrorMessage,
 		Header,
 		SitePlansCards,
-		Tooltip
+		Tooltip,
+		FBreadcrumbs: Breadcrumbs,
+		SiteAppPlanSelectorDialog
 	},
 	data() {
 		return {
@@ -310,6 +370,9 @@ export default {
 			cluster: null,
 			plan: null,
 			apps: [],
+			appPlans: {},
+			selectedApp: null,
+			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false
 		};
@@ -335,7 +398,14 @@ export default {
 		options() {
 			return {
 				url: 'press.api.site.options_for_new',
-				cache: 'site.options_for_new',
+				makeParams() {
+					return { for_bench: this.bench };
+				},
+				onSuccess() {
+					if (this.bench) {
+						this.version = this.options.versions[0].name;
+					}
+				},
 				auto: true
 			};
 		},
@@ -365,6 +435,7 @@ export default {
 						team: this.$team.doc.name,
 						subdomain: this.subdomain,
 						apps: apps.map(app => ({ app })),
+						app_plans: this.appPlans,
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
 						subscription_plan: this.plan,
@@ -426,9 +497,66 @@ export default {
 					}
 				});
 		},
+		selectedVersionPublicApps() {
+			return this.selectedVersionApps.filter(app => app.public);
+		},
+		selectedVersionPrivateApps() {
+			if (this.selectedVersion?.group?.public) return [];
+
+			return this.selectedVersionApps.filter(app => !app.public);
+		},
 		selectedPlan() {
 			if (!plans?.data) return;
 			return plans.data.find(p => p.name === this.plan);
+		},
+		breadcrumbs() {
+			if (this.bench) {
+				let group = getCachedDocumentResource('Release Group', this.bench);
+				return [
+					{ label: 'Benches', route: '/benches' },
+					{
+						label: group ? group.doc.title : this.bench,
+						route: {
+							name: 'Release Group Detail',
+							params: { name: this.bench }
+						}
+					},
+					{
+						label: 'New Site',
+						route: { name: 'NewBenchSite', params: { bench: this.bench } }
+					}
+				];
+			}
+			return [
+				{ label: 'Sites', route: '/sites' },
+				{ label: 'New Site', route: '/sites/new' }
+			];
+		},
+		_totalPerMonth() {
+			let total =
+				this.$team.doc.currency == 'INR'
+					? this.selectedPlan.price_inr
+					: this.selectedPlan.price_usd;
+
+			for (let appPlan of Object.values(this.appPlans)) {
+				total +=
+					this.$team.doc.currency == 'INR'
+						? appPlan.price_inr
+						: appPlan.price_usd;
+			}
+
+			return total;
+		},
+		totalPerMonth() {
+			return this.$format.userCurrency(this._totalPerMonth);
+		},
+		totalPerDay() {
+			let daysInThisMonth = new Date(
+				new Date().getFullYear(),
+				new Date().getMonth() + 1,
+				0
+			).getDate();
+			return this.$format.userCurrency(this._totalPerMonth / daysInThisMonth);
 		}
 	},
 	methods: {
@@ -438,8 +566,14 @@ export default {
 			}
 			if (this.apps.includes(app.app)) {
 				this.apps = this.apps.filter(a => a !== app.app);
+				delete this.appPlans[app.app];
 			} else {
-				this.apps.push(app.app);
+				if (app.plans?.length) {
+					this.selectedApp = app;
+					this.showAppPlanSelectorDialog = true;
+				} else {
+					this.apps.push(app.app);
+				}
 			}
 		}
 	}

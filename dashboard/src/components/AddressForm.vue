@@ -64,7 +64,7 @@ export default {
 			url: 'press.api.account.country_list',
 			auto: true,
 			onSuccess() {
-				// TODO: remove this.$account usage after dashboard2 is merged
+				// TODO: remove this.$account usage after dashboard-beta is merged
 				let userCountry =
 					this.$account?.team.country || this.$team?.doc.country;
 				if (userCountry) {

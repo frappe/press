@@ -66,7 +66,7 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
-	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
+	{"from_route": "/dashboard-beta/<path:app_path>", "to_route": "dashboard-beta"},
 ]
 
 website_redirects = [
@@ -183,7 +183,6 @@ scheduler_events = {
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
 	],
 	"hourly": [
@@ -223,6 +222,7 @@ scheduler_events = {
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
+			"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
@@ -249,7 +249,10 @@ scheduler_events = {
 			"press.saas.doctype.saas_product.pooling.create",
 			"press.press.doctype.site.saas_pool.create",
 		],
-		"*/30 * * * *": ["press.press.doctype.site_update.scheduled_auto_updates.trigger"],
+		"*/30 * * * *": [
+			"press.press.doctype.site_update.scheduled_auto_updates.trigger",
+			"press.press.doctype.team.suspend_sites.execute",
+		],
 		"15,45 * * * *": [
 			"press.press.doctype.site.site_usages.update_cpu_usages",
 			"press.press.doctype.site.site_usages.update_disk_usages",
@@ -260,7 +263,6 @@ scheduler_events = {
 		"0 0 1 */3 *": [
 			"press.press.doctype.backup_restoration_test.backup_test.run_backup_restore_test"
 		],
-		"*/30 * 10 * *": ["press.press.doctype.team.suspend_sites.execute"],
 		"0 8 * * *": [
 			"press.press.audit.billing_audit",
 			"press.press.audit.partner_billing_audit",

@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-01-04 11:59:04.201894",
+  "modified": "2024-01-31 12:32:53.947854",
   "name": "Create Server",
   "steps": [
    {
@@ -59,6 +59,38 @@
     "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Update Agent\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for Agent to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb()",
+    "step_name": "Upgrade MariaDB",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Upgrade to Complete",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(\"Database Server\", doc.server)\n    server.upgrade_mariadb_patched()",
+    "step_name": "Upgrade MariaDB Patched",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "if doc.server_type == \"Database Server\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Upgrade MariaDB Patched\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True,)",
+    "step_name": "Wait for MariaDB Upgrade Patched to Complete",
     "wait_until_true": 1
    },
    {

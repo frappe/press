@@ -33,7 +33,7 @@ from press.utils import get_current_team, log_error
 
 
 class DeployCandidate(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"name",
 		"status",
 		"creation",
@@ -43,6 +43,7 @@ class DeployCandidate(Document):
 		"build_end",
 		"build_duration",
 		"apps",
+		"group",
 	]
 
 	def get_doc(self, doc):

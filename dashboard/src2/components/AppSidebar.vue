@@ -66,7 +66,7 @@
 				<AppSidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
 			</template>
 		</nav>
-		<!-- TODO: update component name after dashboard2 merges -->
+		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
 </template>
@@ -122,9 +122,13 @@ export default {
 					icon: () => h(Package),
 					route: '/benches',
 					isActive:
-						['Release Group List', 'Release Group Detail', 'NewBench'].includes(
-							routeName
-						) || routeName.startsWith('Release Group Detail'),
+						[
+							'Release Group List',
+							'Release Group Detail',
+							'NewBench',
+							'NewBenchSite'
+						].includes(routeName) ||
+						routeName.startsWith('Release Group Detail'),
 					disabled
 				},
 				{

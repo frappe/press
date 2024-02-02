@@ -211,6 +211,24 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
 
+	@frappe.whitelist()
+	def upgrade_mariadb_patched(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb_patched", timeout=1800)
+
+	def _upgrade_mariadb_patched(self):
+		ansible = Ansible(
+			playbook="upgrade_mariadb_patched.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Upgrade Error", server=self.name)
+
 	def add_mariadb_variable(
 		self,
 		variable: str,

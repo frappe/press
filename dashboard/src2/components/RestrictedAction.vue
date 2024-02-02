@@ -18,6 +18,8 @@ import { Button, createResource, Tooltip } from 'frappe-ui';
 import { getTeam } from '../data/team';
 import session from '../data/session';
 
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps({
 	doctype: { type: String, required: true },
 	docname: { type: String, required: true },

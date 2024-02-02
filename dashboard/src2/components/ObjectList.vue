@@ -24,13 +24,14 @@
 			</slot>
 			<div class="ml-auto flex items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
-				<Tooltip text="Refresh">
-					<Button label="Refresh" @click="list.reload()" :loading="isLoading">
+				<Tooltip text="Refresh" v-if="$list">
+					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
 						<template #icon>
 							<FeatherIcon class="h-4 w-4" name="refresh-ccw" />
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
@@ -42,7 +43,7 @@
 					selectable: this.options.selectable || false,
 					onRowClick: this.options.onRowClick
 						? row => this.options.onRowClick(row)
-						: null,
+						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
 						: null
@@ -84,15 +85,18 @@
 				>
 					Loading...
 				</div>
+				<div v-else-if="$list.list.error" class="py-4 text-center">
+					<ErrorMessage :message="$list.list.error" />
+				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
 			</div>
-			<div class="px-2 py-2 text-right">
+			<div class="px-2 py-2 text-right" v-if="$list">
 				<Button
-					@click="list.next()"
-					v-if="list.next && list.hasNextPage"
-					:loading="list.list.loading"
+					v-if="$list.next && $list.hasNextPage"
+					@click="$list.next()"
+					:loading="isLoading"
 				>
 					Load more
 				</Button>
@@ -114,7 +118,8 @@ import {
 	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
-	Tooltip
+	Tooltip,
+	ErrorMessage
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -135,7 +140,8 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
-		Tooltip
+		Tooltip,
+		ErrorMessage
 	},
 	data() {
 		return {
@@ -145,7 +151,8 @@ export default {
 	},
 	resources: {
 		list() {
-			if (this.options.list) return {};
+			if (this.options.data) return;
+			if (this.options.list) return;
 			if (this.options.resource) {
 				return this.options.resource(this.context);
 			}
@@ -158,6 +165,7 @@ export default {
 				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
+				pageLength: this.options.pageLength || 20,
 				fields: [
 					'name',
 					...(this.options.fields || []),
@@ -170,15 +178,15 @@ export default {
 					this.lastRefreshed = new Date();
 				},
 				onError: e => {
-					if (this.$resources.list.data) {
-						this.$resources.list.data = [];
+					if (this.$list.data) {
+						this.$list.data = [];
 					}
 				}
 			};
 		}
 	},
 	mounted() {
-		if (this.options.list) return;
+		if (this.options.data) return;
 		if (this.options.doctype) {
 			let doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
@@ -186,14 +194,14 @@ export default {
 			subscribed[doctype] = true;
 
 			this.$socket.on('list_update', data => {
-				let names = (this.list.data || []).map(d => d.name);
+				let names = (this.$list.data || []).map(d => d.name);
 				if (
 					data.doctype === doctype &&
 					names.includes(data.name) &&
 					// update list if last refreshed is more than 5 seconds ago
 					new Date() - this.lastRefreshed > 5000
 				) {
-					this.list.reload();
+					this.$list.reload();
 				}
 			});
 		}
@@ -206,8 +214,8 @@ export default {
 		}
 	},
 	computed: {
-		list() {
-			return this.options.list || this.$resources.list;
+		$list() {
+			return this.$resources.list || this.options.list;
 		},
 		columns() {
 			let columns = [];
@@ -231,8 +239,10 @@ export default {
 			return columns;
 		},
 		rows() {
-			let data = this.list.data || [];
-			return data;
+			if (this.options.data) {
+				return this.options.data(this.context);
+			}
+			return this.$list.data || [];
 		},
 		filteredRows() {
 			if (!this.searchQuery) return this.rows;
@@ -260,14 +270,20 @@ export default {
 			if (!props) return null;
 			return props;
 		},
+		secondaryAction() {
+			if (!this.options.secondaryAction) return null;
+			let props = this.options.secondaryAction(this.context);
+			if (!props) return null;
+			return props;
+		},
 		context() {
 			return {
 				...this.options.context,
-				listResource: this.list
+				listResource: this.$list
 			};
 		},
 		isLoading() {
-			return this.list.list?.loading || this.list.loading;
+			return this.$list.list?.loading || this.$list.loading;
 		}
 	}
 };

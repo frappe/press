@@ -98,6 +98,12 @@ const initOptions = {
 };
 
 const options = ref({
+	grid: {
+		top: 20,
+		left: 60,
+		right: 40,
+		bottom: 50
+	},
 	tooltip: {
 		trigger: 'axis',
 		formatter: params => {
@@ -144,7 +150,8 @@ const options = ref({
 					else if (value >= 1000) return `${value / 1000}K`;
 					return value;
 				}
-			}
+			},
+			padding: 5
 		}
 	},
 	labelLine: {

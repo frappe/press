@@ -33,7 +33,7 @@
 			</div>
 		</div>
 		<div v-else-if="column.type == 'Actions'">
-			<Dropdown v-if="actions?.length" :options="actions">
+			<Dropdown v-if="showDropdown" :options="actions">
 				<button
 					class="flex items-center rounded bg-gray-100 px-1 py-0.5 hover:bg-gray-200"
 				>
@@ -96,6 +96,13 @@ export default {
 				...this.context,
 				row: this.row
 			};
+		},
+		showDropdown() {
+			let filteredOptions = (this.actions || [])
+				.filter(Boolean)
+				.filter(option => (option.condition ? option.condition() : true));
+
+			return filteredOptions.length > 0;
 		}
 	},
 	components: { Tooltip, ActionButton }

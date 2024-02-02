@@ -10,7 +10,8 @@ DEFAULT_PERMISSIONS = {
 
 
 class PressPermissionGroup(Document):
-	whitelisted_fields = ["title"]
+	dashboard_fields = ["title"]
+	dashboard_actions = ["get_users", "add_user", "remove_user", "update_permissions"]
 
 	def validate(self):
 		self.validate_permissions()
@@ -60,13 +61,11 @@ class PressPermissionGroup(Document):
 
 	@frappe.whitelist()
 	def get_users(self):
-		from press.api.client import get_list
-
 		user_names = [user.user for user in self.users]
 		if not user_names:
 			return []
 
-		return get_list(
+		return frappe.db.get_all(
 			"User",
 			filters={"name": ["in", user_names], "enabled": 1},
 			fields=[

@@ -3,7 +3,11 @@
 		class="flex h-screen overflow-hidden bg-gray-50"
 		v-if="!$resources.validateRequestKey.loading && email"
 	>
-		<ProductSignupPitch :saasProduct="saasProduct" class="w-[40%]" />
+		<ProductSignupPitch
+			v-if="saasProduct"
+			:saasProduct="saasProduct"
+			class="w-[40%]"
+		/>
 		<div class="w-full overflow-auto">
 			<LoginBox
 				:title="

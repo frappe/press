@@ -50,7 +50,7 @@ class PrometheusAlertRule(Document):
 	def get_rules(self):
 		rules_dict = {"groups": [{"name": "All", "rules": []}]}
 
-		rules = frappe.get_all(self.doctype)
+		rules = frappe.get_all(self.doctype, {"enabled": True})
 		for rule in rules:
 			rule_doc = frappe.get_doc(self.doctype, rule.name)
 			rules_dict["groups"][0]["rules"].append(rule_doc.get_rule())
@@ -70,7 +70,7 @@ class PrometheusAlertRule(Document):
 			],
 		}
 
-		rules = frappe.get_all(self.doctype)
+		rules = frappe.get_all(self.doctype, {"enabled": True})
 		for rule in rules:
 			rule_doc = frappe.get_doc(self.doctype, rule.name)
 			routes_dict["route"]["routes"].append(rule_doc.get_route())

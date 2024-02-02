@@ -85,11 +85,6 @@ export default {
 			targetDateTime: null
 		};
 	},
-	watch: {
-		show(value) {
-			if (value) this.$resources.changeServerOptions.fetch();
-		}
-	},
 	computed: {
 		show: {
 			get() {
@@ -125,6 +120,7 @@ export default {
 				params: {
 					name: this.site?.name
 				},
+				auto: true,
 				transform(d) {
 					return d.map(s => ({
 						label: s.title || s.name,

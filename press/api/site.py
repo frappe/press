@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded
+from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -397,19 +397,34 @@ def activities(filters=None, order_by=None, limit_start=None, limit_page_length=
 
 
 @frappe.whitelist()
-def options_for_new():
-	versions = frappe.db.get_all(
-		"Frappe Version",
-		["name", "default", "status", "number"],
-		{"public": True},
-		order_by="number desc",
-	)
+def options_for_new(for_bench: str = None):
+	for_bench = str(for_bench) if for_bench else None
+	if for_bench:
+		version = frappe.db.get_value("Release Group", for_bench, "version")
+		versions = frappe.db.get_all(
+			"Frappe Version",
+			["name", "default", "status", "number"],
+			{"name": version},
+			order_by="number desc",
+		)
+	else:
+		versions = frappe.db.get_all(
+			"Frappe Version",
+			["name", "default", "status", "number"],
+			{"public": True, "status": ("!=", "End of Life")},
+			order_by="number desc",
+		)
 	available_versions = []
 	for version in versions:
+		filters = (
+			{"name": for_bench}
+			if for_bench
+			else {"enabled": 1, "public": 1, "version": version.name}
+		)
 		release_group = frappe.db.get_value(
 			"Release Group",
-			fieldname=["name", "`default`", "title"],
-			filters={"enabled": 1, "public": 1, "version": version.name},
+			fieldname=["name", "`default`", "title", "public"],
+			filters=filters,
 			order_by="creation desc",
 			as_dict=1,
 		)
@@ -450,6 +465,10 @@ def options_for_new():
 			if app_source not in unique_app_sources:
 				unique_app_sources.append(app_source)
 
+	filters = {"name": ("in", unique_app_sources)}
+	if not for_bench:
+		filters["public"] = True
+
 	app_source_details = frappe.db.get_all(
 		"App Source",
 		[
@@ -464,7 +483,7 @@ def options_for_new():
 			"app_title",
 			"frappe",
 		],
-		filters={"name": ("in", unique_app_sources), "public": True},
+		filters=filters,
 	)
 
 	unique_apps = []
@@ -476,7 +495,7 @@ def options_for_new():
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
+		fields=["title", "image", "description", "app", "route", "subscription_type"],
 		filters={"app": ("in", unique_apps)},
 	)
 	total_installs_by_app = frappe.db.get_all(
@@ -647,11 +666,8 @@ def get_plans(name=None, rg=None):
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
 
-		days_in_month = frappe.utils.get_last_day(None).day
 		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
 			plan.pop("roles", "")
-			plan["price_per_day_inr"] = rounded(plan["price_inr"] / days_in_month, 2)
-			plan["price_per_day_usd"] = rounded(plan["price_usd"] / days_in_month, 2)
 			out.append(plan)
 	return out
 
@@ -838,7 +854,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
-		"is_public": rg_info.public,
+		"group_public": rg_info.public,
 		"latest_frappe_version": frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		),
@@ -1023,8 +1039,10 @@ def get_installed_apps(site):
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+				"Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
 			)
+
+			app_source.plans = get_plans_for_app(app.app)
 
 			app_source.is_free = frappe.db.get_value(
 				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
@@ -1199,25 +1217,6 @@ def last_migrate_failed(name):
 @frappe.whitelist()
 @protected("Site")
 def backup(name, with_files=False):
-	site_doc = frappe.get_doc("Site", name)
-	if site_doc.status == "Suspended":
-		activity = frappe.db.get_all(
-			"Site Activity",
-			filters={"site": name, "action": "Suspend Site"},
-			order_by="creation desc",
-			limit=1,
-		)
-		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
-
-		if (
-			frappe.db.count(
-				"Site Backup",
-				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
-			)
-			> 3
-		):
-			frappe.throw("You cannot take more than 3 backups after site suspension")
-
 	frappe.get_doc("Site", name).backup(with_files)
 
 
@@ -1379,22 +1378,6 @@ def install_app(name, app, plan=None):
 @protected("Site")
 def uninstall_app(name, app):
 	frappe.get_doc("Site", name).uninstall_app(app)
-	disable_marketplace_plan_if_exists(name, app)
-
-
-def disable_marketplace_plan_if_exists(site_name, app_name):
-	marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app_name})
-	app_subscription = frappe.db.exists(
-		"Marketplace App Subscription", {"site": site_name, "app": marketplace_app_name}
-	)
-	if marketplace_app_name and app_subscription:
-		app_subscription = frappe.get_doc(
-			"Marketplace App Subscription",
-			app_subscription,
-			for_update=True,
-		)
-		app_subscription.status = "Disabled"
-		app_subscription.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -1622,27 +1605,35 @@ def change_notify_email(name, email):
 
 @frappe.whitelist()
 @protected("Site")
-def change_team(team, name):
+def send_change_team_request(name, team_mail_id, reason):
+	frappe.get_doc("Site", name).send_change_team_request(team_mail_id, reason)
 
-	if not (
-		frappe.db.exists("Team", {"team_title": team})
-		and frappe.db.get_value("Team", {"team_title": team}, "enabled", 1)
-	):
-		frappe.throw("No Active Team record found.")
 
-	from press.press.doctype.team.team import get_child_team_members
+@frappe.whitelist(allow_guest=True)
+def confirm_site_transfer(key):
+	cache = frappe.cache.get_value(f"site_transfer_data:{key}")
 
-	current_team = get_current_team(True)
-	child_teams = [team.team_title for team in get_child_team_members(current_team.name)]
-	teams = [current_team.team_title] + child_teams
+	if cache:
+		site, team_change = cache
 
-	if team not in teams:
-		frappe.throw(f"{team} is not part of your organization.")
+		team_change = frappe.get_doc("Team Change", team_change)
+		team_change.transfer_completed = True
+		team_change.save()
+		frappe.db.commit()
 
-	child_team = frappe.get_doc("Team", {"team_title": team})
-	site_doc = frappe.get_doc("Site", name)
-	site_doc.team = child_team.name
-	site_doc.save(ignore_permissions=True)
+		frappe.cache.delete_value(f"site_transfer_data:{key}")
+
+		frappe.response.type = "redirect"
+		frappe.response.location = f"/dashboard/sites/{site}"
+	else:
+		from frappe import _
+
+		frappe.respond_as_web_page(
+			_("Not Permitted"),
+			_("The link you are using is invalid or expired."),
+			http_status_code=403,
+			indicator_color="red",
+		)
 
 
 @frappe.whitelist()
@@ -1761,30 +1752,13 @@ def change_region_options(name):
 	group = frappe.get_doc("Release Group", group)
 	cluster_names = group.get_clusters()
 	group_regions = frappe.get_all(
-		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
+		"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
 	)
 
-	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
-
 	return {
-		"regions": regions,
-		"group_regions": group_regions,
+		"regions": [region for region in group_regions if region.name != cluster],
 		"current_region": cluster,
-		"group_team": group.team,
 	}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def add_region_to_group(name, region):
-	from press.api.bench import add_region
-
-	add_region(name, region)
-	group = frappe.get_doc("Release Group", name)
-	candidate = group.create_deploy_candidate()
-	candidate.deploy_to_production()
-
-	return candidate.name
 
 
 @frappe.whitelist()

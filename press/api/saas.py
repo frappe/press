@@ -51,6 +51,13 @@ def account_request(
 	if not country:
 		frappe.throw("Country field should be a valid country name")
 
+	team = frappe.db.get_value("Team", {"user": email})
+	if team:
+		if frappe.db.exists(
+			"Invoice", {"team": team, "status": "Unpaid", "type": "Subscription"}
+		):
+			frappe.throw(f"Account {email} already exists with unpaid invoices")
+
 	try:
 		account_request = frappe.get_doc(
 			{

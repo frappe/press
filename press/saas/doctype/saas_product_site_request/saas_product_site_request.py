@@ -7,7 +7,8 @@ from press.saas.doctype.saas_product.pooling import SitePool
 
 
 class SaaSProductSiteRequest(Document):
-	whitelisted_fields = ["site", "status", "saas_product"]
+	dashboard_fields = ["site", "status", "saas_product"]
+	dashboard_actions = ["create_site", "get_progress", "get_login_sid"]
 
 	def get_doc(self, doc):
 		saas_product = frappe.db.get_value(

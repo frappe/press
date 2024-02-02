@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard2/'),
+	history: createWebHistory('/dashboard-beta/'),
 	routes: [
 		{
 			path: '/',
@@ -52,6 +52,12 @@ let router = createRouter({
 			name: 'NewSite',
 			path: '/sites/new',
 			component: () => import('./pages/NewSite.vue')
+		},
+		{
+			name: 'NewBenchSite',
+			path: '/benches/:bench/sites/new',
+			component: () => import('./pages/NewSite.vue'),
+			props: true
 		},
 		{
 			name: 'NewBench',

@@ -71,12 +71,6 @@ if (showFloatingBanner != null) {
 	}
 }
 
-// show only in workspace
-const routes = ['/app', '/app/users', '/app/home', '/app/hr'];
-if (!routes.includes(window.location.pathname)) {
-	banner = false;
-}
-
 $(document).ready(function () {
 	// check if setup complete
 	if (frappe.boot.setup_complete === 1 && banner) {

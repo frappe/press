@@ -12,6 +12,8 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class SiteDomain(Document):
+	dashboard_fields = ["domain", "status", "dns_type", "site"]
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		domains = query.run(as_dict=1)

@@ -11,7 +11,7 @@ from frappe.utils import rounded
 
 
 class Plan(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"name",
 		"plan_title",
 		"document_type",
@@ -22,6 +22,7 @@ class Plan(Document):
 		"cpu_time_per_day",
 		"max_database_usage",
 		"max_storage_usage",
+		"database_access",
 	]
 
 	def get_doc(self, doc):

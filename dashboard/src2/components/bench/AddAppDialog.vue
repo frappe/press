@@ -113,7 +113,11 @@
 			</div>
 		</template>
 	</Dialog>
-	<NewAppDialog :benchName="benchName" v-model="showNewAppDialog" />
+	<NewAppDialog
+		:benchName="benchName"
+		v-model="showNewAppDialog"
+		@app-add="$emit('appAdd')"
+	/>
 </template>
 
 <script>

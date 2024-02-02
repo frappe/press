@@ -4,6 +4,7 @@
 from datetime import timedelta
 import frappe
 from frappe.utils.background_jobs import enqueue_doc
+from frappe.utils import cint
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
@@ -216,11 +217,11 @@ def get_call_threshold_duration():
 	day_hours = range(9, 18)
 	if frappe.utils.now_datetime().hour in day_hours:
 		return (
-			frappe.db.get_value("Incident Settings", None, "daytime_threshold")
+			cint(frappe.db.get_value("Incident Settings", None, "daytime_threshold"))
 			or DAYTIME_CALL_THRESHOLD_SECONDS
 		)
 	return (
-		frappe.db.get_value("Incident Settings", None, "nighttime_threshold")
+		cint(frappe.db.get_value("Incident Settings", None, "nighttime_threshold"))
 		or NIGHTTIME_CALL_THRESHOLD_SECONDS
 	)
 
