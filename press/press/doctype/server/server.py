@@ -30,7 +30,7 @@ class BaseServer(Document):
 		"status",
 		"team",
 	]
-	dashboard_actions = ["change_plan"]
+	dashboard_actions = ["change_plan", "reboot", "rename"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -589,6 +589,17 @@ class BaseServer(Document):
 			console.reload()
 			console.run_reboot()
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider in ("AWS EC2", "OCI"):
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
+	@frappe.whitelist()
+	def rename(self, title):
+		self.title = title
+		self.save()
+
 
 class Server(BaseServer):
 
@@ -894,12 +905,6 @@ class Server(BaseServer):
 		)
 		if servers:
 			return servers[0]
-
-	@frappe.whitelist()
-	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")

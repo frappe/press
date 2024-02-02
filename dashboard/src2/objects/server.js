@@ -1,5 +1,6 @@
 import { defineAsyncComponent, h } from 'vue';
-import { icon } from '../utils/components';
+import { toast } from 'vue-sonner';
+import { confirmDialog, icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import router from '../router';
@@ -7,7 +8,9 @@ import router from '../router';
 export default {
 	doctype: 'Server',
 	whitelistedMethods: {
-		changePlan: 'change_plan'
+		changePlan: 'change_plan',
+		reboot: 'reboot',
+		rename: 'rename'
 	},
 	list: {
 		route: '/servers',
@@ -78,6 +81,123 @@ export default {
 			return {
 				label: server.doc.status
 			};
+		},
+		actions({ documentResource: server }) {
+			let $team = getTeam();
+
+			return [
+				{
+					label: 'Options',
+					button: {
+						label: 'Options',
+						slots: {
+							icon: icon('more-horizontal')
+						}
+					},
+					options: [
+						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => $team.doc.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${
+										window.location.host
+									}/app/${server.doctype.replace(' ', '-').toLowerCase()}/${
+										server.doc.name
+									}`,
+									'_blank'
+								);
+							}
+						},
+						{
+							label: 'Visit Server',
+							icon: icon('external-link'),
+							condition: () => server.doc.status === 'Active',
+							onClick() {
+								window.open(`https://${server.doc.name}`, '_blank');
+							}
+						},
+						{
+							label: 'Rename Server',
+							condition: () => server.doc.status === 'Active',
+							icon: icon('edit'),
+							onClick() {
+								confirmDialog({
+									title: 'Rename Server',
+									fields: [
+										{
+											label: 'Enter new title for the server',
+											fieldname: 'title'
+										}
+									],
+									primaryAction: {
+										label: 'Update Title'
+									},
+									onSuccess({ hide, values }) {
+										if (server.rename.loading) return;
+										toast.promise(
+											server.rename.submit(
+												{
+													title: values.title
+												},
+												{
+													onSuccess() {
+														hide();
+													}
+												}
+											),
+											{
+												loading: 'Updating title...',
+												success: 'Title updated',
+												error: 'Failed to update title'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Reboot Server',
+							condition: () => server.doc.status === 'Active',
+							icon: icon('rotate-ccw'),
+							onClick() {
+								confirmDialog({
+									title: 'Reboot Server',
+									message: `Are you sure you want to reboot the server <b>${server.doc.name}</b>?`,
+									fields: [
+										{
+											label: 'Please type the server name to confirm',
+											fieldname: 'confirmServerName'
+										}
+									],
+									primaryAction: {
+										label: 'Reboot Server'
+									},
+									onSuccess({ hide, values }) {
+										if (server.reboot.loading) return;
+										if (values.confirmServerName !== server.doc.name) {
+											throw new Error('Server name does not match');
+										}
+										toast.promise(
+											server.reboot.submit(null, {
+												onSuccess() {
+													hide();
+												}
+											}),
+											{
+												loading: 'Rebooting...',
+												success: 'Server rebooted',
+												error: 'Failed to reboot server'
+											}
+										);
+									}
+								});
+							}
+						}
+					]
+				}
+			];
 		},
 		tabs: [
 			{
@@ -184,7 +304,7 @@ export default {
 					route(row) {
 						return {
 							name: 'Server Job',
-							params: { id: row.name, server: row.server }
+							params: { id: row.name }
 						};
 					},
 					orderBy: 'creation desc',
@@ -237,7 +357,7 @@ export default {
 					route(row) {
 						return {
 							name: 'Server Play',
-							params: { id: row.name, server: row.server }
+							params: { id: row.name }
 						};
 					},
 					orderBy: 'creation desc',
