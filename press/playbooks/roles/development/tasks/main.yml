@@ -15,5 +15,7 @@
 - name: Install Vagrant
   apt:
     pkg:
+      - build-essential
+      - pkg-config
       - vagrant
     state: present
