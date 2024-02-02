@@ -38,3 +38,22 @@
     groups:
       - kvm
     append: true
+
+- name: Install libvirt
+  apt:
+    pkg:
+      - libvirt-dev
+      - libvirt-daemon-system
+      - qemu-utils
+      - dnsmasq-base
+    state: present
+
+- name: Add Frappe User to libvirt Group
+  user:
+    name: frappe
+    groups:
+      - libvirt
+    append: true
+
+- name: Install Vagrant Libvirt Plugin
+  shell: vagrant plugin install vagrant-libvirt
