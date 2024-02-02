@@ -55,7 +55,6 @@ export default {
 			return getTeam()?.doc;
 		},
 		partnerDetails() {
-			console.log(this.$resources.partner.data);
 			return [
 				{
 					label: 'Name',

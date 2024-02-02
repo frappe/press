@@ -350,10 +350,9 @@ def get_partner_details(partner_email):
 	from press.utils.billing import get_frappe_io_connection
 
 	client = get_frappe_io_connection()
-	# print(partner_email)
 	data = client.get_doc(
 		"Partner",
-		filters={"email": partner_email},
+		filters={"email": partner_email, "enabled": 1},
 		fields=[
 			"email",
 			"partner_type",
@@ -364,7 +363,6 @@ def get_partner_details(partner_email):
 			"partner_name",
 		],
 	)
-	# print(data)
 	if data:
 		return data[0]
 	else:
