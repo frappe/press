@@ -134,8 +134,14 @@
    "reqd": 1
   }
  ],
- "links": [],
- "modified": "2024-01-15 15:16:01.695164",
+ "links": [
+  {
+   "group": "Logs",
+   "link_doctype": "Ansible Play",
+   "link_fieldname": "server"
+  }
+ ],
+ "modified": "2024-02-02 16:36:54.686053",
  "modified_by": "Administrator",
  "module": "Infrastructure",
  "name": "Development Server",

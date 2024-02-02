@@ -1,0 +1,19 @@
+- name: Add Hashicorp Repository Key
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /etc/apt/keyrings/hashicorp.asc
+
+- name: Add Hashicorp Repository
+  apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/hashicorp.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+    filename: hashicorp
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Install Vagrant
+  apt:
+    pkg:
+      - vagrant
+    state: present
