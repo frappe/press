@@ -26,3 +26,15 @@
       - packer
       - cloud-utils
     state: present
+
+- name: Install QEMU
+  apt:
+    package: qemu-kvm
+    state: present
+
+- name: Add Frappe User to KVM Group
+  user:
+    name: frappe
+    groups:
+      - kvm
+    append: true
