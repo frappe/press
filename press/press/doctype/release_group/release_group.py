@@ -342,7 +342,7 @@ class ReleaseGroup(Document):
 		).version
 
 		try:
-			return sv.Version(version) in sv.SimpleSpec(">=5.21.1")
+			return sv.Version(version) in sv.SimpleSpec(">=5.21.3")
 		except ValueError:
 			return False
 

@@ -221,20 +221,11 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
-
-  {% if app.use_cached %}
-  # App present in cache, Bench and DC support get-app cache
-  bench get-app {{ app.app }} --cache-key {{ app.hash }} \
-
-  {% elif doc.use_app_cache %}
-  # Bench and DC support get-app cache (app NOT present in cache)
-  bench get-app file:///home/frappe/context/apps/{{ app.app }} --cache-key {{ app.hash }} \
-
-  {% else %}
-  # No get-app cache support
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-  {% endif %}
-
+    {% if doc.use_app_cache %}
+    # Bench get-app flags to use get-app cache
+    --cache-key {{ app.hash }} --compress-artifacts \
+    {% endif %}
   `#stage-apps-{{ app.app }}`
 
 {% endif %}
