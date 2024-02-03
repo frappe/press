@@ -6,8 +6,10 @@ frappe.ui.form.on("Performance Report", {
 		frm.add_custom_button(__('Multiply 10^9 with Count & Time Field'), function(){
 			format_fields_helper(frm.get_doc());
 			frm.refresh_fields();
-			msgprint("All the count & time fields with billion and billion_ps suffixes have been multiplied by 10^9");
+			let notice_msg = __("All the count & time fields with billion and billion ps as unit have been multiplied by 10^9");
+			msgprint(notice_msg);
 			frm.remove_custom_button(__('Multiply 10^9 with Count & Time Field'));
+			frm.set_intro(notice_msg);
     });
 	},
 });
