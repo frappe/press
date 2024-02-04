@@ -1,7 +1,7 @@
 <template>
 	<div class="p-5">
 		<div v-if="!$resources.upcomingInvoice.loading">
-			<div class="grid grid-cols-3 gap-5">
+			<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 				<div class="rounded-md border p-4">
 					<div class="flex items-center justify-between">
 						<div class="mb-2 text-sm text-gray-700">Current Billing Amount</div>

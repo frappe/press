@@ -1,8 +1,8 @@
 <template>
-	<div class="flex w-1/2 items-center justify-between py-1">
+	<div class="flex items-center justify-between gap-1">
 		<div>
 			<h3 class="text-base font-medium">{{ props.actionLabel }}</h3>
-			<p class="mt-1 text-base text-gray-600">{{ props.description }}</p>
+			<p class="mt-1 text-p-base text-gray-600">{{ props.description }}</p>
 		</div>
 		<RestrictedAction
 			v-if="site?.doc"
