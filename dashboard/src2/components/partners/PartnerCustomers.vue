@@ -20,24 +20,74 @@
 				</template>
 			</template>
 		</Dialog>
+		<Dialog
+			v-model="transferCreditsDialog"
+			:modelValue="true"
+			:options="{ title: 'Transfer Credits' }"
+		>
+			<template #body-content>
+				<p class="text-p-base pb-3">
+					Enter the equivalent amount of credits (in {{ $team.doc.currency }})
+					you wish to transfer.
+				</p>
+				<FormControl placeholder="Amount" v-model="amount" autocomplete="off" />
+				<ErrorMessage
+					class="mt-2"
+					:message="$resources.transferCredits.error"
+				/>
+			</template>
+			<template #actions>
+				<Button
+					type="primary"
+					variant="solid"
+					class="w-full"
+					:loading="$resources.transferCredits.loading"
+					@click="
+						$resources.transferCredits.submit({
+							amount: amount,
+							customer: customerTeam.name,
+							partner: $team.doc.name
+						})
+					"
+				>
+					Transfer
+				</Button>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
-import { Dialog } from 'frappe-ui';
+import { Dialog, ErrorMessage } from 'frappe-ui';
+import { toast } from 'vue-sonner';
 export default {
 	name: 'PartnerCustomers',
 	components: {
 		ObjectList,
 		PartnerCustomerInvoices,
-		Dialog
+		Dialog,
+		ErrorMessage
 	},
 	data() {
 		return {
 			contributionDialog: false,
-			showInvoice: null
+			showInvoice: null,
+			transferCreditsDialog: false,
+			customerTeam: null,
+			amount: 0.0
 		};
+	},
+	resources: {
+		transferCredits() {
+			return {
+				url: 'press.api.account.transfer_credits',
+				onSuccess() {
+					this.transferCreditsDialog = false;
+					toast.success('Credits Transferred');
+				}
+			};
+		}
 	},
 	computed: {
 		options() {
@@ -62,14 +112,28 @@ export default {
 						fieldname: 'currency'
 					}
 				],
+				rowActions: ({ row, listResource }) => {
+					return [
+						{
+							label: 'Transfer Credits',
+							onClick: () => {
+								this.transferCreditsDialog = true;
+								this.customerTeam = row;
+							}
+						},
+						{
+							label: 'View Contributions',
+							onClick: () => {
+								this.showInvoice = row;
+								this.contributionDialog = true;
+							}
+						}
+					];
+				},
 				filters: {
 					enabled: 1,
 					partner_email: this.$team.doc.partner_email,
 					erpnext_partner: 0
-				},
-				onRowClick: row => {
-					this.contributionDialog = true;
-					this.showInvoice = row;
 				}
 			};
 		}
