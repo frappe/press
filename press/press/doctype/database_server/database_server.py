@@ -726,8 +726,7 @@ class DatabaseServer(BaseServer):
 				self.name,
 				"_fetch_performance_report",
 				queue="long",
-				timeout=1200,
-				now=True
+				timeout=1200
 			)
 			frappe.msgprint("Performance Schema Report Fetching Started")
 		else:
