@@ -372,26 +372,26 @@ def get_partner_details(partner_email):
 @frappe.whitelist()
 def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
-	team_doc = frappe.get_doc("Team", partner)
-	credits_available = team_doc.get_balance()
+	partner_doc = frappe.get_doc("Team", partner)
+	credits_available = partner_doc.get_balance()
 
 	if credits_available < amt:
 		frappe.throw("Insufficient Credits to transfer")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
-	if customer_doc.currency != team_doc.currency:
-		if team_doc.currency == "USD":
+	if customer_doc.currency != partner_doc.currency:
+		if partner_doc.currency == "USD":
 			credits_to_transfer = amt * 83
 		else:
 			credits_to_transfer = amt / 83
 
 	try:
-		team_doc.allocate_credit_amount(
-			credits_to_transfer, "Transferred Credits", f"From {customer_doc.name}"
-		)
 		customer_doc.allocate_credit_amount(
-			amt * -1, "Transferred Credits", f"To {team_doc.name}"
+			credits_to_transfer, "Transferred Credits", f"From {partner_doc.name}"
+		)
+		partner_doc.allocate_credit_amount(
+			amt * -1, "Transferred Credits", f"To {customer_doc.name}"
 		)
 		frappe.db.commit()
 	except Exception:
