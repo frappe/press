@@ -12,6 +12,7 @@ ExecReload=/bin/kill -HUP $MAINPID
 
 ExecStart=/home/frappe/prometheus/prometheus \
   --config.file=/home/frappe/prometheus/prometheus.yml \
+  --enable-feature=promql-negative-offset \
   --storage.tsdb.path=/home/frappe/prometheus/data \
   --storage.tsdb.retention.time=180d \
   --web.console.libraries=/home/frappe/prometheus/console_libraries \
