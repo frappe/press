@@ -16,7 +16,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/prometheus/prometheus/releases/download/v2.27.1/prometheus-2.27.1.linux-amd64.tar.gz
+    src: https://github.com/prometheus/prometheus/releases/download/v2.49.1/prometheus-2.49.1.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -24,7 +24,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/prometheus-2.27.1.linux-amd64/{{ item }}/'
+    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}/'
     dest: '/home/frappe/prometheus/{{ item }}/'
     mode: 0755
     remote_src: yes
@@ -36,7 +36,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: '/tmp/prometheus-2.27.1.linux-amd64/{{ item }}'
+    src: '/tmp/prometheus-2.49.1.linux-amd64/{{ item }}'
     dest: '/home/frappe/prometheus/{{ item }}'
     mode: 0755
     remote_src: yes
