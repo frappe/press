@@ -62,7 +62,7 @@
 			/>
 
 			<BarChart
-				class="col-span-2"
+				class="sm:col-span-2"
 				title="Request Count by Path"
 				:key="requestCountByPathData"
 				:data="requestCountByPathData"
@@ -71,7 +71,7 @@
 				:loading="$resources.analytics.loading"
 			/>
 			<BarChart
-				class="col-span-2"
+				class="sm:col-span-2"
 				title="Request Duration by Path"
 				:key="requestDurationByPathData"
 				:data="requestDurationByPathData"
