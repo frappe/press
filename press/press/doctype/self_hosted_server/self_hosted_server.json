@@ -8,38 +8,41 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "new_server",
+  "different_database_server",
+  "server_url",
   "hostname",
   "domain",
-  "server_url",
-  "ip",
-  "proxy_created",
-  "database_setup",
-  "server_created",
   "column_break_3eap",
   "status",
   "cluster",
   "team",
-  "plan",
   "release_group",
-  "private_ip",
-  "different_database_server",
-  "existing_bench_present",
-  "new_server",
   "section_break_0fky",
+  "proxy_created",
   "proxy_server",
+  "proxy_public_ip",
   "column_break_bcsw",
   "agent_password",
-  "server_section",
-  "server",
-  "ssh_user",
-  "column_break_smwr",
-  "ssh_port",
+  "proxy_private_ip",
   "database_section",
+  "database_setup",
   "database_server",
   "mariadb_ip",
-  "column_break_qvmo",
   "mariadb_root_user",
+  "column_break_qvmo",
+  "mariadb_private_ip",
   "mariadb_root_password",
+  "server_section",
+  "server_created",
+  "server",
+  "ip",
+  "ssh_user",
+  "column_break_smwr",
+  "existing_bench_present",
+  "plan",
+  "private_ip",
+  "ssh_port",
   "existing_bench_tab",
   "bench_directory",
   "column_break_yb8y",
@@ -93,6 +96,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
    "fieldname": "database_section",
    "fieldtype": "Section Break",
    "label": "Database"
@@ -105,7 +109,7 @@
   {
    "fieldname": "mariadb_ip",
    "fieldtype": "Data",
-   "label": "MariaDB IP"
+   "label": "MariaDB Public IP"
   },
   {
    "fieldname": "column_break_qvmo",
@@ -176,6 +180,7 @@
    "label": "Existing Bench Present"
   },
   {
+   "collapsible": 1,
    "fieldname": "server_section",
    "fieldtype": "Section Break",
    "label": "Server"
@@ -249,6 +254,7 @@
    "label": "New Server"
   },
   {
+   "collapsible": 1,
    "fieldname": "section_break_0fky",
    "fieldtype": "Section Break",
    "label": "Proxy"
@@ -287,8 +293,7 @@
   {
    "fieldname": "server_url",
    "fieldtype": "Data",
-   "label": "Server URL",
-   "reqd": 1
+   "label": "Server URL"
   },
   {
    "fieldname": "plan",
@@ -355,10 +360,25 @@
    "fieldname": "vendor",
    "fieldtype": "Data",
    "label": "Vendor"
+  },
+  {
+   "fieldname": "proxy_public_ip",
+   "fieldtype": "Data",
+   "label": "Proxy Public IP"
+  },
+  {
+   "fieldname": "proxy_private_ip",
+   "fieldtype": "Data",
+   "label": "Proxy Private IP"
+  },
+  {
+   "fieldname": "mariadb_private_ip",
+   "fieldtype": "Data",
+   "label": "MariaDB Private IP"
   }
  ],
  "links": [],
- "modified": "2023-08-03 19:20:04.797706",
+ "modified": "2024-02-05 16:55:46.489154",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

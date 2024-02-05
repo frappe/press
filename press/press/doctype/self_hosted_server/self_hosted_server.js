@@ -9,21 +9,24 @@ frappe.ui.form.on('Self Hosted Server', {
 		);
 		[
 			[__('Ping Server'), 'ping_ansible', false],
-			[__('Fetch Ram'), 'fetch_system_ram', false, !frm.doc.ram],
-			[__('Fetch Private IP'), 'fetch_private_ip', false, !frm.doc.private_ip],
-			[__('Fetch System Details'), 'fetch_system_specifications', false],
-			[__('Setup Nginx'), '_setup_nginx', false],
-			[__('Fetch System Details'), 'fetch_system_specifications', false],
-			[__('Create TLS Certificate'), 'create_tls_certs', true],
-			[__('Update TLS'), 'update_tls', false],
-			[__('Create Proxy Server'), 'create_proxy_server', false],
+			[
+				__('Create Proxy Server'),
+				'create_proxy_server',
+				false,
+				!frm.doc.proxy_created,
+			],
 			[
 				__('Create Database Server'),
 				'create_db_server',
 				false,
-				frm.doc.proxy_created,
+				frm.doc.proxy_created &&
+					frm.doc.different_database_server &&
+					!frm.doc.database_setup,
 			],
 			[__('Create App Server'), 'create_server', false, frm.doc.database_setup],
+			[__('Setup Nginx'), '_setup_nginx', false],
+			[__('Create TLS Certificate'), 'create_tls_certs', true],
+			[__('Update TLS'), 'update_tls', false],
 			[
 				__('Restore Files from Existing Sites'),
 				'restore_files',
@@ -48,7 +51,10 @@ frappe.ui.form.on('Self Hosted Server', {
 				true,
 				frm.doc.existing_bench_present && frm.doc.release_group,
 			],
-			,
+			[__('Fetch System Details'), 'fetch_system_specifications', false],
+			[__('Fetch Ram'), 'fetch_system_ram', false, !frm.doc.ram],
+			[__('Fetch Private IP'), 'fetch_private_ip', false, !frm.doc.private_ip],
+			[__('Fetch System Details'), 'fetch_system_specifications', false],
 		].forEach(([label, method, confirm, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

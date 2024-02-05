@@ -227,7 +227,7 @@ class SelfHostedServer(Document):
 	def create_db_server(self):
 		try:
 			db_server = frappe.new_doc("Database Server")
-			db_server.hostname = self.hostname
+			db_server.hostname = self.get_hostname(self.hostname, "Database Server")
 			db_server.title = self.title
 			db_server.is_self_hosted = True
 			db_server.self_hosted_server_domain = self.domain
@@ -289,7 +289,7 @@ class SelfHostedServer(Document):
 		"""
 		try:
 			server = frappe.new_doc("Server")
-			server.hostname = self.hostname
+			server.hostname = self.get_hostname(self.hostname, "Server")
 			server.title = self.title
 			server.is_self_hosted = True
 			server.self_hosted_server_domain = self.domain
@@ -395,6 +395,9 @@ class SelfHostedServer(Document):
 			log_error("Self Hosted Restore error", server=self.name)
 		self.save()
 
+	def get_hostname(self, server_type):
+		return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}"
+
 	@frappe.whitelist()
 	def create_proxy_server(self):
 		"""
@@ -402,7 +405,7 @@ class SelfHostedServer(Document):
 		"""
 		try:
 			server = frappe.new_doc("Proxy Server")
-			server.hostname = self.hostname
+			server.hostname = self.get_hostname(self.hostname, "Proxy Server")
 			server.title = self.title
 			server.is_self_hosted = True
 			server.domain = self.domain
@@ -612,3 +615,11 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
 		case _:
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
+
+
+def get_symbolic_name(server_type):
+	return {
+		"Proxy Server": "n",
+		"Server": "f",
+		"Database Server": "m",
+	}.get(server_type, "f")
