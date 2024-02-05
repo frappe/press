@@ -609,6 +609,12 @@ class DatabaseServer(BaseServer):
 				variables={
 					"private_ip": self.private_ip,
 					"mariadb_port": mariadb_port,
+					"stalk_function": self.stalk_function,
+					"stalk_variable": self.stalk_variable,
+					"stalk_threshold": self.stalk_threshold,
+					"stalk_sleep": self.stalk_sleep,
+					"stalk_cycles": self.stalk_cycles,
+					"stalk_interval": self.stalk_interval,
 				},
 			)
 			play = ansible.run()
