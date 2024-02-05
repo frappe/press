@@ -6,6 +6,8 @@ After=network-online.target
 Type=simple
 ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=/usr/bin/pt-stalk --defaults-file /root/.my.cnf \
+    --host {{ private_ip }} \
+    --port {{ mariadb_port }} \
     --interval 1 \
     --cycles 5 \
     --sleep 300 \

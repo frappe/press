@@ -595,8 +595,22 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _setup_pt_stalk(self):
+		extra_port_variable = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "extra_port"
+		)
+		if extra_port_variable:
+			mariadb_port = extra_port_variable.value_int
+		else:
+			mariadb_port = 3306
 		try:
-			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			ansible = Ansible(
+				playbook="pt_stalk.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_port": mariadb_port,
+				},
+			)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
