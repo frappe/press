@@ -77,6 +77,9 @@ export default {
 	},
 	detail: {
 		titleField: 'title',
+		statusBadge({ documentResource: releaseGroup }) {
+			return { label: releaseGroup.doc.status };
+		},
 		route: '/benches/:name',
 		tabs: [
 			{
@@ -453,7 +456,7 @@ export default {
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
-							label: 'Show Config Preview',
+							label: 'Preview',
 							slots: {
 								prefix: icon('eye')
 							},
@@ -683,7 +686,7 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					options: [

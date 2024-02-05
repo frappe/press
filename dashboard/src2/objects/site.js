@@ -11,6 +11,7 @@ import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
+import SiteActions from '../components/SiteActions.vue';
 
 export default {
 	doctype: 'Site',
@@ -657,7 +658,7 @@ export default {
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
-							label: 'Show Config Preview',
+							label: 'Preview',
 							slots: {
 								prefix: icon('eye')
 							},
@@ -732,27 +733,10 @@ export default {
 				label: 'Actions',
 				icon: icon('activity'),
 				route: 'actions',
-				type: 'list',
-				list: {
-					data({ documentResource: site }) {
-						return site.doc.actions;
-					},
-					columns: [
-						{
-							label: 'Action',
-							fieldname: 'action',
-							type: 'Component',
-							component: ({ row, documentResource: site }) => {
-								return h(SiteActionCell, {
-									siteName: site.doc.name,
-									actionLabel: row.action,
-									method: row.doc_method,
-									description: row.description,
-									buttonLabel: row.button_label
-								});
-							}
-						}
-					]
+				type: 'Component',
+				component: SiteActions,
+				props: site => {
+					return { site: site.doc.name };
 				}
 			},
 			{
@@ -910,7 +894,7 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					context,
