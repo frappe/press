@@ -34,9 +34,9 @@
 					<div class="mt-1 text-sm text-gray-600">
 						{{
 							$format.userCurrency(
-								($team.doc.currency === 'INR'
-									? plan.price_inr
-									: plan.price_usd) / daysInThisMonth
+								$format.pricePerDay(
+									$team.doc.currency === 'INR' ? plan.price_inr : plan.price_usd
+								)
 							)
 						}}
 						/day
@@ -79,12 +79,6 @@
 <script>
 export default {
 	props: ['modelValue', 'plans'],
-	emits: ['update:modelValue'],
-	computed: {
-		daysInThisMonth() {
-			const now = new Date();
-			return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-		}
-	}
+	emits: ['update:modelValue']
 };
 </script>

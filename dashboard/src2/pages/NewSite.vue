@@ -556,7 +556,9 @@ export default {
 				new Date().getMonth() + 1,
 				0
 			).getDate();
-			return this.$format.userCurrency(this._totalPerMonth / daysInThisMonth);
+			return this.$format.userCurrency(
+				this.$format.pricePerDay(this._totalPerMonth)
+			);
 		}
 	},
 	methods: {

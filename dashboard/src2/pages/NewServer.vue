@@ -143,16 +143,15 @@
 						}}
 						per month
 						<div class="text-gray-600">
-							<!-- per day -->
 							{{
 								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? (selectedAppServerPlan.price_inr +
-												selectedDatabaseServerPlan.price_inr) /
-												30
-										: (selectedAppServerPlan.price_usd +
-												selectedDatabaseServerPlan.price_usd) /
-												30
+									$format.pricePerDay(
+										$team.doc.currency == 'INR'
+											? selectedAppServerPlan.price_inr +
+													selectedDatabaseServerPlan.price_inr
+											: selectedAppServerPlan.price_usd +
+													selectedDatabaseServerPlan.price_usd
+									)
 								)
 							}}
 							per day
