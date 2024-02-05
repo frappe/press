@@ -69,7 +69,7 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					// router.push({ name: 'NewServer' });
+					router.push({ name: 'NewServer' });
 				}
 			};
 		}

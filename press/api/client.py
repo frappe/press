@@ -35,6 +35,7 @@ ALLOWED_DOCTYPES = [
 	"Agent Job",
 	"Common Site Config",
 	"Server",
+	"Database Server",
 	"Ansible Play",
 ]
 
