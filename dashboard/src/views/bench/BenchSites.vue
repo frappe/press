@@ -440,6 +440,8 @@ export default {
 					},
 					condition: () =>
 						this.versions[i].status === 'Active' &&
+						(Number(this.versions[i].version.split(' ')[1] > 13) ||
+							this.versions[i].version === 'Nightly') &&
 						this.permissions.rebuildBench
 				},
 				{
