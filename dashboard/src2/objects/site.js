@@ -12,6 +12,7 @@ import SiteActionCell from '../components/SiteActionCell.vue';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Site',
@@ -40,7 +41,9 @@ export default {
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		sendTransferRequest: 'send_change_team_request'
+		sendTransferRequest: 'send_change_team_request',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/sites',
@@ -792,7 +795,6 @@ export default {
 					]
 				}
 			},
-
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -830,7 +832,8 @@ export default {
 						}
 					]
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: site } = context;
