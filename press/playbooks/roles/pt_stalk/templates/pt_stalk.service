@@ -8,6 +8,8 @@ ExecReload=/bin/kill -HUP $MAINPID
 ExecStart=/usr/bin/pt-stalk --defaults-file /root/.my.cnf \
     --host {{ private_ip }} \
     --port {{ mariadb_port }} \
+    {% if stalk_collect_gdb %} --collect-gdb {% endif %} \
+    {% if stalk_collect_strace %} --collect-strace {% endif %} \
     --interval {{ stalk_interval }} \
     --cycles {{ stalk_cycles }} \
     --sleep {{ stalk_sleep }} \
