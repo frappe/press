@@ -606,6 +606,22 @@ class DatabaseServer(BaseServer):
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
+	def setup_mariadb_debug_symbols(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
+		)
+
+	def _setup_mariadb_debug_symbols(self):
+		try:
+			ansible = Ansible(
+				playbook="mariadb_debug_symbols.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Debug Symbols Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def fetch_stalks(self):
 		frappe.enqueue(
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_server_stalks",
