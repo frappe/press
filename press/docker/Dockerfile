@@ -224,7 +224,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
     {% if doc.use_app_cache %}
     # Bench get-app flags to use get-app cache
-    --cache-key {{ app.hash }} --compress-artifacts \
+    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
     {% endif %}
   `#stage-apps-{{ app.app }}`
 
