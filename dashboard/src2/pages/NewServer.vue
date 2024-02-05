@@ -118,6 +118,15 @@
 							)
 						}}
 						per month
+						<div class="text-gray-600">
+							{{ selectedAppServerPlan.vcpu }} vCPU
+						</div>
+						<div class="text-gray-600">
+							{{ $format.bytes(selectedAppServerPlan.memory, 0, 2) }} GB RAM
+						</div>
+						<div class="text-gray-600">
+							{{ $format.bytes(selectedAppServerPlan.disk, 0, 2) }} GB Disk
+						</div>
 					</div>
 					<div class="text-gray-600">Database Server Plan:</div>
 					<div class="text-gray-900">
@@ -129,6 +138,16 @@
 							)
 						}}
 						per month
+						<div class="text-gray-600">
+							{{ selectedDatabaseServerPlan.vcpu }} vCPU
+						</div>
+						<div class="text-gray-600">
+							{{ $format.bytes(selectedDatabaseServerPlan.memory, 0, 2) }} GB
+							RAM
+						</div>
+						<div class="text-gray-600">
+							{{ $format.bytes(selectedDatabaseServerPlan.disk, 0, 2) }} GB Disk
+						</div>
 					</div>
 					<div class="text-gray-600">Total:</div>
 					<div class="text-gray-900">
