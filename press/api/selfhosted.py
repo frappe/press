@@ -18,7 +18,7 @@ def new(server):
 		frappe.throw(
 			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
 		)
-	cluster = "Hybrid"
+	cluster = get_cluster()
 	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 	self_hosted_server = frappe.get_doc(
 		{
@@ -34,6 +34,10 @@ def new(server):
 		}
 	).insert()
 	return self_hosted_server.name
+
+
+def get_cluster():
+	return frappe.db.get_value("Cluster", {"hybrid": 1}, "name")
 
 
 @frappe.whitelist()
