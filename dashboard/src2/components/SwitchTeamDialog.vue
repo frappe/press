@@ -35,6 +35,7 @@
 						</span>
 					</div>
 					<Badge
+						class="whitespace-nowrap"
 						v-if="$team.name === team.name"
 						label="Currently Active"
 						theme="green"

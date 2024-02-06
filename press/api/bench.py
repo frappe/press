@@ -182,7 +182,9 @@ def get_app_counts_for_groups(rg_names):
 @frappe.whitelist()
 def exists(title):
 	team = get_current_team()
-	return bool(frappe.db.exists("Release Group", {"title": title, "team": team}))
+	return bool(
+		frappe.db.exists("Release Group", {"title": title, "team": team, "enabled": True})
+	)
 
 
 @frappe.whitelist()
@@ -484,6 +486,7 @@ def versions(name):
 
 	for version in deployed_versions:
 		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+		version.version = rg_version
 		for site in version.sites:
 			site.version = rg_version
 			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)

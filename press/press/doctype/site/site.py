@@ -111,6 +111,7 @@ class Site(Document):
 		)
 		doc.group_title = group.title
 		doc.group_public = group.public
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated

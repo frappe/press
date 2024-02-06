@@ -22,7 +22,7 @@
 				</Button>
 			</div>
 			<div>
-				<div class="mt-4 grid grid-cols-5 gap-4">
+				<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">

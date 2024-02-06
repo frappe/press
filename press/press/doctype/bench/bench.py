@@ -662,7 +662,7 @@ def sync_benches():
 	for bench in benches:
 		frappe.enqueue(
 			"press.press.doctype.bench.bench.sync_bench",
-			queue="long",
+			queue="sync",
 			name=bench,
 			enqueue_after_commit=True,
 		)
@@ -697,7 +697,7 @@ def sync_analytics():
 	for bench in benches:
 		frappe.enqueue(
 			"press.press.doctype.bench.bench.sync_bench_analytics",
-			queue="long",
+			queue="sync",
 			name=bench,
 			enqueue_after_commit=True,
 		)
