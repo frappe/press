@@ -250,6 +250,8 @@ class TestAPIServer(FrappeTestCase):
 		)
 
 		db_server = frappe.get_last_doc("Database Server")
+		for server in frappe.get_all("Database Server"):
+			print(server.as_dict())
 		self.assertEqual(
 			find(
 				db_server.mariadb_system_variables,
