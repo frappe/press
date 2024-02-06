@@ -69,7 +69,8 @@
    "fieldname": "server",
    "fieldtype": "Link",
    "label": "Server",
-   "options": "Server"
+   "options": "Server",
+   "search_index": 1
   },
   {
    "fieldname": "bench_directory",
@@ -223,7 +224,8 @@
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
-   "options": "Database Server"
+   "options": "Database Server",
+   "search_index": 1
   },
   {
    "fieldname": "release_group",
@@ -265,7 +267,8 @@
    "fieldtype": "Link",
    "label": "Proxy Server",
    "mandatory_depends_on": "eval:doc.proxy_created",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_bcsw",
@@ -386,7 +389,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-06 15:34:12.878592",
+ "modified": "2024-02-06 17:06:01.177691",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",
