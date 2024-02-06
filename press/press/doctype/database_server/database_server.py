@@ -599,7 +599,7 @@ class DatabaseServer(BaseServer):
 			self.mariadb_system_variables, lambda x: x.mariadb_variable == "extra_port"
 		)
 		if extra_port_variable:
-			mariadb_port = extra_port_variable.value_int
+			mariadb_port = extra_port_variable.value_str
 		else:
 			mariadb_port = 3306
 		try:
