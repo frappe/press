@@ -19,20 +19,21 @@
   "team",
   "release_group",
   "section_break_0fky",
+  "proxy_public_ip",
   "proxy_created",
   "proxy_server",
-  "proxy_public_ip",
   "column_break_bcsw",
-  "agent_password",
   "proxy_private_ip",
+  "agent_password",
   "database_section",
-  "database_setup",
-  "database_server",
   "mariadb_ip",
   "mariadb_root_user",
+  "database_setup",
+  "database_server",
   "column_break_qvmo",
   "mariadb_private_ip",
   "mariadb_root_password",
+  "database_plan",
   "server_section",
   "server_created",
   "server",
@@ -107,6 +108,7 @@
    "label": "MariaDB Root User"
   },
   {
+   "depends_on": "eval:doc.different_database_server",
    "fieldname": "mariadb_ip",
    "fieldtype": "Data",
    "label": "MariaDB Public IP"
@@ -372,13 +374,20 @@
    "label": "Proxy Private IP"
   },
   {
+   "depends_on": "eval:doc.different_database_server",
    "fieldname": "mariadb_private_ip",
    "fieldtype": "Data",
    "label": "MariaDB Private IP"
+  },
+  {
+   "fieldname": "database_plan",
+   "fieldtype": "Link",
+   "label": "Database Plan",
+   "options": "Plan"
   }
  ],
  "links": [],
- "modified": "2024-02-05 16:55:46.489154",
+ "modified": "2024-02-06 14:57:18.154242",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

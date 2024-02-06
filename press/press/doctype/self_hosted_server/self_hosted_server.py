@@ -16,6 +16,7 @@ class SelfHostedServer(Document):
 		self.name = sdext(self.server_url).fqdn
 
 	def validate(self):
+		self.set_proxy_details()
 		if not self.mariadb_ip:
 			self.mariadb_ip = self.private_ip
 		if not self.mariadb_root_user:
@@ -28,6 +29,12 @@ class SelfHostedServer(Document):
 			extracted_url = sdext(self.server_url)
 			self.hostname = extracted_url.subdomain
 			self.domain = extracted_url.registered_domain
+
+	def set_proxy_details(self):
+		if self.proxy_created or self.proxy_server:
+			self.proxy_public_ip, self.proxy_private_ip = frappe.db.get_value(
+				"Proxy Server", self.proxy_server, ["ip", "private_ip"]
+			)
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -404,28 +411,31 @@ class SelfHostedServer(Document):
 		Add a new record to the Proxy Server doctype
 		"""
 		try:
-			server = frappe.new_doc("Proxy Server")
-			server.hostname = self.get_hostname(self.hostname, "Proxy Server")
-			server.title = self.title
-			server.is_self_hosted = True
-			server.domain = self.domain
-			server.self_hosted_server_domain = self.domain
-			server.team = self.team
-			server.ip = self.ip
-			server.private_ip = self.private_ip
-			server.ssh_user = self.ssh_user
-			server.is_primary = True
-			server.cluster = self.cluster
-			server.ssh_port = self.ssh_port
-			new_server = server.insert()
-			self.agent_password = new_server.get_password("agent_password")
-			self.proxy_server = new_server.name
-			self.proxy_server_ip = self.private_ip
+			proxy_server = frappe.get_doc(
+				{
+					"doctype": "Proxy Server",
+					"hostname": self.get_hostname(self.hostname, "Proxy Server"),
+					"title": self.title,
+					"is_self_hosted": True,
+					"domain": self.domain,
+					"self_hosted_server_domain": self.domain,
+					"team": self.team,
+					"ip": self.proxy_public_ip,
+					"private_ip": self.proxy_private_ip,
+					"is_primary": True,
+					"cluster": self.cluster,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+				}
+			).insert()
+
+			self.agent_password = proxy_server.get_password("agent_password")
+			self.proxy_server = proxy_server.name
 			self.status = "Active"
 			self.proxy_created = True
 		except Exception as e:
 			self.status = "Broken"
-			frappe.throw("Server Creation Error", exc=e)
+			frappe.throw("Self Hosted Proxy Server Creation Error", exc=e)
 		self.save()
 
 	@frappe.whitelist()
@@ -449,13 +459,21 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def setup_nginx(self):
+		if self.proxy_server and self.proxy_public_ip != self.ip:
+			"""Setup nginx sets ssl_nginx on the server,
+			if a proxy is configured these settings are already considered in proxy.conf"""
+			return
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or "22",
-				variables={"domain": self.name},
+				variables={
+					"domain": self.name,
+					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
+				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
