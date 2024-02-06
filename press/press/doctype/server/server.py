@@ -434,9 +434,13 @@ class BaseServer(Document):
 
 	def get_certificate(self):
 		if self.is_self_hosted:
+			self_hosted = frappe.db.get_value(
+				"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
+			)
+
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				{"domain": f"{self_hosted.hostname}.{self_hosted.domain}"},
 				"name",
 			)
 		else:

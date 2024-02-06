@@ -312,6 +312,7 @@ class SelfHostedServer(Document):
 		"""
 		Add a new record to the Server doctype
 		"""
+
 		try:
 			server = frappe.get_doc(
 				{
@@ -344,6 +345,7 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 		self.save()
+		self.create_tls_certs()
 
 		frappe.msgprint(f"Server record {server.name} created")
 
@@ -467,14 +469,20 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_tls_certs(self):
 		try:
-			tls_cert = frappe.get_doc(
-				{
-					"doctype": "TLS Certificate",
-					"domain": self.name,
-					"team": self.team,
-					"wildcard": False,
-				}
-			).insert()
+			tls_cert = frappe.db.get_value(
+				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
+			)
+			if not tls_cert:
+				tls_cert = frappe.get_doc(
+					{
+						"doctype": "TLS Certificate",
+						"domain": self.name,
+						"team": self.team,
+						"wildcard": False,
+					}
+				).insert()
+				tls_cert = tls_cert.name
+
 			return tls_cert.name
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
