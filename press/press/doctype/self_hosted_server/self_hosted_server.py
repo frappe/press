@@ -244,9 +244,9 @@ class SelfHostedServer(Document):
 			if not self.mariadb_ip or not self.mariadb_private_ip:
 				frappe.throw("Public/Private IP for MariaDB not found")
 
-			db_server = frappe.get_doc(
+			db_server = frappe.new_doc(
+				"Database Server",
 				{
-					"doctype": "Database Server",
 					"hostname": self.get_hostname("Database Server"),
 					"title": self.title,
 					"is_self_hosted": True,
@@ -261,7 +261,7 @@ class SelfHostedServer(Document):
 					"agent_password": self.get_password("agent_password"),
 					"is_server_setup": False if self.new_server else True,
 					"plan": self.database_plan,
-				}
+				},
 			).insert()
 
 			db_server.create_subscription(self.database_plan)
@@ -314,9 +314,9 @@ class SelfHostedServer(Document):
 		"""
 
 		try:
-			server = frappe.get_doc(
+			server = frappe.new_doc(
+				"Server",
 				{
-					"doctype": "Server",
 					"hostname": self.get_hostname("Server"),
 					"title": self.title,
 					"is_self_hosted": True,
@@ -334,16 +334,18 @@ class SelfHostedServer(Document):
 					"ram": self.ram,
 					"new_worker_allocation": True,
 					"plan": self.plan,
-				}
+				},
 			).insert()
 
 			server.create_subscription(self.plan)
 			self.server = server.name
 			self.status = "Active"
 			self.server_created = True
+
 		except Exception as e:
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
+
 		self.save()
 		self.create_tls_certs()
 
@@ -437,9 +439,9 @@ class SelfHostedServer(Document):
 		Add a new record to the Proxy Server doctype
 		"""
 		try:
-			proxy_server = frappe.get_doc(
+			proxy_server = frappe.new_doc(
+				"Proxy Server",
 				{
-					"doctype": "Proxy Server",
 					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
@@ -452,7 +454,7 @@ class SelfHostedServer(Document):
 					"cluster": self.cluster,
 					"ssh_user": self.ssh_user,
 					"ssh_port": self.ssh_port,
-				}
+				},
 			).insert()
 
 			self.agent_password = proxy_server.get_password("agent_password")
@@ -473,13 +475,13 @@ class SelfHostedServer(Document):
 				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
 			)
 			if not tls_cert:
-				tls_cert = frappe.get_doc(
+				tls_cert = frappe.new_doc(
+					"TLS Certificate",
 					{
-						"doctype": "TLS Certificate",
 						"domain": self.name,
 						"team": self.team,
 						"wildcard": False,
-					}
+					},
 				).insert()
 				tls_cert = tls_cert.name
 
@@ -535,16 +537,16 @@ class SelfHostedServer(Document):
 			self.update_tls()
 
 	def create_subscription(self):
-		frappe.get_doc(
+		frappe.new_doc(
+			"Plan Change",
 			{
-				"doctype": "Plan Change",
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"from_plan": "",
 				"to_plan": self.plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
-			}
+			},
 		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
