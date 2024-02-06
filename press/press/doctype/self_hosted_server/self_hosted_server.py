@@ -269,6 +269,8 @@ class SelfHostedServer(Document):
 			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
+
+			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
 			self.status = "Broken"
@@ -342,6 +344,8 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 		self.save()
+
+		frappe.msgprint(f"Server record {server.name} created")
 
 	@frappe.whitelist()
 	def create_new_sites(self):
@@ -457,6 +461,8 @@ class SelfHostedServer(Document):
 			self.status = "Broken"
 			frappe.throw("Self Hosted Proxy Server Creation Error", exc=e)
 		self.save()
+
+		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
 
 	@frappe.whitelist()
 	def create_tls_certs(self):
