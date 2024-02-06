@@ -130,6 +130,10 @@ export default {
 					value: `${formatBytes(
 						this.$site.doc.current_usage.database
 					)} / ${formatBytes(this.$site.doc.current_plan.max_database_usage)}`
+				},
+				{
+					label: 'Support Included',
+					value: this.$site.doc.current_plan.support_included ? 'Yes' : 'No'
 				}
 			];
 		},

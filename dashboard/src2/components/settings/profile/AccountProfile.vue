@@ -189,19 +189,10 @@ export default {
 			return getTeam().doc.enabled;
 		},
 		user() {
-			return this.$resources.user.data?.[0] || {};
+			return this.$team.doc.user_info;
 		}
 	},
 	resources: {
-		user() {
-			return {
-				auto: true,
-				type: 'list',
-				doctype: 'User',
-				filters: { name: getSessionUser() },
-				fields: ['name', 'first_name', 'last_name', 'email', 'user_image']
-			};
-		},
 		updateProfile() {
 			let { first_name, last_name, email } = this.user;
 			return {
