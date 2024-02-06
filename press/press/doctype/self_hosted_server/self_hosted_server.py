@@ -16,25 +16,33 @@ class SelfHostedServer(Document):
 		self.name = sdext(self.server_url).fqdn
 
 	def validate(self):
-		self.set_proxy_details()
-		if not self.mariadb_ip:
-			self.mariadb_ip = self.private_ip
-		if not self.mariadb_root_user:
-			self.mariadb_root_user = "root"
-		if not self.mariadb_root_password:
-			self.mariadb_root_password = frappe.generate_hash(length=32)
-		if not self.agent_password:
-			self.agent_password = frappe.generate_hash(length=32)
 		if not self.hostname or not self.domain:
 			extracted_url = sdext(self.server_url)
 			self.hostname = extracted_url.subdomain
 			self.domain = extracted_url.registered_domain
+
+		self.set_proxy_details()
+		self.set_mariadb_config()
+
+		if not self.agent_password:
+			self.agent_password = frappe.generate_hash(length=32)
 
 	def set_proxy_details(self):
 		if self.proxy_created or self.proxy_server:
 			self.proxy_public_ip, self.proxy_private_ip = frappe.db.get_value(
 				"Proxy Server", self.proxy_server, ["ip", "private_ip"]
 			)
+
+	def set_mariadb_config(self):
+		if not self.different_database_server:
+			pass
+
+		if not self.mariadb_ip:
+			self.mariadb_ip = self.private_ip
+		if not self.mariadb_root_user:
+			self.mariadb_root_user = "root"
+		if not self.mariadb_root_password:
+			self.mariadb_root_password = frappe.generate_hash(length=32)
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -233,24 +241,32 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			db_server = frappe.new_doc("Database Server")
-			db_server.hostname = self.get_hostname(self.hostname, "Database Server")
-			db_server.title = self.title
-			db_server.is_self_hosted = True
-			db_server.self_hosted_server_domain = self.domain
-			db_server.ip = self.ip
-			db_server.private_ip = self.private_ip
-			db_server.team = self.team
-			db_server.ssh_user = self.ssh_user
-			db_server.ssh_port = self.ssh_port
-			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
-			db_server.cluster = self.cluster
-			db_server.agent_password = self.get_password("agent_password")
-			db_server.is_server_setup = False if self.new_server else True
-			_db = db_server.insert()
-			_db.create_subscription("Unlimited")
+			if not self.mariadb_ip or not self.mariadb_private_ip:
+				frappe.throw("Public/Private IP for MariaDB not found")
+
+			db_server = frappe.get_doc(
+				{
+					"doctype": "Database Server",
+					"hostname": self.get_hostname("Database Server"),
+					"title": self.title,
+					"is_self_hosted": True,
+					"self_hosted_server_domain": self.domain,
+					"ip": self.mariadb_ip,
+					"private_ip": self.mariadb_private_ip,
+					"team": self.team,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"cluster": self.cluster,
+					"agent_password": self.get_password("agent_password"),
+					"is_server_setup": False if self.new_server else True,
+					"plan": self.database_plan,
+				}
+			).insert()
+
+			db_server.create_subscription(self.database_plan)
 			self.database_setup = True
-			self.database_server = _db.name
+			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
 		except Exception:
@@ -296,7 +312,7 @@ class SelfHostedServer(Document):
 		"""
 		try:
 			server = frappe.new_doc("Server")
-			server.hostname = self.get_hostname(self.hostname, "Server")
+			server.hostname = self.get_hostname("Server")
 			server.title = self.title
 			server.is_self_hosted = True
 			server.self_hosted_server_domain = self.domain
@@ -403,7 +419,7 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def get_hostname(self, server_type):
-		return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}"
+		return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -414,7 +430,7 @@ class SelfHostedServer(Document):
 			proxy_server = frappe.get_doc(
 				{
 					"doctype": "Proxy Server",
-					"hostname": self.get_hostname(self.hostname, "Proxy Server"),
+					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
 					"domain": self.domain,
