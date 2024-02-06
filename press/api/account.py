@@ -370,6 +370,15 @@ def get_partner_details(partner_email):
 
 
 @frappe.whitelist()
+def get_partner_name(partner_email):
+	return frappe.db.get_value(
+		"Team",
+		{"partner_email": partner_email, "enabled": 1, "erpnext_partner": 1},
+		"billing_name",
+	)
+
+
+@frappe.whitelist()
 def transfer_credits(amount, customer, partner):
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)

@@ -69,7 +69,7 @@ export default {
 					value: this.$resources.partner.data?.company_name
 				},
 				{
-					label: 'Current Teir',
+					label: 'Current Tier',
 					value: this.$resources.partner.data?.partner_type
 				},
 				{
