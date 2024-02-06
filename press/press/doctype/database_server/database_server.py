@@ -615,8 +615,8 @@ class DatabaseServer(BaseServer):
 					"stalk_sleep": self.stalk_sleep,
 					"stalk_cycles": self.stalk_cycles,
 					"stalk_interval": self.stalk_interval,
-					"stalk_gdb_collector": self.stalk_gdb_collector,
-					"stalk_strace_collector": self.stalk_strace_collector,
+					"stalk_gdb_collector": bool(self.stalk_gdb_collector),
+					"stalk_strace_collector": bool(self.stalk_strace_collector),
 				},
 			)
 			play = ansible.run()
