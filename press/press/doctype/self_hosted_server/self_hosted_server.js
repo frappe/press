@@ -23,7 +23,12 @@ frappe.ui.form.on('Self Hosted Server', {
 					frm.doc.different_database_server &&
 					!frm.doc.database_setup,
 			],
-			[__('Create App Server'), 'create_server', false, frm.doc.database_setup],
+			[
+				__('Create App Server'),
+				'create_server',
+				false,
+				frm.doc.database_setup && !frm.doc.server_created,
+			],
 			[__('Setup Nginx'), '_setup_nginx', false],
 			[__('Create TLS Certificate'), 'create_tls_certs', true],
 			[__('Update TLS'), 'update_tls', false],

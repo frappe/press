@@ -311,27 +311,31 @@ class SelfHostedServer(Document):
 		Add a new record to the Server doctype
 		"""
 		try:
-			server = frappe.new_doc("Server")
-			server.hostname = self.get_hostname("Server")
-			server.title = self.title
-			server.is_self_hosted = True
-			server.self_hosted_server_domain = self.domain
-			server.self_hosted_mariadb_server = self.private_ip
-			server.team = self.team
-			server.ip = self.ip
-			server.private_ip = self.private_ip
-			server.ssh_user = self.ssh_user
-			server.ssh_port = self.ssh_port
-			server.proxy_server = self.proxy_server
-			server.database_server = self.database_server
-			server.cluster = self.cluster
-			server.agent_password = self.get_password("agent_password")
-			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
-			server.ram = self.ram
-			server.new_worker_allocation = True
-			new_server = server.insert()
-			new_server.create_subscription("Self Hosted Server")
-			self.server = new_server.name
+			server = frappe.get_doc(
+				{
+					"doctype": "Server",
+					"hostname": self.get_hostname("Server"),
+					"title": self.title,
+					"is_self_hosted": True,
+					"self_hosted_server_domain": self.domain,
+					"team": self.team,
+					"ip": self.ip,
+					"private_ip": self.private_ip,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+					"proxy_server": self.proxy_server,
+					"database_server": self.database_server,
+					"cluster": self.cluster,
+					"agent_password": self.get_password("agent_password"),
+					"self_hosted_mariadb_root_password": self.get_password("mariadb_root_password"),
+					"ram": self.ram,
+					"new_worker_allocation": True,
+					"plan": self.plan,
+				}
+			).insert()
+
+			server.create_subscription(self.plan)
+			self.server = server.name
 			self.status = "Active"
 			self.server_created = True
 		except Exception as e:
