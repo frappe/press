@@ -8,4 +8,4 @@ from frappe.model.document import Document
 
 
 class DeployCandidateApp(Document):
-	pass
+	dashboard_fields = ["app"]

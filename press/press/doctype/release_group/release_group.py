@@ -42,7 +42,21 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document):
-	whitelisted_fields = ["title", "version"]
+	dashboard_fields = ["title", "version", "apps"]
+	dashboard_actions = [
+		"remove_app",
+		"change_app_branch",
+		"fetch_latest_app_update",
+		"delete_config",
+		"update_config",
+		"update_dependency",
+		"add_region",
+		"deployed_versions",
+		"get_app_versions",
+		"archive",
+		"get_certificate",
+		"generate_certificate",
+	]
 
 	@staticmethod
 	def get_list_query(query):

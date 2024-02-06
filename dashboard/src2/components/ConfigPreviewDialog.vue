@@ -6,10 +6,10 @@
 		v-model="showDialog"
 	>
 		<template #body-content>
-			<div
-				class="hidden h-fit max-w-full flex-1 overflow-x-scroll whitespace-pre-line rounded bg-gray-100 p-4 font-mono text-base md:block"
+			<pre
+				class="overflow-x-scroll rounded bg-gray-100 p-4 text-base"
 				v-html="configPreview"
-			></div>
+			></pre>
 		</template>
 	</Dialog>
 </template>

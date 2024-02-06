@@ -3,7 +3,7 @@
   become: yes
   become_user: frappe
   file:
-    path: "{{ item }}"
+    path: '{{ item }}'
     state: directory
     mode: 0755
   with_items:
@@ -20,7 +20,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: https://dl.grafana.com/oss/release/grafana-7.5.4.linux-amd64.tar.gz
+    src: https://dl.grafana.com/oss/release/grafana-10.3.1.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -28,8 +28,8 @@
   become: yes
   become_user: frappe
   copy:
-    src: "/tmp/grafana-7.5.4/{{ item }}/"
-    dest: "/home/frappe/grafana/{{ item }}/"
+    src: '/tmp/grafana-v10.3.1/{{ item }}/'
+    dest: '/home/frappe/grafana/{{ item }}/'
     mode: 0755
     remote_src: yes
   with_items:
@@ -37,7 +37,6 @@
     - conf
     - plugins-bundled
     - public
-    - scripts
 
 - name: Provision Prometheus Datasource
   become: yes
@@ -73,9 +72,9 @@
 - name: Setup Grafana Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}"
+  command: 'htpasswd -Bbc /home/frappe/agent/nginx/grafana.htpasswd frappe {{ grafana_password }}'
 
 - name: Setup Grafana HTTP Authentication
   become: yes
   become_user: frappe
-  command: "htpasswd -Bbc /home/frappe/agent/nginx/grafana-ui.htpasswd admin {{ grafana_password }}"
+  command: 'htpasswd -Bbc /home/frappe/agent/nginx/grafana-ui.htpasswd admin {{ grafana_password }}'

@@ -1,15 +1,29 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-white">
-		<div class="flex items-center space-x-2">
-			<FBreadcrumbs :items="breadcrumbs" />
-			<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
-		</div>
-		<div class="flex items-center space-x-2" v-if="$resources.document?.doc">
-			<ActionButton
-				v-for="button in actions"
-				v-bind="button"
-				:key="button.label"
-			/>
+		<div class="w-full sm:flex sm:items-center sm:justify-between">
+			<div class="flex items-center space-x-2">
+				<FBreadcrumbs :items="breadcrumbs" />
+				<Badge
+					class="hidden sm:inline-flex"
+					v-if="$resources.document?.doc && badge"
+					v-bind="badge"
+				/>
+			</div>
+			<div
+				class="mt-1 flex items-center justify-between space-x-2 sm:mt-0"
+				v-if="$resources.document?.doc"
+			>
+				<div class="sm:hidden">
+					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
+				</div>
+				<div class="space-x-2">
+					<ActionButton
+						v-for="button in actions"
+						v-bind="button"
+						:key="button.label"
+					/>
+				</div>
+			</div>
 		</div>
 	</Header>
 	<div>

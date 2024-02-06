@@ -484,6 +484,7 @@ def versions(name):
 
 	for version in deployed_versions:
 		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+		version.version = rg_version
 		for site in version.sites:
 			site.version = rg_version
 			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)

@@ -1,9 +1,8 @@
 <template>
 	<div
 		v-if="$site?.doc"
-		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
+		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
-		<SiteDailyUsage :site="$site.doc" />
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
 				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
@@ -14,11 +13,14 @@
 					:key="d.label"
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
+					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-2/3 text-base text-gray-900">
+						{{ d.value }}
+					</div>
 				</div>
 			</div>
 		</div>
+		<SiteDailyUsage :site="site" />
 		<div class="mt- rounded-md border">
 			<div class="flex h-12 items-center justify-between border-b px-5">
 				<h2 class="text-lg font-medium text-gray-900">Plan</h2>
@@ -30,8 +32,8 @@
 					:key="d.label"
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">
+					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-2/3 text-base text-gray-900">
 						{{ d.value }}
 					</div>
 				</div>
@@ -69,7 +71,7 @@ export default {
 				},
 				{
 					label: 'Owned by',
-					value: this.$site.doc.team
+					value: this.$site.doc.owner_email
 				},
 				{
 					label: 'Created by',

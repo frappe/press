@@ -125,13 +125,13 @@ RUN useradd -ms /bin/bash frappe
 
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 {% endif %}
 
 {% if p.package_manager not in ["apt-get", "apt"] %}
 
 RUN {{ p.package_manager }} install {{ p.package }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 
 {% else %}
 

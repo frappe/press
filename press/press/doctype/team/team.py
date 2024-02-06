@@ -27,7 +27,7 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"enabled",
 		"team_title",
 		"user",
@@ -45,6 +45,7 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 	]
+	dashboard_actions = ["get_team_members", "remove_team_member"]
 
 	def get_doc(self, doc):
 		if (
@@ -686,6 +687,8 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
+
+		self.reload()
 		if not self.default_payment_method:
 			# change payment mode to prepaid credits if default is card or not set
 			self.payment_mode = (

@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded
+from frappe.utils import flt, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -411,7 +411,7 @@ def options_for_new(for_bench: str = None):
 		versions = frappe.db.get_all(
 			"Frappe Version",
 			["name", "default", "status", "number"],
-			{"public": True},
+			{"public": True, "status": ("!=", "End of Life")},
 			order_by="number desc",
 		)
 	available_versions = []
@@ -423,7 +423,7 @@ def options_for_new(for_bench: str = None):
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
-			fieldname=["name", "`default`", "title"],
+			fieldname=["name", "`default`", "title", "public"],
 			filters=filters,
 			order_by="creation desc",
 			as_dict=1,
@@ -465,6 +465,10 @@ def options_for_new(for_bench: str = None):
 			if app_source not in unique_app_sources:
 				unique_app_sources.append(app_source)
 
+	filters = {"name": ("in", unique_app_sources)}
+	if not for_bench:
+		filters["public"] = True
+
 	app_source_details = frappe.db.get_all(
 		"App Source",
 		[
@@ -479,7 +483,7 @@ def options_for_new(for_bench: str = None):
 			"app_title",
 			"frappe",
 		],
-		filters={"name": ("in", unique_app_sources), "public": True},
+		filters=filters,
 	)
 
 	unique_apps = []
@@ -491,7 +495,7 @@ def options_for_new(for_bench: str = None):
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
+		fields=["title", "image", "description", "app", "route", "subscription_type"],
 		filters={"app": ("in", unique_apps)},
 	)
 	total_installs_by_app = frappe.db.get_all(
@@ -662,11 +666,8 @@ def get_plans(name=None, rg=None):
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
 
-		days_in_month = frappe.utils.get_last_day(None).day
 		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
 			plan.pop("roles", "")
-			plan["price_per_day_inr"] = rounded(plan["price_inr"] / days_in_month, 2)
-			plan["price_per_day_usd"] = rounded(plan["price_usd"] / days_in_month, 2)
 			out.append(plan)
 	return out
 
@@ -1038,8 +1039,10 @@ def get_installed_apps(site):
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+				"Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
 			)
+
+			app_source.plans = get_plans_for_app(app.app)
 
 			app_source.is_free = frappe.db.get_value(
 				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
@@ -1214,25 +1217,6 @@ def last_migrate_failed(name):
 @frappe.whitelist()
 @protected("Site")
 def backup(name, with_files=False):
-	site_doc = frappe.get_doc("Site", name)
-	if site_doc.status == "Suspended":
-		activity = frappe.db.get_all(
-			"Site Activity",
-			filters={"site": name, "action": "Suspend Site"},
-			order_by="creation desc",
-			limit=1,
-		)
-		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
-
-		if (
-			frappe.db.count(
-				"Site Backup",
-				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
-			)
-			> 3
-		):
-			frappe.throw("You cannot take more than 3 backups after site suspension")
-
 	frappe.get_doc("Site", name).backup(with_files)
 
 
@@ -1751,13 +1735,8 @@ def change_group(name, group):
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
-	frappe.get_doc(
-		{
-			"doctype": "Site Update",
-			"site": name,
-			"destination_group": group,
-		}
-	).insert()
+	site = frappe.get_doc("Site", name)
+	site.move_to_group(group)
 
 
 @frappe.whitelist()

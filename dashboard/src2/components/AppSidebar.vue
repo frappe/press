@@ -47,39 +47,44 @@
 			</Dropdown>
 		</div>
 		<nav class="px-2">
-			<template v-for="(item, i) in navigation">
-				<template v-if="item.items">
-					<div
-						class="py-1 text-sm leading-5 text-gray-600"
-						:class="{ 'mt-2': i != 0 }"
-					>
-						{{ item.name }}
-					</div>
-					<div class="space-y-0.5">
+			<NavigationItems>
+				<template v-slot="{ navigation }">
+					<template v-for="(item, i) in navigation">
+						<template v-if="item.items">
+							<div
+								class="py-1 text-sm leading-5 text-gray-600"
+								:class="{ 'mt-2': i != 0 }"
+							>
+								{{ item.name }}
+							</div>
+							<div class="space-y-0.5">
+								<AppSidebarItem
+									v-for="subItem in item.items"
+									:key="subItem.name"
+									:item="subItem"
+								/>
+							</div>
+						</template>
 						<AppSidebarItem
-							v-for="subItem in item.items"
-							:key="subItem.name"
-							:item="subItem"
+							class="mt-0.5"
+							v-else
+							:key="item.name"
+							:item="item"
 						/>
-					</div>
+					</template>
 				</template>
-				<AppSidebarItem class="mt-0.5" v-else :key="item.name" :item="item" />
-			</template>
+			</NavigationItems>
 		</nav>
-		<!-- TODO: update component name after dashboard2 merges -->
+		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
 </template>
 
 <script>
-import { h, defineAsyncComponent } from 'vue';
+import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
-import DoorOpen from '~icons/lucide/door-open';
-import PanelTopInactive from '~icons/lucide/panel-top-inactive';
-import Package from '~icons/lucide/package';
-import WalletCards from '~icons/lucide/wallet-cards';
-import Settings from '~icons/lucide/settings';
 import { Tooltip } from 'frappe-ui';
+import NavigationItems from './NavigationItems.vue';
 
 export default {
 	name: 'AppSidebar',
@@ -88,65 +93,13 @@ export default {
 		SwitchTeamDialog2: defineAsyncComponent(() =>
 			import('./SwitchTeamDialog.vue')
 		),
-		Tooltip
+		Tooltip,
+		NavigationItems
 	},
 	data() {
 		return {
 			showTeamSwitcher: false
 		};
-	},
-	computed: {
-		navigation() {
-			if (!this.$team?.doc) return [];
-			let routeName = this.$route?.name || '';
-			let disabled = !this.$team.doc.onboarding.complete;
-			return [
-				{
-					name: 'Welcome',
-					icon: () => h(DoorOpen),
-					route: '/welcome',
-					isActive: routeName === 'Welcome',
-					condition: !this.$team.doc.onboarding.complete
-				},
-				{
-					name: 'Sites',
-					icon: () => h(PanelTopInactive),
-					route: '/sites',
-					isActive:
-						['Site List', 'Site Detail', 'NewSite'].includes(routeName) ||
-						routeName.startsWith('Site Detail'),
-					disabled
-				},
-				{
-					name: 'Benches',
-					icon: () => h(Package),
-					route: '/benches',
-					isActive:
-						[
-							'Release Group List',
-							'Release Group Detail',
-							'NewBench',
-							'NewBenchSite'
-						].includes(routeName) ||
-						routeName.startsWith('Release Group Detail'),
-					disabled
-				},
-				{
-					name: 'Billing',
-					icon: () => h(WalletCards),
-					route: '/billing',
-					isActive: routeName.startsWith('Billing'),
-					disabled
-				},
-				{
-					name: 'Settings',
-					icon: () => h(Settings),
-					route: '/settings',
-					isActive: routeName.startsWith('Settings'),
-					disabled
-				}
-			].filter(item => item.condition !== false);
-		}
 	},
 	methods: {
 		support() {

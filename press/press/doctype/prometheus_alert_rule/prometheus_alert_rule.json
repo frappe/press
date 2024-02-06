@@ -8,6 +8,7 @@
  "field_order": [
   "severity",
   "for",
+  "enabled",
   "column_break_2",
   "description",
   "section_break_4",
@@ -140,6 +141,13 @@
    "fieldtype": "Code",
    "label": "Route Preview",
    "read_only": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -149,10 +157,11 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2021-06-09 13:47:54.283546",
+ "modified": "2024-01-31 13:35:32.987624",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -169,5 +178,6 @@
   }
  ],
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

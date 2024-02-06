@@ -61,7 +61,7 @@ from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"ip",
 		"status",
 		"group",
@@ -69,6 +69,30 @@ class Site(Document):
 		"team",
 		"plan",
 		"archive_failed",
+		"cluster",
+		"is_database_access_enabled",
+	]
+	dashboard_actions = [
+		"activate",
+		"add_domain",
+		"archive",
+		"backup",
+		"clear_site_cache",
+		"deactivate",
+		"enable_database_access",
+		"disable_database_access",
+		"get_database_credentials",
+		"install_app",
+		"uninstall_app",
+		"migrate",
+		"login_as_admin",
+		"reinstall",
+		"remove_domain",
+		"restore_site",
+		"schedule_update",
+		"set_plan",
+		"update_config",
+		"delete_config",
 	]
 
 	@staticmethod
@@ -87,6 +111,7 @@ class Site(Document):
 		)
 		doc.group_title = group.title
 		doc.group_public = group.public
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
@@ -367,6 +392,12 @@ class Site(Document):
 			self.create_subscription(self.subscription_plan)
 			self.reload()
 
+		if hasattr(self, "app_plans") and self.app_plans:
+			for app, plan in self.app_plans.items():
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan["name"], True
+				)
+
 		# log activity
 		log_site_activity(self.name, "Create")
 		self._create_default_site_domain()
@@ -497,6 +528,24 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
+		if self.status == "Suspended":
+			activity = frappe.db.get_all(
+				"Site Activity",
+				filters={"site": self.name, "action": "Suspend Site"},
+				order_by="creation desc",
+				limit=1,
+			)
+			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+			if (
+				frappe.db.count(
+					"Site Backup",
+					filters=dict(site=self.name, status="Success", creation=(">=", suspension_time)),
+				)
+				> 3
+			):
+				frappe.throw("You cannot take more than 3 backups after site suspension")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
@@ -1656,9 +1705,16 @@ class Site(Document):
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
+		servers_with_backups = frappe.get_all(
+			"Server", {"status": "Active", "skip_scheduled_backups": False}, pluck="name"
+		)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites), "skip_scheduled_backups": False},
+			{
+				"name": ("in", sites),
+				"skip_scheduled_backups": False,
+				"server": ("in", servers_with_backups),
+			},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1818,6 +1874,12 @@ class Site(Document):
 				"button_label": "Change",
 				"doc_method": "change_server",
 				"condition": self.status == "Active",
+			},
+			{
+				"action": "Clear cache",
+				"description": "Clear cache on your site",
+				"button_label": "Clear cache",
+				"doc_method": "clear_site_cache",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]

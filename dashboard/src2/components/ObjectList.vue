@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex">
+		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
@@ -22,7 +22,7 @@
 					</template>
 				</TextInput>
 			</slot>
-			<div class="ml-auto flex items-center space-x-2">
+			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
 				<Tooltip text="Refresh" v-if="$list">
 					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
@@ -52,6 +52,7 @@
 			>
 				<ListHeader>
 					<ListHeaderItem
+						class="whitespace-nowrap"
 						v-for="column in columns"
 						:key="column.key"
 						:item="column"
@@ -85,6 +86,9 @@
 				>
 					Loading...
 				</div>
+				<div v-else-if="$list.list.error" class="py-4 text-center">
+					<ErrorMessage :message="$list.list.error" />
+				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
@@ -115,7 +119,8 @@ import {
 	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
-	Tooltip
+	Tooltip,
+	ErrorMessage
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -136,7 +141,8 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
-		Tooltip
+		Tooltip,
+		ErrorMessage
 	},
 	data() {
 		return {
