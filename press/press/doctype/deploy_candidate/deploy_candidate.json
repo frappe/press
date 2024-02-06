@@ -46,6 +46,7 @@
   "column_break_tkdd",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
+  "use_rq_workerpool",
   "gunicorn_threads_per_worker"
  ],
  "fields": [
@@ -303,6 +304,13 @@
   },
   {
    "default": "0",
+   "fetch_from": "group.use_rq_workerpool",
+   "fieldname": "use_rq_workerpool",
+   "fieldtype": "Check",
+   "label": "Use RQ WorkerPool"
+  },
+  {
+   "default": "0",
    "fetch_from": "group.use_app_cache",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
@@ -317,7 +325,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-05 11:30:59.225111",
+ "modified": "2024-02-05 11:30:59.225112",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
