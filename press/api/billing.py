@@ -7,7 +7,10 @@ from typing import Dict, List
 from itertools import groupby
 from frappe.utils import fmt_money
 from frappe.core.utils import find
-from press.press.doctype.team.team import handle_payment_intent_succeeded, has_unsettled_invoices
+from press.press.doctype.team.team import (
+	handle_payment_intent_succeeded,
+	has_unsettled_invoices,
+)
 from press.utils import get_current_team
 from press.utils.billing import (
 	clear_setup_intent,
@@ -248,6 +251,7 @@ def create_payment_intent_for_buying_credits(amount):
 		"client_secret": intent["client_secret"],
 		"publishable_key": get_publishable_key(),
 	}
+
 
 @frappe.whitelist()
 def confirm_payment_intent_for_buying_credits(payment_intent_id):

@@ -106,7 +106,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2023-11-17 17:25:50.325082",
+  "modified": "2024-02-05 20:21:04.171257",
   "name": "Resize Server",
   "steps": [
    {
@@ -137,9 +137,9 @@
     "parent": "Resize Server",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.start()",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
     "step_name": "Start Virtual Machine",
-    "wait_until_true": 0
+    "wait_until_true": 1
    },
    {
     "parent": "Resize Server",
@@ -164,13 +164,21 @@
     "script": "if doc.server_type == \"Database Server\":\n    server = frappe.get_doc(doc.server_type, doc.server)\n    server.adjust_memory_config()",
     "step_name": "Set additional config",
     "wait_until_true": 0
+   },
+   {
+    "parent": "Resize Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\n\nserver = frappe.get_doc(doc.server_type, doc.server)\nif server.plan:\n    plan_disk_size = frappe.db.get_value(\"Plan\", server.plan, \"disk\")\n    if plan_disk_size and plan_disk_size > machine.disk_size:\n        try:\n            server.increase_disk_size(increment=plan_disk_size - machine.disk_size)\n        except:\n            pass",
+    "step_name": "Increase Disk Size",
+    "wait_until_true": 0
    }
   ]
  },
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2022-11-01 14:39:17.917847",
+  "modified": "2024-02-05 17:08:00.514456",
   "name": "Create Server Snapshot",
   "steps": [
    {
@@ -201,9 +209,9 @@
     "parent": "Create Server Snapshot",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\nmachine.start()",
+    "script": "machine = frappe.get_doc(\"Virtual Machine\", doc.virtual_machine)\ntry:\n    machine.start()\n    result = (True, False)\nexcept:\n    result = (False, False)",
     "step_name": "Start Virtual Machine",
-    "wait_until_true": 0
+    "wait_until_true": 1
    },
    {
     "parent": "Create Server Snapshot",

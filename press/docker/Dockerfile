@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
-ENV NODE_ENV production
 
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
@@ -126,13 +125,13 @@ RUN useradd -ms /bin/bash frappe
 
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 {% endif %}
 
 {% if p.package_manager not in ["apt-get", "apt"] %}
 
 RUN {{ p.package_manager }} install {{ p.package }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 
 {% else %}
 
