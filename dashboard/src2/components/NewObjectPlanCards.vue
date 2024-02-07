@@ -41,38 +41,18 @@
 					</div>
 				</div>
 				<div class="p-3 text-p-sm text-gray-800">
-					<div>
-						<span>{{ plan.vcpu }} </span>
+					<div v-for="feature in plan.features">
+						<span>{{ feature.value }} </span>
 						<span class="ml-1 text-gray-600">
-							{{ $format.plural(plan.vcpu, 'vCPU', 'vCPUs') }}
+							{{ feature.label }}
 						</span>
-					</div>
-					<div>
-						<span>
-							{{ $format.bytes(plan.memory, 0, 2) }}
-						</span>
-						<span class="text-gray-600"> Memory </span>
-					</div>
-					<div>
-						<span>
-							{{ $format.bytes(plan.disk, 0, 2) }}
-						</span>
-						<span class="text-gray-600"> Disk </span>
-					</div>
-					<div>
-						<span>
-							{{ plan.instance_type }}
-						</span>
-						<span class="text-gray-600"> Instance Type </span>
 					</div>
 				</div>
 			</button>
 		</div>
 	</div>
 	<div v-else class="flex h-6 items-center">
-		<div class="text-base text-gray-600">
-			No plans available for this region
-		</div>
+		<div class="text-base text-gray-600">No plans available</div>
 	</div>
 </template>
 

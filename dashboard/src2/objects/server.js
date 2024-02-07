@@ -1,5 +1,6 @@
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
+import { userCurrency, bytes, pricePerDay } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
@@ -69,10 +70,233 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewServer' });
+					router.push({ name: 'New Server' });
 				}
 			};
 		}
+	},
+	create: {
+		route: '/servers/new',
+		optionsResource: {
+			url: 'press.api.server.options',
+			auto: true,
+			initialData: {
+				regions: [],
+				app_plans: [],
+				db_plans: []
+			},
+			transform(data) {
+				return {
+					regions: data.regions,
+					app_plans: data.app_plans.map(plan => {
+						return {
+							...plan,
+							features: [
+								{
+									label: 'vCPUs',
+									value: plan.vcpu
+								},
+								{
+									label: 'Memory',
+									value: bytes(plan.memory, 0, 2)
+								},
+								{
+									label: 'Disk',
+									value: bytes(plan.disk, 0, 2)
+								},
+								{
+									label: 'Instance Type',
+									value: plan.instance_type
+								}
+							],
+							disabled: Object.keys(this.$team.doc.billing_details).length === 0
+						};
+					}),
+					db_plans: data.db_plans.map(plan => {
+						return {
+							...plan,
+							features: [
+								{
+									label: 'vCPUs',
+									value: plan.vcpu
+								},
+								{
+									label: 'Memory',
+									value: bytes(plan.memory, 0, 2)
+								},
+								{
+									label: 'Disk',
+									value: bytes(plan.disk, 0, 2)
+								},
+								{
+									label: 'Instance Type',
+									value: plan.instance_type
+								}
+							],
+							disabled: Object.keys(this.$team.doc.billing_details).length === 0
+						};
+					})
+				};
+			}
+		},
+		primaryAction({ createResource: createServer, vals }) {
+			return {
+				label: 'Create Server',
+				variant: 'solid',
+				onClick() {
+					createServer.submit({
+						server: {
+							title: vals.name,
+							cluster: vals.region,
+							app_plan: vals.app_plan?.name,
+							db_plan: vals.db_plan?.name
+						}
+					});
+				}
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.server.new',
+				validate({ server }) {
+					if (!server.title) {
+						return 'Server name is required';
+					} else if (!server.cluster) {
+						return 'Please select a region';
+					} else if (!server.app_plan) {
+						return 'Please select an App Server Plan';
+					} else if (!server.db_plan) {
+						return 'Please select a Database Server Plan';
+					}
+				},
+				onSuccess(server) {
+					router.push({
+						name: 'Server Detail Plays',
+						params: { name: server.server }
+					});
+				}
+			};
+		},
+		breadcrumbs: [
+			{
+				label: 'Servers',
+				route: '/servers'
+			},
+			{
+				label: 'New Server',
+				route: '/servers/new'
+			}
+		],
+		options: [
+			{
+				label: 'Select Region',
+				type: 'region',
+				name: 'region',
+				fieldname: 'regions'
+			},
+			{
+				label: 'Select App Server Plan',
+				type: 'plan',
+				name: 'app_plan',
+				fieldname: 'app_plans',
+				dependsOn: ['region'],
+				filter(plans, vals) {
+					return plans.filter(plan => plan.cluster === vals.region);
+				}
+			},
+			{
+				label: 'Select Database Server Plan',
+				type: 'plan',
+				name: 'db_plan',
+				fieldname: 'db_plans',
+				dependsOn: ['region'],
+				filter(plans, vals) {
+					return plans.filter(plan => plan.cluster === vals.region);
+				}
+			},
+			{
+				label: 'Enter Server Name',
+				type: 'text',
+				name: 'name',
+				fieldname: 'name',
+				dependsOn: ['region', 'app_plan', 'db_plan']
+			}
+		],
+		summary: [
+			{
+				label: 'Region',
+				fieldname: 'region'
+			},
+			{
+				label: 'App Server Plan',
+				fieldname: 'app_plan',
+				format(value) {
+					let $team = getTeam();
+
+					return `<div class="text-gray-900">${userCurrency(
+						$team.doc.currency == 'INR' ? value.price_inr : value.price_usd
+					)}
+					per month
+					<div class="text-gray-600">
+						${value.vcpu} vCPU
+					</div>
+					<div class="text-gray-600">
+						${bytes(value.memory, 0, 2)} GB RAM
+					</div>
+					<div class="text-gray-600">
+						${bytes(value.disk, 0, 2)} GB Disk
+					</div></div>`;
+				}
+			},
+			{
+				label: 'Database Server Plan',
+				fieldname: 'db_plan',
+				format(value) {
+					let $team = getTeam();
+
+					return `<div class="text-gray-900">${userCurrency(
+						$team.doc.currency == 'INR' ? value.price_inr : value.price_usd
+					)}
+					per month
+					<div class="text-gray-600">
+						${value.vcpu} vCPU
+					</div>
+					<div class="text-gray-600">
+						${bytes(value.memory, 0, 2)} GB RAM
+					</div>
+					<div class="text-gray-600">
+						${bytes(value.disk, 0, 2)} GB Disk
+					</div></div>`;
+				}
+			},
+			{
+				label: 'Server Name',
+				fieldname: 'name'
+			},
+			{
+				label: 'Total',
+				format({ app_plan, db_plan }) {
+					let $team = getTeam();
+
+					return `<div class="text-gray-900">${userCurrency(
+						$team.doc.currency == 'INR'
+							? app_plan.price_inr + db_plan.price_inr
+							: app_plan.price_usd + db_plan.price_usd
+					)} per month
+					<div class="text-gray-600">
+							${userCurrency(
+								pricePerDay(
+									$team.doc.currency == 'INR'
+										? app_plan.price_inr + app_plan.price_inr
+										: db_plan.price_usd + db_plan.price_usd
+								)
+							)}
+							per day
+						</div>
+					</div>`;
+				}
+			}
+		]
 	},
 	detail: {
 		titleField: 'name',
