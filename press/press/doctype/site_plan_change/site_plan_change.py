@@ -14,8 +14,8 @@ class SitePlanChange(Document):
 			self.type = "Initial Plan"
 
 		if self.from_plan and not self.type:
-			from_plan_value = frappe.db.get_value("Plan", self.from_plan, "price_usd")
-			to_plan_value = frappe.db.get_value("Plan", self.to_plan, "price_usd")
+			from_plan_value = frappe.db.get_value("Site Plan", self.from_plan, "price_usd")
+			to_plan_value = frappe.db.get_value("Site Plan", self.to_plan, "price_usd")
 			self.type = "Downgrade" if from_plan_value > to_plan_value else "Upgrade"
 
 		if self.type == "Initial Plan":
@@ -41,9 +41,10 @@ class SitePlanChange(Document):
 		frappe.get_doc(
 			doctype="Subscription",
 			team=self.team,
-			plan=self.to_plan,
 			document_type="Site",
 			document_name=self.site,
+			plan_type="Site Plan",
+			plan=self.to_plan,
 		).insert()
 
 	def change_subscription_plan(self):

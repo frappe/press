@@ -113,7 +113,7 @@ class Site(Document):
 		doc.group_public = group.public
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
-		doc.current_plan = get("Plan", self.plan) if self.plan else None
+		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
@@ -327,7 +327,7 @@ class Site(Document):
 	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
-			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
+			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
 			if not is_free:
 				if not frappe.local.team().can_install_paid_apps():
 					frappe.throw(
@@ -1313,7 +1313,7 @@ class Site(Document):
 				return
 			plan_name = subscription.plan
 
-		plan = frappe.get_doc("Plan", plan_name)
+		plan = frappe.get_doc("Site Plan", plan_name)
 
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
@@ -1498,7 +1498,7 @@ class Site(Document):
 	@frappe.whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
-		if not frappe.db.get_value("Plan", self.plan, "database_access"):
+		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		log_site_activity(self.name, "Enable Database Access")
 
@@ -1563,7 +1563,7 @@ class Site(Document):
 		db_access_info = frappe._dict({})
 
 		is_available_on_current_plan = (
-			frappe.db.get_value("Plan", self.plan, "database_access") if self.plan else None
+			frappe.db.get_value("Site Plan", self.plan, "database_access") if self.plan else None
 		)
 
 		db_access_info.is_available_on_current_plan = is_available_on_current_plan

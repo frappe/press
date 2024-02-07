@@ -205,7 +205,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 
 def validate_plan(server, plan):
-	if frappe.db.get_value("Plan", plan, "price_usd") > 0:
+	if frappe.db.get_value("Site Plan", plan, "price_usd") > 0:
 		return
 	if (
 		frappe.session.data.user_type == "System User"
@@ -621,7 +621,7 @@ def get_plans(name=None, rg=None):
 	filters = {"enabled": True, "document_type": "Site"}
 
 	plans = frappe.db.get_all(
-		"Plan",
+		"Site Plan",
 		fields=[
 			"name",
 			"plan_title",
@@ -758,7 +758,7 @@ def all(site_filter=None):
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
 		site_plan_name = frappe.get_value("Site", site.name, "plan")
-		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.plan = frappe.get_doc("Site Plan", site_plan_name) if site_plan_name else None
 		site.tags = frappe.get_all(
 			"Resource Tag",
 			{"parent": site.name},
@@ -1123,7 +1123,7 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
+	plan = frappe.get_doc("Site Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
