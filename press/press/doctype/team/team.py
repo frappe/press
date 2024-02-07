@@ -32,6 +32,7 @@ class Team(Document):
 		"team_title",
 		"user",
 		"partner_email",
+		"erpnext_partner",
 		"billing_team",
 		"team_members",
 		"child_team_members",

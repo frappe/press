@@ -36,6 +36,8 @@ ALLOWED_DOCTYPES = [
 	"Common Site Config",
 	"Resource Tag",
 	"Press Tag",
+	"User",
+	"Partner Approval Request",
 ]
 
 

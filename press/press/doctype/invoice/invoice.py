@@ -48,6 +48,23 @@ class Invoice(Document):
 		"due_date",
 	]
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		partner_customer = filters.get("partner_customer")
+		if partner_customer:
+			team_name = filters.get("team")
+			due_date = filters.get("due_date")
+			filters.pop("partner_customer")
+			invoice = frappe.qb.DocType("Invoice")
+			query = (
+				frappe.qb.from_(invoice)
+				.select(
+					invoice.name, invoice.total, invoice.amount_due, invoice.status, invoice.due_date
+				)
+				.where((invoice.team == team_name) & (invoice.due_date >= due_date[1]))
+			)
+		return query
+
 	def get_doc(self, doc):
 		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
 
