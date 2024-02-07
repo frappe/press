@@ -178,6 +178,34 @@ frappe.ui.form.on('Database Server', {
 				);
 			}
 		});
+		if (frm.doc.is_server_setup) {
+			frm.add_custom_button(
+				__('Increase Swap'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Increase Swap'),
+						fields: [
+							{
+								fieldtype: 'Int',
+								label: __('Swap Size'),
+								description: __('Size in GB'),
+								fieldname: 'swap_size',
+								default: 4,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Increase Swap'), (args) => {
+						frm.call('increase_swap', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
+		}
 	},
 
 	hostname: function (frm) {
