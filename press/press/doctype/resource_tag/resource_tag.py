@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class ResourceTag(Document):
-	pass
+	dashboard_fields = ["tag", "tag_name"]

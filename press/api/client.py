@@ -34,6 +34,8 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate",
 	"Agent Job",
 	"Common Site Config",
+	"Resource Tag",
+	"Press Tag",
 	"User",
 	"Partner Approval Request",
 ]
@@ -62,6 +64,8 @@ def get_list(
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 
+	print(valid_filters)
+
 	query = frappe.qb.get_query(
 		doctype,
 		filters=valid_filters,
@@ -70,6 +74,8 @@ def get_list(
 		limit=limit,
 		order_by=order_by,
 	)
+
+	print(query)
 
 	if meta.istable:
 		parentmeta = frappe.get_meta(filters.get("parenttype"))
@@ -142,9 +148,14 @@ def insert(doc=None):
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
+
+		if frappe.get_meta(parent.doctype).has_field("team"):
+			if parent.team != frappe.local.team().name:
+				raise_not_permitted()
+
 		parent.append(doc.parentfield, doc)
 		parent.save()
-		return parent
+		return get(parent.doctype, parent.name)
 
 	_doc = frappe.get_doc(doc)
 
