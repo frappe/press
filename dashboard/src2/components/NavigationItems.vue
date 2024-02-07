@@ -11,6 +11,7 @@ import Package from '~icons/lucide/package';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
+import Globe from '~icons/lucide/globe';
 
 export default {
 	name: 'NavigationItems',
@@ -72,6 +73,14 @@ export default {
 					icon: () => h(Settings),
 					route: '/settings',
 					isActive: routeName.startsWith('Settings'),
+					disabled
+				},
+				{
+					name: 'Partners',
+					icon: () => h(Globe),
+					route: '/partners',
+					isActive: routeName.startsWith('Partners'),
+					condition: this.$team.doc.erpnext_partner,
 					disabled
 				}
 			].filter(item => item.condition !== false);

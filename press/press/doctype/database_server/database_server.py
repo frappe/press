@@ -316,10 +316,6 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				if self.is_self_hosted:
-					server = frappe.get_doc("Server", self.name)
-					if server.status != "Active":
-						server.setup_server()  # Setup App server after DB server setup
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -595,8 +591,30 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _setup_pt_stalk(self):
+		extra_port_variable = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "extra_port"
+		)
+		if extra_port_variable:
+			mariadb_port = extra_port_variable.value_str
+		else:
+			mariadb_port = 3306
 		try:
-			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			ansible = Ansible(
+				playbook="pt_stalk.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_port": mariadb_port,
+					"stalk_function": self.stalk_function,
+					"stalk_variable": self.stalk_variable,
+					"stalk_threshold": self.stalk_threshold,
+					"stalk_sleep": self.stalk_sleep,
+					"stalk_cycles": self.stalk_cycles,
+					"stalk_interval": self.stalk_interval,
+					"stalk_gdb_collector": bool(self.stalk_gdb_collector),
+					"stalk_strace_collector": bool(self.stalk_strace_collector),
+				},
+			)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -604,6 +622,22 @@ class DatabaseServer(BaseServer):
 				self.save()
 		except Exception:
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_mariadb_debug_symbols(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
+		)
+
+	def _setup_mariadb_debug_symbols(self):
+		try:
+			ansible = Ansible(
+				playbook="mariadb_debug_symbols.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Debug Symbols Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def fetch_stalks(self):

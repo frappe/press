@@ -37,6 +37,8 @@ ALLOWED_DOCTYPES = [
 	"Server",
 	"Database Server",
 	"Ansible Play",
+	"User",
+	"Partner Approval Request",
 ]
 
 

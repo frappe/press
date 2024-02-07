@@ -182,7 +182,9 @@ def get_app_counts_for_groups(rg_names):
 @frappe.whitelist()
 def exists(title):
 	team = get_current_team()
-	return bool(frappe.db.exists("Release Group", {"title": title, "team": team}))
+	return bool(
+		frappe.db.exists("Release Group", {"title": title, "team": team, "enabled": True})
+	)
 
 
 @frappe.whitelist()

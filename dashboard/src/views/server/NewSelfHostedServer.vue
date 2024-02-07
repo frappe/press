@@ -24,6 +24,9 @@
 					<SelfHostedServerForm
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
+						v-model:privateIP="privateIP"
+						v-model:dbpublicIP="dbpublicIP"
+						v-model:dbprivateIP="dbprivateIP"
 						v-model:error="ipInvalid"
 					/>
 					<Button
@@ -159,7 +162,9 @@ export default {
 			title: null,
 			options: null,
 			publicIP: null,
+			dbpublicIP: null,
 			privateIP: null,
+			dbprivateIP: null,
 			validationMessage: null,
 			serverDoc: null,
 			ssh_key: null,
@@ -217,6 +222,9 @@ export default {
 					server: {
 						title: this.title,
 						publicIP: this.publicIP,
+						privateIP: this.privateIP,
+						dbpublicIP: this.dbpublicIP,
+						dbprivateIP: this.dbprivateIP,
 						plan: this.selectedPlan,
 						url: this.domain
 					}

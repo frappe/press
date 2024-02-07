@@ -29,6 +29,7 @@ def create_test_cluster(
 	region: str = "ap-south-1",
 	public: bool = False,
 	add_default_servers: bool = False,
+	hybrid: bool = False,
 ) -> "Cluster":
 	"""Create test Cluster doc"""
 
@@ -46,6 +47,7 @@ def create_test_cluster(
 			"aws_access_key_id": "test",
 			"aws_secret_access_key": "test",
 			"public": public,
+			"hybrid": hybrid,
 			"add_default_servers": add_default_servers,
 		}
 	).insert(ignore_if_duplicate=True)
