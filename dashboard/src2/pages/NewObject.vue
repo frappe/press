@@ -4,7 +4,7 @@
 			<Breadcrumbs :items="breadcrumbs" />
 		</Header>
 	</div>
-	<div class="mx-auto max-w-4xl">
+	<div class="mx-auto max-w-4xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<template v-for="option in options" :key="option.name">
 				<div v-if="showOption(option)">
@@ -50,12 +50,12 @@
 							/>
 						</div>
 						<div v-else-if="option?.type === 'text'">
-							<FormControl class="w-1/2" v-model="vals[option.name]" />
+							<FormControl class="md:w-1/2" v-model="vals[option.name]" />
 						</div>
 					</div>
 				</div>
 			</template>
-			<div class="w-1/2" v-if="showSummaryAndRegionConsent">
+			<div class="md:w-1/2" v-if="showSummaryAndRegionConsent">
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
@@ -67,7 +67,7 @@
 					</template>
 				</div>
 			</div>
-			<div class="w-1/2 space-y-3">
+			<div class="space-y-3 md:w-1/2">
 				<FormControl
 					v-if="showSummaryAndRegionConsent"
 					v-model="vals['agreedToRegionConsent']"
