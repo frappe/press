@@ -40,7 +40,6 @@
 </template>
 
 <script>
-import { getTeam } from '../../data/team';
 export default {
 	name: 'PartnerOverview',
 	resources: {
@@ -55,9 +54,6 @@ export default {
 		}
 	},
 	computed: {
-		team() {
-			return getTeam()?.doc;
-		},
 		partnerDetails() {
 			return [
 				{
@@ -78,7 +74,7 @@ export default {
 				},
 				{
 					label: 'Code',
-					value: this.team.partner_referral_code
+					value: this.$team.doc.partner_referral_code
 				}
 			];
 		},

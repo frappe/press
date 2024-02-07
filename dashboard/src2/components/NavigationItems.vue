@@ -70,7 +70,7 @@ export default {
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partners'),
-					condition: this.$team.doc.erpnext_partner,
+					condition: Boolean(this.$team.doc.erpnext_partner),
 					disabled
 				}
 			].filter(item => item.condition !== false);
