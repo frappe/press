@@ -38,7 +38,7 @@ class SelfHostedServer(Document):
 			pass
 
 		if not self.mariadb_ip:
-			self.mariadb_ip = self.private_ip
+			self.mariadb_ip = self.ip
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
 		if not self.mariadb_root_password:
@@ -502,7 +502,7 @@ class SelfHostedServer(Document):
 		if self.proxy_server and self.proxy_public_ip != self.ip:
 			"""Setup nginx sets ssl_nginx on the server,
 			if a proxy is configured these settings are already considered in proxy.conf"""
-			return
+			return True
 
 		try:
 			ansible = Ansible(
@@ -534,11 +534,15 @@ class SelfHostedServer(Document):
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		db_server = frappe.get_doc("Database Server", self.name)
+		db_server = frappe.get_doc("Database Server", self.database_server)
 		if not db_server.is_server_setup:
 			db_server.setup_server()
-		else:
-			self.update_tls()
+
+		app_server = frappe.get_doc("Server", self.server)
+		if not app_server.is_server_setup:
+			app_server.setup_server()
+
+		self.update_tls()
 
 	def create_subscription(self):
 		frappe.new_doc(
