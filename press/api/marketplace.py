@@ -536,9 +536,9 @@ def get_promotional_banners() -> List:
 @frappe.whitelist()
 def get_marketplace_subscriptions_for_site(site: str):
 	subscriptions = frappe.db.get_all(
-		"Marketplace App Subscription",
-		filters={"site": site, "status": ("!=", "Disabled")},
-		fields=["name", "app", "status", "marketplace_app_plan", "plan"],
+		"Subscription",
+		filters={"site": site, "enabled": 1, "document_type": "Marketplace App"},
+		fields=["name", "document_name as app", "enabled", "plan"],
 	)
 
 	for subscription in subscriptions:
@@ -548,11 +548,9 @@ def get_marketplace_subscriptions_for_site(site: str):
 
 		subscription.app_title = marketplace_app_info.title
 		subscription.app_image = marketplace_app_info.image
-
 		subscription.plan_info = frappe.db.get_value(
-			"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+			"Marketplace App Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
 		)
-
 		subscription.is_free = frappe.db.get_value(
 			"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
 		)
@@ -604,7 +602,7 @@ def get_apps_with_plans(apps, release_group: str):
 
 @frappe.whitelist()
 def change_app_plan(subscription, new_plan):
-	is_free = frappe.db.get_value("Marketplace App Plan", new_plan, "is_free")
+	is_free = frappe.db.get_value("Marketplace App Plan", new_plan, "price_usd") <= 0
 	if not is_free:
 		team = get_current_team(get_doc=True)
 		if not team.can_install_paid_apps():
@@ -612,11 +610,9 @@ def change_app_plan(subscription, new_plan):
 				"You cannot upgrade to paid plan on Free Credits. Please buy credits before trying to upgrade plan."
 			)
 
-	subscription = frappe.get_doc("Marketplace App Subscription", subscription)
-	subscription.status = (
-		"Active" if subscription.status != "Active" else subscription.status
-	)
-	subscription.marketplace_app_plan = new_plan
+	subscription = frappe.get_doc("Subscription", subscription)
+	subscription.enabled = 1
+	subscription.plan = new_plan
 	subscription.save(ignore_permissions=True)
 
 

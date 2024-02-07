@@ -1023,30 +1023,29 @@ def get_installed_apps(site):
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
-			"Marketplace App Subscription",
-			{"site": site.name, "app": app.app, "status": "Active"},
+			"Subscription",
+			{"site": site.name, "document_type": "Marketplace App", "document_name": app.app, "enabled": 1},
 		):
 			subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				{"site": site.name, "app": app.app, "status": "Active"},
+				"Subscription",
+				{"site": site.name,"document_type": "Marketplace App", "document_name": app.app, "enabled": 1},
+				["document_name as app"]
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+				"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
 			)
 
 			app_source.app_title = marketplace_app_info.title
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
+				"Marketplace App Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
 			)
 
 			app_source.plans = get_plans_for_app(app.app)
 
-			app_source.is_free = frappe.db.get_value(
-				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-			)
+			app_source.is_free = app_source.plan_info.price_usd <= 0
 		else:
 			app_source.subscription = {}
 

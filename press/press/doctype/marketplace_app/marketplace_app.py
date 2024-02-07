@@ -458,29 +458,18 @@ def get_plans_for_app(
 		filters=filters,
 		fields=[
 			"name",
+			"title",
 			"plan",
-			"discount_percent",
-			"gst",
-			"marked_most_popular",
-			"is_free",
 			"enabled",
-			"block_monthly",
+			"price_inr",
+			"price_usd",
 		],
 	)
 
 	for app_plan in marketplace_app_plans:
 		plan_data = {}
 		plan_data.update(app_plan)
-
-		plan_discount_percent = app_plan.discount_percent
-		plan_data["discounted"] = plan_discount_percent > 0
-		plan_prices = frappe.db.get_value(
-			"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
-		)
-
-		plan_data.update(plan_prices)
 		plan_data["features"] = get_app_plan_features(app_plan.name)
-
 		plans.append(plan_data)
 
 	plans.sort(key=lambda x: x["price_usd"])
