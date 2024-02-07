@@ -431,7 +431,10 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def get_hostname(self, server_type):
-		return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+		if self.cluster:
+			return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+
+		return f"{get_symbolic_name(server_type)}-{self.hostname}".lower()
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
