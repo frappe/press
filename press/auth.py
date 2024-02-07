@@ -34,6 +34,7 @@ ALLOWED_PATHS = [
 	"/api/method/validate_plan_change",
 	"/api/method/marketplace-apps",
 	"/api/method/press.www.dashboard.get_context_for_dev",
+	"/api/method/frappe.website.doctype.web_form.web_form.accept",
 ]
 
 ALLOWED_WILDCARD_PATHS = [
