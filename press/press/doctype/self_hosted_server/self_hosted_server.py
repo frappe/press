@@ -246,9 +246,9 @@ class SelfHostedServer(Document):
 
 			db_server = frappe.new_doc(
 				"Database Server",
-				{
+				**{
 					"hostname": self.get_hostname("Database Server"),
-					"title": self.title,
+					"title": f"{self.title} DB",
 					"is_self_hosted": True,
 					"self_hosted_server_domain": self.domain,
 					"ip": self.mariadb_ip,
@@ -316,9 +316,9 @@ class SelfHostedServer(Document):
 		try:
 			server = frappe.new_doc(
 				"Server",
-				{
+				**{
 					"hostname": self.get_hostname("Server"),
-					"title": self.title,
+					"title": f"{self.title} App",
 					"is_self_hosted": True,
 					"self_hosted_server_domain": self.domain,
 					"team": self.team,
@@ -441,7 +441,7 @@ class SelfHostedServer(Document):
 		try:
 			proxy_server = frappe.new_doc(
 				"Proxy Server",
-				{
+				**{
 					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
@@ -474,10 +474,11 @@ class SelfHostedServer(Document):
 			tls_cert = frappe.db.get_value(
 				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
 			)
+
 			if not tls_cert:
 				tls_cert = frappe.new_doc(
 					"TLS Certificate",
-					{
+					**{
 						"domain": self.name,
 						"team": self.team,
 						"wildcard": False,
@@ -485,7 +486,7 @@ class SelfHostedServer(Document):
 				).insert()
 				tls_cert = tls_cert.name
 
-			return tls_cert.name
+			return tls_cert
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
 
@@ -539,7 +540,7 @@ class SelfHostedServer(Document):
 	def create_subscription(self):
 		frappe.new_doc(
 			"Plan Change",
-			{
+			**{
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"from_plan": "",
