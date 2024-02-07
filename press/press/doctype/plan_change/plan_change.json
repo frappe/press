@@ -45,14 +45,14 @@
    "fieldname": "from_plan",
    "fieldtype": "Link",
    "label": "From Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "to_plan",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "To Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "reqd": 1
   },
   {
@@ -74,7 +74,7 @@
   }
  ],
  "links": [],
- "modified": "2022-09-22 05:40:57.705702",
+ "modified": "2024-02-05 23:05:19.185748",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Plan Change",

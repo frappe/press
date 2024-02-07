@@ -294,7 +294,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "0",
@@ -358,7 +358,7 @@
   }
  ],
  "links": [],
- "modified": "2023-08-03 19:20:04.797706",
+ "modified": "2024-02-05 23:05:20.697350",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

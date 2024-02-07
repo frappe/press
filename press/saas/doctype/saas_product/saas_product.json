@@ -89,7 +89,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "reqd": 1
   },
   {
@@ -157,7 +157,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-13 18:06:15.058201",
+ "modified": "2024-02-05 23:05:21.815072",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",

@@ -611,7 +611,7 @@
    "fieldname": "erpnext_plan",
    "fieldtype": "Link",
    "label": "ERPNext Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "erpnext_group",
@@ -645,7 +645,7 @@
    "fieldname": "staging_plan",
    "fieldtype": "Link",
    "label": "Staging Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "24",
@@ -1107,7 +1107,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-01-11 23:28:22.862640",
+ "modified": "2024-02-05 23:05:19.970905",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
