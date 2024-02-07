@@ -63,7 +63,7 @@
 				>
 					<template v-for="summaryItem in summary">
 						<div class="text-gray-600">{{ summaryItem.label }}:</div>
-						<div v-html="summaryHTML(summaryItem)"></div>
+						<div v-html="summaryItemHTML(summaryItem)" />
 					</template>
 				</div>
 			</div>
@@ -159,7 +159,7 @@ export default {
 			}
 			return true;
 		},
-		summaryHTML(summaryItem) {
+		summaryItemHTML(summaryItem) {
 			return summaryItem.format
 				? summaryItem.format(
 						summaryItem.fieldname ? this.vals[summaryItem.fieldname] : this.vals
