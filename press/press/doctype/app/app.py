@@ -4,7 +4,11 @@
 
 
 import frappe
+import typing
 from frappe.model.document import Document
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app_source.app_source import AppSource
 
 
 class App(Document):
@@ -16,7 +20,7 @@ class App(Document):
 		team=None,
 		github_installation_id=None,
 		public=False,
-	):
+	) -> AppSource:
 		existing_source = frappe.get_all(
 			"App Source",
 			{"app": self.name, "repository_url": repository_url, "branch": branch, "team": team},

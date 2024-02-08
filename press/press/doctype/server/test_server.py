@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import frappe
+import typing
 from frappe.model.naming import make_autoname
 
 from press.press.doctype.database_server.test_database_server import (
@@ -19,6 +20,9 @@ from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy
 from press.press.doctype.server.server import BaseServer
 from press.press.doctype.team.test_team import create_test_team
 
+if typing.TYPE_CHECKING:
+	from press.press.doctype.server.server import Server
+
 
 @patch.object(BaseServer, "after_insert", new=Mock())
 def create_test_server(
@@ -26,7 +30,7 @@ def create_test_server(
 	database_server=None,
 	cluster: str = "Default",
 	team: str = None,
-):
+) -> Server:
 	"""Create test Server doc."""
 	if not proxy_server:
 		proxy_server = create_test_proxy_server().name

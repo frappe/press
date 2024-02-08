@@ -23,10 +23,12 @@ class BenchGetAppCache(Document):
 		run_command_in_docker_cache(f"rm bench/apps/{self.file_name}")
 		get_app_cache_items.cache.invalidate()
 
+	@staticmethod
 	def clear_app_cache() -> None:
 		run_command_in_docker_cache("rm bench/apps/*.tar bench/apps/*.tgz")
 		get_app_cache_items.cache.invalidate()
 
+	@staticmethod
 	def clear_app_cache_by_app(app: str) -> None:
 		run_command_in_docker_cache(f"rm bench/apps/{app}-*.tar bench/apps/{app}-*.tgz")
 		get_app_cache_items.cache.invalidate()
