@@ -1,10 +1,13 @@
 ---
-- name: Install Percona Toolkit
+- name: Install Percona Toolkit Dependencies
   apt:
     pkg:
-      - percona-toolkit
       - net-tools # Needed for netstat
     state: present
+
+- name: Install Percona Toolkit
+  apt:
+    deb: https://downloads.percona.com/downloads/percona-toolkit/3.5.7/binary/debian/{{ ansible_distribution_release }}/x86_64/percona-toolkit_3.5.7-1.{{ ansible_distribution_release }}_amd64.deb
 
 - name: Create Stalk Systemd Service File
   template:
