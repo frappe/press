@@ -15,6 +15,12 @@
     regexp: 'cut -f 3 ' # lsof returns name, pid, user, ...  . We need pid so 2nd field not 3rd
     replace: 'cut -f 2 '
 
+- name: Enable Full GDB Backtrace
+  ansible.builtin.replace:
+    path: /usr/bin/pt-stalk
+    regexp: '-ex "thread apply all bt" \\'
+    replace: '-ex "set print frame-arguments all" -ex "thread apply all bt full" \\'
+
 - name: Create Stalk Systemd Service File
   template:
     src: pt_stalk.service
