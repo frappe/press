@@ -92,7 +92,6 @@
   "is_innodb_buffer_stats_by_table_perf_report_enabled",
   "is_user_resource_use_overview_perf_report_enabled",
   "is_user_resource_use_io_statistics_perf_report_enabled",
-  "is_user_resource_use_statement_statistics_perf_report_enabled"
   "mariadb_stalk_section",
   "is_stalk_setup",
   "stalk_gdb_collector",
@@ -452,6 +451,8 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
+   "default": "1",
    "fieldname": "performance_schema_report_section",
    "fieldtype": "Section Break",
    "label": "Performance Schema Report"
@@ -635,12 +636,8 @@
    "label": "User Resource Use I/O Statistics"
   },
   {
-   "default": "1",
-   "fieldname": "is_user_resource_use_statement_statistics_perf_report_enabled",
-   "fieldtype": "Check",
-   "label": "User Resource Use Statement Statistics"
-=======
    "collapsible": 1,
+   "default": "1",
    "fieldname": "mariadb_stalk_section",
    "fieldtype": "Section Break",
    "label": "MariaDB Stalk"
@@ -704,7 +701,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 21:30:29.998544",
+ "modified": "2024-02-08 10:42:07.116593",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",
