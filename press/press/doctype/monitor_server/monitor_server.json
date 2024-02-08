@@ -29,7 +29,9 @@
   "column_break_20",
   "root_public_key",
   "monitoring_section",
-  "monitoring_password"
+  "monitoring_password",
+  "column_break_nzet",
+  "prometheus_data_directory"
  ],
  "fields": [
   {
@@ -192,6 +194,16 @@
    "fieldtype": "Link",
    "label": "Cluster",
    "options": "Cluster"
+  },
+  {
+   "fieldname": "column_break_nzet",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "/home/frappe/prometheus/data",
+   "fieldname": "prometheus_data_directory",
+   "fieldtype": "Data",
+   "label": "Prometheus Data Directory"
   }
  ],
  "links": [
@@ -200,7 +212,7 @@
    "link_fieldname": "server"
   }
  ],
- "modified": "2023-12-13 15:09:06.458740",
+ "modified": "2024-02-05 20:07:19.024804",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Monitor Server",

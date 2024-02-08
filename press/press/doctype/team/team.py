@@ -32,6 +32,7 @@ class Team(Document):
 		"team_title",
 		"user",
 		"partner_email",
+		"erpnext_partner",
 		"billing_team",
 		"team_members",
 		"child_team_members",
@@ -44,6 +45,7 @@ class Team(Document):
 		"is_saas_user",
 		"billing_name",
 		"referrer_id",
+		"partner_referral_code",
 	]
 	dashboard_actions = ["get_team_members", "remove_team_member"]
 
@@ -57,8 +59,8 @@ class Team(Document):
 
 		user = frappe.db.get_value(
 			"User",
-			self.user,
-			["first_name", "last_name", "user_image", "user_type"],
+			frappe.session.user,
+			["name", "first_name", "last_name", "user_image", "user_type", "email"],
 			as_dict=True,
 		)
 		doc.user_info = user

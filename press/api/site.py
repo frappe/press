@@ -1735,13 +1735,8 @@ def change_group(name, group):
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
-	frappe.get_doc(
-		{
-			"doctype": "Site Update",
-			"site": name,
-			"destination_group": group,
-		}
-	).insert()
+	site = frappe.get_doc("Site", name)
+	site.move_to_group(group)
 
 
 @frappe.whitelist()

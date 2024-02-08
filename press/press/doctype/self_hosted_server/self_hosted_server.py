@@ -16,18 +16,33 @@ class SelfHostedServer(Document):
 		self.name = sdext(self.server_url).fqdn
 
 	def validate(self):
-		if not self.mariadb_ip:
-			self.mariadb_ip = self.private_ip
-		if not self.mariadb_root_user:
-			self.mariadb_root_user = "root"
-		if not self.mariadb_root_password:
-			self.mariadb_root_password = frappe.generate_hash(length=32)
-		if not self.agent_password:
-			self.agent_password = frappe.generate_hash(length=32)
 		if not self.hostname or not self.domain:
 			extracted_url = sdext(self.server_url)
 			self.hostname = extracted_url.subdomain
 			self.domain = extracted_url.registered_domain
+
+		self.set_proxy_details()
+		self.set_mariadb_config()
+
+		if not self.agent_password:
+			self.agent_password = frappe.generate_hash(length=32)
+
+	def set_proxy_details(self):
+		if self.proxy_created or self.proxy_server:
+			self.proxy_public_ip, self.proxy_private_ip = frappe.db.get_value(
+				"Proxy Server", self.proxy_server, ["ip", "private_ip"]
+			)
+
+	def set_mariadb_config(self):
+		if not self.different_database_server:
+			pass
+
+		if not self.mariadb_ip:
+			self.mariadb_ip = self.ip
+		if not self.mariadb_root_user:
+			self.mariadb_root_user = "root"
+		if not self.mariadb_root_password:
+			self.mariadb_root_password = frappe.generate_hash(length=32)
 
 	@frappe.whitelist()
 	def fetch_apps_and_sites(self):
@@ -226,26 +241,36 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			db_server = frappe.new_doc("Database Server")
-			db_server.hostname = self.hostname
-			db_server.title = self.title
-			db_server.is_self_hosted = True
-			db_server.self_hosted_server_domain = self.domain
-			db_server.ip = self.ip
-			db_server.private_ip = self.private_ip
-			db_server.team = self.team
-			db_server.ssh_user = self.ssh_user
-			db_server.ssh_port = self.ssh_port
-			db_server.mariadb_root_password = self.get_password("mariadb_root_password")
-			db_server.cluster = self.cluster
-			db_server.agent_password = self.get_password("agent_password")
-			db_server.is_server_setup = False if self.new_server else True
-			_db = db_server.insert()
-			_db.create_subscription("Unlimited")
+			if not self.mariadb_ip or not self.mariadb_private_ip:
+				frappe.throw("Public/Private IP for MariaDB not found")
+
+			db_server = frappe.new_doc(
+				"Database Server",
+				**{
+					"hostname": self.get_hostname("Database Server"),
+					"title": f"{self.title} DB",
+					"is_self_hosted": True,
+					"self_hosted_server_domain": self.domain,
+					"ip": self.mariadb_ip,
+					"private_ip": self.mariadb_private_ip,
+					"team": self.team,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+					"mariadb_root_password": self.get_password("mariadb_root_password"),
+					"cluster": self.cluster,
+					"agent_password": self.get_password("agent_password"),
+					"is_server_setup": False if self.new_server else True,
+					"plan": self.database_plan,
+				},
+			).insert()
+
+			db_server.create_subscription(self.database_plan)
 			self.database_setup = True
-			self.database_server = _db.name
+			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
+
+			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
 			self.status = "Broken"
@@ -287,34 +312,44 @@ class SelfHostedServer(Document):
 		"""
 		Add a new record to the Server doctype
 		"""
+
 		try:
-			server = frappe.new_doc("Server")
-			server.hostname = self.hostname
-			server.title = self.title
-			server.is_self_hosted = True
-			server.self_hosted_server_domain = self.domain
-			server.self_hosted_mariadb_server = self.private_ip
-			server.team = self.team
-			server.ip = self.ip
-			server.private_ip = self.private_ip
-			server.ssh_user = self.ssh_user
-			server.ssh_port = self.ssh_port
-			server.proxy_server = self.proxy_server
-			server.database_server = self.database_server
-			server.cluster = self.cluster
-			server.agent_password = self.get_password("agent_password")
-			server.self_hosted_mariadb_root_password = self.get_password("mariadb_root_password")
-			server.ram = self.ram
-			server.new_worker_allocation = True
-			new_server = server.insert()
-			new_server.create_subscription("Self Hosted Server")
-			self.server = new_server.name
+			server = frappe.new_doc(
+				"Server",
+				**{
+					"hostname": self.get_hostname("Server"),
+					"title": f"{self.title} App",
+					"is_self_hosted": True,
+					"self_hosted_server_domain": self.domain,
+					"team": self.team,
+					"ip": self.ip,
+					"private_ip": self.private_ip,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+					"proxy_server": self.proxy_server,
+					"database_server": self.database_server,
+					"cluster": self.cluster,
+					"agent_password": self.get_password("agent_password"),
+					"self_hosted_mariadb_root_password": self.get_password("mariadb_root_password"),
+					"ram": self.ram,
+					"new_worker_allocation": True,
+					"plan": self.plan,
+				},
+			).insert()
+
+			server.create_subscription(self.plan)
+			self.server = server.name
 			self.status = "Active"
 			self.server_created = True
+
 		except Exception as e:
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
+
 		self.save()
+		self.create_tls_certs()
+
+		frappe.msgprint(f"Server record {server.name} created")
 
 	@frappe.whitelist()
 	def create_new_sites(self):
@@ -395,48 +430,66 @@ class SelfHostedServer(Document):
 			log_error("Self Hosted Restore error", server=self.name)
 		self.save()
 
+	def get_hostname(self, server_type):
+		if self.cluster:
+			return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+
+		return f"{get_symbolic_name(server_type)}-{self.hostname}".lower()
+
 	@frappe.whitelist()
 	def create_proxy_server(self):
 		"""
 		Add a new record to the Proxy Server doctype
 		"""
 		try:
-			server = frappe.new_doc("Proxy Server")
-			server.hostname = self.hostname
-			server.title = self.title
-			server.is_self_hosted = True
-			server.domain = self.domain
-			server.self_hosted_server_domain = self.domain
-			server.team = self.team
-			server.ip = self.ip
-			server.private_ip = self.private_ip
-			server.ssh_user = self.ssh_user
-			server.is_primary = True
-			server.cluster = self.cluster
-			server.ssh_port = self.ssh_port
-			new_server = server.insert()
-			self.agent_password = new_server.get_password("agent_password")
-			self.proxy_server = new_server.name
-			self.proxy_server_ip = self.private_ip
+			proxy_server = frappe.new_doc(
+				"Proxy Server",
+				**{
+					"hostname": self.get_hostname("Proxy Server"),
+					"title": self.title,
+					"is_self_hosted": True,
+					"domain": self.domain,
+					"self_hosted_server_domain": self.domain,
+					"team": self.team,
+					"ip": self.proxy_public_ip,
+					"private_ip": self.proxy_private_ip,
+					"is_primary": True,
+					"cluster": self.cluster,
+					"ssh_user": self.ssh_user,
+					"ssh_port": self.ssh_port,
+				},
+			).insert()
+
+			self.agent_password = proxy_server.get_password("agent_password")
+			self.proxy_server = proxy_server.name
 			self.status = "Active"
 			self.proxy_created = True
 		except Exception as e:
 			self.status = "Broken"
-			frappe.throw("Server Creation Error", exc=e)
+			frappe.throw("Self Hosted Proxy Server Creation Error", exc=e)
 		self.save()
+
+		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
 
 	@frappe.whitelist()
 	def create_tls_certs(self):
 		try:
-			tls_cert = frappe.get_doc(
-				{
-					"doctype": "TLS Certificate",
-					"domain": self.name,
-					"team": self.team,
-					"wildcard": False,
-				}
-			).insert()
-			return tls_cert.name
+			tls_cert = frappe.db.get_value(
+				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
+			)
+
+			if not tls_cert:
+				tls_cert = frappe.new_doc(
+					"TLS Certificate",
+					**{
+						"domain": self.name,
+						"team": self.team,
+						"wildcard": False,
+					},
+				).insert()
+				tls_cert = tls_cert.name
+
+			return tls_cert
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
 
@@ -446,13 +499,21 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def setup_nginx(self):
+		if self.proxy_server and self.proxy_public_ip != self.ip:
+			"""Setup nginx sets ssl_nginx on the server,
+			if a proxy is configured these settings are already considered in proxy.conf"""
+			return True
+
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or "22",
-				variables={"domain": self.name},
+				variables={
+					"domain": self.name,
+					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
+				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
@@ -473,23 +534,27 @@ class SelfHostedServer(Document):
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		db_server = frappe.get_doc("Database Server", self.name)
+		db_server = frappe.get_doc("Database Server", self.database_server)
 		if not db_server.is_server_setup:
 			db_server.setup_server()
-		else:
-			self.update_tls()
+
+		app_server = frappe.get_doc("Server", self.server)
+		if not app_server.is_server_setup:
+			app_server.setup_server()
+
+		self.update_tls()
 
 	def create_subscription(self):
-		frappe.get_doc(
-			{
-				"doctype": "Plan Change",
+		frappe.new_doc(
+			"Plan Change",
+			**{
 				"document_type": self.doctype,
 				"document_name": self.name,
 				"from_plan": "",
 				"to_plan": self.plan,
 				"type": "Initial Plan",
 				"timestamp": self.creation,
-			}
+			},
 		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
@@ -612,3 +677,11 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
 		case _:
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
+
+
+def get_symbolic_name(server_type):
+	return {
+		"Proxy Server": "n",
+		"Server": "f",
+		"Database Server": "m",
+	}.get(server_type, "f")

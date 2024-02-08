@@ -11,6 +11,8 @@ import { bytes, duration, date } from '../utils/format';
 import SiteActionCell from '../components/SiteActionCell.vue';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
+import SiteActions from '../components/SiteActions.vue';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Site',
@@ -39,7 +41,9 @@ export default {
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		sendTransferRequest: 'send_change_team_request'
+		sendTransferRequest: 'send_change_team_request',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/sites',
@@ -657,7 +661,7 @@ export default {
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
-							label: 'Show Config Preview',
+							label: 'Preview',
 							slots: {
 								prefix: icon('eye')
 							},
@@ -732,27 +736,10 @@ export default {
 				label: 'Actions',
 				icon: icon('activity'),
 				route: 'actions',
-				type: 'list',
-				list: {
-					data({ documentResource: site }) {
-						return site.doc.actions;
-					},
-					columns: [
-						{
-							label: 'Action',
-							fieldname: 'action',
-							type: 'Component',
-							component: ({ row, documentResource: site }) => {
-								return h(SiteActionCell, {
-									siteName: site.doc.name,
-									actionLabel: row.action,
-									method: row.doc_method,
-									description: row.description,
-									buttonLabel: row.button_label
-								});
-							}
-						}
-					]
+				type: 'Component',
+				component: SiteActions,
+				props: site => {
+					return { site: site.doc.name };
 				}
 			},
 			{
@@ -808,7 +795,6 @@ export default {
 					]
 				}
 			},
-
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -846,7 +832,8 @@ export default {
 						}
 					]
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: site } = context;
@@ -910,7 +897,7 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					context,

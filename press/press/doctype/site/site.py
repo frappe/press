@@ -49,6 +49,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.utils import (
 	convert,
 	get_client_blacklisted_keys,
@@ -60,7 +61,7 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, create_dns_record
 
 
-class Site(Document):
+class Site(Document, TagHelpers):
 	dashboard_fields = [
 		"ip",
 		"status",
@@ -111,6 +112,7 @@ class Site(Document):
 		)
 		doc.group_title = group.title
 		doc.group_public = group.public
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
 		doc.current_plan = get("Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
