@@ -3,27 +3,29 @@
 # For license information, please see license.txt
 
 
-from functools import cached_property
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from press.agent import Agent
-from press.runner import Ansible
-from press.utils import log_error
-from frappe.core.utils import find
-from press.overrides import get_permission_query_conditions_for_doctype
-from frappe.utils.user import is_system_user
-
-from typing import List, Union
-import boto3
 import json
 import typing
+from functools import cached_property
+from typing import List, Union
+
+import boto3
+import frappe
+from frappe import _
+from frappe.core.utils import find
+from frappe.model.document import Document
+from frappe.utils.user import is_system_user
+
+from press.agent import Agent
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.runner import Ansible
+from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
 
 
-class BaseServer(Document):
+class BaseServer(Document, TagHelpers):
 	dashboard_fields = [
 		"plan",
 		"cluster",

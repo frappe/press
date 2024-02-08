@@ -4,6 +4,7 @@ import { userCurrency, bytes, pricePerDay } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
+import { tagTab } from './common/tags';
 import router from '../router';
 
 export default {
@@ -11,7 +12,9 @@ export default {
 	whitelistedMethods: {
 		changePlan: 'change_plan',
 		reboot: 'reboot',
-		rename: 'rename'
+		rename: 'rename',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/servers',
@@ -619,7 +622,8 @@ export default {
 						}
 					]
 				}
-			}
+			},
+			tagTab()
 		]
 	},
 	routes: [
