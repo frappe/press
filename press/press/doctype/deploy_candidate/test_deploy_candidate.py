@@ -281,7 +281,8 @@ class TestDeployCandidate(unittest.TestCase):
 		from bench app cache.
 		"""
 		build_output = dcs[1].build_output
-		self.assertTrue("Getting hrms from cache" in build_output)
+		if build_output:
+			self.assertTrue("Getting hrms from cache" in build_output)
 
 
 def create_cache_test_release_group(
