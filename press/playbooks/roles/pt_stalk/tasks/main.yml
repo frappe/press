@@ -6,7 +6,7 @@
       - net-tools # Needed for netstat
     state: present
 
-- name: Create Stak Systemd Service File
+- name: Create Stalk Systemd Service File
   template:
     src: pt_stalk.service
     dest: /etc/systemd/system/pt_stalk.service
@@ -14,7 +14,7 @@
     group: root
     mode: 0644
 
-- name: Restart Stak Service
+- name: Restart Stalk Service
   systemd:
     daemon_reload: true
     name: pt_stalk
