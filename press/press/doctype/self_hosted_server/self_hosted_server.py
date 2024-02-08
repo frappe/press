@@ -499,17 +499,16 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def setup_nginx(self):
-		if self.proxy_server and self.proxy_public_ip != self.ip:
-			"""Setup nginx sets ssl_nginx on the server,
-			if a proxy is configured these settings are already considered in proxy.conf"""
-			return True
+		server = self
+		if not self.dedicated_proxy:
+			server = frappe.get_doc("Server", self.server)
 
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
-				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or "22",
+				server=server,
+				user=server.ssh_user or "root",
+				port=server.ssh_port or "22",
 				variables={
 					"domain": self.name,
 					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
