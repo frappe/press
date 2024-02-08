@@ -30,7 +30,7 @@ def create_test_server(
 	database_server=None,
 	cluster: str = "Default",
 	team: str = None,
-) -> Server:
+) -> "Server":
 	"""Create test Server doc."""
 	if not proxy_server:
 		proxy_server = create_test_proxy_server().name
