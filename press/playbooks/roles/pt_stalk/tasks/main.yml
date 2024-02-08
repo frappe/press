@@ -9,6 +9,12 @@
   apt:
     deb: https://downloads.percona.com/downloads/percona-toolkit/3.5.7/binary/debian/{{ ansible_distribution_release }}/x86_64/percona-toolkit_3.5.7-1.{{ ansible_distribution_release }}_amd64.deb
 
+- name: Fix a bug in pt-stalk
+  ansible.builtin.replace:
+    path: /usr/bin/pt-stalk
+    regexp: 'cut -f 3 ' # lsof returns name, pid, user, ...  . We need pid so 2nd field not 3rd
+    replace: 'cut -f 2 '
+
 - name: Create Stalk Systemd Service File
   template:
     src: pt_stalk.service
