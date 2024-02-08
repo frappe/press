@@ -29,13 +29,19 @@ class TestSelfHostedServer(FrappeTestCase):
 	)
 	@patch.object(Ansible, "run", new=Mock())
 	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
-		server = create_test_self_hosted_server("ssl")
+		from press.press.doctype.plan.test_plan import create_test_plan
+
+		create_test_plan(
+			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
+		)
+		server = create_test_self_hosted_server("ssl", plan="Self Hosted Server")
+		app_server = server.create_server()
 		server.setup_nginx()
 		Mock_Ansible.assert_called_with(
 			playbook="self_hosted_nginx.yml",
-			server=server,
-			user=server.ssh_user or "root",
-			port=server.ssh_port or "22",
+			server=app_server,
+			user=app_server.ssh_user or "root",
+			port=app_server.ssh_port or "22",
 			variables={
 				"domain": server.name,
 				"press_domain": frappe.db.get_single_value("Press Settings", "domain"),

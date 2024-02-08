@@ -350,6 +350,7 @@ class SelfHostedServer(Document):
 		self.create_tls_certs()
 
 		frappe.msgprint(f"Server record {server.name} created")
+		return server
 
 	@frappe.whitelist()
 	def create_new_sites(self):
