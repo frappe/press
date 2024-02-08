@@ -112,7 +112,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows users consuming the most memory",
    "fieldname": "top_memory_by_user_section",
    "fieldtype": "Section Break",
@@ -126,7 +126,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows hosts consuming the most memory",
    "fieldname": "top_memory_by_host_section",
    "fieldtype": "Section Break",
@@ -140,7 +140,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows threads consuming the most memory",
    "fieldname": "top_memory_by_thread_section",
    "fieldtype": "Section Break",
@@ -154,7 +154,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows events consuming the most memory",
    "fieldname": "top_memory_by_event_section",
    "fieldtype": "Section Break",
@@ -173,7 +173,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Show the Files doing the most IOs",
    "fieldname": "top_file_io_activity_report_section",
    "fieldtype": "Section Break",
@@ -187,7 +187,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Show highest IO usage by file and latency",
    "fieldname": "top_io_by_file_by_time_section",
    "fieldtype": "Section Break",
@@ -226,7 +226,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Show the highest IO Data usage by event categories",
    "fieldname": "top_io_by_event_category_section",
    "fieldtype": "Section Break",
@@ -240,7 +240,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Show the highest IO time consumers by event categories",
    "fieldname": "top_io_in_time_by_event_category_section",
    "fieldtype": "Section Break",
@@ -254,7 +254,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows the highest IO time consumers by event categories",
    "fieldname": "top_io_time_by_userthread_section",
    "fieldtype": "Section Break",
@@ -268,7 +268,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "List statements with various aggregated statistics",
    "fieldname": "statement_analysis_section",
    "fieldtype": "Section Break",
@@ -282,7 +282,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "List all statements whose average runtime, in microseconds is in highest 5 percent",
    "fieldname": "statements_in_highest_5_percent_by_runtime_section",
    "fieldtype": "Section Break",
@@ -296,7 +296,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists all statements that use temporary tables - access the highest # of disk temporary tables, then memory temp tables",
    "fieldname": "statements_using_temp_tables_section",
    "fieldtype": "Section Break",
@@ -310,7 +310,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "List all normalized statements that have done sorts",
    "fieldname": "statements_with_sorting_section",
    "fieldtype": "Section Break",
@@ -324,7 +324,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists statements that have performed a full table scan",
    "fieldname": "statements_with_full_table_scans_section",
    "fieldtype": "Section Break",
@@ -338,7 +338,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "List statements that have raised errors or warnings",
    "fieldname": "statements_with_errors_or_warnings_section",
    "fieldtype": "Section Break",
@@ -352,7 +352,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "fieldname": "schema_index_statistics_section",
    "fieldtype": "Section Break",
    "label": "Schema Index Statistics"
@@ -365,7 +365,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "fieldname": "schema_table_statistics_section",
    "fieldtype": "Section Break",
    "label": "Schema Table Statistics"
@@ -378,14 +378,14 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "fieldname": "schema_table_statistics_with_innodb_buffer_section",
    "fieldtype": "Section Break",
    "label": "Schema Table Statistics (with InnoDB Buffer)"
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Find tables that are beign accesses by full table scans",
    "fieldname": "tables_with_full_table_scans_section",
    "fieldtype": "Section Break",
@@ -399,7 +399,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "fieldname": "unused_indexes_section",
    "fieldtype": "Section Break",
    "label": "Unused Indexes"
@@ -412,7 +412,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists the top wait events by theit total time, ignoring idle",
    "fieldname": "global_waits_by_time_section",
    "fieldtype": "Section Break",
@@ -426,7 +426,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists the top wait events by theit total time, ignoring idle",
    "fieldname": "waits_by_user_by_time_section",
    "fieldtype": "Section Break",
@@ -440,7 +440,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists the top wait classes by total time, ignoring idle",
    "fieldname": "wait_classes_by_time_section",
    "fieldtype": "Section Break",
@@ -454,7 +454,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Lists the top wait classes by average time, ignoring idle",
    "fieldname": "waits_classes_by_average_time_section",
    "fieldtype": "Section Break",
@@ -468,7 +468,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Summarizes the output of the INFORMATION_SCHEMA.INNODB_BUFFER_PAGE table, aggregating by schema",
    "fieldname": "innodb_buffer_stats_by_schema_section",
    "fieldtype": "Section Break",
@@ -482,7 +482,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Summarizes the output of the INFORMATION_SCHEMA.INNODB_BUFFER_PAGE table, aggregating by schema and table name",
    "fieldname": "innodb_buffer_stats_by_table_section",
    "fieldtype": "Section Break",
@@ -496,7 +496,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows resource use summary for each user",
    "fieldname": "overview_section",
    "fieldtype": "Section Break",
@@ -510,7 +510,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shoes I/O usage for each user",
    "fieldname": "io_statistics_section",
    "fieldtype": "Section Break",
@@ -524,7 +524,7 @@
   },
   {
    "collapsible": 1,
-   "collapsible_depends_on": "true",
+   "default": "1",
    "description": "Shows statement execution statistics for each user",
    "fieldname": "statement_statistics_section",
    "fieldtype": "Section Break",
@@ -546,7 +546,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-01 12:22:15.901845",
+ "modified": "2024-02-08 10:46:01.135333",
  "modified_by": "Administrator",
  "module": "Database Performance Schema",
  "name": "Performance Report",
