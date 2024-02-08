@@ -62,7 +62,7 @@
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 3fr 4fr"
+					style="grid-template-columns: 1fr 1fr"
 				>
 					<template v-for="summaryItem in summary">
 						<div class="text-gray-600">{{ summaryItem.label }}:</div>
@@ -70,7 +70,7 @@
 					</template>
 				</div>
 			</div>
-			<div class="space-y-3 md:w-1/2">
+			<div class="space-y-3">
 				<FormControl
 					v-if="showSummaryAndRegionConsent"
 					v-model="vals['agreedToRegionConsent']"
@@ -81,7 +81,7 @@
 				<Button
 					v-if="showSummaryAndRegionConsent"
 					:disabled="!vals.agreedToRegionConsent"
-					class="w-full"
+					class="md:w-1/2"
 					v-bind="primaryAction"
 				/>
 			</div>
