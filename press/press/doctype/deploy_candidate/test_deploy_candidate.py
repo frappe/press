@@ -298,15 +298,20 @@ def create_cache_test_release_group(
 		"use_app_cache": True,
 		"compress_app_cache": True,
 	}
-	release_group = frappe.get_doc(doc_dict)
+	release_group: "ReleaseGroup" = frappe.get_doc(doc_dict)
 
+	# Set apps
 	for info in app_info_list:
 		value = dict(app=info["app"].name, source=info["source"].name)
 		release_group.append("apps", value)
-	release_group.append(
-		"dependencies",
-		dict(dependency="BENCH_VERSION", version="5.21.3"),
-	)
+
+	# Set BENCH_VERSION
+	release_group.fetch_dependencies()
+	for dep in release_group.dependencies:
+		if dep.dependency != "BENCH_VERSION":
+			continue
+		dep.version = "5.21.3"
+
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()
 	return release_group
