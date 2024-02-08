@@ -20,7 +20,7 @@ class App(Document):
 		team=None,
 		github_installation_id=None,
 		public=False,
-	) -> AppSource:
+	) -> "AppSource":
 		existing_source = frappe.get_all(
 			"App Source",
 			{"app": self.name, "repository_url": repository_url, "branch": branch, "team": team},

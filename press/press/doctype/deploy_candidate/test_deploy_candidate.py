@@ -285,8 +285,8 @@ class TestDeployCandidate(unittest.TestCase):
 
 
 def create_cache_test_release_group(
-	app_info_list: list[AppInfo], team: Team
-) -> ReleaseGroup:
+	app_info_list: list[AppInfo], team: "Team"
+) -> "ReleaseGroup":
 	title = f"Test App Cache RG {random.getrandbits(20):x}"
 	doc_dict = {
 		"doctype": "Release Group",
@@ -312,7 +312,7 @@ def create_cache_test_release_group(
 	return release_group
 
 
-def create_cache_test_apps(team: Team) -> dict[str, AppInfo]:
+def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 	info = [
 		(
 			"frappe",

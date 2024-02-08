@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
 
 
-def create_test_app_release(app_source: AppSource, hash: str = None) -> AppRelease:
+def create_test_app_release(app_source: AppSource, hash: str = None) -> "AppRelease":
 	"""Create test app release given App source."""
 	hash = hash or frappe.mock("sha1")
 	app_release = frappe.get_doc(
