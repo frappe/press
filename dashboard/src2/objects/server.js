@@ -20,6 +20,7 @@ export default {
 		route: '/servers',
 		title: 'Servers',
 		fields: [
+			'title',
 			'plan.plan_title as plan_title',
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
@@ -31,7 +32,10 @@ export default {
 			{
 				label: 'Server',
 				fieldname: 'name',
-				width: 1.5
+				width: 1.5,
+				format(value, row) {
+					return row.title || value;
+				}
 			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{

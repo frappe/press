@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:
 
 class BaseServer(Document, TagHelpers):
 	dashboard_fields = [
+		"title",
 		"plan",
 		"cluster",
 		"status",

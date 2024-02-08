@@ -5,7 +5,7 @@
 	>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Server information</h2>
+				<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
 			</div>
 			<div>
 				<div
@@ -65,6 +65,11 @@ export default {
 		serverInformation() {
 			return [
 				{
+					label: 'Server title',
+					value: this.$server.doc.title,
+					condition: () => this.$server.doc.title
+				},
+				{
 					label: 'Server name',
 					value: this.$server.doc.name
 				},
@@ -80,7 +85,7 @@ export default {
 					label: 'Created on',
 					value: this.$format.date(this.$server.doc.creation)
 				}
-			];
+			].filter(d => !d.condition || d.condition());
 		},
 		current_usage() {
 			let formatBytes = v => this.$format.bytes(v, 0, 2);
