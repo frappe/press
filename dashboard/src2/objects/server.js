@@ -193,7 +193,7 @@ export default {
 		options: [
 			{
 				label: 'Select Region',
-				type: 'region',
+				type: 'card',
 				name: 'region',
 				fieldname: 'regions'
 			},
@@ -509,7 +509,7 @@ export default {
 							},
 							onClick() {
 								router.push({
-									name: 'NewServerBench',
+									name: 'New Bench',
 									params: { server: server.doc.name }
 								});
 							}

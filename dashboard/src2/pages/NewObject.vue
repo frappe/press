@@ -15,29 +15,32 @@
 					</div>
 					<div class="mt-2">
 						<div
-							v-if="option?.type === 'region'"
+							v-if="option?.type === 'card'"
 							class="grid grid-cols-2 gap-3 sm:grid-cols-4"
 						>
 							<button
-								v-for="region in optionsData[option.fieldname]"
-								:key="region.name"
+								v-for="card in optionsData[option.fieldname]"
+								:key="card.name"
 								:class="[
-									vals[option.name] === region.name
+									vals[option.name] === card.name
 										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 										: 'bg-white text-gray-900  ring-gray-200 hover:bg-gray-50',
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
 								]"
-								@click="vals[option.name] = region.name"
+								@click="vals[option.name] = card.name"
 							>
 								<div class="flex w-full items-center space-x-2">
-									<img :src="region.image" class="h-5 w-5" />
+									<img v-if="card.image" :src="card.image" class="h-5 w-5" />
 									<span class="text-sm font-medium">
-										{{ region.title }}
+										{{ card.title || card.name }}
+									</span>
+									<span v-if="card.status" class="!ml-auto text-gray-600">
+										{{ card.status }}
 									</span>
 									<Badge
 										class="!ml-auto"
 										theme="gray"
-										v-if="region.beta"
+										v-if="card.beta"
 										label="Beta"
 									/>
 								</div>
@@ -135,7 +138,8 @@ export default {
 			if (!this.object.create.primaryAction) return null;
 			let props = this.object.create.primaryAction({
 				createResource: this.$resources.createResource,
-				vals: this.vals
+				vals: this.vals,
+				optionsData: this.optionsData
 			});
 			if (!props) return null;
 			return props;
