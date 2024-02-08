@@ -332,7 +332,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -458,7 +458,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-29 21:08:48.112153",
+ "modified": "2024-02-08 13:36:30.068344",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

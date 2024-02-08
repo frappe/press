@@ -4,11 +4,10 @@
 from typing import List
 
 import frappe
-from frappe.model.document import Document
-from frappe.utils import rounded
+from press.press.doctype.site_plan.plan import Plan
 
 
-class SitePlan(Document):
+class SitePlan(Plan):
 	dashboard_fields = [
 		"name",
 		"plan_title",
@@ -28,27 +27,10 @@ class SitePlan(Document):
 		doc["price_per_day_usd"] = self.get_price_per_day("USD")
 		return doc
 
-	@property
-	def period(self):
-		return frappe.utils.get_last_day(None).day
-
-	def get_price_per_day(self, currency):
-		price = self.price_inr if currency == "INR" else self.price_usd
-		price_per_day = rounded(price / self.period, 2)
-		return price_per_day
-
-	def get_price_for_interval(self, interval, currency):
-		price_per_day = self.get_price_per_day(currency)
-
-		if interval == "Daily":
-			return price_per_day
-
-		if interval == "Monthly":
-			return rounded(price_per_day * 30)
-
 	@classmethod
 	def get_ones_without_offsite_backups(cls) -> List[str]:
 		return frappe.get_all("Site Plan", filters={"offsite_backups": False}, pluck="name")
+
 
 def get_plan_config(name):
 	cpu_time = frappe.db.get_value("Site Plan", name, "cpu_time_per_day")

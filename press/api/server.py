@@ -4,8 +4,9 @@
 import frappe
 import requests
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.site_plan.plan import Plan
 
-from press.utils import get_current_team, group_children_in_result
+from press.utils import get_current_team
 from press.api.site import protected
 from press.api.bench import all as all_benches
 from frappe.utils import convert_utc_to_timezone
@@ -393,14 +394,11 @@ def options():
 
 @frappe.whitelist()
 def plans(name, cluster=None):
-	filters = {"enabled": True, "document_type": name}
-	if cluster:
-		filters["cluster"] = cluster
-	plans = frappe.db.get_all(
-		"Plan",
+	plans = Plan.get_plans(
+		doctype="Server Plan",
 		fields=[
 			"name",
-			"plan_title",
+			"title",
 			"price_usd",
 			"price_inr",
 			"vcpu",
@@ -408,19 +406,13 @@ def plans(name, cluster=None):
 			"disk",
 			"cluster",
 			"instance_type",
-			"`tabHas Role`.role",
 		],
-		filters=filters,
-		order_by="price_usd asc",
+		filters={"server_type": name, "cluster": cluster}
+		if cluster
+		else {"server_type": name},
 	)
-	plans = group_children_in_result(plans, {"role": "roles"})
 
-	out = []
-	for plan in plans:
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
-	return out
+	return plans
 
 
 @frappe.whitelist()

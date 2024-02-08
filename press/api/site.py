@@ -22,6 +22,7 @@ from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
 	get_current_team,
@@ -29,7 +30,6 @@ from press.utils import (
 	get_last_doc,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
-	group_children_in_result,
 	unique,
 )
 
@@ -618,10 +618,8 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_plans(name=None, rg=None):
-	filters = {"enabled": True, "document_type": "Site"}
-
-	plans = frappe.db.get_all(
-		"Site Plan",
+	plans = Plan.get_plans(
+		doctype="Site Plan",
 		fields=[
 			"name",
 			"plan_title",
@@ -635,12 +633,8 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
-			"`tabHas Role`.role",
 		],
-		filters=filters,
-		order_by="price_usd asc",
 	)
-	plans = group_children_in_result(plans, {"role": "roles"})
 
 	if name or rg:
 		team = get_current_team()
@@ -665,10 +659,8 @@ def get_plans(name=None, rg=None):
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
+		out.append(plan)
 
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
 	return out
 
 
@@ -1024,12 +1016,22 @@ def get_installed_apps(site):
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
 			"Subscription",
-			{"site": site.name, "document_type": "Marketplace App", "document_name": app.app, "enabled": 1},
+			{
+				"site": site.name,
+				"document_type": "Marketplace App",
+				"document_name": app.app,
+				"enabled": 1,
+			},
 		):
 			subscription = frappe.get_doc(
 				"Subscription",
-				{"site": site.name,"document_type": "Marketplace App", "document_name": app.app, "enabled": 1},
-				["document_name as app"]
+				{
+					"site": site.name,
+					"document_type": "Marketplace App",
+					"document_name": app.app,
+					"enabled": 1,
+				},
+				["document_name as app"],
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
@@ -1040,7 +1042,10 @@ def get_installed_apps(site):
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Marketplace App Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
+				"Marketplace App Plan",
+				subscription.plan,
+				["price_usd", "price_inr", "name"],
+				as_dict=True,
 			)
 
 			app_source.plans = get_plans_for_app(app.app)
