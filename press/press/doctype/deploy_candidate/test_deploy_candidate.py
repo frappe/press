@@ -237,7 +237,7 @@ class TestDeployCandidate(unittest.TestCase):
 		When building the image of the second Deploy Candidate,
 		hrms should be fetched from app cache.
 		"""
-		from press.press.api.tests.test_bench import (
+		from press.api.tests.test_bench import (
 			patch_dc_command_for_ci,
 			set_press_settings_for_docker_build,
 		)
