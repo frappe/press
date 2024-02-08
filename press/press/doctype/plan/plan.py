@@ -26,6 +26,7 @@ class Plan(Document):
 		"vcpu",
 		"memory",
 		"disk",
+		"support_included",
 	]
 
 	def get_doc(self, doc):

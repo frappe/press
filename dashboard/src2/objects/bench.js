@@ -8,6 +8,7 @@ import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Release Group',
@@ -23,7 +24,9 @@ export default {
 		getAppVersions: 'get_app_versions',
 		archive: 'archive',
 		getCertificate: 'get_certificate',
-		generateCertificate: 'generate_certificate'
+		generateCertificate: 'generate_certificate',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/benches',
@@ -639,7 +642,8 @@ export default {
 						};
 					}
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: bench } = context;

@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.server.server import Server
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.utils import (
 	get_last_doc,
 	get_app_tag,
@@ -39,7 +40,7 @@ DEFAULT_DEPENDENCIES = [
 ]
 
 
-class ReleaseGroup(Document):
+class ReleaseGroup(Document, TagHelpers):
 	dashboard_fields = ["title", "version", "apps"]
 	dashboard_actions = [
 		"remove_app",

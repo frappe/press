@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class PressTag(Document):
-	pass
+	dashboard_fields = ["tag", "doctype_name", "team"]

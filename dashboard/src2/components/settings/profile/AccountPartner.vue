@@ -1,6 +1,6 @@
 <template>
 	<Card
-		v-if="$team.doc.erpnext_partner"
+		v-if="!$team.doc.erpnext_partner"
 		title="Frappe Partner"
 		subtitle="Frappe Partner associated with your account"
 	>
