@@ -787,6 +787,15 @@ class Agent:
 		host=None,
 		method="POST",
 	):
+		"""Deduplicate jobs in execution state"""
+
+		disable_agent_job_deduplication = frappe.db.get_single_value(
+			"Press Settings", "disable_agent_job_deduplication"
+		)
+
+		if disable_agent_job_deduplication:
+			return ""
+
 		filteres = {
 			"server_type": self.server_type,
 			"server": self.server,
