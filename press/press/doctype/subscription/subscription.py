@@ -204,45 +204,18 @@ def paid_plans():
 
 def sites_with_free_hosting():
 	# sites marked as free
-	free_sites = frappe.get_all(
-		"Site",
-		filters={"free": True, "status": ("not in", ("Archived", "Suspended"))},
-		pluck="name",
-	)
-
-	marketplace_paid_plans = frappe.get_all(
-		"Marketplace App Plan",
-		{"is_free": 0, "standard_hosting_plan": ("is", "set")},
-		pluck="name",
-	)
-
-	# sites with free/standard hosting (only for backward compatibility with smb plans)
-	free_sites += frappe.get_all(
-		"Marketplace App Subscription",
-		{
-			"marketplace_app_plan": ("in", marketplace_paid_plans),
-			"status": "Active",
-			"site": ("not in", free_sites),
-		},
-		pluck="site",
-	)
-
 	free_teams = frappe.get_all(
 		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
 	)
-
-	# sites owned by free_accounts that are not set as free sites
-	free_sites += frappe.get_all(
+	return frappe.get_all(
 		"Site",
 		filters={
+			"free": True,
 			"status": ("not in", ("Archived", "Suspended")),
-			"team": ("in", free_teams),
-			"name": ("not in", free_sites),
+			"team": ("not in", free_teams),
 		},
 		pluck="name",
 	)
-
-	return free_sites
 
 
 def created_usage_records(free_sites, date=None):
