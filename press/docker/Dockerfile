@@ -239,7 +239,7 @@ RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/conte
 
 
 # Validate dependencies
-RUN if bench validate-dependencies --help 1>> /dev/null 2>> /dev/null; then bench validate-dependencies; else echo skipped; fi; `#stage-validate-dependencies`
+RUN ["/bin/bash", "-c", "if bench validate-dependencies --help 1> /dev/null 2> /dev/null; then bench validate-dependencies; else echo skipped; fi;"] `#stage-validate-dependencies`
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
