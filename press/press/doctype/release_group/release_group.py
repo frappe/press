@@ -106,6 +106,7 @@ class ReleaseGroup(Document, TagHelpers):
 		# to avoid ading deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
+		self.set_default_app_cache_flags()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -1006,6 +1007,22 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		self.enabled = 0
 		self.save()
+
+	def set_default_app_cache_flags(self):
+		if self.use_app_cache:
+			return
+
+		if not frappe.db.get_single_value("Press Settings", "use_app_cache"):
+			return
+
+		if not self.can_use_get_app_cache():
+			return
+
+		self.use_app_cache = 1
+		self.compress_app_cache = frappe.db.get_single_value(
+			"Press Settings",
+			"compress_app_cache",
+		)
 
 
 def new_release_group(
