@@ -261,11 +261,16 @@ class DeployCandidate(Document):
 			if app.pullable_release:
 				pull_update_steps.append(("pull", app.app, "Pull Updates", app.title))
 
+		validation_steps = [
+			("validate", "dependencies", "Run Validations", "Validate Dependencies"),
+		]
+
 		steps = [
 			*clone_steps,
 			*preparation_steps,
 			*app_install_steps,
 			*pull_update_steps,
+			*validation_steps,
 			*mount_step,
 		]
 
