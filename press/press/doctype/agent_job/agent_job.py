@@ -544,6 +544,12 @@ def get_next_retry_at(job_retry_count):
 
 
 def retry_undelivered_jobs():
+	"""Retry undelivered jobs and update job status if max retry count is reached"""
+
+	disable_auto_retry = frappe.db.get_single_value("Press Settings", "disable_auto_retry")
+	if disable_auto_retry:
+		return
+
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
 	server_jobs = get_server_wise_undelivered_jobs(job_types)
 
@@ -590,8 +596,6 @@ def update_job_and_step_status(job):
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
 		agent_job_step.agent_job == job
 	).run()
-
-	process_job_updates(job)
 
 
 def get_server_wise_undelivered_jobs(job_types):

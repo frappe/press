@@ -176,6 +176,9 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
+  "column_break_rdlr",
+  "disable_auto_retry",
+  "disable_agent_job_deduplication",
   "code_spaces_tab",
   "spaces_domain"
  ],
@@ -1103,11 +1106,27 @@
    "fieldname": "print_format",
    "fieldtype": "Data",
    "label": "Print Format"
+  },
+  {
+   "fieldname": "column_break_rdlr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disable Auto Retry"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_agent_job_deduplication",
+   "fieldtype": "Check",
+   "label": "Disable Agent Job Deduplication"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-01-11 23:28:22.862640",
+ "modified": "2024-02-09 17:29:14.471254",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
