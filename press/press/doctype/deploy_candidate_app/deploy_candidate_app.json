@@ -6,6 +6,7 @@
  "field_order": [
   "app",
   "title",
+  "use_cached",
   "column_break_3",
   "source",
   "app_name",
@@ -91,11 +92,19 @@
    "fieldtype": "Data",
    "label": "Pullable Hash",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "description": "Auto set if app is present in cache and deploy candidate can use app cache.",
+   "fieldname": "use_cached",
+   "fieldtype": "Check",
+   "label": "Use Cached",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2023-12-22 13:59:01.558580",
+ "modified": "2024-01-30 12:41:26.703875",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate App",
