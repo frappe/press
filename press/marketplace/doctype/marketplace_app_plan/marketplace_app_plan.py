@@ -4,17 +4,22 @@
 import frappe
 
 from typing import List
-from frappe.model.document import Document
+from press.press.doctype.site_plan.plan import Plan
 
 
-class MarketplaceAppPlan(Document):
+class MarketplaceAppPlan(Plan):
 	@staticmethod
 	def create_marketplace_app_subscription(
 		site_name, app_name, plan_name, while_site_creation=False
 	):
 		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
 		subscription = frappe.db.exists(
-			"Subscription", {"site": site_name, "document_type": "Marketplace App", "document_name": marketplace_app}
+			"Subscription",
+			{
+				"site": site_name,
+				"document_type": "Marketplace App",
+				"document_name": marketplace_app,
+			},
 		)
 
 		# If already exists, update the plan and activate
@@ -43,6 +48,7 @@ class MarketplaceAppPlan(Document):
 				"team": frappe.local.team().name,
 			}
 		).insert(ignore_permissions=True)
+
 
 def get_app_plan_features(app_plan: str) -> List[str]:
 	features = frappe.get_all(

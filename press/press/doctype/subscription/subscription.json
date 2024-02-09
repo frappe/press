@@ -46,7 +46,6 @@
    "fetch_from": "plan.interval",
    "fieldname": "interval",
    "fieldtype": "Select",
-   "hidden": 1,
    "in_list_view": 1,
    "label": "Interval",
    "options": "Daily\nMonthly"
@@ -92,7 +91,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-02-09 12:41:07.547652",
+ "modified": "2024-02-09 17:55:55.684846",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",
