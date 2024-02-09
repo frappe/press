@@ -19,7 +19,10 @@ class Subscription(Document):
 	def on_update(self):
 		doc = self.get_subscribed_document()
 		plan_field = doc.meta.get_field("plan")
-		if not (plan_field and plan_field.options == "Plan"):
+		if not (
+			plan_field
+			and plan_field.options in ["Site Plan", "Server Plan", "Marketplace App Plan"]
+		):
 			return
 
 		if self.enabled and doc.plan != self.plan:
@@ -63,7 +66,7 @@ class Subscription(Document):
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
-		plan = frappe.get_cached_doc("Plan", self.plan)
+		plan = frappe.get_cached_doc(self.plan_type, self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		usage_record = frappe.get_doc(
@@ -71,12 +74,16 @@ class Subscription(Document):
 			team=team.name,
 			document_type=self.document_type,
 			document_name=self.document_name,
+			plan_type=self.plan_type,
 			plan=plan.name,
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
-			site=frappe.get_value(
-				"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+			site=(
+				self.site
+				or frappe.get_value(
+					"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+				)
 			)
 			if self.document_type == "Marketplace App"
 			else None,

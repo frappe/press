@@ -14,6 +14,7 @@
   "time",
   "prepaid",
   "section_break_7",
+  "plan_type",
   "plan",
   "currency",
   "amount",
@@ -117,9 +118,9 @@
   },
   {
    "fieldname": "plan",
-   "fieldtype": "Link",
+   "fieldtype": "Dynamic Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "plan_type"
   },
   {
    "fieldname": "payout",
@@ -137,12 +138,18 @@
    "fieldname": "prepaid",
    "fieldtype": "Check",
    "label": "Prepaid"
+  },
+  {
+   "fieldname": "plan_type",
+   "fieldtype": "Link",
+   "label": "Plan Type",
+   "options": "DocType"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-03-31 13:52:00.471001",
+ "modified": "2024-02-09 12:52:09.605815",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Usage Record",
