@@ -117,7 +117,7 @@ frappe.ui.form.on('Database Server', {
 				__('Setup Percona Stalk'),
 				'setup_pt_stalk',
 				true,
-				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
+				frm.doc.is_server_setup,
 			],
 			[
 				__('Fetch MariaDB Stalks'),
