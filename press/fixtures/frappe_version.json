@@ -176,7 +176,7 @@
     "parent": "Nightly",
     "parentfield": "dependencies",
     "parenttype": "Frappe Version",
-    "version": "5.16.2"
+    "version": "5.22.0"
    }
   ],
   "docstatus": 0,
