@@ -4,15 +4,15 @@
 		title="Refer & Earn"
 		subtitle="Your unique referral link"
 	>
-		<div class="space-y-4 overflow-hidden">
+		<div class="space-y-4 overflow-hidden flex flex-col">
 			<ClickToCopyField :textContent="referralLink" />
-			<h3 class="text-base text-gray-700">
+			<span class="text-base font-medium text-gray-700">
 				When someone sign's up using the above link and spends at least
 				{{ minimumSpentAmount }} on Frappe Cloud, you
 				<strong>
 					get {{ creditAmountInTeamCurrency }} in Frappe Cloud Credits!
 				</strong>
-			</h3>
+			</span>
 		</div>
 	</Card>
 </template>

@@ -41,7 +41,7 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Duration</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.duration(job.duration) }}
+								{{ job.end ? $format.duration(job.duration) : '' }}
 							</div>
 						</div>
 						<div>

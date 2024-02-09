@@ -316,10 +316,6 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				if self.is_self_hosted:
-					server = frappe.get_doc("Server", self.name)
-					if server.status != "Active":
-						server.setup_server()  # Setup App server after DB server setup
 			else:
 				self.status = "Broken"
 		except Exception:
@@ -599,7 +595,7 @@ class DatabaseServer(BaseServer):
 			self.mariadb_system_variables, lambda x: x.mariadb_variable == "extra_port"
 		)
 		if extra_port_variable:
-			mariadb_port = extra_port_variable.value_int
+			mariadb_port = extra_port_variable.value_str
 		else:
 			mariadb_port = 3306
 		try:
@@ -615,8 +611,8 @@ class DatabaseServer(BaseServer):
 					"stalk_sleep": self.stalk_sleep,
 					"stalk_cycles": self.stalk_cycles,
 					"stalk_interval": self.stalk_interval,
-					"stalk_gdb_collector": self.stalk_gdb_collector,
-					"stalk_strace_collector": self.stalk_strace_collector,
+					"stalk_gdb_collector": bool(self.stalk_gdb_collector),
+					"stalk_strace_collector": bool(self.stalk_strace_collector),
 				},
 			)
 			play = ansible.run()

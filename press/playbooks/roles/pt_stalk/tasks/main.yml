@@ -1,12 +1,27 @@
 ---
-- name: Install Percona Toolkit
+- name: Install Percona Toolkit Dependencies
   apt:
     pkg:
-      - percona-toolkit
       - net-tools # Needed for netstat
     state: present
 
-- name: Create Stak Systemd Service File
+- name: Install Percona Toolkit
+  apt:
+    deb: https://downloads.percona.com/downloads/percona-toolkit/3.5.7/binary/debian/{{ ansible_distribution_release }}/x86_64/percona-toolkit_3.5.7-1.{{ ansible_distribution_release }}_amd64.deb
+
+- name: Fix a bug in pt-stalk
+  ansible.builtin.replace:
+    path: /usr/bin/pt-stalk
+    regexp: 'cut -f 3 ' # lsof returns name, pid, user, ...  . We need pid so 2nd field not 3rd
+    replace: 'cut -f 2 '
+
+- name: Enable Full GDB Backtrace
+  ansible.builtin.replace:
+    path: /usr/bin/pt-stalk
+    regexp: '-ex "thread apply all bt" \\'
+    replace: '-ex "set print frame-arguments all" -ex "thread apply all bt full" \\'
+
+- name: Create Stalk Systemd Service File
   template:
     src: pt_stalk.service
     dest: /etc/systemd/system/pt_stalk.service
@@ -14,7 +29,7 @@
     group: root
     mode: 0644
 
-- name: Restart Stak Service
+- name: Restart Stalk Service
   systemd:
     daemon_reload: true
     name: pt_stalk

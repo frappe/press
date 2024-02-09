@@ -11,7 +11,13 @@ DEFAULT_PERMISSIONS = {
 
 class PressPermissionGroup(Document):
 	dashboard_fields = ["title"]
-	dashboard_actions = ["get_users", "add_user", "remove_user", "update_permissions"]
+	dashboard_actions = [
+		"get_users",
+		"add_user",
+		"remove_user",
+		"update_permissions",
+		"get_all_document_permissions",
+	]
 
 	def validate(self):
 		self.validate_permissions()

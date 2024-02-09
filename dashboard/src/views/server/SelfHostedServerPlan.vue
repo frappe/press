@@ -1,7 +1,10 @@
 <template>
 	<div>
 		<label class="text-lg font-semibold">
-			We have a fixed Pricing for managing Self Hosted Servers
+			Select plan for app and database self-hosted server
+			<br /><span class="text-sm text-gray-500">
+				For server management and support
+			</span>
 		</label>
 		<AlertBillingInformation class="mt-4" />
 		<div class="mt-4">
