@@ -371,6 +371,8 @@ class ReleaseGroup(Document, TagHelpers):
 			return
 
 		apps = self.get_apps_to_update(apps_to_update)
+		if apps_to_update is None:
+			self.validate_dc_apps_against_rg(apps)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
@@ -403,6 +405,22 @@ class ReleaseGroup(Document, TagHelpers):
 		).insert()
 
 		return candidate
+
+	def validate_dc_apps_against_rg(self, dc_apps) -> None:
+		app_map = {app["app"]: app for app in dc_apps}
+		not_found = []
+		for app in self.apps:
+			if app.app in app_map:
+				continue
+			not_found.append(app.app)
+
+		if not not_found:
+			return
+
+		msg = _(
+			"Following apps {0} not found. Potentially due to not approved App Releases."
+		).format(not_found)
+		frappe.throw(msg)
 
 	def get_apps_to_update(self, apps_to_update):
 		# If apps_to_update is None, try to update all apps
