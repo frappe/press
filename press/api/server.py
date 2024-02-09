@@ -46,11 +46,7 @@ def all(server_filter=None):
 				app_server.creation,
 				app_server.cluster,
 			)
-			.where(
-				((app_server.team).isin(teams))
-				& (app_server.status != "Archived")
-				& (app_server.is_self_hosted == 0)
-			)
+			.where(((app_server.team).isin(teams)) & (app_server.status != "Archived"))
 		)
 
 		if server_filter["tag"]:
@@ -137,12 +133,21 @@ def get(name):
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
 	plan = frappe.get_doc("Plan", server.plan) if server.plan else None
-	if server.is_self_hosted:  # Hacky way to show current specs in place of Plans
-		self_hosted_server = frappe.get_doc("Self Hosted Server", server.name)
-		if plan:
-			plan.vcpu = self_hosted_server.vcpus
-			plan.memory = self_hosted_server.ram
-			plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
+
+	if server.is_self_hosted and plan:  # Hacky way to show current specs in place of Plans
+		filters = {}
+		if server.doctype == "Database Server":
+			filters["database_server"] = server.name
+		else:
+			filters["server"] = server.name
+
+		self_hosted_server_name = frappe.db.get_value("Self Hosted Server", filters, "name")
+		self_hosted_server = frappe.get_doc("Self Hosted Server", self_hosted_server_name)
+
+		plan.vcpu = self_hosted_server.vcpus
+		plan.memory = self_hosted_server.ram
+		plan.disk = self_hosted_server.total_storage.split(" ")[0]  # Saved in DB as "50 GB"
+
 	return {
 		"plan": plan if plan else None,
 		"info": {

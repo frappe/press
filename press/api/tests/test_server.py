@@ -16,6 +16,7 @@ from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
@@ -43,6 +44,18 @@ def successful_ping_ansible(self: BaseServer):
 	create_test_ansible_play("Ping Server", "ping.yml", self.doctype, self.name)
 
 
+def successful_upgrade_mariadb(self: DatabaseServer):
+	create_test_ansible_play(
+		"Upgrade MariaDB", "upgrade_mariadb.yml", self.doctype, self.name
+	)
+
+
+def successful_upgrade_mariadb_patched(self: DatabaseServer):
+	create_test_ansible_play(
+		"Upgrade MariaDB Patched", "upgrade_mariadb_patched.yml", self.doctype, self.name
+	)
+
+
 def successful_tls_certificate(self: BaseServer):
 	create_test_ansible_play("Setup TLS Certificates", "tls.yml", self.doctype, self.name)
 
@@ -55,6 +68,10 @@ def successful_update_agent_ansible(self: BaseServer):
 @patch.object(VirtualMachine, "client", new=MagicMock())
 @patch.object(Ansible, "run", new=Mock())
 @patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
+@patch.object(DatabaseServer, "upgrade_mariadb", new=successful_upgrade_mariadb)
+@patch.object(
+	DatabaseServer, "upgrade_mariadb_patched", new=successful_upgrade_mariadb_patched
+)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 class TestAPIServer(FrappeTestCase):

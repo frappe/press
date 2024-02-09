@@ -18,28 +18,44 @@ def new(server):
 		frappe.throw(
 			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
 		)
-	cluster = "Hybrid"
+	cluster = get_cluster()
 	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
-	self_hosted_server = frappe.get_doc(
-		{
-			"doctype": "Self Hosted Server",
-			"ip": server["publicIP"].strip(),
+	app_ip = server["publicIP"].strip()
+	db_ip = server["dbpublicIP"].strip()
+
+	different_database_server = False
+	if app_ip != db_ip:
+		different_database_server = True
+
+	self_hosted_server = frappe.new_doc(
+		"Self Hosted Server",
+		**{
+			"ip": app_ip,
+			"private_ip": server["privateIP"].strip(),
+			"mariadb_ip": db_ip,
+			"mariadb_private_ip": server["dbprivateIP"].strip(),
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
+			"different_database_server": different_database_server,
 			"team": team.name,
-			"plan": "Unlimited",
+			"plan": server["plan"]["name"],
+			"database_plan": server["plan"]["name"],
 			"server_url": server["url"],
 			"new_server": True,
 		}
 	).insert()
+
 	return self_hosted_server.name
+
+
+def get_cluster():
+	return frappe.db.get_value("Cluster", {"hybrid": 1}, "name")
 
 
 @frappe.whitelist()
 def sshkey():
-	key_doc = frappe.get_doc("SSH Key", "Frappe Cloud Production")
-	return key_doc.public_key
+	return frappe.db.get_value("SSH Key", {"enabled": 1, "default": 1}, "public_key")
 
 
 @frappe.whitelist()
@@ -93,7 +109,7 @@ def check_dns(domain, ip):
 	try:
 		resolver = Resolver(configure=False)
 		resolver.nameservers = NAMESERVERS
-		domain_ip = resolver.query(domain, "A")[0].to_text()
+		domain_ip = resolver.query(domain.strip(), "A")[0].to_text()
 		if domain_ip == ip:
 			return True
 	except Exception:
