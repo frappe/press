@@ -189,7 +189,7 @@ class AgentJob(Document):
 
 		if self.job_id == 0:
 			job = agent.get_jobs_id(self.name)
-			if len(job) > 0:
+			if job and len(job) > 0:
 				self.job_id = job[0]["id"]
 				self.status = job[0]["status"]
 		else:
