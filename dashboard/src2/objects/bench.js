@@ -640,7 +640,7 @@ export default {
 													{ key: row.key },
 													{
 														onSuccess: () => {
-															configs.reload();
+															environmentVariables.reload();
 															hide();
 														}
 													}
