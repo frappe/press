@@ -265,7 +265,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.bench_config = json.dumps({})
 
 		self.save()
-	
+
 	@frappe.whitelist()
 	def update_environment_variable(self, environment_variables: dict):
 		for key, value in environment_variables.items():
@@ -273,12 +273,16 @@ class ReleaseGroup(Document, TagHelpers):
 			for env_var in self.environment_variables:
 				if env_var.key == key:
 					if env_var.internal:
-						frappe.throw(f"Environment variable {env_var.key} is internal and cannot be updated")
+						frappe.throw(
+							f"Environment variable {env_var.key} is internal and cannot be updated"
+						)
 					else:
 						env_var.value = value
 						is_updated = True
 			if not is_updated:
-				self.append("environment_variables", {"key": key, "value": value, "internal": False})
+				self.append(
+					"environment_variables", {"key": key, "value": value, "internal": False}
+				)
 		self.save()
 
 	@frappe.whitelist()
