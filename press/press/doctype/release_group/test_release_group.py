@@ -8,7 +8,6 @@ from unittest.mock import patch
 import frappe
 from frappe.core.utils import find
 from press.api.bench import deploy_information
-from press.api.client import get_list
 from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
