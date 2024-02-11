@@ -10,7 +10,7 @@ class ReleaseGroupVariable(Document):
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
-		Config = frappe.qb.DocType("Release Group Variable")
-		query = query.where(Config.internal == 0).orderby(Config.key, order=frappe.qb.asc)
+		environmentVariable = frappe.qb.DocType("Release Group Variable")
+		query = query.where(environmentVariable.internal == 0).orderby(environmentVariable.key, order=frappe.qb.asc)
 		configs = query.run(as_dict=True)
 		return configs
