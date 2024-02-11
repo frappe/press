@@ -8,6 +8,7 @@ from unittest.mock import patch
 import frappe
 from frappe.core.utils import find
 from press.api.bench import deploy_information
+from press.api.client import get_list
 from press.press.doctype.app.app import App
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
@@ -16,6 +17,9 @@ from press.press.doctype.app_source.test_app_source import create_test_app_sourc
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
+)
+from press.press.doctype.release_group_variable.release_group_variable import (
+	ReleaseGroupVariable,
 )
 from press.press.doctype.team.test_team import create_test_team
 
@@ -239,3 +243,83 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_update_available_shows_for_first_deploy(self):
 		rg = create_test_release_group([create_test_app()])
 		self.assertEqual(deploy_information(rg.name).get("update_available"), True)
+
+	def test_add_environment_variable(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.update_environment_variable({"test_key": "test_value"})
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+		self.assertEqual(rg.environment_variables[0].key, "test_key")
+		self.assertEqual(rg.environment_variables[0].value, "test_value")
+
+	def test_update_environment_variable(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append(
+			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
+		)
+		rg.save()
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+		rg.update_environment_variable({"test_key": "new_test_value"})
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+		self.assertEqual(rg.environment_variables[0].value, "new_test_value")
+
+	def test_update_internal_environment_variable(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append(
+			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
+		)
+		rg.save()
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+
+		def update_internal_environment_variable():
+			rg.update_environment_variable({"test_key": "new_test_value"})
+
+		self.assertRaises(frappe.ValidationError, update_internal_environment_variable)
+
+	def test_delete_internal_environment_variable(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append(
+			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 1}
+		)
+		rg.save()
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+		rg.delete_environment_variable("test_key")
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+
+	def test_delete_environment_variable(self):
+		rg = create_test_release_group([create_test_app()])
+		rg.append(
+			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
+		)
+		rg.save()
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 1)
+		rg.delete_environment_variable("test_key")
+		rg.reload()
+		self.assertEqual(len(rg.environment_variables), 0)
+
+	def test_fetch_environment_variable(self):
+		"""It should fetch only non-internal environment variables."""
+		rg = create_test_release_group([create_test_app()])
+		rg.append(
+			"environment_variables", {"key": "test_key", "value": "test_value", "internal": 0}
+		)
+		rg.append(
+			"environment_variables",
+			{"key": "test_internal_key", "value": "test_value", "internal": 1},
+		)
+		rg.save()
+		rg.reload()
+		environment_variables = get_list(
+			"Release Group Variable",
+			fields=["name", "key", "value"],
+			filters={"parenttype": "Release Group", "parent": rg.name},
+		)
+		self.assertEqual(len(environment_variables), 1)
+		self.assertEqual(environment_variables[0].key, "test_key")
+		self.assertEqual(environment_variables[0].value, "test_value")
