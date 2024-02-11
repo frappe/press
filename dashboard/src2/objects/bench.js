@@ -551,7 +551,6 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
-					pageLength: 999,
 					columns: [
 						{
 							label: 'Environment Variable Name',
@@ -581,24 +580,6 @@ export default {
 										onSuccess() {
 											environmentVariables.reload();
 										}
-									})
-								);
-							}
-						};
-					},
-					secondaryAction({ listResource: environmentVariables }) {
-						return {
-							label: 'Preview',
-							slots: {
-								prefix: icon('eye')
-							},
-							onClick() {
-								let EnvironmentVariablePreviewDialog = defineAsyncComponent(() =>
-									import('../components/EnvironmentVariablePreviewDialog.vue')
-								);
-								renderDialog(
-									h(EnvironmentVariablePreviewDialog, {
-										environment_variables: environmentVariables.data
 									})
 								);
 							}
