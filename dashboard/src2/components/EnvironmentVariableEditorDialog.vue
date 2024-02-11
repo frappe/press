@@ -71,7 +71,7 @@ export default {
 				);
 			}
 			if (!this.docResource) return;
-			let key =this.key;
+			let key = this.key;
 			let value = this.value;
 			let environment_variables = { [key]: value };
 			this.docResource.updateEnvironmentVariable.submit(
