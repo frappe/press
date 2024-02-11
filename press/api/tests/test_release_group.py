@@ -72,7 +72,11 @@ class TestAPIReleaseGroupEnvironmentVariable(FrappeTestCase):
 		def update_internal_environment_variable():
 			rg.update_environment_variable({"test_key": "new_test_value"})
 
-		self.assertRaises(frappe.ValidationError, update_internal_environment_variable)
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Environment variable test_key is internal and cannot be updated",
+			update_internal_environment_variable,
+		)
 
 	def test_delete_internal_environment_variable(self):
 		rg = create_test_release_group([create_test_app()])
