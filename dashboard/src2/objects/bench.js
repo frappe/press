@@ -169,10 +169,10 @@ export default {
 								return last_github_poll_failed
 									? 'Action Required'
 									: !deployed
-										? 'Not Deployed'
-										: update_available
-											? 'Update Available'
-											: 'Latest Version';
+									? 'Not Deployed'
+									: update_available
+									? 'Update Available'
+									: 'Latest Version';
 							},
 							width: 1
 						}
