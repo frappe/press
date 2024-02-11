@@ -18,9 +18,6 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.release_group_variable.release_group_variable import (
-	ReleaseGroupVariable,
-)
 from press.press.doctype.team.test_team import create_test_team
 
 
