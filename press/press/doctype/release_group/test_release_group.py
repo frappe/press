@@ -53,7 +53,6 @@ def create_test_release_group(
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team().name
-		print("Run again")
 
 	def tearDown(self):
 		frappe.db.rollback()
