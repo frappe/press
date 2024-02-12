@@ -245,7 +245,6 @@ class TestReleaseGroup(unittest.TestCase):
 	def test_fetch_environment_variables(self):
 		rg = create_test_release_group([create_test_app()])
 		frappe.local.team = lambda: frappe.get_doc("Team", rg.team)
-
 		environment_variables = [
 			{"key": "test_key", "value": "test_value", "internal": False},
 			{"key": "test_key_2", "value": "test_value", "internal": False},
