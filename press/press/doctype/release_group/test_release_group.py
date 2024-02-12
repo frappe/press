@@ -53,6 +53,7 @@ def create_test_release_group(
 class TestReleaseGroup(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team().name
+		print("Run again")
 
 	def tearDown(self):
 		frappe.db.rollback()
@@ -243,6 +244,8 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def test_fetch_environment_variables(self):
 		rg = create_test_release_group([create_test_app()])
+		frappe.local.team = lambda: frappe.get_doc("Team", rg.team)
+
 		environment_variables = [
 			{"key": "test_key", "value": "test_value", "internal": False},
 			{"key": "test_key_2", "value": "test_value", "internal": False},
@@ -252,7 +255,6 @@ class TestReleaseGroup(unittest.TestCase):
 			rg.append("environment_variables", env)
 		rg.save()
 		rg.reload()
-
 		fetched_environment_variable_list = get_list(
 			"Release Group Variable",
 			fields=["name", "key", "value"],
