@@ -56,7 +56,6 @@ class TestReleaseGroup(unittest.TestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
-		frappe.set_user("Administrator")
 
 	def test_create_release_group(self):
 		app = create_test_app("frappe", "Frappe Framework")
@@ -243,9 +242,7 @@ class TestReleaseGroup(unittest.TestCase):
 		self.assertEqual(deploy_information(rg.name).get("update_available"), True)
 
 	def test_fetch_environment_variables(self):
-		user = frappe.get_value("Team", self.team, "user")
-		frappe.set_user(user)
-		rg = create_test_release_group([create_test_app()], user)
+		rg = create_test_release_group([create_test_app()], frappe.session.user)
 		environment_variables = [
 			{"key": "test_key", "value": "test_value", "internal": False},
 			{"key": "test_key_2", "value": "test_value", "internal": False},
