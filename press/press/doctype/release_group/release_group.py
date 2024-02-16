@@ -50,6 +50,8 @@ class ReleaseGroup(Document, TagHelpers):
 		"fetch_latest_app_update",
 		"delete_config",
 		"update_config",
+		"update_environment_variable",
+		"delete_environment_variable",
 		"update_dependency",
 		"add_region",
 		"deployed_versions",
@@ -262,6 +264,34 @@ class ReleaseGroup(Document, TagHelpers):
 		if bench_config == []:
 			self.bench_config = json.dumps({})
 
+		self.save()
+
+	@frappe.whitelist()
+	def update_environment_variable(self, environment_variables: dict):
+		for key, value in environment_variables.items():
+			is_updated = False
+			for env_var in self.environment_variables:
+				if env_var.key == key:
+					if env_var.internal:
+						frappe.throw(
+							f"Environment variable {env_var.key} is internal and cannot be updated"
+						)
+					else:
+						env_var.value = value
+						is_updated = True
+			if not is_updated:
+				self.append(
+					"environment_variables", {"key": key, "value": value, "internal": False}
+				)
+		self.save()
+
+	@frappe.whitelist()
+	def delete_environment_variable(self, key):
+		updated_env_variables = []
+		for env_var in self.environment_variables:
+			if env_var.key != key or env_var.internal:
+				updated_env_variables.append(env_var)
+		self.environment_variables = updated_env_variables
 		self.save()
 
 	def validate_title(self):

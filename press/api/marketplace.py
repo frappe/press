@@ -814,12 +814,12 @@ def get_payouts_list() -> List[Dict]:
 		fields=[
 			"name",
 			"status",
-			"due_date",
+			"period_end",
 			"mode_of_payment",
 			"net_total_inr",
 			"net_total_usd",
 		],
-		order_by="due_date desc",
+		order_by="period_end desc",
 	)
 
 	return payouts
