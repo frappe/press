@@ -114,6 +114,19 @@ let utils = {
 				status = 'Trial';
 			}
 			return status;
+		},
+		$sanitize(text) {
+			if (!text) return text;
+			const map = {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#x27;',
+				'/': '&#x2F;'
+			};
+			const reg = /[&<>"'/]/gi;
+			return text.replace(reg, match => map[match]);
 		}
 	},
 	computed: {

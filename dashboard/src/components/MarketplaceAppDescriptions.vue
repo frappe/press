@@ -5,7 +5,7 @@
 		subtitle="Details about your app"
 	>
 		<div class="divide-y" v-if="app">
-			<ListItem title="Summary" :description="app.description">
+			<ListItem title="Summary" :description="$sanitize(app.description)">
 				<template #actions>
 					<Button icon-left="edit" @click="showEditSummaryDialog = true">
 						Edit
