@@ -254,6 +254,8 @@ class TestAgentJob(unittest.TestCase):
 		site = create_test_site()
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
+		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
+
 		# check if similar job exists
 		agent = Agent(site.server)
 		in_execution_job = agent.get_similar_in_execution_job(
@@ -264,3 +266,5 @@ class TestAgentJob(unittest.TestCase):
 		)
 
 		self.assertEqual(in_execution_job.name, job.name)
+
+		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
