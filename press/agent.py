@@ -780,7 +780,7 @@ class Agent:
 		"""Deduplicate jobs in execution state"""
 
 		disable_agent_job_deduplication = frappe.db.get_single_value(
-			"Press Settings", "disable_agent_job_deduplication"
+			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
 		if disable_agent_job_deduplication:
