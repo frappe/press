@@ -4,7 +4,12 @@ import frappe
 def execute():
 	plans = frappe.get_all(
 		"Site Plan",
-		{"document_type": ("in", ["Server", "Database Server", "Self Hosted Server"])},
+		{
+			"document_type": (
+				"in",
+				["Server", "Database Server", "Proxy Server", "Self Hosted Server"],
+			)
+		},
 		pluck="name",
 	)
 
@@ -27,7 +32,7 @@ def execute():
 			}
 		)
 		server_plan_doc.roles = plan_doc.roles
-		server_plan_doc.insert()
+		server_plan_doc.insert(ignore_if_duplicate=True)
 
 	for marketplace_plan in frappe.get_all("Marketplace App Plan", pluck="name"):
 		map_doc = frappe.get_doc("Marketplace App Plan", marketplace_plan)
