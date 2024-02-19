@@ -34,7 +34,7 @@
    "fieldname": "server_type",
    "fieldtype": "Select",
    "label": "Server Type",
-   "options": "Server\nDatabase Server"
+   "options": "Server\nDatabase Server\nProxy Server\nSelf Hosted Server"
   },
   {
    "fieldname": "section_break_nifk",
@@ -115,7 +115,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-06 12:44:18.775834",
+ "modified": "2024-02-19 19:31:24.187185",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",

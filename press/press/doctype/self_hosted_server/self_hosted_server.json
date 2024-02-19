@@ -304,7 +304,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Site Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -386,11 +386,11 @@
    "fieldname": "database_plan",
    "fieldtype": "Link",
    "label": "Database Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   }
  ],
  "links": [],
- "modified": "2024-02-06 17:22:16.606598",
+ "modified": "2024-02-19 19:43:34.211720",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

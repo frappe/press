@@ -43,7 +43,6 @@
   },
   {
    "default": "Daily",
-   "fetch_from": "plan.interval",
    "fieldname": "interval",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -91,7 +90,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2024-02-09 17:55:55.684846",
+ "modified": "2024-02-19 19:49:40.819033",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

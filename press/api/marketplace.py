@@ -729,7 +729,7 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 		{
 			"doctype": "Marketplace App Plan",
 			"app": marketplace_app,
-			"title": plan_data.get("title").name,
+			"title": plan_data.get("title"),
 			"price_inr": plan_data.get("price_inr"),
 			"price_usd": plan_data.get("price_usd"),
 		}
@@ -962,22 +962,24 @@ def login_via_token(token, team, site):
 @frappe.whitelist()
 def subscriptions():
 	team = get_current_team(True)
-	free_plans = frappe.get_all("Marketplace App Plan", {"is_free": 1}, pluck="name")
+	free_plans = frappe.get_all(
+		"Marketplace App Plan", {"price_usd": ("<=", 0)}, pluck="name"
+	)
 	subscriptions = frappe.get_all(
-		"Marketplace App Subscription",
+		"Subscription",
 		{
 			"team": team.name,
-			"status": ("in", ("Active", "Suspended")),
+			"enabled": 1,
 			"plan": ("not in", free_plans),
 		},
-		["name", "app", "site", "plan", "marketplace_app_plan"],
+		["name", "document_name as app", "site", "plan"],
 	)
 
 	for sub in subscriptions:
 		sub["available_plans"] = get_plans_for_app(sub["app"])
 		for ele in sub["available_plans"]:
 			ele["amount"] = ele[f"price_{team.currency.lower()}"]
-			if ele["name"] == sub["marketplace_app_plan"]:
+			if ele["name"] == sub["plan"]:
 				sub["selected_plan"] = ele
 
 	return subscriptions

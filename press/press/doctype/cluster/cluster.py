@@ -656,7 +656,7 @@ class Cluster(Document):
 		).insert()
 
 	def get_or_create_basic_plan(self, server_type):
-		return frappe.get_doc("Plan", f"Basic Cluster - {server_type}")
+		return frappe.get_doc("Server Plan", f"Basic Cluster - {server_type}")
 
 	def create_server(
 		self,

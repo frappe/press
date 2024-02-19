@@ -207,7 +207,12 @@ def sites_with_free_hosting():
 	free_teams = frappe.get_all(
 		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
 	)
-	return frappe.get_all(
+	free_team_sites = frappe.get_all(
+		"Site",
+		{"status": ("not in", ("Archived", "Suspended")), "team": ("in", free_teams)},
+		pluck="name",
+	)
+	return free_team_sites + frappe.get_all(
 		"Site",
 		filters={
 			"free": True,
