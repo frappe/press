@@ -784,7 +784,7 @@ class Agent:
 		)
 
 		if disable_agent_job_deduplication:
-			return ""
+			return False
 
 		filteres = {
 			"server_type": self.server_type,
