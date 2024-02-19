@@ -630,7 +630,9 @@ def get_next_retry_at(job_retry_count):
 def retry_undelivered_jobs():
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
-	disable_auto_retry = frappe.db.get_single_value("Press Settings", "disable_auto_retry")
+	disable_auto_retry = frappe.db.get_single_value(
+		"Press Settings", "disable_auto_retry", cache=True
+	)
 	if disable_auto_retry:
 		return
 
