@@ -34,6 +34,7 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate",
 	"Agent Job",
 	"Common Site Config",
+	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
 	"User",

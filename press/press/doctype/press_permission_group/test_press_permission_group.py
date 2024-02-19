@@ -30,6 +30,7 @@ class TestPressPermissionGroup(FrappeTestCase):
 		frappe.delete_doc("Team", self.team.name, force=True)
 		frappe.delete_doc("User", self.team_member.name, force=True)
 		frappe.delete_doc("User", self.team_user.name, force=True)
+		frappe.local._current_team = None
 
 	def test_add_user(self):
 		self.perm_group.add_user(self.team_member.name)
@@ -122,7 +123,7 @@ class TestPressPermissionGroup(FrappeTestCase):
 		site.db_insert()
 
 		frappe.set_user(self.team_member.name)
-		frappe.local.team = lambda: self.team
+		frappe.local._current_team = self.team
 		permissions = self.perm_group.get_all_document_permissions("Site")
 		self.assertEqual(len(permissions), 1)
 		self.assertEqual(permissions[0]["document_type"], "Site")

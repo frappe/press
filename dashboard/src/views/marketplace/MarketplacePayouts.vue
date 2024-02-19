@@ -27,7 +27,7 @@ const payouts = createResource({
 				<div
 					class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-600 md:grid-cols-6"
 				>
-					<span>Due Date</span>
+					<span>Date</span>
 					<span class="hidden md:inline">Payment Mode</span>
 					<span class="hidden md:inline">Status</span>
 					<span>Net INR</span>
@@ -40,9 +40,9 @@ const payouts = createResource({
 					:key="payout.name"
 					class="grid grid-cols-4 items-center gap-x-8 py-4 text-base text-gray-900 md:grid-cols-6"
 				>
-					<div v-if="payout.due_date">
+					<div v-if="payout.period_end">
 						{{
-							$date(payout.due_date).toLocaleString({
+							$date(payout.period_end).toLocaleString({
 								month: 'long',
 								day: 'numeric',
 								year: 'numeric'

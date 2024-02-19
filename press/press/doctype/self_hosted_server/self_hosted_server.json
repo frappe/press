@@ -29,6 +29,7 @@
   "private_ip",
   "ssh_port",
   "section_break_0fky",
+  "dedicated_proxy",
   "proxy_public_ip",
   "proxy_created",
   "proxy_server",
@@ -259,6 +260,7 @@
   },
   {
    "collapsible": 1,
+   "collapsible_depends_on": "eval:doc.dedicated_proxy",
    "fieldname": "section_break_0fky",
    "fieldtype": "Section Break",
    "label": "Proxy"
@@ -387,10 +389,16 @@
    "fieldtype": "Link",
    "label": "Database Plan",
    "options": "Server Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_proxy",
+   "fieldtype": "Check",
+   "label": "Dedicated Proxy"
   }
  ],
  "links": [],
- "modified": "2024-02-19 19:43:34.211720",
+ "modified": "2024-02-08 14:10:21.024772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

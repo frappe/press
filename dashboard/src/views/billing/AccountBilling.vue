@@ -7,7 +7,16 @@
 			<Tabs :tabs="tabs" class="-mb-px pl-0.5" />
 		</header>
 		<div class="mx-auto max-w-5xl py-5">
-			<router-view />
+			<router-view
+				v-if="
+					$account.user?.name === $account.team?.user ||
+					$account.user?.user_type === 'System User'
+				"
+			/>
+			<div v-else class="mx-auto my-auto h-full w-full text-red-600">
+				Team members are not allowed to access this page. Please contact your
+				team owner or support for more information.
+			</div>
 		</div>
 	</div>
 </template>
