@@ -30,12 +30,8 @@ class TestSelfHostedServer(FrappeTestCase):
 	)
 	@patch.object(Ansible, "run", new=Mock())
 	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
-		from press.press.doctype.plan.test_plan import create_test_plan
-
-		create_test_plan(
-			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
-		)
-		server = create_test_self_hosted_server("ssl", plan="Self Hosted Server")
+		plan = create_test_server_plan(document_type="Self Hosted Server")
+		server = create_test_self_hosted_server("ssl", plan=plan.name)
 		app_server = server.create_server()
 		server.setup_nginx()
 		Mock_Ansible.assert_called_with(
