@@ -312,7 +312,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -332,6 +332,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -615,7 +620,8 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
@@ -628,7 +634,8 @@ export default {
 												),
 												{
 													loading: 'Deleting  environment variable...',
-													success: () => `Environment variable ${row.key} removed`,
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')
