@@ -28,8 +28,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
+   "options": "Plan"
   },
   {
    "fieldname": "app",
@@ -78,6 +77,13 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly\nYearly"
   },
   {
    "fieldname": "price_inr",

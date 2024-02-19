@@ -14,7 +14,11 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_subscription(
-	document_name: str, plan: str, team: str, document_type: str = "Site"
+	document_name: str,
+	plan: str,
+	team: str,
+	document_type: str = "Site",
+	plan_type: str = "Site Plan",
 ):
 
 	subscription = frappe.get_doc(
@@ -23,7 +27,9 @@ def create_test_subscription(
 			"document_type": document_type,
 			"document_name": document_name,
 			"team": team,
+			"plan_type": plan_type,
 			"plan": plan,
+			"site": document_name if document_type == "Site" else None,
 		}
 	).insert(ignore_if_duplicate=True)
 	subscription.reload()

@@ -17,7 +17,6 @@ from press.api.site import (
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
-from press.press.doctype.plan.plan import Plan
 from press.press.doctype.app.app import new_app as new_app_doc
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
@@ -726,9 +725,14 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 
 @frappe.whitelist()
 def create_app_plan(marketplace_app: str, plan_data: Dict):
-	plan = create_new_plan(marketplace_app, plan_data)
 	app_plan_doc = frappe.get_doc(
-		{"doctype": "Marketplace App Plan", "app": marketplace_app, "plan": plan.name}
+		{
+			"doctype": "Marketplace App Plan",
+			"app": marketplace_app,
+			"title": plan_data.get("title").name,
+			"price_inr": plan_data.get("price_inr"),
+			"price_usd": plan_data.get("price_usd"),
+		}
 	)
 
 	feature_list = plan_data.get("features")
@@ -739,34 +743,37 @@ def create_app_plan(marketplace_app: str, plan_data: Dict):
 @frappe.whitelist()
 def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 
-	if not updated_plan_data.get("plan_title"):
+	if not updated_plan_data.get("title"):
 		frappe.throw("Plan title is required")
 
 	app_plan_doc = frappe.get_doc("Marketplace App Plan", app_plan_name)
-	plan_name = app_plan_doc.plan
 
 	no_of_active_subscriptions = frappe.db.count(
-		"Marketplace App Subscription",
-		{"app": app_plan_doc.app, "plan": plan_name, "status": "Active"},
+		"Subscription",
+		{
+			"document_type": "Marketplace App",
+			"document_name": app_plan_doc.app,
+			"plan": app_plan_doc.name,
+			"enabled": True,
+		},
 	)
 
 	if no_of_active_subscriptions > 0:
 		# Someone is on this plan, don't change price for the plan,
 		# instead create and link a new plan
 		# TODO: Later we have to figure out a way for plan changes
-		new_plan = create_new_plan(app_plan_doc.app, updated_plan_data)
-		app_plan_doc.plan = new_plan.name
-	else:
-		plan_doc = frappe.get_doc("Plan", plan_name, for_update=True)
-		# Update the price in the plan itself
-		plan_doc.update(
-			{
-				"price_inr": updated_plan_data.get("price_inr"),
-				"price_usd": updated_plan_data.get("price_usd"),
-				"plan_title": updated_plan_data.get("plan_title", plan_doc.plan_title),
-			}
+		frappe.throw(
+			"Plan is already in use, cannot update the plan. Please contact support to proceed."
 		)
-		plan_doc.save(ignore_permissions=True)
+
+	app_plan_doc.update(
+		{
+			"price_inr": updated_plan_data.get("price_inr"),
+			"price_usd": updated_plan_data.get("price_usd"),
+			"title": updated_plan_data.get("title", app_plan_doc.title),
+		}
+	)
+	app_plan_doc.save(ignore_permissions=True)
 
 	feature_list = updated_plan_data.get("features", [])
 	reset_features_for_plan(app_plan_doc, feature_list, save=False)
@@ -786,19 +793,6 @@ def reset_features_for_plan(
 
 	if save:
 		app_plan_doc.save(ignore_permissions=True)
-
-
-def create_new_plan(app: str, data: Dict) -> Plan:
-	return frappe.get_doc(
-		{
-			"doctype": "Plan",
-			"price_inr": data.get("price_inr"),
-			"price_usd": data.get("price_usd"),
-			"plan_title": data.get("plan_title"),
-			"document_type": "Marketplace App",
-			"name": app + f"-plan-{frappe.utils.random_string(6)}",
-		}
-	).insert(ignore_permissions=True)
 
 
 @frappe.whitelist()
