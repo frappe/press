@@ -187,19 +187,16 @@ def create_usage_records():
 
 
 def paid_plans():
-	return frappe.db.get_all(
-		"Site Plan",
-		{
-			"document_type": (
-				"in",
-				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
-			),
-			"is_trial_plan": 0,
-			"price_inr": (">", 0),
-		},
-		pluck="name",
-		ignore_ifnull=True,
-	)
+	free_plans = []
+	filter = {
+		"price_inr": (">", 0),
+		"enabled": 1,
+	}
+	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan"]
+	for doctype in doctypes:
+		free_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
+
+	return list(set(free_plans))
 
 
 def sites_with_free_hosting():
