@@ -111,3 +111,4 @@ press.press.doctype.virtual_machine_volume.patches.rename_aws_fields
 [post_model_sync]
 press.patches.v0_7_0.rename_plan_to_site_plan
 press.patches.v0_7_0.migrate_fields_from_plans_to_server_and_marketplace #
+press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs

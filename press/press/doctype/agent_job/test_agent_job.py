@@ -240,3 +240,31 @@ class TestAgentJob(unittest.TestCase):
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Rename Site on Upstream"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertEqual(site.name, doc_name)
+
+	def test_no_duplicate_undelivered_job(self):
+		site = create_test_site()
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
+
+		# create a new job with same type and site
+		job_name = site.update_site_config({"host_name": f"https://{site.host_name}"})
+
+		self.assertEqual(job_name.name, job.name)
+
+	def test_get_similar_in_execution_job(self):
+		site = create_test_site()
+		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
+
+		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
+
+		# check if similar job exists
+		agent = Agent(site.server)
+		in_execution_job = agent.get_similar_in_execution_job(
+			job_type="Update Site Configuration",
+			path=f"benches/{site.bench}/sites/{site.name}/config",
+			bench=site.bench,
+			site=site.name,
+		)
+
+		self.assertEqual(in_execution_job.name, job.name)
+
+		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", True)
