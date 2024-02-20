@@ -396,6 +396,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
