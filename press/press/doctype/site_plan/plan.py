@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 import frappe
 from frappe.model.document import Document
 from frappe.utils import rounded
@@ -27,7 +25,7 @@ class Plan(Document):
 		return frappe.utils.get_last_day(None).day
 
 	@classmethod
-	def get_plans(cls, doctype, filters: Dict, fields: List = ["*"]):
+	def get_plans(cls, doctype, fields=["*"], filters=None):
 		filters = filters or {}
 		fields.append("`tabHas Role`.role")
 		filters.update({"enabled": True})
