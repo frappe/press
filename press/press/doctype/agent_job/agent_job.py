@@ -189,7 +189,7 @@ class AgentJob(Document):
 
 		if not self.job_id:
 			job = agent.get_jobs_id(self.name)
-			if len(job) > 0:
+			if job and len(job) > 0:
 				self.db_set("job_id", job[0]["id"])
 		if self.job_id:
 			polled_job = agent.get_job_status(self.job_id)
