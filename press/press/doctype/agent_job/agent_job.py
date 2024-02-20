@@ -171,34 +171,25 @@ class AgentJob(Document):
 				self.status = "Failure"
 				self.save()
 				process_job_updates(self.name)
+				frappe.db.commit()
 
 			else:
 				self.set_status_and_next_retry_at()
+				frappe.db.commit()
 
 	def set_status_and_next_retry_at(self):
 		try:
-			next_retry_at = get_next_retry_at(self.retry_count)
-
 			if not self.retry_count:
 				self.retry_count = 1
 
-			frappe.db.set_value(
-				"Agent Job",
-				self.name,
-				{
-					"status": "Undelivered",
-					"next_retry_at": next_retry_at,
-					"retry_count": self.retry_count,
-				},
-				update_modified=False,
-			)
+			next_retry_at = get_next_retry_at(self.retry_count)
+
+			self.status = "Undelivered"
+			self.next_retry_at = next_retry_at
+			self.save()
+
 		except Exception:
-			log_error(
-				"Agent Job Set Status Exception",
-				job=self,
-				reference_doctype="Agent Job",
-				reference_name=self.name,
-			)
+			log_error("Agent Job Set Next Retry Timing", job=self)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)

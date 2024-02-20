@@ -700,8 +700,8 @@ class Agent:
 					headers=headers,
 					result=json_response or result.text,
 				)
-		except Exception as exce:
-			self.handle_exception(agent_job, exce)
+		except Exception as exc:
+			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -820,7 +820,9 @@ class Agent:
 		if host:
 			filteres["host"] = host
 
-		return frappe.db.get_value("Agent Job", filteres, ["name", "status"], as_dict=1)
+		job = frappe.db.get_value("Agent Job", filteres, "name")
+
+		return frappe.get_doc("Agent Job", job) if job else False
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
