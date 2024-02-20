@@ -12,7 +12,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
