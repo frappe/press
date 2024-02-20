@@ -30,6 +30,10 @@ from press.press.doctype.site_migration.site_migration import (
 )
 from press.utils import log_error
 
+from press.press.doctype.agent_job_type.agent_job_type import (
+	get_retryable_job_types_and_max_retry_count,
+)
+
 
 class AgentJob(Document):
 	# begin: auto-generated types
@@ -657,19 +661,6 @@ def retry_undelivered_jobs():
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
-
-
-def get_retryable_job_types_and_max_retry_count():
-	job_types, max_retry_per_job_type = [], {}
-	for job_type in frappe.get_all(
-		"Agent Job Type",
-		filters={"disabled_auto_retry": 0, "max_retry_count": [">", 0]},
-		fields=["name", "max_retry_count"],
-	):
-		job_types.append(job_type["name"])
-		max_retry_per_job_type[job_type["name"]] = job_type["max_retry_count"]
-
-	return job_types, max_retry_per_job_type
 
 
 def update_job_and_step_status(job):
