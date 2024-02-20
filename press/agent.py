@@ -734,83 +734,25 @@ class Agent:
 		upstream=None,
 		host=None,
 	):
-
-		"""
-		Check if job already exists in Undelivered, Pending, Running state
-		don't add new job until its gets comleted
-		"""
-
-		job = self.get_similar_in_execution_job(
-			job_type, path, bench, site, code_server, upstream, host, method
-		)
-
-		if not job:
-			job = frappe.get_doc(
-				{
-					"doctype": "Agent Job",
-					"server_type": self.server_type,
-					"server": self.server,
-					"bench": bench,
-					"host": host,
-					"site": site,
-					"code_server": code_server,
-					"upstream": upstream,
-					"status": "Undelivered",
-					"request_method": method,
-					"request_path": path,
-					"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
-					"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
-					"job_type": job_type,
-				}
-			).insert()
-
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": self.server_type,
+				"server": self.server,
+				"bench": bench,
+				"host": host,
+				"site": site,
+				"code_server": code_server,
+				"upstream": upstream,
+				"status": "Undelivered",
+				"request_method": method,
+				"request_path": path,
+				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
+				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
+				"job_type": job_type,
+			}
+		).insert()
 		return job
-
-	def get_similar_in_execution_job(
-		self,
-		job_type,
-		path,
-		bench=None,
-		site=None,
-		code_server=None,
-		upstream=None,
-		host=None,
-		method="POST",
-	):
-		"""Deduplicate jobs in execution state"""
-
-		disable_agent_job_deduplication = frappe.db.get_single_value(
-			"Press Settings", "disable_agent_job_deduplication", cache=True
-		)
-
-		if disable_agent_job_deduplication:
-			return False
-
-		filteres = {
-			"server_type": self.server_type,
-			"server": self.server,
-			"job_type": job_type,
-			"status": ("not in", ("Success", "Failure", "Delivery Failure")),
-			"request_method": method,
-			"request_path": path,
-		}
-
-		if bench:
-			filteres["bench"] = bench
-
-		if site:
-			filteres["site"] = site
-
-		if code_server:
-			filteres["code_server"] = code_server
-
-		if upstream:
-			filteres["upstream"] = upstream
-
-		if host:
-			filteres["host"] = host
-
-		return frappe.db.get_value("Agent Job", filteres, ["name", "status"], as_dict=1)
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
