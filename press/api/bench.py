@@ -468,7 +468,7 @@ def versions(name):
 		.run(as_dict=True)
 	)
 
-	Plan = frappe.qb.DocType("Plan")
+	Plan = frappe.qb.DocType("Site Plan")
 	plan_data = (
 		frappe.qb.from_(Plan)
 		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)

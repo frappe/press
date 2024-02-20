@@ -12,7 +12,7 @@ import frappe
 class BackupTest:
 	def __init__(self) -> None:
 		self.trial_plans = frappe.get_all(
-			"Plan", dict(enabled=1, is_trial_plan=1), pluck="name"
+			"Site Plan", dict(enabled=1, is_trial_plan=1), pluck="name"
 		)
 		self.sites = self.get_random_sites()
 

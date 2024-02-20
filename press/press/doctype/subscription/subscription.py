@@ -188,7 +188,7 @@ def create_usage_records():
 
 def paid_plans():
 	return frappe.db.get_all(
-		"Plan",
+		"Site Plan",
 		{
 			"document_type": (
 				"in",

@@ -85,7 +85,7 @@ def all(server_filter=None):
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = (
-			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
+			frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
 		)
 		server["app_server"] = f"f{server.name[1:]}"
 		server["tags"] = frappe.get_all(
@@ -132,7 +132,7 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
-	plan = frappe.get_doc("Plan", server.plan) if server.plan else None
+	plan = frappe.get_doc("Server Plan", server.plan) if server.plan else None
 
 	if server.is_self_hosted and plan:  # Hacky way to show current specs in place of Plans
 		filters = {}

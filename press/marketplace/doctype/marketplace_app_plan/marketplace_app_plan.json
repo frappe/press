@@ -28,7 +28,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "app",
@@ -117,7 +117,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-06 21:59:34.720518",
+ "modified": "2024-02-20 13:52:41.248912",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
