@@ -138,16 +138,6 @@ export default {
 				}
 			};
 		},
-		breadcrumbs: [
-			{
-				label: 'Benches',
-				route: '/benches'
-			},
-			{
-				label: 'New Bench',
-				route: '/benches/new'
-			}
-		],
 		options: [
 			{
 				label: 'Select Frappe Framework Version',

@@ -84,6 +84,7 @@ export default {
 	},
 	create: {
 		route: '/servers/new',
+		title: 'New Server',
 		optionsResource: {
 			url: 'press.api.server.options',
 			auto: true,
@@ -184,16 +185,6 @@ export default {
 				}
 			};
 		},
-		breadcrumbs: [
-			{
-				label: 'Servers',
-				route: '/servers'
-			},
-			{
-				label: 'New Server',
-				route: '/servers/new'
-			}
-		],
 		options: [
 			{
 				label: 'Select Region',

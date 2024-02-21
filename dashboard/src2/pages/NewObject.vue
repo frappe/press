@@ -123,7 +123,13 @@ export default {
 			return getObject(this.objectType);
 		},
 		breadcrumbs() {
-			return this.object.create.breadcrumbs;
+			return [
+				{ label: this.object.list.title, route: this.object.list.route },
+				{
+					label: this.object.create.title,
+					route: this.object.create.route
+				}
+			];
 		},
 		options() {
 			return this.object.create.options;
