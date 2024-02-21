@@ -127,7 +127,11 @@
 					</Button>
 				</template>
 			</Dialog>
-
+			<PatchAppDialog
+				:bench="benchName"
+				:app="appToPatch"
+				@clear-app-to-patch="() => (appToPatch = null)"
+			/>
 			<ChangeAppBranchDialog
 				:bench="benchName"
 				v-model:app="appToChangeBranchOf"
@@ -140,18 +144,21 @@ import AppSourceSelector from '@/components/AppSourceSelector.vue';
 import ChangeAppBranchDialog from '@/components/ChangeAppBranchDialog.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
+import PatchAppDialog from './PatchAppDialog.vue';
 
 export default {
 	name: 'BenchApps',
 	components: {
 		AppSourceSelector,
-		ChangeAppBranchDialog
+		ChangeAppBranchDialog,
+		PatchAppDialog
 	},
 	props: ['benchName', 'bench'],
 	data() {
 		return {
 			selectedApps: [],
 			showAddAppDialog: false,
+			appToPatch: null,
 			appToChangeBranchOf: null,
 			searchTerm: '',
 			filteredOptions: []
@@ -257,6 +264,12 @@ export default {
 					label: 'Visit Repo',
 					onClick: () =>
 						window.open(`${app.repository_url}/tree/${app.branch}`, '_blank')
+				},
+				{
+					label: 'Apply Patch',
+					onClick: () => {
+						this.appToPatch = app;
+					}
 				}
 			].filter(Boolean);
 		},
