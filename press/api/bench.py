@@ -843,7 +843,7 @@ def update_all_sites(name):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).server_logs

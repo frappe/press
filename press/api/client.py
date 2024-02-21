@@ -37,6 +37,7 @@ ALLOWED_DOCTYPES = [
 	"Server",
 	"Database Server",
 	"Ansible Play",
+	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
 	"User",
@@ -67,8 +68,6 @@ def get_list(
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 
-	print(valid_filters)
-
 	query = frappe.qb.get_query(
 		doctype,
 		filters=valid_filters,
@@ -77,8 +76,6 @@ def get_list(
 		limit=limit,
 		order_by=order_by,
 	)
-
-	print(query)
 
 	if meta.istable:
 		parentmeta = frappe.get_meta(filters.get("parenttype"))

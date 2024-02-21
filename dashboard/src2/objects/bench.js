@@ -18,6 +18,8 @@ export default {
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
+		updateEnvironmentVariable: 'update_environment_variable',
+		deleteEnvironmentVariable: 'delete_environment_variable',
 		updateDependency: 'update_dependency',
 		addRegion: 'add_region',
 		deployedVersions: 'deployed_versions',
@@ -519,6 +521,114 @@ export default {
 												{
 													loading: 'Deleting config...',
 													success: () => `Config ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
+				}
+			},
+			{
+				label: 'Environment Variable',
+				icon: icon('tool'),
+				route: 'bench-environment-variable',
+				type: 'list',
+				list: {
+					doctype: 'Release Group Variable',
+					filters: releaseGroup => {
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['name'],
+					columns: [
+						{
+							label: 'Environment Variable Name',
+							fieldname: 'key'
+						},
+						{
+							label: 'Environment Variable Value',
+							fieldname: 'value'
+						}
+					],
+					primaryAction({
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return {
+							label: 'Add Environment Variable',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let EnvironmentVariableEditorDialog = defineAsyncComponent(() =>
+									import('../components/EnvironmentVariableEditorDialog.vue')
+								);
+								renderDialog(
+									h(EnvironmentVariableEditorDialog, {
+										group: releaseGroup.doc.name,
+										onSuccess() {
+											environmentVariables.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({
+						row,
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/EnvironmentVariableEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											group: releaseGroup.doc.name,
+											environment_variable: row,
+											onSuccess() {
+												environmentVariables.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Environment Variable',
+										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											toast.promise(
+												releaseGroup.deleteEnvironmentVariable.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															environmentVariables.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting  environment variable...',
+													success: () => `Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')

@@ -219,7 +219,14 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} bench get-app file:///home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+    {% if doc.use_app_cache %}
+    # Bench get-app flags to use get-app cache
+    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
+    {% endif %}
+  `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
@@ -237,6 +244,9 @@ RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/conte
 {% endif %}
 {% endfor %}
 
+
+# Validate dependencies
+RUN ["/bin/bash", "-c", "if bench validate-dependencies --help 1> /dev/null 2> /dev/null; then bench validate-dependencies; else echo skipped; fi;"] `#stage-validate-dependencies`
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt

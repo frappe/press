@@ -33,19 +33,25 @@
 			</template>
 		</Dialog>
 		<div class="divide-y" v-if="app">
-			<ListItem title="Website" :description="app.website || 'N/A'" />
-			<ListItem title="Support" :description="app.support || 'N/A'" />
+			<ListItem
+				title="Website"
+				:description="$sanitize(app.website || 'N/A')"
+			/>
+			<ListItem
+				title="Support"
+				:description="$sanitize(app.support || 'N/A')"
+			/>
 			<ListItem
 				title="Documentation"
-				:description="app.documentation || 'N/A'"
+				:description="$sanitize(app.documentation || 'N/A')"
 			/>
 			<ListItem
 				title="Privacy Policy"
-				:description="app.privacy_policy || 'N/A'"
+				:description="$sanitize(app.privacy_policy || 'N/A')"
 			/>
 			<ListItem
 				title="Terms of Service"
-				:description="app.terms_of_service || 'N/A'"
+				:description="$sanitize(app.terms_of_service || 'N/A')"
 			/>
 		</div>
 	</Card>
