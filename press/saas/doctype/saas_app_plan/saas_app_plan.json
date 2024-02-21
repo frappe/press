@@ -58,7 +58,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "reqd": 1
   },
   {
@@ -83,7 +83,7 @@
    "fieldname": "site_plan",
    "fieldtype": "Link",
    "label": "Site Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "reqd": 1
   },
   {
@@ -145,7 +145,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-19 09:26:01.277657",
+ "modified": "2024-02-05 23:05:22.125111",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas App Plan",

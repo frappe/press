@@ -7,7 +7,7 @@ import requests
 import json
 import sqlparse
 from press.api.site import protected
-from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from frappe.utils import (
 	convert_utc_to_timezone,
 	get_datetime,

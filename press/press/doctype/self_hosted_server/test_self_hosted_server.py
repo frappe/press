@@ -10,6 +10,7 @@ import frappe
 import json
 from press.runner import Ansible
 from press.press.doctype.team.test_team import create_test_team
+from press.api.tests.test_server import create_test_server_plan
 from frappe.tests.utils import FrappeTestCase
 
 
@@ -29,12 +30,8 @@ class TestSelfHostedServer(FrappeTestCase):
 	)
 	@patch.object(Ansible, "run", new=Mock())
 	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
-		from press.press.doctype.plan.test_plan import create_test_plan
-
-		create_test_plan(
-			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
-		)
-		server = create_test_self_hosted_server("ssl", plan="Self Hosted Server")
+		plan = create_test_server_plan(document_type="Self Hosted Server")
+		server = create_test_self_hosted_server("ssl", plan=plan.name)
 		app_server = server.create_server()
 		server.setup_nginx()
 		Mock_Ansible.assert_called_with(
@@ -224,16 +221,13 @@ class TestSelfHostedServer(FrappeTestCase):
 		from press.press.doctype.proxy_server.test_proxy_server import (
 			create_test_proxy_server,
 		)
-		from press.press.doctype.plan.test_plan import create_test_plan
 
 		create_test_cluster(name="Default", hybrid=True)
 		create_test_proxy_server()
-		create_test_plan(
-			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
-		)
+		plan = create_test_server_plan(document_type="Self Hosted Server")
 		pre_server_count = frappe.db.count("Server")
 
-		server = create_test_self_hosted_server("tester", plan="Self Hosted Server")
+		server = create_test_self_hosted_server("tester", plan=plan.name)
 		server.create_server()
 		server.reload()
 
@@ -247,14 +241,13 @@ class TestSelfHostedServer(FrappeTestCase):
 		from press.press.doctype.proxy_server.test_proxy_server import (
 			create_test_proxy_server,
 		)
-		from press.press.doctype.plan.test_plan import create_test_plan
 
-		create_test_plan("Database Server", plan_title="Unlimited", plan_name="Unlimited")
+		plan = create_test_server_plan(document_type="Database Server")
 		create_test_cluster(name="Default", hybrid=True)
 		create_test_proxy_server()
 		pre_server_count = frappe.db.count("Database Server")
 
-		server = create_test_self_hosted_server("tester", database_plan="Unlimited")
+		server = create_test_self_hosted_server("tester", database_plan=plan.name)
 		server.create_db_server()
 		server.reload()
 
@@ -281,11 +274,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertTrue(server.check_minimum_specs())
 
 	def test_create_subscription_add_plan_change_and_check_for_new_subscription(self):
-		from press.press.doctype.plan.test_plan import create_test_plan
-
-		plan = create_test_plan(
-			"Self Hosted Server", plan_title="Unlimited", plan_name="Unlimited"
-		)
+		plan = create_test_server_plan("Self Hosted Server")
 		pre_plan_change_count = frappe.db.count("Plan Change")
 		pre_subscription_count = frappe.db.count("Subscription")
 		server = create_test_self_hosted_server("tester")

@@ -26,7 +26,7 @@
 
 			<h4 class="flex justify-between text-xl font-semibold text-gray-900">
 				<div>
-					<span v-if="plan.is_free"> Free </span>
+					<span v-if="plan.price_usd <= 0"> Free </span>
 
 					<span v-else>
 						{{ $planTitle(plan) }}

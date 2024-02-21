@@ -178,6 +178,8 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
+  "column_break_biqm",
+  "realtime_job_updates",
   "code_spaces_tab",
   "spaces_domain"
  ],
@@ -613,7 +615,7 @@
    "fieldname": "erpnext_plan",
    "fieldtype": "Link",
    "label": "ERPNext Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "erpnext_group",
@@ -647,7 +649,7 @@
    "fieldname": "staging_plan",
    "fieldtype": "Link",
    "label": "Staging Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "24",
@@ -1120,11 +1122,21 @@
    "fieldname": "compress_app_cache",
    "fieldtype": "Check",
    "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "column_break_biqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "realtime_job_updates",
+   "fieldtype": "Check",
+   "label": "Realtime Job Updates"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-09 16:30:31.244735",
+ "modified": "2024-02-21 17:04:16.524389",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

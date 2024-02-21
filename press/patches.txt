@@ -1,3 +1,4 @@
+[pre_model_sync]
 press.patches.v0_0_1.site_history_to_site_activity
 press.patches.v0_0_1.user_account_to_team #6
 press.patches.v0_0_1.rename_transaction_currency_to_currency
@@ -106,3 +107,8 @@ press.press.doctype.virtual_machine.patches.rename_aws_fields
 press.press.doctype.virtual_machine_image.patches.rename_aws_fields
 press.press.doctype.virtual_disk_snapshot.patches.rename_aws_fields
 press.press.doctype.virtual_machine_volume.patches.rename_aws_fields
+press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs
+
+[post_model_sync]
+press.patches.v0_7_0.rename_plan_to_site_plan
+press.patches.v0_7_0.migrate_fields_from_plans_to_server_and_marketplace

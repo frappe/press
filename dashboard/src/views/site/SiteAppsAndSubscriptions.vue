@@ -60,8 +60,8 @@
 				</div>
 
 				<div class="w-1/6">
-					<span v-if="app.subscription.status"
-						><Badge :label="app.subscription.status" />
+					<span v-if="app.subscription.enabled"
+						><Badge label="Enabled" />
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -170,8 +170,8 @@
 		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
-					v-if="appToInstall?.app"
-					:app="appToInstall.app"
+					v-if="appToInstall?.document_name"
+					:app="appToInstall.document_name"
 					:frappeVersion="site?.frappe_version"
 					class="mb-9"
 					@change="
@@ -388,10 +388,10 @@ export default {
 			this.newAppPlan = this.currentAppPlan;
 
 			this.appToChangePlan = {
-				name: app.subscription.app,
+				name: app.subscription.document_name,
 				title: app.app_title,
 				image: app.app_image,
-				plan: app.subscription.marketplace_app_plan,
+				plan: app.subscription.plan,
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};

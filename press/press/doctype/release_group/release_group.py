@@ -43,7 +43,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document, TagHelpers):
-	dashboard_fields = ["title", "version", "apps"]
+	dashboard_fields = ["title", "version", "apps", "team"]
 	dashboard_actions = [
 		"remove_app",
 		"change_app_branch",
@@ -570,7 +570,7 @@ class ReleaseGroup(Document, TagHelpers):
 			.run(as_dict=True)
 		)
 
-		Plan = frappe.qb.DocType("Plan")
+		Plan = frappe.qb.DocType("Site Plan")
 		plan_data = (
 			frappe.qb.from_(Plan)
 			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)

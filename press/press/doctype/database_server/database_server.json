@@ -279,7 +279,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -484,7 +484,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-05 21:30:29.998544",
+ "modified": "2024-02-08 13:37:28.064067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

@@ -71,7 +71,7 @@ def get_teams_with_unpaid_invoices():
 	# last day of previous month
 	last_day = get_last_day(frappe.utils.add_months(today, -1))
 
-	plan = frappe.qb.DocType("Plan")
+	plan = frappe.qb.DocType("Site Plan")
 	query = (
 		frappe.qb.from_(plan)
 		.select(plan.name)

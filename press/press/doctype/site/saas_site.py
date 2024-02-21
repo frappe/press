@@ -184,7 +184,7 @@ def create_app_subscriptions(site, app):
 	subscription_docs, custom_saas_config = get_app_subscriptions(marketplace_apps, app)
 
 	# set site config
-	site_config = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+	site_config = {f"sk_{s.document_name}": s.secret_key for s in subscription_docs}
 	site_config.update(custom_saas_config)
 	site._update_configuration(site_config, save=False)
 
@@ -202,18 +202,21 @@ def get_app_subscriptions(apps=None, standby_for=None):
 
 	for app in apps:
 		free_plan = frappe.get_all(
-			"Marketplace App Plan", {"enabled": 1, "is_free": 1, "app": app}, pluck="name"
+			"Marketplace App Plan",
+			{"enabled": 1, "price_usd": ("<=", 0), "app": app},
+			pluck="name",
 		)
 		if free_plan:
 			new_subscription = frappe.get_doc(
 				{
-					"doctype": "Marketplace App Subscription",
-					"marketplace_app_plan": get_saas_plan(app)
+					"doctype": "Subscription",
+					"document_type": "Marketplace App",
+					"document_name": app,
+					"plan_type": "Marketplace App Plan",
+					"plan": get_saas_plan(app)
 					if frappe.db.exists("Saas Settings", app)
 					else free_plan[0],
-					"app": app,
-					"while_site_creation": True,
-					"status": "Disabled",
+					"enabled": 0,
 					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 				}
 			).insert(ignore_permissions=True)
