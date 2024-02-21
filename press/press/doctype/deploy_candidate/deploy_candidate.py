@@ -1019,26 +1019,35 @@ def can_pull_update(file_paths: list[str]) -> bool:
 
 
 def pull_update_file_filter(file_path: str) -> bool:
-	# Requires migrate but should not change image filesystem
-	if file_path.endswith(".json") and "/doctype/" in file_path:
-		return True
-
-	# Controller file
-	elif file_path.endswith(".py") and "/doctype/" in file_path:
-		return True
+	blacklist = [
+		# Requires pip install
+		"requirements.txt",
+		"pyproject.toml",
+		"setup.py",
+		# Requires yarn install, build
+		"package.json",
+		".vue",
+		".ts",
+		".jsx",
+		".tsx",
+		".scss",
+	]
+	if any(file_path.endswith(f) for f in blacklist):
+		return False
 
 	# Non build requiring frontend files
 	for ext in [".html", ".js", ".css"]:
 		if not file_path.endswith(ext):
 			continue
 
-		if "/public/" in file_path:
+		if "/public/" in file_path or "/www/" in file_path:
 			return True
 
-		elif "/www/" in file_path:
-			return True
+		# Probably requires build
+		else:
+			return False
 
-	return False
+	return True
 
 
 def cleanup_build_directories():

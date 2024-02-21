@@ -184,6 +184,7 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -222,7 +223,6 @@ scheduler_events = {
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
-			"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [

@@ -76,6 +76,8 @@
   "column_break_66",
   "code_server",
   "code_server_password",
+  "use_app_cache",
+  "compress_app_cache",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -176,6 +178,8 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
+  "column_break_biqm",
+  "realtime_job_updates",
   "code_spaces_tab",
   "spaces_domain"
  ],
@@ -1103,11 +1107,36 @@
    "fieldname": "print_format",
    "fieldtype": "Data",
    "label": "Print Format"
+  },
+  {
+   "default": "0",
+   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.21.3 or later.",
+   "fieldname": "use_app_cache",
+   "fieldtype": "Check",
+   "label": "Use App Cache"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.use_app_cache",
+   "description": "Use Gzip to compress bench get-app artifacts before caching.",
+   "fieldname": "compress_app_cache",
+   "fieldtype": "Check",
+   "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "column_break_biqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "realtime_job_updates",
+   "fieldtype": "Check",
+   "label": "Realtime Job Updates"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-01-11 23:28:22.862640",
+ "modified": "2024-02-21 17:04:16.524389",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

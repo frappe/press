@@ -43,12 +43,12 @@ import docker
 class TestAPIBench(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
-		self.version = "Version 14"
+		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
 			self.version,
 			repository_url="https://github.com/frappe/frappe",
-			branch="version-14",
+			branch="version-15",
 			team=get_current_team(),
 			public=True,
 		)
