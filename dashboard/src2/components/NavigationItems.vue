@@ -58,6 +58,7 @@ export default {
 					route: '/servers',
 					isActive:
 						['NewServer', 'NewServerBench'].includes(routeName) ||
+						routeName.startsWith('Database Server') ||
 						routeName.startsWith('Server'),
 					disabled
 				},

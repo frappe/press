@@ -17,7 +17,7 @@ export default {
 	},
 	list: {
 		route: '/servers',
-		title: 'Database Servers'
+		title: 'Servers'
 	},
 	detail: {
 		titleField: 'name',

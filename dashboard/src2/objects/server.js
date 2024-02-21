@@ -342,14 +342,14 @@ export default {
 							}
 						},
 						{
-							label: 'Switch to App Server',
+							label: 'Switch to Database Server',
 							icon: icon('repeat'),
-							condition: () => server.doctype === 'Database Server',
+							condition: () => server.doctype === 'Server',
 							onClick() {
 								router.push({
-									name: 'Server Detail Overview',
+									name: 'Database Server Detail Overview',
 									params: {
-										name: server.doc.name.replace('m', 'f')
+										name: server.doc.database_server
 									}
 								});
 							}
