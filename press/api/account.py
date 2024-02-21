@@ -836,6 +836,9 @@ def feedback(message, route=None):
 
 @frappe.whitelist()
 def user_prompts():
+	if frappe.local.dev_server:
+		return
+
 	team = get_current_team(True)
 	doc = frappe.get_doc("Team", team.name)
 
