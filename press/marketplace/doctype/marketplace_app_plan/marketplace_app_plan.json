@@ -20,7 +20,7 @@
   "available_on_versions",
   "features",
   "allowed_roles_section",
-  "link_coag"
+  "roles"
  ],
  "fields": [
   {
@@ -103,21 +103,22 @@
    "label": "Allowed Roles"
   },
   {
-   "fieldname": "link_coag",
-   "fieldtype": "Table",
-   "options": "Has Role"
-  },
-  {
    "default": "Daily",
    "fieldname": "interval",
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly\nYearly"
+  },
+  {
+   "fieldname": "roles",
+   "fieldtype": "Table",
+   "label": "Roles",
+   "options": "Has Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-20 13:52:41.248912",
+ "modified": "2024-02-21 21:05:19.586189",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",

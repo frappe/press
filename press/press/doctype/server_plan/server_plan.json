@@ -21,7 +21,7 @@
   "memory",
   "disk",
   "allowed_roles_section",
-  "table_heyh"
+  "roles"
  ],
  "fields": [
   {
@@ -107,7 +107,7 @@
    "label": "Allowed Roles"
   },
   {
-   "fieldname": "table_heyh",
+   "fieldname": "roles",
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
@@ -115,7 +115,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-19 19:31:24.187185",
+ "modified": "2024-02-21 21:04:47.525589",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
