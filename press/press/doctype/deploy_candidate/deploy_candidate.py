@@ -68,8 +68,9 @@ class DeployCandidate(Document):
 		series = f"deploy-{group}-.######"
 		self.name = make_autoname(series)
 
-	def after_insert(self):
-		return
+	def before_insert(self):
+		if self.status == "Draft":
+			self.build_duration = 0
 
 	def on_trash(self):
 		frappe.db.delete(
