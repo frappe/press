@@ -570,6 +570,10 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner'
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
