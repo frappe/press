@@ -399,7 +399,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
-		plan = frappe.get_doc("Plan", plan)
+		plan = frappe.get_doc("Server Plan", plan)
 		self.ram = plan.memory
 		self.save()
 		self.reload()

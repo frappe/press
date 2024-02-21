@@ -19,7 +19,7 @@ ALLOWED_DOCTYPES = [
 	"Site Activity",
 	"Site Config",
 	"Site Config Key",
-	"Plan",
+	"Site Plan",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",

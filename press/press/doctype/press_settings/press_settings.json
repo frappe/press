@@ -615,7 +615,7 @@
    "fieldname": "erpnext_plan",
    "fieldtype": "Link",
    "label": "ERPNext Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "erpnext_group",
@@ -649,7 +649,7 @@
    "fieldname": "staging_plan",
    "fieldtype": "Link",
    "label": "Staging Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "24",

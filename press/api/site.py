@@ -22,6 +22,7 @@ from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
 	get_current_team,
@@ -29,7 +30,6 @@ from press.utils import (
 	get_last_doc,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
-	group_children_in_result,
 	unique,
 )
 
@@ -205,7 +205,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 
 def validate_plan(server, plan):
-	if frappe.db.get_value("Plan", plan, "price_usd") > 0:
+	if frappe.db.get_value("Site Plan", plan, "price_usd") > 0:
 		return
 	if (
 		frappe.session.data.user_type == "System User"
@@ -618,10 +618,8 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_plans(name=None, rg=None):
-	filters = {"enabled": True, "document_type": "Site"}
-
-	plans = frappe.db.get_all(
-		"Plan",
+	plans = Plan.get_plans(
+		doctype="Site Plan",
 		fields=[
 			"name",
 			"plan_title",
@@ -635,12 +633,8 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
-			"`tabHas Role`.role",
 		],
-		filters=filters,
-		order_by="price_usd asc",
 	)
-	plans = group_children_in_result(plans, {"role": "roles"})
 
 	if name or rg:
 		team = get_current_team()
@@ -665,10 +659,8 @@ def get_plans(name=None, rg=None):
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
+		out.append(plan)
 
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
 	return out
 
 
@@ -758,7 +750,7 @@ def all(site_filter=None):
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
 		site_plan_name = frappe.get_value("Site", site.name, "plan")
-		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.plan = frappe.get_doc("Site Plan", site_plan_name) if site_plan_name else None
 		site.tags = frappe.get_all(
 			"Resource Tag",
 			{"parent": site.name},
@@ -1023,30 +1015,42 @@ def get_installed_apps(site):
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
-			"Marketplace App Subscription",
-			{"site": site.name, "app": app.app, "status": "Active"},
+			"Subscription",
+			{
+				"site": site.name,
+				"document_type": "Marketplace App",
+				"document_name": app.app,
+				"enabled": 1,
+			},
 		):
 			subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				{"site": site.name, "app": app.app, "status": "Active"},
+				"Subscription",
+				{
+					"site": site.name,
+					"document_type": "Marketplace App",
+					"document_name": app.app,
+					"enabled": 1,
+				},
+				["document_name as app"],
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+				"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
 			)
 
 			app_source.app_title = marketplace_app_info.title
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr", "name"], as_dict=True
+				"Marketplace App Plan",
+				subscription.plan,
+				["price_usd", "price_inr", "name"],
+				as_dict=True,
 			)
 
 			app_source.plans = get_plans_for_app(app.app)
 
-			app_source.is_free = frappe.db.get_value(
-				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-			)
+			app_source.is_free = app_source.plan_info.price_usd <= 0
 		else:
 			app_source.subscription = {}
 
@@ -1123,7 +1127,7 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
+	plan = frappe.get_doc("Site Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)

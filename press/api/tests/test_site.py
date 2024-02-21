@@ -17,7 +17,7 @@ from press.press.doctype.app_release.test_app_release import create_test_app_rel
 from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.cluster.test_cluster import create_test_cluster
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )

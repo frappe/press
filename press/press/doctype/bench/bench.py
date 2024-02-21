@@ -333,7 +333,7 @@ class Bench(Document):
 			JOIN tabSubscription subscription
 			ON site.name = subscription.document_name
 
-			JOIN tabPlan plan
+			JOIN `tabSite Plan` plan
 			ON subscription.plan = plan.name
 
 			WHERE site.bench = "{self.name}"
