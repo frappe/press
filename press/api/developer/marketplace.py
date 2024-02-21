@@ -39,11 +39,10 @@ class DeveloperApiHandler:
 		"""Important rule for security: Send info back carefully"""
 		app_subscription_dict = self.app_subscription_doc.as_dict()
 		fields_to_send = [
-			"app",
-			"status",
+			"document_name",
+			"enabled",
 			"plan",
 			"site",
-			"end_date",
 		]
 
 		filtered_dict = {
