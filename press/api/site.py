@@ -236,11 +236,13 @@ def get_app_subscriptions(app_plans, team: str):
 
 		new_subscription = frappe.get_doc(
 			{
-				"doctype": "Marketplace App Subscription",
-				"marketplace_app_plan": plan_name,
-				"app": app_name,
+				"doctype": "Subscription",
+				"document_type": "Marketplace App",
+				"document_name": app_name,
+				"plan_type": "Marketplace App",
+				"plan": plan_name,
+				"enabled": 1,
 				"team": team,
-				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
 
