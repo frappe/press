@@ -75,10 +75,114 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewBench' });
+					router.push({ name: 'New Release Group' });
 				}
 			};
 		}
+	},
+	create: {
+		route: '/benches/new',
+		title: 'New Bench',
+		optionsResource: {
+			url: 'press.api.bench.options',
+			initialData: {
+				versions: [],
+				clusters: []
+			},
+			auto: true
+		},
+		createResource() {
+			return {
+				url: 'press.api.bench.new',
+				validate({ bench }) {
+					if (!bench.title) {
+						return 'Bench Title cannot be blank';
+					}
+					if (!bench.version) {
+						return 'Select a version to create bench';
+					}
+				},
+				onSuccess(groupName) {
+					this.$router.push({
+						name: 'Release Group Detail Apps',
+						params: { name: groupName }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createBench, vals, optionsData: options }) {
+			return {
+				label: 'Create Bench',
+				variant: 'solid',
+				onClick() {
+					createBench.submit({
+						bench: {
+							title: vals.benchTitle,
+							version: vals.benchVersion,
+							cluster: vals.benchRegion,
+							saas_app: null,
+							apps: [
+								// some wizardry to only pick frappe for the chosen version
+								options.versions
+									.find(v => v.name === vals.benchVersion)
+									.apps.find(app => app.name === 'frappe')
+							].map(app => {
+								return {
+									name: app.name,
+									source: app.source.name
+								};
+							}),
+							server: vals.server || null
+						}
+					});
+				}
+			};
+		},
+		breadcrumbs: [
+			{
+				label: 'Benches',
+				route: '/benches'
+			},
+			{
+				label: 'New Bench',
+				route: '/benches/new'
+			}
+		],
+		options: [
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'benchVersion',
+				type: 'card',
+				fieldname: 'versions'
+			},
+			{
+				label: 'Select Region',
+				name: 'benchRegion',
+				type: 'card',
+				fieldname: 'clusters',
+				dependsOn: ['benchVersion']
+			},
+			{
+				label: 'Bench Title',
+				name: 'benchTitle',
+				type: 'text',
+				dependsOn: ['benchVersion', 'benchRegion']
+			}
+		],
+		summary: [
+			{
+				label: 'Bench Title',
+				fieldname: 'benchTitle'
+			},
+			{
+				label: 'Region',
+				fieldname: 'benchRegion'
+			},
+			{
+				label: 'Frappe Version',
+				fieldname: 'benchVersion'
+			}
+		]
 	},
 	detail: {
 		titleField: 'title',
@@ -615,7 +719,8 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
@@ -628,7 +733,8 @@ export default {
 												),
 												{
 													loading: 'Deleting  environment variable...',
-													success: () => `Environment variable ${row.key} removed`,
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')
