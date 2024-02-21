@@ -107,7 +107,7 @@ def validate_plan(secret_key):
 	except Exception as e:
 		frappe.throw(e)
 
-	if subscription["status"] == "Active":
+	if subscription["enabled"]:
 		# TODO: add a date filter(use start date from plan)
 		first_day = str(datetime.now().replace(day=1).date())
 		count = frappe.db.count(
