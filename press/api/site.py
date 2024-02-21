@@ -239,7 +239,7 @@ def get_app_subscriptions(app_plans, team: str):
 				"doctype": "Subscription",
 				"document_type": "Marketplace App",
 				"document_name": app_name,
-				"plan_type": "Marketplace App",
+				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"enabled": 1,
 				"team": team,
