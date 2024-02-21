@@ -342,6 +342,19 @@ export default {
 							}
 						},
 						{
+							label: 'Switch to App Server',
+							icon: icon('repeat'),
+							condition: () => server.doctype === 'Database Server',
+							onClick() {
+								router.push({
+									name: 'Server Detail Overview',
+									params: {
+										name: server.doc.name.replace('m', 'f')
+									}
+								});
+							}
+						},
+						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () => server.doc.status === 'Active',
@@ -440,7 +453,7 @@ export default {
 					import('../components/server/ServerOverview.vue')
 				),
 				props: server => {
-					return { server: server.doc.name };
+					return { server: server.doc.name, serverType: server.doctype };
 				}
 			},
 			{
@@ -452,7 +465,7 @@ export default {
 					import('../../src/views/server/ServerAnalytics.vue')
 				),
 				props: server => {
-					return { servers: server.doc.name };
+					return { serverName: server.doc.name };
 				}
 			},
 			{
@@ -603,11 +616,6 @@ export default {
 							label: 'Status',
 							fieldname: 'status',
 							type: 'Badge'
-						},
-						{
-							label: 'Job ID',
-							fieldname: 'job_id',
-							class: 'text-gray-600'
 						},
 						{
 							label: 'Duration',

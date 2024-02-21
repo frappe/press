@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import cstr
 
 from press.api.client import is_owned_by_team
+from press.utils import poly_get_doctype
 
 
 class AnsiblePlay(Document):
@@ -29,7 +30,8 @@ class AnsiblePlay(Document):
 		if not server:
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		is_owned_by_team("Server", server, raise_exception=True)
+		doctype = poly_get_doctype(["Server", "Database Server"], server)
+		is_owned_by_team(doctype, server, raise_exception=True)
 
 		results = query.run(as_dict=1)
 		return results

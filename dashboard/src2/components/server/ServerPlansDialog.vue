@@ -8,7 +8,7 @@
 					label: 'Change plan',
 					variant: 'solid',
 					onClick: changePlan,
-					disabled: !plan || ($server?.doc && plan === $server.doc.plan)
+					disabled: !plan || plan === $server?.doc.plan
 				}
 			]
 		}"
@@ -28,6 +28,10 @@ export default {
 	components: { ServerPlanCards },
 	props: {
 		server: {
+			type: String,
+			required: true
+		},
+		serverType: {
 			type: String,
 			required: true
 		}
@@ -55,7 +59,7 @@ export default {
 			return {
 				url: 'press.api.server.plans',
 				params: {
-					name: 'Server',
+					name: this.serverType,
 					cluster: this.$server.doc.cluster
 				},
 				auto: true,
@@ -84,7 +88,7 @@ export default {
 	},
 	computed: {
 		$server() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource(this.serverType, this.server);
 		}
 	}
 };

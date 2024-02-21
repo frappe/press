@@ -32,6 +32,7 @@ class BaseServer(Document, TagHelpers):
 		"cluster",
 		"status",
 		"team",
+		"database_server",
 	]
 	dashboard_actions = ["change_plan", "reboot", "rename"]
 

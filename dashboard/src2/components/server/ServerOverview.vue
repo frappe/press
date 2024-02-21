@@ -49,7 +49,7 @@ import { renderDialog } from '../../utils/components';
 import ServerPlansDialog from './ServerPlansDialog.vue';
 
 export default {
-	props: ['server'],
+	props: ['server', 'serverType'],
 	components: {
 		ServerPlansDialog
 	},
@@ -58,7 +58,12 @@ export default {
 			let ServerPlansDialog = defineAsyncComponent(() =>
 				import('./ServerPlansDialog.vue')
 			);
-			renderDialog(h(ServerPlansDialog, { server: this.server }));
+			renderDialog(
+				h(ServerPlansDialog, {
+					server: this.server,
+					serverType: this.serverType
+				})
+			);
 		}
 	},
 	computed: {
@@ -129,7 +134,7 @@ export default {
 			];
 		},
 		$server() {
-			return getCachedDocumentResource('Server', this.server);
+			return getCachedDocumentResource(this.serverType, this.server);
 		}
 	}
 };
