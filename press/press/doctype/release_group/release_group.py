@@ -43,7 +43,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document, TagHelpers):
-	dashboard_fields = ["title", "version", "apps"]
+	dashboard_fields = ["title", "version", "apps", "team"]
 	dashboard_actions = [
 		"remove_app",
 		"change_app_branch",

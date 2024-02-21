@@ -3,7 +3,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
@@ -816,6 +816,13 @@ export default {
 						}
 					},
 					options: [
+						{
+							label: 'Impersonate Team',
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
 						{
 							label: 'Drop Bench',
 							onClick() {

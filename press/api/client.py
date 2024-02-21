@@ -61,7 +61,7 @@ def get_list(
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
 		frappe.throw("parenttype and parent are required to get child records")
 
-	if meta.has_field("team") and not frappe.local.system_user():
+	if meta.has_field("team"):
 		valid_filters = valid_filters or frappe._dict()
 		valid_filters.team = frappe.local.team().name
 
@@ -330,9 +330,6 @@ def check_method_permissions(doctype, docname, method) -> None:
 def is_owned_by_team(doctype, docname, raise_exception=True):
 	if not frappe.local.team():
 		return False
-
-	if frappe.local.system_user():
-		return True
 
 	docname = cstr(docname)
 	owned = frappe.db.get_value(doctype, docname, "team") == frappe.local.team().name
