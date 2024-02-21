@@ -170,14 +170,14 @@
 		>
 			<template v-slot:body-content>
 				<ChangeAppPlanSelector
-					v-if="appToInstall?.document_name"
-					:app="appToInstall.document_name"
+					v-if="appToInstall?.app"
+					:app="appToInstall.app"
 					:frappeVersion="site?.frappe_version"
 					class="mb-9"
 					@change="
 						plan => {
 							selectedPlan = plan.name;
-							selectedPlanIsFree = plan.is_free;
+							selectedPlanIsFree = plan.price_usd === 0;
 						}
 					"
 				/>
@@ -328,7 +328,7 @@ export default {
 				},
 				validate() {
 					if (this.showPlanSelectionDialog && !this.selectedPlan) {
-						return 'Please select a plan to continue';
+						return 'Please aaa select a plan to continue';
 					}
 				},
 				onSuccess() {

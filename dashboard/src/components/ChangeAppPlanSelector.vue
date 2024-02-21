@@ -43,7 +43,7 @@
 import AppPlanCard from '@/components/AppPlanCard.vue';
 
 export default {
-	name: 'ChangeAppPlanCards',
+	name: 'ChangeAppPlanSelector',
 	components: {
 		AppPlanCard
 	},
