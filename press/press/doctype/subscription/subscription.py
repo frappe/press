@@ -187,16 +187,16 @@ def create_usage_records():
 
 
 def paid_plans():
-	free_plans = []
+	paid_plans = []
 	filter = {
 		"price_inr": (">", 0),
 		"enabled": 1,
 	}
 	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan"]
 	for doctype in doctypes:
-		free_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
+		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
 
-	return list(set(free_plans))
+	return list(set(paid_plans))
 
 
 def sites_with_free_hosting():
