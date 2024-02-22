@@ -927,3 +927,6 @@ class Agent:
 		return self.create_agent_job(
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)
+
+	def build_docker_image(self, data:dict):
+		return self.create_agent_job("Docker Image Build", "/builder/build", data=data)
