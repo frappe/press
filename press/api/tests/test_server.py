@@ -241,6 +241,9 @@ class TestAPIServer(FrappeTestCase):
 		)
 		server = frappe.get_last_doc("Server")
 		db_server = frappe.get_last_doc("Database Server")
+		frappe.db.set_value(
+			"Press Job", {"status": "Running"}, "status", "Success"
+		)  # Mark running jobs as success as extra steps we don't check
 
 		change_plan(
 			server.name,
@@ -255,6 +258,9 @@ class TestAPIServer(FrappeTestCase):
 		self.assertTrue(app_subscription.enabled)
 		self.assertEqual(server.plan, app_plan_2.name)
 		self.assertEqual(server.ram, app_plan_2.memory)
+		frappe.db.set_value(
+			"Press Job", {"status": "Running"}, "status", "Success"
+		)  # Mark running jobs as success as extra steps we don't check
 
 		change_plan(
 			db_server.name,
