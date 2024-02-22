@@ -21,7 +21,7 @@ export default {
 		title: 'Servers',
 		fields: [
 			'title',
-			'plan.plan_title as plan_title',
+			'plan.title as plan_title',
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
 			'cluster.image as cluster_image',

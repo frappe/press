@@ -23,9 +23,6 @@ class Plan(Document):
 		"max_database_usage",
 		"max_storage_usage",
 		"database_access",
-		"vcpu",
-		"memory",
-		"disk",
 		"support_included",
 	]
 

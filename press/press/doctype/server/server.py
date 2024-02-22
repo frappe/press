@@ -49,7 +49,7 @@ class BaseServer(Document, TagHelpers):
 		from press.api.client import get
 		from press.api.server import usage
 
-		doc.current_plan = get("Plan", self.plan) if self.plan else None
+		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
 		doc.usage = usage(self.name)
 
 		return doc

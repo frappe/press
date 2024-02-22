@@ -37,6 +37,7 @@ ALLOWED_DOCTYPES = [
 	"Server",
 	"Database Server",
 	"Ansible Play",
+	"Server Plan",
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
