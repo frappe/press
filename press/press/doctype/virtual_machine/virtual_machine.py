@@ -857,7 +857,7 @@ class VirtualMachine(Document):
 				"cluster": cluster,
 			}
 
-			client = frappe.get_doc("Virtual Machine", filters=filters).client()
+			client = frappe.get_doc("Virtual Machine", filters).client()
 			instance_ids = frappe.get_all(
 				"Virtual Machine",
 				filters=filters,
