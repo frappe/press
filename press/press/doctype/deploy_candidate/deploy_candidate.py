@@ -8,17 +8,20 @@ import re
 import shlex
 import shutil
 import subprocess
+import tarfile
+import tempfile
 from subprocess import Popen
 from typing import List
 
 import docker
 import dockerfile
-import frappe
 
+import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
+from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
 	AppReleasePair,
@@ -155,8 +158,7 @@ class DeployCandidate(Document):
 		self.pre_build(method="_build_and_deploy", staging=staging)
 
 	def _build_and_deploy(self, staging: bool):
-		self._build()
-		self._deploy(staging)
+		self._build(deploy_after_build=True, deploy_to_staging=staging)
 
 	def _deploy(self, staging=False):
 		try:
@@ -164,8 +166,12 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
 
-	def _build(self, no_cache=False):
-		self.status = "Running"
+	def _build(self, no_cache=False, deploy_after_build=False, deploy_to_staging=False):
+		def _mark_build_as_running():
+			self.status = "Running"
+			self.save()
+			frappe.db.commit()
+		self.status = "Preparing"
 		self.build_start = now()
 		self.is_single_container = True
 		self.is_ssh_enabled = True
@@ -177,31 +183,100 @@ class DeployCandidate(Document):
 		try:
 			self._prepare_build_directory()
 			self._prepare_build_context()
-			self._run_docker_build(no_cache)
-			self._push_docker_image()
+
+			# Fetch Remote Docker Builder Config
+			settings = frappe.db.get_value(
+				"Press Settings",
+				None,
+				[
+					"docker_registry_url",
+					"docker_registry_namespace",
+					"docker_registry_username",
+					"docker_registry_password",
+					"use_docker_remote_builder",
+					"docker_remote_builder_server"
+				],
+				as_dict=True,
+			)
+			if settings.use_docker_remote_builder:
+				agent = Agent(settings.docker_remote_builder_server)
+				# Upload build context to remote docker builder
+				build_context_archieve_filepath = self._tar_build_context()
+				print(build_context_archieve_filepath)
+				uploaded_filename = None
+				with open(build_context_archieve_filepath, "rb") as f:
+					uploaded_filename = agent.upload_build_context_for_docker_build(f)
+				if not uploaded_filename:
+					raise Exception("Failed to upload build context to remote docker builder")
+				agent.build_docker_image({
+					"deploy_candidate": self.name,
+					"deploy_after_build": deploy_after_build,
+					"filename": uploaded_filename,
+					"image_repository": self.docker_image_repository,
+					"image_tag": self.docker_image_tag,
+					"no_cache": no_cache,
+					"registry": {
+						"password": settings.docker_registry_password,
+						"url": settings.docker_registry_url,
+						"username": settings.docker_registry_username,
+					},
+					"build_steps": [{
+						"stage": step.stage,
+						"stage_slug": step.stage_slug,
+						"step": step.step,
+						"step_slug": step.step_slug,
+						"status": step.status,
+						"duration": step.duration,
+						"cached": step.cached,
+						"step_index": step.step_index,
+						"hash": step.hash,
+						"command": step.command,
+						"output": step.output,
+						"lines": step.lines
+					} for step in self.build_steps]
+				})
+				_mark_build_as_running()
+			else:
+				_mark_build_as_running()
+				self._run_docker_build(no_cache)
+				self._push_docker_image()
+				self._build_successful()
+				self._build_end()
+
+				# Deploy if deploy_after_build set
+				if self.status == "Success" and deploy_after_build:
+					self._deploy(deploy_to_staging)
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
-			self.status = "Failure"
-			bench_update = frappe.get_all(
-				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
-			)
-			if bench_update:
-				frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
-			frappe.db.commit()
+			self._build_failed()
+			self._build_end()
 			raise
-		else:
-			self.status = "Success"
-			bench_update = frappe.get_all(
-				"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
-			)
-			if bench_update:
-				frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
 
-		finally:
-			self.build_end = now()
-			self.build_duration = self.build_end - self.build_start
-			self.save()
-			frappe.db.commit()
+	def _build_failed(self):
+		self.status = "Failure"
+		bench_update = frappe.get_all(
+			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+		)
+		if bench_update:
+			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
+		self.save()
+		frappe.db.commit()
+
+	def _build_successful(self):
+		self.status = "Success"
+		bench_update = frappe.get_all(
+			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
+		)
+		if bench_update:
+			frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
+		self.save()
+		frappe.db.commit()
+
+	def _build_end(self):
+		self.build_end = now()
+		self.build_duration = self.build_end - self.build_start
+		self.save()
+		frappe.db.commit()
 
 	def add_build_steps(self):
 		if self.build_steps:
@@ -305,7 +380,6 @@ class DeployCandidate(Document):
 			_package_manager = p.package_manager.split("/")[-1]
 
 			if _package_manager in ["apt", "pip"]:
-
 				self.steps_additional_packages.append(
 					[
 						"pre",
@@ -555,6 +629,13 @@ class DeployCandidate(Document):
 
 		return app
 
+	def _tar_build_context(self) -> str:
+		"""Creates a tarball of the build context and returns the path to it."""
+		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
+		with tarfile.open(tmp_file_path, "w:gz") as tar:
+			tar.add(self.build_directory, arcname=".")
+		return tmp_file_path
+
 	command = "docker build"
 
 	def _run_docker_build(self, no_cache=False):
@@ -574,9 +655,9 @@ class DeployCandidate(Document):
 
 		# check if it's running on apple silicon mac
 		if (
-			platform.machine() == "arm64"
-			and platform.system() == "Darwin"
-			and platform.processor() == "arm"
+				platform.machine() == "arm64"
+				and platform.system() == "Darwin"
+				and platform.processor() == "arm"
 		):
 			self.command = f"{self.command}x build --platform linux/amd64"
 
@@ -760,7 +841,7 @@ class DeployCandidate(Document):
 			last_update = now()
 
 			for line in client.images.push(
-				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
+					self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
 			):
 				if "id" not in line.keys():
 					continue
