@@ -2,8 +2,8 @@
 # For license information, please see license.txt
 
 # import frappe
-from frappe.model.document import Document
+from press.press.doctype.site_plan.plan import Plan
 
 
-class ServerPlan(Document):
+class ServerPlan(Plan):
 	pass
