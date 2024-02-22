@@ -175,6 +175,10 @@
   "log_server",
   "telegram_alert_chat_id",
   "telegram_alerts_chat_group",
+  "development_section",
+  "development_server",
+  "column_break_oukg",
+  "development_server_namespace",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -1138,11 +1142,32 @@
    "fieldname": "realtime_job_updates",
    "fieldtype": "Check",
    "label": "Realtime Job Updates"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "development_section",
+   "fieldtype": "Section Break",
+   "label": "Development"
+  },
+  {
+   "fieldname": "development_server",
+   "fieldtype": "Link",
+   "label": "Development Server",
+   "options": "Development Server"
+  },
+  {
+   "fieldname": "column_break_oukg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "development_server_namespace",
+   "fieldtype": "Data",
+   "label": "Development Server Namespace"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-22 11:44:28.735617",
+ "modified": "2024-02-22 11:48:15.043438",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
