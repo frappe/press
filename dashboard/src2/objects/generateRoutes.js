@@ -27,6 +27,16 @@ export default function generateRoutes() {
 					return { objectType, ...route.params };
 				}
 			});
+			if (object.create.secondaryCreate) {
+				routes.push({
+					name: object.create.secondaryCreate.routeName,
+					path: object.create.secondaryCreate.route,
+					component: () => import('../pages/NewObject.vue'),
+					props: route => {
+						return { objectType, ...route.params };
+					}
+				});
+			}
 		}
 		if (object.detail) {
 			let children = object.detail.tabs.map(tab => {

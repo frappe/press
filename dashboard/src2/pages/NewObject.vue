@@ -99,11 +99,19 @@ export default {
 		objectType: {
 			type: String,
 			required: true
+		},
+		server: {
+			type: String,
+			default: ''
+		},
+		bench: {
+			type: String,
+			default: ''
 		}
 	},
 	data() {
 		return {
-			vals: {}
+			vals: this.server ? { server: this.server } : {}
 		};
 	},
 	components: {
@@ -123,6 +131,30 @@ export default {
 			return getObject(this.objectType);
 		},
 		breadcrumbs() {
+			if (this.object.create.secondaryCreate.routeName === this.$route.name) {
+				let isObjectServer = Object.keys(this.vals)[0] === 'server';
+				let objectName = Object.values(this.vals)[0];
+
+				return [
+					{
+						label: isObjectServer ? 'Servers' : 'Benches',
+						route: isObjectServer ? '/servers' : '/benches'
+					},
+					{
+						label: objectName,
+						route: {
+							name: isObjectServer
+								? 'Server Detail Benches'
+								: 'Release Group Detail Sites',
+							params: { name: objectName }
+						}
+					},
+					{
+						label: this.object.create.title,
+						route: this.$route.path
+					}
+				];
+			}
 			return [
 				{ label: this.object.list.title, route: this.object.list.route },
 				{
@@ -132,10 +164,24 @@ export default {
 			];
 		},
 		options() {
-			return this.object.create.options;
+			let options = this.object.create.options;
+			if (
+				this.object.create.secondaryCreate &&
+				this.$route.name === this.object.create.secondaryCreate.routeName
+			) {
+				options = options.filter(
+					option =>
+						!this.object.create.secondaryCreate.optionalFields.includes(
+							option.fieldname
+						)
+				);
+			}
+			return options;
 		},
 		summary() {
-			return this.object.create.summary;
+			return this.object.create.summary.filter(
+				summaryItem => !summaryItem.hideWhen || !this.vals[summaryItem.hideWhen]
+			);
 		},
 		optionsData() {
 			return this.$resources.optionsData.data;
@@ -154,6 +200,11 @@ export default {
 			for (let option of this.options) {
 				if (!this.showOption(option)) return false;
 			}
+
+			for (let summaryItem of this.summary) {
+				if (!this.vals[summaryItem.fieldname]) return false;
+			}
+
 			return true;
 		}
 	},

@@ -83,6 +83,11 @@ export default {
 	create: {
 		route: '/benches/new',
 		title: 'New Bench',
+		secondaryCreate: {
+			route: '/servers/:server/benches/new',
+			optionalFields: ['clusters'],
+			routeName: 'Server New Bench'
+		},
 		optionsResource: {
 			url: 'press.api.bench.options',
 			initialData: {
@@ -119,7 +124,7 @@ export default {
 						bench: {
 							title: vals.benchTitle,
 							version: vals.benchVersion,
-							cluster: vals.benchRegion,
+							cluster: vals.benchRegion || null,
 							saas_app: null,
 							apps: [
 								// some wizardry to only pick frappe for the chosen version
@@ -140,10 +145,16 @@ export default {
 		},
 		options: [
 			{
+				label: 'Bench Title',
+				name: 'benchTitle',
+				type: 'text'
+			},
+			{
 				label: 'Select Frappe Framework Version',
 				name: 'benchVersion',
 				type: 'card',
-				fieldname: 'versions'
+				fieldname: 'versions',
+				dependsOn: ['benchTitle']
 			},
 			{
 				label: 'Select Region',
@@ -151,12 +162,6 @@ export default {
 				type: 'card',
 				fieldname: 'clusters',
 				dependsOn: ['benchVersion']
-			},
-			{
-				label: 'Bench Title',
-				name: 'benchTitle',
-				type: 'text',
-				dependsOn: ['benchVersion', 'benchRegion']
 			}
 		],
 		summary: [
@@ -166,7 +171,13 @@ export default {
 			},
 			{
 				label: 'Region',
-				fieldname: 'benchRegion'
+				fieldname: 'benchRegion',
+				hideWhen: 'server'
+			},
+			{
+				label: 'Server',
+				fieldname: 'server',
+				hideWhen: 'benchRegion'
 			},
 			{
 				label: 'Frappe Version',

@@ -1075,6 +1075,8 @@ def new_release_group(
 				limit=1,
 			)[0]
 		servers = [{"server": server}]
+	elif server:
+		servers = [{"server": server}]
 	else:
 		servers = []
 	group = frappe.get_doc(

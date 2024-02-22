@@ -517,7 +517,7 @@ export default {
 							},
 							onClick() {
 								router.push({
-									name: 'NewServerBench',
+									name: 'Server New Bench',
 									params: { server: server.doc.name }
 								});
 							}
