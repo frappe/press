@@ -76,6 +76,8 @@
   "column_break_66",
   "code_server",
   "code_server_password",
+  "use_docker_remote_builder",
+  "docker_remote_builder_server",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1122,11 +1124,23 @@
    "fieldname": "disable_agent_job_deduplication",
    "fieldtype": "Check",
    "label": "Disable Agent Job Deduplication"
+  },
+  {
+   "default": "0",
+   "fieldname": "use_docker_remote_builder",
+   "fieldtype": "Check",
+   "label": "Use Docker Remote Builder"
+  },
+  {
+   "fieldname": "docker_remote_builder_server",
+   "fieldtype": "Link",
+   "label": "Docker Remote Builder Server",
+   "options": "Server"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-09 17:29:14.471254",
+ "modified": "2024-02-22 13:26:09.368422",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
