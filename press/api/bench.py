@@ -672,6 +672,8 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 			limit=limit_page_length,
 			ignore_ifnull=True,
 		)
+		for job in jobs:
+			job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
 	else:
 		jobs = []
 	return jobs

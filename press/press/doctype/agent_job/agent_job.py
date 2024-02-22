@@ -62,6 +62,8 @@ class AgentJob(Document):
 
 		results = query.run(as_dict=1)
 		for result in results:
+			if result.status == "Undelivered":
+				result.status = "Pending"
 			# agent job start and end are in utc
 			if result.start:
 				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
@@ -70,6 +72,9 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
+		if doc.status == "Undelivered":
+			doc.status = "Pending"
+
 		doc["steps"] = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.name},
