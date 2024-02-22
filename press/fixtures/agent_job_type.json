@@ -1906,5 +1906,23 @@
     "step_name": "Optimize Tables"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 0,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-02-22 20:01:05.606166",
+  "name": "Docker Image Build",
+  "request_method": "POST",
+  "request_path": "builder/build",
+  "steps": [
+   {
+    "parent": "Docker Image Build",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Docker Image Build"
+   }
+  ]
  }
 ]
