@@ -1,7 +1,7 @@
 <template>
 	<Table
 		:columns="[
-			{ label: 'Bench Name', title: 'name', width: 2 },
+			{ label: 'Bench Name', name: 'title', width: 2 },
 			{ label: 'Status', name: 'status' },
 			{ label: 'Version', name: 'version' },
 			{ label: 'Tags', name: 'tags' },
