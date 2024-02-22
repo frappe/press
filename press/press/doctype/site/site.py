@@ -2074,7 +2074,10 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def process_restore_job_update(job):
+def process_restore_job_update(job, force=False):
+	"""
+	force: force updates apps table sync
+	"""
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
@@ -2083,7 +2086,7 @@ def process_restore_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
-	if updated_status != site_status:
+	if force or updated_status != site_status:
 		if job.status == "Success":
 			apps = [line.split()[0] for line in job.output.splitlines()]
 			site = frappe.get_doc("Site", job.site)

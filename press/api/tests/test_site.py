@@ -383,6 +383,7 @@ insights 0.8.3	    HEAD
 		group = create_test_release_group([app, app2])
 		plan = create_test_plan("Site")
 		create_test_bench(group=group)
+		subdomain = "testsite"
 
 		# frappe.set_user(self.team.user) # can't this due to weird perm error with ignore_perimssions in new site
 		database = create_test_remote_file().name
@@ -396,13 +397,16 @@ insights 0.8.3	    HEAD
 erpnext 0.8.3	    HEAD
 """
 			),
+		), fake_agent_job(
+			"Add Site to Upstream",
+			"Success",
 		):
 			new(
 				{
-					"name": "testsite",
+					"name": subdomain,
 					"group": group.name,
 					"plan": plan.name,
-					"apps": [app.name],
+					"apps": [app.name],  # giving 1 app only
 					"files": {
 						"database": database,
 						"public": public,
@@ -413,7 +417,7 @@ erpnext 0.8.3	    HEAD
 			)
 			poll_pending_jobs()
 
-		site = frappe.get_last_doc("Site")
+		site = frappe.get_last_doc("Site", {"subdomain": subdomain})
 		self.assertEqual(len(site.apps), 2)
 		self.assertEqual(site.apps[0].app, "frappe")
 		self.assertEqual(site.apps[1].app, "erpnext")
