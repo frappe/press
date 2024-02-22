@@ -81,13 +81,20 @@ class Bench(Document):
 
 		if not self.apps:
 			for release in candidate.apps:
+				app_release = release.release
+				app_hash = release.hash
+
+				if release.pullable_release and release.pullable_hash:
+					app_release = release.pullable_release
+					app_hash = release.pullable_hash
+
 				self.append(
 					"apps",
 					{
-						"release": release.release,
+						"release": app_release,
 						"source": release.source,
 						"app": release.app,
-						"hash": release.hash,
+						"hash": app_hash,
 					},
 				)
 
@@ -326,7 +333,7 @@ class Bench(Document):
 			JOIN tabSubscription subscription
 			ON site.name = subscription.document_name
 
-			JOIN tabPlan plan
+			JOIN `tabSite Plan` plan
 			ON subscription.plan = plan.name
 
 			WHERE site.bench = "{self.name}"
@@ -662,7 +669,7 @@ def sync_benches():
 	for bench in benches:
 		frappe.enqueue(
 			"press.press.doctype.bench.bench.sync_bench",
-			queue="long",
+			queue="sync",
 			name=bench,
 			enqueue_after_commit=True,
 		)
@@ -697,7 +704,7 @@ def sync_analytics():
 	for bench in benches:
 		frappe.enqueue(
 			"press.press.doctype.bench.bench.sync_bench_analytics",
-			queue="long",
+			queue="sync",
 			name=bench,
 			enqueue_after_commit=True,
 		)

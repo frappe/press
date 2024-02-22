@@ -11,7 +11,13 @@ DEFAULT_PERMISSIONS = {
 
 class PressPermissionGroup(Document):
 	dashboard_fields = ["title"]
-	dashboard_actions = ["get_users", "add_user", "remove_user", "update_permissions"]
+	dashboard_actions = [
+		"get_users",
+		"add_user",
+		"remove_user",
+		"update_permissions",
+		"get_all_document_permissions",
+	]
 
 	def validate(self):
 		self.validate_permissions()
@@ -84,6 +90,12 @@ class PressPermissionGroup(Document):
 		if user_belongs_to_group:
 			frappe.throw(f"{user} already belongs to {self.title}")
 
+		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
+		if user_is_team_owner:
+			frappe.throw(
+				f"{user} cannot be added to {self.title} because they are the owner of {self.team}"
+			)
+
 		self.append("users", {"user": user})
 		self.save()
 
@@ -111,7 +123,8 @@ class PressPermissionGroup(Document):
 
 		user = frappe.session.user
 		user_belongs_to_group = self.get("users", {"user": user})
-		if not user_belongs_to_group and user != "Administrator":
+		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
+		if not user_belongs_to_group and user != "Administrator" and not user_is_team_owner:
 			frappe.throw(f"{user} does not belong to {self.name}")
 
 		if doctype not in get_all_restrictable_doctypes():
@@ -124,7 +137,6 @@ class PressPermissionGroup(Document):
 		options = []
 		fields = ["name", "title"] if doctype != "Site" else ["name"]
 		docs = get_list(doctype=doctype, fields=fields)
-		print(docs)
 
 		for doc in docs:
 			permitted_methods = get_permitted_methods(doctype, doc.name, group_names=[self.name])

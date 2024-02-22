@@ -14,7 +14,11 @@ from press.press.doctype.team.test_team import create_test_team
 
 
 def create_test_subscription(
-	document_name: str, plan: str, team: str, document_type: str = "Site"
+	document_name: str,
+	plan: str,
+	team: str,
+	document_type: str = "Site",
+	plan_type: str = "Site Plan",
 ):
 
 	subscription = frappe.get_doc(
@@ -23,7 +27,9 @@ def create_test_subscription(
 			"document_type": document_type,
 			"document_name": document_name,
 			"team": team,
+			"plan_type": plan_type,
 			"plan": plan,
+			"site": document_name if document_type == "Site" else None,
 		}
 	).insert(ignore_if_duplicate=True)
 	subscription.reload()
@@ -43,7 +49,7 @@ class TestSubscription(unittest.TestCase):
 	def test_subscription_daily(self):
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
-			doctype="Plan",
+			doctype="Site Plan",
 			name="Plan-10",
 			document_type="ToDo",
 			interval="Daily",
@@ -56,6 +62,7 @@ class TestSubscription(unittest.TestCase):
 			team=self.team.name,
 			document_type="ToDo",
 			document_name=todo.name,
+			plan_type="Site Plan",
 			plan=plan.name,
 		).insert()
 
@@ -88,7 +95,7 @@ class TestSubscription(unittest.TestCase):
 	def test_subscription_for_non_chargeable_document(self):
 		todo = frappe.get_doc(doctype="ToDo", description="Test todo").insert()
 		plan = frappe.get_doc(
-			doctype="Plan",
+			doctype="Site Plan",
 			name="Plan-10",
 			document_type="ToDo",
 			interval="Daily",
@@ -101,6 +108,7 @@ class TestSubscription(unittest.TestCase):
 			team=self.team.name,
 			document_type="ToDo",
 			document_name=todo.name,
+			plan_type="Site Plan",
 			plan=plan.name,
 		).insert()
 
@@ -124,7 +132,7 @@ class TestSubscription(unittest.TestCase):
 		site.save()
 
 		plan = frappe.get_doc(
-			doctype="Plan",
+			doctype="Site Plan",
 			name="Plan-10",
 			document_type="Site",
 			interval="Daily",
@@ -138,6 +146,7 @@ class TestSubscription(unittest.TestCase):
 			team=self.team.name,
 			document_type="Site",
 			document_name=site.name,
+			plan_type="Site Plan",
 			plan=plan.name,
 		).insert()
 

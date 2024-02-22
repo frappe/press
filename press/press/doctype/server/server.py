@@ -399,7 +399,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
-		plan = frappe.get_doc("Plan", plan)
+		plan = frappe.get_doc("Server Plan", plan)
 		self.ram = plan.memory
 		self.save()
 		self.reload()
@@ -419,6 +419,20 @@ class BaseServer(Document):
 		self.run_press_job("Create Server Snapshot")
 
 	def run_press_job(self, job_name, arguments=None):
+		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		if existing_jobs := frappe.db.get_all(
+			"Press Job",
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"server_type": self.doctype,
+				"server": self.name,
+			},
+			["job_type", "status"],
+		):
+			frappe.throw(
+				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
+			)
+
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(
@@ -434,9 +448,13 @@ class BaseServer(Document):
 
 	def get_certificate(self):
 		if self.is_self_hosted:
+			self_hosted = frappe.db.get_value(
+				"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
+			)
+
 			certificate_name = frappe.db.get_value(
 				"TLS Certificate",
-				{"domain": f"{self.hostname}.{self.self_hosted_server_domain}"},
+				{"domain": f"{self_hosted.hostname}.{self_hosted.domain}"},
 				"name",
 			)
 		else:
@@ -459,18 +477,29 @@ class BaseServer(Document):
 		return frappe.get_doc("Cluster", self.cluster).get_password("monitoring_password")
 
 	@frappe.whitelist()
-	def increase_swap(self):
+	def increase_swap(self, swap_size=4):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_increase_swap",
+			queue="long",
+			timeout=1200,
+			**{"swap_size": swap_size},
+		)
+
+	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
 
-		swap_size = calculate_swap(self.name).get("swap", 0)
+		existing_swap_size = calculate_swap(self.name).get("swap", 0)
 		# We used to do 4 GB minimum swap files, to avoid conflict, name files accordingly
-		swap_file_name = "swap" + str(int((swap_size // 4) + 1))
+		swap_file_name = "swap" + str(int((existing_swap_size // 4) + 1))
 		try:
 			ansible = Ansible(
 				playbook="increase_swap.yml",
 				server=self,
 				variables={
+					"swap_size": swap_size,
 					"swap_file": swap_file_name,
 				},
 			)

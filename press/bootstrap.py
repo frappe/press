@@ -296,11 +296,11 @@ def setup_teams():
 def setup_plans():
 	plans = [("Free", 0), ("USD 10", 10), ("USD 25", 25)]
 	for index, plan in enumerate(plans, 1):
-		if frappe.db.exists("Plan", plan[0]):
+		if frappe.db.exists("Site Plan", plan[0]):
 			continue
 		frappe.get_doc(
 			{
-				"doctype": "Plan",
+				"doctype": "Site Plan",
 				"name": plan[0],
 				"document_type": "Site",
 				"plan_title": plan[0],

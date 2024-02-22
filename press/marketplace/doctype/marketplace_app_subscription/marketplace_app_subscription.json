@@ -82,7 +82,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "read_only": 1
   },
   {
@@ -106,7 +106,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-06-27 14:26:09.055778",
+ "modified": "2024-02-05 23:05:21.509377",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Subscription",

@@ -19,7 +19,7 @@ ALLOWED_DOCTYPES = [
 	"Site Activity",
 	"Site Config",
 	"Site Config Key",
-	"Plan",
+	"Site Plan",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -34,6 +34,11 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate",
 	"Agent Job",
 	"Common Site Config",
+	"Release Group Variable",
+	"Resource Tag",
+	"Press Tag",
+	"User",
+	"Partner Approval Request",
 ]
 
 
@@ -140,9 +145,14 @@ def insert(doc=None):
 
 		# inserting a child record
 		parent = frappe.get_doc(doc.parenttype, doc.parent)
+
+		if frappe.get_meta(parent.doctype).has_field("team"):
+			if parent.team != frappe.local.team().name:
+				raise_not_permitted()
+
 		parent.append(doc.parentfield, doc)
 		parent.save()
-		return parent
+		return get(parent.doctype, parent.name)
 
 	_doc = frappe.get_doc(doc)
 

@@ -8,7 +8,11 @@
 		"
 	>
 		<slot v-bind="{ hasMethodPermission: hasMethodPermission.data }">
-			<Button v-bind="$attrs" :disabled="!hasMethodPermission.data"></Button>
+			<Button
+				class="whitespace-nowrap"
+				v-bind="$attrs"
+				:disabled="!hasMethodPermission.data"
+			></Button>
 		</slot>
 	</component>
 </template>

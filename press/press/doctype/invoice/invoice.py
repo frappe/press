@@ -48,6 +48,23 @@ class Invoice(Document):
 		"due_date",
 	]
 
+	@staticmethod
+	def get_list_query(query, filters=None, **list_args):
+		partner_customer = filters.get("partner_customer")
+		if partner_customer:
+			team_name = filters.get("team")
+			due_date = filters.get("due_date")
+			filters.pop("partner_customer")
+			invoice = frappe.qb.DocType("Invoice")
+			query = (
+				frappe.qb.from_(invoice)
+				.select(
+					invoice.name, invoice.total, invoice.amount_due, invoice.status, invoice.due_date
+				)
+				.where((invoice.team == team_name) & (invoice.due_date >= due_date[1]))
+			)
+		return query
+
 	def get_doc(self, doc):
 		doc.invoice_pdf = self.invoice_pdf or (self.currency == "USD" and self.get_pdf())
 
@@ -362,7 +379,7 @@ class Invoice(Document):
 		for item in self.items:
 			if not item.description and item.document_type == "Site" and item.plan:
 				site_name = item.document_name.split(".archived")[0]
-				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
+				plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
 				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 

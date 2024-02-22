@@ -56,7 +56,10 @@
 					</p>
 					<div class="mt-4">
 						<AppSourceSelector
-							:apps="selectedVersion.apps"
+							:apps="[
+								...selectedVersion.apps.filter(app => app.name === 'frappe'),
+								...selectedVersion.apps.filter(app => app.name !== 'frappe')
+							]"
 							v-model="selectedApps"
 							:multiple="true"
 						/>

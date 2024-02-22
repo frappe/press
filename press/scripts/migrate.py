@@ -246,7 +246,7 @@ def render_teams_table(teams):
 
 
 def render_plan_table(plans_list):
-	plans_table = [["Plan", "CPU Time"]]
+	plans_table = [["Site Plan", "CPU Time"]]
 	visible_headers = ["name", "cpu_time_per_day"]
 
 	for plan in plans_list:

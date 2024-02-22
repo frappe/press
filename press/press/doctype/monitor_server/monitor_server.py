@@ -84,6 +84,7 @@ class MonitorServer(BaseServer):
 					"press_app_server": frappe.local.site,
 					"press_db_server": f"db.{frappe.local.site}",
 					"press_url": press_url,
+					"prometheus_data_directory": self.prometheus_data_directory,
 					"monitor_token": monitor_token,
 					"registries_json": json.dumps(registries),
 					"log_servers_json": json.dumps(log_servers),

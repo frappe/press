@@ -6,7 +6,6 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
-ENV NODE_ENV production
 
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
@@ -126,13 +125,13 @@ RUN useradd -ms /bin/bash frappe
 
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 {% endif %}
 
 {% if p.package_manager not in ["apt-get", "apt"] %}
 
 RUN {{ p.package_manager }} install {{ p.package }} \
- `#stage-pre-{{ p.package }}`
+  `#stage-pre-{{ p.package }}`
 
 {% else %}
 
@@ -220,7 +219,14 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 {% for app in doc.apps %}
 {% if app.app != "frappe" %}
 
-RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} bench get-app file:///home/frappe/context/apps/{{ app.app }} `#stage-apps-{{ app.app }}`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
+  --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
+  bench get-app file:///home/frappe/context/apps/{{ app.app }} \
+    {% if doc.use_app_cache %}
+    # Bench get-app flags to use get-app cache
+    --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
+    {% endif %}
+  `#stage-apps-{{ app.app }}`
 
 {% endif %}
 {% endfor %}
@@ -238,6 +244,9 @@ RUN --mount=type=bind,source=app_updates/{{ app.app }},target=/home/frappe/conte
 {% endif %}
 {% endfor %}
 
+
+# Validate dependencies
+RUN ["/bin/bash", "-c", "if bench validate-dependencies --help 1> /dev/null 2> /dev/null; then bench validate-dependencies; else echo skipped; fi;"] `#stage-validate-dependencies`
 
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt

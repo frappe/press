@@ -14,6 +14,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from press.press.doctype.server.server import Server
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.utils import (
 	get_last_doc,
 	get_app_tag,
@@ -25,6 +26,8 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from typing import TYPE_CHECKING
 from frappe.utils import cstr
+from frappe import _
+import semantic_version as sv
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -39,14 +42,16 @@ DEFAULT_DEPENDENCIES = [
 ]
 
 
-class ReleaseGroup(Document):
-	dashboard_fields = ["title", "version", "apps"]
+class ReleaseGroup(Document, TagHelpers):
+	dashboard_fields = ["title", "version", "apps", "team"]
 	dashboard_actions = [
 		"remove_app",
 		"change_app_branch",
 		"fetch_latest_app_update",
 		"delete_config",
 		"update_config",
+		"update_environment_variable",
+		"delete_environment_variable",
 		"update_dependency",
 		"add_region",
 		"deployed_versions",
@@ -97,11 +102,13 @@ class ReleaseGroup(Document):
 		self.validate_servers()
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
+		self.validate_feature_flags()
 
 	def before_insert(self):
 		# to avoid ading deps while cloning a release group
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
+		self.set_default_app_cache_flags()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -260,6 +267,34 @@ class ReleaseGroup(Document):
 
 		self.save()
 
+	@frappe.whitelist()
+	def update_environment_variable(self, environment_variables: dict):
+		for key, value in environment_variables.items():
+			is_updated = False
+			for env_var in self.environment_variables:
+				if env_var.key == key:
+					if env_var.internal:
+						frappe.throw(
+							f"Environment variable {env_var.key} is internal and cannot be updated"
+						)
+					else:
+						env_var.value = value
+						is_updated = True
+			if not is_updated:
+				self.append(
+					"environment_variables", {"key": key, "value": value, "internal": False}
+				)
+		self.save()
+
+	@frappe.whitelist()
+	def delete_environment_variable(self, key):
+		updated_env_variables = []
+		for env_var in self.environment_variables:
+			if env_var.key != key or env_var.internal:
+				updated_env_variables.append(env_var)
+		self.environment_variables = updated_env_variables
+		self.save()
+
 	def validate_title(self):
 		if frappe.get_all(
 			"Release Group",
@@ -342,6 +377,21 @@ class ReleaseGroup(Document):
 					frappe.ValidationError,
 				)
 
+	def validate_feature_flags(self) -> None:
+		if self.use_app_cache and not self.can_use_get_app_cache():
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.2 or later"))
+
+	def can_use_get_app_cache(self) -> bool:
+		version = find(
+			self.dependencies,
+			lambda x: x.dependency == "BENCH_VERSION",
+		).version
+
+		try:
+			return sv.Version(version) in sv.SimpleSpec(">=5.21.3")
+		except ValueError:
+			return False
+
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
@@ -352,6 +402,8 @@ class ReleaseGroup(Document):
 			return
 
 		apps = self.get_apps_to_update(apps_to_update)
+		if apps_to_update is None:
+			self.validate_dc_apps_against_rg(apps)
 
 		dependencies = [
 			{"dependency": d.dependency, "version": d.version} for d in self.dependencies
@@ -384,6 +436,22 @@ class ReleaseGroup(Document):
 		).insert()
 
 		return candidate
+
+	def validate_dc_apps_against_rg(self, dc_apps) -> None:
+		app_map = {app["app"]: app for app in dc_apps}
+		not_found = []
+		for app in self.apps:
+			if app.app in app_map:
+				continue
+			not_found.append(app.app)
+
+		if not not_found:
+			return
+
+		msg = _(
+			"Following apps {0} not found. Potentially due to not approved App Releases."
+		).format(not_found)
+		frappe.throw(msg)
 
 	def get_apps_to_update(self, apps_to_update):
 		# If apps_to_update is None, try to update all apps
@@ -502,7 +570,7 @@ class ReleaseGroup(Document):
 			.run(as_dict=True)
 		)
 
-		Plan = frappe.qb.DocType("Plan")
+		Plan = frappe.qb.DocType("Site Plan")
 		plan_data = (
 			frappe.qb.from_(Plan)
 			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
@@ -969,6 +1037,22 @@ class ReleaseGroup(Document):
 		)
 		self.enabled = 0
 		self.save()
+
+	def set_default_app_cache_flags(self):
+		if self.use_app_cache:
+			return
+
+		if not frappe.db.get_single_value("Press Settings", "use_app_cache"):
+			return
+
+		if not self.can_use_get_app_cache():
+			return
+
+		self.use_app_cache = 1
+		self.compress_app_cache = frappe.db.get_single_value(
+			"Press Settings",
+			"compress_app_cache",
+		)
 
 
 def new_release_group(

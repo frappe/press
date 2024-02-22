@@ -3,11 +3,12 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Release Group',
@@ -17,13 +18,17 @@ export default {
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
+		updateEnvironmentVariable: 'update_environment_variable',
+		deleteEnvironmentVariable: 'delete_environment_variable',
 		updateDependency: 'update_dependency',
 		addRegion: 'add_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
 		archive: 'archive',
 		getCertificate: 'get_certificate',
-		generateCertificate: 'generate_certificate'
+		generateCertificate: 'generate_certificate',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/benches',
@@ -77,6 +82,9 @@ export default {
 	},
 	detail: {
 		titleField: 'title',
+		statusBadge({ documentResource: releaseGroup }) {
+			return { label: releaseGroup.doc.status };
+		},
 		route: '/benches/:name',
 		tabs: [
 			{
@@ -304,7 +312,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -324,6 +332,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -381,6 +394,11 @@ export default {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
 						},
 						{
 							label: '',
@@ -453,7 +471,7 @@ export default {
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
-							label: 'Show Config Preview',
+							label: 'Preview',
 							slots: {
 								prefix: icon('eye')
 							},
@@ -513,6 +531,116 @@ export default {
 												{
 													loading: 'Deleting config...',
 													success: () => `Config ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
+				}
+			},
+			{
+				label: 'Environment Variable',
+				icon: icon('tool'),
+				route: 'bench-environment-variable',
+				type: 'list',
+				list: {
+					doctype: 'Release Group Variable',
+					filters: releaseGroup => {
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['name'],
+					columns: [
+						{
+							label: 'Environment Variable Name',
+							fieldname: 'key'
+						},
+						{
+							label: 'Environment Variable Value',
+							fieldname: 'value'
+						}
+					],
+					primaryAction({
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return {
+							label: 'Add Environment Variable',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let EnvironmentVariableEditorDialog = defineAsyncComponent(() =>
+									import('../components/EnvironmentVariableEditorDialog.vue')
+								);
+								renderDialog(
+									h(EnvironmentVariableEditorDialog, {
+										group: releaseGroup.doc.name,
+										onSuccess() {
+											environmentVariables.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({
+						row,
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/EnvironmentVariableEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											group: releaseGroup.doc.name,
+											environment_variable: row,
+											onSuccess() {
+												environmentVariables.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Environment Variable',
+										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
+											toast.promise(
+												releaseGroup.deleteEnvironmentVariable.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															environmentVariables.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting  environment variable...',
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')
@@ -636,7 +764,8 @@ export default {
 						};
 					}
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
@@ -683,10 +812,17 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					options: [
+						{
+							label: 'Impersonate Team',
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
 						{
 							label: 'Drop Bench',
 							onClick() {

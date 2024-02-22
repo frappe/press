@@ -182,7 +182,9 @@ def get_app_counts_for_groups(rg_names):
 @frappe.whitelist()
 def exists(title):
 	team = get_current_team()
-	return bool(frappe.db.exists("Release Group", {"title": title, "team": team}))
+	return bool(
+		frappe.db.exists("Release Group", {"title": title, "team": team, "enabled": True})
+	)
 
 
 @frappe.whitelist()
@@ -466,7 +468,7 @@ def versions(name):
 		.run(as_dict=True)
 	)
 
-	Plan = frappe.qb.DocType("Plan")
+	Plan = frappe.qb.DocType("Site Plan")
 	plan_data = (
 		frappe.qb.from_(Plan)
 		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
@@ -484,6 +486,7 @@ def versions(name):
 
 	for version in deployed_versions:
 		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+		version.version = rg_version
 		for site in version.sites:
 			site.version = rg_version
 			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
@@ -840,7 +843,7 @@ def update_all_sites(name):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).server_logs
