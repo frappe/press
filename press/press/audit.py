@@ -171,7 +171,7 @@ class BackupRecordCheck(Audit):
 	def __init__(self):
 		log = {self.list_key: [], self.backup_summary: {}}
 		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
-		trial_plans = tuple(frappe.get_all("Plan", dict(is_trial_plan=1), pluck="name"))
+		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
 		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
 		tuples = frappe.db.sql(
 			f"""
@@ -393,7 +393,7 @@ class BillingAudit(Audit):
 		# last day of previous month
 		last_day = frappe.utils.get_last_day(frappe.utils.add_months(today, -1))
 
-		plan = frappe.qb.DocType("Plan")
+		plan = frappe.qb.DocType("Site Plan")
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)

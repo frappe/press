@@ -68,8 +68,9 @@ class DeployCandidate(Document):
 		series = f"deploy-{group}-.######"
 		self.name = make_autoname(series)
 
-	def after_insert(self):
-		return
+	def before_insert(self):
+		if self.status == "Draft":
+			self.build_duration = 0
 
 	def on_trash(self):
 		frappe.db.delete(
@@ -338,6 +339,15 @@ class DeployCandidate(Document):
 	def _set_app_cached_flags(self) -> None:
 		cached = get_cached_apps()
 		for app in self.apps:
+			"""
+			Temporary workaround cause get-app fails if repo owner is not 'frappe' or 'erpnext'
+			A fix has been deployed but due a build dependency issue, it cannot be released.
+
+			Ref: https://github.com/frappe/bench/pull/1536
+			"""
+			if frappe.get_value("App Source", "SRC-frappe-002", "repository_owner") != "frappe":
+				continue
+
 			if app.hash[:10] not in cached.get(app.app, []):
 				continue
 

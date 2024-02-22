@@ -17,7 +17,6 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from frappe.utils.safe_exec import safe_exec
-from frappe.utils import get_datetime
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -398,46 +397,11 @@ class MarketplaceApp(WebsiteGenerator):
 		return get_plans_for_app(self.name, frappe_version)
 
 	def can_charge_for_subscription(self, subscription):
-		marketplace_app_plan, plan, site, team, status = frappe.get_value(
-			"Marketplace App Subscription",
-			subscription.marketplace_app_subscription,
-			["marketplace_app_plan", "plan", "site", "team", "status"],
-		)
-
 		return (
-			status == "Active"
-			and team
-			and team != "Administrator"
-			and self.should_create_usage_record(marketplace_app_plan, plan, site)
+			subscription.enabled == 1
+			and subscription.team
+			and subscription.team != "Administrator"
 		)
-
-	def should_create_usage_record(self, marketplace_app_plan, plan, site):
-		"""Check if the user can create a usage record for this app"""
-		is_free = frappe.db.get_value("Marketplace App Plan", marketplace_app_plan, "is_free")
-
-		if is_free:
-			return False
-
-		# For annual prepaid plans
-		plan_interval = frappe.db.get_value("Plan", plan, "interval")
-
-		if plan_interval == "Annually":
-			return False
-
-		# For non-active sites
-		site_status, trial_site, free = frappe.db.get_value(
-			"Site", site, ["status", "trial_end_date", "free"]
-		)
-		if site_status not in ("Active", "Inactive"):
-			return False
-
-		if free:
-			return False
-
-		if trial_site and frappe.utils.getdate() < get_datetime(trial_site).date():
-			return False
-
-		return True
 
 
 def get_plans_for_app(
@@ -458,29 +422,18 @@ def get_plans_for_app(
 		filters=filters,
 		fields=[
 			"name",
+			"title",
 			"plan",
-			"discount_percent",
-			"gst",
-			"marked_most_popular",
-			"is_free",
 			"enabled",
-			"block_monthly",
+			"price_inr",
+			"price_usd",
 		],
 	)
 
 	for app_plan in marketplace_app_plans:
 		plan_data = {}
 		plan_data.update(app_plan)
-
-		plan_discount_percent = app_plan.discount_percent
-		plan_data["discounted"] = plan_discount_percent > 0
-		plan_prices = frappe.db.get_value(
-			"Plan", app_plan.plan, ["plan_title", "price_usd", "price_inr"], as_dict=True
-		)
-
-		plan_data.update(plan_prices)
 		plan_data["features"] = get_app_plan_features(app_plan.name)
-
 		plans.append(plan_data)
 
 	plans.sort(key=lambda x: x["price_usd"])

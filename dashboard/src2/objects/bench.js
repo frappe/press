@@ -3,7 +3,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
@@ -406,7 +406,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -426,6 +426,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -483,6 +488,11 @@ export default {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
 						},
 						{
 							label: '',
@@ -900,6 +910,13 @@ export default {
 						}
 					},
 					options: [
+						{
+							label: 'Impersonate Team',
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
 						{
 							label: 'Drop Bench',
 							onClick() {

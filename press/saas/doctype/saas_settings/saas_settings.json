@@ -1,6 +1,4 @@
 {
- "_comments": "[]",
- "_liked_by": "[]",
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:app",
@@ -95,7 +93,7 @@
    "fieldname": "site_plan",
    "fieldtype": "Link",
    "label": "Site Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "billing_type",
@@ -156,7 +154,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-31 12:25:49.138663",
+ "modified": "2024-02-05 23:05:21.977051",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Settings",
