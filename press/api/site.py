@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours
+from frappe.utils import flt, time_diff_in_hours, sbool
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -1420,7 +1420,7 @@ def update_config(name, config):
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type == "Boolean":
-			c.value = bool(c.value)
+			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		sanitized_config.append(c)
