@@ -185,7 +185,7 @@ export default {
 			{
 				label: 'Plays',
 				icon: icon('play'),
-				childrenRoutes: ['Server Play'],
+				childrenRoutes: ['Database Server Play'],
 				route: 'plays',
 				type: 'list',
 				list: {
@@ -195,7 +195,7 @@ export default {
 					},
 					route(row) {
 						return {
-							name: 'Server Play',
+							name: 'Database Server Play',
 							params: { id: row.name }
 						};
 					},
@@ -235,12 +235,7 @@ export default {
 	},
 	routes: [
 		{
-			name: 'Server Job',
-			path: 'job/:id',
-			component: () => import('../pages/JobPage.vue')
-		},
-		{
-			name: 'Server Play',
+			name: 'Database Server Play',
 			path: 'play/:id',
 			component: () => import('../pages/PlayPage.vue')
 		}
