@@ -12,41 +12,59 @@ from press.api.site import NAMESERVERS
 @frappe.whitelist()
 def new(server):
 	team = get_current_team(get_doc=True)
+
 	if not team.enabled:
 		frappe.throw("You cannot create a new server because your account is disabled")
+
 	if not team.self_hosted_servers_enabled:
 		frappe.throw(
 			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
 		)
-	cluster = get_cluster()
-	proxy_server = frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
-	app_ip = server["publicIP"].strip()
-	db_ip = server["dbpublicIP"].strip()
 
-	different_database_server = False
-	if app_ip != db_ip:
-		different_database_server = True
+	cluster = get_cluster()
+	proxy_server = get_proxy_server_for_cluster(cluster)
+
+	ip_details = get_sanitized_ip(server)
+
+	is_standalone = False
+
+	if server["serverType"] == "standalone":
+		is_standalone = True
 
 	self_hosted_server = frappe.new_doc(
 		"Self Hosted Server",
 		**{
-			"ip": app_ip,
-			"private_ip": server["privateIP"].strip(),
-			"mariadb_ip": db_ip,
-			"mariadb_private_ip": server["dbprivateIP"].strip(),
+			"ip": ip_details.public_ip,
+			"private_ip": ip_details.private_ip,
+			"mariadb_ip": ip_details.db_public_ip,
+			"mariadb_private_ip": ip_details.db_private_ip,
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
-			"different_database_server": different_database_server,
+			"different_database_server": is_standalone,
 			"team": team.name,
 			"plan": server["plan"]["name"],
 			"database_plan": server["plan"]["name"],
-			"server_url": server["url"],
 			"new_server": True,
 		}
 	).insert()
 
 	return self_hosted_server.name
+
+
+def get_sanitized_ip(server):
+	return frappe._dict(
+		{
+			"public_ip": server["publicIP"].strip(),
+			"private_ip": server["privateIP"].strip() if server["privateIP"] else None,
+			"db_public_ip": server["dbpublicIP"].strip(),
+			"db_private_ip": server["dbprivateIP"].strip() if server["dbprivateIP"] else None,
+		}
+	)
+
+
+def get_proxy_server_for_cluster(cluster):
+	return frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 
 
 def get_cluster():

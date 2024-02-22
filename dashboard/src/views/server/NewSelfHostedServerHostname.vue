@@ -14,7 +14,7 @@
 				placeholder="AcmeCorp Production Server"
 			/>
 		</div>
-		<div class="mt-6 space-y-2">
+		<!-- <div class="mt-6 space-y-2">
 			<h2 class="text-lg font-semibold">Add Domain</h2>
 
 			<p class="text-base text-gray-700">Add Domain pointing to Server</p>
@@ -22,17 +22,17 @@
 				class="z-10 w-full rounded-r-none"
 				:value="domain"
 				@change="$emit('update:domain', $event.target.value)"
-				placeholder="abc.example.com"
+				placeholder="example.com"
 			/>
-		</div>
+		</div> -->
 		<ErrorMessage class="mt-4" :message="errorMessage" />
 	</div>
 </template>
 <script>
 export default {
 	name: 'SelfHostedHostname',
-	props: ['title', 'domain'],
-	emits: ['update:title', 'update:domain', 'error'],
+	props: ['title'],
+	emits: ['update:title', 'error'],
 	data() {
 		return {
 			errorMessage: null

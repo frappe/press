@@ -6,21 +6,22 @@ import frappe
 from frappe.model.document import Document
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.model.naming import make_autoname
 
 import json
-from tldextract import extract as sdext
+
+# from tldextract import extract as sdext
 
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		self.name = sdext(self.server_url).fqdn
+		series = make_autoname("SHS-.#####")
+		self.name = f"{series}.{self.hybrid_domain}"
+
+		self.hostname = series
+		self.domain = self.hybrid_domain
 
 	def validate(self):
-		if not self.hostname or not self.domain:
-			extracted_url = sdext(self.server_url)
-			self.hostname = extracted_url.subdomain
-			self.domain = extracted_url.registered_domain
-
 		self.set_proxy_details()
 		self.set_mariadb_config()
 
@@ -34,11 +35,10 @@ class SelfHostedServer(Document):
 			)
 
 	def set_mariadb_config(self):
-		if not self.different_database_server:
-			pass
-
 		if not self.mariadb_ip:
 			self.mariadb_ip = self.ip
+		if not self.mariadb_private_ip:
+			self.mariadb_private_ip = self.private_ip
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
 		if not self.mariadb_root_password:
@@ -250,7 +250,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Database Server"),
 					"title": f"{self.title} DB",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"ip": self.mariadb_ip,
 					"private_ip": self.mariadb_private_ip,
 					"team": self.team,
@@ -269,6 +270,8 @@ class SelfHostedServer(Document):
 			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
+
+			db_server.create_dns_record()
 
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
@@ -320,7 +323,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Server"),
 					"title": f"{self.title} App",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.ip,
 					"private_ip": self.private_ip,
@@ -341,6 +345,8 @@ class SelfHostedServer(Document):
 			self.server = server.name
 			self.status = "Active"
 			self.server_created = True
+
+			server.create_dns_record()
 
 		except Exception as e:
 			self.status = "Broken"
@@ -432,10 +438,16 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def get_hostname(self, server_type):
-		if self.cluster:
-			return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+		symbolic_name = get_symbolic_name(server_type)
+		series = f"{symbolic_name}-{self.cluster}.#####"
 
-		return f"{get_symbolic_name(server_type)}-{self.hostname}".lower()
+		index = make_autoname(series)[-5:]
+
+		return f"{symbolic_name}-{index}-{self.cluster}".lower()
+
+	@property
+	def hybrid_domain(self):
+		return frappe.db.get_single_value("Press Settings", "hybrid_domain")
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -449,8 +461,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
-					"domain": self.domain,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.proxy_public_ip,
 					"private_ip": self.proxy_private_ip,
@@ -681,7 +693,7 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 
 def get_symbolic_name(server_type):
 	return {
-		"Proxy Server": "n",
-		"Server": "f",
-		"Database Server": "m",
-	}.get(server_type, "f")
+		"Proxy Server": "hybrid-n",
+		"Server": "hybrid-f",
+		"Database Server": "hybrid-m",
+	}.get(server_type, "hybrid-f")
