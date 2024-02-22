@@ -269,7 +269,7 @@ export default {
 								onClick: () => {
 									renderDialog(
 										h(PatchAppDialog, {
-											bench: releaseGroup.name,
+											group: releaseGroup.name,
 											app: row
 										})
 									);

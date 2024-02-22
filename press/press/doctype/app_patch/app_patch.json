@@ -5,24 +5,18 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "file_name",
+  "filename",
   "bench",
   "group",
   "build_assets",
   "column_break_vedh",
-  "patch_url",
+  "url",
   "app_release",
   "section_break_fqnr",
-  "patch"
+  "patch",
+  "patch_applied"
  ],
  "fields": [
-  {
-   "fieldname": "file_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "File Name",
-   "reqd": 1
-  },
   {
    "fieldname": "bench",
    "fieldtype": "Link",
@@ -40,12 +34,6 @@
   {
    "fieldname": "column_break_vedh",
    "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval: doc.patch_url",
-   "fieldname": "patch_url",
-   "fieldtype": "Data",
-   "label": "Patch URL"
   },
   {
    "fieldname": "app_release",
@@ -74,11 +62,31 @@
    "options": "Release Group",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "depends_on": "eval: doc.url",
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "Patch URL"
+  },
+  {
+   "fieldname": "filename",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "File Name",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "patch_applied",
+   "fieldtype": "Check",
+   "label": "Patch Applied",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-22 12:01:26.733483",
+ "modified": "2024-02-22 15:13:35.686076",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",

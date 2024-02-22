@@ -21,6 +21,7 @@ from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.utils import (
 	get_app_tag,
 	get_current_team,
@@ -885,3 +886,13 @@ def get_title_and_creation(name):
 @protected("Release Group")
 def rename(name, title):
 	return frappe.db.set_value("Release Group", name, "title", title)
+
+
+@frappe.whitelist()
+@protected("App Patch")
+def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
+	return create_app_patch(
+		release_group,
+		app,
+		patch_config,
+	)

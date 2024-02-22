@@ -54,7 +54,7 @@
 					v-model="applyToBench"
 					label="Select deploy"
 					type="select"
-					placeholder="Select a deploy"
+					variant="outline"
 					:options="$resources.benches.data"
 				/>
 				<FormControl
@@ -90,7 +90,7 @@ export default {
 	name: 'PatchAppDialog',
 	props: {
 		app: [null, Object],
-		bench: String
+		group: String
 	},
 	components: {
 		Dialog,
@@ -163,9 +163,9 @@ export default {
 			}
 
 			const args = {
-				name: this.bench,
+				release_group: this.group,
 				app: this.app.name,
-				update_data: {
+				patch_config: {
 					patch: this.patch,
 					patch_filename: this.patchFileName,
 					patch_url: this.patchURL,
@@ -200,12 +200,13 @@ export default {
 				doctype: 'Bench',
 				fields: ['name'],
 				filters: {
-					group: this.bench,
+					group: this.group,
 					status: 'Active'
 				},
 				auto: true,
 				onSuccess(data) {
 					if (data.length > 0) {
+						this.applyToBench = data[0].value;
 						return;
 					}
 
