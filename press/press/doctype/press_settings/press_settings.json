@@ -183,7 +183,10 @@
   "column_break_biqm",
   "realtime_job_updates",
   "code_spaces_tab",
-  "spaces_domain"
+  "spaces_domain",
+  "hybrid_server_tab",
+  "hybrid_cluster",
+  "hybrid_domain"
  ],
  "fields": [
   {
@@ -1147,6 +1150,23 @@
    "fieldname": "use_delta_builds",
    "fieldtype": "Check",
    "label": "Use Delta Builds"
+  },
+  {
+   "fieldname": "hybrid_server_tab",
+   "fieldtype": "Tab Break",
+   "label": "Hybrid Server"
+  },
+  {
+   "fieldname": "hybrid_cluster",
+   "fieldtype": "Link",
+   "label": "Hybrid Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "hybrid_domain",
+   "fieldtype": "Link",
+   "label": "Hybrid Domain",
+   "options": "Root Domain"
   }
  ],
  "issingle": 1,
