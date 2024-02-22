@@ -23,6 +23,7 @@ ALLOWED_DOCTYPES = [
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
+	"Bench",
 	"Bench Dependency Version",
 	"Release Group",
 	"Release Group App",

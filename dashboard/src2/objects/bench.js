@@ -6,6 +6,7 @@ import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import { tagTab } from './common/tags';
@@ -260,6 +261,17 @@ export default {
 									window.open(
 										`${row.repository_url}/tree/${row.branch}`,
 										'_blank'
+									);
+								}
+							},
+							{
+								label: 'Apply Patch',
+								onClick: () => {
+									renderDialog(
+										h(PatchAppDialog, {
+											bench: releaseGroup.name,
+											app: row
+										})
 									);
 								}
 							}
@@ -615,7 +627,8 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
@@ -628,7 +641,8 @@ export default {
 												),
 												{
 													loading: 'Deleting  environment variable...',
-													success: () => `Environment variable ${row.key} removed`,
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')

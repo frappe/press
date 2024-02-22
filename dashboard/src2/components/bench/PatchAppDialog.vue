@@ -1,5 +1,6 @@
 <template>
 	<Dialog
+		v-if="show"
 		:options="{ title: `Apply a patch to ${app?.title}`, position: 'top' }"
 		v-model="show"
 	>
@@ -114,7 +115,7 @@ export default {
 	},
 	data() {
 		return {
-			show: false,
+			show: true,
 			error: '',
 			patch: '',
 			patchURL: '',

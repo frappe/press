@@ -19,6 +19,8 @@ from press.utils import log_error
 
 
 class Bench(Document):
+	dashboard_fields = ["name", "group", "status"]
+
 	@staticmethod
 	def with_sites(name: str):
 		bench = frappe.get_doc("Bench", name)
