@@ -339,6 +339,8 @@ class DeployCandidate(Document):
 	def _set_app_cached_flags(self) -> None:
 		cached = get_cached_apps()
 		for app in self.apps:
+			app.use_cached = False
+
 			"""
 			Temporary workaround cause get-app fails if repo owner is not 'frappe' or 'erpnext'
 			A fix has been deployed but due a build dependency issue, it cannot be released.
