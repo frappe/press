@@ -221,6 +221,7 @@
    "label": "Billing"
   },
   {
+   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -431,6 +432,7 @@
    "label": "Total Backups Count"
   },
   {
+   "collapsible": 1,
    "fieldname": "backups_section",
    "fieldtype": "Section Break",
    "label": "Backups"
@@ -710,6 +712,7 @@
    "label": "Telegram Bot Token"
   },
   {
+   "collapsible": 1,
    "fieldname": "mailgun_settings_section",
    "fieldtype": "Section Break",
    "label": "Mailgun"
@@ -852,6 +855,7 @@
    "label": "Agent GitHub Access Token"
   },
   {
+   "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
@@ -1024,6 +1028,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "aws_section",
    "fieldtype": "Section Break",
    "label": "AWS"
@@ -1043,6 +1048,7 @@
    "label": "AWS Secret Access Key"
   },
   {
+   "collapsible": 1,
    "fieldname": "twilio_section",
    "fieldtype": "Section Break",
    "label": "Twilio"
@@ -1136,7 +1142,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-21 17:04:16.524389",
+ "modified": "2024-02-22 11:44:28.735617",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
