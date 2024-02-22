@@ -851,17 +851,16 @@ class VirtualMachine(Document):
 			group_by="cluster",
 			pluck="cluster",
 		):
-			client = frappe.get_doc(
-				"Virtual Machine",
-				{
-					"status": ("not in", ("Terminated", "Draft")),
-					"cloud_provider": "AWS EC2",
-					"cluster": cluster,
-				},
-			).client()
+			filters = {
+				"status": ("not in", ("Terminated", "Draft")),
+				"cloud_provider": "AWS EC2",
+				"cluster": cluster,
+			}
+
+			client = frappe.get_doc("Virtual Machine", filters=filters).client()
 			instance_ids = frappe.get_all(
 				"Virtual Machine",
-				{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "AWS EC2"},
+				filters=filters,
 				pluck="instance_id",
 			)
 			response = client.describe_instances(InstanceIds=instance_ids)
