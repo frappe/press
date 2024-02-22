@@ -850,7 +850,7 @@ def logs(name, bench):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).get_server_log(log)
