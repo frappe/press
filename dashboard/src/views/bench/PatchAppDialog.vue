@@ -1,6 +1,6 @@
 <template>
 	<Dialog
-		:options="{ title: `Apply patch to ${app?.title}`, position: 'top' }"
+		:options="{ title: `Apply a patch to ${app?.title}`, position: 'top' }"
 		v-model="show"
 	>
 		<template v-slot:body-content>
@@ -48,6 +48,19 @@
 				</div>
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
 				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
+				<FormControl
+					v-if="!applyToAllBenches"
+					v-model="applyToBench"
+					label="Select deploy"
+					type="select"
+					placeholder="Select a deploy"
+					:options="$resources.benches.data"
+				/>
+				<FormControl
+					label="Apply patch to all active deploys"
+					type="checkbox"
+					v-model="applyToAllBenches"
+				/>
 				<FormControl
 					label="Build assets after applying patch"
 					type="checkbox"
@@ -106,31 +119,41 @@ export default {
 			patch: '',
 			patchURL: '',
 			patchFileName: '',
-			buildAssets: false
+			buildAssets: false,
+			applyToBench: '',
+			applyToAllBenches: false
 		};
 	},
 	methods: {
-		/**
-		 * TODO:
-		 * - Enter URL for patchfile
-		 * - Select patchfile from local
-		 * - Set patch file name
-		 * - Apply patch
-		 * - Store patch in doctype and trigger agent job on insert
-		 * - Display if app has been patched in apps list
-		 * - Option to undo patches if app has patch
-		 */
 		clearApp() {
 			this.$emit('clear-app-to-patch');
 		},
-		applyPatch() {
+		validate() {
+			if (!this.$resources.benches.data.length) {
+				this.error = 'This bench has no deploys, patch cannot be applied.';
+				return false;
+			}
+
 			if (this.patch && !this.patchFileName) {
-				this.error = 'Please set a Patch File Name.';
-				return;
+				this.error = 'Please enter a patch file Name.';
+				return false;
 			}
 
 			if (!this.patch && !this.patchURL) {
-				this.error = 'Please set patch URL or select a patch file.';
+				this.error = 'Please enter the patch URL or select a patch file.';
+				return false;
+			}
+
+			if (!this.applyToAllBenches && !this.applyToBench) {
+				this.error =
+					'Please select a deploy or check Apply patch to all active deploys.';
+				return false;
+			}
+
+			return true;
+		},
+		applyPatch() {
+			if (!this.validate()) {
 				return;
 			}
 
@@ -138,18 +161,23 @@ export default {
 				this.patchFileName += '.patch';
 			}
 
-			this.$resources.applyPatch.submit({
+			const args = {
 				name: this.bench,
-				app: app.name,
+				app: this.app.name,
 				update_data: {
 					patch: this.patch,
 					patch_filename: this.patchFileName,
 					patch_url: this.patchURL,
-					build_assets: this.buildAssets
+					build_assets: this.buildAssets,
+					patch_bench: this.applyToBench,
+					patch_all_benches: this.applyToAllBenches
 				}
-			});
+			};
+
+			this.$resources.applyPatch.submit(args);
 		},
 		async onPatchFileSelect(e) {
+			this.error = '';
 			const file = e.target.files?.[0];
 			if (!file) {
 				return;
@@ -165,13 +193,41 @@ export default {
 		}
 	},
 	resources: {
+		benches() {
+			return {
+				type: 'list',
+				doctype: 'Bench',
+				fields: ['name'],
+				filters: {
+					group: this.bench,
+					status: 'Active'
+				},
+				auto: true,
+				onSuccess(data) {
+					if (data.length > 0) {
+						return;
+					}
+
+					this.error = 'This bench has no deploys, patch cannot be applied.';
+				},
+				onError(data) {
+					this.error = data;
+				},
+				transform(data) {
+					return data.map(({ name }) => ({ value: name, label: name }));
+				}
+			};
+		},
 		applyPatch() {
 			return {
-				url: 'press.api.bench.patch_app',
+				url: 'press.api.bench.apply_patch',
 				onSuccess(data) {
+					// TODO: Handle success
 					console.log('Patch Success', data);
 				},
 				onError(data) {
+					// TODO: Handle error
+					console.log('Patch Error', data);
 					this.error = data;
 				}
 			};
