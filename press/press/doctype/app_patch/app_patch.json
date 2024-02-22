@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-02-22 10:31:03.366179",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "file_name",
+  "bench",
+  "group",
+  "build_assets",
+  "column_break_vedh",
+  "patch_url",
+  "app_release",
+  "section_break_fqnr",
+  "patch"
+ ],
+ "fields": [
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "File Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "build_assets",
+   "fieldtype": "Check",
+   "label": "Build assets after applying patch"
+  },
+  {
+   "fieldname": "column_break_vedh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval: doc.patch_url",
+   "fieldname": "patch_url",
+   "fieldtype": "Data",
+   "label": "Patch URL"
+  },
+  {
+   "fieldname": "app_release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App Release",
+   "options": "App Release",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_fqnr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "patch",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Patch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-22 12:01:26.733483",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Patch",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
