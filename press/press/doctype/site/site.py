@@ -24,6 +24,7 @@ from frappe.utils import (
 	get_datetime,
 	get_url,
 	time_diff_in_hours,
+	sbool,
 )
 
 from press.exceptions import CannotChangePlan
@@ -313,7 +314,9 @@ class Site(Document, TagHelpers):
 				)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
+					row.value
+					if isinstance(row.value, bool)
+					else bool(sbool(json.loads(cstr(row.value))))
 				)
 			elif key_type == "JSON":
 				key_value = json.loads(cstr(row.value))
@@ -1144,7 +1147,7 @@ class Site(Document, TagHelpers):
 			if _type == "Number":
 				value = flt(value)
 			elif _type == "Boolean":
-				value = bool(value)
+				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
 			sanitized_config[key] = value
