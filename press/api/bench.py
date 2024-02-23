@@ -273,7 +273,16 @@ def bench_config(name):
 	else:
 		bench_config = []
 
-	return common_site_config + bench_config
+	config = common_site_config + bench_config
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c["key"] in secret_keys:
+			c["value"] = "*******"
+			c["type"] = "Password"
+	return config
 
 
 @frappe.whitelist()
@@ -296,6 +305,8 @@ def update_config(name, config):
 			c.value = bool(c.value)
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
 
 		if c.key in bench_config_keys:
 			sanitized_bench_config.append(c)

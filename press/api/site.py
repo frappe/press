@@ -1409,7 +1409,17 @@ def log(name, log):
 @protected("Site")
 def site_config(name):
 	site = frappe.get_doc("Site", name)
-	return list(filter(lambda x: not x.internal, site.configuration))
+	config = list(filter(lambda x: not x.internal, site.configuration))
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c.key in secret_keys:
+			c.type = "Password"
+			c.value = "*******"
+
+	return config
 
 
 @frappe.whitelist()
@@ -1430,6 +1440,8 @@ def update_config(name, config):
 			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)
