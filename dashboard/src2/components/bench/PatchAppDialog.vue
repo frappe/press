@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		v-if="show"
-		:options="{ title: `Apply a patch to ${app?.title}`, position: 'top' }"
+		:options="{ title: `Apply a patch to ${app}`, position: 'top' }"
 		v-model="show"
 	>
 		<template v-slot:body-content>
@@ -43,11 +43,17 @@
 					</Button>
 
 					<!-- Clear Patch File -->
-					<Button @click="clearPatchFile" v-if="patch" title="Clear patch file">
+					<Button @click="clear" v-if="patch" title="Clear patch file">
 						<FeatherIcon name="x" class="h-5 w-5 text-gray-600" />
 					</Button>
 				</div>
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
+				<div
+					v-if="success"
+					class="whitespace-pre-line text-base text-green-600"
+					role="alert"
+					v-html="success"
+				></div>
 				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
 				<FormControl
 					v-if="!applyToAllBenches"
@@ -89,7 +95,7 @@ import {
 export default {
 	name: 'PatchAppDialog',
 	props: {
-		app: [null, Object],
+		app: [null, String],
 		group: String
 	},
 	components: {
@@ -117,6 +123,7 @@ export default {
 		return {
 			show: true,
 			error: '',
+			success: '',
 			patch: '',
 			patchURL: '',
 			patchFileName: '',
@@ -154,7 +161,7 @@ export default {
 			return true;
 		},
 		applyPatch() {
-			if (!this.validate()) {
+			if (!this.validate() || this.success) {
 				return;
 			}
 
@@ -164,7 +171,7 @@ export default {
 
 			const args = {
 				release_group: this.group,
-				app: this.app.name,
+				app: this.app,
 				patch_config: {
 					patch: this.patch,
 					patch_filename: this.patchFileName,
@@ -187,7 +194,8 @@ export default {
 			this.patch = await file.text();
 			this.patchFileName = file.name;
 		},
-		clearPatchFile() {
+		clear() {
+			this.success = '';
 			this.error = '';
 			this.patch = '';
 			this.patchFileName = '';
@@ -224,13 +232,26 @@ export default {
 			return {
 				url: 'press.api.bench.apply_patch',
 				onSuccess(data) {
-					// TODO: Handle success
-					console.log('Patch Success', data);
+					if (!data.length) {
+						this.error = 'No patches were created.';
+						return;
+					}
+
+					let p = data.length > 1 ? 'patches' : 'patch';
+
+					this.success = `<strong>${data.length} ${p} created</strong> and will be applied shortly.
+					You can check status under the <strong>Patches</strong> tab.`;
+					setTimeout(() => {
+						this.show = false;
+						this.clear();
+					}, 10000);
 				},
-				onError(data) {
-					// TODO: Handle error
-					console.log('Patch Error', data);
-					this.error = data;
+				onError(error) {
+					if (error.messages.length) {
+						this.error = error.messages.join('\n');
+					} else {
+						this.error = error.message;
+					}
 				}
 			};
 		}

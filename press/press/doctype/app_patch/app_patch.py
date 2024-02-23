@@ -1,12 +1,12 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+from typing import Optional, TypedDict
+
 import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-
-from typing import TypedDict, Optional
 
 PatchConfig = TypedDict(
 	"PatchConfig",
@@ -20,6 +20,19 @@ PatchConfig = TypedDict(
 
 
 class AppPatch(Document):
+	dashboard_fields = [
+		"name",
+		"app",
+		"app_release",
+		"patch",
+		"filename",
+		"bench",
+		"group",
+		"build_assets",
+		"url",
+		"patch_applied",
+	]
+
 	def validate(self):
 		patches = frappe.get_all(
 			"App Patch",
@@ -41,6 +54,9 @@ class AppPatch(Document):
 			f"{self.bench}-p",
 			separator="",
 		)
+
+		if self.name.endswith("-p"):
+			self.name += "1"
 
 	def after_insert(self):
 		# TODO: Call apply_patch
@@ -66,10 +82,11 @@ def create_app_patch(
 
 	for bench in benches:
 		doc_dict = dict(
-			doctype="AppPatch",
+			doctype="App Patch",
 			patch=patch,
 			bench=bench,
 			group=release_group,
+			app=app,
 			app_release=get_app_release(bench, app),
 			url=patch_config.get("patch_url"),
 			filename=patch_config.get("patch_filename"),
@@ -105,6 +122,7 @@ def get_benches(release_group: str, patch_config: PatchConfig) -> list[str]:
 def get_app_release(bench: str, app: str) -> str:
 	return frappe.get_all(
 		"Bench App",
+		fields=["release"],
 		filters={"parent": bench, "app": app},
-		pluck="name",
+		pluck="release",
 	)[0]

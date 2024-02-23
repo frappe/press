@@ -11,6 +11,7 @@
   "build_assets",
   "column_break_vedh",
   "url",
+  "app",
   "app_release",
   "section_break_fqnr",
   "patch",
@@ -82,11 +83,18 @@
    "fieldtype": "Check",
    "label": "Patch Applied",
    "read_only": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-22 15:13:35.686076",
+ "modified": "2024-02-23 13:07:41.596121",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",

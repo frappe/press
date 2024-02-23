@@ -10,6 +10,7 @@ import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import { tagTab } from './common/tags';
+import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
@@ -270,7 +271,7 @@ export default {
 									renderDialog(
 										h(PatchAppDialog, {
 											group: releaseGroup.name,
-											app: row
+											app: row.name
 										})
 									);
 								}
@@ -301,6 +302,7 @@ export default {
 					}
 				}
 			},
+			patches,
 			{
 				label: 'Deploys',
 				route: 'deploys',
