@@ -8,6 +8,7 @@ import random
 
 from press.agent import Agent
 from press.api.client import is_owned_by_team
+from press.press.doctype.deploy_candidate.deploy_candidate import process_docker_image_build_job_update
 from press.utils import log_error
 from frappe.utils import (
 	cint,
@@ -757,6 +758,8 @@ def process_job_updates(job_name):
 			process_update_nginx_job_update(job)
 		elif job.job_type == "Move Site to Bench":
 			process_move_site_to_bench_job_update(job)
+		elif job.job_type == "Docker Image Build":
+			process_docker_image_build_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())

@@ -202,7 +202,6 @@ class DeployCandidate(Document):
 				agent = Agent(settings.docker_remote_builder_server)
 				# Upload build context to remote docker builder
 				build_context_archieve_filepath = self._tar_build_context()
-				print(build_context_archieve_filepath)
 				uploaded_filename = None
 				with open(build_context_archieve_filepath, "rb") as f:
 					uploaded_filename = agent.upload_build_context_for_docker_build(f)
@@ -211,6 +210,7 @@ class DeployCandidate(Document):
 				agent.build_docker_image({
 					"deploy_candidate": self.name,
 					"deploy_after_build": deploy_after_build,
+					"deploy_to_staging": deploy_to_staging,
 					"filename": uploaded_filename,
 					"image_repository": self.docker_image_repository,
 					"image_tag": self.docker_image_tag,
@@ -1086,6 +1086,44 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
+	def process_docker_image_build_job_update(self, job):
+		request_data = json.loads(job.request_data)
+		data = frappe.get_doc("Agent Job Step",{"agent_job": job.name, "step_name": "Docker Image Build"}).data
+		if data:
+			data = json.loads(data)
+		else:
+			data = {}
+		# Update build output
+		if "build_output" in data:
+			self.build_output = data.get("build_output", "")
+		# Update build steps
+		for step_update in data.get("build_steps", []):
+			step = find(self.build_steps, lambda x: x.stage_slug == step_update["stage_slug"] and x.step_slug == step_update["step_slug"])
+			step.status = step_update["status"]
+			step.cached = step_update["cached"]
+			step.command = step_update["command"]
+			step.duration = step_update["duration"]
+			step.hash = step_update["hash"]
+			step.lines = step_update["lines"]
+			step.output = step_update["output"]
+			step.step_index = step_update["step_index"]
+
+		if job.status == "Running":
+			if self.status != "Running":
+				self.status = "Running"
+				self.save()
+				frappe.db.commit()
+		elif job.status == "Failure":
+			self._build_failed()
+			self._build_end()
+		elif job.status == "Success":
+			self.docker_image_id = data.get("docker_image_id", "")
+			self._build_successful()
+			self._build_end()
+
+			# Check if deployment required
+			if request_data.get("deploy_after_build"):
+				self.create_deploy(request_data.get("deploy_to_staging"))
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1215,3 +1253,9 @@ def run_scheduled_builds():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)
+
+
+def process_docker_image_build_job_update(job):
+	request_data = json.loads(job.request_data)
+	deploy_candidate = frappe.get_doc("Deploy Candidate", request_data["deploy_candidate"])
+	deploy_candidate.process_docker_image_build_job_update(job)
