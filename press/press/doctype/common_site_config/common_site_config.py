@@ -18,7 +18,12 @@ class CommonSiteConfig(Document):
 			fields=["key", "title"],
 			filters={"key": ["in", [c.key for c in configs]]},
 		)
+		secret_keys = frappe.get_all(
+			"Site Config Key", filters={"type": "Password"}, pluck="key"
+		)
 		for config in configs:
+			if config.key in secret_keys:
+				config.value = "*******"
 			config.title = next((c.title for c in config_key_titles if c.key == config.key), "")
 		return configs
 
