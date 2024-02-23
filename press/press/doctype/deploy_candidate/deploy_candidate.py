@@ -1109,8 +1109,9 @@ class DeployCandidate(Document):
 		return pull_update
 
 	def process_docker_image_build_job_update(self, job):
+		job = job.get_doc(job.as_dict())
 		request_data = json.loads(job.request_data)
-		data = frappe.get_doc("Agent Job Step",{"agent_job": job.name, "step_name": "Docker Image Build"}).data
+		data = find(job["steps"], lambda x: x["step_name"] == "Docker Image Build")["output"]
 		if data:
 			data = json.loads(data)
 		else:

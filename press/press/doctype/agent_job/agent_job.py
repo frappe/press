@@ -357,12 +357,12 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			publish_update(job.name)
+			process_job_updates(job.name)
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
 
-			process_job_updates(job.name)
 			frappe.db.commit()
+			publish_update(job.name)
 		except Exception:
 			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
 			frappe.db.rollback()
