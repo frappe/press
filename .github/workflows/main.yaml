@@ -64,16 +64,10 @@ jobs:
 
     name: Server
 
-    services:
-      mariadb:
-        image: mariadb:10.6
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3 --innodb-doublewrite=0 --innodb-flush-log-at-trx-commit=0 --innodb_buffer_pool_size=4G
-
     steps:
+      - name: Run MariaDB Container
+        run: docker run -e MYSQL_ROOT_PASSWORD=root -p 3306:3306 -d docker.io/library/mariadb:10.6 --innodb-doublewrite=0 --innodb-flush-log-at-trx-commit=0 --innodb_buffer_pool_size=4G
+
       - name: Clone
         uses: actions/checkout@v3
 
