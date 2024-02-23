@@ -351,6 +351,7 @@ def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 			f"https://github.com/frappe/{name}",
 			branch,
 			team.name,
+			repository_owner="frappe",
 		)
 		release = create_test_app_release(source, hash)
 		apps[name] = dict(app=app, source=source, release=release)
