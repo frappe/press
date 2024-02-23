@@ -796,6 +796,7 @@ class VirtualMachine(Document):
 
 		return frappe.get_doc(document).insert()
 
+	@frappe.whitelist()
 	def create_registry_server(self):
 		document = {
 			"doctype": "Registry Server",
