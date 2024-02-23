@@ -938,7 +938,12 @@ def get_emails():
 
 @frappe.whitelist()
 def update_emails(data):
+	from frappe.utils import validate_email_address
+
 	data = {x["type"]: x["value"] for x in json.loads(data)}
+	for key, value in data:
+		validate_email_address(value, throw=True)
+
 	team_doc = get_current_team(get_doc=True)
 
 	for row in team_doc.communication_emails:
