@@ -4,8 +4,9 @@
 import frappe
 import requests
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.site_plan.plan import Plan
 
-from press.utils import get_current_team, group_children_in_result
+from press.utils import get_current_team
 from press.api.site import protected
 from press.api.bench import all as all_benches
 from frappe.utils import convert_utc_to_timezone
@@ -84,7 +85,7 @@ def all(server_filter=None):
 	for server in servers:
 		server_plan_name = frappe.get_value("Server", server.name, "plan")
 		server["plan"] = (
-			frappe.get_doc("Plan", server_plan_name) if server_plan_name else None
+			frappe.get_doc("Server Plan", server_plan_name) if server_plan_name else None
 		)
 		server["app_server"] = f"f{server.name[1:]}"
 		server["tags"] = frappe.get_all(
@@ -131,7 +132,7 @@ def get(name):
 @protected(["Server", "Database Server"])
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
-	plan = frappe.get_doc("Plan", server.plan) if server.plan else None
+	plan = frappe.get_doc("Server Plan", server.plan) if server.plan else None
 
 	if server.is_self_hosted and plan:  # Hacky way to show current specs in place of Plans
 		filters = {}
@@ -186,7 +187,7 @@ def new(server):
 
 	cluster: Cluster = frappe.get_doc("Cluster", server["cluster"])
 
-	db_plan = frappe.get_doc("Plan", server["db_plan"])
+	db_plan = frappe.get_doc("Server Plan", server["db_plan"])
 	db_server, job = cluster.create_server(
 		"Database Server", server["title"], db_plan, team=team.name
 	)
@@ -199,7 +200,7 @@ def new(server):
 	cluster.database_server = db_server.name
 	cluster.proxy_server = proxy_server.name
 
-	app_plan = frappe.get_doc("Plan", server["app_plan"])
+	app_plan = frappe.get_doc("Server Plan", server["app_plan"])
 	app_server, job = cluster.create_server(
 		"Server", server["title"], app_plan, team=team.name
 	)
@@ -398,14 +399,11 @@ def options():
 
 @frappe.whitelist()
 def plans(name, cluster=None):
-	filters = {"enabled": True, "document_type": name}
-	if cluster:
-		filters["cluster"] = cluster
-	plans = frappe.db.get_all(
-		"Plan",
+	plans = Plan.get_plans(
+		doctype="Server Plan",
 		fields=[
 			"name",
-			"plan_title",
+			"title",
 			"price_usd",
 			"price_inr",
 			"vcpu",
@@ -413,19 +411,13 @@ def plans(name, cluster=None):
 			"disk",
 			"cluster",
 			"instance_type",
-			"`tabHas Role`.role",
 		],
-		filters=filters,
-		order_by="price_usd asc",
+		filters={"server_type": name, "cluster": cluster}
+		if cluster
+		else {"server_type": name},
 	)
-	plans = group_children_in_result(plans, {"role": "roles"})
 
-	out = []
-	for plan in plans:
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			out.append(plan)
-	return out
+	return plans
 
 
 @frappe.whitelist()
@@ -480,6 +472,10 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 		limit=limit_page_length,
 		order_by=order_by or "creation desc",
 	)
+
+	for job in jobs:
+		job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
+
 	return jobs
 
 

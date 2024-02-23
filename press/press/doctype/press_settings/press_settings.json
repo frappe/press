@@ -78,6 +78,8 @@
   "code_server_password",
   "use_docker_remote_builder",
   "docker_remote_builder_server",
+  "use_app_cache",
+  "compress_app_cache",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -178,9 +180,8 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
-  "column_break_rdlr",
-  "disable_auto_retry",
-  "disable_agent_job_deduplication",
+  "column_break_biqm",
+  "realtime_job_updates",
   "code_spaces_tab",
   "spaces_domain"
  ],
@@ -616,7 +617,7 @@
    "fieldname": "erpnext_plan",
    "fieldtype": "Link",
    "label": "ERPNext Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "erpnext_group",
@@ -650,7 +651,7 @@
    "fieldname": "staging_plan",
    "fieldtype": "Link",
    "label": "Staging Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "24",
@@ -1110,20 +1111,29 @@
    "label": "Print Format"
   },
   {
-   "fieldname": "column_break_rdlr",
+   "default": "0",
+   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.21.3 or later.",
+   "fieldname": "use_app_cache",
+   "fieldtype": "Check",
+   "label": "Use App Cache"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.use_app_cache",
+   "description": "Use Gzip to compress bench get-app artifacts before caching.",
+   "fieldname": "compress_app_cache",
+   "fieldtype": "Check",
+   "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "column_break_biqm",
    "fieldtype": "Column Break"
   },
   {
    "default": "0",
-   "fieldname": "disable_auto_retry",
+   "fieldname": "realtime_job_updates",
    "fieldtype": "Check",
-   "label": "Disable Auto Retry"
-  },
-  {
-   "default": "0",
-   "fieldname": "disable_agent_job_deduplication",
-   "fieldtype": "Check",
-   "label": "Disable Agent Job Deduplication"
+   "label": "Realtime Job Updates"
   },
   {
    "default": "0",

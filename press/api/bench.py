@@ -468,7 +468,7 @@ def versions(name):
 		.run(as_dict=True)
 	)
 
-	Plan = frappe.qb.DocType("Plan")
+	Plan = frappe.qb.DocType("Site Plan")
 	plan_data = (
 		frappe.qb.from_(Plan)
 		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
@@ -672,6 +672,8 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 			limit=limit_page_length,
 			ignore_ifnull=True,
 		)
+		for job in jobs:
+			job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
 	else:
 		jobs = []
 	return jobs
@@ -850,7 +852,7 @@ def logs(name, bench):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).get_server_log(log)

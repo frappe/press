@@ -787,6 +787,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: 1
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',

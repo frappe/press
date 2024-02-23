@@ -5,7 +5,7 @@ frappe.ui.form.on('Saas Settings', {
 	refresh: function (frm) {
 		frm.set_query('plan', () => {
 			return {
-				filters: { app: frm.doc.name, is_free: 1 },
+				filters: { app: frm.doc.name, price_usd: ['=', 0] },
 			};
 		});
 	},

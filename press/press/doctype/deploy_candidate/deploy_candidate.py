@@ -71,8 +71,9 @@ class DeployCandidate(Document):
 		series = f"deploy-{group}-.######"
 		self.name = make_autoname(series)
 
-	def after_insert(self):
-		return
+	def before_insert(self):
+		if self.status == "Draft":
+			self.build_duration = 0
 
 	def on_trash(self):
 		frappe.db.delete(
@@ -412,6 +413,17 @@ class DeployCandidate(Document):
 	def _set_app_cached_flags(self) -> None:
 		cached = get_cached_apps()
 		for app in self.apps:
+			app.use_cached = False
+
+			"""
+			Temporary workaround cause get-app fails if repo owner is not 'frappe' or 'erpnext'
+			A fix has been deployed but due a build dependency issue, it cannot be released.
+
+			Ref: https://github.com/frappe/bench/pull/1536
+			"""
+			if frappe.get_value("App Source", app.source, "repository_owner") != "frappe":
+				continue
+
 			if app.hash[:10] not in cached.get(app.app, []):
 				continue
 
@@ -1137,26 +1149,35 @@ def can_pull_update(file_paths: list[str]) -> bool:
 
 
 def pull_update_file_filter(file_path: str) -> bool:
-	# Requires migrate but should not change image filesystem
-	if file_path.endswith(".json") and "/doctype/" in file_path:
-		return True
-
-	# Controller file
-	elif file_path.endswith(".py") and "/doctype/" in file_path:
-		return True
+	blacklist = [
+		# Requires pip install
+		"requirements.txt",
+		"pyproject.toml",
+		"setup.py",
+		# Requires yarn install, build
+		"package.json",
+		".vue",
+		".ts",
+		".jsx",
+		".tsx",
+		".scss",
+	]
+	if any(file_path.endswith(f) for f in blacklist):
+		return False
 
 	# Non build requiring frontend files
 	for ext in [".html", ".js", ".css"]:
 		if not file_path.endswith(ext):
 			continue
 
-		if "/public/" in file_path:
+		if "/public/" in file_path or "/www/" in file_path:
 			return True
 
-		elif "/www/" in file_path:
-			return True
+		# Probably requires build
+		else:
+			return False
 
-	return False
+	return True
 
 
 def cleanup_build_directories():

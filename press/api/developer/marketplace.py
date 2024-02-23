@@ -19,7 +19,7 @@ class DeveloperApiHandler:
 			raise_invalid_key_error()
 
 		app_subscription_name = frappe.db.exists(
-			"Marketplace App Subscription", {"secret_key": self.secret_key, "status": "Active"}
+			"Subscription", {"secret_key": self.secret_key, "enabled": 1}
 		)
 
 		if not app_subscription_name:
@@ -30,9 +30,7 @@ class DeveloperApiHandler:
 
 	def set_subscription_doc(self):
 		"""To be called after `secret_key` validation"""
-		self.app_subscription_doc = frappe.get_doc(
-			"Marketplace App Subscription", self.app_subscription_name
-		)
+		self.app_subscription_doc = frappe.get_doc("Subscription", self.app_subscription_name)
 
 	def get_subscription_status(self) -> str:
 		return self.app_subscription_doc.status
@@ -41,11 +39,10 @@ class DeveloperApiHandler:
 		"""Important rule for security: Send info back carefully"""
 		app_subscription_dict = self.app_subscription_doc.as_dict()
 		fields_to_send = [
-			"app",
-			"status",
+			"document_name",
+			"enabled",
 			"plan",
 			"site",
-			"end_date",
 		]
 
 		filtered_dict = {

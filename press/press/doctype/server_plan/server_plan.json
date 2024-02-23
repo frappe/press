@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "prompt",
+ "creation": "2024-02-05 22:21:47.560972",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "title",
+  "pricing_section",
+  "price_inr",
+  "column_break_sjmg",
+  "price_usd",
+  "section_break_nifk",
+  "server_type",
+  "cluster",
+  "instance_type",
+  "column_break_ypkt",
+  "vcpu",
+  "memory",
+  "disk",
+  "allowed_roles_section",
+  "roles"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Server\nDatabase Server\nProxy Server\nSelf Hosted Server"
+  },
+  {
+   "fieldname": "section_break_nifk",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type"
+  },
+  {
+   "fieldname": "column_break_ypkt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU"
+  },
+  {
+   "fieldname": "memory",
+   "fieldtype": "Data",
+   "label": "Memory"
+  },
+  {
+   "fieldname": "disk",
+   "fieldtype": "Data",
+   "label": "Disk"
+  },
+  {
+   "fieldname": "pricing_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
+  },
+  {
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (INR)",
+   "options": "INR",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_sjmg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (USD)",
+   "options": "INR",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
+  },
+  {
+   "fieldname": "allowed_roles_section",
+   "fieldtype": "Section Break",
+   "label": "Allowed Roles"
+  },
+  {
+   "fieldname": "roles",
+   "fieldtype": "Table",
+   "label": "Roles",
+   "options": "Has Role"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-21 21:04:47.525589",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Server Plan",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

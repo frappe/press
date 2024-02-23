@@ -3,7 +3,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
@@ -235,23 +235,30 @@ export default {
 								condition: () => row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return;
-									toast.promise(
-										releaseGroup.removeApp.submit({
-											app: row.name
-										}),
-										{
-											loading: 'Removing App...',
-											success: () => {
-												apps.reload();
-												return 'App Removed';
-											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: 'Remove App',
+										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(
+												releaseGroup.removeApp.submit({
+													app: row.name
+												}),
+												{
+													loading: 'Removing App...',
+													success: () => {
+														hide();
+														apps.reload();
+														return 'App Removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
 								}
 							},
 							{
@@ -312,7 +319,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -332,6 +339,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -389,6 +401,11 @@ export default {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
 						},
 						{
 							label: '',
@@ -615,7 +632,8 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
@@ -628,7 +646,8 @@ export default {
 												),
 												{
 													loading: 'Deleting  environment variable...',
-													success: () => `Environment variable ${row.key} removed`,
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')
@@ -804,6 +823,13 @@ export default {
 						}
 					},
 					options: [
+						{
+							label: 'Impersonate Team',
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
 						{
 							label: 'Drop Bench',
 							onClick() {

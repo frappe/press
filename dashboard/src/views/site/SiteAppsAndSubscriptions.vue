@@ -60,8 +60,8 @@
 				</div>
 
 				<div class="w-1/6">
-					<span v-if="app.subscription.status"
-						><Badge :label="app.subscription.status" />
+					<span v-if="app.subscription.enabled"
+						><Badge label="Enabled" />
 					</span>
 					<span v-else>-</span>
 				</div>
@@ -177,7 +177,7 @@
 					@change="
 						plan => {
 							selectedPlan = plan.name;
-							selectedPlanIsFree = plan.is_free;
+							selectedPlanIsFree = plan.price_usd === 0;
 						}
 					"
 				/>
@@ -328,7 +328,7 @@ export default {
 				},
 				validate() {
 					if (this.showPlanSelectionDialog && !this.selectedPlan) {
-						return 'Please select a plan to continue';
+						return 'Please aaa select a plan to continue';
 					}
 				},
 				onSuccess() {
@@ -388,10 +388,10 @@ export default {
 			this.newAppPlan = this.currentAppPlan;
 
 			this.appToChangePlan = {
-				name: app.subscription.app,
+				name: app.subscription.document_name,
 				title: app.app_title,
 				image: app.app_image,
-				plan: app.subscription.marketplace_app_plan,
+				plan: app.subscription.plan,
 				subscription: app.subscription.name,
 				billing_type: app.billing_type
 			};

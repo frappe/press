@@ -1,7 +1,7 @@
 <template>
 	<Table
 		:columns="[
-			{ label: 'Bench Name', name: 'name', width: 2 },
+			{ label: 'Bench Name', name: 'title', width: 2 },
 			{ label: 'Status', name: 'status' },
 			{ label: 'Version', name: 'version' },
 			{ label: 'Tags', name: 'tags' },
@@ -112,7 +112,8 @@ export default {
 			}
 
 			return this.$resources.benches.data.map(bench => ({
-				name: bench.title,
+				name: bench.name,
+				title: bench.title,
 				status: bench.status,
 				version: bench.version,
 				stats: {

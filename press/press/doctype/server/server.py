@@ -399,7 +399,7 @@ class BaseServer(Document):
 	@frappe.whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
-		plan = frappe.get_doc("Plan", plan)
+		plan = frappe.get_doc("Server Plan", plan)
 		self.ram = plan.memory
 		self.save()
 		self.reload()
@@ -419,6 +419,20 @@ class BaseServer(Document):
 		self.run_press_job("Create Server Snapshot")
 
 	def run_press_job(self, job_name, arguments=None):
+		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
+		if existing_jobs := frappe.db.get_all(
+			"Press Job",
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"server_type": self.doctype,
+				"server": self.name,
+			},
+			["job_type", "status"],
+		):
+			frappe.throw(
+				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
+			)
+
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(

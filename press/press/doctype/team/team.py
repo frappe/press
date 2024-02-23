@@ -950,7 +950,7 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
-		plan = frappe.qb.DocType("Plan")
+		plan = frappe.qb.DocType("Site Plan")
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)
