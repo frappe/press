@@ -340,23 +340,30 @@ export default {
 								condition: () => row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return;
-									toast.promise(
-										releaseGroup.removeApp.submit({
-											app: row.name
-										}),
-										{
-											loading: 'Removing App...',
-											success: () => {
-												apps.reload();
-												return 'App Removed';
-											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: 'Remove App',
+										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(
+												releaseGroup.removeApp.submit({
+													app: row.name
+												}),
+												{
+													loading: 'Removing App...',
+													success: () => {
+														hide();
+														apps.reload();
+														return 'App Removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
 								}
 							},
 							{
@@ -542,12 +549,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({

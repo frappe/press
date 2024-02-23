@@ -2,11 +2,11 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.model.document import Document
+from press.press.doctype.site_plan.plan import Plan
 from frappe.utils import rounded
 
 
-class ServerPlan(Document):
+class ServerPlan(Plan):
 	dashboard_fields = [
 		"title",
 		"price_inr",

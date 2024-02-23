@@ -69,6 +69,8 @@ class AgentJob(Document):
 
 		results = query.run(as_dict=1)
 		for result in results:
+			if result.status == "Undelivered":
+				result.status = "Pending"
 			# agent job start and end are in utc
 			if result.start:
 				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
@@ -77,6 +79,9 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
+		if doc.status == "Undelivered":
+			doc.status = "Pending"
+
 		doc["steps"] = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.name},
@@ -734,7 +739,7 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
-			process_restore_job_update(job)
+			process_restore_job_update(job, force=True)
 		elif job.job_type == "Restore Site":
 			process_restore_job_update(job)
 		elif job.job_type == "Reinstall Site":

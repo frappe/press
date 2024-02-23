@@ -42,7 +42,13 @@
 					label="Type"
 					:modelValue="selectedConfig?.type || type"
 					@update:modelValue="type = $event"
-					:options="['String', 'Number', 'JSON', 'Boolean']"
+					:options="[
+						'String',
+						'Number',
+						'JSON',
+						'Boolean',
+						selectedConfig?.value !== '__custom_key' ? 'Password' : null
+					]"
 					:disabled="selectedConfig?.value !== '__custom_key'"
 					autocomplete="off"
 				/>
@@ -100,7 +106,7 @@ export default {
 				this.key = this.config.key;
 				this.type = this.config.type;
 			}
-			this.value = this.config.value;
+			this.value = this.config.type === 'Password' ? '' : this.config.value;
 		}
 	},
 	resources: {
