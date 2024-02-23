@@ -191,6 +191,7 @@ class DeployCandidate(Document):
 				None,
 				[
 					"docker_registry_url",
+					"domain",
 					"docker_registry_namespace",
 					"docker_registry_username",
 					"docker_registry_password",
@@ -199,6 +200,15 @@ class DeployCandidate(Document):
 				],
 				as_dict=True,
 			)
+			if settings.docker_registry_namespace:
+				namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
+			else:
+				namespace = f"{settings.domain}"
+			self.docker_image_repository = (
+				f"{settings.docker_registry_url}/{namespace}/{self.group}"
+			)
+			self.docker_image_tag = self.name
+			self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
 			if settings.use_docker_remote_builder:
 				agent = Agent(settings.docker_remote_builder_server)
 				# Upload build context to remote docker builder
@@ -1106,8 +1116,7 @@ class DeployCandidate(Document):
 		else:
 			data = {}
 		# Update build output
-		if "build_output" in data:
-			self.build_output = data.get("build_output", "")
+		self.build_output = data.get("build_output", "")
 		# Update build steps
 		for step_update in data.get("build_steps", []):
 			step = find(self.build_steps, lambda x: x.stage_slug == step_update["stage_slug"] and x.step_slug == step_update["step_slug"])
@@ -1121,10 +1130,9 @@ class DeployCandidate(Document):
 			step.step_index = step_update["step_index"]
 
 		if job.status == "Running":
-			if self.status != "Running":
-				self.status = "Running"
-				self.save()
-				frappe.db.commit()
+			self.status = "Running"
+			self.save()
+			frappe.db.commit()
 		elif job.status == "Failure":
 			self._build_failed()
 			self._build_end()
