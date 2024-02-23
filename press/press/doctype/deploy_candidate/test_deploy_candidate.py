@@ -311,7 +311,7 @@ def create_cache_test_release_group(
 	for dep in release_group.dependencies:
 		if dep.dependency != "BENCH_VERSION":
 			continue
-		dep.version = "5.21.3"
+		dep.version = "5.22.1"
 
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()

@@ -341,15 +341,6 @@ class DeployCandidate(Document):
 		for app in self.apps:
 			app.use_cached = False
 
-			"""
-			Temporary workaround cause get-app fails if repo owner is not 'frappe' or 'erpnext'
-			A fix has been deployed but due a build dependency issue, it cannot be released.
-
-			Ref: https://github.com/frappe/bench/pull/1536
-			"""
-			if frappe.get_value("App Source", app.source, "repository_owner") != "frappe":
-				continue
-
 			if app.hash[:10] not in cached.get(app.app, []):
 				continue
 

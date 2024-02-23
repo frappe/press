@@ -2,32 +2,31 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
+from typing import TYPE_CHECKING, List
+
 import frappe
-from frappe.utils import comma_and, flt
-import json
-from typing import List
+import semantic_version as sv
+from frappe import _
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.press.doctype.server.server import Server
-from press.press.doctype.resource_tag.tag_helpers import TagHelpers
-from press.utils import (
-	get_last_doc,
-	get_app_tag,
-	get_current_team,
-	log_error,
-	get_client_blacklisted_keys,
-)
+from frappe.utils import comma_and, cstr, flt
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
-from typing import TYPE_CHECKING
-from frappe.utils import cstr
-from frappe import _
-import semantic_version as sv
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.server import Server
+from press.utils import (
+	get_app_tag,
+	get_client_blacklisted_keys,
+	get_current_team,
+	get_last_doc,
+	log_error,
+)
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -379,7 +378,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
-			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.2 or later"))
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
@@ -388,7 +387,7 @@ class ReleaseGroup(Document, TagHelpers):
 		).version
 
 		try:
-			return sv.Version(version) in sv.SimpleSpec(">=5.21.3")
+			return sv.Version(version) in sv.SimpleSpec(">=5.22.1")
 		except ValueError:
 			return False
 
