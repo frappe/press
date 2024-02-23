@@ -101,7 +101,13 @@
 							v-model="newConfig.type"
 							type="select"
 							:disabled="chosenStandardConfig && !showCustomKeyInput"
-							:options="['String', 'Password', 'Number', 'JSON', 'Boolean']"
+							:options="[
+								'String',
+								'Number',
+								'JSON',
+								'Boolean',
+								chosenStandardConfig?.value !== 'custom_key' ? 'Password' : null
+							]"
 							@change="isDirty = true"
 						/>
 						<FormControl

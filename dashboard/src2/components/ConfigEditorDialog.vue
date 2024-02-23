@@ -42,7 +42,13 @@
 					label="Type"
 					:modelValue="selectedConfig?.type || type"
 					@update:modelValue="type = $event"
-					:options="['String', 'Password', 'Number', 'JSON', 'Boolean']"
+					:options="[
+						'String',
+						'Number',
+						'JSON',
+						'Boolean',
+						selectedConfig?.value !== '__custom_key' ? 'Password' : null
+					]"
 					:disabled="selectedConfig?.value !== '__custom_key'"
 					autocomplete="off"
 				/>
