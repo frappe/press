@@ -24,7 +24,6 @@ from press.press.doctype.app_release.app_release import (
 	AppReleasePair,
 	get_changed_files_between_hashes,
 )
-from press.press.doctype.deploy_candidate.cache_utils import get_cached_apps
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -337,13 +336,7 @@ class DeployCandidate(Document):
 		self.mounts = json.dumps(self._mounts)
 
 	def _set_app_cached_flags(self) -> None:
-		cached = get_cached_apps()
 		for app in self.apps:
-			app.use_cached = False
-
-			if app.hash[:10] not in cached.get(app.app, []):
-				continue
-
 			app.use_cached = True
 
 	def _prepare_build_directory(self):
