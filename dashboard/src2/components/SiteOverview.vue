@@ -5,7 +5,7 @@
 	>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
+				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
 			</div>
 			<div>
 				<div
@@ -91,7 +91,7 @@ export default {
 			let formatBytes = v => this.$format.bytes(v, 0, 2);
 			let currentPlan = this.$site.doc.current_plan;
 			let planDescription = '';
-			if (currentPlan.price_usd > 0) {
+			if (currentPlan?.price_usd > 0) {
 				if (this.$team.doc.currency === 'INR') {
 					planDescription = `₹${currentPlan.price_inr} /month (₹${currentPlan.price_per_day_inr} /day)`;
 				} else {
