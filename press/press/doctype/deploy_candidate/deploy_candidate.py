@@ -144,7 +144,7 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
-		if frappe.db.get_single_value("Press Settings", "suspend_builds"):
+		if frappe.db.get_single_value("Press Settings", "suspend_builds") and not self._is_docker_remote_builder_server_configured():
 			if self.status != "Scheduled":
 				# Schedule build to be run ASAP.
 				self.status = "Scheduled"
@@ -189,13 +189,11 @@ class DeployCandidate(Document):
 				"Press Settings",
 				None,
 				[
-					"docker_registry_url",
 					"domain",
+					"docker_registry_url",
 					"docker_registry_namespace",
 					"docker_registry_username",
 					"docker_registry_password",
-					"use_docker_remote_builder",
-					"docker_remote_builder_server"
 				],
 				as_dict=True,
 			)
@@ -208,8 +206,8 @@ class DeployCandidate(Document):
 			)
 			self.docker_image_tag = self.name
 			self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
-			if settings.use_docker_remote_builder:
-				agent = Agent(settings.docker_remote_builder_server)
+			if self._is_docker_remote_builder_server_configured():
+				agent = Agent(self._get_docker_remote_builder_server())
 				# Upload build context to remote docker builder
 				build_context_archieve_filepath = self._tar_build_context()
 				uploaded_filename = None
@@ -654,7 +652,7 @@ class DeployCandidate(Document):
 				"domain",
 				"docker_registry_url",
 				"docker_registry_namespace",
-				"docker_remote_builder",
+				"docker_remote_builder_ssh",
 			],
 			as_dict=True,
 		)
@@ -672,9 +670,9 @@ class DeployCandidate(Document):
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		if settings.docker_remote_builder:
+		if settings.docker_remote_builder_ssh:
 			# Connect to Remote Docker Host if configured
-			environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
+			environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"})
 
 		if settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
@@ -826,14 +824,14 @@ class DeployCandidate(Document):
 					"docker_registry_url",
 					"docker_registry_username",
 					"docker_registry_password",
-					"docker_remote_builder",
+					"docker_remote_builder_ssh",
 				],
 				as_dict=True,
 			)
 			environment = os.environ.copy()
-			if settings.docker_remote_builder:
+			if settings.docker_remote_builder_ssh:
 				# Connect to Remote Docker Host if configured
-				environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder}"})
+				environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"})
 
 			client = docker.from_env(environment=environment)
 			client.login(
@@ -1129,6 +1127,12 @@ class DeployCandidate(Document):
 			# Check if deployment required
 			if request_data.get("deploy_after_build"):
 				self.create_deploy(request_data.get("deploy_to_staging"))
+
+	def _is_docker_remote_builder_server_configured(self):
+		return bool(self._get_docker_remote_builder_server())
+
+	def _get_docker_remote_builder_server(self):
+		return frappe.get_value("Press Settings", None, "docker_remote_builder_server")
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
