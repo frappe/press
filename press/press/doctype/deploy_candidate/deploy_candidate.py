@@ -175,6 +175,10 @@ class DeployCandidate(Document):
 			self.save()
 			frappe.db.commit()
 
+		# For remote docker builder, don't run build if it's already in running stage
+		if self.status == "Running" and self.is_docker_remote_builder_used:
+			return
+
 		self.status = "Preparing"
 		self.build_start = now()
 		self.is_single_container = True
@@ -213,6 +217,7 @@ class DeployCandidate(Document):
 			remote_build_server = self._get_docker_remote_builder_server()
 			if remote_build_server:
 				agent = Agent(remote_build_server)
+				self.is_docker_remote_builder_used = True
 				# Upload build context to remote docker builder
 				build_context_archieve_filepath = self._tar_build_context()
 				uploaded_filename = None
@@ -255,6 +260,7 @@ class DeployCandidate(Document):
 				)
 				_mark_build_as_running()
 			else:
+				self.is_docker_remote_builder_used = False
 				_mark_build_as_running()
 				self._run_docker_build(no_cache)
 				self._push_docker_image()
