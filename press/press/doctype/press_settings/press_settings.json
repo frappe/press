@@ -1112,7 +1112,7 @@
   },
   {
    "default": "0",
-   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.21.3 or later.",
+   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.22.1 or later.",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
    "label": "Use App Cache"

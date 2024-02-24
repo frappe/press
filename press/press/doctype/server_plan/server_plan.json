@@ -63,12 +63,12 @@
   },
   {
    "fieldname": "memory",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Memory"
   },
   {
    "fieldname": "disk",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Disk"
   },
   {
@@ -115,7 +115,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-21 21:04:47.525589",
+ "modified": "2024-02-24 10:54:20.322655",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",
