@@ -8,7 +8,9 @@ import random
 
 from press.agent import Agent
 from press.api.client import is_owned_by_team
-from press.press.doctype.deploy_candidate.deploy_candidate import process_docker_image_build_job_update
+from press.press.doctype.deploy_candidate.deploy_candidate import (
+	process_docker_image_build_job_update,
+)
 from press.utils import log_error
 from frappe.utils import (
 	cint,

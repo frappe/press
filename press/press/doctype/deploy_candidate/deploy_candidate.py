@@ -144,7 +144,10 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
-		if frappe.db.get_single_value("Press Settings", "suspend_builds") and not self._is_docker_remote_builder_server_configured():
+		if (
+			frappe.db.get_single_value("Press Settings", "suspend_builds")
+			and not self._is_docker_remote_builder_server_configured()
+		):
 			if self.status != "Scheduled":
 				# Schedule build to be run ASAP.
 				self.status = "Scheduled"
@@ -171,6 +174,7 @@ class DeployCandidate(Document):
 			self.status = "Running"
 			self.save()
 			frappe.db.commit()
+
 		self.status = "Preparing"
 		self.build_start = now()
 		self.is_single_container = True
@@ -215,34 +219,39 @@ class DeployCandidate(Document):
 					uploaded_filename = agent.upload_build_context_for_docker_build(f)
 				if not uploaded_filename:
 					raise Exception("Failed to upload build context to remote docker builder")
-				agent.build_docker_image({
-					"deploy_candidate": self.name,
-					"deploy_after_build": deploy_after_build,
-					"deploy_to_staging": deploy_to_staging,
-					"filename": uploaded_filename,
-					"image_repository": self.docker_image_repository,
-					"image_tag": self.docker_image_tag,
-					"no_cache": no_cache,
-					"registry": {
-						"password": settings.docker_registry_password,
-						"url": settings.docker_registry_url,
-						"username": settings.docker_registry_username,
-					},
-					"build_steps": [{
-						"stage": step.stage,
-						"stage_slug": step.stage_slug,
-						"step": step.step,
-						"step_slug": step.step_slug,
-						"status": step.status,
-						"duration": step.duration,
-						"cached": step.cached,
-						"step_index": step.step_index,
-						"hash": step.hash,
-						"command": step.command,
-						"output": step.output,
-						"lines": step.lines
-					} for step in self.build_steps]
-				})
+				agent.build_docker_image(
+					{
+						"deploy_candidate": self.name,
+						"deploy_after_build": deploy_after_build,
+						"deploy_to_staging": deploy_to_staging,
+						"filename": uploaded_filename,
+						"image_repository": self.docker_image_repository,
+						"image_tag": self.docker_image_tag,
+						"no_cache": no_cache,
+						"registry": {
+							"password": settings.docker_registry_password,
+							"url": settings.docker_registry_url,
+							"username": settings.docker_registry_username,
+						},
+						"build_steps": [
+							{
+								"stage": step.stage,
+								"stage_slug": step.stage_slug,
+								"step": step.step,
+								"step_slug": step.step_slug,
+								"status": step.status,
+								"duration": step.duration,
+								"cached": step.cached,
+								"step_index": step.step_index,
+								"hash": step.hash,
+								"command": step.command,
+								"output": step.output,
+								"lines": step.lines,
+							}
+							for step in self.build_steps
+						],
+					}
+				)
 				_mark_build_as_running()
 			else:
 				_mark_build_as_running()
@@ -659,9 +668,9 @@ class DeployCandidate(Document):
 
 		# check if it's running on apple silicon mac
 		if (
-				platform.machine() == "arm64"
-				and platform.system() == "Darwin"
-				and platform.processor() == "arm"
+			platform.machine() == "arm64"
+			and platform.system() == "Darwin"
+			and platform.processor() == "arm"
 		):
 			self.command = f"{self.command}x build --platform linux/amd64"
 
@@ -672,7 +681,9 @@ class DeployCandidate(Document):
 
 		if settings.docker_remote_builder_ssh:
 			# Connect to Remote Docker Host if configured
-			environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"})
+			environment.update(
+				{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
+			)
 
 		if settings.docker_registry_namespace:
 			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
@@ -831,7 +842,9 @@ class DeployCandidate(Document):
 			environment = os.environ.copy()
 			if settings.docker_remote_builder_ssh:
 				# Connect to Remote Docker Host if configured
-				environment.update({"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"})
+				environment.update(
+					{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
+				)
 
 			client = docker.from_env(environment=environment)
 			client.login(
@@ -845,7 +858,7 @@ class DeployCandidate(Document):
 			last_update = now()
 
 			for line in client.images.push(
-					self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
+				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
 			):
 				if "id" not in line.keys():
 					continue
@@ -1102,7 +1115,11 @@ class DeployCandidate(Document):
 		self.build_output = data.get("build_output", "")
 		# Update build steps
 		for step_update in data.get("build_steps", []):
-			step = find(self.build_steps, lambda x: x.stage_slug == step_update["stage_slug"] and x.step_slug == step_update["step_slug"])
+			step = find(
+				self.build_steps,
+				lambda x: x.stage_slug == step_update["stage_slug"]
+				and x.step_slug == step_update["step_slug"],
+			)
 			step.status = step_update["status"]
 			step.cached = step_update["cached"]
 			step.command = step_update["command"]
@@ -1133,6 +1150,7 @@ class DeployCandidate(Document):
 
 	def _get_docker_remote_builder_server(self):
 		return frappe.get_value("Press Settings", None, "docker_remote_builder_server")
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
