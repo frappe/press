@@ -295,7 +295,7 @@ class Site(Document, TagHelpers):
 			log_error("Removing Old Site from Route53 Failed")
 
 	def update_config_preview(self):
-		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
+		"""Regenerates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
 
 		# Update from site.configuration
@@ -303,9 +303,6 @@ class Site(Document, TagHelpers):
 			# update internal flag from master
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
 			key_type = row.type or row.get_type()
-			if key_type == "Password":
-				# we don't support password type yet!
-				key_type = "String"
 			row.type = key_type
 
 			if key_type == "Number":
@@ -1108,13 +1105,14 @@ class Site(Document, TagHelpers):
 		"""
 		keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
+			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(
+				value
+			)
 			if key in keys:
 				self.configuration[keys[key]].value = convert(value)
-				self.configuration[keys[key]].type = guess_type(value)
+				self.configuration[keys[key]].type = _type
 			else:
-				self.append(
-					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
-				)
+				self.append("configuration", {"key": key, "value": convert(value), "type": _type})
 
 		if save:
 			self.save()
@@ -1150,6 +1148,8 @@ class Site(Document, TagHelpers):
 				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
+			elif _type == "Password" and value == "*******":
+				value = frappe.get_value("Site Config", {"key": key}, "value")
 			sanitized_config[key] = value
 
 		self.update_site_config(sanitized_config)

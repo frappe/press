@@ -444,12 +444,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({
