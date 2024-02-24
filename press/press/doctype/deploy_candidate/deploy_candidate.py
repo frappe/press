@@ -1155,6 +1155,7 @@ class DeployCandidate(Document):
 			server = frappe.get_value("Press Settings", None, "docker_remote_builder_server")
 		return server
 
+
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
 	Updated app files between current and previous build
