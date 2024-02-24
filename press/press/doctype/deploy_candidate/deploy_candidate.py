@@ -210,8 +210,9 @@ class DeployCandidate(Document):
 			)
 			self.docker_image_tag = self.name
 			self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
-			if self._is_docker_remote_builder_server_configured():
-				agent = Agent(self._get_docker_remote_builder_server())
+			remote_build_server = self._get_docker_remote_builder_server()
+			if remote_build_server:
+				agent = Agent(remote_build_server)
 				# Upload build context to remote docker builder
 				build_context_archieve_filepath = self._tar_build_context()
 				uploaded_filename = None
@@ -1149,8 +1150,10 @@ class DeployCandidate(Document):
 		return bool(self._get_docker_remote_builder_server())
 
 	def _get_docker_remote_builder_server(self):
-		return frappe.get_value("Press Settings", None, "docker_remote_builder_server")
-
+		server = frappe.get_value("Release Group", self.group, "docker_remote_builder_server")
+		if not server:
+			server = frappe.get_value("Press Settings", None, "docker_remote_builder_server")
+		return server
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
