@@ -371,7 +371,7 @@ export default {
 			if (this.tabIndex === 1) {
 				return this.selectedGithubRepository?.label;
 			} else {
-				return this.githubAppLink.split('/')[4];
+				return this.githubAppLink.split('/')[4].replace('.git', '');
 			}
 		},
 		branchOptions() {
