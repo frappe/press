@@ -113,23 +113,21 @@ export default {
 				},
 				{
 					label: 'CPU',
-					value: `${this.$server.doc.usage.vcpu} vCPU / ${this.$format.plural(
-						currentPlan.vcpu,
-						'vCPU',
-						'vCPUs'
-					)}`
+					value: `${this.$server.doc.usage.vcpu || 0} vCPU / ${
+						currentPlan.vcpu
+					} ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
 				},
 				{
 					label: 'Memory',
-					value: `${formatBytes(this.$server.doc.usage.memory)} / ${formatBytes(
-						currentPlan.memory
-					)}`
+					value: `${formatBytes(
+						this.$server.doc.usage.memory || 0
+					)} / ${formatBytes(currentPlan.memory)}`
 				},
 				{
 					label: 'Storage',
-					value: `${formatBytes(this.$server.doc.usage.disk)} / ${formatBytes(
-						currentPlan.disk
-					)}`
+					value: `${formatBytes(
+						this.$server.doc.usage.disk || 0
+					)} / ${formatBytes(currentPlan.disk)}`
 				}
 			];
 		},
