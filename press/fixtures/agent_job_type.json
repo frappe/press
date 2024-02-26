@@ -1908,7 +1908,7 @@
   ]
  },
  {
-  "disabled_auto_retry": 0,
+  "disabled_auto_retry": 1,
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
