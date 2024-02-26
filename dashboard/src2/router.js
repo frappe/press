@@ -60,11 +60,6 @@ let router = createRouter({
 			props: true
 		},
 		{
-			name: 'NewBench',
-			path: '/benches/new',
-			component: () => import('./pages/NewBench.vue')
-		},
-		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),

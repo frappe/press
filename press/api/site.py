@@ -15,7 +15,7 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours
+from frappe.utils import flt, time_diff_in_hours, sbool
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
@@ -262,6 +262,10 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 		limit=limit_page_length,
 		order_by=order_by or "creation desc",
 	)
+
+	for job in jobs:
+		job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
+
 	return jobs
 
 
@@ -281,6 +285,9 @@ def job(job):
 	for key in list(job.keys()):
 		if key not in whitelisted_fields:
 			job.pop(key, None)
+
+	if job.status == "Undelivered":
+		job.status = "Pending"
 
 	job.steps = frappe.get_all(
 		"Agent Job Step",
@@ -1046,7 +1053,7 @@ def get_installed_apps(site):
 			app_source.plan_info = frappe.db.get_value(
 				"Marketplace App Plan",
 				subscription.plan,
-				["price_usd", "price_inr", "name"],
+				["price_usd", "price_inr", "name", "plan"],
 				as_dict=True,
 			)
 
@@ -1402,7 +1409,17 @@ def log(name, log):
 @protected("Site")
 def site_config(name):
 	site = frappe.get_doc("Site", name)
-	return list(filter(lambda x: not x.internal, site.configuration))
+	config = list(filter(lambda x: not x.internal, site.configuration))
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c.key in secret_keys:
+			c.type = "Password"
+			c.value = "*******"
+
+	return config
 
 
 @frappe.whitelist()
@@ -1420,9 +1437,11 @@ def update_config(name, config):
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type == "Boolean":
-			c.value = bool(c.value)
+			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)

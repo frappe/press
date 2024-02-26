@@ -34,11 +34,12 @@
 						</div>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
-						{{ $team.doc.country === 'India' ? '₹' : '$'
-						}}{{
-							$team.doc.country === 'India'
-								? plan.price_per_day_inr
-								: plan.price_per_day_usd
+						{{
+							$format.userCurrency(
+								$format.pricePerDay(
+									$team.doc.currency === 'INR' ? plan.price_inr : plan.price_usd
+								)
+							)
 						}}
 						/day
 					</div>

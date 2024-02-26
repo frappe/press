@@ -653,12 +653,6 @@ class DatabaseServer(BaseServer):
 	def get_stalk(self, name):
 		return self.agent.get(f"database/stalks/{name}")
 
-	@frappe.whitelist()
-	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
-
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")
 		agent_repository_url = self.get_agent_repository_url()

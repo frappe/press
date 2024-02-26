@@ -3,28 +3,29 @@
 # For license information, please see license.txt
 
 import json
-import frappe
 import random
 
-from press.agent import Agent
-from press.api.client import is_owned_by_team
-from press.utils import log_error
+import frappe
+from frappe.core.utils import find
+from frappe.model.document import Document
 from frappe.utils import (
+	add_days,
 	cint,
 	convert_utc_to_system_timezone,
 	create_batch,
-	add_days,
 	cstr,
 )
-from frappe.core.utils import find
-from frappe.model.document import Document
+
+from press.agent import Agent
+from press.api.client import is_owned_by_team
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.press.doctype.press_notification.press_notification import (
-	create_new_notification,
-)
+from press.utils import log_error
 
 
 class AgentJob(Document):
@@ -39,13 +40,16 @@ class AgentJob(Document):
 		"bench",
 		"site",
 		"server",
+		"job_id",
 	]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		site = cstr(filters.get("site", ""))
 		group = cstr(filters.get("group", ""))
-		if not (site or group):
+		server = cstr(filters.get("server", ""))
+
+		if not (site or group or server):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
 		if site:
@@ -60,8 +64,13 @@ class AgentJob(Document):
 			)
 			query = query.where(AgentJob.bench.isin(benches))
 
+		if server:
+			is_owned_by_team("Server", server, raise_exception=True)
+
 		results = query.run(as_dict=1)
 		for result in results:
+			if result.status == "Undelivered":
+				result.status = "Pending"
 			# agent job start and end are in utc
 			if result.start:
 				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
@@ -70,6 +79,9 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
+		if doc.status == "Undelivered":
+			doc.status = "Pending"
+
 		doc["steps"] = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.name},
@@ -675,43 +687,43 @@ def process_job_updates(job_name):
 	job = frappe.get_doc("Agent Job", job_name)
 	try:
 		from press.press.doctype.bench.bench import (
+			process_add_ssh_user_job_update,
 			process_archive_bench_job_update,
 			process_new_bench_job_update,
-			process_add_ssh_user_job_update,
 			process_remove_ssh_user_job_update,
 		)
-		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.code_server.code_server import (
+			process_archive_code_server_job_update,
+			process_new_code_server_job_update,
+			process_start_code_server_job_update,
+			process_stop_code_server_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
+		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site.site import (
+			process_add_proxysql_user_job_update,
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
-			process_uninstall_app_site_job_update,
 			process_migrate_site_job_update,
+			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
-			process_rename_site_job_update,
-			process_restore_tables_job_update,
-			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
-			process_move_site_to_bench_job_update,
+			process_rename_site_job_update,
 			process_restore_job_update,
+			process_restore_tables_job_update,
+			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
 		from press.press.doctype.site_update.site_update import (
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
-		)
-		from press.press.doctype.code_server.code_server import (
-			process_new_code_server_job_update,
-			process_start_code_server_job_update,
-			process_stop_code_server_job_update,
-			process_archive_code_server_job_update,
 		)
 
 		site_migration = get_ongoing_migration(job.site)

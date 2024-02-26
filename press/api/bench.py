@@ -273,7 +273,16 @@ def bench_config(name):
 	else:
 		bench_config = []
 
-	return common_site_config + bench_config
+	config = common_site_config + bench_config
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c["key"] in secret_keys:
+			c["value"] = "*******"
+			c["type"] = "Password"
+	return config
 
 
 @frappe.whitelist()
@@ -296,6 +305,8 @@ def update_config(name, config):
 			c.value = bool(c.value)
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
 
 		if c.key in bench_config_keys:
 			sanitized_bench_config.append(c)
@@ -460,29 +471,32 @@ def versions(name):
 		fields=["name", "status", "cluster", "plan", "creation", "bench"],
 	)
 
-	Cluster = frappe.qb.DocType("Cluster")
-	cluster_data = (
-		frappe.qb.from_(Cluster)
-		.select(Cluster.name, Cluster.title, Cluster.image)
-		.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+	if sites_in_group_details:
+		Cluster = frappe.qb.DocType("Cluster")
+		cluster_data = (
+			frappe.qb.from_(Cluster)
+			.select(Cluster.name, Cluster.title, Cluster.image)
+			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
 
-	Plan = frappe.qb.DocType("Site Plan")
-	plan_data = (
-		frappe.qb.from_(Plan)
-		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-		.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+		Plan = frappe.qb.DocType("Site Plan")
+		plan_data = (
+			frappe.qb.from_(Plan)
+			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
 
-	ResourceTag = frappe.qb.DocType("Resource Tag")
-	tag_data = (
-		frappe.qb.from_(ResourceTag)
-		.select(ResourceTag.tag_name, ResourceTag.parent)
-		.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+		ResourceTag = frappe.qb.DocType("Resource Tag")
+		tag_data = (
+			frappe.qb.from_(ResourceTag)
+			.select(ResourceTag.tag_name, ResourceTag.parent)
+			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+	else:
+		cluster_data = plan_data = tag_data = {}
 
 	for version in deployed_versions:
 		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
@@ -672,6 +686,8 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 			limit=limit_page_length,
 			ignore_ifnull=True,
 		)
+		for job in jobs:
+			job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
 	else:
 		jobs = []
 	return jobs

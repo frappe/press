@@ -75,10 +75,117 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewBench' });
+					router.push({ name: 'New Release Group' });
 				}
 			};
 		}
+	},
+	create: {
+		route: '/benches/new',
+		title: 'New Bench',
+		secondaryCreate: {
+			route: '/servers/:server/benches/new',
+			optionalFields: ['clusters'],
+			routeName: 'Server New Bench'
+		},
+		optionsResource() {
+			return {
+				url: 'press.api.bench.options',
+				initialData: {
+					versions: [],
+					clusters: []
+				},
+				auto: true
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.bench.new',
+				validate({ bench }) {
+					if (!bench.title) {
+						return 'Bench Title cannot be blank';
+					}
+					if (!bench.version) {
+						return 'Select a version to create bench';
+					}
+				},
+				onSuccess(groupName) {
+					this.$router.push({
+						name: 'Release Group Detail Apps',
+						params: { name: groupName }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createBench, vals, optionsData: options }) {
+			return {
+				label: 'Create Bench',
+				variant: 'solid',
+				onClick() {
+					createBench.submit({
+						bench: {
+							title: vals.benchTitle,
+							version: vals.benchVersion,
+							cluster: vals.benchRegion || null,
+							saas_app: null,
+							apps: [
+								// some wizardry to only pick frappe for the chosen version
+								options.versions
+									.find(v => v.name === vals.benchVersion)
+									.apps.find(app => app.name === 'frappe')
+							].map(app => {
+								return {
+									name: app.name,
+									source: app.source.name
+								};
+							}),
+							server: vals.server || null
+						}
+					});
+				}
+			};
+		},
+		options: [
+			{
+				label: 'Bench Title',
+				name: 'benchTitle',
+				type: 'text'
+			},
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'benchVersion',
+				type: 'card',
+				fieldname: 'versions',
+				dependsOn: ['benchTitle']
+			},
+			{
+				label: 'Select Region',
+				name: 'benchRegion',
+				type: 'card',
+				fieldname: 'clusters',
+				dependsOn: ['benchVersion']
+			}
+		],
+		summary: [
+			{
+				label: 'Bench Title',
+				fieldname: 'benchTitle'
+			},
+			{
+				label: 'Region',
+				fieldname: 'benchRegion',
+				hideWhen: 'server'
+			},
+			{
+				label: 'Server',
+				fieldname: 'server',
+				hideWhen: 'benchRegion'
+			},
+			{
+				label: 'Frappe Version',
+				fieldname: 'benchVersion'
+			}
+		]
 	},
 	detail: {
 		titleField: 'title',
@@ -444,12 +551,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({

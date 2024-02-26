@@ -3,27 +3,72 @@
 # For license information, please see license.txt
 
 
-from functools import cached_property
-import frappe
-from frappe import _
-from frappe.model.document import Document
-from press.agent import Agent
-from press.runner import Ansible
-from press.utils import log_error
-from frappe.core.utils import find
-from press.overrides import get_permission_query_conditions_for_doctype
-from frappe.utils.user import is_system_user
-
-from typing import List, Union
-import boto3
 import json
 import typing
+from functools import cached_property
+from typing import List, Union
+
+import boto3
+import frappe
+from frappe import _
+from frappe.core.utils import find
+from frappe.model.document import Document
+from frappe.utils.user import is_system_user
+
+from press.agent import Agent
+from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.runner import Ansible
+from press.utils import log_error
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
 
 
-class BaseServer(Document):
+class BaseServer(Document, TagHelpers):
+	dashboard_fields = [
+		"title",
+		"plan",
+		"cluster",
+		"status",
+		"team",
+		"database_server",
+	]
+	dashboard_actions = ["change_plan", "reboot", "rename", "drop_server"]
+
+	@staticmethod
+	def get_list_query(query):
+		Server = frappe.qb.DocType("Server")
+
+		query = query.where(Server.status != "Archived").where(
+			Server.team == frappe.local.team().name
+		)
+		return query
+
+	def get_doc(self, doc):
+		from press.api.client import get
+		from press.api.server import usage
+
+		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
+		doc.usage = usage(self.name)
+
+		return doc
+
+	@frappe.whitelist()
+	def drop_server(self):
+		if self.doctype == "Database Server":
+			app_server_name = frappe.db.get_value(
+				"Server", {"database_server": self.name}, "name"
+			)
+			app_server = frappe.get_doc("Server", app_server_name)
+			db_server = self
+		else:
+			app_server = self
+			db_server = frappe.get_doc("Database Server", self.database_server)
+
+		app_server.archive()
+		db_server.archive()
+
 	def autoname(self):
 		if not self.domain:
 			self.domain = frappe.db.get_single_value("Press Settings", "domain")
@@ -592,6 +637,17 @@ class BaseServer(Document):
 			console.reload()
 			console.run_reboot()
 
+	@frappe.whitelist()
+	def reboot(self):
+		if self.provider in ("AWS EC2", "OCI"):
+			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
+			virtual_machine.reboot()
+
+	@frappe.whitelist()
+	def rename(self, title):
+		self.title = title
+		self.save()
+
 
 class Server(BaseServer):
 
@@ -897,12 +953,6 @@ class Server(BaseServer):
 		)
 		if servers:
 			return servers[0]
-
-	@frappe.whitelist()
-	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")

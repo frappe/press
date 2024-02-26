@@ -262,7 +262,6 @@
    "label": "Common Site Config"
   },
   {
-   "default": "{}",
    "fieldname": "common_site_config_table",
    "fieldtype": "Table",
    "label": "Configuration",
@@ -344,7 +343,7 @@
   },
   {
    "default": "0",
-   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.21.3 or later.",
+   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.22.1 or later.",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
    "label": "Use App Cache"

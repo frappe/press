@@ -5,6 +5,7 @@
 
 # import frappe
 import copy
+
 from frappe.model.document import Document
 
 DEFAULT_DEPENDENCIES = [
@@ -12,7 +13,7 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "NODE_VERSION", "version": "18.16.0"},
 	{"dependency": "PYTHON_VERSION", "version": "3.11"},
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
-	{"dependency": "BENCH_VERSION", "version": "5.22.0"},
+	{"dependency": "BENCH_VERSION", "version": "5.22.1"},
 ]
 
 
