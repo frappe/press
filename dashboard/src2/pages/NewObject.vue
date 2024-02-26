@@ -131,7 +131,7 @@ export default {
 			return getObject(this.objectType);
 		},
 		breadcrumbs() {
-			if (this.object.create.secondaryCreate.routeName === this.$route.name) {
+			if (this.object.create.secondaryCreate?.routeName === this.$route.name) {
 				let isObjectServer = Object.keys(this.vals)[0] === 'server';
 				let objectName = Object.values(this.vals)[0];
 
@@ -200,9 +200,9 @@ export default {
 			for (let option of this.options) {
 				if (!this.showOption(option)) return false;
 			}
-
 			for (let summaryItem of this.summary) {
-				if (!this.vals[summaryItem.fieldname]) return false;
+				if (summaryItem.fieldname && !this.vals[summaryItem.fieldname])
+					return false;
 			}
 
 			return true;
