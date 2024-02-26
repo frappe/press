@@ -520,3 +520,11 @@ class ttl_cache:
 
 		wrapper_func.cache = self
 		return wrapper_func
+
+
+def poly_get_doctype(doctypes, name):
+	"""Get the doctype value from the given name of a doc from a list of doctypes"""
+	for doctype in doctypes:
+		if frappe.db.exists(doctype, name):
+			return doctype
+	return doctypes[-1]
