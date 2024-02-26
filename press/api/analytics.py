@@ -25,7 +25,9 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 try:
 	from frappe.utils import convert_utc_to_user_timezone
 except ImportError:
-	from frappe.utils import convert_utc_to_system_timezone as convert_utc_to_user_timezone
+	from frappe.utils import (
+		convert_utc_to_system_timezone as convert_utc_to_user_timezone,
+	)
 
 
 @frappe.whitelist()
@@ -47,6 +49,8 @@ def get(name, timezone, duration="7d"):
 	request_duration_by_path_data = get_request_by_path(
 		name, "duration", timezone, timespan, timegrain
 	)
+	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
+	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
 
 	uptime_data = get_uptime(name, timezone, timespan, timegrain)
@@ -60,6 +64,8 @@ def get(name, timezone, duration="7d"):
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"request_count_by_path": request_count_by_path_data,
 		"request_duration_by_path": request_duration_by_path_data,
+		"slow_logs_by_count": slow_logs_by_count,
+		"slow_logs_by_duration": slow_logs_by_duration,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
 		"job_cpu_time": [{"value": r.duration, "date": r.date} for r in job_data],
 		"uptime": (uptime_data + [{}] * 60)[:60],
@@ -144,7 +150,14 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 							"bool": {
 								"filter": [
 									{"match_phrase": {"json.site": site}},
-									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+									{
+										"range": {
+											"@timestamp": {
+												"gte": f"now-{timespan}s",
+												"lte": "now",
+											}
+										}
+									},
 								],
 								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
 							}
@@ -162,7 +175,14 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 									"bool": {
 										"filter": [
 											{"match_phrase": {"json.site": site}},
-											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+											{
+												"range": {
+													"@timestamp": {
+														"gte": f"now-{timespan}s",
+														"lte": "now",
+													}
+												}
+											},
 										],
 										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
 									}
@@ -199,7 +219,14 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 							"bool": {
 								"filter": [
 									{"match_phrase": {"json.site": site}},
-									{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+									{
+										"range": {
+											"@timestamp": {
+												"gte": f"now-{timespan}s",
+												"lte": "now",
+											}
+										}
+									},
 								],
 								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
 							}
@@ -224,7 +251,14 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 									"bool": {
 										"filter": [
 											{"match_phrase": {"json.site": site}},
-											{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+											{
+												"range": {
+													"@timestamp": {
+														"gte": f"now-{timespan}s",
+														"lte": "now",
+													}
+												}
+											},
 										],
 										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
 									}
@@ -277,11 +311,208 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 				{
 					"path": bucket["key"],
 					"values": [
-						data["request_count"]["doc_count"]
-						if query_type == "count"
-						else data["methods"]["sum"]["value"] / 1000000
-						if query_type == "duration"
-						else 0
+						(
+							data["request_count"]["doc_count"]
+							if query_type == "count"
+							else (
+								data["methods"]["sum"]["value"] / 1000000 if query_type == "duration" else 0
+							)
+						)
+						for data in bucket["histogram_of_method"]["buckets"]
+					],
+					"stack": "path",
+				}
+			)
+		)
+
+	return {"datasets": buckets, "labels": labels}
+
+
+def get_slow_logs(site, query_type, timezone, timespan, timegrain):
+	database_name = frappe.db.get_value("Site", site, "database_name")
+	MAX_NO_OF_PATHS = 10
+
+	log_server = frappe.db.get_single_value("Press Settings", "log_server")
+	if not log_server:
+		return {"datasets": [], "labels": []}
+
+	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
+	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+
+	count_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "mysql.slowlog.query",
+					"order": {"slowlog_count": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"slowlog_count": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+									{
+										"range": {
+											"@timestamp": {
+												"gte": f"now-{timespan}s",
+												"lte": "now",
+											}
+										}
+									},
+								],
+							}
+						}
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"slowlog_count": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+											{
+												"range": {
+													"@timestamp": {
+														"gte": f"now-{timespan}s",
+														"lte": "now",
+													}
+												}
+											},
+										],
+									}
+								}
+							}
+						},
+					},
+				},
+			}
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+			}
+		},
+	}
+
+	duration_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "mysql.slowlog.query",
+					"order": {"methods>sum": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"methods": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+									{
+										"range": {
+											"@timestamp": {
+												"gte": f"now-{timespan}s",
+												"lte": "now",
+											}
+										}
+									},
+								],
+							}
+						},
+						"aggs": {
+							"sum": {
+								"sum": {
+									"field": "event.duration",
+								}
+							}
+						},
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"methods": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+											{
+												"range": {
+													"@timestamp": {
+														"gte": f"now-{timespan}s",
+														"lte": "now",
+													}
+												}
+											},
+										],
+									}
+								},
+								"aggs": {
+									"sum": {
+										"sum": {
+											"field": "event.duration",
+										}
+									}
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"mysql.slowlog.current_user": database_name}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+			}
+		},
+	}
+
+	if query_type == "count":
+		query = count_query
+	else:
+		query = duration_query
+
+	response = requests.post(url, json=query, auth=("frappe", password)).json()
+
+	if not response["aggregations"]["method_path"]["buckets"]:
+		return {"datasets": [], "labels": []}
+
+	buckets = []
+	labels = [
+		get_datetime(data["key_as_string"]).replace(tzinfo=None)
+		for data in response["aggregations"]["method_path"]["buckets"][0][
+			"histogram_of_method"
+		]["buckets"]
+	]
+	for bucket in response["aggregations"]["method_path"]["buckets"]:
+		buckets.append(
+			frappe._dict(
+				{
+					"path": bucket["key"],
+					"values": [
+						(
+							data["slowlog_count"]["doc_count"]
+							if query_type == "count"
+							else (data["methods"]["sum"]["value"] / 1e9 if query_type == "duration" else 0)
+						)
 						for data in bucket["histogram_of_method"]["buckets"]
 					],
 					"stack": "path",
@@ -303,7 +534,10 @@ def get_usage(site, type, timezone, timespan, timegrain):
 	query = {
 		"aggs": {
 			"date_histogram": {
-				"date_histogram": {"field": "@timestamp", "fixed_interval": f"{timegrain}s"},
+				"date_histogram": {
+					"field": "@timestamp",
+					"fixed_interval": f"{timegrain}s",
+				},
 				"aggs": {
 					"duration": {"sum": {"field": "json.duration"}},
 					"count": {"value_count": {"field": "json.duration"}},
@@ -331,7 +565,8 @@ def get_usage(site, type, timezone, timespan, timegrain):
 			frappe._dict(
 				{
 					"date": convert_utc_to_timezone(
-						get_datetime(bucket["key_as_string"]).replace(tzinfo=None), timezone
+						get_datetime(bucket["key_as_string"]).replace(tzinfo=None),
+						timezone,
 					),
 					"count": bucket["count"]["value"],
 					"duration": bucket["duration"]["value"],
