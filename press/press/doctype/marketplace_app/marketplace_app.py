@@ -20,6 +20,13 @@ from frappe.utils.safe_exec import safe_exec
 
 
 class MarketplaceApp(WebsiteGenerator):
+	dashboard_fields = [
+		"image",
+		"title",
+		"status",
+		"description",
+	]
+
 	def autoname(self):
 		self.name = self.app
 

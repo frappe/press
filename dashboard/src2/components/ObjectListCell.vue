@@ -25,6 +25,9 @@
 		<template v-else-if="column.type === 'Button'">
 			<ActionButton v-if="button" v-bind="button" />
 		</template>
+		<div class="" v-else-if="column.type == 'Image'">
+			<img :src="value" :alt="formattedValue" class="h-6 w-6 rounded" />
+		</div>
 		<div class="text-base text-gray-600" v-else-if="column.type == 'Timestamp'">
 			<div class="flex">
 				<Tooltip :text="$format.date(value)">
