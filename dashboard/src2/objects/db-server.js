@@ -12,6 +12,7 @@ export default {
 		changePlan: 'change_plan',
 		reboot: 'reboot',
 		rename: 'rename',
+		dropServer: 'drop_server',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag'
 	},
@@ -149,6 +150,43 @@ export default {
 												error: 'Failed to reboot server'
 											}
 										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Drop Server',
+							condition: () => server.doc.status === 'Active',
+							icon: icon('trash-2'),
+							onClick() {
+								confirmDialog({
+									title: 'Drop Server',
+									message: `Are you sure you want to drop your servers?<br>Both the Application server (<b>${server.doc.name.replace(
+										'm',
+										'f'
+									)}</b>) and Database server (<b>${
+										server.doc.name
+									}</b>)will be archived.<br>This action cannot be undone.`,
+									fields: [
+										{
+											label: 'Please type the server name to confirm',
+											fieldname: 'confirmServerName'
+										}
+									],
+									primaryAction: {
+										label: 'Drop Server',
+										theme: 'red'
+									},
+									onSuccess({ hide, values }) {
+										if (server.dropServer.loading) return;
+										if (values.confirmServerName !== server.doc.name) {
+											throw new Error('Server name does not match');
+										}
+										toast.promise(server.dropServer.submit().then(hide), {
+											loading: 'Dropping...',
+											success: 'Server dropped',
+											error: 'Failed to drop server'
+										});
 									}
 								});
 							}

@@ -34,7 +34,7 @@ class BaseServer(Document, TagHelpers):
 		"team",
 		"database_server",
 	]
-	dashboard_actions = ["change_plan", "reboot", "rename"]
+	dashboard_actions = ["change_plan", "reboot", "rename", "drop_server"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -53,6 +53,21 @@ class BaseServer(Document, TagHelpers):
 		doc.usage = usage(self.name)
 
 		return doc
+
+	@frappe.whitelist()
+	def drop_server(self):
+		if self.doctype == "Database Server":
+			app_server_name = frappe.db.get_value(
+				"Server", {"database_server": self.name}, "name"
+			)
+			app_server = frappe.get_doc("Server", app_server_name)
+			db_server = self
+		else:
+			app_server = self
+			db_server = frappe.get_doc("Database Server", self.database_server)
+
+		app_server.archive()
+		db_server.archive()
 
 	def autoname(self):
 		if not self.domain:
