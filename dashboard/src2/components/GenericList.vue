@@ -4,7 +4,7 @@
 		:rows="rows"
 		:options="{
 			selectable: options.selectable || false,
-			onRowClick: () => {},
+			onRowClick: row => (options.onRowClick ? options.onRowClick(row) : {}),
 			getRowRoute: options.route ? getRowRoute : null
 		}"
 		row-key="name"

@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			size: '2xl',
+			size: '4xl',
 			title: 'Update Bench'
 		}"
 	>
@@ -145,6 +145,36 @@ export default {
 								tag: tag,
 								link: `${app.repository_url}/commit/${tag}`
 							});
+						}
+					},
+					{
+						label: '',
+						type: 'Component',
+						width: 0.5,
+						component({ row }) {
+							let url;
+							if (row.current_hash && row.next_release) {
+								url = `${row.repository_url}/compare/${row.current_hash}...${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							} else if (row.next_release) {
+								url = `${row.repository_url}/commit/${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							}
+							return h(
+								'a',
+								{
+									href: url,
+									class: 'text-gray-500',
+									target: '_blank'
+								},
+								'→'
+							);
 						}
 					},
 					{
