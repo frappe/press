@@ -83,6 +83,11 @@ export function numberK(number) {
 	}
 }
 
+export function pricePerDay(price) {
+	let daysInThisMonth = dayjs().daysInMonth();
+	return price / daysInThisMonth;
+}
+
 export function date(dateTimeString, format = 'LLLL') {
 	if (!dateTimeString) return;
 	return dayjsLocal(dateTimeString).format(format);

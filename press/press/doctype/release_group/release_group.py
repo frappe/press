@@ -61,7 +61,8 @@ class ReleaseGroup(Document, TagHelpers):
 	]
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters, **list_args):
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		Bench = frappe.qb.DocType("Bench")
 		Site = frappe.qb.DocType("Site")
@@ -86,6 +87,13 @@ class ReleaseGroup(Document, TagHelpers):
 			.where(ReleaseGroup.public == 0)
 			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
 		)
+
+		if server := filters.get("server"):
+			query = (
+				query.inner_join(ReleaseGroupServer)
+				.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+				.where(ReleaseGroupServer.server == server)
+			)
 
 		return query
 
@@ -1062,6 +1070,8 @@ def new_release_group(
 				pluck="name",
 				limit=1,
 			)[0]
+		servers = [{"server": server}]
+	elif server:
 		servers = [{"server": server}]
 	else:
 		servers = []

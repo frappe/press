@@ -264,7 +264,6 @@
    "label": "Common Site Config"
   },
   {
-   "default": "{}",
    "fieldname": "common_site_config_table",
    "fieldtype": "Table",
    "label": "Configuration",
