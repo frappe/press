@@ -44,6 +44,7 @@ ALLOWED_DOCTYPES = [
 	"User",
 	"Partner Approval Request",
 	"Marketplace App",
+	"Subscription",
 ]
 
 

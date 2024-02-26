@@ -4,6 +4,8 @@
 
 
 from typing import List
+
+from frappe.query_builder.functions import Coalesce, Count
 from press.press.doctype.plan.plan import Plan
 
 import frappe
@@ -13,6 +15,41 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Subscription(Document):
+	dashboard_fields = [
+		"site",
+		"enabled",
+		"document_type",
+		"document_name",
+		"team",
+	]
+
+	@staticmethod
+	def get_list_query(query):
+		Subscription = frappe.qb.DocType("Subscription")
+		Team = frappe.qb.DocType("Team")
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		Plan = frappe.qb.DocType("Marketplace App Plan")
+		price_field = (
+			Plan.price_inr if frappe.local.team().currency == "INR" else Plan.price_usd
+		)
+
+		query = (
+			query.select(
+				price_field.as_("price"),
+				Team.user.as_("email"),
+				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
+			)
+			.join(Plan)
+			.on(Subscription.plan == Plan.name)
+			.join(Team)
+			.on(Subscription.team == Team.name)
+			.left_join(UsageRecord)
+			.on(UsageRecord.subscription == Subscription.name)
+			.groupby(Subscription.name)
+		)
+
+		return query
+
 	def validate(self):
 		self.validate_duplicate()
 

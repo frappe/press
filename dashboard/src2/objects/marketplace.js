@@ -1,6 +1,7 @@
 import { defineAsyncComponent, h } from 'vue';
 import { icon, renderDialog } from '../utils/components';
 import NewAppDialog from '../components/marketplace/NewAppDialog.vue';
+import { getTeam } from '../data/team';
 
 export default {
 	doctype: 'Marketplace App',
@@ -8,7 +9,7 @@ export default {
 	list: {
 		route: '/marketplace',
 		title: 'Marketplace',
-		fields: ['image', 'title', 'description', 'status'],
+		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
 				label: 'Logo',
@@ -83,7 +84,60 @@ export default {
 			{
 				label: 'Subscriptions',
 				icon: icon('users'),
-				route: 'pricing'
+				route: 'subscription',
+				type: 'list',
+				list: {
+					doctype: 'Subscription',
+					filters: app => {
+						return {
+							document_type: 'Marketplace App',
+							document_name: app.name
+						};
+					},
+					fields: ['site', 'enabled', 'team'],
+					columns: [
+						{
+							label: 'Site',
+							fieldname: 'site',
+							width: 0.6
+						},
+						{
+							label: 'Status',
+							type: 'Badge',
+							fieldname: 'enabled',
+							width: 0.3,
+							format: value => {
+								return value ? 'Active' : 'Disabled';
+							}
+						},
+						{
+							label: 'Price',
+							fieldname: 'price',
+							width: 0.3,
+							format: value => {
+								let $team = getTeam();
+								let currencySymbol = $team.doc.currency == 'INR' ? '₹' : '$';
+								return currencySymbol + value + '/month';
+							}
+						},
+						{
+							label: 'Active For',
+							fieldname: 'active_for',
+							width: 0.3,
+							format: value => {
+								return value + (value == 1 ? ' day' : ' days');
+							}
+						},
+						{
+							label: 'Contact',
+							fieldname: 'email',
+							width: 0.6,
+							link: (value, _) => {
+								return `mailto:${value}`;
+							}
+						}
+					]
+				}
 			}
 		],
 		actions(context) {
