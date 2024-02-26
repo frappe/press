@@ -148,36 +148,6 @@ export default {
 						}
 					},
 					{
-						label: '',
-						type: 'Component',
-						width: 0.5,
-						component({ row }) {
-							let url;
-							if (row.current_hash && row.next_release) {
-								url = `${row.repository_url}/compare/${row.current_hash}...${
-									row.releases.find(
-										release => release.name === row.next_release
-									).hash
-								}`;
-							} else if (row.next_release) {
-								url = `${row.repository_url}/commit/${
-									row.releases.find(
-										release => release.name === row.next_release
-									).hash
-								}`;
-							}
-							return h(
-								'a',
-								{
-									href: url,
-									class: 'text-gray-500',
-									target: '_blank'
-								},
-								'→'
-							);
-						}
-					},
-					{
 						label: 'To',
 						fieldname: 'next_release',
 						type: 'Component',
@@ -250,6 +220,35 @@ export default {
 								return 'First Deploy';
 							}
 							return 'Update Available';
+						}
+					},
+					{
+						label: 'View Changes',
+						type: 'Button',
+						width: 0.5,
+						Button({ row }) {
+							let url;
+							if (row.current_hash && row.next_release) {
+								url = `${row.repository_url}/compare/${row.current_hash}...${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							} else if (row.next_release) {
+								url = `${row.repository_url}/commit/${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							}
+
+							return {
+								label: 'View',
+								variant: 'ghost',
+								onClick() {
+									window.open(url, '_blank');
+								}
+							};
 						}
 					}
 				]
