@@ -85,67 +85,71 @@ export default {
 	create: {
 		route: '/servers/new',
 		title: 'New Server',
-		optionsResource: {
-			url: 'press.api.server.options',
-			auto: true,
-			initialData: {
-				regions: [],
-				app_plans: [],
-				db_plans: []
-			},
-			transform(data) {
-				return {
-					regions: data.regions,
-					app_plans: data.app_plans.map(plan => {
-						return {
-							...plan,
-							features: [
-								{
-									label: 'vCPUs',
-									value: plan.vcpu
-								},
-								{
-									label: 'Memory',
-									value: bytes(plan.memory, 0, 2)
-								},
-								{
-									label: 'Disk',
-									value: bytes(plan.disk, 0, 2)
-								},
-								{
-									label: 'Instance Type',
-									value: plan.instance_type
-								}
-							],
-							disabled: Object.keys(this.$team.doc.billing_details).length === 0
-						};
-					}),
-					db_plans: data.db_plans.map(plan => {
-						return {
-							...plan,
-							features: [
-								{
-									label: 'vCPUs',
-									value: plan.vcpu
-								},
-								{
-									label: 'Memory',
-									value: bytes(plan.memory, 0, 2)
-								},
-								{
-									label: 'Disk',
-									value: bytes(plan.disk, 0, 2)
-								},
-								{
-									label: 'Instance Type',
-									value: plan.instance_type
-								}
-							],
-							disabled: Object.keys(this.$team.doc.billing_details).length === 0
-						};
-					})
-				};
-			}
+		optionsResource() {
+			return {
+				url: 'press.api.server.options',
+				auto: true,
+				initialData: {
+					regions: [],
+					app_plans: [],
+					db_plans: []
+				},
+				transform(data) {
+					return {
+						regions: data.regions,
+						app_plans: data.app_plans.map(plan => {
+							return {
+								...plan,
+								features: [
+									{
+										label: 'vCPUs',
+										value: plan.vcpu
+									},
+									{
+										label: 'Memory',
+										value: bytes(plan.memory, 0, 2)
+									},
+									{
+										label: 'Disk',
+										value: bytes(plan.disk, 0, 2)
+									},
+									{
+										label: 'Instance Type',
+										value: plan.instance_type
+									}
+								],
+								disabled:
+									Object.keys(this.$team.doc.billing_details).length === 0
+							};
+						}),
+						db_plans: data.db_plans.map(plan => {
+							return {
+								...plan,
+								features: [
+									{
+										label: 'vCPUs',
+										value: plan.vcpu
+									},
+									{
+										label: 'Memory',
+										value: bytes(plan.memory, 0, 2)
+									},
+									{
+										label: 'Disk',
+										value: bytes(plan.disk, 0, 2)
+									},
+									{
+										label: 'Instance Type',
+										value: plan.instance_type
+									}
+								],
+								disabled:
+									Object.keys(this.$team.doc.billing_details).length === 0
+							};
+						})
+					};
+				}
+			};
 		},
 		primaryAction({ createResource: createServer, vals }) {
 			return {

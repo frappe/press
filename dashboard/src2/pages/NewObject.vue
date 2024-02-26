@@ -120,7 +120,7 @@ export default {
 	},
 	resources: {
 		optionsData() {
-			return { ...this.object.create.optionsResource };
+			return { ...this.object.create.optionsResource() };
 		},
 		createResource() {
 			return { ...this.object.create.createResource() };

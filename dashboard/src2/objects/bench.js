@@ -88,13 +88,15 @@ export default {
 			optionalFields: ['clusters'],
 			routeName: 'Server New Bench'
 		},
-		optionsResource: {
-			url: 'press.api.bench.options',
-			initialData: {
-				versions: [],
-				clusters: []
-			},
-			auto: true
+		optionsResource() {
+			return {
+				url: 'press.api.bench.options',
+				initialData: {
+					versions: [],
+					clusters: []
+				},
+				auto: true
+			};
 		},
 		createResource() {
 			return {
