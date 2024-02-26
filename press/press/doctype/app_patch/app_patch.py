@@ -7,15 +7,28 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
+from press.agent import Agent
 
 PatchConfig = TypedDict(
 	"PatchConfig",
-	patch=Optional[str],
-	patch_filename=str,
-	patch_url=str,
-	build_assets=bool,
-	patch_bench=Optional[str],
-	patch_all_benches=bool,
+	{
+		"patch": Optional[str],
+		"filename": str,
+		"patch_url": str,
+		"build_assets": bool,
+		"patch_bench": Optional[str],
+		"patch_all_benches": bool,
+	},
+)
+
+AgentPatchConfig = TypedDict(
+	"AgentPatchConfig",
+	{
+		"patch": str,
+		"filename": str,
+		"build_assets": bool,
+		"revert": bool,
+	},
 )
 
 
@@ -64,12 +77,25 @@ class AppPatch(Document):
 
 	@frappe.whitelist()
 	def apply_patch(self):
-		# TODO: AgentJob that applies patch
-		pass
+		self.patch_app(revert=False)
 
 	@frappe.whitelist()
 	def revert_patch(self):
-		# TODO: Revert patch
+		self.patch_app(revert=True)
+
+	def patch_app(self, revert: bool):
+		server = frappe.db.get_value("Bench", self.bench, "server")
+		data = dict(
+			patch=self.patch,
+			filename=self.filename,
+			build_assets=self.build_assets,
+			revert=revert,
+		)
+		Agent(server).patch_app(self.bench, self.app, data)
+
+	@frappe.whitelist()
+	def revert_all_patches(self):
+		# TODO: Agent job: git reset RELEASE_COMMIT --hard
 		pass
 
 
@@ -89,7 +115,7 @@ def create_app_patch(
 			app=app,
 			app_release=get_app_release(bench, app),
 			url=patch_config.get("patch_url"),
-			filename=patch_config.get("patch_filename"),
+			filename=patch_config.get("filename"),
 			build_assets=patch_config.get("build_assets"),
 		)
 

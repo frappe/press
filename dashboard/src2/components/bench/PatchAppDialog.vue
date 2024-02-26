@@ -165,6 +165,10 @@ export default {
 				return;
 			}
 
+			if (!this.patchFileName && this.patchURL) {
+				this.patchFileName = this.patchURL.split('/').at(-1);
+			}
+
 			if (!this.patchFileName.endsWith('.patch')) {
 				this.patchFileName += '.patch';
 			}
@@ -174,7 +178,7 @@ export default {
 				app: this.app,
 				patch_config: {
 					patch: this.patch,
-					patch_filename: this.patchFileName,
+					filename: this.patchFileName,
 					patch_url: this.patchURL,
 					build_assets: this.buildAssets,
 					patch_bench: this.applyToBench,
