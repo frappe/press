@@ -4,7 +4,7 @@
 		:rows="rows"
 		:options="{
 			selectable: options.selectable || false,
-			onRowClick: () => {},
+			onRowClick: row => (options.onRowClick ? options.onRowClick(row) : {}),
 			getRowRoute: options.route ? getRowRoute : null
 		}"
 		row-key="name"
@@ -24,6 +24,12 @@
 			</template>
 		</ListHeader>
 		<ListRows>
+			<div
+				v-if="rows.length === 0"
+				class="text-center text-sm leading-10 text-gray-500"
+			>
+				No results found
+			</div>
 			<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
 				<template v-slot="{ column, item }">
 					<ObjectListCell

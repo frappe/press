@@ -54,7 +54,7 @@
 
 				<div class="w-1/6">
 					<span v-if="app.subscription.plan">
-						{{ app.subscription.plan }}
+						{{ app.plan_info.plan }}
 					</span>
 					<span v-else>-</span>
 				</div>
