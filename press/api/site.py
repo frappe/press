@@ -1053,7 +1053,7 @@ def get_installed_apps(site):
 			app_source.plan_info = frappe.db.get_value(
 				"Marketplace App Plan",
 				subscription.plan,
-				["price_usd", "price_inr", "name"],
+				["price_usd", "price_inr", "name", "plan"],
 				as_dict=True,
 			)
 
