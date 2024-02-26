@@ -110,6 +110,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.validate_rq_queues()
 		self.validate_max_min_workers()
 		self.validate_feature_flags()
+		self.validate_common_site_config()
 
 	def before_insert(self):
 		# to avoid ading deps while cloning a release group
@@ -384,6 +385,11 @@ class ReleaseGroup(Document, TagHelpers):
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
 			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
+
+	def validate_common_site_config(self):
+		keys = [x.key for x in self.common_site_config_table]
+		if len(keys) != len(set(keys)):
+			frappe.throw("Duplicate keys in Common Site Config")
 
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
