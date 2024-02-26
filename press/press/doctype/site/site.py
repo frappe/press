@@ -213,14 +213,9 @@ class Site(Document, TagHelpers):
 			self._validate_host_name()
 
 	def validate_site_config(self):
+		# update site._keys_removed_in_last_update value
 		old_keys = json.loads(self.config)
 		new_keys = [x.key for x in self.configuration]
-
-		# check for duplicate keys in site.config
-		if len(new_keys) != len(set(new_keys)):
-			frappe.throw("Duplicate keys in Site Config")
-
-		# update site._keys_removed_in_last_update value
 		self._keys_removed_in_last_update = json.dumps(
 			[x for x in old_keys if x not in new_keys]
 		)
