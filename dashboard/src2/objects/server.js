@@ -243,10 +243,10 @@ export default {
 						${value.vcpu} vCPU
 					</div>
 					<div class="text-gray-600">
-						${bytes(value.memory, 0, 2)} GB RAM
+						${bytes(value.memory, 0, 2)} RAM
 					</div>
 					<div class="text-gray-600">
-						${bytes(value.disk, 0, 2)} GB Disk
+						${bytes(value.disk, 0, 2)} Disk
 					</div></div>`;
 				}
 			},
@@ -264,10 +264,10 @@ export default {
 						${value.vcpu} vCPU
 					</div>
 					<div class="text-gray-600">
-						${bytes(value.memory, 0, 2)} GB RAM
+						${bytes(value.memory, 0, 2)} RAM
 					</div>
 					<div class="text-gray-600">
-						${bytes(value.disk, 0, 2)} GB Disk
+						${bytes(value.disk, 0, 2)} Disk
 					</div></div>`;
 				}
 			},
