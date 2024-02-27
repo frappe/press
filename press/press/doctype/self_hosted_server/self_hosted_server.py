@@ -280,9 +280,6 @@ class SelfHostedServer(Document):
 			self.save()
 			log_error("Inserting a new DB server failed")
 
-		if self.different_database_server:
-			self.create_tls_certs(db_server.name)
-
 	def append_site_configs(self, play_name):
 		"""
 		Append site_config.json to `sites` Child Table
@@ -356,7 +353,6 @@ class SelfHostedServer(Document):
 			frappe.throw("Server Creation Error", exc=e)
 
 		self.save()
-		self.create_tls_certs(server.name)
 
 		frappe.msgprint(f"Server record {server.name} created")
 		return server
@@ -509,14 +505,39 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def _setup_nginx(self):
-		frappe.enqueue_doc(self.doctype, self.name, "setup_nginx", queue="long")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_app", queue="long")
 
-	@frappe.whitelist()
-	def setup_nginx(self):
-		server = self
-		if not self.dedicated_proxy:
-			server = frappe.get_doc("Server", self.server)
+		if self.different_database_server:
+			frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_db", queue="long")
 
+	def _setup_nginx_on_app(self):
+		server = {
+			"doctype": "Server",
+			"name": self.server,
+		}
+
+		if self.setup_nginx(server):
+			self.create_tls_certs(self.server)
+			return True
+
+		return False
+
+	def _setup_nginx_on_db(self):
+		if not self.different_database_server:
+			return True
+
+		server = {
+			"doctype": "Datanse Server",
+			"name": self.database_server,
+		}
+
+		if self.setup_nginx(server):
+			self.create_tls_certs(self.database_server)
+			return True
+
+		return False
+
+	def setup_nginx(self, server):
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
@@ -525,14 +546,16 @@ class SelfHostedServer(Document):
 				port=server.ssh_port or "22",
 				variables={
 					"domain": self.name,
-					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
+					"press_domain": frappe.db.get_single_value(
+						"Press Settings", "domain"
+					),  # for ssl renewal
 				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
 				return True
 		except Exception:
-			log_error("TLS Cert Generation Failed", server=self.as_dict())
+			log_error("Nginx setup failed for self hosted server", server=self.as_dict())
 			return False
 
 	@frappe.whitelist()

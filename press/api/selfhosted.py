@@ -11,23 +11,14 @@ from press.api.site import NAMESERVERS
 
 @frappe.whitelist()
 def new(server):
+	is_multi_server_setup = True
+
 	team = get_current_team(get_doc=True)
-
-	if not team.enabled:
-		frappe.throw("You cannot create a new server because your account is disabled")
-
-	if not team.self_hosted_servers_enabled:
-		frappe.throw(
-			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
-		)
+	validate_team(team)
 
 	cluster = get_cluster()
 	proxy_server = get_proxy_server_for_cluster(cluster)
-
 	ip_details = get_sanitized_ip(server)
-	print(ip_details)
-
-	is_multi_server_setup = True
 
 	if server["setupType"] == "standalone":
 		is_multi_server_setup = False
@@ -51,6 +42,19 @@ def new(server):
 	).insert()
 
 	return self_hosted_server.name
+
+
+def validate_team(team):
+	if not team:
+		frappe.throw("You must be part of a team to create a new server")
+
+	if not team.enabled:
+		frappe.throw("You cannot create a new server because your account is disabled")
+
+	if not team.self_hosted_servers_enabled:
+		frappe.throw(
+			"You cannot create a new server because Hybrid Cloud is disabled for your account. Please contact support to enable it."
+		)
 
 
 def get_sanitized_ip(server):
@@ -80,49 +84,31 @@ def sshkey():
 @frappe.whitelist()
 def verify(server):
 	play_status = "Failure"
-	server = "SHS-00002.cloud.pressonprem.com"
 	server_doc = frappe.get_doc("Self Hosted Server", server)
+	_server_details = frappe._dict(
+		{
+			"ssh_user": server_doc.ssh_user,
+			"ssh_port": server_doc.ssh_port,
+			"doctype": "Self Hosted Server",
+			"name": server_doc.name,
+		}
+	)
+
+	app_server_result = verify_app_server_is_reachable(_server_details, server_doc)
+	db_server_result = verify_db_server_is_reachable(_server_details, server_doc)
 
 	if server_doc.different_database_server:
-		server = frappe._dict(
-			{
-				"ssh_user": server_doc.ssh_user,
-				"ssh_port": server_doc.ssh_port,
-				"doctype": "Self Hosted Server",
-				"name": server_doc.name,
-			}
-		)
-
-		# Check if the server is reachable
-		ping_app_server = Ansible(
-			playbook="ping.yml",
-			server=server.update({"ip": server_doc.ip}),
-		)
-		app = ping_app_server.run()
-
-		# Check if the database server is reachable
-		ping_db_server = Ansible(
-			playbook="ping.yml",
-			server=server.update({"ip": server_doc.mariadb_ip}),
-		)
-		db = ping_db_server.run()
-
 		# If both servers are reachable, then the status is success
-		if app.status == "Success" and db.status == "Success":
+		if app_server_result.status == "Success" and db_server_result.status == "Success":
 			play_status = "Success"
 
 	else:
-		ansible = Ansible(
-			playbook="ping.yml",
-			server=server_doc,
-		)
-		play = ansible.run()
-		play_status = play.status
+		if app_server_result.status == "Success":
+			play_status = "Success"
 
-		if play_status == "Success":
 			server_doc.fetch_private_ip()
-			server_doc.fetch_system_ram(play.name)
-			server_doc.fetch_system_specifications(play.name)
+			server_doc.fetch_system_ram(app_server_result.name)
+			server_doc.fetch_system_specifications(app_server_result.name)
 			server_doc.check_minimum_specs()
 			server_doc.save()
 
@@ -130,19 +116,47 @@ def verify(server):
 		server_doc.reload()
 		server_doc.status = "Pending"
 		server_doc.save()
+
+		server_doc.reload()
 		server_doc.create_db_server()
+
 		server_doc.reload()
 		server_doc.create_server()
-		server_doc.reload()
+
 		return True
 	else:
 		return False
 
 
+def verify_app_server_is_reachable(_server_details, server_doc):
+	ping_app_server = Ansible(
+		playbook="ping.yml",
+		server=_server_details.update({"ip": server_doc.ip}),
+	)
+	return ping_app_server.run()
+
+
+def verify_db_server_is_reachable(_server_details, server_doc):
+	if not server_doc.different_database_server:
+		return frappe._dict({"status": "Success"})
+
+	ping_db_server = Ansible(
+		playbook="ping.yml",
+		server=_server_details.update({"ip": server_doc.mariadb_ip}),
+	)
+	return ping_db_server.run()
+
+
 @frappe.whitelist()
 def setup_nginx(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	return server_doc.setup_nginx()
+	is_nginx_installed_on_app = server_doc._setup_nginx_on_app()
+	is_nginx_installed_on_db = server_doc._setup_nginx_on_db()
+
+	if is_nginx_installed_on_app and is_nginx_installed_on_db:
+		return True
+
+	return False
 
 
 @frappe.whitelist()
