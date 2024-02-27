@@ -9,13 +9,13 @@
   "bench",
   "group",
   "build_assets",
+  "status",
   "column_break_vedh",
   "url",
   "app",
   "app_release",
   "section_break_fqnr",
-  "patch",
-  "patch_applied"
+  "patch"
  ],
  "fields": [
   {
@@ -78,23 +78,23 @@
    "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "patch_applied",
-   "fieldtype": "Check",
-   "label": "Patch Applied",
-   "read_only": 1
-  },
-  {
    "fieldname": "app",
    "fieldtype": "Link",
    "label": "App",
    "options": "App",
    "reqd": 1
+  },
+  {
+   "default": "Not Applied",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Not Applied\nIn Process\nFailed\nApplied"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-23 13:07:41.596121",
+ "modified": "2024-02-27 13:25:33.571745",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",

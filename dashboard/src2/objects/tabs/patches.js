@@ -50,13 +50,7 @@ export default {
 			{
 				label: 'Status',
 				type: 'Badge',
-				format(_, row) {
-					if (row.patch_applied) {
-						return 'Applied';
-					}
-
-					return 'Not Applied';
-				},
+				fieldname: 'status',
 				width: 0.4
 			}
 		],
@@ -75,7 +69,7 @@ export default {
 				},
 				{
 					label: 'Revert Patch',
-					condition: () => row.patch_applied,
+					condition: () => row.status === 'Applied',
 					onClick: () => {
 						// TODO: Hook this up
 						console.log('revert patch clicked');

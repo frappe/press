@@ -43,7 +43,7 @@ class AppPatch(Document):
 		"group",
 		"build_assets",
 		"url",
-		"patch_applied",
+		"status",
 	]
 
 	def validate(self):

@@ -1666,30 +1666,6 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2023-11-06 07:28:18.568610",
-  "name": "Archive Bench",
-  "request_method": "POST",
-  "request_path": "/benches/{bench}/archive",
-  "steps": [
-   {
-    "parent": "Archive Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Bench Disable Production"
-   },
-   {
-    "parent": "Archive Bench",
-    "parentfield": "steps",
-    "parenttype": "Agent Job Type",
-    "step_name": "Move Bench to Archived Directory"
-   }
-  ]
- },
- {
-  "disabled_auto_retry": 1,
-  "docstatus": 0,
-  "doctype": "Agent Job Type",
-  "max_retry_count": 3,
   "modified": "2023-11-06 07:28:18.663533",
   "name": "Update Site Configuration",
   "request_method": "POST",
@@ -1912,7 +1888,31 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2024-02-26 13:20:49.282327",
+  "modified": "2023-11-06 07:28:18.568610",
+  "name": "Archive Bench",
+  "request_method": "POST",
+  "request_path": "/benches/{bench}/archive",
+  "steps": [
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Disable Production"
+   },
+   {
+    "parent": "Archive Bench",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Move Bench to Archived Directory"
+   }
+  ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-02-27 11:37:23.355304",
   "name": "Patch App",
   "request_method": "POST",
   "request_path": "/bench/{bench}/patch/{app}",
@@ -1922,6 +1922,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Git Apply"
+   },
+   {
+    "parent": "Patch App",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Rebuild Bench Assets"
    }
   ]
  }
