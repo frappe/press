@@ -175,7 +175,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
-		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+		secret_keys = {f"sk_{s.document_name}": s.secret_key for s in subscription_docs}
 		site._update_configuration(secret_keys, save=False)
 
 	site.insert(ignore_permissions=True)
@@ -643,6 +643,8 @@ def get_plans(name=None, rg=None):
 			"private_benches",
 			"monitor_access",
 		],
+		# TODO: Remove later, temporary change because site plan has all document_type plans
+		filters={"document_type": "Site"},
 	)
 
 	if name or rg:
@@ -1019,7 +1021,7 @@ def get_installed_apps(site):
 		app_source.update(app_tags if app_tags else {})
 		app_source.subscription_available = bool(
 			frappe.db.exists(
-				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
+				"Marketplace App Plan", {"price_usd": (">", 0), "app": app.app, "enabled": 1}
 			)
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
@@ -1040,7 +1042,7 @@ def get_installed_apps(site):
 					"document_name": app.app,
 					"enabled": 1,
 				},
-				["document_name as app"],
+				["document_name as app", "plan"],
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
