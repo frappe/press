@@ -15,7 +15,7 @@ from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import comma_and, cstr, flt
+from frappe.utils import comma_and, cstr, flt, sbool
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
@@ -219,7 +219,7 @@ class ReleaseGroup(Document, TagHelpers):
 			if _type == "Number":
 				value = flt(value)
 			elif _type == "Boolean":
-				value = bool(value)
+				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
 

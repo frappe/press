@@ -2,30 +2,30 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from collections import OrderedDict
 import re
-from press.press.doctype.team.team import get_child_team_members
+from collections import OrderedDict
 from typing import Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import flt
+from frappe.utils import flt, sbool
 
-from press.api.site import protected
 from press.api.github import branches
-from press.press.doctype.cluster.cluster import Cluster
+from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	get_app_tag,
+	get_client_blacklisted_keys,
 	get_current_team,
 	unique,
-	get_client_blacklisted_keys,
 )
 
 
@@ -302,7 +302,7 @@ def update_config(name, config):
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type == "Boolean":
-			c.value = bool(c.value)
+			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		elif c.type == "Password" and c.value == "*******":
