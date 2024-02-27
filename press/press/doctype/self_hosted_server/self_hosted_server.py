@@ -280,6 +280,9 @@ class SelfHostedServer(Document):
 			self.save()
 			log_error("Inserting a new DB server failed")
 
+		if self.different_database_server:
+			self.create_tls_certs(db_server.name)
+
 	def append_site_configs(self, play_name):
 		"""
 		Append site_config.json to `sites` Child Table
@@ -353,7 +356,7 @@ class SelfHostedServer(Document):
 			frappe.throw("Server Creation Error", exc=e)
 
 		self.save()
-		self.create_tls_certs()
+		self.create_tls_certs(server.name)
 
 		frappe.msgprint(f"Server record {server.name} created")
 		return server
@@ -485,11 +488,9 @@ class SelfHostedServer(Document):
 		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
 
 	@frappe.whitelist()
-	def create_tls_certs(self):
+	def create_tls_certs(self, domain):
 		try:
-			tls_cert = frappe.db.get_value(
-				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
-			)
+			tls_cert = frappe.db.get_value("TLS Certificate", {"domain": f"{domain}"})
 
 			if not tls_cert:
 				tls_cert = frappe.new_doc(

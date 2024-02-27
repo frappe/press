@@ -25,11 +25,12 @@ def new(server):
 	proxy_server = get_proxy_server_for_cluster(cluster)
 
 	ip_details = get_sanitized_ip(server)
+	print(ip_details)
 
-	is_standalone = False
+	is_multi_server_setup = True
 
-	if server["serverType"] == "standalone":
-		is_standalone = True
+	if server["setupType"] == "standalone":
+		is_multi_server_setup = False
 
 	self_hosted_server = frappe.new_doc(
 		"Self Hosted Server",
@@ -41,7 +42,7 @@ def new(server):
 			"title": server["title"],
 			"proxy_server": proxy_server,
 			"proxy_created": True,
-			"different_database_server": is_standalone,
+			"different_database_server": is_multi_server_setup,
 			"team": team.name,
 			"plan": server["plan"]["name"],
 			"database_plan": server["plan"]["name"],
@@ -78,17 +79,55 @@ def sshkey():
 
 @frappe.whitelist()
 def verify(server):
+	play_status = "Failure"
+	server = "SHS-00002.cloud.pressonprem.com"
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	ansible = Ansible(
-		playbook="ping.yml",
-		server=server_doc,
-	)
-	play = ansible.run()
-	if play.status == "Success":
-		server_doc.fetch_private_ip()
-		server_doc.fetch_system_ram(play.name)
-		server_doc.fetch_system_specifications(play.name)
-		server_doc.check_minimum_specs()
+
+	if server_doc.different_database_server:
+		server = frappe._dict(
+			{
+				"ssh_user": server_doc.ssh_user,
+				"ssh_port": server_doc.ssh_port,
+				"doctype": "Self Hosted Server",
+				"name": server_doc.name,
+			}
+		)
+
+		# Check if the server is reachable
+		ping_app_server = Ansible(
+			playbook="ping.yml",
+			server=server.update({"ip": server_doc.ip}),
+		)
+		app = ping_app_server.run()
+
+		# Check if the database server is reachable
+		ping_db_server = Ansible(
+			playbook="ping.yml",
+			server=server.update({"ip": server_doc.mariadb_ip}),
+		)
+		db = ping_db_server.run()
+
+		# If both servers are reachable, then the status is success
+		if app.status == "Success" and db.status == "Success":
+			play_status = "Success"
+
+	else:
+		ansible = Ansible(
+			playbook="ping.yml",
+			server=server_doc,
+		)
+		play = ansible.run()
+		play_status = play.status
+
+		if play_status == "Success":
+			server_doc.fetch_private_ip()
+			server_doc.fetch_system_ram(play.name)
+			server_doc.fetch_system_specifications(play.name)
+			server_doc.check_minimum_specs()
+			server_doc.save()
+
+	if play_status == "Success":
+		server_doc.reload()
 		server_doc.status = "Pending"
 		server_doc.save()
 		server_doc.create_db_server()
@@ -96,7 +135,7 @@ def verify(server):
 		server_doc.create_server()
 		server_doc.reload()
 		return True
-	if play.unreachable:
+	else:
 		return False
 
 
