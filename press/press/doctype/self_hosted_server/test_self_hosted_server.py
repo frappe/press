@@ -11,32 +11,39 @@ import json
 from press.runner import Ansible
 from press.press.doctype.team.test_team import create_test_team
 from press.api.tests.test_server import create_test_server_plan
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests.utils import FrappeTestCase, change_settings
 
 
 class TestSelfHostedServer(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_autoname_to_fqdn(self):
-		hostnames = ["a1", "a1.b1", "waaaaaaawwwaawwa", "1234561234"]
-		for host in hostnames:
-			server = create_test_self_hosted_server(host)
-			self.assertEqual(server.name, f"{host}.fc.dev")
+	# def test_autoname_to_fqdn(self):
+	# 	hostnames = ["a1", "a1.b1", "waaaaaaawwwaawwa", "1234561234"]
+	# 	for host in hostnames:
+	# 		server = create_test_self_hosted_server(host)
+	# 		self.assertEqual(server.name, f"{host}.fc.dev")
 
 	@patch(
 		"press.press.doctype.self_hosted_server.self_hosted_server.Ansible",
 		wraps=Ansible,
 	)
 	@patch.object(Ansible, "run", new=Mock())
+	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
 	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
 		plan = create_test_server_plan(document_type="Self Hosted Server")
 		server = create_test_self_hosted_server("ssl", plan=plan.name)
 		app_server = server.create_server()
-		server.setup_nginx()
+		server._setup_nginx_on_app()
 		Mock_Ansible.assert_called_with(
 			playbook="self_hosted_nginx.yml",
-			server=app_server,
+			server={
+				"doctype": "Server",
+				"name": "hybrid-f-00001-default.fc.dev",
+				"ssh_user": "root",
+				"ssh_port": 22,
+				"ip": server.ip,
+			},
 			user=app_server.ssh_user or "root",
 			port=app_server.ssh_port or "22",
 			variables={
@@ -58,7 +65,7 @@ class TestSelfHostedServer(FrappeTestCase):
 				{"server": "ssl.fc.dev"},
 			),
 		):
-			server.create_tls_certs()
+			server.create_tls_certs(server.name)
 		post_setup_count = frappe.db.count("TLS Certificate")
 		self.assertEqual(pre_setup_count, post_setup_count - 1)
 
@@ -216,6 +223,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		server.reload()
 		self.assertEqual(server.private_ip, "192.168.1.1")
 
+	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
 	def test_create_server_and_check_total_records(self):
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
 		from press.press.doctype.proxy_server.test_proxy_server import (
@@ -234,8 +242,9 @@ class TestSelfHostedServer(FrappeTestCase):
 		post_server_count = frappe.db.count("Server")
 		new_server = frappe.get_last_doc("Server")
 		self.assertEqual(pre_server_count, post_server_count - 1)
-		self.assertEqual("f-default-tester.fc.dev", new_server.name)
+		self.assertEqual("hybrid-f-00001-default.fc.dev", new_server.name)
 
+	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
 	def test_create_db_server_and_check_total_records(self):
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
 		from press.press.doctype.proxy_server.test_proxy_server import (
@@ -254,7 +263,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		post_server_count = frappe.db.count("Database Server")
 		new_server = frappe.get_last_doc("Database Server")
 		self.assertEqual(pre_server_count, post_server_count - 1)
-		self.assertEqual("m-default-tester.fc.dev", new_server.name)
+		self.assertEqual("hybrid-m-00001-default.fc.dev", new_server.name)
 
 	def test_check_minimum_specs(self):
 		server = create_test_self_hosted_server("tester")

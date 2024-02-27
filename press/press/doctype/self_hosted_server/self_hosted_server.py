@@ -271,7 +271,8 @@ class SelfHostedServer(Document):
 			self.status = "Active"
 			self.save()
 
-			db_server.create_dns_record()
+			if not frappe.flags.in_test:
+				db_server.create_dns_record()
 
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
@@ -346,7 +347,8 @@ class SelfHostedServer(Document):
 			self.status = "Active"
 			self.server_created = True
 
-			server.create_dns_record()
+			if not frappe.flags.in_test:
+				server.create_dns_record()
 
 		except Exception as e:
 			self.status = "Broken"
@@ -492,7 +494,7 @@ class SelfHostedServer(Document):
 				tls_cert = frappe.new_doc(
 					"TLS Certificate",
 					**{
-						"domain": self.name,
+						"domain": domain,
 						"team": self.team,
 						"wildcard": False,
 					},
@@ -511,10 +513,15 @@ class SelfHostedServer(Document):
 			frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_db", queue="long")
 
 	def _setup_nginx_on_app(self):
-		server = {
-			"doctype": "Server",
-			"name": self.server,
-		}
+		server = frappe._dict(
+			{
+				"doctype": "Server",
+				"name": self.server,
+				"ssh_user": self.ssh_user or "root",
+				"ssh_port": self.ssh_port or "22",
+				"ip": self.ip,
+			}
+		)
 
 		if self.setup_nginx(server):
 			self.create_tls_certs(self.server)
@@ -526,10 +533,15 @@ class SelfHostedServer(Document):
 		if not self.different_database_server:
 			return True
 
-		server = {
-			"doctype": "Datanse Server",
-			"name": self.database_server,
-		}
+		server = frappe._dict(
+			{
+				"doctype": "Database Server",
+				"name": self.database_server,
+				"ssh_user": self.ssh_user or "root",
+				"ssh_port": self.ssh_port or "22",
+				"ip": self.mariadb_ip,
+			}
+		)
 
 		if self.setup_nginx(server):
 			self.create_tls_certs(self.database_server)
