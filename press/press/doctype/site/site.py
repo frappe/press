@@ -1149,7 +1149,7 @@ class Site(Document, TagHelpers):
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
 			elif _type == "Password" and value == "*******":
-				value = frappe.get_value("Site Config", {"key": key}, "value")
+				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 			sanitized_config[key] = value
 
 		self.update_site_config(sanitized_config)

@@ -306,7 +306,7 @@ def update_config(name, config):
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		elif c.type == "Password" and c.value == "*******":
-			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
+			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 
 		if c.key in bench_config_keys:
 			sanitized_bench_config.append(c)

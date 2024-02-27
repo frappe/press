@@ -222,6 +222,8 @@ class ReleaseGroup(Document, TagHelpers):
 				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
+			elif _type == "Password" and value == "*******":
+				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 
 			# update existing key
 			for row in sanitized_common_site_config:

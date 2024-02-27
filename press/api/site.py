@@ -1441,7 +1441,7 @@ def update_config(name, config):
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
 		elif c.type == "Password" and c.value == "*******":
-			c.value = frappe.get_value("Site Config", {"key": c.key}, "value")
+			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)
