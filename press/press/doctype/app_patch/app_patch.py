@@ -1,6 +1,8 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
+import json
+import typing
 from typing import Optional, TypedDict
 
 import frappe
@@ -30,6 +32,9 @@ AgentPatchConfig = TypedDict(
 		"revert": bool,
 	},
 )
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 
 
 class AppPatch(Document):
@@ -92,6 +97,19 @@ class AppPatch(Document):
 			revert=revert,
 		)
 		Agent(server).patch_app(self.bench, self.app, data)
+		self.status = "In Process"
+		self.save()
+
+	@staticmethod
+	def process_patch_app(agent_job: "AgentJob"):
+		app_patch = get_app_patch_from_agent_job(agent_job)
+		if agent_job.status == "Failure":
+			app_patch.status = "Failed"
+		elif agent_job.status == "Success":
+			app_patch.status = "Applied"
+		else:
+			app_patch.status = "In Process"
+		app_patch.save()
 
 	@frappe.whitelist()
 	def revert_all_patches(self):
@@ -152,3 +170,15 @@ def get_app_release(bench: str, app: str) -> str:
 		filters={"parent": bench, "app": app},
 		pluck="release",
 	)[0]
+
+
+def get_app_patch_from_agent_job(agent_job: "AgentJob") -> "AppPatch":
+	patch = json.loads(agent_job.request_data).get("patch")
+	return frappe.get_last_doc(
+		"App Patch",
+		{
+			"bench": agent_job.bench,
+			"patch": patch,
+		},
+		for_update=True,
+	)
