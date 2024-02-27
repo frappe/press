@@ -1912,7 +1912,7 @@
   "docstatus": 0,
   "doctype": "Agent Job Type",
   "max_retry_count": 3,
-  "modified": "2024-02-27 11:37:23.355304",
+  "modified": "2024-02-27 13:51:17.142316",
   "name": "Patch App",
   "request_method": "POST",
   "request_path": "/bench/{bench}/patch/{app}",
@@ -1928,6 +1928,12 @@
     "parentfield": "steps",
     "parenttype": "Agent Job Type",
     "step_name": "Rebuild Bench Assets"
+   },
+   {
+    "parent": "Patch App",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Bench Restart"
    }
   ]
  }

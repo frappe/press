@@ -243,8 +243,10 @@ export default {
 
 					let p = data.length > 1 ? 'patches' : 'patch';
 
-					this.success = `<strong>${data.length} ${p} created</strong> and will be applied shortly.
-					You can check status under the <strong>Patches</strong> tab.`;
+					this.success = [
+						`<strong>${data.length} ${p} created</strong> and will be applied shortly.`,
+						`You can check status under the <strong>Patches</strong> tab.`
+					].join(' ');
 					setTimeout(() => {
 						this.show = false;
 						this.clear();

@@ -8,7 +8,6 @@ from typing import Optional, TypedDict
 import frappe
 import requests
 from frappe.model.document import Document
-from frappe.model.naming import append_number_if_name_exists
 from press.agent import Agent
 
 PatchConfig = TypedDict(
@@ -52,6 +51,14 @@ class AppPatch(Document):
 	]
 
 	def validate(self):
+		self.validate_bench()
+
+	def validate_bench(self):
+		if frappe.get_value("Bench", self.bench, "status") == "Active":
+			return
+		frappe.throw(f"Bench {self.bench} is not Active, patch cannot be applied")
+
+	def before_insert(self):
 		patches = frappe.get_all(
 			"App Patch",
 			fields=["name", "filename"],
@@ -60,21 +67,8 @@ class AppPatch(Document):
 		if not len(patches):
 			return
 
-		patch_name = patches[0].get("name")
 		filename = patches[0].get("filename")
-		frappe.throw(
-			f"Patch already exists for {self.bench} by the filename {filename} and name {patch_name}"
-		)
-
-	def autoname(self):
-		self.name = append_number_if_name_exists(
-			"App Patch",
-			f"{self.bench}-p",
-			separator="",
-		)
-
-		if self.name.endswith("-p"):
-			self.name += "1"
+		frappe.throw(f"Patch already exists for {self.bench} by the filename {filename}")
 
 	def after_insert(self):
 		# TODO: Call apply_patch
@@ -102,13 +96,28 @@ class AppPatch(Document):
 
 	@staticmethod
 	def process_patch_app(agent_job: "AgentJob"):
-		app_patch = get_app_patch_from_agent_job(agent_job)
-		if agent_job.status == "Failure":
+		request_data = json.loads(agent_job.request_data)
+		app_patch = frappe.get_last_doc(
+			"App Patch",
+			{
+				"bench": agent_job.bench,
+				"patch": request_data.get("patch"),
+			},
+			for_update=True,
+		)
+
+		revert = request_data.get("revert")
+		if agent_job.status == "Failure" and revert:
+			app_patch.status = "Applied"
+		elif agent_job.status == "Failure" and not revert:
 			app_patch.status = "Failed"
-		elif agent_job.status == "Success":
+		elif agent_job.status == "Success" and revert:
+			app_patch.status = "Not Applied"
+		elif agent_job.status == "Success" and not revert:
 			app_patch.status = "Applied"
 		else:
 			app_patch.status = "In Process"
+
 		app_patch.save()
 
 	@frappe.whitelist()
@@ -170,15 +179,3 @@ def get_app_release(bench: str, app: str) -> str:
 		filters={"parent": bench, "app": app},
 		pluck="release",
 	)[0]
-
-
-def get_app_patch_from_agent_job(agent_job: "AgentJob") -> "AppPatch":
-	patch = json.loads(agent_job.request_data).get("patch")
-	return frappe.get_last_doc(
-		"App Patch",
-		{
-			"bench": agent_job.bench,
-			"patch": patch,
-		},
-		for_update=True,
-	)
