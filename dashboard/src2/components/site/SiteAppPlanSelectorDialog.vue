@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: `Select Plan for ${app?.app_title}`,
+			title: `Select Plan for ${app?.app_title || app?.title}`,
 			size: '3xl',
 			actions: [
 				{
