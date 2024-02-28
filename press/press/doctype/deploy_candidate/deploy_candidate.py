@@ -104,6 +104,7 @@ class DeployCandidate(Document):
 		self.status = "Pending"
 		if not kwargs.get("no_cache"):
 			self._update_app_releases()
+		self.prepare_mounts()
 		self.add_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -207,12 +208,6 @@ class DeployCandidate(Document):
 		if self.build_steps:
 			return
 
-		self.steps_additional_packages = []
-		self._mounts = []
-
-		self._prepare_packages()
-		self._prepare_mounts()
-
 		# stage_slug, step_slug, stage, step
 		preparation_steps = [
 			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
@@ -222,8 +217,8 @@ class DeployCandidate(Document):
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
 		]
 
-		if self.steps_additional_packages:
-			preparation_steps.extend(self.steps_additional_packages)
+		additional_packages_steps = self._prepare_packages()
+		preparation_steps.extend(additional_packages_steps)
 
 		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
@@ -245,14 +240,6 @@ class DeployCandidate(Document):
 		clone_steps = []
 		app_install_steps = []
 		pull_update_steps = []
-		mount_step = []
-
-		if self._mounts:
-			mount_step.extend(
-				[
-					("mounts", "create", "Setup Mounts", "Prepare Mounts"),
-				]
-			)
 
 		for app in self.apps:
 			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
@@ -264,6 +251,12 @@ class DeployCandidate(Document):
 		validation_steps = [
 			("validate", "dependencies", "Run Validations", "Validate Dependencies"),
 		]
+
+		mount_step = []
+		if self.mounts:
+			mount_step = [
+				("mounts", "create", "Setup Mounts", "Prepare Mounts"),
+			]
 
 		steps = [
 			*clone_steps,
@@ -299,41 +292,45 @@ class DeployCandidate(Document):
 
 	def _prepare_packages(self):
 		packages = []
-		_variables = {d.dependency: d.version for d in self.dependencies}
+		additional_packages_steps = []
+		variable = {d.dependency: d.version for d in self.dependencies}
 
 		for p in self.packages:
-			_package_manager = p.package_manager.split("/")[-1]
+			package_manager = p.package_manager.split("/")[-1]
+			if package_manager not in ["apt", "pip"]:
+				continue
 
-			if _package_manager in ["apt", "pip"]:
+			additional_packages_steps.append(
+				[
+					"pre",
+					p.package,
+					"Setup Prerequisites",
+					f"Install package {p.package}",
+				]
+			)
 
-				self.steps_additional_packages.append(
-					[
-						"pre",
-						p.package,
-						"Setup Prerequisites",
-						f"Install package {p.package}",
-					]
-				)
-				packages.append(
-					{
-						"package_manager": p.package_manager,
-						"package": p.package,
-						"prerequisites": frappe.render_template(p.package_prerequisites, _variables),
-						"after_install": p.after_install,
-					}
-				)
+			prerequisites = frappe.render_template(p.package_prerequisites, variable)
+			packages.append(
+				{
+					"package_manager": p.package_manager,
+					"package": p.package,
+					"prerequisites": prerequisites,
+					"after_install": p.after_install,
+				}
+			)
 
 		self.apt_packages = json.dumps(packages)
+		return additional_packages_steps
 
-	def _prepare_mounts(self):
-		self._mounts = frappe.get_all(
+	def prepare_mounts(self):
+		mounts = frappe.get_all(
 			"Release Group Mount",
 			{"parent": self.group},
 			["source", "destination", "is_absolute_path"],
 			order_by="idx",
 		)
 
-		self.mounts = json.dumps(self._mounts)
+		self.mounts = json.dumps(mounts)
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
@@ -915,11 +912,6 @@ class DeployCandidate(Document):
 			)
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
-
-	def get_apt_packages(self):
-		return " ".join(
-			p.package for p in self.packages if p.package_manager in ["apt", "pip"]
-		)
 
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
