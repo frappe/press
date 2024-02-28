@@ -1,3 +1,4 @@
+import { getCachedDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { userCurrency, bytes, pricePerDay } from '../utils/format';
@@ -309,6 +310,18 @@ export default {
 				label: server.doc.status
 			};
 		},
+		customResource({ documentResource: server }) {
+			return {
+				type: 'document',
+				doctype: 'Database Server',
+				name: server.doc?.database_server,
+				whitelistedMethods: {
+					changePlan: 'change_plan',
+					reboot: 'reboot',
+					rename: 'rename'
+				}
+			};
+		},
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
@@ -335,19 +348,6 @@ export default {
 									}`,
 									'_blank'
 								);
-							}
-						},
-						{
-							label: 'Switch to Database Server',
-							icon: icon('repeat'),
-							condition: () => server.doctype === 'Server',
-							onClick() {
-								router.push({
-									name: 'Database Server Detail Overview',
-									params: {
-										name: server.doc.database_server
-									}
-								});
 							}
 						},
 						{
@@ -398,7 +398,7 @@ export default {
 							}
 						},
 						{
-							label: 'Reboot Server',
+							label: 'Reboot Application Server',
 							condition: () => server.doc.status === 'Active',
 							icon: icon('rotate-ccw'),
 							onClick() {
@@ -421,6 +421,51 @@ export default {
 										}
 										toast.promise(
 											server.reboot.submit(null, {
+												onSuccess() {
+													hide();
+												}
+											}),
+											{
+												loading: 'Rebooting...',
+												success: 'Server rebooted',
+												error: 'Failed to reboot server'
+											}
+										);
+									}
+								});
+							}
+						},
+						{
+							label: 'Reboot Database Server',
+							condition: () => server.doc.status === 'Active',
+							icon: icon('rotate-ccw'),
+							onClick() {
+								confirmDialog({
+									title: 'Reboot Server',
+									message: `Are you sure you want to reboot the server <b>${server.doc.database_server}</b>?`,
+									fields: [
+										{
+											label: 'Please type the server name to confirm',
+											fieldname: 'confirmServerName'
+										}
+									],
+									primaryAction: {
+										label: 'Reboot Server'
+									},
+									onSuccess({ hide, values }) {
+										if (server.reboot.loading) return;
+										if (
+											values.confirmServerName !== server.doc.database_server
+										) {
+											throw new Error('Server name does not match');
+										}
+
+										let db_server = getCachedDocumentResource(
+											'Database Server',
+											server.doc.database_server
+										);
+										toast.promise(
+											db_server.reboot.submit(null, {
 												onSuccess() {
 													hide();
 												}
@@ -481,7 +526,7 @@ export default {
 					import('../components/server/ServerOverview.vue')
 				),
 				props: server => {
-					return { server: server.doc.name, serverType: server.doctype };
+					return { server: server.doc.name };
 				}
 			},
 			{
@@ -628,7 +673,9 @@ export default {
 				list: {
 					doctype: 'Ansible Play',
 					filters: server => {
-						return { server: server.doc.name };
+						return {
+							server: ['in', [server.doc.name, server.doc.database_server]]
+						};
 					},
 					route(row) {
 						return {
@@ -647,11 +694,18 @@ export default {
 						{
 							label: 'Status',
 							fieldname: 'status',
-							type: 'Badge'
+							type: 'Badge',
+							width: 0.5
+						},
+						{
+							label: 'Server',
+							fieldname: 'server',
+							width: 2
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
+							width: 0.5,
 							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
