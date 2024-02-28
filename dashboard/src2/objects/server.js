@@ -1,8 +1,7 @@
 import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
+import ServerActions from '../components/server/ServerActions.vue';
 import { userCurrency, bytes, pricePerDay } from '../utils/format';
-import { confirmDialog, icon } from '../utils/components';
-import { getDocResource } from '../utils/resource';
+import { icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
@@ -345,166 +344,6 @@ export default {
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
 							}
-						},
-						{
-							label: 'Rename Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('edit'),
-							onClick() {
-								confirmDialog({
-									title: 'Rename Server',
-									fields: [
-										{
-											label: 'Enter new title for the server',
-											fieldname: 'title'
-										}
-									],
-									primaryAction: {
-										label: 'Update Title'
-									},
-									onSuccess({ hide, values }) {
-										if (server.rename.loading) return;
-										toast.promise(
-											server.rename.submit(
-												{
-													title: values.title
-												},
-												{
-													onSuccess() {
-														hide();
-													}
-												}
-											),
-											{
-												loading: 'Updating title...',
-												success: 'Title updated',
-												error: 'Failed to update title'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Reboot Application Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('rotate-ccw'),
-							onClick() {
-								confirmDialog({
-									title: 'Reboot Server',
-									message: `Are you sure you want to reboot the server <b>${server.doc.name}</b>?`,
-									fields: [
-										{
-											label: 'Please type the server name to confirm',
-											fieldname: 'confirmServerName'
-										}
-									],
-									primaryAction: {
-										label: 'Reboot Server'
-									},
-									onSuccess({ hide, values }) {
-										if (server.reboot.loading) return;
-										if (values.confirmServerName !== server.doc.name) {
-											throw new Error('Server name does not match');
-										}
-										toast.promise(
-											server.reboot.submit(null, {
-												onSuccess() {
-													hide();
-												}
-											}),
-											{
-												loading: 'Rebooting...',
-												success: 'Server rebooted',
-												error: 'Failed to reboot server'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Reboot Database Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('rotate-ccw'),
-							onClick() {
-								confirmDialog({
-									title: 'Reboot Server',
-									message: `Are you sure you want to reboot the server <b>${server.doc.database_server}</b>?`,
-									fields: [
-										{
-											label: 'Please type the server name to confirm',
-											fieldname: 'confirmServerName'
-										}
-									],
-									primaryAction: {
-										label: 'Reboot Server'
-									},
-									onSuccess({ hide, values }) {
-										if (server.reboot.loading) return;
-										if (
-											values.confirmServerName !== server.doc.database_server
-										) {
-											throw new Error('Server name does not match');
-										}
-
-										let db_server = getDocResource({
-											type: 'document',
-											doctype: 'Database Server',
-											name: server.doc?.database_server,
-											whitelistedMethods: {
-												changePlan: 'change_plan',
-												reboot: 'reboot',
-												rename: 'rename'
-											}
-										});
-										toast.promise(
-											db_server.reboot.submit(null, {
-												onSuccess() {
-													hide();
-												}
-											}),
-											{
-												loading: 'Rebooting...',
-												success: 'Server rebooted',
-												error: 'Failed to reboot server'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Drop Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('trash-2'),
-							onClick() {
-								confirmDialog({
-									title: 'Drop Server',
-									message: `Are you sure you want to drop your servers?<br>Both the Application server (<b>${server.doc.name}</b>) and Database server (<b>${server.doc.database_server}</b>)will be archived.<br>This action cannot be undone.`,
-									fields: [
-										{
-											label: 'Please type the server name to confirm',
-											fieldname: 'confirmServerName'
-										}
-									],
-									primaryAction: {
-										label: 'Drop Server',
-										theme: 'red'
-									},
-									onSuccess({ hide, values }) {
-										if (server.dropServer.loading) return;
-										if (values.confirmServerName !== server.doc.name) {
-											throw new Error('Server name does not match');
-										}
-										toast.promise(server.dropServer.submit().then(hide), {
-											loading: 'Dropping...',
-											success: 'Server dropped',
-											error: 'Failed to drop server'
-										});
-									}
-								});
-							}
 						}
 					]
 				}
@@ -716,6 +555,16 @@ export default {
 							align: 'right'
 						}
 					]
+				}
+			},
+			{
+				label: 'Actions',
+				icon: icon('activity'),
+				route: 'actions',
+				type: 'Component',
+				component: ServerActions,
+				props: server => {
+					return { server: server.doc.name };
 				}
 			},
 			tagTab()

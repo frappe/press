@@ -51,8 +51,39 @@ class BaseServer(Document, TagHelpers):
 
 		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
 		doc.usage = usage(self.name)
+		doc.actions = self.get_actions()
 
 		return doc
+
+	def get_actions(self):
+		actions = [
+			{
+				"action": "Reboot server",
+				"description": "Reboot the application server"
+				if self.doctype == "Server"
+				else "Reboot the database server",
+				"button_label": "Reboot",
+				"condition": self.status == "Active",
+				"doc_method": "reboot",
+			},
+			{
+				"action": "Rename server",
+				"description": "Rename the application server"
+				if self.doctype == "Server"
+				else "Rename the database server",
+				"button_label": "Rename",
+				"condition": self.status == "Active",
+				"doc_method": "rename",
+			},
+			{
+				"action": "Drop server",
+				"description": "Drop both the application and database servers",
+				"button_label": "Drop",
+				"condition": self.status == "Active" and self.doctype == "Server",
+				"doc_method": "drop_server",
+			},
+		]
+		return [action for action in actions if action.get("condition", True)]
 
 	@frappe.whitelist()
 	def drop_server(self):

@@ -174,7 +174,12 @@ export default {
 		$dbServer() {
 			return getDocResource({
 				doctype: 'Database Server',
-				name: this.$appServer.doc.database_server
+				name: this.$appServer.doc.database_server,
+				whitelistedMethods: {
+					changePlan: 'change_plan',
+					reboot: 'reboot',
+					rename: 'rename'
+				}
 			});
 		}
 	}
