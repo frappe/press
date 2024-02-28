@@ -14,7 +14,6 @@ from typing import List
 import docker
 import dockerfile
 import frappe
-
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -215,10 +214,8 @@ class DeployCandidate(Document):
 			("pre", "python", "Setup Prerequisites", "Install Python"),
 			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
 			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
+			# package steps added in: _update_build_steps_with_packages
 		]
-
-		additional_packages_steps = self._prepare_packages()
-		preparation_steps.extend(additional_packages_steps)
 
 		if frappe.get_value("Team", self.team, "is_code_server_user"):
 			preparation_steps.extend(
@@ -289,38 +286,6 @@ class DeployCandidate(Document):
 			},
 		)
 		self.save()
-
-	def _prepare_packages(self):
-		packages = []
-		additional_packages_steps = []
-		variable = {d.dependency: d.version for d in self.dependencies}
-
-		for p in self.packages:
-			package_manager = p.package_manager.split("/")[-1]
-			if package_manager not in ["apt", "pip"]:
-				continue
-
-			additional_packages_steps.append(
-				[
-					"pre",
-					p.package,
-					"Setup Prerequisites",
-					f"Install package {p.package}",
-				]
-			)
-
-			prerequisites = frappe.render_template(p.package_prerequisites, variable)
-			packages.append(
-				{
-					"package_manager": p.package_manager,
-					"package": p.package,
-					"prerequisites": prerequisites,
-					"after_install": p.after_install,
-				}
-			)
-
-		self.apt_packages = json.dumps(packages)
-		return additional_packages_steps
 
 	def prepare_mounts(self):
 		mounts = frappe.get_all(
@@ -440,7 +405,16 @@ class DeployCandidate(Document):
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
-		self._load_packages()
+		"""
+		Due to dependencies mentioned in an apps pyproject.toml
+		file, _update_packages() needs to run after the repos
+		have been cloned.
+		"""
+		self._update_packages()
+		self._update_build_steps_with_packages()
+		self.save(ignore_version=True)
+		self._set_additional_packages()
+
 		self._load_mounts()
 		self._generate_dockerfile()
 		self._copy_config_files()
@@ -449,14 +423,73 @@ class DeployCandidate(Document):
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
 
-	def _load_packages(self):
-		try:
-			self.additional_packages = json.loads(self.apt_packages)
-		except Exception:
-			# backward compatibility
-			self.additional_packages = [
-				{"package": p.package} for p in self.packages if p.package_manager == "apt"
-			]
+	def _update_packages(self):
+		existing_apt_packages = set()
+		for pkgs in self.packages:
+			if pkgs.package_manager != "apt":
+				continue
+			for p in pkgs.split(" "):
+				existing_apt_packages.add(p)
+
+		"""
+		Individual apps can mention apt dependencies in their pyproject.toml.
+
+		For Example:
+		```
+		[deploy.dependencies.apt]
+		packages = [
+			"ffmpeg",
+			"libsm6",
+			"libxext6",
+		]
+		```
+
+		For each app, these are grouped together into a single package row.
+		"""
+		for app in self.apps:
+			deps = self._get_app_pyproject(app.app).get("deploy", {}).get("dependencies", {})
+			pkgs = deps.get("apt", {}).get("packages", [])
+
+			app_packages = []
+			for p in pkgs:
+				if p in existing_apt_packages:
+					continue
+				existing_apt_packages.add(p)
+				app_packages.append(p)
+
+			if not app_packages:
+				continue
+
+			package = dict(package_manager="apt", package=" ".join(app_packages))
+			self.append("packages", package)
+
+	def _update_build_steps_with_packages(self):
+		package_steps = []
+		for p in self.packages:
+			step = ("pre", p.package, "Setup Prerequisite", f"Install package {p.package}")
+			package_steps.append(step)
+		# TODO: Splice into self.build_steps
+
+	def _set_additional_packages(self):
+		"""
+		additional_packages is used when rendering the Dockerfile template
+		"""
+		self.additional_packages = []
+		dep_versions = {d.dependency: d.version for d in self.dependencies}
+		for p in self.packages:
+
+			#  second clause cause: '/opt/certbot/bin/pip'
+			if p.package_manager not in ["apt", "pip"] or not p.package_manager.endswith("/pip"):
+				continue
+
+			prerequisites = frappe.render_template(p.package_prerequisites, dep_versions)
+			package = dict(
+				package_manager=p.package_manager,
+				package=p.package,
+				prerequisites=prerequisites,
+				after_install=p.after_install,
+			)
+			self.additional_packages.append(package)
 
 	def _load_mounts(self):
 		if self.mounts:
@@ -519,18 +552,10 @@ class DeployCandidate(Document):
 		app_name = None
 		apps_path = os.path.join(self.build_directory, "apps")
 
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
 		config_py_path = os.path.join(apps_path, app, "setup.cfg")
 		setup_py_path = os.path.join(apps_path, app, "setup.py")
 
-		if os.path.exists(pyproject_path):
-			try:
-				from tomli import load
-			except ImportError:
-				from tomllib import load
-
-			with open(pyproject_path, "rb") as f:
-				app_name = load(f).get("project", {}).get("name")
+		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
 
 		if not app_name and os.path.exists(config_py_path):
 			from setuptools.config import read_configuration
@@ -547,6 +572,20 @@ class DeployCandidate(Document):
 			return app_name
 
 		return app
+
+	def _get_app_pyproject(self, app):
+		apps_path = os.path.join(self.build_directory, "apps")
+		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
+		if not os.path.exists(pyproject_path):
+			return {}
+
+		try:
+			from tomli import load
+		except ImportError:
+			from tomllib import load
+
+		with open(pyproject_path, "rb") as f:
+			return load(f)
 
 	command = "docker build"
 

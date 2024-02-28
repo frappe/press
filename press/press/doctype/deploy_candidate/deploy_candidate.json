@@ -17,7 +17,6 @@
   "apps",
   "dependencies",
   "packages",
-  "apt_packages",
   "environment_variables",
   "mounts",
   "section_break_6",
@@ -251,12 +250,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "apt_packages",
-   "fieldtype": "Text",
-   "label": "APT Packages",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_tkdd",
    "fieldtype": "Column Break"
   },
@@ -325,7 +318,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-05 11:30:59.225112",
+ "modified": "2024-02-28 18:45:58.819771",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
