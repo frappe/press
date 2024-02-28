@@ -48,7 +48,7 @@
 					Change
 				</Button>
 			</div>
-			<div v-if="$dbServer.doc.current_plan">
+			<div v-if="$dbServer.doc?.current_plan">
 				<div
 					v-for="d in current_usage('Database Server')"
 					:key="d.label"
@@ -72,6 +72,7 @@ import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource } from 'frappe-ui';
 import { renderDialog } from '../../utils/components';
 import ServerPlansDialog from './ServerPlansDialog.vue';
+import { getDocResource } from '../../utils/resource';
 
 export default {
 	props: ['server'],
@@ -151,7 +152,7 @@ export default {
 				},
 				{
 					label: 'Database server',
-					value: this.$dbServer.doc.name
+					value: this.$appServer.doc.database_server
 				},
 				{
 					label: 'Owned by',
@@ -171,10 +172,10 @@ export default {
 			return getCachedDocumentResource('Server', this.server);
 		},
 		$dbServer() {
-			return getCachedDocumentResource(
-				'Database Server',
-				this.$appServer.doc.database_server
-			);
+			return getDocResource({
+				doctype: 'Database Server',
+				name: this.$appServer.doc.database_server
+			});
 		}
 	}
 };

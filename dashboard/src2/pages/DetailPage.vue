@@ -74,13 +74,6 @@ export default {
 				name: this.name,
 				whitelistedMethods: this.object.whitelistedMethods || {}
 			};
-		},
-		_resource() {
-			return {
-				...this.object.detail.customResource({
-					documentResource: this.$resources.document
-				})
-			};
 		}
 	},
 	computed: {

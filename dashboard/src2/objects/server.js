@@ -1,8 +1,8 @@
-import { getCachedDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { userCurrency, bytes, pricePerDay } from '../utils/format';
 import { confirmDialog, icon } from '../utils/components';
+import { getDocResource } from '../utils/resource';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
@@ -310,18 +310,6 @@ export default {
 				label: server.doc.status
 			};
 		},
-		customResource({ documentResource: server }) {
-			return {
-				type: 'document',
-				doctype: 'Database Server',
-				name: server.doc?.database_server,
-				whitelistedMethods: {
-					changePlan: 'change_plan',
-					reboot: 'reboot',
-					rename: 'rename'
-				}
-			};
-		},
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
@@ -460,10 +448,16 @@ export default {
 											throw new Error('Server name does not match');
 										}
 
-										let db_server = getCachedDocumentResource(
-											'Database Server',
-											server.doc.database_server
-										);
+										let db_server = getDocResource({
+											type: 'document',
+											doctype: 'Database Server',
+											name: server.doc?.database_server,
+											whitelistedMethods: {
+												changePlan: 'change_plan',
+												reboot: 'reboot',
+												rename: 'rename'
+											}
+										});
 										toast.promise(
 											db_server.reboot.submit(null, {
 												onSuccess() {
