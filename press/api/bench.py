@@ -313,8 +313,9 @@ def update_config(name, config):
 		else:
 			sanitized_common_site_config.append(c)
 
-	rg = frappe.get_doc("Release Group", name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
+	rg.update_benches_config()
 	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 
