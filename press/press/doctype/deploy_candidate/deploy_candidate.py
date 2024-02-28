@@ -541,7 +541,7 @@ class DeployCandidate(Document):
 			config = read_configuration(config_py_path)
 			app_name = config.get("metadata", {}).get("name")
 
-		if not app_name:
+		if not app_name and os.path.exists(setup_py_path):
 			# retrieve app name from setup.py as fallback
 			with open(setup_py_path, "rb") as f:
 				app_name = re.search(r'name\s*=\s*[\'"](.*)[\'"]', f.read().decode("utf-8"))[1]
