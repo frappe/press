@@ -2,13 +2,13 @@
 import { createResource } from 'frappe-ui';
 
 const props = defineProps({
-	app: Object
+	appName: String
 });
 
 const appSubscriptions = createResource({
 	url: 'press.api.marketplace.get_subscriptions_list',
 	params: {
-		marketplace_app: props.app?.name
+		marketplace_app: props.appName
 	},
 	auto: true
 });
@@ -45,7 +45,7 @@ const appSubscriptions = createResource({
 					</p>
 
 					<p>
-						<Badge :label="subscription.status" />
+						<Badge :label="subscription.enabled == 1 ? 'Active' : 'Disabled'" />
 					</p>
 
 					<p class="hidden md:inline">

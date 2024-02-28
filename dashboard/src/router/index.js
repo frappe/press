@@ -403,7 +403,8 @@ const routes = [
 				name: 'MarketplaceAppSubscriptions',
 				path: 'subscriptions',
 				component: () =>
-					import('../views/marketplace/MarketplaceAppSubscriptions.vue')
+					import('../views/marketplace/MarketplaceAppSubscriptions.vue'),
+				props: true
 			},
 			{
 				name: 'MarketplaceAppPricing',
