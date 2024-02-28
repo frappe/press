@@ -652,12 +652,16 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def get_certificate(self):
+		user_ssh_key = frappe.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+		)[0]
 		certificates = frappe.get_all(
 			"SSH Certificate",
 			{
 				"user": frappe.session.user,
 				"valid_until": [">", frappe.utils.now()],
 				"group": self.name,
+				"user_ssh_key": user_ssh_key,
 			},
 			pluck="name",
 			limit=1,
