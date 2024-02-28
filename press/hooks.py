@@ -224,6 +224,8 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+		],
+		"* * * * * 0/10": [
 			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
 		],
 		"0 */6 * * *": [
