@@ -532,7 +532,10 @@ export default {
 					import('../../src/views/server/ServerAnalytics.vue')
 				),
 				props: server => {
-					return { serverName: server.doc.name };
+					return {
+						serverName: server.doc.name,
+						dbServerName: server.doc.database_server
+					};
 				}
 			},
 			{

@@ -1,14 +1,27 @@
 <template>
 	<div class="space-y-4">
-		<FormControl
-			class="w-32"
-			label="Duration"
-			type="select"
-			:options="
-				durationOptions.map(option => ({ label: option, value: option }))
-			"
-			v-model="duration"
-		/>
+		<div class="flex space-x-2">
+			<FormControl
+				v-if="dbServerName"
+				class="w-48"
+				label="Server"
+				type="select"
+				:options="[
+					{ label: 'Application Server', value: serverName },
+					{ label: 'Database Server', value: dbServerName }
+				]"
+				v-model="chosenServer"
+			/>
+			<FormControl
+				class="w-32"
+				label="Duration"
+				type="select"
+				:options="
+					durationOptions.map(option => ({ label: option, value: option }))
+				"
+				v-model="duration"
+			/>
+		</div>
 		<div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 			<LineChart
 				type="time"
@@ -91,13 +104,14 @@ import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
-	props: ['serverName'],
+	props: ['serverName', 'dbServerName'],
 	components: {
 		LineChart
 	},
 	data() {
 		return {
 			duration: '1 Hour',
+			chosenServer: this.serverName,
 			durationOptions: ['1 Hour', '6 Hour', '24 Hour', '7 Days', '15 Days']
 		};
 	},
@@ -107,7 +121,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'loadavg',
 					duration: this.duration
@@ -120,7 +134,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'cpu',
 					duration: this.duration
@@ -133,7 +147,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'memory',
 					duration: this.duration
@@ -146,7 +160,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'network',
 					duration: this.duration
@@ -159,7 +173,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'iops',
 					duration: this.duration
@@ -172,7 +186,7 @@ export default {
 			return {
 				url: 'press.api.server.analytics',
 				params: {
-					name: this.serverName,
+					name: this.chosenServer,
 					timezone: localTimezone,
 					query: 'space',
 					duration: this.duration
