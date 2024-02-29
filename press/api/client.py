@@ -45,6 +45,8 @@ ALLOWED_DOCTYPES = [
 	"Partner Approval Request",
 	"Marketplace App",
 	"Subscription",
+	"Marketplace App Version",
+	"Marketplace App Plan",
 ]
 
 

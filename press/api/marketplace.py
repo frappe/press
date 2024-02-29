@@ -1009,10 +1009,11 @@ def options_for_version(name, source):
 	added_versions = frappe.get_all(
 		"Marketplace App Version", {"parent": name}, pluck="version"
 	)
-	return {
-		"versions": list(set(frappe_version).difference(set(added_versions))),
-		"branches": branches(source),
-	}
+	branchesList = branches(source)
+	versions = list(set(frappe_version).difference(set(added_versions)))
+	branchesList = [branch["name"] for branch in branchesList]
+
+	return [{"version": version, "branch": branchesList} for version in versions]
 
 
 @protected("Marketplace App")

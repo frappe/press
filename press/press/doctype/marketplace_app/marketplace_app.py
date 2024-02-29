@@ -26,6 +26,7 @@ class MarketplaceApp(WebsiteGenerator):
 		"status",
 		"description",
 	]
+	dashboard_actions = ["remove_version", "add_version", "options_for_version"]
 
 	def autoname(self):
 		self.name = self.app
@@ -101,6 +102,7 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc.branch = to_branch
 			source_doc.save()
 
+	@frappe.whitelist()
 	def add_version(self, version, branch):
 		existing_source = frappe.db.exists(
 			"App Source",
@@ -138,6 +140,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.append("sources", {"version": version, "source": source_doc.name})
 		self.save()
 
+	@frappe.whitelist()
 	def remove_version(self, version):
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
@@ -390,14 +393,37 @@ class MarketplaceApp(WebsiteGenerator):
 		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
 
 	def get_analytics(self):
+		site = frappe.qb.DocType("Site")
+		site_app = frappe.qb.DocType("Site App")
+		team = frappe.qb.DocType("Team")
+
+		query = (
+			frappe.qb.from_(site)
+			.left_join(team)
+			.on(team.name == site.team)
+			.left_outer_join(site_app)
+			.on(site.name == site_app.parent)
+			.select(site.name, site.plan, team.user)
+			.where(
+				(site.status == "Active")
+				& (site_app.app == self.app)
+				& (site.plan != "Frappe Team")
+			)
+		)
+
 		return {
-			"total_installs": self.total_installs(),
-			"num_installs_active_sites": self.total_active_sites(),
-			"num_installs_active_benches": self.total_active_benches(),
-			"total_payout": self.get_payout_amount(),
-			"paid_payout": self.get_payout_amount(status="Paid"),
-			"pending_payout": self.get_payout_amount(status="Draft"),
-			"commission": self.get_payout_amount(total_for="commission"),
+			"installs": {
+				"total_installs": self.total_installs(),
+				"num_installs_active_sites": self.total_active_sites(),
+				"num_installs_active_benches": self.total_active_benches(),
+			},
+			"site_installs": query.run(as_dict=True),
+			"payout": {
+				"total_payout": self.get_payout_amount(),
+				"paid_payout": self.get_payout_amount(status="Paid"),
+				"pending_payout": self.get_payout_amount(status="Draft"),
+				"commission": self.get_payout_amount(total_for="commission"),
+			},
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:
