@@ -87,7 +87,17 @@ class SiteUpdate(Document):
 		if self.has_pending_updates():
 			frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
+	@property
+	def triggered_by_user(self):
+		return frappe.session.user != "Administrator"
+
 	def validate_past_failed_updates(self):
+		if getattr(self, "ignore_past_failures", False):
+			return
+
+		if self.triggered_by_user:
+			return  # Allow user to trigger update for same source and destination
+
 		if not self.skipped_failing_patches and self.have_past_updates_failed():
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
@@ -143,10 +153,6 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
-		if (
-			not frappe.session.user == "Administrator"
-		):  # Allow user to trigger update for same source and destination
-			return False
 		return frappe.db.exists(
 			"Site Update",
 			{

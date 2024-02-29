@@ -586,6 +586,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"destination_group": group,
 				"skipped_failing_patches": skip_failing_patches,
+				"ignore_past_failures": True,
 			}
 		).insert()
 
