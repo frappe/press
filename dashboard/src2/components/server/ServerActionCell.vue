@@ -89,7 +89,7 @@ function onRenameServer() {
 			}
 		],
 		primaryAction: {
-			label: 'Update Title'
+			label: 'Rename'
 		},
 		onSuccess({ hide, values }) {
 			if (server.rename.loading) return;
