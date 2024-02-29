@@ -2,19 +2,17 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 import os
 import re
 import shlex
 import shutil
 import subprocess
 from subprocess import Popen
-from typing import List
+from typing import List, Tuple
 
 import docker
 import dockerfile
 import frappe
-
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -104,7 +102,7 @@ class DeployCandidate(Document):
 		self.status = "Pending"
 		if not kwargs.get("no_cache"):
 			self._update_app_releases()
-		self.add_build_steps()
+		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
 			frappe.session.user,
@@ -203,137 +201,31 @@ class DeployCandidate(Document):
 			self.save()
 			frappe.db.commit()
 
-	def add_build_steps(self):
+	def add_pre_build_steps(self):
+		"""
+		This function just adds build steps that occur before
+		a docker build, rest of the steps are updated after the
+		Dockerfile is generated in:
+		- `_update_build_steps`
+		- `_update_post_build_steps`
+		"""
 		if self.build_steps:
-			return
+			self.build_steps.clear()
 
-		self.steps_additional_packages = []
-		self._mounts = []
-
-		self._prepare_packages()
-		self._prepare_mounts()
-
-		# stage_slug, step_slug, stage, step
-		preparation_steps = [
-			("pre", "essentials", "Setup Prerequisites", "Install Essential Packages"),
-			("pre", "redis", "Setup Prerequisites", "Install Redis"),
-			("pre", "python", "Setup Prerequisites", "Install Python"),
-			("pre", "wkhtmltopdf", "Setup Prerequisites", "Install wkhtmltopdf"),
-			("pre", "fonts", "Setup Prerequisites", "Install Fonts"),
-		]
-
-		if self.steps_additional_packages:
-			preparation_steps.extend(self.steps_additional_packages)
-
-		if frappe.get_value("Team", self.team, "is_code_server_user"):
-			preparation_steps.extend(
-				[
-					("pre", "code-server", "Setup Prerequisites", "Install Code Server"),
-				]
-			)
-
-		preparation_steps.extend(
-			[
-				("pre", "node", "Setup Prerequisites", "Install Node.js"),
-				("pre", "yarn", "Setup Prerequisites", "Install Yarn"),
-				("pre", "pip", "Setup Prerequisites", "Install pip"),
-				("bench", "bench", "Setup Bench", "Install Bench"),
-				("bench", "env", "Setup Bench", "Setup Virtual Environment"),
-			]
-		)
-
-		clone_steps = []
-		app_install_steps = []
-		pull_update_steps = []
-		mount_step = []
-
-		if self._mounts:
-			mount_step.extend(
-				[
-					("mounts", "create", "Setup Mounts", "Prepare Mounts"),
-				]
-			)
-
+		app_titles = {a.app: a.title for a in self.apps}
+		stage_slug = "clone"
 		for app in self.apps:
-			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
-			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
-
-			if app.pullable_release:
-				pull_update_steps.append(("pull", app.app, "Pull Updates", app.title))
-
-		validation_steps = [
-			("validate", "dependencies", "Run Validations", "Validate Dependencies"),
-		]
-
-		steps = [
-			*clone_steps,
-			*preparation_steps,
-			*app_install_steps,
-			*pull_update_steps,
-			*validation_steps,
-			*mount_step,
-		]
-
-		for stage_slug, step_slug, stage, step in steps:
-			self.append(
-				"build_steps",
-				{
-					"status": "Pending",
-					"stage_slug": stage_slug,
-					"step_slug": step_slug,
-					"stage": stage,
-					"step": step,
-				},
+			step_slug = app.app
+			stage, step = get_build_stage_and_step(stage_slug, step_slug, app_titles)
+			step = dict(
+				status="Pending",
+				stage_slug=stage_slug,
+				step_slug=step_slug,
+				stage=stage,
+				step=step,
 			)
-		self.append(
-			"build_steps",
-			{
-				"status": "Pending",
-				"stage_slug": "upload",
-				"step_slug": "upload",
-				"stage": "Upload",
-				"step": "Docker Image",
-			},
-		)
+			self.append("build_steps", step)
 		self.save()
-
-	def _prepare_packages(self):
-		packages = []
-		_variables = {d.dependency: d.version for d in self.dependencies}
-
-		for p in self.packages:
-			_package_manager = p.package_manager.split("/")[-1]
-
-			if _package_manager in ["apt", "pip"]:
-
-				self.steps_additional_packages.append(
-					[
-						"pre",
-						p.package,
-						"Setup Prerequisites",
-						f"Install package {p.package}",
-					]
-				)
-				packages.append(
-					{
-						"package_manager": p.package_manager,
-						"package": p.package,
-						"prerequisites": frappe.render_template(p.package_prerequisites, _variables),
-						"after_install": p.after_install,
-					}
-				)
-
-		self.apt_packages = json.dumps(packages)
-
-	def _prepare_mounts(self):
-		self._mounts = frappe.get_all(
-			"Release Group Mount",
-			{"parent": self.group},
-			["source", "destination", "is_absolute_path"],
-			order_by="idx",
-		)
-
-		self.mounts = json.dumps(self._mounts)
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
@@ -443,27 +335,96 @@ class DeployCandidate(Document):
 			self.save(ignore_version=True)
 			frappe.db.commit()
 
-		self._load_packages()
-		self._load_mounts()
-		self._generate_dockerfile()
+		"""
+		Due to dependencies mentioned in an apps pyproject.toml
+		file, _update_packages() needs to run after the repos
+		have been cloned.
+		"""
+		self._update_packages()
+		self.save(ignore_version=True)
+
+		# Set props used when generating the Dockerfile
+		self._set_additional_packages()
+		self._set_container_mounts()
+
+		dockerfile = self._generate_dockerfile()
+		self._add_build_steps(dockerfile)
+		self._add_post_build_steps()
+
 		self._copy_config_files()
 		self._generate_redis_cache_config()
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
 
-	def _load_packages(self):
-		try:
-			self.additional_packages = json.loads(self.apt_packages)
-		except Exception:
-			# backward compatibility
-			self.additional_packages = [
-				{"package": p.package} for p in self.packages if p.package_manager == "apt"
-			]
+	def _update_packages(self):
+		existing_apt_packages = set()
+		for pkgs in self.packages:
+			if pkgs.package_manager != "apt":
+				continue
+			for p in pkgs.split(" "):
+				existing_apt_packages.add(p)
 
-	def _load_mounts(self):
-		if self.mounts:
-			self.container_mounts = json.loads(self.mounts)
+		"""
+		Individual apps can mention apt dependencies in their pyproject.toml.
+
+		For Example:
+		```
+		[deploy.dependencies.apt]
+		packages = [
+			"ffmpeg",
+			"libsm6",
+			"libxext6",
+		]
+		```
+
+		For each app, these are grouped together into a single package row.
+		"""
+		for app in self.apps:
+			deps = self._get_app_pyproject(app.app).get("deploy", {}).get("dependencies", {})
+			pkgs = deps.get("apt", {}).get("packages", [])
+
+			app_packages = []
+			for p in pkgs:
+				if p in existing_apt_packages:
+					continue
+				existing_apt_packages.add(p)
+				app_packages.append(p)
+
+			if not app_packages:
+				continue
+
+			package = dict(package_manager="apt", package=" ".join(app_packages))
+			self.append("packages", package)
+
+	def _set_additional_packages(self):
+		"""
+		additional_packages is used when rendering the Dockerfile template
+		"""
+		self.additional_packages = []
+		dep_versions = {d.dependency: d.version for d in self.dependencies}
+		for p in self.packages:
+
+			#  second clause cause: '/opt/certbot/bin/pip'
+			if p.package_manager not in ["apt", "pip"] or not p.package_manager.endswith("/pip"):
+				continue
+
+			prerequisites = frappe.render_template(p.package_prerequisites, dep_versions)
+			package = dict(
+				package_manager=p.package_manager,
+				package=p.package,
+				prerequisites=prerequisites,
+				after_install=p.after_install,
+			)
+			self.additional_packages.append(package)
+
+	def _set_container_mounts(self):
+		self.container_mounts = frappe.get_all(
+			"Release Group Mount",
+			{"parent": self.group, "is_absolute_path": False},
+			["destination"],
+			order_by="idx",
+		)
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -476,6 +437,74 @@ class DeployCandidate(Document):
 
 			content = frappe.render_template(dockerfile_template, {"doc": self}, is_path=True)
 			f.write(content)
+			return content
+
+	def _add_build_steps(self, dockerfile: str):
+		"""
+		This function adds build steps that take place inside docker build.
+		These steps are added from the generated Dockerfile.
+
+		Build steps are updated when docker build runs and prints a string of
+		the following format `#stage-{ stage_slug }-{ step_slug }` to the output.
+
+		To add additional build steps:
+		- Update STAGE_SLUG_MAP
+		- Update STEP_SLUG_MAP
+		- Update get_build_stage_and_step
+		"""
+		app_titles = {a.app: a.title for a in self.apps}
+
+		checkpoints = self._get_dockerfile_checkpoints(dockerfile)
+		for checkpoint in checkpoints:
+			splits = checkpoint.split("-", 1)
+			if len(splits) != 2:
+				continue
+
+			stage_slug, step_slug = splits
+			stage, step = get_build_stage_and_step(
+				stage_slug,
+				step_slug,
+				app_titles,
+			)
+
+			step = dict(
+				status="Pending",
+				stage_slug=stage_slug,
+				step_slug=step_slug,
+				stage=stage,
+				step=step,
+			)
+			self.append("build_steps", step)
+
+	def _get_dockerfile_checkpoints(self, dockerfile: str) -> list[str]:
+		"""
+		Returns checkpoint slugs from a generated Dockerfile
+		"""
+
+		# Example: "`#stage-pre-essentials`", "`#stage-apps-print_designer`"
+		rx = re.compile(r"`#stage-([^`]+)`")
+
+		# Example: "pre-essentials", "apps-print_designer"
+		checkpoints = []
+		for line in dockerfile.split("\n"):
+			matches = rx.findall(line)
+			checkpoints.extend(matches)
+
+		return checkpoints
+
+	def _add_post_build_steps(self):
+		slugs = [("upload", "image")]
+
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(stage_slug, step_slug, {})
+			step = dict(
+				status="Pending",
+				stage_slug=stage_slug,
+				step_slug=step_slug,
+				stage=stage,
+				step=step,
+			)
+			self.append("build_steps", step)
 
 	def _copy_config_files(self):
 		for target in ["common_site_config.json", "supervisord.conf", ".vimrc"]:
@@ -522,18 +551,10 @@ class DeployCandidate(Document):
 		app_name = None
 		apps_path = os.path.join(self.build_directory, "apps")
 
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
 		config_py_path = os.path.join(apps_path, app, "setup.cfg")
 		setup_py_path = os.path.join(apps_path, app, "setup.py")
 
-		if os.path.exists(pyproject_path):
-			try:
-				from tomli import load
-			except ImportError:
-				from tomllib import load
-
-			with open(pyproject_path, "rb") as f:
-				app_name = load(f).get("project", {}).get("name")
+		app_name = self._get_app_pyproject(app).get("project", {}).get("name")
 
 		if not app_name and os.path.exists(config_py_path):
 			from setuptools.config import read_configuration
@@ -550,6 +571,20 @@ class DeployCandidate(Document):
 			return app_name
 
 		return app
+
+	def _get_app_pyproject(self, app):
+		apps_path = os.path.join(self.build_directory, "apps")
+		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
+		if not os.path.exists(pyproject_path):
+			return {}
+
+		try:
+			from tomli import load
+		except ImportError:
+			from tomllib import load
+
+		with open(pyproject_path, "rb") as f:
+			return load(f)
 
 	command = "docker build"
 
@@ -916,11 +951,6 @@ class DeployCandidate(Document):
 		else:
 			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
 
-	def get_apt_packages(self):
-		return " ".join(
-			p.package for p in self.packages if p.package_manager in ["apt", "pip"]
-		)
-
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
 		return f"{dependency} {version}"
@@ -1139,3 +1169,47 @@ def run_scheduled_builds():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)
+
+
+# Key: stage_slug
+STAGE_SLUG_MAP = {
+	"clone": "Clone Repositories",
+	"pre_before": "Run Before Prerequisite Script",
+	"pre": "Setup Prerequisites",
+	"pre_after": "Run After Prerequisite Script",
+	"bench": "Setup Bench",
+	"apps": "Install Apps",
+	"validate": "Run Validations",
+	"pull": "Pull Updates",
+	"mounts": "Setup Mounts",
+	"upload": "Upload",
+}
+
+# Key: (stage_slug, step_slug)
+STEP_SLUG_MAP = {
+	("pre", "essentials"): "Install Essential Packages",
+	("pre", "redis"): "Install Redis",
+	("pre", "python"): "Install Python",
+	("pre", "wkhtmltopdf"): "Install wkhtmltopdf",
+	("pre", "fonts"): "Install Fonts",
+	("pre", "node"): "Install Node.js",
+	("pre", "yarn"): "Install Yarn",
+	("pre", "pip"): "Install pip",
+	("pre", "code-server"): "Install Code Server",
+	("bench", "bench"): "Install Bench",
+	("bench", "env"): "Setup Virtual Environment",
+	("validate", "dependencies"): "Validate Dependencies",
+	("mounts", "create"): "Prepare Mounts",
+	("upload", "image"): "Docker Image",
+}
+
+
+def get_build_stage_and_step(
+	stage_slug: str, step_slug: str, app_titles: dict[str, str] = None
+) -> Tuple[str, str]:
+	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
+	if stage_slug == "clone" or stage_slug == "apps":
+		return (stage, app_titles[step_slug])
+
+	step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
+	return (stage, step)

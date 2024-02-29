@@ -17,9 +17,7 @@
   "apps",
   "dependencies",
   "packages",
-  "apt_packages",
   "environment_variables",
-  "mounts",
   "section_break_6",
   "build_start",
   "build_end",
@@ -251,12 +249,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "apt_packages",
-   "fieldtype": "Text",
-   "label": "APT Packages",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_tkdd",
    "fieldtype": "Column Break"
   },
@@ -297,12 +289,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "mounts",
-   "fieldtype": "Text",
-   "label": "Mounts",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "fetch_from": "group.use_rq_workerpool",
    "fieldname": "use_rq_workerpool",
@@ -325,7 +311,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-05 11:30:59.225112",
+ "modified": "2024-02-29 13:32:52.946943",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
