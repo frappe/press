@@ -464,6 +464,7 @@ export default {
 				],
 				Installing: ['Jobs'],
 				Pending: ['Jobs'],
+				Archived: ['Jobs', 'Database'],
 				Broken: [
 					'Overview',
 					'Apps',
