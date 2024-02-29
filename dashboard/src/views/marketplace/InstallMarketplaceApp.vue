@@ -132,7 +132,7 @@ export default {
 						color: 'green'
 					});
 
-					this.$router.push(`/benches/${this.selectedBench}/overview`);
+					this.$router.push(`/benches/${this.selectedBench}/apps`);
 				}
 			};
 		},
