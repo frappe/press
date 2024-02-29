@@ -131,7 +131,9 @@ export default {
 				auto: true,
 				onSuccess(options) {
 					if (!this.selectedVersionName) {
-						this.selectedVersionName = options.versions[0].name;
+						this.selectedVersionName = this.options.versions.filter(
+							v => v.default == 1
+						)[0].name;
 					}
 					if (!this.selectedRegion) {
 						this.selectedRegion = this.options.clusters[0].name;

@@ -11,7 +11,11 @@
 			<ErrorMessage :message="$resources.optionsForQuickInstall.error" />
 
 			<div v-if="options" class="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-				<Card title="Sites" subtitle="Select a site to install">
+				<Card
+					v-if="options.approved"
+					title="Sites"
+					subtitle="Select a site to install"
+				>
 					<ul v-if="options.sites?.length">
 						<li
 							v-for="site in options.sites"
