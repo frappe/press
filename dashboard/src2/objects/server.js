@@ -1,7 +1,7 @@
 import { defineAsyncComponent, h } from 'vue';
-import { toast } from 'vue-sonner';
+import ServerActions from '../components/server/ServerActions.vue';
 import { userCurrency, bytes, pricePerDay } from '../utils/format';
-import { confirmDialog, icon } from '../utils/components';
+import { icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
@@ -338,133 +338,11 @@ export default {
 							}
 						},
 						{
-							label: 'Switch to Database Server',
-							icon: icon('repeat'),
-							condition: () => server.doctype === 'Server',
-							onClick() {
-								router.push({
-									name: 'Database Server Detail Overview',
-									params: {
-										name: server.doc.database_server
-									}
-								});
-							}
-						},
-						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
 							condition: () => server.doc.status === 'Active',
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
-							}
-						},
-						{
-							label: 'Rename Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('edit'),
-							onClick() {
-								confirmDialog({
-									title: 'Rename Server',
-									fields: [
-										{
-											label: 'Enter new title for the server',
-											fieldname: 'title'
-										}
-									],
-									primaryAction: {
-										label: 'Update Title'
-									},
-									onSuccess({ hide, values }) {
-										if (server.rename.loading) return;
-										toast.promise(
-											server.rename.submit(
-												{
-													title: values.title
-												},
-												{
-													onSuccess() {
-														hide();
-													}
-												}
-											),
-											{
-												loading: 'Updating title...',
-												success: 'Title updated',
-												error: 'Failed to update title'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Reboot Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('rotate-ccw'),
-							onClick() {
-								confirmDialog({
-									title: 'Reboot Server',
-									message: `Are you sure you want to reboot the server <b>${server.doc.name}</b>?`,
-									fields: [
-										{
-											label: 'Please type the server name to confirm',
-											fieldname: 'confirmServerName'
-										}
-									],
-									primaryAction: {
-										label: 'Reboot Server'
-									},
-									onSuccess({ hide, values }) {
-										if (server.reboot.loading) return;
-										if (values.confirmServerName !== server.doc.name) {
-											throw new Error('Server name does not match');
-										}
-										toast.promise(
-											server.reboot.submit(null, {
-												onSuccess() {
-													hide();
-												}
-											}),
-											{
-												loading: 'Rebooting...',
-												success: 'Server rebooted',
-												error: 'Failed to reboot server'
-											}
-										);
-									}
-								});
-							}
-						},
-						{
-							label: 'Drop Server',
-							condition: () => server.doc.status === 'Active',
-							icon: icon('trash-2'),
-							onClick() {
-								confirmDialog({
-									title: 'Drop Server',
-									message: `Are you sure you want to drop your servers?<br>Both the Application server (<b>${server.doc.name}</b>) and Database server (<b>${server.doc.database_server}</b>)will be archived.<br>This action cannot be undone.`,
-									fields: [
-										{
-											label: 'Please type the server name to confirm',
-											fieldname: 'confirmServerName'
-										}
-									],
-									primaryAction: {
-										label: 'Drop Server',
-										theme: 'red'
-									},
-									onSuccess({ hide, values }) {
-										if (server.dropServer.loading) return;
-										if (values.confirmServerName !== server.doc.name) {
-											throw new Error('Server name does not match');
-										}
-										toast.promise(server.dropServer.submit().then(hide), {
-											loading: 'Dropping...',
-											success: 'Server dropped',
-											error: 'Failed to drop server'
-										});
-									}
-								});
 							}
 						}
 					]
@@ -481,7 +359,7 @@ export default {
 					import('../components/server/ServerOverview.vue')
 				),
 				props: server => {
-					return { server: server.doc.name, serverType: server.doctype };
+					return { server: server.doc.name };
 				}
 			},
 			{
@@ -493,7 +371,10 @@ export default {
 					import('../../src/views/server/ServerAnalytics.vue')
 				),
 				props: server => {
-					return { serverName: server.doc.name };
+					return {
+						serverName: server.doc.name,
+						dbServerName: server.doc.database_server
+					};
 				}
 			},
 			{
@@ -628,7 +509,9 @@ export default {
 				list: {
 					doctype: 'Ansible Play',
 					filters: server => {
-						return { server: server.doc.name };
+						return {
+							server: ['in', [server.doc.name, server.doc.database_server]]
+						};
 					},
 					route(row) {
 						return {
@@ -647,11 +530,18 @@ export default {
 						{
 							label: 'Status',
 							fieldname: 'status',
-							type: 'Badge'
+							type: 'Badge',
+							width: 0.5
+						},
+						{
+							label: 'Server',
+							fieldname: 'server',
+							width: 2
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
+							width: 0.5,
 							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
@@ -665,6 +555,16 @@ export default {
 							align: 'right'
 						}
 					]
+				}
+			},
+			{
+				label: 'Actions',
+				icon: icon('activity'),
+				route: 'actions',
+				type: 'Component',
+				component: ServerActions,
+				props: server => {
+					return { server: server.doc.name };
 				}
 			},
 			tagTab()

@@ -265,21 +265,60 @@ export default {
 																		label: 'Install',
 																		onClick() {
 																			if (site.installApp.loading) return;
-																			toast.promise(
-																				site.installApp.submit({
-																					app: row.app
-																				}),
-																				{
-																					loading: 'Installing app...',
-																					success: () =>
-																						'App will be installed shortly',
-																					error: e => {
-																						return e.messages.length
-																							? e.messages.join('\n')
-																							: e.message;
+
+																			if (row.plans) {
+																				let SiteAppPlanSelectDialog =
+																					defineAsyncComponent(() =>
+																						import(
+																							'../components/site/SiteAppPlanSelectDialog.vue'
+																						)
+																					);
+
+																				renderDialog(
+																					h(SiteAppPlanSelectDialog, {
+																						app: row,
+																						currentPlan: null,
+																						onPlanSelected(plan) {
+																							toast.promise(
+																								site.installApp.submit({
+																									app: row.app,
+																									plan: plan.name
+																								}),
+																								{
+																									loading: 'Installing app...',
+																									success: () => {
+																										apps.reload();
+																										return 'App will be installed shortly';
+																									},
+																									error: e => {
+																										return e.messages.length
+																											? e.messages.join('\n')
+																											: e.message;
+																									}
+																								}
+																							);
+																						}
+																					})
+																				);
+																			} else {
+																				toast.promise(
+																					site.installApp.submit({
+																						app: row.app
+																					}),
+																					{
+																						loading: 'Installing app...',
+																						success: () => {
+																							apps.reload();
+																							return 'App will be installed shortly';
+																						},
+																						error: e => {
+																							return e.messages.length
+																								? e.messages.join('\n')
+																								: e.message;
+																						}
 																					}
-																				}
-																			);
+																				);
+																			}
 																		}
 																	};
 																}
@@ -318,13 +357,13 @@ export default {
 								condition: () => row.plan_info && row.plans.length > 1,
 								onClick() {
 									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
-										import('../components/site/SiteAppPlanChangeDialog.vue')
+										import('../components/site/SiteAppPlanSelectDialog.vue')
 									);
 									renderDialog(
 										h(SiteAppPlanChangeDialog, {
 											app: row,
 											currentPlan: row.plans.find(
-												plan => plan.plan === row.plan_info.name
+												plan => plan.name === row.plan_info.name
 											),
 											onPlanChanged() {
 												apps.reload();

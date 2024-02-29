@@ -688,12 +688,15 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 	app_plan = frappe.qb.DocType("Marketplace App Plan")
 	site = frappe.qb.DocType("Site")
 	usage_record = frappe.qb.DocType("Usage Record")
+	team = frappe.qb.DocType("Team")
 
 	conditions = app_plan.price_usd > 0  # noqa: E712
 	conditions = conditions & (app_sub.document_name == marketplace_app)
 
 	query = (
 		frappe.qb.from_(app_sub)
+		.left_join(team)
+		.on(app_sub.team == team.name)
 		.join(app_plan)
 		.on(app_sub.plan == app_plan.name)
 		.join(site)
@@ -705,7 +708,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.select(
 			frappe.query_builder.functions.Count("*").as_("active_days"),
 			app_sub.site,
-			site.team.as_("user_contact"),
+			team.user.as_("user_contact"),
 			app_sub.plan.as_("app_plan"),
 			app_plan.price_usd.as_("price_usd"),
 			app_plan.price_inr.as_("price_inr"),

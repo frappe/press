@@ -30,8 +30,11 @@ class AnsiblePlay(Document):
 		if not server:
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		doctype = poly_get_doctype(["Server", "Database Server"], server)
-		is_owned_by_team(doctype, server, raise_exception=True)
+		servers = frappe.parse_json(server.replace("'", '"'))[1]
+
+		for server in servers:
+			doctype = poly_get_doctype(["Server", "Database Server"], server)
+			is_owned_by_team(doctype, server, raise_exception=True)
 
 		results = query.run(as_dict=1)
 		return results
