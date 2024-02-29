@@ -112,7 +112,7 @@ def get_saas_bench(app):
 		FROM
 			tabSite site
 		LEFT JOIN
-			tabPlan plan
+			tabSite Plan plan
 		ON
 			site.plan = plan.name
 		WHERE

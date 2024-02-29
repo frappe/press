@@ -87,7 +87,7 @@ def update_disk_usages():
 			ON
 				u.site = site.name
 			LEFT JOIN
-				`tabPlan` plan
+				`tabSite Plan` plan
 			ON
 				s.plan = plan.name
 			WHERE
