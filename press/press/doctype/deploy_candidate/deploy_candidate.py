@@ -2,7 +2,6 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
-import json
 import os
 import re
 import shlex
@@ -103,7 +102,6 @@ class DeployCandidate(Document):
 		self.status = "Pending"
 		if not kwargs.get("no_cache"):
 			self._update_app_releases()
-		self.prepare_mounts()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -229,16 +227,6 @@ class DeployCandidate(Document):
 			self.append("build_steps", step)
 		self.save()
 
-	def prepare_mounts(self):
-		mounts = frappe.get_all(
-			"Release Group Mount",
-			{"parent": self.group},
-			["source", "destination", "is_absolute_path"],
-			order_by="idx",
-		)
-
-		self.mounts = json.dumps(mounts)
-
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
 			app.use_cached = True
@@ -354,12 +342,15 @@ class DeployCandidate(Document):
 		"""
 		self._update_packages()
 		self.save(ignore_version=True)
-		self._set_additional_packages()
 
-		self._load_mounts()
+		# Set props used when generating the Dockerfile
+		self._set_additional_packages()
+		self._set_container_mounts()
+
 		dockerfile = self._generate_dockerfile()
 		self._add_build_steps(dockerfile)
 		self._add_post_build_steps()
+
 		self._copy_config_files()
 		self._generate_redis_cache_config()
 		self._generate_supervisor_config()
@@ -427,9 +418,13 @@ class DeployCandidate(Document):
 			)
 			self.additional_packages.append(package)
 
-	def _load_mounts(self):
-		if self.mounts:
-			self.container_mounts = json.loads(self.mounts)
+	def _set_container_mounts(self):
+		self.container_mounts = frappe.get_all(
+			"Release Group Mount",
+			{"parent": self.group, "is_absolute_path": False},
+			["destination"],
+			order_by="idx",
+		)
 
 	def _generate_dockerfile(self):
 		dockerfile = os.path.join(self.build_directory, "Dockerfile")
@@ -487,7 +482,7 @@ class DeployCandidate(Document):
 		"""
 
 		# Example: "`#stage-pre-essentials`", "`#stage-apps-print_designer`"
-		rx = re.compile(r"`#stage-([^` ]+)`")
+		rx = re.compile(r"`#stage-([^`]+)`")
 
 		# Example: "pre-essentials", "apps-print_designer"
 		checkpoints = []
@@ -1179,7 +1174,9 @@ def run_scheduled_builds():
 # Key: stage_slug
 STAGE_SLUG_MAP = {
 	"clone": "Clone Repositories",
+	"pre_before": "Run Before Prerequisite Script",
 	"pre": "Setup Prerequisites",
+	"pre_after": "Run After Prerequisite Script",
 	"bench": "Setup Bench",
 	"apps": "Install Apps",
 	"validate": "Run Validations",
@@ -1198,6 +1195,7 @@ STEP_SLUG_MAP = {
 	("pre", "node"): "Install Node.js",
 	("pre", "yarn"): "Install Yarn",
 	("pre", "pip"): "Install pip",
+	("pre", "code-server"): "Install Code Server",
 	("bench", "bench"): "Install Bench",
 	("bench", "env"): "Setup Virtual Environment",
 	("validate", "dependencies"): "Validate Dependencies",

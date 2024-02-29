@@ -18,7 +18,6 @@
   "dependencies",
   "packages",
   "environment_variables",
-  "mounts",
   "section_break_6",
   "build_start",
   "build_end",
@@ -290,12 +289,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "mounts",
-   "fieldtype": "Text",
-   "label": "Mounts",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "fetch_from": "group.use_rq_workerpool",
    "fieldname": "use_rq_workerpool",
@@ -318,7 +311,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-28 18:45:58.819771",
+ "modified": "2024-02-29 13:32:52.946943",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
