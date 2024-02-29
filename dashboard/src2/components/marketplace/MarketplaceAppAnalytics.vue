@@ -1,0 +1,232 @@
+<template>
+	<div
+		v-if="$resources.analytics.data"
+		class="grid grid-cols-1 gap-5 sm:grid-cols-2"
+	>
+		<div class="rounded-md border">
+			<div class="h-12 border-b px-5 py-4">
+				<h2 class="text-lg font-medium text-gray-900">Installs</h2>
+			</div>
+			<div>
+				<div
+					v-for="d in installAnalytics"
+					:key="d.title"
+					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+				>
+					<div class="w-1/3 text-base text-gray-600">{{ d.title }}</div>
+					<div class="w-2/3 text-base text-gray-900">
+						{{ d.value }}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="rounded-md border">
+			<div class="h-12 border-b px-5 py-4">
+				<h2 class="text-lg font-medium text-gray-900">Sites Installed On</h2>
+			</div>
+			<div class="max-h-60 overflow-scroll">
+				<div
+					v-for="d in siteInstalls"
+					:key="d.name"
+					class="flex flex-row justify-between px-5 py-3 last:pb-5 even:bg-gray-50/70"
+				>
+					<div class="w-2/5 text-base text-gray-600">{{ d.name }}</div>
+					<div class="w-1/5 text-base text-gray-900">
+						{{ d.plan }}
+					</div>
+					<div class="w-2/5 text-base text-gray-900">
+						{{ d.user }}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<LineChart
+			title="Pageviews"
+			type="time"
+			:key="pageViewsData"
+			:data="pageViewsData"
+			unit="views"
+			:chartTheme="[$theme.colors.purple[500]]"
+			:loading="$resources.plausible_analytics.loading"
+			:error="$resources.plausible_analytics.error"
+		>
+			<template #actions>
+				<a
+					v-if="app"
+					class="text-base text-gray-700 hover:text-gray-800"
+					:href="`/marketplace/apps/${app.app}`"
+					target="_blank"
+				>
+					View Page →
+				</a>
+			</template>
+		</LineChart>
+		<LineChart
+			title="Unique Visitors"
+			type="time"
+			:key="visitorsData"
+			:data="visitorsData"
+			unit="visitors"
+			:chartTheme="[$theme.colors.green[500]]"
+			:loading="$resources.plausible_analytics.loading"
+			:error="$resources.plausible_analytics.error"
+		/>
+	</div>
+</template>
+
+<script>
+import { DateTime } from 'luxon';
+import LineChart from '@/components/charts/LineChart.vue';
+
+export default {
+	name: 'MarketplaceAppAnalytics',
+	props: {
+		app: Object
+	},
+	components: {
+		LineChart
+	},
+	methods: {
+		formatDate(data) {
+			return data.map(d => d.date);
+		},
+		getChartOptions(yFormatter) {
+			return {
+				axisOptions: {
+					xIsSeries: true,
+					shortenYAxisNumbers: 1
+				},
+				lineOptions: {
+					hideDots: true,
+					regionFill: true
+				},
+				tooltipOptions: {
+					formatTooltipX: d => {
+						return DateTime.fromISO(d).toLocaleString(DateTime.DATE_MED);
+					},
+					formatTooltipY: yFormatter
+				}
+			};
+		}
+	},
+	resources: {
+		analytics() {
+			return {
+				url: 'press.api.marketplace.analytics',
+				auto: true,
+				params: {
+					name: this.app?.app
+				}
+			};
+		},
+		plausible_analytics() {
+			return {
+				url: 'press.api.analytics.plausible_analytics',
+				auto: true,
+				params: {
+					name: this.app?.app
+				}
+			};
+		}
+	},
+	computed: {
+		installAnalytics() {
+			if (
+				!this.$resources.analytics.loading &&
+				this.$resources.analytics.data
+			) {
+				const analyticsData = this.$resources.analytics.data;
+				const {
+					total_installs,
+					num_installs_active_sites,
+					num_installs_active_benches
+				} = analyticsData.installs;
+
+				return [
+					{
+						title: 'Total Installs',
+						value:
+							total_installs.toString() +
+							' ' +
+							(total_installs == 1 ? 'Site' : 'Sites')
+					},
+					{
+						title: 'Active Sites with this App',
+						value:
+							num_installs_active_sites.toString() +
+							' ' +
+							(num_installs_active_sites == 1 ? 'Site' : 'Sites')
+					},
+					{
+						title: 'Active Benches with this App',
+						value:
+							num_installs_active_benches.toString() +
+							' ' +
+							(num_installs_active_benches == 1 ? 'Bench' : 'Benches')
+					}
+				];
+			}
+		},
+		siteInstalls() {
+			if (
+				!this.$resources.analytics.loading &&
+				this.$resources.analytics.data
+			) {
+				return this.$resources.analytics.data.site_installs;
+			}
+		},
+		pageViewsData() {
+			let pageViews = this.$resources.plausible_analytics.data?.pageviews;
+			if (!pageViews) return;
+
+			return {
+				datasets: [pageViews.map(d => [+new Date(d.date), d.value])]
+			};
+		},
+		visitorsData() {
+			let visitorsData = this.$resources.plausible_analytics.data?.visitors;
+			if (!visitorsData) return;
+
+			return {
+				datasets: [visitorsData.map(d => [+new Date(d.date), d.value])]
+			};
+		},
+		paymentAnalytics() {
+			if (
+				!this.$resources.analytics.loading &&
+				this.$resources.analytics.data
+			) {
+				let data = this.$resources.analytics.data;
+				return {
+					total_payout: {
+						usd: data.total_payout.usd_amount
+							? data.total_payout.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.total_payout.inr_amount
+							? data.total_payout.inr_amount.toFixed(2)
+							: 0.0
+					},
+					pending_payout: {
+						usd: data.pending_payout.usd_amount
+							? data.pending_payout.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.pending_payout.inr_amount
+							? data.pending_payout.inr_amount.toFixed(2)
+							: 0.0
+					},
+					commission: {
+						usd: data.commission.usd_amount
+							? data.commission.usd_amount.toFixed(2)
+							: 0.0,
+						inr: data.commission.inr_amount
+							? data.commission.inr_amount.toFixed(2)
+							: 0.0
+					}
+				};
+			}
+		}
+	}
+};
+</script>
