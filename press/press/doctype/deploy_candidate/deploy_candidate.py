@@ -228,6 +228,7 @@ class DeployCandidate(Document):
 		- `_update_post_build_steps`
 		"""
 		if self.build_steps:
+			self.build_output = ""
 			self.build_steps.clear()
 
 		app_titles = {a.app: a.title for a in self.apps}
@@ -380,7 +381,7 @@ class DeployCandidate(Document):
 		for pkgs in self.packages:
 			if pkgs.package_manager != "apt":
 				continue
-			for p in pkgs.split(" "):
+			for p in pkgs.package.split(" "):
 				existing_apt_packages.add(p)
 
 		"""
@@ -424,7 +425,9 @@ class DeployCandidate(Document):
 		for p in self.packages:
 
 			#  second clause cause: '/opt/certbot/bin/pip'
-			if p.package_manager not in ["apt", "pip"] or not p.package_manager.endswith("/pip"):
+			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith(
+				"/pip"
+			):
 				continue
 
 			prerequisites = frappe.render_template(p.package_prerequisites, dep_versions)
