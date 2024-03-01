@@ -15,9 +15,15 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
-		[
+		const actions = [
+			[
+				__('Generate Build Context'),
+				'generate_build_context',
+				window.dev_server,
+			],
 			[__('Build'), 'build', true],
 			[__('Build without cache'), 'build_without_cache', true],
+			[__('Build without push'), 'build_without_push', window.dev_server],
 			[__('Deploy to Staging'), 'deploy_to_staging', true],
 			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
 			[
@@ -30,15 +36,18 @@ frappe.ui.form.on('Deploy Candidate', {
 				'cleanup_build_directory',
 				frm.doc.status !== 'Draft',
 			],
-		].forEach(([label, method, show]) => {
-			if (show)
-				frm.add_custom_button(
-					label,
-					() => {
-						frm.call(method).then((r) => frm.refresh());
-					},
-					__('Actions'),
-				);
-		});
+		];
+
+		for (const [label, method, show] of actions) {
+			if (!show) {
+				continue;
+			}
+
+			frm.add_custom_button(
+				label,
+				() => frm.call(method).then((r) => frm.refresh()),
+				__('Actions'),
+			);
+		}
 	},
 });
