@@ -127,6 +127,10 @@ class DeployCandidate(Document):
 		self.pre_build(method="_build", no_cache=True)
 
 	@frappe.whitelist()
+	def build_without_push(self):
+		self.pre_build(method="_build", no_push=True)
+
+	@frappe.whitelist()
 	def deploy_to_staging(self):
 		"""Deploy a bench on staging server and also create a staging site."""
 		self.build_and_deploy(staging=True)
@@ -162,7 +166,7 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
 
-	def _build(self, no_cache=False):
+	def _build(self, no_cache=False, no_push: bool = False):
 		self.status = "Running"
 		self.build_start = now()
 		self.is_single_container = True
@@ -173,10 +177,7 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 		try:
-			self._prepare_build_directory()
-			self._prepare_build_context()
-			self._run_docker_build(no_cache)
-			self._push_docker_image()
+			self._execute_build(no_cache, no_push)
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -200,6 +201,14 @@ class DeployCandidate(Document):
 			self.build_duration = self.build_end - self.build_start
 			self.save()
 			frappe.db.commit()
+
+	def _execute_build(self, no_cache: bool, no_push: bool):
+		self._prepare_build_directory()
+		self._prepare_build_context(no_push)
+		self._run_docker_build(no_cache)
+
+		if not self.no_push:
+			self._push_docker_image()
 
 	def add_pre_build_steps(self):
 		"""
@@ -281,7 +290,7 @@ class DeployCandidate(Document):
 			app.pullable_hash = release_pair["new"]["hash"]
 			app.pullable_release = release_pair["new"]["name"]
 
-	def _prepare_build_context(self):
+	def _prepare_build_context(self, no_push: bool):
 		# Create apps directory
 		apps_directory = os.path.join(self.build_directory, "apps")
 		os.mkdir(apps_directory)
@@ -349,7 +358,7 @@ class DeployCandidate(Document):
 
 		dockerfile = self._generate_dockerfile()
 		self._add_build_steps(dockerfile)
-		self._add_post_build_steps()
+		self._add_post_build_steps(no_push)
 
 		self._copy_config_files()
 		self._generate_redis_cache_config()
@@ -492,8 +501,10 @@ class DeployCandidate(Document):
 
 		return checkpoints
 
-	def _add_post_build_steps(self):
-		slugs = [("upload", "image")]
+	def _add_post_build_steps(self, no_push: bool):
+		slugs = []
+		if not no_push:
+			slugs.append(("upload", "image"))
 
 		for stage_slug, step_slug in slugs:
 			stage, step = get_build_stage_and_step(stage_slug, step_slug, {})
