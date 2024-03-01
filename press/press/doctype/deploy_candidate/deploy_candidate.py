@@ -7,8 +7,9 @@ import re
 import shlex
 import shutil
 import subprocess
+from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import docker
 import dockerfile
@@ -16,6 +17,7 @@ import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
+from frappe.utils import format_duration
 from frappe.utils import now_datetime as now
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
@@ -116,6 +118,23 @@ class DeployCandidate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	@frappe.whitelist()
+	def is_build_okay(self):
+		"""
+		These status checks are a best-ish guess.
+		"""
+		if self.check_if_build_failed(True):
+			return False
+
+		if self.check_if_build_stuck(True):
+			return False
+
+		if self.check_if_build_succeeded(True):
+			return True
+
+		frappe.msgprint("Build seems to be running fine")
+		return True
 
 	@frappe.whitelist()
 	def generate_build_context(self):
@@ -228,6 +247,7 @@ class DeployCandidate(Document):
 		- `_update_post_build_steps`
 		"""
 		if self.build_steps:
+			self.build_output = ""
 			self.build_steps.clear()
 
 		app_titles = {a.app: a.title for a in self.apps}
@@ -380,7 +400,7 @@ class DeployCandidate(Document):
 		for pkgs in self.packages:
 			if pkgs.package_manager != "apt":
 				continue
-			for p in pkgs.split(" "):
+			for p in pkgs.package.split(" "):
 				existing_apt_packages.add(p)
 
 		"""
@@ -424,7 +444,9 @@ class DeployCandidate(Document):
 		for p in self.packages:
 
 			#  second clause cause: '/opt/certbot/bin/pip'
-			if p.package_manager not in ["apt", "pip"] or not p.package_manager.endswith("/pip"):
+			if p.package_manager not in ["apt", "pip"] and not p.package_manager.endswith(
+				"/pip"
+			):
 				continue
 
 			prerequisites = frappe.render_template(p.package_prerequisites, dep_versions)
@@ -1051,6 +1073,71 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
+	def check_if_build_failed(self, msgprint: bool = False) -> bool:
+		if self.status == "Failure":
+			return True
+
+		errors = frappe.get_all(
+			"Error Log",
+			filters={
+				"error": ["like", f"%{self.name}%"],
+				"seen": False,
+				"creation": [">", self.modified],
+			},
+			fields=["name", "method", "creation"],
+			order_by="creation",
+		)
+
+		failed_step = self.get_first_step_of_given_status(["Failure"])
+		failed = len(errors) > 0 or failed_step is not None
+
+		if failed and msgprint:
+			msgprint_build_failed(self, errors, failed_step)
+
+		return failed
+
+	def check_if_build_stuck(self, msgprint: bool = False) -> bool:
+		if self.status != "Running" and self.status != "Pending":
+			return False
+
+		stuck_step = self.get_first_step_of_given_status(["Pending", "Running"])
+		if not stuck_step:
+			return
+
+		modified = stuck_step.modified
+		if isinstance(modified, str):
+			modified = datetime.fromisoformat(modified)
+
+		delta: timedelta = now() - modified
+		stuck = delta.seconds > 600  # 10 minutes
+
+		if stuck and msgprint:
+			msgprint_build_stuck(stuck_step, delta)
+
+		return stuck
+
+	def check_if_build_succeeded(self, msgprint: bool = False) -> bool:
+		if self.status == "Success":
+			return True
+
+		last_step = self.build_steps[-1]
+		success = last_step.stage_slug == "upload" and last_step.status == "Success"
+
+		if msgprint and success:
+			frappe.msgprint(
+				f"Last step {last_step.stage} {last_step.step} has succeeded.",
+				title="Build might have succeeded",
+			)
+
+		return success
+
+	def get_first_step_of_given_status(self, status: list[str]) -> Optional[Document]:
+		for build_step in self.build_steps:
+			if build_step.status not in status:
+				continue
+			return build_step
+		return None
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1233,3 +1320,38 @@ def get_build_stage_and_step(
 
 	step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)
+
+
+def msgprint_build_failed(
+	dc: DeployCandidate, errors: list[dict], failed_step: Optional[Document]
+) -> None:
+	errors.reverse()
+	msg = ""
+	if failed_step:
+		msg += f"Build step no. {failed_step.idx} <b>{failed_step.stage} {failed_step.step}</b> has failed. "
+
+	if not errors:
+		return frappe.msgprint(msg, title="Failed Step")
+
+	msg += f"The following errors were found associated with <b>{dc.name}</b>:"
+
+	right_now = now()
+	msg += "<ul>"
+	for e in errors:
+		delta = format_duration((right_now - e.creation).seconds)
+		msg += f"""
+		<li style="">
+			<a href="/app/error-log/{e.name}" target="_blank">{e.method}</a>
+			<p style="font-size: 0.8rem">{delta} ago</p>
+		</li>"""
+	msg += "</ul>"
+	frappe.msgprint(msg, title="Build might have failed")
+
+
+def msgprint_build_stuck(stuck_step: Document, delta: timedelta) -> None:
+	frappe.msgprint(
+		f"Build step no. {stuck_step.idx} <b>{stuck_step.stage} {stuck_step.step}</b> "
+		f"with status <b>{stuck_step.status}</b> "
+		f"was last updated <b>{format_duration(delta.seconds)} ago</b>.",
+		title="Build might be stuck",
+	)
