@@ -110,13 +110,16 @@ class DeployCandidate(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
-		# self._build()
 		frappe.enqueue_doc(
 			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	@frappe.whitelist()
+	def generate_build_context(self):
+		self.pre_build(method="_build", no_build=True)
 
 	@frappe.whitelist()
 	def build(self):
@@ -166,7 +169,9 @@ class DeployCandidate(Document):
 		except Exception:
 			log_error("Deploy Creation Error", candidate=self.name)
 
-	def _build(self, no_cache=False, no_push: bool = False):
+	def _build(
+		self, no_cache: bool = False, no_push: bool = False, no_build: bool = False
+	):
 		self.status = "Running"
 		self.build_start = now()
 		self.is_single_container = True
@@ -177,7 +182,7 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 		try:
-			self._execute_build(no_cache, no_push)
+			self._execute_build(no_cache, no_push, no_build)
 		except Exception:
 			log_error("Deploy Candidate Build Exception", name=self.name)
 			self.status = "Failure"
@@ -202,13 +207,17 @@ class DeployCandidate(Document):
 			self.save()
 			frappe.db.commit()
 
-	def _execute_build(self, no_cache: bool, no_push: bool):
+	def _execute_build(self, no_cache: bool, no_push: bool, no_build: bool):
 		self._prepare_build_directory()
 		self._prepare_build_context(no_push)
+
+		if no_build:
+			return
 		self._run_docker_build(no_cache)
 
-		if not self.no_push:
-			self._push_docker_image()
+		if no_push:
+			return
+		self._push_docker_image()
 
 	def add_pre_build_steps(self):
 		"""

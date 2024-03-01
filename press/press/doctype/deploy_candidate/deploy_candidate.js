@@ -16,13 +16,14 @@ frappe.ui.form.on('Deploy Candidate', {
 		};
 
 		const actions = [
+			[
+				__('Generate Build Context'),
+				'generate_build_context',
+				window.dev_server,
+			],
 			[__('Build'), 'build', true],
 			[__('Build without cache'), 'build_without_cache', true],
-			[
-				__('Build without push'),
-				'build_without_push',
-				frappe.boot.developer_mode,
-			],
+			[__('Build without push'), 'build_without_push', window.dev_server],
 			[__('Deploy to Staging'), 'deploy_to_staging', true],
 			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
 			[
