@@ -19,7 +19,7 @@
 							class="grid grid-cols-2 gap-3 sm:grid-cols-4"
 						>
 							<button
-								v-for="card in optionsData[option.fieldname]"
+								v-for="card in filteredData(option)"
 								:key="card.name"
 								:class="[
 									vals[option.name] === card.name
@@ -52,12 +52,30 @@
 								v-model="vals[option.name]"
 							/>
 						</div>
-						<div v-else-if="option?.type === 'text'">
-							<FormControl class="md:w-1/2" v-model="vals[option.name]" />
+						<div
+							class="col-span-2 flex md:w-1/2"
+							v-else-if="option?.type === 'text'"
+						>
+							<TextInput
+								class="w-full"
+								:class="option.class"
+								v-model="vals[option.name]"
+							/>
+							<template v-if="option?.slot">
+								<component :is="option.slot({ optionsData })" />
+							</template>
+						</div>
+						<div v-else-if="option?.type === 'Component'">
+							<component
+								v-once
+								:is="option.component({ optionsData, vals })"
+								v-model="vals[option.name]"
+							/>
 						</div>
 					</div>
 				</div>
 			</template>
+
 			<div class="md:w-1/2" v-if="showSummaryAndRegionConsent">
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
@@ -65,17 +83,29 @@
 					style="grid-template-columns: 1fr 1fr"
 				>
 					<template v-for="summaryItem in summary">
-						<div class="text-gray-600">{{ summaryItem.label }}:</div>
-						<div v-html="summaryItemHTML(summaryItem)" />
+						<div v-if="summaryItemHTML(summaryItem)" class="text-gray-600">
+							{{ summaryItem.label }}:
+						</div>
+						<div
+							v-if="summaryItemHTML(summaryItem)"
+							v-html="summaryItemHTML(summaryItem)"
+						/>
 					</template>
 				</div>
 			</div>
-			<div class="space-y-3">
+			<div class="flex flex-col space-y-3">
 				<FormControl
 					v-if="showSummaryAndRegionConsent"
 					v-model="vals['agreedToRegionConsent']"
 					type="checkbox"
 					label="I agree that the laws of the region selected by me shall stand applicable to me and Frappe"
+				/>
+				<FormControl
+					v-for="consent in consents"
+					v-if="showSummaryAndRegionConsent"
+					v-model="vals[consent.name]"
+					type="checkbox"
+					:label="consent.label"
 				/>
 				<ErrorMessage :message="$resources.createResource.error" />
 				<Button
@@ -183,6 +213,9 @@ export default {
 				summaryItem => !summaryItem.hideWhen || !this.vals[summaryItem.hideWhen]
 			);
 		},
+		consents() {
+			return this.object.create.consents;
+		},
 		optionsData() {
 			return this.$resources.optionsData.data;
 		},
@@ -201,7 +234,11 @@ export default {
 				if (!this.showOption(option)) return false;
 			}
 			for (let summaryItem of this.summary) {
-				if (summaryItem.fieldname && !this.vals[summaryItem.fieldname])
+				if (
+					!summaryItem.optional &&
+					summaryItem.fieldname &&
+					!this.vals[summaryItem.fieldname]
+				)
 					return false;
 			}
 
@@ -211,7 +248,11 @@ export default {
 	methods: {
 		filteredData(option) {
 			if (!option.filter) return this.optionsData[option.fieldname];
-			return option.filter(this.optionsData[option.fieldname], this.vals);
+			return option.filter(
+				this.optionsData[option.fieldname],
+				this.vals,
+				this.optionsData
+			);
 		},
 		showOption(option) {
 			if (!option.dependsOn) return true;
@@ -223,7 +264,10 @@ export default {
 		summaryItemHTML(summaryItem) {
 			return summaryItem.format
 				? summaryItem.format(
-						summaryItem.fieldname ? this.vals[summaryItem.fieldname] : this.vals
+						summaryItem.fieldname
+							? this.vals[summaryItem.fieldname]
+							: this.vals,
+						this.optionsData
 				  )
 				: this.vals[summaryItem.fieldname];
 		}

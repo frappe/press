@@ -43,23 +43,6 @@ let router = createRouter({
 			meta: { isLoginPage: true }
 		},
 		{
-			name: 'JobPage',
-			path: '/jobs/:id',
-			component: () => import('./pages/JobPage.vue'),
-			props: true
-		},
-		{
-			name: 'NewSite',
-			path: '/sites/new',
-			component: () => import('./pages/NewSite.vue')
-		},
-		{
-			name: 'NewBenchSite',
-			path: '/benches/:bench/sites/new',
-			component: () => import('./pages/NewSite.vue'),
-			props: true
-		},
-		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),

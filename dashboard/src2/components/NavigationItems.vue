@@ -33,7 +33,7 @@ export default {
 					icon: () => h(PanelTopInactive),
 					route: '/sites',
 					isActive:
-						['Site List', 'Site Detail', 'NewSite'].includes(routeName) ||
+						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
 						routeName.startsWith('Site Detail'),
 					disabled
 				},
