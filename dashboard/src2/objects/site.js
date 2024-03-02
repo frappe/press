@@ -168,7 +168,7 @@ export default {
 					import('../../src/views/site/SiteCharts.vue')
 				),
 				props: site => {
-					return { site: site.doc };
+					return { siteName: site.doc.name };
 				}
 			},
 			{
