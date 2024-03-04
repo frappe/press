@@ -37,7 +37,11 @@
 									</Tooltip>
 									<Badge
 										theme="gray"
-										:label="app.subscription_type === 'Free' ? 'Free' : 'Paid'"
+										:label="
+											app.subscription_type === 'Freemium'
+												? 'Paid'
+												: app.subscription_type
+										"
 									/>
 								</div>
 								<a :href="`/${app.route}`" target="_blank" title="App details">
@@ -112,7 +116,7 @@ export default {
 	computed: {
 		publicApps() {
 			return (this.availableApps || []).filter(
-				app => app.public || app.plans?.length
+				app => (app.public || app.plans?.length) && app.image
 			);
 		},
 		privateApps() {
