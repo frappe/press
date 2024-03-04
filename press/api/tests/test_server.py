@@ -90,6 +90,12 @@ def successful_update_agent_ansible(self: BaseServer):
 	create_test_ansible_play("Update Agent", "update_agent.yml", self.doctype, self.name)
 
 
+def successful_wait_for_cloud_init(self: BaseServer):
+	create_test_ansible_play(
+		"Wait for Cloud Init to finish", "wait_for_cloud_init.yml", self.doctype, self.name
+	)
+
+
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachine, "client", new=MagicMock())
 @patch.object(Ansible, "run", new=Mock())
@@ -98,6 +104,7 @@ def successful_update_agent_ansible(self: BaseServer):
 @patch.object(
 	DatabaseServer, "upgrade_mariadb_patched", new=successful_upgrade_mariadb_patched
 )
+@patch.object(BaseServer, "wait_for_cloud_init", new=successful_wait_for_cloud_init)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 class TestAPIServer(FrappeTestCase):

@@ -679,6 +679,24 @@ class BaseServer(Document, TagHelpers):
 		self.title = title
 		self.save()
 
+	def wait_for_cloud_init(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_wait_for_cloud_init",
+			queue="short",
+		)
+
+	def _wait_for_cloud_init(self):
+		try:
+			ansible = Ansible(
+				playbook="wait_for_cloud_init.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Cloud Init Wait Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 
