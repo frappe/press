@@ -106,6 +106,9 @@ class DeployCandidate(Document):
 		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
+		if not self.validate_pre_build():
+			return
+
 		self.status = "Pending"
 		if not kwargs.get("no_cache"):
 			self._update_app_releases()
@@ -123,6 +126,13 @@ class DeployCandidate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	def validate_pre_build(self):
+		if self.status == "Running" and self.is_docker_remote_builder_used:
+			server = self._get_docker_remote_builder_server()
+			frappe.msgprint(f"Build is running on remote server <b>{server}<b/>")
+			return False
+		return True
 
 	@frappe.whitelist()
 	def is_build_okay(self):
@@ -170,24 +180,27 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def deploy_to_production(self):
-		if (
-			frappe.db.get_single_value("Press Settings", "suspend_builds")
-			and not self._is_docker_remote_builder_server_configured()
-		):
-			if self.status != "Scheduled":
-				# Schedule build to be run ASAP.
-				self.status = "Scheduled"
-				self.scheduled_time = frappe.utils.now_datetime()
-				self.save()
-				frappe.db.commit()
+		if self.status == "Scheduled":
 			return
-		self.build_and_deploy()
+
+		if not is_suspended() or self.can_use_remote_build_server():
+			self.build_and_deploy(staging=False)
+			return
+
+		# Schedule build to be run ASAP.
+		self.status = "Scheduled"
+		self.scheduled_time = frappe.utils.now_datetime()
+		self.save()
+		frappe.db.commit()
 
 	def build_and_deploy(self, staging: bool = False):
 		self.pre_build(method="_build_and_deploy", staging=staging)
 
 	def _build_and_deploy(self, staging: bool):
 		self._build(deploy_after_build=True, deploy_to_staging=staging)
+
+		if self.status == "Success" and not self.is_docker_remote_builder_used:
+			self._deploy(staging)
 
 	def _deploy(self, staging=False):
 		try:
@@ -250,7 +263,7 @@ class DeployCandidate(Document):
 			return
 
 		# Build Runs locally
-		self._mark_build_as_running()
+		self._build_run()
 
 		if not no_build:
 			self._run_docker_build(no_cache)
@@ -314,12 +327,7 @@ class DeployCandidate(Document):
 				],
 			}
 		)
-		self._mark_build_as_running()
-
-	def _mark_build_as_running(self):
-		self.status = "Running"
-		self.save()
-		frappe.db.commit()
+		self._build_run()
 
 	def _update_docker_image_metadata(self):
 		settings = self._fetch_registry_settings()
@@ -352,6 +360,11 @@ class DeployCandidate(Document):
 	def _build_start(self):
 		self.status = "Preparing"
 		self.build_start = now()
+		self.save()
+		frappe.db.commit()
+
+	def _build_run(self):
+		self.status = "Running"
 		self.save()
 		frappe.db.commit()
 
@@ -1239,9 +1252,7 @@ class DeployCandidate(Document):
 			step.step_index = step_update["step_index"]
 
 		if job.status == "Running":
-			self.status = "Running"
-			self.save()
-			frappe.db.commit()
+			self._build_run()
 		elif job.status == "Failure":
 			self._build_failed()
 			self._build_end()
@@ -1254,7 +1265,7 @@ class DeployCandidate(Document):
 			if request_data.get("deploy_after_build"):
 				self.create_deploy(request_data.get("deploy_to_staging"))
 
-	def _is_docker_remote_builder_server_configured(self):
+	def can_use_remote_build_server(self):
 		return bool(self._get_docker_remote_builder_server())
 
 	def _get_docker_remote_builder_server(self):
@@ -1551,3 +1562,7 @@ def msgprint_build_stuck(stuck_step: Document, delta: timedelta) -> None:
 		f"was last updated <b>{format_duration(delta.seconds)} ago</b>.",
 		title="Build might be stuck",
 	)
+
+
+def is_suspended() -> bool:
+	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))

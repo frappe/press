@@ -666,7 +666,9 @@ class Agent:
 				verify = True
 			if files:
 				file_objects = {
-					key: value if isinstance(value, _io.BufferedReader) else frappe.get_doc("File", {"file_url": url}).get_content()
+					key: value
+					if isinstance(value, _io.BufferedReader)
+					else frappe.get_doc("File", {"file_url": url}).get_content()
 					for key, value in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
@@ -872,7 +874,9 @@ class Agent:
 		)
 
 	def upload_build_context_for_docker_build(self, file):
-		return self.request("POST", "builder/upload", files={"build_context_file": file})["filename"]
+		return self.request("POST", "builder/upload", files={"build_context_file": file}).get(
+			"filename"
+		)
 
-	def build_docker_image(self, data:dict):
+	def build_docker_image(self, data: dict):
 		return self.create_agent_job("Docker Image Build", "builder/build", data=data)
