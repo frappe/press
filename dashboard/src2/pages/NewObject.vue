@@ -5,7 +5,13 @@
 		</Header>
 	</div>
 	<div class="mx-auto max-w-4xl px-5">
-		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
+		<div
+			v-if="$resources.optionsData.loading"
+			class="py-4 text-base text-gray-600"
+		>
+			Loading...
+		</div>
+		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<template v-for="option in options" :key="option.name">
 				<div v-if="showOption(option)">
 					<div class="flex items-center justify-between">
