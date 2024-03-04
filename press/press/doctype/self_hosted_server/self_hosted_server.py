@@ -241,8 +241,8 @@ class SelfHostedServer(Document):
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			if not self.mariadb_ip or not self.mariadb_private_ip:
-				frappe.throw("Public/Private IP for MariaDB not found")
+			if not self.mariadb_ip:
+				frappe.throw("Public IP for MariaDB not found")
 
 			db_server = frappe.new_doc(
 				"Database Server",
@@ -525,6 +525,10 @@ class SelfHostedServer(Document):
 
 		if self.setup_nginx(server):
 			self.create_tls_certs(self.server)
+
+			if not self.different_database_server:
+				self.create_tls_certs(self.database_server)
+
 			return True
 
 		return False
@@ -576,21 +580,33 @@ class SelfHostedServer(Document):
 			update_server_tls_certifcate,
 		)
 
-		cert = frappe.get_last_doc(
-			"TLS Certificate", {"domain": self.name, "status": "Active"}
-		)
+		try:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.server, "status": "Active"}
+			)
+		except frappe.DoesNotExistError:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.name, "status": "Active"}
+			)
+
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		db_server = frappe.get_doc("Database Server", self.database_server)
-		if not db_server.is_server_setup:
-			db_server.setup_server()
-
-		app_server = frappe.get_doc("Server", self.server)
-		if not app_server.is_server_setup:
-			app_server.setup_server()
-
 		self.update_tls()
+
+	def setup_server(self):
+		self._setup_db_server()
+
+		if self.different_database_server:
+			self._setup_app_server()
+
+	def _setup_db_server(self):
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		db_server.setup_server()
+
+	def _setup_app_server(self):
+		app_server = frappe.get_doc("Server", self.server)
+		app_server.setup_server()
 
 	def create_subscription(self):
 		frappe.new_doc(

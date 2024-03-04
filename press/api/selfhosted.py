@@ -7,6 +7,7 @@ from press.api.server import plans
 from press.runner import Ansible
 from press.utils import get_current_team
 from press.api.site import NAMESERVERS
+from frappe.utils import strip
 
 
 @frappe.whitelist()
@@ -60,10 +61,10 @@ def validate_team(team):
 def get_sanitized_ip(server):
 	return frappe._dict(
 		{
-			"public_ip": server["publicIP"].strip(),
-			"private_ip": server["privateIP"].strip() if server["privateIP"] else None,
-			"db_public_ip": server["dbpublicIP"].strip(),
-			"db_private_ip": server["dbprivateIP"].strip() if server["dbprivateIP"] else None,
+			"public_ip": strip(server.get("publicIP", "")),
+			"private_ip": strip(server.get("privateIP", "")),
+			"db_public_ip": strip(server.get("dbpublicIP", "")),
+			"db_private_ip": strip(server.get("dbprivateIP", "")),
 		}
 	)
 
@@ -164,8 +165,8 @@ def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	server_doc.start_setup = True
 	server_doc.create_subscription()
-	server_doc.create_tls_certs()
 	server_doc.save()
+	server_doc.setup_server()
 	time.sleep(1)
 
 

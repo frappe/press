@@ -254,7 +254,7 @@ export default {
 		async setupServers() {
 			await this.$resources.setupServer.submit();
 			if (this.agreedToRegionConsent) {
-				this.$router.replace(`/servers/${this.serverDoc}/overview`);
+				this.$router.replace(`/servers/`);
 			}
 		}
 	}

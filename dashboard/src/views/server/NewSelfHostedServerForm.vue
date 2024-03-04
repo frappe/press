@@ -37,6 +37,7 @@
 						:value="privateIP"
 						@change="$emit('update:privateIP', $event.target.value)"
 					/>
+					<ErrorMessage class="text-sm" :message="privateIpErrorMessage" />
 				</div>
 			</div>
 			<div v-if="isMultiserverSetup()">
@@ -58,6 +59,7 @@
 						:value="dbPrivateIP"
 						@change="$emit('update:dbPrivateIP', $event.target.value)"
 					/>
+					<ErrorMessage class="text-sm" :message="dbPrivateIpErrorMessage" />
 				</div>
 			</div>
 		</div>
@@ -97,7 +99,14 @@ export default {
 		dbPublicIpErrorMessage() {
 			return this.validateIP(this.dbPublicIP, 'DB Public');
 		},
+		privateIpErrorMessage() {
+			return this.validateIP(this.privateIP, 'Private');
+		},
+		dbPrivateIpErrorMessage() {
+			return this.validateIP(this.dbPrivateIP, 'DB Private');
+		},
 		hasError() {
+			console.log(this.publicIpErrorMessage, this.privateIpErrorMessage);
 			return this.publicIpErrorMessage !== null;
 		}
 	},
