@@ -110,8 +110,6 @@ class DeployCandidate(Document):
 			return
 
 		self.status = "Pending"
-		if not kwargs.get("no_cache"):
-			self._update_app_releases()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -179,8 +177,8 @@ class DeployCandidate(Document):
 		self._deploy()
 
 	@frappe.whitelist()
-	def deploy_to_production(self):
-		if self.status == "Scheduled":
+	def deploy_to_production(self, running_scheduled=False):
+		if self.status == "Scheduled" and not running_scheduled:
 			return
 
 		if not is_suspended() or self.can_use_remote_build_server():
@@ -236,6 +234,9 @@ class DeployCandidate(Document):
 			raise
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
+		if not no_cache:
+			self._update_app_releases()
+
 		if not no_cache and self.use_app_cache:
 			self._set_app_cached_flags()
 
@@ -1298,12 +1299,12 @@ class DeployCandidate(Document):
 		return failed
 
 	def check_if_build_stuck(self, msgprint: bool = False) -> bool:
-		if self.status != "Running" and self.status != "Pending":
+		if self.status not in ["Pending", "Preparing", "Running"]:
 			return False
 
 		stuck_step = self.get_first_step_of_given_status(["Pending", "Running"])
 		if not stuck_step:
-			return
+			return False
 
 		modified = stuck_step.modified
 		if isinstance(modified, str):
@@ -1471,8 +1472,8 @@ def run_scheduled_builds():
 	)
 	for candidate in candidates:
 		try:
-			candidate = frappe.get_doc("Deploy Candidate", candidate)
-			candidate.deploy_to_production()
+			candidate: "DeployCandidate" = frappe.get_doc("Deploy Candidate", candidate)
+			candidate.deploy_to_production(running_scheduled=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
