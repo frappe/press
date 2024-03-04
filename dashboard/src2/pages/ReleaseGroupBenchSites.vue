@@ -3,7 +3,10 @@
 		<div class="flex items-center justify-between">
 			<div></div>
 			<Button
-				:route="{ name: 'NewBenchSite', params: { bench: this.releaseGroup } }"
+				:route="{
+					name: 'Bench New Site',
+					params: { name: this.releaseGroup }
+				}"
 			>
 				<template #prefix>
 					<i-lucide-plus class="h-4 w-4 text-gray-600" />

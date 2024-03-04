@@ -5,13 +5,22 @@
 		</Header>
 	</div>
 	<div class="mx-auto max-w-4xl px-5">
-		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
+		<div
+			v-if="$resources.optionsData.loading"
+			class="py-4 text-base text-gray-600"
+		>
+			Loading...
+		</div>
+		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<template v-for="option in options" :key="option.name">
 				<div v-if="showOption(option)">
 					<div class="flex items-center justify-between">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							{{ option.label }}
 						</h2>
+						<template v-if="option?.labelSlot">
+							<component :is="option.labelSlot({ optionsData })" />
+						</template>
 					</div>
 					<div class="mt-2">
 						<div
@@ -19,7 +28,7 @@
 							class="grid grid-cols-2 gap-3 sm:grid-cols-4"
 						>
 							<button
-								v-for="card in optionsData[option.fieldname]"
+								v-for="card in filteredData(option)"
 								:key="card.name"
 								:class="[
 									vals[option.name] === card.name
@@ -52,30 +61,60 @@
 								v-model="vals[option.name]"
 							/>
 						</div>
-						<div v-else-if="option?.type === 'text'">
-							<FormControl class="md:w-1/2" v-model="vals[option.name]" />
+						<div
+							class="col-span-2 flex md:w-1/2"
+							v-else-if="option?.type === 'text'"
+						>
+							<TextInput
+								class="w-full"
+								:class="option.class"
+								v-model="vals[option.name]"
+							/>
+							<template v-if="option?.slot">
+								<component :is="option.slot({ optionsData })" />
+							</template>
+						</div>
+						<div v-else-if="option?.type === 'Component'">
+							<component
+								v-once
+								:is="option.component({ optionsData, vals })"
+								v-model="vals[option.name]"
+							/>
 						</div>
 					</div>
 				</div>
 			</template>
-			<div class="md:w-1/2" v-if="showSummaryAndRegionConsent">
+
+			<div class="md:w-2/3" v-if="showSummaryAndRegionConsent">
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
 					style="grid-template-columns: 1fr 1fr"
 				>
 					<template v-for="summaryItem in summary">
-						<div class="text-gray-600">{{ summaryItem.label }}:</div>
-						<div v-html="summaryItemHTML(summaryItem)" />
+						<div v-if="summaryItemHTML(summaryItem)" class="text-gray-600">
+							{{ summaryItem.label }}:
+						</div>
+						<div
+							v-if="summaryItemHTML(summaryItem)"
+							v-html="summaryItemHTML(summaryItem)"
+						/>
 					</template>
 				</div>
 			</div>
-			<div class="space-y-3">
+			<div class="flex flex-col space-y-3">
 				<FormControl
 					v-if="showSummaryAndRegionConsent"
 					v-model="vals['agreedToRegionConsent']"
 					type="checkbox"
 					label="I agree that the laws of the region selected by me shall stand applicable to me and Frappe"
+				/>
+				<FormControl
+					v-for="consent in consents"
+					v-if="showSummaryAndRegionConsent"
+					v-model="vals[consent.name]"
+					type="checkbox"
+					:label="consent.label"
 				/>
 				<ErrorMessage :message="$resources.createResource.error" />
 				<Button
@@ -83,6 +122,7 @@
 					:disabled="!vals.agreedToRegionConsent"
 					class="md:w-1/2"
 					v-bind="primaryAction"
+					:loading="$resources.createResource.loading"
 				/>
 			</div>
 		</div>
@@ -100,19 +140,20 @@ export default {
 			type: String,
 			required: true
 		},
-		server: {
+		// router passed object name for secondary create
+		// eg: /benches/:name/sites/new'
+		name: {
 			type: String,
-			default: ''
-		},
-		bench: {
-			type: String,
-			default: ''
+			required: false
 		}
 	},
 	data() {
 		return {
-			vals: this.server ? { server: this.server } : {}
+			vals: {}
 		};
+	},
+	mounted() {
+		if (this.name) this.vals[this.secondaryCreate.propName] = this.name;
 	},
 	components: {
 		Header,
@@ -120,7 +161,9 @@ export default {
 	},
 	resources: {
 		optionsData() {
-			return { ...this.object.create.optionsResource() };
+			return {
+				...this.object.create.optionsResource({ routerProp: this.name })
+			};
 		},
 		createResource() {
 			return { ...this.object.create.createResource() };
@@ -131,7 +174,7 @@ export default {
 			return getObject(this.objectType);
 		},
 		breadcrumbs() {
-			if (this.object.create.secondaryCreate?.routeName === this.$route.name) {
+			if (this.secondaryCreate?.routeName === this.$route.name) {
 				let isObjectServer = Object.keys(this.vals)[0] === 'server';
 				let objectName = Object.values(this.vals)[0];
 
@@ -163,17 +206,17 @@ export default {
 				}
 			];
 		},
+		secondaryCreate() {
+			return this.object.create.secondaryCreate || null;
+		},
 		options() {
 			let options = this.object.create.options;
 			if (
-				this.object.create.secondaryCreate &&
-				this.$route.name === this.object.create.secondaryCreate.routeName
+				this.secondaryCreate &&
+				this.$route.name === this.secondaryCreate.routeName
 			) {
 				options = options.filter(
-					option =>
-						!this.object.create.secondaryCreate.optionalFields.includes(
-							option.fieldname
-						)
+					option => !this.secondaryCreate.optionalFields.includes(option.name)
 				);
 			}
 			return options;
@@ -182,6 +225,9 @@ export default {
 			return this.object.create.summary.filter(
 				summaryItem => !summaryItem.hideWhen || !this.vals[summaryItem.hideWhen]
 			);
+		},
+		consents() {
+			return this.object.create.consents;
 		},
 		optionsData() {
 			return this.$resources.optionsData.data;
@@ -201,7 +247,11 @@ export default {
 				if (!this.showOption(option)) return false;
 			}
 			for (let summaryItem of this.summary) {
-				if (summaryItem.fieldname && !this.vals[summaryItem.fieldname])
+				if (
+					!summaryItem.optional &&
+					summaryItem.fieldname &&
+					!this.vals[summaryItem.fieldname]
+				)
 					return false;
 			}
 
@@ -211,19 +261,33 @@ export default {
 	methods: {
 		filteredData(option) {
 			if (!option.filter) return this.optionsData[option.fieldname];
-			return option.filter(this.optionsData[option.fieldname], this.vals);
+			return option.filter(
+				this.optionsData[option.fieldname],
+				this.vals,
+				this.optionsData
+			);
 		},
 		showOption(option) {
 			if (!option.dependsOn) return true;
 			for (let field of option.dependsOn) {
-				if (!this.vals[field]) return false;
+				if (!this.vals[field]) {
+					if (
+						this.secondaryCreate?.routeName === this.$route.name &&
+						this.secondaryCreate.optionalFields.includes(field)
+					)
+						return true;
+					else return false;
+				}
 			}
 			return true;
 		},
 		summaryItemHTML(summaryItem) {
 			return summaryItem.format
 				? summaryItem.format(
-						summaryItem.fieldname ? this.vals[summaryItem.fieldname] : this.vals
+						summaryItem.fieldname
+							? this.vals[summaryItem.fieldname]
+							: this.vals,
+						this.optionsData
 				  )
 				: this.vals[summaryItem.fieldname];
 		}

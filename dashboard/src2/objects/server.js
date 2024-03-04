@@ -1,4 +1,6 @@
+import HelpIcon from '~icons/lucide/help-circle';
 import { defineAsyncComponent, h } from 'vue';
+import { Button } from 'frappe-ui';
 import ServerActions from '../components/server/ServerActions.vue';
 import { userCurrency, bytes, pricePerDay } from '../utils/format';
 import { icon } from '../utils/components';
@@ -202,6 +204,19 @@ export default {
 				type: 'plan',
 				name: 'app_plan',
 				fieldname: 'app_plans',
+				labelSlot() {
+					return h(
+						Button,
+						{
+							link: 'https://frappecloud.com/pricing#dedicated',
+							variant: 'ghost'
+						},
+						{
+							prefix: () => h(HelpIcon, { class: 'h-4 w-4 text-gray-700' }),
+							default: () => 'Help'
+						}
+					);
+				},
 				dependsOn: ['region'],
 				filter(plans, vals) {
 					return plans.filter(plan => plan.cluster === vals.region);
@@ -436,7 +451,7 @@ export default {
 							onClick() {
 								router.push({
 									name: 'Server New Bench',
-									params: { server: server.doc.name }
+									params: { name: server.doc.name }
 								});
 							}
 						};
