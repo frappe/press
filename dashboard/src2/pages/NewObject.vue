@@ -116,6 +116,7 @@
 					:disabled="!vals.agreedToRegionConsent"
 					class="md:w-1/2"
 					v-bind="primaryAction"
+					:loading="$resources.createResource.loading"
 				/>
 			</div>
 		</div>
