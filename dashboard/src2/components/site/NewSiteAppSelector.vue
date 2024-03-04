@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-12">
 		<div v-if="publicApps.length">
-			<h2 class="text-base font-medium leading-6 text-gray-900">
+			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Marketplace Apps
 			</h2>
 			<div class="mt-2 w-full space-y-2">
@@ -71,7 +71,7 @@
 			/>
 		</div>
 		<div v-if="!siteOnPublicBench && privateApps.length">
-			<h2 class="text-base font-medium leading-6 text-gray-900">
+			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Private Apps
 			</h2>
 			<div class="mt-2 w-full space-y-2">

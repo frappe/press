@@ -76,7 +76,7 @@
 						</div>
 						<div v-else-if="option?.type === 'Component'">
 							<component
-								v-once
+								v-memo="[option.type]"
 								:is="option.component({ optionsData, vals })"
 								v-model="vals[option.name]"
 							/>
