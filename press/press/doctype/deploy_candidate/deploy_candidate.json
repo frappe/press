@@ -9,6 +9,7 @@
   "is_single_container",
   "is_ssh_enabled",
   "staged",
+  "is_docker_remote_builder_used",
   "column_break_2",
   "group",
   "team",
@@ -65,7 +66,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nScheduled\nPending\nRunning\nSuccess\nFailure",
+   "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -308,6 +309,13 @@
    "fieldname": "compress_app_cache",
    "fieldtype": "Check",
    "label": "Compress App Cache"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_docker_remote_builder_used",
+   "fieldtype": "Check",
+   "label": "Is Docker Remote Builder used",
+   "read_only": 1
   }
  ],
  "links": [],

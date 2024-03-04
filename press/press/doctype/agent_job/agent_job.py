@@ -5,6 +5,9 @@
 import json
 import random
 
+from press.press.doctype.deploy_candidate.deploy_candidate import (
+	process_docker_image_build_job_update,
+)
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -363,12 +366,12 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			publish_update(job.name)
+			process_job_updates(job.name)
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
 
-			process_job_updates(job.name)
 			frappe.db.commit()
+			publish_update(job.name)
 		except Exception:
 			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
 			frappe.db.rollback()
@@ -802,6 +805,8 @@ def process_job_updates(job_name):
 			process_update_nginx_job_update(job)
 		elif job.job_type == "Move Site to Bench":
 			process_move_site_to_bench_job_update(job)
+		elif job.job_type == "Docker Image Build":
+			process_docker_image_build_job_update(job)
 
 	except Exception as e:
 		log_error("Agent Job Callback Exception", job=job.as_dict())
