@@ -73,6 +73,7 @@ class Site(Document, TagHelpers):
 		"archive_failed",
 		"cluster",
 		"is_database_access_enabled",
+		"trial_end_date",
 	]
 	dashboard_actions = [
 		"activate",
@@ -160,12 +161,23 @@ class Site(Document, TagHelpers):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
+		self.validate_site_creation()
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
+
+	def validate_site_creation(self):
+		team = frappe.local.team()
+		if not team.enabled:
+			frappe.throw("You cannot create a new site because your account is disabled")
+
+		if not (self.domain and frappe.db.exists("Root Domain", {"name": self.domain})):
+			frappe.throw("No root domain for site")
+
+		self.cluster = self.cluster or frappe.db.get_single_value("Press Settings", "cluster")
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -275,10 +287,9 @@ class Site(Document, TagHelpers):
 	def rename(self, new_name: str):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.account_request and frappe.db.get_value(
-			"Account Request", self.account_request, "saas_product"
-		):
-			create_user = self.get_account_request_user()
+		if self.standby_for_product:
+			# if standby site, rename site and create first user for trial signups
+			create_user = self.get_user_details()
 			agent.rename_site(self, new_name, create_user)
 		else:
 			agent.rename_site(self, new_name)
@@ -1386,15 +1397,13 @@ class Site(Document, TagHelpers):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
-	def get_account_request_user(self):
-		if not self.account_request:
-			return
-		account_request = frappe.get_doc("Account Request", self.account_request)
+	def get_user_details(self):
+		user_email = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.db.get_value(
-			"User", {"email": account_request.email}, ["first_name", "last_name"], as_dict=True
+			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
 		)
 		return {
-			"email": account_request.email,
+			"email": user_email,
 			"first_name": user.first_name,
 			"last_name": user.last_name,
 		}

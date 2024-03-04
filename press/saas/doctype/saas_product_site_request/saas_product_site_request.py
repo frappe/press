@@ -14,7 +14,7 @@ class SaaSProductSiteRequest(Document):
 		saas_product = frappe.db.get_value(
 			"SaaS Product",
 			{"name": self.saas_product},
-			["name", "title", "logo", "domain", "description"],
+			["name", "title", "logo", "domain", "description", "trial_days"],
 			as_dict=True,
 		)
 		saas_product.description = frappe.utils.md_to_html(saas_product.description)
@@ -24,10 +24,13 @@ class SaaSProductSiteRequest(Document):
 	@frappe.whitelist()
 	def create_site(self, subdomain, plan):
 		pool = SitePool(self.saas_product)
-		site = pool.create_or_rename(subdomain, self.team, self.account_request)
+		site = pool.create_or_rename(subdomain, self.team)
 		site.create_subscription(plan)
 		site.reload()
-		site.trial_end_date = frappe.utils.add_days(None, 14)
+		trial_days = (
+			frappe.db.get_value("SaaS Product", self.saas_product, "trial_days") or 14
+		)
+		site.trial_end_date = frappe.utils.add_days(None, trial_days)
 		site.save(ignore_permissions=True)
 		self.site = site.name
 		self.status = "Wait for Site"
@@ -35,7 +38,7 @@ class SaaSProductSiteRequest(Document):
 
 	@frappe.whitelist()
 	def get_login_sid(self):
-		email = frappe.db.get_value("Account Request", self.account_request, "email")
+		email = frappe.db.get_value("Team", self.team, "user")
 		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
 
 	@frappe.whitelist()
@@ -63,6 +66,8 @@ class SaaSProductSiteRequest(Document):
 				progress = current_progress + 1
 			return {"progress": progress}
 		elif status in ("Failure", "Undelivered"):
+			self.status = "Error"
+			self.save(ignore_permissions=True)
 			return {"progress": current_progress, "error": True}
 
 		return {"progress": current_progress + 1}

@@ -70,6 +70,8 @@ class Team(Document):
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
 		doc.billing_details = self.billing_details()
+		doc.trial_sites = self.get_trial_sites()
+		doc.pending_site_request = self.get_pending_saas_site_request()
 		doc.payment_method = frappe.db.get_value(
 			"Stripe Payment Method",
 			{"team": self.name, "name": self.default_payment_method},
@@ -900,10 +902,10 @@ class Team(Document):
 
 		saas_site_request = self.get_pending_saas_site_request()
 		complete = False
-		if saas_site_request:
-			complete = False
-		elif frappe.local.system_user():
+		if frappe.local.system_user():
 			complete = True
+		elif saas_site_request:
+			complete = False
 		elif billing_setup:
 			complete = True
 
@@ -920,24 +922,39 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-			saas_product = frappe.db.get_value(
-				"SaaS Product Site Request",
-				{"team": self.name, "status": "Pending"},
-				"saas_product",
-			)
-			return f"/setup-site/{saas_product}"
+		if self.payment_mode:
+			return "/sites"
 
-		return "/sites"
+		if self.is_saas_user:
+			saas_product = frappe.db.get_value(
+				"Account Request", self.account_request, "saas_product"
+			)
+			if saas_product:
+				return f"/app-trial/{saas_product}"
+
+		return "/welcome"
 
 	def get_pending_saas_site_request(self):
-		if self.is_saas_user:
-			return frappe.db.get_value(
-				"SaaS Product Site Request",
-				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},
-				"name",
-				order_by="creation desc",
-			)
+		return frappe.db.get_value(
+			"SaaS Product Site Request",
+			{"team": self.name, "status": ("in", ["Pending", "Wait for Site", "Error"])},
+			["name", "saas_product", "saas_product.title", "status"],
+			order_by="creation desc",
+			as_dict=True,
+		)
+
+	def get_trial_sites(self):
+		return frappe.db.get_all(
+			"Site",
+			{
+				"team": self.name,
+				"is_standby": False,
+				"trial_end_date": ("is", "set"),
+				"status": ("!=", "Archived"),
+			},
+			["name", "trial_end_date", "standby_for_product.title as product_title"],
+			order_by="`tabSite`.`modified` desc",
+		)
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):

@@ -10,9 +10,6 @@ let session = reactive({
 				usr: email,
 				pwd: password
 			};
-		},
-		onSuccess() {
-			window.location.reload();
 		}
 	}),
 	logout: createResource({
@@ -20,6 +17,7 @@ let session = reactive({
 		async onSuccess() {
 			session.user = getSessionUser();
 			await router.replace({ name: 'Login' });
+			localStorage.removeItem('current_team');
 			window.location.reload();
 		}
 	}),

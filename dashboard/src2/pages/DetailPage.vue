@@ -48,6 +48,8 @@ import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 
+let subscribed = {};
+
 export default {
 	name: 'DetailPage',
 	props: {
@@ -66,14 +68,46 @@ export default {
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
 	},
+	data() {
+		return {
+			lastRefreshed: null
+		};
+	},
 	resources: {
 		document() {
 			return {
 				type: 'document',
 				doctype: this.object.doctype,
 				name: this.name,
-				whitelistedMethods: this.object.whitelistedMethods || {}
+				whitelistedMethods: this.object.whitelistedMethods || {},
+				onSuccess() {
+					this.lastRefreshed = new Date();
+				}
 			};
+		}
+	},
+	mounted() {
+		if (!subscribed[this.object.doctype]) {
+			this.$socket.emit('doctype_subscribe', this.object.doctype);
+			subscribed[this.object.doctype] = true;
+		}
+		this.$socket.on('list_update', data => {
+			if (
+				data.doctype === doctype &&
+				data.name === this.name &&
+				// update document if last refreshed is more than 5 seconds ago
+				new Date() - this.lastRefreshed > 5000
+			) {
+				console.log('reloading', this.object.doctype, this.name);
+				this.$resources.document.reload();
+			}
+		});
+	},
+	beforeUnmount() {
+		if (subscribed[this.object.doctype]) {
+			let doctype = this.object.doctype;
+			this.$socket.emit('doctype_unsubscribe', doctype);
+			subscribed[doctype] = false;
 		}
 	},
 	computed: {
