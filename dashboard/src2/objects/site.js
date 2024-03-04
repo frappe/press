@@ -8,7 +8,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, userCurrency } from '../utils/format';
+import { bytes, duration, date, userCurrency, commaAnd } from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
@@ -351,12 +351,11 @@ export default {
 					let apps = (values.apps || []).map(app => app.app);
 					if (!apps.length) return 'No apps selected';
 
-					let newValue = Object.values(optionsData.app_source_details)
+					let appTitles = Object.values(optionsData.app_source_details)
 						.filter(app => apps.includes(app.app))
-						.map(app => app.app_title)
-						.join(', ');
+						.map(app => app.app_title);
 
-					return newValue;
+					return commaAnd(appTitles);
 				}
 			},
 			{
