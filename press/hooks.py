@@ -66,7 +66,7 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
-	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
+	{"from_route": "/dashboard-beta/<path:app_path>", "to_route": "dashboard-beta"},
 ]
 
 website_redirects = [
@@ -183,8 +183,8 @@ scheduler_events = {
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",

@@ -1,0 +1,259 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "Prompt",
+ "creation": "2022-01-28 20:07:37.055861",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "section_break_2",
+  "document_type",
+  "plan_title",
+  "interval",
+  "column_break_5",
+  "price_inr",
+  "price_usd",
+  "features_section",
+  "cpu_time_per_day",
+  "max_database_usage",
+  "max_storage_usage",
+  "column_break_13",
+  "is_trial_plan",
+  "offsite_backups",
+  "private_benches",
+  "database_access",
+  "monitor_access",
+  "support_included",
+  "dedicated_server_plan",
+  "is_frappe_plan",
+  "servers",
+  "cluster",
+  "instance_type",
+  "column_break_21",
+  "vcpu",
+  "memory",
+  "disk",
+  "roles_section",
+  "roles"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan_title",
+   "fieldtype": "Data",
+   "label": "Plan Title"
+  },
+  {
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly\nAnnually"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (INR)",
+   "options": "INR",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Price (USD)",
+   "options": "USD",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.document_type == 'Site'",
+   "fieldname": "features_section",
+   "fieldtype": "Section Break",
+   "label": "Site Features"
+  },
+  {
+   "fieldname": "cpu_time_per_day",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "CPU Time Per Day"
+  },
+  {
+   "fieldname": "max_database_usage",
+   "fieldtype": "Int",
+   "label": "Max Database Usage (MiB)"
+  },
+  {
+   "fieldname": "max_storage_usage",
+   "fieldtype": "Int",
+   "label": "Max Storage Usage (MiB)"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_trial_plan",
+   "fieldtype": "Check",
+   "label": "Is Trial Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "offsite_backups",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Offsite Backups"
+  },
+  {
+   "default": "0",
+   "fieldname": "private_benches",
+   "fieldtype": "Check",
+   "label": "Private Benches"
+  },
+  {
+   "default": "0",
+   "fieldname": "database_access",
+   "fieldtype": "Check",
+   "label": "Database Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "monitor_access",
+   "fieldtype": "Check",
+   "label": "Monitor Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "support_included",
+   "fieldtype": "Check",
+   "label": "Support Included"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_server_plan",
+   "fieldtype": "Check",
+   "label": "Dedicated Server Plan"
+  },
+  {
+   "default": "0",
+   "description": "Enterprise, Central, Frappe Team etc",
+   "fieldname": "is_frappe_plan",
+   "fieldtype": "Check",
+   "label": "Is Frappe Plan"
+  },
+  {
+   "fieldname": "servers",
+   "fieldtype": "Section Break",
+   "label": "Servers"
+  },
+  {
+   "fieldname": "cluster",
+   "fieldtype": "Link",
+   "label": "Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Data",
+   "label": "Instance Type"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vcpu",
+   "fieldtype": "Int",
+   "label": "vCPU"
+  },
+  {
+   "fieldname": "memory",
+   "fieldtype": "Int",
+   "label": "Memory"
+  },
+  {
+   "fieldname": "disk",
+   "fieldtype": "Int",
+   "label": "Disk"
+  },
+  {
+   "fieldname": "roles_section",
+   "fieldtype": "Section Break",
+   "label": "Roles"
+  },
+  {
+   "fieldname": "roles",
+   "fieldtype": "Table",
+   "label": "Roles",
+   "options": "Has Role"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-06 19:49:46.214758",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Site Plan",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "price_usd",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "plan_title",
+ "track_changes": 1
+}

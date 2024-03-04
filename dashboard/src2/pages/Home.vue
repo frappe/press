@@ -4,8 +4,8 @@
 			<Breadcrumbs :items="[{ label: 'Home', route: { name: 'Home' } }]" />
 			<Dropdown
 				:options="[
-					{ label: 'Site', route: { name: 'NewSite' } },
-					{ label: 'Bench', route: { name: 'NewBench' } }
+					{ label: 'Site', route: { name: 'New Site' } },
+					{ label: 'Bench', route: { name: 'New Release Group' } }
 				]"
 			>
 				<Button

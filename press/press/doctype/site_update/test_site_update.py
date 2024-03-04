@@ -12,7 +12,7 @@ from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
 from press.press.doctype.app_source.test_app_source import create_test_app_source
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.press.doctype.plan.test_plan import create_test_plan
+from press.press.doctype.site_plan.test_site_plan import create_test_plan
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -20,8 +20,18 @@ from press.press.doctype.release_group.test_release_group import (
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 
 from unittest.mock import patch, Mock, MagicMock
+from press.press.doctype.site_update.site_update import SiteUpdate
 
 from press.press.doctype.subscription.test_subscription import create_test_subscription
+
+
+@patch.object(SiteUpdate, "create_agent_request", new=Mock())
+def create_test_site_update(site: str, destination_group: str, status: str):
+	return frappe.get_doc(
+		dict(
+			doctype="Site Update", site=site, destination_group=destination_group, status=status
+		)
+	).insert(ignore_if_duplicate=True)
 
 
 @patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())

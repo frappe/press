@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard2/'),
+	history: createWebHistory('/dashboard-beta/'),
 	routes: [
 		{
 			path: '/',
@@ -41,28 +41,6 @@ let router = createRouter({
 			component: () => import('./pages/ResetPassword.vue'),
 			props: true,
 			meta: { isLoginPage: true }
-		},
-		{
-			name: 'JobPage',
-			path: '/jobs/:id',
-			component: () => import('./pages/JobPage.vue'),
-			props: true
-		},
-		{
-			name: 'NewSite',
-			path: '/sites/new',
-			component: () => import('./pages/NewSite.vue')
-		},
-		{
-			name: 'NewBenchSite',
-			path: '/benches/:bench/sites/new',
-			component: () => import('./pages/NewSite.vue'),
-			props: true
-		},
-		{
-			name: 'NewBench',
-			path: '/benches/new',
-			component: () => import('./pages/NewBench.vue')
 		},
 		{
 			name: 'Billing',
@@ -129,6 +107,30 @@ let router = createRouter({
 							props: true
 						}
 					]
+				}
+			]
+		},
+		{
+			name: 'Partners',
+			path: '/partners',
+			redirect: { name: 'PartnerOverview' },
+			component: () => import('./pages/Partners.vue'),
+			children: [
+				{
+					name: 'PartnerOverview',
+					path: 'overview',
+					component: () => import('./components/partners/PartnerOverview.vue')
+				},
+				{
+					name: 'PartnerCustomers',
+					path: 'customers',
+					component: () => import('./components/partners/PartnerCustomers.vue')
+				},
+				{
+					name: 'PartnerApprovalRequests',
+					path: 'approval-requests',
+					component: () =>
+						import('./components/partners/PartnerApprovalRequests.vue')
 				}
 			]
 		},

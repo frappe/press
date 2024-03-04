@@ -24,6 +24,7 @@ from frappe.utils import (
 	get_datetime,
 	get_url,
 	time_diff_in_hours,
+	sbool,
 )
 
 from press.exceptions import CannotChangePlan
@@ -49,6 +50,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 from press.press.doctype.plan.plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.utils import (
 	convert,
 	get_client_blacklisted_keys,
@@ -60,8 +62,8 @@ from press.utils import (
 from press.utils.dns import _change_dns_record, create_dns_record
 
 
-class Site(Document):
-	whitelisted_fields = [
+class Site(Document, TagHelpers):
+	dashboard_fields = [
 		"ip",
 		"status",
 		"group",
@@ -69,6 +71,30 @@ class Site(Document):
 		"team",
 		"plan",
 		"archive_failed",
+		"cluster",
+		"is_database_access_enabled",
+	]
+	dashboard_actions = [
+		"activate",
+		"add_domain",
+		"archive",
+		"backup",
+		"clear_site_cache",
+		"deactivate",
+		"enable_database_access",
+		"disable_database_access",
+		"get_database_credentials",
+		"install_app",
+		"uninstall_app",
+		"migrate",
+		"login_as_admin",
+		"reinstall",
+		"remove_domain",
+		"restore_site",
+		"schedule_update",
+		"set_plan",
+		"update_config",
+		"delete_config",
 	]
 
 	@staticmethod
@@ -87,8 +113,9 @@ class Site(Document):
 		)
 		doc.group_title = group.title
 		doc.group_public = group.public
+		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
-		doc.current_plan = get("Plan", self.plan) if self.plan else None
+		doc.current_plan = get("Site Plan", self.plan) if self.plan else None
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
@@ -99,6 +126,11 @@ class Site(Document):
 		def outer_wrapper(func):
 			@wraps(func)
 			def wrapper(inst, *args, **kwargs):
+				user_type = frappe.session.data.user_type or frappe.get_cached_value(
+					"User", frappe.session.user, "user_type"
+				)
+				if user_type == "System User":
+					return func(inst, *args, **kwargs)
 				if inst.status not in allowed_status:
 					frappe.throw(
 						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
@@ -262,7 +294,7 @@ class Site(Document):
 			log_error("Removing Old Site from Route53 Failed")
 
 	def update_config_preview(self):
-		"""Regenrates site.config on each site.validate from the site.configuration child table data"""
+		"""Regenerates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
 
 		# Update from site.configuration
@@ -270,9 +302,6 @@ class Site(Document):
 			# update internal flag from master
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
 			key_type = row.type or row.get_type()
-			if key_type == "Password":
-				# we don't support password type yet!
-				key_type = "String"
 			row.type = key_type
 
 			if key_type == "Number":
@@ -281,7 +310,9 @@ class Site(Document):
 				)
 			elif key_type == "Boolean":
 				key_value = (
-					row.value if isinstance(row.value, bool) else bool(json.loads(cstr(row.value)))
+					row.value
+					if isinstance(row.value, bool)
+					else bool(sbool(json.loads(cstr(row.value))))
 				)
 			elif key_type == "JSON":
 				key_value = json.loads(cstr(row.value))
@@ -296,7 +327,7 @@ class Site(Document):
 	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
-			is_free = frappe.db.get_value("Marketplace App Plan", plan, "is_free")
+			is_free = frappe.db.get_value("Marketplace App Plan", plan, "price_usd") <= 0
 			if not is_free:
 				if not frappe.local.team().can_install_paid_apps():
 					frappe.throw(
@@ -331,16 +362,16 @@ class Site(Document):
 		# disable marketplace plan if it exists
 		marketplace_app_name = frappe.db.get_value("Marketplace App", {"app": app})
 		app_subscription = frappe.db.exists(
-			"Marketplace App Subscription", {"site": self.name, "app": marketplace_app_name}
+			"Subscription",
+			{
+				"team": self.team,
+				"site": self.name,
+				"document_type": "Marketplace App",
+				"document_name": marketplace_app_name,
+			},
 		)
 		if marketplace_app_name and app_subscription:
-			app_subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				app_subscription,
-				for_update=True,
-			)
-			app_subscription.status = "Disabled"
-			app_subscription.save(ignore_permissions=True)
+			frappe.db.set_value("Subscription", app_subscription, "enabled", 0)
 
 	def _create_default_site_domain(self):
 		"""Create Site Domain with Site name."""
@@ -360,6 +391,12 @@ class Site(Document):
 			# create subscription
 			self.create_subscription(self.subscription_plan)
 			self.reload()
+
+		if hasattr(self, "app_plans") and self.app_plans:
+			for app, plan in self.app_plans.items():
+				MarketplaceAppPlan.create_marketplace_app_subscription(
+					self.name, app, plan["name"], True
+				)
 
 		# log activity
 		log_site_activity(self.name, "Create")
@@ -495,6 +532,24 @@ class Site(Document):
 
 	@frappe.whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
+		if self.status == "Suspended":
+			activity = frappe.db.get_all(
+				"Site Activity",
+				filters={"site": self.name, "action": "Suspend Site"},
+				order_by="creation desc",
+				limit=1,
+			)
+			suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
+
+			if (
+				frappe.db.count(
+					"Site Backup",
+					filters=dict(site=self.name, status="Success", creation=(">=", suspension_time)),
+				)
+				> 3
+			):
+				frappe.throw("You cannot take more than 3 backups after site suspension")
+
 		return frappe.get_doc(
 			{
 				"doctype": "Site Backup",
@@ -534,6 +589,7 @@ class Site(Document):
 				"site": self.name,
 				"destination_group": group,
 				"skipped_failing_patches": skip_failing_patches,
+				"ignore_past_failures": True,
 			}
 		).insert()
 
@@ -1053,13 +1109,14 @@ class Site(Document):
 		"""
 		keys = {x.key: i for i, x in enumerate(self.configuration)}
 		for key, value in config.items():
+			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(
+				value
+			)
 			if key in keys:
 				self.configuration[keys[key]].value = convert(value)
-				self.configuration[keys[key]].type = guess_type(value)
+				self.configuration[keys[key]].type = _type
 			else:
-				self.append(
-					"configuration", {"key": key, "value": convert(value), "type": guess_type(value)}
-				)
+				self.append("configuration", {"key": key, "value": convert(value), "type": _type})
 
 		if save:
 			self.save()
@@ -1092,9 +1149,11 @@ class Site(Document):
 			if _type == "Number":
 				value = flt(value)
 			elif _type == "Boolean":
-				value = bool(value)
+				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
+			elif _type == "Password" and value == "*******":
+				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 			sanitized_config[key] = value
 
 		self.update_site_config(sanitized_config)
@@ -1262,7 +1321,7 @@ class Site(Document):
 				return
 			plan_name = subscription.plan
 
-		plan = frappe.get_doc("Plan", plan_name)
+		plan = frappe.get_doc("Site Plan", plan_name)
 
 		disk_usage = usage.public + usage.private
 		if usage.database < plan.max_database_usage and disk_usage < plan.max_storage_usage:
@@ -1447,7 +1506,7 @@ class Site(Document):
 	@frappe.whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
-		if not frappe.db.get_value("Plan", self.plan, "database_access"):
+		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
 			frappe.throw(f"Database Access is not available on {self.plan} plan")
 		log_site_activity(self.name, "Enable Database Access")
 
@@ -1512,7 +1571,7 @@ class Site(Document):
 		db_access_info = frappe._dict({})
 
 		is_available_on_current_plan = (
-			frappe.db.get_value("Plan", self.plan, "database_access") if self.plan else None
+			frappe.db.get_value("Site Plan", self.plan, "database_access") if self.plan else None
 		)
 
 		db_access_info.is_available_on_current_plan = is_available_on_current_plan
@@ -1654,9 +1713,16 @@ class Site(Document):
 	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
+		servers_with_backups = frappe.get_all(
+			"Server", {"status": "Active", "skip_scheduled_backups": False}, pluck="name"
+		)
 		return frappe.get_all(
 			"Site",
-			{"name": ("in", sites), "skip_scheduled_backups": False},
+			{
+				"name": ("in", sites),
+				"skip_scheduled_backups": False,
+				"server": ("in", servers_with_backups),
+			},
 			["name", "timezone", "server"],
 			order_by="server",
 			ignore_ifnull=True,
@@ -1788,6 +1854,40 @@ class Site(Document):
 				"description": "Transfer ownership of this site to another team",
 				"button_label": "Transfer",
 				"doc_method": "send_change_team_request",
+			},
+			{
+				"action": "Version upgrade",
+				"description": "Upgrade your site to a major version",
+				"button_label": "Upgrade",
+				"doc_method": "upgrade",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change region",
+				"description": "Move your site to a different region",
+				"button_label": "Change",
+				"doc_method": "change_region",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change bench",
+				"description": "Move your site to a different bench",
+				"button_label": "Change",
+				"doc_method": "change_bench",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Change server",
+				"description": "Move your site to a different server",
+				"button_label": "Change",
+				"doc_method": "change_server",
+				"condition": self.status == "Active",
+			},
+			{
+				"action": "Clear cache",
+				"description": "Clear cache on your site",
+				"button_label": "Clear cache",
+				"doc_method": "clear_site_cache",
 			},
 		]
 		return [d for d in actions if d.get("condition", True)]
@@ -1981,7 +2081,10 @@ def process_uninstall_app_site_job_update(job):
 		frappe.db.set_value("Site", job.site, "status", updated_status)
 
 
-def process_restore_job_update(job):
+def process_restore_job_update(job, force=False):
+	"""
+	force: force updates apps table sync
+	"""
 	updated_status = {
 		"Pending": "Pending",
 		"Running": "Installing",
@@ -1990,7 +2093,7 @@ def process_restore_job_update(job):
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
-	if updated_status != site_status:
+	if force or updated_status != site_status:
 		if job.status == "Success":
 			apps = [line.split()[0] for line in job.output.splitlines()]
 			site = frappe.get_doc("Site", job.site)

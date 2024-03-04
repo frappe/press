@@ -8,38 +8,43 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "new_server",
+  "different_database_server",
+  "server_url",
   "hostname",
   "domain",
-  "server_url",
-  "ip",
-  "proxy_created",
-  "database_setup",
-  "server_created",
   "column_break_3eap",
   "status",
   "cluster",
   "team",
-  "plan",
   "release_group",
-  "private_ip",
-  "different_database_server",
-  "existing_bench_present",
-  "new_server",
-  "section_break_0fky",
-  "proxy_server",
-  "column_break_bcsw",
-  "agent_password",
   "server_section",
+  "server_created",
   "server",
+  "ip",
   "ssh_user",
   "column_break_smwr",
+  "existing_bench_present",
+  "plan",
+  "private_ip",
   "ssh_port",
+  "section_break_0fky",
+  "dedicated_proxy",
+  "proxy_public_ip",
+  "proxy_created",
+  "proxy_server",
+  "column_break_bcsw",
+  "proxy_private_ip",
+  "agent_password",
   "database_section",
-  "database_server",
   "mariadb_ip",
-  "column_break_qvmo",
   "mariadb_root_user",
+  "database_setup",
+  "database_server",
+  "column_break_qvmo",
+  "mariadb_private_ip",
   "mariadb_root_password",
+  "database_plan",
   "existing_bench_tab",
   "bench_directory",
   "column_break_yb8y",
@@ -65,7 +70,8 @@
    "fieldname": "server",
    "fieldtype": "Link",
    "label": "Server",
-   "options": "Server"
+   "options": "Server",
+   "search_index": 1
   },
   {
    "fieldname": "bench_directory",
@@ -93,6 +99,8 @@
    "fieldtype": "Column Break"
   },
   {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:doc.different_database_server",
    "fieldname": "database_section",
    "fieldtype": "Section Break",
    "label": "Database"
@@ -103,9 +111,10 @@
    "label": "MariaDB Root User"
   },
   {
+   "depends_on": "eval:doc.different_database_server",
    "fieldname": "mariadb_ip",
    "fieldtype": "Data",
-   "label": "MariaDB IP"
+   "label": "MariaDB Public IP"
   },
   {
    "fieldname": "column_break_qvmo",
@@ -217,7 +226,8 @@
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
-   "options": "Database Server"
+   "options": "Database Server",
+   "search_index": 1
   },
   {
    "fieldname": "release_group",
@@ -249,6 +259,8 @@
    "label": "New Server"
   },
   {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:doc.dedicated_proxy",
    "fieldname": "section_break_0fky",
    "fieldtype": "Section Break",
    "label": "Proxy"
@@ -258,7 +270,8 @@
    "fieldtype": "Link",
    "label": "Proxy Server",
    "mandatory_depends_on": "eval:doc.proxy_created",
-   "options": "Proxy Server"
+   "options": "Proxy Server",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_bcsw",
@@ -287,14 +300,13 @@
   {
    "fieldname": "server_url",
    "fieldtype": "Data",
-   "label": "Server URL",
-   "reqd": 1
+   "label": "Server URL"
   },
   {
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -355,10 +367,38 @@
    "fieldname": "vendor",
    "fieldtype": "Data",
    "label": "Vendor"
+  },
+  {
+   "fieldname": "proxy_public_ip",
+   "fieldtype": "Data",
+   "label": "Proxy Public IP"
+  },
+  {
+   "fieldname": "proxy_private_ip",
+   "fieldtype": "Data",
+   "label": "Proxy Private IP"
+  },
+  {
+   "depends_on": "eval:doc.different_database_server",
+   "fieldname": "mariadb_private_ip",
+   "fieldtype": "Data",
+   "label": "MariaDB Private IP"
+  },
+  {
+   "fieldname": "database_plan",
+   "fieldtype": "Link",
+   "label": "Database Plan",
+   "options": "Server Plan"
+  },
+  {
+   "default": "0",
+   "fieldname": "dedicated_proxy",
+   "fieldtype": "Check",
+   "label": "Dedicated Proxy"
   }
  ],
  "links": [],
- "modified": "2023-08-03 19:20:04.797706",
+ "modified": "2024-02-08 14:10:21.024772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

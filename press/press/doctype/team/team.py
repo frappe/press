@@ -27,11 +27,12 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"enabled",
 		"team_title",
 		"user",
 		"partner_email",
+		"erpnext_partner",
 		"billing_team",
 		"team_members",
 		"child_team_members",
@@ -44,7 +45,9 @@ class Team(Document):
 		"is_saas_user",
 		"billing_name",
 		"referrer_id",
+		"partner_referral_code",
 	]
+	dashboard_actions = ["get_team_members", "remove_team_member"]
 
 	def get_doc(self, doc):
 		if (
@@ -56,8 +59,8 @@ class Team(Document):
 
 		user = frappe.db.get_value(
 			"User",
-			self.user,
-			["first_name", "last_name", "user_image", "user_type"],
+			frappe.session.user,
+			["name", "first_name", "last_name", "user_image", "user_type", "email"],
 			as_dict=True,
 		)
 		doc.user_info = user
@@ -686,6 +689,8 @@ class Team(Document):
 		)
 		doc.insert(ignore_permissions=True)
 		doc.submit()
+
+		self.reload()
 		if not self.default_payment_method:
 			# change payment mode to prepaid credits if default is card or not set
 			self.payment_mode = (
@@ -945,7 +950,7 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
-		plan = frappe.qb.DocType("Plan")
+		plan = frappe.qb.DocType("Site Plan")
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)

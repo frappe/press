@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-3">
+	<div class="space-y-3 max-h-96 overflow-auto px-4">
 		<button
 			class="block w-full cursor-pointer rounded-md border px-4 py-3 text-left shadow ring-inset focus:outline-none"
 			:class="

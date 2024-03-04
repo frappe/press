@@ -9,6 +9,7 @@
   "is_single_container",
   "is_ssh_enabled",
   "staged",
+  "is_docker_remote_builder_used",
   "column_break_2",
   "group",
   "team",
@@ -17,9 +18,7 @@
   "apps",
   "dependencies",
   "packages",
-  "apt_packages",
   "environment_variables",
-  "mounts",
   "section_break_6",
   "build_start",
   "build_end",
@@ -41,6 +40,8 @@
   "user_certificate",
   "feature_flags_section",
   "is_redisearch_enabled",
+  "use_app_cache",
+  "compress_app_cache",
   "column_break_tkdd",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -65,7 +66,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nScheduled\nPending\nRunning\nSuccess\nFailure",
+   "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
    "read_only": 1
   },
   {
@@ -249,12 +250,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "apt_packages",
-   "fieldtype": "Text",
-   "label": "APT Packages",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_tkdd",
    "fieldtype": "Column Break"
   },
@@ -295,21 +290,36 @@
    "read_only": 1
   },
   {
-   "fieldname": "mounts",
-   "fieldtype": "Text",
-   "label": "Mounts",
-   "read_only": 1
-  },
-  {
    "default": "0",
    "fetch_from": "group.use_rq_workerpool",
    "fieldname": "use_rq_workerpool",
    "fieldtype": "Check",
    "label": "Use RQ WorkerPool"
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.use_app_cache",
+   "fieldname": "use_app_cache",
+   "fieldtype": "Check",
+   "label": "Use App Cache"
+  },
+  {
+   "default": "0",
+   "fetch_from": "group.compress_app_cache",
+   "fieldname": "compress_app_cache",
+   "fieldtype": "Check",
+   "label": "Compress App Cache"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_docker_remote_builder_used",
+   "fieldtype": "Check",
+   "label": "Is Docker Remote Builder used",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2024-01-18 14:52:17.666769",
+ "modified": "2024-02-29 13:32:52.946943",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

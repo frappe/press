@@ -11,8 +11,9 @@ from press.api.bench import apps
 
 
 class ReleaseGroupApp(Document):
+	dashboard_fields = ["app"]
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
-		if filters and filters.get("parent"):
-			group_name = cstr(filters.get("parent"))
-			return apps(group_name)
+		group = cstr(filters.get("parent", "")) if filters else None
+		return apps(group)

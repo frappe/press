@@ -16,7 +16,7 @@ import {
 } from 'frappe-ui';
 import outsideClickDirective from './outsideClickDirective';
 
-let components = import.meta.globEager('./*.vue'); // To get each component inside this folder
+let components = import.meta.glob('./*.vue', { eager: true }); // To get each component inside this folder
 
 let globalFrappeUIComponents = {
 	Button,

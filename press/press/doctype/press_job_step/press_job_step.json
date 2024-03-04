@@ -99,6 +99,7 @@
   {
    "fieldname": "attempts",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Attempts",
    "read_only": 1
   },
@@ -113,7 +114,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-01 18:36:52.022633",
+ "modified": "2024-02-05 19:53:33.508928",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Job Step",

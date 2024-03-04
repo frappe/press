@@ -4,12 +4,13 @@
 			<h2 class="text-lg font-medium text-gray-900">Daily Usage</h2>
 			<router-link
 				class="text-base text-gray-600 hover:text-gray-700"
-				:to="`/sites/${site.name}/analytics`"
+				:to="{ name: 'Site Detail Analytics', params: { name: site } }"
 			>
 				All analytics →
 			</router-link>
 		</div>
 		<LineChart
+			title="Daily Usage"
 			type="time"
 			:key="dailyUsageData"
 			:data="dailyUsageData"
@@ -19,20 +20,11 @@
 			:error="$resources.requestCounter.error"
 			:showCard="false"
 			class="h-52 p-2"
-		>
-			<template #actions>
-				<router-link
-					class="text-base text-gray-600 hover:text-gray-700"
-					:to="`/sites/${site.name}/analytics`"
-				>
-					All analytics →
-				</router-link>
-			</template>
-		</LineChart>
+		/>
 	</div>
 </template>
 <script>
-import { DateTime } from 'luxon';
+import dayjs from '../utils/dayjs';
 import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
@@ -41,10 +33,10 @@ export default {
 	components: { LineChart },
 	resources: {
 		requestCounter() {
-			let localTimezone = DateTime.local().zoneName;
+			let localTimezone = dayjs.tz.guess();
 			return {
 				url: 'press.api.analytics.daily_usage',
-				params: { name: this.site?.name, timezone: localTimezone },
+				params: { name: this.site, timezone: localTimezone },
 				auto: true
 			};
 		}

@@ -83,7 +83,28 @@ export function numberK(number) {
 	}
 }
 
+export function pricePerDay(price) {
+	let daysInThisMonth = dayjs().daysInMonth();
+	return price / daysInThisMonth;
+}
+
 export function date(dateTimeString, format = 'LLLL') {
 	if (!dateTimeString) return;
 	return dayjsLocal(dateTimeString).format(format);
+}
+
+export function commaSeparator(arr, separator) {
+	let joinedString = arr.slice(0, -1).join(', ');
+
+	if (arr.length > 1) {
+		joinedString += ` ${separator} ${arr[arr.length - 1]}`;
+	} else {
+		joinedString += arr[0];
+	}
+
+	return joinedString;
+}
+
+export function commaAnd(arr) {
+	return commaSeparator(arr, 'and');
 }

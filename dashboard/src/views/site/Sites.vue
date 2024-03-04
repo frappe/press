@@ -354,7 +354,10 @@ export default {
 		validateCreateSite() {
 			if (!this.$account.hasBillingInfo) {
 				this.showAddCardDialog = true;
-			} else if (this.$account.billing_info.has_unpaid_invoices) {
+			} else if (
+				this.$account.billing_info.has_unpaid_invoices &&
+				!this.$account.team.free_account
+			) {
 				notify({
 					title:
 						'Please settle your unpaid invoices from the billing tab in order to create new sites',

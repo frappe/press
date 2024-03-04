@@ -14,6 +14,21 @@ from press.agent import Agent
 
 
 class SiteBackup(Document):
+	dashboard_fields = [
+		"status",
+		"database_url",
+		"public_url",
+		"private_url",
+		"config_file_url",
+		"site",
+		"database_size",
+		"public_size",
+		"private_size",
+		"with_files",
+		"offsite",
+		"files_availability",
+	]
+
 	def before_insert(self):
 		if getattr(self, "force", False):
 			return

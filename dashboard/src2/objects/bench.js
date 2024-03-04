@@ -3,11 +3,12 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import { tagTab } from './common/tags';
 
 export default {
 	doctype: 'Release Group',
@@ -17,13 +18,17 @@ export default {
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
 		deleteConfig: 'delete_config',
 		updateConfig: 'update_config',
+		updateEnvironmentVariable: 'update_environment_variable',
+		deleteEnvironmentVariable: 'delete_environment_variable',
 		updateDependency: 'update_dependency',
 		addRegion: 'add_region',
 		deployedVersions: 'deployed_versions',
 		getAppVersions: 'get_app_versions',
 		archive: 'archive',
 		getCertificate: 'get_certificate',
-		generateCertificate: 'generate_certificate'
+		generateCertificate: 'generate_certificate',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/benches',
@@ -70,13 +75,124 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewBench' });
+					router.push({ name: 'New Release Group' });
 				}
 			};
 		}
 	},
+	create: {
+		route: '/benches/new',
+		title: 'New Bench',
+		secondaryCreate: {
+			route: '/servers/:name/benches/new',
+			optionalFields: ['benchRegion'],
+			routeName: 'Server New Bench',
+			propName: 'server'
+		},
+		optionsResource() {
+			return {
+				url: 'press.api.bench.options',
+				initialData: {
+					versions: [],
+					clusters: []
+				},
+				auto: true
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.bench.new',
+				validate({ bench }) {
+					if (!bench.title) {
+						return 'Bench Title cannot be blank';
+					}
+					if (!bench.version) {
+						return 'Select a version to create bench';
+					}
+				},
+				onSuccess(groupName) {
+					this.$router.push({
+						name: 'Release Group Detail Apps',
+						params: { name: groupName }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createBench, vals, optionsData: options }) {
+			return {
+				label: 'Create Bench',
+				variant: 'solid',
+				onClick() {
+					createBench.submit({
+						bench: {
+							title: vals.benchTitle,
+							version: vals.benchVersion,
+							cluster: vals.benchRegion || null,
+							saas_app: null,
+							apps: [
+								// some wizardry to only pick frappe for the chosen version
+								options.versions
+									.find(v => v.name === vals.benchVersion)
+									.apps.find(app => app.name === 'frappe')
+							].map(app => {
+								return {
+									name: app.name,
+									source: app.source.name
+								};
+							}),
+							server: vals.server || null
+						}
+					});
+				}
+			};
+		},
+		options: [
+			{
+				label: 'Bench Title',
+				name: 'benchTitle',
+				type: 'text'
+			},
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'benchVersion',
+				type: 'card',
+				fieldname: 'versions',
+				dependsOn: ['benchTitle']
+			},
+			{
+				label: 'Select Region',
+				name: 'benchRegion',
+				type: 'card',
+				fieldname: 'clusters',
+				dependsOn: ['benchVersion']
+			}
+		],
+		summary: [
+			{
+				label: 'Bench Title',
+				fieldname: 'benchTitle'
+			},
+			{
+				label: 'Region',
+				fieldname: 'benchRegion',
+				hideWhen: 'server'
+			},
+			{
+				label: 'Server',
+				fieldname: 'server',
+				hideWhen: 'benchRegion'
+			},
+			{
+				label: 'Frappe Version',
+				fieldname: 'benchVersion'
+			}
+		]
+	},
 	detail: {
 		titleField: 'title',
+		statusBadge({ documentResource: releaseGroup }) {
+			return { label: releaseGroup.doc.status };
+		},
 		route: '/benches/:name',
 		tabs: [
 			{
@@ -97,17 +213,11 @@ export default {
 				route: 'apps',
 				type: 'list',
 				list: {
-					resource({ documentResource: releaseGroup }) {
+					doctype: 'Release Group App',
+					filters: releaseGroup => {
 						return {
-							type: 'list',
-							doctype: 'Release Group App',
-							cache: ['ObjectList', 'Release Group App', releaseGroup.name],
-							parent: 'Release Group',
-							filters: {
-								parenttype: 'Release Group',
-								parent: releaseGroup.name
-							},
-							auto: true
+							parenttype: 'Release Group',
+							parent: releaseGroup.doc.name
 						};
 					},
 					columns: [
@@ -233,23 +343,30 @@ export default {
 								condition: () => row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return;
-									toast.promise(
-										releaseGroup.removeApp.submit({
-											app: row.name
-										}),
-										{
-											loading: 'Removing App...',
-											success: () => {
-												apps.reload();
-												return 'App Removed';
-											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: 'Remove App',
+										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(
+												releaseGroup.removeApp.submit({
+													app: row.name
+												}),
+												{
+													loading: 'Removing App...',
+													success: () => {
+														hide();
+														apps.reload();
+														return 'App Removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
 								}
 							},
 							{
@@ -310,7 +427,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -320,7 +437,6 @@ export default {
 						},
 						{
 							label: 'Apps',
-							fieldname: 'apps',
 							format(value, row) {
 								return (row.apps || []).map(d => d.app).join(', ');
 							},
@@ -331,6 +447,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -390,6 +511,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
@@ -406,7 +532,10 @@ export default {
 				list: {
 					doctype: 'Common Site Config',
 					filters: releaseGroup => {
-						return { group: releaseGroup.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					orderBy: 'creation desc',
 					fields: ['name'],
@@ -423,12 +552,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({
@@ -457,7 +590,7 @@ export default {
 					},
 					secondaryAction({ listResource: configs }) {
 						return {
-							label: 'Show Config Preview',
+							label: 'Preview',
 							slots: {
 								prefix: icon('eye')
 							},
@@ -533,6 +666,116 @@ export default {
 				}
 			},
 			{
+				label: 'Environment Variable',
+				icon: icon('tool'),
+				route: 'bench-environment-variable',
+				type: 'list',
+				list: {
+					doctype: 'Release Group Variable',
+					filters: releaseGroup => {
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
+					},
+					orderBy: 'creation desc',
+					fields: ['name'],
+					columns: [
+						{
+							label: 'Environment Variable Name',
+							fieldname: 'key'
+						},
+						{
+							label: 'Environment Variable Value',
+							fieldname: 'value'
+						}
+					],
+					primaryAction({
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return {
+							label: 'Add Environment Variable',
+							slots: {
+								prefix: icon('plus')
+							},
+							onClick() {
+								let EnvironmentVariableEditorDialog = defineAsyncComponent(() =>
+									import('../components/EnvironmentVariableEditorDialog.vue')
+								);
+								renderDialog(
+									h(EnvironmentVariableEditorDialog, {
+										group: releaseGroup.doc.name,
+										onSuccess() {
+											environmentVariables.reload();
+										}
+									})
+								);
+							}
+						};
+					},
+					rowActions({
+						row,
+						listResource: environmentVariables,
+						documentResource: releaseGroup
+					}) {
+						return [
+							{
+								label: 'Edit',
+								onClick() {
+									let ConfigEditorDialog = defineAsyncComponent(() =>
+										import('../components/EnvironmentVariableEditorDialog.vue')
+									);
+									renderDialog(
+										h(ConfigEditorDialog, {
+											group: releaseGroup.doc.name,
+											environment_variable: row,
+											onSuccess() {
+												environmentVariables.reload();
+											}
+										})
+									);
+								}
+							},
+							{
+								label: 'Delete',
+								onClick() {
+									confirmDialog({
+										title: 'Delete Environment Variable',
+										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
+										onSuccess({ hide }) {
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
+											toast.promise(
+												releaseGroup.deleteEnvironmentVariable.submit(
+													{ key: row.key },
+													{
+														onSuccess: () => {
+															environmentVariables.reload();
+															hide();
+														}
+													}
+												),
+												{
+													loading: 'Deleting  environment variable...',
+													success: () =>
+														`Environment variable ${row.key} removed`,
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							}
+						];
+					}
+				}
+			},
+			{
 				label: 'Dependencies',
 				icon: icon('box'),
 				route: 'bench-dependencies',
@@ -540,7 +783,10 @@ export default {
 				list: {
 					doctype: 'Release Group Dependency',
 					filters: releaseGroup => {
-						return { group: releaseGroup.doc.name };
+						return {
+							parenttype: 'Release Group',
+							parent: releaseGroup.name
+						};
 					},
 					columns: [
 						{
@@ -637,7 +883,8 @@ export default {
 						};
 					}
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
@@ -684,10 +931,17 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					options: [
+						{
+							label: 'Impersonate Team',
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
 						{
 							label: 'Drop Bench',
 							onClick() {

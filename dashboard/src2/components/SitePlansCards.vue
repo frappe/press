@@ -1,6 +1,8 @@
 <template>
 	<div class="@container" v-if="plans.length">
-		<div class="grid grid-cols-2 gap-3 @3xl:grid-cols-4">
+		<div
+			class="grid grid-cols-1 gap-3 @md:grid-cols-2 @2xl:grid-cols-3 @3xl:grid-cols-4"
+		>
 			<button
 				v-for="(plan, i) in plans"
 				:key="plan.name"
@@ -32,11 +34,12 @@
 						</div>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
-						{{ $team.doc.country === 'India' ? '₹' : '$'
-						}}{{
-							$team.doc.country === 'India'
-								? plan.price_per_day_inr
-								: plan.price_per_day_usd
+						{{
+							$format.userCurrency(
+								$format.pricePerDay(
+									$team.doc.currency === 'INR' ? plan.price_inr : plan.price_usd
+								)
+							)
 						}}
 						/day
 					</div>

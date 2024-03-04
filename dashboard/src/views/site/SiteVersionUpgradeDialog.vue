@@ -6,7 +6,7 @@
 	>
 		<template #body-content>
 			<div class="space-y-4">
-				<p v-if="site?.is_public && nextVersion" class="text-base">
+				<p v-if="site?.group_public && nextVersion" class="text-base">
 					The site <b>{{ site.host_name }}</b> will be upgraded to
 					<b>{{ nextVersion }}</b>
 				</p>
@@ -27,7 +27,7 @@
 				/>
 				<FormControl
 					class="mt-4"
-					v-if="(site.is_public && nextVersion) || benchHasCommonServer"
+					v-if="(site.group_public && nextVersion) || benchHasCommonServer"
 					label="Schedule Site Migration"
 					type="datetime-local"
 					:min="new Date().toISOString().slice(0, 16)"
@@ -46,9 +46,9 @@
 				/>
 			</div>
 		</template>
-		<template v-if="site?.is_public || privateReleaseGroups.length" #actions>
+		<template v-if="site?.group_public || privateReleaseGroups.length" #actions>
 			<Button
-				v-if="!site.is_public"
+				v-if="!site.group_public"
 				class="mb-2 w-full"
 				:disabled="benchHasCommonServer || !privateReleaseGroup || !nextVersion"
 				label="Add Server to Bench"
@@ -64,7 +64,7 @@
 				label="Upgrade"
 				:disabled="
 					((!benchHasCommonServer || !privateReleaseGroup) &&
-						!site.is_public) ||
+						!site.group_public) ||
 					!nextVersion
 				"
 				:loading="
@@ -90,12 +90,6 @@ export default {
 			privateReleaseGroup: '',
 			benchHasCommonServer: false
 		};
-	},
-	watch: {
-		show(value) {
-			if (value && !this.site?.is_public)
-				this.$resources.getPrivateGroups.fetch();
-		}
 	},
 	computed: {
 		show: {
@@ -124,13 +118,16 @@ export default {
 				return 'This site is already on the latest version.';
 			} else if (this.site.frappe_version === 'Nightly') {
 				return "This site is on a nightly version and doesn't need to be upgraded.";
-			} else if (!this.site.is_public && this.privateReleaseGroups.length === 0)
-				return `Your team don't own any private benches available to upgrade this site to ${this.nextVersion}.`;
+			} else if (
+				!this.site.group_public &&
+				this.privateReleaseGroups.length === 0
+			)
+				return `Your team doesn't own any private benches available to upgrade this site to ${this.nextVersion}.`;
 			else if (!this.privateReleaseGroup) {
 				return '';
-			} else if (!this.site.is_public && !this.benchHasCommonServer)
+			} else if (!this.site.group_public && !this.benchHasCommonServer)
 				return `The selected bench and your site doesn't have a common server. Please add site's server to the bench.`;
-			else if (!this.site.is_public && this.benchHasCommonServer)
+			else if (!this.site.group_public && this.benchHasCommonServer)
 				return `The selected bench and your site have a common server. You can proceed with the upgrade to ${this.nextVersion}.`;
 			else return '';
 		},
@@ -169,6 +166,14 @@ export default {
 				params: {
 					name: this.site?.name,
 					version: this.site?.frappe_version
+				},
+				auto: true,
+				validate() {
+					if (
+						!this.site?.group_public ||
+						this.site?.frappe_version === 'Nightly'
+					)
+						return false;
 				},
 				transform(data) {
 					return data.map(group => ({

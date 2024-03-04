@@ -87,6 +87,7 @@ class PressJob(Document):
 			pluck="name",
 		):
 			frappe.db.set_value("Press Job Step", step, "status", "Failure")
+		frappe.db.set_value("Press Job", self.name, "status", "Failure")
 
 	@property
 	def next_step(self):

@@ -1,0 +1,15 @@
+---
+- name: Add MariaDB Debug Symbols Repository
+  apt_repository:
+    repo: deb https://packages.frappe.cloud/mariadb/10.6 focal main/debug
+    state: present
+    update_cache: true
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Install MariaDB
+  apt:
+    package: mariadb-server-core-10.6-dbgsym
+    state: latest

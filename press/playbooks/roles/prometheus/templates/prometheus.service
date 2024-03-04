@@ -12,8 +12,11 @@ ExecReload=/bin/kill -HUP $MAINPID
 
 ExecStart=/home/frappe/prometheus/prometheus \
   --config.file=/home/frappe/prometheus/prometheus.yml \
-  --storage.tsdb.path=/home/frappe/prometheus/data \
-  --storage.tsdb.retention.time=30d \
+  --enable-feature=promql-negative-offset \
+  --query.timeout=5m \
+  --query.max-concurrency=50 \
+  --storage.tsdb.path={{ prometheus_data_directory }} \
+  --storage.tsdb.retention.time=180d \
   --web.console.libraries=/home/frappe/prometheus/console_libraries \
   --web.console.templates=/home/frappe/prometheus/consoles \
   --web.listen-address=127.0.0.1:9090 \
@@ -24,6 +27,8 @@ Restart=always
 RestartSec=1
 StartLimitInterval=0
 
+LimitNOFILE=1024000
+LimitNOFILESoft=102400
 
 [Install]
 WantedBy=multi-user.target

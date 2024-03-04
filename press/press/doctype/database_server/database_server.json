@@ -19,7 +19,6 @@
   "is_server_setup",
   "is_server_prepared",
   "is_server_renamed",
-  "is_stalk_setup",
   "billing_section",
   "team",
   "column_break_11",
@@ -61,7 +60,19 @@
   "memory_swap_max",
   "section_break_ladc",
   "is_performance_schema_enabled",
-  "mariadb_system_variables"
+  "mariadb_system_variables",
+  "mariadb_stalk_section",
+  "is_stalk_setup",
+  "stalk_gdb_collector",
+  "stalk_strace_collector",
+  "column_break_qrkk",
+  "stalk_function",
+  "stalk_variable",
+  "stalk_threshold",
+  "column_break_objb",
+  "stalk_interval",
+  "stalk_cycles",
+  "stalk_sleep"
  ],
  "fields": [
   {
@@ -268,7 +279,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -407,11 +418,73 @@
    "fieldtype": "Check",
    "label": "Is Stalk Setup",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "mariadb_stalk_section",
+   "fieldtype": "Section Break",
+   "label": "MariaDB Stalk"
+  },
+  {
+   "fieldname": "column_break_qrkk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "status",
+   "fieldname": "stalk_function",
+   "fieldtype": "Data",
+   "label": "Stalk Function"
+  },
+  {
+   "default": "Threads_running",
+   "fieldname": "stalk_variable",
+   "fieldtype": "Data",
+   "label": "Stalk Variable"
+  },
+  {
+   "default": "25",
+   "fieldname": "stalk_threshold",
+   "fieldtype": "Int",
+   "label": "Stalk Threshold"
+  },
+  {
+   "fieldname": "column_break_objb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "stalk_interval",
+   "fieldtype": "Float",
+   "label": "Stalk Interval"
+  },
+  {
+   "default": "5",
+   "fieldname": "stalk_cycles",
+   "fieldtype": "Int",
+   "label": "Stalk Cycles"
+  },
+  {
+   "default": "0",
+   "fieldname": "stalk_gdb_collector",
+   "fieldtype": "Check",
+   "label": "Stalk GDB Collector"
+  },
+  {
+   "default": "0",
+   "fieldname": "stalk_strace_collector",
+   "fieldtype": "Check",
+   "label": "Stalk strace Collector"
+  },
+  {
+   "default": "300",
+   "fieldname": "stalk_sleep",
+   "fieldtype": "Int",
+   "label": "Stalk Sleep"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-21 19:00:35.047273",
+ "modified": "2024-02-08 13:37:28.064067",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Database Server",

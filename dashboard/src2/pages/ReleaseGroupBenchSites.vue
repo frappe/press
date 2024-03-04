@@ -3,7 +3,10 @@
 		<div class="flex items-center justify-between">
 			<div></div>
 			<Button
-				:route="{ name: 'NewBenchSite', params: { bench: this.releaseGroup } }"
+				:route="{
+					name: 'Bench New Site',
+					params: { name: this.releaseGroup }
+				}"
 			>
 				<template #prefix>
 					<i-lucide-plus class="h-4 w-4 text-gray-600" />
@@ -262,7 +265,11 @@ export default {
 										},
 										{
 											label: 'Rebuild Assets',
-											condition: () => row.status === 'Active',
+											condition: () =>
+												row.status === 'Active' &&
+												(Number(this.$releaseGroup.doc.version.split(' ')[1]) >
+													13 ||
+													this.$releaseGroup.doc.version === 'Nightly'),
 											onClick: () => {
 												confirmDialog({
 													title: 'Rebuild Assets',
@@ -331,6 +338,9 @@ export default {
 						type: 'Badge',
 						format(value, row) {
 							return value.slice(0, 7);
+						},
+						link: (value, row) => {
+							return `https://github.com/${row.repository_owner}/${row.repository}/commit/${value}`;
 						}
 					},
 					{

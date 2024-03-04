@@ -7,14 +7,13 @@ import shlex
 import shutil
 import subprocess
 from datetime import datetime
+from typing import Optional, TypedDict
 
 import frappe
 from frappe.model.document import Document
 from press.api.github import get_access_token
 from press.press.doctype.app_source.app_source import AppSource
 from press.utils import log_error
-from typing import TypedDict, Optional
-
 
 AppReleaseDict = TypedDict(
 	"AppReleaseDict",
@@ -104,11 +103,8 @@ class AppRelease(Document):
 
 	def _clone_repo(self):
 		source = frappe.get_doc("App Source", self.source)
-		if source.github_installation_id:
-			token = get_access_token(source.github_installation_id)
-			url = f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
-		else:
-			url = source.repository_url
+		url = self._get_repo_url(source)
+
 		self.output = ""
 		self.output += self.run("git init")
 		self.output += self.run(f"git checkout -B {source.branch}")
@@ -118,9 +114,37 @@ class AppRelease(Document):
 		else:
 			self.output += self.run(f"git remote add origin {url}")
 		self.output += self.run("git config credential.helper ''")
-		self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
+
+		try:
+			self.output += self.run(f"git fetch --depth 1 origin {self.hash}")
+		except subprocess.CalledProcessError as e:
+			stdout = e.stdout.decode("utf-8")
+			if "Repository not found." not in stdout:
+				raise e
+
+			frappe.throw(
+				f"Repository could not be fetched for {self.app}. "
+				"Please ensure repository access for Frappe Cloud: "
+				" https://frappecloud.com/docs/faq/custom_apps"
+			)
+
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
+
+	def _get_repo_url(self, source: "AppSource") -> str:
+		if not source.github_installation_id:
+			return source.repository_url
+
+		try:
+			token = get_access_token(source.github_installation_id)
+		except KeyError:
+			frappe.throw(
+				f"App installation token could not be fetched for {self.app}. "
+				"Please ensure repository access for Frappe Cloud: "
+				" https://frappecloud.com/docs/faq/custom_apps"
+			)
+
+		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
 
 	def on_trash(self):
 		if self.clone_directory and os.path.exists(self.clone_directory):

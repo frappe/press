@@ -53,7 +53,7 @@
 							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
 						>
 							{{
-								doc.partner_email && doc.partner_email != doc.team
+								doc.partner_email && doc.partner_email != $account.team.user
 									? 0
 									: doc.formatted.total_discount_amount
 							}}
@@ -88,7 +88,7 @@
 							class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-semibold"
 						>
 							{{
-								doc.partner_email && doc.partner_email != doc.team
+								doc.partner_email && doc.partner_email != $account.team.user
 									? doc.formatted.total_before_discount
 									: doc.formatted.total
 							}}
