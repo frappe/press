@@ -26,12 +26,7 @@
 							<span class="font-medium text-gray-900">
 								{{ $format.planTitle(plan) }}
 							</span>
-							<span
-								v-if="$format.planTitle(plan) !== 'Unlimited'"
-								class="text-gray-700"
-							>
-								/ mo</span
-							>
+							<span v-if="plan.price_inr" class="text-gray-700"> / mo</span>
 						</div>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
