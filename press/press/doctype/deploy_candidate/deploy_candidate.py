@@ -110,8 +110,6 @@ class DeployCandidate(Document):
 			return
 
 		self.status = "Pending"
-		if not kwargs.get("no_cache"):
-			self._update_app_releases()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -236,6 +234,9 @@ class DeployCandidate(Document):
 			raise
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
+		if not no_cache:
+			self._update_app_releases()
+
 		if not no_cache and self.use_app_cache:
 			self._set_app_cached_flags()
 
@@ -1298,7 +1299,7 @@ class DeployCandidate(Document):
 		return failed
 
 	def check_if_build_stuck(self, msgprint: bool = False) -> bool:
-		if self.status != "Running" and self.status != "Pending":
+		if self.status not in ["Pending", "Preparing", "Running"]:
 			return False
 
 		stuck_step = self.get_first_step_of_given_status(["Pending", "Running"])
