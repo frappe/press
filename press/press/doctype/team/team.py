@@ -926,9 +926,13 @@ class Team(Document):
 			return "/sites"
 
 		if self.is_saas_user:
-			saas_product = frappe.db.get_value(
-				"Account Request", self.account_request, "saas_product"
-			)
+			pending_site_request = self.get_pending_saas_site_request()
+			if pending_site_request:
+				saas_product = pending_site_request.saas_product
+			else:
+				saas_product = frappe.db.get_value(
+					"Account Request", self.account_request, "saas_product"
+				)
 			if saas_product:
 				return f"/app-trial/{saas_product}"
 
