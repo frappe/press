@@ -126,7 +126,7 @@
 						You can now create sites and benches from the dashboard. Go ahead
 						and try it.
 					</p>
-					<Button class="mt-2" :route="{ name: 'NewSite' }">
+					<Button class="mt-2" :route="{ name: 'New Site' }">
 						Create a new site
 					</Button>
 				</div>
