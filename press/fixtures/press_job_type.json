@@ -2,7 +2,7 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-01-31 12:32:53.947854",
+  "modified": "2024-03-04 10:36:26.788649",
   "name": "Create Server",
   "steps": [
    {
@@ -43,6 +43,22 @@
     "parenttype": "Press Job Type",
     "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Setup TLS Certificates\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
     "step_name": "Wait for TLS Certificate to be updated",
+    "wait_until_true": 1
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.wait_for_cloud_init()",
+    "step_name": "Check Cloud Init status",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Create Server",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Wait for Cloud Init to finish\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status in (\"Success\", \"Failure\"), False)",
+    "step_name": "Wait for Cloud Init to finish",
     "wait_until_true": 1
    },
    {
