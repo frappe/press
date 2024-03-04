@@ -84,9 +84,10 @@ export default {
 		route: '/benches/new',
 		title: 'New Bench',
 		secondaryCreate: {
-			route: '/servers/:server/benches/new',
-			optionalFields: ['clusters'],
-			routeName: 'Server New Bench'
+			route: '/servers/:name/benches/new',
+			optionalFields: ['benchRegion'],
+			routeName: 'Server New Bench',
+			propName: 'server'
 		},
 		optionsResource() {
 			return {

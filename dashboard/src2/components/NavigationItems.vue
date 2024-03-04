@@ -46,7 +46,7 @@ export default {
 							'Release Group List',
 							'Release Group Detail',
 							'New Release Group',
-							'NewBenchSite',
+							'Bench New Site',
 							'Bench Deploy'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
@@ -57,7 +57,7 @@ export default {
 					icon: () => h(Server),
 					route: '/servers',
 					isActive:
-						['New Server', 'NewServerBench'].includes(routeName) ||
+						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
 					disabled
 				},

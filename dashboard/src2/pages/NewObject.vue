@@ -12,6 +12,9 @@
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							{{ option.label }}
 						</h2>
+						<template v-if="option?.labelSlot">
+							<component :is="option.labelSlot({ optionsData })" />
+						</template>
 					</div>
 					<div class="mt-2">
 						<div
@@ -130,19 +133,20 @@ export default {
 			type: String,
 			required: true
 		},
-		server: {
+		// router passed object name for secondary create
+		// eg: /benches/:name/sites/new'
+		name: {
 			type: String,
-			default: ''
-		},
-		bench: {
-			type: String,
-			default: ''
+			required: false
 		}
 	},
 	data() {
 		return {
-			vals: this.server ? { server: this.server } : {}
+			vals: {}
 		};
+	},
+	mounted() {
+		if (this.name) this.vals[this.secondaryCreate.propName] = this.name;
 	},
 	components: {
 		Header,
@@ -150,7 +154,9 @@ export default {
 	},
 	resources: {
 		optionsData() {
-			return { ...this.object.create.optionsResource() };
+			return {
+				...this.object.create.optionsResource({ routerProp: this.name })
+			};
 		},
 		createResource() {
 			return { ...this.object.create.createResource() };
@@ -161,7 +167,7 @@ export default {
 			return getObject(this.objectType);
 		},
 		breadcrumbs() {
-			if (this.object.create.secondaryCreate?.routeName === this.$route.name) {
+			if (this.secondaryCreate?.routeName === this.$route.name) {
 				let isObjectServer = Object.keys(this.vals)[0] === 'server';
 				let objectName = Object.values(this.vals)[0];
 
@@ -193,17 +199,17 @@ export default {
 				}
 			];
 		},
+		secondaryCreate() {
+			return this.object.create.secondaryCreate || null;
+		},
 		options() {
 			let options = this.object.create.options;
 			if (
-				this.object.create.secondaryCreate &&
-				this.$route.name === this.object.create.secondaryCreate.routeName
+				this.secondaryCreate &&
+				this.$route.name === this.secondaryCreate.routeName
 			) {
 				options = options.filter(
-					option =>
-						!this.object.create.secondaryCreate.optionalFields.includes(
-							option.fieldname
-						)
+					option => !this.secondaryCreate.optionalFields.includes(option.name)
 				);
 			}
 			return options;
@@ -257,7 +263,14 @@ export default {
 		showOption(option) {
 			if (!option.dependsOn) return true;
 			for (let field of option.dependsOn) {
-				if (!this.vals[field]) return false;
+				if (!this.vals[field]) {
+					if (
+						this.secondaryCreate?.routeName === this.$route.name &&
+						this.secondaryCreate.optionalFields.includes(field)
+					)
+						return true;
+					else return false;
+				}
 			}
 			return true;
 		},

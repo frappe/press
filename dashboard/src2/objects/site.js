@@ -1,6 +1,7 @@
-import { frappeRequest, LoadingIndicator } from 'frappe-ui';
+import { frappeRequest, LoadingIndicator, Button } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
+import HelpIcon from '~icons/lucide/help-circle';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
@@ -131,17 +132,19 @@ export default {
 	create: {
 		title: 'New Site',
 		route: '/sites/new',
-		optionsResource() {
+		secondaryCreate: {
+			route: '/benches/:name/sites/new',
+			optionalFields: [],
+			// optionalFields: ['siteVersion'],
+			routeName: 'Bench New Site',
+			propName: 'bench'
+		},
+		optionsResource({ routerProp: bench }) {
 			return {
 				url: 'press.api.site.options_for_new',
-				// makeParams() {
-				// 	return { for_bench: this.bench };
-				// },
-				// onSuccess() {
-				// 	if (this.bench) {
-				// 		this.version = this.options.versions[0].name;
-				// 	}
-				// },
+				makeParams() {
+					return { for_bench: bench };
+				},
 				auto: true,
 				initialData: {
 					versions: [],
@@ -152,7 +155,6 @@ export default {
 			};
 		},
 		createResource() {
-			// if (!(this.options && this.selectedVersion)) return;
 			return {
 				url: 'press.api.client.insert',
 				validate({ doc: { subdomain } }) {
@@ -180,7 +182,6 @@ export default {
 						appPlans[app.app] = app.plan;
 					});
 
-					console.log(vals);
 					createSite.submit({
 						doc: {
 							doctype: 'Site',
@@ -189,7 +190,6 @@ export default {
 							apps: [{ app: 'frappe' }, ...vals.apps],
 							app_plans: appPlans,
 							cluster: vals.cluster,
-							// bench: vals.selectedVersion.group.bench,
 							bench: optionsData.versions.find(v => v.name === vals.siteVersion)
 								.group.bench,
 							subscription_plan: vals.plan.name,
@@ -207,7 +207,7 @@ export default {
 				fieldname: 'versions'
 			},
 			{
-				label: 'Select Marketplace Apps',
+				label: '',
 				fieldname: 'apps',
 				name: 'apps',
 				type: 'Component',
@@ -219,11 +219,11 @@ export default {
 					let selectedVersion = optionsData?.versions.find(
 						v => v.name === vals.siteVersion
 					);
-					let selectedVersionPublicApps;
+					let selectedVersionApps;
 
 					if (selectedVersion?.group?.bench_app_sources)
 						// sorted by total installs and then by name
-						selectedVersionPublicApps = selectedVersion.group.bench_app_sources
+						selectedVersionApps = selectedVersion.group.bench_app_sources
 							.map(app_source => {
 								let app_source_details =
 									optionsData.app_source_details[app_source];
@@ -244,11 +244,11 @@ export default {
 								} else {
 									return a.app_title.localeCompare(b.app_title);
 								}
-							})
-							.filter(app => app.public);
+							});
 
 					return h(NewSiteAppSelector, {
-						availableApps: selectedVersionPublicApps
+						availableApps: selectedVersionApps,
+						siteOnPublicBench: !vals.bench
 					});
 				},
 				dependsOn: ['siteVersion']
@@ -268,6 +268,19 @@ export default {
 				name: 'plan',
 				type: 'plan',
 				dependsOn: ['siteVersion', 'cluster'],
+				labelSlot() {
+					return h(
+						Button,
+						{
+							link: 'https://frappecloud.com/pricing',
+							variant: 'ghost'
+						},
+						{
+							prefix: () => h(HelpIcon, { class: 'h-4 w-4 text-gray-700' }),
+							default: () => 'Help'
+						}
+					);
+				},
 				filter() {
 					return plans.data.map(plan => ({
 						...plan,
