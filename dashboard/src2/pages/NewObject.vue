@@ -79,7 +79,7 @@
 				</div>
 			</template>
 
-			<div class="md:w-1/2" v-if="showSummaryAndRegionConsent">
+			<div class="md:w-2/3" v-if="showSummaryAndRegionConsent">
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
