@@ -135,7 +135,6 @@ export default {
 		secondaryCreate: {
 			route: '/benches/:name/sites/new',
 			optionalFields: [],
-			// optionalFields: ['siteVersion'],
 			routeName: 'Bench New Site',
 			propName: 'bench'
 		},
