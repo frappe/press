@@ -1,0 +1,62 @@
+- name: Add Hashicorp Repository Key
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /etc/apt/keyrings/hashicorp.asc
+
+- name: Add Hashicorp Repository
+  apt_repository:
+    repo: deb [signed-by=/etc/apt/keyrings/hashicorp.asc] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+    filename: hashicorp
+
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Install Vagrant
+  apt:
+    pkg:
+      - build-essential
+      - pkg-config
+      - vagrant
+    state: present
+
+- name: Install Packer
+  apt:
+    pkg:
+      - packer
+      - cloud-utils
+    state: present
+
+- name: Install QEMU
+  apt:
+    package: qemu-kvm
+    state: present
+
+- name: Add Frappe User to KVM Group
+  user:
+    name: frappe
+    groups:
+      - kvm
+    append: true
+
+- name: Install libvirt
+  apt:
+    pkg:
+      - libvirt-dev
+      - libvirt-daemon-system
+      - qemu-utils
+      - dnsmasq-base
+    state: present
+
+- name: Add Frappe User to libvirt Group
+  user:
+    name: frappe
+    groups:
+      - libvirt
+    append: true
+
+- name: Install Vagrant Libvirt Plugin
+  shell: vagrant plugin install vagrant-libvirt
+
+- name: Install Vagrant Hostmanager Plugin
+  shell: vagrant plugin install vagrant-hostmanager

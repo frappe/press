@@ -175,6 +175,10 @@
   "log_server",
   "telegram_alert_chat_id",
   "telegram_alerts_chat_group",
+  "development_section",
+  "development_server",
+  "column_break_oukg",
+  "development_server_namespace",
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
@@ -221,6 +225,7 @@
    "label": "Billing"
   },
   {
+   "collapsible": 1,
    "fieldname": "stripe_settings_section",
    "fieldtype": "Section Break",
    "label": "Stripe Settings"
@@ -431,6 +436,7 @@
    "label": "Total Backups Count"
   },
   {
+   "collapsible": 1,
    "fieldname": "backups_section",
    "fieldtype": "Section Break",
    "label": "Backups"
@@ -710,6 +716,7 @@
    "label": "Telegram Bot Token"
   },
   {
+   "collapsible": 1,
    "fieldname": "mailgun_settings_section",
    "fieldtype": "Section Break",
    "label": "Mailgun"
@@ -852,6 +859,7 @@
    "label": "Agent GitHub Access Token"
   },
   {
+   "collapsible": 1,
    "fieldname": "lets_encrypt_section",
    "fieldtype": "Section Break",
    "label": "Let's Encrypt"
@@ -1024,6 +1032,7 @@
    "read_only": 1
   },
   {
+   "collapsible": 1,
    "fieldname": "aws_section",
    "fieldtype": "Section Break",
    "label": "AWS"
@@ -1043,6 +1052,7 @@
    "label": "AWS Secret Access Key"
   },
   {
+   "collapsible": 1,
    "fieldname": "twilio_section",
    "fieldtype": "Section Break",
    "label": "Twilio"
@@ -1132,11 +1142,32 @@
    "fieldname": "realtime_job_updates",
    "fieldtype": "Check",
    "label": "Realtime Job Updates"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "development_section",
+   "fieldtype": "Section Break",
+   "label": "Development"
+  },
+  {
+   "fieldname": "development_server",
+   "fieldtype": "Link",
+   "label": "Development Server",
+   "options": "Development Server"
+  },
+  {
+   "fieldname": "column_break_oukg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "development_server_namespace",
+   "fieldtype": "Data",
+   "label": "Development Server Namespace"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-21 17:04:16.524389",
+ "modified": "2024-02-22 11:48:15.043438",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
