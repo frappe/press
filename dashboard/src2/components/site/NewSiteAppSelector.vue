@@ -35,7 +35,10 @@
 											</span>
 										</div>
 									</Tooltip>
-									<Badge theme="gray" :label="app.subscription_type" />
+									<Badge
+										theme="gray"
+										:label="app.subscription_type === 'Free' ? 'Free' : 'Paid'"
+									/>
 								</div>
 								<a :href="`/${app.route}`" target="_blank" title="App details">
 									<FeatherIcon name="external-link" class="h-4 w-4" />
