@@ -8,6 +8,16 @@ from press.press.doctype.site_plan.plan import Plan
 
 
 class MarketplaceAppPlan(Plan):
+	dashboard_fields = ["name", "title", "price_inr", "price_usd", "enabled"]
+
+	@staticmethod
+	def get_list_query(query):
+		plans = query.run(as_dict=True)
+		for plan in plans:
+			plan["features"] = get_app_plan_features(plan.name)
+
+		return plans
+
 	@staticmethod
 	def create_marketplace_app_subscription(
 		site_name, app_name, plan_name, while_site_creation=False

@@ -758,7 +758,10 @@ def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 		},
 	)
 
-	if no_of_active_subscriptions > 0:
+	if (
+		updated_plan_data["price_inr"] != app_plan_doc.price_inr
+		or updated_plan_data["price_usd"] != app_plan_doc.price_usd
+	) and no_of_active_subscriptions > 0:
 		# Someone is on this plan, don't change price for the plan,
 		# instead create and link a new plan
 		# TODO: Later we have to figure out a way for plan changes

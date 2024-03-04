@@ -6,12 +6,15 @@ import NewAppDialog from '../components/marketplace/NewAppDialog.vue';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
+import PlansDialog from '../components/marketplace/PlansDialog.vue';
+import { confirmDialog } from '../utils/components';
 
 export default {
 	doctype: 'Marketplace App',
 	whitelistedMethods: {
 		removeVersion: 'remove_version',
-		addVersion: 'add_version'
+		addVersion: 'add_version',
+		disable: 'disable' // should come from Marketplace App Plan
 	},
 	list: {
 		route: '/marketplace',
@@ -19,15 +22,16 @@ export default {
 		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
-				label: 'Logo',
-				type: 'Image',
-				fieldname: 'image',
-				width: 0.2
-			},
-			{
-				label: 'Title',
+				label: 'App',
 				fieldname: 'title',
-				width: 0.3
+				width: 0.3,
+				prefix(row) {
+					return h('img', {
+						src: row.image,
+						class: 'w-6 h-6',
+						alt: row.title
+					});
+				}
 			},
 			{
 				label: 'Status',
@@ -256,6 +260,46 @@ export default {
 					}
 				}
 			},
+			// {
+			// 	label: 'Installs',
+			// 	icon: icon('download'),
+			// 	route: 'install',
+			// 	type: 'list',
+			// 	comopnent: defineAsyncComponent(() =>
+			// 	h(ObjectList, {
+			// 		options: {
+			// 			label: 'Site',
+			// 			fieldname: 'site',
+			// 				columns: [
+			// 					{
+			// 						label: 'Site',
+			// 						fieldname: 'site',
+			// 						width: 0.5
+			// 					},
+			// 					{
+			// 						label: 'Plan',
+			// 						fieldname: 'plan',
+			// 						width: 0.5
+			// 					},
+			// 					{
+			// 						label: 'Contact',
+			// 						fieldname: 'email',
+			// 						width: 0.5
+			// 					}
+			// 				],
+			// 				resource() {
+			// 					return {
+			// 						url: 'press.api.marketplace.site_installs',
+			// 						params: {
+			// 							name: app.doc.name
+			// 						},
+			// 						auto: true
+			// 					}
+			// 				}
+			// 			}
+			// 		},
+			// 	))
+			// },
 			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),
@@ -264,7 +308,7 @@ export default {
 				list: {
 					doctype: 'Marketplace App Plan',
 					filters: app => {
-						return { app: app.doc.name, enabled: 1 };
+						return { app: app.doc.name };
 					},
 					fields: ['name', 'title', 'price_inr', 'price_usd', 'enabled'],
 					columns: [
@@ -302,24 +346,31 @@ export default {
 								prefix: icon('plus')
 							},
 							onClick() {
-								// renderDialog(h(NewAppPlanDialog, { app: app.doc.name }));
+								renderDialog(
+									h(PlansDialog, {
+										app: app.doc.name,
+										onPlanCreated() {
+											plans.reload();
+										}
+									})
+								);
 							}
 						};
 					},
-					rowActions({ listResource: plans, documentResource: plan }) {
+					rowActions({ row, listResource: plans, documentResource: app }) {
 						return [
 							{
 								label: 'Edit',
 								onClick() {
-									console.log(plans);
-									console.log(plan);
-									console.log('Not implemented');
-								}
-							},
-							{
-								label: 'Disable',
-								onClick() {
-									plan.disable.submit();
+									renderDialog(
+										h(PlansDialog, {
+											app: app.doc.name,
+											plan: row,
+											onPlanUpdated() {
+												plans.reload();
+											}
+										})
+									);
 								}
 							}
 						];
