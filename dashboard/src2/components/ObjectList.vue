@@ -86,7 +86,7 @@
 				>
 					Loading...
 				</div>
-				<div v-else-if="$list.list.error" class="py-4 text-center">
+				<div v-else-if="$list.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">

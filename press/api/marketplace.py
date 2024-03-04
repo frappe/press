@@ -31,8 +31,8 @@ from press.utils.billing import get_frappe_io_connection
 
 @frappe.whitelist()
 def options_for_quick_install(marketplace_app: str):
-	app_name, title = frappe.db.get_value(
-		"Marketplace App", marketplace_app, ["app", "title"]
+	app_name, title, frappe_approved = frappe.db.get_value(
+		"Marketplace App", marketplace_app, ["app", "title", "frappe_approved"]
 	)
 	candidate_groups = get_candidate_release_groups(marketplace_app, app_name)
 	candidate_sites = get_candidate_sites(app_name)
@@ -43,6 +43,7 @@ def options_for_quick_install(marketplace_app: str):
 		"sites": candidate_sites,
 		"app_name": app_name,
 		"title": title,
+		"approved": bool(frappe_approved),
 		"has_plans_available": len(plans) > 0,
 	}
 
@@ -688,12 +689,15 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 	app_plan = frappe.qb.DocType("Marketplace App Plan")
 	site = frappe.qb.DocType("Site")
 	usage_record = frappe.qb.DocType("Usage Record")
+	team = frappe.qb.DocType("Team")
 
 	conditions = app_plan.price_usd > 0  # noqa: E712
 	conditions = conditions & (app_sub.document_name == marketplace_app)
 
 	query = (
 		frappe.qb.from_(app_sub)
+		.left_join(team)
+		.on(app_sub.team == team.name)
 		.join(app_plan)
 		.on(app_sub.plan == app_plan.name)
 		.join(site)
@@ -705,7 +709,7 @@ def get_subscriptions_list(marketplace_app: str) -> List:
 		.select(
 			frappe.query_builder.functions.Count("*").as_("active_days"),
 			app_sub.site,
-			site.team.as_("user_contact"),
+			team.user.as_("user_contact"),
 			app_sub.plan.as_("app_plan"),
 			app_plan.price_usd.as_("price_usd"),
 			app_plan.price_inr.as_("price_inr"),

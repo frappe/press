@@ -109,7 +109,7 @@ import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
-	props: ['site'],
+	props: ['siteName'],
 	components: {
 		BarChart,
 		LineChart,
@@ -133,7 +133,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get',
 				params: {
-					name: this.site?.name,
+					name: this.siteName,
 					timezone: localTimezone,
 					duration: this.duration
 				},

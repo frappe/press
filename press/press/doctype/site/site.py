@@ -586,6 +586,7 @@ class Site(Document, TagHelpers):
 				"site": self.name,
 				"destination_group": group,
 				"skipped_failing_patches": skip_failing_patches,
+				"ignore_past_failures": True,
 			}
 		).insert()
 
@@ -1149,7 +1150,7 @@ class Site(Document, TagHelpers):
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
 			elif _type == "Password" and value == "*******":
-				value = frappe.get_value("Site Config", {"key": key}, "value")
+				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 			sanitized_config[key] = value
 
 		self.update_site_config(sanitized_config)

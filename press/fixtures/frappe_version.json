@@ -94,7 +94,7 @@
   "status": "End of Life"
  },
  {
-  "default": 0,
+  "default": 1,
   "dependencies": [
    {
     "dependency": "NVM_VERSION",
@@ -188,7 +188,7 @@
   "status": "Develop"
  },
  {
-  "default": 1,
+  "default": 0,
   "dependencies": [
    {
     "dependency": "NVM_VERSION",

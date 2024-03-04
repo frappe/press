@@ -1,7 +1,7 @@
 <template>
-	<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+	<div v-if="site" class="grid grid-cols-1 gap-5 md:grid-cols-2">
 		<SiteDatabaseBackups :site="site" />
-		<div><SiteDatabaseRestore :site="site" /></div>
+		<SiteDatabaseRestore :site="site" />
 	</div>
 </template>
 
