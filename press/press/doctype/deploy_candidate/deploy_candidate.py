@@ -2,9 +2,9 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 import os
 import re
-import json
 import shlex
 import shutil
 import subprocess
@@ -37,6 +37,7 @@ from press.utils import get_current_team, log_error
 
 
 class DeployCandidate(Document):
+	command = "docker build"
 	dashboard_fields = [
 		"name",
 		"status",
@@ -202,19 +203,13 @@ class DeployCandidate(Document):
 		deploy_after_build: bool = False,
 		deploy_to_staging: bool = False,
 	):
-		self.status = "Preparing"
 		self.is_single_container = True
 		self.is_ssh_enabled = True
 
-		self.build_start = now()
-		if not no_cache and self.use_app_cache:
-			self._set_app_cached_flags()
-		self.save()
-		frappe.db.commit()
-
+		self._build_start()
 		try:
-			self._prepare_build(no_push)
-			self._execute_build(
+			self._prepare_build(no_cache, no_push)
+			self._start_build(
 				no_cache,
 				no_push,
 				no_build,
@@ -227,11 +222,14 @@ class DeployCandidate(Document):
 			self._build_end()
 			raise
 
-	def _prepare_build(self, no_push: bool = False):
+	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
+		if not no_cache and self.use_app_cache:
+			self._set_app_cached_flags()
+
 		self._prepare_build_directory()
 		self._prepare_build_context(no_push)
 
-	def _execute_build(
+	def _start_build(
 		self,
 		no_cache: bool = False,
 		no_push: bool = False,
@@ -240,6 +238,8 @@ class DeployCandidate(Document):
 		deploy_to_staging: bool = False,
 	):
 		self._update_docker_image_metadata()
+
+		# Build runs on remote server
 		if remote_build_server := self._get_docker_remote_builder_server():
 			self._run_remote_docker_build(
 				remote_build_server,
@@ -249,7 +249,9 @@ class DeployCandidate(Document):
 			)
 			return
 
+		# Build Runs locally
 		self._mark_build_as_running()
+
 		if not no_build:
 			self._run_docker_build(no_cache)
 
@@ -270,10 +272,10 @@ class DeployCandidate(Document):
 		self.is_docker_remote_builder_used = True
 
 		# Upload build context to remote docker builder
-		build_context_archieve_filepath = self._tar_build_context()
+		build_context_archive_filepath = self._tar_build_context()
 		uploaded_filename = None
 
-		with open(build_context_archieve_filepath, "rb") as f:
+		with open(build_context_archive_filepath, "rb") as f:
 			uploaded_filename = agent.upload_build_context_for_docker_build(f)
 		if not uploaded_filename:
 			raise Exception("Failed to upload build context to remote docker builder")
@@ -346,6 +348,12 @@ class DeployCandidate(Document):
 			],
 			as_dict=True,
 		)
+
+	def _build_start(self):
+		self.status = "Preparing"
+		self.build_start = now()
+		self.save()
+		frappe.db.commit()
 
 	def _build_failed(self):
 		self.status = "Failure"
@@ -770,65 +778,50 @@ class DeployCandidate(Document):
 		with open(pyproject_path, "rb") as f:
 			return load(f)
 
-	command = "docker build"
-
-	def _run_docker_build(self, no_cache=False):
-		import platform
-
-		settings = frappe.db.get_value(
-			"Press Settings",
-			None,
-			[
-				"domain",
-				"docker_registry_url",
-				"docker_registry_namespace",
-				"docker_remote_builder_ssh",
-			],
-			as_dict=True,
+	def _run_docker_build(self, no_cache: bool = False):
+		self._update_build_command(no_cache)
+		environment = self._get_build_environment()
+		result = self.run(
+			self.command,
+			environment,
 		)
+		self._parse_docker_build_result(result)
 
-		# check if it's running on apple silicon mac
-		if (
-			platform.machine() == "arm64"
-			and platform.system() == "Darwin"
-			and platform.processor() == "arm"
-		):
-			self.command = f"{self.command}x build --platform linux/amd64"
-
+	def _get_build_environment(self):
 		environment = os.environ.copy()
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
 
-		if settings.docker_remote_builder_ssh:
-			# Connect to Remote Docker Host if configured
-			environment.update(
-				{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
-			)
-
-		if settings.docker_registry_namespace:
-			namespace = f"{settings.docker_registry_namespace}/{settings.domain}"
-		else:
-			namespace = f"{settings.domain}"
-
-		self.docker_image_repository = (
-			f"{settings.docker_registry_url}/{namespace}/{self.group}"
+		docker_remote_builder_ssh = frappe.db.get_value(
+			"Press Settings",
+			None,
+			"docker_remote_builder_ssh",
 		)
+		if docker_remote_builder_ssh:
+			# Connect to Remote Docker Host if configured
+			environment.update({"DOCKER_HOST": f"ssh://root@{docker_remote_builder_ssh}"})
 
-		self.docker_image_tag = self.name
-		self.docker_image = f"{self.docker_image_repository}:{self.docker_image_tag}"
+		return environment
+
+	def _update_build_command(self, no_cache: bool):
+		import platform
+
+		# check if it's running on apple silicon mac
+
+		is_apple_silicon = (
+			platform.machine() == "arm64"
+			and platform.system() == "Darwin"
+			and platform.processor() == "arm"
+		)
+		if is_apple_silicon:
+			self.command = f"{self.command}x build --platform linux/amd64"
 
 		if no_cache:
 			self.command += " --no-cache"
 
 		self.command += f" -t {self.docker_image}"
 		self.command += " ."
-
-		result = self.run(
-			self.command,
-			environment,
-		)
-		self._parse_docker_build_result(result)
 
 	def _parse_docker_build_result(self, result):
 		lines = []
