@@ -177,8 +177,8 @@ class DeployCandidate(Document):
 		self._deploy()
 
 	@frappe.whitelist()
-	def deploy_to_production(self):
-		if self.status == "Scheduled":
+	def deploy_to_production(self, running_scheduled=False):
+		if self.status == "Scheduled" and not running_scheduled:
 			return
 
 		if not is_suspended() or self.can_use_remote_build_server():
@@ -1304,7 +1304,7 @@ class DeployCandidate(Document):
 
 		stuck_step = self.get_first_step_of_given_status(["Pending", "Running"])
 		if not stuck_step:
-			return
+			return False
 
 		modified = stuck_step.modified
 		if isinstance(modified, str):
@@ -1472,8 +1472,8 @@ def run_scheduled_builds():
 	)
 	for candidate in candidates:
 		try:
-			candidate = frappe.get_doc("Deploy Candidate", candidate)
-			candidate.deploy_to_production()
+			candidate: "DeployCandidate" = frappe.get_doc("Deploy Candidate", candidate)
+			candidate.deploy_to_production(running_scheduled=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
