@@ -297,7 +297,7 @@ export default {
 								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
-										`${window.location.protocol}//${window.location.host}/app/release-group/${releaseGroup.name}`,
+										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
 										'_blank'
 									);
 								}
@@ -888,6 +888,8 @@ export default {
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
+			let team = getTeam();
+
 			return [
 				{
 					label: 'Update Available',
@@ -936,7 +938,21 @@ export default {
 					},
 					options: [
 						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => team.doc.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
 							label: 'Impersonate Team',
+							icon: defineAsyncComponent(() =>
+								import('~icons/lucide/venetian-mask')
+							),
 							condition: () => window.is_system_user,
 							onClick() {
 								switchToTeam(bench.doc.team);
@@ -944,6 +960,7 @@ export default {
 						},
 						{
 							label: 'Drop Bench',
+							icon: icon('trash-2'),
 							onClick() {
 								confirmDialog({
 									title: 'Drop Bench',
