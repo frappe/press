@@ -175,6 +175,7 @@ export default {
 				variant: 'solid',
 				onClick() {
 					let $team = getTeam();
+					if (!vals.apps) vals.apps = [];
 
 					let appPlans = {};
 					vals.apps.forEach(app => {
