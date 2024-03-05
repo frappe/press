@@ -82,7 +82,7 @@ export default {
 				whitelistedMethods: this.object.whitelistedMethods || {},
 				onSuccess() {
 					this.lastRefreshed = new Date();
-        },
+				},
 				onError(error) {
 					for (let message of error?.messages || []) {
 						if (message.redirect) {
@@ -101,7 +101,7 @@ export default {
 		}
 		this.$socket.on('list_update', data => {
 			if (
-				data.doctype === doctype &&
+				data.doctype === this.object.doctype &&
 				data.name === this.name &&
 				// update document if last refreshed is more than 5 seconds ago
 				new Date() - this.lastRefreshed > 5000
