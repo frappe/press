@@ -7,14 +7,15 @@ import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDial
 import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
-import { confirmDialog } from '../utils/components';
 
 export default {
 	doctype: 'Marketplace App',
 	whitelistedMethods: {
 		removeVersion: 'remove_version',
 		addVersion: 'add_version',
-		disable: 'disable' // should come from Marketplace App Plan
+		disable: 'disable', // should come from Marketplace App Plan
+		siteInstalls: 'site_installs',
+		createApprovalRequest: 'create_approval_request'
 	},
 	list: {
 		route: '/marketplace',
@@ -45,7 +46,7 @@ export default {
 				width: 0.5
 			}
 		],
-		primaryAction({ listResource: marketplace }) {
+		primaryAction({ listResource: apps }) {
 			return {
 				label: 'New Marketplace App',
 				variant: 'solid',
@@ -53,7 +54,14 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					renderDialog(h(NewAppDialog, {}));
+					renderDialog(
+						h(NewAppDialog, {
+							onAppAdded(app) {
+								console.log(app);
+								apps.insert.submit(app);
+							}
+						})
+					);
 				}
 			};
 		}
@@ -66,8 +74,20 @@ export default {
 		},
 		tabs: [
 			{
-				label: 'Listing',
+				label: 'Overview',
 				icon: icon('home'),
+				route: 'overview',
+				type: 'Component',
+				component: defineAsyncComponent(() =>
+					import('../components/marketplace/MarketplaceAppAnalytics.vue')
+				),
+				props: app => {
+					return { app: { app: app.doc.name, title: app.doc.title } };
+				}
+			},
+			{
+				label: 'Listing',
+				icon: icon('shopping-cart'),
 				route: 'overview',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
@@ -75,18 +95,6 @@ export default {
 				),
 				props: app => {
 					return { app: app };
-				}
-			},
-			{
-				label: 'Analytics',
-				icon: icon('bar-chart-2'),
-				route: 'analytics',
-				type: 'Component',
-				component: defineAsyncComponent(() =>
-					import('../components/marketplace/MarketplaceAppAnalytics.vue')
-				),
-				props: app => {
-					return { app: { app: app.doc.name, title: app.doc.title } };
 				}
 			},
 			{
@@ -224,6 +232,101 @@ export default {
 					rowActions({ row, listResource: versions, documentResource: app }) {
 						return [
 							{
+								label: 'Show Releases',
+								slots: {
+									prefix: icon('plus')
+								},
+								onClick() {
+									renderDialog(
+										h(
+											GenericDialog,
+											{
+												options: {
+													title: `Releases for ${app.doc.name} on ${row.branch} branch`,
+													size: '4xl'
+												}
+											},
+											{
+												default: () =>
+													h(ObjectList, {
+														options: {
+															label: 'Version',
+															type: 'list',
+															doctype: 'App Release',
+															filters: {
+																app: app.doc.name,
+																source: row.source
+															},
+															fields: ['message', 'tag', 'author', 'status'],
+															columns: [
+																{
+																	label: 'Commit Message',
+																	fieldname: 'message',
+																	class: 'w-64',
+																	width: 0.5
+																},
+																{
+																	label: 'Hash',
+																	fieldname: 'hash',
+																	class: 'w-24',
+																	type: 'Badge',
+																	width: 0.2,
+																	format: value => {
+																		return value.slice(0, 7);
+																	}
+																},
+																{
+																	label: 'Author',
+																	fieldname: 'author',
+																	width: 0.2
+																},
+																{
+																	label: 'Status',
+																	fieldname: 'status',
+																	type: 'Badge',
+																	width: 0.3
+																},
+																{
+																	label: '',
+																	fieldname: '',
+																	align: 'right',
+																	type: 'Button',
+																	width: 0.2,
+																	Button({ row, listResource: releases }) {
+																		return {
+																			label: 'Publish',
+																			onClick() {
+																				toast.promise(
+																					app.createApprovalRequest.submit({
+																						app_release: row.name
+																					}),
+																					{
+																						loading:
+																							'Submitting release for approval...',
+																						success: () => {
+																							releases.reload();
+																							return 'The release has been submitted for approval';
+																						},
+																						error: e => {
+																							return e.messages.length
+																								? e.messages.join('\n')
+																								: e.message;
+																						}
+																					}
+																				);
+																			}
+																		};
+																	}
+																}
+															]
+														}
+													})
+											}
+										)
+									);
+								}
+							},
+							{
 								label: 'Change Branch',
 								onClick() {
 									renderDialog(
@@ -260,46 +363,32 @@ export default {
 					}
 				}
 			},
-			// {
-			// 	label: 'Installs',
-			// 	icon: icon('download'),
-			// 	route: 'install',
-			// 	type: 'list',
-			// 	comopnent: defineAsyncComponent(() =>
-			// 	h(ObjectList, {
-			// 		options: {
-			// 			label: 'Site',
-			// 			fieldname: 'site',
-			// 				columns: [
-			// 					{
-			// 						label: 'Site',
-			// 						fieldname: 'site',
-			// 						width: 0.5
-			// 					},
-			// 					{
-			// 						label: 'Plan',
-			// 						fieldname: 'plan',
-			// 						width: 0.5
-			// 					},
-			// 					{
-			// 						label: 'Contact',
-			// 						fieldname: 'email',
-			// 						width: 0.5
-			// 					}
-			// 				],
-			// 				resource() {
-			// 					return {
-			// 						url: 'press.api.marketplace.site_installs',
-			// 						params: {
-			// 							name: app.doc.name
-			// 						},
-			// 						auto: true
-			// 					}
-			// 				}
-			// 			}
-			// 		},
-			// 	))
-			// },
+			{
+				label: 'Installs',
+				icon: icon('download'),
+				route: 'install',
+				type: 'list',
+				list: {
+					fields: ['name', 'plan', 'user'],
+					columns: [
+						{
+							label: 'Site',
+							fieldname: 'name'
+						},
+						{
+							label: 'Plan',
+							fieldname: 'plan'
+						},
+						{
+							label: 'Contact',
+							fieldname: 'user'
+						}
+					],
+					list({ documentResource: app }) {
+						return app.siteInstalls;
+					}
+				}
+			},
 			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),

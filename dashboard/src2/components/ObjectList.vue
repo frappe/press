@@ -188,6 +188,12 @@ export default {
 	},
 	mounted() {
 		if (this.options.data) return;
+		if (this.options.list) {
+			let resource = this.$list.list || this.$list;
+			if (!resource.fetched) {
+				resource.fetch();
+			}
+		}
 		if (this.options.doctype) {
 			let doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
@@ -216,7 +222,14 @@ export default {
 	},
 	computed: {
 		$list() {
-			return this.$resources.list || this.options.list;
+			if (this.$resources.list) return this.$resources.list;
+
+			if (this.options.list) {
+				if (typeof this.options.list === 'function') {
+					return this.options.list(this.options.context);
+				}
+				return this.options.list;
+			}
 		},
 		columns() {
 			let columns = [];

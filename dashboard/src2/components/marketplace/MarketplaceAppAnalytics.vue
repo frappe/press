@@ -21,27 +21,6 @@
 			</div>
 		</div>
 
-		<div class="rounded-md border">
-			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Sites Installed On</h2>
-			</div>
-			<div class="max-h-60 overflow-scroll">
-				<div
-					v-for="d in siteInstalls"
-					:key="d.name"
-					class="flex flex-row justify-between px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-2/5 text-base text-gray-600">{{ d.name }}</div>
-					<div class="w-1/5 text-base text-gray-900">
-						{{ d.plan }}
-					</div>
-					<div class="w-2/5 text-base text-gray-900">
-						{{ d.user }}
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<LineChart
 			title="Pageviews"
 			type="time"
@@ -142,7 +121,7 @@ export default {
 					total_installs,
 					num_installs_active_sites,
 					num_installs_active_benches
-				} = analyticsData.installs;
+				} = analyticsData;
 
 				return [
 					{
@@ -167,14 +146,6 @@ export default {
 							(num_installs_active_benches == 1 ? 'Bench' : 'Benches')
 					}
 				];
-			}
-		},
-		siteInstalls() {
-			if (
-				!this.$resources.analytics.loading &&
-				this.$resources.analytics.data
-			) {
-				return this.$resources.analytics.data.site_installs;
 			}
 		},
 		pageViewsData() {

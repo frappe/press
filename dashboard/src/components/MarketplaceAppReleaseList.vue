@@ -214,7 +214,7 @@ export default {
 		createApprovalRequest(appRelease) {
 			let { app } = this.app;
 			this.$resources.createApprovalRequest.submit({
-				marketplace_app: app,
+				name: app,
 				app_release: appRelease
 			});
 		},

@@ -22,9 +22,6 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
-from press.press.doctype.app_release_approval_request.app_release_approval_request import (
-	AppReleaseApprovalRequest,
-)
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 from press.utils.billing import get_frappe_io_connection
 
@@ -335,9 +332,10 @@ def latest_approved_release(source: None | str) -> AppRelease:
 
 
 @frappe.whitelist()
-def create_approval_request(marketplace_app: str, app_release: str):
+@protected("Marketplace App")
+def create_approval_request(name, app_release: str):
 	"""Create a new Approval Request for given `app_release`"""
-	AppReleaseApprovalRequest.create(marketplace_app, app_release)
+	frappe.get_doc("Marketplace App", name).create_approval_request(app_release)
 
 
 @frappe.whitelist()
@@ -370,9 +368,7 @@ def get_latest_approval_request(app_release: str):
 	if len(approval_requests) == 0:
 		frappe.throw("No approval request exists for the given app release")
 
-	approval_request: AppReleaseApprovalRequest = frappe.get_doc(
-		"App Release Approval Request", approval_requests[0]
-	)
+	approval_request = frappe.get_doc("App Release Approval Request", approval_requests[0])
 
 	return approval_request
 

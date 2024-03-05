@@ -47,6 +47,7 @@ ALLOWED_DOCTYPES = [
 	"Subscription",
 	"Marketplace App Version",
 	"Marketplace App Plan",
+	"App Release",
 ]
 
 

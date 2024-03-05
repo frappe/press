@@ -7,6 +7,9 @@ import requests
 
 from typing import Dict, List
 from base64 import b64decode
+from press.press.doctype.app_release_approval_request.app_release_approval_request import (
+	AppReleaseApprovalRequest,
+)
 from press.utils import get_last_doc
 from press.api.github import get_access_token
 from frappe.query_builder.functions import Cast_
@@ -26,10 +29,21 @@ class MarketplaceApp(WebsiteGenerator):
 		"status",
 		"description",
 	]
-	dashboard_actions = ["remove_version", "add_version", "options_for_version"]
+	dashboard_actions = [
+		"remove_version",
+		"add_version",
+		"options_for_version",
+		"site_installs",
+		"create_approval_request",
+	]
 
 	def autoname(self):
 		self.name = self.app
+
+	@frappe.whitelist()
+	def create_approval_request(self, app_release: str):
+		"""Create a new Approval Request for given `app_release`"""
+		AppReleaseApprovalRequest.create(self.app, app_release)
 
 	def before_insert(self):
 		if not frappe.flags.in_test:
@@ -392,7 +406,8 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
 
-	def get_analytics(self):
+	@frappe.whitelist()
+	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
 		team = frappe.qb.DocType("Team")
@@ -410,20 +425,17 @@ class MarketplaceApp(WebsiteGenerator):
 				& (site.plan != "Frappe Team")
 			)
 		)
+		return query.run(as_dict=True)
 
+	def get_analytics(self):
 		return {
-			"installs": {
-				"total_installs": self.total_installs(),
-				"num_installs_active_sites": self.total_active_sites(),
-				"num_installs_active_benches": self.total_active_benches(),
-			},
-			"site_installs": query.run(as_dict=True),
-			"payout": {
-				"total_payout": self.get_payout_amount(),
-				"paid_payout": self.get_payout_amount(status="Paid"),
-				"pending_payout": self.get_payout_amount(status="Draft"),
-				"commission": self.get_payout_amount(total_for="commission"),
-			},
+			"total_installs": self.total_installs(),
+			"num_installs_active_sites": self.total_active_sites(),
+			"num_installs_active_benches": self.total_active_benches(),
+			"total_payout": self.get_payout_amount(),
+			"paid_payout": self.get_payout_amount(status="Paid"),
+			"pending_payout": self.get_payout_amount(status="Draft"),
+			"commission": self.get_payout_amount(total_for="commission"),
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:
