@@ -10,7 +10,7 @@
 				:class="logName === log.name ? 'bg-gray-100' : 'hover:bg-gray-50'"
 				v-for="log in $resources.logs.data"
 				:key="log.name"
-				:to="`/sites/${site.name}/logs/${log.name}`"
+				:to="`/sites/${siteName}/logs/${log.name}`"
 			>
 				<ListItem
 					:title="log.name"
@@ -30,7 +30,7 @@
 			<span v-else class="text-base text-gray-600">No logs</span>
 		</div>
 		<template #details>
-			<SiteLogsDetail :site="site" :logName="logName" />
+			<SiteLogsDetail :siteName="siteName" :logName="logName" />
 		</template>
 	</CardWithDetails>
 </template>
@@ -40,13 +40,13 @@ import CardWithDetails from '@/components/CardWithDetails.vue';
 import SiteLogsDetail from './SiteLogsDetail.vue';
 export default {
 	name: 'SiteLogs',
-	props: ['site', 'logName'],
+	props: ['siteName', 'logName'],
 	components: { CardWithDetails, SiteLogsDetail },
 	resources: {
 		logs() {
 			return {
 				url: 'press.api.site.logs',
-				params: { name: this.site?.name },
+				params: { name: this.siteName },
 				auto: true
 			};
 		}

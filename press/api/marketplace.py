@@ -31,8 +31,8 @@ from press.utils.billing import get_frappe_io_connection
 
 @frappe.whitelist()
 def options_for_quick_install(marketplace_app: str):
-	app_name, title = frappe.db.get_value(
-		"Marketplace App", marketplace_app, ["app", "title"]
+	app_name, title, frappe_approved = frappe.db.get_value(
+		"Marketplace App", marketplace_app, ["app", "title", "frappe_approved"]
 	)
 	candidate_groups = get_candidate_release_groups(marketplace_app, app_name)
 	candidate_sites = get_candidate_sites(app_name)
@@ -43,6 +43,7 @@ def options_for_quick_install(marketplace_app: str):
 		"sites": candidate_sites,
 		"app_name": app_name,
 		"title": title,
+		"approved": bool(frappe_approved),
 		"has_plans_available": len(plans) > 0,
 	}
 

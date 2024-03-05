@@ -17,6 +17,8 @@
   "central_bench",
   "section_break_7",
   "servers",
+  "section_break_keov",
+  "docker_remote_builder_server",
   "apps_tab",
   "apps",
   "config_tab",
@@ -355,10 +357,20 @@
    "fieldname": "compress_app_cache",
    "fieldtype": "Check",
    "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "section_break_keov",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "docker_remote_builder_server",
+   "fieldtype": "Link",
+   "label": "Docker Remote Builder Server",
+   "options": "Server"
   }
  ],
  "links": [],
- "modified": "2024-02-05 11:29:56.312965",
+ "modified": "2024-02-24 13:31:26.841738",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

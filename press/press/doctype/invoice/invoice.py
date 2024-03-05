@@ -46,6 +46,7 @@ class Invoice(Document):
 		"applied_credits",
 		"status",
 		"due_date",
+		"total_discount_amount",
 	]
 
 	@staticmethod

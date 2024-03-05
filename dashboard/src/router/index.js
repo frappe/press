@@ -183,7 +183,8 @@ const routes = [
 			},
 			{
 				path: 'analytics',
-				component: () => import('../views/site/SiteCharts.vue')
+				component: () => import('../views/site/SiteCharts.vue'),
+				props: true
 			},
 			{
 				path: 'database',

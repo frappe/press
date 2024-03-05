@@ -7,6 +7,9 @@ from frappe.model.document import Document
 
 class PressNotification(Document):
 	def after_insert(self):
+		if frappe.local.dev_server:
+			return
+
 		if self.type == "Bench Deploy":
 			group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
 			rg_title = frappe.db.get_value("Release Group", group_name, "title")

@@ -1,18 +1,19 @@
-import { frappeRequest, LoadingIndicator } from 'frappe-ui';
+import { frappeRequest, LoadingIndicator, Button } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
+import HelpIcon from '~icons/lucide/help-circle';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date } from '../utils/format';
-import SiteActionCell from '../components/SiteActionCell.vue';
+import { bytes, duration, date, userCurrency, commaAnd } from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
+import { plans } from '../data/plans';
 
 export default {
 	doctype: 'Site',
@@ -123,10 +124,331 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewSite' });
+					router.push({ name: 'New Site' });
 				}
 			};
 		}
+	},
+	create: {
+		title: 'New Site',
+		route: '/sites/new',
+		secondaryCreate: {
+			route: '/benches/:name/sites/new',
+			optionalFields: [],
+			routeName: 'Bench New Site',
+			propName: 'bench'
+		},
+		optionsResource({ routerProp: bench }) {
+			return {
+				url: 'press.api.site.options_for_new',
+				makeParams() {
+					return { for_bench: bench };
+				},
+				auto: true,
+				initialData: {
+					versions: [],
+					domain: '',
+					marketplace_details: {},
+					app_source_details: {}
+				}
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.client.insert',
+				validate({ doc: { subdomain } }) {
+					if (!subdomain) {
+						return 'Please enter a subdomain';
+					}
+				},
+				onSuccess: site => {
+					router.push({
+						name: 'Site Detail Jobs',
+						params: { name: site.name }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createSite, vals, optionsData }) {
+			return {
+				label: 'Create Site',
+				variant: 'solid',
+				onClick() {
+					let $team = getTeam();
+					if (!vals.apps) vals.apps = [];
+
+					let appPlans = {};
+					vals.apps.forEach(app => {
+						appPlans[app.app] = app.plan;
+					});
+
+					createSite.submit({
+						doc: {
+							doctype: 'Site',
+							team: $team.doc.name,
+							subdomain: vals.subdomain,
+							apps: [{ app: 'frappe' }, ...vals.apps],
+							app_plans: appPlans,
+							cluster: vals.cluster,
+							bench: optionsData.versions.find(v => v.name === vals.siteVersion)
+								.group.bench,
+							subscription_plan: vals.plan.name,
+							share_details_consent: vals.shareDetailsConsent
+						}
+					});
+				}
+			};
+		},
+		options: [
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'siteVersion',
+				type: 'card',
+				fieldname: 'versions'
+			},
+			{
+				label: '',
+				fieldname: 'apps',
+				name: 'apps',
+				type: 'Component',
+				component({ optionsData, vals }) {
+					let NewSiteAppSelector = defineAsyncComponent(() =>
+						import('../components/site/NewSiteAppSelector.vue')
+					);
+
+					let selectedVersion = optionsData?.versions.find(
+						v => v.name === vals.siteVersion
+					);
+					let selectedVersionApps;
+
+					if (selectedVersion?.group?.bench_app_sources)
+						// sorted by total installs and then by name
+						selectedVersionApps = selectedVersion.group.bench_app_sources
+							.map(app_source => {
+								let app_source_details =
+									optionsData.app_source_details[app_source];
+								let marketplace_details = app_source_details
+									? optionsData.marketplace_details[app_source_details.app]
+									: {};
+								return {
+									app_title: app_source,
+									...app_source_details,
+									...marketplace_details
+								};
+							})
+							.sort((a, b) => {
+								if (a.total_installs > b.total_installs) {
+									return -1;
+								} else if (a.total_installs < b.total_installs) {
+									return 1;
+								} else {
+									return a.app_title.localeCompare(b.app_title);
+								}
+							});
+
+					return h(NewSiteAppSelector, {
+						availableApps: selectedVersionApps,
+						siteOnPublicBench: !vals.bench
+					});
+				},
+				dependsOn: ['siteVersion']
+			},
+			{
+				label: 'Select Region',
+				name: 'cluster',
+				type: 'card',
+				dependsOn: ['siteVersion'],
+				filter(_, vals, optionsData) {
+					return optionsData.versions.find(v => v.name === vals.siteVersion)
+						?.group.clusters;
+				}
+			},
+			{
+				label: 'Select Plan',
+				name: 'plan',
+				type: 'plan',
+				dependsOn: ['siteVersion', 'cluster'],
+				labelSlot() {
+					return h(
+						Button,
+						{
+							link: 'https://frappecloud.com/pricing',
+							variant: 'ghost'
+						},
+						{
+							prefix: () => h(HelpIcon, { class: 'h-4 w-4 text-gray-700' }),
+							default: () => 'Help'
+						}
+					);
+				},
+				filter() {
+					return plans.data.map(plan => ({
+						...plan,
+						features: [
+							{
+								label: 'compute hours / day',
+								value: plan.cpu_time_per_day
+							},
+							{
+								label: 'database',
+								value: bytes(plan.max_database_usage, 0, 2)
+							},
+							{
+								label: 'disk',
+								value: bytes(plan.max_storage_usage, 0, 2)
+							},
+							{
+								label: '',
+								value: plan.support_included ? 'Support Included' : ''
+							},
+							{
+								label: '',
+								value: plan.database_access ? 'Database Access' : ''
+							},
+							{
+								label: '',
+								value: plan.offsite_backups ? 'Offsite Backups' : ''
+							},
+							{
+								label: '',
+								value: plan.monitor_access ? 'Advanced Monitoring' : ''
+							}
+						]
+					}));
+				}
+			},
+			{
+				label: 'Enter Subdomain',
+				name: 'subdomain',
+				type: 'text',
+				class: 'flex-1 rounded-r-none',
+				slot({ optionsData }) {
+					return h(
+						'div',
+						{
+							class: 'flex items-center rounded-r bg-gray-100 px-4 text-base'
+						},
+						`.${optionsData.domain}`
+					);
+				},
+				dependsOn: ['siteVersion', 'cluster', 'plan']
+			}
+		],
+		consents: [
+			{
+				label: 'I am okay if my details are shared with local partners',
+				name: 'shareDetailsConsent'
+			}
+		],
+		summary: [
+			{
+				label: 'Frappe Framework Version',
+				fieldname: 'siteVersion'
+			},
+			{
+				label: 'Apps',
+				optional: true,
+				format(values, optionsData) {
+					let apps = (values.apps || []).map(app => app.app);
+					if (!apps.length) return 'No apps selected';
+
+					let appTitles = Object.values(optionsData.app_source_details)
+						.filter(app => apps.includes(app.app))
+						.map(app => app.app_title);
+
+					return commaAnd(appTitles);
+				}
+			},
+			{
+				label: 'Region',
+				fieldname: 'cluster'
+			},
+			{
+				label: 'Site URL',
+				fieldname: 'subdomain',
+				format(value, optionsData) {
+					return `${value}.${optionsData?.domain}`;
+				}
+			},
+			{
+				label: 'Site Plan',
+				fieldname: 'plan',
+				format(value) {
+					let $team = getTeam();
+
+					return `${userCurrency(
+						$team.doc.currency == 'INR' ? value.price_inr : value.price_usd
+					)} / mo`;
+				}
+			},
+			{
+				label: 'Product Warranty',
+				fieldname: 'plan',
+				format(value) {
+					return value.support_included ? 'Included' : 'Not Included';
+				}
+			},
+			{
+				label: 'App Plans',
+				optional: true,
+				format(values, optionsData) {
+					if (!values.apps || !values.apps.length) return '';
+
+					let $team = getTeam();
+					let description = '';
+
+					for (let app of values.apps) {
+						let appTitle = Object.values(optionsData.app_source_details).find(
+							a => a.app == app.app
+						).app_title;
+
+						if (app.plan) {
+							let isAppFree =
+								app.plan.price_inr === 0 && app.plan.price_usd === 0;
+							description += `<span class="text-gray-900">${appTitle} Plan: </span><span class="text-gray-600">${
+								isAppFree
+									? 'Free'
+									: userCurrency(
+											$team.doc.currency == 'INR'
+												? app.plan.price_inr
+												: app.plan.price_usd
+									  )
+							}${isAppFree ? '' : ' / mo'}</span><br>`;
+						} else {
+							description += `<span class="text-gray-900">${appTitle} Plan: </span><span class="text-gray-600">Free</span><br>`;
+						}
+					}
+					return description;
+				}
+			},
+			{
+				label: 'Total',
+				format(values) {
+					let $team = getTeam();
+					let appPlans = (values.apps || []).map(app => app.plan);
+					let sitePlan = values.plan;
+
+					let total = 0;
+					if (sitePlan) {
+						total +=
+							$team.doc.currency == 'INR'
+								? sitePlan.price_inr
+								: sitePlan.price_usd;
+					}
+					for (let app of appPlans) {
+						if (app) {
+							total +=
+								$team.doc.currency == 'INR' ? app.price_inr : app.price_usd;
+						}
+					}
+					return `<span class="text-gray-900">${userCurrency(
+						total
+					)} / mo</span><br><span class="text-gray-600"> ${userCurrency(
+						total / 30
+					)} / day</span>`;
+				}
+			}
+		]
 	},
 	detail: {
 		titleField: 'name',
@@ -168,7 +490,7 @@ export default {
 					import('../../src/views/site/SiteCharts.vue')
 				),
 				props: site => {
-					return { site: site.doc };
+					return { siteName: site.doc.name };
 				}
 			},
 			{

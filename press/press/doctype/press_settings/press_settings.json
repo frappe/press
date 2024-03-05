@@ -72,7 +72,8 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "docker_remote_builder",
+  "docker_remote_builder_server",
+  "docker_remote_builder_ssh",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1062,11 +1063,6 @@
    "label": "Twilio Phone Number"
   },
   {
-   "fieldname": "docker_remote_builder",
-   "fieldtype": "Data",
-   "label": "Docker Remote Builder"
-  },
-  {
    "fieldname": "invoicing_column",
    "fieldtype": "Column Break"
   },
@@ -1132,11 +1128,22 @@
    "fieldname": "realtime_job_updates",
    "fieldtype": "Check",
    "label": "Realtime Job Updates"
+  },
+  {
+   "fieldname": "docker_remote_builder_server",
+   "fieldtype": "Link",
+   "label": "Docker Remote Builder Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "docker_remote_builder_ssh",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder (SSH)"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-21 17:04:16.524389",
+ "modified": "2024-02-24 12:41:35.648280",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

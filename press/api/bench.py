@@ -200,6 +200,7 @@ def options(only_by_current_team=False):
 	SELECT
 		version.name as version,
 		version.status as status,
+		version.default,
 		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
 		source.app_title as title, source.frappe
 	FROM
@@ -221,12 +222,16 @@ def options(only_by_current_team=False):
 		as_dict=True,
 	)
 
+	approved_apps = frappe.get_all(
+		"Marketplace App", filters={"frappe_approved": 1}, pluck="app"
+	)
 	version_list = unique(rows, lambda x: x.version)
 	versions = []
 	for d in version_list:
-		version_dict = {"name": d.version, "status": d.status}
+		version_dict = {"name": d.version, "status": d.status, "default": d.default}
 		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
+		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
 			app_dict = {"name": app, "title": app_rows[0].title}

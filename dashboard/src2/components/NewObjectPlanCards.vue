@@ -6,7 +6,7 @@
 				:key="plan.name"
 				class="flex flex-col overflow-hidden rounded border text-left hover:bg-gray-50"
 				:class="[
-					modelValue === plan
+					modelValue?.name === plan?.name
 						? 'border-gray-900 ring-1 ring-gray-900'
 						: 'border-gray-300',
 					{
@@ -26,7 +26,7 @@
 							<span class="font-medium text-gray-900">
 								{{ $format.planTitle(plan) }}
 							</span>
-							<span class="text-gray-700"> /mo</span>
+							<span v-if="plan.price_inr" class="text-gray-700"> / mo</span>
 						</div>
 					</div>
 					<div class="mt-1 text-sm text-gray-600">
@@ -37,15 +37,17 @@
 								)
 							)
 						}}
-						/day
+						/ day
 					</div>
 				</div>
 				<div class="p-3 text-p-sm text-gray-800">
 					<div v-for="feature in plan.features">
-						<span>{{ feature.value }} </span>
-						<span class="ml-1 text-gray-600">
-							{{ feature.label }}
-						</span>
+						<div v-if="feature.value">
+							<span>{{ feature.value }} </span>
+							<span class="ml-1 text-gray-600">
+								{{ feature.label }}
+							</span>
+						</div>
 					</div>
 				</div>
 			</button>
