@@ -116,6 +116,7 @@ export default {
 					this.siteURL = '';
 					this.email = '';
 					this.password = '';
+					this.showRestoreDialog = false;
 
 					this.$router.push({
 						name: 'Site Detail Jobs',
