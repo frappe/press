@@ -237,7 +237,7 @@ class DeployCandidate(Document):
 		if not no_cache:
 			self._update_app_releases()
 
-		if not no_cache and self.use_app_cache:
+		if not no_cache:
 			self._set_app_cached_flags()
 
 		self._prepare_build_directory()
@@ -424,7 +424,7 @@ class DeployCandidate(Document):
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
-			app.use_cached = True
+			app.use_cached = bool(self.use_app_cache)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
