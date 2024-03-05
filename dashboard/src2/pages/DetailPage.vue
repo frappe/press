@@ -72,7 +72,15 @@ export default {
 				type: 'document',
 				doctype: this.object.doctype,
 				name: this.name,
-				whitelistedMethods: this.object.whitelistedMethods || {}
+				whitelistedMethods: this.object.whitelistedMethods || {},
+				onError(error) {
+					for (let message of error?.messages || []) {
+						if (message.redirect) {
+							window.location.href = message.redirect;
+							return;
+						}
+					}
+				}
 			};
 		}
 	},

@@ -111,7 +111,12 @@ def get_list(
 @frappe.whitelist()
 def get(doctype, name):
 	check_permissions(doctype)
-	doc = frappe.get_doc(doctype, name)
+	try:
+		doc = frappe.get_doc(doctype, name)
+	except frappe.DoesNotExistError:
+		controller = get_controller(doctype)
+		if hasattr(controller, "on_not_found"):
+			return controller.on_not_found(name)
 
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
