@@ -182,7 +182,7 @@
 		<template #actions>
 			<Button
 				class="w-full"
-				label="Add App to bench"
+				label="Add app"
 				variant="solid"
 				:disabled="!appValidated"
 				:loading="$resources.addApp.loading"
