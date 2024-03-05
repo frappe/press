@@ -568,29 +568,30 @@ class ReleaseGroup(Document, TagHelpers):
 			fields=["name", "status", "cluster", "plan", "creation", "bench"],
 		)
 
-		Cluster = frappe.qb.DocType("Cluster")
-		cluster_data = (
-			frappe.qb.from_(Cluster)
-			.select(Cluster.name, Cluster.title, Cluster.image)
-			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+		if sites_in_group_details:
+			Cluster = frappe.qb.DocType("Cluster")
+			cluster_data = (
+				frappe.qb.from_(Cluster)
+				.select(Cluster.name, Cluster.title, Cluster.image)
+				.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		Plan = frappe.qb.DocType("Site Plan")
-		plan_data = (
-			frappe.qb.from_(Plan)
-			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			Plan = frappe.qb.DocType("Site Plan")
+			plan_data = (
+				frappe.qb.from_(Plan)
+				.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+				.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		ResourceTag = frappe.qb.DocType("Resource Tag")
-		tag_data = (
-			frappe.qb.from_(ResourceTag)
-			.select(ResourceTag.tag_name, ResourceTag.parent)
-			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			ResourceTag = frappe.qb.DocType("Resource Tag")
+			tag_data = (
+				frappe.qb.from_(ResourceTag)
+				.select(ResourceTag.tag_name, ResourceTag.parent)
+				.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
 		cur_user_ssh_key = frappe.get_all(
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
