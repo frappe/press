@@ -11,7 +11,8 @@
 						<div>
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
-									{{ currentPlan.currency }}{{ currentPlan.price }} / month
+									{{ $format.planTitle(currentPlan) }}
+									<span v-if="currentPlan.price_inr">/ month</span>
 								</span>
 							</div>
 							<div class="mt-1 text-sm leading-3 text-gray-600">
