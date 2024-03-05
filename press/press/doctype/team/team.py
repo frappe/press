@@ -792,6 +792,10 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
+		if not self.enabled:
+			why = "You cannot create a new site because your account is disabled"
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 

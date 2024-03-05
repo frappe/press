@@ -161,23 +161,12 @@ class Site(Document, TagHelpers):
 		self.validate_auto_update_fields()
 
 	def before_insert(self):
-		self.validate_site_creation()
 		if not self.bench and self.group:
 			self._set_latest_bench()
 		# initialize site.config based on plan
 		self._update_configuration(self.get_plan_config(), save=False)
 		if not self.notify_email and self.team != "Administrator":
 			self.notify_email = frappe.db.get_value("Team", self.team, "notify_email")
-
-	def validate_site_creation(self):
-		team = frappe.local.team()
-		if not team.enabled:
-			frappe.throw("You cannot create a new site because your account is disabled")
-
-		if not (self.domain and frappe.db.exists("Root Domain", {"name": self.domain})):
-			frappe.throw("No root domain for site")
-
-		self.cluster = self.cluster or frappe.db.get_single_value("Press Settings", "cluster")
 
 	def validate_site_name(self):
 		site_regex = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
