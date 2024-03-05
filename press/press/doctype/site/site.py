@@ -1830,6 +1830,12 @@ class Site(Document, TagHelpers):
 				"doc_method": "restore_site_from_files",
 			},
 			{
+				"action": "Restore from an existing site",
+				"description": "Restore your database with database, public and private files from another site",
+				"button_label": "Restore",
+				"doc_method": "restore_site_from_files",
+			},
+			{
 				"action": "Migrate site",
 				"description": "Run bench migrate command on your site",
 				"button_label": "Migrate",
