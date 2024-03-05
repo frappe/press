@@ -38,6 +38,9 @@ function getSiteActionHandler(action) {
 		'Restore from backup': defineAsyncComponent(() =>
 			import('./SiteDatabaseRestoreDialog.vue')
 		),
+		'Restore from an existing site': defineAsyncComponent(() =>
+			import('./site/SiteDatabaseRestoreFromURLDialog.vue')
+		),
 		'Access site database': defineAsyncComponent(() =>
 			import('./SiteDatabaseAccessDialog.vue')
 		),
