@@ -197,7 +197,7 @@ class DeployCandidate(Document):
 	def _build_and_deploy(self, staging: bool):
 		self._build(deploy_after_build=True, deploy_to_staging=staging)
 
-		if self.status == "Success" and not self.is_docker_remote_builder_used:
+		if not self.is_docker_remote_builder_used:
 			self._deploy(staging)
 
 	def _deploy(self, staging=False):
@@ -211,6 +211,7 @@ class DeployCandidate(Document):
 		no_cache: bool = False,
 		no_push: bool = False,
 		no_build: bool = False,
+		# Used for docker remote build
 		deploy_after_build: bool = False,
 		deploy_to_staging: bool = False,
 	):
@@ -298,6 +299,9 @@ class DeployCandidate(Document):
 		agent.build_docker_image(
 			{
 				"deploy_candidate": self.name,
+				# Next two values are not used by agent but are
+				# read in `process_docker_image_build_job_update`
+				# to trigger deploy after a remote build
 				"deploy_after_build": deploy_after_build,
 				"deploy_to_staging": deploy_to_staging,
 				"filename": uploaded_filename,
@@ -450,9 +454,7 @@ class DeployCandidate(Document):
 			self.save()
 
 	def _update_app_releases(self) -> None:
-		should_update = frappe.get_value(
-			"Release Group", self.group, "is_delta_build_enabled"
-		)
+		should_update = frappe.get_value("Release Group", self.group, "use_delta_builds")
 		if not should_update:
 			return
 

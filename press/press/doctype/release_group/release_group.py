@@ -116,6 +116,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
+		self.set_default_delta_builds_flags()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -1068,6 +1069,12 @@ class ReleaseGroup(Document, TagHelpers):
 			"Press Settings",
 			"compress_app_cache",
 		)
+
+	def set_default_delta_builds_flags(self):
+		if not frappe.db.get_single_value("Press Settings", "use_delta_builds"):
+			return
+
+		self.use_delta_builds = 1
 
 
 def new_release_group(
