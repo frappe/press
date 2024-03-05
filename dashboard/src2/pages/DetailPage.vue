@@ -82,6 +82,14 @@ export default {
 				whitelistedMethods: this.object.whitelistedMethods || {},
 				onSuccess() {
 					this.lastRefreshed = new Date();
+        },
+				onError(error) {
+					for (let message of error?.messages || []) {
+						if (message.redirect) {
+							window.location.href = message.redirect;
+							return;
+						}
+					}
 				}
 			};
 		}

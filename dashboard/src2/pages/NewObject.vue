@@ -22,66 +22,11 @@
 							<component :is="option.labelSlot({ optionsData })" />
 						</template>
 					</div>
-					<div class="mt-2">
-						<div
-							v-if="option?.type === 'card'"
-							class="grid grid-cols-2 gap-3 sm:grid-cols-4"
-						>
-							<button
-								v-for="card in filteredData(option)"
-								:key="card.name"
-								:class="[
-									vals[option.name] === card.name
-										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-										: 'bg-white text-gray-900  ring-gray-200 hover:bg-gray-50',
-									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
-								]"
-								@click="vals[option.name] = card.name"
-							>
-								<div class="flex w-full items-center space-x-2">
-									<img v-if="card.image" :src="card.image" class="h-5 w-5" />
-									<span class="text-sm font-medium">
-										{{ card.title || card.name }}
-									</span>
-									<span v-if="card.status" class="!ml-auto text-gray-600">
-										{{ card.status }}
-									</span>
-									<Badge
-										class="!ml-auto"
-										theme="gray"
-										v-if="card.beta"
-										label="Beta"
-									/>
-								</div>
-							</button>
-						</div>
-						<div v-else-if="option?.type === 'plan'">
-							<NewObjectPlanCards
-								:plans="filteredData(option)"
-								v-model="vals[option.name]"
-							/>
-						</div>
-						<div
-							class="col-span-2 flex md:w-1/2"
-							v-else-if="option?.type === 'text'"
-						>
-							<TextInput
-								class="w-full"
-								:class="option.class"
-								v-model="vals[option.name]"
-							/>
-							<template v-if="option?.slot">
-								<component :is="option.slot({ optionsData })" />
-							</template>
-						</div>
-						<div v-else-if="option?.type === 'Component'">
-							<component
-								v-memo="[option.type]"
-								:is="option.component({ optionsData, vals })"
-								v-model="vals[option.name]"
-							/>
-						</div>
-					</div>
+					<NewObjectCell
+						:option="option"
+						:optionsData="optionsData"
+						v-model="vals"
+					/>
 				</div>
 			</template>
 
@@ -130,7 +75,7 @@
 </template>
 
 <script>
-import NewObjectPlanCards from '../components/NewObjectPlanCards.vue';
+import NewObjectCell from '../components/NewObjectCell.vue';
 import Header from '../components/Header.vue';
 import { getObject } from '../objects';
 
@@ -157,7 +102,7 @@ export default {
 	},
 	components: {
 		Header,
-		NewObjectPlanCards
+		NewObjectCell
 	},
 	resources: {
 		optionsData() {
@@ -259,14 +204,6 @@ export default {
 		}
 	},
 	methods: {
-		filteredData(option) {
-			if (!option.filter) return this.optionsData[option.fieldname];
-			return option.filter(
-				this.optionsData[option.fieldname],
-				this.vals,
-				this.optionsData
-			);
-		},
 		showOption(option) {
 			if (!option.dependsOn) return true;
 			for (let field of option.dependsOn) {

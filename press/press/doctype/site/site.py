@@ -106,6 +106,16 @@ class Site(Document, TagHelpers):
 		)
 		return query
 
+	@staticmethod
+	def on_not_found(name):
+		# If name is a custom domain then redirect to the site name
+		site_name = frappe.db.get_value("Site Domain", name, "site")
+		if site_name:
+			frappe.response.message = {
+				"redirect": f"/dashboard-beta/sites/{site_name}",
+			}
+		raise
+
 	def get_doc(self, doc):
 		from press.api.client import get
 
@@ -120,7 +130,6 @@ class Site(Document, TagHelpers):
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-
 		return doc
 
 	def site_action(allowed_status: List[str]):
