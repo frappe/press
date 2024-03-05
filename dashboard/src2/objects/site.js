@@ -1270,7 +1270,7 @@ export default {
 					condition: () =>
 						$team.doc.is_desk_user && site.doc.team != $team.name,
 					onClick() {
-						window.location.href = `/impersonate/${site.doc.team}`;
+						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
 					}
 				},
 				{
