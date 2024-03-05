@@ -34,8 +34,7 @@ export default {
 					route: '/sites',
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
-						routeName.startsWith('Site Detail'),
-					disabled
+						routeName.startsWith('Site Detail')
 				},
 				{
 					name: 'Benches',

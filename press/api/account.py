@@ -859,6 +859,33 @@ def user_prompts():
 		]
 
 
+@frappe.whitelist()
+def get_site_request(product):
+	team = frappe.local.team()
+	requests = frappe.db.get_all(
+		"SaaS Product Site Request",
+		{
+			"team": team.name,
+			"saas_product": product,
+		},
+		["name", "status"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if not requests:
+		site_request = frappe.new_doc(
+			"SaaS Product Site Request",
+			saas_product=product,
+			team=team.name,
+		).insert(ignore_permissions=True)
+		return site_request.name
+	else:
+		site_request = requests[0]
+		if site_request.status in ["Pending", "Wait for Site", "Error"]:
+			return site_request.name
+		frappe.throw("You have already created a trial site for this product")
+
+
 def redirect_to(location):
 	return build_response(
 		frappe.local.request.path,

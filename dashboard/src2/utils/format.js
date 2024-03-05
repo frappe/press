@@ -52,15 +52,16 @@ export function planTitle(plan) {
 	return price > 0 ? `${currency}${price}` : plan.plan_title;
 }
 
-export function userCurrency(value) {
+export function userCurrency(value, fractions = 2) {
 	let $team = getTeam();
-	return currency(value, $team.doc.currency);
+	return currency(value, $team.doc.currency, fractions);
 }
 
-export function currency(value, currency) {
+export function currency(value, currency, fractions = 2) {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
-		currency
+		currency,
+		maximumFractionDigits: fractions
 	}).format(value);
 }
 

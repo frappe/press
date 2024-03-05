@@ -148,7 +148,7 @@ export default {
 		},
 		options: [
 			{
-				label: 'Bench Title',
+				label: 'Title',
 				name: 'benchTitle',
 				type: 'text'
 			},

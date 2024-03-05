@@ -45,7 +45,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nWait for Site\nSite Created\nExpired"
+   "options": "Pending\nWait for Site\nSite Created\nError\nExpired"
   },
   {
    "fieldname": "site",
@@ -57,7 +57,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-14 15:48:42.205915",
+ "modified": "2024-03-04 22:07:00.989747",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product Site Request",

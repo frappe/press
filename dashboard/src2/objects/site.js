@@ -71,8 +71,20 @@ export default {
 				format(value, row) {
 					if (row.trial_end_date) {
 						let trialEndDate = dayjsLocal(row.trial_end_date);
-						if (trialEndDate.isAfter(dayjsLocal())) {
-							return 'Trial';
+						let today = dayjsLocal();
+						let diffHours = trialEndDate.diff(today, 'hours');
+						let endsIn = '';
+						if (diffHours < 24) {
+							endsIn = `today`;
+						} else {
+							let days = Math.round(diffHours / 24);
+							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
+						}
+						if (
+							trialEndDate.isAfter(today) ||
+							trialEndDate.isSame(today, 'day')
+						) {
+							return `Trial ends ${endsIn}`;
 						}
 					}
 					let $team = getTeam();
@@ -1246,6 +1258,19 @@ export default {
 							import('../components/SiteUpdateDialog.vue')
 						);
 						renderDialog(h(SiteUpdateDialog, { site: site.doc.name }));
+					}
+				},
+				{
+					label: 'Impersonate Site Owner',
+					slots: {
+						prefix: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc.is_desk_user && site.doc.team != $team.name,
+					onClick() {
+						window.location.href = `/impersonate/${site.doc.team}`;
 					}
 				},
 				{

@@ -190,11 +190,12 @@ export default {
 					oauth_signup: this.oauthSignup,
 					signup_values: this.signupValues
 				},
-				onSuccess(res) {
-					if (res) {
-						this.$router.push(res.dashboard_route || '/');
+				onSuccess() {
+					let path = '/dashboard-beta';
+					if (this.saasProduct) {
+						path = `/dashboard-beta/app-trial/${this.saasProduct.name}`;
 					}
-					window.location.reload();
+					window.location.href = path;
 				}
 			};
 		}

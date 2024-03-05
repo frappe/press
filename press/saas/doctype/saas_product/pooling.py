@@ -16,13 +16,12 @@ class SitePool:
 		)
 		self.saas_product = frappe.get_doc("SaaS Product", product)
 
-	def create_or_rename(self, subdomain, team, account_request):
+	def create_or_rename(self, subdomain, team):
 		standby_site = self.get_standby_site()
 		if standby_site:
 			site = frappe.get_doc("Site", standby_site)
 			site.subdomain = subdomain
 			site.is_standby = False
-			site.account_request = account_request
 			site.team = team
 			site.save(ignore_permissions=True)
 			return site
