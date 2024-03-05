@@ -332,16 +332,15 @@ export default {
 			{
 				label: 'Enter Subdomain',
 				name: 'subdomain',
-				type: 'text',
-				class: 'flex-1 rounded-r-none',
-				slot({ optionsData }) {
-					return h(
-						'div',
-						{
-							class: 'flex items-center rounded-r bg-gray-100 px-4 text-base'
-						},
-						`.${optionsData.domain}`
+				type: 'Component',
+				component({ optionsData }) {
+					let SubdomainInput = defineAsyncComponent(() =>
+						import('../components/site/SubdomainInput.vue')
 					);
+
+					return h(SubdomainInput, {
+						domain: optionsData.domain
+					});
 				},
 				dependsOn: ['siteVersion', 'cluster', 'plan']
 			}
