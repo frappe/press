@@ -73,7 +73,11 @@
 							size="md"
 						/>
 						<ErrorMessage class="mt-2" :message="progressError" />
-						<Button class="mt-2" v-if="progressErrorCount > 9" route="/">
+						<Button
+							class="mt-2"
+							v-if="siteRequest.getProgress.error && progressErrorCount > 9"
+							route="/"
+						>
 							&#8592; Back to Dashboard
 						</Button>
 					</div>
@@ -91,6 +95,12 @@
 									? 'Logging in to your site...'
 									: ''
 							}}
+						</div>
+					</div>
+					<div v-else-if="siteRequest.doc.status == 'Error'">
+						<div class="text-p-base text-red-600">
+							There was an error creating your site. Please contact
+							<a class="underline" href="/support">Frappe Cloud Support</a>.
 						</div>
 					</div>
 				</LoginBox>
@@ -237,7 +247,12 @@ export default {
 							this.progressErrorCount += 1;
 							if (data.progress == 100) {
 								this.siteRequest.getLoginSid.fetch();
-							} else if (this.progressErrorCount <= 10) {
+							} else if (
+								!(
+									this.siteRequest.getProgress.error &&
+									this.progressErrorCount <= 10
+								)
+							) {
 								setTimeout(() => {
 									this.siteRequest.getProgress.reload();
 								}, 2000);

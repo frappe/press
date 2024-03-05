@@ -3,7 +3,7 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
-		<div class="col-span-2 rounded-md border">
+		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="text-base text-gray-700">Current Plan</div>

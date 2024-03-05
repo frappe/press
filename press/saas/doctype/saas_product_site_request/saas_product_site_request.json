@@ -10,6 +10,7 @@
   "saas_product",
   "team",
   "account_request",
+  "agent_job",
   "column_break_cubd",
   "status",
   "site"
@@ -53,11 +54,17 @@
    "in_list_view": 1,
    "label": "Site",
    "options": "Site"
+  },
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "label": "Agent Job",
+   "options": "Agent Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-04 22:07:00.989747",
+ "modified": "2024-03-06 01:55:59.420257",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product Site Request",
@@ -102,5 +109,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "saas_product"
+ "title_field": "saas_product",
+ "track_changes": 1
 }

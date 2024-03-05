@@ -25,6 +25,7 @@ class SaaSProductSiteRequest(Document):
 	def create_site(self, subdomain, plan):
 		pool = SitePool(self.saas_product)
 		site = pool.create_or_rename(subdomain, self.team)
+		self.agent_job = site.flags.rename_job
 		site.create_subscription(plan)
 		site.reload()
 		trial_days = (
@@ -44,9 +45,13 @@ class SaaSProductSiteRequest(Document):
 	@frappe.whitelist()
 	def get_progress(self, current_progress=None):
 		current_progress = current_progress or 0
+		if self.agent_job:
+			filters = {"name": self.agent_job, "site": self.site}
+		else:
+			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
 		job_name, status = frappe.db.get_value(
 			"Agent Job",
-			{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
+			filters,
 			["name", "status"],
 		)
 		if status == "Success":
@@ -65,9 +70,11 @@ class SaaSProductSiteRequest(Document):
 			if progress <= current_progress:
 				progress = current_progress + 1
 			return {"progress": progress}
-		elif status in ("Failure", "Undelivered"):
+		elif status == "Failure":
 			self.status = "Error"
 			self.save(ignore_permissions=True)
+			return {"progress": current_progress, "error": True}
+		elif status == "Undelivered":
 			return {"progress": current_progress, "error": True}
 
 		return {"progress": current_progress + 1}

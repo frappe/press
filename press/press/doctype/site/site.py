@@ -288,7 +288,8 @@ class Site(Document, TagHelpers):
 		if self.standby_for_product:
 			# if standby site, rename site and create first user for trial signups
 			create_user = self.get_user_details()
-			agent.rename_site(self, new_name, create_user)
+			job = agent.rename_site(self, new_name, create_user)
+			self.flags.rename_job = job.name
 		else:
 			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
