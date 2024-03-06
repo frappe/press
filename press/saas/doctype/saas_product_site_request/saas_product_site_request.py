@@ -32,7 +32,15 @@ class SaaSProductSiteRequest(Document):
 			frappe.db.get_value("SaaS Product", self.saas_product, "trial_days") or 14
 		)
 		site.trial_end_date = frappe.utils.add_days(None, trial_days)
-		site.save(ignore_permissions=True)
+		# update_config implicitly calles site.save
+		site.flags.ignore_permissions = True
+		site.update_config(
+			{
+				"subscription_conf": {"trial_end_date": frappe.utils.cstr(site.trial_end_date)},
+				"app_include_js": ["http://frappecloud.com/assets/press/js/subscription.js"],
+			}
+		)
+		# site.save(ignore_permissions=True)
 		self.site = site.name
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)

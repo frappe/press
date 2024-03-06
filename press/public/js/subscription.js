@@ -5,15 +5,13 @@ $(document).ready(function () {
 			return;
 		}
 		let sitename = frappe.boot.sitename;
-		let trial_end = 15 - frappe.boot.telemetry_site_age;
-		let trial_end_message = '';
-		if (trial_end <= 0) {
-			trial_end_message = 'Your trial has ended.';
-		} else if (trial_end === 1) {
-			trial_end_message = 'Your trial will end in 1 day.';
-		} else {
-			trial_end_message = `Your trial will end in ${trial_end} days.`;
-		}
+		let trial_end_date = subscription.trial_end_date;
+		let trial_end_message =
+			moment(trial_end_date) > moment()
+				? `Your trial will end on ${moment(trial_end_date).format(
+						'Do MMMM, YYYY',
+				  )}.`
+				: 'Your trial has ended.';
 		let alert = `
 			<div class="form-message orange">
 				<div class="flex align-center justify-between">
