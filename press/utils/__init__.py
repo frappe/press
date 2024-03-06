@@ -27,7 +27,12 @@ def log_error(title, **kwargs):
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
-	frappe.log_error(title=title, message=message)
+	frappe.log_error(
+		title=title,
+		message=message,
+		reference_doctype=kwargs.get("reference_doctype"),
+		reference_name=kwargs.get("reference_name"),
+	)
 
 
 def get_current_team(get_doc=False):

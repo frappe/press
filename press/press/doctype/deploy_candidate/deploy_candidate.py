@@ -229,7 +229,12 @@ class DeployCandidate(Document):
 				deploy_to_staging,
 			)
 		except Exception:
-			log_error("Deploy Candidate Build Exception", name=self.name)
+			log_error(
+				"Deploy Candidate Build Exception",
+				name=self.name,
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 			self._build_failed()
 			self._build_end()
 			raise
