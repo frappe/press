@@ -8,7 +8,14 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, userCurrency, commaAnd } from '../utils/format';
+import {
+	bytes,
+	duration,
+	date,
+	userCurrency,
+	commaAnd,
+	plural
+} from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
