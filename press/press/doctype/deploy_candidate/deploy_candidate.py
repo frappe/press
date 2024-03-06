@@ -1286,15 +1286,15 @@ class DeployCandidate(Document):
 		if self.status == "Failure":
 			return True
 
-		errors = frappe.get_all(
-			"Error Log",
-			filters={
-				"error": ["like", f"%{self.name}%"],
-				"seen": False,
-				"creation": [">", self.modified],
-			},
-			fields=["name", "method", "creation"],
-			order_by="creation",
+		errors = frappe.db.sql(
+			"""
+				select `name`, `method`, `creation` from `tabError Log`
+				where `tabError Log`.`error` like %s
+				and `tabError Log`.`modified` > %s
+				order by modified
+			""",
+			(f"%{self.name}%", self.modified),
+			as_dict=True,
 		)
 
 		failed_step = self.get_first_step_of_given_status(["Failure"])
