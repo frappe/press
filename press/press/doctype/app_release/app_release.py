@@ -77,14 +77,25 @@ class AppRelease(Document):
 			self.cloned = True
 			self.save(ignore_permissions=True)
 		except Exception:
-			log_error("App Release Clone Exception", release=self.name)
+			log_error(
+				"App Release Clone Exception",
+				release=self.name,
+				reference_doctype="App Release",
+				reference_name=self.name,
+			)
 
 	def run(self, command):
 		try:
 			return run(command, self.clone_directory)
 		except Exception as e:
 			self.cleanup()
-			log_error("App Release Command Exception", command=command, output=e.output.decode())
+			log_error(
+				"App Release Command Exception",
+				command=command,
+				output=e.output.decode(),
+				reference_doctype="App Release",
+				reference_name=self.name,
+			)
 			raise e
 
 	def set_clone_directory(self):
@@ -249,7 +260,12 @@ def cleanup_unused_releases():
 				deleted += 1
 				frappe.db.commit()
 			except Exception:
-				log_error("App Release Cleanup Error", release=release)
+				log_error(
+					"App Release Cleanup Error",
+					release=release,
+					reference_doctype="App Release",
+					reference_name=release,
+				)
 				frappe.db.rollback()
 
 

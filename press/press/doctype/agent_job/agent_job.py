@@ -160,7 +160,12 @@ class AgentJob(Document):
 			)
 
 		except Exception:
-			log_error("Agent Job Set Status Exception", job=self)
+			log_error(
+				"Agent Job Set Status Exception",
+				job=self,
+				reference_doctype="Agent Job",
+				reference_name=self.name,
+			)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -373,7 +378,13 @@ def poll_pending_jobs_server(server):
 			frappe.db.commit()
 			publish_update(job.name)
 		except Exception:
-			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
+			log_error(
+				"Agent Job Poll Exception",
+				job=job,
+				polled=polled_job,
+				reference_doctype="Agent Job",
+				reference_name=job.name,
+			)
 			frappe.db.rollback()
 
 
@@ -809,7 +820,12 @@ def process_job_updates(job_name):
 			process_docker_image_build_job_update(job)
 
 	except Exception as e:
-		log_error("Agent Job Callback Exception", job=job.as_dict())
+		log_error(
+			"Agent Job Callback Exception",
+			job=job.as_dict(),
+			reference_doctype="Agent Job",
+			reference_name=job_name,
+		)
 		raise e
 
 
