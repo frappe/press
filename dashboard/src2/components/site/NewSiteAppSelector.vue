@@ -36,12 +36,9 @@
 										</div>
 									</Tooltip>
 									<Badge
+										v-if="app.subscription_type !== 'Free'"
 										theme="gray"
-										:label="
-											app.subscription_type === 'Freemium'
-												? 'Paid'
-												: app.subscription_type
-										"
+										:label="app.subscription_type !== 'Free' ? 'Paid' : ''"
 									/>
 								</div>
 								<a :href="`/${app.route}`" target="_blank" title="App details">
@@ -130,7 +127,7 @@ export default {
 			if (this.apps.map(a => a.app).includes(app.app)) {
 				this.apps = this.apps.filter(a => a.app !== app.app);
 			} else {
-				if (app.plans?.length) {
+				if (app.subscription_type !== 'Free') {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
