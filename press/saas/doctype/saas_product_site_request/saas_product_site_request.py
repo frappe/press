@@ -36,7 +36,7 @@ class SaaSProductSiteRequest(Document):
 		site.flags.ignore_permissions = True
 		site.update_config(
 			{
-				"subscription_conf": {"trial_end_date": frappe.utils.cstr(site.trial_end_date)},
+				"subscription": {"trial_end_date": frappe.utils.cstr(site.trial_end_date)},
 				"app_include_js": ["https://frappecloud.com/assets/press/js/subscription.js"],
 			}
 		)
