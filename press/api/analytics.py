@@ -585,16 +585,17 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
-	if not response["aggregations"]["method_path"]["buckets"]:
+	buckets = []
+	try:
+		labels = [
+			get_datetime(data["key_as_string"]).replace(tzinfo=None)
+			for data in response["aggregations"]["method_path"]["buckets"][0][
+				"histogram_of_method"
+			]["buckets"]
+		]
+	except KeyError:
 		return {"datasets": [], "labels": []}
 
-	buckets = []
-	labels = [
-		get_datetime(data["key_as_string"]).replace(tzinfo=None)
-		for data in response["aggregations"]["method_path"]["buckets"][0][
-			"histogram_of_method"
-		]["buckets"]
-	]
 	for bucket in response["aggregations"]["method_path"]["buckets"]:
 		buckets.append(
 			frappe._dict(
