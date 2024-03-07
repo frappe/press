@@ -49,6 +49,9 @@ def get(name, timezone, duration="7d"):
 	request_duration_by_path_data = get_request_by_path(
 		name, "duration", timezone, timespan, timegrain
 	)
+	average_request_duration_by_path_data = get_request_by_path(
+		name, "average_duration", timezone, timespan, timegrain
+	)
 	slow_logs_by_count = get_slow_logs(name, "count", timezone, timespan, timegrain)
 	slow_logs_by_duration = get_slow_logs(name, "duration", timezone, timespan, timegrain)
 	job_data = get_usage(name, "job", timezone, timespan, timegrain)
@@ -64,6 +67,7 @@ def get(name, timezone, duration="7d"):
 		"request_cpu_time": [{"value": r.duration, "date": r.date} for r in request_data],
 		"request_count_by_path": request_count_by_path_data,
 		"request_duration_by_path": request_duration_by_path_data,
+		"average_request_duration_by_path": average_request_duration_by_path_data,
 		"slow_logs_by_count": slow_logs_by_count,
 		"slow_logs_by_duration": slow_logs_by_duration,
 		"job_count": [{"value": r.count, "date": r.date} for r in job_data],
@@ -288,10 +292,95 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		},
 	}
 
+	average_duration_query = {
+		"aggs": {
+			"method_path": {
+				"terms": {
+					"field": "json.request.path",
+					"order": {"methods>avg": "desc"},
+					"size": MAX_NO_OF_PATHS,
+				},
+				"aggs": {
+					"methods": {
+						"filter": {
+							"bool": {
+								"filter": [
+									{"match_phrase": {"json.site": site}},
+									{
+										"range": {
+											"@timestamp": {
+												"gte": f"now-{timespan}s",
+												"lte": "now",
+											}
+										}
+									},
+								],
+								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+							}
+						},
+						"aggs": {
+							"avg": {
+								"avg": {
+									"field": "json.duration",
+								}
+							}
+						},
+					},
+					"histogram_of_method": {
+						"date_histogram": {
+							"field": "@timestamp",
+							"fixed_interval": f"{timegrain}s",
+							"time_zone": timezone,
+						},
+						"aggs": {
+							"methods": {
+								"filter": {
+									"bool": {
+										"filter": [
+											{"match_phrase": {"json.site": site}},
+											{
+												"range": {
+													"@timestamp": {
+														"gte": f"now-{timespan}s",
+														"lte": "now",
+													}
+												}
+											},
+										],
+										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+									}
+								},
+								"aggs": {
+									"avg": {
+										"avg": {
+											"field": "json.duration",
+										}
+									}
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"query": {
+			"bool": {
+				"filter": [
+					{"match_phrase": {"json.site": site}},
+					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
+				],
+				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
+			}
+		},
+	}
+
 	if query_type == "count":
 		query = count_query
-	else:
+	elif query_type == "duration":
 		query = duration_query
+	elif query_type == "average_duration":
+		query = average_duration_query
 
 	response = requests.post(url, json=query, auth=("frappe", password)).json()
 
@@ -315,7 +404,11 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 							data["request_count"]["doc_count"]
 							if query_type == "count"
 							else (
-								data["methods"]["sum"]["value"] / 1000000 if query_type == "duration" else 0
+								data["methods"]["sum"]["value"] / 1000000
+								if query_type == "duration"
+								else data["methods"]["avg"]["value"] / 1000000
+								if query_type == "average_duration"
+								else 0
 							)
 						)
 						for data in bucket["histogram_of_method"]["buckets"]
