@@ -79,6 +79,7 @@
   "code_server_password",
   "use_app_cache",
   "compress_app_cache",
+  "use_delta_builds",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -1139,11 +1140,18 @@
    "fieldname": "docker_remote_builder_ssh",
    "fieldtype": "Data",
    "label": "Docker Remote Builder (SSH)"
+  },
+  {
+   "default": "0",
+   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
+   "fieldname": "use_delta_builds",
+   "fieldtype": "Check",
+   "label": "Use Delta Builds"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-24 12:41:35.648280",
+ "modified": "2024-03-05 15:51:49.055544",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

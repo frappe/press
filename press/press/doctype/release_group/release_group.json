@@ -46,7 +46,7 @@
   "is_push_to_deploy_enabled",
   "use_app_cache",
   "compress_app_cache",
-  "is_delta_build_enabled",
+  "use_delta_builds",
   "column_break_9efq",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -318,13 +318,6 @@
   },
   {
    "default": "0",
-   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
-   "fieldname": "is_delta_build_enabled",
-   "fieldtype": "Check",
-   "label": "Delta Builds"
-  },
-  {
-   "default": "0",
    "fetch_from": "team.is_code_server_user",
    "fieldname": "is_code_server_enabled",
    "fieldtype": "Check",
@@ -367,10 +360,17 @@
    "fieldtype": "Link",
    "label": "Docker Remote Builder Server",
    "options": "Server"
+  },
+  {
+   "default": "0",
+   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
+   "fieldname": "use_delta_builds",
+   "fieldtype": "Check",
+   "label": "Use Delta Builds"
   }
  ],
  "links": [],
- "modified": "2024-02-24 13:31:26.841738",
+ "modified": "2024-03-05 15:49:31.592217",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",
