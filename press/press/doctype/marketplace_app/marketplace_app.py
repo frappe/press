@@ -435,6 +435,7 @@ class MarketplaceApp(WebsiteGenerator):
 	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
+		site_plan = frappe.qb.DocType("Site Plan")
 		team = frappe.qb.DocType("Team")
 
 		query = (
@@ -443,11 +444,11 @@ class MarketplaceApp(WebsiteGenerator):
 			.on(team.name == site.team)
 			.left_outer_join(site_app)
 			.on(site.name == site_app.parent)
+			.left_outer_join(site_plan)
+			.on(site_app.plan == site_plan.name)
 			.select(site.name, site.plan, team.user)
 			.where(
-				(site.status == "Active")
-				& (site_app.app == self.app)
-				& (site.plan != "Frappe Team")
+				(site.status == "Active") & (site_app.app == self.app) & (site_plan.price_usd >= 0)
 			)
 		)
 		return query.run(as_dict=True)

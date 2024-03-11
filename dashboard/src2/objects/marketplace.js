@@ -102,7 +102,7 @@ export default {
 					import('../components/marketplace/MarketplaceAppAnalytics.vue')
 				),
 				props: app => {
-					return { app: { app: app.doc.name, title: app.doc.title } };
+					return { app: app.doc.name };
 				}
 			},
 			{
