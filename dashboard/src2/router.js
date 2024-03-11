@@ -43,11 +43,6 @@ let router = createRouter({
 			meta: { isLoginPage: true }
 		},
 		{
-			name: 'NewMarketplaceApp',
-			path: '/marketplace/new',
-			component: () => import('./pages/NewMarketplaceApp.vue')
-		},
-		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
