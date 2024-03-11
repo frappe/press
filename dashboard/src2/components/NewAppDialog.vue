@@ -1,11 +1,26 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Add a new app to your Bench',
-			size: 'xl'
+			title: 'Add a new app',
+			size: 'xl',
+			actions: [
+				{
+					label: 'Add App',
+					variant: 'solid',
+					onClick() {
+						app.version = selectedVersion.value || options.versions[0].name;
+						$emit('app-added', app);
+						show = false;
+					}
+				}
+			]
 		}"
-		:modelValue="modelValue"
-		@update:modelValue="$emit('update:modelValue', $event)"
+		v-model="show"
+		@update:modelValue="
+			() => {
+				show = false;
+			}
+		"
 	>
 		<template #body-content>
 			<FTabs
@@ -154,6 +169,12 @@
 									<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
 								</template>
 							</FormControl>
+							<FormControl
+								type="autocomplete"
+								label="Choose Version"
+								:options="options.versions.map(v => v.name)"
+								v-model="selectedVersion"
+							/>
 						</div>
 					</div>
 					<div class="mt-4 space-y-2">
@@ -168,26 +189,9 @@
 							<GreenCheckIcon class="mr-2 w-4" />
 							Found {{ this.app.title }} ({{ this.app.name }})
 						</div>
-						<ErrorMessage
-							:message="
-								$resources.branches.error ||
-								$resources.validateApp.error ||
-								$resources.addApp.error
-							"
-						/>
 					</div>
 				</div>
 			</FTabs>
-		</template>
-		<template #actions>
-			<Button
-				class="w-full"
-				label="Add App to bench"
-				variant="solid"
-				:disabled="!appValidated"
-				:loading="$resources.addApp.loading"
-				@click="$resources.addApp.submit()"
-			/>
 		</template>
 	</Dialog>
 </template>
@@ -201,14 +205,15 @@ export default {
 		FTabs: Tabs,
 		FormControl
 	},
-	props: ['benchName', 'modelValue'],
-	emits: ['update:modelValue', 'appAdd'],
+	emits: ['app-added'],
 	data() {
 		return {
+			show: true,
 			app: null,
 			tabIndex: 0,
 			githubAppLink: '',
 			selectedBranch: '',
+			selectedVersion: '',
 			appValidated: false,
 			requiresReAuth: false,
 			selectedGithubUser: null,
@@ -259,18 +264,6 @@ export default {
 		}
 	},
 	resources: {
-		appList() {
-			return {
-				type: 'list',
-				doctype: 'Release Group App',
-				cache: ['ObjectList', 'Release Group App', this.benchName],
-				parent: 'Release Group',
-				filters: {
-					parenttype: 'Release Group',
-					parent: this.benchName
-				}
-			};
-		},
 		options() {
 			return {
 				url: 'press.api.github.options',
@@ -309,7 +302,6 @@ export default {
 							label: branches[0].name,
 							value: branches[0].name
 						};
-
 					this.$resources.validateApp.submit({
 						owner: this.appOwner,
 						repository: this.appName,
@@ -332,26 +324,6 @@ export default {
 				url: 'press.api.github.clear_token_and_get_installation_url',
 				onSuccess(installation_url) {
 					window.location.href = installation_url + '?state=' + this.state;
-				}
-			};
-		},
-		addApp() {
-			return {
-				url: 'press.api.app.new',
-				params: {
-					app: {
-						name: this.app?.name,
-						title: this.app?.title,
-						repository_url: this.app?.repository_url,
-						branch: this.selectedBranch.value,
-						github_installation_id: this.app?.github_installation_id,
-						group: this.benchName
-					}
-				},
-				onSuccess() {
-					this.$resources.appList.reload();
-					this.$emit('update:modelValue', false);
-					this.$emit('appAdd');
 				}
 			};
 		}
