@@ -6,6 +6,7 @@ import frappe
 import requests
 import json
 import sqlparse
+from frappe.utils import flt
 from press.api.site import protected
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from frappe.utils import (
@@ -406,7 +407,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 							else (
 								data["methods"]["sum"]["value"] / 1000000
 								if query_type == "duration"
-								else data["methods"]["avg"]["value"] / 1000000
+								else flt(data["methods"]["avg"]["value"]) / 1000000
 								if query_type == "average_duration"
 								else 0
 							)
