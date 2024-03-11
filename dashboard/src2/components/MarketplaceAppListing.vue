@@ -112,6 +112,7 @@
 								v-slot="{ openFileSelector, uploading, progress, error }"
 							>
 								<Button
+									:loading="uploading"
 									@click="openFileSelector()"
 									icon-left="plus"
 									label="Add"

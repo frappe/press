@@ -8,7 +8,7 @@ from press.press.doctype.site_plan.plan import Plan
 
 
 class MarketplaceAppPlan(Plan):
-	dashboard_fields = ["name", "title", "price_inr", "price_usd", "enabled"]
+	dashboard_fields = ["app", "name", "title", "price_inr", "price_usd", "enabled"]
 
 	@staticmethod
 	def get_list_query(query):

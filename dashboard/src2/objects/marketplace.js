@@ -581,6 +581,84 @@ export default {
 							'_blank'
 						);
 					}
+				},
+				{
+					label: 'Complete Listing',
+					variant: 'solid',
+					slots: {
+						prefix: icon('alert-circle')
+					},
+					condition: () => app.doc.status === 'Draft',
+					onClick() {
+						renderDialog(
+							h(
+								GenericDialog,
+								{
+									options: {
+										title: 'Steps to complete before the app can be published',
+										size: '2xl',
+										message:
+											'Please complete the following steps before publishing the app. Once all steps are completed, the app will be reviewed and published.'
+									}
+								},
+								{
+									default: () =>
+										h(ObjectList, {
+											options: {
+												label: 'Steps',
+												fieldname: 'steps',
+												fieldtype: 'ListSelection',
+												hideControls: true,
+												columns: [
+													{
+														label: 'Step',
+														fieldname: 'step',
+														width: 0.8
+													},
+													{
+														label: 'Completed',
+														fieldname: 'completed',
+														type: 'Icon',
+														width: 0.3,
+														Icon(value) {
+															return value ? 'check' : '';
+														}
+													},
+													{
+														label: 'Update Now',
+														type: 'Button',
+														width: 0.2,
+														Button({ row }) {
+															let route = `/marketplace/${app.doc.name}/`;
+															route += row.step.includes('Publish')
+																? 'versions'
+																: 'listing';
+
+															return {
+																label: 'View',
+																variant: 'ghost',
+																onClick() {
+																	router.push(route);
+																}
+															};
+														}
+													}
+												],
+												resource() {
+													return {
+														url: 'press.api.marketplace.review_steps',
+														params: {
+															name: app.doc.name
+														},
+														auto: true
+													};
+												}
+											}
+										})
+								}
+							)
+						);
+					}
 				}
 			];
 		}

@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex items-center justify-between">
+		<div v-if="hideControls" class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
@@ -298,6 +298,9 @@ export default {
 		},
 		isLoading() {
 			return this.$list.list?.loading || this.$list.loading;
+		},
+		hideControls() {
+			return !this.options.hideControls;
 		}
 	}
 };

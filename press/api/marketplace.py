@@ -1035,16 +1035,25 @@ def remove_version(name, version):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def review_stages(name):
+def review_steps(name):
 	app = frappe.get_doc("Marketplace App", name)
-	return {
-		"logo": True if app.image else False,
-		"description": True if app.description and app.long_description else False,
-		"publish": True
-		if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
-		else False,
-		"links": True if app.website and app.support and app.documentation else False,
-	}
+	return [
+		{"step": "Add a logo for your app", "completed": True if app.image else False},
+		{
+			"step": "Add links",
+			"completed": True if app.website and app.support and app.documentation else False,
+		},
+		{
+			"step": "Update description and long description",
+			"completed": True if app.description else False,
+		},
+		{
+			"step": "Publish a release for version",
+			"completed": True
+			if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+			else False,
+		},
+	]
 
 
 @protected("Marketplace App")
