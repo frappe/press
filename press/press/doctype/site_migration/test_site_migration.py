@@ -192,7 +192,7 @@ class TestSiteMigration(FrappeTestCase):
 				lambda x: x.method_name == SiteMigration.restore_site_on_destination_proxy.__name__,
 			).status,
 			"Failure",
-		)  # step after archive site on source failed
+		)  # step after archive site on source passed
 		self.assertEqual(
 			frappe.db.count(
 				"Agent Job", {"job_type": "Archive Site", "site": site.name, "server": bench.server}
