@@ -16,6 +16,7 @@ export default {
 		addVersion: 'add_version',
 		siteInstalls: 'site_installs',
 		createApprovalRequest: 'create_approval_request',
+		cancelApprovalRequest: 'cancel_approval_request',
 		updateListing: 'update_listing'
 	},
 	list: {
@@ -58,7 +59,7 @@ export default {
 		],
 		primaryAction({ listResource: apps }) {
 			return {
-				label: 'New Marketplace App',
+				label: 'New App',
 				variant: 'solid',
 				slots: {
 					prefix: icon('plus')
@@ -111,7 +112,7 @@ export default {
 				route: 'listing',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
-					import('../components/MarketplaceAppOverview.vue')
+					import('../components/MarketplaceAppListing.vue')
 				),
 				props: app => {
 					return { app: app };
@@ -166,7 +167,7 @@ export default {
 										GenericDialog,
 										{
 											options: {
-												title: `Add a new version for ${app.doc.name}`,
+												title: `Add version support for ${app.doc.name}`,
 												size: '2xl'
 											}
 										},
@@ -203,7 +204,7 @@ export default {
 																align: 'right',
 																type: 'Button',
 																width: '5rem',
-																Button({ row }) {
+																Button({ row, listResource: versionsOptions }) {
 																	return {
 																		label: 'Add',
 																		onClick() {
@@ -217,6 +218,7 @@ export default {
 																					loading: 'Adding new version...',
 																					success: () => {
 																						versions.reload();
+																						versionsOptions.reload();
 																						return 'New version added';
 																					},
 																					error: e => {
@@ -313,19 +315,39 @@ export default {
 																	type: 'Button',
 																	width: 0.2,
 																	Button({ row, listResource: releases }) {
+																		let label = '';
+																		let successMessage = '';
+																		let loadingMessage = '';
+
+																		if (row.status === 'Awaiting Approval') {
+																			label = 'Cancel';
+																			successMessage =
+																				'The release has been cancelled';
+																			loadingMessage = 'Cancelling release...';
+																		} else if (row.status === 'Draft') {
+																			label = 'Submit';
+																			loadingMessage =
+																				'Submitting release for approval...';
+																			successMessage =
+																				'The release has been submitted for approval';
+																		}
+
 																		return {
-																			label: 'Publish',
+																			label: label,
 																			onClick() {
 																				toast.promise(
-																					app.createApprovalRequest.submit({
-																						app_release: row.name
-																					}),
+																					row.status === 'Awaiting Approval'
+																						? app.cancelApprovalRequest.submit({
+																								app_release: row.name
+																						  })
+																						: app.createApprovalRequest.submit({
+																								app_release: row.name
+																						  }),
 																					{
-																						loading:
-																							'Submitting release for approval...',
+																						loading: loadingMessage,
 																						success: () => {
 																							releases.reload();
-																							return 'The release has been submitted for approval';
+																							return successMessage;
 																						},
 																						error: e => {
 																							return e.messages.length
@@ -383,32 +405,32 @@ export default {
 					}
 				}
 			},
-			{
-				label: 'Installs',
-				icon: icon('download'),
-				route: 'install',
-				type: 'list',
-				list: {
-					fields: ['name', 'plan', 'user'],
-					columns: [
-						{
-							label: 'Site',
-							fieldname: 'name'
-						},
-						{
-							label: 'Plan',
-							fieldname: 'plan'
-						},
-						{
-							label: 'Contact',
-							fieldname: 'user'
-						}
-					],
-					list({ documentResource: app }) {
-						return app.siteInstalls;
-					}
-				}
-			},
+			// {
+			// 	label: 'Installs',
+			// 	icon: icon('download'),
+			// 	route: 'install',
+			// 	type: 'list',
+			// 	list: {
+			// 		fields: ['name', 'plan', 'user'],
+			// 		columns: [
+			// 			{
+			// 				label: 'Site',
+			// 				fieldname: 'name'
+			// 			},
+			// 			{
+			// 				label: 'Plan',
+			// 				fieldname: 'plan'
+			// 			},
+			// 			{
+			// 				label: 'Contact',
+			// 				fieldname: 'user'
+			// 			}
+			// 		],
+			// 		list({ documentResource: app }) {
+			// 			return app.siteInstalls;
+			// 		}
+			// 	}
+			// },
 			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),

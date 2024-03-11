@@ -3,19 +3,57 @@
 		v-if="$resources.analytics.data"
 		class="grid grid-cols-1 gap-5 sm:grid-cols-2"
 	>
-		<div class="rounded-md border">
-			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Installs</h2>
-			</div>
-			<div>
-				<div
-					v-for="d in installAnalytics"
-					:key="d.title"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-1/3 text-base text-gray-600">{{ d.title }}</div>
-					<div class="w-2/3 text-base text-gray-900">
-						{{ d.value }}
+		<div class="col-span-2 rounded-md border">
+			<div class="grid grid-cols-2 lg:grid-cols-4">
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Total Installs</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									{{ installAnalytics.total_installs }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Active Sites</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									{{ installAnalytics.installs_active_sites }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Active Benches</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									{{ installAnalytics.installs_active_benches }}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Weekly Installs</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900">
+									{{ installAnalytics.installs_active_benches }}
+								</span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -62,7 +100,7 @@ import LineChart from '@/components/charts/LineChart.vue';
 export default {
 	name: 'MarketplaceAppAnalytics',
 	props: {
-		app: Object
+		app: String
 	},
 	components: {
 		LineChart
@@ -96,7 +134,7 @@ export default {
 				url: 'press.api.marketplace.analytics',
 				auto: true,
 				params: {
-					name: this.app?.app
+					name: this.app
 				}
 			};
 		},
@@ -105,7 +143,7 @@ export default {
 				url: 'press.api.analytics.plausible_analytics',
 				auto: true,
 				params: {
-					name: this.app?.app
+					name: this.app
 				}
 			};
 		}
@@ -116,37 +154,9 @@ export default {
 				!this.$resources.analytics.loading &&
 				this.$resources.analytics.data
 			) {
-				const analyticsData = this.$resources.analytics.data;
-				const {
-					total_installs,
-					num_installs_active_sites,
-					num_installs_active_benches
-				} = analyticsData;
-
-				return [
-					{
-						title: 'Total Installs',
-						value:
-							total_installs.toString() +
-							' ' +
-							(total_installs == 1 ? 'Site' : 'Sites')
-					},
-					{
-						title: 'Active Sites with this App',
-						value:
-							num_installs_active_sites.toString() +
-							' ' +
-							(num_installs_active_sites == 1 ? 'Site' : 'Sites')
-					},
-					{
-						title: 'Active Benches with this App',
-						value:
-							num_installs_active_benches.toString() +
-							' ' +
-							(num_installs_active_benches == 1 ? 'Bench' : 'Benches')
-					}
-				];
+				return this.$resources.analytics.data;
 			}
+			return {};
 		},
 		pageViewsData() {
 			let pageViews = this.$resources.plausible_analytics.data?.pageviews;

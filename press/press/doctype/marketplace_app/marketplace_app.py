@@ -33,9 +33,11 @@ class MarketplaceApp(WebsiteGenerator):
 	dashboard_actions = [
 		"remove_version",
 		"add_version",
-		"options_for_version",
 		"site_installs",
 		"create_approval_request",
+		"cancel_approval_request",
+		"update_listing",
+		"listing_details",
 	]
 
 	def autoname(self):
@@ -45,6 +47,20 @@ class MarketplaceApp(WebsiteGenerator):
 	def create_approval_request(self, app_release: str):
 		"""Create a new Approval Request for given `app_release`"""
 		AppReleaseApprovalRequest.create(self.app, app_release)
+
+	@frappe.whitelist()
+	def cancel_approval_request(self, app_release: str):
+		approval_requests = frappe.get_all(
+			"App Release Approval Request",
+			filters={"app_release": app_release},
+			pluck="name",
+			order_by="creation desc",
+		)
+
+		if len(approval_requests) == 0:
+			frappe.throw("No approval request exists for the given app release")
+
+		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	def before_insert(self):
 		self.check_if_duplicate()
@@ -453,11 +469,37 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return query.run(as_dict=True)
 
+	@frappe.whitelist()
+	def listing_details(self):
+		return {
+			"support": self.support,
+			"website": self.website,
+			"documentation": self.documentation,
+			"privacy_policy": self.privacy_policy,
+			"terms_of_service": self.terms_of_service,
+			"description": self.description,
+			"long_description": self.long_description,
+			"screenshots": [screenshot.image for screenshot in self.screenshots],
+		}
+
+	@frappe.whitelist()
+	def update_listing(self, *args):
+		data = frappe._dict(args[0])
+		self.title = data.get("title") or self.title
+		self.description = data.get("description")
+		self.long_description = data.get("long_description")
+		self.support = data.get("support")
+		self.website = data.get("website")
+		self.documentation = data.get("documentation")
+		self.privacy_policy = data.get("privacy_policy")
+		self.terms_of_service = data.get("terms_of_service")
+		self.save()
+
 	def get_analytics(self):
 		return {
 			"total_installs": self.total_installs(),
-			"num_installs_active_sites": self.total_active_sites(),
-			"num_installs_active_benches": self.total_active_benches(),
+			"installs_active_sites": self.total_active_sites(),
+			"installs_active_benches": self.total_active_benches(),
 			"total_payout": self.get_payout_amount(),
 			"paid_payout": self.get_payout_amount(status="Paid"),
 			"pending_payout": self.get_payout_amount(status="Draft"),
