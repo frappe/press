@@ -19,6 +19,7 @@ from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import 
 	get_app_plan_features,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
+from press.press.doctype.app.app import new_app as new_app_doc
 from frappe.utils.safe_exec import safe_exec
 
 
@@ -46,6 +47,9 @@ class MarketplaceApp(WebsiteGenerator):
 		AppReleaseApprovalRequest.create(self.app, app_release)
 
 	def before_insert(self):
+		self.check_if_duplicate()
+		self.create_app_and_source_if_needed()
+
 		if not frappe.flags.in_test:
 			self.long_description = self.fetch_readme()
 
@@ -53,6 +57,27 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def set_route(self):
 		self.route = "marketplace/apps/" + cleanup_page_name(self.app)
+
+	def check_if_duplicate(self):
+		if frappe.db.exists("Marketplace App", self.app):
+			frappe.throw(
+				f"App {self.app} already exists and is owned by some other team. Please contact support"
+			)
+
+	def create_app_and_source_if_needed(self):
+		if frappe.db.exists("App", self.name):
+			app_doc = frappe.get_doc("App", self.name)
+		else:
+			app_doc = new_app_doc(self.name, self.title)
+
+		source = app_doc.add_source(
+			self.version,
+			self.repository_url,
+			self.branch,
+			self.team,
+		)
+		self.app = source.app
+		self.append("sources", {"version": self.version, "source": source})
 
 	def validate(self):
 		self.published = self.status == "Published"

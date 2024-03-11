@@ -2,10 +2,11 @@ import { defineAsyncComponent, h } from 'vue';
 import { icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import NewAppDialog from '../components/marketplace/NewAppDialog.vue';
+import NewAppDialog from '../components/NewAppDialog.vue';
 import ChangeAppBranchDialog from '../components/marketplace/ChangeAppBranchDialog.vue';
-import { getTeam } from '../data/team';
 import { toast } from 'vue-sonner';
+import router from '../router';
+import { userCurrency, currency } from '../utils/format';
 import PlansDialog from '../components/marketplace/PlansDialog.vue';
 
 export default {
@@ -13,9 +14,9 @@ export default {
 	whitelistedMethods: {
 		removeVersion: 'remove_version',
 		addVersion: 'add_version',
-		disable: 'disable', // should come from Marketplace App Plan
 		siteInstalls: 'site_installs',
-		createApprovalRequest: 'create_approval_request'
+		createApprovalRequest: 'create_approval_request',
+		updateListing: 'update_listing'
 	},
 	list: {
 		route: '/marketplace',
@@ -27,11 +28,20 @@ export default {
 				fieldname: 'title',
 				width: 0.3,
 				prefix(row) {
-					return h('img', {
-						src: row.image,
-						class: 'w-6 h-6',
-						alt: row.title
-					});
+					return row.image
+						? h('img', {
+								src: row.image,
+								class: 'w-6 h-6 rounded',
+								alt: row.title
+						  })
+						: h(
+								'div',
+								{
+									class:
+										'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
+								},
+								row.title[0].toUpperCase()
+						  );
 				}
 			},
 			{
@@ -57,8 +67,18 @@ export default {
 					renderDialog(
 						h(NewAppDialog, {
 							onAppAdded(app) {
-								console.log(app);
-								apps.insert.submit(app);
+								toast.promise(apps.insert.submit(app), apps.reload(), {
+									loading: 'Adding new app...',
+									success: () => {
+										router.push(`/marketplace/${app.name}/listing`);
+										return 'New marketplace app added';
+									},
+									error: e => {
+										return e.messages.length
+											? e.messages.join('\n')
+											: e.message;
+									}
+								});
 							}
 						})
 					);
@@ -88,7 +108,7 @@ export default {
 			{
 				label: 'Listing',
 				icon: icon('shopping-cart'),
-				route: 'overview',
+				route: 'listing',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
 					import('../components/MarketplaceAppOverview.vue')
@@ -417,14 +437,14 @@ export default {
 							label: 'Price (INR)',
 							fieldname: 'price_inr',
 							format: value => {
-								return `₹ ${value}`;
+								return currency(value, 'INR');
 							}
 						},
 						{
 							label: 'Price (USD)',
 							fieldname: 'price_usd',
 							format: value => {
-								return `$ ${value}`;
+								return currency(value, 'USD');
 							}
 						}
 					],
@@ -500,9 +520,7 @@ export default {
 							fieldname: 'price',
 							width: 0.3,
 							format: value => {
-								let $team = getTeam();
-								let currencySymbol = $team.doc.currency == 'INR' ? '₹' : '$';
-								return currencySymbol + value + '/month';
+								return userCurrency(value);
 							}
 						},
 						{
