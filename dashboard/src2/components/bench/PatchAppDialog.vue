@@ -198,9 +198,10 @@ export default {
 				this.patchFileName += '.patch';
 			}
 
+			const app = this.app || this.applyToApp;
 			const args = {
 				release_group: this.group,
-				app: this.applyToPatch,
+				app,
 				patch_config: {
 					patch: this.patch,
 					filename: this.patchFileName,
@@ -283,22 +284,11 @@ export default {
 		applyPatch() {
 			return {
 				url: 'press.api.bench.apply_patch',
-				onSuccess(data) {
-					if (!data.length) {
-						this.error = 'No patches were created.';
-						return;
-					}
-
-					let p = data.length > 1 ? 'patches' : 'patch';
-
-					this.success = [
-						`<strong>${data.length} ${p} created</strong> and will be applied shortly.`,
-						`You can check status under the <strong>Patches</strong> tab.`
-					].join(' ');
-					setTimeout(() => {
-						this.show = false;
-						this.clear();
-					}, 10000);
+				onSuccess() {
+					this.$router.push({
+						name: 'Release Group Detail Jobs',
+						params: { name: this.group }
+					});
 				},
 				onError(error) {
 					if (error.messages.length) {

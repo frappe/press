@@ -4,6 +4,13 @@ import { confirmDialog, icon, renderDialog } from '../../utils/components';
 import { h } from 'vue';
 import PatchAppDialog from '../../components/bench/PatchAppDialog.vue';
 
+const STATUS_THEME = {
+	Applied: 'green',
+	'Not Applied': 'gray',
+	'In Process': 'orange',
+	Failure: 'red'
+};
+
 export default {
 	label: 'Patches',
 	icon: icon('hash'),
@@ -26,6 +33,7 @@ export default {
 				label: 'Status',
 				type: 'Badge',
 				fieldname: 'status',
+				theme: value => STATUS_THEME[value],
 				width: 0.4
 			},
 			{
@@ -83,7 +91,7 @@ export default {
 				},
 				{
 					label: 'Apply Patch',
-					condition: () => row.status === 'Not Applied',
+					condition: () => row.status !== 'In Process',
 					onClick: () => {
 						toast.promise(
 							listResource.runDocMethod.submit({
@@ -91,8 +99,8 @@ export default {
 								name: row.name
 							}),
 							{
-								loading: 'Applying...',
-								success: 'Patch applied',
+								loading: 'Creating job to apply patch',
+								success: 'Patch apply in process',
 								error: 'Failed to apply patch'
 							}
 						);
@@ -100,7 +108,7 @@ export default {
 				},
 				{
 					label: 'Revert Patch',
-					condition: () => row.status === 'Applied',
+					condition: () => row.status !== 'In Process',
 					onClick: () => {
 						toast.promise(
 							listResource.runDocMethod.submit({
@@ -108,8 +116,8 @@ export default {
 								name: row.name
 							}),
 							{
-								loading: 'Reverting...',
-								success: 'Patch reverted',
+								loading: 'Creating job to revert patch',
+								success: 'Patch reversion in process',
 								error: 'Failed to revert patch'
 							}
 						);

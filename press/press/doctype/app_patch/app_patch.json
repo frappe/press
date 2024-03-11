@@ -1,6 +1,7 @@
 {
  "actions": [],
  "autoname": "autoincrement",
+ "beta": 1,
  "creation": "2024-02-22 10:31:03.366179",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -94,7 +95,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-27 16:34:11.351331",
+ "modified": "2024-03-11 14:34:04.963664",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "App Patch",
