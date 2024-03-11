@@ -69,7 +69,6 @@ export default {
 	computed: {
 		columns() {
 			if (!this.options.columns && this.options.data.length > 0) {
-				console.log(Object.keys(this.options.data[0]));
 				return Object.keys(this.options.data[0]).map(fieldname => {
 					return {
 						fieldname,
@@ -106,14 +105,6 @@ export default {
 				return route || this.$route;
 			}
 			return null;
-		},
-		formattedValue(value, column, row) {
-			let formattedValue =
-				column.format && value ? column.format(value, row) : value;
-			if (!formattedValue) {
-				formattedValue = '';
-			}
-			return String(formattedValue);
 		}
 	}
 };

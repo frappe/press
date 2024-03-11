@@ -38,7 +38,6 @@
 		</div>
 		<div v-else-if="option?.type === 'Component'">
 			<component
-				v-memo="[option]"
 				:is="option.component({ optionsData, vals })"
 				v-model="vals[option.name]"
 			/>
@@ -55,15 +54,13 @@ export default {
 	components: {
 		NewObjectPlanCards
 	},
-	data() {
-		return {
-			vals: this.modelValue
-		};
-	},
-	watch: {
+	computed: {
 		vals: {
-			handler(newVals) {
-				this.$emit('update:modelValue', newVals);
+			get() {
+				return this.modelValue;
+			},
+			set(val) {
+				this.$emit('update:modelValue', val);
 			}
 		}
 	},

@@ -92,17 +92,41 @@ export default {
 			required: false
 		}
 	},
+	components: {
+		Header,
+		NewObjectCell
+	},
 	data() {
 		return {
-			vals: {}
+			vals: {},
+			watcher: {}
 		};
 	},
 	mounted() {
 		if (this.name) this.vals[this.secondaryCreate.propName] = this.name;
+
+		let keys = this.options.map(option => option.name);
+
+		for (let key of keys) {
+			this.watcher[key] = this.$watch(
+				() => this.vals[key],
+				(newVal, oldVal) => {
+					if (newVal === oldVal) return;
+					let changed = key;
+
+					for (let option of this.options) {
+						if (option?.dependsOn?.includes(changed)) {
+							this.vals[option.name] = null;
+						}
+					}
+				}
+			);
+		}
 	},
-	components: {
-		Header,
-		NewObjectCell
+	unmounted() {
+		for (let key in this.watcher) {
+			this.watcher[key]();
+		}
 	},
 	resources: {
 		optionsData() {
