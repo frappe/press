@@ -1283,7 +1283,8 @@ class Site(Document, TagHelpers):
 
 		if (
 			frappe.db.exists(
-				"Marketplace App Subscription", {"status": "Active", "site": self.name}
+				"Subscription",
+				{"enabled": 1, "site": self.name, "document_type": "Marketplace App"},
 			)
 			and self.trial_end_date
 		):
