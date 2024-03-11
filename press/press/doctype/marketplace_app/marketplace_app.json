@@ -93,6 +93,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "default": "Please add a short description about your app here...",
    "fieldname": "description",
    "fieldtype": "Small Text",
    "in_list_view": 1,
@@ -370,7 +371,7 @@
    "link_fieldname": "app"
   }
  ],
- "modified": "2023-06-01 13:32:04.972967",
+ "modified": "2024-03-10 23:28:20.203230",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Marketplace App",
