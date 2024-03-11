@@ -17,6 +17,8 @@ export default {
 	route: 'patches',
 	type: 'list',
 	list: {
+		experimental: true, // If removing this, uncheck App Patch doctype beta flag.
+		documentation: 'https://frappecloud.com/docs/benches/app-patches',
 		doctype: 'App Patch',
 		filters: releaseGroup => {
 			return {
@@ -27,7 +29,7 @@ export default {
 			{
 				label: 'File Name',
 				fieldname: 'filename',
-				width: 0.75
+				width: '300px'
 			},
 			{
 				label: 'Status',
@@ -39,17 +41,17 @@ export default {
 			{
 				label: 'Deploy Name',
 				fieldname: 'bench',
-				width: 1
+				width: 0.8
 			},
 			{
 				label: 'App',
 				fieldname: 'app',
-				width: 0.6
+				width: 0.4
 			},
 			{
 				label: 'Patch URL',
 				fieldname: 'url',
-				width: 1,
+				width: '300px',
 				format(value) {
 					if (!value) {
 						return '-';
