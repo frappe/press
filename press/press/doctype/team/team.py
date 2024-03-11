@@ -872,9 +872,7 @@ class Team(Document):
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
-		elif self.payment_mode == "Prepaid Credits" and frappe.db.get_all(
-			"Invoice", {"team": self.name, "status": "Paid", "type": "Prepaid Credits"}, limit=1
-		):
+		elif self.payment_mode == "Prepaid Credits":
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
