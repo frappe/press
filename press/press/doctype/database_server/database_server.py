@@ -212,6 +212,24 @@ class DatabaseServer(BaseServer):
 			log_error("MariaDB Upgrade Error", server=self.name)
 
 	@frappe.whitelist()
+	def update_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_mariadb", timeout=1800)
+
+	def _update_mariadb(self):
+		ansible = Ansible(
+			playbook="update_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Update Error", server=self.name)
+
+	@frappe.whitelist()
 	def upgrade_mariadb_patched(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb_patched", timeout=1800)
 
