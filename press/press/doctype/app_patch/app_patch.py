@@ -49,6 +49,7 @@ class AppPatch(Document):
 		"url",
 		"status",
 	]
+	dashboard_actions = ["apply_patch", "revert_patch", "delete"]
 
 	def validate(self):
 		self.validate_bench()
@@ -76,11 +77,27 @@ class AppPatch(Document):
 
 	@frappe.whitelist()
 	def apply_patch(self):
-		self.patch_app(revert=False)
+		self.status = "Applied"
+		self.save()
+		frappe.db.commit()
+		# self.patch_app(revert=False)
 
 	@frappe.whitelist()
 	def revert_patch(self):
-		self.patch_app(revert=True)
+		self.status = "Not Applied"
+		self.save()
+		frappe.db.commit()
+		# self.patch_app(revert=True)
+
+	@frappe.whitelist()
+	def delete_patch(self):
+		print("delete patch called")
+		if self.status != "Not Applied":
+			frappe.throw(
+				f"Cannot delete patch if status is not 'Not Applied'. Current status is '{self.status}'"
+			)
+
+		self.delete()
 
 	def patch_app(self, revert: bool):
 		server = frappe.db.get_value("Bench", self.bench, "server")

@@ -1,7 +1,6 @@
-import { h } from 'vue';
-import { icon, renderDialog } from '../../utils/components';
+import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
-import PatchAppDialog from '../../components/bench/PatchAppDialog.vue';
+import { confirmDialog, icon } from '../../utils/components';
 
 export default {
 	label: 'Patches',
@@ -20,6 +19,12 @@ export default {
 				label: 'File Name',
 				fieldname: 'filename',
 				width: 0.75
+			},
+			{
+				label: 'Status',
+				type: 'Badge',
+				fieldname: 'status',
+				width: 0.4
 			},
 			{
 				label: 'Deploy Name',
@@ -46,15 +51,9 @@ export default {
 				link(value) {
 					return value;
 				}
-			},
-			{
-				label: 'Status',
-				type: 'Badge',
-				fieldname: 'status',
-				width: 0.4
 			}
 		],
-		rowActions({ row }) {
+		rowActions({ row, listResource }) {
 			let team = getTeam();
 			return [
 				{
@@ -68,32 +67,62 @@ export default {
 					}
 				},
 				{
+					label: 'Apply Patch',
+					condition: () => row.status === 'Not Applied',
+					onClick: () => {
+						toast.promise(
+							listResource.runDocMethod.submit({
+								method: 'apply_patch',
+								name: row.name
+							}),
+							{
+								loading: 'Applying...',
+								success: 'Patch applied',
+								error: 'Failed to apply patch'
+							}
+						);
+					}
+				},
+				{
 					label: 'Revert Patch',
 					condition: () => row.status === 'Applied',
 					onClick: () => {
-						// TODO: Hook this up
-						console.log('revert patch clicked');
+						toast.promise(
+							listResource.runDocMethod.submit({
+								method: 'revert_patch',
+								name: row.name
+							}),
+							{
+								loading: 'Reverting...',
+								success: 'Patch reverted',
+								error: 'Failed to revert patch'
+							}
+						);
+					}
+				},
+				{
+					label: 'Delete',
+					condition: () => row.status === 'Not Applied',
+					onClick: () => {
+						confirmDialog({
+							title: 'Delete Patch',
+							message: 'Are you sure you want to delete this patch?',
+							onSuccess: ({ hide }) => {
+								toast.promise(
+									listResource.delete.submit(row.name, {
+										onSuccess: () => hide()
+									}),
+									{
+										loading: 'Deleting...',
+										success: 'Patch deleted',
+										error: 'Failed to delete patch'
+									}
+								);
+							}
+						});
 					}
 				}
 			];
 		}
-		/*
-		primaryAction({ listResource: apps, documentResource: releaseGroup }) {
-			return {
-				label: 'Apply Patch',
-				slots: {
-					prefix: icon('plus')
-				},
-				onClick() {
-					renderDialog(
-						h(PatchAppDialog, {
-							group: releaseGroup.name,
-							app: ''
-						})
-					);
-				}
-			};
-		}
-		*/
 	}
 };
