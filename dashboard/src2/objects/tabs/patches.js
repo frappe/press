@@ -1,6 +1,8 @@
 import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
-import { confirmDialog, icon } from '../../utils/components';
+import { confirmDialog, icon, renderDialog } from '../../utils/components';
+import { h } from 'vue';
+import PatchAppDialog from '../../components/bench/PatchAppDialog.vue';
 
 export default {
 	label: 'Patches',
@@ -53,6 +55,19 @@ export default {
 				}
 			}
 		],
+		primaryAction({ listResource: apps, documentResource: releaseGroup }) {
+			return {
+				label: 'Apply Patch',
+				slots: {
+					prefix: icon('plus')
+				},
+				onClick() {
+					renderDialog(
+						h(PatchAppDialog, { group: releaseGroup.name, app: '' })
+					);
+				}
+			};
+		},
 		rowActions({ row, listResource }) {
 			let team = getTeam();
 			return [

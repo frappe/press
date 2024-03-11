@@ -72,22 +72,15 @@ class AppPatch(Document):
 		frappe.throw(f"Patch already exists for {self.bench} by the filename {filename}")
 
 	def after_insert(self):
-		# TODO: Call apply_patch
-		pass
+		self.apply_patch()
 
 	@frappe.whitelist()
 	def apply_patch(self):
-		self.status = "Applied"
-		self.save()
-		frappe.db.commit()
-		# self.patch_app(revert=False)
+		self.patch_app(revert=False)
 
 	@frappe.whitelist()
 	def revert_patch(self):
-		self.status = "Not Applied"
-		self.save()
-		frappe.db.commit()
-		# self.patch_app(revert=True)
+		self.patch_app(revert=True)
 
 	@frappe.whitelist()
 	def delete_patch(self):

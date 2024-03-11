@@ -1,51 +1,64 @@
 <template>
-	<Dialog
-		v-if="show"
-		:options="{ title: `Apply a patch to ${app}`, position: 'top' }"
-		v-model="show"
-	>
+	<Dialog v-if="show" :options="{ title, position: 'top' }" v-model="show">
 		<template v-slot:body-content>
 			<div class="flex flex-col gap-4">
 				<p class="text-base text-gray-600">
 					You can select the app patch by either entering the patch URL, or by
 					selecting a patch file.
 				</p>
-				<div class="flex items-end gap-1">
+				<div class="flex flex-col gap-2">
 					<FormControl
-						v-if="!patch"
+						v-if="!app"
 						class="w-full"
-						label="Patch URL"
-						type="data"
-						v-model="patchURL"
+						v-model="applyToApp"
+						label="Select app"
+						placeholder="Select app to patch"
+						type="select"
 						variant="outline"
-						placeholder="Enter patch URL"
-					/>
-					<FormControl
-						v-else
-						class="w-full"
-						label="Patch File Name"
-						type="data"
-						variant="outline"
-						v-model="patchFileName"
-						placeholder="Set patch file name"
+						:options="$resources.apps.data"
 					/>
 
-					<!-- File Selector -->
-					<input
-						ref="fileSelector"
-						type="file"
-						:accept="['text/x-patch', 'text/x-diff', 'application/x-patch']"
-						class="hidden"
-						@change="onPatchFileSelect"
-					/>
-					<Button @click="$refs.fileSelector.click()" title="Select patch file">
-						<FeatherIcon name="file-text" class="h-5 w-5 text-gray-600" />
-					</Button>
+					<!-- Patch Selector (URL or File) -->
+					<div class="flex w-full items-end gap-1">
+						<FormControl
+							v-if="!patch"
+							class="w-full"
+							label="Patch URL"
+							type="data"
+							v-model="patchURL"
+							variant="outline"
+							placeholder="Enter patch URL"
+						/>
+						<FormControl
+							v-else
+							class="w-full"
+							label="Patch File Name"
+							type="data"
+							variant="outline"
+							v-model="patchFileName"
+							placeholder="Set patch file name"
+						/>
 
-					<!-- Clear Patch File -->
-					<Button @click="clear" v-if="patch" title="Clear patch file">
-						<FeatherIcon name="x" class="h-5 w-5 text-gray-600" />
-					</Button>
+						<!-- File Selector -->
+						<input
+							ref="fileSelector"
+							type="file"
+							:accept="['text/x-patch', 'text/x-diff', 'application/x-patch']"
+							class="hidden"
+							@change="onPatchFileSelect"
+						/>
+						<Button
+							@click="$refs.fileSelector.click()"
+							title="Select patch file"
+						>
+							<FeatherIcon name="file-text" class="h-5 w-5 text-gray-600" />
+						</Button>
+
+						<!-- Clear Patch File -->
+						<Button @click="clear" v-if="patch" title="Clear patch file">
+							<FeatherIcon name="x" class="h-5 w-5 text-gray-600" />
+						</Button>
+					</div>
 				</div>
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
 				<div
@@ -109,6 +122,7 @@ export default {
 	watch: {
 		app(value) {
 			this.show = !!value;
+			this.applyToApp = value || '';
 		},
 		show(value) {
 			this.error = '';
@@ -128,9 +142,20 @@ export default {
 			patchURL: '',
 			patchFileName: '',
 			buildAssets: false,
+			applyToApp: '',
 			applyToBench: '',
 			applyToAllBenches: false
 		};
+	},
+	computed: {
+		title() {
+			const app = this.app || this.applyToApp;
+			if (app) {
+				return `Apply a patch to ${app}`;
+			}
+
+			return 'Apply a patch';
+		}
 	},
 	methods: {
 		clearApp() {
@@ -175,7 +200,7 @@ export default {
 
 			const args = {
 				release_group: this.group,
-				app: this.app,
+				app: this.applyToPatch,
 				patch_config: {
 					patch: this.patch,
 					filename: this.patchFileName,
@@ -206,6 +231,29 @@ export default {
 		}
 	},
 	resources: {
+		apps() {
+			return {
+				type: 'list',
+				doctype: 'Release Group App',
+				parent: 'Release Group',
+				auto: true,
+				filters: {
+					parenttype: 'Release Group',
+					parent: this.group
+				},
+				onSuccess(data) {
+					if (data.length === 1) {
+						this.applyToApp = data[0].value;
+					}
+				},
+				onError(data) {
+					this.error = data;
+				},
+				transform(data) {
+					return data.map(({ name }) => ({ value: name, label: name }));
+				}
+			};
+		},
 		benches() {
 			return {
 				type: 'list',

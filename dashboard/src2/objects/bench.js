@@ -417,7 +417,6 @@ export default {
 					}
 				}
 			},
-			patches,
 			{
 				label: 'Deploys',
 				route: 'deploys',
@@ -898,7 +897,8 @@ export default {
 					}
 				}
 			},
-			tagTab()
+			tagTab(),
+			patches
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
