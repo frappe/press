@@ -594,7 +594,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 				"histogram_of_method"
 			]["buckets"]
 		]
-	except KeyError:
+	except (KeyError, IndexError):
 		return {"datasets": [], "labels": []}
 
 	for bucket in response["aggregations"]["method_path"]["buckets"]:
