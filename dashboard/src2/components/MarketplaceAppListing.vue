@@ -12,7 +12,7 @@
 				</div>
 				<Button @click="$resources.updateListing.submit()">Save</Button>
 			</div>
-			<div class="grid grid-cols-2 gap-x-5 border-b py-6">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 border-b py-6">
 				<div>
 					<span class="font-medium text-base">Profile</span>
 					<div class="my-4 group relative flex">
@@ -94,7 +94,7 @@
 						</div>
 					</div>
 				</div>
-				<div>
+				<div class="hidden md:block">
 					<div class="flex w-full">
 						<span class="font-medium text-base">Screenshots and Videos</span>
 						<FileUploader
@@ -121,7 +121,9 @@
 							</template>
 						</FileUploader>
 					</div>
-					<div class="grid grid-cols-5 gap-x-4 gap-y-4 pt-4 flex-wrap">
+					<div
+						class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-x-4 gap-y-4 pt-4"
+					>
 						<Dropdown
 							class="w-fit"
 							v-for="(image, index) in marketplaceApp.screenshots"

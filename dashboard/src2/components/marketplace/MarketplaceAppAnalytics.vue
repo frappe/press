@@ -1,9 +1,6 @@
 <template>
-	<div
-		v-if="$resources.analytics.data"
-		class="grid grid-cols-1 gap-5 sm:grid-cols-2"
-	>
-		<div class="col-span-2 rounded-md border">
+	<div v-if="$resources.analytics.data">
+		<div class="mb-5 col-span-2 rounded-md border">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="text-base text-gray-700">Total Installs</div>
@@ -59,37 +56,39 @@
 			</div>
 		</div>
 
-		<LineChart
-			title="Pageviews"
-			type="time"
-			:key="pageViewsData"
-			:data="pageViewsData"
-			unit="views"
-			:chartTheme="[$theme.colors.purple[500]]"
-			:loading="$resources.plausible_analytics.loading"
-			:error="$resources.plausible_analytics.error"
-		>
-			<template #actions>
-				<a
-					v-if="app"
-					class="text-base text-gray-700 hover:text-gray-800"
-					:href="`/marketplace/apps/${app.app}`"
-					target="_blank"
-				>
-					View Page →
-				</a>
-			</template>
-		</LineChart>
-		<LineChart
-			title="Unique Visitors"
-			type="time"
-			:key="visitorsData"
-			:data="visitorsData"
-			unit="visitors"
-			:chartTheme="[$theme.colors.green[500]]"
-			:loading="$resources.plausible_analytics.loading"
-			:error="$resources.plausible_analytics.error"
-		/>
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+			<LineChart
+				title="Pageviews"
+				type="time"
+				:key="pageViewsData"
+				:data="pageViewsData"
+				unit="views"
+				:chartTheme="[$theme.colors.purple[500]]"
+				:loading="$resources.plausible_analytics.loading"
+				:error="$resources.plausible_analytics.error"
+			>
+				<template #actions>
+					<a
+						v-if="app"
+						class="text-base text-gray-700 hover:text-gray-800"
+						:href="`/marketplace/apps/${app.app}`"
+						target="_blank"
+					>
+						View Page →
+					</a>
+				</template>
+			</LineChart>
+			<LineChart
+				title="Unique Visitors"
+				type="time"
+				:key="visitorsData"
+				:data="visitorsData"
+				unit="visitors"
+				:chartTheme="[$theme.colors.green[500]]"
+				:loading="$resources.plausible_analytics.loading"
+				:error="$resources.plausible_analytics.error"
+			/>
+		</div>
 	</div>
 </template>
 
