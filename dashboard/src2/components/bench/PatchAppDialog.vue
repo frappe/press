@@ -61,12 +61,6 @@
 					</div>
 				</div>
 				<ErrorMessage class="-mt-2 w-full" :message="error" />
-				<div
-					v-if="success"
-					class="whitespace-pre-line text-base text-green-600"
-					role="alert"
-					v-html="success"
-				></div>
 				<h3 class="mt-4 text-base font-semibold">Patch Config</h3>
 				<FormControl
 					v-if="!applyToAllBenches"
@@ -137,7 +131,6 @@ export default {
 		return {
 			show: true,
 			error: '',
-			success: '',
 			patch: '',
 			patchURL: '',
 			patchFileName: '',
@@ -183,10 +176,15 @@ export default {
 				return false;
 			}
 
+			if (!this.app || !this.applyToApp) {
+				this.error = 'Please select an app to patch.';
+				return false;
+			}
+
 			return true;
 		},
 		applyPatch() {
-			if (!this.validate() || this.success) {
+			if (!this.validate()) {
 				return;
 			}
 
@@ -225,7 +223,6 @@ export default {
 			this.patchFileName = file.name;
 		},
 		clear() {
-			this.success = '';
 			this.error = '';
 			this.patch = '';
 			this.patchFileName = '';
