@@ -110,6 +110,10 @@ def poll_file_statuses():
 		for files in chunk(set_to_available, 1000):
 			frappe.db.set_value(doctype, {"name": ("in", files)}, "status", "Available")
 
+		# Delete s3 files that are not tracked with Remote Files
+		remote_file_paths = set(file["file_path"] for file in remote_files)
+		file_only_on_s3 = all_files - remote_file_paths
+		delete_s3_files({bucket_name: list(file_only_on_s3)})
 		frappe.db.commit()
 
 
