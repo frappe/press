@@ -214,7 +214,8 @@ class VirtualMachine(Document):
 			mariadb_context = {
 				"server_id": server.server_id,
 				"private_ip": self.private_ip_address,
-				"ansible_memtotal_mb": frappe.db.get_value("Plan", server.plan, "memory") or 1024,
+				"ansible_memtotal_mb": frappe.db.get_value("Server Plan", server.plan, "memory")
+				or 1024,
 				"mariadb_root_password": server.get_password("mariadb_root_password"),
 			}
 
@@ -850,31 +851,41 @@ class VirtualMachine(Document):
 			group_by="cluster",
 			pluck="cluster",
 		):
-			client = frappe.get_doc(
+			# Pick a random machine
+			# TODO: This probably should be a method on the Cluster
+			machine = frappe.get_doc(
 				"Virtual Machine",
 				{
 					"status": ("not in", ("Terminated", "Draft")),
 					"cloud_provider": "AWS EC2",
 					"cluster": cluster,
 				},
-			).client()
-			instance_ids = frappe.get_all(
-				"Virtual Machine",
-				{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "AWS EC2"},
-				pluck="instance_id",
 			)
-			response = client.describe_instances(InstanceIds=instance_ids)
-			for reservation in response["Reservations"]:
-				for instance in reservation["Instances"]:
-					machine = frappe.get_doc(
-						"Virtual Machine", {"instance_id": instance["InstanceId"]}
-					)
-					try:
-						machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
-						frappe.db.commit()
-					except Exception:
-						log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
-						frappe.db.rollback()
+			frappe.enqueue_doc(
+				machine.doctype, machine.name, method="bulk_sync_aws_cluster", queue="sync"
+			)
+
+	def bulk_sync_aws_cluster(self):
+		client = self.client()
+		instance_ids = frappe.get_all(
+			"Virtual Machine",
+			filters={
+				"status": ("not in", ("Terminated", "Draft")),
+				"cloud_provider": "AWS EC2",
+				"cluster": self.cluster,
+			},
+			pluck="instance_id",
+		)
+		response = client.describe_instances(InstanceIds=instance_ids)
+		for reservation in response["Reservations"]:
+			for instance in reservation["Instances"]:
+				machine = frappe.get_doc("Virtual Machine", {"instance_id": instance["InstanceId"]})
+				try:
+					machine._sync_aws({"Reservations": [{"Instances": [instance]}]})
+					frappe.db.commit()
+				except Exception:
+					log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
+					frappe.db.rollback()
 
 	@classmethod
 	def bulk_sync_oci(cls):

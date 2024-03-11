@@ -46,7 +46,7 @@ class SaasSitePool:
 					"domain": domain,
 					"is_standby": True,
 					"standby_for": self.app,
-					"team": "Administrator",
+					"team": frappe.get_value("Team", {"user": "Administrator"}, "name"),
 					"bench": bench,
 					"apps": [{"app": app} for app in apps],
 				}

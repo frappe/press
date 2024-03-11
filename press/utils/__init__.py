@@ -24,10 +24,24 @@ def log_error(title, **kwargs):
 				pass
 			else:
 				raise
+
+	# Prevent double logging as `message`
+	reference_doctype = kwargs.get("reference_doctype")
+	reference_name = kwargs.get("reference_doctype")
+	if reference_doctype and reference_name:
+		del kwargs["reference_doctype"]
+		del kwargs["reference_name"]
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
-	frappe.log_error(title=title, message=message)
+
+	frappe.log_error(
+		title=title,
+		message=message,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+	)
 
 
 def get_current_team(get_doc=False):
@@ -520,3 +534,11 @@ class ttl_cache:
 
 		wrapper_func.cache = self
 		return wrapper_func
+
+
+def poly_get_doctype(doctypes, name):
+	"""Get the doctype value from the given name of a doc from a list of doctypes"""
+	for doctype in doctypes:
+		if frappe.db.exists(doctype, name):
+			return doctype
+	return doctypes[-1]

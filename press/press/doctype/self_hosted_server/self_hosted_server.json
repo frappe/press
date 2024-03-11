@@ -306,7 +306,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",
@@ -388,7 +388,7 @@
    "fieldname": "database_plan",
    "fieldtype": "Link",
    "label": "Database Plan",
-   "options": "Plan"
+   "options": "Server Plan"
   },
   {
    "default": "0",

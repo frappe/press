@@ -6,21 +6,22 @@ import frappe
 from frappe.model.document import Document
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.model.naming import make_autoname
 
 import json
-from tldextract import extract as sdext
+
+# from tldextract import extract as sdext
 
 
 class SelfHostedServer(Document):
 	def autoname(self):
-		self.name = sdext(self.server_url).fqdn
+		series = make_autoname("SHS-.#####")
+		self.name = f"{series}.{self.hybrid_domain}"
+
+		self.hostname = series
+		self.domain = self.hybrid_domain
 
 	def validate(self):
-		if not self.hostname or not self.domain:
-			extracted_url = sdext(self.server_url)
-			self.hostname = extracted_url.subdomain
-			self.domain = extracted_url.registered_domain
-
 		self.set_proxy_details()
 		self.set_mariadb_config()
 
@@ -34,11 +35,10 @@ class SelfHostedServer(Document):
 			)
 
 	def set_mariadb_config(self):
-		if not self.different_database_server:
-			pass
-
 		if not self.mariadb_ip:
 			self.mariadb_ip = self.ip
+		if not self.mariadb_private_ip:
+			self.mariadb_private_ip = self.private_ip
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
 		if not self.mariadb_root_password:
@@ -238,11 +238,26 @@ class SelfHostedServer(Document):
 		self.status = "Active"
 		self.save()
 
+	def get_database_plan(self):
+		if not self.different_database_server:
+			try:
+				frappe.get_last_doc("Server Plan", "Unlimited")
+			except frappe.DoesNotExists:
+				self._create_server_plan("Unlimited")
+
+			self.database_plan = "Unlimited"
+
+	def _create_server_plan(self, plan_name):
+		plan = frappe.new_doc("Server Plan")
+		plan.name = plan_name
+		plan.title = plan_name
+		plan.save()
+
 	@frappe.whitelist()
 	def create_db_server(self):
 		try:
-			if not self.mariadb_ip or not self.mariadb_private_ip:
-				frappe.throw("Public/Private IP for MariaDB not found")
+			if not self.mariadb_ip:
+				frappe.throw("Public IP for MariaDB not found")
 
 			db_server = frappe.new_doc(
 				"Database Server",
@@ -250,7 +265,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Database Server"),
 					"title": f"{self.title} DB",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"ip": self.mariadb_ip,
 					"private_ip": self.mariadb_private_ip,
 					"team": self.team,
@@ -269,6 +285,9 @@ class SelfHostedServer(Document):
 			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
+
+			if not frappe.flags.in_test:
+				db_server.create_dns_record()
 
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
@@ -320,7 +339,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Server"),
 					"title": f"{self.title} App",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.ip,
 					"private_ip": self.private_ip,
@@ -342,12 +362,14 @@ class SelfHostedServer(Document):
 			self.status = "Active"
 			self.server_created = True
 
+			if not frappe.flags.in_test:
+				server.create_dns_record()
+
 		except Exception as e:
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 
 		self.save()
-		self.create_tls_certs()
 
 		frappe.msgprint(f"Server record {server.name} created")
 		return server
@@ -432,10 +454,16 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def get_hostname(self, server_type):
-		if self.cluster:
-			return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+		symbolic_name = get_symbolic_name(server_type)
+		series = f"{symbolic_name}-{self.cluster}.#####"
 
-		return f"{get_symbolic_name(server_type)}-{self.hostname}".lower()
+		index = make_autoname(series)[-5:]
+
+		return f"{symbolic_name}-{index}-{self.cluster}".lower()
+
+	@property
+	def hybrid_domain(self):
+		return frappe.db.get_single_value("Press Settings", "hybrid_domain")
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -449,8 +477,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
-					"domain": self.domain,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.proxy_public_ip,
 					"private_ip": self.proxy_private_ip,
@@ -473,17 +501,15 @@ class SelfHostedServer(Document):
 		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
 
 	@frappe.whitelist()
-	def create_tls_certs(self):
+	def create_tls_certs(self, domain):
 		try:
-			tls_cert = frappe.db.get_value(
-				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
-			)
+			tls_cert = frappe.db.get_value("TLS Certificate", {"domain": f"{domain}"})
 
 			if not tls_cert:
 				tls_cert = frappe.new_doc(
 					"TLS Certificate",
 					**{
-						"domain": self.name,
+						"domain": domain,
 						"team": self.team,
 						"wildcard": False,
 					},
@@ -496,14 +522,53 @@ class SelfHostedServer(Document):
 
 	@frappe.whitelist()
 	def _setup_nginx(self):
-		frappe.enqueue_doc(self.doctype, self.name, "setup_nginx", queue="long")
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_app", queue="long")
 
-	@frappe.whitelist()
-	def setup_nginx(self):
-		server = self
-		if not self.dedicated_proxy:
-			server = frappe.get_doc("Server", self.server)
+		if self.different_database_server:
+			frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_db", queue="long")
 
+	def _setup_nginx_on_app(self):
+		server = frappe._dict(
+			{
+				"doctype": "Server",
+				"name": self.server,
+				"ssh_user": self.ssh_user or "root",
+				"ssh_port": self.ssh_port or "22",
+				"ip": self.ip,
+			}
+		)
+
+		if self.setup_nginx(server):
+			self.create_tls_certs(self.server)
+
+			if not self.different_database_server:
+				self.create_tls_certs(self.database_server)
+
+			return True
+
+		return False
+
+	def _setup_nginx_on_db(self):
+		if not self.different_database_server:
+			return True
+
+		server = frappe._dict(
+			{
+				"doctype": "Database Server",
+				"name": self.database_server,
+				"ssh_user": self.ssh_user or "root",
+				"ssh_port": self.ssh_port or "22",
+				"ip": self.mariadb_ip,
+			}
+		)
+
+		if self.setup_nginx(server):
+			self.create_tls_certs(self.database_server)
+			return True
+
+		return False
+
+	def setup_nginx(self, server):
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
@@ -512,14 +577,16 @@ class SelfHostedServer(Document):
 				port=server.ssh_port or "22",
 				variables={
 					"domain": self.name,
-					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
+					"press_domain": frappe.db.get_single_value(
+						"Press Settings", "domain"
+					),  # for ssl renewal
 				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
 				return True
 		except Exception:
-			log_error("TLS Cert Generation Failed", server=self.as_dict())
+			log_error("Nginx setup failed for self hosted server", server=self.as_dict())
 			return False
 
 	@frappe.whitelist()
@@ -528,21 +595,33 @@ class SelfHostedServer(Document):
 			update_server_tls_certifcate,
 		)
 
-		cert = frappe.get_last_doc(
-			"TLS Certificate", {"domain": self.name, "status": "Active"}
-		)
+		try:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.server, "status": "Active"}
+			)
+		except frappe.DoesNotExistError:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.name, "status": "Active"}
+			)
+
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		db_server = frappe.get_doc("Database Server", self.database_server)
-		if not db_server.is_server_setup:
-			db_server.setup_server()
-
-		app_server = frappe.get_doc("Server", self.server)
-		if not app_server.is_server_setup:
-			app_server.setup_server()
-
 		self.update_tls()
+
+	def setup_server(self):
+		self._setup_db_server()
+
+		if self.different_database_server:
+			self._setup_app_server()
+
+	def _setup_db_server(self):
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		db_server.setup_server()
+
+	def _setup_app_server(self):
+		app_server = frappe.get_doc("Server", self.server)
+		app_server.setup_server()
 
 	def create_subscription(self):
 		frappe.new_doc(
@@ -681,7 +760,7 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 
 def get_symbolic_name(server_type):
 	return {
-		"Proxy Server": "n",
-		"Server": "f",
-		"Database Server": "m",
-	}.get(server_type, "f")
+		"Proxy Server": "hybrid-n",
+		"Server": "hybrid-f",
+		"Database Server": "hybrid-m",
+	}.get(server_type, "hybrid-f")

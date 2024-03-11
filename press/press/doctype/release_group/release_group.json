@@ -17,6 +17,8 @@
   "central_bench",
   "section_break_7",
   "servers",
+  "section_break_keov",
+  "docker_remote_builder_server",
   "apps_tab",
   "apps",
   "config_tab",
@@ -44,7 +46,7 @@
   "is_push_to_deploy_enabled",
   "use_app_cache",
   "compress_app_cache",
-  "is_delta_build_enabled",
+  "use_delta_builds",
   "column_break_9efq",
   "merge_all_rq_queues",
   "merge_default_and_short_rq_queues",
@@ -262,7 +264,6 @@
    "label": "Common Site Config"
   },
   {
-   "default": "{}",
    "fieldname": "common_site_config_table",
    "fieldtype": "Table",
    "label": "Configuration",
@@ -317,13 +318,6 @@
   },
   {
    "default": "0",
-   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
-   "fieldname": "is_delta_build_enabled",
-   "fieldtype": "Check",
-   "label": "Delta Builds"
-  },
-  {
-   "default": "0",
    "fetch_from": "team.is_code_server_user",
    "fieldname": "is_code_server_enabled",
    "fieldtype": "Check",
@@ -344,7 +338,7 @@
   },
   {
    "default": "0",
-   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.21.3 or later.",
+   "description": "Uses Bench get-app cache for faster image builds. Can be used only if Bench version is 5.22.1 or later.",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
    "label": "Use App Cache"
@@ -356,10 +350,27 @@
    "fieldname": "compress_app_cache",
    "fieldtype": "Check",
    "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "section_break_keov",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "docker_remote_builder_server",
+   "fieldtype": "Link",
+   "label": "Docker Remote Builder Server",
+   "options": "Server"
+  },
+  {
+   "default": "0",
+   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
+   "fieldname": "use_delta_builds",
+   "fieldtype": "Check",
+   "label": "Use Delta Builds"
   }
  ],
  "links": [],
- "modified": "2024-02-05 11:29:56.312965",
+ "modified": "2024-03-05 15:49:31.592217",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

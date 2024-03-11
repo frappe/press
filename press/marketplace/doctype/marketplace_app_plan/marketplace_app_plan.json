@@ -8,26 +8,19 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "is_free",
-  "column_break_2",
-  "gst",
-  "block_monthly",
-  "us_eu",
-  "partner_discount",
-  "section_break_2",
+  "title",
   "app",
-  "column_break_3",
   "plan",
-  "standard_hosting_plan",
-  "column_break_5",
-  "discount_percent",
+  "interval",
+  "section_break_2",
+  "price_inr",
+  "column_break_3",
+  "price_usd",
   "plan_features_section",
   "available_on_versions",
   "features",
-  "section_break_7",
-  "marked_most_popular",
-  "add_ons_section",
-  "add_ons"
+  "allowed_roles_section",
+  "roles"
  ],
  "fields": [
   {
@@ -35,8 +28,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Plan",
-   "options": "Plan",
-   "reqd": 1
+   "options": "Site Plan"
   },
   {
    "fieldname": "app",
@@ -56,24 +48,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "discount_percent",
-   "fieldtype": "Percent",
-   "label": "Discount Percent"
-  },
-  {
-   "default": "0",
-   "fieldname": "marked_most_popular",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Marked Most Popular"
-  },
-  {
-   "default": "0",
-   "fieldname": "is_free",
-   "fieldtype": "Check",
-   "label": "Is Free"
-  },
-  {
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
@@ -85,20 +59,13 @@
    "label": "Plan Features"
   },
   {
-   "fieldname": "section_break_7",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "column_break_3",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_5",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "section_break_2",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Pricing"
   },
   {
    "fieldname": "available_on_versions",
@@ -107,62 +74,54 @@
    "options": "App Plan Version"
   },
   {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
   },
   {
-   "default": "0",
-   "description": "Monthly plan won't be shown on checkout",
-   "fieldname": "block_monthly",
-   "fieldtype": "Check",
-   "label": "Block Monthly"
+   "default": "Daily",
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly\nYearly"
   },
   {
-   "default": "0",
-   "description": "Include GST on checkout",
-   "fieldname": "gst",
-   "fieldtype": "Check",
-   "label": "GST"
+   "fieldname": "price_inr",
+   "fieldtype": "Currency",
+   "label": "Price (INR)",
+   "reqd": 1
   },
   {
-   "fieldname": "add_ons_section",
+   "fieldname": "price_usd",
+   "fieldtype": "Currency",
+   "label": "Price (USD)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "allowed_roles_section",
    "fieldtype": "Section Break",
-   "label": "Add Ons"
+   "label": "Allowed Roles"
   },
   {
-   "fieldname": "add_ons",
+   "default": "Daily",
+   "fieldname": "interval",
+   "fieldtype": "Select",
+   "label": "Interval",
+   "options": "Daily\nMonthly\nYearly"
+  },
+  {
+   "fieldname": "roles",
    "fieldtype": "Table",
-   "in_standard_filter": 1,
-   "label": "Marketplace Add On",
-   "options": "Marketplace Add On"
-  },
-  {
-   "default": "0",
-   "description": "Only for US/EU customers",
-   "fieldname": "us_eu",
-   "fieldtype": "Check",
-   "label": "US/EU"
-  },
-  {
-   "fieldname": "standard_hosting_plan",
-   "fieldtype": "Link",
-   "label": "Standard Hosting Plan",
-   "options": "Plan"
-  },
-  {
-   "default": "0",
-   "fieldname": "partner_discount",
-   "fieldtype": "Check",
-   "label": "Partner Discount"
+   "label": "Roles",
+   "options": "Has Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-10-12 11:14:25.942122",
+ "modified": "2024-02-21 21:05:19.586189",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
- "name_case": "UPPER CASE",
  "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [

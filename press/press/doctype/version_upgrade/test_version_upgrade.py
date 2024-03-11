@@ -11,6 +11,7 @@ from press.press.doctype.release_group.test_release_group import (
 )
 from press.press.doctype.server.test_server import create_test_server
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
+from press.press.doctype.site_update.test_site_update import create_test_site_update
 
 from press.press.doctype.version_upgrade.version_upgrade import VersionUpgrade
 
@@ -38,18 +39,40 @@ class TestVersionUpgrade(FrappeTestCase):
 		group2 = create_test_release_group([app1])
 
 		source_bench = create_test_bench(group=group1, server=server.name)
-		dest_bench = create_test_bench(group=group2, server=server.name)
+		create_test_bench(group=group2, server=server.name)
 
 		site = create_test_site(bench=source_bench.name)
 		site.install_app(app2.name)
 
-		destination_group = frappe.get_doc("Release Group", dest_bench.group)
-		destination_group.add_server(server.name)
+		group2.add_server(server.name)
 
 		self.assertRaisesRegex(
 			frappe.ValidationError,
 			f".*apps installed on {site.name}: app., app.$",
 			create_test_version_upgrade,
 			site.name,
-			destination_group.name,
+			group2.name,
 		)
+
+	def test_version_upgrade_creates_site_update_even_when_past_updates_failed(self):
+		server = create_test_server()
+		app1 = create_test_app()  # frappe
+
+		group1 = create_test_release_group([app1])
+		group2 = create_test_release_group([app1])
+
+		source_bench = create_test_bench(group=group1, server=server.name)
+		create_test_bench(group=group2, server=server.name)
+
+		site = create_test_site(bench=source_bench.name)
+
+		group2.add_server(server.name)
+
+		create_test_site_update(
+			site.name, group2.name, "Recovered"
+		)  # cause of failure not resolved
+		site_updates_before = frappe.db.count("Site Update", {"site": site.name})
+		version_upgrade = create_test_version_upgrade(site.name, group2.name)
+		version_upgrade.start()  # simulate scheduled one. User will be admin
+		site_updates_after = frappe.db.count("Site Update", {"site": site.name})
+		self.assertEqual(site_updates_before + 1, site_updates_after)

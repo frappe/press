@@ -8,6 +8,7 @@ import { h } from 'vue';
 import DoorOpen from '~icons/lucide/door-open';
 import PanelTopInactive from '~icons/lucide/panel-top-inactive';
 import Package from '~icons/lucide/package';
+import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import Globe from '~icons/lucide/globe';
@@ -32,9 +33,8 @@ export default {
 					icon: () => h(PanelTopInactive),
 					route: '/sites',
 					isActive:
-						['Site List', 'Site Detail', 'NewSite'].includes(routeName) ||
-						routeName.startsWith('Site Detail'),
-					disabled
+						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
+						routeName.startsWith('Site Detail')
 				},
 				{
 					name: 'Benches',
@@ -44,11 +44,20 @@ export default {
 						[
 							'Release Group List',
 							'Release Group Detail',
-							'NewBench',
-							'NewBenchSite',
+							'New Release Group',
+							'Bench New Site',
 							'Bench Deploy'
 						].includes(routeName) ||
 						routeName.startsWith('Release Group Detail'),
+					disabled
+				},
+				{
+					name: 'Servers',
+					icon: () => h(Server),
+					route: '/servers',
+					isActive:
+						['New Server'].includes(routeName) ||
+						routeName.startsWith('Server'),
 					disabled
 				},
 				{

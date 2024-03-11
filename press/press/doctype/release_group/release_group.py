@@ -2,32 +2,31 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
+import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
+from typing import TYPE_CHECKING, List
+
 import frappe
-from frappe.utils import comma_and, flt
-import json
-from typing import List
+import semantic_version as sv
+from frappe import _
 from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from press.press.doctype.server.server import Server
-from press.press.doctype.resource_tag.tag_helpers import TagHelpers
-from press.utils import (
-	get_last_doc,
-	get_app_tag,
-	get_current_team,
-	log_error,
-	get_client_blacklisted_keys,
-)
+from frappe.utils import comma_and, cstr, flt, sbool
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
-from typing import TYPE_CHECKING
-from frappe.utils import cstr
-from frappe import _
-import semantic_version as sv
+from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.press.doctype.server.server import Server
+from press.utils import (
+	get_app_tag,
+	get_client_blacklisted_keys,
+	get_current_team,
+	get_last_doc,
+	log_error,
+)
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -43,7 +42,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document, TagHelpers):
-	dashboard_fields = ["title", "version", "apps"]
+	dashboard_fields = ["title", "version", "apps", "team", "public"]
 	dashboard_actions = [
 		"remove_app",
 		"change_app_branch",
@@ -62,7 +61,8 @@ class ReleaseGroup(Document, TagHelpers):
 	]
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, filters, **list_args):
+		ReleaseGroupServer = frappe.qb.DocType("Release Group Server")
 		ReleaseGroup = frappe.qb.DocType("Release Group")
 		Bench = frappe.qb.DocType("Bench")
 		Site = frappe.qb.DocType("Site")
@@ -88,6 +88,13 @@ class ReleaseGroup(Document, TagHelpers):
 			.select(site_count.as_("site_count"), active_benches.as_("active_benches"))
 		)
 
+		if server := filters.get("server"):
+			query = (
+				query.inner_join(ReleaseGroupServer)
+				.on(ReleaseGroupServer.parent == ReleaseGroup.name)
+				.where(ReleaseGroupServer.server == server)
+			)
+
 		return query
 
 	def get_doc(self, doc):
@@ -109,6 +116,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
+		self.set_default_delta_builds_flags()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -137,9 +145,6 @@ class ReleaseGroup(Document, TagHelpers):
 			# update internal flag from master
 			row.internal = frappe.db.get_value("Site Config Key", row.key, "internal")
 			key_type = row.type or row.get_type()
-			if key_type == "Password":
-				# we don't support password type yet!
-				key_type = "String"
 			row.type = key_type
 
 			if key_type == "Number":
@@ -215,9 +220,11 @@ class ReleaseGroup(Document, TagHelpers):
 			if _type == "Number":
 				value = flt(value)
 			elif _type == "Boolean":
-				value = bool(value)
+				value = bool(sbool(value))
 			elif _type == "JSON":
 				value = frappe.parse_json(value)
+			elif _type == "Password" and value == "*******":
+				value = frappe.get_value("Site Config", {"key": key, "parent": self.name}, "value")
 
 			# update existing key
 			for row in sanitized_common_site_config:
@@ -379,7 +386,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def validate_feature_flags(self) -> None:
 		if self.use_app_cache and not self.can_use_get_app_cache():
-			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.21.2 or later"))
+			frappe.throw(_("Use App Cache cannot be set, BENCH_VERSION must be 5.22.1 or later"))
 
 	def can_use_get_app_cache(self) -> bool:
 		version = find(
@@ -388,7 +395,7 @@ class ReleaseGroup(Document, TagHelpers):
 		).version
 
 		try:
-			return sv.Version(version) in sv.SimpleSpec(">=5.21.3")
+			return sv.Version(version) in sv.SimpleSpec(">=5.22.1")
 		except ValueError:
 			return False
 
@@ -562,29 +569,30 @@ class ReleaseGroup(Document, TagHelpers):
 			fields=["name", "status", "cluster", "plan", "creation", "bench"],
 		)
 
-		Cluster = frappe.qb.DocType("Cluster")
-		cluster_data = (
-			frappe.qb.from_(Cluster)
-			.select(Cluster.name, Cluster.title, Cluster.image)
-			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+		if sites_in_group_details:
+			Cluster = frappe.qb.DocType("Cluster")
+			cluster_data = (
+				frappe.qb.from_(Cluster)
+				.select(Cluster.name, Cluster.title, Cluster.image)
+				.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		Plan = frappe.qb.DocType("Plan")
-		plan_data = (
-			frappe.qb.from_(Plan)
-			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			Plan = frappe.qb.DocType("Site Plan")
+			plan_data = (
+				frappe.qb.from_(Plan)
+				.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+				.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		ResourceTag = frappe.qb.DocType("Resource Tag")
-		tag_data = (
-			frappe.qb.from_(ResourceTag)
-			.select(ResourceTag.tag_name, ResourceTag.parent)
-			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			ResourceTag = frappe.qb.DocType("Resource Tag")
+			tag_data = (
+				frappe.qb.from_(ResourceTag)
+				.select(ResourceTag.tag_name, ResourceTag.parent)
+				.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
 		cur_user_ssh_key = frappe.get_all(
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
@@ -646,12 +654,21 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def get_certificate(self):
+		user_ssh_key = (
+			frappe.get_all(
+				"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+			)
+			or [None]
+		)[0]
+		if not user_ssh_key:
+			return False
 		certificates = frappe.get_all(
 			"SSH Certificate",
 			{
 				"user": frappe.session.user,
 				"valid_until": [">", frappe.utils.now()],
 				"group": self.name,
+				"user_ssh_key": user_ssh_key,
 			},
 			pluck="name",
 			limit=1,
@@ -1054,6 +1071,12 @@ class ReleaseGroup(Document, TagHelpers):
 			"compress_app_cache",
 		)
 
+	def set_default_delta_builds_flags(self):
+		if not frappe.db.get_single_value("Press Settings", "use_delta_builds"):
+			return
+
+		self.use_delta_builds = 1
+
 
 def new_release_group(
 	title, version, apps, team=None, cluster=None, saas_app="", server=None
@@ -1066,6 +1089,8 @@ def new_release_group(
 				pluck="name",
 				limit=1,
 			)[0]
+		servers = [{"server": server}]
+	elif server:
 		servers = [{"server": server}]
 	else:
 		servers = []

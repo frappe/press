@@ -231,11 +231,11 @@ class TestDeployCandidate(unittest.TestCase):
 		i.e. after cache has been set by a previous one.
 
 		Creates two Deploy Candidates:
-		1. apps: frappe, hrms
-		2. apps: frappe, wiki, hrms
+		1. apps: frappe, raven
+		2. apps: frappe, wiki, raven
 
 		When building the image of the second Deploy Candidate,
-		hrms should be fetched from app cache.
+		raven should be fetched from app cache.
 		"""
 		from press.api.tests.test_bench import (
 			patch_dc_command_for_ci,
@@ -253,8 +253,8 @@ class TestDeployCandidate(unittest.TestCase):
 		BenchGetAppCache.clear_app_cache()
 
 		app_info_lists = [
-			[apps["frappe"], apps["hrms"]],
-			[apps["frappe"], apps["wiki"], apps["hrms"]],
+			[apps["frappe"], apps["raven"]],
+			[apps["frappe"], apps["wiki"], apps["raven"]],
 		]
 
 		dcs: list[DeployCandidate] = []
@@ -269,7 +269,7 @@ class TestDeployCandidate(unittest.TestCase):
 		the builds.
 		"""
 		cache_items = {v.app: v for v in BenchGetAppCache.get_data()}
-		for name in ["hrms", "wiki"]:
+		for name in ["raven", "wiki"]:
 			file_name = cache_items.get(name, {}).get("file_name")
 			self.assertTrue(file_name, f"app {name} not found in bench get-app cache")
 
@@ -277,12 +277,12 @@ class TestDeployCandidate(unittest.TestCase):
 			self.assertTrue(hash_stub in file_name, "app found in cache does not match")
 
 		"""
-		Check if HRMS in the second Deploy Candidate was fetched
+		Check if raven in the second Deploy Candidate was fetched
 		from bench app cache.
 		"""
 		build_output = dcs[1].build_output
 		if build_output:
-			self.assertTrue("Getting hrms from cache" in build_output)
+			self.assertTrue("Getting raven from cache" in build_output)
 
 
 def create_cache_test_release_group(
@@ -311,7 +311,7 @@ def create_cache_test_release_group(
 	for dep in release_group.dependencies:
 		if dep.dependency != "BENCH_VERSION":
 			continue
-		dep.version = "5.21.3"
+		dep.version = "5.22.1"
 
 	release_group.insert(ignore_if_duplicate=True)
 	release_group.reload()
@@ -321,37 +321,41 @@ def create_cache_test_release_group(
 def create_cache_test_apps(team: "Team") -> dict[str, "AppInfo"]:
 	info = [
 		(
-			"frappe",
+			"https://github.com/frappe/frappe",
 			"Frappe Framework",
 			"Nightly",
 			"develop",
 			"d26c67df75a95ef43d329eadd48d7998ea656856",
 		),
 		(
-			"wiki",
+			"https://github.com/frappe/wiki",
 			"Frappe Wiki",
 			"Nightly",
 			"master",
 			"8b369c63dd90b4f36195844d4a84e2aaa3b8f39a",
 		),
 		(
-			"hrms",
-			"Frappe HRMS",
+			"https://github.com/The-Commit-Company/raven",
+			"Raven",
 			"Nightly",
 			"develop",
-			"84aced29ec904ebf09fbb4a80dc45d8112e6e71f",
+			"317de412bc4b66c21052a929021c1013bbe31335",
 		),
 	]
 
 	apps = dict()
-	for name, title, version, branch, hash in info:
+	for url, title, version, branch, hash in info:
+		parts = url.split("/")
+		name = parts[-1]
 		app = create_test_app(name, title)
 		source = app.add_source(
 			version,
-			f"https://github.com/frappe/{name}",
+			url,
 			branch,
 			team.name,
+			repository_owner=parts[-2],
 		)
+
 		release = create_test_app_release(source, hash)
 		apps[name] = dict(app=app, source=source, release=release)
 

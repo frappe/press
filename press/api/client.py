@@ -19,7 +19,7 @@ ALLOWED_DOCTYPES = [
 	"Site Activity",
 	"Site Config",
 	"Site Config Key",
-	"Plan",
+	"Site Plan",
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
@@ -35,6 +35,10 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate",
 	"Agent Job",
 	"Common Site Config",
+	"Server",
+	"Database Server",
+	"Ansible Play",
+	"Server Plan",
 	"Release Group Variable",
 	"Resource Tag",
 	"Press Tag",
@@ -109,7 +113,12 @@ def get_list(
 @frappe.whitelist()
 def get(doctype, name):
 	check_permissions(doctype)
-	doc = frappe.get_doc(doctype, name)
+	try:
+		doc = frappe.get_doc(doctype, name)
+	except frappe.DoesNotExistError:
+		controller = get_controller(doctype)
+		if hasattr(controller, "on_not_found"):
+			return controller.on_not_found(name)
 
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:

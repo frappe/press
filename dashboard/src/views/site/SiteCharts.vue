@@ -79,6 +79,24 @@
 				:chartTheme="requestChartColors"
 				:loading="$resources.analytics.loading"
 			/>
+			<BarChart
+				class="sm:col-span-2"
+				title="Slow Logs by Count"
+				:key="slowLogsByCountData"
+				:data="slowLogsByCountData"
+				unit="queries"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+			<BarChart
+				class="sm:col-span-2"
+				title="Slow Logs by Duration"
+				:key="slowLogsByDurationData"
+				:data="slowLogsByDurationData"
+				unit="seconds"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
 		</div>
 	</div>
 </template>
@@ -91,7 +109,7 @@ import SiteAnalyticsUptime from './SiteAnalyticsUptime.vue';
 
 export default {
 	name: 'SiteAnalytics',
-	props: ['site'],
+	props: ['siteName'],
 	components: {
 		BarChart,
 		LineChart,
@@ -115,7 +133,7 @@ export default {
 			return {
 				url: 'press.api.analytics.get',
 				params: {
-					name: this.site?.name,
+					name: this.siteName,
 					timezone: localTimezone,
 					duration: this.duration
 				},
@@ -186,6 +204,19 @@ export default {
 			if (!requestDurationByPath) return;
 
 			return requestDurationByPath;
+		},
+		slowLogsByCountData() {
+			let slowLogsByCount = this.$resources.analytics.data?.slow_logs_by_count;
+			if (!slowLogsByCount) return;
+
+			return slowLogsByCount;
+		},
+		slowLogsByDurationData() {
+			let slowLogsByDuration =
+				this.$resources.analytics.data?.slow_logs_by_duration;
+			if (!slowLogsByDuration) return;
+
+			return slowLogsByDuration;
 		},
 		requestTimeData() {
 			let requestCpuTime = this.$resources.analytics.data?.request_cpu_time;

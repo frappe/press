@@ -3,7 +3,7 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
 import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
@@ -77,10 +77,118 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewBench' });
+					router.push({ name: 'New Release Group' });
 				}
 			};
 		}
+	},
+	create: {
+		route: '/benches/new',
+		title: 'New Bench',
+		secondaryCreate: {
+			route: '/servers/:name/benches/new',
+			optionalFields: ['benchRegion'],
+			routeName: 'Server New Bench',
+			propName: 'server'
+		},
+		optionsResource() {
+			return {
+				url: 'press.api.bench.options',
+				initialData: {
+					versions: [],
+					clusters: []
+				},
+				auto: true
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.bench.new',
+				validate({ bench }) {
+					if (!bench.title) {
+						return 'Bench Title cannot be blank';
+					}
+					if (!bench.version) {
+						return 'Select a version to create bench';
+					}
+				},
+				onSuccess(groupName) {
+					this.$router.push({
+						name: 'Release Group Detail Apps',
+						params: { name: groupName }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createBench, vals, optionsData: options }) {
+			return {
+				label: 'Create Bench',
+				variant: 'solid',
+				onClick() {
+					createBench.submit({
+						bench: {
+							title: vals.benchTitle,
+							version: vals.benchVersion,
+							cluster: vals.benchRegion || null,
+							saas_app: null,
+							apps: [
+								// some wizardry to only pick frappe for the chosen version
+								options.versions
+									.find(v => v.name === vals.benchVersion)
+									.apps.find(app => app.name === 'frappe')
+							].map(app => {
+								return {
+									name: app.name,
+									source: app.source.name
+								};
+							}),
+							server: vals.server || null
+						}
+					});
+				}
+			};
+		},
+		options: [
+			{
+				label: 'Title',
+				name: 'benchTitle',
+				type: 'text'
+			},
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'benchVersion',
+				type: 'card',
+				fieldname: 'versions',
+				dependsOn: ['benchTitle']
+			},
+			{
+				label: 'Select Region',
+				name: 'benchRegion',
+				type: 'card',
+				fieldname: 'clusters',
+				dependsOn: ['benchVersion']
+			}
+		],
+		summary: [
+			{
+				label: 'Bench Title',
+				fieldname: 'benchTitle'
+			},
+			{
+				label: 'Region',
+				fieldname: 'benchRegion',
+				hideWhen: 'server'
+			},
+			{
+				label: 'Server',
+				fieldname: 'server',
+				hideWhen: 'benchRegion'
+			},
+			{
+				label: 'Frappe Version',
+				fieldname: 'benchVersion'
+			}
+		]
 	},
 	detail: {
 		titleField: 'title',
@@ -191,7 +299,7 @@ export default {
 								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
-										`${window.location.protocol}//${window.location.host}/app/release-group/${releaseGroup.name}`,
+										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
 										'_blank'
 									);
 								}
@@ -237,23 +345,30 @@ export default {
 								condition: () => row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return;
-									toast.promise(
-										releaseGroup.removeApp.submit({
-											app: row.name
-										}),
-										{
-											loading: 'Removing App...',
-											success: () => {
-												apps.reload();
-												return 'App Removed';
-											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: 'Remove App',
+										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(
+												releaseGroup.removeApp.submit({
+													app: row.name
+												}),
+												{
+													loading: 'Removing App...',
+													success: () => {
+														hide();
+														apps.reload();
+														return 'App Removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
 								}
 							},
 							{
@@ -326,7 +441,7 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
@@ -346,6 +461,11 @@ export default {
 							fieldname: 'build_duration',
 							format: duration,
 							class: 'text-gray-600',
+							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
 							width: 1
 						}
 					]
@@ -405,6 +525,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
@@ -441,12 +566,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({
@@ -773,6 +902,8 @@ export default {
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
+			let team = getTeam();
+
 			return [
 				{
 					label: 'Update Available',
@@ -821,7 +952,29 @@ export default {
 					},
 					options: [
 						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => team.doc.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
+							label: 'Impersonate Team',
+							icon: defineAsyncComponent(() =>
+								import('~icons/lucide/venetian-mask')
+							),
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
+						{
 							label: 'Drop Bench',
+							icon: icon('trash-2'),
 							onClick() {
 								confirmDialog({
 									title: 'Drop Bench',

@@ -72,12 +72,14 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "docker_remote_builder",
+  "docker_remote_builder_server",
+  "docker_remote_builder_ssh",
   "column_break_66",
   "code_server",
   "code_server_password",
   "use_app_cache",
   "compress_app_cache",
+  "use_delta_builds",
   "auto_update_section",
   "auto_update_queue_size",
   "remote_files_section",
@@ -178,8 +180,13 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
+  "column_break_biqm",
+  "realtime_job_updates",
   "code_spaces_tab",
-  "spaces_domain"
+  "spaces_domain",
+  "hybrid_server_tab",
+  "hybrid_cluster",
+  "hybrid_domain"
  ],
  "fields": [
   {
@@ -613,7 +620,7 @@
    "fieldname": "erpnext_plan",
    "fieldtype": "Link",
    "label": "ERPNext Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "fieldname": "erpnext_group",
@@ -647,7 +654,7 @@
    "fieldname": "staging_plan",
    "fieldtype": "Link",
    "label": "Staging Plan",
-   "options": "Plan"
+   "options": "Site Plan"
   },
   {
    "default": "24",
@@ -1060,11 +1067,6 @@
    "label": "Twilio Phone Number"
   },
   {
-   "fieldname": "docker_remote_builder",
-   "fieldtype": "Data",
-   "label": "Docker Remote Builder"
-  },
-  {
    "fieldname": "invoicing_column",
    "fieldtype": "Column Break"
   },
@@ -1108,7 +1110,7 @@
   },
   {
    "default": "0",
-   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.21.3 or later.",
+   "description": "Uses Bench get-app cache for faster image builds. Will be set only if Bench version is 5.22.1 or later.",
    "fieldname": "use_app_cache",
    "fieldtype": "Check",
    "label": "Use App Cache"
@@ -1120,11 +1122,56 @@
    "fieldname": "compress_app_cache",
    "fieldtype": "Check",
    "label": "Compress App Cache"
+  },
+  {
+   "fieldname": "column_break_biqm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "realtime_job_updates",
+   "fieldtype": "Check",
+   "label": "Realtime Job Updates"
+  },
+  {
+   "fieldname": "docker_remote_builder_server",
+   "fieldtype": "Link",
+   "label": "Docker Remote Builder Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "docker_remote_builder_ssh",
+   "fieldtype": "Data",
+   "label": "Docker Remote Builder (SSH)"
+  },
+  {
+   "default": "0",
+   "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
+   "fieldname": "use_delta_builds",
+   "fieldtype": "Check",
+   "label": "Use Delta Builds"
+  },
+  {
+   "fieldname": "hybrid_server_tab",
+   "fieldtype": "Tab Break",
+   "label": "Hybrid Server"
+  },
+  {
+   "fieldname": "hybrid_cluster",
+   "fieldtype": "Link",
+   "label": "Hybrid Cluster",
+   "options": "Cluster"
+  },
+  {
+   "fieldname": "hybrid_domain",
+   "fieldtype": "Link",
+   "label": "Hybrid Domain",
+   "options": "Root Domain"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-02-09 16:30:31.244735",
+ "modified": "2024-03-05 15:51:49.055544",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

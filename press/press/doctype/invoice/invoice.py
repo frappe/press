@@ -46,6 +46,7 @@ class Invoice(Document):
 		"applied_credits",
 		"status",
 		"due_date",
+		"total_discount_amount",
 	]
 
 	@staticmethod
@@ -379,7 +380,7 @@ class Invoice(Document):
 		for item in self.items:
 			if not item.description and item.document_type == "Site" and item.plan:
 				site_name = item.document_name.split(".archived")[0]
-				plan = frappe.get_cached_value("Plan", item.plan, "plan_title")
+				plan = frappe.get_cached_value("Site Plan", item.plan, "plan_title")
 				how_many_days = f"{cint(item.quantity)} day{'s' if item.quantity > 1 else ''}"
 				item.description = f"{site_name} active for {how_many_days} on {plan} plan"
 

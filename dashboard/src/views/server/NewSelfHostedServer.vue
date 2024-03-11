@@ -11,7 +11,6 @@
 				<SelfHostedHostname
 					v-show="activeStep.name === 'SelfHostedHostname'"
 					v-model:title="title"
-					v-model:domain="domain"
 				/>
 				<div class="mt-4">
 					<SelfHostedServerPlan
@@ -25,40 +24,10 @@
 						v-show="activeStep.name === 'ServerDetails'"
 						v-model:publicIP="publicIP"
 						v-model:privateIP="privateIP"
-						v-model:dbpublicIP="dbpublicIP"
-						v-model:dbprivateIP="dbprivateIP"
+						v-model:dbPublicIP="dbPublicIP"
+						v-model:dbPrivateIP="dbPrivateIP"
 						v-model:error="ipInvalid"
-					/>
-					<Button
-						variant="solid"
-						v-show="
-							activeStep.name === 'ServerDetails' &&
-							!this.ipInvalid &&
-							this.domain
-						"
-						@click="!domainVerified && $resources.verifyDNS.submit()"
-						:loading="$resources.verifyDNS.loading"
-						:icon-left="domainVerified ? 'check' : dnsErrorMessage ? 'x' : ''"
-						:appearance="
-							domainVerified
-								? 'success'
-								: dnsErrorMessage
-								? 'danger'
-								: 'primary'
-						"
-					>
-						{{
-							domainVerified
-								? 'Domain Verified'
-								: dnsErrorMessage
-								? 'Verification Error'
-								: 'Verify Domain'
-						}}
-					</Button>
-					<ErrorMessage
-						v-if="activeStep.name === 'ServerDetails'"
-						class="mt-2"
-						:message="dnsErrorMessage"
+						v-model:setupType="setupType"
 					/>
 				</div>
 
@@ -114,9 +83,6 @@
 							class="ml-auto"
 							variant="solid"
 							@click="nextStep(activeStep, next)"
-							:disabled="
-								activeStep.name === 'ServerDetails' ? !domainVerified : false
-							"
 							:class="{ 'mt-2': hasPrevious }"
 						>
 							Next
@@ -162,26 +128,25 @@ export default {
 			title: null,
 			options: null,
 			publicIP: null,
-			dbpublicIP: null,
+			dbPublicIP: null,
 			privateIP: null,
-			dbprivateIP: null,
+			dbPrivateIP: null,
+			setupType: null,
 			validationMessage: null,
 			serverDoc: null,
 			ssh_key: null,
 			selectedPlan: null,
-			domain: null,
 			dnsErrorMessage: null,
 			ipInvalid: false,
 			unreachable: false,
 			playOutput: false,
 			agreedToRegionConsent: false,
-			domainVerified: false,
 			nginxSetup: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
 					validate: () => {
-						return this.title && this.domain;
+						return this.title;
 					}
 				},
 				{
@@ -223,10 +188,10 @@ export default {
 						title: this.title,
 						publicIP: this.publicIP,
 						privateIP: this.privateIP,
-						dbpublicIP: this.dbpublicIP,
-						dbprivateIP: this.dbprivateIP,
+						dbpublicIP: this.dbPublicIP,
+						dbprivateIP: this.dbPrivateIP,
 						plan: this.selectedPlan,
-						url: this.domain
+						setupType: this.setupType
 					}
 				},
 				onSuccess(data) {
@@ -266,21 +231,6 @@ export default {
 				}
 			};
 		},
-		verifyDNS() {
-			return {
-				url: 'press.api.selfhosted.check_dns',
-				params: {
-					domain: this.domain,
-					ip: this.publicIP
-				},
-				onSuccess(data) {
-					this.domainVerified = data;
-					this.dnsErrorMessage = this.domainVerified
-						? null
-						: `DNS verification Failed, Please make sure ${this.domain} is pointed to ${this.publicIP}`;
-				}
-			};
-		},
 		setupNginx() {
 			return {
 				url: 'press.api.selfhosted.setup_nginx',
@@ -304,7 +254,7 @@ export default {
 		async setupServers() {
 			await this.$resources.setupServer.submit();
 			if (this.agreedToRegionConsent) {
-				this.$router.replace(`/servers/${this.serverDoc}/overview`);
+				this.$router.replace(`/servers/`);
 			}
 		}
 	}

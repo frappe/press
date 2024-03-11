@@ -35,6 +35,8 @@ ALLOWED_PATHS = [
 	"/api/method/marketplace-apps",
 	"/api/method/press.www.dashboard.get_context_for_dev",
 	"/api/method/frappe.website.doctype.web_form.web_form.accept",
+	"/api/method/frappe.core.doctype.user.user.test_password_strength",
+	"/api/method/frappe.core.doctype.user.user.update_password",
 ]
 
 ALLOWED_WILDCARD_PATHS = [

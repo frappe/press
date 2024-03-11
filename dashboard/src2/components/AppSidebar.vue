@@ -14,6 +14,11 @@
 						onClick: support
 					},
 					{
+						label: 'Switch to old dashboard',
+						icon: 'layout',
+						onClick: switchToOldDashboard
+					},
+					{
 						label: 'Logout',
 						icon: 'log-out',
 						onClick: $session.logout.submit
@@ -104,6 +109,9 @@ export default {
 	methods: {
 		support() {
 			window.open('https://frappecloud.com/support', '_blank');
+		},
+		switchToOldDashboard() {
+			window.location.href = '/dashboard';
 		}
 	}
 };
