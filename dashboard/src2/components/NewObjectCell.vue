@@ -2,7 +2,7 @@
 	<div class="mt-2">
 		<div
 			v-if="option?.type === 'card'"
-			class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+			class="grid grid-cols-2 gap-3 sm:grid-cols-3"
 		>
 			<button
 				v-for="card in filteredData(option)"
