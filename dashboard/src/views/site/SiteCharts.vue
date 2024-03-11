@@ -81,6 +81,15 @@
 			/>
 			<BarChart
 				class="sm:col-span-2"
+				title="Average Request Duration by Path"
+				:key="averageRequestDurationByPathData"
+				:data="averageRequestDurationByPathData"
+				unit="seconds"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+			<BarChart
+				class="sm:col-span-2"
 				title="Slow Logs by Count"
 				:key="slowLogsByCountData"
 				:data="slowLogsByCountData"
@@ -204,6 +213,13 @@ export default {
 			if (!requestDurationByPath) return;
 
 			return requestDurationByPath;
+		},
+		averageRequestDurationByPathData() {
+			let averageRequestDurationByPath =
+				this.$resources.analytics.data?.average_request_duration_by_path;
+			if (!averageRequestDurationByPath) return;
+
+			return averageRequestDurationByPath;
 		},
 		slowLogsByCountData() {
 			let slowLogsByCount = this.$resources.analytics.data?.slow_logs_by_count;
