@@ -3,28 +3,7 @@
 		v-model="show"
 		:options="{
 			title: 'Updates Available',
-			size: '2xl',
-			actions: [
-				{
-					label: 'Schedule Update',
-					variant: 'solid',
-					onClick: () => {
-						return this.$site.scheduleUpdate.submit(
-							{
-								skip_failing_patches: this.skipFailingPatches,
-								skip_backups: this.skipBackups,
-								scheduled_time: scheduledTimeInIST
-							},
-							{
-								onSuccess: () => {
-									this.$site.reload();
-									this.show = false;
-								}
-							}
-						);
-					}
-				}
-			]
+			size: '2xl'
 		}"
 	>
 		<template #body-content>
@@ -60,12 +39,37 @@
 				No apps to update
 			</div>
 		</template>
+		<template #actions>
+			<Button
+				class="w-full"
+				variant="solid"
+				:loading="$site.scheduleUpdate.loading"
+				:label="`Schedule update ${
+					scheduledTime ? `at ${scheduledTimeInLocal}` : 'now'
+				}`"
+				@click="
+					$site.scheduleUpdate.submit(
+						{
+							skip_failing_patches: skipFailingPatches,
+							skip_backups: skipBackups,
+							scheduled_time: scheduledTimeInIST
+						},
+						{
+							onSuccess: () => {
+								$site.reload();
+								show = false;
+							}
+						}
+					)
+				"
+			/>
+		</template>
 	</Dialog>
 </template>
 <script>
 import { FormControl, getCachedDocumentResource } from 'frappe-ui';
 import GenericList from './GenericList.vue';
-import { dayjsIST } from '../utils/dayjs';
+import dayjs, { dayjsIST } from '../utils/dayjs';
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -93,7 +97,11 @@ export default {
 	},
 	computed: {
 		scheduledTimeInIST() {
+			if (!this.scheduledTime) return;
 			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+		},
+		scheduledTimeInLocal() {
+			return dayjs(this.scheduledTime).format('lll');
 		},
 		listOptions() {
 			return {
