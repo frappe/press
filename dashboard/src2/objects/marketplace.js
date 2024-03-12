@@ -54,7 +54,8 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				width: 0.5
+				width: 0.5,
+				class: 'truncate overflow-auto max-w-sm'
 			}
 		],
 		primaryAction({ listResource: apps }) {
