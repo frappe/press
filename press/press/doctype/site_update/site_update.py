@@ -26,6 +26,8 @@ class SiteUpdate(Document):
 		"creation",
 	]
 
+	dashboard_actions = ["start"]
+
 	def validate(self):
 		if not self.is_new():
 			return
