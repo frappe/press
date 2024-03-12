@@ -25,7 +25,7 @@ from press.press.doctype.site_update.site_update import SiteUpdate
 from press.press.doctype.subscription.test_subscription import create_test_subscription
 
 
-@patch.object(SiteUpdate, "create_agent_request", new=Mock())
+@patch.object(SiteUpdate, "start", new=Mock())
 def create_test_site_update(site: str, destination_group: str, status: str):
 	return frappe.get_doc(
 		dict(
