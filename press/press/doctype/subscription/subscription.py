@@ -41,6 +41,7 @@ class Subscription(Document):
 			.groupby(Subscription.name)
 			.select(
 				Subscription.site,
+				Subscription.enabled,
 				price_field.as_("price"),
 				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
 			)
@@ -48,7 +49,7 @@ class Subscription(Document):
 				(Subscription.document_type == "Marketplace App")
 				& (Subscription.document_name == list_args["filters"]["document_name"])
 				& (Subscription.site != "")
-				& (Subscription.enabled == 1)
+				& (price_field > 0)
 			)
 			.limit(list_args["limit"])
 		)
