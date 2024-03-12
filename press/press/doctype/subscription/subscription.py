@@ -47,11 +47,13 @@ class Subscription(Document):
 			.where(
 				(Subscription.document_type == "Marketplace App")
 				& (Subscription.document_name == list_args["filters"]["document_name"])
+				& (Subscription.site != "")
+				& (Subscription.enabled == 1)
 			)
 			.limit(list_args["limit"])
 		)
 
-		return query
+		return query.run(as_dict=True)
 
 	def validate(self):
 		self.validate_duplicate()
