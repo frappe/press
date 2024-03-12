@@ -757,7 +757,7 @@ class SelfHostedServer(Document):
 		if disk_storage_unit.upper() == "TB":
 			return True
 
-		if disk_storage_unit.upper() == ["GB", "MB"] and int(disk_size) < 40:
+		if disk_storage_unit.upper() in ["GB", "MB"] and int(disk_size) < 40:
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)
