@@ -146,9 +146,8 @@ class AppRelease(Document):
 		if not source.github_installation_id:
 			return source.repository_url
 
-		try:
-			token = get_access_token(source.github_installation_id)
-		except KeyError:
+		token = get_access_token(source.github_installation_id)
+		if token is None:
 			frappe.throw(
 				f"App installation token could not be fetched for {self.app}. "
 				"Please ensure repository access for Frappe Cloud: "

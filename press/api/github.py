@@ -56,7 +56,7 @@ def get_access_token(install):
 	response = requests.post(
 		f"https://api.github.com/app/installations/{install}/access_tokens", headers=headers
 	).json()
-	return response["token"]
+	return response.get("token")
 
 
 @frappe.whitelist()
