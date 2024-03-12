@@ -15,6 +15,7 @@ import patches from './tabs/patches';
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
+		addApp: 'add_app',
 		removeApp: 'remove_app',
 		changeAppBranch: 'change_app_branch',
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
@@ -409,6 +410,26 @@ export default {
 										onAppAdd() {
 											apps.reload();
 											releaseGroup.reload();
+										},
+										onNewApp(app) {
+											toast.promise(
+												releaseGroup.addApp.submit({
+													app: app
+												}),
+												{
+													loading: 'Adding App...',
+													success: () => {
+														apps.reload();
+														releaseGroup.reload();
+														return `App ${app.title} added to the bench`;
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
 									})
 								);

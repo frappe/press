@@ -33,6 +33,8 @@ AppReleasePair = TypedDict(
 
 
 class AppRelease(Document):
+	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
+
 	def validate(self):
 		if not self.clone_directory:
 			self.set_clone_directory()

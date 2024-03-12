@@ -31,7 +31,7 @@ from press.api.marketplace import (
 	change_branch,
 	remove_version,
 	reset_features_for_plan,
-	review_stages,
+	review_steps,
 	start_review,
 	subscriptions,
 	update_app_description,
@@ -375,7 +375,7 @@ class TestAPIMarketplace(unittest.TestCase):
 		frappe.set_user(self.team.user)
 
 		# description, links and publish
-		old_stages = review_stages(self.marketplace_app.name)
+		old_stages = review_steps(self.marketplace_app.name)
 		self.assertEqual(False, old_stages["links"])
 		self.assertEqual(False, old_stages["description"])
 		self.assertEqual(False, old_stages["publish"])
@@ -386,7 +386,7 @@ class TestAPIMarketplace(unittest.TestCase):
 		self.marketplace_app.documentation = frappe.mock("url")
 		self.marketplace_app.save(ignore_permissions=True)
 		self.marketplace_app.reload()
-		new_stages = review_stages(self.marketplace_app.name)
+		new_stages = review_steps(self.marketplace_app.name)
 		self.assertEqual(True, new_stages["description"])
 		self.assertEqual(True, new_stages["links"])
 

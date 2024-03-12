@@ -51,6 +51,12 @@ ALLOWED_DOCTYPES = [
 	"Press Tag",
 	"User",
 	"Partner Approval Request",
+	"Marketplace App",
+	"Subscription",
+	"Marketplace App Version",
+	"Marketplace App Plan",
+	"App Release",
+	"Payout Order",
 	"App Patch",
 	"SaaS Product",
 ]

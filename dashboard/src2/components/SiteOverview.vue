@@ -108,7 +108,7 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
+				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
 			</div>
 			<div>
 				<div

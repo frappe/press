@@ -113,11 +113,7 @@
 			</div>
 		</template>
 	</Dialog>
-	<NewAppDialog
-		:benchName="benchName"
-		v-model="showNewAppDialog"
-		@app-add="$emit('appAdd')"
-	/>
+	<NewAppDialog v-if="showNewAppDialog" @app-added="addAppFromGithub" />
 </template>
 
 <script>
@@ -131,7 +127,7 @@ import {
 	TextInput
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
-import NewAppDialog from './NewAppDialog.vue';
+import NewAppDialog from '../NewAppDialog.vue';
 
 export default {
 	name: 'AddAppDialog',
@@ -146,12 +142,13 @@ export default {
 		TextInput,
 		NewAppDialog
 	},
-	emits: ['appAdd'],
+	emits: ['appAdd', 'new-app'],
 	data() {
 		return {
 			searchQuery: '',
 			showNewAppDialog: false,
 			selectedAppSources: [],
+			selectedBranch: '',
 			showDialog: true,
 			columns: [
 				{
@@ -189,7 +186,7 @@ export default {
 		};
 	},
 	resources: {
-		addApps: {
+		addApp: {
 			url: 'press.api.bench.add_app',
 			onSuccess() {
 				this.$emit('appAdd');
@@ -236,19 +233,23 @@ export default {
 		},
 		isLoading() {
 			return (
-				this.$resources.addApps.loading ||
+				this.$resources.addApp.loading ||
 				this.$resources.installableApps.loading
 			);
 		}
 	},
 	methods: {
+		addAppFromGithub(app) {
+			app.group = this.benchName;
+			this.$emit('new-app', app);
+		},
 		addApp(row) {
 			if (!this.selectedAppSources.includes(row))
 				this.selectedAppSources.push(row);
 
 			let app = this.selectedAppSources.find(app => app.name === row.name);
 
-			this.$resources.addApps.submit({
+			this.$resources.addApp.submit({
 				name: this.benchName,
 				source: app.source.name,
 				app: app.name

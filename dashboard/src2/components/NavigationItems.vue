@@ -52,6 +52,13 @@ export default {
 					disabled
 				},
 				{
+					name: 'Marketplace',
+					icon: () => h(Package),
+					route: '/marketplace',
+					isActive: routeName.startsWith('Marketplace'),
+					disabled
+				},
+				{
 					name: 'Servers',
 					icon: () => h(Server),
 					route: '/servers',

@@ -22,9 +22,6 @@ from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.app_release.app_release import AppRelease
 from press.utils import get_current_team, get_last_doc, unique, get_app_tag
 from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
-from press.press.doctype.app_release_approval_request.app_release_approval_request import (
-	AppReleaseApprovalRequest,
-)
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 from press.utils.billing import get_frappe_io_connection
 
@@ -335,9 +332,10 @@ def latest_approved_release(source: None | str) -> AppRelease:
 
 
 @frappe.whitelist()
-def create_approval_request(marketplace_app: str, app_release: str):
+@protected("Marketplace App")
+def create_approval_request(name, app_release: str):
 	"""Create a new Approval Request for given `app_release`"""
-	AppReleaseApprovalRequest.create(marketplace_app, app_release)
+	frappe.get_doc("Marketplace App", name).create_approval_request(app_release)
 
 
 @frappe.whitelist()
@@ -370,9 +368,7 @@ def get_latest_approval_request(app_release: str):
 	if len(approval_requests) == 0:
 		frappe.throw("No approval request exists for the given app release")
 
-	approval_request: AppReleaseApprovalRequest = frappe.get_doc(
-		"App Release Approval Request", approval_requests[0]
-	)
+	approval_request = frappe.get_doc("App Release Approval Request", approval_requests[0])
 
 	return approval_request
 
@@ -759,7 +755,10 @@ def update_app_plan(app_plan_name: str, updated_plan_data: Dict):
 		},
 	)
 
-	if no_of_active_subscriptions > 0:
+	if (
+		updated_plan_data["price_inr"] != app_plan_doc.price_inr
+		or updated_plan_data["price_usd"] != app_plan_doc.price_usd
+	) and no_of_active_subscriptions > 0:
 		# Someone is on this plan, don't change price for the plan,
 		# instead create and link a new plan
 		# TODO: Later we have to figure out a way for plan changes
@@ -1013,10 +1012,11 @@ def options_for_version(name, source):
 	added_versions = frappe.get_all(
 		"Marketplace App Version", {"parent": name}, pluck="version"
 	)
-	return {
-		"versions": list(set(frappe_version).difference(set(added_versions))),
-		"branches": branches(source),
-	}
+	branchesList = branches(source)
+	versions = list(set(frappe_version).difference(set(added_versions)))
+	branchesList = [branch["name"] for branch in branchesList]
+
+	return [{"version": version, "branch": branchesList} for version in versions]
 
 
 @protected("Marketplace App")
@@ -1035,16 +1035,25 @@ def remove_version(name, version):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def review_stages(name):
+def review_steps(name):
 	app = frappe.get_doc("Marketplace App", name)
-	return {
-		"logo": True if app.image else False,
-		"description": True if app.description and app.long_description else False,
-		"publish": True
-		if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
-		else False,
-		"links": True if app.website and app.support and app.documentation else False,
-	}
+	return [
+		{"step": "Add a logo for your app", "completed": True if app.image else False},
+		{
+			"step": "Add links",
+			"completed": True if app.website and app.support and app.documentation else False,
+		},
+		{
+			"step": "Update description and long description",
+			"completed": True if app.description else False,
+		},
+		{
+			"step": "Publish a release for version",
+			"completed": True
+			if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+			else False,
+		},
+	]
 
 
 @protected("Marketplace App")

@@ -952,4 +952,21 @@ def plausible_analytics(name):
 				unique_visitors = [{"value": d["visitors"], "date": d["date"]} for d in res]
 				response.update({"pageviews": pageviews, "visitors": unique_visitors})
 
+	response.update(
+		{
+			"weekly_installs": frappe.db.sql(
+				f"""
+		SELECT DATE_FORMAT(sa.creation, '%Y-%m-%d') AS date, COUNT(*) AS value
+		FROM `tabSite Activity` as sa
+		WHERE sa.action = 'Install App'
+		AND sa.creation >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)
+		AND sa.reason = '{name}'
+		GROUP BY WEEK(sa.creation)
+		ORDER BY date
+		""",
+				as_dict=True,
+			),
+		}
+	)
+
 	return response
