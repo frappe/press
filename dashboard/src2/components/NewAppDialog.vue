@@ -170,6 +170,7 @@
 								</template>
 							</FormControl>
 							<FormControl
+								v-if="showVersionSelector"
 								type="autocomplete"
 								label="Choose Version"
 								:options="options.versions.map(v => v.name)"
@@ -204,6 +205,12 @@ export default {
 	components: {
 		FTabs: Tabs,
 		FormControl
+	},
+	props: {
+		showVersionSelector: {
+			type: Boolean,
+			default: false
+		}
 	},
 	emits: ['app-added'],
 	data() {

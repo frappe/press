@@ -67,6 +67,7 @@ export default {
 				onClick() {
 					renderDialog(
 						h(NewAppDialog, {
+							showVersionSelector: true,
 							onAppAdded(app) {
 								toast.promise(apps.insert.submit(app), apps.reload(), {
 									loading: 'Adding new app...',
