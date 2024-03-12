@@ -24,6 +24,7 @@ class SelfHostedServer(Document):
 	def validate(self):
 		self.set_proxy_details()
 		self.set_mariadb_config()
+		self.set_database_plan()
 
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
@@ -238,7 +239,7 @@ class SelfHostedServer(Document):
 		self.status = "Active"
 		self.save()
 
-	def get_database_plan(self):
+	def set_database_plan(self):
 		if not self.different_database_server:
 			try:
 				frappe.get_last_doc("Server Plan", "Unlimited")
