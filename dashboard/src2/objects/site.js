@@ -26,6 +26,7 @@ import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { plans } from '../data/plans';
+import { getDocResource } from '../utils/resource';
 
 export default {
 	doctype: 'Site',
@@ -564,9 +565,35 @@ export default {
 								}
 							},
 							{
+								label: 'Update Now',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let siteUpdate = getDocResource({
+										doctype: 'Site Update',
+										name: row.name,
+										whitelistedMethods: {
+											updateNow: 'start'
+										}
+									});
+
+									toast.promise(siteUpdate.updateNow.submit(), {
+										loading: 'Updating site...',
+										success: () => {
+											router.push({
+												name: 'Site Detail Jobs',
+												params: { name: site.name }
+											});
+
+											return 'Site update started';
+										},
+										error: 'Failed to update site'
+									});
+								}
+							},
+							{
 								label: 'View App Changes',
 								onClick() {
-									let appDiffs = createListResource({
+									createListResource({
 										doctype: 'Deploy Candidate Difference App',
 										fields: [
 											'difference.github_diff_url as diff_url',
@@ -579,46 +606,48 @@ export default {
 										auto: true,
 										pageLength: 99,
 										onSuccess(data) {
-											renderDialog(
-												h(
-													GenericDialog,
-													{
-														options: {
-															title: 'Site update app changes'
-														}
-													},
-													{
-														default: () =>
-															h(ObjectList, {
-																options: {
-																	data: () => data,
-																	columns: [
-																		{
-																			label: 'App',
-																			fieldname: 'app',
-																			width: 0.5
-																		},
-																		{
-																			label: 'App Changes',
-																			fieldname: 'diff_url',
-																			width: 0.5,
-																			type: 'Button',
-																			Button({ row }) {
-																				return {
-																					label: 'View App Changes',
-																					slots: {
-																						prefix: icon('github')
-																					},
-																					link: row.diff_url
-																				};
+											if (data?.length) {
+												renderDialog(
+													h(
+														GenericDialog,
+														{
+															options: {
+																title: 'Site update app changes'
+															}
+														},
+														{
+															default: () =>
+																h(ObjectList, {
+																	options: {
+																		data: () => data,
+																		columns: [
+																			{
+																				label: 'App',
+																				fieldname: 'app',
+																				width: 0.5
+																			},
+																			{
+																				label: 'App Changes',
+																				fieldname: 'diff_url',
+																				width: 0.5,
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label: 'View App Changes',
+																						slots: {
+																							prefix: icon('github')
+																						},
+																						link: row.diff_url
+																					};
+																				}
 																			}
-																		}
-																	]
-																}
-															})
-													}
-												)
-											);
+																		]
+																	}
+																})
+														}
+													)
+												);
+											} else toast.error('No app changes found');
 										}
 									});
 								}
