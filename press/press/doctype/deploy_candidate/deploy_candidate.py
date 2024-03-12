@@ -228,14 +228,14 @@ class DeployCandidate(Document):
 				deploy_after_build,
 				deploy_to_staging,
 			)
-		except Exception as exc:
+		except Exception:
 			log_error(
 				"Deploy Candidate Build Exception",
 				name=self.name,
 				reference_doctype="Deploy Candidate",
 				reference_name=self.name,
 			)
-			create_build_failed_notification(self, exc)
+			create_build_failed_notification(self)
 			self._build_failed()
 			self._build_end()
 			raise

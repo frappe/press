@@ -89,6 +89,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval:doc.is_actionable",
    "description": "Actionable notifications can be rectified by the user. For example if a deploy breaks due to incompatible app version.",
    "fieldname": "is_actionable",
    "fieldtype": "Check",
@@ -123,7 +124,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-12 14:53:05.096115",
+ "modified": "2024-03-12 15:29:04.719461",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

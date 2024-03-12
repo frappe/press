@@ -133,11 +133,7 @@ class AppRelease(Document):
 			if "Repository not found." not in stdout:
 				raise e
 
-			frappe.throw(
-				f"Repository could not be fetched for {self.app}. "
-				"Please ensure repository access for Frappe Cloud: "
-				" https://frappecloud.com/docs/faq/custom_apps"
-			)
+			raise Exception("Repository could not be fetched", self.app)
 
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
@@ -148,11 +144,7 @@ class AppRelease(Document):
 
 		token = get_access_token(source.github_installation_id)
 		if token is None:
-			frappe.throw(
-				f"App installation token could not be fetched for {self.app}. "
-				"Please ensure repository access for Frappe Cloud: "
-				" https://frappecloud.com/docs/faq/custom_apps"
-			)
+			raise Exception("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
 
