@@ -28,8 +28,8 @@ from press.press.doctype.app_release.app_release import (
 	AppReleasePair,
 	get_changed_files_between_hashes,
 )
-from press.press.doctype.press_notification.press_notification import (
-	create_new_notification,
+from press.press.doctype.deploy_candidate.deploy_notifications import (
+	create_build_failed_notification,
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
@@ -228,13 +228,14 @@ class DeployCandidate(Document):
 				deploy_after_build,
 				deploy_to_staging,
 			)
-		except Exception:
+		except Exception as exc:
 			log_error(
 				"Deploy Candidate Build Exception",
 				name=self.name,
 				reference_doctype="Deploy Candidate",
 				reference_name=self.name,
 			)
+			create_build_failed_notification(self, exc)
 			self._build_failed()
 			self._build_end()
 			raise
@@ -1127,25 +1128,6 @@ class DeployCandidate(Document):
 		return deploy
 
 	def on_update(self):
-		# failure notification
-		if self.status == "Failure":
-			error_msg = " - ".join(
-				frappe.get_value(
-					"Deploy Candidate Build Step",
-					{"parent": self.name, "status": "Failure"},
-					["stage", "step"],
-				)
-				or []
-			)
-			group_title = frappe.get_value("Release Group", self.group, "title")
-
-			create_new_notification(
-				self.team,
-				"Bench Deploy",
-				self.doctype,
-				self.name,
-				f"The scheduled deploy on the bench <b>{group_title}</b> failed at step <b>{error_msg}</b>",
-			)
 		if self.status == "Running":
 			frappe.publish_realtime(
 				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
