@@ -254,7 +254,7 @@ class SelfHostedServer(Document):
 		plan.save()
 
 	@frappe.whitelist()
-	def create_db_server(self):
+	def create_database_server(self):
 		try:
 			if not self.mariadb_ip:
 				frappe.throw("Public IP for MariaDB not found")
@@ -263,7 +263,7 @@ class SelfHostedServer(Document):
 				"Database Server",
 				**{
 					"hostname": self.get_hostname("Database Server"),
-					"title": f"{self.title} DB",
+					"title": f"{self.title} Database",
 					"is_self_hosted": True,
 					"domain": self.hybrid_domain,
 					"self_hosted_server_domain": self.hybrid_domain,
@@ -327,7 +327,7 @@ class SelfHostedServer(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def create_server(self):
+	def create_application_server(self):
 		"""
 		Add a new record to the Server doctype
 		"""
@@ -337,7 +337,7 @@ class SelfHostedServer(Document):
 				"Server",
 				**{
 					"hostname": self.get_hostname("Server"),
-					"title": f"{self.title} App",
+					"title": f"{self.title} Application",
 					"is_self_hosted": True,
 					"domain": self.hybrid_domain,
 					"self_hosted_server_domain": self.hybrid_domain,
@@ -519,54 +519,6 @@ class SelfHostedServer(Document):
 			return tls_cert
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
-
-	@frappe.whitelist()
-	def _setup_nginx(self):
-		frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_app", queue="long")
-
-		if self.different_database_server:
-			frappe.enqueue_doc(self.doctype, self.name, "_setup_nginx_on_db", queue="long")
-
-	def _setup_nginx_on_app(self):
-		server = frappe._dict(
-			{
-				"doctype": "Server",
-				"name": self.server,
-				"ssh_user": self.ssh_user or "root",
-				"ssh_port": self.ssh_port or "22",
-				"ip": self.ip,
-			}
-		)
-
-		if self.setup_nginx(server):
-			self.create_tls_certs(self.server)
-
-			if not self.different_database_server:
-				self.create_tls_certs(self.database_server)
-
-			return True
-
-		return False
-
-	def _setup_nginx_on_db(self):
-		if not self.different_database_server:
-			return True
-
-		server = frappe._dict(
-			{
-				"doctype": "Database Server",
-				"name": self.database_server,
-				"ssh_user": self.ssh_user or "root",
-				"ssh_port": self.ssh_port or "22",
-				"ip": self.mariadb_ip,
-			}
-		)
-
-		if self.setup_nginx(server):
-			self.create_tls_certs(self.database_server)
-			return True
-
-		return False
 
 	def setup_nginx(self, server):
 		try:

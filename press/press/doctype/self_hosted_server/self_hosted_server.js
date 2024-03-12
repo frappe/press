@@ -17,7 +17,7 @@ frappe.ui.form.on('Self Hosted Server', {
 			],
 			[
 				__('Create Database Server'),
-				'create_db_server',
+				'create_database_server',
 				false,
 				frm.doc.proxy_created &&
 					frm.doc.different_database_server &&
@@ -25,7 +25,7 @@ frappe.ui.form.on('Self Hosted Server', {
 			],
 			[
 				__('Create App Server'),
-				'create_server',
+				'create_application_server',
 				false,
 				frm.doc.database_setup && !frm.doc.server_created,
 			],
