@@ -1,9 +1,9 @@
 <template>
-	<div class="flex h-screen overflow-hidden bg-gray-50">
+	<div class="flex h-screen overflow-hidden sm:bg-gray-50">
 		<ProductSignupPitch
 			v-if="saasProduct"
 			:saasProduct="saasProduct"
-			class="w-[40%]"
+			class="hidden w-[40%] sm:block"
 		/>
 		<div class="w-full overflow-auto">
 			<LoginBox

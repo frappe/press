@@ -1,6 +1,6 @@
 <template>
 	<div class="relative h-full">
-		<div class="relative z-10 mx-auto w-max py-32">
+		<div class="relative z-10 mx-auto py-8 sm:w-max sm:py-32">
 			<div class="flex" @dblclick="redirectForFrappeioAuth">
 				<slot name="logo">
 					<div class="mx-auto flex items-center space-x-2">
@@ -14,7 +14,7 @@
 				</slot>
 			</div>
 			<div
-				class="mx-auto bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-8 sm:shadow-xl"
+				class="mx-auto w-full bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-8 sm:shadow-xl"
 			>
 				<div class="mb-6 text-center" v-if="title">
 					<span
