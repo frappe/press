@@ -176,7 +176,11 @@
 			</Dialog>
 		</div>
 		<div class="absolute bottom-12 left-1/2 -translate-x-1/2 sm:left-[70%]">
-			<Dropdown :options="[{ label: 'Log out' }]">
+			<Dropdown
+				:options="[
+					{ label: 'Log out', onClick: () => $session.logout.submit() }
+				]"
+			>
 				<Button variant="ghost">
 					<span class="text-gray-600">
 						{{ $team.doc.user }}
