@@ -575,19 +575,6 @@ class SelfHostedServer(Document):
 		app_server = frappe.get_doc("Server", self.server)
 		app_server.setup_server()
 
-	def create_subscription(self):
-		frappe.new_doc(
-			"Plan Change",
-			**{
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"from_plan": "",
-				"to_plan": self.plan,
-				"type": "Initial Plan",
-				"timestamp": self.creation,
-			},
-		).insert(ignore_permissions=True)
-
 	@frappe.whitelist()
 	def fetch_system_ram(self, play_id=None):
 		"""
