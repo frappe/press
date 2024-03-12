@@ -588,9 +588,6 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -626,9 +623,6 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update without Backup")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		frappe.get_doc(
 			{
 				"doctype": "Site Update",
