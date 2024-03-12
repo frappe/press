@@ -496,10 +496,17 @@ class MarketplaceApp(WebsiteGenerator):
 		self.save()
 
 	def get_analytics(self):
+		today = frappe.utils.today()
+		last_week = frappe.utils.add_days(today, -7)
+
 		return {
 			"total_installs": self.total_installs(),
 			"installs_active_sites": self.total_active_sites(),
 			"installs_active_benches": self.total_active_benches(),
+			"installs_last_week": frappe.db.count(
+				"Site Activity",
+				{"action": "Install App", "reason": self.app, "creation": (">=", last_week)},
+			),
 			"total_payout": self.get_payout_amount(),
 			"paid_payout": self.get_payout_amount(status="Paid"),
 			"pending_payout": self.get_payout_amount(status="Draft"),

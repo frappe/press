@@ -47,7 +47,7 @@
 						<div>
 							<div class="leading-4">
 								<span class="text-base text-gray-900">
-									{{ installAnalytics.installs_active_benches }}
+									{{ installAnalytics.installs_last_week }}
 								</span>
 							</div>
 						</div>
@@ -56,12 +56,19 @@
 			</div>
 		</div>
 
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+		<div
+			v-if="$resources.plausible_analytics.data"
+			class="grid grid-cols-1 lg:grid-cols-2 gap-5"
+		>
 			<LineChart
 				title="Pageviews"
 				type="time"
-				:key="pageViewsData"
-				:data="pageViewsData"
+				key="Page Views"
+				:data="
+					mapChartAnalytics(
+						this.$resources.plausible_analytics.data?.pageviews || []
+					)
+				"
 				unit="views"
 				:chartTheme="[$theme.colors.purple[500]]"
 				:loading="$resources.plausible_analytics.loading"
@@ -81,14 +88,33 @@
 			<LineChart
 				title="Unique Visitors"
 				type="time"
-				:key="visitorsData"
-				:data="visitorsData"
+				key="Unique Visitors"
+				:data="
+					mapChartAnalytics(
+						this.$resources.plausible_analytics.data?.visitors || []
+					)
+				"
 				unit="visitors"
 				:chartTheme="[$theme.colors.green[500]]"
 				:loading="$resources.plausible_analytics.loading"
 				:error="$resources.plausible_analytics.error"
 			/>
 		</div>
+		<LineChart
+			class="mt-5"
+			title="Weekly Installs"
+			type="time"
+			key="Weekly Installs"
+			:data="
+				mapChartAnalytics(
+					this.$resources.plausible_analytics.data?.weekly_installs || []
+				)
+			"
+			unit="visitors"
+			:chartTheme="[$theme.colors.yellow[500]]"
+			:loading="$resources.plausible_analytics.loading"
+			:error="$resources.plausible_analytics.error"
+		/>
 	</div>
 </template>
 
@@ -125,6 +151,12 @@ export default {
 					formatTooltipY: yFormatter
 				}
 			};
+		},
+		mapChartAnalytics(data) {
+			if (!data) return;
+			return {
+				datasets: [data.map(d => [+new Date(d.date), d.value])]
+			};
 		}
 	},
 	resources: {
@@ -156,56 +188,6 @@ export default {
 				return this.$resources.analytics.data;
 			}
 			return {};
-		},
-		pageViewsData() {
-			let pageViews = this.$resources.plausible_analytics.data?.pageviews;
-			if (!pageViews) return;
-
-			return {
-				datasets: [pageViews.map(d => [+new Date(d.date), d.value])]
-			};
-		},
-		visitorsData() {
-			let visitorsData = this.$resources.plausible_analytics.data?.visitors;
-			if (!visitorsData) return;
-
-			return {
-				datasets: [visitorsData.map(d => [+new Date(d.date), d.value])]
-			};
-		},
-		paymentAnalytics() {
-			if (
-				!this.$resources.analytics.loading &&
-				this.$resources.analytics.data
-			) {
-				let data = this.$resources.analytics.data;
-				return {
-					total_payout: {
-						usd: data.total_payout.usd_amount
-							? data.total_payout.usd_amount.toFixed(2)
-							: 0.0,
-						inr: data.total_payout.inr_amount
-							? data.total_payout.inr_amount.toFixed(2)
-							: 0.0
-					},
-					pending_payout: {
-						usd: data.pending_payout.usd_amount
-							? data.pending_payout.usd_amount.toFixed(2)
-							: 0.0,
-						inr: data.pending_payout.inr_amount
-							? data.pending_payout.inr_amount.toFixed(2)
-							: 0.0
-					},
-					commission: {
-						usd: data.commission.usd_amount
-							? data.commission.usd_amount.toFixed(2)
-							: 0.0,
-						inr: data.commission.inr_amount
-							? data.commission.inr_amount.toFixed(2)
-							: 0.0
-					}
-				};
-			}
 		}
 	}
 };
