@@ -12,6 +12,8 @@ from press.api.github import get_access_token
 
 
 class AppReleaseDifference(Document):
+	dashboard_fields = ["github_diff_url"]
+
 	def validate(self):
 		if self.source_release == self.destination_release:
 			frappe.throw(
