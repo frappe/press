@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Add app to bench',
+			title: 'Add app',
 			size: '4xl'
 		}"
 		v-model="showDialog"

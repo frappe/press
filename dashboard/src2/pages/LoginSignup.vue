@@ -1,9 +1,9 @@
 <template>
-	<div class="flex h-screen overflow-hidden bg-gray-50">
+	<div class="flex h-screen overflow-hidden sm:bg-gray-50">
 		<ProductSignupPitch
 			v-if="saasProduct"
 			:saasProduct="saasProduct"
-			class="w-[40%]"
+			class="hidden w-[40%] sm:block"
 		/>
 		<div class="w-full overflow-auto">
 			<LoginBox
@@ -69,7 +69,7 @@
 								</router-link>
 							</div>
 							<Button class="mt-4" variant="solid"> Log in with email </Button>
-							<ErrorMessage class="mt-2" :message="loginError" />
+							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
 						<template v-else>
 							<FormControl
@@ -165,8 +165,7 @@ export default {
 			email: null,
 			password: null,
 			signupEmailSent: false,
-			resetPasswordEmailSent: false,
-			loginError: null
+			resetPasswordEmailSent: false
 		};
 	},
 	resources: {
@@ -222,15 +221,21 @@ export default {
 		async submitForm() {
 			if (this.isLogin) {
 				if (this.email && this.password) {
-					try {
-						await this.$session.login.submit({
+					await this.$session.login.submit(
+						{
 							email: this.email,
 							password: this.password
-						});
-					} catch (error) {
-						console.log(error);
-						this.loginError = error.messages.join('\n');
-					}
+						},
+						{
+							onSuccess: res => {
+								let loginRoute = `/dashboard-beta${res.dashboard_route || '/'}`;
+								if (this.$route.query.product) {
+									loginRoute = `/dashboard-beta/app-trial/${this.$route.query.product}`;
+								}
+								window.location.href = loginRoute;
+							}
+						}
+					);
 				}
 			} else if (this.hasForgotPassword) {
 				this.$resources.resetPassword.submit();

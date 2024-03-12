@@ -18,7 +18,7 @@
 			:is="column.component(contextWithRow)"
 		/>
 		<template v-else-if="column.type === 'Badge'">
-			<Badge :label="formattedValue" v-if="formattedValue" />
+			<Badge :label="formattedValue" :theme="theme" v-if="formattedValue" />
 		</template>
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
@@ -77,6 +77,14 @@ export default {
 	computed: {
 		value() {
 			return this.row[this.column.key];
+		},
+		theme() {
+			const theme = this.column.theme;
+			if (typeof theme === 'function') {
+				return theme(this.value, this.row);
+			}
+
+			return theme;
 		},
 		formattedValue() {
 			let formattedValue = this.column.format

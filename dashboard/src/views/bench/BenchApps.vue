@@ -127,7 +127,6 @@
 					</Button>
 				</template>
 			</Dialog>
-
 			<ChangeAppBranchDialog
 				:bench="benchName"
 				v-model:app="appToChangeBranchOf"
@@ -152,6 +151,7 @@ export default {
 		return {
 			selectedApps: [],
 			showAddAppDialog: false,
+			appToPatch: null,
 			appToChangeBranchOf: null,
 			searchTerm: '',
 			filteredOptions: []

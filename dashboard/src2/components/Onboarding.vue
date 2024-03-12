@@ -12,33 +12,79 @@
 		<p class="mt-6 text-base text-gray-800">
 			Complete the following steps to get started:
 		</p>
-		<div class="mt-4 space-y-6">
+		<div class="mt-6 space-y-8">
 			<div class="rounded-md">
-				<div>
+				<div v-if="pendingSiteRequest">
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>1</TextInsideCircle>
+							<span
+								class="text-base font-medium"
+								v-if="pendingSiteRequest.status == 'Error'"
+							>
+								There was an error creating your trial site for
+								{{ pendingSiteRequest.title }}
+							</span>
+							<span class="text-base font-medium" v-else>
+								Create your {{ pendingSiteRequest.title }} trial site
+							</span>
+						</div>
+					</div>
+					<div class="mt-2 pl-7" v-if="pendingSiteRequest.status == 'Error'">
+						<p class="mt-2 text-p-base text-gray-800">
+							Please contact Frappe Cloud support by clicking on the button
+							below.
+						</p>
+						<Button class="mt-2" link="/support"> Contact Support </Button>
+					</div>
+					<div class="mt-2 pl-7" v-else>
+						<p class="mt-2 text-p-base text-gray-800">
+							You can try out the {{ pendingSiteRequest.title }} app for free by
+							clicking on the button below.
+						</p>
+						<Button
+							class="mt-2"
+							:route="`/app-trial/${pendingSiteRequest.saas_product}`"
+						>
+							Continue
+						</Button>
+					</div>
+				</div>
+				<div v-else-if="trialSite">
 					<div class="flex items-center justify-between space-x-2">
 						<div class="flex items-center space-x-2">
 							<TextInsideCircle>1</TextInsideCircle>
 							<span class="text-base font-medium">
-								{{
-									$team.doc.is_saas_user
-										? 'Trial site created'
-										: 'Account created'
-								}}
+								Your trial site is ready: {{ trialSite.name }}
 							</span>
 						</div>
-
 						<div
 							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
 						>
 							<i-lucide-check class="h-3 w-3 text-white" />
 						</div>
 					</div>
-					<div v-if="$team.doc.is_saas_user" class="pl-7">
+					<div class="pl-7">
 						<p class="mt-2 text-p-base text-gray-800">
-							Your trial will expire on [date]. After that you won't be able to
-							access your site. Set up a payment method to enjoy uninterrupted
-							service.
+							Your trial will expire on
+							<span class="font-medium">
+								{{ $format.date(trialSite.trial_end_date, 'LL') }} </span
+							>. After that you won't be able to access your site. Set up
+							billing to enjoy uninterrupted service.
 						</p>
+					</div>
+				</div>
+				<div v-else>
+					<div class="flex items-center justify-between space-x-2">
+						<div class="flex items-center space-x-2">
+							<TextInsideCircle>1</TextInsideCircle>
+							<span class="text-base font-medium"> Account created </span>
+						</div>
+						<div
+							class="grid h-4 w-4 place-items-center rounded-full bg-green-500/90"
+						>
+							<i-lucide-check class="h-3 w-3 text-white" />
+						</div>
 					</div>
 				</div>
 			</div>
@@ -46,20 +92,19 @@
 				<div v-if="!$team.doc.payment_mode">
 					<div class="flex items-center space-x-2">
 						<TextInsideCircle>2</TextInsideCircle>
-						<span class="text-base font-medium"> Set up billing </span>
+						<span class="text-base font-medium"> Add a payment mode </span>
 					</div>
 
 					<div class="pl-7">
 						<p class="mt-2 text-p-base text-gray-800">
-							If you select this option, you need to add a card on file. If you
-							do this, we give you
-							<span class="font-medium">{{ free_credits }}</span>
-							free credits so that you can create sites and test them without
-							any upfront cost.
+							Select this option to add a card on file. If you do this, we give
+							you <span class="font-medium">{{ free_credits }}</span> worth of
+							free credits so that you can create sites without any upfront
+							cost.
 						</p>
 						<div class="mt-2">
 							<Button @click="showAddCardDialog = true">
-								Add card for automatic billing
+								Add a debit/credit card for automatic billing
 							</Button>
 						</div>
 						<div
@@ -74,11 +119,11 @@
 						</div>
 						<p class="mt-2 text-p-base text-gray-800">
 							If you don't want to add your card on file, you can add money to
-							your wallet and use it to create sites.
+							your account and use it to create sites.
 						</p>
 						<div class="mt-2 flex items-center space-x-2">
 							<Button @click="showBuyCreditsDialog = true">
-								Add money to your wallet
+								Add money to your account
 							</Button>
 						</div>
 					</div>
@@ -130,6 +175,9 @@
 						Create a new site
 					</Button>
 				</div>
+			</div>
+			<div v-if="$team.doc.payment_mode">
+				<Button route="/sites"> Go to sites </Button>
 			</div>
 		</div>
 		<Dialog
@@ -183,11 +231,18 @@ export default {
 			return this.$format.userCurrency(
 				this.$team.doc.currency == 'INR'
 					? window.free_credits_inr
-					: window.free_credits_usd
+					: window.free_credits_usd,
+				0
 			);
 		},
 		minimumAmount() {
 			return this.$team.doc.currency == 'INR' ? 100 : 5;
+		},
+		pendingSiteRequest() {
+			return this.$team.doc.pending_site_request;
+		},
+		trialSite() {
+			return this.$team.doc.trial_sites?.[0];
 		}
 	}
 };

@@ -8,7 +8,14 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, userCurrency, commaAnd } from '../utils/format';
+import {
+	bytes,
+	duration,
+	date,
+	userCurrency,
+	commaAnd,
+	plural
+} from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
@@ -71,8 +78,20 @@ export default {
 				format(value, row) {
 					if (row.trial_end_date) {
 						let trialEndDate = dayjsLocal(row.trial_end_date);
-						if (trialEndDate.isAfter(dayjsLocal())) {
-							return 'Trial';
+						let today = dayjsLocal();
+						let diffHours = trialEndDate.diff(today, 'hours');
+						let endsIn = '';
+						if (diffHours < 24) {
+							endsIn = `today`;
+						} else {
+							let days = Math.round(diffHours / 24);
+							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
+						}
+						if (
+							trialEndDate.isAfter(today) ||
+							trialEndDate.isSame(today, 'day')
+						) {
+							return `Trial ends ${endsIn}`;
 						}
 					}
 					let $team = getTeam();
@@ -320,16 +339,15 @@ export default {
 			{
 				label: 'Enter Subdomain',
 				name: 'subdomain',
-				type: 'text',
-				class: 'flex-1 rounded-r-none',
-				slot({ optionsData }) {
-					return h(
-						'div',
-						{
-							class: 'flex items-center rounded-r bg-gray-100 px-4 text-base'
-						},
-						`.${optionsData.domain}`
+				type: 'Component',
+				component({ optionsData }) {
+					let SubdomainInput = defineAsyncComponent(() =>
+						import('../components/site/SubdomainInput.vue')
 					);
+
+					return h(SubdomainInput, {
+						domain: optionsData.domain
+					});
 				},
 				dependsOn: ['siteVersion', 'cluster', 'plan']
 			}
@@ -1246,6 +1264,19 @@ export default {
 							import('../components/SiteUpdateDialog.vue')
 						);
 						renderDialog(h(SiteUpdateDialog, { site: site.doc.name }));
+					}
+				},
+				{
+					label: 'Impersonate Site Owner',
+					slots: {
+						prefix: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc.is_desk_user && site.doc.team != $team.name,
+					onClick() {
+						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
 					}
 				},
 				{

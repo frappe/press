@@ -3,18 +3,25 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
-		<div class="col-span-2 rounded-md border">
+		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="text-base text-gray-700">Current Plan</div>
 					<div class="mt-2 flex items-start justify-between">
 						<div>
 							<div class="leading-4">
-								<span class="text-base text-gray-900">
-									{{ currentPlan.currency }}{{ currentPlan.price }} / month
+								<span class="text-base text-gray-900" v-if="currentPlan">
+									{{ $format.planTitle(currentPlan) }}
+									<span v-if="currentPlan.price_inr">/ month</span>
+								</span>
+								<span class="text-base text-gray-900" v-else>
+									No plan set
 								</span>
 							</div>
-							<div class="mt-1 text-sm leading-3 text-gray-600">
+							<div
+								class="mt-1 text-sm leading-3 text-gray-600"
+								v-if="currentPlan"
+							>
 								{{
 									currentPlan.support_included
 										? 'Support included'
@@ -30,13 +37,20 @@
 					<div class="mt-2">
 						<Progress
 							size="md"
-							:value="(currentUsage.cpu / currentPlan.cpu_time_per_day) * 100"
+							:value="
+								currentPlan
+									? (currentUsage.cpu / currentPlan.cpu_time_per_day) * 100
+									: 0
+							"
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ currentUsage.cpu }} of
-									{{ currentPlan.cpu_time_per_day }} hours
+									{{ currentUsage.cpu }}
+									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
+									<template v-if="currentPlan">
+										of {{ currentPlan?.cpu_time_per_day }} hours
+									</template>
 								</div>
 							</div>
 						</div>
@@ -48,14 +62,18 @@
 						<Progress
 							size="md"
 							:value="
-								(currentUsage.storage / currentPlan.max_storage_usage) * 100
+								currentPlan
+									? (currentUsage.storage / currentPlan.max_storage_usage) * 100
+									: 0
 							"
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.storage) }} of
-									{{ formatBytes(currentPlan.max_storage_usage) }}
+									{{ formatBytes(currentUsage.storage) }}
+									<template v-if="currentPlan">
+										of {{ formatBytes(currentPlan.max_storage_usage) }}
+									</template>
 								</div>
 							</div>
 						</div>
@@ -67,14 +85,20 @@
 						<Progress
 							size="md"
 							:value="
-								(currentUsage.database / currentPlan.max_database_usage) * 100
+								currentPlan
+									? (currentUsage.database / currentPlan.max_database_usage) *
+									  100
+									: 0
 							"
 						/>
 						<div>
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
-									{{ formatBytes(currentUsage.database) }} of
-									{{ formatBytes(currentPlan.max_database_usage) }}
+									{{ formatBytes(currentUsage.database) }}
+									<template v-if="currentPlan">
+										of
+										{{ formatBytes(currentPlan.max_database_usage) }}
+									</template>
 								</div>
 							</div>
 						</div>
@@ -149,6 +173,7 @@ export default {
 			];
 		},
 		currentPlan() {
+			if (!this.$site.doc.current_plan) return null;
 			let currency = this.$team.doc.currency;
 			return {
 				price:

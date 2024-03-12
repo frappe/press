@@ -836,6 +836,9 @@ def feedback(message, route=None):
 
 @frappe.whitelist()
 def user_prompts():
+	if frappe.local.dev_server:
+		return
+
 	team = get_current_team(True)
 	doc = frappe.get_doc("Team", team.name)
 
@@ -857,6 +860,33 @@ def user_prompts():
 			"UpdateBillingDetails",
 			"If you have a registered GSTIN number, you are required to update it, so that we can generate a GST Invoice.",
 		]
+
+
+@frappe.whitelist()
+def get_site_request(product):
+	team = frappe.local.team()
+	requests = frappe.db.get_all(
+		"SaaS Product Site Request",
+		{
+			"team": team.name,
+			"saas_product": product,
+		},
+		["name", "status"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if not requests:
+		site_request = frappe.new_doc(
+			"SaaS Product Site Request",
+			saas_product=product,
+			team=team.name,
+		).insert(ignore_permissions=True)
+		return site_request.name
+	else:
+		site_request = requests[0]
+		if site_request.status in ["Pending", "Wait for Site", "Error"]:
+			return site_request.name
+		frappe.throw("You have already created a trial site for this product")
 
 
 def redirect_to(location):

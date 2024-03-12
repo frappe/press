@@ -46,7 +46,7 @@ export default {
 					{
 						label: 'Balance',
 						fieldname: 'ending_balance',
-						format: this.$format.userCurrency
+						format: this.formatCurrency
 					}
 				],
 				filters: {

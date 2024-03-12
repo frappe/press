@@ -523,20 +523,26 @@ class BaseServer(Document, TagHelpers):
 		).insert()
 
 	def get_certificate(self):
-		if self.is_self_hosted:
-			self_hosted = frappe.db.get_value(
-				"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+
+		if not certificate_name and self.is_self_hosted:
+			certificate_name = frappe.db.get_value(
+				"TLS Certificate", {"domain": f"{self.name}"}, "name"
 			)
 
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate",
-				{"domain": f"{self_hosted.hostname}.{self_hosted.domain}"},
-				"name",
-			)
-		else:
-			certificate_name = frappe.db.get_value(
-				"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-			)
+			if not certificate_name:
+				self_hosted_server = frappe.db.get_value(
+					"Self Hosted Server", {"server": self.name}, ["hostname", "domain"], as_dict=1
+				)
+
+				certificate_name = frappe.db.get_value(
+					"TLS Certificate",
+					{"domain": f"{self_hosted_server.hostname}.{self_hosted_server.domain}"},
+					"name",
+				)
+
 		return frappe.get_doc("TLS Certificate", certificate_name)
 
 	def get_log_server(self):

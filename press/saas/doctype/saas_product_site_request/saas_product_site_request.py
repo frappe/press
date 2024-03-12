@@ -3,47 +3,52 @@
 
 import frappe
 from frappe.model.document import Document
-from press.saas.doctype.saas_product.pooling import SitePool
+from press.saas.doctype.saas_product.saas_product import SaaSProduct
 
 
 class SaaSProductSiteRequest(Document):
 	dashboard_fields = ["site", "status", "saas_product"]
 	dashboard_actions = ["create_site", "get_progress", "get_login_sid"]
 
-	def get_doc(self, doc):
-		saas_product = frappe.db.get_value(
-			"SaaS Product",
-			{"name": self.saas_product},
-			["name", "title", "logo", "domain", "description"],
-			as_dict=True,
-		)
-		saas_product.description = frappe.utils.md_to_html(saas_product.description)
-		doc.saas_product = saas_product
-		return doc
-
 	@frappe.whitelist()
-	def create_site(self, subdomain, plan):
-		pool = SitePool(self.saas_product)
-		site = pool.create_or_rename(subdomain, self.team, self.account_request)
+	def create_site(self, subdomain, plan, cluster=None):
+		product: SaaSProduct = frappe.get_doc("SaaS Product", self.saas_product)
+		site = product.setup_trial_site(subdomain, self.team, cluster)
+		self.agent_job = site.flags.rename_job
 		site.create_subscription(plan)
 		site.reload()
-		site.trial_end_date = frappe.utils.add_days(None, 14)
-		site.save(ignore_permissions=True)
+		trial_days = (
+			frappe.db.get_value("SaaS Product", self.saas_product, "trial_days") or 14
+		)
+		site.trial_end_date = frappe.utils.add_days(None, trial_days)
+		# update_config implicitly calles site.save
+		site.flags.ignore_permissions = True
+		site.update_site_config(
+			{
+				"subscription": {"trial_end_date": frappe.utils.cstr(site.trial_end_date)},
+				"app_include_js": ["https://frappecloud.com/assets/press/js/subscription.js"],
+			}
+		)
+		# site.save(ignore_permissions=True)
 		self.site = site.name
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def get_login_sid(self):
-		email = frappe.db.get_value("Account Request", self.account_request, "email")
+		email = frappe.db.get_value("Team", self.team, "user")
 		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
 
 	@frappe.whitelist()
 	def get_progress(self, current_progress=None):
 		current_progress = current_progress or 0
+		if self.agent_job:
+			filters = {"name": self.agent_job, "site": self.site}
+		else:
+			filters = {"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]}
 		job_name, status = frappe.db.get_value(
 			"Agent Job",
-			{"site": self.site, "job_type": ["in", ["New Site", "Rename Site"]]},
+			filters,
 			["name", "status"],
 		)
 		if status == "Success":
@@ -62,7 +67,11 @@ class SaaSProductSiteRequest(Document):
 			if progress <= current_progress:
 				progress = current_progress + 1
 			return {"progress": progress}
-		elif status in ("Failure", "Undelivered"):
+		elif status == "Failure":
+			self.status = "Error"
+			self.save(ignore_permissions=True)
+			return {"progress": current_progress, "error": True}
+		elif status == "Undelivered":
 			return {"progress": current_progress, "error": True}
 
 		return {"progress": current_progress + 1}

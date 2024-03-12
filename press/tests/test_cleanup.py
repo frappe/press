@@ -13,6 +13,7 @@ from press.press.doctype.site.backups import FIFO, GFS
 from press.press.doctype.site.backups import cleanup_offsite
 from press.press.doctype.site.test_site import create_test_site
 from press.press.doctype.site_backup.test_site_backup import create_test_site_backup
+from press.utils.test import foreground_enqueue
 
 
 @patch.object(AgentJob, "after_insert", new=Mock())
@@ -279,6 +280,7 @@ class TestBackupRotationScheme(unittest.TestCase):
 
 	@patch("press.press.doctype.site.backups.GFS")
 	@patch("press.press.doctype.site.backups.FIFO")
+	@patch("press.press.doctype.site.backups.frappe.enqueue", foreground_enqueue)
 	def test_press_setting_of_rotation_scheme_works(self, mock_FIFO, mock_GFS):
 		"""Ensure setting rotation scheme in press settings affect rotation scheme used."""
 		press_settings = create_test_press_settings()

@@ -140,9 +140,10 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppSite',
-			path: '/new-app-site',
-			component: () => import('./pages/NewAppSite.vue')
+			name: 'NewAppTrial',
+			path: '/app-trial/:productId',
+			component: () => import('./pages/NewAppTrial.vue'),
+			props: true
 		},
 		{
 			name: 'Impersonate',
@@ -171,17 +172,13 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingComplete = $team.doc.onboarding.complete;
 		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
-		let onboardingRoute = $team.doc.onboarding.saas_site_request
-			? 'NewAppSite'
-			: 'Welcome';
-
-		if (onboardingIncomplete && to.name != onboardingRoute) {
+		let onboardingRoute = 'Welcome';
+		if (
+			onboardingIncomplete &&
+			to.name != onboardingRoute &&
+			(to.name.includes('Release Group') || to.name.includes('Server'))
+		) {
 			next({ name: onboardingRoute });
-			return;
-		}
-
-		if (to.name == onboardingRoute && onboardingComplete) {
-			next({ name: defaultRoute });
 			return;
 		}
 

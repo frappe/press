@@ -4,6 +4,7 @@
 import _io
 import json
 import os
+import typing
 from datetime import date
 from typing import List
 
@@ -11,6 +12,9 @@ import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
 
 
 class Agent:
@@ -871,6 +875,14 @@ class Agent:
 	def force_update_bench_limits(self, bench: str, data: dict):
 		return self.create_agent_job(
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
+		)
+
+	def patch_app(self, bench: str, app: str, data: "AgentPatchConfig"):
+		return self.create_agent_job(
+			"Patch App",
+			f"benches/{bench}/patch/{app}",
+			bench=bench,
+			data=data,
 		)
 
 	def upload_build_context_for_docker_build(self, file):

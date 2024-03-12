@@ -9,16 +9,15 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "description",
   "column_break_bqrh",
   "logo",
   "published",
+  "section_break_gogi",
+  "description",
   "section_break_rvnt",
-  "team",
   "domain",
-  "plan",
+  "trial_days",
   "column_break_cpkv",
-  "cluster",
   "release_group",
   "section_break_ipmu",
   "apps",
@@ -36,14 +35,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Title",
-   "reqd": 1
-  },
-  {
-   "fieldname": "team",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Team",
-   "options": "Team",
    "reqd": 1
   },
   {
@@ -85,23 +76,8 @@
    "reqd": 1
   },
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Plan",
-   "options": "Site Plan",
-   "reqd": 1
-  },
-  {
    "fieldname": "column_break_cpkv",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "cluster",
-   "fieldtype": "Link",
-   "label": "Cluster",
-   "options": "Cluster",
-   "reqd": 1
   },
   {
    "fieldname": "release_group",
@@ -112,8 +88,7 @@
   },
   {
    "fieldname": "site_pool_section",
-   "fieldtype": "Section Break",
-   "label": "Site Pool"
+   "fieldtype": "Section Break"
   },
   {
    "default": "0",
@@ -153,11 +128,28 @@
    "fieldname": "description",
    "fieldtype": "Markdown Editor",
    "label": "Description"
+  },
+  {
+   "default": "14",
+   "fieldname": "trial_days",
+   "fieldtype": "Int",
+   "label": "Trial Duration (Days)"
+  },
+  {
+   "fieldname": "section_break_gogi",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   }
  ],
+ "image_field": "logo",
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-02-05 23:05:21.815072",
+ "links": [
+  {
+   "link_doctype": "Site",
+   "link_fieldname": "standby_for_product"
+  }
+ ],
+ "modified": "2024-03-12 14:27:39.104789",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",

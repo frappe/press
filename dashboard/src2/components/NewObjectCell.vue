@@ -2,7 +2,7 @@
 	<div class="mt-2">
 		<div
 			v-if="option?.type === 'card'"
-			class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+			class="grid grid-cols-2 gap-3 sm:grid-cols-3"
 		>
 			<button
 				v-for="card in filteredData(option)"
@@ -33,19 +33,11 @@
 				v-model="vals[option.name]"
 			/>
 		</div>
-		<div class="col-span-2 flex md:w-1/2" v-else-if="option?.type === 'text'">
-			<TextInput
-				class="w-full"
-				:class="option.class"
-				v-model="vals[option.name]"
-			/>
-			<template v-if="option?.slot">
-				<component :is="option.slot({ optionsData })" />
-			</template>
+		<div class="md:w-1/2" v-else-if="option?.type === 'text'">
+			<FormControl v-model="vals[option.name]" :type="option.type" />
 		</div>
 		<div v-else-if="option?.type === 'Component'">
 			<component
-				v-memo="[option]"
 				:is="option.component({ optionsData, vals })"
 				v-model="vals[option.name]"
 			/>
@@ -62,15 +54,13 @@ export default {
 	components: {
 		NewObjectPlanCards
 	},
-	data() {
-		return {
-			vals: this.modelValue
-		};
-	},
-	watch: {
+	computed: {
 		vals: {
-			handler(newVals) {
-				this.$emit('update:modelValue', newVals);
+			get() {
+				return this.modelValue;
+			},
+			set(val) {
+				this.$emit('update:modelValue', val);
 			}
 		}
 	},

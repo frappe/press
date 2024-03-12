@@ -1,62 +1,11 @@
 <template>
 	<div class="space-y-12">
-		<div v-if="publicApps.length">
+		<div v-if="publicApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Marketplace Apps
 			</h2>
 			<div class="mt-2 w-full space-y-2">
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
-					<button
-						v-for="app in publicApps"
-						:key="app"
-						@click="toggleApp(app)"
-						:class="[
-							apps.map(a => a.app).includes(app.app)
-								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-								: 'bg-white text-gray-900  hover:bg-gray-50',
-							'flex w-full items-start space-x-2 rounded border p-2 text-left text-base text-gray-900'
-						]"
-					>
-						<img :src="app.image" class="h-10 w-10 shrink-0" />
-						<div class="w-full">
-							<div class="flex w-full items-center justify-between">
-								<div class="flex items-center space-x-2">
-									<div class="text-base font-medium">
-										{{ app.app_title }}
-									</div>
-									<Tooltip
-										v-if="app.total_installs > 1"
-										:text="`${app.total_installs} installs`"
-									>
-										<div class="flex items-center text-sm text-gray-600">
-											<i-lucide-download class="h-3 w-3" />
-											<span class="ml-0.5 leading-3">
-												{{ $format.numberK(app.total_installs || '') }}
-											</span>
-										</div>
-									</Tooltip>
-									<Badge
-										theme="gray"
-										:label="
-											app.subscription_type === 'Freemium'
-												? 'Paid'
-												: app.subscription_type
-										"
-									/>
-								</div>
-								<a :href="`/${app.route}`" target="_blank" title="App details">
-									<FeatherIcon name="external-link" class="h-4 w-4" />
-								</a>
-							</div>
-							<div
-								class="mt-1 line-clamp-1 overflow-clip text-p-sm text-gray-600"
-								:title="app.description"
-							>
-								{{ app.description }}
-							</div>
-						</div>
-					</button>
-				</div>
+				<ObjectList :options="publicApps" />
 			</div>
 			<SiteAppPlanSelectorDialog
 				v-if="selectedApp"
@@ -64,65 +13,197 @@
 				:app="selectedApp"
 				@plan-select="
 					plan => {
-						apps.push({ app: selectedApp.app, plan });
+						apps = [...apps, { app: selectedApp.app, plan }];
 						showAppPlanSelectorDialog = false;
 					}
 				"
 			/>
 		</div>
-		<div v-if="!siteOnPublicBench && privateApps.length">
+		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				Select Private Apps
 			</h2>
 			<div class="mt-2 w-full space-y-2">
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
-					<button
-						v-for="app in privateApps"
-						:key="app"
-						@click="toggleApp(app)"
-						:class="[
-							apps.map(a => a.app).includes(app.app)
-								? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-								: 'bg-white text-gray-900  hover:bg-gray-50',
-							'flex h-12 w-full items-center space-x-2 rounded border p-2 text-left text-base text-gray-900'
-						]"
-					>
-						<div class="text-base font-medium">
-							{{ app.app_title }}
-						</div>
-					</button>
-				</div>
+				<ObjectList :options="privateApps" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+import { h } from 'vue';
+import DownloadIcon from '~icons/lucide/download';
 import SiteAppPlanSelectorDialog from './SiteAppPlanSelectorDialog.vue';
+import { Badge } from 'frappe-ui';
+import { icon } from '../../utils/components';
+import ObjectList from '../ObjectList.vue';
 
 export default {
 	props: ['availableApps', 'siteOnPublicBench', 'modelValue'],
 	emits: ['update:modelValue'],
 	components: {
+		ObjectList,
 		SiteAppPlanSelectorDialog
 	},
 	data() {
 		return {
 			selectedApp: null,
-			showAppPlanSelectorDialog: false,
-			apps: []
+			showAppPlanSelectorDialog: false
 		};
 	},
 	computed: {
+		apps: {
+			get() {
+				return this.modelValue || [];
+			},
+			set(newApps) {
+				this.$emit('update:modelValue', newApps);
+			}
+		},
 		publicApps() {
-			return (this.availableApps || []).filter(
+			if (!this.availableApps) return;
+			let publicApps = this.availableApps.filter(
 				app => (app.public || app.plans?.length) && app.image
 			);
+
+			if (!publicApps.length) return;
+
+			return {
+				data: () => publicApps,
+				columns: [
+					{
+						label: 'App',
+						fieldname: 'app_title',
+						width: 0.5,
+						type: 'Component',
+						component: ({ row }) => {
+							return h(
+								'a',
+								{
+									class: 'flex items-center text-sm',
+									href: `/${row.route}`,
+									target: '_blank'
+								},
+								[
+									h('img', {
+										class: 'h-6 w-6',
+										src: row.image
+									}),
+									h('span', { class: 'ml-2' }, row.app_title)
+								]
+							);
+						}
+					},
+					{
+						label: 'Installs',
+						width: 0.2,
+						type: 'Component',
+						component: ({ row }) => {
+							return h(
+								'div',
+								{
+									class: 'flex items-center text-sm text-gray-600'
+								},
+								[
+									h(DownloadIcon, {
+										class: 'h-3 w-3'
+									}),
+									h('span', { class: 'ml-0.5 leading-3' }, [
+										this.$format.numberK(row.total_installs || '')
+									])
+								]
+							);
+						}
+					},
+					{
+						label: 'Subscription',
+						width: 0.2,
+						type: 'Component',
+						component: ({ row }) => {
+							if (row.subscription_type !== 'Free')
+								return h(Badge, {
+									theme: 'gray',
+									label: 'Paid'
+								});
+						}
+					},
+					{
+						label: '',
+						width: 0.2,
+						align: 'right',
+						type: 'Button',
+						Button: ({ row: app }) => {
+							let formatPlan = plan => {
+								let price = plan.price_usd;
+								return price > 0 ? `$${price}` : 'Free';
+							};
+
+							let plan = this.apps.find(a => a.app === app.app)?.plan;
+							let title = plan ? formatPlan(plan) : 'Free';
+							let isAppAdded = this.apps.map(a => a.app).includes(app.app);
+
+							return {
+								label: isAppAdded ? title : 'Add',
+								slots: {
+									prefix: isAppAdded ? icon('check') : icon('plus')
+								},
+								variant: isAppAdded ? 'outline' : 'subtle',
+								onClick: event => {
+									this.toggleApp(app);
+									event.stopPropagation();
+								}
+							};
+						}
+					}
+				]
+			};
 		},
 		privateApps() {
-			return (this.availableApps || []).filter(
-				app => !this.publicApps.includes(app)
+			if (!this.availableApps) return;
+
+			let privateApps = this.availableApps.filter(
+				app => !((app.public || app.plans?.length) && app.image)
 			);
+
+			if (privateApps.length === 0) return;
+
+			return {
+				data: () => privateApps,
+				columns: [
+					{
+						label: 'App',
+						fieldname: 'app_title'
+					},
+					{
+						label: '',
+						align: 'right',
+						type: 'Button',
+						Button: ({ row: app }) => {
+							return {
+								label: this.apps
+									.map(a => a.app)
+									.includes(app.app || app.app_title)
+									? 'Added'
+									: 'Add',
+								slots: {
+									prefix: this.apps
+										.map(a => a.app)
+										.includes(app.app || app.app_title)
+										? icon('check')
+										: icon('plus')
+								},
+								variant: this.apps.map(a => a.app).includes(app.app)
+									? 'outline'
+									: 'subtle',
+								onClick: event => {
+									this.toggleApp(app);
+									event.stopPropagation();
+								}
+							};
+						}
+					}
+				]
+			};
 		}
 	},
 	methods: {
@@ -130,14 +211,13 @@ export default {
 			if (this.apps.map(a => a.app).includes(app.app)) {
 				this.apps = this.apps.filter(a => a.app !== app.app);
 			} else {
-				if (app.plans?.length) {
+				if (app.subscription_type && app.subscription_type !== 'Free') {
 					this.selectedApp = app;
 					this.showAppPlanSelectorDialog = true;
 				} else {
-					this.apps.push({ app: app.app });
+					this.apps = [...this.apps, app];
 				}
 			}
-			this.$emit('update:modelValue', this.apps);
 		}
 	}
 };

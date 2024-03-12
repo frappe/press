@@ -72,7 +72,8 @@
    "in_standard_filter": 1,
    "label": "Team",
    "options": "Team",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "customer_name",
@@ -454,7 +455,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2023-11-14 12:52:53.654283",
+ "modified": "2024-03-12 15:24:29.792253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",

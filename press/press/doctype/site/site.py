@@ -73,6 +73,7 @@ class Site(Document, TagHelpers):
 		"archive_failed",
 		"cluster",
 		"is_database_access_enabled",
+		"trial_end_date",
 	]
 	dashboard_actions = [
 		"activate",
@@ -105,6 +106,16 @@ class Site(Document, TagHelpers):
 		)
 		return query
 
+	@staticmethod
+	def on_not_found(name):
+		# If name is a custom domain then redirect to the site name
+		site_name = frappe.db.get_value("Site Domain", name, "site")
+		if site_name:
+			frappe.response.message = {
+				"redirect": f"/dashboard-beta/sites/{site_name}",
+			}
+		raise
+
 	def get_doc(self, doc):
 		from press.api.client import get
 
@@ -119,7 +130,6 @@ class Site(Document, TagHelpers):
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-
 		return doc
 
 	def site_action(allowed_status: List[str]):
@@ -275,11 +285,11 @@ class Site(Document, TagHelpers):
 	def rename(self, new_name: str):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 		agent = Agent(self.server)
-		if self.account_request and frappe.db.get_value(
-			"Account Request", self.account_request, "saas_product"
-		):
-			create_user = self.get_account_request_user()
-			agent.rename_site(self, new_name, create_user)
+		if self.standby_for_product:
+			# if standby site, rename site and create first user for trial signups
+			create_user = self.get_user_details()
+			job = agent.rename_site(self, new_name, create_user)
+			self.flags.rename_job = job.name
 		else:
 			agent.rename_site(self, new_name)
 		self.rename_upstream(new_name)
@@ -559,17 +569,18 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
-	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
+	def schedule_update(
+		self, skip_failing_patches=False, skip_backups=False, scheduled_time=None
+	):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
+				"status": "Scheduled" if scheduled_time else "Pending",
+				"scheduled_time": scheduled_time,
 			}
 		).insert()
 		return doc.name
@@ -577,9 +588,6 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -615,9 +623,6 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update without Backup")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -1273,7 +1278,8 @@ class Site(Document, TagHelpers):
 
 		if (
 			frappe.db.exists(
-				"Marketplace App Subscription", {"status": "Active", "site": self.name}
+				"Subscription",
+				{"enabled": 1, "site": self.name, "document_type": "Marketplace App"},
 			)
 			and self.trial_end_date
 		):
@@ -1386,15 +1392,13 @@ class Site(Document, TagHelpers):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.update_site_status(self.server, self.name, status, skip_reload)
 
-	def get_account_request_user(self):
-		if not self.account_request:
-			return
-		account_request = frappe.get_doc("Account Request", self.account_request)
+	def get_user_details(self):
+		user_email = frappe.db.get_value("Team", self.team, "user")
 		user = frappe.db.get_value(
-			"User", {"email": account_request.email}, ["first_name", "last_name"], as_dict=True
+			"User", {"email": user_email}, ["first_name", "last_name"], as_dict=True
 		)
 		return {
-			"email": account_request.email,
+			"email": user_email,
 			"first_name": user.first_name,
 			"last_name": user.last_name,
 		}
@@ -1819,6 +1823,12 @@ class Site(Document, TagHelpers):
 			{
 				"action": "Restore from backup",
 				"description": "Restore your database from database, public and private files",
+				"button_label": "Restore",
+				"doc_method": "restore_site_from_files",
+			},
+			{
+				"action": "Restore from an existing site",
+				"description": "Restore your database with database, public and private files from another site",
 				"button_label": "Restore",
 				"doc_method": "restore_site_from_files",
 			},

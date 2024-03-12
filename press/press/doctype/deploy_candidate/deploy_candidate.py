@@ -197,7 +197,7 @@ class DeployCandidate(Document):
 	def _build_and_deploy(self, staging: bool):
 		self._build(deploy_after_build=True, deploy_to_staging=staging)
 
-		if self.status == "Success" and not self.is_docker_remote_builder_used:
+		if not self.is_docker_remote_builder_used:
 			self._deploy(staging)
 
 	def _deploy(self, staging=False):
@@ -211,6 +211,7 @@ class DeployCandidate(Document):
 		no_cache: bool = False,
 		no_push: bool = False,
 		no_build: bool = False,
+		# Used for docker remote build
 		deploy_after_build: bool = False,
 		deploy_to_staging: bool = False,
 	):
@@ -228,7 +229,12 @@ class DeployCandidate(Document):
 				deploy_to_staging,
 			)
 		except Exception:
-			log_error("Deploy Candidate Build Exception", name=self.name)
+			log_error(
+				"Deploy Candidate Build Exception",
+				name=self.name,
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 			self._build_failed()
 			self._build_end()
 			raise
@@ -237,7 +243,7 @@ class DeployCandidate(Document):
 		if not no_cache:
 			self._update_app_releases()
 
-		if not no_cache and self.use_app_cache:
+		if not no_cache:
 			self._set_app_cached_flags()
 
 		self._prepare_build_directory()
@@ -298,6 +304,9 @@ class DeployCandidate(Document):
 		agent.build_docker_image(
 			{
 				"deploy_candidate": self.name,
+				# Next two values are not used by agent but are
+				# read in `process_docker_image_build_job_update`
+				# to trigger deploy after a remote build
 				"deploy_after_build": deploy_after_build,
 				"deploy_to_staging": deploy_to_staging,
 				"filename": uploaded_filename,
@@ -424,7 +433,7 @@ class DeployCandidate(Document):
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
-			app.use_cached = True
+			app.use_cached = bool(self.use_app_cache)
 
 	def _prepare_build_directory(self):
 		build_directory = frappe.get_value("Press Settings", None, "build_directory")
@@ -450,9 +459,7 @@ class DeployCandidate(Document):
 			self.save()
 
 	def _update_app_releases(self) -> None:
-		should_update = frappe.get_value(
-			"Release Group", self.group, "is_delta_build_enabled"
-		)
+		should_update = frappe.get_value("Release Group", self.group, "use_delta_builds")
 		if not should_update:
 			return
 
@@ -1279,15 +1286,15 @@ class DeployCandidate(Document):
 		if self.status == "Failure":
 			return True
 
-		errors = frappe.get_all(
-			"Error Log",
-			filters={
-				"error": ["like", f"%{self.name}%"],
-				"seen": False,
-				"creation": [">", self.modified],
-			},
-			fields=["name", "method", "creation"],
-			order_by="creation",
+		errors = frappe.db.sql(
+			"""
+				select `name`, `method`, `creation` from `tabError Log`
+				where `tabError Log`.`error` like %s
+				and `tabError Log`.`modified` > %s
+				order by modified
+			""",
+			(f"%{self.name}%", self.modified),
+			as_dict=True,
 		)
 
 		failed_step = self.get_first_step_of_given_status(["Failure"])

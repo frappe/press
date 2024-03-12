@@ -212,6 +212,24 @@ class DatabaseServer(BaseServer):
 			log_error("MariaDB Upgrade Error", server=self.name)
 
 	@frappe.whitelist()
+	def update_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_mariadb", timeout=1800)
+
+	def _update_mariadb(self):
+		ansible = Ansible(
+			playbook="update_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Update Error", server=self.name)
+
+	@frappe.whitelist()
 	def upgrade_mariadb_patched(self):
 		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb_patched", timeout=1800)
 
@@ -316,12 +334,28 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
+
+				self.process_hybrid_server_setup()
 			else:
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def process_hybrid_server_setup(self):
+		try:
+			hybird_server = frappe.db.get_value(
+				"Self Hosted Server", {"database_server": self.name}, "name"
+			)
+
+			if hybird_server:
+				hybird_server = frappe.get_doc("Self Hosted Server", hybird_server)
+
+				if not hybird_server.different_database_server:
+					hybird_server._setup_app_server()
+		except Exception:
+			log_error("Hybrid Server Setup exception", server=self.as_dict())
 
 	def _setup_primary(self, secondary):
 		mariadb_root_password = self.get_password("mariadb_root_password")

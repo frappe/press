@@ -2,16 +2,14 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from functools import cached_property
 import json
 from datetime import datetime, timedelta
+from functools import cached_property
 
 import frappe
 from frappe.exceptions import DoesNotExistError
-
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
-
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.site.site import Site
@@ -19,6 +17,8 @@ from press.utils import log_error
 
 
 class Bench(Document):
+	dashboard_fields = ["name", "group", "status"]
+
 	@staticmethod
 	def with_sites(name: str):
 		bench = frappe.get_doc("Bench", name)
@@ -261,7 +261,13 @@ class Bench(Document):
 					frappe.get_doc("Site", site, for_update=True).sync_info(info)
 					frappe.db.commit()
 				except Exception:
-					log_error("Site Sync Error", site=site, info=info)
+					log_error(
+						"Site Sync Error",
+						site=site,
+						info=info,
+						reference_doctype="Bench",
+						reference_name=self.name,
+					)
 					frappe.db.rollback()
 
 	@frappe.whitelist()
@@ -275,7 +281,13 @@ class Bench(Document):
 				frappe.get_doc("Site", site).sync_analytics(analytics)
 				frappe.db.commit()
 			except Exception:
-				log_error("Site Analytics Sync Error", site=site, analytics=analytics)
+				log_error(
+					"Site Analytics Sync Error",
+					site=site,
+					analytics=analytics,
+					reference_doctype="Bench",
+					reference_name=self.name,
+				)
 				frappe.db.rollback()
 
 	@frappe.whitelist()
@@ -588,7 +600,7 @@ def get_active_site_updates(bench: str):
 	return frappe.get_all(
 		"Site Update",
 		{
-			"status": ("in", ["Pending", "Running", "Failure"]),
+			"status": ("in", ["Pending", "Running", "Failure", "Scheduled"]),
 		},
 		or_filters={
 			"source_bench": bench,
@@ -660,7 +672,12 @@ def archive_obsolete_benches():
 					frappe.db.commit()
 					break
 				except Exception:
-					log_error("Bench Archival Error", bench=bench.name)
+					log_error(
+						"Bench Archival Error",
+						bench=bench.name,
+						reference_doctype="Bench",
+						reference_name=bench.name,
+					)
 					frappe.db.rollback()
 
 
@@ -695,7 +712,12 @@ def sync_bench(name):
 		bench.sync_info()
 		frappe.db.commit()
 	except Exception:
-		log_error("Bench Sync Error", bench=bench.name)
+		log_error(
+			"Bench Sync Error",
+			bench=bench.name,
+			reference_doctype="Bench",
+			reference_name=bench.name,
+		)
 		frappe.db.rollback()
 
 
@@ -717,7 +739,12 @@ def sync_bench_analytics(name):
 		bench.sync_analytics()
 		frappe.db.commit()
 	except Exception:
-		log_error("Bench Analytics Sync Error", bench=bench.name)
+		log_error(
+			"Bench Analytics Sync Error",
+			bench=bench.name,
+			reference_doctype="Bench",
+			reference_name=bench.name,
+		)
 		frappe.db.rollback()
 
 

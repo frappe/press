@@ -6,9 +6,11 @@ import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import { tagTab } from './common/tags';
+import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
@@ -149,7 +151,7 @@ export default {
 		},
 		options: [
 			{
-				label: 'Bench Title',
+				label: 'Title',
 				name: 'benchTitle',
 				type: 'text'
 			},
@@ -298,7 +300,7 @@ export default {
 								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
-										`${window.location.protocol}//${window.location.host}/app/release-group/${releaseGroup.name}`,
+										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
 										'_blank'
 									);
 								}
@@ -376,6 +378,17 @@ export default {
 									window.open(
 										`${row.repository_url}/tree/${row.branch}`,
 										'_blank'
+									);
+								}
+							},
+							{
+								label: 'Apply Patch',
+								onClick: () => {
+									renderDialog(
+										h(PatchAppDialog, {
+											group: releaseGroup.name,
+											app: row.name
+										})
 									);
 								}
 							}
@@ -905,10 +918,13 @@ export default {
 					}
 				}
 			},
-			tagTab()
+			tagTab(),
+			patches
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
+			let team = getTeam();
+
 			return [
 				{
 					label: 'Update Available',
@@ -957,7 +973,21 @@ export default {
 					},
 					options: [
 						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => team.doc.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
 							label: 'Impersonate Team',
+							icon: defineAsyncComponent(() =>
+								import('~icons/lucide/venetian-mask')
+							),
 							condition: () => window.is_system_user,
 							onClick() {
 								switchToTeam(bench.doc.team);
@@ -965,6 +995,7 @@ export default {
 						},
 						{
 							label: 'Drop Bench',
+							icon: icon('trash-2'),
 							onClick() {
 								confirmDialog({
 									title: 'Drop Bench',

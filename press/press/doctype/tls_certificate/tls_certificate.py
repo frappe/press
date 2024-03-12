@@ -116,6 +116,7 @@ class TLSCertificate(Document):
 	def trigger_self_hosted_server_callback(self):
 		try:
 			frappe.get_doc("Self Hosted Server", self.name).process_tls_cert_update()
+			# need fix for hybrid servers
 		except Exception:
 			pass
 

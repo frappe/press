@@ -78,7 +78,7 @@
 									'site',
 									'sites'
 							  )}`
-							: 'Skip and Deploy'
+							: 'Skip and deploy'
 					"
 					:loading="$resources.deploy.loading"
 					@click="$resources.deploy.submit()"

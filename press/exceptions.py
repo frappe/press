@@ -11,3 +11,7 @@ class FrappeioServerNotSet(ValidationError):
 
 class CannotChangePlan(ValidationError):
 	pass
+
+
+class OngoingAgentJob(ValidationError):
+	pass

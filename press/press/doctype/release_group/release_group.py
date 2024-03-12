@@ -43,7 +43,7 @@ DEFAULT_DEPENDENCIES = [
 
 
 class ReleaseGroup(Document, TagHelpers):
-	dashboard_fields = ["title", "version", "apps", "team"]
+	dashboard_fields = ["title", "version", "apps", "team", "public"]
 	dashboard_actions = [
 		"add_app",
 		"remove_app",
@@ -118,6 +118,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if len(self.dependencies) == 0:
 			self.fetch_dependencies()
 		self.set_default_app_cache_flags()
+		self.set_default_delta_builds_flags()
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
@@ -570,29 +571,30 @@ class ReleaseGroup(Document, TagHelpers):
 			fields=["name", "status", "cluster", "plan", "creation", "bench"],
 		)
 
-		Cluster = frappe.qb.DocType("Cluster")
-		cluster_data = (
-			frappe.qb.from_(Cluster)
-			.select(Cluster.name, Cluster.title, Cluster.image)
-			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+		if sites_in_group_details:
+			Cluster = frappe.qb.DocType("Cluster")
+			cluster_data = (
+				frappe.qb.from_(Cluster)
+				.select(Cluster.name, Cluster.title, Cluster.image)
+				.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		Plan = frappe.qb.DocType("Site Plan")
-		plan_data = (
-			frappe.qb.from_(Plan)
-			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			Plan = frappe.qb.DocType("Site Plan")
+			plan_data = (
+				frappe.qb.from_(Plan)
+				.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+				.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
-		ResourceTag = frappe.qb.DocType("Resource Tag")
-		tag_data = (
-			frappe.qb.from_(ResourceTag)
-			.select(ResourceTag.tag_name, ResourceTag.parent)
-			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
-			.run(as_dict=True)
-		)
+			ResourceTag = frappe.qb.DocType("Resource Tag")
+			tag_data = (
+				frappe.qb.from_(ResourceTag)
+				.select(ResourceTag.tag_name, ResourceTag.parent)
+				.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+				.run(as_dict=True)
+			)
 
 		cur_user_ssh_key = frappe.get_all(
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
@@ -1091,6 +1093,12 @@ class ReleaseGroup(Document, TagHelpers):
 			"Press Settings",
 			"compress_app_cache",
 		)
+
+	def set_default_delta_builds_flags(self):
+		if not frappe.db.get_single_value("Press Settings", "use_delta_builds"):
+			return
+
+		self.use_delta_builds = 1
 
 
 def new_release_group(

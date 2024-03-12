@@ -1,0 +1,122 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "beta": 1,
+ "creation": "2024-02-22 10:31:03.366179",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "filename",
+  "bench",
+  "group",
+  "build_assets",
+  "status",
+  "column_break_vedh",
+  "url",
+  "app",
+  "app_release",
+  "section_break_fqnr",
+  "patch"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bench",
+   "options": "Bench",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "build_assets",
+   "fieldtype": "Check",
+   "label": "Build assets after applying patch"
+  },
+  {
+   "fieldname": "column_break_vedh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_release",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "App Release",
+   "options": "App Release",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_fqnr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "patch",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Patch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "bench.group",
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Release Group",
+   "options": "Release Group",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval: doc.url",
+   "fieldname": "url",
+   "fieldtype": "Data",
+   "label": "Patch URL"
+  },
+  {
+   "fieldname": "filename",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "File Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Link",
+   "label": "App",
+   "options": "App",
+   "reqd": 1
+  },
+  {
+   "default": "Not Applied",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Not Applied\nIn Process\nFailed\nApplied"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-03-11 14:34:04.963664",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "App Patch",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "filename"
+}

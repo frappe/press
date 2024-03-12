@@ -34,8 +34,7 @@ export default {
 					route: '/sites',
 					isActive:
 						['Site List', 'Site Detail', 'New Site'].includes(routeName) ||
-						routeName.startsWith('Site Detail'),
-					disabled
+						routeName.startsWith('Site Detail')
 				},
 				{
 					name: 'Benches',
@@ -57,9 +56,9 @@ export default {
 					icon: () => h(Package),
 					route: '/marketplace',
 					isActive: routeName.startsWith('Marketplace'),
-          disabled
-        },
-        {
+					disabled
+				},
+				{
 					name: 'Servers',
 					icon: () => h(Server),
 					route: '/servers',

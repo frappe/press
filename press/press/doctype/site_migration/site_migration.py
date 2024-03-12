@@ -3,13 +3,14 @@
 # For license information, please see license.txt
 
 
+from contextlib import suppress
 from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.exceptions import CannotChangePlan
+from press.exceptions import CannotChangePlan, OngoingAgentJob
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -40,7 +41,6 @@ class SiteMigration(Document):
 	def before_insert(self):
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
-		self.check_for_existing_agent_jobs()
 
 	def after_insert(self):
 		self.set_migration_type()
@@ -61,11 +61,12 @@ class SiteMigration(Document):
 			)
 
 	def start(self):
+		self.check_for_ongoing_agent_jobs()
 		self.db_set("status", "Pending")
 		frappe.db.commit()
 		self.run_next_step()
 
-	def check_for_existing_agent_jobs(self):
+	def check_for_ongoing_agent_jobs(self):
 		if frappe.db.exists(
 			"Agent Job",
 			{
@@ -74,7 +75,7 @@ class SiteMigration(Document):
 				"creation": (">", frappe.utils.add_to_date(None, hours=-24)),
 			},
 		):
-			frappe.throw("Ongoing Agent Job for site exists")
+			frappe.throw("Ongoing Agent Job for site exists", OngoingAgentJob)
 
 	def set_migration_type(self):
 		if self.source_cluster != self.destination_cluster:
@@ -529,7 +530,8 @@ def run_scheduled_migrations():
 	)
 	for migration in migrations:
 		site_migration = frappe.get_doc("Site Migration", migration)
-		site_migration.start()
+		with suppress(OngoingAgentJob):
+			site_migration.start()
 
 
 def on_doctype_update():
