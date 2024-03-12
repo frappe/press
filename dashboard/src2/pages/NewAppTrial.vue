@@ -197,7 +197,7 @@ import { vElementSize } from '@vueuse/components';
 import { validateSubdomain } from '@/utils';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'NewAppTrial',
@@ -353,10 +353,7 @@ export default {
 		},
 		selectedPlanDescription() {
 			if (!this.plan) return;
-			if (!plans?.data) {
-				return this.plan;
-			}
-			let plan = plans.data.find(plan => plan.name == this.plan);
+			let plan = getPlans().find(plan => plan.name == this.plan);
 			let country = this.$team.doc.country;
 			let pricePerMonth = this.$format.userCurrency(
 				country === 'India' ? plan.price_inr : plan.price_usd,

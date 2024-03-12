@@ -131,7 +131,7 @@
 	</div>
 </template>
 <script>
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'InvoiceTable',
@@ -165,7 +165,7 @@ export default {
 	},
 	methods: {
 		formatPlan(plan) {
-			let planDoc = (plans.data || []).find(p => p.name === plan);
+			let planDoc = getPlans().find(p => p.name === plan);
 			if (planDoc) {
 				let india = this.$team.doc.currency === 'INR';
 				return this.$format.userCurrency(

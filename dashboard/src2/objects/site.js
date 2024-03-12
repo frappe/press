@@ -20,7 +20,7 @@ import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	doctype: 'Site',
@@ -301,7 +301,7 @@ export default {
 					);
 				},
 				filter() {
-					return plans.data.map(plan => ({
+					return getPlans().map(plan => ({
 						...plan,
 						features: [
 							{

@@ -23,7 +23,7 @@
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'ManageSitePlansDialog',
@@ -59,7 +59,7 @@ export default {
 				{
 					onSuccess: () => {
 						this.show = false;
-						let plan = (plans.data || []).find(
+						let plan = getPlans().find(
 							plan => plan.name === this.$site.doc.plan
 						);
 						let formattedPlan = plan

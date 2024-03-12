@@ -90,7 +90,7 @@
 
 <script>
 import { Tabs } from 'frappe-ui';
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
@@ -122,7 +122,7 @@ export default {
 			];
 		},
 		plans() {
-			return plans.data || [];
+			return getPlans();
 		}
 	}
 };
