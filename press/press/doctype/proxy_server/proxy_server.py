@@ -107,6 +107,7 @@ class ProxyServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"press_url": frappe.utils.get_url(),
 				},
 			)
 			play = ansible.run()
