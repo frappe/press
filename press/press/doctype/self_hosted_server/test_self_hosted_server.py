@@ -237,17 +237,23 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertTrue(server.check_minimum_specs())
 
 	def test_create_subscription_add_plan_change_and_check_for_new_subscription(self):
-		plan = create_test_server_plan("Self Hosted Server")
+		app_plan = create_test_server_plan("Self Hosted Server")
+		database_plan = create_test_server_plan(document_type="Database Server")
+
 		pre_plan_change_count = frappe.db.count("Plan Change")
 		pre_subscription_count = frappe.db.count("Subscription")
-		server = create_test_self_hosted_server("tester")
-		server.plan = plan.name
-		server.create_subscription()
-		server.reload()
+
+		server = create_test_self_hosted_server(
+			"tester", database_plan=database_plan.name, plan=app_plan.name
+		)
+		server.create_application_server()
+		server.create_database_server()
+
 		post_plan_change_count = frappe.db.count("Plan Change")
 		post_subscription_count = frappe.db.count("Subscription")
-		self.assertEqual(pre_plan_change_count, post_plan_change_count - 1)
-		self.assertEqual(pre_subscription_count, post_subscription_count - 1)
+
+		self.assertEqual(pre_plan_change_count, post_plan_change_count - 2)
+		self.assertEqual(pre_subscription_count, post_subscription_count - 2)
 
 
 def create_test_self_hosted_server(

@@ -152,7 +152,6 @@ def verify_db_server_is_reachable(_server_details, server_doc):
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	server_doc.start_setup = True
-	server_doc.create_subscription()
 	server_doc.save()
 	server_doc.setup_server()
 	time.sleep(1)
