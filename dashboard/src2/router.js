@@ -66,6 +66,11 @@ let router = createRouter({
 					name: 'BillingPaymentMethods',
 					path: 'payment-methods',
 					component: () => import('./pages/BillingPaymentMethods.vue')
+				},
+				{
+					name: 'BillingMarketplacePayouts',
+					path: 'payouts',
+					component: () => import('./pages/BillingMarketplacePayouts.vue')
 				}
 			]
 		},

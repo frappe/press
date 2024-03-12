@@ -14,6 +14,24 @@ from datetime import date
 
 
 class PayoutOrder(Document):
+	dashboard_fields = [
+		"period_end",
+		"recipient",
+		"mode_of_payment",
+		"status",
+		"net_total_inr",
+		"net_total_usd",
+		"items",
+	]
+
+	@staticmethod
+	def get_list_query(query):
+		PayoutOrder = frappe.qb.DocType("Payout Order")
+		query = query.where(
+			(PayoutOrder.docstatus != 2) & (PayoutOrder.recipient == frappe.local.team().name)
+		)
+		return query
+
 	def validate(self):
 		self.validate_items()
 		self.validate_net_totals()

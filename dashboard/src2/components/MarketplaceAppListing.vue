@@ -10,10 +10,14 @@
 						images.
 					</p>
 				</div>
-				<Button @click="$resources.updateListing.submit()">Save</Button>
+				<Button
+					:variant="editing ? 'solid' : 'subtle'"
+					@click="$resources.updateListing.submit()"
+					>Save</Button
+				>
 			</div>
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-5 border-b py-6">
-				<div>
+				<div class="border-r pr-6">
 					<span class="font-medium text-base">Profile</span>
 					<div class="my-4 group relative flex">
 						<div class="flex flex-col">
@@ -55,6 +59,7 @@
 							class="mt-4"
 							label="Title"
 							type="text"
+							@input="editing = true"
 							v-model="marketplaceApp.title"
 						/>
 					</div>
@@ -65,30 +70,35 @@
 								class="mt-4"
 								label="Documentation"
 								type="text"
+								@input="editing = true"
 								v-model="marketplaceApp.documentation"
 							/>
 							<FormControl
 								class="mt-4"
 								label="Website"
 								type="text"
+								@input="editing = true"
 								v-model="marketplaceApp.website"
 							/>
 							<FormControl
 								class="mt-4"
 								label="Support"
 								type="text"
+								@input="editing = true"
 								v-model="marketplaceApp.support"
 							/>
 							<FormControl
 								class="mt-4"
 								label="Terms of Service"
 								type="text"
+								@input="editing = true"
 								v-model="marketplaceApp.terms_of_service"
 							/>
 							<FormControl
 								class="mt-4"
 								label="Privacy Policy"
 								type="text"
+								@input="editing = true"
 								v-model="marketplaceApp.privacy_policy"
 							/>
 						</div>
@@ -122,7 +132,7 @@
 						</FileUploader>
 					</div>
 					<div
-						class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-x-4 gap-y-4 pt-4"
+						class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-4 pt-4"
 					>
 						<Dropdown
 							class="w-fit"
@@ -146,6 +156,7 @@
 					class="mt-4"
 					label="Description"
 					type="textarea"
+					@input="editing = true"
 					v-model="marketplaceApp.description"
 				/>
 				<div class="mt-4">
@@ -155,7 +166,12 @@
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"
-						@change="marketplaceApp.long_description = $event"
+						@input="
+							() => {
+								marketplaceApp.long_description = $event;
+								editing = true;
+							}
+						"
 						:editable="editable"
 						:bubbleMenu="true"
 					>
@@ -180,6 +196,7 @@ export default {
 	},
 	data() {
 		return {
+			editing: false,
 			editable: true,
 			marketplaceApp: {
 				title: this.app.doc.title,
@@ -207,6 +224,7 @@ export default {
 				},
 				onSuccess(response) {
 					toast.success('Updated Successfully');
+					this.editing = false;
 				}
 			};
 		},
