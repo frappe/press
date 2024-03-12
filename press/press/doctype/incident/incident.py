@@ -206,16 +206,9 @@ where
 			"""
 		)  # status of the sites down in each bench
 
-	def intervene(self):
-		pass
-
 	def check_resolved(self):
-		"""
-		Checks if the Incident is auto-resolved
-		"""
 		if "Firing" in self.get_last_alert_status_for_each_group():
 			# all should be "resolved" for auto-resolve
-			self.intervene()
 			return
 		if self.status == "Validating":
 			self.status = "Auto-Resolved"
@@ -225,16 +218,20 @@ where
 
 	@property
 	def time_to_call_for_help(self) -> bool:
-		return self.status == "Confirmed" and self.creation <= frappe.utils.add_to_date(
-			frappe.utils.now_datetime(),
-			seconds=-(get_confirmation_threshold_duration() + get_call_threshold_duration()),
+		return (
+			self.status == "Confirmed"
+			and frappe.utils.now_datetime() - self.creation
+			> timedelta(
+				seconds=get_confirmation_threshold_duration() + get_call_threshold_duration()
+			)
 		)
 
 	@property
 	def time_to_call_for_help_again(self) -> bool:
-		return self.status == "Acknowledged" and self.modified <= frappe.utils.add_to_date(
-			frappe.utils.now_datetime(),
-			seconds=-(get_call_repeat_interval() + get_call_threshold_duration()),
+		return (
+			self.status == "Acknowledged"
+			and frappe.utils.now_datetime() - self.modified
+			> timedelta(seconds=get_call_repeat_interval())
 		)
 
 
@@ -275,17 +272,16 @@ def get_call_repeat_interval():
 
 
 def validate_incidents():
-	confirmed_incidents = frappe.get_all(
+	validating_incidents = frappe.get_all(
 		"Incident",
 		filters={
 			"status": "Validating",
 		},
 		fields=["name", "creation"],
 	)
-	for incident_dict in confirmed_incidents:
-		if incident_dict.creation <= frappe.utils.add_to_date(
-			frappe.utils.frappe.utils.now_datetime(),
-			seconds=-get_confirmation_threshold_duration(),
+	for incident_dict in validating_incidents:
+		if frappe.utils.now_datetime() - incident_dict.creation > timedelta(
+			seconds=get_confirmation_threshold_duration()
 		):
 			incident: Incident = frappe.get_doc("Incident", incident_dict.name)
 			incident.status = "Confirmed"
@@ -303,6 +299,5 @@ def resolve_incidents():
 	for incident_name in ongoing_incidents:
 		incident: Incident = frappe.get_doc("Incident", incident_name)
 		incident.check_resolved()
-		incident.reload()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()

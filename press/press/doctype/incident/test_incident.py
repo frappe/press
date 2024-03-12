@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe and Contributors
 # See license.txt
 
+from datetime import timedelta
 from unittest.mock import patch, Mock
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -11,7 +12,11 @@ from press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log impor
 from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log import (
 	create_test_alertmanager_webhook_log,
 )
-from press.press.doctype.incident.incident import resolve_incidents, validate_incidents
+from press.press.doctype.incident.incident import (
+	CALL_REPEAT_INTERVAL_NIGHT,
+	resolve_incidents,
+	validate_incidents,
+)
 from press.press.doctype.prometheus_alert_rule.test_prometheus_alert_rule import (
 	create_test_prometheus_alert_rule,
 )
@@ -74,6 +79,7 @@ class MockTwilioClient:
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
+@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		self.from_ = "+911234567892"
@@ -108,7 +114,6 @@ class TestIncident(FrappeTestCase):
 			}
 		).insert()
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList,
@@ -136,7 +141,6 @@ class TestIncident(FrappeTestCase):
 			url="http://demo.twilio.com/docs/voice.xml",
 		)
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
@@ -152,7 +156,6 @@ class TestIncident(FrappeTestCase):
 		).insert().call_humans()
 		self.assertEqual(mock_calls_create.call_count, 1)
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
@@ -169,7 +172,6 @@ class TestIncident(FrappeTestCase):
 		incident.reload()
 		self.assertEqual(len(incident.updates), 1)
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(MockTwilioCallList, "create", wraps=MockTwilioCallList("ringing").create)
 	def test_incident_calls_next_person_after_retry_limit(self, mock_calls_create):
@@ -207,7 +209,6 @@ class TestIncident(FrappeTestCase):
 		create_test_alertmanager_webhook_log(site=site3)
 		self.assertEqual(frappe.db.count("Incident") - incident_count_before, 1)
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	def test_call_event_creates_acknowledgement_update(self):
 		with patch.object(
@@ -236,7 +237,6 @@ class TestIncident(FrappeTestCase):
 			incident.reload()
 			self.assertEqual(len(incident.updates), 2)
 
-	@patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
 	@patch("tenacity.nap.time", new=Mock())  # no sleep
 	@patch.object(
 		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
@@ -354,3 +354,22 @@ class TestIncident(FrappeTestCase):
 		validate_incidents()
 		incident.reload()
 		self.assertEqual(incident.status, "Validating")
+
+	@patch.object(
+		MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+	)
+	def test_calls_repeated_for_acknowledged_incidents(self, mock_calls_create):
+		create_test_alertmanager_webhook_log()
+		incident = frappe.get_last_doc("Incident")
+		incident.db_set("status", "Acknowledged")
+		resolve_incidents()
+		mock_calls_create.assert_not_called()
+		incident.reload()  # datetime conversion
+		# breakpoint()
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)  # assume night interval is longer
+		resolve_incidents()
+		mock_calls_create.assert_called_once()
