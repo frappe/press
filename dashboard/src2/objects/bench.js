@@ -6,9 +6,11 @@ import { icon, renderDialog, confirmDialog } from '../utils/components';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import { tagTab } from './common/tags';
+import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
@@ -375,6 +377,17 @@ export default {
 									window.open(
 										`${row.repository_url}/tree/${row.branch}`,
 										'_blank'
+									);
+								}
+							},
+							{
+								label: 'Apply Patch',
+								onClick: () => {
+									renderDialog(
+										h(PatchAppDialog, {
+											group: releaseGroup.name,
+											app: row.name
+										})
 									);
 								}
 							}
@@ -884,7 +897,8 @@ export default {
 					}
 				}
 			},
-			tagTab()
+			tagTab(),
+			patches
 		],
 		actions(context) {
 			let { documentResource: bench } = context;

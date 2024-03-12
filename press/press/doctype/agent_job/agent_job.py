@@ -739,6 +739,7 @@ def process_job_updates(job_name):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
+		from press.press.doctype.app_patch.app_patch import AppPatch
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -816,6 +817,8 @@ def process_job_updates(job_name):
 			process_update_nginx_job_update(job)
 		elif job.job_type == "Move Site to Bench":
 			process_move_site_to_bench_job_update(job)
+		elif job.job_type == "Patch App":
+			AppPatch.process_patch_app(job)
 		elif job.job_type == "Docker Image Build":
 			process_docker_image_build_job_update(job)
 

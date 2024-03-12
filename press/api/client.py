@@ -2,14 +2,18 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
-import frappe
+
 import inspect
+
+import frappe
+from frappe import is_whitelisted
+from frappe.client import delete_doc
+from frappe.handler import get_attr
+from frappe.handler import run_doc_method as _run_doc_method
+from frappe.model import child_table_fields, default_fields
+from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
-from frappe.model.base_document import get_controller
-from frappe.model import default_fields, child_table_fields
-from frappe import is_whitelisted
-from frappe.handler import get_attr, run_doc_method as _run_doc_method
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -23,6 +27,7 @@ ALLOWED_DOCTYPES = [
 	"Invoice",
 	"Balance Transaction",
 	"Stripe Payment Method",
+	"Bench",
 	"Bench Dependency Version",
 	"Release Group",
 	"Release Group App",
@@ -43,6 +48,7 @@ ALLOWED_DOCTYPES = [
 	"Press Tag",
 	"User",
 	"Partner Approval Request",
+	"App Patch",
 ]
 
 
@@ -183,26 +189,54 @@ def set_value(doctype, name, fieldname, value=None):
 
 @frappe.whitelist(methods=["DELETE", "POST"])
 def delete(doctype, name):
-	pass
+	check_permissions(doctype)
+	check_team_access(doctype, name)
+	check_dashboard_actions(doctype, "delete")
+
+	delete_doc(doctype, name)
 
 
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
-
-	if not frappe.local.system_user() and frappe.get_meta(dt).has_field("team"):
-		doc_team = frappe.db.get_value(dt, dn, "team")
-		if doc_team != frappe.local.team().name:
-			raise_not_permitted()
-
-	controller = get_controller(dt)
-	dashboard_actions = getattr(controller, "dashboard_actions", [])
-	if method not in dashboard_actions:
-		raise_not_permitted()
-
+	check_team_access(dt, dn)
+	check_dashboard_actions(dt, method)
 	check_method_permissions(dt, dn, method)
+
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
+
+
+def check_team_access(doctype: str, name: str):
+	if frappe.local.system_user():
+		return
+
+	team = ""
+	meta = frappe.get_meta(doctype)
+	if meta.has_field("team"):
+		team = frappe.db.get_value(doctype, name, "team")
+	elif meta.has_field("bench"):
+		bench = frappe.db.get_value(doctype, name, "bench")
+		team = frappe.db.get_value("Bench", bench, "team")
+	elif meta.has_field("group"):
+		group = frappe.db.get_value(doctype, name, "group")
+		team = frappe.db.get_value("Release Group", group, "team")
+	else:
+		return
+
+	if team == frappe.local.team().name:
+		return
+
+	raise_not_permitted()
+
+
+def check_dashboard_actions(doctype, method):
+	controller = get_controller(doctype)
+	dashboard_actions = getattr(controller, "dashboard_actions", [])
+	if method in dashboard_actions:
+		return
+
+	raise_not_permitted()
 
 
 @frappe.whitelist()
