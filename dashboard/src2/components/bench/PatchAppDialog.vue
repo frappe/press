@@ -176,7 +176,7 @@ export default {
 				return false;
 			}
 
-			if (!this.app || !this.applyToApp) {
+			if (!this.app && !this.applyToApp) {
 				this.error = 'Please select an app to patch.';
 				return false;
 			}
