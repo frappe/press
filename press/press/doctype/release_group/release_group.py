@@ -880,7 +880,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def add_app_with_source(self, source):
+	def append_source(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
@@ -1028,7 +1028,7 @@ class ReleaseGroup(Document, TagHelpers):
 			self.team,
 			app.get("github_installation_id", None),
 		)
-		self.add_app_with_source(source)
+		self.append_source(source)
 
 	@frappe.whitelist()
 	def remove_app(self, app: str):

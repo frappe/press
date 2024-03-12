@@ -31,5 +31,5 @@ def new(app):
 		app["github_installation_id"] if "github_installation_id" in app else None,
 	)
 
-	group.add_app(source)
+	group.append_source(source)
 	return group.name
