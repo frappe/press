@@ -24,6 +24,7 @@ class SelfHostedServer(Document):
 	def validate(self):
 		self.set_proxy_details()
 		self.set_mariadb_config()
+		self.set_database_plan()
 
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
@@ -238,19 +239,21 @@ class SelfHostedServer(Document):
 		self.status = "Active"
 		self.save()
 
-	def get_database_plan(self):
-		if not self.different_database_server:
-			try:
-				frappe.get_last_doc("Server Plan", "Unlimited")
-			except frappe.DoesNotExists:
-				self._create_server_plan("Unlimited")
+	def set_database_plan(self):
+		if self.database_plan:
+			return
 
-			self.database_plan = "Unlimited"
+		if not self.different_database_server:
+			if not frappe.db.exists("Server Plan", "Unlimited"):
+				self._create_server_plan("Unlimited")
+				self.database_plan = "Unlimited"
 
 	def _create_server_plan(self, plan_name):
 		plan = frappe.new_doc("Server Plan")
 		plan.name = plan_name
 		plan.title = plan_name
+		plan.price_inr = 0
+		plan.price_usd = 0
 		plan.save()
 
 	@frappe.whitelist()
@@ -574,19 +577,6 @@ class SelfHostedServer(Document):
 	def _setup_app_server(self):
 		app_server = frappe.get_doc("Server", self.server)
 		app_server.setup_server()
-
-	def create_subscription(self):
-		frappe.new_doc(
-			"Plan Change",
-			**{
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"from_plan": "",
-				"to_plan": self.plan,
-				"type": "Initial Plan",
-				"timestamp": self.creation,
-			},
-		).insert(ignore_permissions=True)
 
 	@frappe.whitelist()
 	def fetch_system_ram(self, play_id=None):

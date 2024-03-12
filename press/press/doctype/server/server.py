@@ -433,6 +433,12 @@ class BaseServer(Document, TagHelpers):
 		if self.is_self_hosted:
 			self.status = "Archived"
 			self.save()
+
+			if self.doctype == "Server":
+				frappe.db.set_value(
+					"Self Hosted Server", {"server": self.name}, "status", "Archived"
+				)
+
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()

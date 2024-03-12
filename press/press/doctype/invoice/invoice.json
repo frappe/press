@@ -107,7 +107,6 @@
    "options": "Draft\nInvoice Created\nUnpaid\nPaid\nRefunded\nUncollectible\nCollected\nEmpty"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "total",
    "fieldtype": "Currency",
    "in_list_view": 1,
@@ -456,7 +455,7 @@
    "link_fieldname": "invoice"
   }
  ],
- "modified": "2024-03-06 15:53:47.466051",
+ "modified": "2024-03-12 15:24:29.792253",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Invoice",
