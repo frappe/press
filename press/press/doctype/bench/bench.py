@@ -600,7 +600,7 @@ def get_active_site_updates(bench: str):
 	return frappe.get_all(
 		"Site Update",
 		{
-			"status": ("in", ["Pending", "Running", "Failure"]),
+			"status": ("in", ["Pending", "Running", "Failure", "Scheduled"]),
 		},
 		or_filters={
 			"source_bench": bench,

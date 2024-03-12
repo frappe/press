@@ -569,17 +569,18 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
-	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
+	def schedule_update(
+		self, skip_failing_patches=False, skip_backups=False, scheduled_time=None
+	):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
+				"status": "Scheduled" if scheduled_time else "Pending",
+				"scheduled_time": scheduled_time,
 			}
 		).insert()
 		return doc.name
@@ -587,9 +588,6 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def move_to_group(self, group, skip_failing_patches=False):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		return frappe.get_doc(
 			{
 				"doctype": "Site Update",
@@ -625,9 +623,6 @@ class Site(Document, TagHelpers):
 	@site_action(["Active"])
 	def update_without_backup(self):
 		log_site_activity(self.name, "Update without Backup")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		frappe.get_doc(
 			{
 				"doctype": "Site Update",
