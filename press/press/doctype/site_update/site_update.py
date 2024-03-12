@@ -15,6 +15,19 @@ from frappe.utils.caching import site_cache
 
 
 class SiteUpdate(Document):
+	dashboard_fields = [
+		"status",
+		"site",
+		"destination_bench",
+		"source_bench",
+		"deploy_type",
+		"difference",
+		"update_job",
+		"creation",
+	]
+
+	dashboard_actions = ["start"]
+
 	def validate(self):
 		if not self.is_new():
 			return

@@ -13,11 +13,12 @@
 </template>
 <script>
 import { Dialog } from 'frappe-ui';
+import GenericDialogField from './GenericDialogField.vue';
 
 export default {
 	name: 'GenericDialog',
 	props: ['options', 'fields'],
-	components: { Dialog },
+	components: { Dialog, GenericDialogField },
 	data() {
 		return {
 			show: true

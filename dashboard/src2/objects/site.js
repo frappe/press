@@ -1,4 +1,9 @@
-import { frappeRequest, LoadingIndicator, Button } from 'frappe-ui';
+import {
+	createListResource,
+	LoadingIndicator,
+	frappeRequest,
+	Button
+} from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import HelpIcon from '~icons/lucide/help-circle';
@@ -20,6 +25,7 @@ import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
+import { getDocResource } from '../utils/resource';
 import { getPlans } from '../data/plans';
 
 export default {
@@ -509,6 +515,145 @@ export default {
 				),
 				props: site => {
 					return { siteName: site.doc.name };
+				}
+			},
+			{
+				label: 'Updates',
+				icon: icon('arrow-up-circle'),
+				route: 'updates',
+				type: 'list',
+				list: {
+					doctype: 'Site Update',
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					orderBy: 'creation',
+					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
+					columns: [
+						{
+							label: 'Type',
+							fieldname: 'deploy_type',
+							width: 0.3
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner'
+						},
+						{
+							label: 'Updated On',
+							fieldname: 'updated_on',
+							format(value) {
+								return date(value, 'lll');
+							}
+						}
+					],
+					rowActions({ row, documentResource: site }) {
+						return [
+							{
+								label: 'View Job',
+								onClick() {
+									router.push({
+										name: 'Site Job',
+										params: { name: site.name, id: row.update_job }
+									});
+								}
+							},
+							{
+								label: 'Update Now',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let siteUpdate = getDocResource({
+										doctype: 'Site Update',
+										name: row.name,
+										whitelistedMethods: {
+											updateNow: 'start'
+										}
+									});
+
+									toast.promise(siteUpdate.updateNow.submit(), {
+										loading: 'Updating site...',
+										success: () => {
+											router.push({
+												name: 'Site Detail Jobs',
+												params: { name: site.name }
+											});
+
+											return 'Site update started';
+										},
+										error: 'Failed to update site'
+									});
+								}
+							},
+							{
+								label: 'View App Changes',
+								onClick() {
+									createListResource({
+										doctype: 'Deploy Candidate Difference App',
+										fields: [
+											'difference.github_diff_url as diff_url',
+											'app.title as app'
+										],
+										filters: {
+											parenttype: 'Deploy Candidate Difference',
+											parent: row.difference
+										},
+										auto: true,
+										pageLength: 99,
+										onSuccess(data) {
+											if (data?.length) {
+												renderDialog(
+													h(
+														GenericDialog,
+														{
+															options: {
+																title: 'Site update app changes'
+															}
+														},
+														{
+															default: () =>
+																h(ObjectList, {
+																	options: {
+																		data: () => data,
+																		columns: [
+																			{
+																				label: 'App',
+																				fieldname: 'app',
+																				width: 0.5
+																			},
+																			{
+																				label: 'App Changes',
+																				fieldname: 'diff_url',
+																				width: 0.5,
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label: 'View App Changes',
+																						slots: {
+																							prefix: icon('github')
+																						},
+																						link: row.diff_url
+																					};
+																				}
+																			}
+																		]
+																	}
+																})
+														}
+													)
+												);
+											} else toast.error('No app changes found');
+										}
+									});
+								}
+							}
+						];
+					}
 				}
 			},
 			{
@@ -1135,7 +1280,7 @@ export default {
 					route(row) {
 						return {
 							name: 'Site Job',
-							params: { id: row.name, site: row.site }
+							params: { id: row.name, name: row.site }
 						};
 					},
 					orderBy: 'creation desc',
