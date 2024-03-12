@@ -120,6 +120,11 @@
 					<div class="w-2/3 text-base text-gray-900">
 						{{ d.value }}
 					</div>
+					<div v-if="d.help">
+						<Tooltip :text="d.help">
+							<i-lucide-info class="h-4 w-4 text-gray-500" />
+						</Tooltip>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -169,6 +174,16 @@ export default {
 				{
 					label: 'Last updated',
 					value: this.$format.date(this.$site.doc.last_updated) || 'Never'
+				},
+				{
+					label: 'Inbound IP',
+					value: this.$site.doc.inbound_ip,
+					help: 'Use this for adding A records for your site'
+				},
+				{
+					label: 'Outbound IP',
+					value: this.$site.doc.outbound_ip,
+					help: 'Use this for whitelisting our server on a 3rd party service'
 				}
 			];
 		},
