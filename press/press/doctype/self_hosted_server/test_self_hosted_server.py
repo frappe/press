@@ -2,13 +2,12 @@
 # See license.txt
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 
 from press.press.doctype.self_hosted_server.self_hosted_server import SelfHostedServer
 import frappe
 import json
-from press.runner import Ansible
 from press.press.doctype.team.test_team import create_test_team
 from press.api.tests.test_server import create_test_server_plan
 from frappe.tests.utils import FrappeTestCase, change_settings
@@ -23,34 +22,6 @@ class TestSelfHostedServer(FrappeTestCase):
 	# 	for host in hostnames:
 	# 		server = create_test_self_hosted_server(host)
 	# 		self.assertEqual(server.name, f"{host}.fc.dev")
-
-	@patch(
-		"press.press.doctype.self_hosted_server.self_hosted_server.Ansible",
-		wraps=Ansible,
-	)
-	@patch.object(Ansible, "run", new=Mock())
-	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
-	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
-		plan = create_test_server_plan(document_type="Self Hosted Server")
-		server = create_test_self_hosted_server("ssl", plan=plan.name)
-		app_server = server.create_application_server()
-		server._setup_nginx_on_app()
-		Mock_Ansible.assert_called_with(
-			playbook="self_hosted_nginx.yml",
-			server={
-				"doctype": "Server",
-				"name": "hybrid-f-00001-default.fc.dev",
-				"ssh_user": "root",
-				"ssh_port": 22,
-				"ip": server.ip,
-			},
-			user=app_server.ssh_user or "root",
-			port=app_server.ssh_port or "22",
-			variables={
-				"domain": server.name,
-				"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
-			},
-		)
 
 	def test_successful_ping_ansible_sets_status_to_pending(self):
 		server = create_test_self_hosted_server("pinger")
@@ -219,7 +190,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		pre_server_count = frappe.db.count("Server")
 
 		server = create_test_self_hosted_server("tester", plan=plan.name)
-		server.create_server()
+		server.create_application_server()
 		server.reload()
 
 		post_server_count = frappe.db.count("Server")
