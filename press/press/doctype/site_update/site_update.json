@@ -15,6 +15,7 @@
   "destination_bench",
   "destination_candidate",
   "destination_group",
+  "scheduled_time",
   "section_break_8",
   "difference",
   "difference_deploy_type",
@@ -61,7 +62,7 @@
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal"
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal\nScheduled"
   },
   {
    "fieldname": "destination_bench",
@@ -199,11 +200,16 @@
    "fieldtype": "Check",
    "label": "Skipped Backups",
    "no_copy": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-12 14:47:21.156498",
+ "modified": "2024-03-11 17:50:13.520159",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

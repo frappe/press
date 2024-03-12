@@ -12,7 +12,8 @@
 						return this.$site.scheduleUpdate.submit(
 							{
 								skip_failing_patches: this.skipFailingPatches,
-								skip_backups: this.skipBackups
+								skip_backups: this.skipBackups,
+								scheduled_time: scheduledTimeInIST
 							},
 							{
 								onSuccess: () => {
@@ -29,18 +30,30 @@
 		<template #body-content>
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
-				<div class="mt-7 text-base text-gray-900">Update settings</div>
+				<div class="mt-7 text-base font-bold text-gray-900">
+					Update settings
+				</div>
 				<div class="mt-4 flex flex-col space-y-4">
 					<FormControl
-						label="Skip failing patches if any"
-						type="checkbox"
-						v-model="skipFailingPatches"
+						class="w-1/2"
+						label="Schedule time"
+						type="datetime-local"
+						:min="new Date().toISOString().slice(0, 16)"
+						:step="60 * 15"
+						v-model="scheduledTime"
 					/>
-					<FormControl
-						label="Skip backups"
-						type="checkbox"
-						v-model="skipBackups"
-					/>
+					<div class="flex flex-col space-y-4">
+						<FormControl
+							label="Skip failing patches if any"
+							type="checkbox"
+							v-model="skipFailingPatches"
+						/>
+						<FormControl
+							label="Skip backups"
+							type="checkbox"
+							v-model="skipBackups"
+						/>
+					</div>
 				</div>
 			</template>
 			<div v-else class="text-center text-base text-gray-600">
@@ -52,6 +65,7 @@
 <script>
 import { FormControl, getCachedDocumentResource } from 'frappe-ui';
 import GenericList from './GenericList.vue';
+import { dayjsIST } from '../utils/dayjs';
 
 export default {
 	name: 'SiteUpdateDialog',
@@ -64,6 +78,7 @@ export default {
 		return {
 			show: true,
 			skipFailingPatches: false,
+			scheduledTime: '',
 			skipBackups: false
 		};
 	},
@@ -77,6 +92,9 @@ export default {
 		}
 	},
 	computed: {
+		scheduledTimeInIST() {
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+		},
 		listOptions() {
 			return {
 				data: this.updatableApps,

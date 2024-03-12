@@ -569,17 +569,18 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
-	def schedule_update(self, skip_failing_patches=False, skip_backups=False):
+	def schedule_update(
+		self, skip_failing_patches=False, skip_backups=False, scheduled_time=None
+	):
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		doc = frappe.get_doc(
 			{
 				"doctype": "Site Update",
 				"site": self.name,
 				"skipped_failing_patches": skip_failing_patches,
 				"skipped_backups": skip_backups,
+				"status": "Scheduled" if scheduled_time else "Pending",
+				"scheduled_time": scheduled_time,
 			}
 		).insert()
 		return doc.name
