@@ -1,23 +1,19 @@
 import { createResource } from 'frappe-ui';
 
-let lastRefreshed = null;
+let plansFetched = null;
 
 export let plans = createResource({
 	url: 'press.api.site.get_plans',
 	cache: 'site.plans',
 	initialData: [],
 	onSuccess() {
-		lastRefreshed = new Date();
+		plansFetched = true;
 	}
 });
 
 export function getPlans() {
-	if (plans.data.length === 0) {
+	if (!plansFetched) {
 		plans.fetch();
-	}
-	// refresh if data is older than 10 seconds
-	if (!lastRefreshed || new Date() - lastRefreshed > 10000) {
-		plans.reload();
 	}
 	return plans.data || [];
 }
