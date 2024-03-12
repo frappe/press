@@ -63,10 +63,10 @@ class MarketplaceApp(WebsiteGenerator):
 		frappe.get_doc("App Release Approval Request", approval_requests[0]).cancel()
 
 	def before_insert(self):
-		self.check_if_duplicate()
-		self.create_app_and_source_if_needed()
 
 		if not frappe.flags.in_test:
+			self.check_if_duplicate()
+			self.create_app_and_source_if_needed()
 			self.long_description = self.fetch_readme()
 
 		self.set_route()
