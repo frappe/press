@@ -24,7 +24,7 @@ class Subscription(Document):
 	]
 
 	@staticmethod
-	def get_list_query(query):
+	def get_list_query(query, **list_args):
 		Subscription = frappe.qb.DocType("Subscription")
 		UsageRecord = frappe.qb.DocType("Usage Record")
 		Plan = frappe.qb.DocType("Marketplace App Plan")
@@ -44,6 +44,11 @@ class Subscription(Document):
 				price_field.as_("price"),
 				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
 			)
+			.where(
+				(Subscription.document_type == "Marketplace App")
+				& (Subscription.document_name == list_args["filters"]["document_name"])
+			)
+			.limit(list_args["limit"])
 		)
 
 		return query
