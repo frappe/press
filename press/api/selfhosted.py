@@ -119,10 +119,10 @@ def verify(server):
 		server_doc.save()
 
 		server_doc.reload()
-		server_doc.create_db_server()
+		server_doc.create_database_server()
 
 		server_doc.reload()
-		server_doc.create_server()
+		server_doc.create_application_server()
 
 		return True
 	else:
@@ -146,18 +146,6 @@ def verify_db_server_is_reachable(_server_details, server_doc):
 		server=_server_details.update({"ip": server_doc.mariadb_ip}),
 	)
 	return ping_db_server.run()
-
-
-@frappe.whitelist()
-def setup_nginx(server):
-	server_doc = frappe.get_doc("Self Hosted Server", server)
-	is_nginx_installed_on_app = server_doc._setup_nginx_on_app()
-	is_nginx_installed_on_db = server_doc._setup_nginx_on_db()
-
-	if is_nginx_installed_on_app and is_nginx_installed_on_db:
-		return True
-
-	return False
 
 
 @frappe.whitelist()

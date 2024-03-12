@@ -33,7 +33,7 @@ class TestSelfHostedServer(FrappeTestCase):
 	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
 		plan = create_test_server_plan(document_type="Self Hosted Server")
 		server = create_test_self_hosted_server("ssl", plan=plan.name)
-		app_server = server.create_server()
+		app_server = server.create_application_server()
 		server._setup_nginx_on_app()
 		Mock_Ansible.assert_called_with(
 			playbook="self_hosted_nginx.yml",
@@ -51,23 +51,6 @@ class TestSelfHostedServer(FrappeTestCase):
 				"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
 			},
 		)
-
-	def test_setup_nginx_creates_tls_certificate_post_success(self):
-		server = create_test_self_hosted_server("ssl")
-		pre_setup_count = frappe.db.count("TLS Certificate")
-		with patch(
-			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
-			new=lambda x: create_test_ansible_play(
-				"Setup Self Hosted Nginx",
-				"self_hosted_nginx.yml",
-				server.doctype,
-				server.name,
-				{"server": "ssl.fc.dev"},
-			),
-		):
-			server.create_tls_certs(server.name)
-		post_setup_count = frappe.db.count("TLS Certificate")
-		self.assertEqual(pre_setup_count, post_setup_count - 1)
 
 	def test_successful_ping_ansible_sets_status_to_pending(self):
 		server = create_test_self_hosted_server("pinger")
@@ -257,7 +240,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		pre_server_count = frappe.db.count("Database Server")
 
 		server = create_test_self_hosted_server("tester", database_plan=plan.name)
-		server.create_db_server()
+		server.create_database_server()
 		server.reload()
 
 		post_server_count = frappe.db.count("Database Server")

@@ -48,17 +48,16 @@
 						variant="solid"
 						:theme="playOutput ? 'gray' : 'red'"
 						:appearance="playOutput ? 'success' : 'warning'"
-						:loading="$resources.verify.loading || !nginxSetup"
 						@click="$resources.verify.submit()"
 					>
 						{{ playOutput ? 'Server Verified' : 'Server Unreachable' }}
 					</Button>
-					<div class="mt-1" v-if="playOutput && !nginxSetup">
+					<!-- <div class="mt-1" v-if="playOutput && !nginxSetup">
 						<span class="text-sm text-green-600">
 							Server Verification is complete. Setting Up Nginx, this can take
 							upto a minute</span
 						>
-					</div>
+					</div> -->
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.verify.error" />
 				<div class="mt-4">
@@ -91,9 +90,7 @@
 							v-show="!hasNext"
 							class="ml-auto"
 							variant="solid"
-							:disabled="
-								!playOutput || !nginxSetup || !this.agreedToRegionConsent
-							"
+							:disabled="!playOutput || !this.agreedToRegionConsent"
 							@click="setupServers"
 							:loading="$resources.setupServer.loading"
 						>
@@ -141,7 +138,6 @@ export default {
 			unreachable: false,
 			playOutput: false,
 			agreedToRegionConsent: false,
-			nginxSetup: false,
 			steps: [
 				{
 					name: 'SelfHostedHostname',
@@ -207,9 +203,6 @@ export default {
 				},
 				onSuccess(data) {
 					this.playOutput = data;
-					if (data) {
-						this.$resources.setupNginx.submit();
-					}
 				}
 			};
 		},
@@ -228,17 +221,6 @@ export default {
 					if (!canCreate) {
 						return 'Cannot create server';
 					}
-				}
-			};
-		},
-		setupNginx() {
-			return {
-				url: 'press.api.selfhosted.setup_nginx',
-				params: {
-					server: this.serverDoc
-				},
-				onSuccess(data) {
-					this.nginxSetup = data;
 				}
 			};
 		}
