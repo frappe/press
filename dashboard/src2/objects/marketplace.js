@@ -406,32 +406,6 @@ export default {
 					}
 				}
 			},
-			// {
-			// 	label: 'Installs',
-			// 	icon: icon('download'),
-			// 	route: 'install',
-			// 	type: 'list',
-			// 	list: {
-			// 		fields: ['name', 'plan', 'user'],
-			// 		columns: [
-			// 			{
-			// 				label: 'Site',
-			// 				fieldname: 'name'
-			// 			},
-			// 			{
-			// 				label: 'Plan',
-			// 				fieldname: 'plan'
-			// 			},
-			// 			{
-			// 				label: 'Contact',
-			// 				fieldname: 'user'
-			// 			}
-			// 		],
-			// 		list({ documentResource: app }) {
-			// 			return app.siteInstalls;
-			// 		}
-			// 	}
-			// },
 			{
 				label: 'Pricing',
 				icon: icon('dollar-sign'),
@@ -552,14 +526,6 @@ export default {
 							width: 0.3,
 							format: value => {
 								return value + (value == 1 ? ' day' : ' days');
-							}
-						},
-						{
-							label: 'Contact',
-							fieldname: 'email',
-							width: 0.6,
-							link: (value, _) => {
-								return `mailto:${value}`;
 							}
 						}
 					]

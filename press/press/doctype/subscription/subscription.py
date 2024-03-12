@@ -26,7 +26,6 @@ class Subscription(Document):
 	@staticmethod
 	def get_list_query(query):
 		Subscription = frappe.qb.DocType("Subscription")
-		Team = frappe.qb.DocType("Team")
 		UsageRecord = frappe.qb.DocType("Usage Record")
 		Plan = frappe.qb.DocType("Marketplace App Plan")
 		price_field = (
@@ -34,18 +33,17 @@ class Subscription(Document):
 		)
 
 		query = (
-			query.select(
-				price_field.as_("price"),
-				Team.user.as_("email"),
-				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
-			)
+			frappe.qb.from_(Subscription)
 			.join(Plan)
 			.on(Subscription.plan == Plan.name)
-			.join(Team)
-			.on(Subscription.team == Team.name)
 			.left_join(UsageRecord)
 			.on(UsageRecord.subscription == Subscription.name)
 			.groupby(Subscription.name)
+			.select(
+				Subscription.site,
+				price_field.as_("price"),
+				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
+			)
 		)
 
 		return query
