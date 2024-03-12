@@ -44,7 +44,7 @@
 				class="w-full"
 				variant="solid"
 				:loading="$site.scheduleUpdate.loading"
-				:label="`Schedule update ${
+				:label="`Update ${
 					scheduledTime ? `at ${scheduledTimeInLocal}` : 'now'
 				}`"
 				@click="
