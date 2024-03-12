@@ -240,7 +240,8 @@ export default {
 				columns.push({
 					...column,
 					label: column.label,
-					key: column.fieldname
+					key: column.fieldname,
+					align: column.align || 'left'
 				});
 			}
 			if (this.options.rowActions) {

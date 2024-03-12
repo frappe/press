@@ -3,28 +3,17 @@
 
 import frappe
 from frappe.model.document import Document
-from press.saas.doctype.saas_product.pooling import SitePool
+from press.saas.doctype.saas_product.saas_product import SaaSProduct
 
 
 class SaaSProductSiteRequest(Document):
 	dashboard_fields = ["site", "status", "saas_product"]
 	dashboard_actions = ["create_site", "get_progress", "get_login_sid"]
 
-	def get_doc(self, doc):
-		saas_product = frappe.db.get_value(
-			"SaaS Product",
-			{"name": self.saas_product},
-			["name", "title", "logo", "domain", "description", "trial_days"],
-			as_dict=True,
-		)
-		saas_product.description = frappe.utils.md_to_html(saas_product.description)
-		doc.saas_product = saas_product
-		return doc
-
 	@frappe.whitelist()
-	def create_site(self, subdomain, plan):
-		pool = SitePool(self.saas_product)
-		site = pool.create_or_rename(subdomain, self.team)
+	def create_site(self, subdomain, plan, cluster=None):
+		product: SaaSProduct = frappe.get_doc("SaaS Product", self.saas_product)
+		site = product.setup_trial_site(subdomain, self.team, cluster)
 		self.agent_job = site.flags.rename_job
 		site.create_subscription(plan)
 		site.reload()

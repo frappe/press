@@ -245,7 +245,7 @@ scheduler_events = {
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.pooling.create",
+			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [

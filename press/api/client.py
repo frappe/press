@@ -49,6 +49,7 @@ ALLOWED_DOCTYPES = [
 	"User",
 	"Partner Approval Request",
 	"App Patch",
+	"SaaS Product",
 ]
 
 

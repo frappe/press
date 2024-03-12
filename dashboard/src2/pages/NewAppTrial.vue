@@ -1,14 +1,22 @@
 <template>
-	<div v-if="productId">
-		<div v-if="$resources.siteRequestId.error" class="p-5 text-lg text-red-600">
-			{{ $resources.siteRequestId.error.messages[0] }}
-		</div>
-		<div
-			class="flex min-h-screen bg-gray-50"
-			v-if="siteRequest?.doc && saasProduct"
-		>
-			<ProductSignupPitch class="w-[40%]" :saasProduct="saasProduct" />
-			<div class="w-full">
+	<div v-if="saasProduct">
+		<div class="flex min-h-screen sm:bg-gray-50">
+			<ProductSignupPitch
+				class="hidden w-[40%] sm:block"
+				v-if="saasProduct"
+				:saasProduct="saasProduct"
+			/>
+			<div
+				class="flex w-full items-start justify-center pt-32"
+				v-if="$resources.siteRequestId.error"
+			>
+				<div class="rounded-md bg-white p-5 sm:shadow-xl">
+					<div class="text-lg text-red-600">
+						{{ $resources.siteRequestId.error.messages[0] }}
+					</div>
+				</div>
+			</div>
+			<div class="relative w-full" v-if="siteRequest?.doc && saasProduct">
 				<LoginBox
 					:title="
 						siteRequest.doc.status == 'Pending'
@@ -61,7 +69,7 @@
 							class="w-full"
 							variant="solid"
 							@click="siteRequest.createSite.submit()"
-							:loading="siteRequest.createSite.loading"
+							:loading="findingFastestServer || siteRequest.createSite.loading"
 						>
 							Create
 						</Button>
@@ -167,6 +175,15 @@
 				</template>
 			</Dialog>
 		</div>
+		<div class="absolute bottom-12 left-1/2 -translate-x-1/2 sm:left-[70%]">
+			<Dropdown :options="[{ label: 'Log out' }]">
+				<Button variant="ghost">
+					<span class="text-gray-600">
+						{{ $team.doc.user }}
+					</span>
+				</Button>
+			</Dropdown>
+		</div>
 	</div>
 </template>
 <script>
@@ -196,7 +213,9 @@ export default {
 			inputPaddingRight: null,
 			showPlanDialog: false,
 			selectedPlan: null,
-			progressErrorCount: 0
+			progressErrorCount: 0,
+			findingClosestServer: false,
+			closestCluster: null
 		};
 	},
 	resources: {
@@ -205,6 +224,13 @@ export default {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
 				auto: true
+			};
+		},
+		saasProduct() {
+			return {
+				type: 'document',
+				doctype: 'SaaS Product',
+				name: this.productId
 			};
 		},
 		siteRequest() {
@@ -222,8 +248,8 @@ export default {
 				whitelistedMethods: {
 					createSite: {
 						method: 'create_site',
-						makeParams() {
-							return { subdomain: this.subdomain, plan: this.plan };
+						makeParams({ cluster }) {
+							return { subdomain: this.subdomain, plan: this.plan, cluster };
 						},
 						validate() {
 							if (!this.plan) {
@@ -272,6 +298,41 @@ export default {
 		}
 	},
 	methods: {
+		async createSite() {
+			let cluster = await this.getClosestCluster();
+			return this.siteRequest.createSite.submit({ cluster });
+		},
+		async getClosestCluster() {
+			if (this.closestCluster) return this.closestCluster;
+			let proxyServers = Object.keys(this.saasProduct.proxy_servers);
+			if (proxyServers.length > 0) {
+				this.findingClosestServer = true;
+				let promises = proxyServers.map(server => this.getPingTime(server));
+				let results = await Promise.allSettled(promises);
+				let fastestServer = results.reduce((a, b) =>
+					a.value.pingTime < b.value.pingTime ? a : b
+				);
+				let closestServer = fastestServer.value.server;
+				let closestCluster = this.saasProduct.proxy_servers[closestServer];
+				if (this.closestCluster) {
+					this.closestCluster = closestCluster;
+				}
+				this.findingClosestServer = false;
+			}
+			return this.closestCluster;
+		},
+		async getPingTime(server) {
+			let pingTime = 999999;
+			try {
+				let t1 = new Date().getTime();
+				let r = await fetch(`https://${server}`);
+				let t2 = new Date().getTime();
+				pingTime = t2 - t1;
+			} catch (error) {
+				console.warn(error);
+			}
+			return { server, pingTime };
+		},
 		onResize({ width }) {
 			this.inputPaddingRight = width + 10 + 'px';
 		},
@@ -284,7 +345,7 @@ export default {
 			return this.$resources.siteRequest;
 		},
 		saasProduct() {
-			return this.siteRequest?.doc.saas_product;
+			return this.$resources.saasProduct.doc;
 		},
 		selectedPlanDescription() {
 			if (!this.plan) return;
