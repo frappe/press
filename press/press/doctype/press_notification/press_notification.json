@@ -7,12 +7,20 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "read",
   "team",
-  "type",
   "document_type",
+  "column_break_brxc",
+  "type",
   "document_name",
-  "message"
+  "interaction_section",
+  "is_actionable",
+  "read",
+  "column_break_rada",
+  "is_resolved",
+  "message_section",
+  "title",
+  "message",
+  "traceback"
  ],
  "fields": [
   {
@@ -62,11 +70,60 @@
    "options": "document_type",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.traceback",
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_brxc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "interaction_section",
+   "fieldtype": "Section Break",
+   "label": "User Interaction"
+  },
+  {
+   "default": "0",
+   "description": "Actionable notifications can be rectified by the user. For example if a deploy breaks due to incompatible app version.",
+   "fieldname": "is_actionable",
+   "fieldtype": "Check",
+   "label": "Is Actionable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rada",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_actionable",
+   "description": "Actionable notifications can be resolved by the user.\n\nUsed to prevent an action until the issue has been resolved. For example preventing further deploy until an incompatible app version has been fixed.",
+   "fieldname": "is_resolved",
+   "fieldtype": "Check",
+   "label": "Is Resolved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "depends_on": "eval:doc.title",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-15 13:12:13.826348",
+ "modified": "2024-03-12 14:53:05.096115",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",
