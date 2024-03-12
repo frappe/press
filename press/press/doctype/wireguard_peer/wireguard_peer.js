@@ -3,6 +3,10 @@
 
 frappe.ui.form.on('Wireguard Peer', {
 	refresh: function (frm) {
+		frm.add_fetch('server_name', 'ip', 'ip');
+		frm.add_fetch('server_name', 'private_ip', 'private_ip');
+		frm.add_fetch('server_name', 'title', 'peer_name');
+
 		[
 			[__('Setup Wireguard'), 'setup_wireguard', false],
 			[__('Ping Peer'), 'ping_peer', false],
