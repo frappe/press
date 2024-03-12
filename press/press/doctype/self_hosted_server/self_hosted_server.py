@@ -240,18 +240,20 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def set_database_plan(self):
-		if not self.different_database_server:
-			try:
-				frappe.get_last_doc("Server Plan", "Unlimited")
-			except frappe.DoesNotExists:
-				self._create_server_plan("Unlimited")
+		if self.database_plan:
+			return
 
-			self.database_plan = "Unlimited"
+		if not self.different_database_server:
+			if not frappe.db.exists("Server Plan", "Unlimited"):
+				self._create_server_plan("Unlimited")
+				self.database_plan = "Unlimited"
 
 	def _create_server_plan(self, plan_name):
 		plan = frappe.new_doc("Server Plan")
 		plan.name = plan_name
 		plan.title = plan_name
+		plan.price_inr = 0
+		plan.price_usd = 0
 		plan.save()
 
 	@frappe.whitelist()
