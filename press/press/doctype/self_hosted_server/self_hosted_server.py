@@ -639,15 +639,26 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("Fetching Private IP failed", server=self.as_dict())
 
+	def _get_play_id(self):
+		try:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.server, "play": "Ping Server"}
+			).name
+		except frappe.DoesNotExistError:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.name, "play": "Ping Server"}
+			).name
+
+		return play_id
+
 	@frappe.whitelist()
 	def fetch_system_specifications(self, play_id=None):
 		"""
 		Fetch the RAM from the Ping Ansible Play
 		"""
 		if not play_id:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.name, "play": "Ping Server"}
-			).name
+			play_id = self._get_play_id()
+
 		play = frappe.get_doc(
 			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
 		)
@@ -686,11 +697,22 @@ class SelfHostedServer(Document):
 			frappe.throw(
 				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
 			)
-		if round(int(float(self.total_storage.split()[0])), -1) < 40:
+
+		self._validate_disk()
+
+		return True
+
+	def _validate_disk(self):
+		disk_size = self.total_storage.split()[0]
+		disk_storage_unit = self.total_storage.split()[1]
+
+		if disk_storage_unit.upper() == "TB":
+			return True
+
+		if disk_storage_unit.upper() in ["GB", "MB"] and int(disk_size) < 40:
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)
-		return True
 
 
 def fetch_private_ip_based_on_vendor(play_result: dict):
