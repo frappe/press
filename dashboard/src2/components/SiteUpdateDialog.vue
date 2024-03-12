@@ -45,7 +45,7 @@
 				variant="solid"
 				:loading="$site.scheduleUpdate.loading"
 				:label="`Update ${
-					scheduledTime ? `at ${scheduledTimeInLocal}` : 'now'
+					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'
 				}`"
 				@click="
 					$site.scheduleUpdate.submit(
