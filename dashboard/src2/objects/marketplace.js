@@ -96,9 +96,9 @@ export default {
 		},
 		tabs: [
 			{
-				label: 'Overview',
-				icon: icon('home'),
-				route: 'overview',
+				label: 'Analytics',
+				icon: icon('bar-chart-2'),
+				route: 'analytics',
 				type: 'Component',
 				component: defineAsyncComponent(() =>
 					import('../components/marketplace/MarketplaceAppAnalytics.vue')
