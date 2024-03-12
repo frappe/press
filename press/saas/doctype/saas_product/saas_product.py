@@ -69,7 +69,7 @@ class SaaSProduct(Document):
 	def get_standby_site(self, cluster=None):
 		filters = {
 			"is_standby": True,
-			"standby_for_product": self.product,
+			"standby_for_product": self.name,
 			"status": "Active",
 		}
 		if cluster:

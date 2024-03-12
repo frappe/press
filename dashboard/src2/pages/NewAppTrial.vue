@@ -52,7 +52,7 @@
 							class="subdomain mt-2"
 							label="Site Name"
 							v-model="subdomain"
-							@keydown.enter="siteRequest.createSite.submit()"
+							@keydown.enter="createSite"
 						>
 							<template #suffix>
 								<div
@@ -68,7 +68,7 @@
 						<Button
 							class="w-full"
 							variant="solid"
-							@click="siteRequest.createSite.submit()"
+							@click="createSite"
 							:loading="findingFastestServer || siteRequest.createSite.loading"
 						>
 							Create
@@ -252,7 +252,8 @@ export default {
 				whitelistedMethods: {
 					createSite: {
 						method: 'create_site',
-						makeParams({ cluster }) {
+						makeParams(params) {
+							let cluster = params?.cluster;
 							return { subdomain: this.subdomain, plan: this.plan, cluster };
 						},
 						validate() {
