@@ -101,6 +101,7 @@
 			/>
 		</div>
 		<LineChart
+			v-if="$resources.plausible_analytics.data"
 			class="mt-5"
 			title="Weekly Installs"
 			type="time"
@@ -110,7 +111,7 @@
 					this.$resources.plausible_analytics.data?.weekly_installs || []
 				)
 			"
-			unit="visitors"
+			unit="installs"
 			:chartTheme="[$theme.colors.yellow[500]]"
 			:loading="$resources.plausible_analytics.loading"
 			:error="$resources.plausible_analytics.error"
