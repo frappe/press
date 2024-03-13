@@ -6,6 +6,21 @@ from frappe.model.document import Document
 
 
 class PressNotification(Document):
+	dashboard_fields = [
+		"team",
+		"document_type",
+		"class",
+		"type",
+		"document_name",
+		"is_actionable",
+		"read",
+		"is_resolved",
+		"title",
+		"message",
+		"traceback",
+		"assistance_url",
+	]
+
 	def after_insert(self):
 		if frappe.local.dev_server:
 			return

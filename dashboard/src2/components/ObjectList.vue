@@ -1,5 +1,11 @@
 <template>
 	<div>
+		<AlertAddressibleError
+			class="mb-4"
+			v-if="error"
+			:name="error.name"
+			:title="error.title"
+		/>
 		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<TextInput
@@ -123,6 +129,7 @@
 </template>
 <script>
 import ActionButton from './ActionButton.vue';
+import AlertAddressibleError from './AlertAddressibleError.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import {
 	Dropdown,
@@ -146,6 +153,7 @@ export default {
 	props: ['options'],
 	components: {
 		ActionButton,
+		AlertAddressibleError,
 		ObjectListCell,
 		Dropdown,
 		ListView,
@@ -163,7 +171,8 @@ export default {
 	data() {
 		return {
 			lastRefreshed: null,
-			searchQuery: ''
+			searchQuery: '',
+			error: null
 		};
 	},
 	resources: {
@@ -198,6 +207,32 @@ export default {
 					if (this.$list.data) {
 						this.$list.data = [];
 					}
+				}
+			};
+		},
+		notifications() {
+			return {
+				type: 'list',
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: this.options.doctype,
+					is_actionable: true,
+					is_resolved: false,
+					class: 'Error'
+				},
+				limit: 1,
+				onSuccess(data) {
+					console.log(data);
+					if (!data.length) {
+						return;
+					}
+
+					this.error = data[0];
+				},
+				onError(data) {
+					console.error(data);
 				}
 			};
 		}

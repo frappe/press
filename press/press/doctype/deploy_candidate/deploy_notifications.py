@@ -45,6 +45,7 @@ def create_build_failed_notification(dc: "DeployCandidate") -> None:
 		"type": "Bench Deploy",
 		"document_type": dc.doctype,
 		"document_name": dc.name,
+		"class": "Error",
 		**details,
 	}
 	doc = frappe.get_doc(doc_dict)

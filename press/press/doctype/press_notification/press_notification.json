@@ -21,7 +21,8 @@
   "title",
   "message",
   "traceback",
-  "assistance_url"
+  "assistance_url",
+  "class"
  ],
  "fields": [
   {
@@ -129,11 +130,19 @@
    "fieldtype": "Data",
    "label": "Assitance URL",
    "read_only": 1
+  },
+  {
+   "default": "Info",
+   "fieldname": "class",
+   "fieldtype": "Select",
+   "label": "Class",
+   "options": "Info\nSuccess\nWarning\nError",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-13 17:00:58.719829",
+ "modified": "2024-03-13 18:05:05.232924",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",
