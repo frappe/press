@@ -23,6 +23,7 @@ class SiteUpdate(Document):
 		"deploy_type",
 		"difference",
 		"update_job",
+		"scheduled_time",
 		"creation",
 	]
 
