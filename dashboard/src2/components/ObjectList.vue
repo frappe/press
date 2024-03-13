@@ -1,8 +1,8 @@
 <template>
 	<div>
 		<AlertAddressibleError
-			class="mb-4"
 			v-if="error"
+			class="mb-5"
 			:name="error.name"
 			:title="error.title"
 		/>
@@ -171,8 +171,7 @@ export default {
 	data() {
 		return {
 			lastRefreshed: null,
-			searchQuery: '',
-			error: null
+			searchQuery: ''
 		};
 	},
 	resources: {
@@ -210,9 +209,10 @@ export default {
 				}
 			};
 		},
-		notifications() {
+		errors() {
 			return {
 				type: 'list',
+				cache: ['Press Notification', 'Error', this.options.doctype],
 				doctype: 'Press Notification',
 				auto: true,
 				fields: ['title', 'name'],
@@ -222,18 +222,7 @@ export default {
 					is_resolved: false,
 					class: 'Error'
 				},
-				limit: 1,
-				onSuccess(data) {
-					console.log(data);
-					if (!data.length) {
-						return;
-					}
-
-					this.error = data[0];
-				},
-				onError(data) {
-					console.error(data);
-				}
+				limit: 1
 			};
 		}
 	},
@@ -266,6 +255,9 @@ export default {
 		}
 	},
 	computed: {
+		error() {
+			return this.$resources.errors?.data?.[0] ?? null;
+		},
 		$list() {
 			return this.$resources.list || this.options.list;
 		},

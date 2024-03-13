@@ -53,6 +53,7 @@ let subscribed = {};
 export default {
 	name: 'DetailPage',
 	props: {
+		id: String,
 		objectType: {
 			type: String,
 			required: true

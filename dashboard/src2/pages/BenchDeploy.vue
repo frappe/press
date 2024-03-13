@@ -1,5 +1,11 @@
 <template>
 	<div class="p-5" v-if="deploy">
+		<AlertAddressibleError
+			v-if="error"
+			class="mb-5"
+			:name="error.name"
+			:title="error.title"
+		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
@@ -72,12 +78,14 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
+import AlertAddressibleError from '../components/AlertAddressibleError.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
-		JobStep
+		JobStep,
+		AlertAddressibleError
 	},
 	resources: {
 		deploy() {
@@ -103,6 +111,23 @@ export default {
 					}
 					return deploy;
 				}
+			};
+		},
+		errors() {
+			return {
+				type: 'list',
+				cache: ['Press Notification', 'Error', 'Deploy Candidate', this.id],
+				doctype: 'Press Notification',
+				auto: true,
+				fields: ['title', 'name'],
+				filters: {
+					document_type: 'Deploy Candidate',
+					document_name: this.id,
+					is_actionable: true,
+					is_resolved: false,
+					class: 'Error'
+				},
+				limit: 1
 			};
 		}
 	},
@@ -130,6 +155,9 @@ export default {
 		},
 		object() {
 			return getObject(this.objectType);
+		},
+		error() {
+			return this.$resources.errors?.data?.[0] ?? null;
 		}
 	}
 };
