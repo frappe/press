@@ -37,10 +37,12 @@ class SelfHostedServer(Document):
 			"mariadb_ip": self.mariadb_ip,
 			"mariadb_private_ip": self.mariadb_private_ip,
 			"name": ("!=", self.name),
-			"status": ("!=", "Archived"),
+			"status": ("not in", ["Archived", "Broken"]),
 		}
-		server = frappe.db.get_value("Self Hosted Server", filters, pluck="name")
-		raise frappe.DuplicateEntryError(self.doctype, server)
+		duplicate_server = frappe.db.get_value("Self Hosted Server", filters, pluck="name")
+
+		if duplicate_server:
+			raise frappe.DuplicateEntryError(self.doctype, duplicate_server)
 
 	def set_proxy_details(self):
 		if self.proxy_created or self.proxy_server:
@@ -600,6 +602,7 @@ class SelfHostedServer(Document):
 			play_id = frappe.get_last_doc(
 				"Ansible Play", {"server": self.name, "play": "Ping Server"}
 			).name
+
 		play = frappe.get_doc(
 			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
 		)
@@ -655,7 +658,7 @@ class SelfHostedServer(Document):
 		return play_id
 
 	@frappe.whitelist()
-	def fetch_system_specifications(self, play_id=None):
+	def fetch_system_specifications(self, play_id=None, server_type="app"):
 		"""
 		Fetch the RAM from the Ping Ansible Play
 		"""
@@ -667,24 +670,37 @@ class SelfHostedServer(Document):
 		)
 		try:
 			result = json.loads(play.result)
-			self.vendor = result["ansible_facts"]["system_vendor"]
-			self.ram = result["ansible_facts"]["memtotal_mb"]
-			self.vcpus = result["ansible_facts"]["processor_vcpus"]
-			self.swap_total = result["ansible_facts"]["swaptotal_mb"]
-			self.architecture = result["ansible_facts"]["architecture"]
-			self.instance_type = result["ansible_facts"]["product_name"]
-			self.processor = result["ansible_facts"]["processor"][2]
-			self.distribution = result["ansible_facts"]["lsb"]["description"]
-			match self.vendor:
-				case "DigitalOcean":
-					self.total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
-				case "Amazon EC2":
-					self.total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
-				case _:
-					self.total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+			if server_type == "app":
+
+				self.vendor = result["ansible_facts"]["system_vendor"]
+				self.ram = result["ansible_facts"]["memtotal_mb"]
+				self.vcpus = result["ansible_facts"]["processor_vcpus"]
+				self.swap_total = result["ansible_facts"]["swaptotal_mb"]
+				self.architecture = result["ansible_facts"]["architecture"]
+				self.instance_type = result["ansible_facts"]["product_name"]
+				self.processor = result["ansible_facts"]["processor"][2]
+				self.distribution = result["ansible_facts"]["lsb"]["description"]
+				self.total_storage = self._get_total_storage(result)
+
+			else:
+				self.db_ram = result["ansible_facts"]["memtotal_mb"]
+				self.db_vcpus = result["ansible_facts"]["processor_vcpus"]
+				self.db_total_storage = self._get_total_storage(result)
+
 			self.save()
 		except Exception:
 			log_error("Fetching System Details Failed", server=self.as_dict())
+
+	def _get_total_storage(self, result):
+		match self.vendor:
+			case "DigitalOcean":
+				total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
+			case "Amazon EC2":
+				total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
+			case _:
+				total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+
+		return total_storage
 
 	def check_minimum_specs(self):
 		"""
@@ -712,7 +728,9 @@ class SelfHostedServer(Document):
 		if disk_storage_unit.upper() == "TB":
 			return True
 
-		if disk_storage_unit.upper() in ["GB", "MB"] and int(disk_size) < 40:
+		if (
+			disk_storage_unit.upper() in ["GB", "MB"] and round(int(float(disk_size)), -1) < 40
+		):
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)

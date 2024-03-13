@@ -42,6 +42,7 @@ def create_self_hosted_server(server_details, team, proxy_server):
 			}
 		).insert()
 	except frappe.DuplicateEntryError as e:
+		print(e)
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
 		server_name = e.args[1]
 		return server_name
@@ -79,7 +80,6 @@ def sshkey():
 
 @frappe.whitelist()
 def verify(server):
-	play_status = "Failure"
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	_server_details = frappe._dict(
 		{
@@ -90,26 +90,11 @@ def verify(server):
 		}
 	)
 
-	app_server_result = verify_app_server_is_reachable(_server_details, server_doc)
-	db_server_result = verify_db_server_is_reachable(_server_details, server_doc)
+	if app_server_verified(_server_details, server_doc) and db_server_verified(
+		_server_details, server_doc
+	):
+		server_doc.check_minimum_specs()
 
-	if server_doc.different_database_server:
-		# If both servers are reachable, then the status is success
-		if app_server_result.status == "Success" and db_server_result.status == "Success":
-			play_status = "Success"
-
-	else:
-		if app_server_result.status == "Success":
-			play_status = "Success"
-
-			server_doc.fetch_private_ip()
-			server_doc.fetch_system_ram(app_server_result.name)
-			server_doc.fetch_system_specifications(app_server_result.name)
-			server_doc.check_minimum_specs()
-			server_doc.save()
-
-	if play_status == "Success":
-		server_doc.reload()
 		server_doc.status = "Pending"
 		server_doc.save()
 
@@ -118,29 +103,46 @@ def verify(server):
 
 		server_doc.reload()
 		server_doc.create_application_server()
-
 		return True
-	else:
-		return False
+
+	return False
 
 
-def verify_app_server_is_reachable(_server_details, server_doc):
-	ping_app_server = Ansible(
+def app_server_verified(_server_details, server_doc):
+	ping = Ansible(
 		playbook="ping.yml",
 		server=_server_details.update({"ip": server_doc.ip}),
 	)
-	return ping_app_server.run()
+
+	result = ping.run()
+
+	if result.status == "Success":
+		server_doc.fetch_system_specifications(result.name, server_type="app")
+		server_doc.save()
+		server_doc.reload()
+		return True
+
+	server_doc.status = "Broken"
+	server_doc.save()
+	return False
 
 
-def verify_db_server_is_reachable(_server_details, server_doc):
-	if not server_doc.different_database_server:
-		return frappe._dict({"status": "Success"})
-
-	ping_db_server = Ansible(
+def db_server_verified(_server_details, server_doc):
+	ping = Ansible(
 		playbook="ping.yml",
 		server=_server_details.update({"ip": server_doc.mariadb_ip}),
 	)
-	return ping_db_server.run()
+	result = ping.run()
+
+	if result.status == "Success":
+		server_doc.fetch_system_specifications(result.name, server_type="db")
+		server_doc.save()
+		server_doc.reload()
+		return True
+
+	server_doc.status = "Broken"
+	server_doc.save()
+	return False
 
 
 @frappe.whitelist()
