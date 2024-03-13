@@ -22,6 +22,10 @@ Details = TypedDict(
 	},
 )
 
+DOC_URLS = {
+	"app-installation-issue": "https://frappecloud.com/docs/faq/app-installation-issue"
+}
+
 
 def create_build_failed_notification(dc: "DeployCandidate") -> None:
 	"""
@@ -93,11 +97,8 @@ def update_with_github_token_error(
 
 	App installation access token could not be fetched from GitHub API for the app <b>{app}</b>.
 
-	To fix this issue, please follow the steps mentioned in
-	<a href="https://frappecloud.com/docs/faq/cannot-not-fetch-app-installation-token" target="_blank">this document</a>.
-
-	If the issue persists after following the steps, please raise a support with the unique
-	ID found the GitHub Frappe Cloud app installation URL.
+	To rectify this issue, please follow the steps mentioned on this
+	<a href="{DOC_URLS['app-installation-issue']}" target="_blank">documentation page</a>.
 	""".strip()
 	details["message"] = dedent(message)
 
