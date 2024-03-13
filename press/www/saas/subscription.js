@@ -13,6 +13,7 @@ $(document).ready(function () {
 });
 
 function show_banner() {
+	let subscription = frappe.boot.subscription_conf;
 	let trial_end_date = subscription.trial_end_date;
 	let trial_end_message =
 		moment(trial_end_date) > moment()
