@@ -6,7 +6,8 @@
 			>
 				<thead class="bg-gray-100">
 					<tr class="text-gray-600">
-						<th class="rounded-l p-2 text-left font-normal">Description</th>
+						<th class="rounded-l p-2 text-left font-normal">App</th>
+						<th class="rounded-l p-2 text-left font-normal">Site</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Rate</th>
 						<th class="whitespace-nowrap p-2 text-right font-normal">Total</th>
 						<th class="rounded-r p-2 text-right font-normal">Fee</th>
@@ -17,6 +18,9 @@
 				<tbody>
 					<template v-for="(row, i) in doc.items" :key="row.idx">
 						<tr>
+							<td class="py-1 pl-2 pr-2">
+								{{ row.document_name }}
+							</td>
 							<td class="py-1 pl-2 pr-2">
 								{{ row.site }}
 							</td>
@@ -41,6 +45,7 @@
 				</tbody>
 				<tfoot>
 					<tr>
+						<td></td>
 						<td></td>
 						<td></td>
 						<td></td>
