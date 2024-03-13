@@ -60,6 +60,7 @@ export default {
 					value: dayjs().add(i, 'day').format('YYYY-MM-DD')
 				});
 			}
+			return days;
 		},
 		hourOptions() {
 			let options = [...Array(24).keys()].map(n => ({
