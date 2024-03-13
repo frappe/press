@@ -67,9 +67,18 @@ class MarketplaceApp(WebsiteGenerator):
 		if not frappe.flags.in_test:
 			self.check_if_duplicate()
 			self.create_app_and_source_if_needed()
-			self.long_description = self.fetch_readme()
+			self.long_description = self.markdown_to_html(self.fetch_readme())
 
 		self.set_route()
+
+	def markdown_to_html(self, content):
+		import markdown
+
+		content = content.replace("'", "'")
+		html = markdown.markdown(content)
+		html = html.replace("\n", "")
+
+		return html
 
 	def set_route(self):
 		self.route = "marketplace/apps/" + cleanup_page_name(self.app)

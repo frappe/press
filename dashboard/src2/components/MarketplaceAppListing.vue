@@ -166,12 +166,7 @@
 						ref="textEditor"
 						editor-class="rounded-b-lg max-w-[unset] prose-sm pb-[10vh]"
 						:content="marketplaceApp.long_description"
-						@input="
-							() => {
-								marketplaceApp.long_description = $event;
-								editing = true;
-							}
-						"
+						@change="marketplaceApp.long_description = $event"
 						:editable="editable"
 						:bubbleMenu="true"
 					>
