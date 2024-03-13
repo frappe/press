@@ -6,27 +6,18 @@ import {
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import HelpIcon from '~icons/lucide/help-circle';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import {
-	bytes,
-	duration,
-	date,
-	userCurrency,
-	commaAnd,
-	plural
-} from '../utils/format';
+import { bytes, duration, date, plural } from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
-import { getPlans } from '../data/plans';
 
 export default {
 	doctype: 'Site',
