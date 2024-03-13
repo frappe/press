@@ -54,6 +54,17 @@ let router = createRouter({
 			props: true
 		},
 		{
+			name: 'New Release Group',
+			path: '/benches/new',
+			component: () => import('./pages/NewBench.vue')
+		},
+		{
+			name: 'Server New Bench',
+			path: '/servers/:server/benches/new',
+			component: () => import('./pages/NewBench.vue'),
+			props: true
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
