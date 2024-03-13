@@ -20,8 +20,8 @@ export default {
 		updateListing: 'update_listing'
 	},
 	list: {
-		route: '/marketplace',
-		title: 'Marketplace',
+		route: '/apps',
+		title: 'Apps',
 		fields: ['image', 'title', 'status', 'description'],
 		columns: [
 			{
@@ -72,8 +72,11 @@ export default {
 								toast.promise(apps.insert.submit(app), apps.reload(), {
 									loading: 'Adding new app...',
 									success: () => {
-										router.push(`/marketplace/${app.name}/listing`);
-										return 'New marketplace app added';
+										router.push({
+											name: 'Marketplace App Detail Listing',
+											params: { name: app.name }
+										});
+										return 'New app added';
 									},
 									error: e => {
 										return e.messages.length
@@ -90,9 +93,18 @@ export default {
 	},
 	detail: {
 		titleField: 'name',
-		route: '/marketplace/:name',
+		route: '/apps/:name',
 		statusBadge({ documentResource: app }) {
 			return { label: app.doc.status };
+		},
+		breadcrumbs({ items, documentResource: app }) {
+			return [
+				items[0],
+				{
+					label: app.doc.title,
+					route: `/apps/${app.doc.name}`
+				}
+			];
 		},
 		tabs: [
 			{
@@ -544,7 +556,7 @@ export default {
 					condition: () => app.doc.status === 'Published',
 					onClick() {
 						window.open(
-							`${window.location.origin}/marketplace/apps/${app.name}`,
+							`${window.location.origin}/apps/apps/${app.name}`,
 							'_blank'
 						);
 					}
@@ -596,7 +608,7 @@ export default {
 														type: 'Button',
 														width: 0.2,
 														Button({ row }) {
-															let route = `/marketplace/${app.doc.name}/`;
+															let route = `/apps/${app.doc.name}/`;
 															route += row.step.includes('Publish')
 																? 'versions'
 																: 'listing';
@@ -604,9 +616,7 @@ export default {
 															return {
 																label: 'View',
 																variant: 'ghost',
-																onClick() {
-																	router.push(route);
-																}
+																route
 															};
 														}
 													}
