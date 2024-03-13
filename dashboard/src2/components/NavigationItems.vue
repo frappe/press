@@ -65,7 +65,7 @@ export default {
 					name: 'Apps',
 					icon: () => h(App),
 					route: '/apps',
-					isActive: routeName.startsWith('Apps'),
+					isActive: routeName.startsWith('Marketplace'),
 					disabled
 				},
 				{
