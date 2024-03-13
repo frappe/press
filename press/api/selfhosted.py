@@ -171,3 +171,11 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
+
+
+@frappe.whitelist()
+def options_for_new():
+	return {
+		"plans": get_plans(),
+		"ssh_key": sshkey(),
+	}
