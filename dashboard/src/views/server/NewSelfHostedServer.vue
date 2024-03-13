@@ -22,12 +22,11 @@
 				<div>
 					<SelfHostedServerForm
 						v-show="activeStep.name === 'ServerDetails'"
-						v-model:publicIP="publicIP"
-						v-model:privateIP="privateIP"
+						v-model:appPublicIP="appPublicIP"
+						v-model:appPrivateIP="appPrivateIP"
 						v-model:dbPublicIP="dbPublicIP"
 						v-model:dbPrivateIP="dbPrivateIP"
 						v-model:error="ipInvalid"
-						v-model:setupType="setupType"
 					/>
 				</div>
 
@@ -52,12 +51,6 @@
 					>
 						{{ playOutput ? 'Server Verified' : 'Server Unreachable' }}
 					</Button>
-					<!-- <div class="mt-1" v-if="playOutput && !nginxSetup">
-						<span class="text-sm text-green-600">
-							Server Verification is complete. Setting Up Nginx, this can take
-							upto a minute</span
-						>
-					</div> -->
 				</div>
 				<ErrorMessage class="mt-2" :message="$resources.verify.error" />
 				<div class="mt-4">
@@ -124,11 +117,10 @@ export default {
 		return {
 			title: null,
 			options: null,
-			publicIP: null,
+			appPublicIP: null,
+			appPrivateIP: null,
 			dbPublicIP: null,
-			privateIP: null,
 			dbPrivateIP: null,
-			setupType: null,
 			validationMessage: null,
 			serverDoc: null,
 			ssh_key: null,
@@ -154,7 +146,7 @@ export default {
 				{
 					name: 'ServerDetails',
 					validate: () => {
-						return this.publicIP;
+						return this.appPublicIP;
 					}
 				},
 				{
@@ -182,12 +174,11 @@ export default {
 				params: {
 					server: {
 						title: this.title,
-						publicIP: this.publicIP,
-						privateIP: this.privateIP,
-						dbpublicIP: this.dbPublicIP,
-						dbprivateIP: this.dbPrivateIP,
-						plan: this.selectedPlan,
-						setupType: this.setupType
+						app_public_ip: this.appPublicIP,
+						app_private_ip: this.appPrivateIP,
+						db_public_ip: this.dbPublicIP,
+						db_private_ip: this.dbPrivateIP,
+						plan: this.selectedPlan
 					}
 				},
 				onSuccess(data) {

@@ -14,17 +14,6 @@
 				placeholder="AcmeCorp Production Server"
 			/>
 		</div>
-		<!-- <div class="mt-6 space-y-2">
-			<h2 class="text-lg font-semibold">Add Domain</h2>
-
-			<p class="text-base text-gray-700">Add Domain pointing to Server</p>
-			<FormControl
-				class="z-10 w-full rounded-r-none"
-				:value="domain"
-				@change="$emit('update:domain', $event.target.value)"
-				placeholder="example.com"
-			/>
-		</div> -->
 		<ErrorMessage class="mt-4" :message="errorMessage" />
 	</div>
 </template>
