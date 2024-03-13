@@ -47,6 +47,7 @@ class Invoice(Document):
 		"status",
 		"due_date",
 		"total_discount_amount",
+		"invoice_pdf",
 	]
 
 	@staticmethod
