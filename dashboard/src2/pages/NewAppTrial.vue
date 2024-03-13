@@ -319,7 +319,7 @@ export default {
 				);
 				let closestServer = fastestServer.value.server;
 				let closestCluster = this.saasProduct.proxy_servers[closestServer];
-				if (this.closestCluster) {
+				if (!this.closestCluster) {
 					this.closestCluster = closestCluster;
 				}
 				this.findingClosestServer = false;
