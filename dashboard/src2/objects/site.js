@@ -546,6 +546,13 @@ export default {
 							fieldname: 'owner'
 						},
 						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							}
+						},
+						{
 							label: 'Updated On',
 							fieldname: 'updated_on',
 							format(value) {
