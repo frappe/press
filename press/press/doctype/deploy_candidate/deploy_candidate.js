@@ -15,7 +15,7 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
-		if (frm.doc.status !== 'Draft' && frm.doc.status !== 'Success') {
+		if (window.dev_server) {
 			frm.add_custom_button('Check Status', () =>
 				frm.call('is_build_okay').then((r) => frm.refresh()),
 			);
