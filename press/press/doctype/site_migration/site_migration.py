@@ -21,6 +21,7 @@ from press.utils.dns import create_dns_record
 
 if TYPE_CHECKING:
 	from press.press.doctype.site.site import Site
+	from press.press.doctype.agent_job.agent_job import AgentJob
 
 
 def get_ongoing_migration(site: str, scheduled=False):
@@ -211,13 +212,38 @@ class SiteMigration(Document):
 			== "Success"
 		)
 
-	def fail(self):
+	def set_pending_steps_to_skipped(self):
+		for step in self.steps:
+			if step.status == "Pending":
+				step.status = "Skipped"
+		self.save()
+
+	@property
+	def restore_on_destination_happened(self) -> bool:
+		return find(
+			self.steps,
+			lambda x: x.method_name == self.restore_site_on_destination_server.__name__,
+		).status in ["Success", "Failure"]
+
+	def fail(self, cleanup=True):
+		self.set_pending_steps_to_skipped()
+		if (
+			cleanup and not self.archived_site_on_source and self.restore_on_destination_happened
+		):
+			self.append(
+				"steps",
+				{
+					"step_title": self.archive_site_on_destination_server.__doc__,
+					"method_name": self.archive_site_on_destination_server.__name__,
+					"status": "Pending",
+				},
+			)
+			self.run_next_step()
+			return
 		self.status = "Failure"
 		self.save()
 		self.send_fail_notification()
 		self.activate_site_if_appropriate()
-		if not self.archived_site_on_source:
-			self.archive_site_on_destination_server()
 
 	@property
 	def failed_step(self):
@@ -229,7 +255,6 @@ class SiteMigration(Document):
 			self.failed_step.method_name
 			in [
 				self.backup_source_site.__name__,
-				self.archive_site_on_destination_server.__name__,
 				self.restore_site_on_destination_server.__name__,
 				self.restore_site_on_destination_proxy.__name__,
 			]
@@ -502,6 +527,13 @@ class SiteMigration(Document):
 			self.update_next_step_status("Skipped")
 		self.run_next_step()
 
+	def is_cleanup_done(self, job: "AgentJob") -> bool:
+		return (
+			job.job_type == "Archive Site"
+			and job.status == "Success"
+			and job.bench == self.destination_bench
+		)
+
 
 def process_required_job_callbacks(job):
 	if job.job_type == "Backup Site":
@@ -510,18 +542,23 @@ def process_required_job_callbacks(job):
 
 def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
-	if job.name == site_migration.next_step.step_job:
-		process_required_job_callbacks(job)
-		site_migration.update_next_step_status(job.status)
-		if job.status == "Success":
-			try:
-				site_migration.run_next_step()
-			except Exception:
-				log_error("Site Migration Step Error")
-		elif job.status in ["Failure", "Delivery Failure"]:
-			site_migration.fail()
-	else:
+	if job.name != site_migration.next_step.step_job:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+
+	process_required_job_callbacks(job)
+	site_migration.update_next_step_status(job.status)
+
+	if site_migration.is_cleanup_done(job):
+		site_migration.fail(cleanup=False)
+		return
+
+	if job.status == "Success":
+		try:
+			site_migration.run_next_step()
+		except Exception:
+			log_error("Site Migration Step Error")
+	elif job.status in ["Failure", "Delivery Failure"]:
+		site_migration.fail()
 
 
 def run_scheduled_migrations():
