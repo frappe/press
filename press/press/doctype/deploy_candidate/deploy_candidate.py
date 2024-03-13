@@ -433,6 +433,10 @@ class DeployCandidate(Document):
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
+			if app.app == "hrms":
+				app.use_cached = False
+				continue
+
 			app.use_cached = bool(self.use_app_cache)
 
 	def _prepare_build_directory(self):
