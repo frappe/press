@@ -117,13 +117,17 @@
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
 					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
-					<div class="w-2/3 text-base text-gray-900">
-						{{ d.value }}
-					</div>
-					<div v-if="d.help">
-						<Tooltip :text="d.help">
-							<i-lucide-info class="h-4 w-4 text-gray-500" />
-						</Tooltip>
+					<div
+						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
+					>
+						<span>
+							{{ d.value }}
+						</span>
+						<div v-if="d.help">
+							<Tooltip :text="d.help">
+								<i-lucide-info class="h-4 w-4 text-gray-500" />
+							</Tooltip>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -156,10 +160,6 @@ export default {
 		siteInformation() {
 			return [
 				{
-					label: 'Site name',
-					value: this.$site.doc.name
-				},
-				{
 					label: 'Owned by',
 					value: this.$site.doc.owner_email
 				},
@@ -170,10 +170,6 @@ export default {
 				{
 					label: 'Created on',
 					value: this.$format.date(this.$site.doc.creation)
-				},
-				{
-					label: 'Last updated',
-					value: this.$format.date(this.$site.doc.last_updated) || 'Never'
 				},
 				{
 					label: 'Inbound IP',
