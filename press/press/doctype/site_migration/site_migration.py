@@ -202,11 +202,22 @@ class SiteMigration(Document):
 		self.next_step.status = status
 		self.save()
 
+	@property
+	def archived_site_on_source(self) -> bool:
+		return (
+			find(
+				self.steps, lambda x: x.method_name == self.archive_site_on_source.__name__
+			).status
+			== "Success"
+		)
+
 	def fail(self):
 		self.status = "Failure"
 		self.save()
 		self.send_fail_notification()
 		self.activate_site_if_appropriate()
+		if not self.archived_site_on_source:
+			self.archive_site_on_destination_server()
 
 	@property
 	def failed_step(self):
@@ -402,7 +413,7 @@ class SiteMigration(Document):
 		return frappe.get_doc("Agent Job", backup.job)
 
 	def archive_site_on_destination_server(self):
-		"""Archive site on destination (case of retry)"""
+		"""Archive site on destination (case of retry/failure)"""
 		agent = Agent(self.destination_server)
 		site = frappe.get_doc("Site", self.site)
 		site.bench = self.destination_bench
