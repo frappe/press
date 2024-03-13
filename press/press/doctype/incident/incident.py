@@ -80,10 +80,11 @@ class Incident(WebsiteGenerator):
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
 		if frappe.db.exists("Self Hosted Server", {"server": self.server}):
-			ret = incident_settings.self_hosted_users
-		ret = incident_settings.users
+			users = incident_settings.self_hosted_users
+		users = incident_settings.users
+		ret = users
 		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
-			for user in ret:
+			for user in users:
 				if user.user == self.acknowledged_by:
 					ret.remove(user)
 					ret.insert(0, user)
