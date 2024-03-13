@@ -47,7 +47,11 @@ class Team(Document):
 		"referrer_id",
 		"partner_referral_code",
 	]
-	dashboard_actions = ["get_team_members", "remove_team_member"]
+	dashboard_actions = [
+		"get_team_members",
+		"remove_team_member",
+		"change_default_dashboard",
+	]
 
 	def get_doc(self, doc):
 		if (
@@ -1073,6 +1077,14 @@ class Team(Document):
 				"team": self,
 			},
 		)
+
+	@frappe.whitelist()
+	def change_default_dashboard(self, new_dashboard=None):
+		if new_dashboard is not None:
+			self.default_to_new_dashboard = new_dashboard
+			self.save()
+			# invalidate account.get cache
+			frappe.cache.delete_value("cached-account.get", user=frappe.session.user)
 
 
 def get_team_members(team):

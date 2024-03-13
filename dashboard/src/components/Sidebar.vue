@@ -102,11 +102,9 @@
 				</router-link>
 			</div>
 		</div>
+		<TryNewDashboardButton />
+
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
-		<Dialog
-			:options="newDashboardDialogOptions"
-			v-model="showNewDashboardDialog"
-		/>
 	</div>
 </template>
 
@@ -116,19 +114,20 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
+import TryNewDashboardButton from './TryNewDashboardButton.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
 		SwitchTeamDialog,
-		CommandPalette
+		CommandPalette,
+		TryNewDashboardButton
 	},
 	data() {
 		return {
 			showCommandPalette: false,
 			showTeamSwitcher: false,
-			showNewDashboardDialog: false,
 			dropdownItems: [
 				{
 					label: 'Switch Team',
@@ -139,11 +138,6 @@ export default {
 					label: 'Support & Docs',
 					icon: 'help-circle',
 					onClick: () => (window.location.href = '/support')
-				},
-				{
-					label: 'Try the new dashboard',
-					icon: 'layout',
-					onClick: () => (this.showNewDashboardDialog = true)
 				},
 				{
 					label: 'Logout',
@@ -251,23 +245,6 @@ export default {
 					icon: FCIcons.SettingsIcon
 				}
 			].filter(d => (d.condition ? d.condition() : true));
-		},
-		newDashboardDialogOptions() {
-			return {
-				title: 'New Dashboard ✨',
-				message:
-					'The new dashboard is built from the ground up to provide a better experience. It might be missing a few features or have some bugs, please report them to us and include "New Dashboard" in the ticket subject. You can always switch back to the old dashboard from the user dropdown.',
-				actions: [
-					{
-						label: 'Go to new dashboard',
-						variant: 'solid',
-						onClick: () => {
-							this.showNewDashboardDialog = false;
-							window.location.href = '/dashboard-beta';
-						}
-					}
-				]
-			};
 		}
 	}
 };

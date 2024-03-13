@@ -90,6 +90,7 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'AppSidebar',
@@ -111,7 +112,21 @@ export default {
 			window.open('https://frappecloud.com/support', '_blank');
 		},
 		switchToOldDashboard() {
-			window.location.href = '/dashboard';
+			toast.promise(
+				this.$team.changeDefaultDashboard.submit(
+					{ new_dashboard: false },
+					{
+						onSuccess() {
+							window.location.href = '/dashboard';
+						}
+					}
+				),
+				{
+					loading: 'Switching to old dashboard...',
+					success: () => 'Switching to old dashboard...',
+					error: e => 'Failed to switch to old dashboard'
+				}
+			);
 		}
 	}
 };
