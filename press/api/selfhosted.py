@@ -12,35 +12,39 @@ from frappe.utils import strip
 
 @frappe.whitelist()
 def new(server):
-	is_multi_server_setup = True
+	server_details = frappe._dict(server)
 
 	team = get_current_team(get_doc=True)
 	validate_team(team)
 
-	cluster = get_cluster()
-	proxy_server = get_proxy_server_for_cluster(cluster)
-	ip_details = get_sanitized_ip(server)
+	proxy_server = get_proxy_server_for_cluster()
 
-	if server["setupType"] == "standalone":
-		is_multi_server_setup = False
+	return create_self_hosted_server(server_details, team, proxy_server)
 
-	self_hosted_server = frappe.new_doc(
-		"Self Hosted Server",
-		**{
-			"ip": ip_details.public_ip,
-			"private_ip": ip_details.private_ip,
-			"mariadb_ip": ip_details.db_public_ip,
-			"mariadb_private_ip": ip_details.db_private_ip,
-			"title": server["title"],
-			"proxy_server": proxy_server,
-			"proxy_created": True,
-			"different_database_server": is_multi_server_setup,
-			"team": team.name,
-			"plan": server["plan"]["name"],
-			"database_plan": server["plan"]["name"],
-			"new_server": True,
-		}
-	).insert()
+
+def create_self_hosted_server(server_details, team, proxy_server):
+	try:
+		self_hosted_server = frappe.new_doc(
+			"Self Hosted Server",
+			**{
+				"ip": strip(server_details.get("app_public_ip", "")),
+				"private_ip": strip(server_details.get("app_private_ip", "")),
+				"mariadb_ip": strip(server_details.get("db_public_ip", "")),
+				"mariadb_private_ip": strip(server_details.get("db_private_ip", "")),
+				"title": server_details.title,
+				"proxy_server": proxy_server,
+				"proxy_created": True,
+				"different_database_server": True,
+				"team": team.name,
+				"plan": server_details.plan["name"],
+				"database_plan": server_details.plan["name"],
+				"new_server": True,
+			}
+		).insert()
+	except frappe.DuplicateEntryError as e:
+		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
+		server_name = e.args[1]
+		return server_name
 
 	return self_hosted_server.name
 
@@ -58,22 +62,13 @@ def validate_team(team):
 		)
 
 
-def get_sanitized_ip(server):
-	return frappe._dict(
-		{
-			"public_ip": strip(server.get("publicIP", "")),
-			"private_ip": strip(server.get("privateIP", "")),
-			"db_public_ip": strip(server.get("dbpublicIP", "")),
-			"db_private_ip": strip(server.get("dbprivateIP", "")),
-		}
-	)
+def get_proxy_server_for_cluster(cluster=None):
+	cluster = get_hybrid_cluster() if not cluster else cluster
 
-
-def get_proxy_server_for_cluster(cluster):
 	return frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 
 
-def get_cluster():
+def get_hybrid_cluster():
 	return frappe.db.get_value("Cluster", {"hybrid": 1}, "name")
 
 

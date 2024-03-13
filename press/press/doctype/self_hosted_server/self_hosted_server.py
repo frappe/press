@@ -22,12 +22,25 @@ class SelfHostedServer(Document):
 		self.domain = self.hybrid_domain
 
 	def validate(self):
+		self.validate_is_duplicate()
 		self.set_proxy_details()
 		self.set_mariadb_config()
 		self.set_database_plan()
 
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
+
+	def validate_is_duplicate(self):
+		filters = {
+			"ip": self.ip,
+			"private_ip": self.private_ip,
+			"mariadb_ip": self.mariadb_ip,
+			"mariadb_private_ip": self.mariadb_private_ip,
+			"name": ("!=", self.name),
+			"status": ("!=", "Archived"),
+		}
+		server = frappe.db.get_value("Self Hosted Server", filters, pluck="name")
+		raise frappe.DuplicateEntryError(self.doctype, server)
 
 	def set_proxy_details(self):
 		if self.proxy_created or self.proxy_server:
