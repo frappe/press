@@ -54,6 +54,9 @@ BACKUP_JOB_RES = {
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
 class TestSiteMigration(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_in_cluster_site_migration_goes_through_all_steps_and_updates_site(self):
 		site = create_test_site()
 		bench = create_test_bench()
@@ -84,7 +87,6 @@ class TestSiteMigration(FrappeTestCase):
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
-			poll_pending_jobs()
 			site_migration.reload()
 			self.assertEqual(site_migration.status, "Running")
 			poll_pending_jobs()
@@ -96,34 +98,6 @@ class TestSiteMigration(FrappeTestCase):
 		self.assertEqual(site.server, bench.server)
 
 	def test_site_is_activated_on_failure_when_possible(self):
-		site = create_test_site()
-		bench = create_test_bench()
-		site_migration = frappe.get_doc(
-			{
-				"doctype": "Site Migration",
-				"site": site.name,
-				"destination_bench": bench.name,
-			}
-		).insert()
-
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
-			"Backup Site",
-			data=BACKUP_JOB_RES,
-		), fake_agent_job("New Site from Backup"), fake_agent_job(
-			"Archive Site", status="Failure"
-		), fake_agent_job(
-			"Update Site Configuration"
-		):
-			site_migration.start()
-			poll_pending_jobs()
-			poll_pending_jobs()
-			poll_pending_jobs()
-			site_migration.reload()
-			self.assertEqual(site_migration.status, "Failure")
-			site.reload()
-			self.assertEqual(site.status, "Active")
-
-	def test_site_archived_on_destinataion_on_failure(self):
 		site = create_test_site()
 		bench = create_test_bench()
 		site_migration: SiteMigration = frappe.get_doc(
@@ -138,23 +112,51 @@ class TestSiteMigration(FrappeTestCase):
 			"Backup Site",
 			data=BACKUP_JOB_RES,
 		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job(
-			"Archive Site",  # archive site on destination (retry)
+			"Archive Site"
+		):
+			site_migration.start()
+			poll_pending_jobs()
+			poll_pending_jobs()
+			poll_pending_jobs()
+			poll_pending_jobs()
+			site_migration.reload()
+			self.assertEqual(site_migration.status, "Failure")
+			site.reload()
+			self.assertEqual(site.status, "Active")
+
+	def test_site_archived_on_destination_on_failure(self):
+		site = create_test_site()
+		bench = create_test_bench()
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": bench.name,
+			}
+		).insert()
+
+		with fake_agent_job("Update Site Configuration"), fake_agent_job(
+			"Backup Site",
+			data=BACKUP_JOB_RES,
+		), fake_agent_job("New Site from Backup", "Failure"), fake_agent_job(
+			"Archive Site",
 		), fake_agent_job(
 			"Update Site Configuration"
 		):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()
-			poll_pending_jobs()  # archive on destination
+			poll_pending_jobs()
+			self.assertEqual(site_migration.status, "Running")
 			poll_pending_jobs()  # restore on destination
 			site_migration.reload()
 			self.assertEqual(site_migration.status, "Failure")
 			archive_job_count = frappe.db.count(
 				"Agent Job", {"job_type": "Archive Site", "site": site.name, "server": bench.server}
 			)
-			self.assertEqual(archive_job_count, 2)
+			self.assertEqual(archive_job_count, 1)
 
-	def test_site_not_archived_on_destinataion_on_failure_if_site_archived_on_source(self):
+	def test_site_not_archived_on_destination_on_failure_if_site_archived_on_source(self):
 		site = create_test_site()
 		bench = create_test_bench()
 		site_migration: SiteMigration = frappe.get_doc(
@@ -178,7 +180,6 @@ class TestSiteMigration(FrappeTestCase):
 			site_migration.start()
 			poll_pending_jobs()
 			poll_pending_jobs()
-			poll_pending_jobs()  # archive on destination
 			poll_pending_jobs()  # restore on destination
 			poll_pending_jobs()  # archive on source
 			poll_pending_jobs()  # remove from source proxy
@@ -193,9 +194,8 @@ class TestSiteMigration(FrappeTestCase):
 			).status,
 			"Failure",
 		)  # step after archive site on source passed
-		self.assertEqual(
-			frappe.db.count(
+		self.assertFalse(
+			frappe.db.exists(
 				"Agent Job", {"job_type": "Archive Site", "site": site.name, "server": bench.server}
 			),
-			1,
-		)  # only first archive on dest job ran
+		)
