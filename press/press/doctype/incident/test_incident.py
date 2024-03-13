@@ -72,13 +72,6 @@ class MockTwilioClient:
 		return MockTwilioMessageList()
 
 
-def first_busy_then_completed(*args, **kwargs):
-	if not hasattr(first_busy_then_completed, "statuses"):
-		first_busy_then_completed.statuses = ["busy", "completed"]
-	ret_status = first_busy_then_completed.statuses.pop(0)
-	return MockTwilioCallInstance(status=ret_status)
-
-
 @patch(
 	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.enqueue_doc",
 	new=foreground_enqueue_doc,
@@ -398,7 +391,14 @@ class TestIncident(FrappeTestCase):
 				seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10
 			),
 		)
-		with patch.object(MockTwilioCallList, "create", wraps=first_busy_then_completed):
+		with patch.object(
+			MockTwilioCallList,
+			"create",
+			side_effect=[
+				MockTwilioCallList("busy").create(),
+				MockTwilioCallList("completed").create(),
+			],
+		) as mock_calls_create:
 			resolve_incidents()  # second guy picks up
 		incident.reload()
 		incident.db_set(
