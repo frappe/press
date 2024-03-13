@@ -1,5 +1,7 @@
 <template>
-	<div class="min-h-screen w-[220px] border-r bg-gray-50">
+	<div
+		class="relative flex min-h-screen w-[220px] flex-col border-r bg-gray-50"
+	>
 		<div class="p-2">
 			<Dropdown
 				:options="[
@@ -12,11 +14,6 @@
 						label: 'Support & Docs',
 						icon: 'help-circle',
 						onClick: support
-					},
-					{
-						label: 'Switch to old dashboard',
-						icon: 'layout',
-						onClick: switchToOldDashboard
 					},
 					{
 						label: 'Logout',
@@ -80,6 +77,11 @@
 				</template>
 			</NavigationItems>
 		</nav>
+		<div class="mt-auto p-2">
+			<Button variant="ghost" @click="switchToOldDashboard">
+				Switch to old dashboard
+			</Button>
+		</div>
 		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
