@@ -138,7 +138,7 @@ node_modules
 press/docs/current
 press/public/dashboard
 press/www/dashboard.html
-press/www/dashboard2.html
+press/www/dashboard-beta.html
 press/public/css/email.css
 press/public/css/saas-next.css
 dashboard/tailwind.theme.json

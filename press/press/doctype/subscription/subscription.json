@@ -10,8 +10,10 @@
   "team",
   "document_type",
   "document_name",
+  "plan_type",
   "plan",
   "interval",
+  "site",
   "marketplace_app_subscription"
  ],
  "fields": [
@@ -41,7 +43,6 @@
   },
   {
    "default": "Daily",
-   "fetch_from": "plan.interval",
    "fieldname": "interval",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -56,9 +57,9 @@
   },
   {
    "fieldname": "plan",
-   "fieldtype": "Link",
+   "fieldtype": "Dynamic Link",
    "label": "Plan",
-   "options": "Plan",
+   "options": "plan_type",
    "reqd": 1
   },
   {
@@ -66,6 +67,20 @@
    "fieldtype": "Link",
    "label": "Marketplace App Subscription",
    "options": "Marketplace App Subscription"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "plan_type",
+   "fieldtype": "Link",
+   "label": "Plan Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Site"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -75,7 +90,7 @@
    "link_fieldname": "subscription"
   }
  ],
- "modified": "2023-06-27 21:57:40.400786",
+ "modified": "2024-02-19 19:49:40.819033",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Subscription",

@@ -15,13 +15,14 @@ from boto3 import client
 from frappe.core.utils import find
 from botocore.exceptions import ClientError
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, rounded
+from frappe.utils import flt, time_diff_in_hours, sbool
 from frappe.utils.password import get_decrypted_password
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
 from press.utils import (
 	get_current_team,
@@ -29,7 +30,6 @@ from press.utils import (
 	get_last_doc,
 	get_frappe_backups,
 	get_client_blacklisted_keys,
-	group_children_in_result,
 	unique,
 )
 
@@ -175,7 +175,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 		subscription_docs = get_app_subscriptions(app_plans, team.name)
 
 		# Set the secret keys for subscription in config
-		secret_keys = {f"sk_{s.app}": s.secret_key for s in subscription_docs}
+		secret_keys = {f"sk_{s.document_name}": s.secret_key for s in subscription_docs}
 		site._update_configuration(secret_keys, save=False)
 
 	site.insert(ignore_permissions=True)
@@ -205,7 +205,7 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 
 def validate_plan(server, plan):
-	if frappe.db.get_value("Plan", plan, "price_usd") > 0:
+	if frappe.db.get_value("Site Plan", plan, "price_usd") > 0:
 		return
 	if (
 		frappe.session.data.user_type == "System User"
@@ -236,11 +236,13 @@ def get_app_subscriptions(app_plans, team: str):
 
 		new_subscription = frappe.get_doc(
 			{
-				"doctype": "Marketplace App Subscription",
-				"marketplace_app_plan": plan_name,
-				"app": app_name,
+				"doctype": "Subscription",
+				"document_type": "Marketplace App",
+				"document_name": app_name,
+				"plan_type": "Marketplace App Plan",
+				"plan": plan_name,
+				"enabled": 1,
 				"team": team,
-				"while_site_creation": True,
 			}
 		).insert(ignore_permissions=True)
 
@@ -260,6 +262,10 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 		limit=limit_page_length,
 		order_by=order_by or "creation desc",
 	)
+
+	for job in jobs:
+		job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
+
 	return jobs
 
 
@@ -279,6 +285,9 @@ def job(job):
 	for key in list(job.keys()):
 		if key not in whitelisted_fields:
 			job.pop(key, None)
+
+	if job.status == "Undelivered":
+		job.status = "Pending"
 
 	job.steps = frappe.get_all(
 		"Agent Job Step",
@@ -411,7 +420,7 @@ def options_for_new(for_bench: str = None):
 		versions = frappe.db.get_all(
 			"Frappe Version",
 			["name", "default", "status", "number"],
-			{"public": True},
+			{"public": True, "status": ("!=", "End of Life")},
 			order_by="number desc",
 		)
 	available_versions = []
@@ -423,7 +432,7 @@ def options_for_new(for_bench: str = None):
 		)
 		release_group = frappe.db.get_value(
 			"Release Group",
-			fieldname=["name", "`default`", "title"],
+			fieldname=["name", "`default`", "title", "public"],
 			filters=filters,
 			order_by="creation desc",
 			as_dict=1,
@@ -465,6 +474,10 @@ def options_for_new(for_bench: str = None):
 			if app_source not in unique_app_sources:
 				unique_app_sources.append(app_source)
 
+	filters = {"name": ("in", unique_app_sources)}
+	if not for_bench:
+		filters["public"] = True
+
 	app_source_details = frappe.db.get_all(
 		"App Source",
 		[
@@ -479,7 +492,7 @@ def options_for_new(for_bench: str = None):
 			"app_title",
 			"frappe",
 		],
-		filters={"name": ("in", unique_app_sources), "public": True},
+		filters=filters,
 	)
 
 	unique_apps = []
@@ -491,7 +504,7 @@ def options_for_new(for_bench: str = None):
 
 	marketplace_apps = frappe.db.get_all(
 		"Marketplace App",
-		fields=["title", "image", "description", "app", "route"],
+		fields=["title", "image", "description", "app", "route", "subscription_type"],
 		filters={"app": ("in", unique_apps)},
 	)
 	total_installs_by_app = frappe.db.get_all(
@@ -614,10 +627,8 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_plans(name=None, rg=None):
-	filters = {"enabled": True, "document_type": "Site"}
-
-	plans = frappe.db.get_all(
-		"Plan",
+	plans = Plan.get_plans(
+		doctype="Site Plan",
 		fields=[
 			"name",
 			"plan_title",
@@ -631,12 +642,10 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
-			"`tabHas Role`.role",
 		],
-		filters=filters,
-		order_by="price_usd asc",
+		# TODO: Remove later, temporary change because site plan has all document_type plans
+		filters={"document_type": "Site"},
 	)
-	plans = group_children_in_result(plans, {"role": "roles"})
 
 	if name or rg:
 		team = get_current_team()
@@ -661,13 +670,8 @@ def get_plans(name=None, rg=None):
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
+		out.append(plan)
 
-		days_in_month = frappe.utils.get_last_day(None).day
-		if frappe.utils.has_common(plan["roles"], frappe.get_roles()):
-			plan.pop("roles", "")
-			plan["price_per_day_inr"] = rounded(plan["price_inr"] / days_in_month, 2)
-			plan["price_per_day_usd"] = rounded(plan["price_usd"] / days_in_month, 2)
-			out.append(plan)
 	return out
 
 
@@ -757,7 +761,7 @@ def all(site_filter=None):
 	for site in sites:
 		site.server_region_info = get_server_region_info(site)
 		site_plan_name = frappe.get_value("Site", site.name, "plan")
-		site.plan = frappe.get_doc("Plan", site_plan_name) if site_plan_name else None
+		site.plan = frappe.get_doc("Site Plan", site_plan_name) if site_plan_name else None
 		site.tags = frappe.get_all(
 			"Resource Tag",
 			{"parent": site.name},
@@ -853,7 +857,7 @@ def get(name):
 		"setup_wizard_complete": site.setup_wizard_complete,
 		"group": group_name,
 		"team": site.team,
-		"is_public": rg_info.public,
+		"group_public": rg_info.public,
 		"latest_frappe_version": frappe.db.get_value(
 			"Frappe Version", {"status": "Stable", "public": True}, order_by="name desc"
 		),
@@ -1017,33 +1021,47 @@ def get_installed_apps(site):
 		app_source.update(app_tags if app_tags else {})
 		app_source.subscription_available = bool(
 			frappe.db.exists(
-				"Marketplace App Plan", {"is_free": 0, "app": app.app, "enabled": 1}
+				"Marketplace App Plan", {"price_usd": (">", 0), "app": app.app, "enabled": 1}
 			)
 		)
 		app_source.billing_type = is_prepaid_marketplace_app(app.app)
 		if frappe.db.exists(
-			"Marketplace App Subscription",
-			{"site": site.name, "app": app.app, "status": "Active"},
+			"Subscription",
+			{
+				"site": site.name,
+				"document_type": "Marketplace App",
+				"document_name": app.app,
+				"enabled": 1,
+			},
 		):
 			subscription = frappe.get_doc(
-				"Marketplace App Subscription",
-				{"site": site.name, "app": app.app, "status": "Active"},
+				"Subscription",
+				{
+					"site": site.name,
+					"document_type": "Marketplace App",
+					"document_name": app.app,
+					"enabled": 1,
+				},
+				["document_name as app", "plan"],
 			)
 			app_source.subscription = subscription
 			marketplace_app_info = frappe.db.get_value(
-				"Marketplace App", subscription.app, ["title", "image"], as_dict=True
+				"Marketplace App", subscription.document_name, ["title", "image"], as_dict=True
 			)
 
 			app_source.app_title = marketplace_app_info.title
 			app_source.app_image = marketplace_app_info.image
 
 			app_source.plan_info = frappe.db.get_value(
-				"Plan", subscription.plan, ["price_usd", "price_inr"], as_dict=True
+				"Marketplace App Plan",
+				subscription.plan,
+				["price_usd", "price_inr", "name", "plan"],
+				as_dict=True,
 			)
 
-			app_source.is_free = frappe.db.get_value(
-				"Marketplace App Plan", subscription.marketplace_app_plan, "is_free"
-			)
+			app_source.plans = get_plans_for_app(app.app)
+
+			app_source.is_free = app_source.plan_info.price_usd <= 0
 		else:
 			app_source.subscription = {}
 
@@ -1120,7 +1138,7 @@ def current_plan(name):
 	from press.api.analytics import get_current_cpu_usage
 
 	site = frappe.get_doc("Site", name)
-	plan = frappe.get_doc("Plan", site.plan) if site.plan else None
+	plan = frappe.get_doc("Site Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
 	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
@@ -1214,25 +1232,6 @@ def last_migrate_failed(name):
 @frappe.whitelist()
 @protected("Site")
 def backup(name, with_files=False):
-	site_doc = frappe.get_doc("Site", name)
-	if site_doc.status == "Suspended":
-		activity = frappe.db.get_all(
-			"Site Activity",
-			filters={"site": name, "action": "Suspend Site"},
-			order_by="creation desc",
-			limit=1,
-		)
-		suspension_time = frappe.get_doc("Site Activity", activity[0]).creation
-
-		if (
-			frappe.db.count(
-				"Site Backup",
-				filters=dict(site=name, status="Success", creation=(">=", suspension_time)),
-			)
-			> 3
-		):
-			frappe.throw("You cannot take more than 3 backups after site suspension")
-
 	frappe.get_doc("Site", name).backup(with_files)
 
 
@@ -1412,7 +1411,17 @@ def log(name, log):
 @protected("Site")
 def site_config(name):
 	site = frappe.get_doc("Site", name)
-	return list(filter(lambda x: not x.internal, site.configuration))
+	config = list(filter(lambda x: not x.internal, site.configuration))
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c.key in secret_keys:
+			c.type = "Password"
+			c.value = "*******"
+
+	return config
 
 
 @frappe.whitelist()
@@ -1430,9 +1439,11 @@ def update_config(name, config):
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type == "Boolean":
-			c.value = bool(c.value)
+			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 		sanitized_config.append(c)
 
 	site = frappe.get_doc("Site", name)
@@ -1751,13 +1762,8 @@ def change_group(name, group):
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
-	frappe.get_doc(
-		{
-			"doctype": "Site Update",
-			"site": name,
-			"destination_group": group,
-		}
-	).insert()
+	site = frappe.get_doc("Site", name)
+	site.move_to_group(group)
 
 
 @frappe.whitelist()
@@ -1768,30 +1774,13 @@ def change_region_options(name):
 	group = frappe.get_doc("Release Group", group)
 	cluster_names = group.get_clusters()
 	group_regions = frappe.get_all(
-		"Cluster", filters={"name": ("in", cluster_names)}, pluck="name"
+		"Cluster", filters={"name": ("in", cluster_names)}, fields=["name", "title", "image"]
 	)
 
-	regions = frappe.db.get_all("Cluster", {"public": 1}, ["name", "title", "image"])
-
 	return {
-		"regions": regions,
-		"group_regions": group_regions,
+		"regions": [region for region in group_regions if region.name != cluster],
 		"current_region": cluster,
-		"group_team": group.team,
 	}
-
-
-@frappe.whitelist()
-@protected("Release Group")
-def add_region_to_group(name, region):
-	from press.api.bench import add_region
-
-	add_region(name, region)
-	group = frappe.get_doc("Release Group", name)
-	candidate = group.create_deploy_candidate()
-	candidate.deploy_to_production()
-
-	return candidate.name
 
 
 @frappe.whitelist()

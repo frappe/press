@@ -1,0 +1,90 @@
+---
+- name: Use Debian Unattended Package Installation Mode
+  shell: export DEBIAN_FRONTEND=noninteractive
+  changed_when: false
+
+- name: Remove MariaDB Repository Files
+  file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - /etc/apt/sources.list.d/mariadb.list
+    - /etc/apt/sources.list.d/packages_frappe_cloud_mariadb_10_6.list
+    - /etc/apt/sources.list.d/mirror_rackspace_com_mariadb_repo_10_6_ubuntu.list
+    - /etc/apt/sources.list.d/deb_mariadb_org_10_6_ubuntu.list
+
+- name: Add MariaDB Repository Key
+  apt_key:
+    url: https://mariadb.org/mariadb_release_signing_key.pgp
+    state: present
+
+- name: Add MariaDB Repository
+  apt_repository:
+    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main
+    state: present
+
+- name: Add MariaDB Debug Symbols Repository
+  apt_repository:
+    repo: deb https://mirror.rackspace.com/mariadb/repo/10.6/ubuntu {{ ansible_distribution_release }} main/debug
+    state: present
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install MariaDB
+  apt:
+    pkg:
+      - mariadb-server
+      - mariadb-client
+      - libmariadbclient18
+    state: latest
+
+- name: Set Open Files Count Limit for MariaDB
+  lineinfile:
+    dest: /lib/systemd/system/mariadb.service
+    regexp: '^LimitNOFILE(\s*)=(\s*)\d+'
+    line: 'LimitNOFILE = infinity'
+    insertafter: '\[Service\]'
+    state: present
+
+- name: Restart MariaDB Service
+  systemd:
+    daemon_reload: true
+    name: mysql
+    state: restarted
+    enabled: yes
+
+- name: Install MariaDB Debug Symbols
+  apt:
+    package: mariadb-server-core-10.6-dbgsym
+    state: latest
+
+- name: Add Ubuntu Debug Symbols Repository Key
+  apt_key:
+    id: F2EDC64DC5AEE1F6B9C621F0C8CAB6595FDFF622
+    keyserver: keyserver.ubuntu.com
+    state: present
+
+- name: Add Ubuntu Debug Symbols Repositories
+  apt_repository:
+    repo: '{{ item }}'
+    state: present
+  with_items:
+    - 'deb http://ddebs.ubuntu.com {{ ansible_distribution_release }} main restricted universe multiverse'
+    - 'deb http://ddebs.ubuntu.com {{ ansible_distribution_release }}-updates main restricted universe multiverse'
+    - 'deb http://ddebs.ubuntu.com {{ ansible_distribution_release }}-proposed main restricted universe multiverse'
+
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install Ubuntu Debug Symbols
+  apt:
+    pkg:
+      - libc6-dbg
+      - libstdc++6-10-dbg
+      - lib32stdc++6-10-dbg
+      - libx32stdc++6-10-dbg
+      - libstdc++6-dbgsym
+    state: latest

@@ -23,8 +23,7 @@ class UsageRecord(Document):
 			log_error(title="Usage Record Invoice Update Error", name=self.name)
 
 	def on_cancel(self):
-		if not self.prepaid:
-			self.remove_usage_from_invoice()
+		self.remove_usage_from_invoice()
 
 	def update_usage_in_invoice(self):
 		team = frappe.get_doc("Team", self.team)

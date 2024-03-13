@@ -14,6 +14,7 @@ def foreground_enqueue_doc(
 	enqueue_after_commit=False,
 	job_id=None,
 	deduplicate=False,
+	at_front: bool = False,
 	**kwargs,
 ):
 	"""

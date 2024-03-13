@@ -323,7 +323,7 @@ def validate_request_key(key, timezone=None):
 				"title": saas_product_doc.title,
 				"logo": saas_product_doc.logo,
 				"signup_fields": saas_product_doc.signup_fields,
-				"description": frappe.utils.md_to_html(saas_product_doc.description)
+				"description": frappe.utils.md_to_html(saas_product_doc.description),
 			}
 			if saas_product_doc
 			else None,
@@ -343,6 +343,69 @@ def update_partnership_date(team, partnership_date):
 		team_doc = frappe.get_doc("Team", team)
 		team_doc.partnership_date = partnership_date
 		team_doc.save()
+
+
+@frappe.whitelist()
+def get_partner_details(partner_email):
+	from press.utils.billing import get_frappe_io_connection
+
+	client = get_frappe_io_connection()
+	data = client.get_doc(
+		"Partner",
+		filters={"email": partner_email, "enabled": 1},
+		fields=[
+			"email",
+			"partner_type",
+			"company_name",
+			"custom_ongoing_period_fc_invoice_contribution",
+			"custom_ongoing_period_enterprise_invoice_contribution",
+			"custom_ongoing_period_revenue_contribution",
+			"partner_name",
+		],
+	)
+	if data:
+		return data[0]
+	else:
+		frappe.throw("Partner Details not found")
+
+
+@frappe.whitelist()
+def get_partner_name(partner_email):
+	return frappe.db.get_value(
+		"Team",
+		{"partner_email": partner_email, "enabled": 1, "erpnext_partner": 1},
+		"billing_name",
+	)
+
+
+@frappe.whitelist()
+def transfer_credits(amount, customer, partner):
+	amt = frappe.utils.flt(amount)
+	partner_doc = frappe.get_doc("Team", partner)
+	credits_available = partner_doc.get_balance()
+
+	if credits_available < amt:
+		frappe.throw("Insufficient Credits to transfer")
+
+	customer_doc = frappe.get_doc("Team", customer)
+	credits_to_transfer = amt
+	if customer_doc.currency != partner_doc.currency:
+		if partner_doc.currency == "USD":
+			credits_to_transfer = amt * 83
+		else:
+			credits_to_transfer = amt / 83
+
+	try:
+		customer_doc.allocate_credit_amount(
+			credits_to_transfer, "Transferred Credits", f"From {partner_doc.name}"
+		)
+		partner_doc.allocate_credit_amount(
+			amt * -1, "Transferred Credits", f"To {customer_doc.name}"
+		)
+		frappe.db.commit()
+	except Exception:
+		frappe.throw("Error in transferring credits")
+		frappe.db.rollback()
 
 
 @frappe.whitelist(allow_guest=True)
@@ -773,6 +836,9 @@ def feedback(message, route=None):
 
 @frappe.whitelist()
 def user_prompts():
+	if frappe.local.dev_server:
+		return
+
 	team = get_current_team(True)
 	doc = frappe.get_doc("Team", team.name)
 
@@ -794,6 +860,33 @@ def user_prompts():
 			"UpdateBillingDetails",
 			"If you have a registered GSTIN number, you are required to update it, so that we can generate a GST Invoice.",
 		]
+
+
+@frappe.whitelist()
+def get_site_request(product):
+	team = frappe.local.team()
+	requests = frappe.db.get_all(
+		"SaaS Product Site Request",
+		{
+			"team": team.name,
+			"saas_product": product,
+		},
+		["name", "status"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if not requests:
+		site_request = frappe.new_doc(
+			"SaaS Product Site Request",
+			saas_product=product,
+			team=team.name,
+		).insert(ignore_permissions=True)
+		return site_request.name
+	else:
+		site_request = requests[0]
+		if site_request.status in ["Pending", "Wait for Site", "Error"]:
+			return site_request.name
+		frappe.throw("You have already created a trial site for this product")
 
 
 def redirect_to(location):
@@ -875,7 +968,12 @@ def get_emails():
 
 @frappe.whitelist()
 def update_emails(data):
+	from frappe.utils import validate_email_address
+
 	data = {x["type"]: x["value"] for x in json.loads(data)}
+	for key, value in data:
+		validate_email_address(value, throw=True)
+
 	team_doc = get_current_team(get_doc=True)
 
 	for row in team_doc.communication_emails:

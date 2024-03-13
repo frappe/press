@@ -2,59 +2,26 @@
 # See license.txt
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 
 from press.press.doctype.self_hosted_server.self_hosted_server import SelfHostedServer
 import frappe
 import json
-from press.runner import Ansible
 from press.press.doctype.team.test_team import create_test_team
-from frappe.tests.utils import FrappeTestCase
+from press.api.tests.test_server import create_test_server_plan
+from frappe.tests.utils import FrappeTestCase, change_settings
 
 
 class TestSelfHostedServer(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_autoname_to_fqdn(self):
-		hostnames = ["a1", "a1.b1", "waaaaaaawwwaawwa", "1234561234"]
-		for host in hostnames:
-			server = create_test_self_hosted_server(host)
-			self.assertEqual(server.name, f"{host}.fc.dev")
-
-	@patch(
-		"press.press.doctype.self_hosted_server.self_hosted_server.Ansible",
-		wraps=Ansible,
-	)
-	@patch.object(Ansible, "run", new=Mock())
-	def test_setup_nginx_triggers_nginx_ssl_playbook(self, Mock_Ansible: Mock):
-		server = create_test_self_hosted_server("ssl")
-		server.setup_nginx()
-		Mock_Ansible.assert_called_with(
-			playbook="self_hosted_nginx.yml",
-			server=server,
-			user=server.ssh_user or "root",
-			port=server.ssh_port or "22",
-			variables={"domain": server.name},
-		)
-
-	def test_setup_nginx_creates_tls_certificate_post_success(self):
-		server = create_test_self_hosted_server("ssl")
-		pre_setup_count = frappe.db.count("TLS Certificate")
-		with patch(
-			"press.press.doctype.self_hosted_server.self_hosted_server.Ansible.run",
-			new=lambda x: create_test_ansible_play(
-				"Setup Self Hosted Nginx",
-				"self_hosted_nginx.yml",
-				server.doctype,
-				server.name,
-				{"server": "ssl.fc.dev"},
-			),
-		):
-			server.create_tls_certs()
-		post_setup_count = frappe.db.count("TLS Certificate")
-		self.assertEqual(pre_setup_count, post_setup_count - 1)
+	# def test_autoname_to_fqdn(self):
+	# 	hostnames = ["a1", "a1.b1", "waaaaaaawwwaawwa", "1234561234"]
+	# 	for host in hostnames:
+	# 		server = create_test_self_hosted_server(host)
+	# 		self.assertEqual(server.name, f"{host}.fc.dev")
 
 	def test_successful_ping_ansible_sets_status_to_pending(self):
 		server = create_test_self_hosted_server("pinger")
@@ -210,45 +177,47 @@ class TestSelfHostedServer(FrappeTestCase):
 		server.reload()
 		self.assertEqual(server.private_ip, "192.168.1.1")
 
+	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
 	def test_create_server_and_check_total_records(self):
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
 		from press.press.doctype.proxy_server.test_proxy_server import (
 			create_test_proxy_server,
 		)
-		from press.press.doctype.plan.test_plan import create_test_plan
 
-		server = create_test_self_hosted_server("tester")
-		create_test_cluster(name="Default")
+		create_test_cluster(name="Default", hybrid=True)
 		create_test_proxy_server()
-		create_test_plan(
-			"Self Hosted Server", plan_title="Self Hosted Server", plan_name="Self Hosted Server"
-		)
+		plan = create_test_server_plan(document_type="Self Hosted Server")
 		pre_server_count = frappe.db.count("Server")
-		server.create_server()
+
+		server = create_test_self_hosted_server("tester", plan=plan.name)
+		server.create_application_server()
 		server.reload()
+
 		post_server_count = frappe.db.count("Server")
 		new_server = frappe.get_last_doc("Server")
 		self.assertEqual(pre_server_count, post_server_count - 1)
-		self.assertEqual(server.name, new_server.name)
+		self.assertEqual("hybrid-f-00001-default.fc.dev", new_server.name)
 
+	@change_settings("Press Settings", {"hybrid_domain": "fc.dev"})
 	def test_create_db_server_and_check_total_records(self):
 		from press.press.doctype.cluster.test_cluster import create_test_cluster
 		from press.press.doctype.proxy_server.test_proxy_server import (
 			create_test_proxy_server,
 		)
-		from press.press.doctype.plan.test_plan import create_test_plan
 
-		server = create_test_self_hosted_server("tester")
-		create_test_cluster(name="Default")
+		plan = create_test_server_plan(document_type="Database Server")
+		create_test_cluster(name="Default", hybrid=True)
 		create_test_proxy_server()
-		create_test_plan("Database Server", plan_title="Unlimited", plan_name="Unlimited")
 		pre_server_count = frappe.db.count("Database Server")
-		server.create_db_server()
+
+		server = create_test_self_hosted_server("tester", database_plan=plan.name)
+		server.create_database_server()
 		server.reload()
+
 		post_server_count = frappe.db.count("Database Server")
 		new_server = frappe.get_last_doc("Database Server")
 		self.assertEqual(pre_server_count, post_server_count - 1)
-		self.assertEqual(server.name, new_server.name)
+		self.assertEqual("hybrid-m-00001-default.fc.dev", new_server.name)
 
 	def test_check_minimum_specs(self):
 		server = create_test_self_hosted_server("tester")
@@ -268,11 +237,7 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertTrue(server.check_minimum_specs())
 
 	def test_create_subscription_add_plan_change_and_check_for_new_subscription(self):
-		from press.press.doctype.plan.test_plan import create_test_plan
-
-		plan = create_test_plan(
-			"Self Hosted Server", plan_title="Unlimited", plan_name="Unlimited"
-		)
+		plan = create_test_server_plan("Self Hosted Server")
 		pre_plan_change_count = frappe.db.count("Plan Change")
 		pre_subscription_count = frappe.db.count("Subscription")
 		server = create_test_self_hosted_server("tester")
@@ -285,15 +250,32 @@ class TestSelfHostedServer(FrappeTestCase):
 		self.assertEqual(pre_subscription_count, post_subscription_count - 1)
 
 
-def create_test_self_hosted_server(host) -> SelfHostedServer:
+def create_test_self_hosted_server(
+	host, database_plan=None, plan=None
+) -> SelfHostedServer:
+	"""
+	Plan: is a string that represents the application servers subscription plan name
+	Database Plan: is a string that represents the database servers subscription plan name
+	"""
 	server = frappe.get_doc(
 		{
 			"doctype": "Self Hosted Server",
 			"ip": frappe.mock("ipv4"),
+			"private_ip": "192.168.1.1",
+			"mariadb_ip": frappe.mock("ipv4"),
+			"mariadb_private_ip": "192.168.1.2",
 			"server_url": f"https://{host}.fc.dev",
 			"team": create_test_team().name,
+			"cluster": "Default",
 		}
-	).insert(ignore_if_duplicate=True)
+	)
+
+	if database_plan:
+		server.database_plan = database_plan
+	if plan:
+		server.plan = plan
+
+	server.insert(ignore_if_duplicate=True)
 	server.reload()
 	return server
 

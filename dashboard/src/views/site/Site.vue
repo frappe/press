@@ -125,10 +125,26 @@
 
 		<SiteTransferDialog :site="site" v-model="showTransferSiteDialog" />
 
-		<SiteChangeGroupDialog :site="site" v-model="showChangeGroupDialog" />
-		<SiteChangeRegionDialog :site="site" v-model="showChangeRegionDialog" />
-		<SiteChangeServerDialog :site="site" v-model="showChangeServerDialog" />
-		<SiteVersionUpgradeDialog :site="site" v-model="showVersionUpgradeDialog" />
+		<SiteChangeGroupDialog
+			v-if="site"
+			:site="site"
+			v-model="showChangeGroupDialog"
+		/>
+		<SiteChangeRegionDialog
+			v-if="site"
+			:site="site"
+			v-model="showChangeRegionDialog"
+		/>
+		<SiteChangeServerDialog
+			v-if="site"
+			:site="site"
+			v-model="showChangeServerDialog"
+		/>
+		<SiteVersionUpgradeDialog
+			v-if="site"
+			:site="site"
+			v-model="showVersionUpgradeDialog"
+		/>
 	</div>
 </template>
 

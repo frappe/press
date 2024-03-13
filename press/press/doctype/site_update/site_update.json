@@ -15,6 +15,7 @@
   "destination_bench",
   "destination_candidate",
   "destination_group",
+  "scheduled_time",
   "section_break_8",
   "difference",
   "difference_deploy_type",
@@ -60,7 +61,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal"
+   "no_copy": 1,
+   "options": "Pending\nRunning\nSuccess\nFailure\nRecovered\nFatal\nScheduled"
   },
   {
    "fieldname": "destination_bench",
@@ -84,6 +86,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Deploy Type",
+   "no_copy": 1,
    "options": "\nPull\nMigrate"
   },
   {
@@ -93,6 +96,7 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Source Deploy Candidate",
+   "no_copy": 1,
    "options": "Deploy Candidate"
   },
   {
@@ -102,6 +106,7 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Destination Deploy Candidate",
+   "no_copy": 1,
    "options": "Deploy Candidate"
   },
   {
@@ -119,6 +124,7 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Source Group",
+   "no_copy": 1,
    "options": "Release Group"
   },
   {
@@ -138,6 +144,7 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Update Job",
+   "no_copy": 1,
    "options": "Agent Job"
   },
   {
@@ -146,7 +153,8 @@
    "fieldtype": "Check",
    "hide_days": 1,
    "hide_seconds": 1,
-   "label": "Cause of Failure is Resolved"
+   "label": "Cause of Failure is Resolved",
+   "no_copy": 1
   },
   {
    "fieldname": "column_break_14",
@@ -160,6 +168,7 @@
    "hide_days": 1,
    "hide_seconds": 1,
    "label": "Recover Job",
+   "no_copy": 1,
    "options": "Agent Job"
   },
   {
@@ -174,6 +183,7 @@
    "fieldname": "skipped_failing_patches",
    "fieldtype": "Check",
    "label": "Skipped Failing Patches",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -181,18 +191,25 @@
    "fieldname": "destination_group",
    "fieldtype": "Link",
    "label": "Destination Group",
+   "no_copy": 1,
    "options": "Release Group"
   },
   {
    "default": "0",
    "fieldname": "skipped_backups",
    "fieldtype": "Check",
-   "label": "Skipped Backups"
+   "label": "Skipped Backups",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "scheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Scheduled Time"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-03-21 14:31:40.445390",
+ "modified": "2024-03-11 17:50:13.520159",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",

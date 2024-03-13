@@ -211,6 +211,42 @@ class DatabaseServer(BaseServer):
 		if play.status == "Failure":
 			log_error("MariaDB Upgrade Error", server=self.name)
 
+	@frappe.whitelist()
+	def update_mariadb(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_update_mariadb", timeout=1800)
+
+	def _update_mariadb(self):
+		ansible = Ansible(
+			playbook="update_mariadb.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Update Error", server=self.name)
+
+	@frappe.whitelist()
+	def upgrade_mariadb_patched(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_upgrade_mariadb_patched", timeout=1800)
+
+	def _upgrade_mariadb_patched(self):
+		ansible = Ansible(
+			playbook="upgrade_mariadb_patched.yml",
+			server=self,
+			user=self.ssh_user or "root",
+			port=self.ssh_port or 22,
+			variables={
+				"server": self.name,
+			},
+		)
+		play = ansible.run()
+		if play.status == "Failure":
+			log_error("MariaDB Upgrade Error", server=self.name)
+
 	def add_mariadb_variable(
 		self,
 		variable: str,
@@ -298,16 +334,28 @@ class DatabaseServer(BaseServer):
 			if play.status == "Success":
 				self.status = "Active"
 				self.is_server_setup = True
-				if self.is_self_hosted:
-					server = frappe.get_doc("Server", self.name)
-					if server.status != "Active":
-						server.setup_server()  # Setup App server after DB server setup
+
+				self.process_hybrid_server_setup()
 			else:
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	def process_hybrid_server_setup(self):
+		try:
+			hybird_server = frappe.db.get_value(
+				"Self Hosted Server", {"database_server": self.name}, "name"
+			)
+
+			if hybird_server:
+				hybird_server = frappe.get_doc("Self Hosted Server", hybird_server)
+
+				if not hybird_server.different_database_server:
+					hybird_server._setup_app_server()
+		except Exception:
+			log_error("Hybrid Server Setup exception", server=self.as_dict())
 
 	def _setup_primary(self, secondary):
 		mariadb_root_password = self.get_password("mariadb_root_password")
@@ -577,8 +625,30 @@ class DatabaseServer(BaseServer):
 		)
 
 	def _setup_pt_stalk(self):
+		extra_port_variable = find(
+			self.mariadb_system_variables, lambda x: x.mariadb_variable == "extra_port"
+		)
+		if extra_port_variable:
+			mariadb_port = extra_port_variable.value_str
+		else:
+			mariadb_port = 3306
 		try:
-			ansible = Ansible(playbook="pt_stalk.yml", server=self)
+			ansible = Ansible(
+				playbook="pt_stalk.yml",
+				server=self,
+				variables={
+					"private_ip": self.private_ip,
+					"mariadb_port": mariadb_port,
+					"stalk_function": self.stalk_function,
+					"stalk_variable": self.stalk_variable,
+					"stalk_threshold": self.stalk_threshold,
+					"stalk_sleep": self.stalk_sleep,
+					"stalk_cycles": self.stalk_cycles,
+					"stalk_interval": self.stalk_interval,
+					"stalk_gdb_collector": bool(self.stalk_gdb_collector),
+					"stalk_strace_collector": bool(self.stalk_strace_collector),
+				},
+			)
 			play = ansible.run()
 			self.reload()
 			if play.status == "Success":
@@ -586,6 +656,22 @@ class DatabaseServer(BaseServer):
 				self.save()
 		except Exception:
 			log_error("Percona Stalk Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
+	def setup_mariadb_debug_symbols(self):
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_setup_mariadb_debug_symbols", queue="long", timeout=1200
+		)
+
+	def _setup_mariadb_debug_symbols(self):
+		try:
+			ansible = Ansible(
+				playbook="mariadb_debug_symbols.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Debug Symbols Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def fetch_stalks(self):
@@ -600,12 +686,6 @@ class DatabaseServer(BaseServer):
 
 	def get_stalk(self, name):
 		return self.agent.get(f"database/stalks/{name}")
-
-	@frappe.whitelist()
-	def reboot(self):
-		if self.provider in ("AWS EC2", "OCI"):
-			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
-			virtual_machine.reboot()
 
 	def _rename_server(self):
 		agent_password = self.get_password("agent_password")

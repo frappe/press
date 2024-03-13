@@ -43,12 +43,12 @@ import docker
 class TestAPIBench(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
-		self.version = "Version 14"
+		self.version = "Version 15"
 		self.app = create_test_app()
 		self.app_source = self.app.add_source(
 			self.version,
 			repository_url="https://github.com/frappe/frappe",
-			branch="version-14",
+			branch="version-15",
 			team=get_current_team(),
 			public=True,
 		)
@@ -80,17 +80,6 @@ class TestAPIBench(FrappeTestCase):
 		self.assertEqual(get_res["status"], "Awaiting Deploy")
 		self.assertEqual(get_res["public"], False)
 
-	def _set_press_settings_for_docker_build(self):
-		press_settings = create_test_press_settings()
-		cwd = os.getcwd()
-		back = os.path.join(cwd, "..")
-		bench_dir = os.path.abspath(back)
-		build_dir = os.path.join(bench_dir, "test_builds")
-		clone_dir = os.path.join(bench_dir, "test_clones")
-		press_settings.db_set("build_directory", build_dir)
-		press_settings.db_set("clone_directory", clone_dir)
-		press_settings.db_set("docker_registry_url", "registry.local.frappe.dev")
-
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
@@ -100,7 +89,12 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
 	)
 	def test_deploy_fn_deploys_bench_container(self):
-		self._set_press_settings_for_docker_build()
+		# mark frappe as approved so that the deploy can happen
+		release = frappe.get_last_doc("App Release", {"source": self.app_source.name})
+		release.status = "Approved"
+		release.save()
+
+		set_press_settings_for_docker_build()
 		frappe.set_user(self.team.user)
 		group = new(
 			{
@@ -115,10 +109,7 @@ class TestAPIBench(FrappeTestCase):
 
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_before = frappe.db.count("Deploy", filters={"group": group})
-		DeployCandidate.command = "docker buildx build"
-		DeployCandidate.command += (
-			" --cache-from type=gha --cache-to type=gha,mode=max --load"
-		)
+		patch_dc_command_for_ci()
 		deploy(group, [{"app": self.app.name}])
 		dc_count_after = frappe.db.count("Deploy Candidate", filters={"group": group})
 		d_count_after = frappe.db.count("Deploy", filters={"group": group})
@@ -636,3 +627,20 @@ class TestAPIBenchList(FrappeTestCase):
 		self.assertEqual(
 			all(bench_filter={"status": "", "tag": "test_tag"}), [self.bench_with_tag_dict]
 		)
+
+
+def set_press_settings_for_docker_build() -> None:
+	press_settings = create_test_press_settings()
+	cwd = os.getcwd()
+	back = os.path.join(cwd, "..")
+	bench_dir = os.path.abspath(back)
+	build_dir = os.path.join(bench_dir, "test_builds")
+	clone_dir = os.path.join(bench_dir, "test_clones")
+	press_settings.db_set("build_directory", build_dir)
+	press_settings.db_set("clone_directory", clone_dir)
+	press_settings.db_set("docker_registry_url", "registry.local.frappe.dev")
+
+
+def patch_dc_command_for_ci():
+	DeployCandidate.command = "docker buildx build"
+	DeployCandidate.command += " --cache-from type=gha --cache-to type=gha,mode=max --load"

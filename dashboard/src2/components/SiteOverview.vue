@@ -1,8 +1,111 @@
 <template>
 	<div
 		v-if="$site?.doc"
-		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
+		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
+		<div class="col-span-1 rounded-md border lg:col-span-2">
+			<div class="grid grid-cols-2 lg:grid-cols-4">
+				<div class="border-b border-r p-5 lg:border-b-0">
+					<div class="text-base text-gray-700">Current Plan</div>
+					<div class="mt-2 flex items-start justify-between">
+						<div>
+							<div class="leading-4">
+								<span class="text-base text-gray-900" v-if="currentPlan">
+									{{ $format.planTitle(currentPlan) }}
+									<span v-if="currentPlan.price_inr">/ month</span>
+								</span>
+								<span class="text-base text-gray-900" v-else>
+									No plan set
+								</span>
+							</div>
+							<div
+								class="mt-1 text-sm leading-3 text-gray-600"
+								v-if="currentPlan"
+							>
+								{{
+									currentPlan.support_included
+										? 'Support included'
+										: 'Support not included'
+								}}
+							</div>
+						</div>
+						<Button @click="showPlanChangeDialog">Change</Button>
+					</div>
+				</div>
+				<div class="border-b p-5 lg:border-b-0 lg:border-r">
+					<div class="text-base text-gray-700">Compute</div>
+					<div class="mt-2">
+						<Progress
+							size="md"
+							:value="
+								currentPlan
+									? (currentUsage.cpu / currentPlan.cpu_time_per_day) * 100
+									: 0
+							"
+						/>
+						<div>
+							<div class="mt-2 flex justify-between">
+								<div class="text-sm text-gray-600">
+									{{ currentUsage.cpu }}
+									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
+									<template v-if="currentPlan">
+										of {{ currentPlan?.cpu_time_per_day }} hours
+									</template>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="border-r p-5">
+					<div class="text-base text-gray-700">Storage</div>
+					<div class="mt-2">
+						<Progress
+							size="md"
+							:value="
+								currentPlan
+									? (currentUsage.storage / currentPlan.max_storage_usage) * 100
+									: 0
+							"
+						/>
+						<div>
+							<div class="mt-2 flex justify-between">
+								<div class="text-sm text-gray-600">
+									{{ formatBytes(currentUsage.storage) }}
+									<template v-if="currentPlan">
+										of {{ formatBytes(currentPlan.max_storage_usage) }}
+									</template>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="p-5">
+					<div class="text-base text-gray-700">Database</div>
+					<div class="mt-2">
+						<Progress
+							size="md"
+							:value="
+								currentPlan
+									? (currentUsage.database / currentPlan.max_database_usage) *
+									  100
+									: 0
+							"
+						/>
+						<div>
+							<div class="mt-2 flex justify-between">
+								<div class="text-sm text-gray-600">
+									{{ formatBytes(currentUsage.database) }}
+									<template v-if="currentPlan">
+										of
+										{{ formatBytes(currentPlan.max_database_usage) }}
+									</template>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
 				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
@@ -13,48 +116,35 @@
 					:key="d.label"
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
-				</div>
-			</div>
-		</div>
-		<div class="mt- rounded-md border">
-			<div class="flex h-12 items-center justify-between border-b px-5">
-				<h2 class="text-lg font-medium text-gray-900">Plan</h2>
-				<Button @click="showPlanChangeDialog">Change</Button>
-			</div>
-			<div class="">
-				<div
-					v-for="d in current_usage"
-					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">
+					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
+					<div class="w-2/3 text-base text-gray-900">
 						{{ d.value }}
 					</div>
 				</div>
 			</div>
 		</div>
+		<SiteDailyUsage :site="site" />
 	</div>
 </template>
 <script>
 import { h, defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource } from 'frappe-ui';
-import LucideGaugeCircle from '~icons/lucide/gauge-circle';
-import LucideHardDrive from '~icons/lucide/hard-drive';
-import LucideDatabase from '~icons/lucide/database';
+import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { renderDialog } from '../utils/components';
+import SiteDailyUsage from './SiteDailyUsage.vue';
 
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
+	components: { SiteDailyUsage, Progress },
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(() =>
 				import('../components/ManageSitePlansDialog.vue')
 			);
 			renderDialog(h(SitePlansDialog, { site: this.site }));
+		},
+		formatBytes(v) {
+			return this.$format.bytes(v, 0, 2);
 		}
 	},
 	computed: {
@@ -66,7 +156,7 @@ export default {
 				},
 				{
 					label: 'Owned by',
-					value: this.$site.doc.team
+					value: this.$site.doc.owner_email
 				},
 				{
 					label: 'Created by',
@@ -82,52 +172,24 @@ export default {
 				}
 			];
 		},
-		current_usage() {
-			let formatBytes = v => this.$format.bytes(v, 0, 2);
-			let currentPlan = this.$site.doc.current_plan;
-			let planDescription = '';
-			if (currentPlan.price_usd > 0) {
-				if (this.$team.doc.currency === 'INR') {
-					planDescription = `₹${currentPlan.price_inr} /month (₹${currentPlan.price_per_day_inr} /day)`;
-				} else {
-					planDescription = `$${currentPlan.price_usd} /month ($${currentPlan.price_per_day_usd} /day)`;
-				}
-			} else {
-				planDescription = currentPlan.plan_title;
-			}
-
-			return [
-				{
-					label: 'Current Plan',
-					icon: LucideGaugeCircle,
-					value: planDescription
-				},
-				{
-					label: 'CPU Usage',
-					icon: LucideGaugeCircle,
-					value: `${this.$site.doc.current_usage.cpu} / ${
-						this.$site.doc.current_plan.cpu_time_per_day
-					} ${this.$format.plural(
-						this.$site.doc.current_plan.cpu_time_per_day,
-						'hour',
-						'hours'
-					)}`
-				},
-				{
-					label: 'Storage Usage',
-					icon: LucideHardDrive,
-					value: `${formatBytes(
-						this.$site.doc.current_usage.storage
-					)} / ${formatBytes(this.$site.doc.current_plan.max_storage_usage)}`
-				},
-				{
-					label: 'Database Usage',
-					icon: LucideDatabase,
-					value: `${formatBytes(
-						this.$site.doc.current_usage.database
-					)} / ${formatBytes(this.$site.doc.current_plan.max_database_usage)}`
-				}
-			];
+		currentPlan() {
+			if (!this.$site.doc.current_plan) return null;
+			let currency = this.$team.doc.currency;
+			return {
+				price:
+					currency === 'INR'
+						? this.$site.doc.current_plan.price_inr
+						: this.$site.doc.current_plan.price_usd,
+				price_per_day:
+					currency === 'INR'
+						? this.$site.doc.current_plan.price_per_day_inr
+						: this.$site.doc.current_plan.price_per_day_usd,
+				currency: currency == 'INR' ? '₹' : '$',
+				...this.$site.doc.current_plan
+			};
+		},
+		currentUsage() {
+			return this.$site.doc.current_usage;
 		},
 		$site() {
 			return getCachedDocumentResource('Site', this.site);

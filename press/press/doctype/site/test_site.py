@@ -396,7 +396,7 @@ class TestSite(unittest.TestCase):
 		private = create_test_remote_file().name
 		config = create_test_remote_file().name
 		plan = frappe.get_doc(
-			doctype="Plan",
+			doctype="Site Plan",
 			name="Plan-10",
 			document_type="Site",
 			interval="Daily",

@@ -113,7 +113,7 @@ class VersionUpgrade(Document):
 		self.save()
 
 	@classmethod
-	def get_all_scheduled_before_now(cls) -> List[Document]:
+	def get_all_scheduled_before_now(cls) -> List["VersionUpgrade"]:
 		upgrades = frappe.get_all(
 			cls.doctype,
 			{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},

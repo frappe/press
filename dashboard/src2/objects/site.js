@@ -1,15 +1,26 @@
-import { frappeRequest } from 'frappe-ui';
+import { frappeRequest, LoadingIndicator, Button } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
+import HelpIcon from '~icons/lucide/help-circle';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date } from '../utils/format';
-import SiteActionCell from '../components/SiteActionCell.vue';
+import {
+	bytes,
+	duration,
+	date,
+	userCurrency,
+	commaAnd,
+	plural
+} from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
+import { getRunningJobs } from '../utils/agentJob';
+import SiteActions from '../components/SiteActions.vue';
+import { tagTab } from './common/tags';
+import { plans } from '../data/plans';
 
 export default {
 	doctype: 'Site',
@@ -20,11 +31,11 @@ export default {
 		backup: 'backup',
 		clearSiteCache: 'clear_site_cache',
 		deactivate: 'deactivate',
-		disableDatabaseAccess: 'disable_database_access',
-		disableReadWrite: 'disable_read_write',
 		enableDatabaseAccess: 'enable_database_access',
-		enableReadWrite: 'enable_read_write',
+		disableDatabaseAccess: 'disable_database_access',
 		getDatabaseCredentials: 'get_database_credentials',
+		disableReadWrite: 'disable_read_write',
+		enableReadWrite: 'enable_read_write',
 		installApp: 'install_app',
 		uninstallApp: 'uninstall_app',
 		migrate: 'migrate',
@@ -33,21 +44,14 @@ export default {
 		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
-		resetSiteUsage: 'reset_site_usage',
 		restoreSite: 'restore_site',
-		restoreTables: 'restore_tables',
-		retryArchive: 'retry_archive',
-		retryRename: 'retry_rename',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
-		suspend: 'suspend',
-		sync_info: 'sync_info',
-		unsuspend: 'unsuspend',
-		updateSiteConfig: 'update_site_config',
 		updateConfig: 'update_config',
 		deleteConfig: 'delete_config',
-		updateWithoutBackup: 'update_without_backup',
-		sendTransferRequest: 'send_change_team_request'
+		sendTransferRequest: 'send_change_team_request',
+		addTag: 'add_resource_tag',
+		removeTag: 'remove_resource_tag'
 	},
 	list: {
 		route: '/sites',
@@ -74,8 +78,20 @@ export default {
 				format(value, row) {
 					if (row.trial_end_date) {
 						let trialEndDate = dayjsLocal(row.trial_end_date);
-						if (trialEndDate.isAfter(dayjsLocal())) {
-							return 'Trial';
+						let today = dayjsLocal();
+						let diffHours = trialEndDate.diff(today, 'hours');
+						let endsIn = '';
+						if (diffHours < 24) {
+							endsIn = `today`;
+						} else {
+							let days = Math.round(diffHours / 24);
+							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
+						}
+						if (
+							trialEndDate.isAfter(today) ||
+							trialEndDate.isSame(today, 'day')
+						) {
+							return `Trial ends ${endsIn}`;
 						}
 					}
 					let $team = getTeam();
@@ -127,10 +143,330 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewSite' });
+					router.push({ name: 'New Site' });
 				}
 			};
 		}
+	},
+	create: {
+		title: 'New Site',
+		route: '/sites/new',
+		secondaryCreate: {
+			route: '/benches/:name/sites/new',
+			optionalFields: [],
+			routeName: 'Bench New Site',
+			propName: 'bench'
+		},
+		optionsResource({ routerProp: bench }) {
+			return {
+				url: 'press.api.site.options_for_new',
+				makeParams() {
+					return { for_bench: bench };
+				},
+				auto: true,
+				initialData: {
+					versions: [],
+					domain: '',
+					marketplace_details: {},
+					app_source_details: {}
+				}
+			};
+		},
+		createResource() {
+			return {
+				url: 'press.api.client.insert',
+				validate({ doc: { subdomain } }) {
+					if (!subdomain) {
+						return 'Please enter a subdomain';
+					}
+				},
+				onSuccess: site => {
+					router.push({
+						name: 'Site Detail Jobs',
+						params: { name: site.name }
+					});
+				}
+			};
+		},
+		primaryAction({ createResource: createSite, vals, optionsData }) {
+			return {
+				label: 'Create Site',
+				variant: 'solid',
+				onClick() {
+					let $team = getTeam();
+					if (!vals.apps) vals.apps = [];
+
+					let appPlans = {};
+					vals.apps.forEach(app => {
+						appPlans[app.app] = app.plan;
+					});
+
+					createSite.submit({
+						doc: {
+							doctype: 'Site',
+							team: $team.doc.name,
+							subdomain: vals.subdomain,
+							apps: [{ app: 'frappe' }, ...vals.apps],
+							app_plans: appPlans,
+							cluster: vals.cluster,
+							bench: optionsData.versions.find(v => v.name === vals.siteVersion)
+								.group.bench,
+							subscription_plan: vals.plan.name,
+							share_details_consent: vals.shareDetailsConsent
+						}
+					});
+				}
+			};
+		},
+		options: [
+			{
+				label: 'Select Frappe Framework Version',
+				name: 'siteVersion',
+				type: 'card',
+				fieldname: 'versions'
+			},
+			{
+				label: '',
+				fieldname: 'apps',
+				name: 'apps',
+				type: 'Component',
+				component({ optionsData, vals }) {
+					let NewSiteAppSelector = defineAsyncComponent(() =>
+						import('../components/site/NewSiteAppSelector.vue')
+					);
+
+					let selectedVersion = optionsData?.versions.find(
+						v => v.name === vals.siteVersion
+					);
+					let selectedVersionApps;
+
+					if (selectedVersion?.group?.bench_app_sources)
+						// sorted by total installs and then by name
+						selectedVersionApps = selectedVersion.group.bench_app_sources
+							.map(app_source => {
+								let app_source_details =
+									optionsData.app_source_details[app_source];
+								let marketplace_details = app_source_details
+									? optionsData.marketplace_details[app_source_details.app]
+									: {};
+								return {
+									app_title: app_source,
+									...app_source_details,
+									...marketplace_details
+								};
+							})
+							.sort((a, b) => {
+								if (a.total_installs > b.total_installs) {
+									return -1;
+								} else if (a.total_installs < b.total_installs) {
+									return 1;
+								} else {
+									return a.app_title.localeCompare(b.app_title);
+								}
+							});
+
+					return h(NewSiteAppSelector, {
+						availableApps: selectedVersionApps,
+						siteOnPublicBench: !vals.bench
+					});
+				},
+				dependsOn: ['siteVersion']
+			},
+			{
+				label: 'Select Region',
+				name: 'cluster',
+				type: 'card',
+				dependsOn: ['siteVersion'],
+				filter(_, vals, optionsData) {
+					return optionsData.versions.find(v => v.name === vals.siteVersion)
+						?.group.clusters;
+				}
+			},
+			{
+				label: 'Select Plan',
+				name: 'plan',
+				type: 'plan',
+				dependsOn: ['siteVersion', 'cluster'],
+				labelSlot() {
+					return h(
+						Button,
+						{
+							link: 'https://frappecloud.com/pricing',
+							variant: 'ghost'
+						},
+						{
+							prefix: () => h(HelpIcon, { class: 'h-4 w-4 text-gray-700' }),
+							default: () => 'Help'
+						}
+					);
+				},
+				filter() {
+					return plans.data.map(plan => ({
+						...plan,
+						features: [
+							{
+								label: 'compute hours / day',
+								value: plan.cpu_time_per_day
+							},
+							{
+								label: 'database',
+								value: bytes(plan.max_database_usage, 0, 2)
+							},
+							{
+								label: 'disk',
+								value: bytes(plan.max_storage_usage, 0, 2)
+							},
+							{
+								label: '',
+								value: plan.support_included ? 'Support Included' : ''
+							},
+							{
+								label: '',
+								value: plan.database_access ? 'Database Access' : ''
+							},
+							{
+								label: '',
+								value: plan.offsite_backups ? 'Offsite Backups' : ''
+							},
+							{
+								label: '',
+								value: plan.monitor_access ? 'Advanced Monitoring' : ''
+							}
+						]
+					}));
+				}
+			},
+			{
+				label: 'Enter Subdomain',
+				name: 'subdomain',
+				type: 'Component',
+				component({ optionsData }) {
+					let SubdomainInput = defineAsyncComponent(() =>
+						import('../components/site/SubdomainInput.vue')
+					);
+
+					return h(SubdomainInput, {
+						domain: optionsData.domain
+					});
+				},
+				dependsOn: ['siteVersion', 'cluster', 'plan']
+			}
+		],
+		consents: [
+			{
+				label: 'I am okay if my details are shared with local partners',
+				name: 'shareDetailsConsent'
+			}
+		],
+		summary: [
+			{
+				label: 'Frappe Framework Version',
+				fieldname: 'siteVersion'
+			},
+			{
+				label: 'Apps',
+				optional: true,
+				format(values, optionsData) {
+					let apps = (values.apps || []).map(app => app.app);
+					if (!apps.length) return 'No apps selected';
+
+					let appTitles = Object.values(optionsData.app_source_details)
+						.filter(app => apps.includes(app.app))
+						.map(app => app.app_title);
+
+					return commaAnd(appTitles);
+				}
+			},
+			{
+				label: 'Region',
+				fieldname: 'cluster'
+			},
+			{
+				label: 'Site URL',
+				fieldname: 'subdomain',
+				format(value, optionsData) {
+					return `${value}.${optionsData?.domain}`;
+				}
+			},
+			{
+				label: 'Site Plan',
+				fieldname: 'plan',
+				format(value) {
+					let $team = getTeam();
+
+					return `${userCurrency(
+						$team.doc.currency == 'INR' ? value.price_inr : value.price_usd
+					)} / mo`;
+				}
+			},
+			{
+				label: 'Product Warranty',
+				fieldname: 'plan',
+				format(value) {
+					return value.support_included ? 'Included' : 'Not Included';
+				}
+			},
+			{
+				label: 'App Plans',
+				optional: true,
+				format(values, optionsData) {
+					if (!values.apps || !values.apps.length) return '';
+
+					let $team = getTeam();
+					let description = '';
+
+					for (let app of values.apps) {
+						let appTitle = Object.values(optionsData.app_source_details).find(
+							a => a.app == app.app
+						).app_title;
+
+						if (app.plan) {
+							let isAppFree =
+								app.plan.price_inr === 0 && app.plan.price_usd === 0;
+							description += `<span class="text-gray-900">${appTitle} Plan: </span><span class="text-gray-600">${
+								isAppFree
+									? 'Free'
+									: userCurrency(
+											$team.doc.currency == 'INR'
+												? app.plan.price_inr
+												: app.plan.price_usd
+									  )
+							}${isAppFree ? '' : ' / mo'}</span><br>`;
+						} else {
+							description += `<span class="text-gray-900">${appTitle} Plan: </span><span class="text-gray-600">Free</span><br>`;
+						}
+					}
+					return description;
+				}
+			},
+			{
+				label: 'Total',
+				format(values) {
+					let $team = getTeam();
+					let appPlans = (values.apps || []).map(app => app.plan);
+					let sitePlan = values.plan;
+
+					let total = 0;
+					if (sitePlan) {
+						total +=
+							$team.doc.currency == 'INR'
+								? sitePlan.price_inr
+								: sitePlan.price_usd;
+					}
+					for (let app of appPlans) {
+						if (app) {
+							total +=
+								$team.doc.currency == 'INR' ? app.price_inr : app.price_usd;
+						}
+					}
+					return `<span class="text-gray-900">${userCurrency(
+						total
+					)} / mo</span><br><span class="text-gray-600"> ${userCurrency(
+						total / 30
+					)} / day</span>`;
+				}
+			}
+		]
 	},
 	detail: {
 		titleField: 'name',
@@ -172,7 +508,7 @@ export default {
 					import('../../src/views/site/SiteCharts.vue')
 				),
 				props: site => {
-					return { site: site.doc };
+					return { siteName: site.doc.name };
 				}
 			},
 			{
@@ -183,7 +519,7 @@ export default {
 				list: {
 					doctype: 'Site App',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parenttype: 'Site', parent: site.doc.name };
 					},
 					columns: [
 						{
@@ -218,24 +554,9 @@ export default {
 							width: '34rem'
 						}
 					],
-					resource({ documentResource: site }) {
-						return {
-							type: 'list',
-							doctype: 'Site App',
-							cache: ['Site Apps', site.name],
-							fields: ['name', 'app'],
-							parent: 'Site',
-							filters: {
-								parenttype: 'Site',
-								parent: site.doc.name
-							},
-							auto: true
-						};
-					},
 					primaryAction({ listResource: apps, documentResource: site }) {
 						return {
 							label: 'Install App',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -284,21 +605,60 @@ export default {
 																		label: 'Install',
 																		onClick() {
 																			if (site.installApp.loading) return;
-																			toast.promise(
-																				site.installApp.submit({
-																					app: row.app
-																				}),
-																				{
-																					loading: 'Installing app...',
-																					success: () =>
-																						'App will be installed shortly',
-																					error: e => {
-																						return e.messages.length
-																							? e.messages.join('\n')
-																							: e.message;
+
+																			if (row.plans) {
+																				let SiteAppPlanSelectDialog =
+																					defineAsyncComponent(() =>
+																						import(
+																							'../components/site/SiteAppPlanSelectDialog.vue'
+																						)
+																					);
+
+																				renderDialog(
+																					h(SiteAppPlanSelectDialog, {
+																						app: row,
+																						currentPlan: null,
+																						onPlanSelected(plan) {
+																							toast.promise(
+																								site.installApp.submit({
+																									app: row.app,
+																									plan: plan.name
+																								}),
+																								{
+																									loading: 'Installing app...',
+																									success: () => {
+																										apps.reload();
+																										return 'App will be installed shortly';
+																									},
+																									error: e => {
+																										return e.messages.length
+																											? e.messages.join('\n')
+																											: e.message;
+																									}
+																								}
+																							);
+																						}
+																					})
+																				);
+																			} else {
+																				toast.promise(
+																					site.installApp.submit({
+																						app: row.app
+																					}),
+																					{
+																						loading: 'Installing app...',
+																						success: () => {
+																							apps.reload();
+																							return 'App will be installed shortly';
+																						},
+																						error: e => {
+																							return e.messages.length
+																								? e.messages.join('\n')
+																								: e.message;
+																						}
 																					}
-																				}
-																			);
+																				);
+																			}
 																		}
 																	};
 																}
@@ -322,7 +682,36 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: apps, documentResource: site }) {
+						let $team = getTeam();
+
 						return [
+							{
+								label: 'View in Desk',
+								condition: () => $team.doc.is_desk_user,
+								onClick() {
+									window.open(`/app/app-source/${row.name}`, '_blank');
+								}
+							},
+							{
+								label: 'Change Plan',
+								condition: () => row.plan_info && row.plans.length > 1,
+								onClick() {
+									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
+										import('../components/site/SiteAppPlanSelectDialog.vue')
+									);
+									renderDialog(
+										h(SiteAppPlanChangeDialog, {
+											app: row,
+											currentPlan: row.plans.find(
+												plan => plan.name === row.plan_info.name
+											),
+											onPlanChanged() {
+												apps.reload();
+											}
+										})
+									);
+								}
+							},
 							{
 								label: 'Uninstall',
 								condition: () => row.app !== 'frappe',
@@ -357,12 +746,6 @@ export default {
 											);
 										}
 									});
-								}
-							},
-							{
-								label: 'View in Desk',
-								onClick() {
-									window.open(`/app/app-source/${row.name}`, '_blank');
 								}
 							}
 						];
@@ -406,7 +789,6 @@ export default {
 					primaryAction({ listResource: domains, documentResource: site }) {
 						return {
 							label: 'Add Domain',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -573,24 +955,21 @@ export default {
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {
 							label: 'Schedule Backup',
-							variant: 'solid',
 							slots: {
 								prefix: icon('upload-cloud')
 							},
-							loading: backups.insert.loading,
+							loading: site.backup.loading,
 							onClick() {
-								return backups.insert.submit(
+								return site.backup.submit(
 									{
-										site: site.doc.name
+										with_files: true
 									},
 									{
 										onError(e) {
-											let messages = e.messages || ['Something went wrong'];
-											for (let message of messages) {
-												toast.error(message);
-											}
+											showErrorToast(e);
 										},
 										onSuccess() {
+											backups.reload();
 											toast.success('Backup scheduled');
 										}
 									}
@@ -608,9 +987,10 @@ export default {
 				list: {
 					doctype: 'Site Config',
 					filters: site => {
-						return { site: site.doc.name };
+						return { parent: site.doc.name, parenttype: 'Site' };
 					},
 					fields: ['name'],
+					pageLength: 999,
 					orderBy: 'creation desc',
 					columns: [
 						{
@@ -640,7 +1020,6 @@ export default {
 					primaryAction({ listResource: configs, documentResource: site }) {
 						return {
 							label: 'Add Config',
-							variant: 'solid',
 							slots: {
 								prefix: icon('plus')
 							},
@@ -654,6 +1033,24 @@ export default {
 										onSuccess() {
 											configs.reload();
 										}
+									})
+								);
+							}
+						};
+					},
+					secondaryAction({ listResource: configs }) {
+						return {
+							label: 'Preview',
+							slots: {
+								prefix: icon('eye')
+							},
+							onClick() {
+								let ConfigPreviewDialog = defineAsyncComponent(() =>
+									import('../components/ConfigPreviewDialog.vue')
+								);
+								renderDialog(
+									h(ConfigPreviewDialog, {
+										configs: configs.data
 									})
 								);
 							}
@@ -718,27 +1115,10 @@ export default {
 				label: 'Actions',
 				icon: icon('activity'),
 				route: 'actions',
-				type: 'list',
-				list: {
-					data({ documentResource: site }) {
-						return site.doc.actions;
-					},
-					columns: [
-						{
-							label: 'Action',
-							fieldname: 'action',
-							type: 'Component',
-							component: ({ row, documentResource: site }) => {
-								return h(SiteActionCell, {
-									siteName: site.doc.name,
-									actionLabel: row.action,
-									method: row.doc_method,
-									description: row.description,
-									buttonLabel: row.button_label
-								});
-							}
-						}
-					]
+				type: 'Component',
+				component: SiteActions,
+				props: site => {
+					return { site: site.doc.name };
 				}
 			},
 			{
@@ -749,7 +1129,6 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
-					userFilters: {},
 					filters: site => {
 						return { site: site.doc.name };
 					},
@@ -787,6 +1166,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: 1
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
@@ -795,7 +1179,6 @@ export default {
 					]
 				}
 			},
-
 			{
 				label: 'Activity',
 				icon: icon('activity'),
@@ -822,7 +1205,8 @@ export default {
 						},
 						{
 							label: 'Reason',
-							fieldname: 'reason'
+							fieldname: 'reason',
+							class: 'text-gray-600'
 						},
 						{
 							label: '',
@@ -832,12 +1216,34 @@ export default {
 						}
 					]
 				}
-			}
+			},
+			tagTab()
 		],
 		actions(context) {
 			let { documentResource: site } = context;
 			let $team = getTeam();
+			let runningJobs = getRunningJobs({ site: site.doc.name });
+
 			return [
+				{
+					label: 'Jobs in progress',
+					slots: {
+						prefix: () => h(LoadingIndicator, { class: 'w-4 h-4' })
+					},
+					condition() {
+						return (
+							runningJobs.filter(job =>
+								['Pending', 'Running'].includes(job.status)
+							).length > 0
+						);
+					},
+					onClick() {
+						router.push({
+							name: 'Site Detail Jobs',
+							params: { name: site.name }
+						});
+					}
+				},
 				{
 					label: 'Update Available',
 					variant: 'solid',
@@ -861,6 +1267,19 @@ export default {
 					}
 				},
 				{
+					label: 'Impersonate Site Owner',
+					slots: {
+						prefix: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc.is_desk_user && site.doc.team != $team.name,
+					onClick() {
+						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
+					}
+				},
+				{
 					label: 'Visit Site',
 					slots: {
 						prefix: icon('external-link')
@@ -875,7 +1294,7 @@ export default {
 					button: {
 						label: 'Options',
 						slots: {
-							default: icon('more-horizontal')
+							icon: icon('more-horizontal')
 						}
 					},
 					context,

@@ -17,7 +17,7 @@
 			:is="column.component(contextWithRow)"
 		/>
 		<template v-else-if="column.type === 'Badge'">
-			<Badge :label="formattedValue" v-if="formattedValue" />
+			<Badge :label="formattedValue" :theme="theme" v-if="formattedValue" />
 		</template>
 		<template v-else-if="column.type === 'Icon'">
 			<FeatherIcon v-if="icon" class="h-4 w-4" :name="icon" />
@@ -33,7 +33,7 @@
 			</div>
 		</div>
 		<div v-else-if="column.type == 'Actions'">
-			<Dropdown v-if="actions?.length" :options="actions">
+			<Dropdown v-if="showDropdown" :options="actions">
 				<button
 					class="flex items-center rounded bg-gray-100 px-1 py-0.5 hover:bg-gray-200"
 				>
@@ -64,6 +64,14 @@ export default {
 	computed: {
 		value() {
 			return this.row[this.column.key];
+		},
+		theme() {
+			const theme = this.column.theme;
+			if (typeof theme === 'function') {
+				return theme(this.value, this.row);
+			}
+
+			return theme;
 		},
 		formattedValue() {
 			let formattedValue = this.column.format
@@ -96,6 +104,13 @@ export default {
 				...this.context,
 				row: this.row
 			};
+		},
+		showDropdown() {
+			let filteredOptions = (this.actions || [])
+				.filter(Boolean)
+				.filter(option => (option.condition ? option.condition() : true));
+
+			return filteredOptions.length > 0;
 		}
 	},
 	components: { Tooltip, ActionButton }

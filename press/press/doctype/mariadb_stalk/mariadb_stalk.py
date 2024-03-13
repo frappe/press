@@ -1,15 +1,43 @@
 # Copyright (c) 2023, Frappe and contributors
 # For license information, please see license.txt
 
+import gzip
+
 import frappe
 from frappe.model.document import Document
+from frappe.query_builder import Interval
+from frappe.query_builder.functions import Now
+
 from press.utils import log_error
 from datetime import datetime
 from frappe.utils import convert_utc_to_system_timezone, add_to_date, now_datetime
 
 
 class MariaDBStalk(Document):
-	pass
+	@staticmethod
+	def clear_old_logs(days=30):
+		table = frappe.qb.DocType("MariaDB Stalk")
+		stalks = frappe.db.get_values(
+			table, filters=table.creation < (Now() - Interval(days=days))
+		)
+		for stalk in stalks:
+			stalk = frappe.get_doc("MariaDB Stalk", stalk)
+			stalk.create_json_gz_file()
+			stalk.delete(delete_permanently=True)
+
+	def create_json_gz_file(self):
+		filename = f"mariadb-stalk-{self.server}-{self.timestamp}.json.gz"
+		encoded = frappe.safe_encode(self.as_json())
+		compressed = gzip.compress(encoded)
+		file = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": filename,
+				"content": compressed,
+				"is_private": True,
+			}
+		)
+		file.insert()
 
 
 def fetch_stalks():

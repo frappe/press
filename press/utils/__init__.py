@@ -2,15 +2,16 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import frappe
 import functools
 import json
-import requests
-import pytz
-
+import time
 from datetime import datetime, timedelta
 from urllib.parse import urljoin
-from frappe.utils import get_system_timezone, get_datetime
+
+import frappe
+import pytz
+import requests
+from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 
 
@@ -23,10 +24,24 @@ def log_error(title, **kwargs):
 				pass
 			else:
 				raise
+
+	# Prevent double logging as `message`
+	reference_doctype = kwargs.get("reference_doctype")
+	reference_name = kwargs.get("reference_doctype")
+	if reference_doctype and reference_name:
+		del kwargs["reference_doctype"]
+		del kwargs["reference_name"]
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
-	frappe.log_error(title=title, message=message)
+
+	frappe.log_error(
+		title=title,
+		message=message,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+	)
 
 
 def get_current_team(get_doc=False):
@@ -481,3 +496,49 @@ def convert_user_timezone_to_utc(datetime):
 	timezone = pytz.timezone(get_system_timezone())
 	datetime_obj = get_datetime(datetime)
 	return timezone.localize(datetime_obj).astimezone(pytz.utc).isoformat()
+
+
+class ttl_cache:
+	"""
+	Does not invalidate cache depending on function
+	args. Ideally it's for functions with 0 arity.
+
+	Example:
+
+	# or use it as a decorator
+	cached_func = ttl_cache()(func)
+
+	# to invalidate cache
+	cached_func.cache.invalidate()
+	"""
+
+	def __init__(self, ttl: int = 60):
+		self.ttl = ttl
+		self.result = None
+		self.start = 0
+
+	def invalidate(self):
+		self.result = None
+		self.start = 0
+
+	def __call__(self, func):
+		self.result = None
+		self.start = time.time()
+
+		def wrapper_func(*args, **kwargs):
+			if self.result is not None and (time.time() - self.start) < self.ttl:
+				return self.result
+			self.start = time.time()
+			self.result = func(*args, **kwargs)
+			return self.result
+
+		wrapper_func.cache = self
+		return wrapper_func
+
+
+def poly_get_doctype(doctypes, name):
+	"""Get the doctype value from the given name of a doc from a list of doctypes"""
+	for doctype in doctypes:
+		if frappe.db.exists(doctype, name):
+			return doctype
+	return doctypes[-1]

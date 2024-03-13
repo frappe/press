@@ -45,7 +45,7 @@ def callback(code=None, state=None):
 	except Exception as e:
 		log_error("Google Login failed", data=e)
 		frappe.local.response.type = "redirect"
-		frappe.local.response.location = "/dashboard2/login"
+		frappe.local.response.location = "/dashboard-beta/login"
 
 	# authenticated
 	frappe.cache().delete_value(cached_key)
@@ -76,46 +76,38 @@ def callback(code=None, state=None):
 			if phone:
 				phone_number = phone[0].get("value")
 
-	# saas product signup
-	if saas_product:
+	team_name, team_enabled = frappe.db.get_value(
+		"Team", {"user": email}, ["name", "enabled"]
+	) or [0, 0]
+
+	if team_name and team_enabled:
+		# login to existing account
+		frappe.local.login_manager.login_as(email)
+		frappe.local.response.type = "redirect"
+		if saas_product:
+			frappe.local.response.location = f"/dashboard-beta/app-trial/{saas_product.name}"
+		else:
+			frappe.local.response.location = "/dashboard-beta"
+	elif team_name and not team_enabled:
+		# cannot move forward because account is disabled
+		frappe.throw(_("Account {0} has been deactivated").format(email))
+	elif not team_name:
 		account_request = frappe.get_doc(
 			doctype="Account Request",
 			email=email,
 			first_name=id_info.get("given_name"),
 			last_name=id_info.get("family_name"),
 			phone_number=phone_number,
-			saas_product=saas_product.name,
-		).insert(ignore_permissions=True)
-		frappe.db.commit()
+			new_signup_flow=1,
+		)
+		if saas_product:
+			account_request.saas_product = saas_product.name
 
+		account_request.insert(ignore_permissions=True)
+		frappe.db.commit()
 		frappe.local.response.type = "redirect"
 		verification_url = account_request.get_verification_url()
 		frappe.local.response.location = verification_url
-	else:
-		# Frappe Cloud User Login
-		team_exists, team_enabled = frappe.db.get_value(
-			"Team", {"user": email}, ["name", "enabled"]
-		) or [0, 0]
-		if team_exists and team_enabled:
-			# login to existing account
-			frappe.local.login_manager.login_as(email)
-			frappe.local.response.type = "redirect"
-			frappe.local.response.location = "/dashboard2"
-		elif team_exists and not team_enabled:
-			# cannot login because account is disabled
-			frappe.throw(_("Account {0} has been deactivated").format(email))
-		elif not team_exists:
-			account_request = frappe.get_doc(
-				doctype="Account Request",
-				email=email,
-				first_name=id_info.get("given_name"),
-				last_name=id_info.get("family_name"),
-				phone_number=phone_number,
-			).insert(ignore_permissions=True)
-			frappe.db.commit()
-			frappe.local.response.type = "redirect"
-			verification_url = account_request.get_verification_url()
-			frappe.local.response.location = verification_url
 
 
 def invalid_login():

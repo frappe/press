@@ -7,15 +7,16 @@ from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.core.utils import find
+from frappe.model.naming import make_autoname
 from frappe.tests.utils import FrappeTestCase
 
 from press.api.server import change_plan, new, all
 from press.press.doctype.ansible_play.test_ansible_play import create_test_ansible_play
 from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.cluster.test_cluster import create_test_cluster
-from press.press.doctype.plan.test_plan import create_test_plan
 from press.press.doctype.proxy_server.test_proxy_server import create_test_proxy_server
 from press.press.doctype.server.server import BaseServer
+from press.press.doctype.database_server.database_server import DatabaseServer
 from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 from press.press.doctype.virtual_machine_image.test_virtual_machine_image import (
@@ -26,6 +27,32 @@ from press.press.doctype.virtual_machine_image.virtual_machine_image import (
 )
 from press.runner import Ansible
 from press.utils.test import foreground_enqueue_doc
+
+
+def create_test_server_plan(
+	document_type: str,
+	price_usd: float = 10.0,
+	price_inr: float = 750.0,
+	title: str = None,
+	plan_name: str = None,
+):
+	"""Create test Plan doc."""
+	plan_name = plan_name or f"Test {document_type} plan {make_autoname('.#')}"
+	title = plan_name
+	plan = frappe.get_doc(
+		{
+			"doctype": "Server Plan",
+			"server_type": document_type,
+			"name": plan_name,
+			"title": title,
+			"price_inr": price_inr,
+			"price_usd": price_usd,
+			"enabled": 1,
+			"instance_type": "t2.micro",
+		}
+	).insert(ignore_if_duplicate=True)
+	plan.reload()
+	return plan
 
 
 def successful_provision(self: VirtualMachine):
@@ -43,6 +70,18 @@ def successful_ping_ansible(self: BaseServer):
 	create_test_ansible_play("Ping Server", "ping.yml", self.doctype, self.name)
 
 
+def successful_upgrade_mariadb(self: DatabaseServer):
+	create_test_ansible_play(
+		"Upgrade MariaDB", "upgrade_mariadb.yml", self.doctype, self.name
+	)
+
+
+def successful_upgrade_mariadb_patched(self: DatabaseServer):
+	create_test_ansible_play(
+		"Upgrade MariaDB Patched", "upgrade_mariadb_patched.yml", self.doctype, self.name
+	)
+
+
 def successful_tls_certificate(self: BaseServer):
 	create_test_ansible_play("Setup TLS Certificates", "tls.yml", self.doctype, self.name)
 
@@ -51,10 +90,21 @@ def successful_update_agent_ansible(self: BaseServer):
 	create_test_ansible_play("Update Agent", "update_agent.yml", self.doctype, self.name)
 
 
+def successful_wait_for_cloud_init(self: BaseServer):
+	create_test_ansible_play(
+		"Wait for Cloud Init to finish", "wait_for_cloud_init.yml", self.doctype, self.name
+	)
+
+
 @patch.object(VirtualMachineImage, "client", new=MagicMock())
 @patch.object(VirtualMachine, "client", new=MagicMock())
 @patch.object(Ansible, "run", new=Mock())
 @patch.object(BaseServer, "ping_ansible", new=successful_ping_ansible)
+@patch.object(DatabaseServer, "upgrade_mariadb", new=successful_upgrade_mariadb)
+@patch.object(
+	DatabaseServer, "upgrade_mariadb_patched", new=successful_upgrade_mariadb_patched
+)
+@patch.object(BaseServer, "wait_for_cloud_init", new=successful_wait_for_cloud_init)
 @patch.object(BaseServer, "update_tls_certificate", new=successful_tls_certificate)
 @patch.object(BaseServer, "update_agent_ansible", new=successful_update_agent_ansible)
 class TestAPIServer(FrappeTestCase):
@@ -62,9 +112,9 @@ class TestAPIServer(FrappeTestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 
-		self.app_plan = create_test_plan("Server")
+		self.app_plan = create_test_server_plan("Server")
 		self.app_plan.db_set("memory", 1024)
-		self.db_plan = create_test_plan("Database Server")
+		self.db_plan = create_test_server_plan("Database Server")
 		self.cluster = create_test_cluster()
 		create_test_proxy_server(cluster=self.cluster.name)
 
@@ -179,9 +229,9 @@ class TestAPIServer(FrappeTestCase):
 			cluster=self.cluster, series="f"
 		)  # call from here and not setup, so mocks work
 
-		app_plan_2 = create_test_plan("Server")
+		app_plan_2 = create_test_server_plan(document_type="Server")
 		app_plan_2.db_set("memory", 2048)
-		db_plan_2 = create_test_plan("Database Server")
+		db_plan_2 = create_test_server_plan(document_type="Database Server")
 
 		self.team.allocate_credit_amount(
 			100000, source="Prepaid Credits", remark="Test Credits"
@@ -198,6 +248,9 @@ class TestAPIServer(FrappeTestCase):
 		)
 		server = frappe.get_last_doc("Server")
 		db_server = frappe.get_last_doc("Database Server")
+		frappe.db.set_value(
+			"Press Job", {"status": "Running"}, "status", "Success"
+		)  # Mark running jobs as success as extra steps we don't check
 
 		change_plan(
 			server.name,
@@ -212,6 +265,9 @@ class TestAPIServer(FrappeTestCase):
 		self.assertTrue(app_subscription.enabled)
 		self.assertEqual(server.plan, app_plan_2.name)
 		self.assertEqual(server.ram, app_plan_2.memory)
+		frappe.db.set_value(
+			"Press Job", {"status": "Running"}, "status", "Success"
+		)  # Mark running jobs as success as extra steps we don't check
 
 		change_plan(
 			db_server.name,

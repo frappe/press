@@ -8,14 +8,6 @@ export default function registerRouter(app, auth, account) {
 		// currently this is being called for every guest request which breaks the current signup flow
 		// await account.fetchIfRequired();
 
-		if (account.saas_site_request && to.name != 'App Site Setup') {
-			next({
-				name: 'App Site Setup',
-				params: { product: account.saas_site_request }
-			});
-			return;
-		}
-
 		if (to.name == 'Home') {
 			next({ name: 'Sites' });
 			return;

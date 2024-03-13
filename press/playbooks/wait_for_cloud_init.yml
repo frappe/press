@@ -1,0 +1,11 @@
+---
+- name: Wait for Cloud Init to finish
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Wait for Cloud Init to finish
+      command: 'cloud-init status --wait'
+

@@ -66,7 +66,7 @@ update_website_context = ["press.overrides.update_website_context"]
 
 website_route_rules = [
 	{"from_route": "/dashboard/<path:app_path>", "to_route": "dashboard"},
-	{"from_route": "/dashboard2/<path:app_path>", "to_route": "dashboard2"},
+	{"from_route": "/dashboard-beta/<path:app_path>", "to_route": "dashboard-beta"},
 ]
 
 website_redirects = [
@@ -183,8 +183,8 @@ scheduler_events = {
 		"press.saas.doctype.saas_app_subscription.saas_app_subscription.suspend_prepaid_subscriptions",
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
-		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -234,6 +234,7 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
@@ -250,7 +251,7 @@ scheduler_events = {
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.pooling.create",
+			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [

@@ -95,6 +95,13 @@ frappe.ui.form.on('Database Server', {
 				frm.doc.is_server_setup,
 			],
 			[__('Upgrade MariaDB'), 'upgrade_mariadb', true, frm.doc.is_server_setup],
+			[__('Update MariaDB'), 'update_mariadb', true, frm.doc.is_server_setup],
+			[
+				__('Upgrade MariaDB Patched'),
+				'upgrade_mariadb_patched',
+				true,
+				frm.doc.is_server_setup,
+			],
 			[
 				__('Reconfigure MariaDB Exporter'),
 				'reconfigure_mariadb_exporter',
@@ -111,7 +118,7 @@ frappe.ui.form.on('Database Server', {
 				__('Setup Percona Stalk'),
 				'setup_pt_stalk',
 				true,
-				frm.doc.is_server_setup && !frm.doc.is_stalk_setup,
+				frm.doc.is_server_setup,
 			],
 			[
 				__('Fetch MariaDB Stalks'),
@@ -172,6 +179,34 @@ frappe.ui.form.on('Database Server', {
 				);
 			}
 		});
+		if (frm.doc.is_server_setup) {
+			frm.add_custom_button(
+				__('Increase Swap'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Increase Swap'),
+						fields: [
+							{
+								fieldtype: 'Int',
+								label: __('Swap Size'),
+								description: __('Size in GB'),
+								fieldname: 'swap_size',
+								default: 4,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Increase Swap'), (args) => {
+						frm.call('increase_swap', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
+		}
 	},
 
 	hostname: function (frm) {

@@ -103,6 +103,10 @@
 			</div>
 		</div>
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
+		<Dialog
+			:options="newDashboardDialogOptions"
+			v-model="showNewDashboardDialog"
+		/>
 	</div>
 </template>
 
@@ -124,6 +128,7 @@ export default {
 		return {
 			showCommandPalette: false,
 			showTeamSwitcher: false,
+			showNewDashboardDialog: false,
 			dropdownItems: [
 				{
 					label: 'Switch Team',
@@ -136,9 +141,9 @@ export default {
 					onClick: () => (window.location.href = '/support')
 				},
 				{
-					label: 'Settings',
-					icon: 'settings',
-					onClick: () => this.$router.push('/settings/profile')
+					label: 'Try the new dashboard',
+					icon: 'layout',
+					onClick: () => (this.showNewDashboardDialog = true)
 				},
 				{
 					label: 'Logout',
@@ -246,6 +251,23 @@ export default {
 					icon: FCIcons.SettingsIcon
 				}
 			].filter(d => (d.condition ? d.condition() : true));
+		},
+		newDashboardDialogOptions() {
+			return {
+				title: 'New Dashboard ✨',
+				message:
+					'The new dashboard is built from the ground up to provide a better experience. It might be missing a few features or have some bugs, please report them to us and include "New Dashboard" in the ticket subject. You can always switch back to the old dashboard from the user dropdown.',
+				actions: [
+					{
+						label: 'Go to new dashboard',
+						variant: 'solid',
+						onClick: () => {
+							this.showNewDashboardDialog = false;
+							window.location.href = '/dashboard-beta';
+						}
+					}
+				]
+			};
 		}
 	}
 };

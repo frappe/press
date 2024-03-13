@@ -1,0 +1,8 @@
+---
+- name: Upgrade MariaDB Patched
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: yes
+  roles:
+    - role: mariadb_10_6_16_frappe

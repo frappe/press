@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard2/'),
+	history: createWebHistory('/dashboard-beta/'),
 	routes: [
 		{
 			path: '/',
@@ -41,28 +41,6 @@ let router = createRouter({
 			component: () => import('./pages/ResetPassword.vue'),
 			props: true,
 			meta: { isLoginPage: true }
-		},
-		{
-			name: 'JobPage',
-			path: '/jobs/:id',
-			component: () => import('./pages/JobPage.vue'),
-			props: true
-		},
-		{
-			name: 'NewSite',
-			path: '/sites/new',
-			component: () => import('./pages/NewSite.vue')
-		},
-		{
-			name: 'NewBenchSite',
-			path: '/benches/:bench/sites/new',
-			component: () => import('./pages/NewSite.vue'),
-			props: true
-		},
-		{
-			name: 'NewBench',
-			path: '/benches/new',
-			component: () => import('./pages/NewBench.vue')
 		},
 		{
 			name: 'Billing',
@@ -133,9 +111,34 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppSite',
-			path: '/new-app-site',
-			component: () => import('./pages/NewAppSite.vue')
+			name: 'Partners',
+			path: '/partners',
+			redirect: { name: 'PartnerOverview' },
+			component: () => import('./pages/Partners.vue'),
+			children: [
+				{
+					name: 'PartnerOverview',
+					path: 'overview',
+					component: () => import('./components/partners/PartnerOverview.vue')
+				},
+				{
+					name: 'PartnerCustomers',
+					path: 'customers',
+					component: () => import('./components/partners/PartnerCustomers.vue')
+				},
+				{
+					name: 'PartnerApprovalRequests',
+					path: 'approval-requests',
+					component: () =>
+						import('./components/partners/PartnerApprovalRequests.vue')
+				}
+			]
+		},
+		{
+			name: 'NewAppTrial',
+			path: '/app-trial/:productId',
+			component: () => import('./pages/NewAppTrial.vue'),
+			props: true
 		},
 		{
 			name: 'Impersonate',
@@ -164,17 +167,13 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingComplete = $team.doc.onboarding.complete;
 		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
-		let onboardingRoute = $team.doc.onboarding.saas_site_request
-			? 'NewAppSite'
-			: 'Welcome';
-
-		if (onboardingIncomplete && to.name != onboardingRoute) {
+		let onboardingRoute = 'Welcome';
+		if (
+			onboardingIncomplete &&
+			to.name != onboardingRoute &&
+			(to.name.includes('Release Group') || to.name.includes('Server'))
+		) {
 			next({ name: onboardingRoute });
-			return;
-		}
-
-		if (to.name == onboardingRoute && onboardingComplete) {
-			next({ name: defaultRoute });
 			return;
 		}
 

@@ -87,7 +87,17 @@ class SiteUpdate(Document):
 		if self.has_pending_updates():
 			frappe.throw("An update is already pending for this site", frappe.ValidationError)
 
+	@property
+	def triggered_by_user(self):
+		return frappe.session.user != "Administrator"
+
 	def validate_past_failed_updates(self):
+		if getattr(self, "ignore_past_failures", False):
+			return
+
+		if self.triggered_by_user:
+			return  # Allow user to trigger update for same source and destination
+
 		if not self.skipped_failing_patches and self.have_past_updates_failed():
 			frappe.throw(
 				f"Update from Source Candidate {self.source_candidate} to Destination"
@@ -106,6 +116,22 @@ class SiteUpdate(Document):
 			)
 
 	def after_insert(self):
+		if not self.scheduled_time:
+			self.start()
+
+	@frappe.whitelist()
+	def start(self):
+		site = frappe.get_doc("Site", self.site)
+		if site.status in ["Updating", "Pending", "Installing"]:
+			frappe.throw("Site is under maintenance. Cannot Update")
+
+		self.status = "Pending"
+		self.save()
+
+		site.status_before_update = site.status
+		site.status = "Pending"
+		site.save()
+
 		self.create_agent_request()
 
 	def get_before_migrate_scripts(self, rollback=False):
@@ -143,10 +169,6 @@ class SiteUpdate(Document):
 		frappe.db.set_value("Site Update", self.name, "update_job", job.name)
 
 	def have_past_updates_failed(self):
-		if (
-			not frappe.session.user == "Administrator"
-		):  # Allow user to trigger update for same source and destination
-			return False
 		return frappe.db.exists(
 			"Site Update",
 			{
@@ -160,7 +182,10 @@ class SiteUpdate(Document):
 	def has_pending_updates(self):
 		return frappe.db.exists(
 			"Site Update",
-			{"site": self.site, "status": ("in", ("Pending", "Running", "Failure"))},
+			{
+				"site": self.site,
+				"status": ("in", ("Pending", "Running", "Failure", "Scheduled")),
+			},
 		)
 
 	def reallocate_workers(self):
@@ -444,3 +469,21 @@ def mark_stuck_updates_as_fatal():
 		"status",
 		"Fatal",
 	)
+
+
+def run_scheduled_updates():
+	updates = frappe.get_all(
+		"Site Update",
+		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
+		pluck="name",
+	)
+
+	for update in updates:
+		try:
+			doc = frappe.get_doc("Site Update", update)
+			doc.validate()
+			doc.start()
+			frappe.db.commit()
+		except Exception:
+			log_error("Scheduled Site Update Error", update=update)
+			frappe.db.rollback()

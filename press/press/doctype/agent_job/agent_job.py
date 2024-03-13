@@ -3,25 +3,36 @@
 # For license information, please see license.txt
 
 import json
-import frappe
 import random
 
-from press.agent import Agent
-from press.utils import log_error
-from frappe.utils import cint, convert_utc_to_system_timezone, create_batch, add_days
+from press.press.doctype.deploy_candidate.deploy_candidate import (
+	process_docker_image_build_job_update,
+)
+import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import (
+	add_days,
+	cint,
+	convert_utc_to_system_timezone,
+	create_batch,
+	cstr,
+)
+
+from press.agent import Agent
+from press.api.client import is_owned_by_team
+from press.press.doctype.press_notification.press_notification import (
+	create_new_notification,
+)
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
 )
-from press.press.doctype.press_notification.press_notification import (
-	create_new_notification,
-)
+from press.utils import log_error
 
 
 class AgentJob(Document):
-	whitelisted_fields = [
+	dashboard_fields = [
 		"name",
 		"job_type",
 		"creation",
@@ -32,11 +43,23 @@ class AgentJob(Document):
 		"bench",
 		"site",
 		"server",
+		"job_id",
 	]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
-		if filters.group:
+		site = cstr(filters.get("site", ""))
+		group = cstr(filters.get("group", ""))
+		server = cstr(filters.get("server", ""))
+
+		if not (site or group or server):
+			frappe.throw("Not permitted", frappe.PermissionError)
+
+		if site:
+			is_owned_by_team("Site", site, raise_exception=True)
+
+		if group:
+			is_owned_by_team("Release Group", group, raise_exception=True)
 			AgentJob = frappe.qb.DocType("Agent Job")
 			Bench = frappe.qb.DocType("Bench")
 			benches = (
@@ -44,8 +67,13 @@ class AgentJob(Document):
 			)
 			query = query.where(AgentJob.bench.isin(benches))
 
+		if server:
+			is_owned_by_team("Server", server, raise_exception=True)
+
 		results = query.run(as_dict=1)
 		for result in results:
+			if result.status == "Undelivered":
+				result.status = "Pending"
 			# agent job start and end are in utc
 			if result.start:
 				result.start = convert_utc_to_system_timezone(result.start).replace(tzinfo=None)
@@ -54,10 +82,13 @@ class AgentJob(Document):
 		return results
 
 	def get_doc(self, doc):
+		if doc.status == "Undelivered":
+			doc.status = "Pending"
+
 		doc["steps"] = frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": self.name},
-			fields=["step_name", "status", "start", "end", "duration", "output"],
+			fields=["name", "step_name", "status", "start", "end", "duration", "output"],
 			order_by="creation",
 		)
 		# agent job start and end are in utc
@@ -65,6 +96,10 @@ class AgentJob(Document):
 			doc.start = convert_utc_to_system_timezone(doc.start).replace(tzinfo=None)
 		if doc.end:
 			doc.end = convert_utc_to_system_timezone(doc.end).replace(tzinfo=None)
+
+		for step in doc["steps"]:
+			if step.status == "Running":
+				step.output = frappe.cache.hget("agent_job_step_output", step.name)
 
 		return doc
 
@@ -125,7 +160,12 @@ class AgentJob(Document):
 			)
 
 		except Exception:
-			log_error("Agent Job Set Status Exception", job=self)
+			log_error(
+				"Agent Job Set Status Exception",
+				job=self,
+				reference_doctype="Agent Job",
+				reference_name=self.name,
+			)
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -171,16 +211,14 @@ class AgentJob(Document):
 	def get_status(self):
 		agent = Agent(self.server, server_type=self.server_type)
 
-		if self.job_id == 0:
+		if not self.job_id:
 			job = agent.get_jobs_id(self.name)
-			if len(job) > 0:
-				self.job_id = job[0]["id"]
-				self.status = job[0]["status"]
-		else:
-			job_details = agent.get_job_status(self.job_id)
-			self.status = job_details["status"]
-
-		self.save()
+			if job and len(job) > 0:
+				self.db_set("job_id", job[0]["id"])
+		if self.job_id:
+			polled_job = agent.get_job_status(self.job_id)
+			update_job(self.name, polled_job)
+			update_steps(self.name, polled_job)
 
 	@frappe.whitelist()
 	def retry_skip_failing_patches(self):
@@ -332,15 +370,41 @@ def poll_pending_jobs_server(server):
 
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
-			publish_update(job.name)
+			populate_output_cache(polled_job, job)
+			process_job_updates(job.name)
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
 
-			process_job_updates(job.name)
 			frappe.db.commit()
+			publish_update(job.name)
 		except Exception:
-			log_error("Agent Job Poll Exception", job=job, polled=polled_job)
+			log_error(
+				"Agent Job Poll Exception",
+				job=job,
+				polled=polled_job,
+				reference_doctype="Agent Job",
+				reference_name=job.name,
+			)
 			frappe.db.rollback()
+
+
+def populate_output_cache(polled_job, job):
+	if not cint(frappe.get_cached_value("Press Settings", None, "realtime_job_updates")):
+		return
+	steps = frappe.get_all(
+		"Agent Job Step",
+		filters={"agent_job": job.name, "status": "Running"},
+		fields=["name", "step_name"],
+	)
+	for step in steps:
+		polled_step = find(polled_job["steps"], lambda x: x["name"] == step.step_name)
+		if polled_step:
+			lines = []
+			for command in polled_step.get("commands", []):
+				output = command.get("output", "").strip()
+				if output:
+					lines.append(output)
+			frappe.cache.hset("agent_job_step_output", step.name, "\n".join(lines))
 
 
 def poll_pending_jobs():
@@ -637,31 +701,37 @@ def process_job_updates(job_name):
 	job = frappe.get_doc("Agent Job", job_name)
 	try:
 		from press.press.doctype.bench.bench import (
+			process_add_ssh_user_job_update,
 			process_archive_bench_job_update,
 			process_new_bench_job_update,
-			process_add_ssh_user_job_update,
 			process_remove_ssh_user_job_update,
 		)
-		from press.press.doctype.server.server import process_new_server_job_update
+		from press.press.doctype.code_server.code_server import (
+			process_archive_code_server_job_update,
+			process_new_code_server_job_update,
+			process_start_code_server_job_update,
+			process_stop_code_server_job_update,
+		)
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
+		from press.press.doctype.server.server import process_new_server_job_update
 		from press.press.doctype.site.erpnext_site import (
 			process_setup_erpnext_site_job_update,
 		)
 		from press.press.doctype.site.site import (
+			process_add_proxysql_user_job_update,
 			process_archive_site_job_update,
 			process_install_app_site_job_update,
-			process_uninstall_app_site_job_update,
 			process_migrate_site_job_update,
+			process_move_site_to_bench_job_update,
 			process_new_site_job_update,
 			process_reinstall_site_job_update,
-			process_rename_site_job_update,
-			process_restore_tables_job_update,
-			process_add_proxysql_user_job_update,
 			process_remove_proxysql_user_job_update,
-			process_move_site_to_bench_job_update,
+			process_rename_site_job_update,
 			process_restore_job_update,
+			process_restore_tables_job_update,
+			process_uninstall_app_site_job_update,
 		)
 		from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
 		from press.press.doctype.site_domain.site_domain import process_new_host_job_update
@@ -669,12 +739,7 @@ def process_job_updates(job_name):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
-		from press.press.doctype.code_server.code_server import (
-			process_new_code_server_job_update,
-			process_start_code_server_job_update,
-			process_stop_code_server_job_update,
-			process_archive_code_server_job_update,
-		)
+		from press.press.doctype.app_patch.app_patch import AppPatch
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -689,7 +754,7 @@ def process_job_updates(job_name):
 			process_new_site_job_update(job)
 		elif job.job_type == "New Site from Backup":
 			process_new_site_job_update(job)
-			process_restore_job_update(job)
+			process_restore_job_update(job, force=True)
 		elif job.job_type == "Restore Site":
 			process_restore_job_update(job)
 		elif job.job_type == "Reinstall Site":
@@ -752,9 +817,18 @@ def process_job_updates(job_name):
 			process_update_nginx_job_update(job)
 		elif job.job_type == "Move Site to Bench":
 			process_move_site_to_bench_job_update(job)
+		elif job.job_type == "Patch App":
+			AppPatch.process_patch_app(job)
+		elif job.job_type == "Docker Image Build":
+			process_docker_image_build_job_update(job)
 
 	except Exception as e:
-		log_error("Agent Job Callback Exception", job=job.as_dict())
+		log_error(
+			"Agent Job Callback Exception",
+			job=job.as_dict(),
+			reference_doctype="Agent Job",
+			reference_name=job_name,
+		)
 		raise e
 
 

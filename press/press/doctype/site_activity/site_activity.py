@@ -8,6 +8,8 @@ from frappe.model.document import Document
 
 
 class SiteActivity(Document):
+	dashboard_fields = ["action", "reason", "site"]
+
 	def after_insert(self):
 		if self.action == "Login as Administrator" and self.reason:
 			d = frappe.get_all("Site", {"name": self.site}, ["notify_email", "team"])[0]

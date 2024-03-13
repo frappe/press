@@ -81,9 +81,7 @@
   "backups_section",
   "skip_scheduled_backups",
   "tags_section",
-  "tags",
-  "monitor_section",
-  "hide_monitor_tab"
+  "tags"
  ],
  "fields": [
   {
@@ -349,7 +347,7 @@
    "fieldname": "plan",
    "fieldtype": "Link",
    "label": "Plan",
-   "options": "Plan",
+   "options": "Site Plan",
    "read_only": 1
   },
   {
@@ -641,16 +639,11 @@
   },
   {
    "group": "Related Documents",
-   "link_doctype": "Central Site Migration",
-   "link_fieldname": "site"
-  },
-  {
-   "group": "Related Documents",
    "link_doctype": "Marketplace App Subscription",
    "link_fieldname": "site"
   }
  ],
- "modified": "2023-12-06 15:36:26.281669",
+ "modified": "2024-02-05 23:05:21.073454",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

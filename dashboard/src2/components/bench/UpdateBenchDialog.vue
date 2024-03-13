@@ -2,7 +2,7 @@
 	<Dialog
 		v-model="show"
 		:options="{
-			size: '2xl',
+			size: '4xl',
 			title: 'Update Bench'
 		}"
 	>
@@ -78,7 +78,7 @@
 									'site',
 									'sites'
 							  )}`
-							: 'Skip and Deploy'
+							: 'Skip and deploy'
 					"
 					:loading="$resources.deploy.loading"
 					@click="$resources.deploy.submit()"
@@ -220,6 +220,35 @@ export default {
 								return 'First Deploy';
 							}
 							return 'Update Available';
+						}
+					},
+					{
+						label: 'View Changes',
+						type: 'Button',
+						width: 0.5,
+						Button({ row }) {
+							let url;
+							if (row.current_hash && row.next_release) {
+								url = `${row.repository_url}/compare/${row.current_hash}...${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							} else if (row.next_release) {
+								url = `${row.repository_url}/commit/${
+									row.releases.find(
+										release => release.name === row.next_release
+									).hash
+								}`;
+							}
+
+							return {
+								label: 'View',
+								variant: 'ghost',
+								onClick() {
+									window.open(url, '_blank');
+								}
+							};
 						}
 					}
 				]

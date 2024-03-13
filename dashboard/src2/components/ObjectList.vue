@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex">
+		<div class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
@@ -22,8 +22,24 @@
 					</template>
 				</TextInput>
 			</slot>
-			<div class="ml-auto flex items-center space-x-2">
+			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
+				<Tooltip
+					v-if="options.experimental"
+					text="This is an experimental feature"
+					class="rounded-md bg-purple-100 p-1.5"
+				>
+					<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+				</Tooltip>
+				<Tooltip
+					v-if="options.documentation"
+					text="View documentation"
+					class="rounded-md bg-gray-100 p-1.5"
+				>
+					<a :href="options.documentation" target="_blank">
+						<FeatherIcon class="h-4 w-4" name="help-circle" />
+					</a>
+				</Tooltip>
 				<Tooltip text="Refresh" v-if="$list">
 					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
 						<template #icon>
@@ -31,6 +47,7 @@
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
 		</div>
@@ -51,6 +68,7 @@
 			>
 				<ListHeader>
 					<ListHeaderItem
+						class="whitespace-nowrap"
 						v-for="column in columns"
 						:key="column.key"
 						:item="column"
@@ -84,6 +102,9 @@
 				>
 					Loading...
 				</div>
+				<div v-else-if="$list.list?.error" class="py-4 text-center">
+					<ErrorMessage :message="$list.list.error" />
+				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
 					No results found
 				</div>
@@ -114,7 +135,8 @@ import {
 	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
-	Tooltip
+	Tooltip,
+	ErrorMessage
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -135,7 +157,8 @@ export default {
 		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
-		Tooltip
+		Tooltip,
+		ErrorMessage
 	},
 	data() {
 		return {
@@ -159,6 +182,7 @@ export default {
 				],
 				url: this.options.url || null,
 				doctype: this.options.doctype,
+				pageLength: this.options.pageLength || 20,
 				fields: [
 					'name',
 					...(this.options.fields || []),
@@ -216,7 +240,8 @@ export default {
 				columns.push({
 					...column,
 					label: column.label,
-					key: column.fieldname
+					key: column.fieldname,
+					align: column.align || 'left'
 				});
 			}
 			if (this.options.rowActions) {
@@ -260,6 +285,12 @@ export default {
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
+			if (!props) return null;
+			return props;
+		},
+		secondaryAction() {
+			if (!this.options.secondaryAction) return null;
+			let props = this.options.secondaryAction(this.context);
 			if (!props) return null;
 			return props;
 		},

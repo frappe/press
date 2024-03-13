@@ -7,6 +7,13 @@ datasources:
     url: http://127.0.0.1:9090/prometheus
     isDefault: true
     jsonData:
-      httpMethod: "POST"
-    editable: false
+      httpMethod: 'POST'
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.49.1
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      exemplarTraceIdDestinations:
+    editable: true
     version: 1

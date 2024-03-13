@@ -12,7 +12,7 @@ from frappe.utils import cstr
 class SiteApp(Document):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
-		if filters and filters.get("parent"):
-			site_name = cstr(filters.get("parent"))
-			site = frappe.get_doc("Site", site_name)
-			return get_installed_apps(site)
+		site = cstr(filters.get("parent", "")) if filters else None
+		if site:
+			site_doc = frappe.get_doc("Site", site)
+			return get_installed_apps(site_doc)

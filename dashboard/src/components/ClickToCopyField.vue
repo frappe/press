@@ -1,11 +1,13 @@
 <template>
-	<div
-		class="flex flex-row items-center justify-between rounded-lg border-2 p-2"
-	>
-		<p class="select-all overflow-hidden font-mono text-sm text-gray-800">
+	<div class="relative rounded-lg border-2 p-2">
+		<p class="select-all break-all font-mono text-sm text-gray-800">
 			{{ textContent }}
 		</p>
-		<Button icon="copy" @click="copyTextContentToClipboard" />
+		<Button
+			class="absolute right-1 top-[1.5px] p-3"
+			icon="copy"
+			@click="copyTextContentToClipboard"
+		/>
 	</div>
 </template>
 

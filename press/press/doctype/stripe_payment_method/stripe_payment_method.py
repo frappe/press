@@ -12,6 +12,16 @@ from press.utils import log_error
 
 
 class StripePaymentMethod(Document):
+	dashboard_fields = [
+		"is_default",
+		"expiry_month",
+		"expiry_year",
+		"brand",
+		"name_on_card",
+		"last_4",
+	]
+	dashboard_actions = ["set_default"]
+
 	def onload(self):
 		load_address_and_contact(self)
 

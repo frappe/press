@@ -1,15 +1,29 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-white">
-		<div class="flex items-center space-x-2">
-			<FBreadcrumbs :items="breadcrumbs" />
-			<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
-		</div>
-		<div class="flex items-center space-x-2" v-if="$resources.document?.doc">
-			<ActionButton
-				v-for="button in actions"
-				v-bind="button"
-				:key="button.label"
-			/>
+		<div class="w-full sm:flex sm:items-center sm:justify-between">
+			<div class="flex items-center space-x-2">
+				<FBreadcrumbs :items="breadcrumbs" />
+				<Badge
+					class="hidden sm:inline-flex"
+					v-if="$resources.document?.doc && badge"
+					v-bind="badge"
+				/>
+			</div>
+			<div
+				class="mt-1 flex items-center justify-between space-x-2 sm:mt-0"
+				v-if="$resources.document?.doc"
+			>
+				<div class="sm:hidden">
+					<Badge v-if="$resources.document?.doc && badge" v-bind="badge" />
+				</div>
+				<div class="space-x-2">
+					<ActionButton
+						v-for="button in actions"
+						v-bind="button"
+						:key="button.label"
+					/>
+				</div>
+			</div>
 		</div>
 	</Header>
 	<div>
@@ -34,6 +48,8 @@ import { Breadcrumbs } from 'frappe-ui';
 import { getObject } from '../objects';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
 
+let subscribed = {};
+
 export default {
 	name: 'DetailPage',
 	props: {
@@ -52,14 +68,54 @@ export default {
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
 	},
+	data() {
+		return {
+			lastRefreshed: null
+		};
+	},
 	resources: {
 		document() {
 			return {
 				type: 'document',
 				doctype: this.object.doctype,
 				name: this.name,
-				whitelistedMethods: this.object.whitelistedMethods || {}
+				whitelistedMethods: this.object.whitelistedMethods || {},
+				onSuccess() {
+					this.lastRefreshed = new Date();
+				},
+				onError(error) {
+					for (let message of error?.messages || []) {
+						if (message.redirect) {
+							window.location.href = message.redirect;
+							return;
+						}
+					}
+				}
 			};
+		}
+	},
+	mounted() {
+		if (!subscribed[this.object.doctype]) {
+			this.$socket.emit('doctype_subscribe', this.object.doctype);
+			subscribed[this.object.doctype] = true;
+		}
+		this.$socket.on('list_update', data => {
+			if (
+				data.doctype === this.object.doctype &&
+				data.name === this.name &&
+				// update document if last refreshed is more than 5 seconds ago
+				new Date() - this.lastRefreshed > 5000
+			) {
+				console.log('reloading', this.object.doctype, this.name);
+				this.$resources.document.reload();
+			}
+		});
+	},
+	beforeUnmount() {
+		if (subscribed[this.object.doctype]) {
+			let doctype = this.object.doctype;
+			this.$socket.emit('doctype_unsubscribe', doctype);
+			subscribed[doctype] = false;
 		}
 	},
 	computed: {

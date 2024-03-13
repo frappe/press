@@ -7,7 +7,7 @@ from press.utils import log_error
 
 @functools.lru_cache(maxsize=128)
 def get_cpu_limit(plan):
-	return frappe.db.get_value("Plan", plan, "cpu_time_per_day") * 3600 * 1000_000
+	return frappe.db.get_value("Site Plan", plan, "cpu_time_per_day") * 3600 * 1000_000
 
 
 @functools.lru_cache(maxsize=128)
@@ -17,7 +17,9 @@ def get_cpu_limits(plan):
 
 @functools.lru_cache(maxsize=128)
 def get_disk_limits(plan):
-	return frappe.db.get_value("Plan", plan, ["max_database_usage", "max_storage_usage"])
+	return frappe.db.get_value(
+		"Site Plan", plan, ["max_database_usage", "max_storage_usage"]
+	)
 
 
 @functools.lru_cache(maxsize=128)
@@ -85,7 +87,7 @@ def update_disk_usages():
 			ON
 				u.site = site.name
 			LEFT JOIN
-				`tabPlan` plan
+				`tabSite Plan` plan
 			ON
 				s.plan = plan.name
 			WHERE

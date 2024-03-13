@@ -5,4 +5,7 @@ export let plans = createResource({
 	cache: 'site.plans'
 });
 
-plans.fetch();
+export function getPlan(planName) {
+	if (!plans.data) plans.fetch();
+	return (plans.data || []).find(plan => plan.name === planName);
+}

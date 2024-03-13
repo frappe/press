@@ -12,6 +12,7 @@
   "status",
   "public",
   "beta",
+  "hybrid",
   "column_break_fsht",
   "monitoring_password",
   "image",
@@ -263,6 +264,12 @@
    "fieldname": "beta",
    "fieldtype": "Check",
    "label": "Beta"
+  },
+  {
+   "default": "0",
+   "fieldname": "hybrid",
+   "fieldtype": "Check",
+   "label": "Hybrid"
   }
  ],
  "image_field": "image",
@@ -294,7 +301,7 @@
    "link_fieldname": "cluster"
   }
  ],
- "modified": "2023-12-19 19:58:39.284714",
+ "modified": "2024-02-05 18:13:12.628949",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",

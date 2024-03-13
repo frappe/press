@@ -57,7 +57,12 @@ class Incident(WebsiteGenerator):
 
 	def call_humans(self):
 		enqueue_doc(
-			self.doctype, self.name, "_call_humans", queue="long", enqueue_after_commit=True
+			self.doctype,
+			self.name,
+			"_call_humans",
+			queue="long",
+			enqueue_after_commit=True,
+			at_front=True,
 		)
 
 	def get_humans(

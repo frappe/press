@@ -1,5 +1,5 @@
 ---
-- name: Increase swap on app server
+- name: Increase Swap
   hosts: all
   become: yes
   become_user: root

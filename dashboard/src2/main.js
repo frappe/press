@@ -8,6 +8,7 @@ import {
 import App from './App.vue';
 import router from './router';
 import { initSocket } from './socket';
+import { subscribeToJobUpdates } from './utils/agentJob';
 
 let request = options => {
 	let _options = options || {};
@@ -24,7 +25,7 @@ setConfig('defaultDocGetUrl', 'press.api.client.get');
 setConfig('defaultDocInsertUrl', 'press.api.client.insert');
 setConfig('defaultRunDocMethodUrl', 'press.api.client.run_doc_method');
 // setConfig('defaultDocUpdateUrl', 'press.api.list.set_value');
-// setConfig('defaultDocDeleteUrl', 'press.api.list.delete');
+setConfig('defaultDocDeleteUrl', 'press.api.client.delete');
 
 let app;
 let socket;
@@ -38,6 +39,7 @@ getInitialData().then(() => {
 	socket = initSocket();
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
+	subscribeToJobUpdates(socket);
 
 	importGlobals().then(() => {
 		app.mount('#app');

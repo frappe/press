@@ -50,7 +50,16 @@
 						</div>
 					</div>
 					<div v-else-if="tab.value === 'your-github-app'" class="pt-4">
-						<div class="flex justify-center pt-2" v-if="!options?.authorized">
+						<div
+							v-if="$resources.options.loading"
+							class="mt-2 flex justify-center"
+						>
+							<LoadingText />
+						</div>
+						<div
+							class="flex justify-center pt-2"
+							v-else-if="!options?.authorized"
+						>
 							<Button
 								v-if="requiresReAuth"
 								variant="solid"
@@ -173,7 +182,7 @@
 		<template #actions>
 			<Button
 				class="w-full"
-				label="Add App to bench"
+				label="Add app"
 				variant="solid"
 				:disabled="!appValidated"
 				:loading="$resources.addApp.loading"
@@ -193,7 +202,7 @@ export default {
 		FormControl
 	},
 	props: ['benchName', 'modelValue'],
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'appAdd'],
 	data() {
 		return {
 			app: null,
@@ -362,7 +371,7 @@ export default {
 			if (this.tabIndex === 1) {
 				return this.selectedGithubRepository?.label;
 			} else {
-				return this.githubAppLink.split('/')[4];
+				return this.githubAppLink.split('/')[4].replace('.git', '');
 			}
 		},
 		branchOptions() {

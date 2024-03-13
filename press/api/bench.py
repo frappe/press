@@ -2,30 +2,31 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
-from collections import OrderedDict
 import re
-from press.press.doctype.team.team import get_child_team_members
+from collections import OrderedDict
 from typing import Dict, List
 
 import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import flt
+from frappe.utils import flt, sbool
 
-from press.api.site import protected
 from press.api.github import branches
-from press.press.doctype.cluster.cluster import Cluster
+from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
 from press.press.doctype.app_source.app_source import AppSource
+from press.press.doctype.cluster.cluster import Cluster
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
+from press.press.doctype.app_patch.app_patch import create_app_patch
+from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	get_app_tag,
+	get_client_blacklisted_keys,
 	get_current_team,
 	unique,
-	get_client_blacklisted_keys,
 )
 
 
@@ -182,7 +183,9 @@ def get_app_counts_for_groups(rg_names):
 @frappe.whitelist()
 def exists(title):
 	team = get_current_team()
-	return bool(frappe.db.exists("Release Group", {"title": title, "team": team}))
+	return bool(
+		frappe.db.exists("Release Group", {"title": title, "team": team, "enabled": True})
+	)
 
 
 @frappe.whitelist()
@@ -198,6 +201,7 @@ def options(only_by_current_team=False):
 	SELECT
 		version.name as version,
 		version.status as status,
+		version.default,
 		source.name as source, source.app, source.repository_url, source.repository, source.repository_owner, source.branch,
 		source.app_title as title, source.frappe
 	FROM
@@ -211,7 +215,7 @@ def options(only_by_current_team=False):
 	ON
 		source_version.version = version.name
 	WHERE
-		version.public = 1 AND
+		version.public = 1 AND source.enabled=1 AND
 		(source.team = %(team)s {or_conditions})
 	ORDER BY source.creation
 	""",
@@ -219,12 +223,16 @@ def options(only_by_current_team=False):
 		as_dict=True,
 	)
 
+	approved_apps = frappe.get_all(
+		"Marketplace App", filters={"frappe_approved": 1}, pluck="app"
+	)
 	version_list = unique(rows, lambda x: x.version)
 	versions = []
 	for d in version_list:
-		version_dict = {"name": d.version, "status": d.status}
+		version_dict = {"name": d.version, "status": d.status, "default": d.default}
 		version_rows = find_all(rows, lambda x: x.version == d.version)
 		app_list = frappe.utils.unique([row.app for row in version_rows])
+		app_list = sorted(app_list, key=lambda x: x not in approved_apps)
 		for app in app_list:
 			app_rows = find_all(version_rows, lambda x: x.app == app)
 			app_dict = {"name": app, "title": app_rows[0].title}
@@ -271,7 +279,16 @@ def bench_config(name):
 	else:
 		bench_config = []
 
-	return common_site_config + bench_config
+	config = common_site_config + bench_config
+
+	secret_keys = frappe.get_all(
+		"Site Config Key", filters={"type": "Password"}, pluck="key"
+	)
+	for c in config:
+		if c["key"] in secret_keys:
+			c["value"] = "*******"
+			c["type"] = "Password"
+	return config
 
 
 @frappe.whitelist()
@@ -291,17 +308,20 @@ def update_config(name, config):
 		if c.type == "Number":
 			c.value = flt(c.value)
 		elif c.type == "Boolean":
-			c.value = bool(c.value)
+			c.value = bool(sbool(c.value))
 		elif c.type == "JSON":
 			c.value = frappe.parse_json(c.value)
+		elif c.type == "Password" and c.value == "*******":
+			c.value = frappe.get_value("Site Config", {"key": c.key, "parent": name}, "value")
 
 		if c.key in bench_config_keys:
 			sanitized_bench_config.append(c)
 		else:
 			sanitized_common_site_config.append(c)
 
-	rg = frappe.get_doc("Release Group", name)
+	rg: ReleaseGroup = frappe.get_doc("Release Group", name)
 	rg.update_config_in_release_group(sanitized_common_site_config, sanitized_bench_config)
+	rg.update_benches_config()
 	return list(filter(lambda x: not x.internal, rg.common_site_config_table))
 
 
@@ -458,32 +478,36 @@ def versions(name):
 		fields=["name", "status", "cluster", "plan", "creation", "bench"],
 	)
 
-	Cluster = frappe.qb.DocType("Cluster")
-	cluster_data = (
-		frappe.qb.from_(Cluster)
-		.select(Cluster.name, Cluster.title, Cluster.image)
-		.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+	if sites_in_group_details:
+		Cluster = frappe.qb.DocType("Cluster")
+		cluster_data = (
+			frappe.qb.from_(Cluster)
+			.select(Cluster.name, Cluster.title, Cluster.image)
+			.where((Cluster.name.isin([site.cluster for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
 
-	Plan = frappe.qb.DocType("Plan")
-	plan_data = (
-		frappe.qb.from_(Plan)
-		.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
-		.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+		Plan = frappe.qb.DocType("Site Plan")
+		plan_data = (
+			frappe.qb.from_(Plan)
+			.select(Plan.name, Plan.plan_title, Plan.price_inr, Plan.price_usd)
+			.where((Plan.name.isin([site.plan for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
 
-	ResourceTag = frappe.qb.DocType("Resource Tag")
-	tag_data = (
-		frappe.qb.from_(ResourceTag)
-		.select(ResourceTag.tag_name, ResourceTag.parent)
-		.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
-		.run(as_dict=True)
-	)
+		ResourceTag = frappe.qb.DocType("Resource Tag")
+		tag_data = (
+			frappe.qb.from_(ResourceTag)
+			.select(ResourceTag.tag_name, ResourceTag.parent)
+			.where((ResourceTag.parent.isin([site.name for site in sites_in_group_details])))
+			.run(as_dict=True)
+		)
+	else:
+		cluster_data = plan_data = tag_data = {}
 
 	for version in deployed_versions:
 		version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
+		version.version = rg_version
 		for site in version.sites:
 			site.version = rg_version
 			site.server_region_info = find(cluster_data, lambda x: x.name == site.cluster)
@@ -669,6 +693,8 @@ def jobs(filters=None, order_by=None, limit_start=None, limit_page_length=None):
 			limit=limit_page_length,
 			ignore_ifnull=True,
 		)
+		for job in jobs:
+			job["status"] = "Pending" if job["status"] == "Undelivered" else job["status"]
 	else:
 		jobs = []
 	return jobs
@@ -840,14 +866,14 @@ def update_all_sites(name):
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def logs(name, bench):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).server_logs
 
 
 @frappe.whitelist()
-@protected("Bench")
+@protected("Release Group")
 def log(name, bench, log):
 	if frappe.db.get_value("Bench", bench, "group") == name:
 		return frappe.get_doc("Bench", bench).get_server_log(log)
@@ -856,36 +882,13 @@ def log(name, bench, log):
 @frappe.whitelist()
 @protected("Release Group")
 def certificate(name):
-	certificates = frappe.get_all(
-		"SSH Certificate",
-		{
-			"user": frappe.session.user,
-			"valid_until": [">", frappe.utils.now()],
-			"group": name,
-		},
-		pluck="name",
-		limit=1,
-	)
-	if certificates:
-		return frappe.get_doc("SSH Certificate", certificates[0])
+	return frappe.get_doc("Release Group", name).get_certificate()
 
 
 @frappe.whitelist()
 @protected("Release Group")
 def generate_certificate(name):
-	user_ssh_key = frappe.get_all(
-		"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-	)[0]
-	return frappe.get_doc(
-		{
-			"doctype": "SSH Certificate",
-			"certificate_type": "User",
-			"group": name,
-			"user": frappe.session.user,
-			"user_ssh_key": user_ssh_key,
-			"validity": "6h",
-		}
-	).insert()
+	return frappe.get_doc("Release Group", name).generate_certificate()
 
 
 @frappe.whitelist()
@@ -905,3 +908,13 @@ def get_title_and_creation(name):
 @protected("Release Group")
 def rename(name, title):
 	return frappe.db.set_value("Release Group", name, "title", title)
+
+
+@frappe.whitelist()
+@protected("App Patch")
+def apply_patch(release_group: str, app: str, patch_config: dict) -> list[str]:
+	return create_app_patch(
+		release_group,
+		app,
+		patch_config,
+	)

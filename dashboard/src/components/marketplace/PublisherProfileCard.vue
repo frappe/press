@@ -8,13 +8,16 @@
 			<div class="divide-y-2">
 				<ListItem
 					title="Display Name"
-					:description="displayName || 'Not Set'"
+					:description="$sanitize(displayName || 'Not Set')"
 				/>
 				<ListItem
 					title="Contact Email"
-					:description="contactEmail || 'Not Set'"
+					:description="$sanitize(contactEmail || 'Not Set')"
 				/>
-				<ListItem title="Website" :description="website || 'Not Set'" />
+				<ListItem
+					title="Website"
+					:description="$sanitize(website || 'Not Set')"
+				/>
 			</div>
 
 			<template #actions>

@@ -98,8 +98,16 @@ const initOptions = {
 };
 
 const options = ref({
+	grid: {
+		top: 20,
+		left: 60,
+		right: 40,
+		bottom: 50
+	},
 	tooltip: {
 		trigger: 'axis',
+		confine: true,
+		extraCssText: 'width: 60%; white-space: normal; word-wrap: break-word;',
 		formatter: params => {
 			// for the dot to follow the same color as the line 🗿
 			let tooltip = `<p>${DateTime.fromSQL(
@@ -144,7 +152,8 @@ const options = ref({
 					else if (value >= 1000) return `${value / 1000}K`;
 					return value;
 				}
-			}
+			},
+			padding: 5
 		}
 	},
 	labelLine: {
@@ -160,7 +169,7 @@ const options = ref({
 	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
-			name: dataset.path || unit,
+			name: dataset.path.replace(/\n|\t/g, '') || unit,
 			type: 'bar',
 			stack: dataset.stack,
 			showSymbol: false,
