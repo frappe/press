@@ -626,6 +626,7 @@ class Team(Document):
 		self.allocate_free_credits()
 		# Telemetry: Added card
 		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
+		self.remove_subscription_config_in_trial_sites()
 
 		return doc
 
@@ -1005,6 +1006,21 @@ class Team(Document):
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
 
+	def remove_subscription_config_in_trial_sites(self):
+		for site in frappe.db.get_all(
+			"Site",
+			{"team": self.name, "status": ("!=", "Archived"), "trial_end_date": ("is", "set")},
+			pluck="name",
+		):
+			try:
+				frappe.get_doc("Site", site).update_site_config(
+					{
+						"subscription": {"status": "Subscribed"},
+					}
+				)
+			except Exception:
+				log_error("Failed to remove subscription config in trial sites")
+
 	def get_upcoming_invoice(self):
 		# get the current period's invoice
 		today = frappe.utils.today()
@@ -1201,6 +1217,7 @@ def handle_payment_intent_succeeded(payment_intent):
 
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
+	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,
