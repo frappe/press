@@ -4,14 +4,9 @@
 		title="Review Steps"
 		subtitle="Complete all the steps before submitting for a review"
 	>
-		<ListItem
-			v-for="step in steps"
-			:key="step.key"
-			:title="step.title"
-			:subtitle="step.description"
-		>
+		<ListItem v-for="step in reviewStages" :key="step.step" :title="step.step">
 			<template #actions>
-				<GreenCheckIcon v-if="reviewStages[step.key]" class="h-5 w-5" />
+				<GreenCheckIcon v-if="step.completed" class="h-5 w-5" />
 				<GrayCheckIcon v-else class="h-5 w-5" />
 			</template>
 		</ListItem>
@@ -154,30 +149,6 @@ export default {
 		this.$resources.communication.submit();
 	},
 	computed: {
-		steps() {
-			return [
-				{
-					key: 'logo',
-					title: 'Add a Logo',
-					description: "Make sure it's atleast 300x300 in dimension"
-				},
-				{
-					key: 'description',
-					title: 'Add Description',
-					description: 'Add Short and Long description for your app'
-				},
-				{
-					key: 'links',
-					title: 'Add Links',
-					description: 'Make sure you add all the links for your app'
-				},
-				{
-					key: 'publish',
-					title: 'Publish a Release',
-					description: 'Publish your first release from the Releases tab'
-				}
-			];
-		},
 		communication() {
 			return this.$resources.communication.data;
 		}
