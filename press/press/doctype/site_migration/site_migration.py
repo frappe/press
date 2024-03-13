@@ -290,11 +290,6 @@ class SiteMigration(Document):
 				"status": "Pending",
 			},
 			{
-				"step_title": self.archive_site_on_destination_server.__doc__,
-				"method_name": self.archive_site_on_destination_server.__name__,
-				"status": "Pending",
-			},
-			{
 				"step_title": self.restore_site_on_destination_server.__doc__,
 				"method_name": self.restore_site_on_destination_server.__name__,
 				"status": "Pending",
@@ -343,11 +338,6 @@ class SiteMigration(Document):
 			{
 				"step_title": self.backup_source_site.__doc__,
 				"method_name": self.backup_source_site.__name__,
-				"status": "Pending",
-			},
-			{
-				"step_title": self.archive_site_on_destination_server.__doc__,
-				"method_name": self.archive_site_on_destination_server.__name__,
 				"status": "Pending",
 			},
 			{
@@ -413,7 +403,7 @@ class SiteMigration(Document):
 		return frappe.get_doc("Agent Job", backup.job)
 
 	def archive_site_on_destination_server(self):
-		"""Archive site on destination (case of retry/failure)"""
+		"""Archive site on destination (case of failure)"""
 		agent = Agent(self.destination_server)
 		site = frappe.get_doc("Site", self.site)
 		site.bench = self.destination_bench
