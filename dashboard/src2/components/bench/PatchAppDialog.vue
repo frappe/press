@@ -181,6 +181,12 @@ export default {
 				return false;
 			}
 
+			if (this.patchURL && !this.patchURL.endsWith('.patch')) {
+				this.error =
+					'Patch URL does not have a `.patch` extension. Please enter a valid URL,';
+				return false;
+			}
+
 			return true;
 		},
 		applyPatch() {
