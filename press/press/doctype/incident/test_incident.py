@@ -14,6 +14,8 @@ from press.press.doctype.alertmanager_webhook_log.test_alertmanager_webhook_log 
 )
 from press.press.doctype.incident.incident import (
 	CALL_REPEAT_INTERVAL_NIGHT,
+	CALL_THRESHOLD_SECONDS_NIGHT,
+	CONFIRMATION_THRESHOLD_SECONDS_NIGHT,
 	resolve_incidents,
 	validate_incidents,
 )
@@ -68,6 +70,13 @@ class MockTwilioClient:
 	@property
 	def messages(self):
 		return MockTwilioMessageList()
+
+
+def first_busy_then_completed(*args, **kwargs):
+	if not hasattr(first_busy_then_completed, "statuses"):
+		first_busy_then_completed.statuses = ["busy", "completed"]
+	ret_status = first_busy_then_completed.statuses.pop(0)
+	return MockTwilioCallInstance(status=ret_status)
 
 
 @patch(
@@ -373,3 +382,34 @@ class TestIncident(FrappeTestCase):
 		)  # assume night interval is longer
 		resolve_incidents()
 		mock_calls_create.assert_called_once()
+
+	def test_repeat_call_calls_acknowledging_person_first(self):
+		create_test_alertmanager_webhook_log(
+			creation=frappe.utils.add_to_date(
+				frappe.utils.now(), minutes=-CONFIRMATION_THRESHOLD_SECONDS_NIGHT
+			)
+		)
+		incident = frappe.get_last_doc("Incident")
+		incident.db_set("status", "Confirmed")
+		incident.db_set(
+			"creation",
+			incident.creation
+			- timedelta(
+				seconds=CONFIRMATION_THRESHOLD_SECONDS_NIGHT + CALL_THRESHOLD_SECONDS_NIGHT + 10
+			),
+		)
+		with patch.object(MockTwilioCallList, "create", wraps=first_busy_then_completed):
+			resolve_incidents()  # second guy picks up
+		incident.reload()
+		incident.db_set(
+			"modified",
+			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),
+			update_modified=False,
+		)
+		with patch.object(
+			MockTwilioCallList, "create", wraps=MockTwilioCallList("completed").create
+		) as mock_calls_create:
+			resolve_incidents()
+			mock_calls_create.assert_called_with(
+				to=self.test_phno_2, from_=self.from_, url="http://demo.twilio.com/docs/voice.xml"
+			)

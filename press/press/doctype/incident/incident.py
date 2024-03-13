@@ -80,8 +80,14 @@ class Incident(WebsiteGenerator):
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
 		if frappe.db.exists("Self Hosted Server", {"server": self.server}):
-			return incident_settings.self_hosted_users
-		return incident_settings.users
+			ret = incident_settings.self_hosted_users
+		ret = incident_settings.users
+		if self.status == "Acknowledged":  # repeat the acknowledged user to be the first
+			for user in ret:
+				if user.user == self.acknowledged_by:
+					ret.remove(user)
+					ret.insert(0, user)
+		return ret
 
 	@property
 	def twilio_phone_number(self):
@@ -130,6 +136,7 @@ class Incident(WebsiteGenerator):
 				if status in ["in-progress", "completed"]:  # call was picked up
 					acknowledged = True
 					self.status = "Acknowledged"
+					self.acknowledged_by = human.user
 					break
 			finally:
 				self.add_acknowledgment_update(human, acknowledged=acknowledged, call_status=status)
