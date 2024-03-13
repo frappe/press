@@ -26,7 +26,7 @@ class SaaSProductSiteRequest(Document):
 		site.update_site_config(
 			{
 				"subscription": {"trial_end_date": site.trial_end_date.strftime("%Y-%m-%d")},
-				"app_include_js": ["https://frappecloud.com/assets/press/js/subscription.js"],
+				"app_include_js": ["https://frappecloud.com/saas/subscription.js"],
 			}
 		)
 		# site.save(ignore_permissions=True)
