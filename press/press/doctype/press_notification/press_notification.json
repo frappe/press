@@ -20,7 +20,8 @@
   "message_section",
   "title",
   "message",
-  "traceback"
+  "traceback",
+  "assistance_url"
  ],
  "fields": [
   {
@@ -117,14 +118,22 @@
   {
    "depends_on": "eval:doc.title",
    "fieldname": "title",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Title",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.assistance_url",
+   "description": "Meant to be used if the notification is actionable. The URL can point to documentation on how to resolve the issue.",
+   "fieldname": "assistance_url",
+   "fieldtype": "Data",
+   "label": "Assitance URL",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-12 15:29:04.719461",
+ "modified": "2024-03-13 17:00:58.719829",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

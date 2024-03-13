@@ -19,6 +19,7 @@ Details = TypedDict(
 		"message": str,
 		"traceback": Optional[str],
 		"is_actionable": bool,
+		"assistance_url": Optional[str],
 	},
 )
 
@@ -34,7 +35,7 @@ def create_build_failed_notification(dc: "DeployCandidate") -> None:
 	further builds until the user has resolved it.
 	"""
 
-	if (exc := sys.exception) is None:
+	if (exc := sys.exception()) is None:
 		return
 
 	details = get_details(dc, exc)
@@ -48,6 +49,7 @@ def create_build_failed_notification(dc: "DeployCandidate") -> None:
 	}
 	doc = frappe.get_doc(doc_dict)
 	doc.insert()
+	frappe.db.commit()
 
 	frappe.publish_realtime("press_notification", {"team": dc.team})
 
@@ -59,6 +61,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 		message=get_default_message(dc),
 		is_actionable=False,
 		traceback=tb,
+		assistance_url=None,
 	)
 
 	# Failure in Clone Repositories step, raise in app_release.py
@@ -77,7 +80,7 @@ def update_with_github_token_error(
 	exc: BaseException,
 	is_repo_not_found: bool = False,
 ):
-	if exc.args > 1:
+	if len(exc.args) > 1:
 		app = exc.args[1]
 	elif (failed_step := dc.get_first_step_of_given_status("Failure")) is not None:
 		app = failed_step.step_slug
@@ -96,11 +99,10 @@ def update_with_github_token_error(
 	{details['message']}
 
 	App installation access token could not be fetched from GitHub API for the app <b>{app}</b>.
-
-	To rectify this issue, please follow the steps mentioned on this
-	<a href="{DOC_URLS['app-installation-issue']}" target="_blank">documentation page</a>.
+	To rectify this issue, please follow the steps mentioned in the link.
 	""".strip()
 	details["message"] = dedent(message)
+	details["assistance_url"] = DOC_URLS["app-installation-issue"]
 
 
 def is_installation_token_none(dc: "DeployCandidate", app: str) -> bool:
@@ -124,14 +126,14 @@ def is_installation_token_none(dc: "DeployCandidate", app: str) -> bool:
 
 def get_default_title(dc: "DeployCandidate") -> str:
 	rg_title = frappe.get_value("Release Group", dc.group, "title")
-	return f"Deploy Failed <b>[{rg_title}]</b>"
+	return f"<b>[{rg_title}]</b> Deploy Failed"
 
 
 def get_default_message(dc: "DeployCandidate") -> str:
 	failed_step = dc.get_first_step_of_given_status("Failure")
 	if failed_step:
-		return f"Image build failed at step <b>{failed_step.stage} - {failed_step.step}</b>"
-	return "Image build failed"
+		return f"Image build failed at step <b>{failed_step.stage} - {failed_step.step}</b>."
+	return "Image build failed."
 
 
 def get_is_actionable(dc: "DeployCandidate", tb: str) -> bool:

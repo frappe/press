@@ -7,10 +7,10 @@ import os
 import re
 import shlex
 import shutil
-import typing
 import subprocess
 import tarfile
 import tempfile
+import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
 from typing import List, Optional, Tuple
@@ -208,7 +208,12 @@ class DeployCandidate(Document):
 		try:
 			self.create_deploy(staging)
 		except Exception:
-			log_error("Deploy Creation Error", candidate=self.name)
+			log_error(
+				"Deploy Creation Error",
+				candidate=self.name,
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 
 	def _build(
 		self,
@@ -233,15 +238,15 @@ class DeployCandidate(Document):
 				deploy_to_staging,
 			)
 		except Exception:
+			self._build_failed()
+			self._build_end()
+			create_build_failed_notification(self)
 			log_error(
 				"Deploy Candidate Build Exception",
 				name=self.name,
 				reference_doctype="Deploy Candidate",
 				reference_name=self.name,
 			)
-			create_build_failed_notification(self)
-			self._build_failed()
-			self._build_end()
 			raise
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
@@ -390,6 +395,8 @@ class DeployCandidate(Document):
 		)
 		if bench_update:
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
+
+		self._fail_last_running_step()
 		self.save()
 		frappe.db.commit()
 
@@ -408,6 +415,15 @@ class DeployCandidate(Document):
 		self.build_duration = self.build_end - self.build_start
 		self.save()
 		frappe.db.commit()
+
+	def _fail_last_running_step(self):
+		for step in self.build_steps:
+			if step.status == "Failure":
+				return
+
+			if step.status == "Running":
+				step.status = "Failure"
+				break
 
 	def add_pre_build_steps(self):
 		"""
