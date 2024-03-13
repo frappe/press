@@ -7,6 +7,7 @@ import os
 import re
 import shlex
 import shutil
+import typing
 import subprocess
 import tarfile
 import tempfile
@@ -34,6 +35,9 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app_release.app_release import AppRelease
 
 
 class DeployCandidate(Document):
@@ -466,8 +470,12 @@ class DeployCandidate(Document):
 
 		try:
 			update = self.get_pull_update_dict()
-		except Exception as e:
-			log_error(title="Failed to get Pull Update Dict", data=e)
+		except Exception:
+			log_error(
+				title="Failed to get Pull Update Dict",
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 			return
 
 		for app in self.apps:
@@ -508,7 +516,7 @@ class DeployCandidate(Document):
 				self.save(ignore_version=True)
 				frappe.db.commit()
 
-				release = frappe.get_doc("App Release", app.release, for_update=True)
+				release: "AppRelease" = frappe.get_doc("App Release", app.release, for_update=True)
 				release._clone()
 				source = release.clone_directory
 

@@ -27,7 +27,7 @@ def log_error(title, **kwargs):
 
 	# Prevent double logging as `message`
 	reference_doctype = kwargs.get("reference_doctype")
-	reference_name = kwargs.get("reference_doctype")
+	reference_name = kwargs.get("reference_name")
 	if reference_doctype and reference_name:
 		del kwargs["reference_doctype"]
 		del kwargs["reference_name"]

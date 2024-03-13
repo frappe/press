@@ -68,21 +68,14 @@ class AppRelease(Document):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
 	def _clone(self):
-		try:
-			if self.cloned:
-				return
-			self._set_prepared_clone_directory()
-			self._set_code_server_url()
-			self._clone_repo()
-			self.cloned = True
-			self.save(ignore_permissions=True)
-		except Exception:
-			log_error(
-				"App Release Clone Exception",
-				release=self.name,
-				reference_doctype="App Release",
-				reference_name=self.name,
-			)
+		if self.cloned:
+			return
+
+		self._set_prepared_clone_directory()
+		self._set_code_server_url()
+		self._clone_repo()
+		self.cloned = True
+		self.save(ignore_permissions=True)
 
 	def run(self, command):
 		try:
