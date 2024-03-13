@@ -195,7 +195,7 @@ class AlertmanagerWebhookLog(Document):
 			{
 				"alert": self.alert,
 				INCIDENT_SCOPE: self.incident_scope,
-				"status": ("in", ["Validating", "Confirmed"]),
+				"status": ("in", ["Validating", "Confirmed", "Acknowledged"]),
 			},
 			"status",
 			for_update=True,
