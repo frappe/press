@@ -556,7 +556,7 @@ export default {
 					condition: () => app.doc.status === 'Published',
 					onClick() {
 						window.open(
-							`${window.location.origin}/apps/apps/${app.name}`,
+							`${window.location.origin}/marketplace/apps/${app.name}`,
 							'_blank'
 						);
 					}
