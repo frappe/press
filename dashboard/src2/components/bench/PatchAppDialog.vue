@@ -181,6 +181,12 @@ export default {
 				return false;
 			}
 
+			if (this.patchURL && !this.patchURL.endsWith('.patch')) {
+				this.error =
+					'Patch URL does not have a `.patch` extension. Please enter a valid URL,';
+				return false;
+			}
+
 			return true;
 		},
 		applyPatch() {
@@ -226,6 +232,10 @@ export default {
 			this.error = '';
 			this.patch = '';
 			this.patchFileName = '';
+		},
+		close() {
+			this.show = false;
+			this.clear();
 		}
 	},
 	resources: {
@@ -264,7 +274,7 @@ export default {
 				auto: true,
 				onSuccess(data) {
 					if (data.length > 0) {
-						this.applyToBench = data[0].value;
+						this.applyToBench = data.at(-1).value;
 						return;
 					}
 
@@ -282,6 +292,7 @@ export default {
 			return {
 				url: 'press.api.bench.apply_patch',
 				onSuccess() {
+					this.close();
 					this.$router.push({
 						name: 'Release Group Detail Jobs',
 						params: { name: this.group }

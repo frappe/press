@@ -433,6 +433,10 @@ class DeployCandidate(Document):
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
+			if app.app == "hrms":
+				app.use_cached = False
+				continue
+
 			app.use_cached = bool(self.use_app_cache)
 
 	def _prepare_build_directory(self):
@@ -1530,10 +1534,11 @@ def get_build_stage_and_step(
 	stage_slug: str, step_slug: str, app_titles: dict[str, str] = None
 ) -> Tuple[str, str]:
 	stage = STAGE_SLUG_MAP.get(stage_slug, stage_slug)
+	step = step_slug
 	if stage_slug == "clone" or stage_slug == "apps":
-		return (stage, app_titles[step_slug])
-
-	step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
+		step = app_titles.get(step_slug, step_slug)
+	else:
+		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)
 
 
