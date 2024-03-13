@@ -148,10 +148,11 @@
 					<div class="text-gray-900">
 						{{
 							apps.length
-								? selectedVersionPublicApps
-										.filter(app => apps.map(a => a.app).includes(app.app))
-										.map(app => app.app_title)
-										.join(', ')
+								? $format.commaAnd(
+										selectedVersionApps
+											.filter(app => apps.map(a => a.app).includes(app.app))
+											.map(app => app.app_title)
+								  )
 								: 'No apps selected'
 						}}
 					</div>
@@ -183,7 +184,7 @@
 					<div class="text-gray-900">
 						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
 					</div>
-					<template v-for="app in apps" :key="app.app">
+					<template v-for="app in apps.filter(a => a.plan)" :key="app.app">
 						<div class="text-gray-600">
 							{{
 								selectedVersionPublicApps.find(a => app.app === a.app).app_title
@@ -346,8 +347,17 @@ export default {
 						doctype: 'Site',
 						team: this.$team.doc.name,
 						subdomain: this.subdomain,
-						apps: apps.map(app => ({ app })),
-						app_plans: this.appPlans,
+						apps: [
+							{ app: 'frappe' },
+							...apps.filter(app => app.app).map(app => ({ app: app.app }))
+						],
+						app_plans: Object.assign(
+							...this.apps
+								.filter(a => a.plan)
+								.map(app => ({
+									[app.app]: app.plan
+								}))
+						),
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
 						subscription_plan: this.plan,
@@ -410,9 +420,7 @@ export default {
 				});
 		},
 		selectedVersionPublicApps() {
-			return this.selectedVersionApps.filter(
-				app => (app.public || app.plans?.length) && app.image
-			);
+			return this.selectedVersionApps.filter(app => app.public);
 		},
 		selectedVersionPrivateApps() {
 			if (this.selectedVersion?.group?.public) return [];
@@ -437,7 +445,7 @@ export default {
 					},
 					{
 						label: 'New Site',
-						route: { name: 'NewBenchSite', params: { bench: this.bench } }
+						route: { name: 'Bench New Site', params: { bench: this.bench } }
 					}
 				];
 			}
@@ -452,7 +460,7 @@ export default {
 					? this.selectedPlan.price_inr
 					: this.selectedPlan.price_usd;
 
-			for (let app of this.apps) {
+			for (let app of this.apps.filter(app => app.plan)) {
 				total +=
 					this.$team.doc.currency == 'INR'
 						? app.plan.price_inr
@@ -468,24 +476,6 @@ export default {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth)
 			);
-		}
-	},
-	methods: {
-		toggleApp(app) {
-			if (app.app == 'frappe') {
-				return;
-			}
-			if (this.apps.includes(app.app)) {
-				this.apps = this.apps.filter(a => a !== app.app);
-				delete this.appPlans[app.app];
-			} else {
-				if (app.plans?.length) {
-					this.selectedApp = app;
-					this.showAppPlanSelectorDialog = true;
-				} else {
-					this.apps.push(app.app);
-				}
-			}
 		}
 	}
 };
