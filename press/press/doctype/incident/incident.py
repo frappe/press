@@ -55,6 +55,13 @@ class Incident(WebsiteGenerator):
 	def after_insert(self):
 		self.send_sms_via_twilio()
 
+	@frappe.whitelist()
+	def ignore_for_server(self):
+		"""
+		Ignore incidents on server (Don't call)
+		"""
+		frappe.db.set_value("Server", self.server, "ignore_incidents", 1)
+
 	def call_humans(self):
 		enqueue_doc(
 			self.doctype,
@@ -104,6 +111,8 @@ class Incident(WebsiteGenerator):
 
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
+			return
+		if frappe.db.get_value("Server", self.server, "ignore_incidents"):
 			return
 		for human in self.get_humans():
 			call = self.twilio_client.calls.create(
