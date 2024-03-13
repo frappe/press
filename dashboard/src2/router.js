@@ -173,10 +173,17 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
+
+		let visitingSiteOrBillingOrSettings =
+			to.name.startsWith('Site') ||
+			to.name.startsWith('Billing') ||
+			to.name.startsWith('Settings');
+
+		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
 		if (
 			onboardingIncomplete &&
 			to.name != onboardingRoute &&
-			(to.name.includes('Release Group') || to.name.includes('Server'))
+			!visitingSiteOrBillingOrSettings
 		) {
 			next({ name: onboardingRoute });
 			return;

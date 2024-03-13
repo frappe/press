@@ -68,6 +68,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'group.title as group_title',
 			'group.public as group_public',
+			'group.team as group_team',
 			'group.version as version',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
@@ -481,16 +482,20 @@ export default {
 			return { label: site.doc.status };
 		},
 		breadcrumbs({ items, documentResource: site }) {
-			if (site.doc?.group_public) {
-				return items;
+			// if (site.doc?.group_public) {
+			// 	return items;
+			// }
+			let $team = getTeam();
+			if (site.doc.group_team == $team.doc.name) {
+				return [
+					{
+						label: site.doc?.group_title,
+						route: `/benches/${site.doc?.group}`
+					},
+					items[1]
+				];
 			}
-			return [
-				{
-					label: site.doc?.group_title,
-					route: `/benches/${site.doc?.group}`
-				},
-				items[1]
-			];
+			return items;
 		},
 		tabs: [
 			{
