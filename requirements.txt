@@ -23,4 +23,3 @@ tldextract==3.4.4
 tomli==2.0.1
 tqdm==4.65.0
 twilio==8.10.3
-markdown
