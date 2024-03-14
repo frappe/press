@@ -259,7 +259,10 @@
 									}
 							  })
 					"
-					:loading="$resources.createServer.loading"
+					:loading="
+						$resources.createServer.loading ||
+						$resources.createHybridServer.loading
+					"
 				>
 					{{ serverType === 'hybrid' ? 'Add Hybrid Server' : 'Create Server' }}
 				</Button>
