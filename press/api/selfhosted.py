@@ -171,3 +171,22 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
+
+
+@frappe.whitelist()
+def options_for_new():
+	return {"plans": get_plans(), "ssh_key": sshkey()}
+
+
+@frappe.whitelist()
+def create_and_verify_selfhosted(server):
+	self_hosted_server_name = new(server)
+
+	if verify(self_hosted_server_name):
+		setup(self_hosted_server_name)
+		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
+
+	else:
+		frappe.throw(
+			"Server verification failed. Please check the server details and try again."
+		)
