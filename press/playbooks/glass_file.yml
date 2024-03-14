@@ -1,0 +1,10 @@
+---
+- name: Adds dummy 250MB file for deletion purposes
+  hosts: all
+  become: yes
+  become_user: root
+  gather_facts: no
+
+  tasks:
+    - name: Add 250MB file
+      command: 'fallocate -l 250M /root/glass'

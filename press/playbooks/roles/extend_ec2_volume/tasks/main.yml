@@ -14,5 +14,8 @@
 - name: Extend Filesystem
   command: resize2fs /dev/nvme0n1p1
 
+- name: Add Glass file back
+  command: fallocate -l 250M /root/glass
+
 - name: Show Modified Volumes
   command: df -h

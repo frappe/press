@@ -4,6 +4,7 @@
 
 
 import json
+import shlex
 import typing
 from functools import cached_property
 from typing import List, Union
@@ -12,6 +13,7 @@ import boto3
 import frappe
 from frappe import _
 from frappe.core.utils import find
+from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
 
@@ -380,6 +382,7 @@ class BaseServer(Document, TagHelpers):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
+			subprocess.check_output(shlex.split(f"ssh root@{self.ip} -t rm /root/glass"))
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
 		except Exception:
