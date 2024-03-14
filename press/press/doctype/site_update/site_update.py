@@ -223,7 +223,7 @@ class SiteUpdate(Document):
 			and workload_diff
 			>= 8  # USD 100 site equivalent. (Since workload is based off of CPU)
 		):
-			server.auto_scale_workers()
+			server.auto_scale_workers(commit=False)
 
 	@frappe.whitelist()
 	def trigger_recovery_job(self):
