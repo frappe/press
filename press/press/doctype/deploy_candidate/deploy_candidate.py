@@ -55,6 +55,28 @@ class DeployCandidate(Document):
 		"group",
 	]
 
+	@staticmethod
+	def get_list_query(query):
+		results = query.run(as_dict=True)
+		names = [r.name for r in results]
+		notifications = frappe.get_all(
+			"Press Notification",
+			fields=["name", "document_name"],
+			filters={
+				"document_type": "Deploy Candidate",
+				"document_name": ["in", names],
+				"class": "Error",
+				"is_actionable": True,
+				"is_resolved": False,
+			},
+		)
+		notification_map = {n.document_name: n.name for n in notifications}
+		for result in results:
+			if name := result.get("name"):
+				result.addressable_notification = notification_map.get(name)
+
+		return results
+
 	def get_doc(self, doc):
 		doc.jobs = []
 		deploys = frappe.get_all("Deploy", {"candidate": self.name}, limit=1)

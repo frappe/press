@@ -446,7 +446,22 @@ export default {
 							label: 'Status',
 							fieldname: 'status',
 							type: 'Badge',
-							width: 0.5
+							width: 0.5,
+							suffix(row) {
+								if (!row.addressable_notification) {
+									return;
+								}
+
+								return h(
+									Tooltip,
+									{
+										text: 'Attention required!',
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									() => h(icon('alert-circle', 'w-3 h-3'), {})
+								);
+							}
 						},
 						{
 							label: 'Apps',
