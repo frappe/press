@@ -52,6 +52,10 @@ class Incident(WebsiteGenerator):
 	def global_phone_call_enabled(self) -> bool:
 		return bool(frappe.get_cached_value("Incident Settings", None, "phone_call_alerts"))
 
+	@property
+	def global_email_alerts_enabled(self) -> bool:
+		return bool(frappe.get_cached_value("Incident Settings", None, "email_alerts"))
+
 	def after_insert(self):
 		self.send_sms_via_twilio()
 		self.send_email_notification()
@@ -172,6 +176,9 @@ Incident URL: {incident_link}"""
 		self.save()
 
 	def send_email_notification(self):
+		if not self.global_email_alerts_enabled:
+			return
+
 		if self.status == "Investigating":
 			return
 
