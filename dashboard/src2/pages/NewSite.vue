@@ -339,7 +339,7 @@ export default {
 		},
 		newSite() {
 			if (!(this.options && this.selectedVersion)) return;
-			let apps = ['frappe'].concat(this.apps);
+
 			return {
 				url: 'press.api.client.insert',
 				params: {
@@ -349,15 +349,17 @@ export default {
 						subdomain: this.subdomain,
 						apps: [
 							{ app: 'frappe' },
-							...apps.filter(app => app.app).map(app => ({ app: app.app }))
+							...this.apps.filter(app => app.app).map(app => ({ app: app.app }))
 						],
-						app_plans: Object.assign(
-							...this.apps
-								.filter(a => a.plan)
-								.map(app => ({
-									[app.app]: app.plan
-								}))
-						),
+						app_plans: this.apps.length
+							? Object.assign(
+									...this.apps
+										.filter(a => a.plan)
+										.map(app => ({
+											[app.app]: app.plan
+										}))
+							  )
+							: {},
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
 						subscription_plan: this.plan,
