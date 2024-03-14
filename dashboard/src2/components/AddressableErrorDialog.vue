@@ -9,7 +9,6 @@
 
 		<!-- Message and Traceback -->
 		<template v-slot:body-content>
-			<!-- <div class="flex flex-col gap-5"> -->
 			<div
 				:if="doc.message"
 				v-html="doc.message"
@@ -30,7 +29,7 @@
 					<pre>{{ doc.traceback }}</pre>
 				</div>
 			</div>
-			<!-- </div> -->
+
 			<ErrorMessage :message="error" class="mt-2"></ErrorMessage>
 		</template>
 
@@ -67,6 +66,7 @@ export default {
 		Button,
 		FeatherIcon
 	},
+	emits: ['done'],
 	data() {
 		return {
 			helpViewed: false,
@@ -80,7 +80,10 @@ export default {
 			return {
 				type: 'document',
 				doctype: 'Press Notification',
-				name: this.name
+				name: this.name,
+				whitelistedMethods: {
+					markAsAddressed: 'mark_as_addressed'
+				}
 			};
 		}
 	},
@@ -95,12 +98,16 @@ export default {
 			this.copied = true;
 			setTimeout(() => (this.copied = false), 4000);
 		},
-		done() {
+		async done() {
 			if (this.doc.assistance_url && !this.helpViewed) {
 				this.error =
 					'Please follow the steps mentioned in <i>Help</i> before clicking Done';
 				return;
 			}
+
+			await this.$resources.notification.markAsAddressed.submit();
+			this.show = false;
+			this.$emit('done');
 		},
 		help() {
 			this.error = '';

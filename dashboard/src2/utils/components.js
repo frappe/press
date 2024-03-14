@@ -32,8 +32,13 @@ export function confirmDialog({
 	);
 }
 
-export function addressableErrorDialog(name) {
-	renderDialog(h(AddressableErrorDialog, { name }));
+export function addressableErrorDialog(name, onDone) {
+	renderDialog(
+		h(AddressableErrorDialog, {
+			name,
+			onDone
+		})
+	);
 }
 
 export const dialogs = ref([]);

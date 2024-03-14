@@ -5,6 +5,7 @@
 			class="mb-5"
 			:name="error.name"
 			:title="error.title"
+			@done="$resources.errors.reload()"
 		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>

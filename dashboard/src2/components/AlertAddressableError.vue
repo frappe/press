@@ -10,13 +10,14 @@ import { addressableErrorDialog } from '../utils/components';
 export default {
 	name: 'AlertAddPaymentMode',
 	components: { AlertBanner },
+	emits: ['done'],
 	props: {
 		name: String,
 		title: String
 	},
 	methods: {
 		show() {
-			addressableErrorDialog(this.name);
+			addressableErrorDialog(this.name, () => this.$emit('done'));
 		}
 	}
 };
