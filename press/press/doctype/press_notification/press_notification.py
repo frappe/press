@@ -14,7 +14,7 @@ class PressNotification(Document):
 		"document_name",
 		"is_actionable",
 		"read",
-		"is_resolved",
+		"is_addressed",
 		"title",
 		"message",
 		"traceback",

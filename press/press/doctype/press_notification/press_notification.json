@@ -16,7 +16,7 @@
   "is_actionable",
   "read",
   "column_break_rada",
-  "is_resolved",
+  "is_addressed",
   "message_section",
   "title",
   "message",
@@ -103,15 +103,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "depends_on": "eval:doc.is_actionable",
-   "description": "Actionable notifications can be resolved by the user.\n\nUsed to prevent an action until the issue has been resolved. For example preventing further deploy until an incompatible app version has been fixed.",
-   "fieldname": "is_resolved",
-   "fieldtype": "Check",
-   "label": "Is Resolved",
-   "read_only": 1
-  },
-  {
    "fieldname": "message_section",
    "fieldtype": "Section Break",
    "label": "Message"
@@ -138,11 +129,20 @@
    "label": "Class",
    "options": "Info\nSuccess\nWarning\nError",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_actionable",
+   "description": "Actionable notifications can be addressed by the user.\n\nUsed to prevent an action until the issue has been addressed. For example preventing further deploy until an incompatible app version has been fixed.",
+   "fieldname": "is_addressed",
+   "fieldtype": "Check",
+   "label": "Is Addressed",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-13 18:05:05.232924",
+ "modified": "2024-03-14 15:53:46.991772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

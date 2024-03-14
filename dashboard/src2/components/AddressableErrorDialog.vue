@@ -42,7 +42,7 @@
 				</Link>
 
 				<Button
-					v-if="!doc.is_resolved"
+					v-if="!doc.is_addressed"
 					variant="solid"
 					class="w-40"
 					@click="done"

@@ -124,7 +124,7 @@ export default {
 					document_type: 'Deploy Candidate',
 					document_name: this.id,
 					is_actionable: true,
-					is_resolved: false,
+					is_addressed: false,
 					class: 'Error'
 				},
 				limit: 1

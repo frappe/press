@@ -67,7 +67,7 @@ class DeployCandidate(Document):
 				"document_name": ["in", names],
 				"class": "Error",
 				"is_actionable": True,
-				"is_resolved": False,
+				"is_addressed": False,
 			},
 		)
 		notification_map = {n.document_name: n.name for n in notifications}
