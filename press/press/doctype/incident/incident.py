@@ -54,6 +54,7 @@ class Incident(WebsiteGenerator):
 
 	def after_insert(self):
 		self.send_sms_via_twilio()
+		self.send_email_notification()
 
 	@frappe.whitelist()
 	def ignore_for_server(self):
@@ -165,6 +166,40 @@ Incident URL: {incident_link}"""
 			)
 		self.sms_sent = 1
 		self.save()
+
+	def send_email_notification(self):
+		# Notifications are only meaningful for incidents that are linked to a server and a team
+		team = frappe.db.get_value("Server", self.server, "team")
+		if (not self.server) or (not team):
+			return
+		try:
+			subject = self.get_email_subject()
+			message = self.get_email_message()
+			frappe.sendmail(
+				recipients=[frappe.db.get_value("Team", team, "notify_email")],
+				subject=subject,
+				template="incident",
+				args={
+					"message": message,
+					"link": f"dashboard/servers/{self.server}/analytics/",
+				},
+				now=True,
+			)
+		except Exception:
+			# Swallow the exception to avoid breaking the Incident creation
+			log_error("Incident Notification Email Failed")
+
+	def get_email_subject(self):
+		title = frappe.db.get_value("Server", self.server, "title")
+		name = title.rstrip(" - Application") or self.server
+		return f"Incident on {name} - {self.alert}"
+
+	def get_email_message(self):
+		message = {
+			"Validating": "We are noticing some issues with sites on your server. We are giving it a few minutes to confirm before escalating this incident to our engineers.",
+		}[self.status]
+
+		return message
 
 	def add_acknowledgment_update(
 		self, human: "IncidentSettingsUser", call_status: str = None, acknowledged=False
