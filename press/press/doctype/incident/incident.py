@@ -172,6 +172,9 @@ Incident URL: {incident_link}"""
 		self.save()
 
 	def send_email_notification(self):
+		if self.status == "Investigating":
+			return
+
 		# Notifications are only meaningful for incidents that are linked to a server and a team
 		team = frappe.db.get_value("Server", self.server, "team")
 		if (not self.server) or (not team):
