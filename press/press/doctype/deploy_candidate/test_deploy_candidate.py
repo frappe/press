@@ -178,7 +178,7 @@ class TestDeployCandidate(unittest.TestCase):
 		app = create_test_app("erpnext", "ERPNext")
 		source = create_test_app_source(group.version, app)
 		release = create_test_app_release(source)
-		group.add_app(source)
+		group.append_source(source)
 		candidate = group.create_deploy_candidate([{"app": app.name}])
 		self.assertEqual(candidate.apps[1].app, app.name)
 		self.assertEqual(candidate.apps[1].release, release.name)
@@ -197,7 +197,7 @@ class TestDeployCandidate(unittest.TestCase):
 		group = frappe.get_doc("Release Group", bench.group)
 		app = create_test_app("erpnext", "ERPNext")
 		erpnext_source = create_test_app_source(group.version, app)
-		group.add_app(erpnext_source)
+		group.append_source(erpnext_source)
 		first_candidate = group.create_deploy_candidate(group.apps)
 
 		dc_count_before = frappe.db.count("Deploy Candidate", filters={"group": group.name})

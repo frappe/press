@@ -108,7 +108,7 @@
 		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
-				<h2 class="text-lg font-medium text-gray-900">Site information</h2>
+				<h2 class="text-lg font-medium text-gray-900">Site Information</h2>
 			</div>
 			<div>
 				<div
@@ -117,8 +117,17 @@
 					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 				>
 					<div class="w-1/3 text-base text-gray-600">{{ d.label }}</div>
-					<div class="w-2/3 text-base text-gray-900">
-						{{ d.value }}
+					<div
+						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
+					>
+						<span>
+							{{ d.value }}
+						</span>
+						<div v-if="d.help">
+							<Tooltip :text="d.help">
+								<i-lucide-info class="h-4 w-4 text-gray-500" />
+							</Tooltip>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -151,10 +160,6 @@ export default {
 		siteInformation() {
 			return [
 				{
-					label: 'Site name',
-					value: this.$site.doc.name
-				},
-				{
 					label: 'Owned by',
 					value: this.$site.doc.owner_email
 				},
@@ -167,8 +172,14 @@ export default {
 					value: this.$format.date(this.$site.doc.creation)
 				},
 				{
-					label: 'Last updated',
-					value: this.$format.date(this.$site.doc.last_updated) || 'Never'
+					label: 'Inbound IP',
+					value: this.$site.doc.inbound_ip,
+					help: 'Use this for adding A records for your site'
+				},
+				{
+					label: 'Outbound IP',
+					value: this.$site.doc.outbound_ip,
+					help: 'Use this for whitelisting our server on a 3rd party service'
 				}
 			];
 		},

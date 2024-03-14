@@ -119,7 +119,7 @@ class BaseServer(Document, TagHelpers):
 			self._set_hostname_abbreviation()
 
 	def _set_hostname_abbreviation(self):
-		self.set_hostname_abbreviation = get_hostname_abbreviation(self.hostname)
+		self.hostname_abbreviation = get_hostname_abbreviation(self.hostname)
 
 	def after_insert(self):
 		if self.ip:
@@ -433,6 +433,12 @@ class BaseServer(Document, TagHelpers):
 		if self.is_self_hosted:
 			self.status = "Archived"
 			self.save()
+
+			if self.doctype == "Server":
+				frappe.db.set_value(
+					"Self Hosted Server", {"server": self.name}, "status", "Archived"
+				)
+
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
@@ -1063,9 +1069,9 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
-	def auto_scale_workers(self):
+	def auto_scale_workers(self, commit=True):
 		if self.new_worker_allocation:
-			self._auto_scale_workers_new()
+			self._auto_scale_workers_new(commit)
 		else:
 			self._auto_scale_workers_old()
 
@@ -1102,7 +1108,7 @@ class Server(BaseServer):
 		usable_ram_for_bg = 0.4 * self.usable_ram  # 40% of usable ram
 		return usable_ram_for_bg / self.BACKGROUND_JOB_MEMORY
 
-	def _auto_scale_workers_new(self):
+	def _auto_scale_workers_new(self, commit):
 		for bench in self.bench_workloads.keys():
 			try:
 				bench.allocate_workers(
@@ -1113,12 +1119,14 @@ class Server(BaseServer):
 					self.GUNICORN_MEMORY,
 					self.BACKGROUND_JOB_MEMORY,
 				)
-				frappe.db.commit()
+				if commit:
+					frappe.db.commit()
 			except Exception:
 				log_error(
 					"Bench Auto Scale Worker Error", bench=bench, workload=self.bench_workloads[bench]
 				)
-				frappe.db.rollback()
+				if commit:
+					frappe.db.rollback()
 
 	def _auto_scale_workers_old(self):
 		benches = frappe.get_all(

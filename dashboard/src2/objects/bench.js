@@ -9,12 +9,14 @@ import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue
 import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import LucideRocket from '~icons/lucide/rocket';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
+		addApp: 'add_app',
 		removeApp: 'remove_app',
 		changeAppBranch: 'change_app_branch',
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
@@ -30,7 +32,8 @@ export default {
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		redeploy: 'redeploy'
 	},
 	list: {
 		route: '/benches',
@@ -81,114 +84,6 @@ export default {
 				}
 			};
 		}
-	},
-	create: {
-		route: '/benches/new',
-		title: 'New Bench',
-		secondaryCreate: {
-			route: '/servers/:name/benches/new',
-			optionalFields: ['benchRegion'],
-			routeName: 'Server New Bench',
-			propName: 'server'
-		},
-		optionsResource() {
-			return {
-				url: 'press.api.bench.options',
-				initialData: {
-					versions: [],
-					clusters: []
-				},
-				auto: true
-			};
-		},
-		createResource() {
-			return {
-				url: 'press.api.bench.new',
-				validate({ bench }) {
-					if (!bench.title) {
-						return 'Bench Title cannot be blank';
-					}
-					if (!bench.version) {
-						return 'Select a version to create bench';
-					}
-				},
-				onSuccess(groupName) {
-					this.$router.push({
-						name: 'Release Group Detail Apps',
-						params: { name: groupName }
-					});
-				}
-			};
-		},
-		primaryAction({ createResource: createBench, vals, optionsData: options }) {
-			return {
-				label: 'Create Bench',
-				variant: 'solid',
-				onClick() {
-					createBench.submit({
-						bench: {
-							title: vals.benchTitle,
-							version: vals.benchVersion,
-							cluster: vals.benchRegion || null,
-							saas_app: null,
-							apps: [
-								// some wizardry to only pick frappe for the chosen version
-								options.versions
-									.find(v => v.name === vals.benchVersion)
-									.apps.find(app => app.name === 'frappe')
-							].map(app => {
-								return {
-									name: app.name,
-									source: app.source.name
-								};
-							}),
-							server: vals.server || null
-						}
-					});
-				}
-			};
-		},
-		options: [
-			{
-				label: 'Title',
-				name: 'benchTitle',
-				type: 'text'
-			},
-			{
-				label: 'Select Frappe Framework Version',
-				name: 'benchVersion',
-				type: 'card',
-				fieldname: 'versions',
-				dependsOn: ['benchTitle']
-			},
-			{
-				label: 'Select Region',
-				name: 'benchRegion',
-				type: 'card',
-				fieldname: 'clusters',
-				dependsOn: ['benchVersion']
-			}
-		],
-		summary: [
-			{
-				label: 'Bench Title',
-				fieldname: 'benchTitle'
-			},
-			{
-				label: 'Region',
-				fieldname: 'benchRegion',
-				hideWhen: 'server'
-			},
-			{
-				label: 'Server',
-				fieldname: 'server',
-				hideWhen: 'benchRegion'
-			},
-			{
-				label: 'Frappe Version',
-				fieldname: 'benchVersion'
-			}
-		]
 	},
 	detail: {
 		titleField: 'title',
@@ -409,6 +304,26 @@ export default {
 										onAppAdd() {
 											apps.reload();
 											releaseGroup.reload();
+										},
+										onNewApp(app) {
+											toast.promise(
+												releaseGroup.addApp.submit({
+													app: app
+												}),
+												{
+													loading: 'Adding App...',
+													success: () => {
+														apps.reload();
+														releaseGroup.reload();
+														return `App ${app.title} added to the bench`;
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
 									})
 								);
@@ -482,14 +397,62 @@ export default {
 							fieldname: 'owner',
 							width: 1
 						}
-					]
+					],
+					primaryAction({ listResource: deploys, documentResource: bench }) {
+						return {
+							label: 'Deploy',
+							slots: {
+								prefix: icon(LucideRocket)
+							},
+							onClick() {
+								if (bench.doc.deploy_information.deploy_in_progress) {
+									return toast.error(
+										'Another deploy is in progress. Please wait for it to complete.'
+									);
+								} else if (bench.doc.deploy_information.update_available) {
+									let UpdateBenchDialog = defineAsyncComponent(() =>
+										import('../components/bench/UpdateBenchDialog.vue')
+									);
+									renderDialog(
+										h(UpdateBenchDialog, {
+											bench: bench.name,
+											onSuccess(candidate) {
+												bench.doc.deploy_information.deploy_in_progress = true;
+												bench.doc.deploy_information.last_deploy.name =
+													candidate;
+											}
+										})
+									);
+								} else {
+									confirmDialog({
+										title: 'Deploy Bench',
+										message:
+											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
+										onSuccess: ({ hide }) => {
+											toast.promise(bench.redeploy.submit(), {
+												loading: 'Deploying...',
+												success: () => {
+													hide();
+													deploys.reload();
+													return 'Bench Deployed';
+												},
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											});
+										}
+									});
+								}
+							}
+						};
+					}
 				}
 			},
 			{
 				label: 'Jobs',
 				icon: icon('truck'),
-				// highlight: route =>
-				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
 				route: 'jobs',
 				type: 'list',
 				list: {

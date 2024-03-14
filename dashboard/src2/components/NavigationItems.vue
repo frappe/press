@@ -11,6 +11,7 @@ import Package from '~icons/lucide/package';
 import Server from '~icons/lucide/server';
 import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
+import App from '~icons/lucide/layout-grid';
 import Globe from '~icons/lucide/globe';
 
 export default {
@@ -58,6 +59,13 @@ export default {
 					isActive:
 						['New Server'].includes(routeName) ||
 						routeName.startsWith('Server'),
+					disabled
+				},
+				{
+					name: 'Apps',
+					icon: () => h(App),
+					route: '/apps',
+					isActive: routeName.startsWith('Marketplace'),
 					disabled
 				},
 				{

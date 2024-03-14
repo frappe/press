@@ -441,7 +441,7 @@ def add_apps(name, apps):
 	release_group = frappe.get_doc("Release Group", name)
 	for app in apps:
 		app_name, source = app.values()
-		release_group.add_app(frappe._dict(name=source, app=app_name))
+		release_group.append_source(frappe._dict(name=source, app=app_name))
 
 
 @frappe.whitelist()

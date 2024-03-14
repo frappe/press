@@ -47,7 +47,11 @@ class Team(Document):
 		"referrer_id",
 		"partner_referral_code",
 	]
-	dashboard_actions = ["get_team_members", "remove_team_member"]
+	dashboard_actions = [
+		"get_team_members",
+		"remove_team_member",
+		"change_default_dashboard",
+	]
 
 	def get_doc(self, doc):
 		if (
@@ -622,6 +626,7 @@ class Team(Document):
 		self.allocate_free_credits()
 		# Telemetry: Added card
 		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
+		self.remove_subscription_config_in_trial_sites()
 
 		return doc
 
@@ -1001,6 +1006,21 @@ class Team(Document):
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
 
+	def remove_subscription_config_in_trial_sites(self):
+		for site in frappe.db.get_all(
+			"Site",
+			{"team": self.name, "status": ("!=", "Archived"), "trial_end_date": ("is", "set")},
+			pluck="name",
+		):
+			try:
+				frappe.get_doc("Site", site).update_site_config(
+					{
+						"subscription": {"status": "Subscribed"},
+					}
+				)
+			except Exception:
+				log_error("Failed to remove subscription config in trial sites")
+
 	def get_upcoming_invoice(self):
 		# get the current period's invoice
 		today = frappe.utils.today()
@@ -1073,6 +1093,14 @@ class Team(Document):
 				"team": self,
 			},
 		)
+
+	@frappe.whitelist()
+	def change_default_dashboard(self, new_dashboard=None):
+		if new_dashboard is not None:
+			self.default_to_new_dashboard = new_dashboard
+			self.save()
+			# invalidate account.get cache
+			frappe.cache.delete_value("cached-account.get", user=frappe.session.user)
 
 
 def get_team_members(team):
@@ -1189,6 +1217,7 @@ def handle_payment_intent_succeeded(payment_intent):
 
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
+	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,

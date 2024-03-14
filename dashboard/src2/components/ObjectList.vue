@@ -1,6 +1,6 @@
 <template>
 	<div>
-		<div class="flex items-center justify-between">
+		<div v-if="hideControls" class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
 				<TextInput
 					placeholder="Search"
@@ -102,7 +102,7 @@
 				>
 					Loading...
 				</div>
-				<div v-else-if="$list.list?.error" class="py-4 text-center">
+				<div v-else-if="$list?.list?.error" class="py-4 text-center">
 					<ErrorMessage :message="$list.list.error" />
 				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
@@ -204,6 +204,12 @@ export default {
 	},
 	mounted() {
 		if (this.options.data) return;
+		if (this.options.list) {
+			let resource = this.$list.list || this.$list;
+			if (!resource.fetched) {
+				resource.fetch();
+			}
+		}
 		if (this.options.doctype) {
 			let doctype = this.options.doctype;
 			if (subscribed[doctype]) return;
@@ -232,7 +238,14 @@ export default {
 	},
 	computed: {
 		$list() {
-			return this.$resources.list || this.options.list;
+			if (this.$resources.list) return this.$resources.list;
+
+			if (this.options.list) {
+				if (typeof this.options.list === 'function') {
+					return this.options.list(this.options.context);
+				}
+				return this.options.list;
+			}
 		},
 		columns() {
 			let columns = [];
@@ -301,7 +314,11 @@ export default {
 			};
 		},
 		isLoading() {
+			if (this.options.data) return false;
 			return this.$list.list?.loading || this.$list.loading;
+		},
+		hideControls() {
+			return !this.options.hideControls;
 		}
 	}
 };

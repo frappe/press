@@ -16,28 +16,6 @@ export default function generateRoutes() {
 				}
 			});
 		}
-		if (object.create) {
-			let routeName = `New ${object.doctype}`;
-			object.create.routeName = routeName;
-			routes.push({
-				name: routeName,
-				path: object.create.route,
-				component: () => import('../pages/NewObject.vue'),
-				props: route => {
-					return { objectType, ...route.params };
-				}
-			});
-			if (object.create.secondaryCreate) {
-				routes.push({
-					name: object.create.secondaryCreate.routeName,
-					path: object.create.secondaryCreate.route,
-					component: () => import('../pages/NewObject.vue'),
-					props: route => {
-						return { objectType, ...route.params };
-					}
-				});
-			}
-		}
 		if (object.detail) {
 			let children = object.detail.tabs.map(tab => {
 				let routeName = `${object.doctype} Detail ${tab.label}`;

@@ -11,10 +11,12 @@
 </template>
 <script>
 import { Autocomplete, FormControl } from 'frappe-ui';
+import ListSelection from './ListSelection.vue';
+
 export default {
 	name: 'GenericDialogField',
 	props: ['field'],
-	components: { Autocomplete, FormControl },
+	components: { Autocomplete, FormControl, ListSelection },
 	computed: {
 		autocompleteOptions() {
 			let options = [];

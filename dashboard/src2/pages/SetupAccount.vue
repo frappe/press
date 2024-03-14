@@ -6,7 +6,7 @@
 		<ProductSignupPitch
 			v-if="saasProduct"
 			:saasProduct="saasProduct"
-			class="w-[40%]"
+			class="order-1 hidden sm:block"
 		/>
 		<div class="w-full overflow-auto">
 			<LoginBox

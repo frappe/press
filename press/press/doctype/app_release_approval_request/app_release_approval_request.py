@@ -12,7 +12,6 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.press.doctype.app_release.app_release import AppRelease
-from press.press.doctype.marketplace_app.marketplace_app import MarketplaceApp
 
 
 class AppReleaseApprovalRequest(Document):
@@ -104,9 +103,7 @@ class AppReleaseApprovalRequest(Document):
 		frappe.publish_realtime(event="request_status_changed", message={"source": source})
 
 	def notify_publisher(self):
-		marketplace_app: MarketplaceApp = frappe.get_doc(
-			"Marketplace App", self.marketplace_app
-		)
+		marketplace_app = frappe.get_doc("Marketplace App", self.marketplace_app)
 		app_release: AppRelease = frappe.get_doc("App Release", self.app_release)
 		publisher_email = frappe.get_doc("Team", marketplace_app.team).user
 

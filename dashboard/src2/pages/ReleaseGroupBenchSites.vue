@@ -5,7 +5,7 @@
 			<Button
 				:route="{
 					name: 'Bench New Site',
-					params: { name: this.releaseGroup }
+					params: { bench: this.releaseGroup }
 				}"
 			>
 				<template #prefix>

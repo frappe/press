@@ -53,6 +53,7 @@
   "apps",
   "sites",
   "system_information_tab",
+  "application_server_section",
   "vendor",
   "vcpus",
   "ram",
@@ -62,7 +63,12 @@
   "instance_type",
   "architecture",
   "processor",
-  "distribution"
+  "distribution",
+  "database_server_section",
+  "db_vcpus",
+  "db_total_storage",
+  "column_break_krqz",
+  "db_ram"
  ],
  "fields": [
   {
@@ -395,10 +401,39 @@
    "fieldname": "dedicated_proxy",
    "fieldtype": "Check",
    "label": "Dedicated Proxy"
+  },
+  {
+   "fieldname": "application_server_section",
+   "fieldtype": "Section Break",
+   "label": "Application Server"
+  },
+  {
+   "fieldname": "database_server_section",
+   "fieldtype": "Section Break",
+   "label": "Database Server"
+  },
+  {
+   "fieldname": "db_vcpus",
+   "fieldtype": "Data",
+   "label": "vCPUs"
+  },
+  {
+   "fieldname": "db_total_storage",
+   "fieldtype": "Data",
+   "label": "Total Storage"
+  },
+  {
+   "fieldname": "column_break_krqz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "db_ram",
+   "fieldtype": "Data",
+   "label": "RAM"
   }
  ],
  "links": [],
- "modified": "2024-02-08 14:10:21.024772",
+ "modified": "2024-03-13 13:15:21.249527",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

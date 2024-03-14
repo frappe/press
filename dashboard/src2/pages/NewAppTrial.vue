@@ -2,7 +2,7 @@
 	<div v-if="saasProduct">
 		<div class="flex min-h-screen sm:bg-gray-50">
 			<ProductSignupPitch
-				class="hidden w-[40%] sm:block"
+				class="order-1 hidden sm:block"
 				v-if="saasProduct"
 				:saasProduct="saasProduct"
 			/>
@@ -52,7 +52,7 @@
 							class="subdomain mt-2"
 							label="Site Name"
 							v-model="subdomain"
-							@keydown.enter="siteRequest.createSite.submit()"
+							@keydown.enter="createSite"
 						>
 							<template #suffix>
 								<div
@@ -68,8 +68,8 @@
 						<Button
 							class="w-full"
 							variant="solid"
-							@click="siteRequest.createSite.submit()"
-							:loading="findingFastestServer || siteRequest.createSite.loading"
+							@click="createSite"
+							:loading="findingClosestServer || siteRequest.createSite.loading"
 						>
 							Create
 						</Button>
@@ -112,6 +112,19 @@
 						</div>
 					</div>
 				</LoginBox>
+				<div class="absolute bottom-12 left-1/2 -translate-x-1/2">
+					<Dropdown
+						:options="[
+							{ label: 'Log out', onClick: () => $session.logout.submit() }
+						]"
+					>
+						<Button variant="ghost">
+							<span class="text-gray-600">
+								{{ $team.doc.user }}
+							</span>
+						</Button>
+					</Dropdown>
+				</div>
 			</div>
 			<Dialog
 				:options="{
@@ -175,15 +188,6 @@
 				</template>
 			</Dialog>
 		</div>
-		<div class="absolute bottom-12 left-1/2 -translate-x-1/2 sm:left-[70%]">
-			<Dropdown :options="[{ label: 'Log out' }]">
-				<Button variant="ghost">
-					<span class="text-gray-600">
-						{{ $team.doc.user }}
-					</span>
-				</Button>
-			</Dropdown>
-		</div>
 	</div>
 </template>
 <script>
@@ -193,7 +197,7 @@ import { vElementSize } from '@vueuse/components';
 import { validateSubdomain } from '@/utils';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'NewAppTrial',
@@ -248,7 +252,8 @@ export default {
 				whitelistedMethods: {
 					createSite: {
 						method: 'create_site',
-						makeParams({ cluster }) {
+						makeParams(params) {
+							let cluster = params?.cluster;
 							return { subdomain: this.subdomain, plan: this.plan, cluster };
 						},
 						validate() {
@@ -314,7 +319,7 @@ export default {
 				);
 				let closestServer = fastestServer.value.server;
 				let closestCluster = this.saasProduct.proxy_servers[closestServer];
-				if (this.closestCluster) {
+				if (!this.closestCluster) {
 					this.closestCluster = closestCluster;
 				}
 				this.findingClosestServer = false;
@@ -349,10 +354,7 @@ export default {
 		},
 		selectedPlanDescription() {
 			if (!this.plan) return;
-			if (!plans?.data) {
-				return this.plan;
-			}
-			let plan = plans.data.find(plan => plan.name == this.plan);
+			let plan = getPlans().find(plan => plan.name == this.plan);
 			let country = this.$team.doc.country;
 			let pricePerMonth = this.$format.userCurrency(
 				country === 'India' ? plan.price_inr : plan.price_usd,

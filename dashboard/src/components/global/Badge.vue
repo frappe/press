@@ -26,6 +26,7 @@ export default {
 				'Awaiting Approval': 'orange',
 				'Awaiting Deploy': 'orange',
 				Success: 'green',
+				Completed: 'green',
 				Deployed: 'green',
 				Expired: 'red',
 				Paid: 'green',

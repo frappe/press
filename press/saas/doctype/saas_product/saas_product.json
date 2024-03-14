@@ -147,9 +147,13 @@
   {
    "link_doctype": "Site",
    "link_fieldname": "standby_for_product"
+  },
+  {
+   "link_doctype": "SaaS Product Site Request",
+   "link_fieldname": "saas_product"
   }
  ],
- "modified": "2024-03-12 14:27:39.104789",
+ "modified": "2024-03-14 12:55:40.311385",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "SaaS Product",

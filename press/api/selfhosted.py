@@ -12,35 +12,39 @@ from frappe.utils import strip
 
 @frappe.whitelist()
 def new(server):
-	is_multi_server_setup = True
+	server_details = frappe._dict(server)
 
 	team = get_current_team(get_doc=True)
 	validate_team(team)
 
-	cluster = get_cluster()
-	proxy_server = get_proxy_server_for_cluster(cluster)
-	ip_details = get_sanitized_ip(server)
+	proxy_server = get_proxy_server_for_cluster()
 
-	if server["setupType"] == "standalone":
-		is_multi_server_setup = False
+	return create_self_hosted_server(server_details, team, proxy_server)
 
-	self_hosted_server = frappe.new_doc(
-		"Self Hosted Server",
-		**{
-			"ip": ip_details.public_ip,
-			"private_ip": ip_details.private_ip,
-			"mariadb_ip": ip_details.db_public_ip,
-			"mariadb_private_ip": ip_details.db_private_ip,
-			"title": server["title"],
-			"proxy_server": proxy_server,
-			"proxy_created": True,
-			"different_database_server": is_multi_server_setup,
-			"team": team.name,
-			"plan": server["plan"]["name"],
-			"database_plan": server["plan"]["name"],
-			"new_server": True,
-		}
-	).insert()
+
+def create_self_hosted_server(server_details, team, proxy_server):
+	try:
+		self_hosted_server = frappe.new_doc(
+			"Self Hosted Server",
+			**{
+				"ip": strip(server_details.get("app_public_ip", "")),
+				"private_ip": strip(server_details.get("app_private_ip", "")),
+				"mariadb_ip": strip(server_details.get("db_public_ip", "")),
+				"mariadb_private_ip": strip(server_details.get("db_private_ip", "")),
+				"title": server_details.title,
+				"proxy_server": proxy_server,
+				"proxy_created": True,
+				"different_database_server": True,
+				"team": team.name,
+				"plan": server_details.plan["name"],
+				"database_plan": server_details.plan["name"],
+				"new_server": True,
+			}
+		).insert()
+	except frappe.DuplicateEntryError as e:
+		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
+		server_name = e.args[1]
+		return server_name
 
 	return self_hosted_server.name
 
@@ -58,22 +62,13 @@ def validate_team(team):
 		)
 
 
-def get_sanitized_ip(server):
-	return frappe._dict(
-		{
-			"public_ip": strip(server.get("publicIP", "")),
-			"private_ip": strip(server.get("privateIP", "")),
-			"db_public_ip": strip(server.get("dbpublicIP", "")),
-			"db_private_ip": strip(server.get("dbprivateIP", "")),
-		}
-	)
+def get_proxy_server_for_cluster(cluster=None):
+	cluster = get_hybrid_cluster() if not cluster else cluster
 
-
-def get_proxy_server_for_cluster(cluster):
 	return frappe.get_all("Proxy Server", {"cluster": cluster}, pluck="name")[0]
 
 
-def get_cluster():
+def get_hybrid_cluster():
 	return frappe.db.get_value("Cluster", {"hybrid": 1}, "name")
 
 
@@ -84,7 +79,6 @@ def sshkey():
 
 @frappe.whitelist()
 def verify(server):
-	play_status = "Failure"
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	_server_details = frappe._dict(
 		{
@@ -95,26 +89,11 @@ def verify(server):
 		}
 	)
 
-	app_server_result = verify_app_server_is_reachable(_server_details, server_doc)
-	db_server_result = verify_db_server_is_reachable(_server_details, server_doc)
+	if app_server_verified(_server_details, server_doc) and db_server_verified(
+		_server_details, server_doc
+	):
+		server_doc.check_minimum_specs()
 
-	if server_doc.different_database_server:
-		# If both servers are reachable, then the status is success
-		if app_server_result.status == "Success" and db_server_result.status == "Success":
-			play_status = "Success"
-
-	else:
-		if app_server_result.status == "Success":
-			play_status = "Success"
-
-			server_doc.fetch_private_ip()
-			server_doc.fetch_system_ram(app_server_result.name)
-			server_doc.fetch_system_specifications(app_server_result.name)
-			server_doc.check_minimum_specs()
-			server_doc.save()
-
-	if play_status == "Success":
-		server_doc.reload()
 		server_doc.status = "Pending"
 		server_doc.save()
 
@@ -123,36 +102,50 @@ def verify(server):
 
 		server_doc.reload()
 		server_doc.create_application_server()
-
 		return True
-	else:
-		return False
+
+	return False
 
 
-def verify_app_server_is_reachable(_server_details, server_doc):
-	ping_app_server = Ansible(
+def app_server_verified(_server_details, server_doc):
+	ping = Ansible(
 		playbook="ping.yml",
 		server=_server_details.update({"ip": server_doc.ip}),
 	)
-	return ping_app_server.run()
+
+	result = ping.run()
+
+	if result.status == "Success":
+		server_doc.fetch_system_specifications(result.name, server_type="app")
+		server_doc.reload()
+		return True
+
+	server_doc.status = "Broken"
+	server_doc.save()
+	return False
 
 
-def verify_db_server_is_reachable(_server_details, server_doc):
-	if not server_doc.different_database_server:
-		return frappe._dict({"status": "Success"})
-
-	ping_db_server = Ansible(
+def db_server_verified(_server_details, server_doc):
+	ping = Ansible(
 		playbook="ping.yml",
 		server=_server_details.update({"ip": server_doc.mariadb_ip}),
 	)
-	return ping_db_server.run()
+	result = ping.run()
+
+	if result.status == "Success":
+		server_doc.fetch_system_specifications(result.name, server_type="db")
+		server_doc.reload()
+		return True
+
+	server_doc.status = "Broken"
+	server_doc.save()
+	return False
 
 
 @frappe.whitelist()
 def setup(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
 	server_doc.start_setup = True
-	server_doc.create_subscription()
 	server_doc.save()
 	server_doc.setup_server()
 	time.sleep(1)
@@ -175,3 +168,22 @@ def check_dns(domain, ip):
 	except Exception:
 		return False
 	return False
+
+
+@frappe.whitelist()
+def options_for_new():
+	return {"plans": get_plans(), "ssh_key": sshkey()}
+
+
+@frappe.whitelist()
+def create_and_verify_selfhosted(server):
+	self_hosted_server_name = new(server)
+
+	if verify(self_hosted_server_name):
+		setup(self_hosted_server_name)
+		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
+
+	else:
+		frappe.throw(
+			"Server verification failed. Please check the server details and try again."
+		)

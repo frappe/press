@@ -323,7 +323,7 @@ def validate_request_key(key, timezone=None):
 				"title": saas_product_doc.title,
 				"logo": saas_product_doc.logo,
 				"signup_fields": saas_product_doc.signup_fields,
-				"description": frappe.utils.md_to_html(saas_product_doc.description),
+				"description": saas_product_doc.description,
 			}
 			if saas_product_doc
 			else None,
@@ -566,7 +566,6 @@ def signup_settings(product=None):
 			["title", "description", "logo"],
 			as_dict=1,
 		)
-		saas_product.description = frappe.utils.md_to_html(saas_product.description)
 
 	return {
 		"enable_google_oauth": settings.enable_google_oauth,

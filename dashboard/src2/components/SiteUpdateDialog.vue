@@ -9,18 +9,8 @@
 		<template #body-content>
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
-				<div class="mt-7 text-base font-bold text-gray-900">
-					Update settings
-				</div>
 				<div class="mt-4 flex flex-col space-y-4">
-					<FormControl
-						class="w-1/2"
-						label="Schedule time"
-						type="datetime-local"
-						:min="new Date().toISOString().slice(0, 16)"
-						:step="60 * 15"
-						v-model="scheduledTime"
-					/>
+					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
 					<div class="flex flex-col space-y-4">
 						<FormControl
 							label="Skip failing patches if any"
@@ -67,7 +57,8 @@
 	</Dialog>
 </template>
 <script>
-import { FormControl, getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui';
+import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
 import dayjs, { dayjsIST } from '../utils/dayjs';
 
@@ -76,7 +67,7 @@ export default {
 	props: ['site'],
 	components: {
 		GenericList,
-		FormControl
+		DateTimeControl
 	},
 	data() {
 		return {

@@ -14,8 +14,8 @@
 		</div>
 		<div class="mt-1">
 			<ErrorMessage :message="error" />
-			<template v-if="!error && subdomainExists">
-				<div v-if="subdomainExists" class="text-sm text-green-600">
+			<template v-if="!error">
+				<div v-if="!subdomainExists" class="text-sm text-green-600">
 					{{ subdomain }}.{{ domain }} is available
 				</div>
 				<div v-else class="text-sm text-red-600">
@@ -35,7 +35,7 @@ export default {
 	data() {
 		return {
 			error: '',
-			subdomain: '',
+			subdomain: this.modelValue || '',
 			subdomainExists: false
 		};
 	},
@@ -58,14 +58,13 @@ export default {
 				validate() {
 					return validateSubdomain(this.subdomain);
 				},
-				onSuccess() {
-					this.subdomainExists = true;
+				onSuccess(data) {
+					this.subdomainExists = data;
 					this.error = '';
 					this.$emit('update:modelValue', this.subdomain);
 				},
 				onError(err) {
 					this.error = err;
-					this.$emit('update:modelValue', '');
 				}
 			};
 		}

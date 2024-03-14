@@ -19,6 +19,7 @@
   "is_self_hosted",
   "is_server_prepared",
   "is_server_renamed",
+  "ignore_incidents",
   "billing_section",
   "team",
   "column_break_11",
@@ -455,10 +456,16 @@
    "fieldname": "skip_scheduled_backups",
    "fieldtype": "Check",
    "label": "Skip Scheduled Backups"
+  },
+  {
+   "default": "0",
+   "fieldname": "ignore_incidents",
+   "fieldtype": "Check",
+   "label": "Ignore Incidents"
   }
  ],
  "links": [],
- "modified": "2024-02-19 14:01:02.197832",
+ "modified": "2024-03-13 13:08:57.593735",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

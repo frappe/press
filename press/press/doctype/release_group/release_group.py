@@ -18,6 +18,7 @@ from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and, cstr, flt, sbool
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
+from press.press.doctype.app.app import new_app
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -44,6 +45,7 @@ DEFAULT_DEPENDENCIES = [
 class ReleaseGroup(Document, TagHelpers):
 	dashboard_fields = ["title", "version", "apps", "team", "public"]
 	dashboard_actions = [
+		"add_app",
 		"remove_app",
 		"change_app_branch",
 		"fetch_latest_app_update",
@@ -58,6 +60,7 @@ class ReleaseGroup(Document, TagHelpers):
 		"archive",
 		"get_certificate",
 		"generate_certificate",
+		"redeploy",
 	]
 
 	@staticmethod
@@ -402,6 +405,11 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
+
+	@frappe.whitelist()
+	def redeploy(self):
+		dc = self.create_duplicate_deploy_candidate()
+		dc.deploy_to_production()
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_update=None) -> "DeployCandidate":
@@ -878,7 +886,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def add_app(self, source):
+	def append_source(self, source):
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
 
@@ -1006,6 +1014,27 @@ class ReleaseGroup(Document, TagHelpers):
 		benches = frappe.get_all("Bench", "name", {"group": self.name, "status": "Active"})
 		for bench in benches:
 			frappe.get_doc("Bench", bench.name).update_bench_config(force=True)
+
+	@frappe.whitelist()
+	def add_app(self, app):
+		if isinstance(app, str):
+			app = json.loads(app)
+
+		name = app["name"]
+
+		if frappe.db.exists("App", name):
+			app_doc = frappe.get_doc("App", name)
+		else:
+			app_doc = new_app(name, app["title"])
+
+		source = app_doc.add_source(
+			self.version,
+			app["repository_url"],
+			app["branch"],
+			self.team,
+			app.get("github_installation_id", None),
+		)
+		self.append_source(source)
 
 	@frappe.whitelist()
 	def remove_app(self, app: str):

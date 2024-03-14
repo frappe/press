@@ -43,6 +43,33 @@ let router = createRouter({
 			meta: { isLoginPage: true }
 		},
 		{
+			name: 'New Site',
+			path: '/sites/new',
+			component: () => import('./pages/NewSite.vue')
+		},
+		{
+			name: 'Bench New Site',
+			path: '/benches/:bench/sites/new',
+			component: () => import('./pages/NewSite.vue'),
+			props: true
+		},
+		{
+			name: 'New Release Group',
+			path: '/benches/new',
+			component: () => import('./pages/NewBench.vue')
+		},
+		{
+			name: 'Server New Bench',
+			path: '/servers/:server/benches/new',
+			component: () => import('./pages/NewBench.vue'),
+			props: true
+		},
+		{
+			name: 'New Server',
+			path: '/servers/new',
+			component: () => import('./pages/NewServer.vue')
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
@@ -66,6 +93,11 @@ let router = createRouter({
 					name: 'BillingPaymentMethods',
 					path: 'payment-methods',
 					component: () => import('./pages/BillingPaymentMethods.vue')
+				},
+				{
+					name: 'BillingMarketplacePayouts',
+					path: 'payouts',
+					component: () => import('./pages/BillingMarketplacePayouts.vue')
 				}
 			]
 		},
@@ -168,10 +200,18 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
 		let onboardingRoute = 'Welcome';
+
+		let visitingSiteOrBillingOrSettings =
+			to.name.startsWith('Site') ||
+			to.name.startsWith('Billing') ||
+			to.name.startsWith('NewAppTrial') ||
+			to.name.startsWith('Settings');
+
+		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
 		if (
 			onboardingIncomplete &&
 			to.name != onboardingRoute &&
-			(to.name.includes('Release Group') || to.name.includes('Server'))
+			!visitingSiteOrBillingOrSettings
 		) {
 			next({ name: onboardingRoute });
 			return;

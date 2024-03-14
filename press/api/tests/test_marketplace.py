@@ -10,12 +10,10 @@ import responses
 import frappe
 from press.api.marketplace import (
 	add_app,
-	add_reply,
 	add_version,
 	become_publisher,
 	branches,
 	change_app_plan,
-	communication,
 	create_app_plan,
 	create_approval_request,
 	developer_toggle_allowed,
@@ -31,8 +29,6 @@ from press.api.marketplace import (
 	change_branch,
 	remove_version,
 	reset_features_for_plan,
-	review_stages,
-	start_review,
 	subscriptions,
 	update_app_description,
 	update_app_links,
@@ -370,36 +366,6 @@ class TestAPIMarketplace(unittest.TestCase):
 		remove_version(self.marketplace_app.name, "Nightly")
 		self.marketplace_app.reload()
 		self.assertEqual(old_versions, len(self.marketplace_app.sources))
-
-	def test_app_review_steps(self):
-		frappe.set_user(self.team.user)
-
-		# description, links and publish
-		old_stages = review_stages(self.marketplace_app.name)
-		self.assertEqual(False, old_stages["links"])
-		self.assertEqual(False, old_stages["description"])
-		self.assertEqual(False, old_stages["publish"])
-		self.marketplace_app.description = "Test"
-		self.marketplace_app.long_description = "Test Text"
-		self.marketplace_app.website = frappe.mock("url")
-		self.marketplace_app.support = frappe.mock("url")
-		self.marketplace_app.documentation = frappe.mock("url")
-		self.marketplace_app.save(ignore_permissions=True)
-		self.marketplace_app.reload()
-		new_stages = review_stages(self.marketplace_app.name)
-		self.assertEqual(True, new_stages["description"])
-		self.assertEqual(True, new_stages["links"])
-
-		# reply
-		add_reply(self.marketplace_app.name, "Test")
-		comm = communication(self.marketplace_app.name)
-		self.assertIsNotNone(comm)
-
-		# ready for review
-		self.assertNotEqual(self.marketplace_app.status, "In Review")
-		start_review(self.marketplace_app.name)
-		self.marketplace_app.reload()
-		self.assertEqual(self.marketplace_app.status, "In Review")
 
 	@responses.activate
 	def test_branches(self):

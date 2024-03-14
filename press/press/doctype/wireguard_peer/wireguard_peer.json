@@ -6,19 +6,24 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "server_section",
+  "server_type",
+  "server_name",
   "peer_name",
+  "upstream_proxy",
+  "column_break_bsvs",
+  "status",
   "ip",
   "private_ip",
-  "status",
-  "peer_ip",
+  "peer_private_network",
+  "wireguard_section",
   "wireguard_network",
+  "peer_ip",
+  "allowed_ips",
+  "column_break_aqot",
   "is_wireguard_setup",
-  "column_break_bsvs",
   "private_key",
   "public_key",
-  "allowed_ips",
-  "peer_private_network",
-  "upstream_proxy",
   "config_tab",
   "peer_config"
  ],
@@ -113,11 +118,40 @@
    "label": "Peer Config",
    "options": "conf",
    "read_only": 1
+  },
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Server\nDatabase Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Server Name",
+   "options": "server_type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "server_section",
+   "fieldtype": "Section Break",
+   "label": "Server"
+  },
+  {
+   "fieldname": "wireguard_section",
+   "fieldtype": "Section Break",
+   "label": "Wireguard"
+  },
+  {
+   "fieldname": "column_break_aqot",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-08-11 13:00:39.385957",
+ "modified": "2024-03-11 18:18:39.689700",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Wireguard Peer",

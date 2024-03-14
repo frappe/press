@@ -1,8 +1,9 @@
 <template>
-	<div class="shrink-0 bg-white" v-if="saasProduct">
-		<div class="max-w-[480px]">
-			<div class="prose prose-sm mt-4" v-html="saasProduct.description" />
-		</div>
+	<div
+		class="h-screen max-w-none shrink-0 overflow-hidden bg-white"
+		v-if="saasProduct"
+	>
+		<div v-html="saasProduct.description" />
 	</div>
 </template>
 <script>

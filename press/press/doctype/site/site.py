@@ -130,6 +130,10 @@ class Site(Document, TagHelpers):
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
+		doc.outbound_ip, proxy_server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server"]
+		)
+		doc.inbound_ip = frappe.get_value("Proxy Server", proxy_server, "ip")
 		return doc
 
 	def site_action(allowed_status: List[str]):
@@ -348,7 +352,7 @@ class Site(Document, TagHelpers):
 					# TODO: check if app is available and can be installed
 
 		if not find(self.apps, lambda x: x.app == app):
-			log_site_activity(self.name, "Install App")
+			log_site_activity(self.name, "Install App", app)
 			agent = Agent(self.server)
 			agent.install_app_site(self, app)
 			self.status = "Pending"

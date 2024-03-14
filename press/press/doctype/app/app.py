@@ -12,6 +12,8 @@ if typing.TYPE_CHECKING:
 
 
 class App(Document):
+	dashboard_fields = ["title"]
+
 	def add_source(
 		self,
 		version,
