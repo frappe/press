@@ -6,6 +6,23 @@ from frappe.model.document import Document
 
 
 class PressNotification(Document):
+	dashboard_fields = [
+		"team",
+		"document_type",
+		"class",
+		"type",
+		"document_name",
+		"is_actionable",
+		"read",
+		"is_addressed",
+		"title",
+		"message",
+		"traceback",
+		"assistance_url",
+	]
+
+	dashboard_actions = ["mark_as_addressed"]
+
 	def after_insert(self):
 		if frappe.local.dev_server:
 			return
@@ -23,6 +40,13 @@ class PressNotification(Document):
 					"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
 				},
 			)
+
+	@frappe.whitelist()
+	def mark_as_addressed(self):
+		self.read = True
+		self.is_addressed = True
+		self.save()
+		frappe.db.commit()
 
 
 def create_new_notification(team, type, document_type, document_name, message):

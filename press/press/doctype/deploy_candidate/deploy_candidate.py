@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
 from typing import List, Optional, Tuple
@@ -28,12 +29,15 @@ from press.press.doctype.app_release.app_release import (
 	AppReleasePair,
 	get_changed_files_between_hashes,
 )
-from press.press.doctype.press_notification.press_notification import (
-	create_new_notification,
+from press.press.doctype.deploy_candidate.deploy_notifications import (
+	create_build_failed_notification,
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app_release.app_release import AppRelease
 
 
 class DeployCandidate(Document):
@@ -50,6 +54,28 @@ class DeployCandidate(Document):
 		"apps",
 		"group",
 	]
+
+	@staticmethod
+	def get_list_query(query):
+		results = query.run(as_dict=True)
+		names = [r.name for r in results]
+		notifications = frappe.get_all(
+			"Press Notification",
+			fields=["name", "document_name"],
+			filters={
+				"document_type": "Deploy Candidate",
+				"document_name": ["in", names],
+				"class": "Error",
+				"is_actionable": True,
+				"is_addressed": False,
+			},
+		)
+		notification_map = {n.document_name: n.name for n in notifications}
+		for result in results:
+			if name := result.get("name"):
+				result.addressable_notification = notification_map.get(name)
+
+		return results
 
 	def get_doc(self, doc):
 		doc.jobs = []
@@ -204,7 +230,12 @@ class DeployCandidate(Document):
 		try:
 			self.create_deploy(staging)
 		except Exception:
-			log_error("Deploy Creation Error", candidate=self.name)
+			log_error(
+				"Deploy Creation Error",
+				candidate=self.name,
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 
 	def _build(
 		self,
@@ -229,14 +260,15 @@ class DeployCandidate(Document):
 				deploy_to_staging,
 			)
 		except Exception:
+			self._build_failed()
+			self._build_end()
+			create_build_failed_notification(self)
 			log_error(
 				"Deploy Candidate Build Exception",
 				name=self.name,
 				reference_doctype="Deploy Candidate",
 				reference_name=self.name,
 			)
-			self._build_failed()
-			self._build_end()
 			raise
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
@@ -385,6 +417,8 @@ class DeployCandidate(Document):
 		)
 		if bench_update:
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
+
+		self._fail_last_running_step()
 		self.save()
 		frappe.db.commit()
 
@@ -403,6 +437,15 @@ class DeployCandidate(Document):
 		self.build_duration = self.build_end - self.build_start
 		self.save()
 		frappe.db.commit()
+
+	def _fail_last_running_step(self):
+		for step in self.build_steps:
+			if step.status == "Failure":
+				return
+
+			if step.status == "Running":
+				step.status = "Failure"
+				break
 
 	def add_pre_build_steps(self):
 		"""
@@ -469,8 +512,12 @@ class DeployCandidate(Document):
 
 		try:
 			update = self.get_pull_update_dict()
-		except Exception as e:
-			log_error(title="Failed to get Pull Update Dict", data=e)
+		except Exception:
+			log_error(
+				title="Failed to get Pull Update Dict",
+				reference_doctype="Deploy Candidate",
+				reference_name=self.name,
+			)
 			return
 
 		for app in self.apps:
@@ -511,7 +558,7 @@ class DeployCandidate(Document):
 				self.save(ignore_version=True)
 				frappe.db.commit()
 
-				release = frappe.get_doc("App Release", app.release, for_update=True)
+				release: "AppRelease" = frappe.get_doc("App Release", app.release, for_update=True)
 				release._clone()
 				source = release.clone_directory
 
@@ -1131,25 +1178,6 @@ class DeployCandidate(Document):
 		return deploy
 
 	def on_update(self):
-		# failure notification
-		if self.status == "Failure":
-			error_msg = " - ".join(
-				frappe.get_value(
-					"Deploy Candidate Build Step",
-					{"parent": self.name, "status": "Failure"},
-					["stage", "step"],
-				)
-				or []
-			)
-			group_title = frappe.get_value("Release Group", self.group, "title")
-
-			create_new_notification(
-				self.team,
-				"Bench Deploy",
-				self.doctype,
-				self.name,
-				f"The scheduled deploy on the bench <b>{group_title}</b> failed at step <b>{error_msg}</b>",
-			)
 		if self.status == "Running":
 			frappe.publish_realtime(
 				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}

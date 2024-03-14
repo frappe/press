@@ -70,21 +70,14 @@ class AppRelease(Document):
 		frappe.enqueue_doc(self.doctype, self.name, "_clone")
 
 	def _clone(self):
-		try:
-			if self.cloned:
-				return
-			self._set_prepared_clone_directory()
-			self._set_code_server_url()
-			self._clone_repo()
-			self.cloned = True
-			self.save(ignore_permissions=True)
-		except Exception:
-			log_error(
-				"App Release Clone Exception",
-				release=self.name,
-				reference_doctype="App Release",
-				reference_name=self.name,
-			)
+		if self.cloned:
+			return
+
+		self._set_prepared_clone_directory()
+		self._set_code_server_url()
+		self._clone_repo()
+		self.cloned = True
+		self.save(ignore_permissions=True)
 
 	def run(self, command):
 		try:
@@ -135,11 +128,7 @@ class AppRelease(Document):
 			if "Repository not found." not in stdout:
 				raise e
 
-			frappe.throw(
-				f"Repository could not be fetched for {self.app}. "
-				"Please ensure repository access for Frappe Cloud: "
-				" https://frappecloud.com/docs/faq/custom_apps"
-			)
+			raise Exception("Repository could not be fetched", self.app)
 
 		self.output += self.run(f"git checkout {self.hash}")
 		self.output += self.run(f"git reset --hard {self.hash}")
@@ -148,14 +137,9 @@ class AppRelease(Document):
 		if not source.github_installation_id:
 			return source.repository_url
 
-		try:
-			token = get_access_token(source.github_installation_id)
-		except KeyError:
-			frappe.throw(
-				f"App installation token could not be fetched for {self.app}. "
-				"Please ensure repository access for Frappe Cloud: "
-				" https://frappecloud.com/docs/faq/custom_apps"
-			)
+		token = get_access_token(source.github_installation_id)
+		if token is None:
+			raise Exception("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
 

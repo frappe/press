@@ -59,6 +59,7 @@ ALLOWED_DOCTYPES = [
 	"Payout Order",
 	"App Patch",
 	"SaaS Product",
+	"Press Notification",
 ]
 
 
