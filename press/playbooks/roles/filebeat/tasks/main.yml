@@ -20,7 +20,7 @@
 
 - name: Add Elasticsearch Repository
   apt_repository:
-    repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+    repo: deb https://artifacts.elastic.co/packages/8.x/apt stable main
     state: present
     update_cache: true
 
@@ -39,12 +39,12 @@
 
 - name: Setup Filebeat Modules
   template:
-    src: "modules.d/{{ item }}.yml"
-    dest: "/etc/filebeat/modules.d/{{ item }}.yml"
+    src: 'modules.d/{{ item }}.yml'
+    dest: '/etc/filebeat/modules.d/{{ item }}.yml'
   loop:
-    - "mysql"
-    - "system"
-    - "nginx"
+    - 'mysql'
+    - 'system'
+    - 'nginx'
 
 - name: Create Filebeat Modules Directory
   file:
@@ -53,12 +53,12 @@
 
 - name: Setup Filebeat Inputs
   template:
-    src: "inputs.d/{{ item }}.yml"
-    dest: "/etc/filebeat/inputs.d/{{ item }}.yml"
+    src: 'inputs.d/{{ item }}.yml'
+    dest: '/etc/filebeat/inputs.d/{{ item }}.yml'
   loop:
-    - "all"
-    - "containers"
-    - "monitor"
+    - 'all'
+    - 'containers'
+    - 'monitor'
 
 - name: Restart Filebeat Daemon
   systemd:
