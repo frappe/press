@@ -136,7 +136,7 @@
 								:options="
 									selectedGithubUser.value.repos.map(r => ({
 										label: r.name,
-										value: r
+										value: r.name
 									}))
 								"
 								v-model="selectedGithubRepository"
