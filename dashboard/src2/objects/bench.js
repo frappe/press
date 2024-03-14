@@ -412,7 +412,7 @@ export default {
 									confirmDialog({
 										title: 'Deploy Bench',
 										message:
-											'Are you sure you want to redeploy the bench without any app updates?',
+											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
 										onSuccess: ({ hide }) => {
 											toast.promise(bench.redeploy.submit(), {
 												loading: 'Deploying...',
