@@ -105,7 +105,7 @@
 				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
 				<div
 					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 4fr 4fr"
+					style="grid-template-columns: 3fr 4fr"
 				>
 					<div class="text-gray-600">Frappe Framework Version:</div>
 					<div class="text-gray-900">
@@ -131,6 +131,7 @@
 			>
 				<FormControl
 					type="checkbox"
+					class="w-1/2"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me shall stand applicable to me and Frappe.`"
 				/>
