@@ -10,7 +10,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-2xl">
+	<div class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -59,7 +59,7 @@
 						Select Region
 					</h2>
 					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+						<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 							<button
 								v-for="c in options?.regions"
 								:key="c.name"

@@ -5,7 +5,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl px-5">
+	<div class="mx-auto max-w-2xl px-5">
 		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
 			Loading...
 		</div>
@@ -20,7 +20,7 @@
 					</h2>
 				</div>
 				<div class="mt-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="v in options.versions"
 							:key="v.name"
@@ -54,7 +54,7 @@
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="c in selectedVersion.group.clusters"
 							:key="c.name"
@@ -94,7 +94,7 @@
 					<SitePlansCards v-model="plan" />
 				</div>
 			</div>
-			<div v-if="selectedVersion && plan && cluster" class="w-1/2">
+			<div v-if="selectedVersion && plan && cluster">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Enter Subdomain
 				</h2>
@@ -136,84 +136,13 @@
 					</template>
 				</div>
 			</div>
-			<div class="w-1/2" v-if="selectedVersion && cluster && plan && subdomain">
-				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 2fr 4fr"
-				>
-					<div class="text-gray-600">Version:</div>
-					<div class="text-gray-900">{{ selectedVersion.name }}</div>
-					<div class="text-gray-600">Apps:</div>
-					<div class="text-gray-900">
-						{{
-							apps.length
-								? $format.commaAnd(
-										selectedVersionApps
-											.filter(app => apps.map(a => a.app).includes(app.app))
-											.map(app => app.app_title)
-								  )
-								: 'No apps selected'
-						}}
-					</div>
-
-					<div class="text-gray-600">Region:</div>
-					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
-					<div class="text-gray-600">Site URL:</div>
-					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
-				</div>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 2fr 4fr"
-				>
-					<div class="text-gray-600">Site Plan:</div>
-					<div v-if="selectedPlan">
-						<span class="text-gray-900">
-							{{
-								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? selectedPlan.price_inr
-										: selectedPlan.price_usd
-								)
-							}}
-							per month
-						</span>
-					</div>
-					<div v-else>{{ plan }}</div>
-					<div class="text-gray-600">Product Warranty:</div>
-					<div class="text-gray-900">
-						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
-					</div>
-					<template v-for="app in apps.filter(a => a.plan)" :key="app.app">
-						<div class="text-gray-600">
-							{{
-								selectedVersionPublicApps.find(a => app.app === a.app).app_title
-							}}
-							Plan:
-						</div>
-						<div>
-							<span class="text-gray-900">
-								{{
-									$format.userCurrency(
-										$team.doc.currency == 'INR'
-											? app.plan.price_inr
-											: app.plan.price_usd
-									)
-								}}
-								per month
-							</span>
-						</div>
-					</template>
-					<div class="text-gray-600">Total:</div>
-					<div>
-						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
-						<div class="text-gray-600">{{ totalPerDay }} per day</div>
-					</div>
-				</div>
-			</div>
+			<Summary
+				v-if="selectedVersion && cluster && plan && subdomain"
+				:options="siteSummaryOptions"
+			/>
 			<div
 				v-if="selectedVersion && cluster && plan"
-				class="flex w-1/2 flex-col space-y-4"
+				class="flex flex-col space-y-4"
 			>
 				<FormControl
 					class="checkbox"
@@ -229,7 +158,7 @@
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 			</div>
-			<div class="w-1/2" v-if="selectedVersion && cluster && plan">
+			<div v-if="selectedVersion && cluster && plan">
 				<Button
 					class="w-full"
 					variant="solid"
@@ -260,6 +189,7 @@ import Header from '../components/Header.vue';
 import router from '../router';
 import { plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
+import Summary from '../components/Summary.vue';
 
 export default {
 	name: 'NewSite',
@@ -274,6 +204,7 @@ export default {
 		FeatherIcon,
 		TextInput,
 		Tooltip,
+		Summary,
 		Header
 	},
 	data() {
@@ -478,6 +409,63 @@ export default {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth)
 			);
+		},
+		siteSummaryOptions() {
+			let appPlans = [];
+			for (let app of this.apps.filter(app => app.plan)) {
+				appPlans.push(
+					`${
+						this.selectedVersionPublicApps.find(a => a.app === app.app)
+							.app_title
+					} ${
+						app.plan.price_inr
+							? `- <span class="text-gray-600">${this.$format.userCurrency(
+									this.$team.doc.currency == 'INR'
+										? app.plan.price_inr
+										: app.plan.price_usd
+							  )} per month</span>`
+							: ''
+					}`
+				);
+			}
+
+			return [
+				{
+					label: 'Frappe Framework Version',
+					value: this.selectedVersion?.name
+				},
+				{
+					label: 'Region',
+					value: this.selectedClusterTitle
+				},
+				{
+					label: 'Site URL',
+					value: `${this.subdomain}.${this.options?.domain}`
+				},
+				{
+					label: 'Site Plan',
+					value: `${this.$format.userCurrency(
+						this.$team.doc.currency == 'INR'
+							? this.selectedPlan.price_inr
+							: this.selectedPlan.price_usd
+					)} per month`
+				},
+				{
+					label: 'Product Warranty',
+					value: this.selectedPlan.support_included
+						? 'Included'
+						: 'Not Included'
+				},
+				{
+					label: 'Apps',
+					value: this.apps.length ? appPlans.join('<br>') : 'No apps selected'
+				},
+				{
+					label: 'Total',
+					value: `${this.totalPerMonth} per month <div class="text-gray-600">${this.totalPerDay} per day</div>`,
+					condition: () => this._totalPerMonth
+				}
+			];
 		}
 	}
 };

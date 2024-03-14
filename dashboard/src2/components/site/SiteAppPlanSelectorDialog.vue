@@ -18,7 +18,7 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<div class="grid grid-cols-3 gap-3">
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
 				<button
 					v-for="plan in app.plans"
 					:key="plan.name"

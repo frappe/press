@@ -1,7 +1,7 @@
 <template>
 	<div class="@container" v-if="plans.length">
 		<div
-			class="grid grid-cols-1 gap-3 @md:grid-cols-2 @2xl:grid-cols-3 @3xl:grid-cols-4"
+			class="grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-3 @3xl:grid-cols-4"
 		>
 			<button
 				v-for="(plan, i) in plans"

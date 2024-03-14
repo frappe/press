@@ -3,6 +3,56 @@
 		v-if="$appServer?.doc"
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
+		<div class="flex flex-col space-y-4">
+			<div class="rounded-md border">
+				<div class="flex h-12 items-center justify-between border-b px-5">
+					<h2 class="text-lg font-medium text-gray-900">
+						Application Server Plan
+					</h2>
+					<Button @click="showPlanChangeDialog('Server')"> Change </Button>
+				</div>
+				<div v-if="$appServer.doc.current_plan">
+					<div
+						v-for="d in current_usage('Server')"
+						:key="d.label"
+						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					>
+						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
+						<div class="w-2/3 text-base font-medium">
+							{{ d.value }}
+						</div>
+					</div>
+				</div>
+				<div v-else class="flex items-center justify-center p-3">
+					<div class="text-base text-gray-700">No Plan Selected</div>
+				</div>
+			</div>
+			<div class="rounded-md border">
+				<div class="flex h-12 items-center justify-between border-b px-5">
+					<h2 class="text-lg font-medium text-gray-900">
+						Database Server Plan
+					</h2>
+					<Button @click="showPlanChangeDialog('Database Server')">
+						Change
+					</Button>
+				</div>
+				<div v-if="$dbServer.doc?.current_plan">
+					<div
+						v-for="d in current_usage('Database Server')"
+						:key="d.label"
+						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
+					>
+						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
+						<div class="w-2/3 text-base font-medium">
+							{{ d.value }}
+						</div>
+					</div>
+				</div>
+				<div v-else class="flex items-center justify-center p-3">
+					<div class="text-base text-gray-700">No Plan Selected</div>
+				</div>
+			</div>
+		</div>
 		<div class="rounded-md border">
 			<div class="h-12 border-b px-5 py-4">
 				<h2 class="text-lg font-medium text-gray-900">Server Information</h2>
@@ -16,52 +66,6 @@
 					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
 					<div class="w-2/3 text-base font-medium">{{ d.value }}</div>
 				</div>
-			</div>
-		</div>
-		<div class="rounded-md border">
-			<div class="flex h-12 items-center justify-between border-b px-5">
-				<h2 class="text-lg font-medium text-gray-900">
-					Application Server Plan
-				</h2>
-				<Button @click="showPlanChangeDialog('Server')"> Change </Button>
-			</div>
-			<div v-if="$appServer.doc.current_plan">
-				<div
-					v-for="d in current_usage('Server')"
-					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">
-						{{ d.value }}
-					</div>
-				</div>
-			</div>
-			<div v-else class="flex items-center justify-center p-3">
-				<div class="text-base text-gray-700">No Plan Selected</div>
-			</div>
-		</div>
-		<div class="rounded-md border">
-			<div class="flex h-12 items-center justify-between border-b px-5">
-				<h2 class="text-lg font-medium text-gray-900">Database Server Plan</h2>
-				<Button @click="showPlanChangeDialog('Database Server')">
-					Change
-				</Button>
-			</div>
-			<div v-if="$dbServer.doc?.current_plan">
-				<div
-					v-for="d in current_usage('Database Server')"
-					:key="d.label"
-					class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
-				>
-					<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-					<div class="w-2/3 text-base font-medium">
-						{{ d.value }}
-					</div>
-				</div>
-			</div>
-			<div v-else class="flex items-center justify-center p-3">
-				<div class="text-base text-gray-700">No Plan Selected</div>
 			</div>
 		</div>
 	</div>

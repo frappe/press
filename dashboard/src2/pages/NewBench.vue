@@ -27,7 +27,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl">
+	<div class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
@@ -36,7 +36,7 @@
 					</h2>
 				</div>
 				<div class="mt-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="version in options.versions"
 							:key="version.name"
@@ -64,7 +64,7 @@
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="c in options?.clusters"
 							:key="c.name"
@@ -91,53 +91,24 @@
 					Enter Bench Title
 				</h2>
 				<div class="mt-2">
-					<FormControl
-						v-model="benchTitle"
-						type="text"
-						class="block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
-					/>
+					<FormControl v-model="benchTitle" type="text" />
 				</div>
 			</div>
-			<div
-				class="w-1/2"
+			<Summary
 				v-if="benchVersion && (benchRegion || server) && benchTitle"
-			>
-				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 3fr 4fr"
-				>
-					<div class="text-gray-600">Frappe Framework Version:</div>
-					<div class="text-gray-900">
-						{{ benchVersion }}
-					</div>
-					<div v-if="benchRegion" class="text-gray-600">Region:</div>
-					<div v-if="benchRegion" class="text-gray-900">
-						{{ benchRegion }}
-					</div>
-					<div v-if="server" class="text-gray-600">Server:</div>
-					<div v-if="server" class="text-gray-900">
-						{{ server }}
-					</div>
-					<div class="text-gray-600">Title:</div>
-					<div class="text-gray-900">
-						{{ benchTitle }}
-					</div>
-				</div>
-			</div>
+				:options="summaryOptions"
+			/>
 			<div
 				class="flex flex-col space-y-4"
 				v-if="benchVersion && (benchRegion || server) && benchTitle"
 			>
 				<FormControl
 					type="checkbox"
-					class="w-1/2"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me shall stand applicable to me and Frappe.`"
 				/>
 				<ErrorMessage class="my-2" :message="$resources.createBench.error" />
 				<Button
-					class="w-1/2"
 					variant="solid"
 					:disabled="!agreedToRegionConsent"
 					@click="
@@ -171,10 +142,13 @@
 	</div>
 </template>
 <script>
+import Summary from '../components/Summary.vue';
 import Header from '../components/Header.vue';
+
 export default {
 	name: 'NewBench',
 	components: {
+		Summary,
 		Header
 	},
 	props: ['server'],
@@ -223,6 +197,28 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		summaryOptions() {
+			return [
+				{
+					label: 'Frappe Framework Version',
+					value: this.benchVersion
+				},
+				{
+					label: 'Region',
+					value: this.benchRegion,
+					condition: () => !this.server
+				},
+				{
+					label: 'Server',
+					value: this.server,
+					condition: () => this.server
+				},
+				{
+					label: 'Title',
+					value: this.benchTitle
+				}
+			];
 		}
 	}
 };

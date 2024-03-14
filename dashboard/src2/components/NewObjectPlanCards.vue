@@ -1,6 +1,6 @@
 <template>
 	<div class="@container" v-if="plans.length">
-		<div class="grid grid-cols-2 gap-3 @3xl:grid-cols-4">
+		<div class="grid grid-cols-2 gap-3 @xl:grid-cols-3">
 			<button
 				v-for="(plan, i) in plans"
 				:key="plan.name"
