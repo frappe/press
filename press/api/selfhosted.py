@@ -42,7 +42,6 @@ def create_self_hosted_server(server_details, team, proxy_server):
 			}
 		).insert()
 	except frappe.DuplicateEntryError as e:
-		print(e)
 		# Exception return  tupple like ('Self Hosted Server', 'SHS-00018.cloud.pressonprem.com')
 		server_name = e.args[1]
 		return server_name
@@ -118,7 +117,6 @@ def app_server_verified(_server_details, server_doc):
 
 	if result.status == "Success":
 		server_doc.fetch_system_specifications(result.name, server_type="app")
-		server_doc.save()
 		server_doc.reload()
 		return True
 
@@ -136,7 +134,6 @@ def db_server_verified(_server_details, server_doc):
 
 	if result.status == "Success":
 		server_doc.fetch_system_specifications(result.name, server_type="db")
-		server_doc.save()
 		server_doc.reload()
 		return True
 
