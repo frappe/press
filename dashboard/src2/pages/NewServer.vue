@@ -180,7 +180,6 @@
 					<div class="text-gray-900">
 						{{ serverTitle }}
 					</div>
-
 					<div v-if="serverRegion" class="text-gray-600">Region:</div>
 					<div v-if="serverRegion" class="text-gray-900">
 						{{ serverRegion }}
@@ -196,6 +195,30 @@
 					</div>
 					<div v-if="dbServerPlan" class="text-gray-900">
 						{{ $format.planTitle(dbServerPlan) }} per month
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-600">
+						App Server Public IP:
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-900">
+						{{ appPublicIP }}
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-600">
+						App Server Private IP:
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-900">
+						{{ appPrivateIP }}
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-600">
+						Database Server Public IP:
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-900">
+						{{ dbPublicIP }}
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-600">
+						Database Server Private IP:
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-900">
+						{{ dbPrivateIP }}
 					</div>
 					<div v-if="serverType === 'hybrid'" class="text-gray-600">Plan:</div>
 					<div v-if="serverType === 'hybrid'" class="text-gray-900">
@@ -413,6 +436,14 @@ export default {
 						!this.dbPrivateIP
 					) {
 						return 'Please fill all the IP addresses';
+					} else if (this.validateIP(this.appPublicIP)) {
+						return 'Please enter a valid Application Public IP';
+					} else if (this.validateIP(this.appPrivateIP)) {
+						return 'Please enter a valid Application Private IP';
+					} else if (this.validateIP(this.dbPublicIP)) {
+						return 'Please enter a valid Database Public IP';
+					} else if (this.validateIP(this.dbPrivateIP)) {
+						return 'Please enter a valid Database Private IP';
 					} else if (this.dbPublicIP === this.appPublicIP) {
 						return "Please don't use the same server as Application and Database servers";
 					} else if (!this.agreedToRegionConsent) {
@@ -449,6 +480,13 @@ export default {
 		totalPerDay() {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth)
+			);
+		}
+	},
+	methods: {
+		validateIP(ip) {
+			return !ip.match(
+				/^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
 			);
 		}
 	}
