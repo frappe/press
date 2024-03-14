@@ -10,14 +10,14 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl">
+	<div class="mx-auto max-w-2xl">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Choose Server Type
 				</h2>
 				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3">
 						<button
 							v-for="c in options?.server_types"
 							:key="c.name"
@@ -49,7 +49,7 @@
 					<FormControl
 						v-model="serverTitle"
 						type="text"
-						class="block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+						class="block rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
 					/>
 				</div>
 			</div>
@@ -86,7 +86,7 @@
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
 							Select Application Server Plan
 						</h2>
-						<div class="mt-2 w-full space-y-2">
+						<div class="mt-2 space-y-2">
 							<NewObjectPlanCards
 								v-model="appServerPlan"
 								:plans="options.app_plans"
@@ -114,8 +114,14 @@
 						App Server IP Addresses
 					</h2>
 					<div class="flex space-x-3">
-						<FormControl v-model="appPublicIP" label="Public IP" type="text" />
 						<FormControl
+							class="w-full"
+							v-model="appPublicIP"
+							label="Public IP"
+							type="text"
+						/>
+						<FormControl
+							class="w-full"
 							v-model="appPrivateIP"
 							label="Private IP"
 							type="text"
@@ -127,23 +133,87 @@
 						Database Server IP Addresses
 					</h2>
 					<div class="flex space-x-3">
-						<FormControl v-model="dbPublicIP" label="Public IP" type="text" />
-						<FormControl v-model="dbPrivateIP" label="Private IP" type="text" />
+						<FormControl
+							class="w-full"
+							v-model="dbPublicIP"
+							label="Public IP"
+							type="text"
+						/>
+						<FormControl
+							class="w-full"
+							v-model="dbPrivateIP"
+							label="Private IP"
+							type="text"
+						/>
 					</div>
 				</div>
 				<div class="flex flex-col space-y-2">
 					<h2 class="text-sm font-medium leading-6 text-gray-900">
 						Add SSH Key
 					</h2>
-					<span class="w-1/2 text-xs text-gray-600">
+					<span class="text-xs text-gray-600">
 						Add this SSH Key to
 						<span class="font-mono">~/.ssh/authorized_keys</span>
 						file on Application and Database server</span
 					>
-					<ClickToCopy
-						class="w-1/2"
-						:textContent="$resources.hybridOptions.data.ssh_key"
-					/>
+					<ClickToCopy :textContent="$resources.hybridOptions.data.ssh_key" />
+				</div>
+			</div>
+			<div
+				class="w-full"
+				v-if="
+					serverTitle &&
+					(serverRegion ||
+						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
+				"
+			>
+				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
+				<div
+					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
+					style="grid-template-columns: 4fr 4fr"
+				>
+					<div class="text-gray-600">Server Type:</div>
+					<div class="text-gray-900">
+						{{ serverType === 'dedicated' ? 'Dedicated' : 'Hybrid' }}
+					</div>
+					<div class="text-gray-600">Server Name:</div>
+					<div class="text-gray-900">
+						{{ serverTitle }}
+					</div>
+
+					<div v-if="serverRegion" class="text-gray-600">Region:</div>
+					<div v-if="serverRegion" class="text-gray-900">
+						{{ serverRegion }}
+					</div>
+					<div v-if="appServerPlan" class="text-gray-600">
+						Application Server Plan:
+					</div>
+					<div v-if="appServerPlan" class="text-gray-900">
+						{{ $format.planTitle(appServerPlan) }} per month
+					</div>
+					<div v-if="dbServerPlan" class="text-gray-600">
+						Database Server Plan:
+					</div>
+					<div v-if="dbServerPlan" class="text-gray-900">
+						{{ $format.planTitle(dbServerPlan) }} per month
+					</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-600">Plan:</div>
+					<div v-if="serverType === 'hybrid'" class="text-gray-900">
+						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }} per
+						month <span class="text-gray-600"> x 2</span>
+					</div>
+					<div
+						v-if="(appServerPlan && dbServerPlan) || serverType === 'hybrid'"
+						class="text-gray-600"
+					>
+						Total:
+					</div>
+					<div
+						v-if="(appServerPlan && dbServerPlan) || serverType === 'hybrid'"
+					>
+						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
+						<div class="text-gray-600">{{ totalPerDay }} per day</div>
+					</div>
 				</div>
 			</div>
 			<div
@@ -166,7 +236,6 @@
 					"
 				/>
 				<Button
-					class="w-1/2"
 					variant="solid"
 					:disabled="!agreedToRegionConsent"
 					@click="
@@ -185,13 +254,14 @@
 										app_public_ip: appPublicIP,
 										app_private_ip: appPrivateIP,
 										db_public_ip: dbPublicIP,
-										db_private_ip: dbPrivateIP
+										db_private_ip: dbPrivateIP,
+										plan: $resources.hybridOptions.data.plans[0]
 									}
 							  })
 					"
 					:loading="$resources.createServer.loading"
 				>
-					Create Server
+					{{ serverType === 'hybrid' ? 'Add Hybrid Server' : 'Create Server' }}
 				</Button>
 			</div>
 		</div>
@@ -352,6 +422,25 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		_totalPerMonth() {
+			let currencyField =
+				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
+			if (this.serverType === 'dedicated') {
+				return (
+					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
+				);
+			} else if (this.serverType === 'hybrid') {
+				return this.$resources.hybridOptions?.data?.plans[0][currencyField] * 2;
+			}
+		},
+		totalPerMonth() {
+			return this.$format.userCurrency(this._totalPerMonth);
+		},
+		totalPerDay() {
+			return this.$format.userCurrency(
+				this.$format.pricePerDay(this._totalPerMonth)
+			);
 		}
 	}
 };
