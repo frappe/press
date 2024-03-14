@@ -159,86 +159,14 @@
 					<ClickToCopy :textContent="$resources.hybridOptions.data.ssh_key" />
 				</div>
 			</div>
-			<div
-				class="w-full"
+			<Summary
+				:options="summaryOptions"
 				v-if="
 					serverTitle &&
-					(serverRegion ||
+					((serverRegion && dbServerPlan && appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
-			>
-				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 4fr 4fr"
-				>
-					<div class="text-gray-600">Server Type:</div>
-					<div class="text-gray-900">
-						{{ serverType === 'dedicated' ? 'Dedicated' : 'Hybrid' }}
-					</div>
-					<div class="text-gray-600">Server Name:</div>
-					<div class="text-gray-900">
-						{{ serverTitle }}
-					</div>
-					<div v-if="serverRegion" class="text-gray-600">Region:</div>
-					<div v-if="serverRegion" class="text-gray-900">
-						{{ serverRegion }}
-					</div>
-					<div v-if="appServerPlan" class="text-gray-600">
-						Application Server Plan:
-					</div>
-					<div v-if="appServerPlan" class="text-gray-900">
-						{{ $format.planTitle(appServerPlan) }} per month
-					</div>
-					<div v-if="dbServerPlan" class="text-gray-600">
-						Database Server Plan:
-					</div>
-					<div v-if="dbServerPlan" class="text-gray-900">
-						{{ $format.planTitle(dbServerPlan) }} per month
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-600">
-						App Server Public IP:
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-900">
-						{{ appPublicIP }}
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-600">
-						App Server Private IP:
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-900">
-						{{ appPrivateIP }}
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-600">
-						Database Server Public IP:
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-900">
-						{{ dbPublicIP }}
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-600">
-						Database Server Private IP:
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-900">
-						{{ dbPrivateIP }}
-					</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-600">Plan:</div>
-					<div v-if="serverType === 'hybrid'" class="text-gray-900">
-						{{ $format.planTitle($resources.hybridOptions.data.plans[0]) }} per
-						month <span class="text-gray-600"> x 2</span>
-					</div>
-					<div
-						v-if="(appServerPlan && dbServerPlan) || serverType === 'hybrid'"
-						class="text-gray-600"
-					>
-						Total:
-					</div>
-					<div
-						v-if="(appServerPlan && dbServerPlan) || serverType === 'hybrid'"
-					>
-						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
-						<div class="text-gray-600">{{ totalPerDay }} per day</div>
-					</div>
-				</div>
-			</div>
+			/>
 			<div
 				class="flex flex-col space-y-4"
 				v-if="
@@ -295,6 +223,7 @@
 </template>
 <script>
 import Header from '../components/Header.vue';
+import Summary from '../components/Summary.vue';
 import NewObjectPlanCards from '../components/NewObjectPlanCards.vue';
 import ClickToCopy from '../../src/components/ClickToCopyField.vue';
 
@@ -302,6 +231,7 @@ export default {
 	components: {
 		NewObjectPlanCards,
 		ClickToCopy,
+		Summary,
 		Header
 	},
 	props: ['server'],
@@ -318,6 +248,17 @@ export default {
 			dbPrivateIP: '',
 			agreedToRegionConsent: false
 		};
+	},
+	watch: {
+		serverType() {
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
+			this.serverRegion = '';
+			this.appPublicIP = '';
+			this.appPrivateIP = '';
+			this.dbPublicIP = '';
+			this.dbPrivateIP = '';
+		}
 	},
 	resources: {
 		options() {
@@ -481,6 +422,63 @@ export default {
 			return this.$format.userCurrency(
 				this.$format.pricePerDay(this._totalPerMonth)
 			);
+		},
+		summaryOptions() {
+			return [
+				{
+					label: 'Server Name',
+					value: this.serverTitle
+				},
+				{
+					label: 'Region',
+					value: this.serverRegion,
+					condition: () => this.serverType === 'dedicated'
+				},
+				{
+					label: 'App Server Plan',
+					value: this.$format.planTitle(this.appServerPlan) + ' per month',
+					condition: () => this.serverType === 'dedicated'
+				},
+				{
+					label: 'DB Server Plan',
+					value: this.$format.planTitle(this.dbServerPlan) + ' per month',
+					condition: () => this.serverType === 'dedicated'
+				},
+				{
+					label: 'App Public IP',
+					value: this.appPublicIP,
+					condition: () => this.serverType === 'hybrid'
+				},
+				{
+					label: 'App Private IP',
+					value: this.appPrivateIP,
+					condition: () => this.serverType === 'hybrid'
+				},
+				{
+					label: 'DB Public IP',
+					value: this.dbPublicIP,
+					condition: () => this.serverType === 'hybrid'
+				},
+				{
+					label: 'DB Private IP',
+					value: this.dbPrivateIP,
+					condition: () => this.serverType === 'hybrid'
+				},
+				{
+					label: 'Plan',
+					value: `${this.$format.planTitle(
+						this.$resources.hybridOptions?.data?.plans[0]
+					)} per month`,
+					condition: () =>
+						this.serverType === 'hybrid' &&
+						this.$resources.hybridOptions?.data?.plans[0]
+				},
+				{
+					label: 'Total',
+					value: `${this.totalPerMonth} per month <div class="text-gray-600"> ${this.totalPerDay} per day</div>`,
+					condition: () => this._totalPerMonth
+				}
+			];
 		}
 	},
 	methods: {
