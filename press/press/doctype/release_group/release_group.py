@@ -60,6 +60,7 @@ class ReleaseGroup(Document, TagHelpers):
 		"archive",
 		"get_certificate",
 		"generate_certificate",
+		"redeploy",
 	]
 
 	@staticmethod
@@ -404,6 +405,11 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def create_duplicate_deploy_candidate(self):
 		return self.create_deploy_candidate([])
+
+	@frappe.whitelist()
+	def redeploy(self):
+		dc = self.create_duplicate_deploy_candidate()
+		dc.deploy_to_production()
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_update=None) -> "DeployCandidate":

@@ -9,6 +9,7 @@ import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue
 import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import LucideRocket from '~icons/lucide/rocket';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
 
@@ -31,7 +32,8 @@ export default {
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		redeploy: 'redeploy'
 	},
 	list: {
 		route: '/benches',
@@ -380,14 +382,62 @@ export default {
 							fieldname: 'owner',
 							width: 1
 						}
-					]
+					],
+					primaryAction({ listResource: deploys, documentResource: bench }) {
+						return {
+							label: 'Deploy',
+							slots: {
+								prefix: icon(LucideRocket)
+							},
+							onClick() {
+								if (bench.doc.deploy_information.deploy_in_progress) {
+									return toast.error(
+										'Another deploy is in progress. Please wait for it to complete.'
+									);
+								} else if (bench.doc.deploy_information.update_available) {
+									let UpdateBenchDialog = defineAsyncComponent(() =>
+										import('../components/bench/UpdateBenchDialog.vue')
+									);
+									renderDialog(
+										h(UpdateBenchDialog, {
+											bench: bench.name,
+											onSuccess(candidate) {
+												bench.doc.deploy_information.deploy_in_progress = true;
+												bench.doc.deploy_information.last_deploy.name =
+													candidate;
+											}
+										})
+									);
+								} else {
+									confirmDialog({
+										title: 'Deploy Bench',
+										message:
+											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
+										onSuccess: ({ hide }) => {
+											toast.promise(bench.redeploy.submit(), {
+												loading: 'Deploying...',
+												success: () => {
+													hide();
+													deploys.reload();
+													return 'Bench Deployed';
+												},
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											});
+										}
+									});
+								}
+							}
+						};
+					}
 				}
 			},
 			{
 				label: 'Jobs',
 				icon: icon('truck'),
-				// highlight: route =>
-				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
 				route: 'jobs',
 				type: 'list',
 				list: {
