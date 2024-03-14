@@ -399,7 +399,7 @@ export default {
 		},
 		createHybridServer() {
 			return {
-				url: 'press.api.selfhosted.new',
+				url: 'press.api.selfhosted.create_and_verify_selfhosted',
 				validate() {
 					if (!this.serverTitle) {
 						return 'Server name is required';
@@ -415,6 +415,12 @@ export default {
 					} else if (!this.agreedToRegionConsent) {
 						return 'Please agree to the region consent';
 					}
+				},
+				onSuccess(server) {
+					router.push({
+						name: 'Server Detail Plays',
+						params: { name: server }
+					});
 				}
 			};
 		}
