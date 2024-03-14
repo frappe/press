@@ -1,5 +1,5 @@
 <template>
-	<FTabs v-model="currentTab" :tabs="tabs">
+	<FTabs v-if="tabs?.length" v-model="currentTab" :tabs="tabs">
 		<template #default="{ tab }">
 			<slot name="tab-content" :tab="tab">
 				<router-view :tab="tab" />

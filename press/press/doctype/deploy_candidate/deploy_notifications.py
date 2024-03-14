@@ -94,13 +94,14 @@ def update_with_github_token_error(
 		return
 
 	details["is_actionable"] = True
-	details["title"] += ": App access token could not be fetched"
+	details["title"] = "App access token could not be fetched"
 
+	app_name = {app: s.step for s in dc.build_steps if s.step_slug == app}.get(app, app)
 	message = f"""
-	{details['message']}
+	<p>{details['message']}</p>
 
-	App installation access token could not be fetched from GitHub API for the app <b>{app}</b>.
-	To rectify this issue, please follow the steps mentioned in the link.
+	<p><b>{app_name}</b> installation access token could not be fetched from GitHub.
+	To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["app-installation-issue"]
@@ -126,8 +127,7 @@ def is_installation_token_none(dc: "DeployCandidate", app: str) -> bool:
 
 
 def get_default_title(dc: "DeployCandidate") -> str:
-	rg_title = frappe.get_value("Release Group", dc.group, "title")
-	return f"<b>[{rg_title}]</b> Deploy Failed"
+	return "Build Failed"
 
 
 def get_default_message(dc: "DeployCandidate") -> str:

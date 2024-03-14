@@ -1,5 +1,5 @@
 {
-	"include": ["./src/**/*"],
+	"include": ["./src/**/*", "src2/components/AddressableErrorDialog.vue"],
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {

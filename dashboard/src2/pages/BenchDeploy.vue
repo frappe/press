@@ -1,6 +1,6 @@
 <template>
 	<div class="p-5" v-if="deploy">
-		<AlertAddressibleError
+		<AlertAddressableError
 			v-if="error"
 			class="mb-5"
 			:name="error.name"
@@ -78,14 +78,14 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
-import AlertAddressibleError from '../components/AlertAddressibleError.vue';
+import AlertAddressableError from '../components/AlertAddressableError.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,
-		AlertAddressibleError
+		AlertAddressableError
 	},
 	resources: {
 		deploy() {

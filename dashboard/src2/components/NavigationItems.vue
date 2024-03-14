@@ -82,6 +82,13 @@ export default {
 					condition: Boolean(this.$team.doc.erpnext_partner),
 					disabled
 				}
+				// {
+				// 	name: 'Notifications',
+				// 	icon: () => h(Notification),
+				// 	route: '/notifications',
+				// 	isActive: routeName.startsWith('Notification'),
+				// 	disabled
+				// }
 			].filter(item => item.condition !== false);
 		}
 	}

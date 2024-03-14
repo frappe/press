@@ -1,6 +1,7 @@
-import { h, isVNode, ref } from 'vue';
+import { h, isVNode, ref, render } from 'vue';
 import { FeatherIcon } from 'frappe-ui';
 import ConfirmDialog from '../dialogs/ConfirmDialog.vue';
+import AddressableErrorDialog from '../components/AddressableErrorDialog.vue';
 
 export function icon(name, _class = '') {
 	let iconComponent;
@@ -29,6 +30,10 @@ export function confirmDialog({
 			onSuccess
 		})
 	);
+}
+
+export function addressableErrorDialog(name) {
+	renderDialog(h(AddressableErrorDialog, { name }));
 }
 
 export const dialogs = ref([]);
