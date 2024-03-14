@@ -118,6 +118,7 @@ def app_server_verified(_server_details, server_doc):
 	if result.status == "Success":
 		server_doc.fetch_system_specifications(result.name, server_type="app")
 		server_doc.reload()
+		server_doc.validate_private_ip(result.name, server_type="app")
 		return True
 
 	server_doc.status = "Broken"
@@ -135,6 +136,7 @@ def db_server_verified(_server_details, server_doc):
 	if result.status == "Success":
 		server_doc.fetch_system_specifications(result.name, server_type="db")
 		server_doc.reload()
+		server_doc.validate_private_ip(result.name, server_type="db")
 		return True
 
 	server_doc.status = "Broken"
