@@ -89,6 +89,53 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
+		if frappe.db.get_value("Prometheus Alert Rule", self.alert, "enable_reactions"):
+			enqueue_doc(
+				self.doctype,
+				self.name,
+				"react",
+				enqueue_after_commit=True,
+				job_id=f"react:{self.alert}",
+				deduplicate=True,
+			)
+
+	def ongoing_reaction_exists(self, instance):
+		ongoing_incident_status = frappe.db.get_value(  # using get_value for for_update
+			"Prometheus Alert Reaction",
+			{
+				"alert": self.alert,
+				"instance": instance,
+				"status": ("in", ["Pending", "Running"]),
+			},
+			"status",
+			for_update=True,
+		)
+		return bool(ongoing_incident_status)
+
+	def react(self):
+		for instance in self.get_instances_from_alerts_payload(self.payload):
+			self.react_for_instance(instance)
+
+	def react_for_instance(self, instance):
+		if self.ongoing_reaction_exists(instance):
+			return
+
+		instance_type = self.guess_doctype(instance)
+
+		frappe.new_doc(
+			"Prometheus Alert Reaction",
+			rule=self.name,
+			instance_type=instance_type,
+			instance=instance,
+		).insert()
+
+	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
+		instances = []
+		payload = json.loads(payload)
+		instances.extend(
+			[alert["labels"]["instance"] for alert in payload["alerts"]]
+		)  # sites
+		return set(instances)
 
 	def get_past_alert_instances(self):
 		past_alerts = frappe.get_all(
@@ -110,10 +157,7 @@ class AlertmanagerWebhookLog(Document):
 
 		instances = []
 		for alert in past_alerts:
-			payload = json.loads(alert["payload"])
-			instances.extend(
-				[alert["labels"]["instance"] for alert in payload["alerts"]]
-			)  # sites
+			instances.extend(self.get_instances_from_alerts_payload(alert["payload"]))
 		return set(instances)
 
 	def total_instances(self) -> int:

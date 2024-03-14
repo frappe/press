@@ -98,12 +98,3 @@ class PrometheusAlertRule(Document):
 			routes_dict["route"]["routes"].append(rule_doc.get_route())
 
 		return routes_dict
-
-	def react(self, instance_type: str, instance: str):
-		frappe.new_doc(
-			"Prometheus Alert Reaction",
-			rule=self.name,
-			instance_type=instance_type,
-			instance=instance,
-			method_name=self.reaction_method,
-		).insert()
