@@ -2,7 +2,7 @@
 	<div v-if="saasProduct">
 		<div class="flex min-h-screen sm:bg-gray-50">
 			<ProductSignupPitch
-				class="hidden w-[40%] sm:block"
+				class="order-1 hidden sm:block"
 				v-if="saasProduct"
 				:saasProduct="saasProduct"
 			/>
@@ -69,7 +69,7 @@
 							class="w-full"
 							variant="solid"
 							@click="createSite"
-							:loading="findingFastestServer || siteRequest.createSite.loading"
+							:loading="findingClosestServer || siteRequest.createSite.loading"
 						>
 							Create
 						</Button>
@@ -112,6 +112,19 @@
 						</div>
 					</div>
 				</LoginBox>
+				<div class="absolute bottom-12 left-1/2 -translate-x-1/2">
+					<Dropdown
+						:options="[
+							{ label: 'Log out', onClick: () => $session.logout.submit() }
+						]"
+					>
+						<Button variant="ghost">
+							<span class="text-gray-600">
+								{{ $team.doc.user }}
+							</span>
+						</Button>
+					</Dropdown>
+				</div>
 			</div>
 			<Dialog
 				:options="{
@@ -174,19 +187,6 @@
 					</div>
 				</template>
 			</Dialog>
-		</div>
-		<div class="absolute bottom-12 left-1/2 -translate-x-1/2 sm:left-[70%]">
-			<Dropdown
-				:options="[
-					{ label: 'Log out', onClick: () => $session.logout.submit() }
-				]"
-			>
-				<Button variant="ghost">
-					<span class="text-gray-600">
-						{{ $team.doc.user }}
-					</span>
-				</Button>
-			</Dropdown>
 		</div>
 	</div>
 </template>

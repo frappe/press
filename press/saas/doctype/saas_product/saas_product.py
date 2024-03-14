@@ -13,7 +13,6 @@ class SaaSProduct(Document):
 	def get_doc(self, doc):
 		if not self.published:
 			frappe.throw("Not permitted")
-		doc.description = frappe.utils.md_to_html(self.description)
 		doc.proxy_servers = self.get_proxy_servers_for_available_clusters()
 		return doc
 

@@ -204,6 +204,7 @@ router.beforeEach(async (to, from, next) => {
 		let visitingSiteOrBillingOrSettings =
 			to.name.startsWith('Site') ||
 			to.name.startsWith('Billing') ||
+			to.name.startsWith('NewAppTrial') ||
 			to.name.startsWith('Settings');
 
 		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
