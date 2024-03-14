@@ -179,10 +179,13 @@ def options_for_new():
 
 
 @frappe.whitelist()
-def create_and_verify_selfhosted(server_details):
-	self_hosted_server_name = new(server_details)
+def create_and_verify_selfhosted(server):
+	self_hosted_server_name = new(server)
+
 	if verify(self_hosted_server_name):
+		setup(self_hosted_server_name)
 		return frappe.get_value("Self Hosted Server", self_hosted_server_name, "server")
+
 	else:
 		frappe.throw(
 			"Server verification failed. Please check the server details and try again."

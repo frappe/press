@@ -393,7 +393,7 @@ export default {
 					}
 				},
 				onSuccess(server) {
-					router.push({
+					this.$router.push({
 						name: 'Server Detail Plays',
 						params: { name: server.server }
 					});
@@ -420,7 +420,7 @@ export default {
 					}
 				},
 				onSuccess(server) {
-					router.push({
+					this.$router.push({
 						name: 'Server Detail Plays',
 						params: { name: server }
 					});
