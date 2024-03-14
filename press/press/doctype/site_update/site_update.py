@@ -2,16 +2,18 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import pytz
 import random
-import frappe
-
-from press.agent import Agent
 from datetime import datetime
-from press.utils import log_error, get_last_doc
+
+import frappe
+import pytz
 from frappe.core.utils import find
 from frappe.model.document import Document
+from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
+
+from press.agent import Agent
+from press.utils import get_last_doc, log_error
 
 
 class SiteUpdate(Document):
@@ -28,6 +30,17 @@ class SiteUpdate(Document):
 	]
 
 	dashboard_actions = ["start"]
+
+	@staticmethod
+	def get_list_query(query):
+		results = query.run(as_dict=True)
+		for result in results:
+			if result.updated_on:
+				result.updated_on = convert_utc_to_system_timezone(result.updated_on).replace(
+					tzinfo=None
+				)
+
+		return results
 
 	def validate(self):
 		if not self.is_new():
