@@ -80,18 +80,11 @@ def sshkey():
 @frappe.whitelist()
 def verify(server):
 	server_doc = frappe.get_doc("Self Hosted Server", server)
-	_server_details = frappe._dict(
-		{
-			"ssh_user": server_doc.ssh_user,
-			"ssh_port": server_doc.ssh_port,
-			"doctype": "Self Hosted Server",
-			"name": server_doc.name,
-		}
-	)
 
-	if app_server_verified(_server_details, server_doc) and db_server_verified(
-		_server_details, server_doc
-	):
+	app_server_verified = verify_server("app", server_doc)
+	db_server_verified = verify_server("db", server_doc)
+
+	if app_server_verified and db_server_verified:
 		server_doc.check_minimum_specs()
 
 		server_doc.status = "Pending"
@@ -107,38 +100,29 @@ def verify(server):
 	return False
 
 
-def app_server_verified(_server_details, server_doc):
+def verify_server(server_type, server_doc):
 	ping = Ansible(
 		playbook="ping.yml",
-		server=_server_details.update({"ip": server_doc.ip}),
-	)
-
-	result = ping.run()
-
-	if result.status == "Success":
-		server_doc.fetch_system_specifications(result.name, server_type="app")
-		server_doc.reload()
-		return True
-
-	server_doc.status = "Broken"
-	server_doc.save()
-	return False
-
-
-def db_server_verified(_server_details, server_doc):
-	ping = Ansible(
-		playbook="ping.yml",
-		server=_server_details.update({"ip": server_doc.mariadb_ip}),
+		server=frappe._dict(
+			{
+				"doctype": "Self Hosted Server",
+				"name": server_doc.name,
+				"ssh_user": server_doc.ssh_user,
+				"ssh_port": server_doc.ssh_port,
+				"ip": server_doc.ip if server_type == "app" else server_doc.mariadb_ip,
+			}
+		),
 	)
 	result = ping.run()
 
 	if result.status == "Success":
-		server_doc.fetch_system_specifications(result.name, server_type="db")
+		server_doc.validate_private_ip(result.name, server_type=server_type)
+
+		server_doc.fetch_system_specifications(result.name, server_type=server_type)
 		server_doc.reload()
+
 		return True
 
-	server_doc.status = "Broken"
-	server_doc.save()
 	return False
 
 

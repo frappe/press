@@ -647,6 +647,30 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("Fetching RAM failed", server=self.as_dict())
 
+	def validate_private_ip(self, play_id=None, server_type="app"):
+		if not play_id:
+			play_id = self._get_play_id()
+
+		all_ipv4_addresses = []
+		result = self._get_play(play_id)
+
+		try:
+			all_ipv4_addresses = result["ansible_facts"]["all_ipv4_addresses"]
+		except Exception:
+			log_error("Fetching Private IP failed", server=self.as_dict())
+			return
+
+		private_ip = self.private_ip
+		public_ip = self.ip
+		if server_type == "db":
+			private_ip = self.mariadb_private_ip
+			public_ip = self.mariadb_ip
+
+		if private_ip not in all_ipv4_addresses:
+			frappe.throw(
+				f"Private IP {private_ip} is not associated with server having IP {public_ip} "
+			)
+
 	@frappe.whitelist()
 	def fetch_private_ip(self, play_id=None, server_type="app"):
 		"""
