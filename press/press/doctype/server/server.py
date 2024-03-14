@@ -43,7 +43,19 @@ class BaseServer(Document, TagHelpers):
 		query = query.where(Server.status != "Archived").where(
 			Server.team == frappe.local.team().name
 		)
-		return query
+		results = query.run(as_dict=True)
+
+		for result in results:
+			db_plan_name = frappe.db.get_value("Database Server", result.database_server, "plan")
+			result.db_plan = (
+				frappe.db.get_value(
+					"Server Plan", db_plan_name, ["title", "price_inr", "price_usd"], as_dict=True
+				)
+				if db_plan_name
+				else None
+			)
+
+		return results
 
 	def get_doc(self, doc):
 		from press.api.client import get

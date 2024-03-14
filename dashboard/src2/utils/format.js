@@ -47,7 +47,7 @@ export function planTitle(plan) {
 	let india = $team.doc.country == 'India';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =
-		plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
+		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
 	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
 }
 

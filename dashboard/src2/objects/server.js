@@ -2,7 +2,7 @@ import HelpIcon from '~icons/lucide/help-circle';
 import { defineAsyncComponent, h } from 'vue';
 import { Button } from 'frappe-ui';
 import ServerActions from '../components/server/ServerActions.vue';
-import { userCurrency, bytes, pricePerDay } from '../utils/format';
+import { userCurrency, bytes, pricePerDay, planTitle } from '../utils/format';
 import { icon } from '../utils/components';
 import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
@@ -24,6 +24,7 @@ export default {
 		title: 'Servers',
 		fields: [
 			'title',
+			'database_server',
 			'plan.title as plan_title',
 			'plan.price_usd as price_usd',
 			'plan.price_inr as price_inr',
@@ -42,24 +43,22 @@ export default {
 			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
-				label: 'Plan',
-				width: 1,
+				label: 'App Server Plan',
 				format(value, row) {
-					let $team = getTeam();
-					if (row.price_usd > 0) {
-						let india = $team.doc.country == 'India';
-						let currencySymbol = $team.doc.currency === 'INR' ? '₹' : '$';
-						return `${currencySymbol}${
-							india ? row.price_inr : row.price_usd
-						} /mo`;
-					}
-					return row.plan_title;
+					return planTitle(row);
+				}
+			},
+			{
+				label: 'Database Server Plan',
+				fieldname: 'db_plan',
+				format(value) {
+					if (!value) return '';
+					return planTitle(value);
 				}
 			},
 			{
 				label: 'Region',
 				fieldname: 'cluster',
-				width: 1,
 				format(value, row) {
 					return row.cluster_title || value;
 				},
