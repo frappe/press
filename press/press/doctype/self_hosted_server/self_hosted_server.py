@@ -14,6 +14,9 @@ import json
 
 
 class SelfHostedServer(Document):
+	def before_insert(self):
+		self.validate_is_duplicate()
+
 	def autoname(self):
 		series = make_autoname("SHS-.#####")
 		self.name = f"{series}.{self.hybrid_domain}"
@@ -22,7 +25,6 @@ class SelfHostedServer(Document):
 		self.domain = self.hybrid_domain
 
 	def validate(self):
-		self.validate_is_duplicate()
 		self.set_proxy_details()
 		self.set_mariadb_config()
 		self.set_database_plan()
@@ -36,7 +38,6 @@ class SelfHostedServer(Document):
 			"private_ip": self.private_ip,
 			"mariadb_ip": self.mariadb_ip,
 			"mariadb_private_ip": self.mariadb_private_ip,
-			"name": ("!=", self.name),
 			"status": ("not in", ["Archived", "Broken"]),
 		}
 		duplicate_server = frappe.db.get_value("Self Hosted Server", filters, pluck="name")
@@ -593,26 +594,6 @@ class SelfHostedServer(Document):
 		app_server = frappe.get_doc("Server", self.server)
 		app_server.setup_server()
 
-	@frappe.whitelist()
-	def fetch_system_ram(self, play_id=None):
-		"""
-		Fetch the RAM from the Ping Ansible Play
-		"""
-		if not play_id:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.name, "play": "Ping Server"}
-			).name
-
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
-		try:
-			result = json.loads(play.result)
-			self.ram = result["ansible_facts"]["memtotal_mb"]
-			self.save()
-		except Exception:
-			log_error("Fetching RAM failed", server=self.as_dict())
-
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(
@@ -627,24 +608,6 @@ class SelfHostedServer(Document):
 			and self.team != "Administrator"
 		)
 
-	@frappe.whitelist()
-	def fetch_private_ip(self):
-		"""
-		Fetch the Private IP from the Ping Ansible Play
-		"""
-		play_id = frappe.get_last_doc(
-			"Ansible Play", {"server": self.name, "play": "Ping Server"}
-		).name
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
-		try:
-			result = json.loads(play.result)
-			self.private_ip = fetch_private_ip_based_on_vendor(result)
-			self.save()
-		except Exception:
-			log_error("Fetching Private IP failed", server=self.as_dict())
-
 	def _get_play_id(self):
 		try:
 			play_id = frappe.get_last_doc(
@@ -657,6 +620,53 @@ class SelfHostedServer(Document):
 
 		return play_id
 
+	def _get_play(self, play_id):
+		play = frappe.get_doc(
+			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
+		)
+
+		return json.loads(play.result)
+
+	@frappe.whitelist()
+	def fetch_system_ram(self, play_id=None, server_type="app"):
+		"""
+		Fetch the RAM from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = self._get_play_id()
+
+		try:
+			result = result = self._get_play(play_id)
+
+			if server_type == "app":
+				self.ram = result["ansible_facts"]["memtotal_mb"]
+			else:
+				self.db_ram = result["ansible_facts"]["memtotal_mb"]
+
+			self.save()
+		except Exception:
+			log_error("Fetching RAM failed", server=self.as_dict())
+
+	@frappe.whitelist()
+	def fetch_private_ip(self, play_id=None, server_type="app"):
+		"""
+		Fetch the Private IP from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = self._get_play_id()
+
+		try:
+			result = self._get_play(play_id)
+
+			if server_type == "app":
+				self.private_ip = fetch_private_ip_based_on_vendor(result)
+			else:
+				self.mariadb_private_ip = fetch_private_ip_based_on_vendor(result)
+
+			self.save()
+		except Exception:
+			log_error("Fetching Private IP failed", server=self.as_dict())
+
 	@frappe.whitelist()
 	def fetch_system_specifications(self, play_id=None, server_type="app"):
 		"""
@@ -665,11 +675,8 @@ class SelfHostedServer(Document):
 		if not play_id:
 			play_id = self._get_play_id()
 
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
 		try:
-			result = json.loads(play.result)
+			result = self._get_play(play_id)
 			if server_type == "app":
 
 				self.vendor = result["ansible_facts"]["system_vendor"]
@@ -742,7 +749,7 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 		case "DigitalOcean":
 			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
 		case "Hetzner":
-			return play_result["ansible_facts"]["all_ipv4_addresses"][2]
+			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
 		case "Amazon EC2":
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
 		case "Microsoft Corporation":
