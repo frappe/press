@@ -13,7 +13,7 @@
 
 - name: Copy Processs Exporter Binary
   copy:
-    src: /tmp/process-exporter-0.7.10.linux-amd64/process_exporter
+    src: /tmp/process-exporter-0.7.10.linux-amd64/process-exporter
     dest: /opt/process_exporter/process_exporter
     remote_src: yes
     mode: 0755
