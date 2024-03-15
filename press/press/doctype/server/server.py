@@ -414,7 +414,8 @@ class BaseServer(Document, TagHelpers):
 	@property
 	def subscription(self):
 		name = frappe.db.get_value(
-			"Subscription", {"document_type": self.doctype, "document_name": self.name}
+			"Subscription",
+			{"document_type": self.doctype, "document_name": self.name, "team": self.team},
 		)
 		return frappe.get_doc("Subscription", name) if name else None
 
