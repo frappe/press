@@ -34,7 +34,11 @@ const tabs = [
 	{
 		label: 'Permissions',
 		icon: icon('lock'),
-		routeName: 'SettingsPermission'
+		routeName: 'SettingsPermission',
+		childrenRoutes: [
+			'SettingsPermissionGroupList',
+			'SettingsPermissionGroupPermissions'
+		]
 	}
 ];
 
