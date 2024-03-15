@@ -49,6 +49,9 @@ class Cluster(Document):
 		"title",
 		"image",
 		"description",
+		"team",
+		"availability_zone",
+		"cidr_block",
 		"status",
 		"public",
 		"region",
@@ -172,12 +175,7 @@ class Cluster(Document):
 			self.monitoring_password = frappe.generate_hash()
 
 	def provision_on_aws_ec2(self):
-		client = boto3.client(
-			"ec2",
-			region_name=self.region,
-			aws_access_key_id=self.aws_access_key_id,
-			aws_secret_access_key=self.get_password("aws_secret_access_key"),
-		)
+		client = self._get_aws_ec2_connection()
 
 		response = client.create_vpc(
 			AmazonProvidedIpv6CidrBlock=False,
@@ -324,13 +322,17 @@ class Cluster(Document):
 			pass
 		self.save()
 
-	def create_proxy_security_group(self):
-		client = boto3.client(
+	def _get_aws_ec2_connection(self):
+		return boto3.client(
 			"ec2",
 			region_name=self.region,
 			aws_access_key_id=self.aws_access_key_id,
 			aws_secret_access_key=self.get_password("aws_secret_access_key"),
 		)
+
+	def create_proxy_security_group(self):
+		client = self._get_aws_ec2_connection()
+
 		response = client.create_security_group(
 			GroupName=f"Frappe Cloud - {self.name} - Proxy - Security Group",
 			Description="Allow Everything on Proxy",
@@ -743,3 +745,11 @@ class Cluster(Document):
 			filters={**filters, **extra_filters},
 			fields=["name", "title", "image", "beta"],
 		)
+
+	def get_aws_availability_zones(self):
+		client = self._get_aws_ec2_connection()
+		return client.describe_availability_zones()["AvailabilityZones"]
+
+	def describe_aws_security_group(self, group_id):
+		client = self._get_aws_ec2_connection()
+		return client.describe_security_groups(GroupIds=[group_id])["SecurityGroups"][0]
