@@ -33,7 +33,7 @@ scrape_configs:
           - /home/frappe/prometheus/file_sd/self.yml
 
   - job_name: press
-    scrape_interval: 1m
+    scrape_interval: 15s
     scheme: https
     basic_auth:
       username: frappe
