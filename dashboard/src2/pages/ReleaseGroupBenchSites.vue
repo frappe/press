@@ -204,8 +204,7 @@ export default {
 										},
 										{
 											label: 'SSH Access',
-											condition: () =>
-												row.status === 'Active' && row.hasSSHAcess,
+											condition: () => row.status === 'Active',
 											onClick: () => {
 												renderDialog(
 													h(SSHCertificateDialog, {
