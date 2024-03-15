@@ -89,7 +89,9 @@
 						<div class="mt-2 space-y-2">
 							<NewObjectPlanCards
 								v-model="appServerPlan"
-								:plans="options.app_plans"
+								:plans="
+									options.app_plans.filter(p => p.cluster === serverRegion)
+								"
 							/>
 						</div>
 					</div>
@@ -102,7 +104,9 @@
 						<div class="mt-2 w-full space-y-2">
 							<NewObjectPlanCards
 								v-model="dbServerPlan"
-								:plans="options.db_plans"
+								:plans="
+									options.db_plans.filter(p => p.cluster === serverRegion)
+								"
 							/>
 						</div>
 					</div>
