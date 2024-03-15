@@ -454,6 +454,7 @@ export default {
 				label: 'Jobs',
 				icon: icon('truck'),
 				route: 'jobs',
+				childrenRoutes: ['Bench Job'],
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
