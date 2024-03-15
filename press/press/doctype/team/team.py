@@ -64,7 +64,7 @@ class Team(Document):
 		user = frappe.db.get_value(
 			"User",
 			frappe.session.user,
-			["name", "first_name", "last_name", "user_image", "user_type", "email"],
+			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
 		doc.user_info = user

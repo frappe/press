@@ -119,6 +119,11 @@ let router = createRouter({
 					component: () => import('./components/settings/TeamSettings.vue')
 				},
 				{
+					name: 'SettingsDeveloper',
+					path: 'developer',
+					component: () => import('./components/settings/DeveloperSettings.vue')
+				},
+				{
 					name: 'SettingsPermission',
 					path: 'permissions',
 					component: () =>

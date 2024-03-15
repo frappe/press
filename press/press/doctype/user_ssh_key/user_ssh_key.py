@@ -10,6 +10,9 @@ from frappe.model.document import Document
 
 
 class UserSSHKey(Document):
+	dashboard_fields = ["ssh_fingerprint", "is_default"]
+	dashboard_actions = ["delete"]
+
 	valid_key_types = [
 		"ssh-rsa",
 		"ssh-ed25519",
