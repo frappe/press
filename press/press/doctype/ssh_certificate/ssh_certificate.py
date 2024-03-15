@@ -52,7 +52,11 @@ class SSHCertificate(Document):
 	def validate_existing_certificates(self):
 		if frappe.get_all(
 			"SSH Certificate",
-			{"user": self.user, "valid_until": [">", frappe.utils.now()], "group": self.group},
+			{
+				"user_ssh_key": self.user_ssh_key,
+				"valid_until": [">", frappe.utils.now()],
+				"group": self.group,
+			},
 		):
 			frappe.throw("A valid certificate already exists.")
 
