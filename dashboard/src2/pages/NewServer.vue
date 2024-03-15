@@ -175,7 +175,7 @@
 				class="flex flex-col space-y-4"
 				v-if="
 					serverTitle &&
-					(serverRegion ||
+					((serverRegion && dbServerPlan && appServerPlan) ||
 						(appPublicIP && appPrivateIP && dbPublicIP && dbPrivateIP))
 				"
 			>
