@@ -21,9 +21,14 @@ class MariaDBStalk(Document):
 			table, filters=table.creation < (Now() - Interval(days=days))
 		)
 		for stalk in stalks:
-			stalk = frappe.get_doc("MariaDB Stalk", stalk)
-			stalk.create_json_gz_file()
-			stalk.delete(delete_permanently=True)
+			try:
+				stalk = frappe.get_doc("MariaDB Stalk", stalk)
+				stalk.create_json_gz_file()
+				stalk.delete(delete_permanently=True)
+				frappe.db.commit()
+			except Exception:
+				log_error("MariaDB Stalk Delete Error")
+				frappe.db.rollback()
 
 	def create_json_gz_file(self):
 		filename = f"mariadb-stalk-{self.server}-{self.timestamp}.json.gz"
