@@ -2,7 +2,7 @@ import {
 	createListResource,
 	LoadingIndicator,
 	frappeRequest,
-	Button
+	Tooltip
 } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
@@ -353,7 +353,22 @@ export default {
 						{
 							label: 'App',
 							fieldname: 'app',
-							width: 1
+							width: 1,
+							suffix(row) {
+								if (!row.is_app_patched) {
+									return;
+								}
+
+								return h(
+									Tooltip,
+									{
+										text: 'App has been patched',
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									() => h(icon('alert-circle', 'w-3 h-3'))
+								);
+							}
 						},
 						{
 							label: 'Branch',
