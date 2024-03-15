@@ -91,7 +91,7 @@ export default {
 							return h(
 								Tooltip,
 								{
-									text: 'Patches applied',
+									text: 'Apps in this deploy have been patched',
 									placement: 'top',
 									class: 'rounded-full bg-gray-100 p-1'
 								},
