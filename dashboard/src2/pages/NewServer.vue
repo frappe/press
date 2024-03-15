@@ -59,7 +59,7 @@
 						Select Region
 					</h2>
 					<div class="mt-2 w-full space-y-2">
-						<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+						<div class="grid grid-cols-2 gap-3">
 							<button
 								v-for="c in options?.regions"
 								:key="c.name"
@@ -71,11 +71,14 @@
 									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
 								]"
 							>
-								<div class="flex w-full items-center space-x-2">
-									<img :src="c.image" class="h-5 w-5" />
-									<span class="text-sm font-medium">
-										{{ c.title }}
-									</span>
+								<div class="flex w-full items-center justify-between">
+									<div class="flex w-full items-center space-x-2">
+										<img :src="c.image" class="h-5 w-5" />
+										<span class="text-sm font-medium">
+											{{ c.title }}
+										</span>
+									</div>
+									<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 								</div>
 							</button>
 						</div>
