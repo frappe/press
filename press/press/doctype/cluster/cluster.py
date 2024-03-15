@@ -45,7 +45,15 @@ if typing.TYPE_CHECKING:
 
 
 class Cluster(Document):
-	dashboard_fields = ["title", "image"]
+	dashboard_fields = [
+		"title",
+		"image",
+		"description",
+		"status",
+		"public",
+		"region",
+		"cloud_provider",
+	]
 
 	base_servers = {
 		"Proxy Server": "n",
@@ -70,6 +78,8 @@ class Cluster(Document):
 				filters={"name": ("in", cluster_names)},
 			)
 			return clusters
+		else:
+			return query
 
 	def validate(self):
 		self.validate_monitoring_password()
