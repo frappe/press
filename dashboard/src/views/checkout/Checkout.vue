@@ -5,6 +5,7 @@
 			v-if="step === 1"
 			:secretKey="secretKey"
 			:subscription="$resources.subscription.data"
+			:team="$resources.subscription.data.team"
 			v-model:step="step"
 			v-model:selectedPlan="selectedPlan"
 		/>
