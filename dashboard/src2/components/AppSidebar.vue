@@ -16,6 +16,11 @@
 						onClick: support
 					},
 					{
+						label: 'Share Feedback',
+						icon: 'file-text',
+						onClick: feedback
+					},
+					{
 						label: 'Logout',
 						icon: 'log-out',
 						onClick: $session.logout.submit
@@ -112,6 +117,12 @@ export default {
 	methods: {
 		support() {
 			window.open('https://frappecloud.com/support', '_blank');
+		},
+		feedback() {
+			window.open(
+				'https://frappecloud.com/frappe-cloud-feedback/new',
+				'_blank'
+			);
 		},
 		switchToOldDashboard() {
 			toast.promise(

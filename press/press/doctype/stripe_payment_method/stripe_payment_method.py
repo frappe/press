@@ -20,7 +20,7 @@ class StripePaymentMethod(Document):
 		"name_on_card",
 		"last_4",
 	]
-	dashboard_actions = ["set_default"]
+	dashboard_actions = ["set_default", "delete"]
 
 	def onload(self):
 		load_address_and_contact(self)
