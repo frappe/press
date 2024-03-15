@@ -140,9 +140,7 @@ export default {
 				},
 				{
 					label: 'Storage',
-					value: `${formatBytes(currentUsage.disk || 0)} / ${formatBytes(
-						currentPlan.disk
-					)}`
+					value: `${currentUsage.disk || 0} GB / ${currentPlan.disk} GB`
 				}
 			];
 		}
