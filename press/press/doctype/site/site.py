@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 import dateutil.parser
 import frappe
 import requests
+from frappe import _
 from frappe.core.utils import find
 from frappe.frappeclient import FrappeClient
 from frappe.model.document import Document
@@ -1341,6 +1342,15 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
+		plan = frappe.db.get_value(
+			"Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
+		)
+		if self.plan and plan.is_trial_plan:
+			frappe.throw(_("Cannot deactivate site on a trial plan"))
+
+		if self.plan and plan.is_frappe_plan:
+			frappe.throw(_("Cannot deactivate site on a Frappe plan"))
+
 		log_site_activity(self.name, "Deactivate Site")
 		self.status = "Inactive"
 		self.update_site_config({"maintenance_mode": 1})
