@@ -6,6 +6,7 @@ After=network-online.target
 Type=simple
 ExecStart=/opt/process_exporter/process_exporter \
     --config.path /opt/process_exporter/config.yml \
+    --threads=false \
     --web.listen-address=127.0.0.1:9256
 
 SyslogIdentifier=process_exporter
