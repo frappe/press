@@ -295,8 +295,8 @@ def analytics(name, query, timezone, duration):
 			lambda x: x["device"],
 		),
 		"space": (
-			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", device="/dev/root"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", device="/dev/root"}})""",
-			lambda x: x["device"],
+			f"""100 - ((node_filesystem_avail_bytes{{instance="{name}", job="node", mountpoint="/"}} * 100) / node_filesystem_size_bytes{{instance="{name}", job="node", mountpoint="/"}})""",
+			lambda x: x["mountpoint"],
 		),
 		"loadavg": (
 			f"""{{__name__=~"node_load1|node_load5|node_load15", instance="{name}", job="node"}}""",
