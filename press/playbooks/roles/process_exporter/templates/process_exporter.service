@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus Process Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/process_exporter/process_exporter ---config.path /opt/process_exporter/conf.yml --web.listen-address=127.0.0.1:9256
+
+SyslogIdentifier=process_exporter
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
