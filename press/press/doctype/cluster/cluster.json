@@ -16,6 +16,8 @@
   "column_break_fsht",
   "monitoring_password",
   "image",
+  "billing_section",
+  "team",
   "provisioning_section",
   "cloud_provider",
   "region",
@@ -270,6 +272,17 @@
    "fieldname": "hybrid",
    "fieldtype": "Check",
    "label": "Hybrid"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
   }
  ],
  "image_field": "image",
@@ -299,9 +312,14 @@
    "group": "Servers",
    "link_doctype": "Monitor Server",
    "link_fieldname": "cluster"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Subscription",
+   "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-02-05 18:13:12.628949",
+ "modified": "2024-03-14 18:20:04.856430",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Cluster",
