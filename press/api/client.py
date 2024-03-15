@@ -96,7 +96,6 @@ def get_list(
 	)
 
 	if meta.istable:
-		print("das")
 		parentmeta = frappe.get_meta(filters.get("parenttype"))
 		if parentmeta.has_field("team"):
 			ParentDocType = frappe.qb.DocType(filters.get("parenttype"))
@@ -106,8 +105,6 @@ def get_list(
 				.on(ParentDocType.name == ChildDocType.parent)
 				.where(ParentDocType.team == frappe.local.team().name)
 			)
-
-	print(filters, query)
 
 	filters = frappe._dict(filters or {})
 	list_args = dict(
@@ -119,9 +116,7 @@ def get_list(
 		parent=parent,
 		debug=debug,
 	)
-	print("list_args", list_args)
 	query = apply_custom_filters(doctype, query, **list_args)
-	print("query", query)
 	if isinstance(query, QueryBuilder):
 		return query.run(as_dict=1, debug=debug)
 	elif isinstance(query, list):
@@ -280,7 +275,6 @@ def apply_custom_filters(doctype, query, **list_args):
 	"""Apply custom filters to query"""
 	controller = get_controller(doctype)
 	if hasattr(controller, "get_list_query"):
-		print(inspect.getfullargspec(controller.get_list_query).varkw)
 		if inspect.getfullargspec(controller.get_list_query).varkw:
 			return controller.get_list_query(query, **list_args)
 		else:

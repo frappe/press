@@ -46,10 +46,10 @@ export default {
 	},
 	detail: {
 		titleField: 'name',
-		route: '/servers/:name',
-		statusBadge({ documentResource: server }) {
+		route: '/clusters/:name',
+		statusBadge({ documentResource: cluster }) {
 			return {
-				label: server.doc.status
+				label: cluster.doc.status
 			};
 		},
 		actions({ documentResource: server }) {
