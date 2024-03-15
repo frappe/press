@@ -22,6 +22,8 @@
 	</div>
 </template>
 <script>
+import { toast } from 'vue-sonner';
+
 export default {
 	name: 'BuyPrepaidCreditsRazorpay',
 	props: {
@@ -97,9 +99,10 @@ export default {
 		},
 		handlePaymentFailed(response) {
 			this.$resources.handlePaymentFailed.submit({ response });
+			toast.error('Payment failed');
 		},
 		handlePaymentSuccess(response) {
-			console.log('Payment Success.', response);
+			toast.success('Payment successful');
 		}
 	},
 	beforeUnmount() {

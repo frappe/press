@@ -1,7 +1,7 @@
 <template>
 	<Dialog v-model="show" :options="{ title: 'Add new card' }">
 		<template #body-content>
-			<StripeCard2 />
+			<StripeCard2 @complete="show = false" />
 		</template>
 	</Dialog>
 </template>
