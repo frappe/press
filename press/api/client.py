@@ -60,6 +60,7 @@ ALLOWED_DOCTYPES = [
 	"App Patch",
 	"SaaS Product",
 	"Press Notification",
+	"User SSH Key",
 ]
 
 

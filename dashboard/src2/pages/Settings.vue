@@ -32,6 +32,11 @@ const tabs = [
 		routeName: 'SettingsTeam'
 	},
 	{
+		label: 'Developer',
+		icon: icon('code'),
+		routeName: 'SettingsDeveloper'
+	},
+	{
 		label: 'Permissions',
 		icon: icon('lock'),
 		routeName: 'SettingsPermission',

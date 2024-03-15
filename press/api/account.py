@@ -988,6 +988,13 @@ def add_key(key):
 
 
 @frappe.whitelist()
+def mark_key_as_default(key_name):
+	key = frappe.get_doc("User SSH Key", key_name)
+	key.is_default = True
+	key.save()
+
+
+@frappe.whitelist()
 def create_api_secret():
 	user = frappe.get_doc("User", frappe.session.user)
 
