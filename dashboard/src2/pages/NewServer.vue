@@ -300,7 +300,7 @@ export default {
 									},
 									{
 										label: 'Disk',
-										value: this.$format.bytes(plan.disk, 0, 2)
+										value: `${plan.disk} GB`
 									},
 									{
 										label: 'Instance Type',
@@ -325,7 +325,7 @@ export default {
 									},
 									{
 										label: 'Disk',
-										value: this.$format.bytes(plan.disk, 0, 2)
+										value: `${plan.disk} GB`
 									},
 									{
 										label: 'Instance Type',
