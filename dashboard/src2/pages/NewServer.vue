@@ -90,7 +90,7 @@
 							Select Application Server Plan
 						</h2>
 						<div class="mt-2 space-y-2">
-							<NewObjectPlanCards
+							<ServerPlansCards
 								v-model="appServerPlan"
 								:plans="
 									options.app_plans.filter(p => p.cluster === serverRegion)
@@ -105,7 +105,7 @@
 							Select Database Server Plan
 						</h2>
 						<div class="mt-2 w-full space-y-2">
-							<NewObjectPlanCards
+							<ServerPlansCards
 								v-model="dbServerPlan"
 								:plans="
 									options.db_plans.filter(p => p.cluster === serverRegion)
@@ -231,12 +231,12 @@
 <script>
 import Header from '../components/Header.vue';
 import Summary from '../components/Summary.vue';
-import NewObjectPlanCards from '../components/NewObjectPlanCards.vue';
+import ServerPlansCards from '../components/server/ServerPlansCards.vue';
 import ClickToCopy from '../../src/components/ClickToCopyField.vue';
 
 export default {
 	components: {
-		NewObjectPlanCards,
+		ServerPlansCards,
 		ClickToCopy,
 		Summary,
 		Header
@@ -289,56 +289,8 @@ export default {
 							}
 						],
 						regions: data.regions,
-						app_plans: data.app_plans.map(plan => {
-							return {
-								...plan,
-								features: [
-									{
-										label: 'vCPUs',
-										value: plan.vcpu
-									},
-									{
-										label: 'Memory',
-										value: this.$format.bytes(plan.memory, 0, 2)
-									},
-									{
-										label: 'Disk',
-										value: `${plan.disk} GB`
-									},
-									{
-										label: 'Instance Type',
-										value: plan.instance_type
-									}
-								],
-								disabled:
-									Object.keys(this.$team.doc.billing_details).length === 0
-							};
-						}),
-						db_plans: data.db_plans.map(plan => {
-							return {
-								...plan,
-								features: [
-									{
-										label: 'vCPUs',
-										value: plan.vcpu
-									},
-									{
-										label: 'Memory',
-										value: this.$format.bytes(plan.memory, 0, 2)
-									},
-									{
-										label: 'Disk',
-										value: `${plan.disk} GB`
-									},
-									{
-										label: 'Instance Type',
-										value: plan.instance_type
-									}
-								],
-								disabled:
-									Object.keys(this.$team.doc.billing_details).length === 0
-							};
-						})
+						app_plans: data.app_plans,
+						db_plans: data.db_plans
 					};
 				}
 			};

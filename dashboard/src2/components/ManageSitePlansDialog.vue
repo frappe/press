@@ -23,7 +23,7 @@
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
 import SitePlansCards from './SitePlansCards.vue';
-import { getPlans } from '../data/plans';
+import { getPlans, getPlan } from '../data/plans';
 
 export default {
 	name: 'ManageSitePlansDialog',
@@ -46,7 +46,7 @@ export default {
 			handler(siteName) {
 				if (siteName) {
 					if (this.$site?.doc?.plan) {
-						this.plan = this.$site.doc.plan;
+						this.plan = getPlan(this.$site.doc.plan);
 					}
 				}
 			}
@@ -55,7 +55,7 @@ export default {
 	methods: {
 		changePlan() {
 			return this.$site.setPlan.submit(
-				{ plan: this.plan },
+				{ plan: this.plan.name },
 				{
 					onSuccess: () => {
 						this.show = false;

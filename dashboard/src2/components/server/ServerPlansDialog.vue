@@ -15,17 +15,17 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<ServerPlanCards v-model="plan" :plans="$resources.serverPlans.data" />
+			<ServerPlansCards v-model="plan" :plans="$resources.serverPlans.data" />
 			<ErrorMessage class="mt-2" :message="$server.changePlan.error" />
 		</template>
 	</Dialog>
 </template>
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import ServerPlanCards from './ServerPlanCards.vue';
+import ServerPlansCards from './ServerPlansCards.vue';
 
 export default {
-	components: { ServerPlanCards },
+	components: { ServerPlansCards },
 	props: {
 		server: {
 			type: String,
@@ -48,7 +48,7 @@ export default {
 			handler(serverName) {
 				if (serverName) {
 					if (this.$server?.doc?.plan) {
-						this.plan = this.$server.doc.current_plan.name;
+						this.plan = this.$server.doc.current_plan;
 					}
 				}
 			}
@@ -70,7 +70,7 @@ export default {
 	methods: {
 		changePlan() {
 			return this.$server.changePlan.submit(
-				{ plan: this.plan },
+				{ plan: this.plan.name },
 				{
 					onSuccess: () => {
 						this.show = false;

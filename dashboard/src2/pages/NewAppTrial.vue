@@ -135,7 +135,7 @@
 							label: 'Select plan',
 							variant: 'solid',
 							onClick: () => {
-								this.plan = this.selectedPlan;
+								this.plan = this.selectedPlan.name;
 								this.showPlanDialog = false;
 							}
 						},
@@ -165,7 +165,7 @@
 							variant="solid"
 							@click="
 								() => {
-									this.plan = this.selectedPlan;
+									this.plan = this.selectedPlan.name;
 									this.showPlanDialog = false;
 								}
 							"

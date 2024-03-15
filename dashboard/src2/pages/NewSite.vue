@@ -190,7 +190,7 @@ import SitePlansCards from '../components/SitePlansCards.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import Header from '../components/Header.vue';
 import router from '../router';
-import { plans } from '../data/plans';
+import { getPlans, plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 
@@ -365,7 +365,7 @@ export default {
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
-			return plans.data.find(p => p.name === this.plan);
+			return plans.data.find(p => p.name === this.plan.name);
 		},
 		breadcrumbs() {
 			if (this.bench) {
