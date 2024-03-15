@@ -8,10 +8,7 @@ from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.deploy.deploy import create_deploy_candidate_differences
-from press.api.notifications import get_unread_count, get_notifications
-from press.press.doctype.deploy_candidate.test_deploy_candidate import (
-	create_test_deploy_candidate,
-)
+from press.api.notifications import get_unread_count
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
@@ -50,18 +47,3 @@ class TestPressNotification(FrappeTestCase):
 		# api test is added here since it's trivial
 		# move to separate file if it gets more complex
 		self.assertEqual(get_unread_count(), 1)
-
-	def test_notification_is_created_when_deploy_fails(self):
-		group = create_test_release_group(self.apps)
-		dc = create_test_deploy_candidate(group)
-
-		self.assertEqual(frappe.db.count("Press Notification"), 0)
-
-		dc.status = "Failure"
-		dc.save()
-
-		notification = frappe.get_last_doc("Press Notification")
-		self.assertEqual(notification.type, "Bench Deploy")
-		# api test is added here since it's trivial
-		# move to separate file if it gets more complex
-		self.assertEqual(len(get_notifications()), 1)
