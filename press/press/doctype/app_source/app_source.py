@@ -165,3 +165,26 @@ def create_app_source(
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"App Source"
 )
+
+
+def get_latest_release(source: str) -> str | None:
+	releases = frappe.get_all(
+		"App Release",
+		fields=["name", "status"],
+		filters={"source": source},
+		order_by="modified desc",
+	)
+
+	# Return first Approved
+	for r in releases:
+		if r.status != "Approved":
+			continue
+		return r
+
+	# Return first Draft (if first approved not found)
+	for r in releases:
+		if r.status != "Draft":
+			continue
+		return r
+
+	return None

@@ -4,9 +4,10 @@
 
 import json
 from contextlib import suppress
+from datetime import datetime
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, TypedDict
 
 import frappe
 import semantic_version as sv
@@ -17,8 +18,12 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and, cstr, flt, sbool
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.app.app import new_app
+from press.press.doctype.app_source.app_source import (
+	AppSource,
+	create_app_source,
+	get_latest_release,
+)
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -32,6 +37,70 @@ from press.utils import (
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
+
+DeployInformationSite = TypedDict(
+	"DeployInformationSite",
+	{
+		"name": str,
+		"server": str,
+		"bench": str,
+		"skip_failing_patches": bool,
+		"skip_backups": bool,
+	},
+)
+
+AppRelease = TypedDict(
+	"AppRelease",
+	{
+		"name": str,
+		"source": str,
+		"status": str,
+		"hash": str,
+		"message": str,
+		"creation": str,
+	},
+)
+
+AppUpdate = TypedDict(
+	"AppUpdate",
+	{
+		"title": str,
+		"app": str,
+		"name": str,
+		"source": str,
+		"repository": str,
+		"repository_owner": str,
+		"repository_url": str,
+		"branch": str,
+		"current_hash": str,
+		"current_tag": str,
+		"current_release": str | None,
+		"releases": list[AppRelease],
+		"next_release": str | None,
+		"will_branch_change": bool,
+		"current_branch": str,
+		"update_available": bool,
+	},
+)
+
+LastDeployInfo = TypedDict(
+	"LastDeployInfo", {"name": str, "status": str, "creation": datetime}
+)
+
+RemovedApps = TypedDict("RemovedApps", {"name": str, "title": str})
+
+DeployInformation = TypedDict(
+	"DeployInformation",
+	{
+		"apps": list[AppUpdate],
+		"last_deploy": None | LastDeployInfo,
+		"deploy_in_progress": bool,
+		"removed_apps": list[RemovedApps],
+		"update_available": bool,
+		"number_of_apps": int,
+		"sites": list[DeployInformationSite],
+	},
+)
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -416,7 +485,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if not self.enabled:
 			return
 
-		apps = self.get_apps_to_update(apps_to_update)
+		apps = self.get_deploy_candidate_apps(apps_to_update)
 		if apps_to_update is None:
 			self.validate_dc_apps_against_rg(apps)
 
@@ -468,44 +537,68 @@ class ReleaseGroup(Document, TagHelpers):
 		).format(not_found)
 		frappe.throw(msg)
 
-	def get_apps_to_update(self, apps_to_update):
-		# If apps_to_update is None, try to update all apps
+	def get_deploy_candidate_apps(self, apps_to_update=None):
 		if apps_to_update is None:
 			apps_to_update = self.apps
+		apps_to_update_map = {a.get("app"): a for a in apps_to_update}
 
-		apps = []
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		last_deployed_apps = self.get_last_deployed_apps()
+		last_deployed_apps_map = {a.get("app"): a for a in last_deployed_apps}
 
-		for app in self.deploy_information().apps:
-			app_to_update = find(apps_to_update, lambda x: x.get("app") == app.app)
-			# If we want to update the app and there's an update available
-			if app_to_update and app["update_available"]:
-				# Use a specific release if mentioned, otherwise pick the most recent one
-				target_release = app_to_update.get("release", app.next_release)
-				apps.append(
-					{
-						"app": app["app"],
-						"source": app["source"],
-						"release": target_release,
-						"hash": frappe.db.get_value("App Release", target_release, "hash"),
-					}
-				)
-			else:
-				# Either we don't want to update the app or there's no update available
-				if last_deployed_bench:
-					# Find the last deployed release and use it
-					app_to_keep = find(last_deployed_bench.apps, lambda x: x.app == app.app)
-					if app_to_keep:
-						apps.append(
-							{
-								"app": app_to_keep.app,
-								"source": app_to_keep.source,
-								"release": app_to_keep.release,
-								"hash": app_to_keep.hash,
-							}
-						)
+		dc_apps = []
+		for app_update in self.get_app_updates(last_deployed_apps):
+			name = app_update.app
+			dc_app = self.get_deploy_candidate_app(
+				app_update,
+				last_deployed_apps_map.get(name),
+				apps_to_update_map.get(name),
+			)
 
-		return self.get_sorted_based_on_rg_apps(apps)
+			if not dc_app:
+				continue
+
+			dc_apps.append(dc_app)
+
+		return self.get_sorted_based_on_rg_apps(dc_apps)
+
+	def get_deploy_candidate_app(
+		self,
+		app_update: AppUpdate,
+		app_to_keep: dict | None,
+		app_to_update: dict | None,
+	) -> None | dict:
+		name = app_update.app
+
+		if not app_update["update_available"] and app_to_keep:
+			return {
+				"app": app_to_keep["app"],
+				"source": app_to_keep["source"],
+				"release": app_to_keep["release"],
+				"hash": app_to_keep["hash"],
+			}
+
+		if not app_to_update:
+			return None
+
+		source = app_update["source"]
+		release = app_to_update.get("release", app_update.next_release)
+
+		new_source, new_release = None, None
+		# Updates source if it has changed since last deploy
+		if app_to_update.get("source", source) != source:
+			new_source = app_to_update.get("source")
+			new_release = get_latest_release(new_source)
+
+		if new_release is not None:
+			source = new_source
+			release = new_release
+
+		return {
+			"app": name,
+			"source": source,
+			"release": release,
+			"hash": frappe.db.get_value("App Release", release, "hash"),
+		}
 
 	def get_sorted_based_on_rg_apps(self, apps):
 		# Rearrange Apps to match release group ordering
@@ -523,32 +616,54 @@ class ReleaseGroup(Document, TagHelpers):
 		return sorted_apps
 
 	@frappe.whitelist()
-	def deploy_information(self):
-		out = frappe._dict(update_available=False)
+	def deploy_information(self) -> DeployInformation:
+		last_deployed_apps = self.get_last_deployed_apps()
+		app_updates = self.get_app_updates(last_deployed_apps)
+		removed_apps = self.get_removed_apps()
 
-		last_deployed_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
-		out.apps = self.get_app_updates(
-			last_deployed_bench.apps if last_deployed_bench else []
+		return frappe._dict(
+			apps=app_updates,
+			removed_apps=removed_apps,
+			number_of_apps=len(self.apps),
+			update_available=self.get_is_update_available(app_updates, removed_apps),
+			last_deploy=self.last_dc_info,
+			deploy_in_progress=self.deploy_in_progress,
+			sites=self.get_deploy_information_sites(),
 		)
-		out.last_deploy = self.last_dc_info
-		out.deploy_in_progress = self.deploy_in_progress
 
-		out.removed_apps = self.get_removed_apps()
-		out.update_available = (
-			any([app["update_available"] for app in out.apps])
-			or (len(out.removed_apps) > 0)
-			or self.dependency_update_pending
+	def get_last_deployed_apps(self):
+		last_deployed_bench = get_last_doc(
+			"Bench",
+			{"group": self.name, "status": "Active"},
 		)
-		out.number_of_apps = len(self.apps)
 
-		out.sites = [
+		if last_deployed_bench is None:
+			return []
+		return last_deployed_bench.apps
+
+	def get_is_update_available(
+		self, apps: list[AppUpdate], removed_apps: list[RemovedApps]
+	):
+		for app in apps:
+			if app["update_available"]:
+				return True
+
+		if len(removed_apps) > 0:
+			return True
+
+		return self.dependency_update_pending
+
+	def get_deploy_information_sites(self) -> list[DeployInformationSite]:
+		sites = frappe.get_all(
+			"Site",
+			fields=["name", "server", "bench"],
+			filters={"group": self.name, "status": "Active"},
+		)
+
+		for site in sites:
 			site.update({"skip_failing_patches": False, "skip_backups": False})
-			for site in frappe.get_all(
-				"Site", {"group": self.name, "status": "Active"}, ["name", "server", "bench"]
-			)
-		]
 
-		return out
+		return sites
 
 	@frappe.whitelist()
 	def deployed_versions(self):
@@ -695,7 +810,10 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@property
 	def deploy_in_progress(self):
-		return self.last_dc_info and self.last_dc_info.status in ("Running", "Scheduled")
+		if not self.last_dc_info:
+			return False
+
+		return self.last_dc_info.status in ("Running", "Scheduled")
 
 	@property
 	def status(self):
@@ -705,7 +823,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self):
+	def last_dc_info(self) -> LastDeployInfo | None:
 		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (
@@ -721,7 +839,7 @@ class ReleaseGroup(Document, TagHelpers):
 		if len(results) > 0:
 			return results[0]
 
-	def get_app_updates(self, current_apps):
+	def get_app_updates(self, current_apps) -> list[AppUpdate]:
 		next_apps = self.get_next_apps(current_apps)
 
 		apps = []
@@ -869,20 +987,21 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return next_apps
 
-	def get_removed_apps(self):
+	def get_removed_apps(self) -> list[RemovedApps]:
 		# Apps that were removed from the release group
 		# but were in the last deployed bench
-		removed_apps = []
 
 		latest_bench = get_last_doc("Bench", {"group": self.name, "status": "Active"})
+		if not latest_bench:
+			return []
 
-		if latest_bench:
-			bench_apps = latest_bench.apps
+		removed_apps = []
+		for bench_app in latest_bench.apps:
+			if find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
+				continue
 
-			for bench_app in bench_apps:
-				if not find(self.apps, lambda rg_app: rg_app.app == bench_app.app):
-					app_title = frappe.db.get_value("App", bench_app.app, "title")
-					removed_apps.append({"name": bench_app.app, "title": app_title})
+			app_title = frappe.db.get_value("App", bench_app.app, "title")
+			removed_apps.append({"name": bench_app.app, "title": app_title})
 
 		return removed_apps
 
