@@ -30,7 +30,7 @@
 </template>
 <script>
 import { h } from 'vue';
-import { getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
 import GenericList from '../components/GenericList.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { toast } from 'vue-sonner';
@@ -56,6 +56,7 @@ export default {
 					status: version.status,
 					proxyServer: version.proxy_server,
 					hasSSHAcess: version.has_ssh_access,
+					hasAppPatchApplied: version.has_app_patch_applied,
 					isBench: true
 				});
 				for (let site of version.sites) {
@@ -81,6 +82,21 @@ export default {
 								: row.name == 'No sites'
 								? 'text-gray-600 pl-2'
 								: 'text-gray-900 pl-2';
+						},
+						suffix(row) {
+							if (!row.hasAppPatchApplied) {
+								return;
+							}
+
+							return h(
+								Tooltip,
+								{
+									text: 'Patches applied',
+									placement: 'top',
+									class: 'rounded-full bg-gray-100 p-1'
+								},
+								() => h(icon('alert-circle', 'w-3 h-3'))
+							);
 						}
 					},
 					{

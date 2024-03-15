@@ -605,7 +605,17 @@ class ReleaseGroup(Document, TagHelpers):
 		cur_user_ssh_key = frappe.get_all(
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
 		)
+
+		benches = [dn.name for dn in deployed_versions]
+		benches_with_patches = frappe.get_all(
+			"App Patch",
+			fields=["bench"],
+			filters={"bench": ["in", benches], "status": "Applied"},
+			pluck="bench",
+		)
+
 		for version in deployed_versions:
+			version.has_app_patch_applied = version.name in benches_with_patches
 			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
