@@ -35,6 +35,11 @@ def checks():
 	except Exception as e:
 		click.secho(f"An error occurred: {e}", fg="yellow")
 		return
+	finally:
+		try:
+			chrome.quit()
+		except Exception:
+			pass
 
 
 def initialize_webdriver():
