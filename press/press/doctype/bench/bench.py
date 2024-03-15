@@ -581,6 +581,7 @@ def get_archive_jobs(bench: str):
 			"job_type": "Archive Bench",
 			"bench": bench,
 			"status": ("in", ("Pending", "Running", "Success")),
+			"creation": (">", frappe.utils.add_to_date(None, hours=-6)),
 		},
 		limit=1,
 		ignore_ifnull=True,
