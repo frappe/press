@@ -1,4 +1,7 @@
 process_names:
+  - name: '{% raw %}rq:job:{{.Matches.fn}}{% endraw %}'
+    cmdline:
+      - "rq: Started running (?P<fn>\\S+) .+"
   - name: '{% raw %}{{.Comm}}{% endraw %}'
     cmdline:
       - '.+'
