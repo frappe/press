@@ -21,6 +21,7 @@
 	</div>
 
 	<AWSClusterNetworkOverview
+		v-if="securityGroupInformation"
 		:cluster="cluster"
 		:clusterDoc="clusterDoc"
 		:securityGroupInformation="securityGroupInformation"
