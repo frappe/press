@@ -164,6 +164,9 @@ def event_log():
 	"""
 	data = json.loads(frappe.request.data)
 
+	if not data.get("event-data"):
+		return
+
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
