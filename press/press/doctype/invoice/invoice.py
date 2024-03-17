@@ -750,8 +750,8 @@ class Invoice(Document):
 
 				if invoice:
 					self.frappe_invoice = invoice
+					self.db_set("frappe_invoice", invoice)
 					self.fetch_invoice_pdf()
-					self.save()
 					return invoice
 			else:
 				from bs4 import BeautifulSoup
