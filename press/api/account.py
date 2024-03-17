@@ -957,9 +957,9 @@ def get_partner_customers():
 
 @frappe.whitelist()
 def get_emails():
-	team = get_current_team(True)
+	team = get_current_team()
 	data = frappe.get_all(
-		"Communication Email", filters={"parent": team.name}, fields=["type", "value"]
+		"Communication Email", filters={"parent": team}, fields=["type", "value"]
 	)
 
 	return data
@@ -970,7 +970,7 @@ def update_emails(data):
 	from frappe.utils import validate_email_address
 
 	data = {x["type"]: x["value"] for x in json.loads(data)}
-	for key, value in data:
+	for key, value in data.items():
 		validate_email_address(value, throw=True)
 
 	team_doc = get_current_team(get_doc=True)
