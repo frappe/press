@@ -4,7 +4,7 @@
 
 # import frappe
 
-from .dashboard import get_context as _get_context
+from .dashboard import _get_context
 
 base_template_path = "templates/www/dashboard-beta.html"
 no_cache = 1

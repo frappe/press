@@ -1,54 +1,61 @@
 <template>
 	<div>
-		<h2 class="space-y-1 text-lg font-semibold">
-			Enter the App Server Details
-		</h2>
-		<div class="mt-6 flex flex-col gap-4">
-			<p class="text-black-900 text-base">Public IP of the Server</p>
-			<FormControl
-				class="z-10 w-full rounded-r-none"
-				:value="publicIP"
-				@change="$emit('update:publicIP', $event.target.value)"
-			/>
-			<p class="text-black-900 text-base">Private IP of the Server</p>
-			<FormControl
-				class="z-10 w-full rounded-r-none"
-				:value="privateIP"
-				@change="$emit('update:privateIP', $event.target.value)"
-			/>
-			<div class="mt-1">
-				<ErrorMessage :message="publicIpErrorMessage" />
+		<div class="mb-3">
+			<div>
+				<h2 class="space-y-1 mt-6 text-lg font-semibold">
+					Enter the Application Server Details
+				</h2>
+				<div class="mt-6 flex flex-col gap-4">
+					<p class="text-black-900 text-base">Public IP of the Server</p>
+					<FormControl
+						class="z-10 w-full rounded-r-none"
+						:value="appPublicIP"
+						@change="$emit('update:appPublicIP', $event.target.value)"
+					/>
+					<ErrorMessage class="text-sm" :message="publicIpErrorMessage" />
+
+					<p class="text-black-900 text-base">Private IP of the Server</p>
+					<FormControl
+						class="z-10 w-full rounded-r-none"
+						:value="appPrivateIP"
+						@change="$emit('update:appPrivateIP', $event.target.value)"
+					/>
+					<ErrorMessage class="text-sm" :message="privateIpErrorMessage" />
+				</div>
+
+				<h2 class="space-y-1 mt-8 text-lg font-semibold">
+					Enter the DB Server Details
+				</h2>
+				<div class="mt-6 flex flex-col gap-4">
+					<p class="text-black-900 text-base">Public IP of the DB Server</p>
+					<FormControl
+						class="z-10 w-full rounded-r-none"
+						:value="dbPublicIP"
+						@change="$emit('update:dbPublicIP', $event.target.value)"
+					/>
+					<ErrorMessage class="text-sm" :message="dbPublicIpErrorMessage" />
+
+					<p class="text-black-900 text-base">Private IP of the DB Server</p>
+					<FormControl
+						class="z-10 w-full rounded-r-none"
+						:value="dbPrivateIP"
+						@change="$emit('update:dbPrivateIP', $event.target.value)"
+					/>
+					<ErrorMessage class="text-sm" :message="dbPrivateIpErrorMessage" />
+				</div>
 			</div>
 		</div>
-		<h2 class="space-y-1 mt-4 text-lg font-semibold">
-			Enter the DB Server Details
-		</h2>
-		<div class="mt-6 flex flex-col gap-4">
-			<p class="text-black-900 text-base">Public IP of the DB Server</p>
-			<FormControl
-				class="z-10 w-full rounded-r-none"
-				:value="dbpublicIP"
-				@change="$emit('update:dbpublicIP', $event.target.value)"
-			/>
-			<p class="text-black-900 text-base">Private IP of the DB Server</p>
-			<FormControl
-				class="z-10 w-full rounded-r-none"
-				:value="dbprivateIP"
-				@change="$emit('update:dbprivateIP', $event.target.value)"
-			/>
-		</div>
-		<div class="mb-3"></div>
 	</div>
 </template>
 <script>
 export default {
 	name: 'SelfHostedServerForm',
-	props: ['publicIP', 'dbpublicIP', 'dbprivateIP', 'privateIP', 'error'],
+	props: ['appPublicIP', 'appPrivateIP', 'dbPublicIP', 'dbPrivateIP', 'error'],
 	emits: [
-		'update:publicIP',
-		'update:dbpublicIP',
-		'update:dbprivateIP',
-		'update:privateIP',
+		'update:appPublicIP',
+		'update:appPrivateIP',
+		'update:dbPublicIP',
+		'update:dbPrivateIP',
 		'update:error'
 	],
 	watch: {
@@ -61,10 +68,24 @@ export default {
 	},
 	computed: {
 		publicIpErrorMessage() {
-			return this.validateIP(this.publicIP, 'Public');
+			return this.validateIP(this.appPublicIP, 'Public');
+		},
+		dbPublicIpErrorMessage() {
+			return this.validateIP(this.dbPublicIP, 'DB Public');
+		},
+		privateIpErrorMessage() {
+			return this.validateIP(this.appPrivateIP, 'Private');
+		},
+		dbPrivateIpErrorMessage() {
+			return this.validateIP(this.dbPrivateIP, 'DB Private');
 		},
 		hasError() {
-			return this.publicIpErrorMessage !== null;
+			return (
+				this.publicIpErrorMessage !== null ||
+				this.privateIpErrorMessage !== null ||
+				this.dbPublicIpErrorMessage !== null ||
+				this.dbPrivateIpErrorMessage !== null
+			);
 		}
 	},
 	methods: {

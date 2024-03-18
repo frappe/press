@@ -11,16 +11,17 @@
   "team_title",
   "user",
   "account_request",
+  "partner_email",
+  "billing_team",
+  "parent_team",
+  "column_break_wejg",
+  "erpnext_partner",
   "is_developer",
   "is_saas_user",
   "is_code_server_user",
   "free_account",
   "via_erpnext",
-  "column_break_6",
-  "erpnext_partner",
-  "partner_email",
-  "billing_team",
-  "parent_team",
+  "default_to_new_dashboard",
   "section_break_6",
   "team_members",
   "section_break_tdm9",
@@ -265,10 +266,6 @@
    "options": "Invoice Discount"
   },
   {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "partner_email",
    "fieldtype": "Data",
    "label": "Partner Email"
@@ -409,6 +406,16 @@
    "fieldname": "is_code_server_user",
    "fieldtype": "Check",
    "label": "Is Code Server User"
+  },
+  {
+   "fieldname": "column_break_wejg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "default_to_new_dashboard",
+   "fieldtype": "Check",
+   "label": "Default to New Dashboard"
   }
  ],
  "links": [
@@ -463,7 +470,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2023-12-19 12:53:24.914882",
+ "modified": "2024-03-13 14:52:15.325393",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

@@ -107,7 +107,7 @@ def validate_plan(secret_key):
 	except Exception as e:
 		frappe.throw(e)
 
-	if subscription["status"] == "Active":
+	if subscription["enabled"]:
 		# TODO: add a date filter(use start date from plan)
 		first_day = str(datetime.now().replace(day=1).date())
 		count = frappe.db.count(
@@ -164,6 +164,9 @@ def event_log():
 	"""
 	data = json.loads(frappe.request.data)
 
+	if not data.get("event-data"):
+		return
+
 	event_data = data["event-data"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
@@ -177,7 +180,7 @@ def event_log():
 			"unique_token": secrets.token_hex(25),
 			"message_id": message_id,
 			"sender": headers["from"],
-			"recipient": headers["to"],
+			"recipient": event_data.get("recipient") or headers.get("to"),
 			"site": site,
 			"status": event_data["event"],
 			"subscription_key": secret_key,

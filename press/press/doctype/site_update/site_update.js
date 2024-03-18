@@ -20,6 +20,7 @@ frappe.ui.form.on('Site Update', {
 				'trigger_recovery_job',
 				!frm.doc.recover_job,
 			],
+			[__('Start'), 'start', ['Scheduled', 'Failure'].includes(frm.doc.status)],
 		].forEach(([label, method, condition]) => {
 			if (typeof condition === 'undefined' || condition) {
 				frm.add_custom_button(

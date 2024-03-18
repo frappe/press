@@ -3,16 +3,20 @@ import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import { duration, date } from '../utils/format';
 import { icon, renderDialog, confirmDialog } from '../utils/components';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import ChangeAppBranchDialog from '../components/bench/ChangeAppBranchDialog.vue';
+import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
+import LucideRocket from '~icons/lucide/rocket';
 import { tagTab } from './common/tags';
+import patches from './tabs/patches';
 
 export default {
 	doctype: 'Release Group',
 	whitelistedMethods: {
+		addApp: 'add_app',
 		removeApp: 'remove_app',
 		changeAppBranch: 'change_app_branch',
 		fetchLatestAppUpdates: 'fetch_latest_app_update',
@@ -28,7 +32,8 @@ export default {
 		getCertificate: 'get_certificate',
 		generateCertificate: 'generate_certificate',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		redeploy: 'redeploy'
 	},
 	list: {
 		route: '/benches',
@@ -75,7 +80,7 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewBench' });
+					router.push({ name: 'New Release Group' });
 				}
 			};
 		}
@@ -189,7 +194,7 @@ export default {
 								condition: () => team.doc.is_desk_user,
 								onClick() {
 									window.open(
-										`${window.location.protocol}//${window.location.host}/app/release-group/${releaseGroup.name}`,
+										`${window.location.protocol}//${window.location.host}/app/app/${row.name}`,
 										'_blank'
 									);
 								}
@@ -235,23 +240,30 @@ export default {
 								condition: () => row.name !== 'frappe',
 								onClick() {
 									if (releaseGroup.removeApp.loading) return;
-									toast.promise(
-										releaseGroup.removeApp.submit({
-											app: row.name
-										}),
-										{
-											loading: 'Removing App...',
-											success: () => {
-												apps.reload();
-												return 'App Removed';
-											},
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: 'Remove App',
+										message: `Are you sure you want to remove the app <b>${row.title}</b>?`,
+										onSuccess: ({ hide }) => {
+											toast.promise(
+												releaseGroup.removeApp.submit({
+													app: row.name
+												}),
+												{
+													loading: 'Removing App...',
+													success: () => {
+														hide();
+														apps.reload();
+														return 'App Removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
 								}
 							},
 							{
@@ -260,6 +272,17 @@ export default {
 									window.open(
 										`${row.repository_url}/tree/${row.branch}`,
 										'_blank'
+									);
+								}
+							},
+							{
+								label: 'Apply Patch',
+								onClick: () => {
+									renderDialog(
+										h(PatchAppDialog, {
+											group: releaseGroup.name,
+											app: row.name
+										})
 									);
 								}
 							}
@@ -281,6 +304,26 @@ export default {
 										onAppAdd() {
 											apps.reload();
 											releaseGroup.reload();
+										},
+										onNewApp(app) {
+											toast.promise(
+												releaseGroup.addApp.submit({
+													app: app
+												}),
+												{
+													loading: 'Adding App...',
+													success: () => {
+														apps.reload();
+														releaseGroup.reload();
+														return `App ${app.title} added to the bench`;
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
 									})
 								);
@@ -312,13 +355,28 @@ export default {
 							format(value) {
 								return `Deploy on ${date(value, 'llll')}`;
 							},
-							width: '25rem'
+							width: '20rem'
 						},
 						{
 							label: 'Status',
 							fieldname: 'status',
 							type: 'Badge',
-							width: 0.5
+							width: 0.5,
+							suffix(row) {
+								if (!row.addressable_notification) {
+									return;
+								}
+
+								return h(
+									Tooltip,
+									{
+										text: 'Attention required!',
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									() => h(icon('alert-circle', 'w-3 h-3'), {})
+								);
+							}
 						},
 						{
 							label: 'Apps',
@@ -333,16 +391,70 @@ export default {
 							format: duration,
 							class: 'text-gray-600',
 							width: 1
+						},
+						{
+							label: 'Deployed By',
+							fieldname: 'owner',
+							width: 1
 						}
-					]
+					],
+					primaryAction({ listResource: deploys, documentResource: bench }) {
+						return {
+							label: 'Deploy',
+							slots: {
+								prefix: icon(LucideRocket)
+							},
+							onClick() {
+								if (bench.doc.deploy_information.deploy_in_progress) {
+									return toast.error(
+										'Another deploy is in progress. Please wait for it to complete.'
+									);
+								} else if (bench.doc.deploy_information.update_available) {
+									let UpdateBenchDialog = defineAsyncComponent(() =>
+										import('../components/bench/UpdateBenchDialog.vue')
+									);
+									renderDialog(
+										h(UpdateBenchDialog, {
+											bench: bench.name,
+											onSuccess(candidate) {
+												bench.doc.deploy_information.deploy_in_progress = true;
+												bench.doc.deploy_information.last_deploy.name =
+													candidate;
+											}
+										})
+									);
+								} else {
+									confirmDialog({
+										title: 'Deploy Bench',
+										message:
+											'Are you sure you want to deploy the bench without any app updates? Changes in dependencies and environment variables will be applied to the new deploy.',
+										onSuccess: ({ hide }) => {
+											toast.promise(bench.redeploy.submit(), {
+												loading: 'Deploying...',
+												success: () => {
+													hide();
+													deploys.reload();
+													return 'Bench Deployed';
+												},
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											});
+										}
+									});
+								}
+							}
+						};
+					}
 				}
 			},
 			{
 				label: 'Jobs',
 				icon: icon('truck'),
-				// highlight: route =>
-				// 	['Site Detail Jobs', 'Site Job'].includes(route.name),
 				route: 'jobs',
+				childrenRoutes: ['Bench Job'],
 				type: 'list',
 				list: {
 					doctype: 'Agent Job',
@@ -391,6 +503,11 @@ export default {
 							}
 						},
 						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: '10rem'
+						},
+						{
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
@@ -427,12 +544,16 @@ export default {
 							}
 						},
 						{
-							label: 'Type',
-							fieldname: 'type'
+							label: 'Config Value',
+							fieldname: 'value',
+							class: 'font-mono',
+							width: 2
 						},
 						{
-							label: 'Config Value',
-							fieldname: 'value'
+							label: 'Type',
+							fieldname: 'type',
+							type: 'Badge',
+							width: '100px'
 						}
 					],
 					primaryAction({
@@ -615,7 +736,8 @@ export default {
 										title: 'Delete Environment Variable',
 										message: `Are you sure you want to delete the environment variable <b>${row.key}</b>?`,
 										onSuccess({ hide }) {
-											if (releaseGroup.deleteEnvironmentVariable.loading) return;
+											if (releaseGroup.deleteEnvironmentVariable.loading)
+												return;
 											toast.promise(
 												releaseGroup.deleteEnvironmentVariable.submit(
 													{ key: row.key },
@@ -628,7 +750,8 @@ export default {
 												),
 												{
 													loading: 'Deleting  environment variable...',
-													success: () => `Environment variable ${row.key} removed`,
+													success: () =>
+														`Environment variable ${row.key} removed`,
 													error: e => {
 														return e.messages.length
 															? e.messages.join('\n')
@@ -753,10 +876,13 @@ export default {
 					}
 				}
 			},
-			tagTab()
+			tagTab(),
+			patches
 		],
 		actions(context) {
 			let { documentResource: bench } = context;
+			let team = getTeam();
+
 			return [
 				{
 					label: 'Update Available',
@@ -805,7 +931,29 @@ export default {
 					},
 					options: [
 						{
+							label: 'View in Desk',
+							icon: icon('external-link'),
+							condition: () => team.doc.is_desk_user,
+							onClick() {
+								window.open(
+									`${window.location.protocol}//${window.location.host}/app/release-group/${bench.name}`,
+									'_blank'
+								);
+							}
+						},
+						{
+							label: 'Impersonate Team',
+							icon: defineAsyncComponent(() =>
+								import('~icons/lucide/venetian-mask')
+							),
+							condition: () => window.is_system_user,
+							onClick() {
+								switchToTeam(bench.doc.team);
+							}
+						},
+						{
 							label: 'Drop Bench',
+							icon: icon('trash-2'),
 							onClick() {
 								confirmDialog({
 									title: 'Drop Bench',

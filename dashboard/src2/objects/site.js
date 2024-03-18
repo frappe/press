@@ -1,4 +1,9 @@
-import { frappeRequest, LoadingIndicator } from 'frappe-ui';
+import {
+	createListResource,
+	LoadingIndicator,
+	frappeRequest,
+	Tooltip
+} from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
@@ -7,12 +12,12 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date } from '../utils/format';
-import SiteActionCell from '../components/SiteActionCell.vue';
+import { bytes, duration, date, plural } from '../utils/format';
 import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
+import { getDocResource } from '../utils/resource';
 
 export default {
 	doctype: 'Site',
@@ -54,6 +59,7 @@ export default {
 			'plan.price_inr as price_inr',
 			'group.title as group_title',
 			'group.public as group_public',
+			'group.team as group_team',
 			'group.version as version',
 			'cluster.image as cluster_image',
 			'cluster.title as cluster_title',
@@ -70,8 +76,20 @@ export default {
 				format(value, row) {
 					if (row.trial_end_date) {
 						let trialEndDate = dayjsLocal(row.trial_end_date);
-						if (trialEndDate.isAfter(dayjsLocal())) {
-							return 'Trial';
+						let today = dayjsLocal();
+						let diffHours = trialEndDate.diff(today, 'hours');
+						let endsIn = '';
+						if (diffHours < 24) {
+							endsIn = `today`;
+						} else {
+							let days = Math.round(diffHours / 24);
+							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
+						}
+						if (
+							trialEndDate.isAfter(today) ||
+							trialEndDate.isSame(today, 'day')
+						) {
+							return `Trial ends ${endsIn}`;
 						}
 					}
 					let $team = getTeam();
@@ -123,7 +141,7 @@ export default {
 					prefix: icon('plus')
 				},
 				onClick() {
-					router.push({ name: 'NewSite' });
+					router.push({ name: 'New Site' });
 				}
 			};
 		}
@@ -135,16 +153,20 @@ export default {
 			return { label: site.doc.status };
 		},
 		breadcrumbs({ items, documentResource: site }) {
-			if (site.doc?.group_public) {
-				return items;
+			// if (site.doc?.group_public) {
+			// 	return items;
+			// }
+			let $team = getTeam();
+			if (site.doc.group_team == $team.doc.name) {
+				return [
+					{
+						label: site.doc?.group_title,
+						route: `/benches/${site.doc?.group}`
+					},
+					items[1]
+				];
 			}
-			return [
-				{
-					label: site.doc?.group_title,
-					route: `/benches/${site.doc?.group}`
-				},
-				items[1]
-			];
+			return items;
 		},
 		tabs: [
 			{
@@ -168,7 +190,153 @@ export default {
 					import('../../src/views/site/SiteCharts.vue')
 				),
 				props: site => {
-					return { site: site.doc };
+					return { siteName: site.doc.name };
+				}
+			},
+			{
+				label: 'Updates',
+				icon: icon('arrow-up-circle'),
+				route: 'updates',
+				type: 'list',
+				list: {
+					doctype: 'Site Update',
+					filters: site => {
+						return { site: site.doc.name };
+					},
+					orderBy: 'creation',
+					fields: ['difference', 'update_job.end as updated_on', 'update_job'],
+					columns: [
+						{
+							label: 'Type',
+							fieldname: 'deploy_type',
+							width: 0.3
+						},
+						{
+							label: 'Status',
+							fieldname: 'status',
+							type: 'Badge',
+							width: 0.5
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner'
+						},
+						{
+							label: 'Scheduled At',
+							fieldname: 'scheduled_time',
+							format(value) {
+								return date(value, 'lll');
+							}
+						},
+						{
+							label: 'Updated On',
+							fieldname: 'updated_on',
+							format(value) {
+								return date(value, 'lll');
+							}
+						}
+					],
+					rowActions({ row, documentResource: site }) {
+						return [
+							{
+								label: 'View Job',
+								onClick() {
+									router.push({
+										name: 'Site Job',
+										params: { name: site.name, id: row.update_job }
+									});
+								}
+							},
+							{
+								label: 'Update Now',
+								condition: () => row.status === 'Scheduled',
+								onClick() {
+									let siteUpdate = getDocResource({
+										doctype: 'Site Update',
+										name: row.name,
+										whitelistedMethods: {
+											updateNow: 'start'
+										}
+									});
+
+									toast.promise(siteUpdate.updateNow.submit(), {
+										loading: 'Updating site...',
+										success: () => {
+											router.push({
+												name: 'Site Detail Jobs',
+												params: { name: site.name }
+											});
+
+											return 'Site update started';
+										},
+										error: 'Failed to update site'
+									});
+								}
+							},
+							{
+								label: 'View App Changes',
+								onClick() {
+									createListResource({
+										doctype: 'Deploy Candidate Difference App',
+										fields: [
+											'difference.github_diff_url as diff_url',
+											'app.title as app'
+										],
+										filters: {
+											parenttype: 'Deploy Candidate Difference',
+											parent: row.difference
+										},
+										auto: true,
+										pageLength: 99,
+										onSuccess(data) {
+											if (data?.length) {
+												renderDialog(
+													h(
+														GenericDialog,
+														{
+															options: {
+																title: 'Site update app changes'
+															}
+														},
+														{
+															default: () =>
+																h(ObjectList, {
+																	options: {
+																		data: () => data,
+																		columns: [
+																			{
+																				label: 'App',
+																				fieldname: 'app',
+																				width: 0.5
+																			},
+																			{
+																				label: 'App Changes',
+																				fieldname: 'diff_url',
+																				width: 0.5,
+																				type: 'Button',
+																				Button({ row }) {
+																					return {
+																						label: 'View App Changes',
+																						slots: {
+																							prefix: icon('github')
+																						},
+																						link: row.diff_url
+																					};
+																				}
+																			}
+																		]
+																	}
+																})
+														}
+													)
+												);
+											} else toast.error('No app changes found');
+										}
+									});
+								}
+							}
+						];
+					}
 				}
 			},
 			{
@@ -185,7 +353,22 @@ export default {
 						{
 							label: 'App',
 							fieldname: 'app',
-							width: 1
+							width: 1,
+							suffix(row) {
+								if (!row.is_app_patched) {
+									return;
+								}
+
+								return h(
+									Tooltip,
+									{
+										text: 'App has been patched',
+										placement: 'top',
+										class: 'rounded-full bg-gray-100 p-1'
+									},
+									() => h(icon('alert-circle', 'w-3 h-3'))
+								);
+							}
 						},
 						{
 							label: 'Branch',
@@ -265,21 +448,60 @@ export default {
 																		label: 'Install',
 																		onClick() {
 																			if (site.installApp.loading) return;
-																			toast.promise(
-																				site.installApp.submit({
-																					app: row.app
-																				}),
-																				{
-																					loading: 'Installing app...',
-																					success: () =>
-																						'App will be installed shortly',
-																					error: e => {
-																						return e.messages.length
-																							? e.messages.join('\n')
-																							: e.message;
+
+																			if (row.plans) {
+																				let SiteAppPlanSelectDialog =
+																					defineAsyncComponent(() =>
+																						import(
+																							'../components/site/SiteAppPlanSelectDialog.vue'
+																						)
+																					);
+
+																				renderDialog(
+																					h(SiteAppPlanSelectDialog, {
+																						app: row,
+																						currentPlan: null,
+																						onPlanSelected(plan) {
+																							toast.promise(
+																								site.installApp.submit({
+																									app: row.app,
+																									plan: plan.name
+																								}),
+																								{
+																									loading: 'Installing app...',
+																									success: () => {
+																										apps.reload();
+																										return 'App will be installed shortly';
+																									},
+																									error: e => {
+																										return e.messages.length
+																											? e.messages.join('\n')
+																											: e.message;
+																									}
+																								}
+																							);
+																						}
+																					})
+																				);
+																			} else {
+																				toast.promise(
+																					site.installApp.submit({
+																						app: row.app
+																					}),
+																					{
+																						loading: 'Installing app...',
+																						success: () => {
+																							apps.reload();
+																							return 'App will be installed shortly';
+																						},
+																						error: e => {
+																							return e.messages.length
+																								? e.messages.join('\n')
+																								: e.message;
+																						}
 																					}
-																				}
-																			);
+																				);
+																			}
 																		}
 																	};
 																}
@@ -318,13 +540,13 @@ export default {
 								condition: () => row.plan_info && row.plans.length > 1,
 								onClick() {
 									let SiteAppPlanChangeDialog = defineAsyncComponent(() =>
-										import('../components/site/SiteAppPlanChangeDialog.vue')
+										import('../components/site/SiteAppPlanSelectDialog.vue')
 									);
 									renderDialog(
 										h(SiteAppPlanChangeDialog, {
 											app: row,
 											currentPlan: row.plans.find(
-												plan => plan.plan === row.plan_info.name
+												plan => plan.name === row.plan_info.name
 											),
 											onPlanChanged() {
 												apps.reload();
@@ -756,7 +978,7 @@ export default {
 					route(row) {
 						return {
 							name: 'Site Job',
-							params: { id: row.name, site: row.site }
+							params: { id: row.name, name: row.site }
 						};
 					},
 					orderBy: 'creation desc',
@@ -785,6 +1007,11 @@ export default {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
 							}
+						},
+						{
+							label: 'Created By',
+							fieldname: 'owner',
+							width: 1
 						},
 						{
 							label: '',
@@ -880,6 +1107,19 @@ export default {
 							import('../components/SiteUpdateDialog.vue')
 						);
 						renderDialog(h(SiteUpdateDialog, { site: site.doc.name }));
+					}
+				},
+				{
+					label: 'Impersonate Site Owner',
+					slots: {
+						prefix: defineAsyncComponent(() =>
+							import('~icons/lucide/venetian-mask')
+						)
+					},
+					condition: () =>
+						$team.doc.is_desk_user && site.doc.team != $team.name,
+					onClick() {
+						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
 					}
 				},
 				{

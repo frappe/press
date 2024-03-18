@@ -12,6 +12,8 @@ if typing.TYPE_CHECKING:
 
 
 class App(Document):
+	dashboard_fields = ["title"]
+
 	def add_source(
 		self,
 		version,
@@ -20,6 +22,7 @@ class App(Document):
 		team=None,
 		github_installation_id=None,
 		public=False,
+		repository_owner=None,
 	) -> "AppSource":
 		existing_source = frappe.get_all(
 			"App Source",
@@ -43,6 +46,7 @@ class App(Document):
 					"team": team,
 					"github_installation_id": github_installation_id,
 					"public": public,
+					"repository_owner": repository_owner,
 				}
 			).insert()
 		return source

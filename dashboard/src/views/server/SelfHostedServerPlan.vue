@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<label class="text-lg font-semibold">
-			Select plan for app and database self-hosted server
+			Select plan for application and database self-hosted server
 			<br /><span class="text-sm text-gray-500">
 				For server management and support
 			</span>

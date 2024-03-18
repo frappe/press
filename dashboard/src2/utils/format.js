@@ -45,22 +45,22 @@ export function plural(number, singular, plural) {
 export function planTitle(plan) {
 	let $team = getTeam();
 	let india = $team.doc.country == 'India';
-	let currency = india ? '₹' : '$';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =
-		plan.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
-	return price > 0 ? `${currency}${price}` : plan.plan_title;
+		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];
+	return price > 0 ? `${userCurrency(price)}` : plan.plan_title;
 }
 
-export function userCurrency(value) {
+export function userCurrency(value, fractions = 2) {
 	let $team = getTeam();
-	return currency(value, $team.doc.currency);
+	return currency(value, $team.doc.currency, fractions);
 }
 
-export function currency(value, currency) {
+export function currency(value, currency, fractions = 2) {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
-		currency
+		currency,
+		maximumFractionDigits: fractions
 	}).format(value);
 }
 
@@ -83,7 +83,28 @@ export function numberK(number) {
 	}
 }
 
+export function pricePerDay(price) {
+	let daysInThisMonth = dayjs().daysInMonth();
+	return price / daysInThisMonth;
+}
+
 export function date(dateTimeString, format = 'LLLL') {
 	if (!dateTimeString) return;
 	return dayjsLocal(dateTimeString).format(format);
+}
+
+export function commaSeparator(arr, separator) {
+	let joinedString = arr.slice(0, -1).join(', ');
+
+	if (arr.length > 1) {
+		joinedString += ` ${separator} ${arr[arr.length - 1]}`;
+	} else {
+		joinedString += arr[0];
+	}
+
+	return joinedString;
+}
+
+export function commaAnd(arr) {
+	return commaSeparator(arr, 'and');
 }

@@ -7,7 +7,28 @@
 		v-model="show"
 	>
 		<template #body-content>
-			<div v-if="certificate" class="space-y-4">
+			<div v-if="!bench.hasSSHAcess" class="space-y-4">
+				<p class="mb-4 text-base">
+					It looks like you haven't added your SSH public key.<br />
+					Please go to
+					<router-link
+						:to="{ name: 'SettingsDeveloper' }"
+						class="underline"
+						@click="show = false"
+					>
+						Developer Settings
+					</router-link>
+					and add your SSH public key.
+				</p>
+				<p class="text-base">
+					Please refer to the
+					<a href="/docs/benches/ssh" class="underline" target="_blank"
+						>SSH Access documentation</a
+					>
+					for more details.
+				</p>
+			</div>
+			<div v-else-if="certificate" class="space-y-4">
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
 					<div class="space-y-1">
@@ -44,7 +65,7 @@
 				</p>
 			</div>
 		</template>
-		<template #actions v-if="!certificate">
+		<template #actions v-if="!certificate && bench.hasSSHAcess">
 			<Button
 				:loading="$releaseGroup.generateCertificate.loading"
 				@click="
@@ -67,6 +88,7 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
+import bench from '../../objects/bench';
 
 export default {
 	props: ['bench', 'releaseGroup'],

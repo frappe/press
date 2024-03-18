@@ -21,4 +21,8 @@ export function dayjsLocal(dateTimeString) {
 	return dayjs.tz(dateTimeString, 'Asia/Calcutta').tz(localTimezone);
 }
 
+export function dayjsIST(dateTimeString) {
+	return dayjs(dateTimeString).tz('Asia/Calcutta');
+}
+
 export default dayjs;

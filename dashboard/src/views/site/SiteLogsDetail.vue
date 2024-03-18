@@ -43,7 +43,7 @@
 import CardDetails from '@/components/CardDetails.vue';
 export default {
 	name: 'SiteLogsDetail',
-	props: ['site', 'logName'],
+	props: ['siteName', 'logName'],
 	components: { CardDetails },
 	inject: ['viewportWidth'],
 	resources: {
@@ -51,7 +51,7 @@ export default {
 			return {
 				url: 'press.api.site.log',
 				params: {
-					name: this.site?.name,
+					name: this.siteName,
 					log: this.logName
 				},
 				auto: Boolean(this.logName)

@@ -102,6 +102,8 @@
 				</router-link>
 			</div>
 		</div>
+		<TryNewDashboardButton />
+
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
 </template>
@@ -112,13 +114,15 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
+import TryNewDashboardButton from './TryNewDashboardButton.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
 		SwitchTeamDialog,
-		CommandPalette
+		CommandPalette,
+		TryNewDashboardButton
 	},
 	data() {
 		return {
@@ -134,11 +138,6 @@ export default {
 					label: 'Support & Docs',
 					icon: 'help-circle',
 					onClick: () => (window.location.href = '/support')
-				},
-				{
-					label: 'Settings',
-					icon: 'settings',
-					onClick: () => this.$router.push('/settings/profile')
 				},
 				{
 					label: 'Logout',

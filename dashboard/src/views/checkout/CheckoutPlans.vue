@@ -49,7 +49,14 @@ export default {
 		FeatureList
 	},
 	emits: ['update:selectedPlan', 'update:step'],
-	props: ['selectedPlan', 'currency', 'step', 'secretKey', 'subscription'],
+	props: [
+		'selectedPlan',
+		'currency',
+		'step',
+		'secretKey',
+		'subscription',
+		'team'
+	],
 	resources: {
 		changeSitePlan() {
 			return {
@@ -60,6 +67,7 @@ export default {
 	methods: {
 		selectPlan(plan) {
 			this.$emit('update:selectedPlan', plan);
+			this.capturePosthogEvent();
 
 			if (Object.keys(this.subscription.address).length > 0) {
 				if (this.subscription.has_billing_info) {
@@ -87,6 +95,13 @@ export default {
 				features.push('Product warranty + Support');
 			}
 			return features;
+		},
+		capturePosthogEvent() {
+			if (window.posthog) {
+				posthog.capture('fc_subscribe_plan_selected', {
+					distinct_id: this.team
+				});
+			}
 		}
 	}
 };

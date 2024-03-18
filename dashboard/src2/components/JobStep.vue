@@ -47,7 +47,7 @@
 		</button>
 		<div
 			class="overflow-auto rounded-b border border-gray-100 bg-gray-900 px-2.5 py-2 text-sm text-gray-200"
-			v-show="step.isOpen"
+			v-show="step.isOpen || step.status == 'Running'"
 			ref="output"
 		>
 			<pre class="max-h-[50vh]">{{ step.output || 'No output' }}</pre>

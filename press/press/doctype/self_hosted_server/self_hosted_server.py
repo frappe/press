@@ -6,26 +6,44 @@ import frappe
 from frappe.model.document import Document
 from press.runner import Ansible
 from press.utils import log_error
+from frappe.model.naming import make_autoname
 
 import json
-from tldextract import extract as sdext
+
+# from tldextract import extract as sdext
 
 
 class SelfHostedServer(Document):
+	def before_insert(self):
+		self.validate_is_duplicate()
+
 	def autoname(self):
-		self.name = sdext(self.server_url).fqdn
+		series = make_autoname("SHS-.#####")
+		self.name = f"{series}.{self.hybrid_domain}"
+
+		self.hostname = series
+		self.domain = self.hybrid_domain
 
 	def validate(self):
-		if not self.hostname or not self.domain:
-			extracted_url = sdext(self.server_url)
-			self.hostname = extracted_url.subdomain
-			self.domain = extracted_url.registered_domain
-
 		self.set_proxy_details()
 		self.set_mariadb_config()
+		self.set_database_plan()
 
 		if not self.agent_password:
 			self.agent_password = frappe.generate_hash(length=32)
+
+	def validate_is_duplicate(self):
+		filters = {
+			"ip": self.ip,
+			"private_ip": self.private_ip,
+			"mariadb_ip": self.mariadb_ip,
+			"mariadb_private_ip": self.mariadb_private_ip,
+			"status": ("not in", ["Archived", "Broken"]),
+		}
+		duplicate_server = frappe.db.get_value("Self Hosted Server", filters, pluck="name")
+
+		if duplicate_server:
+			raise frappe.DuplicateEntryError(self.doctype, duplicate_server)
 
 	def set_proxy_details(self):
 		if self.proxy_created or self.proxy_server:
@@ -34,11 +52,10 @@ class SelfHostedServer(Document):
 			)
 
 	def set_mariadb_config(self):
-		if not self.different_database_server:
-			pass
-
 		if not self.mariadb_ip:
 			self.mariadb_ip = self.ip
+		if not self.mariadb_private_ip:
+			self.mariadb_private_ip = self.private_ip
 		if not self.mariadb_root_user:
 			self.mariadb_root_user = "root"
 		if not self.mariadb_root_password:
@@ -238,19 +255,37 @@ class SelfHostedServer(Document):
 		self.status = "Active"
 		self.save()
 
+	def set_database_plan(self):
+		if self.database_plan:
+			return
+
+		if not self.different_database_server:
+			if not frappe.db.exists("Server Plan", "Unlimited"):
+				self._create_server_plan("Unlimited")
+				self.database_plan = "Unlimited"
+
+	def _create_server_plan(self, plan_name):
+		plan = frappe.new_doc("Server Plan")
+		plan.name = plan_name
+		plan.title = plan_name
+		plan.price_inr = 0
+		plan.price_usd = 0
+		plan.save()
+
 	@frappe.whitelist()
-	def create_db_server(self):
+	def create_database_server(self):
 		try:
-			if not self.mariadb_ip or not self.mariadb_private_ip:
-				frappe.throw("Public/Private IP for MariaDB not found")
+			if not self.mariadb_ip:
+				frappe.throw("Public IP for MariaDB not found")
 
 			db_server = frappe.new_doc(
 				"Database Server",
 				**{
 					"hostname": self.get_hostname("Database Server"),
-					"title": f"{self.title} DB",
+					"title": f"{self.title} Database",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"ip": self.mariadb_ip,
 					"private_ip": self.mariadb_private_ip,
 					"team": self.team,
@@ -269,6 +304,9 @@ class SelfHostedServer(Document):
 			self.database_server = db_server.name
 			self.status = "Active"
 			self.save()
+
+			if not frappe.flags.in_test:
+				db_server.create_dns_record()
 
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
@@ -308,7 +346,7 @@ class SelfHostedServer(Document):
 		self.save()
 
 	@frappe.whitelist()
-	def create_server(self):
+	def create_application_server(self):
 		"""
 		Add a new record to the Server doctype
 		"""
@@ -318,9 +356,10 @@ class SelfHostedServer(Document):
 				"Server",
 				**{
 					"hostname": self.get_hostname("Server"),
-					"title": f"{self.title} App",
+					"title": f"{self.title} Application",
 					"is_self_hosted": True,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.ip,
 					"private_ip": self.private_ip,
@@ -342,14 +381,17 @@ class SelfHostedServer(Document):
 			self.status = "Active"
 			self.server_created = True
 
+			if not frappe.flags.in_test:
+				server.create_dns_record()
+
 		except Exception as e:
 			self.status = "Broken"
 			frappe.throw("Server Creation Error", exc=e)
 
 		self.save()
-		self.create_tls_certs()
 
 		frappe.msgprint(f"Server record {server.name} created")
+		return server
 
 	@frappe.whitelist()
 	def create_new_sites(self):
@@ -431,10 +473,16 @@ class SelfHostedServer(Document):
 		self.save()
 
 	def get_hostname(self, server_type):
-		if self.cluster:
-			return f"{get_symbolic_name(server_type)}-{self.cluster}-{self.hostname}".lower()
+		symbolic_name = get_symbolic_name(server_type)
+		series = f"{symbolic_name}-{self.cluster}.#####"
 
-		return f"{get_symbolic_name(server_type)}-{self.hostname}".lower()
+		index = make_autoname(series)[-5:]
+
+		return f"{symbolic_name}-{index}-{self.cluster}".lower()
+
+	@property
+	def hybrid_domain(self):
+		return frappe.db.get_single_value("Press Settings", "hybrid_domain")
 
 	@frappe.whitelist()
 	def create_proxy_server(self):
@@ -448,8 +496,8 @@ class SelfHostedServer(Document):
 					"hostname": self.get_hostname("Proxy Server"),
 					"title": self.title,
 					"is_self_hosted": True,
-					"domain": self.domain,
-					"self_hosted_server_domain": self.domain,
+					"domain": self.hybrid_domain,
+					"self_hosted_server_domain": self.hybrid_domain,
 					"team": self.team,
 					"ip": self.proxy_public_ip,
 					"private_ip": self.proxy_private_ip,
@@ -472,17 +520,15 @@ class SelfHostedServer(Document):
 		frappe.msgprint(f"Proxy server record {proxy_server.name} created")
 
 	@frappe.whitelist()
-	def create_tls_certs(self):
+	def create_tls_certs(self, domain):
 		try:
-			tls_cert = frappe.db.get_value(
-				"TLS Certificate", {"domain": f"{self.hostname}.{self.domain}"}
-			)
+			tls_cert = frappe.db.get_value("TLS Certificate", {"domain": f"{domain}"})
 
 			if not tls_cert:
 				tls_cert = frappe.new_doc(
 					"TLS Certificate",
 					**{
-						"domain": self.name,
+						"domain": domain,
 						"team": self.team,
 						"wildcard": False,
 					},
@@ -493,33 +539,25 @@ class SelfHostedServer(Document):
 		except Exception:
 			log_error("TLS Certificate(SelfHosted) Creation Error")
 
-	@frappe.whitelist()
-	def _setup_nginx(self):
-		frappe.enqueue_doc(self.doctype, self.name, "setup_nginx", queue="long")
-
-	@frappe.whitelist()
-	def setup_nginx(self):
-		if self.proxy_server and self.proxy_public_ip != self.ip:
-			"""Setup nginx sets ssl_nginx on the server,
-			if a proxy is configured these settings are already considered in proxy.conf"""
-			return True
-
+	def setup_nginx(self, server):
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_nginx.yml",
-				server=self,
-				user=self.ssh_user or "root",
-				port=self.ssh_port or "22",
+				server=server,
+				user=server.ssh_user or "root",
+				port=server.ssh_port or "22",
 				variables={
 					"domain": self.name,
-					"press_domain": frappe.db.get_single_value("Press Settings", "domain"),
+					"press_domain": frappe.db.get_single_value(
+						"Press Settings", "domain"
+					),  # for ssl renewal
 				},
 			)
 			play = ansible.run()
 			if play.status == "Success":
 				return True
 		except Exception:
-			log_error("TLS Cert Generation Failed", server=self.as_dict())
+			log_error("Nginx setup failed for self hosted server", server=self.as_dict())
 			return False
 
 	@frappe.whitelist()
@@ -528,53 +566,33 @@ class SelfHostedServer(Document):
 			update_server_tls_certifcate,
 		)
 
-		cert = frappe.get_last_doc(
-			"TLS Certificate", {"domain": self.name, "status": "Active"}
-		)
+		try:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.server, "status": "Active"}
+			)
+		except frappe.DoesNotExistError:
+			cert = frappe.get_last_doc(
+				"TLS Certificate", {"domain": self.name, "status": "Active"}
+			)
+
 		update_server_tls_certifcate(self, cert)
 
 	def process_tls_cert_update(self):
-		db_server = frappe.get_doc("Database Server", self.database_server)
-		if not db_server.is_server_setup:
-			db_server.setup_server()
-
-		app_server = frappe.get_doc("Server", self.server)
-		if not app_server.is_server_setup:
-			app_server.setup_server()
-
 		self.update_tls()
 
-	def create_subscription(self):
-		frappe.new_doc(
-			"Plan Change",
-			**{
-				"document_type": self.doctype,
-				"document_name": self.name,
-				"from_plan": "",
-				"to_plan": self.plan,
-				"type": "Initial Plan",
-				"timestamp": self.creation,
-			},
-		).insert(ignore_permissions=True)
+	def setup_server(self):
+		self._setup_db_server()
 
-	@frappe.whitelist()
-	def fetch_system_ram(self, play_id=None):
-		"""
-		Fetch the RAM from the Ping Ansible Play
-		"""
-		if not play_id:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.name, "play": "Ping Server"}
-			).name
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
-		try:
-			result = json.loads(play.result)
-			self.ram = result["ansible_facts"]["memtotal_mb"]
-			self.save()
-		except Exception:
-			log_error("Fetching RAM failed", server=self.as_dict())
+		if self.different_database_server:
+			self._setup_app_server()
+
+	def _setup_db_server(self):
+		db_server = frappe.get_doc("Database Server", self.database_server)
+		db_server.setup_server()
+
+	def _setup_app_server(self):
+		app_server = frappe.get_doc("Server", self.server)
+		app_server.setup_server()
 
 	@property
 	def subscription(self):
@@ -590,56 +608,130 @@ class SelfHostedServer(Document):
 			and self.team != "Administrator"
 		)
 
-	@frappe.whitelist()
-	def fetch_private_ip(self):
-		"""
-		Fetch the Private IP from the Ping Ansible Play
-		"""
-		play_id = frappe.get_last_doc(
-			"Ansible Play", {"server": self.name, "play": "Ping Server"}
-		).name
+	def _get_play_id(self):
+		try:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.server, "play": "Ping Server"}
+			).name
+		except frappe.DoesNotExistError:
+			play_id = frappe.get_last_doc(
+				"Ansible Play", {"server": self.name, "play": "Ping Server"}
+			).name
+
+		return play_id
+
+	def _get_play(self, play_id):
 		play = frappe.get_doc(
 			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
 		)
+
+		return json.loads(play.result)
+
+	@frappe.whitelist()
+	def fetch_system_ram(self, play_id=None, server_type="app"):
+		"""
+		Fetch the RAM from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = self._get_play_id()
+
 		try:
-			result = json.loads(play.result)
-			self.private_ip = fetch_private_ip_based_on_vendor(result)
+			result = result = self._get_play(play_id)
+
+			if server_type == "app":
+				self.ram = result["ansible_facts"]["memtotal_mb"]
+			else:
+				self.db_ram = result["ansible_facts"]["memtotal_mb"]
+
+			self.save()
+		except Exception:
+			log_error("Fetching RAM failed", server=self.as_dict())
+
+	def validate_private_ip(self, play_id=None, server_type="app"):
+		if not play_id:
+			play_id = self._get_play_id()
+
+		all_ipv4_addresses = []
+		result = self._get_play(play_id)
+
+		try:
+			all_ipv4_addresses = result["ansible_facts"]["all_ipv4_addresses"]
+		except Exception:
+			log_error("Fetching Private IP failed", server=self.as_dict())
+			return
+
+		private_ip = self.private_ip
+		public_ip = self.ip
+		if server_type == "db":
+			private_ip = self.mariadb_private_ip
+			public_ip = self.mariadb_ip
+
+		if private_ip not in all_ipv4_addresses:
+			frappe.throw(
+				f"Private IP {private_ip} is not associated with server having IP {public_ip} "
+			)
+
+	@frappe.whitelist()
+	def fetch_private_ip(self, play_id=None, server_type="app"):
+		"""
+		Fetch the Private IP from the Ping Ansible Play
+		"""
+		if not play_id:
+			play_id = self._get_play_id()
+
+		try:
+			result = self._get_play(play_id)
+
+			if server_type == "app":
+				self.private_ip = fetch_private_ip_based_on_vendor(result)
+			else:
+				self.mariadb_private_ip = fetch_private_ip_based_on_vendor(result)
+
 			self.save()
 		except Exception:
 			log_error("Fetching Private IP failed", server=self.as_dict())
 
 	@frappe.whitelist()
-	def fetch_system_specifications(self, play_id=None):
+	def fetch_system_specifications(self, play_id=None, server_type="app"):
 		"""
 		Fetch the RAM from the Ping Ansible Play
 		"""
 		if not play_id:
-			play_id = frappe.get_last_doc(
-				"Ansible Play", {"server": self.name, "play": "Ping Server"}
-			).name
-		play = frappe.get_doc(
-			"Ansible Task", {"status": "Success", "play": play_id, "task": "Gather Facts"}
-		)
+			play_id = self._get_play_id()
+
 		try:
-			result = json.loads(play.result)
-			self.vendor = result["ansible_facts"]["system_vendor"]
-			self.ram = result["ansible_facts"]["memtotal_mb"]
-			self.vcpus = result["ansible_facts"]["processor_vcpus"]
-			self.swap_total = result["ansible_facts"]["swaptotal_mb"]
-			self.architecture = result["ansible_facts"]["architecture"]
-			self.instance_type = result["ansible_facts"]["product_name"]
-			self.processor = result["ansible_facts"]["processor"][2]
-			self.distribution = result["ansible_facts"]["lsb"]["description"]
-			match self.vendor:
-				case "DigitalOcean":
-					self.total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
-				case "Amazon EC2":
-					self.total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
-				case _:
-					self.total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+			result = self._get_play(play_id)
+			if server_type == "app":
+
+				self.vendor = result["ansible_facts"]["system_vendor"]
+				self.ram = result["ansible_facts"]["memtotal_mb"]
+				self.vcpus = result["ansible_facts"]["processor_vcpus"]
+				self.swap_total = result["ansible_facts"]["swaptotal_mb"]
+				self.architecture = result["ansible_facts"]["architecture"]
+				self.instance_type = result["ansible_facts"]["product_name"]
+				self.processor = result["ansible_facts"]["processor"][2]
+				self.distribution = result["ansible_facts"]["lsb"]["description"]
+				self.total_storage = self._get_total_storage(result)
+
+			else:
+				self.db_ram = result["ansible_facts"]["memtotal_mb"]
+				self.db_vcpus = result["ansible_facts"]["processor_vcpus"]
+				self.db_total_storage = self._get_total_storage(result)
+
 			self.save()
 		except Exception:
 			log_error("Fetching System Details Failed", server=self.as_dict())
+
+	def _get_total_storage(self, result):
+		match self.vendor:
+			case "DigitalOcean":
+				total_storage = result["ansible_facts"]["devices"]["vda"]["size"]
+			case "Amazon EC2":
+				total_storage = result["ansible_facts"]["devices"]["nvme0n1"]["size"]
+			case _:
+				total_storage = result["ansible_facts"]["devices"]["sda"]["size"]
+
+		return total_storage
 
 	def check_minimum_specs(self):
 		"""
@@ -655,11 +747,24 @@ class SelfHostedServer(Document):
 			frappe.throw(
 				f"Minimum vCPU requirement not met, Minumum is 2 Cores and available is {self.vcpus}"
 			)
-		if round(int(float(self.total_storage.split()[0])), -1) < 40:
+
+		self._validate_disk()
+
+		return True
+
+	def _validate_disk(self):
+		disk_size = self.total_storage.split()[0]
+		disk_storage_unit = self.total_storage.split()[1]
+
+		if disk_storage_unit.upper() == "TB":
+			return True
+
+		if (
+			disk_storage_unit.upper() in ["GB", "MB"] and round(int(float(disk_size)), -1) < 40
+		):
 			frappe.throw(
 				f"Minimum Storage requirement not met, Minumum is 50GB and available is {self.total_storage}"
 			)
-		return True
 
 
 def fetch_private_ip_based_on_vendor(play_result: dict):
@@ -668,7 +773,7 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 		case "DigitalOcean":
 			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
 		case "Hetzner":
-			return play_result["ansible_facts"]["all_ipv4_addresses"][2]
+			return play_result["ansible_facts"]["all_ipv4_addresses"][1]
 		case "Amazon EC2":
 			return play_result["ansible_facts"]["default_ipv4"]["address"]
 		case "Microsoft Corporation":
@@ -681,7 +786,7 @@ def fetch_private_ip_based_on_vendor(play_result: dict):
 
 def get_symbolic_name(server_type):
 	return {
-		"Proxy Server": "n",
-		"Server": "f",
-		"Database Server": "m",
-	}.get(server_type, "f")
+		"Proxy Server": "hybrid-n",
+		"Server": "hybrid-f",
+		"Database Server": "hybrid-m",
+	}.get(server_type, "hybrid-f")

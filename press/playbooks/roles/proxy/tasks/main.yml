@@ -31,6 +31,6 @@
 - name: Setup Agent Proxy
   become: yes
   become_user: frappe
-  command: "/home/frappe/agent/env/bin/agent setup proxy --domain {{ domain }}"
+  command: '/home/frappe/agent/env/bin/agent setup proxy --domain {{ domain }} --press-url {{ press_url }}'
   args:
     chdir: /home/frappe/agent

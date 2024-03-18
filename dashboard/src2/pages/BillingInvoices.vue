@@ -42,7 +42,7 @@ export default {
 		options() {
 			return {
 				doctype: 'Invoice',
-				fields: ['type'],
+				fields: ['type', 'invoice_pdf'],
 				columns: [
 					{ label: 'Invoice', fieldname: 'name' },
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
@@ -61,12 +61,14 @@ export default {
 					{
 						label: 'Amount Paid',
 						fieldname: 'amount_paid',
-						format: this.formatCurrency
+						format: this.formatCurrency,
+						width: 0.7
 					},
 					{
 						label: 'Amount Due',
 						fieldname: 'amount_due',
-						format: this.formatCurrency
+						format: this.formatCurrency,
+						width: 0.7
 					},
 					{
 						label: '',

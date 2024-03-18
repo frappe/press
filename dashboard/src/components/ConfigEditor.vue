@@ -37,6 +37,10 @@
 						<FormControl
 							:label="getStandardConfigTitle(config.key)"
 							v-model="config.value"
+							@click="
+								config.type === 'Password' ? (config.value = '') : null;
+								config.type === 'Password' ? (isDirty = true) : null;
+							"
 							@input="isDirty = true"
 							class="flex-1"
 						/>
@@ -97,7 +101,13 @@
 							v-model="newConfig.type"
 							type="select"
 							:disabled="chosenStandardConfig && !showCustomKeyInput"
-							:options="['String', 'Number', 'JSON', 'Boolean']"
+							:options="[
+								'String',
+								'Number',
+								'JSON',
+								'Boolean',
+								chosenStandardConfig?.value !== 'custom_key' ? 'Password' : null
+							]"
 							@change="isDirty = true"
 						/>
 						<FormControl
@@ -162,6 +172,7 @@ export default {
 				const value = d.value;
 				if (!isNaN(value)) d.type = 'Number';
 				else if (isValidJSON(value)) d.type = 'JSON';
+				else if (d.type === 'Password') d.type = 'Password';
 				else d.type = 'String';
 
 				return {
@@ -203,6 +214,7 @@ export default {
 				},
 				onSuccess() {
 					this.isDirty = false;
+					this.$resources.configData.reload();
 				}
 			};
 		},
@@ -254,6 +266,7 @@ export default {
 		configInputProps() {
 			let type = {
 				String: 'text',
+				Password: 'text',
 				Number: 'number',
 				JSON: 'textarea',
 				Boolean: 'select'
@@ -294,11 +307,10 @@ export default {
 			this.newConfig.key = this.chosenStandardConfig?.value || '';
 		},
 		getStandardConfigType(key) {
-			const type =
+			return (
 				this.$resources.standardConfigKeys.data.find(d => d.key === key)
-					?.type || 'String';
-
-			return type === 'Password' ? 'String' : type;
+					?.type || 'String'
+			);
 		},
 		getStandardConfigKey(key) {
 			return (

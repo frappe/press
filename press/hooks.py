@@ -184,6 +184,7 @@ scheduler_events = {
 		"press.press.doctype.payout_order.payout_order.create_marketplace_payout_orders",
 		"press.press.doctype.root_domain.root_domain.cleanup_cname_records",
 		"press.press.doctype.remote_file.remote_file.poll_file_statuses",
+		"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 	],
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
@@ -205,9 +206,14 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
-		"press.press.doctype.incident.incident.validate_incidents",
 	],
 	"cron": {
+		"1-59/2 * * * *": [
+			"press.press.doctype.incident.incident.validate_incidents",
+		],
+		"*/2 * * * *": [
+			"press.press.doctype.incident.incident.resolve_incidents",
+		],
 		"0 4 * * *": [
 			"press.press.doctype.site.backups.cleanup_offsite",
 			"press.press.cleanup.unlink_remote_files_from_site",
@@ -222,13 +228,13 @@ scheduler_events = {
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
 			"press.press.doctype.razorpay_payment_record.razorpay_payment_record.fetch_pending_payment_orders",
-			"press.press.doctype.virtual_machine.virtual_machine.snapshot_virtual_machines",
 		],
 		"30 * * * *": ["press.press.doctype.agent_job.agent_job.suspend_sites"],
 		"*/15 * * * *": [
 			"press.press.doctype.site_update.site_update.schedule_updates",
 			"press.press.doctype.drip_email.drip_email.send_welcome_email",
 			"press.press.doctype.site.backups.schedule",
+			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
 			"press.press.doctype.bench.bench.archive_obsolete_benches",
@@ -246,7 +252,7 @@ scheduler_events = {
 			"press.press.doctype.deploy_candidate.deploy_candidate.run_scheduled_builds",
 		],
 		"*/10 * * * *": [
-			"press.saas.doctype.saas_product.pooling.create",
+			"press.saas.doctype.saas_product.saas_product.replenish_standby_sites",
 			"press.press.doctype.site.saas_pool.create",
 		],
 		"*/30 * * * *": [

@@ -5,7 +5,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl px-5">
+	<div class="mx-auto max-w-2xl px-5">
 		<div v-if="$resources.options.loading" class="py-4 text-base text-gray-600">
 			Loading...
 		</div>
@@ -20,7 +20,7 @@
 					</h2>
 				</div>
 				<div class="mt-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="v in options.versions"
 							:key="v.name"
@@ -40,98 +40,12 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="selectedVersionPublicApps.length">
-				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Select Marketplace Apps
-				</h2>
-				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
-						<button
-							v-for="app in selectedVersionPublicApps"
-							:key="app"
-							@click="toggleApp(app)"
-							:class="[
-								apps.includes(app.app)
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-gray-50',
-								'flex w-full items-start space-x-2 rounded border p-2 text-left text-base text-gray-900'
-							]"
-						>
-							<img :src="app.image" class="h-10 w-10 shrink-0" />
-							<div class="w-full">
-								<div class="flex w-full items-center justify-between">
-									<div class="flex items-center space-x-2">
-										<div class="text-base font-medium">
-											{{ app.app_title }}
-										</div>
-										<Tooltip
-											v-if="app.total_installs > 1"
-											:text="`${app.total_installs} installs`"
-										>
-											<div class="flex items-center text-sm text-gray-600">
-												<i-lucide-download class="h-3 w-3" />
-												<span class="ml-0.5 leading-3">
-													{{ $format.numberK(app.total_installs || '') }}
-												</span>
-											</div>
-										</Tooltip>
-										<Badge theme="gray" :label="app.subscription_type" />
-									</div>
-									<a
-										:href="`/${app.route}`"
-										target="_blank"
-										title="App details"
-									>
-										<FeatherIcon name="external-link" class="h-4 w-4" />
-									</a>
-								</div>
-								<div
-									class="mt-1 line-clamp-1 overflow-clip text-p-sm text-gray-600"
-									:title="app.description"
-								>
-									{{ app.description }}
-								</div>
-							</div>
-						</button>
-					</div>
-				</div>
-				<SiteAppPlanSelectorDialog
-					v-if="selectedApp"
-					v-model="showAppPlanSelectorDialog"
-					:app="selectedApp"
-					@plan-select="
-						plan => {
-							apps.push(selectedApp.app);
-							appPlans[selectedApp.app] = plan;
-							showAppPlanSelectorDialog = false;
-						}
-					"
-				/>
-			</div>
-			<div class="flex flex-col" v-if="selectedVersionPrivateApps.length">
-				<h2 class="text-base font-medium leading-6 text-gray-900">
-					Select Private Apps
-				</h2>
-				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-2">
-						<button
-							v-for="app in selectedVersionPrivateApps"
-							:key="app"
-							@click="toggleApp(app)"
-							:class="[
-								apps.includes(app.app)
-									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  hover:bg-gray-50',
-								'flex h-12 w-full items-center space-x-2 rounded border p-2 text-left text-base text-gray-900'
-							]"
-						>
-							<div class="text-base font-medium">
-								{{ app.app_title }}
-							</div>
-						</button>
-					</div>
-				</div>
-			</div>
+			<NewSiteAppSelector
+				v-if="version"
+				:availableApps="selectedVersionApps"
+				:siteOnPublicBench="!bench"
+				v-model="apps"
+			/>
 			<div
 				class="flex flex-col"
 				v-if="selectedVersion?.group?.clusters?.length"
@@ -140,7 +54,7 @@
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3">
 						<button
 							v-for="c in selectedVersion.group.clusters"
 							:key="c.name"
@@ -152,11 +66,14 @@
 								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
 							]"
 						>
-							<div class="flex w-full items-center space-x-2">
-								<img :src="c.image" class="h-5 w-5" />
-								<span class="text-sm font-medium">
-									{{ c.title }}
-								</span>
+							<div class="flex w-full items-center justify-between">
+								<div class="flex w-full items-center space-x-2">
+									<img :src="c.image" class="h-5 w-5" />
+									<span class="text-sm font-medium">
+										{{ c.title }}
+									</span>
+								</div>
+								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
 						</button>
 					</div>
@@ -180,7 +97,7 @@
 					<SitePlansCards v-model="plan" />
 				</div>
 			</div>
-			<div v-if="selectedVersion && plan && cluster" class="w-1/2">
+			<div v-if="selectedVersion && plan && cluster">
 				<h2 class="text-base font-medium leading-6 text-gray-900">
 					Enter Subdomain
 				</h2>
@@ -222,81 +139,13 @@
 					</template>
 				</div>
 			</div>
-			<div class="w-1/2" v-if="selectedVersion && cluster && plan && subdomain">
-				<h2 class="text-base font-medium leading-6 text-gray-900">Summary</h2>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 2fr 4fr"
-				>
-					<div class="text-gray-600">Version:</div>
-					<div class="text-gray-900">{{ selectedVersion.name }}</div>
-					<div class="text-gray-600">Apps:</div>
-					<div class="text-gray-900">
-						{{
-							apps.length
-								? selectedVersionPublicApps
-										.filter(app => apps.includes(app.app))
-										.map(app => app.app_title)
-										.join(', ')
-								: 'No apps selected'
-						}}
-					</div>
-
-					<div class="text-gray-600">Region:</div>
-					<div class="text-gray-900">{{ selectedClusterTitle }}</div>
-					<div class="text-gray-600">Site URL:</div>
-					<div class="text-gray-900">{{ subdomain }}.{{ options.domain }}</div>
-				</div>
-				<div
-					class="mt-2 grid gap-x-4 gap-y-2 rounded-md border bg-gray-50 p-4 text-p-base"
-					style="grid-template-columns: 2fr 4fr"
-				>
-					<div class="text-gray-600">Site Plan:</div>
-					<div v-if="selectedPlan">
-						<span class="text-gray-900">
-							{{
-								$format.userCurrency(
-									$team.doc.currency == 'INR'
-										? selectedPlan.price_inr
-										: selectedPlan.price_usd
-								)
-							}}
-							per month
-						</span>
-					</div>
-					<div v-else>{{ plan }}</div>
-					<div class="text-gray-600">Product Warranty:</div>
-					<div class="text-gray-900">
-						{{ selectedPlan.support_included ? 'Included' : 'Not Included' }}
-					</div>
-					<template v-for="app in Object.keys(appPlans)" :key="app">
-						<div class="text-gray-600">
-							{{ selectedVersionPublicApps.find(a => app === a.app).app_title }}
-							Plan:
-						</div>
-						<div>
-							<span class="text-gray-900">
-								{{
-									$format.userCurrency(
-										$team.doc.currency == 'INR'
-											? appPlans[app].price_inr
-											: appPlans[app].price_usd
-									)
-								}}
-								per month
-							</span>
-						</div>
-					</template>
-					<div class="text-gray-600">Total:</div>
-					<div>
-						<div class="text-gray-900">{{ totalPerMonth }} per month</div>
-						<div class="text-gray-600">{{ totalPerDay }} per day</div>
-					</div>
-				</div>
-			</div>
+			<Summary
+				v-if="selectedVersion && cluster && plan && subdomain"
+				:options="siteSummaryOptions"
+			/>
 			<div
 				v-if="selectedVersion && cluster && plan"
-				class="flex w-1/2 flex-col space-y-4"
+				class="flex flex-col space-y-4"
 			>
 				<FormControl
 					class="checkbox"
@@ -312,7 +161,7 @@
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 			</div>
-			<div class="w-1/2" v-if="selectedVersion && cluster && plan">
+			<div v-if="selectedVersion && cluster && plan">
 				<Button
 					class="w-full"
 					variant="solid"
@@ -337,31 +186,29 @@ import {
 	Breadcrumbs,
 	getCachedDocumentResource
 } from 'frappe-ui';
-import Header from '../components/Header.vue';
-import { validateSubdomain } from '../../src/utils.js';
-import router from '../router';
 import SitePlansCards from '../components/SitePlansCards.vue';
-import SiteAppPlanSelectorDialog from '../components/site/SiteAppPlanSelectorDialog.vue';
-import { plans } from '../data/plans';
-
-// TODO:
-// 1. Marketplace app plans
-// 2. Restore from site, backup files
+import { validateSubdomain } from '../../src/utils.js';
+import Header from '../components/Header.vue';
+import router from '../router';
+import { getPlans, plans } from '../data/plans';
+import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
+import Summary from '../components/Summary.vue';
 
 export default {
 	name: 'NewSite',
 	props: ['bench'],
 	components: {
-		FormControl,
-		TextInput,
-		Autocomplete,
-		FeatherIcon,
-		ErrorMessage,
-		Header,
-		SitePlansCards,
-		Tooltip,
 		FBreadcrumbs: Breadcrumbs,
-		SiteAppPlanSelectorDialog
+		NewSiteAppSelector,
+		SitePlansCards,
+		Autocomplete,
+		ErrorMessage,
+		FormControl,
+		FeatherIcon,
+		TextInput,
+		Tooltip,
+		Summary,
+		Header
 	},
 	data() {
 		return {
@@ -426,7 +273,7 @@ export default {
 		},
 		newSite() {
 			if (!(this.options && this.selectedVersion)) return;
-			let apps = ['frappe'].concat(this.apps);
+
 			return {
 				url: 'press.api.client.insert',
 				params: {
@@ -434,8 +281,19 @@ export default {
 						doctype: 'Site',
 						team: this.$team.doc.name,
 						subdomain: this.subdomain,
-						apps: apps.map(app => ({ app })),
-						app_plans: this.appPlans,
+						apps: [
+							{ app: 'frappe' },
+							...this.apps.filter(app => app.app).map(app => ({ app: app.app }))
+						],
+						app_plans: this.apps.length
+							? Object.assign(
+									...this.apps
+										.filter(a => a.plan)
+										.map(app => ({
+											[app.app]: app.plan
+										}))
+							  )
+							: {},
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
 						subscription_plan: this.plan,
@@ -507,7 +365,7 @@ export default {
 		},
 		selectedPlan() {
 			if (!plans?.data) return;
-			return plans.data.find(p => p.name === this.plan);
+			return plans.data.find(p => p.name === this.plan.name);
 		},
 		breadcrumbs() {
 			if (this.bench) {
@@ -523,7 +381,7 @@ export default {
 					},
 					{
 						label: 'New Site',
-						route: { name: 'NewBenchSite', params: { bench: this.bench } }
+						route: { name: 'Bench New Site', params: { bench: this.bench } }
 					}
 				];
 			}
@@ -538,11 +396,11 @@ export default {
 					? this.selectedPlan.price_inr
 					: this.selectedPlan.price_usd;
 
-			for (let appPlan of Object.values(this.appPlans)) {
+			for (let app of this.apps.filter(app => app.plan)) {
 				total +=
 					this.$team.doc.currency == 'INR'
-						? appPlan.price_inr
-						: appPlan.price_usd;
+						? app.plan.price_inr
+						: app.plan.price_usd;
 			}
 
 			return total;
@@ -551,30 +409,66 @@ export default {
 			return this.$format.userCurrency(this._totalPerMonth);
 		},
 		totalPerDay() {
-			let daysInThisMonth = new Date(
-				new Date().getFullYear(),
-				new Date().getMonth() + 1,
-				0
-			).getDate();
-			return this.$format.userCurrency(this._totalPerMonth / daysInThisMonth);
-		}
-	},
-	methods: {
-		toggleApp(app) {
-			if (app.app == 'frappe') {
-				return;
+			return this.$format.userCurrency(
+				this.$format.pricePerDay(this._totalPerMonth)
+			);
+		},
+		siteSummaryOptions() {
+			let appPlans = [];
+			for (let app of this.apps.filter(app => app.plan)) {
+				appPlans.push(
+					`${
+						this.selectedVersionPublicApps.find(a => a.app === app.app)
+							.app_title
+					} ${
+						app.plan.price_inr
+							? `- <span class="text-gray-600">${this.$format.userCurrency(
+									this.$team.doc.currency == 'INR'
+										? app.plan.price_inr
+										: app.plan.price_usd
+							  )} per month</span>`
+							: ''
+					}`
+				);
 			}
-			if (this.apps.includes(app.app)) {
-				this.apps = this.apps.filter(a => a !== app.app);
-				delete this.appPlans[app.app];
-			} else {
-				if (app.plans?.length) {
-					this.selectedApp = app;
-					this.showAppPlanSelectorDialog = true;
-				} else {
-					this.apps.push(app.app);
+
+			return [
+				{
+					label: 'Frappe Framework Version',
+					value: this.selectedVersion?.name
+				},
+				{
+					label: 'Region',
+					value: this.selectedClusterTitle
+				},
+				{
+					label: 'Site URL',
+					value: `${this.subdomain}.${this.options?.domain}`
+				},
+				{
+					label: 'Site Plan',
+					value: `${this.$format.userCurrency(
+						this.$team.doc.currency == 'INR'
+							? this.selectedPlan.price_inr
+							: this.selectedPlan.price_usd
+					)} per month`
+				},
+				{
+					label: 'Product Warranty',
+					value: this.selectedPlan.support_included
+						? 'Included'
+						: 'Not Included'
+				},
+				{
+					label: 'Apps',
+					value: this.apps.length ? appPlans.join('<br>') : 'No apps selected'
+				},
+				{
+					label: 'Total',
+					value: `${this.totalPerMonth} per month <div class="text-gray-600">${this.totalPerDay} per day</div>`,
+					condition: () => this._totalPerMonth
 				}
-			}
+			];
 		}
 	}
 };

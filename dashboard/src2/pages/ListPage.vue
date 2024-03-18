@@ -8,6 +8,7 @@
 			</Header>
 		</div>
 		<div class="p-5">
+			<AlertAddPaymentMode class="mb-5" v-if="!$team.doc.payment_mode" />
 			<ObjectList :options="listOptions" />
 		</div>
 	</div>
@@ -18,6 +19,7 @@ import Header from '../components/Header.vue';
 import ObjectList from '../components/ObjectList.vue';
 import { Breadcrumbs, Button, Dropdown, TextInput } from 'frappe-ui';
 import { getObject } from '../objects';
+import { defineAsyncComponent } from 'vue';
 
 export default {
 	components: {
@@ -26,7 +28,10 @@ export default {
 		ObjectList,
 		Button,
 		Dropdown,
-		TextInput
+		TextInput,
+		AlertAddPaymentMode: defineAsyncComponent(() =>
+			import('../components/AlertAddPaymentMode.vue')
+		)
 	},
 	props: {
 		objectType: {

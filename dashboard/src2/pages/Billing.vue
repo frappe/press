@@ -28,7 +28,11 @@ export default {
 				{ label: 'Overview', route: { name: 'BillingOverview' } },
 				{ label: 'Invoices', route: { name: 'BillingInvoices' } },
 				{ label: 'Balances', route: { name: 'BillingBalances' } },
-				{ label: 'Payment Methods', route: { name: 'BillingPaymentMethods' } }
+				{ label: 'Payment Methods', route: { name: 'BillingPaymentMethods' } },
+				{
+					label: 'Marketplace Payouts',
+					route: { name: 'BillingMarketplacePayouts' }
+				}
 			]
 		};
 	}

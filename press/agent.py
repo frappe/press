@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-
-
+import _io
 import json
 import os
+import typing
 from datetime import date
 from typing import List
 
@@ -12,6 +12,9 @@ import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
+
+if typing.TYPE_CHECKING:
+	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
 
 
 class Agent:
@@ -648,6 +651,8 @@ class Agent:
 
 	def request(self, method, path, data=None, files=None, agent_job=None):
 		agent_job_id = agent_job.name if agent_job else None
+		headers = None
+		url = None
 
 		try:
 			url = f"https://{self.server}:{self.port}/agent/{path}"
@@ -665,8 +670,10 @@ class Agent:
 				verify = True
 			if files:
 				file_objects = {
-					key: frappe.get_doc("File", {"file_url": url}).get_content()
-					for key, url in files.items()
+					key: value
+					if isinstance(value, _io.BufferedReader)
+					else frappe.get_doc("File", {"file_url": url}).get_content()
+					for key, value in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
 				result = requests.request(
@@ -869,3 +876,19 @@ class Agent:
 		return self.create_agent_job(
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)
+
+	def patch_app(self, bench: str, app: str, data: "AgentPatchConfig"):
+		return self.create_agent_job(
+			"Patch App",
+			f"benches/{bench}/patch/{app}",
+			bench=bench,
+			data=data,
+		)
+
+	def upload_build_context_for_docker_build(self, file):
+		return self.request("POST", "builder/upload", files={"build_context_file": file}).get(
+			"filename"
+		)
+
+	def build_docker_image(self, data: dict):
+		return self.create_agent_job("Docker Image Build", "builder/build", data=data)

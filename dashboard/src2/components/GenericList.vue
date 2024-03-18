@@ -4,7 +4,7 @@
 		:rows="rows"
 		:options="{
 			selectable: options.selectable || false,
-			onRowClick: () => {},
+			onRowClick: row => (options.onRowClick ? options.onRowClick(row) : {}),
 			getRowRoute: options.route ? getRowRoute : null
 		}"
 		row-key="name"
@@ -24,6 +24,12 @@
 			</template>
 		</ListHeader>
 		<ListRows>
+			<div
+				v-if="rows.length === 0"
+				class="text-center text-sm leading-10 text-gray-500"
+			>
+				No results found
+			</div>
 			<ListRow v-for="(row, i) in rows" :row="row" :key="row.name">
 				<template v-slot="{ column, item }">
 					<ObjectListCell
@@ -63,7 +69,6 @@ export default {
 	computed: {
 		columns() {
 			if (!this.options.columns && this.options.data.length > 0) {
-				console.log(Object.keys(this.options.data[0]));
 				return Object.keys(this.options.data[0]).map(fieldname => {
 					return {
 						fieldname,
@@ -100,14 +105,6 @@ export default {
 				return route || this.$route;
 			}
 			return null;
-		},
-		formattedValue(value, column, row) {
-			let formattedValue =
-				column.format && value ? column.format(value, row) : value;
-			if (!formattedValue) {
-				formattedValue = '';
-			}
-			return String(formattedValue);
 		}
 	}
 };

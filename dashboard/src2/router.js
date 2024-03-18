@@ -43,26 +43,31 @@ let router = createRouter({
 			meta: { isLoginPage: true }
 		},
 		{
-			name: 'JobPage',
-			path: '/jobs/:id',
-			component: () => import('./pages/JobPage.vue'),
-			props: true
-		},
-		{
-			name: 'NewSite',
+			name: 'New Site',
 			path: '/sites/new',
 			component: () => import('./pages/NewSite.vue')
 		},
 		{
-			name: 'NewBenchSite',
+			name: 'Bench New Site',
 			path: '/benches/:bench/sites/new',
 			component: () => import('./pages/NewSite.vue'),
 			props: true
 		},
 		{
-			name: 'NewBench',
+			name: 'New Release Group',
 			path: '/benches/new',
 			component: () => import('./pages/NewBench.vue')
+		},
+		{
+			name: 'Server New Bench',
+			path: '/servers/:server/benches/new',
+			component: () => import('./pages/NewBench.vue'),
+			props: true
+		},
+		{
+			name: 'New Server',
+			path: '/servers/new',
+			component: () => import('./pages/NewServer.vue')
 		},
 		{
 			name: 'Billing',
@@ -88,6 +93,11 @@ let router = createRouter({
 					name: 'BillingPaymentMethods',
 					path: 'payment-methods',
 					component: () => import('./pages/BillingPaymentMethods.vue')
+				},
+				{
+					name: 'BillingMarketplacePayouts',
+					path: 'payouts',
+					component: () => import('./pages/BillingMarketplacePayouts.vue')
 				}
 			]
 		},
@@ -107,6 +117,11 @@ let router = createRouter({
 					name: 'SettingsTeam',
 					path: 'team',
 					component: () => import('./components/settings/TeamSettings.vue')
+				},
+				{
+					name: 'SettingsDeveloper',
+					path: 'developer',
+					component: () => import('./components/settings/DeveloperSettings.vue')
 				},
 				{
 					name: 'SettingsPermission',
@@ -157,9 +172,10 @@ let router = createRouter({
 			]
 		},
 		{
-			name: 'NewAppSite',
-			path: '/new-app-site',
-			component: () => import('./pages/NewAppSite.vue')
+			name: 'NewAppTrial',
+			path: '/app-trial/:productId',
+			component: () => import('./pages/NewAppTrial.vue'),
+			props: true
 		},
 		{
 			name: 'Impersonate',
@@ -188,17 +204,21 @@ router.beforeEach(async (to, from, next) => {
 		let onboardingComplete = $team.doc.onboarding.complete;
 		let onboardingIncomplete = !onboardingComplete;
 		let defaultRoute = 'Site List';
-		let onboardingRoute = $team.doc.onboarding.saas_site_request
-			? 'NewAppSite'
-			: 'Welcome';
+		let onboardingRoute = 'Welcome';
 
-		if (onboardingIncomplete && to.name != onboardingRoute) {
+		let visitingSiteOrBillingOrSettings =
+			to.name.startsWith('Site') ||
+			to.name.startsWith('Billing') ||
+			to.name.startsWith('NewAppTrial') ||
+			to.name.startsWith('Settings');
+
+		// if onboarding is incomplete, only allow access to Welcome, Site, Billing, and Settings pages
+		if (
+			onboardingIncomplete &&
+			to.name != onboardingRoute &&
+			!visitingSiteOrBillingOrSettings
+		) {
 			next({ name: onboardingRoute });
-			return;
-		}
-
-		if (to.name == onboardingRoute && onboardingComplete) {
-			next({ name: defaultRoute });
 			return;
 		}
 

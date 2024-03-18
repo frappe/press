@@ -38,5 +38,11 @@
 - targets:
     - '{{ press_app_server }}'
   labels:
+    job: process
+    __metrics_path__: /metrics/process
+
+- targets:
+    - '{{ press_app_server }}'
+  labels:
     job: press
     __metrics_path__: /metrics/press

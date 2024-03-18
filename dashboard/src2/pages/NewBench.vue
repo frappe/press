@@ -2,15 +2,32 @@
 	<div class="sticky top-0 z-10 shrink-0">
 		<Header>
 			<Breadcrumbs
-				:items="[
-					{ label: 'Benches', route: '/benches' },
-					{ label: 'New Bench', route: '/benches/new' }
-				]"
+				:items="
+					server
+						? [
+								{
+									label: 'Servers',
+									route: '/servers'
+								},
+								{
+									label: server,
+									route: `/servers/${server}`
+								},
+								{
+									label: 'New Bench',
+									route: '/benches/new'
+								}
+						  ]
+						: [
+								{ label: 'Benches', route: '/benches' },
+								{ label: 'New Bench', route: '/benches/new' }
+						  ]
+				"
 			/>
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-4xl">
+	<div class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">
@@ -19,7 +36,7 @@
 					</h2>
 				</div>
 				<div class="mt-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
 							v-for="version in options.versions"
 							:key="version.name"
@@ -39,59 +56,64 @@
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col" v-if="options?.clusters.length">
+			<div
+				class="flex flex-col"
+				v-if="options?.clusters.length && benchVersion && !server"
+			>
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Select Region
 				</h2>
 				<div class="mt-2 w-full space-y-2">
-					<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div class="grid grid-cols-2 gap-3">
 						<button
 							v-for="c in options?.clusters"
 							:key="c.name"
 							@click="benchRegion = c.name"
 							:class="[
-								!benchVersion ? 'pointer-events-none' : 'border-gray-400',
 								benchRegion === c.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
-									: 'bg-white text-gray-900  ring-gray-200 hover:bg-gray-50',
+									: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
 								'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
 							]"
 						>
-							<div class="flex w-full items-center space-x-2">
-								<img :src="c.image" class="h-5 w-5" />
-								<span class="text-sm font-medium">
-									{{ c.title }}
-								</span>
+							<div class="flex w-full items-center justify-between">
+								<div class="flex w-full items-center space-x-2">
+									<img :src="c.image" class="h-5 w-5" />
+									<span class="text-sm font-medium">
+										{{ c.title }}
+									</span>
+								</div>
+								<Badge v-if="c.beta" :label="c.beta ? 'Beta' : ''" />
 							</div>
 						</button>
 					</div>
 				</div>
 			</div>
-			<div class="flex flex-col">
+			<div v-if="benchVersion && (benchRegion || server)" class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
 					Enter Bench Title
 				</h2>
 				<div class="mt-2">
-					<FormControl
-						:disabled="!benchVersion || !benchRegion"
-						v-model="benchTitle"
-						type="text"
-						class="block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
-					/>
+					<FormControl v-model="benchTitle" type="text" />
 				</div>
 			</div>
-			<div class="flex flex-col space-y-4">
+			<Summary
+				v-if="benchVersion && (benchRegion || server) && benchTitle"
+				:options="summaryOptions"
+			/>
+			<div
+				class="flex flex-col space-y-4"
+				v-if="benchVersion && (benchRegion || server) && benchTitle"
+			>
 				<FormControl
 					type="checkbox"
-					:disabled="!benchVersion || !benchRegion || !benchTitle"
 					v-model="agreedToRegionConsent"
 					:label="`I agree that the laws of the region selected by me shall stand applicable to me and Frappe.`"
 				/>
 				<ErrorMessage class="my-2" :message="$resources.createBench.error" />
 				<Button
-					class="w-1/2"
 					variant="solid"
-					:disabled="!benchVersion || !benchRegion || !benchTitle"
+					:disabled="!agreedToRegionConsent"
 					@click="
 						$resources.createBench.submit({
 							bench: {
@@ -110,7 +132,7 @@
 										source: app.source.name
 									};
 								}),
-								server: null
+								server: server || null
 							}
 						})
 					"
@@ -123,12 +145,16 @@
 	</div>
 </template>
 <script>
+import Summary from '../components/Summary.vue';
 import Header from '../components/Header.vue';
+
 export default {
 	name: 'NewBench',
 	components: {
+		Summary,
 		Header
 	},
+	props: ['server'],
 	data() {
 		return {
 			benchTitle: '',
@@ -174,6 +200,28 @@ export default {
 	computed: {
 		options() {
 			return this.$resources.options.data;
+		},
+		summaryOptions() {
+			return [
+				{
+					label: 'Frappe Framework Version',
+					value: this.benchVersion
+				},
+				{
+					label: 'Region',
+					value: this.benchRegion,
+					condition: () => !this.server
+				},
+				{
+					label: 'Server',
+					value: this.server,
+					condition: () => this.server
+				},
+				{
+					label: 'Title',
+					value: this.benchTitle
+				}
+			];
 		}
 	}
 };

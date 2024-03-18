@@ -3,67 +3,77 @@
 		v-model="show"
 		:options="{
 			title: 'Updates Available',
-			size: '2xl',
-			actions: [
-				{
-					label: 'Schedule Update',
-					variant: 'solid',
-					onClick: () => {
-						return this.$site.scheduleUpdate.submit(
-							{
-								skip_failing_patches: this.skipFailingPatches,
-								skip_backups: this.skipBackups
-							},
-							{
-								onSuccess: () => {
-									this.$site.reload();
-									this.show = false;
-								}
-							}
-						);
-					}
-				}
-			]
+			size: '2xl'
 		}"
 	>
 		<template #body-content>
 			<template v-if="updatableApps.length > 0">
 				<GenericList :options="listOptions" />
-				<div class="mt-7 text-base text-gray-900">Update settings</div>
 				<div class="mt-4 flex flex-col space-y-4">
-					<FormControl
-						label="Skip failing patches if any"
-						type="checkbox"
-						v-model="skipFailingPatches"
-					/>
-					<FormControl
-						label="Skip backups"
-						type="checkbox"
-						v-model="skipBackups"
-					/>
+					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
+					<div class="flex flex-col space-y-4">
+						<FormControl
+							label="Skip failing patches if any"
+							type="checkbox"
+							v-model="skipFailingPatches"
+						/>
+						<FormControl
+							label="Skip backups"
+							type="checkbox"
+							v-model="skipBackups"
+						/>
+					</div>
 				</div>
 			</template>
 			<div v-else class="text-center text-base text-gray-600">
 				No apps to update
 			</div>
 		</template>
+		<template #actions>
+			<Button
+				class="w-full"
+				variant="solid"
+				:loading="$site.scheduleUpdate.loading"
+				:label="`Update ${
+					scheduledTime ? `at ${scheduledTimeInLocal}` : 'Now'
+				}`"
+				@click="
+					$site.scheduleUpdate.submit(
+						{
+							skip_failing_patches: skipFailingPatches,
+							skip_backups: skipBackups,
+							scheduled_time: scheduledTimeInIST
+						},
+						{
+							onSuccess: () => {
+								$site.reload();
+								show = false;
+							}
+						}
+					)
+				"
+			/>
+		</template>
 	</Dialog>
 </template>
 <script>
-import { FormControl, getCachedDocumentResource } from 'frappe-ui';
+import { getCachedDocumentResource } from 'frappe-ui';
+import DateTimeControl from './DateTimeControl.vue';
 import GenericList from './GenericList.vue';
+import dayjs, { dayjsIST } from '../utils/dayjs';
 
 export default {
 	name: 'SiteUpdateDialog',
 	props: ['site'],
 	components: {
 		GenericList,
-		FormControl
+		DateTimeControl
 	},
 	data() {
 		return {
 			show: true,
 			skipFailingPatches: false,
+			scheduledTime: '',
 			skipBackups: false
 		};
 	},
@@ -77,6 +87,13 @@ export default {
 		}
 	},
 	computed: {
+		scheduledTimeInIST() {
+			if (!this.scheduledTime) return;
+			return dayjsIST(this.scheduledTime).format('YYYY-MM-DDTHH:mm');
+		},
+		scheduledTimeInLocal() {
+			return dayjs(this.scheduledTime).format('lll');
+		},
 		listOptions() {
 			return {
 				data: this.updatableApps,

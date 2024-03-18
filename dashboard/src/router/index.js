@@ -183,7 +183,8 @@ const routes = [
 			},
 			{
 				path: 'analytics',
-				component: () => import('../views/site/SiteCharts.vue')
+				component: () => import('../views/site/SiteCharts.vue'),
+				props: true
 			},
 			{
 				path: 'database',
@@ -403,7 +404,8 @@ const routes = [
 				name: 'MarketplaceAppSubscriptions',
 				path: 'subscriptions',
 				component: () =>
-					import('../views/marketplace/MarketplaceAppSubscriptions.vue')
+					import('../views/marketplace/MarketplaceAppSubscriptions.vue'),
+				props: true
 			},
 			{
 				name: 'MarketplaceAppPricing',

@@ -7,12 +7,22 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "read",
   "team",
-  "type",
   "document_type",
+  "column_break_brxc",
+  "type",
   "document_name",
-  "message"
+  "interaction_section",
+  "is_actionable",
+  "read",
+  "column_break_rada",
+  "is_addressed",
+  "message_section",
+  "title",
+  "message",
+  "traceback",
+  "assistance_url",
+  "class"
  ],
  "fields": [
   {
@@ -62,11 +72,77 @@
    "options": "document_type",
    "read_only": 1,
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.traceback",
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_brxc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "interaction_section",
+   "fieldtype": "Section Break",
+   "label": "User Interaction"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_actionable",
+   "description": "Actionable notifications can be rectified by the user. For example if a deploy breaks due to incompatible app version.",
+   "fieldname": "is_actionable",
+   "fieldtype": "Check",
+   "label": "Is Actionable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rada",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "depends_on": "eval:doc.title",
+   "fieldname": "title",
+   "fieldtype": "Small Text",
+   "label": "Title",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.assistance_url",
+   "description": "Meant to be used if the notification is actionable. The URL can point to documentation on how to resolve the issue.",
+   "fieldname": "assistance_url",
+   "fieldtype": "Data",
+   "label": "Assitance URL",
+   "read_only": 1
+  },
+  {
+   "default": "Info",
+   "fieldname": "class",
+   "fieldtype": "Select",
+   "label": "Class",
+   "options": "Info\nSuccess\nWarning\nError",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.is_actionable",
+   "description": "Actionable notifications can be addressed by the user.\n\nUsed to prevent an action until the issue has been addressed. For example preventing further deploy until an incompatible app version has been fixed.",
+   "fieldname": "is_addressed",
+   "fieldtype": "Check",
+   "label": "Is Addressed",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-12-15 13:12:13.826348",
+ "modified": "2024-03-14 15:53:46.991772",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Notification",

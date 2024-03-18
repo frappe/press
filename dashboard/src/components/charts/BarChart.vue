@@ -106,6 +106,8 @@ const options = ref({
 	},
 	tooltip: {
 		trigger: 'axis',
+		confine: true,
+		extraCssText: 'width: 60%; white-space: normal; word-wrap: break-word;',
 		formatter: params => {
 			// for the dot to follow the same color as the line 🗿
 			let tooltip = `<p>${DateTime.fromSQL(
@@ -167,7 +169,7 @@ const options = ref({
 	},
 	series: data.value.datasets.map((dataset, i) => {
 		return {
-			name: dataset.path || unit,
+			name: dataset.path.replace(/\n|\t/g, '') || unit,
 			type: 'bar',
 			stack: dataset.stack,
 			showSymbol: false,

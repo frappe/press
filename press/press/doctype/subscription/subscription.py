@@ -4,6 +4,8 @@
 
 
 from typing import List
+
+from frappe.query_builder.functions import Coalesce, Count
 from press.press.doctype.plan.plan import Plan
 
 import frappe
@@ -13,13 +15,57 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Subscription(Document):
+	dashboard_fields = [
+		"site",
+		"enabled",
+		"document_type",
+		"document_name",
+		"team",
+	]
+
+	@staticmethod
+	def get_list_query(query, **list_args):
+		Subscription = frappe.qb.DocType("Subscription")
+		UsageRecord = frappe.qb.DocType("Usage Record")
+		Plan = frappe.qb.DocType("Marketplace App Plan")
+		price_field = (
+			Plan.price_inr if frappe.local.team().currency == "INR" else Plan.price_usd
+		)
+
+		query = (
+			frappe.qb.from_(Subscription)
+			.join(Plan)
+			.on(Subscription.plan == Plan.name)
+			.left_join(UsageRecord)
+			.on(UsageRecord.subscription == Subscription.name)
+			.groupby(Subscription.name)
+			.select(
+				Subscription.site,
+				Subscription.enabled,
+				price_field.as_("price"),
+				Coalesce(Count(UsageRecord.subscription), 0).as_("active_for"),
+			)
+			.where(
+				(Subscription.document_type == "Marketplace App")
+				& (Subscription.document_name == list_args["filters"]["document_name"])
+				& (Subscription.site != "")
+				& (price_field > 0)
+			)
+			.limit(list_args["limit"])
+		)
+
+		return query.run(as_dict=True)
+
 	def validate(self):
 		self.validate_duplicate()
 
 	def on_update(self):
 		doc = self.get_subscribed_document()
 		plan_field = doc.meta.get_field("plan")
-		if not (plan_field and plan_field.options == "Plan"):
+		if not (
+			plan_field
+			and plan_field.options in ["Site Plan", "Server Plan", "Marketplace App Plan"]
+		):
 			return
 
 		if self.enabled and doc.plan != self.plan:
@@ -63,7 +109,7 @@ class Subscription(Document):
 		if not team.get_upcoming_invoice():
 			team.create_upcoming_invoice()
 
-		plan = frappe.get_cached_doc("Plan", self.plan)
+		plan = frappe.get_cached_doc(self.plan_type, self.plan)
 		amount = plan.get_price_for_interval(self.interval, team.currency)
 
 		usage_record = frappe.get_doc(
@@ -71,12 +117,16 @@ class Subscription(Document):
 			team=team.name,
 			document_type=self.document_type,
 			document_name=self.document_name,
+			plan_type=self.plan_type,
 			plan=plan.name,
 			amount=amount,
 			subscription=self.name,
 			interval=self.interval,
-			site=frappe.get_value(
-				"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+			site=(
+				self.site
+				or frappe.get_value(
+					"Marketplace App Subscription", self.marketplace_app_subscription, "site"
+				)
 			)
 			if self.document_type == "Marketplace App"
 			else None,
@@ -180,62 +230,37 @@ def create_usage_records():
 
 
 def paid_plans():
-	return frappe.db.get_all(
-		"Plan",
-		{
-			"document_type": (
-				"in",
-				("Site", "Server", "Database Server", "Self Hosted Server", "Marketplace App"),
-			),
-			"is_trial_plan": 0,
-			"price_inr": (">", 0),
-		},
-		pluck="name",
-		ignore_ifnull=True,
-	)
+	paid_plans = []
+	filter = {
+		"price_inr": (">", 0),
+		"enabled": 1,
+	}
+	doctypes = ["Site Plan", "Marketplace App Plan", "Server Plan"]
+	for doctype in doctypes:
+		paid_plans += frappe.get_all(doctype, filter, pluck="name", ignore_ifnull=True)
+
+	return list(set(paid_plans))
 
 
 def sites_with_free_hosting():
 	# sites marked as free
-	free_sites = frappe.get_all(
-		"Site",
-		filters={"free": True, "status": ("not in", ("Archived", "Suspended"))},
-		pluck="name",
-	)
-
-	marketplace_paid_plans = frappe.get_all(
-		"Marketplace App Plan",
-		{"is_free": 0, "standard_hosting_plan": ("is", "set")},
-		pluck="name",
-	)
-
-	# sites with free/standard hosting (only for backward compatibility with smb plans)
-	free_sites += frappe.get_all(
-		"Marketplace App Subscription",
-		{
-			"marketplace_app_plan": ("in", marketplace_paid_plans),
-			"status": "Active",
-			"site": ("not in", free_sites),
-		},
-		pluck="site",
-	)
-
 	free_teams = frappe.get_all(
 		"Team", filters={"free_account": True, "enabled": True}, pluck="name"
 	)
-
-	# sites owned by free_accounts that are not set as free sites
-	free_sites += frappe.get_all(
+	free_team_sites = frappe.get_all(
+		"Site",
+		{"status": ("not in", ("Archived", "Suspended")), "team": ("in", free_teams)},
+		pluck="name",
+	)
+	return free_team_sites + frappe.get_all(
 		"Site",
 		filters={
+			"free": True,
 			"status": ("not in", ("Archived", "Suspended")),
-			"team": ("in", free_teams),
-			"name": ("not in", free_sites),
+			"team": ("not in", free_teams),
 		},
 		pluck="name",
 	)
-
-	return free_sites
 
 
 def created_usage_records(free_sites, date=None):

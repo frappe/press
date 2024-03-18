@@ -656,7 +656,23 @@ class Cluster(Document):
 		).insert()
 
 	def get_or_create_basic_plan(self, server_type):
-		return frappe.get_doc("Plan", f"Basic Cluster - {server_type}")
+		plan = frappe.db.exists("Server Plan", f"Basic Cluster - {server_type}")
+		if plan:
+			return frappe.get_doc("Server Plan", f"Basic Cluster - {server_type}")
+		else:
+			return frappe.get_doc(
+				{
+					"doctype": "Server Plan",
+					"name": f"Basic Cluster - {server_type}",
+					"title": f"Basic Cluster - {server_type}",
+					"instance_type": "t2.medium",
+					"price_inr": 0,
+					"price_usd": 0,
+					"vcpu": 2,
+					"memory": 4096,
+					"disk": 50,
+				}
+			).insert(ignore_permissions=True, ignore_if_duplicate=True)
 
 	def create_server(
 		self,
@@ -713,5 +729,7 @@ class Cluster(Document):
 		)
 		filters = {"name": ("in", cluster_names), "public": True}
 		return frappe.db.get_all(
-			"Cluster", filters={**filters, **extra_filters}, fields=["name", "title", "image"]
+			"Cluster",
+			filters={**filters, **extra_filters},
+			fields=["name", "title", "image", "beta"],
 		)

@@ -66,7 +66,7 @@
 						</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								doc.partner_email && doc.partner_email != doc.team
+								doc.partner_email && doc.partner_email != $team.doc.user
 									? formatCurrency(0)
 									: formatCurrency(doc.total_discount_amount)
 							}}
@@ -98,7 +98,7 @@
 						<td class="pb-2 pr-2 pt-4 text-right font-medium">Grand Total</td>
 						<td class="whitespace-nowrap pb-2 pr-2 pt-4 text-right font-medium">
 							{{
-								doc.partner_email && doc.partner_email != doc.team
+								doc.partner_email && doc.partner_email != $team.doc.user
 									? formatCurrency(doc.total_before_discount)
 									: formatCurrency(doc.total)
 							}}
@@ -131,7 +131,7 @@
 	</div>
 </template>
 <script>
-import { plans } from '../data/plans';
+import { getPlans } from '../data/plans';
 
 export default {
 	name: 'InvoiceTable',
@@ -165,7 +165,7 @@ export default {
 	},
 	methods: {
 		formatPlan(plan) {
-			let planDoc = (plans.data || []).find(p => p.name === plan);
+			let planDoc = getPlans().find(p => p.name === plan);
 			if (planDoc) {
 				let india = this.$team.doc.currency === 'INR';
 				return this.$format.userCurrency(

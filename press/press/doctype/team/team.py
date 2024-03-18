@@ -47,7 +47,11 @@ class Team(Document):
 		"referrer_id",
 		"partner_referral_code",
 	]
-	dashboard_actions = ["get_team_members", "remove_team_member"]
+	dashboard_actions = [
+		"get_team_members",
+		"remove_team_member",
+		"change_default_dashboard",
+	]
 
 	def get_doc(self, doc):
 		if (
@@ -60,7 +64,7 @@ class Team(Document):
 		user = frappe.db.get_value(
 			"User",
 			frappe.session.user,
-			["name", "first_name", "last_name", "user_image", "user_type", "email"],
+			["name", "first_name", "last_name", "user_image", "user_type", "email", "api_key"],
 			as_dict=True,
 		)
 		doc.user_info = user
@@ -70,6 +74,8 @@ class Team(Document):
 		doc.onboarding = self.get_onboarding()
 		doc.billing_info = self.billing_info()
 		doc.billing_details = self.billing_details()
+		doc.trial_sites = self.get_trial_sites()
+		doc.pending_site_request = self.get_pending_saas_site_request()
 		doc.payment_method = frappe.db.get_value(
 			"Stripe Payment Method",
 			{"team": self.name, "name": self.default_payment_method},
@@ -620,6 +626,7 @@ class Team(Document):
 		self.allocate_free_credits()
 		# Telemetry: Added card
 		capture("added_card_or_prepaid_credits", "fc_signup", self.account_request)
+		self.remove_subscription_config_in_trial_sites()
 
 		return doc
 
@@ -790,6 +797,10 @@ class Team(Document):
 		why = ""
 		allow = (True, "")
 
+		if not self.enabled:
+			why = "You cannot create a new site because your account is disabled"
+			return (False, why)
+
 		if self.free_account or self.parent_team or self.billing_team:
 			return allow
 
@@ -866,9 +877,7 @@ class Team(Document):
 	def get_onboarding(self):
 		if self.payment_mode == "Partner Credits":
 			billing_setup = True
-		elif self.payment_mode == "Prepaid Credits" and frappe.db.get_all(
-			"Invoice", {"team": self.name, "status": "Paid", "type": "Prepaid Credits"}, limit=1
-		):
+		elif self.payment_mode == "Prepaid Credits":
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
@@ -900,10 +909,10 @@ class Team(Document):
 
 		saas_site_request = self.get_pending_saas_site_request()
 		complete = False
-		if saas_site_request:
-			complete = False
-		elif frappe.local.system_user():
+		if frappe.local.system_user():
 			complete = True
+		elif saas_site_request:
+			complete = False
 		elif billing_setup:
 			complete = True
 
@@ -920,24 +929,43 @@ class Team(Document):
 		)
 
 	def get_route_on_login(self):
-		if self.is_saas_user and not frappe.db.get_all("Site", {"team": self.name}, limit=1):
-			saas_product = frappe.db.get_value(
-				"SaaS Product Site Request",
-				{"team": self.name, "status": "Pending"},
-				"saas_product",
-			)
-			return f"/setup-site/{saas_product}"
+		if self.payment_mode:
+			return "/sites"
 
-		return "/sites"
+		if self.is_saas_user:
+			pending_site_request = self.get_pending_saas_site_request()
+			if pending_site_request:
+				saas_product = pending_site_request.saas_product
+			else:
+				saas_product = frappe.db.get_value(
+					"Account Request", self.account_request, "saas_product"
+				)
+			if saas_product:
+				return f"/app-trial/{saas_product}"
+
+		return "/welcome"
 
 	def get_pending_saas_site_request(self):
-		if self.is_saas_user:
-			return frappe.db.get_value(
-				"SaaS Product Site Request",
-				{"team": self.name, "status": ("in", ["Pending", "Wait for Site"])},
-				"name",
-				order_by="creation desc",
-			)
+		return frappe.db.get_value(
+			"SaaS Product Site Request",
+			{"team": self.name, "status": ("in", ["Pending", "Wait for Site", "Error"])},
+			["name", "saas_product", "saas_product.title", "status"],
+			order_by="creation desc",
+			as_dict=True,
+		)
+
+	def get_trial_sites(self):
+		return frappe.db.get_all(
+			"Site",
+			{
+				"team": self.name,
+				"is_standby": False,
+				"trial_end_date": ("is", "set"),
+				"status": ("!=", "Archived"),
+			},
+			["name", "trial_end_date", "standby_for_product.title as product_title"],
+			order_by="`tabSite`.`modified` desc",
+		)
 
 	@frappe.whitelist()
 	def suspend_sites(self, reason=None):
@@ -950,7 +978,7 @@ class Team(Document):
 		return sites_to_suspend
 
 	def get_sites_to_suspend(self):
-		plan = frappe.qb.DocType("Plan")
+		plan = frappe.qb.DocType("Site Plan")
 		query = (
 			frappe.qb.from_(plan)
 			.select(plan.name)
@@ -977,6 +1005,21 @@ class Team(Document):
 		for site in suspended_sites:
 			frappe.get_doc("Site", site).unsuspend(reason)
 		return suspended_sites
+
+	def remove_subscription_config_in_trial_sites(self):
+		for site in frappe.db.get_all(
+			"Site",
+			{"team": self.name, "status": ("!=", "Archived"), "trial_end_date": ("is", "set")},
+			pluck="name",
+		):
+			try:
+				frappe.get_doc("Site", site).update_site_config(
+					{
+						"subscription": {"status": "Subscribed"},
+					}
+				)
+			except Exception:
+				log_error("Failed to remove subscription config in trial sites")
 
 	def get_upcoming_invoice(self):
 		# get the current period's invoice
@@ -1050,6 +1093,14 @@ class Team(Document):
 				"team": self,
 			},
 		)
+
+	@frappe.whitelist()
+	def change_default_dashboard(self, new_dashboard=None):
+		if new_dashboard is not None:
+			self.default_to_new_dashboard = new_dashboard
+			self.save()
+			# invalidate account.get cache
+			frappe.cache.delete_value("cached-account.get", user=frappe.session.user)
 
 
 def get_team_members(team):
@@ -1166,6 +1217,7 @@ def handle_payment_intent_succeeded(payment_intent):
 
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
+	team.remove_subscription_config_in_trial_sites()
 	invoice = frappe.get_doc(
 		doctype="Invoice",
 		team=team.name,

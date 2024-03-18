@@ -73,7 +73,7 @@ if (showFloatingBanner != null) {
 
 $(document).ready(function () {
 	// check if setup complete
-	if (frappe.boot.setup_complete === 1 && banner) {
+	if (frappe.boot.setup_complete === 1 && banner && !frappe.is_mobile()) {
 		$('.layout-main-section').before($floatingBar);
 	}
 });

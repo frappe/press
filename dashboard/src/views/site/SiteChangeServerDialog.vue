@@ -95,7 +95,12 @@ export default {
 			}
 		},
 		message() {
-			if (this.targetServer && !this.$resources.isServerAddedInGroup.data) {
+			if (this.$resources.changeServerOptions.data.length === 0) {
+				return 'No servers available for your team to move the site to. Please create a server first.';
+			} else if (
+				this.targetServer &&
+				!this.$resources.isServerAddedInGroup.data
+			) {
 				return "The chosen server isn't added to the bench yet. Please add the server to the bench first.";
 			} else if (
 				this.targetServer &&
@@ -120,6 +125,7 @@ export default {
 				params: {
 					name: this.site?.name
 				},
+				initialData: [],
 				auto: true,
 				transform(d) {
 					return d.map(s => ({

@@ -119,38 +119,36 @@ RUN echo "[mysqldump]\nmax_allowed_packet              = 512M" > /etc/mysql/conf
 # Add frappe user
 RUN useradd -ms /bin/bash frappe
 
-# Install Additional APT Packages
-{% if doc.additional_packages %}
+# Install Additional Packages
 {% for p in doc.additional_packages %}
 
+# Run before install scripts
 {% if p.prerequisites %}
 RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
-  `#stage-pre-{{ p.package }}`
+  `#stage-pre_before-{{ p.package }}`
 {% endif %}
 
+# Install non Ubuntu packages
 {% if p.package_manager not in ["apt-get", "apt"] %}
-
 RUN {{ p.package_manager }} install {{ p.package }} \
   `#stage-pre-{{ p.package }}`
 
+# Install Ubuntu packages
 {% else %}
-
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
-  && apt-get install --yes --no-install-suggests --no-install-recommends \
-  {{ p.package }} \
+  && apt-get install --yes --no-install-suggests --no-install-recommends {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
-
 {% endif %}
 
+# Run after install scripts
 {% if p.after_install %}
 RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
   && rm -rf /var/lib/apt/lists/* \
-  `#stage-pre-{{ p.package }}`
+  `#stage-pre_after-{{ p.package }}`
 {% endif %}
 
 {% endfor %}
-{% endif %}
 
 
 # symlink mysqldump to mariadb-dump
@@ -222,7 +220,7 @@ COPY --chown=frappe:frappe common_site_config.json /home/frappe/frappe-bench/sit
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 \
   --mount=type=bind,source=apps/{{ app.app }},target=/home/frappe/context/apps/{{ app.app }} \
   bench get-app file:///home/frappe/context/apps/{{ app.app }} \
-    {% if doc.use_app_cache %}
+    {% if app.use_cached %}
     # Bench get-app flags to use get-app cache
     --cache-key {{ app.hash }} {% if doc.compress_app_cache %}--compress-artifacts{% endif %} \
     {% endif %}
@@ -251,18 +249,12 @@ RUN ["/bin/bash", "-c", "if bench validate-dependencies --help 1> /dev/null 2> /
 COPY --chown=frappe:frappe config /home/frappe/frappe-bench/config
 COPY --chown=frappe:frappe apps.txt /home/frappe/frappe-bench/sites/apps.txt
 
-# create custom mounts
-{% if doc.mounts %}
+# Create custom mounts
 {% for m in doc.container_mounts %}
-
-{% if not m.is_absolute_path %}
-RUN mkdir -p {{ m.destination }} \
-  && chown -R frappe:frappe {{ m.destination }} \
+RUN mkdir -p {{ m.destination }} && \
+  chown -R frappe:frappe {{ m.destination }} \
   `#stage-mounts-create`
-{% endif %}
-
 {% endfor %}
-{% endif %}
 
 ENV FRAPPE_HARD_LINK_ASSETS True
 
