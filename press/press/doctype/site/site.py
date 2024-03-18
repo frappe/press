@@ -146,9 +146,12 @@ class Site(Document, TagHelpers):
 				)
 				if user_type == "System User":
 					return func(inst, *args, **kwargs)
-				if inst.status not in allowed_status:
+				if (
+					status := frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
+					not in allowed_status
+				):
 					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
 					)
 				return func(inst, *args, **kwargs)
 
