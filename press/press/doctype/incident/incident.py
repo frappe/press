@@ -210,7 +210,7 @@ Incident URL: {incident_link}"""
 
 	def get_email_message(self):
 		acknowledged_by = "An engineer"
-		if self.status == "Acknowledged":
+		if self.acknowledged_by:
 			acknowledged_by = frappe.db.get_value("User", self.acknowledged_by, "first_name")
 		message = {
 			"Validating": "We are noticing some issues with sites on your server. We are giving it a few minutes to confirm before escalating this incident to our engineers.",
