@@ -65,6 +65,7 @@ export default {
 				doctype: 'Bench Dependency Version',
 				fields: ['version'],
 				filters: {
+					parenttype: 'Bench Dependency',
 					parent: this.dependency.dependency,
 					supported_frappe_version: this.group.version
 				},

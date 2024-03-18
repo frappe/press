@@ -6,4 +6,4 @@ from frappe.model.document import Document
 
 
 class BenchDependencyVersion(Document):
-	pass
+	dashboard_fields = ["version", "supported_frappe_version"]
