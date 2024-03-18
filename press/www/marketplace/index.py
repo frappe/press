@@ -15,6 +15,7 @@ def get_context(context):
 			marketplace.image,
 			marketplace.route,
 			marketplace.description,
+			marketplace.recommended,
 			COUNT(*) AS total_installs
 		FROM
 			`tabMarketplace App` marketplace
