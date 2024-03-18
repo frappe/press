@@ -9,7 +9,8 @@ import frappe
 from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.exceptions import DoesNotExistError
-from frappe.utils import get_url, random_string
+from frappe.utils.data import sha256_hash
+from frappe.utils import get_url
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
@@ -697,10 +698,23 @@ def send_reset_password_email(email):
 	frappe.utils.validate_email_address(email, True)
 
 	email = email.strip()
-	key = random_string(32)
+	key = frappe.generate_hash()
+	hashed_key = sha256_hash(key)
 	if frappe.db.exists("User", email):
-		frappe.db.set_value("User", email, "reset_password_key", key)
+		frappe.db.set_value(
+			"User",
+			email,
+			{
+				"reset_password_key": hashed_key,
+				"last_reset_password_key_generated_on": frappe.utils.now_datetime(),
+			},
+		)
 		url = get_url("/dashboard/reset-password/" + key)
+		if frappe.conf.developer_mode:
+			print(f"\nReset password URL for {email}:")
+			print(url)
+			print()
+			return
 		frappe.sendmail(
 			recipients=email,
 			subject="Reset Password",
@@ -722,7 +736,8 @@ def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
+	hashed_key = sha256_hash(key)
+	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
 
 
 @frappe.whitelist()
