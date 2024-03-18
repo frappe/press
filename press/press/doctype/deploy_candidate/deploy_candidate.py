@@ -843,12 +843,16 @@ class DeployCandidate(Document):
 			return {}
 
 		try:
-			from tomli import load
+			from tomli import TOMLDecodeError, load
 		except ImportError:
-			from tomllib import load
+			from tomllib import TOMLDecodeError, load
 
 		with open(pyproject_path, "rb") as f:
-			return load(f)
+			try:
+				return load(f)
+			except TOMLDecodeError:
+				# Do not edit without updating deploy_notifications.py
+				raise Exception("App has invalid pyproject.toml file", app.app)
 
 	def _run_docker_build(self, no_cache: bool = False):
 		self._update_build_command(no_cache)

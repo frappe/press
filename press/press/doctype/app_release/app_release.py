@@ -128,6 +128,7 @@ class AppRelease(Document):
 			if "Repository not found." not in stdout:
 				raise e
 
+			# Do not edit without updating deploy_notifications.py
 			raise Exception("Repository could not be fetched", self.app)
 
 		self.output += self.run(f"git checkout {self.hash}")
@@ -139,6 +140,7 @@ class AppRelease(Document):
 
 		token = get_access_token(source.github_installation_id)
 		if token is None:
+			# Do not edit without updating deploy_notifications.py
 			raise Exception("App installation token could not be fetched", self.app)
 
 		return f"https://x-access-token:{token}@github.com/{source.repository_owner}/{source.repository}"
