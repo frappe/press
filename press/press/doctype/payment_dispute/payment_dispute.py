@@ -8,7 +8,7 @@ from press.telegram_utils import Telegram
 
 class PaymentDispute(Document):
 	def after_insert(self):
-		telegram = Telegram(topic="Dispute", group="Billing")
+		telegram = Telegram(topic="Disputes", group="Billing")
 		telegram.send(
 			f"""
 			Dispute Update!
