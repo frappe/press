@@ -1,4 +1,6 @@
 {% extends "templates/marketplace/base.html" %} {%- block body -%}
+<script src="https://cdn.tailwindcss.com"></script>
+
 <div class="px-4 sm:px-8">
 	<div class="pt-20 pb-12 text-center">
 		<h1 class="text-3xl font-bold text-gray-900">
@@ -54,7 +56,7 @@
 							{{ app.description }}
 						</p>
 						{% if app.recommended %}
-						<span class="flex flex-row bg-gray-100 text-sm mt-2 text-gray-600 border border-gray-400 rounded-md p-1 w-fit">
+						<span class="flex flex-row bg-gray-100 text-sm mt-2 text-gray-600 font-medium rounded-md p-1 w-fit">
 							Recommended
 						</span>
 						{% endif %}

@@ -131,8 +131,8 @@ five_star_rating -%}
 		{%- endfor -%}
 	</div>
 	{%- endif -%}
-	<div class="w-full pb-8 mt-6 prose-sm prose text-gray-900">
-		{{ frappe.utils.md_to_html(app.long_description) }}
+	<div class="w-full pb-8 mt-6 prose max-w-none text-gray-900">
+		{{ app.long_description }}
 	</div>
 
 	<!-- App Reviews Section -->
