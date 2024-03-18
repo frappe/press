@@ -34,7 +34,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
-from press.utils import get_current_team, log_error
+from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -410,6 +410,7 @@ class DeployCandidate(Document):
 		self.save()
 		frappe.db.commit()
 
+	@reconnect_on_failure()
 	def _build_failed(self):
 		self.status = "Failure"
 		bench_update = frappe.get_all(
