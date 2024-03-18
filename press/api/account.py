@@ -397,10 +397,12 @@ def transfer_credits(amount, customer, partner):
 
 	try:
 		customer_doc.allocate_credit_amount(
-			credits_to_transfer, "Transferred Credits", f"From {partner_doc.name}"
+			credits_to_transfer,
+			"Transferred Credits",
+			f"Credits transferred from {partner_doc.name}",
 		)
 		partner_doc.allocate_credit_amount(
-			amt * -1, "Transferred Credits", f"To {customer_doc.name}"
+			amt * -1, "Transferred Credits", f"Credits transferred to {customer_doc.name}"
 		)
 		frappe.db.commit()
 	except Exception:

@@ -8,7 +8,7 @@ from frappe import _
 from enum import Enum
 from press.utils import log_error
 from frappe.core.utils import find_all
-from frappe.utils import getdate, cint
+from frappe.utils import getdate, cint, flt
 from frappe.utils.data import fmt_money
 from press.api.billing import get_stripe
 from frappe.model.document import Document
@@ -53,6 +53,7 @@ class Invoice(Document):
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		partner_customer = filters.get("partner_customer")
+		partner_contribution = filters.get("partner_contribution")
 		if partner_customer:
 			team_name = filters.get("team")
 			due_date = filters.get("due_date")
@@ -65,6 +66,34 @@ class Invoice(Document):
 				)
 				.where((invoice.team == team_name) & (invoice.due_date >= due_date[1]))
 			)
+		elif partner_contribution:
+			partner_email = filters.get("partner_email")
+			due_date = filters.get("due_date")
+			invoice = frappe.qb.DocType("Invoice")
+			filters.pop("partner_contribution")
+			team_currency = frappe.get_value(
+				"Team", {"erpnext_partner": 1, "partner_email": partner_email}, "currency"
+			)
+			query = (
+				frappe.qb.from_(invoice)
+				.select(
+					invoice.name,
+					invoice.total,
+					invoice.status,
+					invoice.due_date,
+					invoice.currency,
+					invoice.customer_name,
+				)
+				.where((invoice.partner_email == partner_email) & (invoice.due_date >= due_date[1]))
+			).run(as_dict=True)
+			for d in query:
+				total2 = d.total
+				if team_currency != d.currency:
+					if team_currency == "USD":
+						total2 = flt(d.total / 83, 2)
+					else:
+						total2 = flt(d.total * 83, 2)
+				d.update({"partner_total": total2})
 		return query
 
 	def get_doc(self, doc):
