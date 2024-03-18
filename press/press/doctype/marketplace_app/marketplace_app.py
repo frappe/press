@@ -514,7 +514,7 @@ class MarketplaceApp(WebsiteGenerator):
 		}
 
 	def get_plans(self, frappe_version: str = None) -> List:
-		return get_plans_for_app(self.name, frappe_version)
+		return get_plans_for_app(self.name, frappe_version, include_free=False)
 
 	def can_charge_for_subscription(self, subscription):
 		return (
@@ -532,7 +532,7 @@ def get_plans_for_app(
 	filters = {"app": app_name}
 
 	if not include_free:
-		filters["is_free"] = False
+		filters["price_inr"] = (">", 0)
 
 	if not include_disabled:
 		filters["enabled"] = True
