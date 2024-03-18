@@ -104,7 +104,7 @@ def update_with_invalid_pyproject_error(
 	dc: "DeployCandidate",
 	exc: "BaseException",
 ):
-	if len(exc.args) <= 1 or not (app := exc.args[0]):
+	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return
 
 	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
@@ -202,5 +202,5 @@ def get_ct_row(
 		return
 
 	for row in ct:
-		if row.get(ct_field == match_value):
+		if row.get(ct_field) == match_value:
 			return row

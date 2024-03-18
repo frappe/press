@@ -852,7 +852,7 @@ class DeployCandidate(Document):
 				return load(f)
 			except TOMLDecodeError:
 				# Do not edit without updating deploy_notifications.py
-				raise Exception("App has invalid pyproject.toml file", app.app)
+				raise Exception("App has invalid pyproject.toml file", app) from None
 
 	def _run_docker_build(self, no_cache: bool = False):
 		self._update_build_command(no_cache)
