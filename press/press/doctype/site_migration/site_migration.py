@@ -472,6 +472,7 @@ class SiteMigration(Document):
 		"""Archive site on source"""
 		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
+		site.bench = self.source_bench  # for sanity
 		return agent.archive_site(site)
 
 	def update_site_record_fields(self):
@@ -544,6 +545,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name != site_migration.next_step.step_job:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+		return
 
 	process_required_job_callbacks(job)
 	site_migration.update_next_step_status(job.status)
