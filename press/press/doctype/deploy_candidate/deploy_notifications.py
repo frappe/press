@@ -1,7 +1,6 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import sys
 import typing
 from textwrap import dedent
 from typing import Optional, TypedDict
@@ -41,15 +40,14 @@ DOC_URLS = {
 }
 
 
-def create_build_failed_notification(dc: "DeployCandidate") -> None:
+def create_build_failed_notification(
+	dc: "DeployCandidate", exc: "BaseException"
+) -> None:
 	"""
 	Used to create press notifications on Build failures. If the notification
 	is actionable then it will be displayed on the dashboard and will block
 	further builds until the user has resolved it.
 	"""
-
-	if (exc := sys.exception()) is None:
-		return
 
 	details = get_details(dc, exc)
 	doc_dict = {
