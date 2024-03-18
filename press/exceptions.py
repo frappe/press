@@ -15,3 +15,10 @@ class CannotChangePlan(ValidationError):
 
 class OngoingAgentJob(ValidationError):
 	pass
+
+
+class MissingAppsInBench(ValidationError):
+	def __init__(self, site: str, apps: set, bench: str):
+		super().__init__(
+			f"Bench {bench} doesn't have some of the apps installed on {site}: {', '.join(apps)}",
+		)
