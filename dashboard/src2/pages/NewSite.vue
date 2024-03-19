@@ -165,6 +165,7 @@
 				<Button
 					class="w-full"
 					variant="solid"
+					:disabled="!agreedToRegionConsent"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
 				>
@@ -296,7 +297,7 @@ export default {
 							: {},
 						cluster: this.cluster,
 						bench: this.selectedVersion.group.bench,
-						subscription_plan: this.plan,
+						subscription_plan: this.plan?.name,
 						share_details_consent: this.shareDetailsConsent
 					}
 				},
