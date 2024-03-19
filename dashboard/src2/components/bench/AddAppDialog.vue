@@ -2,7 +2,7 @@
 	<Dialog
 		:options="{
 			title: 'Add app',
-			size: '4xl'
+			size: '6xl'
 		}"
 		v-model="showDialog"
 	>
