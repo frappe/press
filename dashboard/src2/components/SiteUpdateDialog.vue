@@ -28,6 +28,7 @@
 			<div v-else class="text-center text-base text-gray-600">
 				No apps to update
 			</div>
+			<ErrorMessage class="mt-4" :message="$site.scheduleUpdate.error" />
 		</template>
 		<template #actions>
 			<Button
