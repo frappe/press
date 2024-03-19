@@ -27,7 +27,10 @@
 		</div>
 	</Header>
 	<div>
-		<TabsWithRouter :tabs="object.detail.tabs">
+		<TabsWithRouter
+			v-if="!$resources.document.get.error && $resources.document.get.fetched"
+			:tabs="object.detail.tabs"
+		>
 			<template #tab-content="{ tab }">
 				<!-- this div is required for some reason -->
 				<div></div>
@@ -38,10 +41,20 @@
 				/>
 			</template>
 		</TabsWithRouter>
+		<div
+			v-else-if="
+				$resources.document.get.error?.message?.includes('DoesNotExistError')
+			"
+			class="mx-auto mt-36 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+		>
+			<LucideFrown class="mx-auto mb-4 h-8 w-8" />
+			{{ $resources.document.doctype }} not found
+		</div>
 	</div>
 </template>
 
 <script>
+import LucideFrown from '~icons/lucide/frown';
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
@@ -65,6 +78,7 @@ export default {
 	},
 	components: {
 		Header,
+		LucideFrown,
 		ActionButton,
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
