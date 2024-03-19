@@ -12,6 +12,6 @@ def get_data():
 		"transactions": [
 			{"label": _("Related Documents"), "items": ["Server"]},
 			{"label": _("Logs"), "items": ["Agent Job", "Ansible Play"]},
-			{"label": _("Report"), "items": ["Performance Report"]}
+			{"label": _("Report"), "items": ["Performance Report"]},
 		],
 	}
