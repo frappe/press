@@ -302,7 +302,7 @@ export default {
 																	loading: 'Rebuilding assets...',
 																	success: () => {
 																		hide();
-																		return 'Assets rebuilt';
+																		return 'Assets will be rebuilt in the background. This may take a few minutes.';
 																	},
 																	error: 'Failed to rebuild assets',
 																	duration: 1000
