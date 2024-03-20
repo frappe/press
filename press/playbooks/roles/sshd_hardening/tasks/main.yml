@@ -50,6 +50,7 @@
     dest: /etc/ssh/sshd_config
     regexp: '^Banner'
     line: "Banner /etc/login.warn"
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure SSH MaxStartups is configured"
   lineinfile:

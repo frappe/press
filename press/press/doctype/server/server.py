@@ -187,10 +187,8 @@ class BaseServer(Document, TagHelpers):
 			self.agent_password = frappe.generate_hash(length=32)
 
 	def get_agent_repository_url(self):
-		settings = frappe.get_single("Press Settings")
-		repository_owner = settings.agent_repository_owner or "frappe"
-		url = f"https://github.com/{repository_owner}/agent"
-		return url
+		repository_owner = frappe.db.get_single_value("Press Settings", "agent_repository_owner") or "frappe"
+		return f"https://github.com/{repository_owner}/agent"
 
 	@frappe.whitelist()
 	def ping_agent(self):
@@ -802,6 +800,7 @@ class Server(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"add_warning_banner": frappe.db.get_single_value("Press Settings", "add_warning_banner"),
 				},
 			)
 			play = ansible.run()

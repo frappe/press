@@ -327,6 +327,7 @@ class DatabaseServer(BaseServer):
 					"certificate_private_key": certificate.private_key,
 					"certificate_full_chain": certificate.full_chain,
 					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"add_warning_banner": frappe.db.get_single_value("Press Settings", "add_warning_banner")
 				},
 			)
 			play = ansible.run()

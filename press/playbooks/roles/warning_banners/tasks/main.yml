@@ -6,6 +6,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure local login warning banner is configured properly"
   copy:
@@ -14,6 +15,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure remote login warning banner is configured properly"
   copy:
@@ -22,6 +24,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure remote login warning banner is configured for ssh"
   copy:
@@ -30,6 +33,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure permissions on /etc/motd are configured"
   file:
@@ -38,6 +42,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure permissions on /etc/issue are configured"
   file:
@@ -46,6 +51,7 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
 
 - name: "Ensure permissions on /etc/issue.net are configured"
   file:
@@ -54,3 +60,4 @@
       owner: root
       group: root
       mode: 0644
+  when: "{{ add_warning_banner is defined and add_warning_banner }}"
