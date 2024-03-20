@@ -616,7 +616,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for version in deployed_versions:
 			version.has_app_patch_applied = version.name in benches_with_patches
-			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
+			version.has_ssh_access = version.is_ssh_proxy_setup and len(cur_user_ssh_key) > 0
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
 				site.version = rg_version
