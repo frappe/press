@@ -39,6 +39,17 @@ class AnsiblePlay(Document):
 		results = query.run(as_dict=1)
 		return results
 
+	@staticmethod
+	def clear_old_logs(days=30):
+		playbooks = frappe.get_all(
+			"Ansible Play",
+			filters={"modified": ["<", frappe.utils.add_days(frappe.utils.now(), -days)]},
+		)
+
+		for playbook in playbooks:
+			# will help delete ansible tasks as well
+			frappe.delete_doc("Ansible Play", playbook, ignore_permissions=True, delete_permanently=True)
+
 	def get_doc(self, doc):
 		doc["tasks"] = frappe.get_all(
 			"Ansible Task",
