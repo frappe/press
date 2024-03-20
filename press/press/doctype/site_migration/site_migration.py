@@ -54,7 +54,7 @@ class SiteMigration(Document):
 
 		if diff := set(site_apps) - set(bench_apps):
 			exc = MissingAppsInBench(self.site, diff, self.destination_bench)
-			frappe.throw(str(exc), exc)
+			frappe.throw(str(exc), type(exc))
 
 	def start(self):
 		self.check_for_ongoing_agent_jobs()
@@ -221,7 +221,7 @@ class SiteMigration(Document):
 			lambda x: x.method_name == self.restore_site_on_destination_server.__name__,
 		).status in ["Success", "Failure"]
 
-	def fail(self, cleanup=True, reason=None):
+	def fail(self, cleanup=True, reason=None, activate=False):
 		self.set_pending_steps_to_skipped()
 		if (
 			cleanup and not self.archived_site_on_source and self.restore_on_destination_happened
@@ -239,16 +239,17 @@ class SiteMigration(Document):
 		self.status = "Failure"
 		self.save()
 		self.send_fail_notification(reason)
-		self.activate_site_if_appropriate()
+		self.activate_site_if_appropriate(force=activate)
 
 	@property
 	def failed_step(self):
 		return find(self.steps, lambda x: x.status == "Failure")
 
-	def activate_site_if_appropriate(self):
+	def activate_site_if_appropriate(self, force=False):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		if (
-			self.failed_step.method_name
+			force
+			or self.failed_step.method_name
 			in [
 				self.backup_source_site.__name__,
 				self.restore_site_on_destination_server.__name__,
@@ -569,13 +570,13 @@ def run_scheduled_migrations():
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
 	)
 	for migration in migrations:
-		site_migration = frappe.get_doc("Site Migration", migration)
+		site_migration: SiteMigration = frappe.get_doc("Site Migration", migration)
 		try:
 			site_migration.start()
 		except OngoingAgentJob:
 			pass
 		except MissingAppsInBench as e:
-			site_migration.fail(reason=str(e))
+			site_migration.fail(reason=str(e), activate=True)
 
 
 def on_doctype_update():
