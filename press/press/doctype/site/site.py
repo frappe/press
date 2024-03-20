@@ -1711,9 +1711,7 @@ class Site(Document, TagHelpers):
 		hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
 
 		return {
-			"cpu": round(
-				get_current_cpu_usage(self.name) / (100000 * 60 * 60), 4
-			),  # micro seconds to hours
+			"cpu": flt(get_current_cpu_usage(self.name) / (3.6 * (10**9)), 5),
 			"storage": usage.get("public", 0) + usage.get("private", 0),
 			"database": usage.get("database", 0),
 			"hours_until_cpu_usage_resets": hours_left_today,

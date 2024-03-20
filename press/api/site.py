@@ -1141,7 +1141,7 @@ def current_plan(name):
 	plan = frappe.get_doc("Site Plan", site.plan) if site.plan else None
 
 	result = get_current_cpu_usage(name)
-	total_cpu_usage_hours = round(result / (100000 * 60 * 60), 4)  # microseconds to hours
+	total_cpu_usage_hours = flt(result / (3.6 * (10**9)), 5)
 
 	usage = frappe.get_all(
 		"Site Usage",
