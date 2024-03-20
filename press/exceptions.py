@@ -18,7 +18,4 @@ class OngoingAgentJob(ValidationError):
 
 
 class MissingAppsInBench(ValidationError):
-	def __init__(self, site: str = "", apps: set = [], bench: str = ""):
-		super().__init__(
-			f"Bench {bench} doesn't have some of the apps installed on {site}{': ' if apps else ''}{', '.join(apps)}",
-		)
+	pass

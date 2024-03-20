@@ -53,8 +53,10 @@ class SiteMigration(Document):
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
 
 		if diff := set(site_apps) - set(bench_apps):
-			exc = MissingAppsInBench(self.site, diff, self.destination_bench)
-			frappe.throw(str(exc), type(exc))
+			frappe.throw(
+				f"Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
+				MissingAppsInBench,
+			)
 
 	def start(self):
 		self.check_for_ongoing_agent_jobs()
