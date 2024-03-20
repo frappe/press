@@ -549,3 +549,4 @@ def on_doctype_update():
 	frappe.db.add_index(
 		"Site Update", ["site", "source_candidate", "destination_candidate"]
 	)
+	frappe.db.add_index("Site Update", ["server", "status"])
