@@ -518,3 +518,9 @@ def run_scheduled_updates():
 		except Exception:
 			log_error("Scheduled Site Update Error", update=update)
 			frappe.db.rollback()
+
+
+def on_doctype_update():
+	frappe.db.add_index(
+		"Site Update", ["site", "source_candidate", "destination_candidate"]
+	)

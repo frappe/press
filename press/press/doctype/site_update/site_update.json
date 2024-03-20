@@ -145,7 +145,8 @@
    "hide_seconds": 1,
    "label": "Update Job",
    "no_copy": 1,
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "search_index": 1
   },
   {
    "default": "0",
@@ -169,7 +170,8 @@
    "hide_seconds": 1,
    "label": "Recover Job",
    "no_copy": 1,
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "search_index": 1
   },
   {
    "fetch_from": "difference.deploy_type",
@@ -209,7 +211,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-11 17:50:13.520159",
+ "modified": "2024-03-20 18:17:50.936473",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Update",
