@@ -13,7 +13,7 @@ from frappe.utils import convert_utc_to_system_timezone
 from frappe.utils.caching import site_cache
 
 from press.agent import Agent
-from press.utils import get_last_doc, log_error
+from press.utils import log_error
 
 
 class SiteUpdate(Document):
@@ -387,10 +387,17 @@ def should_try_update(site):
 		limit=1,
 	)[0].destination
 
-	source_apps = [app.app for app in frappe.get_doc("Site", site.name).apps]
+	source_apps = [app.app for app in frappe.get_cached_doc("Site", site.name).apps]
 	dest_apps = []
-	if dest_bench := get_last_doc("Bench", dict(candidate=destination, status="Active")):
-		dest_apps = [app.app for app in dest_bench.apps]
+	destination_bench = frappe.get_all(
+		"Bench",
+		{"candidate": destination, "status": "Active"},
+		limit=1,
+		order_by="creation DESC",
+	)
+	if destination_bench:
+		destination_bench = frappe.get_cached_doc("Bench", destination_bench[0].name)
+		dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
 		return False
