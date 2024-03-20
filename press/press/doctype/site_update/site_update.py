@@ -456,6 +456,8 @@ def process_update_site_job_update(job):
 			frappe.db.set_value("Site", job.site, "status", "Broken")
 			if not frappe.db.get_value("Site Update", site_update.name, "skipped_backups"):
 				trigger_recovery_job(site_update.name)
+			else:
+				frappe.db.set_value("Site Update", site_update.name, "status", "Fatal")
 
 
 def process_update_site_recover_job_update(job):
