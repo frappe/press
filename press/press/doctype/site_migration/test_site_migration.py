@@ -6,6 +6,10 @@ import frappe
 from unittest.mock import patch
 
 from frappe.core.utils import find
+from press.press.doctype.app.test_app import create_test_app
+from press.press.doctype.release_group.test_release_group import (
+	create_test_release_group,
+)
 
 from press.press.doctype.remote_file.remote_file import RemoteFile
 
@@ -14,7 +18,10 @@ from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
-from press.press.doctype.site_migration.site_migration import SiteMigration
+from press.press.doctype.site_migration.site_migration import (
+	SiteMigration,
+	run_scheduled_migrations,
+)
 
 BACKUP_JOB_RES = {
 	"backups": {
@@ -199,3 +206,28 @@ class TestSiteMigration(FrappeTestCase):
 				"Agent Job", {"job_type": "Archive Site", "site": site.name, "server": bench.server}
 			),
 		)
+
+	def test_missing_apps_in_bench_cause_site_migration_to_fail(self):
+		app1 = create_test_app("frappe")
+		app2 = create_test_app("erpnext")
+
+		group = create_test_release_group([app1, app2])
+		bench = create_test_bench(group=group)
+		site = create_test_site(bench=bench.name, apps=[app1.name])
+
+		dest_bench = create_test_bench()
+		site_migration: SiteMigration = frappe.get_doc(
+			{
+				"doctype": "Site Migration",
+				"site": site.name,
+				"destination_bench": dest_bench.name,
+				"scheduled_time": frappe.utils.now_datetime(),
+			}
+		).insert()
+
+		site.append("apps", {"app": app2.name})
+		site.save()
+
+		run_scheduled_migrations()
+		site_migration.reload()
+		self.assertEqual(site_migration.status, "Failure")
