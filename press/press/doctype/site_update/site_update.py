@@ -278,16 +278,22 @@ def trigger_recovery_job(site_update_name):
 
 
 @site_cache(ttl=60)
-def benches_with_available_update(site=None):
+def benches_with_available_update(site=None, server=None):
 	site_bench = frappe.db.get_value("Site", site, "bench") if site else None
+	values = {}
+	if site:
+		values["site_bench"] = site_bench
+	if server:
+		values["server"] = server
 	source_benches_info = frappe.db.sql(
 		f"""
 		SELECT sb.name AS source_bench, sb.candidate AS source_candidate, sb.server AS server, dcd.destination AS destination_candidate
 		FROM `tabBench` sb, `tabDeploy Candidate Difference` dcd
 		WHERE sb.status IN ('Active', 'Broken') AND sb.candidate = dcd.source
 		{'AND sb.name = %(site_bench)s' if site else ''}
+		{'AND sb.server = %(server)s' if server else ''}
 		""",
-		values={"site_bench": site_bench} if site else {},
+		values=values,
 		as_dict=True,
 	)
 
@@ -314,8 +320,8 @@ def benches_with_available_update(site=None):
 	return list(set([bench.source_bench for bench in updates_available_for_benches]))
 
 
-def sites_with_available_update():
-	benches = benches_with_available_update()
+def sites_with_available_update(server):
+	benches = benches_with_available_update(server=server)
 	sites = frappe.get_all(
 		"Site",
 		filters={
@@ -328,19 +334,31 @@ def sites_with_available_update():
 
 
 def schedule_updates():
+	servers = frappe.get_all("Server", {"status": "Active"}, pluck="name")
+	for server in servers:
+		frappe.enqueue(
+			"press.press.doctype.site_update.site_update.schedule_updates_server",
+			server=server,
+			job_id=f"schedule_updates:{server}",
+			deduplicate=True,
+		)
+
+
+def schedule_update_server(server):
 	# Prevent flooding the queue
 	queue_size = frappe.db.get_single_value("Press Settings", "auto_update_queue_size")
 	pending_update_count = frappe.db.count(
 		"Site Update",
 		{
 			"status": ("in", ("Pending", "Running")),
+			"server": server,
 			"creation": (">", frappe.utils.add_to_date(None, hours=-4)),
 		},
 	)
 	if pending_update_count > queue_size:
 		return
 
-	sites = sites_with_available_update()
+	sites = sites_with_available_update(server)
 	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
 
