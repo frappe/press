@@ -875,9 +875,7 @@ class Team(Document):
 		return billing_details
 
 	def get_onboarding(self):
-		if self.payment_mode == "Partner Credits":
-			billing_setup = True
-		elif self.payment_mode == "Prepaid Credits":
+		if self.payment_mode in ("Partner Credits", "Prepaid Credits", "Paid by Partner"):
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
