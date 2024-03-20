@@ -343,7 +343,6 @@ def schedule_updates():
 	sites = sites_with_available_update()
 	sites = list(filter(should_not_skip_auto_updates, sites))
 	sites = list(filter(is_site_in_deploy_hours, sites))
-	sites = list(filter(should_try_update, sites))
 
 	# If a site can't be updated for some reason, then we shouldn't get stuck
 	# Shuffle sites list, to achieve this
@@ -356,6 +355,9 @@ def schedule_updates():
 			continue
 		if update_triggered_count > queue_size:
 			break
+		if not should_try_update(site):
+			continue
+
 		if frappe.db.exists(
 			"Site Update",
 			{"site": site.name, "status": ("in", ("Pending", "Running", "Failure"))},
