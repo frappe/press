@@ -9,6 +9,7 @@ import App from './App.vue';
 import router from './router';
 import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
+import { fetchPlans } from './data/plans.js';
 
 let request = options => {
 	let _options = options || {};
@@ -40,6 +41,7 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
+	fetchPlans();
 
 	importGlobals().then(() => {
 		app.mount('#app');
