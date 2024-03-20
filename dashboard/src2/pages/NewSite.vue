@@ -277,29 +277,32 @@ export default {
 
 			return {
 				url: 'press.api.client.insert',
-				params: {
-					doc: {
-						doctype: 'Site',
-						team: this.$team.doc.name,
-						subdomain: this.subdomain,
-						apps: [
-							{ app: 'frappe' },
-							...this.apps.filter(app => app.app).map(app => ({ app: app.app }))
-						],
-						app_plans: this.apps.length
-							? Object.assign(
-									...this.apps
-										.filter(a => a.plan)
-										.map(app => ({
-											[app.app]: app.plan
-										}))
-							  )
-							: {},
-						cluster: this.cluster,
-						bench: this.selectedVersion.group.bench,
-						subscription_plan: this.plan?.name,
-						share_details_consent: this.shareDetailsConsent
+				makeParams() {
+					let appPlans = {};
+					for (let app of this.apps) {
+						if (app.plan) {
+							appPlans[app.app] = app.plan;
+						}
 					}
+
+					return {
+						doc: {
+							doctype: 'Site',
+							team: this.$team.doc.name,
+							subdomain: this.subdomain,
+							apps: [
+								{ app: 'frappe' },
+								...this.apps
+									.filter(app => app.app)
+									.map(app => ({ app: app.app }))
+							],
+							app_plans: appPlans,
+							cluster: this.cluster,
+							bench: this.selectedVersion.group.bench,
+							subscription_plan: this.plan.name,
+							share_details_consent: this.shareDetailsConsent
+						}
+					};
 				},
 				validate() {
 					if (!this.subdomain) {

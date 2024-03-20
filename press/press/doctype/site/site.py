@@ -1464,6 +1464,8 @@ class Site(Document, TagHelpers):
 			plan = self.subscription_plan if hasattr(self, "subscription_plan") else self.plan
 		if not plan:
 			return {}
+		if plan and not isinstance(plan, str):
+			frappe.throw("Site.subscription_plan must be a string")
 		return get_plan_config(plan)
 
 	def _set_latest_bench(self):
