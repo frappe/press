@@ -466,7 +466,6 @@ def all_apps(name):
 		_source = find(marketplace_app_sources, lambda x: x.app == app.name)
 		app["repo"] = f"{_source.repository_owner}/{_source.repository}"
 
-	# return [app for app in marketplace_apps if app["name"] not in installed_apps]
 	return marketplace_apps
 
 
