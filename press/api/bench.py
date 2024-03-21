@@ -425,6 +425,52 @@ def installable_apps(name):
 
 @frappe.whitelist()
 @protected("Release Group")
+def all_apps(name):
+	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
+
+	release_group = frappe.get_doc("Release Group", name)
+	installed_apps = [app.app for app in release_group.apps]
+	marketplace_apps = frappe.get_all(
+		"Marketplace App",
+		filters={"status": "Published", "app": ("not in", installed_apps)},
+		fields=["name", "title", "image"],
+	)
+
+	AppSource = frappe.qb.DocType("App Source")
+	AppSourceVersion = frappe.qb.DocType("App Source Version")
+	marketplace_app_sources = (
+		frappe.qb.from_(AppSource)
+		.left_join(AppSourceVersion)
+		.on(AppSourceVersion.parent == AppSource.name)
+		.select(
+			AppSource.name,
+			AppSource.branch,
+			AppSource.repository,
+			AppSource.repository_owner,
+			AppSource.app,
+			AppSourceVersion.version,
+		)
+		.where(
+			(AppSource.app.isin([app.name for app in marketplace_apps]))
+			& (AppSource.enabled == 1)
+			& (AppSource.public == 1)
+		)
+	).run(as_dict=1)
+
+	for app in marketplace_apps:
+		app["sources"] = find_all(
+			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
+			lambda x: x.app == app.name,
+		)
+		# for fetching repo details
+		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
+		app["repo"] = f"{app_source.repository_owner}/{app_source.repository}"
+
+	return marketplace_apps
+
+
+@frappe.whitelist()
+@protected("Release Group")
 def fetch_latest_app_update(name, app):
 	frappe.get_doc("Release Group", name).fetch_latest_app_update(app)
 
