@@ -1123,7 +1123,7 @@ def get_team_members(team):
 				from `tabUser` u
 				left join `tabHas Role` r
 				on (r.parent = u.name)
-				where ifnull(u.name, '') in %s
+				where u.name in %s
 				group by u.name
 			""",
 			[member_emails],
@@ -1153,7 +1153,7 @@ def get_child_team_members(team):
 			"""
 				select t.name, t.team_title, t.parent_team, t.user
 				from `tabTeam` t
-				where ifnull(t.name, '') in %s
+				where t.name in %s
 				and t.enabled = 1
 			""",
 			[child_team_members],
