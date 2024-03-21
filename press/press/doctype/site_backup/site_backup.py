@@ -4,7 +4,7 @@
 
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict
 
 import frappe
@@ -32,7 +32,7 @@ class SiteBackup(Document):
 	def before_insert(self):
 		if getattr(self, "force", False):
 			return
-		two_hours_ago = datetime.now() - timedelta(hours=2)
+		two_hours_ago = frappe.utils.add_to_date(None, hours=-2)
 		if frappe.db.count(
 			"Site Backup",
 			{

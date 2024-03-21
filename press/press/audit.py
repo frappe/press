@@ -1,6 +1,5 @@
 """Functions for automated audit of frappe cloud systems."""
 import json
-from datetime import datetime, timedelta
 from press.press.doctype.server.server import Server
 from typing import Dict, List
 
@@ -170,7 +169,7 @@ class BackupRecordCheck(Audit):
 
 	def __init__(self):
 		log = {self.list_key: [], self.backup_summary: {}}
-		interval_hrs_ago = datetime.now() - timedelta(hours=self.interval)
+		interval_hrs_ago = frappe.utils.add_to_date(None, hours=-self.interval)
 		trial_plans = tuple(frappe.get_all("Site Plan", dict(is_trial_plan=1), pluck="name"))
 		cond_filters = " AND site.plan NOT IN {trial_plans}" if trial_plans else ""
 		tuples = frappe.db.sql(
