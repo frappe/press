@@ -65,6 +65,9 @@ def fetch_server_stalks(server):
 		# To avoid fetching incomplete stalks, wait for 5 minutes
 		if not now_datetime() > add_to_date(timestamp, minutes=5):
 			continue
+		# Don't fetch old stalks
+		if now_datetime() > add_to_date(timestamp, days=15):
+			continue
 		if frappe.db.exists("MariaDB Stalk", {"server": server.name, "timestamp": timestamp}):
 			continue
 		try:
