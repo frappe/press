@@ -27,6 +27,7 @@ from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
 	unique,
+	cache,
 )
 
 
@@ -457,12 +458,16 @@ def all_apps(name):
 		)
 	).run(as_dict=1)
 
-	total_installs_by_app = frappe.db.get_all(
-		"Site App",
-		fields=["app", "count(*) as count"],
-		filters={"app": ("in", set(app.name for app in marketplace_apps))},
-		group_by="app",
-	)
+	@cache(seconds=60 * 60 * 24)
+	def get_total_installs_by_app():
+		return frappe.db.get_all(
+			"Site App",
+			fields=["app", "count(*) as count"],
+			filters={"app": ("in", [app.name for app in marketplace_apps])},
+			group_by="app",
+		)
+
+	total_installs_by_app = get_total_installs_by_app()
 
 	for app in marketplace_apps:
 		app["sources"] = find_all(
