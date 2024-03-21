@@ -152,9 +152,6 @@ class SiteUpdate(Document):
 		if site.status in ["Updating", "Pending", "Installing"]:
 			frappe.throw("Site is under maintenance. Cannot Update")
 
-		self.status = "Pending"
-		self.save()
-
 		site.status_before_update = site.status
 		site.status = "Pending"
 		site.save()
