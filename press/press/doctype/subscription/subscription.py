@@ -6,7 +6,7 @@
 from typing import List
 
 from frappe.query_builder.functions import Coalesce, Count
-from press.press.doctype.plan.plan import Plan
+from press.press.doctype.site_plan.site_plan import SitePlan
 
 import frappe
 from frappe.model.document import Document
@@ -195,7 +195,7 @@ class Subscription(Document):
 
 	@classmethod
 	def get_sites_without_offsite_backups(cls) -> List[str]:
-		plans = Plan.get_ones_without_offsite_backups()
+		plans = SitePlan.get_ones_without_offsite_backups()
 		return frappe.get_all(
 			"Subscription",
 			filters={"document_type": "Site", "plan": ("in", plans)},
