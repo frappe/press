@@ -16,4 +16,6 @@ def execute():
 	for index, email in enumerate(emails):
 		update_progress_bar("Updating emails", index, total_emails)
 		if not validate_email_address(email.value):
-			frappe.db.set_value("Communication Email", email.name, "", update_modified=False)
+			frappe.db.set_value(
+				"Communication Email", email.name, "value", "", update_modified=False
+			)
