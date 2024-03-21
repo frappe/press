@@ -8,7 +8,6 @@ import frappe
 from typing import Dict, List
 from frappe.core.utils import find
 from press.api.bench import options
-from press.api.billing import create_payment_intent_for_prepaid_app
 from press.api.site import (
 	is_marketplace_app_source,
 	is_prepaid_marketplace_app,
@@ -851,57 +850,6 @@ def get_payout_details(name: str) -> Dict:
 			grouped_items["usd_items"].append(item)
 
 	return grouped_items
-
-
-@frappe.whitelist(allow_guest=True)
-def prepaid_saas_payment(
-	name, app, site, plan, amount, credits, payment_option, renewal, subscriptions=None
-):
-	if renewal:
-		line_items = [
-			{
-				"app": sub["app"],
-				"plan": sub["marketplace_app_plan"],
-				"subscription": sub["name"],
-				"amount": sub["selected_plan"]["amount"],
-				"quantity": payment_option,
-			}
-			for sub in subscriptions
-		]
-	else:
-		line_items = [
-			{
-				"app": app,
-				"plan": plan,
-				"subscription": name,
-				"amount": amount,
-				"quantity": payment_option,
-			}
-		]
-	metadata = {
-		"payment_for": "prepaid_marketplace",
-		"line_items": json.dumps(line_items),
-		"site": site,
-		"credits": credits,
-	}
-	return create_payment_intent_for_prepaid_app(int(amount), metadata)
-
-
-@frappe.whitelist(allow_guest=True)
-def get_plan(name):
-	plan, gst, discount_percent, block_monthly = frappe.db.get_value(
-		"Marketplace App Plan", name, ["plan", "gst", "discount_percent", "block_monthly"]
-	)
-	currency = get_current_team(True).currency.lower()
-	title, amount = frappe.db.get_value("Plan", plan, ["plan_title", f"price_{currency}"])
-
-	return {
-		"title": title,
-		"amount": amount,
-		"gst": gst,
-		"discount_percent": get_discount_percent(name, discount_percent),
-		"block_monthly": block_monthly,
-	}
 
 
 def get_discount_percent(plan, discount=0.0):
