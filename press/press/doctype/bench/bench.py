@@ -5,6 +5,7 @@
 import json
 from datetime import datetime, timedelta
 from functools import cached_property
+from typing import TYPE_CHECKING, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
@@ -12,8 +13,22 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.bench_shell_log.bench_shell_log import (
+	ExecuteResult,
+	create_bench_shell_log,
+)
 from press.press.doctype.site.site import Site
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	SupervisorctlActions = Literal[
+		"start",
+		"stop",
+		"restart",
+		"clear",
+		"update",
+		"remove",
+	]
 
 
 class Bench(Document):
@@ -460,6 +475,48 @@ class Bench(Document):
 			self.memory_swap = self.memory_max * 2
 		self.save()
 		return self.gunicorn_workers, self.background_workers
+
+	def docker_execute(
+		self,
+		cmd: str,
+		subdir: Optional[str] = None,
+		save_output: bool = True,
+		create_log: bool = True,
+	) -> ExecuteResult:
+		if self.status not in ["Active", "Broken"]:
+			raise Exception(
+				f"Bench {self.name} has status {self.status}, docker_execute cannot be run"
+			)
+
+		data = {"command": cmd}
+		if subdir:
+			data["subdir"] = subdir
+
+		result: ExecuteResult = Agent(self.server).post(
+			f"benches/{self.name}/docker_execute", data
+		)
+
+		if create_log:
+			create_bench_shell_log(result, self.name, cmd, subdir, save_output)
+		return result
+
+	def supervisorctl(
+		self,
+		action: "SupervisorctlActions",
+		programs: str | list[str] = "all",
+	) -> None:
+		"""
+		If programs list is empty then all programs are selected
+		For reference check: http://supervisord.org/running.html#supervisorctl-actions
+		"""
+		if type(programs) is str:
+			programs = [programs]
+
+		return Agent(self.server).call_supervisorctl(
+			self.name,
+			action,
+			programs,
+		)
 
 
 class StagingSite(Site):
