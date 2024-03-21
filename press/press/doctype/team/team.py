@@ -810,6 +810,10 @@ class Team(Document):
 			else:
 				why = "You have already created trial site in the past"
 
+		if not self.payment_mode:
+			why = "You cannot create a new site because your account doesn't have a valid payment method."
+			return (False, why)
+
 		if self.payment_mode == "Partner Credits":
 			if self.get_available_partner_credits() > 0:
 				return allow
