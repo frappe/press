@@ -426,7 +426,7 @@ def installable_apps(name):
 @frappe.whitelist()
 @protected("Release Group")
 def all_apps(name):
-	"""Return all apps in the marketplace and custom apps"""
+	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
 
 	release_group = frappe.get_doc("Release Group", name)
 	installed_apps = [app.app for app in release_group.apps]
