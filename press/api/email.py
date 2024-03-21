@@ -163,16 +163,19 @@ def event_log():
 	log the webhook and forward it to site
 	"""
 	data = json.loads(frappe.request.data)
+	event_data = data.get("event-data")
 
-	if not data.get("event-data"):
+	if not event_data:
 		return
 
-	event_data = data["event-data"]
+	secret_key = event_data["user-variables"]["sk_mail"]
 	headers = event_data["message"]["headers"]
 	message_id = headers["message-id"]
-	site = message_id.split("@")[1]
+	site = (
+		frappe.get_cached_value("Subscription", {"secret_key": secret_key}, "site")
+		or frappe.message_id.split("@")[1]
+	)
 	status = event_data["event"]
-	secret_key = event_data["user-variables"]["sk_mail"]
 
 	frappe.get_doc(
 		{
