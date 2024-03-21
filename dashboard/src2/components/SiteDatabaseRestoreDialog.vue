@@ -7,7 +7,10 @@
 					label: 'Restore',
 					variant: 'solid',
 					loading: $resources.restoreBackup.loading,
-					onClick: () => $resources.restoreBackup.submit()
+					onClick: () => {
+						$resources.restoreBackup.submit();
+						showRestoreDialog = false;
+					}
 				}
 			]
 		}"
