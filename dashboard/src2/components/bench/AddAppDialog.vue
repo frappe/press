@@ -93,7 +93,7 @@
 									@click="addApp(row)"
 								/>
 								<div v-else class="truncate text-base" :class="column.class">
-									{{ formattedValue(column, i) }}
+									{{ formattedValue(column, item) }}
 								</div>
 							</template>
 						</ListRow>
@@ -273,11 +273,8 @@ export default {
 				return _app;
 			});
 		},
-		formattedValue(column, i) {
-			let row = this.rows[i];
-			let value = row[column.key];
-
-			let formattedValue = column.format ? column.format(value, row) : value;
+		formattedValue(column, value) {
+			let formattedValue = column.format ? column.format(value) : value;
 			if (formattedValue == null) {
 				formattedValue = '';
 			}
