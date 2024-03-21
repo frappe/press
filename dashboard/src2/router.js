@@ -70,6 +70,11 @@ let router = createRouter({
 			component: () => import('./pages/NewServer.vue')
 		},
 		{
+			name: 'New Cluster',
+			path: '/clusters/new',
+			component: () => import('./pages/NewCluster.vue')
+		},
+		{
 			name: 'Billing',
 			path: '/billing',
 			component: () => import('./pages/Billing.vue'),
