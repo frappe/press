@@ -13,9 +13,9 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.bench_console_log.bench_console_log import (
+from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
-	create_bench_console_log,
+	create_bench_shell_log,
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
@@ -466,7 +466,13 @@ class Bench(Document):
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 
-	def docker_execute(self, cmd: str, subdir: Optional[str] = None):
+	def docker_execute(
+		self,
+		cmd: str,
+		subdir: Optional[str] = None,
+		save_output: bool = True,
+		create_log: bool = True,
+	) -> ExecuteResult:
 		if self.status not in ["Active", "Broken"]:
 			raise Exception(
 				f"Bench {self.name} has status {self.status}, docker_execute cannot be run"
@@ -479,7 +485,9 @@ class Bench(Document):
 		result: ExecuteResult = Agent(self.server).post(
 			f"benches/{self.name}/docker_execute", data
 		)
-		create_bench_console_log(result, self.name, cmd, subdir)
+
+		if create_log:
+			create_bench_shell_log(result, self.name, cmd, subdir, save_output)
 		return result
 
 

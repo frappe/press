@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestBenchConsoleLog(FrappeTestCase):
+class TestBenchShellLog(FrappeTestCase):
 	pass

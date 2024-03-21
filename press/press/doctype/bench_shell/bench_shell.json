@@ -1,0 +1,151 @@
+{
+ "actions": [
+  {
+   "action": "/app/bench-shell-log",
+   "action_type": "Route",
+   "label": "Bench Shell Logs"
+  },
+  {
+   "action": "press.press.doctype.bench_shell.bench_shell.run_command",
+   "action_type": "Server Action",
+   "hidden": 1,
+   "label": "Run"
+  }
+ ],
+ "creation": "2024-03-21 10:17:17.616121",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_grqb",
+  "bench",
+  "column_break_lqmy",
+  "save_output",
+  "section_break_vhzg",
+  "command",
+  "subdir",
+  "output_section",
+  "output",
+  "traceback",
+  "returncode",
+  "meta_section",
+  "duration",
+  "column_break_gvty",
+  "directory"
+ ],
+ "fields": [
+  {
+   "fieldname": "bench",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bench",
+   "link_filters": "[\n  [\n    {\n      \"fieldname\": \"bench\",\n      \"field_option\": \"Bench\"\n    },\n    \"status\",\n    \"=\",\n    \"Active\"\n  ]\n]",
+   "options": "Bench"
+  },
+  {
+   "description": "<b>Note</b>: this is meant to be used for short running, read-only  commands like <code>ls -lAh</code>, or <code>supervisorctl status</code>, etc",
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "label": "Command"
+  },
+  {
+   "default": "1",
+   "description": "If checked output will be saved in the <i>Bench Shell Log</i>",
+   "fieldname": "save_output",
+   "fieldtype": "Check",
+   "label": "Save Output"
+  },
+  {
+   "fieldname": "section_break_vhzg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "Command is run in the bench root directory. To change the directory use Subdir for example: <i>apps</i>, <i>sites</i>, etc",
+   "fieldname": "subdir",
+   "fieldtype": "Data",
+   "label": "Subdir"
+  },
+  {
+   "fieldname": "output_section",
+   "fieldtype": "Section Break",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.output",
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.output || doc.traceback || doc.directory",
+   "fieldname": "returncode",
+   "fieldtype": "Int",
+   "label": "Return Code",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.traceback",
+   "fieldname": "traceback",
+   "fieldtype": "Code",
+   "label": "Traceback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "meta_section",
+   "fieldtype": "Section Break",
+   "label": "Meta"
+  },
+  {
+   "depends_on": "eval:doc.output || doc.traceback || doc.directory",
+   "fieldname": "duration",
+   "fieldtype": "Float",
+   "label": "Duration (seconds)",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:typeof doc.directory",
+   "fieldname": "directory",
+   "fieldtype": "Data",
+   "label": "Directory",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_gvty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_grqb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_lqmy",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-03-21 12:46:33.651545",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Bench Shell",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
