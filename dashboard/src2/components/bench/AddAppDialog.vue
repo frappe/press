@@ -266,7 +266,12 @@ export default {
 		},
 		filteredRows() {
 			let rows = this.rows.sort((a, b) => {
-				if (a.total_installs != b.total_installs) {
+				// Sort by compatible first, then by total installs
+				if (a.compatible && !b.compatible) {
+					return -1;
+				} else if (!a.compatible && b.compatible) {
+					return 1;
+				} else if (a.total_installs != b.total_installs) {
 					return b.total_installs - a.total_installs;
 				} else {
 					return a.title.localeCompare(b.title);
