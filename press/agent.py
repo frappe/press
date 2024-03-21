@@ -711,6 +711,8 @@ class Agent:
 			)
 
 	def handle_request_failure(self, agent_job, result):
+		if not agent_job:
+			return
 		message = f"""
 			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
 			Response: {getattr(result, 'text', 'Unknown')}
