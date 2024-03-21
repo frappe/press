@@ -53,6 +53,7 @@
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
+   "search_index": 1,
    "label": "Enabled"
   },
   {

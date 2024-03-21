@@ -217,6 +217,7 @@ def create_usage_records():
 			"document_name": ("not in", free_sites),
 		},
 		pluck="name",
+		order_by=None,
 		limit=2000,
 	)
 	for name in subscriptions:
@@ -277,6 +278,7 @@ def created_usage_records(free_sites, date=None):
 			"document_name": ("not in", free_sites),
 		},
 		pluck="subscription",
+		orderby=None,
 		ignore_ifnull=True,
 	)
 
