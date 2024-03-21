@@ -266,7 +266,7 @@ export default {
 				if (a.total_installs != b.total_installs) {
 					return b.total_installs - a.total_installs;
 				} else {
-					return a.app_title.localeCompare(b.app_title);
+					return a.title.localeCompare(b.title);
 				}
 			});
 

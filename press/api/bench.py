@@ -474,9 +474,8 @@ def all_apps(name):
 		app["repo"] = (
 			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
 		)
-		app["total_installs"] = find(total_installs_by_app, lambda x: x.app == app.name)[
-			"count"
-		]
+		app_total_installs = find(total_installs_by_app, lambda x: x.app == app.name)
+		app["total_installs"] = app_total_installs["count"] if app_total_installs else 0
 
 	return marketplace_apps
 
