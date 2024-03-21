@@ -195,12 +195,14 @@ export default {
 				{
 					label: 'Repository',
 					key: 'repo',
-					class: 'text-gray-600'
+					class: 'text-gray-600',
+					width: '15rem'
 				},
 				{
 					label: 'Branch',
 					type: 'select',
 					key: 'sources',
+					width: '15rem',
 					format(value, row) {
 						return row.sources.map(s => {
 							return {
@@ -214,6 +216,7 @@ export default {
 					label: '',
 					key: 'compatible',
 					type: 'Badge',
+					width: '10rem',
 					format(value) {
 						return {
 							label: value ? 'Compatible' : 'Incompatible',
