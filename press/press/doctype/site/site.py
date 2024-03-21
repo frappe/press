@@ -48,7 +48,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
-from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
