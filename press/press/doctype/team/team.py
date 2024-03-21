@@ -2,7 +2,6 @@
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
 
-import os
 import frappe
 
 from frappe import _
@@ -14,7 +13,6 @@ from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form, random_string
 from press.telegram_utils import Telegram
 from frappe.model.document import Document
-from press.exceptions import FrappeioServerNotSet
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
@@ -554,24 +552,15 @@ class Team(Document):
 		if frappe.flags.in_install:
 			return
 
-		try:
-			frappeio_client = get_frappe_io_connection()
-		except FrappeioServerNotSet as e:
-			if frappe.conf.developer_mode or os.environ.get("CI"):
-				return
-			else:
-				raise e
-
 		previous_version = self.get_doc_before_save()
-
 		if not previous_version:
 			self.load_doc_before_save()
 			previous_version = self.get_doc_before_save()
 
 		previous_billing_name = previous_version.billing_name
-
 		if previous_billing_name and previous_billing_name != self.billing_name:
 			try:
+				frappeio_client = get_frappe_io_connection()
 				frappeio_client.rename_doc("Customer", previous_billing_name, self.billing_name)
 				frappe.msgprint(
 					f"Renamed customer from {previous_billing_name} to {self.billing_name}"
@@ -783,15 +772,18 @@ class Team(Document):
 	def has_partner_account_on_erpnext_com(self):
 		if frappe.conf.developer_mode:
 			return False
+
 		try:
 			erpnext_com = get_erpnext_com_connection()
 		except Exception:
 			self.log_error("Cannot connect to erpnext.com to check partner account")
 			return False
-		res = erpnext_com.get_value(
-			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
+
+		return bool(
+			erpnext_com.get_value(
+				"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
+			)
 		)
-		return res["name"] if res else None
 
 	def can_create_site(self):
 		why = ""
