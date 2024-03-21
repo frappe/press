@@ -5,7 +5,7 @@
 import json
 from datetime import datetime, timedelta
 from functools import cached_property
-from typing import Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
@@ -19,6 +19,16 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
+
+if TYPE_CHECKING:
+	SupervisorctlActions = Literal[
+		"start",
+		"stop",
+		"restart",
+		"clear",
+		"update",
+		"remove",
+	]
 
 
 class Bench(Document):
@@ -489,6 +499,24 @@ class Bench(Document):
 		if create_log:
 			create_bench_shell_log(result, self.name, cmd, subdir, save_output)
 		return result
+
+	def supervisorctl(
+		self,
+		action: "SupervisorctlActions",
+		programs: str | list[str] = "all",
+	) -> None:
+		"""
+		If programs list is empty then all programs are selected
+		For reference check: http://supervisord.org/running.html#supervisorctl-actions
+		"""
+		if type(programs) is str:
+			programs = [programs]
+
+		return Agent(self.server).call_supervisorctl(
+			self.name,
+			action,
+			programs,
+		)
 
 
 class StagingSite(Site):

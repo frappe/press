@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2020, Frappe and contributors
 # For license information, please see license.txt
-import _io
 import json
 import os
 import typing
 from datetime import date
 from typing import List
 
+import _io
 import frappe
 import requests
 from frappe.utils.password import get_decrypted_password
@@ -892,3 +892,10 @@ class Agent:
 
 	def build_docker_image(self, data: dict):
 		return self.create_agent_job("Docker Image Build", "builder/build", data=data)
+
+	def call_supervisorctl(self, bench: str, action: str, programs: list[str]):
+		return self.create_agent_job(
+			"Call Bench Supervisorctl",
+			f"/benches/{bench}/supervisorctl",
+			data={"command": action, "programs": programs},
+		)
