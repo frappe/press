@@ -6,6 +6,22 @@ from frappe.model.document import Document
 
 
 class TeamChange(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		document_name: DF.DynamicLink
+		document_type: DF.Link
+		from_team: DF.Link
+		reason: DF.LongText | None
+		to_team: DF.Link
+		transfer_completed: DF.Check
+	# end: auto-generated types
+
 	def validate(self):
 		team = frappe.get_doc(self.document_type, self.document_name).team
 		if team != self.from_team:

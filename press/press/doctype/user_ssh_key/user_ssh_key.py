@@ -10,6 +10,20 @@ from frappe.model.document import Document
 
 
 class UserSSHKey(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		is_default: DF.Check
+		ssh_fingerprint: DF.Data | None
+		ssh_public_key: DF.Code
+		user: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = ["ssh_fingerprint", "is_default", "user"]
 	dashboard_actions = ["delete"]
 

@@ -12,6 +12,29 @@ if typing.TYPE_CHECKING:
 
 
 class App(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		branch: DF.Data | None
+		enable_auto_deploy: DF.Check
+		enabled: DF.Check
+		frappe: DF.Check
+		installation: DF.Data | None
+		public: DF.Check
+		repo: DF.Data | None
+		repo_owner: DF.Data | None
+		scrubbed: DF.Data | None
+		skip_review: DF.Check
+		team: DF.Link | None
+		title: DF.Data
+		url: DF.Data | None
+	# end: auto-generated types
+
 	dashboard_fields = ["title"]
 
 	def add_source(

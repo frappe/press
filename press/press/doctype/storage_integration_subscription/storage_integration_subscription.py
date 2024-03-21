@@ -11,6 +11,26 @@ from frappe.model.document import Document
 
 
 class StorageIntegrationSubscription(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		access_key: DF.Data | None
+		enabled: DF.Check
+		limit: DF.Data | None
+		minio_server_on: DF.Data | None
+		policy_json: DF.Code | None
+		policy_name: DF.Data | None
+		secret_key: DF.Data | None
+		site: DF.Link | None
+		team: DF.Data | None
+		usage: DF.Data | None
+	# end: auto-generated types
+
 	SERVER_TYPE = "Proxy Server"
 
 	def after_insert(self):

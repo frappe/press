@@ -10,6 +10,23 @@ DEFAULT_PERMISSIONS = {
 
 
 class PressPermissionGroup(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.press_permission_group_user.press_permission_group_user import (
+			PressPermissionGroupUser,
+		)
+
+		permissions: DF.JSON | None
+		team: DF.Link
+		title: DF.Data
+		users: DF.Table[PressPermissionGroupUser]
+	# end: auto-generated types
+
 	dashboard_fields = ["title"]
 	dashboard_actions = [
 		"get_users",

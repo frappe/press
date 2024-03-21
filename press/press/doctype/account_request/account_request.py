@@ -11,6 +11,50 @@ from press.utils import get_country_info
 
 
 class AccountRequest(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		agreed_to_partner_consent: DF.Check
+		company: DF.Data | None
+		country: DF.Data | None
+		designation: DF.Data | None
+		email: DF.Data | None
+		erpnext: DF.Check
+		first_name: DF.Data | None
+		geo_location: DF.Code | None
+		industry: DF.Data | None
+		invited_by: DF.Data | None
+		invited_by_parent_team: DF.Check
+		ip_address: DF.Data | None
+		is_us_eu: DF.Check
+		last_name: DF.Data | None
+		new_signup_flow: DF.Check
+		no_of_employees: DF.Data | None
+		no_of_users: DF.Int
+		oauth_signup: DF.Check
+		password: DF.Password | None
+		phone_number: DF.Data | None
+		plan: DF.Link | None
+		referral_source: DF.Data | None
+		referrer_id: DF.Data | None
+		request_key: DF.Data | None
+		role: DF.Data | None
+		saas: DF.Check
+		saas_app: DF.Link | None
+		saas_product: DF.Link | None
+		saas_signup_values: DF.SmallText | None
+		send_email: DF.Check
+		state: DF.Data | None
+		subdomain: DF.Data | None
+		team: DF.Data | None
+		url_args: DF.Code | None
+	# end: auto-generated types
+
 	def before_insert(self):
 		if not self.team:
 			self.team = self.email

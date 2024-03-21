@@ -14,6 +14,30 @@ from frappe.model.document import Document
 
 
 class SSHCertificate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		certificate_details: DF.Code | None
+		certificate_type: DF.Literal["User", "Host"]
+		group: DF.Link | None
+		key_type: DF.Data | None
+		serial_number: DF.Int
+		ssh_certificate: DF.Code | None
+		ssh_certificate_authority: DF.Link | None
+		ssh_certificate_authority_public_key: DF.Code | None
+		ssh_fingerprint: DF.Data | None
+		ssh_public_key: DF.Code
+		user: DF.Link | None
+		user_ssh_key: DF.Link | None
+		valid_until: DF.Datetime | None
+		validity: DF.Literal["1h", "3h", "6h", "30d"]
+	# end: auto-generated types
+
 	def validate(self):
 		self.validate_public_key()
 		self.validate_existing_certificates()

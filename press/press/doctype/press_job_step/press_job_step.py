@@ -8,6 +8,28 @@ import json
 
 
 class PressJobStep(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		attempts: DF.Int
+		duration: DF.Time | None
+		end: DF.Datetime | None
+		job: DF.Link
+		job_type: DF.Link
+		name: DF.Int | None
+		result: DF.Code | None
+		start: DF.Datetime | None
+		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		step_name: DF.Data
+		traceback: DF.Code | None
+		wait_until_true: DF.Check
+	# end: auto-generated types
+
 	@frappe.whitelist()
 	def execute(self):
 		if not self.start:

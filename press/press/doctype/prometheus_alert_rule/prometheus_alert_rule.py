@@ -9,6 +9,28 @@ from press.agent import Agent
 
 
 class PrometheusAlertRule(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		alert_preview: DF.Code | None
+		annotations: DF.Code
+		description: DF.Data
+		enabled: DF.Check
+		expression: DF.Code
+		group_by: DF.Code
+		group_interval: DF.Data
+		group_wait: DF.Data
+		labels: DF.Code
+		repeat_interval: DF.Data
+		route_preview: DF.Code | None
+		severity: DF.Literal["Critical", "Warning", "Information"]
+	# end: auto-generated types
+
 	def validate(self):
 		self.alert_preview = yaml.dump(self.get_rule())
 		self.route_preview = yaml.dump(self.get_route())

@@ -19,6 +19,28 @@ from press.utils import get_current_team, log_error
 
 
 class TLSCertificate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		certificate: DF.Code | None
+		decoded_certificate: DF.Code | None
+		domain: DF.Data
+		expires_on: DF.Datetime | None
+		full_chain: DF.Code | None
+		intermediate_chain: DF.Code | None
+		issued_on: DF.Datetime | None
+		private_key: DF.Code | None
+		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		status: DF.Literal["Pending", "Active", "Expired", "Revoked", "Failure"]
+		team: DF.Link | None
+		wildcard: DF.Check
+	# end: auto-generated types
+
 	def autoname(self):
 		if self.wildcard:
 			self.name = f"*.{self.domain}"

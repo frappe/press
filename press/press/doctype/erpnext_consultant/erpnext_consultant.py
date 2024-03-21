@@ -9,6 +9,22 @@ from frappe.utils import get_fullname
 
 
 class ERPNextConsultant(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.erpnext_consultant_region.erpnext_consultant_region import (
+			ERPNextConsultantRegion,
+		)
+
+		active: DF.Check
+		territories: DF.TableMultiSelect[ERPNextConsultantRegion]
+		user: DF.Link
+	# end: auto-generated types
+
 	@property
 	def full_name(self):
 		return get_fullname(self.name)

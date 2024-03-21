@@ -64,6 +64,85 @@ from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document, TagHelpers):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.site_app.site_app import SiteApp
+		from press.press.doctype.site_config.site_config import SiteConfig
+
+		_keys_removed_in_last_update: DF.Data | None
+		_site_usages: DF.Data | None
+		account_request: DF.Link | None
+		admin_password: DF.Password | None
+		apps: DF.Table[SiteApp]
+		archive_failed: DF.Check
+		auto_update_last_triggered_on: DF.Datetime | None
+		auto_updates_scheduled: DF.Check
+		bench: DF.Link
+		cluster: DF.Link
+		config: DF.Code | None
+		configuration: DF.Table[SiteConfig]
+		current_cpu_usage: DF.Int
+		current_database_usage: DF.Int
+		current_disk_usage: DF.Int
+		database_access_mode: DF.Literal["", "read_only", "read_write"]
+		database_access_password: DF.Password | None
+		database_access_user: DF.Data | None
+		database_name: DF.Data | None
+		domain: DF.Link | None
+		erpnext_consultant: DF.Link | None
+		free: DF.Check
+		group: DF.Link
+		hide_config: DF.Check
+		host_name: DF.Data | None
+		hybrid_saas_pool: DF.Link | None
+		is_database_access_enabled: DF.Check
+		is_erpnext_setup: DF.Check
+		is_standby: DF.Check
+		notify_email: DF.Data | None
+		plan: DF.Link | None
+		remote_config_file: DF.Link | None
+		remote_database_file: DF.Link | None
+		remote_private_file: DF.Link | None
+		remote_public_file: DF.Link | None
+		server: DF.Link
+		setup_wizard_complete: DF.Check
+		skip_auto_updates: DF.Check
+		skip_failing_patches: DF.Check
+		skip_scheduled_backups: DF.Check
+		staging: DF.Check
+		standby_for: DF.Link | None
+		standby_for_product: DF.Link | None
+		status: DF.Literal[
+			"Pending",
+			"Installing",
+			"Updating",
+			"Active",
+			"Inactive",
+			"Broken",
+			"Archived",
+			"Suspended",
+		]
+		status_before_update: DF.Data | None
+		subdomain: DF.Data
+		tags: DF.Table[ResourceTag]
+		team: DF.Link
+		timezone: DF.Data | None
+		trial_end_date: DF.Date | None
+		update_end_of_month: DF.Check
+		update_on_day_of_month: DF.Int
+		update_on_weekday: DF.Literal[
+			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+		]
+		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
+		update_trigger_time: DF.Time | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"ip",
 		"status",

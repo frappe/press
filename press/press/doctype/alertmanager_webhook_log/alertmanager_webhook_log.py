@@ -34,6 +34,26 @@ Labels:
 
 
 class AlertmanagerWebhookLog(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		alert: DF.Link
+		combined_alerts: DF.Int
+		common_labels: DF.Code
+		external_url: DF.Data
+		group_key: DF.Code
+		group_labels: DF.Code
+		payload: DF.Code
+		severity: DF.Literal["Critical", "Warning", "Information"]
+		status: DF.Literal["Firing", "Resolved"]
+		truncated_alerts: DF.Int
+	# end: auto-generated types
+
 	def validate(self):
 		self.parsed = json.loads(self.payload)
 		self.alert = self.parsed["groupLabels"]["alertname"]

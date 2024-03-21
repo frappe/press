@@ -9,6 +9,23 @@ from press.utils import log_error
 
 
 class BenchUpdate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.bench_site_update.bench_site_update import BenchSiteUpdate
+		from press.press.doctype.bench_update_app.bench_update_app import BenchUpdateApp
+
+		apps: DF.Table[BenchUpdateApp]
+		candidate: DF.Link | None
+		group: DF.Link
+		sites: DF.Table[BenchSiteUpdate]
+		status: DF.Literal["Pending", "Running", "Build Successful", "Failure", "Success"]
+	# end: auto-generated types
+
 	def validate(self):
 		if not self.is_new():
 			return

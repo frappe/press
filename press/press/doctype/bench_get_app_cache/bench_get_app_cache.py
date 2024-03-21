@@ -10,6 +10,22 @@ from press.utils import ttl_cache
 
 
 class BenchGetAppCache(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		accessed: DF.Datetime | None
+		app: DF.Data | None
+		file_name: DF.Data | None
+		is_compressed: DF.Check
+		raw: DF.Code | None
+		size: DF.Float
+	# end: auto-generated types
+
 	@staticmethod
 	def get_data():
 		data = get_app_cache_items()

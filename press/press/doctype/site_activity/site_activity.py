@@ -8,6 +8,40 @@ from frappe.model.document import Document
 
 
 class SiteActivity(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		action: DF.Literal[
+			"Activate Site",
+			"Add Domain",
+			"Archive",
+			"Backup",
+			"Create",
+			"Clear Cache",
+			"Deactivate Site",
+			"Install App",
+			"Login as Administrator",
+			"Migrate",
+			"Reinstall",
+			"Restore",
+			"Suspend Site",
+			"Uninstall App",
+			"Unsuspend Site",
+			"Update",
+			"Update Configuration",
+			"Drop Offsite Backups",
+			"Enable Database Access",
+			"Disable Database Access",
+		]
+		reason: DF.SmallText | None
+		site: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = ["action", "reason", "site"]
 
 	def after_insert(self):

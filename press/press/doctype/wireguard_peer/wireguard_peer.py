@@ -11,6 +11,31 @@ import subprocess
 
 
 class WireguardPeer(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		allowed_ips: DF.Data | None
+		ip: DF.Data | None
+		is_wireguard_setup: DF.Check
+		peer_config: DF.Code | None
+		peer_ip: DF.Data | None
+		peer_name: DF.Data
+		peer_private_network: DF.Data | None
+		private_ip: DF.Data | None
+		private_key: DF.Password | None
+		public_key: DF.Data | None
+		server_name: DF.DynamicLink
+		server_type: DF.Literal["Server", "Database Server"]
+		status: DF.Literal["Active", "Broken", "Archived"]
+		upstream_proxy: DF.Link
+		wireguard_network: DF.Data | None
+	# end: auto-generated types
+
 	def validate(self):
 		self.next_ip_address()
 		if not self.private_ip:

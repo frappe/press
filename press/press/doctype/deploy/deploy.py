@@ -11,6 +11,22 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Deploy(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.deploy_bench.deploy_bench import DeployBench
+
+		benches: DF.Table[DeployBench]
+		candidate: DF.Link
+		group: DF.Link
+		staging: DF.Check
+		team: DF.Link
+	# end: auto-generated types
+
 	def autoname(self):
 		self.name = append_number_if_name_exists("Deploy", self.candidate, separator="-")
 

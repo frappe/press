@@ -14,6 +14,22 @@ from frappe.utils import cint
 
 
 class SSHCertificateAuthority(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		directory: DF.Data
+		docker_image: DF.Data | None
+		docker_image_repository: DF.Data | None
+		docker_image_tag: DF.Int
+		key_fingerprint: DF.Code | None
+		public_key: DF.Code | None
+	# end: auto-generated types
+
 	def after_insert(self):
 		self.setup_directory()
 		self.generate_key_pair()

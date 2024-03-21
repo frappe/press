@@ -44,6 +44,42 @@ PAST_ALERT_COVER_MINUTES = (
 
 
 class Incident(WebsiteGenerator):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
+		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
+
+		acknowledged_by: DF.Link | None
+		alert: DF.Link | None
+		alerts: DF.Table[IncidentAlerts]
+		bench: DF.Link | None
+		cluster: DF.Link | None
+		description: DF.TextEditor | None
+		phone_call: DF.Check
+		resolved_by: DF.Link | None
+		route: DF.Data | None
+		server: DF.Link | None
+		show_in_website: DF.Check
+		sms_sent: DF.Check
+		status: DF.Literal[
+			"Validating",
+			"Confirmed",
+			"Acknowledged",
+			"Investigating",
+			"Resolved",
+			"Auto-Resolved",
+			"Press-Resolved",
+		]
+		subject: DF.Data | None
+		type: DF.Literal["Site Down", "Bench Down", "Server Down"]
+		updates: DF.Table[IncidentUpdates]
+	# end: auto-generated types
+
 	def validate(self):
 		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
 			self.phone_call = True

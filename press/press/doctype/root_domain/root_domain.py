@@ -16,6 +16,20 @@ from press.utils import log_error
 
 
 class RootDomain(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		aws_access_key_id: DF.Data
+		aws_secret_access_key: DF.Password
+		default_cluster: DF.Link
+		dns_provider: DF.Literal["AWS Route 53"]
+	# end: auto-generated types
+
 	def after_insert(self):
 		if not frappe.db.exists("TLS Certificate", {"wildcard": True, "domain": self.name}):
 			frappe.enqueue_doc(

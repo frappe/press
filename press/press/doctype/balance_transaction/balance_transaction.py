@@ -9,6 +9,38 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class BalanceTransaction(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.balance_transaction_allocation.balance_transaction_allocation import (
+			BalanceTransactionAllocation,
+		)
+
+		allocated_to: DF.Table[BalanceTransactionAllocation]
+		amended_from: DF.Link | None
+		amount: DF.Currency
+		currency: DF.Link | None
+		description: DF.SmallText | None
+		ending_balance: DF.Currency
+		invoice: DF.Data | None
+		source: DF.Literal[
+			"",
+			"Prepaid Credits",
+			"Free Credits",
+			"Transferred Credits",
+			"Discount",
+			"Referral Bonus",
+			"Marketplace Consumption",
+		]
+		team: DF.Link
+		type: DF.Literal["Adjustment", "Applied To Invoice"]
+		unallocated_amount: DF.Currency
+	# end: auto-generated types
+
 	dashboard_fields = ["type", "amount", "ending_balance", "invoice", "source"]
 
 	def validate(self):

@@ -8,6 +8,28 @@ import frappe
 
 
 class BackupRestorationTest(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		date: DF.Date | None
+		site: DF.Link | None
+		status: DF.Literal[
+			"Pending",
+			"Running",
+			"Success",
+			"Failure",
+			"Undelivered",
+			"Archive Successful",
+			"Archive Failed",
+		]
+		test_site: DF.Link | None
+	# end: auto-generated types
+
 	def before_insert(self):
 		self.new_sitename = "brt-" + str(self.site)
 

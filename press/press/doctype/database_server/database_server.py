@@ -18,6 +18,67 @@ from frappe.core.utils import find
 
 
 class DatabaseServer(BaseServer):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.database_server_mariadb_variable.database_server_mariadb_variable import (
+			DatabaseServerMariaDBVariable,
+		)
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+
+		agent_password: DF.Password | None
+		cluster: DF.Link | None
+		domain: DF.Link | None
+		frappe_public_key: DF.Code | None
+		frappe_user_password: DF.Password | None
+		hostname: DF.Data
+		hostname_abbreviation: DF.Data | None
+		ip: DF.Data | None
+		is_performance_schema_enabled: DF.Check
+		is_primary: DF.Check
+		is_replication_setup: DF.Check
+		is_self_hosted: DF.Check
+		is_server_prepared: DF.Check
+		is_server_renamed: DF.Check
+		is_server_setup: DF.Check
+		is_stalk_setup: DF.Check
+		mariadb_root_password: DF.Password | None
+		mariadb_system_variables: DF.Table[DatabaseServerMariaDBVariable]
+		memory_high: DF.Float
+		memory_max: DF.Float
+		memory_swap_max: DF.Float
+		plan: DF.Link | None
+		primary: DF.Link | None
+		private_ip: DF.Data | None
+		private_mac_address: DF.Data | None
+		private_vlan_id: DF.Data | None
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		ram: DF.Float
+		root_public_key: DF.Code | None
+		self_hosted_mariadb_server: DF.Data | None
+		self_hosted_server_domain: DF.Data | None
+		server_id: DF.Int
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
+		stalk_cycles: DF.Int
+		stalk_function: DF.Data | None
+		stalk_gdb_collector: DF.Check
+		stalk_interval: DF.Float
+		stalk_sleep: DF.Int
+		stalk_strace_collector: DF.Check
+		stalk_threshold: DF.Int
+		stalk_variable: DF.Data | None
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tags: DF.Table[ResourceTag]
+		team: DF.Link | None
+		title: DF.Data | None
+		virtual_machine: DF.Link | None
+	# end: auto-generated types
+
 	def validate(self):
 		super().validate()
 		self.validate_mariadb_root_password()

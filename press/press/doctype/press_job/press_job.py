@@ -7,6 +7,26 @@ import json
 
 
 class PressJob(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		arguments: DF.Code
+		duration: DF.Time | None
+		end: DF.Datetime | None
+		job_type: DF.Link
+		name: DF.Int | None
+		server: DF.DynamicLink | None
+		server_type: DF.Link | None
+		start: DF.Datetime | None
+		status: DF.Literal["Pending", "Running", "Skipped", "Success", "Failure"]
+		virtual_machine: DF.Link | None
+	# end: auto-generated types
+
 	def after_insert(self):
 		self.create_press_job_steps()
 		self.execute()
