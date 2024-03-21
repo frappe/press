@@ -320,7 +320,8 @@ def benches_with_available_update(site=None, server=None):
 	return list(set([bench.source_bench for bench in updates_available_for_benches]))
 
 
-def sites_with_available_update(server):
+@frappe.whitelist()
+def sites_with_available_update(server=None):
 	benches = benches_with_available_update(server=server)
 	sites = frappe.get_all(
 		"Site",
@@ -328,7 +329,7 @@ def sites_with_available_update(server):
 			"status": ("in", ("Active", "Inactive", "Suspended")),
 			"bench": ("in", benches),
 		},
-		fields=["name", "timezone", "bench", "status", "skip_auto_updates"],
+		fields=["name", "timezone", "bench", "server", "status", "skip_auto_updates"],
 	)
 	return sites
 
