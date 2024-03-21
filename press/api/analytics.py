@@ -293,97 +293,61 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 		},
 	}
 
-	average_duration_query = {
-		"aggs": {
-			"method_path": {
-				"terms": {
-					"field": "json.request.path",
-					"order": {"methods>avg": "desc"},
-					"size": MAX_NO_OF_PATHS,
-				},
-				"aggs": {
-					"methods": {
-						"filter": {
-							"bool": {
-								"filter": [
-									{"match_phrase": {"json.site": site}},
-									{
-										"range": {
-											"@timestamp": {
-												"gte": f"now-{timespan}s",
-												"lte": "now",
-											}
-										}
-									},
-								],
-								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-							}
-						},
-						"aggs": {
-							"avg": {
-								"avg": {
-									"field": "json.duration",
-								}
-							}
-						},
-					},
-					"histogram_of_method": {
-						"date_histogram": {
-							"field": "@timestamp",
-							"fixed_interval": f"{timegrain}s",
-							"time_zone": timezone,
-						},
-						"aggs": {
-							"methods": {
-								"filter": {
-									"bool": {
-										"filter": [
-											{"match_phrase": {"json.site": site}},
-											{
-												"range": {
-													"@timestamp": {
-														"gte": f"now-{timespan}s",
-														"lte": "now",
-													}
-												}
-											},
-										],
-										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-									}
-								},
-								"aggs": {
-									"avg": {
-										"avg": {
-											"field": "json.duration",
-										}
-									}
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"size": 0,
-		"query": {
-			"bool": {
-				"filter": [
-					{"match_phrase": {"json.site": site}},
-					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
-				],
-				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-			}
-		},
-	}
-
 	if query_type == "count":
 		query = count_query
+		response = requests.post(url, json=query, auth=("frappe", password)).json()
 	elif query_type == "duration":
 		query = duration_query
+		response = requests.post(url, json=query, auth=("frappe", password)).json()
 	elif query_type == "average_duration":
-		query = average_duration_query
+		from elasticsearch import Elasticsearch
+		from elasticsearch_dsl import Search, A
 
-	response = requests.post(url, json=query, auth=("frappe", password)).json()
+		url = "https://log.frappe.cloud:443/elasticsearch"
+		es = Elasticsearch(url, basic_auth=("frappe", password))
+		search = (
+			Search(using=es, index="filebeat-*")
+			.filter("match_phrase", json__site=site)
+			.filter("match_phrase", json__transaction_type="request")
+			.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+			.exclude("match_phrase", json__request__path="/api/method/ping")
+			.extra(size=0)
+		)
+
+		histogram_of_method = A(
+			"date_histogram",
+			field="@timestamp",
+			fixed_interval=f"{timegrain}s",
+			time_zone=timezone,
+		)
+		avg_of_duration = A("avg", field="json.duration")
+
+		search.aggs.bucket(
+			"method_path",
+			"terms",
+			field="json.request.path",
+			size=MAX_NO_OF_PATHS,
+			order={"outside_avg": "desc"},
+		).bucket("histogram_of_method", histogram_of_method).bucket(
+			"avg_of_duration", avg_of_duration
+		)
+
+		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
+
+		response = search.execute()
+		aggs = response.aggregations
+		labels = set()
+		# method_path has buckets of timestamps with avg of that duration
+		datasets = []
+
+		for path_bucket in aggs.method_path.buckets:
+			path_data = frappe._dict({"path": path_bucket.key, "values": [], "stack": "path"})
+			for hist_bucket in path_bucket.histogram_of_method.buckets:
+				labels.add(hist_bucket.key_as_string)
+				path_data["values"].append(flt(hist_bucket.avg_of_duration.value) / 1e6)
+			datasets.append(path_data)
+
+		return {"datasets": datasets, "labels": list(labels)}
 
 	if not response["aggregations"]["method_path"]["buckets"]:
 		return {"datasets": [], "labels": []}
