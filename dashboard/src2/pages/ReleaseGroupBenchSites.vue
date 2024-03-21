@@ -29,7 +29,7 @@
 	</div>
 </template>
 <script>
-import { h } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
 import GenericList from '../components/GenericList.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
@@ -210,6 +210,21 @@ export default {
 													h(SSHCertificateDialog, {
 														bench: row,
 														releaseGroup: this.$releaseGroup.name
+													})
+												);
+											}
+										},
+										{
+											label: 'View Logs',
+											condition: () => row.status === 'Active',
+											onClick: () => {
+												let BenchLogsDialog = defineAsyncComponent(() =>
+													import('../components/bench/BenchLogsDialog.vue')
+												);
+
+												renderDialog(
+													h(BenchLogsDialog, {
+														bench: row.name
 													})
 												);
 											}

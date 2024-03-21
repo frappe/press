@@ -70,3 +70,7 @@ def link_unlinked_usage_records():
 			frappe.get_doc("Usage Record", usage_record).update_usage_in_invoice()
 		except Exception as e:
 			frappe.log_error("Failed to Link UR to Invoice", data=e)
+
+
+def on_doctype_update():
+	frappe.db.add_index("Usage Record", ["subscription", "date"])

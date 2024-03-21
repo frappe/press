@@ -11,8 +11,10 @@ from urllib.parse import urljoin
 import frappe
 import pytz
 import requests
+import wrapt
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
+from pymysql.err import InterfaceError
 
 
 def log_error(title, **kwargs):
@@ -543,3 +545,15 @@ def poly_get_doctype(doctypes, name):
 		if frappe.db.exists(doctype, name):
 			return doctype
 	return doctypes[-1]
+
+
+def reconnect_on_failure():
+	@wrapt.decorator
+	def wrapper(wrapped, instance, args, kwargs):
+		try:
+			return wrapped(*args, **kwargs)
+		except InterfaceError:
+			frappe.db.connect()
+			return wrapped(*args, **kwargs)
+
+	return wrapper

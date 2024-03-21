@@ -9,7 +9,7 @@ import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { bytes, duration, date, plural } from '../utils/format';
@@ -18,6 +18,7 @@ import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
+import { logsTab } from './tabs/site/logs';
 
 export default {
 	doctype: 'Site',
@@ -1060,6 +1061,7 @@ export default {
 					]
 				}
 			},
+			logsTab(),
 			tagTab()
 		],
 		actions(context) {
@@ -1119,7 +1121,7 @@ export default {
 					condition: () =>
 						$team.doc.is_desk_user && site.doc.team != $team.name,
 					onClick() {
-						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
+						switchToTeam(site.doc.team);
 					}
 				},
 				{
@@ -1200,6 +1202,11 @@ export default {
 			name: 'Site Job',
 			path: 'job/:id',
 			component: () => import('../pages/JobPage.vue')
+		},
+		{
+			name: 'Site Log',
+			path: 'logs/:logName',
+			component: () => import('../pages/LogPage.vue')
 		}
 	]
 };

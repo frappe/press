@@ -10,7 +10,7 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-2xl px-5">
+	<div v-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -227,8 +227,33 @@
 			</div>
 		</div>
 	</div>
+	<div
+		v-else
+		class="mx-auto mt-60 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<LucideServer class="mx-auto mb-4 h-8 w-8" />
+		<p>Server feature isn't enabled for your account.</p>
+		<p>You need to have $200 worth of credits to enable this feature.</p>
+		<p>
+			Please add it from
+			<router-link class="underline" :to="{ name: 'BillingOverview' }"
+				>here</router-link
+			>.
+		</p>
+		<p>
+			Or you can
+			<a
+				class="underline"
+				href="https://frappecloud.com/support"
+				target="_blank"
+				>contact support</a
+			>
+			to enable it.
+		</p>
+	</div>
 </template>
 <script>
+import LucideServer from '~icons/lucide/server-off';
 import Header from '../components/Header.vue';
 import Summary from '../components/Summary.vue';
 import ServerPlansCards from '../components/server/ServerPlansCards.vue';
@@ -237,6 +262,7 @@ import ClickToCopy from '../../src/components/ClickToCopyField.vue';
 export default {
 	components: {
 		ServerPlansCards,
+		LucideServer,
 		ClickToCopy,
 		Summary,
 		Header
@@ -253,6 +279,7 @@ export default {
 			appPrivateIP: '',
 			dbPublicIP: '',
 			dbPrivateIP: '',
+			serverEnabled: true,
 			agreedToRegionConsent: false
 		};
 	},
@@ -292,6 +319,15 @@ export default {
 						app_plans: data.app_plans,
 						db_plans: data.db_plans
 					};
+				},
+				onError(error) {
+					if (
+						error.messages.includes(
+							'Servers feature is not yet enabled on your account'
+						)
+					) {
+						this.serverEnabled = false;
+					}
 				}
 			};
 		},

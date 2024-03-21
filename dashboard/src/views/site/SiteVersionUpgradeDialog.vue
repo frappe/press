@@ -167,14 +167,11 @@ export default {
 					name: this.site?.name,
 					version: this.site?.frappe_version
 				},
-				auto: true,
-				validate() {
-					if (
-						!this.site?.group_public ||
-						this.site?.frappe_version === 'Nightly'
-					)
-						return false;
-				},
+				auto:
+					this.site?.frappe_version &&
+					this.site?.name &&
+					!this.site?.group_public &&
+					this.site?.frappe_version !== 'Nightly',
 				transform(data) {
 					return data.map(group => ({
 						label: group.title || group.name,

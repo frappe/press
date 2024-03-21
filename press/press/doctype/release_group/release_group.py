@@ -616,7 +616,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for version in deployed_versions:
 			version.has_app_patch_applied = version.name in benches_with_patches
-			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
+			version.has_ssh_access = version.is_ssh_proxy_setup and len(cur_user_ssh_key) > 0
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
 				site.version = rg_version
@@ -657,15 +657,22 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def generate_certificate(self):
 		user_ssh_key = frappe.get_all(
-			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-		)[0]
+			"User SSH Key",
+			{"user": frappe.session.user, "is_default": True},
+			pluck="name",
+			limit=1,
+		)
+
+		if not user_ssh_key:
+			frappe.throw(_("Please set a SSH key to generate certificate"))
+
 		return frappe.get_doc(
 			{
 				"doctype": "SSH Certificate",
 				"certificate_type": "User",
 				"group": self.name,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key,
+				"user_ssh_key": user_ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()

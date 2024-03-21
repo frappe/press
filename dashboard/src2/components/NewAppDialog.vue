@@ -193,6 +193,9 @@
 					</div>
 				</div>
 			</FTabs>
+			<ErrorMessage
+				:message="$resources.validateApp.error || $resources.branches.error"
+			/>
 		</template>
 	</Dialog>
 </template>
@@ -259,7 +262,8 @@ export default {
 			this.appValidated = false;
 			this.$resources.branches.submit({
 				owner: this.selectedGithubUser?.label,
-				name: val?.label
+				name: val?.label,
+				installation: this.selectedGithubUser?.value.id
 			});
 
 			if (this.selectedGithubUser) {
@@ -312,7 +316,8 @@ export default {
 					this.$resources.validateApp.submit({
 						owner: this.appOwner,
 						repository: this.appName,
-						branch: branches[0].name
+						branch: branches[0].name,
+						installation: this.selectedGithubUser?.value?.id
 					});
 				},
 				validate() {
