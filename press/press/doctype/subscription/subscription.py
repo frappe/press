@@ -278,7 +278,7 @@ def created_usage_records(free_sites, date=None):
 			"document_name": ("not in", free_sites),
 		},
 		pluck="subscription",
-		orderby=None,
+		order_by=None,
 		ignore_ifnull=True,
 	)
 
