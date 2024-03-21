@@ -463,8 +463,8 @@ def all_apps(name):
 			lambda x: x.app == app.name,
 		)
 		# for fetching repo details
-		_source = find(marketplace_app_sources, lambda x: x.app == app.name)
-		app["repo"] = f"{_source.repository_owner}/{_source.repository}"
+		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
+		app["repo"] = f"{app_source.repository_owner}/{app_source.repository}"
 
 	return marketplace_apps
 
