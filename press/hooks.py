@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from . import __version__ as app_version
 from press.api.account import get_frappe_io_auth_url
+
+from . import __version__ as app_version
 
 app_name = "press"
 app_title = "Press"
@@ -326,3 +327,5 @@ user_data_fields = [
 auth_hooks = ["press.auth.hook"]
 
 page_renderer = ["press.metrics.MetricsRenderer"]
+
+export_python_type_annotations = True
