@@ -97,6 +97,7 @@ class Site(Document, TagHelpers):
 		"set_plan",
 		"update_config",
 		"delete_config",
+		"send_change_team_request",
 	]
 
 	@staticmethod
