@@ -3,7 +3,6 @@ from frappe.utils import get_url
 from typing import Dict, List
 
 from press.api.developer import raise_invalid_key_error
-from press.api.marketplace import prepaid_saas_payment
 from press.api.site import get_plans as get_site_plans
 from press.utils.telemetry import capture
 
@@ -113,19 +112,6 @@ class DeveloperApiHandler:
 			site = frappe.get_doc("Site", self.app_subscription_doc.site)
 			site.change_plan(plan)
 			capture("changed_plan", "fc_subscribe", team)
-
-	def saas_payment(self, data: Dict) -> Dict:
-		with SessionManager(self.app_subscription_doc.team) as _:
-			return prepaid_saas_payment(
-				data["sub_name"],
-				data["app"],
-				data["site"],
-				data["new_plan"]["name"],
-				data["total"],
-				data["total"],
-				12 if data["billing"] == "annual" else 1,
-				False,
-			)
 
 	def send_login_link(self):
 		try:
@@ -240,13 +226,6 @@ def setup_intent_success(secret_key: str, setup_intent) -> str:
 def change_site_plan(secret_key: str, plan: str) -> str:
 	api_handler = DeveloperApiHandler(secret_key)
 	return api_handler.change_site_plan(plan)
-
-
-@frappe.whitelist(allow_guest=True)
-def saas_payment(secret_key: str, data) -> str:
-	data = frappe.parse_json(data)
-	api_handler = DeveloperApiHandler(secret_key)
-	return api_handler.saas_payment(data)
 
 
 @frappe.whitelist(allow_guest=True)

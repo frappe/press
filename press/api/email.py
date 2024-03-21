@@ -96,7 +96,7 @@ def validate_plan(secret_key):
 	if not secret_key or not isinstance(secret_key, str):
 		frappe.throw("Invalid Secret Key")
 
-	if frappe.db.exists("Saas App Subscription", {"secret_key": secret_key}):
+	if frappe.db.exists("Subscription", {"secret_key": secret_key}):
 		return True
 
 	# TODO: replace this with plan attributes
