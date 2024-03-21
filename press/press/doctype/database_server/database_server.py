@@ -682,7 +682,10 @@ class DatabaseServer(BaseServer):
 		)
 
 	def get_stalks(self):
-		return self.agent.get("database/stalks") or []
+		result = self.agent.get("database/stalks", raises=False)
+		if "error" in result:
+			return []
+		return result
 
 	def get_stalk(self, name):
 		return self.agent.get(f"database/stalks/{name}")
