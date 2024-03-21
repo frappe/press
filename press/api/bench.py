@@ -457,6 +457,13 @@ def all_apps(name):
 		)
 	).run(as_dict=1)
 
+	total_installs_by_app = frappe.db.get_all(
+		"Site App",
+		fields=["app", "count(*) as count"],
+		filters={"app": ("in", set(app.name for app in marketplace_apps))},
+		group_by="app",
+	)
+
 	for app in marketplace_apps:
 		app["sources"] = find_all(
 			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
@@ -464,7 +471,12 @@ def all_apps(name):
 		)
 		# for fetching repo details
 		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
-		app["repo"] = f"{app_source.repository_owner}/{app_source.repository}"
+		app["repo"] = (
+			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
+		)
+		app["total_installs"] = find(total_installs_by_app, lambda x: x.app == app.name)[
+			"count"
+		]
 
 	return marketplace_apps
 
