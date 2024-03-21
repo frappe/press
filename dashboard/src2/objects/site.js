@@ -18,6 +18,7 @@ import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
+import { logsTab } from './tabs/site/logs';
 
 export default {
 	doctype: 'Site',
@@ -1060,6 +1061,7 @@ export default {
 					]
 				}
 			},
+			logsTab(),
 			tagTab()
 		],
 		actions(context) {
@@ -1200,6 +1202,11 @@ export default {
 			name: 'Site Job',
 			path: 'job/:id',
 			component: () => import('../pages/JobPage.vue')
+		},
+		{
+			name: 'Site Log',
+			path: 'logs/:logName',
+			component: () => import('../pages/LogPage.vue')
 		}
 	]
 };
