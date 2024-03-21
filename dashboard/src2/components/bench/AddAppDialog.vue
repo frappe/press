@@ -91,6 +91,12 @@
 									v-else-if="column.type === 'Button'"
 									label="Add"
 									@click="addApp(row)"
+									:icon-left="
+										selectedAppSources.includes(row) ? 'check' : 'plus'
+									"
+									:class="{
+										'pointer-events-none': selectedAppSources.includes(row)
+									}"
 								/>
 								<div v-else class="truncate text-base" :class="column.class">
 									{{ formattedValue(column, item) }}
@@ -190,7 +196,6 @@ export default {
 			url: 'press.api.bench.add_app',
 			onSuccess() {
 				this.$emit('appAdd');
-				this.$resources.installableApps.reload();
 			},
 			onError(e) {
 				toast.error(e.messages.length ? e.messages.join('\n') : e.message);
