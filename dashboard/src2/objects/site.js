@@ -43,7 +43,7 @@ export default {
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
-		unsetRedirectToPrimary: 'unset_redirect',
+		removeRedirect: 'unset_redirect',
 		setPrimaryDomain: 'set_host_name',
 		restoreSite: 'restore_site',
 		scheduleUpdate: 'schedule_update',
@@ -723,18 +723,23 @@ export default {
 										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.redirectToPrimary.loading) return;
-											toast.promise(site.redirectToPrimary.submit(), {
-												loading: 'Redirecting domain...',
-												success: () => {
-													hide();
-													return 'Domain redirected';
-												},
-												error: e => {
-													return e.messages.length
-														? e.messages.join('\n')
-														: e.message;
+											toast.promise(
+												site.redirectToPrimary.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Redirecting domain...',
+													success: () => {
+														hide();
+														return 'Domain redirected';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
 												}
-											});
+											);
 										}
 									});
 								}
@@ -748,18 +753,23 @@ export default {
 										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
 										onSuccess({ hide }) {
 											if (site.removeRedirect.loading) return;
-											toast.promise(site.removeRedirect.submit(), {
-												loading: 'Removing redirect...',
-												success: () => {
-													hide();
-													return 'Redirect removed';
-												},
-												error: e => {
-													return e.messages.length
-														? e.messages.join('\n')
-														: e.message;
+											toast.promise(
+												site.removeRedirect.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing redirect...',
+													success: () => {
+														hide();
+														return 'Redirect removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
 												}
-											});
+											);
 										}
 									});
 								}
