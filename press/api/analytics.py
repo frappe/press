@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 
+from elasticsearch import Elasticsearch
+from elasticsearch_dsl import Search, A
 import frappe
 import requests
 import json
@@ -22,6 +24,7 @@ from press.press.report.binary_log_browser.binary_log_browser import (
 	get_files_in_timespan,
 	convert_user_timezone_to_utc,
 )
+
 
 try:
 	from frappe.utils import convert_utc_to_user_timezone
@@ -137,191 +140,55 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
 		return {"datasets": [], "labels": []}
-
-	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
+	url = f"https://{log_server}/elasticsearch"
 
-	count_query = {
-		"aggs": {
-			"method_path": {
-				"terms": {
-					"field": "json.request.path",
-					"order": {"request_count": "desc"},
-					"size": MAX_NO_OF_PATHS,
-				},
-				"aggs": {
-					"request_count": {
-						"filter": {
-							"bool": {
-								"filter": [
-									{"match_phrase": {"json.site": site}},
-									{
-										"range": {
-											"@timestamp": {
-												"gte": f"now-{timespan}s",
-												"lte": "now",
-											}
-										}
-									},
-								],
-								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-							}
-						}
-					},
-					"histogram_of_method": {
-						"date_histogram": {
-							"field": "@timestamp",
-							"fixed_interval": f"{timegrain}s",
-							"time_zone": timezone,
-						},
-						"aggs": {
-							"request_count": {
-								"filter": {
-									"bool": {
-										"filter": [
-											{"match_phrase": {"json.site": site}},
-											{
-												"range": {
-													"@timestamp": {
-														"gte": f"now-{timespan}s",
-														"lte": "now",
-													}
-												}
-											},
-										],
-										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-									}
-								}
-							}
-						},
-					},
-				},
-			}
-		},
-		"size": 0,
-		"query": {
-			"bool": {
-				"filter": [
-					{"match_phrase": {"json.site": site}},
-					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
-				],
-				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-			}
-		},
-	}
+	es = Elasticsearch(url, basic_auth=("frappe", password))
+	search = (
+		Search(using=es, index="filebeat-*")
+		.filter("match_phrase", json__site=site)
+		.filter("match_phrase", json__transaction_type="request")
+		.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+		.exclude("match_phrase", json__request__path="/api/method/ping")
+		.extra(size=0)
+	)
 
-	duration_query = {
-		"aggs": {
-			"method_path": {
-				"terms": {
-					"field": "json.request.path",
-					"order": {"methods>sum": "desc"},
-					"size": MAX_NO_OF_PATHS,
-				},
-				"aggs": {
-					"methods": {
-						"filter": {
-							"bool": {
-								"filter": [
-									{"match_phrase": {"json.site": site}},
-									{
-										"range": {
-											"@timestamp": {
-												"gte": f"now-{timespan}s",
-												"lte": "now",
-											}
-										}
-									},
-								],
-								"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-							}
-						},
-						"aggs": {
-							"sum": {
-								"sum": {
-									"field": "json.duration",
-								}
-							}
-						},
-					},
-					"histogram_of_method": {
-						"date_histogram": {
-							"field": "@timestamp",
-							"fixed_interval": f"{timegrain}s",
-							"time_zone": timezone,
-						},
-						"aggs": {
-							"methods": {
-								"filter": {
-									"bool": {
-										"filter": [
-											{"match_phrase": {"json.site": site}},
-											{
-												"range": {
-													"@timestamp": {
-														"gte": f"now-{timespan}s",
-														"lte": "now",
-													}
-												}
-											},
-										],
-										"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-									}
-								},
-								"aggs": {
-									"sum": {
-										"sum": {
-											"field": "json.duration",
-										}
-									}
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"size": 0,
-		"query": {
-			"bool": {
-				"filter": [
-					{"match_phrase": {"json.site": site}},
-					{"range": {"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}}},
-				],
-				"must_not": [{"match_phrase": {"json.request.path": "/api/method/ping"}}],
-			}
-		},
-	}
+	histogram_of_method = A(
+		"date_histogram",
+		field="@timestamp",
+		fixed_interval=f"{timegrain}s",
+		time_zone=timezone,
+		min_doc_count=0,
+	)
+	avg_of_duration = A("avg", field="json.duration")
+	sum_of_duration = A("sum", field="json.duration")
 
 	if query_type == "count":
-		query = count_query
-		response = requests.post(url, json=query, auth=("frappe", password)).json()
+		search.aggs.bucket(
+			"method_path",
+			"terms",
+			field="json.request.path",
+			size=MAX_NO_OF_PATHS,
+			order={"path_count": "desc"},
+		).bucket("histogram_of_method", histogram_of_method)
+
+		search.aggs["method_path"].bucket(
+			"path_count", "value_count", field="json.request.path"
+		)
+
 	elif query_type == "duration":
-		query = duration_query
-		response = requests.post(url, json=query, auth=("frappe", password)).json()
+		search.aggs.bucket(
+			"method_path",
+			"terms",
+			field="json.request.path",
+			size=MAX_NO_OF_PATHS,
+			order={"outside_sum": "desc"},
+		).bucket("histogram_of_method", histogram_of_method).bucket(
+			"sum_of_duration", sum_of_duration
+		)
+		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
+
 	elif query_type == "average_duration":
-		from elasticsearch import Elasticsearch
-		from elasticsearch_dsl import Search, A
-
-		url = "https://log.frappe.cloud:443/elasticsearch"
-		es = Elasticsearch(url, basic_auth=("frappe", password))
-		search = (
-			Search(using=es, index="filebeat-*")
-			.filter("match_phrase", json__site=site)
-			.filter("match_phrase", json__transaction_type="request")
-			.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
-			.exclude("match_phrase", json__request__path="/api/method/ping")
-			.extra(size=0)
-		)
-
-		histogram_of_method = A(
-			"date_histogram",
-			field="@timestamp",
-			fixed_interval=f"{timegrain}s",
-			time_zone=timezone,
-		)
-		avg_of_duration = A("avg", field="json.duration")
-
 		search.aggs.bucket(
 			"method_path",
 			"terms",
@@ -334,56 +201,41 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
-		response = search.execute()
-		aggs = response.aggregations
-		labels = set()
-		# method_path has buckets of timestamps with avg of that duration
-		datasets = []
+	response = search.execute()
+	aggs = response.aggregations
+	labels = set()
+	for path_bucket in aggs.method_path.buckets:
+		for hist_bucket in path_bucket.histogram_of_method.buckets:
+			labels.add(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
+	labels = sorted(list(labels))
+	# method_path has buckets of timestamps with avg of that duration
+	datasets = []
 
-		for path_bucket in aggs.method_path.buckets:
-			path_data = frappe._dict({"path": path_bucket.key, "values": [], "stack": "path"})
-			for hist_bucket in path_bucket.histogram_of_method.buckets:
-				labels.add(hist_bucket.key_as_string)
-				path_data["values"].append(flt(hist_bucket.avg_of_duration.value) / 1e6)
-			datasets.append(path_data)
-
-		return {"datasets": datasets, "labels": list(labels)}
-
-	if not response["aggregations"]["method_path"]["buckets"]:
-		return {"datasets": [], "labels": []}
-
-	buckets = []
-	labels = [
-		get_datetime(data["key_as_string"]).replace(tzinfo=None)
-		for data in response["aggregations"]["method_path"]["buckets"][0][
-			"histogram_of_method"
-		]["buckets"]
-	]
-	for bucket in response["aggregations"]["method_path"]["buckets"]:
-		buckets.append(
-			frappe._dict(
-				{
-					"path": bucket["key"],
-					"values": [
-						(
-							data["request_count"]["doc_count"]
-							if query_type == "count"
-							else (
-								data["methods"]["sum"]["value"] / 1000000
-								if query_type == "duration"
-								else flt(data["methods"]["avg"]["value"]) / 1000000
-								if query_type == "average_duration"
-								else 0
-							)
-						)
-						for data in bucket["histogram_of_method"]["buckets"]
-					],
-					"stack": "path",
-				}
-			)
+	for path_bucket in aggs.method_path.buckets:
+		path_data = frappe._dict(
+			{
+				"path": path_bucket.key,
+				"values": [0] * len(labels),
+				"stack": "path",
+			}
 		)
+		for hist_bucket in path_bucket.histogram_of_method.buckets:
+			path_data["values"][
+				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
+			] = (
+				(flt(hist_bucket.avg_of_duration.value) / 1e6)
+				if query_type == "average_duration"
+				else (
+					flt(hist_bucket.sum_of_duration.value) / 1e6
+					if query_type == "duration"
+					else hist_bucket.doc_count
+					if query_type == "count"
+					else 0
+				)
+			)
+		datasets.append(path_data)
 
-	return {"datasets": buckets, "labels": labels}
+	return {"datasets": datasets, "labels": labels}
 
 
 def get_slow_logs(site, query_type, timezone, timespan, timegrain):
@@ -585,7 +437,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 def get_usage(site, type, timezone, timespan, timegrain):
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
-		return []
+		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/filebeat-*/_search"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
