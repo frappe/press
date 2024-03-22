@@ -750,11 +750,11 @@ class Agent:
 		don't add new job until its gets comleted
 		"""
 
-		job = self.get_similar_in_execution_job(
-			job_type, path, bench, site, code_server, upstream, host, method
+		disable_agent_job_deduplication = frappe.db.get_single_value(
+			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
-		if not job:
+		if disable_agent_job_deduplication:
 			job = frappe.get_doc(
 				{
 					"doctype": "Agent Job",
@@ -774,7 +774,13 @@ class Agent:
 				}
 			).insert()
 
-		return job
+			return job
+
+		else:
+			job = self.get_similar_in_execution_job(
+				job_type, path, bench, site, code_server, upstream, host, method
+			)
+			return job
 
 	def get_similar_in_execution_job(
 		self,
@@ -788,13 +794,6 @@ class Agent:
 		method="POST",
 	):
 		"""Deduplicate jobs in execution state"""
-
-		disable_agent_job_deduplication = frappe.db.get_single_value(
-			"Press Settings", "disable_agent_job_deduplication", cache=True
-		)
-
-		if disable_agent_job_deduplication:
-			return False
 
 		filteres = {
 			"server_type": self.server_type,
