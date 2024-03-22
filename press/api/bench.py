@@ -14,20 +14,22 @@ from frappe.utils import flt, sbool
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.marketplace_app.marketplace_app import (
+	get_total_installs_by_app,
+)
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	get_app_tag,
 	get_client_blacklisted_keys,
 	get_current_team,
 	unique,
-	cache,
 )
 
 
@@ -457,15 +459,6 @@ def all_apps(name):
 			& (AppSource.public == 1)
 		)
 	).run(as_dict=1)
-
-	@cache(seconds=60 * 60 * 24)
-	def get_total_installs_by_app():
-		return frappe.db.get_all(
-			"Site App",
-			fields=["app", "count(*) as count"],
-			filters={"app": ("in", [app.name for app in marketplace_apps])},
-			group_by="app",
-		)
 
 	total_installs_by_app = get_total_installs_by_app()
 

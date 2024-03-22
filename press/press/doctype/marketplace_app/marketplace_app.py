@@ -654,3 +654,17 @@ def run_script(app, site, op):
 		script = frappe.db.get_value("Marketplace App", app, script)
 		local = {"doc": frappe.get_doc("Site", site)}
 		safe_exec(script, _locals=local)
+
+
+def get_total_installs_by_app():
+	total_installs = frappe.cache.get_value("total_installs_by_app")
+	if not total_installs:
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", "count(*) as count"],
+			group_by="app",
+		)
+		frappe.cache.set_value(
+			"total_installs_by_app", total_installs, expires_in_sec=60 * 60 * 24
+		)
+	return total_installs

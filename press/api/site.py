@@ -24,6 +24,9 @@ from press.press.doctype.press_user_permission.press_user_permission import (
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
+from press.press.doctype.marketplace_app.marketplace_app import (
+	get_total_installs_by_app,
+)
 from press.utils import (
 	get_current_team,
 	log_error,
@@ -507,12 +510,7 @@ def options_for_new(for_bench: str = None):
 		fields=["title", "image", "description", "app", "route", "subscription_type"],
 		filters={"app": ("in", unique_apps)},
 	)
-	total_installs_by_app = frappe.db.get_all(
-		"Site App",
-		fields=["app", "count(*) as count"],
-		filters={"app": ("in", unique_apps)},
-		group_by="app",
-	)
+	total_installs_by_app = get_total_installs_by_app()
 	marketplace_details = {}
 	for app in unique_apps:
 		details = find(marketplace_apps, lambda x: x.app == app)
