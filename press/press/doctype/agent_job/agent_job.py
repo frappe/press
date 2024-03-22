@@ -166,16 +166,16 @@ class AgentJob(Document):
 
 			self.status = "Pending"
 			self.save()
+
 		except Exception:
-			if 400 <= cint(self.flags.status_code) <= 499:
+			if hasattr(self.flags.status_code) and 400 <= cint(self.flags.status_code) <= 499:
 				self.status = "Failure"
 				self.save()
+
 				process_job_updates(self.name)
-				frappe.db.commit()
 
 			else:
 				self.set_status_and_next_retry_at()
-				frappe.db.commit()
 
 	def set_status_and_next_retry_at(self):
 		try:
@@ -187,6 +187,7 @@ class AgentJob(Document):
 			self.status = "Undelivered"
 			self.next_retry_at = next_retry_at
 			self.save()
+			frappe.db.commit()
 
 		except Exception:
 			log_error("Agent Job Set Next Retry Timing", job=self)
@@ -411,6 +412,8 @@ def poll_pending_jobs_server(server):
 			)
 			frappe.db.rollback()
 
+	retry_undelivered_jobs(server)
+
 
 def populate_output_cache(polled_job, job):
 	if not cint(frappe.get_cached_value("Press Settings", None, "realtime_job_updates")):
@@ -622,17 +625,14 @@ def get_next_retry_at(job_retry_count):
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
-def retry_undelivered_jobs():
+def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
-	disable_auto_retry = frappe.db.get_single_value(
-		"Press Settings", "disable_auto_retry", cache=True
-	)
-	if disable_auto_retry:
+	if auto_retry_disabled(server):
 		return
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
-	server_jobs = get_server_wise_undelivered_jobs(job_types)
+	server_jobs = get_undelivered_jobs_for_server(server, job_types)
 
 	for server in server_jobs:
 		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
@@ -654,6 +654,28 @@ def retry_undelivered_jobs():
 				update_job_and_step_status(job)
 
 
+def auto_retry_disabled(server):
+	"""Check if auto retry is disabled for the server"""
+	_auto_retry_disabled = False
+
+	# Global Config
+	_auto_retry_disabled = frappe.db.get_single_value(
+		"Press Settings", "disable_auto_retry", cache=True
+	)
+	if _auto_retry_disabled:
+		return True
+
+	# Server Config
+	try:
+		_auto_retry_disabled = frappe.db.get_value(
+			server.server_type, server.server, "disable_agent_job_auto_retry", cache=True
+		)
+	except Exception:
+		_auto_retry_disabled = False
+
+	return _auto_retry_disabled
+
+
 def update_job_and_step_status(job):
 	agent_job = frappe.qb.DocType("Agent Job")
 	frappe.qb.update(agent_job).set(agent_job.status, "Delivery Failure").where(
@@ -664,6 +686,31 @@ def update_job_and_step_status(job):
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
 		agent_job_step.agent_job == job
 	).run()
+
+
+def get_undelivered_jobs_for_server(server, job_types):
+	jobs = frappe._dict()
+
+	if not job_types:
+		return jobs
+
+	for job in frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Undelivered",
+			"job_id": 0,
+			"retry_count": [">", 0],
+			"server": server.server,
+			"server_type": server.server_type,
+			"next_retry_at": ("<=", frappe.utils.now_datetime()),
+			"job_type": ("in", job_types),
+		},
+		["name", "job_type"],
+		ignore_ifnull=True,  # job type is mandatory and next_retry_at has to be set for retry
+	):
+		jobs.setdefault((server.server, server.server_type), []).append(job["name"])
+
+	return jobs
 
 
 def get_server_wise_undelivered_jobs(job_types):
