@@ -664,6 +664,7 @@ def get_total_installs_by_app():
 			fields=["app", "count(*) as count"],
 			group_by="app",
 		)
+		total_installs = {installs["app"]: installs["count"] for installs in total_installs}
 		frappe.cache.set_value(
 			"total_installs_by_app", total_installs, expires_in_sec=60 * 60 * 24
 		)

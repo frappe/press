@@ -516,8 +516,7 @@ def options_for_new(for_bench: str = None):
 		details = find(marketplace_apps, lambda x: x.app == app)
 		if details:
 			details["plans"] = get_plans_for_app(app)
-			installs = find(total_installs_by_app, lambda x: x.app == app)
-			details["total_installs"] = installs.count if installs else None
+			details["total_installs"] = total_installs_by_app.get(app, 0)
 			marketplace_details[app] = details
 
 	return {
