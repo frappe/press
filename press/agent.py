@@ -714,6 +714,7 @@ class Agent:
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
 			return
+
 		message = f"""
 			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
 			Response: {getattr(result, 'text', 'Unknown')}
@@ -754,33 +755,33 @@ class Agent:
 			"Press Settings", "disable_agent_job_deduplication", cache=True
 		)
 
-		if disable_agent_job_deduplication:
-			job = frappe.get_doc(
-				{
-					"doctype": "Agent Job",
-					"server_type": self.server_type,
-					"server": self.server,
-					"bench": bench,
-					"host": host,
-					"site": site,
-					"code_server": code_server,
-					"upstream": upstream,
-					"status": "Undelivered",
-					"request_method": method,
-					"request_path": path,
-					"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
-					"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
-					"job_type": job_type,
-				}
-			).insert()
-
-			return job
-
-		else:
+		if not disable_agent_job_deduplication:
 			job = self.get_similar_in_execution_job(
 				job_type, path, bench, site, code_server, upstream, host, method
 			)
-			return job
+
+			if job:
+				return job
+
+		job = frappe.get_doc(
+			{
+				"doctype": "Agent Job",
+				"server_type": self.server_type,
+				"server": self.server,
+				"bench": bench,
+				"host": host,
+				"site": site,
+				"code_server": code_server,
+				"upstream": upstream,
+				"status": "Undelivered",
+				"request_method": method,
+				"request_path": path,
+				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
+				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
+				"job_type": job_type,
+			}
+		).insert()
+		return job
 
 	def get_similar_in_execution_job(
 		self,

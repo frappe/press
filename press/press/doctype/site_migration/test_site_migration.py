@@ -94,11 +94,13 @@ class TestSiteMigration(FrappeTestCase):
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
+			site_migration.reload()
+			self.assertEqual(site_migration.status, "Running")
+
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			site_migration.reload()
-			self.assertEqual(site_migration.status, "Running")
 			poll_pending_jobs()
 		site_migration.reload()
 		self.assertEqual(site_migration.status, "Success")
@@ -190,6 +192,7 @@ class TestSiteMigration(FrappeTestCase):
 			"Add Site to Upstream", "Failure"
 		):
 			site_migration.start()
+			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()  # restore on destination

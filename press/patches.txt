@@ -114,4 +114,4 @@ press.press.doctype.team.patches.remove_invalid_email_addresses
 press.patches.v0_7_0.rename_plan_to_site_plan
 press.patches.v0_7_0.migrate_fields_from_plans_to_server_and_marketplace
 press.patches.v0_7_0.set_password_config_type
-press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs #2024-02-29
+press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs #2024-03-22

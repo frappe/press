@@ -245,6 +245,8 @@ class TestAgentJob(unittest.TestCase):
 		site = create_test_site()
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
+		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
+
 		# create a new job with same type and site
 		job_name = site.update_site_config({"host_name": f"https://{site.host_name}"})
 

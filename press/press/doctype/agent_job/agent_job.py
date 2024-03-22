@@ -17,6 +17,8 @@ from frappe.utils import (
 	convert_utc_to_system_timezone,
 	create_batch,
 	cstr,
+	get_datetime,
+	now_datetime,
 )
 
 from press.agent import Agent
@@ -168,9 +170,10 @@ class AgentJob(Document):
 			self.save()
 
 		except Exception:
-			if hasattr(self.flags.status_code) and 400 <= cint(self.flags.status_code) <= 499:
+			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
 				self.status = "Failure"
 				self.save()
+				frappe.db.commit()
 
 				process_job_updates(self.name)
 
@@ -371,6 +374,7 @@ def poll_pending_jobs_server(server):
 	)
 
 	if not pending_jobs:
+		retry_undelivered_jobs(server)
 		return
 
 	agent = Agent(server.server, server_type=server.server_type)
@@ -380,6 +384,7 @@ def poll_pending_jobs_server(server):
 	polled_jobs = agent.get_jobs_status(random_pending_ids)
 
 	if not polled_jobs:
+		retry_undelivered_jobs(server)
 		return
 
 	for polled_job in polled_jobs:
@@ -438,7 +443,7 @@ def poll_pending_jobs():
 	servers = frappe.get_all(
 		"Agent Job",
 		fields=["server", "server_type", "count(*) as count"],
-		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("!=", 0)},
+		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
 		group_by="server",
 		order_by="count desc",
 		ignore_ifnull=True,
@@ -619,7 +624,7 @@ def skip_pending_steps(job_name):
 def get_next_retry_at(job_retry_count):
 	from frappe.utils import add_to_date, now_datetime
 
-	backoff_in_seconds = 2
+	backoff_in_seconds = 5
 	retry_in_seconds = job_retry_count**backoff_in_seconds
 
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
@@ -633,6 +638,7 @@ def retry_undelivered_jobs(server):
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
 	server_jobs = get_undelivered_jobs_for_server(server, job_types)
+	nowtime = now_datetime()
 
 	for server in server_jobs:
 		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
@@ -646,7 +652,10 @@ def retry_undelivered_jobs(server):
 			job_doc = frappe.get_doc("Agent Job", job)
 			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
-			if job_doc.retry_count < max_retry_count:
+			if not job_doc.next_retry_at or get_datetime(job_doc.next_retry_at) > nowtime:
+				continue
+
+			if job_doc.retry_count <= max_retry_count:
 				retry = job_doc.retry_count + 1
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
 				job_doc.retry_in_place()
@@ -699,10 +708,8 @@ def get_undelivered_jobs_for_server(server, job_types):
 		{
 			"status": "Undelivered",
 			"job_id": 0,
-			"retry_count": [">", 0],
 			"server": server.server,
 			"server_type": server.server_type,
-			"next_retry_at": ("<=", frappe.utils.now_datetime()),
 			"job_type": ("in", job_types),
 		},
 		["name", "job_type"],

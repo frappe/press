@@ -15,9 +15,9 @@
   "cluster",
   "provider",
   "virtual_machine",
+  "is_server_prepared",
   "is_server_setup",
   "is_self_hosted",
-  "is_server_prepared",
   "is_server_renamed",
   "ignore_incidents",
   "billing_section",
@@ -32,6 +32,8 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "column_break_pdbx",
+  "disable_agent_job_auto_retry",
   "reverse_proxy_section",
   "proxy_server",
   "column_break_12",
@@ -462,10 +464,20 @@
    "fieldname": "ignore_incidents",
    "fieldtype": "Check",
    "label": "Ignore Incidents"
+  },
+  {
+   "fieldname": "column_break_pdbx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_agent_job_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disable Agent Job Auto Retry"
   }
  ],
  "links": [],
- "modified": "2024-03-13 13:08:57.593735",
+ "modified": "2024-03-22 12:12:52.727223",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",

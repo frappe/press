@@ -3,7 +3,7 @@ from frappe.utils import now_datetime, add_to_date
 
 
 def execute():
-	five_minutes_ago = add_to_date(now_datetime(), minutes=-5)
+	one_minute_ago = add_to_date(now_datetime(), minutes=-1)
 
 	frappe.db.sql(
 		"""
@@ -11,5 +11,5 @@ def execute():
 			SET status = 'Delivery Failure'
 		WHERE job_id = 0 and status = 'Undelivered' and creation <= %s
 	""",
-		five_minutes_ago,
+		one_minute_ago,
 	)

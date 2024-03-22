@@ -1126,7 +1126,6 @@
    "label": "Compress App Cache"
   },
   {
-
    "fieldname": "column_break_rdlr",
    "fieldtype": "Column Break"
   },
@@ -1178,7 +1177,7 @@
    "label": "Disable Auto Retry"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "disable_agent_job_deduplication",
    "fieldtype": "Check",
    "label": "Disable Agent Job Deduplication"
@@ -1186,7 +1185,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-03-05 15:51:49.055544",
+ "modified": "2024-03-22 12:30:21.968896",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
