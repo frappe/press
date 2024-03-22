@@ -13,12 +13,12 @@ import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { bytes, duration, date, plural } from '../utils/format';
-import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
 import { logsTab } from './tabs/site/logs';
+import { trialDays } from '../utils/site';
 
 export default {
 	doctype: 'Site',
@@ -76,22 +76,7 @@ export default {
 				width: 1,
 				format(value, row) {
 					if (row.trial_end_date) {
-						let trialEndDate = dayjsLocal(row.trial_end_date);
-						let today = dayjsLocal();
-						let diffHours = trialEndDate.diff(today, 'hours');
-						let endsIn = '';
-						if (diffHours < 24) {
-							endsIn = `today`;
-						} else {
-							let days = Math.round(diffHours / 24);
-							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
-						}
-						if (
-							trialEndDate.isAfter(today) ||
-							trialEndDate.isSame(today, 'day')
-						) {
-							return `Trial ends ${endsIn}`;
-						}
+						return trialDays(row.trial_end_date);
 					}
 					let $team = getTeam();
 					if (row.price_usd > 0) {

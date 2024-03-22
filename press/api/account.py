@@ -879,28 +879,32 @@ def user_prompts():
 @frappe.whitelist()
 def get_site_request(product):
 	team = frappe.local.team()
-	requests = frappe.db.get_all(
+	requests = frappe.qb.get_query(
 		"SaaS Product Site Request",
-		{
+		filters={
 			"team": team.name,
 			"saas_product": product,
 		},
-		["name", "status"],
+		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
 		order_by="creation desc",
-		limit=1,
-	)
+	).run(as_dict=1)
 	if not requests:
 		site_request = frappe.new_doc(
 			"SaaS Product Site Request",
 			saas_product=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return site_request.name
+		return {"pending": site_request.name}
 	else:
-		site_request = requests[0]
-		if site_request.status in ["Pending", "Wait for Site", "Error"]:
-			return site_request.name
-		frappe.throw("You have already created a trial site for this product")
+		pending = [
+			d
+			for d in requests
+			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
+		]
+		return {
+			"pending": pending[0].name if pending else None,
+			"completed": [d for d in requests if d.site and d.status == "Site Created"],
+		}
 
 
 def redirect_to(location):
