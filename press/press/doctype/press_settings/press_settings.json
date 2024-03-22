@@ -169,6 +169,8 @@
   "use_staging_ca",
   "ssh_section",
   "ssh_certificate_authority",
+  "column_break_ohvk",
+  "add_warning_banner",
   "monitoring_section",
   "monitor_server",
   "monitor_token",
@@ -1167,11 +1169,21 @@
    "fieldtype": "Link",
    "label": "Hybrid Domain",
    "options": "Root Domain"
+  },
+  {
+   "fieldname": "column_break_ohvk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "add_warning_banner",
+   "fieldtype": "Check",
+   "label": "Add Warning Banner"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-03-05 15:51:49.055544",
+ "modified": "2024-03-20 10:50:07.152942",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",
