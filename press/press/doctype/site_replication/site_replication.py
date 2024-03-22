@@ -9,6 +9,23 @@ from typing import List
 
 
 class SiteReplication(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		bench: DF.Link | None
+		new_site: DF.Link | None
+		release_group: DF.Link | None
+		server: DF.Link | None
+		site: DF.Link | None
+		status: DF.Literal["Not Started", "Running", "Success", "Failure"]
+		subdomain: DF.Data | None
+	# end: auto-generated types
+
 	doctype = "Site Replication"
 
 	def validate(self):

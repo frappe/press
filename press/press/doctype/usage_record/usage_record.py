@@ -9,6 +9,32 @@ from press.utils import log_error
 
 
 class UsageRecord(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		amended_from: DF.Link | None
+		amount: DF.Currency
+		currency: DF.Link | None
+		date: DF.Date | None
+		document_name: DF.DynamicLink | None
+		document_type: DF.Link | None
+		interval: DF.Data | None
+		invoice: DF.Data | None
+		payout: DF.Data | None
+		plan: DF.DynamicLink | None
+		plan_type: DF.Link | None
+		remark: DF.SmallText | None
+		site: DF.Link | None
+		subscription: DF.Data | None
+		team: DF.Link | None
+		time: DF.Time | None
+	# end: auto-generated types
+
 	def validate(self):
 		if not self.date:
 			self.date = frappe.utils.today()

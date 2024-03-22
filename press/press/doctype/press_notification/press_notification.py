@@ -6,6 +6,34 @@ from frappe.model.document import Document
 
 
 class PressNotification(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		assistance_url: DF.Data | None
+		document_name: DF.DynamicLink
+		document_type: DF.Link
+		is_actionable: DF.Check
+		is_addressed: DF.Check
+		message: DF.LongText | None
+		read: DF.Check
+		team: DF.Link
+		title: DF.SmallText | None
+		traceback: DF.Code | None
+		type: DF.Literal[
+			"Site Update",
+			"Site Migrate",
+			"Version Upgrade",
+			"Bench Deploy",
+			"Site Recovery",
+			"Downtime/Performance",
+		]
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"team",
 		"document_type",

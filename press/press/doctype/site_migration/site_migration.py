@@ -38,6 +38,32 @@ def get_ongoing_migration(site: str, scheduled=False):
 
 
 class SiteMigration(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.site_migration_step.site_migration_step import (
+			SiteMigrationStep,
+		)
+
+		backup: DF.Link | None
+		destination_bench: DF.Link
+		destination_cluster: DF.Link
+		destination_server: DF.Link
+		migration_type: DF.Literal["", "Bench", "Server", "Cluster"]
+		scheduled_time: DF.Datetime | None
+		site: DF.Link
+		skip_failing_patches: DF.Check
+		source_bench: DF.Link
+		source_cluster: DF.Link
+		source_server: DF.Link
+		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		steps: DF.Table[SiteMigrationStep]
+	# end: auto-generated types
+
 	def before_insert(self):
 		self.validate_apps()
 		if get_ongoing_migration(self.site, scheduled=True):

@@ -14,6 +14,28 @@ from oci.core.models import CreateImageDetails
 
 
 class VirtualMachineImage(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		cluster: DF.Link
+		copied_from: DF.Link | None
+		image_id: DF.Data | None
+		instance_id: DF.Data
+		mariadb_root_password: DF.Password | None
+		platform: DF.Data | None
+		region: DF.Link
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		size: DF.Int
+		snapshot_id: DF.Data | None
+		status: DF.Literal["Pending", "Available", "Unavailable"]
+		virtual_machine: DF.Link
+	# end: auto-generated types
+
 	DOCTYPE = "Virtual Machine Image"
 
 	def after_insert(self):

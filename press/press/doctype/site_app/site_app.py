@@ -10,6 +10,20 @@ from press.api.site import get_installed_apps
 
 
 class SiteApp(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		app: DF.Link
+		parent: DF.Data
+		parentfield: DF.Data
+		parenttype: DF.Data
+	# end: auto-generated types
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		site = cstr(filters.get("parent", "")) if filters else None

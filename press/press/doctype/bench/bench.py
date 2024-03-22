@@ -31,6 +31,51 @@ if TYPE_CHECKING:
 
 
 class Bench(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.bench_app.bench_app import BenchApp
+		from press.press.doctype.bench_mount.bench_mount import BenchMount
+		from press.press.doctype.bench_variable.bench_variable import BenchVariable
+
+		apps: DF.Table[BenchApp]
+		auto_scale_workers: DF.Check
+		background_workers: DF.Int
+		bench_config: DF.Code | None
+		candidate: DF.Link
+		cluster: DF.Link
+		config: DF.Code | None
+		database_server: DF.Link | None
+		docker_image: DF.Data
+		environment_variables: DF.Table[BenchVariable]
+		group: DF.Link
+		gunicorn_threads_per_worker: DF.Int
+		gunicorn_workers: DF.Int
+		is_code_server_enabled: DF.Check
+		is_single_container: DF.Check
+		is_ssh_enabled: DF.Check
+		is_ssh_proxy_setup: DF.Check
+		last_archive_failure: DF.Datetime | None
+		memory_high: DF.Int
+		memory_max: DF.Int
+		memory_swap: DF.Int
+		merge_all_rq_queues: DF.Check
+		merge_default_and_short_rq_queues: DF.Check
+		mounts: DF.Table[BenchMount]
+		port_offset: DF.Int
+		server: DF.Link
+		skip_memory_limits: DF.Check
+		staging: DF.Check
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		team: DF.Link
+		use_rq_workerpool: DF.Check
+		vcpu: DF.Int
+	# end: auto-generated types
+
 	dashboard_fields = ["name", "group", "status"]
 
 	@staticmethod

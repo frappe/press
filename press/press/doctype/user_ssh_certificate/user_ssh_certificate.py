@@ -17,6 +17,30 @@ from frappe.model.document import Document
 
 
 class UserSSHCertificate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		access_server: DF.DynamicLink | None
+		all_servers: DF.Check
+		amended_from: DF.Link | None
+		certificate_details: DF.Code | None
+		reason: DF.SmallText
+		server_type: DF.Literal["Server", "Proxy Server", "Database Server"]
+		ssh_certificate: DF.Code | None
+		ssh_command: DF.Code | None
+		ssh_fingerprint: DF.Data | None
+		ssh_public_key: DF.Code | None
+		user: DF.Link
+		user_ssh_key: DF.Link
+		valid_until: DF.Datetime | None
+		validity: DF.Literal["3h", "6h", "12h", "1d"]
+	# end: auto-generated types
+
 	def validate(self):
 		if not self.ssh_public_key:
 			frappe.throw("Please make sure that a valid public key has been added in team doc.")

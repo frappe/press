@@ -14,6 +14,25 @@ from press.utils import log_error
 
 
 class GitHubWebhookLog(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		branch: DF.Data | None
+		event: DF.Data
+		git_reference_type: DF.Literal["tag", "branch"]
+		github_installation_id: DF.Data | None
+		payload: DF.Code
+		repository: DF.Data | None
+		repository_owner: DF.Data | None
+		signature: DF.Data
+		tag: DF.Data | None
+	# end: auto-generated types
+
 	def validate(self):
 		secret = frappe.db.get_single_value("Press Settings", "github_webhook_secret")
 		digest = hmac.HMAC(secret.encode(), self.payload.encode(), hashlib.sha1)

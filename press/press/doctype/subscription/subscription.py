@@ -15,6 +15,25 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Subscription(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		document_name: DF.DynamicLink
+		document_type: DF.Link
+		enabled: DF.Check
+		interval: DF.Literal["Daily", "Monthly"]
+		marketplace_app_subscription: DF.Link | None
+		plan: DF.DynamicLink
+		plan_type: DF.Link
+		site: DF.Link | None
+		team: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"site",
 		"enabled",

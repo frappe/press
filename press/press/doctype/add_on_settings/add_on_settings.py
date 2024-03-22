@@ -6,6 +6,18 @@ from frappe.model.document import Document
 
 
 class AddOnSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		aws_access_key: DF.Data | None
+		aws_secret_key: DF.Password | None
+	# end: auto-generated types
+
 	@frappe.whitelist()
 	def init_etcd_data(self, proxy_server):
 		# TODO: Add a separate agent job for this, instead of doing it recursively here do it on server

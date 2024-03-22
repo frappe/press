@@ -12,6 +12,25 @@ from press.api.github import get_access_token
 
 
 class AppReleaseDifference(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		app: DF.Link
+		deploy_type: DF.Literal["Pull", "Migrate", "Pending"]
+		destination_hash: DF.Data | None
+		destination_release: DF.Link
+		files: DF.Code | None
+		github_diff_url: DF.Code | None
+		source: DF.Link
+		source_hash: DF.Data | None
+		source_release: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = ["github_diff_url"]
 
 	def validate(self):

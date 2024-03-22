@@ -33,6 +33,29 @@ AppReleasePair = TypedDict(
 
 
 class AppRelease(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		app: DF.Link
+		author: DF.Data | None
+		clone_directory: DF.Text | None
+		cloned: DF.Check
+		code_server_url: DF.Text | None
+		hash: DF.Data
+		message: DF.Code | None
+		output: DF.Code | None
+		public: DF.Check
+		source: DF.Link
+		status: DF.Literal["Draft", "Approved", "Awaiting Approval", "Rejected"]
+		team: DF.Link
+		timestamp: DF.Datetime | None
+	# end: auto-generated types
+
 	dashboard_fields = ["app", "source", "message", "hash", "author", "status"]
 
 	def validate(self):

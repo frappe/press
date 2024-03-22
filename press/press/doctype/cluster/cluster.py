@@ -45,6 +45,43 @@ if typing.TYPE_CHECKING:
 
 
 class Cluster(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		availability_zone: DF.Data | None
+		aws_access_key_id: DF.Data | None
+		aws_secret_access_key: DF.Password | None
+		beta: DF.Check
+		cidr_block: DF.Data | None
+		cloud_provider: DF.Literal["AWS EC2", "Generic", "OCI"]
+		description: DF.Data | None
+		hybrid: DF.Check
+		image: DF.AttachImage | None
+		monitoring_password: DF.Password | None
+		network_acl_id: DF.Data | None
+		oci_private_key: DF.Password | None
+		oci_public_key: DF.Code | None
+		oci_tenancy: DF.Data | None
+		oci_user: DF.Data | None
+		proxy_security_group_id: DF.Data | None
+		public: DF.Check
+		region: DF.Link | None
+		route_table_id: DF.Data | None
+		security_group_id: DF.Data | None
+		ssh_key: DF.Link | None
+		status: DF.Literal["Active", "Copying Images", "Archived"]
+		subnet_cidr_block: DF.Data | None
+		subnet_id: DF.Data | None
+		team: DF.Link | None
+		title: DF.Data | None
+		vpc_id: DF.Data | None
+	# end: auto-generated types
+
 	dashboard_fields = ["title", "image"]
 
 	base_servers = {

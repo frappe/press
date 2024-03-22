@@ -14,6 +14,67 @@ import json
 
 
 class SelfHostedServer(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.self_hosted_site_apps.self_hosted_site_apps import (
+			SelfHostedSiteApps,
+		)
+		from press.press.doctype.site_analytics_app.site_analytics_app import SiteAnalyticsApp
+
+		agent_password: DF.Password | None
+		apps: DF.Table[SiteAnalyticsApp]
+		architecture: DF.Data | None
+		bench_directory: DF.Data | None
+		cluster: DF.Link | None
+		database_plan: DF.Link | None
+		database_server: DF.Link | None
+		database_setup: DF.Check
+		db_ram: DF.Data | None
+		db_total_storage: DF.Data | None
+		db_vcpus: DF.Data | None
+		dedicated_proxy: DF.Check
+		different_database_server: DF.Check
+		distribution: DF.Data | None
+		domain: DF.Data | None
+		existing_bench_present: DF.Check
+		frappe_version: DF.Data | None
+		hostname: DF.Data | None
+		instance_type: DF.Data | None
+		ip: DF.Data
+		mariadb_ip: DF.Data | None
+		mariadb_private_ip: DF.Data | None
+		mariadb_root_password: DF.Password
+		mariadb_root_user: DF.Data | None
+		new_server: DF.Check
+		plan: DF.Link | None
+		private_ip: DF.Data | None
+		processor: DF.Data | None
+		proxy_created: DF.Check
+		proxy_private_ip: DF.Data | None
+		proxy_public_ip: DF.Data | None
+		proxy_server: DF.Link | None
+		ram: DF.Data | None
+		release_group: DF.Link | None
+		server: DF.Link | None
+		server_created: DF.Check
+		server_url: DF.Data | None
+		sites: DF.Table[SelfHostedSiteApps]
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
+		status: DF.Literal["Active", "Pending", "Broken", "Archived", "Unreachable"]
+		swap_total: DF.Data | None
+		team: DF.Link
+		title: DF.Data | None
+		total_storage: DF.Data | None
+		vcpus: DF.Data | None
+		vendor: DF.Data | None
+	# end: auto-generated types
+
 	def before_insert(self):
 		self.validate_is_duplicate()
 

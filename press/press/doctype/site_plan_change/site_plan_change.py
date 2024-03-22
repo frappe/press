@@ -8,6 +8,22 @@ from frappe.model.document import Document
 
 
 class SitePlanChange(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		from_plan: DF.Link | None
+		site: DF.Link
+		team: DF.Link | None
+		timestamp: DF.Datetime | None
+		to_plan: DF.Link
+		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
+	# end: auto-generated types
+
 	def validate(self):
 		if not self.from_plan and self.to_plan:
 			self.type = "Initial Plan"

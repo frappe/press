@@ -12,6 +12,26 @@ from press.utils import log_error
 
 
 class StripePaymentMethod(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		brand: DF.Data | None
+		expiry_month: DF.Data | None
+		expiry_year: DF.Data | None
+		is_default: DF.Check
+		is_verified_with_micro_charge: DF.Check
+		last_4: DF.Data | None
+		name_on_card: DF.Data | None
+		stripe_customer_id: DF.Data | None
+		stripe_payment_method_id: DF.Data | None
+		team: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"is_default",
 		"expiry_month",

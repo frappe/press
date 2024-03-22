@@ -12,6 +12,42 @@ from frappe.utils.make_random import get_random
 
 
 class DripEmail(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.module_setup_guide.module_setup_guide import ModuleSetupGuide
+
+		distribution: DF.Check
+		education: DF.Check
+		email_type: DF.Literal[
+			"Drip", "Sign Up", "Subscription Activation", "Whitepaper Feedback", "Onboarding"
+		]
+		enabled: DF.Check
+		healthcare: DF.Check
+		manufacturing: DF.Check
+		maximum_activation_level: DF.Int
+		message: DF.TextEditor
+		minimum_activation_level: DF.Int
+		module_setup_guide: DF.Table[ModuleSetupGuide]
+		non_profit: DF.Check
+		other: DF.Check
+		pre_header: DF.Data | None
+		reply_to: DF.Data | None
+		retail: DF.Check
+		saas_app: DF.Link | None
+		send_after: DF.Int
+		send_after_payment: DF.Check
+		send_by_consultant: DF.Check
+		sender: DF.Data
+		sender_name: DF.Data
+		services: DF.Check
+		subject: DF.SmallText
+	# end: auto-generated types
+
 	def send(self, site_name=None, lead=None):
 		if self.email_type in ["Drip", "Sign Up"] and site_name:
 			self.send_drip_email(site_name)

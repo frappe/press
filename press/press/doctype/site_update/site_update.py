@@ -17,6 +17,36 @@ from press.utils import log_error
 
 
 class SiteUpdate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		cause_of_failure_is_resolved: DF.Check
+		deploy_type: DF.Literal["", "Pull", "Migrate"]
+		destination_bench: DF.Link | None
+		destination_candidate: DF.Link | None
+		destination_group: DF.Link | None
+		difference: DF.Link | None
+		difference_deploy_type: DF.Literal["", "Pull", "Migrate"]
+		group: DF.Link | None
+		recover_job: DF.Link | None
+		scheduled_time: DF.Datetime | None
+		server: DF.Link | None
+		site: DF.Link | None
+		skipped_backups: DF.Check
+		skipped_failing_patches: DF.Check
+		source_bench: DF.Link | None
+		source_candidate: DF.Link | None
+		status: DF.Literal[
+			"Pending", "Running", "Success", "Failure", "Recovered", "Fatal", "Scheduled"
+		]
+		update_job: DF.Link | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"status",
 		"site",

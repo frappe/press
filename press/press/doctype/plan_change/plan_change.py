@@ -7,6 +7,23 @@ from frappe.model.document import Document
 
 
 class PlanChange(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		document_name: DF.DynamicLink
+		document_type: DF.Link
+		from_plan: DF.Link | None
+		team: DF.Link | None
+		timestamp: DF.Datetime | None
+		to_plan: DF.Link
+		type: DF.Literal["", "Initial Plan", "Upgrade", "Downgrade"]
+	# end: auto-generated types
+
 	def validate(self):
 		self.team = frappe.db.get_value(self.document_type, self.document_name, "team")
 		if self.from_plan and not self.type:

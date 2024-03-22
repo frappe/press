@@ -724,6 +724,60 @@ class BaseServer(Document, TagHelpers):
 
 
 class Server(BaseServer):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+
+		agent_password: DF.Password | None
+		cluster: DF.Link | None
+		database_server: DF.Link | None
+		domain: DF.Link | None
+		frappe_public_key: DF.Code | None
+		frappe_user_password: DF.Password | None
+		hostname: DF.Data
+		hostname_abbreviation: DF.Data | None
+		ignore_incidents: DF.Check
+		ip: DF.Data | None
+		is_primary: DF.Check
+		is_replication_setup: DF.Check
+		is_self_hosted: DF.Check
+		is_server_prepared: DF.Check
+		is_server_renamed: DF.Check
+		is_server_setup: DF.Check
+		is_standalone: DF.Check
+		is_standalone_setup: DF.Check
+		is_upstream_setup: DF.Check
+		new_worker_allocation: DF.Check
+		plan: DF.Link | None
+		primary: DF.Link | None
+		private_ip: DF.Data | None
+		private_mac_address: DF.Data | None
+		private_vlan_id: DF.Data | None
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		proxy_server: DF.Link | None
+		ram: DF.Float
+		root_public_key: DF.Code | None
+		self_hosted_mariadb_root_password: DF.Password | None
+		self_hosted_mariadb_server: DF.Data | None
+		self_hosted_server_domain: DF.Data | None
+		set_bench_memory_limits: DF.Check
+		skip_scheduled_backups: DF.Check
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
+		staging: DF.Check
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		tags: DF.Table[ResourceTag]
+		team: DF.Link | None
+		title: DF.Data | None
+		use_for_new_benches: DF.Check
+		use_for_new_sites: DF.Check
+		virtual_machine: DF.Link | None
+	# end: auto-generated types
 
 	GUNICORN_MEMORY = 150  # avg ram usage of 1 gunicorn worker
 	BACKGROUND_JOB_MEMORY = 3 * 80  # avg ram usage of 3 sets of bg workers

@@ -10,6 +10,28 @@ from press.utils import log_error
 
 
 class VirtualDiskSnapshot(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		cluster: DF.Link | None
+		mariadb_root_password: DF.Password | None
+		progress: DF.Data | None
+		region: DF.Link
+		size: DF.Int
+		snapshot_id: DF.Data
+		start_time: DF.Datetime | None
+		status: DF.Literal[
+			"Pending", "Completed", "Error", "Recovering", "Recoverable", "Unavailable"
+		]
+		virtual_machine: DF.Link
+		volume_id: DF.Data | None
+	# end: auto-generated types
+
 	def before_insert(self):
 		self.set_credentials()
 

@@ -27,6 +27,82 @@ DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
 
 class Invoice(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.invoice_credit_allocation.invoice_credit_allocation import (
+			InvoiceCreditAllocation,
+		)
+		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
+		from press.press.doctype.invoice_item.invoice_item import InvoiceItem
+		from press.press.doctype.invoice_transaction_fee.invoice_transaction_fee import (
+			InvoiceTransactionFee,
+		)
+
+		amended_from: DF.Link | None
+		amount_due: DF.Currency
+		amount_paid: DF.Currency
+		applied_credits: DF.Currency
+		credit_allocations: DF.Table[InvoiceCreditAllocation]
+		currency: DF.Link | None
+		customer_email: DF.Data | None
+		customer_name: DF.Data | None
+		customer_partnership_date: DF.Date | None
+		discounts: DF.Table[InvoiceDiscount]
+		due_date: DF.Date | None
+		ending_balance: DF.Currency
+		exchange_rate: DF.Float
+		frappe_invoice: DF.Data | None
+		frappe_partner_order: DF.Data | None
+		frappe_partnership_date: DF.Date | None
+		free_credits: DF.Currency
+		gst: DF.Currency
+		invoice_pdf: DF.Attach | None
+		items: DF.Table[InvoiceItem]
+		marketplace: DF.Check
+		partner_email: DF.Data | None
+		payment_attempt_count: DF.Int
+		payment_attempt_date: DF.Date | None
+		payment_date: DF.Date | None
+		payment_mode: DF.Literal[
+			"", "Card", "Prepaid Credits", "NEFT", "Partner Credits", "Paid By Partner"
+		]
+		period_end: DF.Date | None
+		period_start: DF.Date | None
+		razorpay_order_id: DF.Data | None
+		razorpay_payment_id: DF.Data | None
+		razorpay_payment_method: DF.Data | None
+		razorpay_payment_record: DF.Link | None
+		starting_balance: DF.Currency
+		status: DF.Literal[
+			"Draft",
+			"Invoice Created",
+			"Unpaid",
+			"Paid",
+			"Refunded",
+			"Uncollectible",
+			"Collected",
+			"Empty",
+		]
+		stripe_invoice_id: DF.Data | None
+		stripe_invoice_url: DF.Text | None
+		stripe_payment_intent_id: DF.Data | None
+		team: DF.Link
+		total: DF.Currency
+		total_before_discount: DF.Currency
+		total_before_tax: DF.Currency
+		total_discount_amount: DF.Currency
+		transaction_amount: DF.Currency
+		transaction_fee: DF.Currency
+		transaction_fee_details: DF.Table[InvoiceTransactionFee]
+		transaction_net: DF.Currency
+		type: DF.Literal["Subscription", "Prepaid Credits", "Service", "Summary"]
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"period_start",
 		"period_end",

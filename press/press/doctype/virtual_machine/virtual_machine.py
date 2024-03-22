@@ -31,6 +31,45 @@ from press.utils import log_error
 
 
 class VirtualMachine(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.virtual_machine_volume.virtual_machine_volume import (
+			VirtualMachineVolume,
+		)
+
+		availability_zone: DF.Data
+		cloud_provider: DF.Literal["", "AWS EC2", "OCI"]
+		cluster: DF.Link
+		disk_size: DF.Int
+		domain: DF.Link
+		index: DF.Int
+		instance_id: DF.Data | None
+		machine_image: DF.Data | None
+		machine_type: DF.Data
+		private_dns_name: DF.Data | None
+		private_ip_address: DF.Data | None
+		public_dns_name: DF.Data | None
+		public_ip_address: DF.Data | None
+		ram: DF.Int
+		region: DF.Link
+		security_group_id: DF.Data | None
+		series: DF.Literal["n", "f", "m", "c", "p", "e", "r"]
+		ssh_key: DF.Link
+		status: DF.Literal["Draft", "Pending", "Running", "Stopped", "Terminated"]
+		subnet_cidr_block: DF.Data | None
+		subnet_id: DF.Data | None
+		team: DF.Link | None
+		termination_protection: DF.Check
+		vcpu: DF.Int
+		virtual_machine_image: DF.Link | None
+		volumes: DF.Table[VirtualMachineVolume]
+	# end: auto-generated types
+
 	server_doctypes = [
 		"Server",
 		"Database Server",

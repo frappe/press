@@ -11,6 +11,26 @@ from press.utils import log_error
 
 
 class DatabaseServerMariaDBVariable(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		mariadb_variable: DF.Link | None
+		parent: DF.Data
+		parentfield: DF.Data
+		parenttype: DF.Data
+		persist: DF.Check
+		skip: DF.Check
+		value_bool: DF.Check
+		value_float: DF.Float
+		value_int: DF.Int
+		value_str: DF.Data | None
+	# end: auto-generated types
+
 	@property
 	def datatype(self) -> str:
 		return frappe.db.get_value("MariaDB Variable", self.mariadb_variable, "datatype")
