@@ -161,7 +161,7 @@
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 			</div>
-			<div v-if="selectedVersion && cluster && plan">
+			<div v-if="selectedVersion && cluster && plan && subdomain">
 				<Button
 					class="w-full"
 					variant="solid"
@@ -260,9 +260,11 @@ export default {
 		subdomainExists() {
 			return {
 				url: 'press.api.site.exists',
-				params: {
-					domain: this.options?.domain,
-					subdomain: this.subdomain
+				makeParams() {
+					return {
+						domain: this.options?.domain,
+						subdomain: this.subdomain
+					};
 				},
 				validate() {
 					return validateSubdomain(this.subdomain);
