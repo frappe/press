@@ -4,8 +4,10 @@
 
 import functools
 import json
+import re
 import time
 from datetime import datetime, timedelta
+from typing import Optional, TypedDict
 from urllib.parse import urljoin
 
 import frappe
@@ -15,6 +17,19 @@ import wrapt
 from frappe.utils import get_datetime, get_system_timezone
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+
+SupervisorStatusEntry = TypedDict(
+	"SupervisorStatusEntry",
+	{
+		"program": str,  # group and name
+		"name": str,
+		"status": str,
+		"uptime": Optional[float],  # in seconds
+		"message": Optional[str],  # when not running
+		"group": Optional[str],
+		"pid": Optional[int],
+	},
+)
 
 
 def log_error(title, **kwargs):
@@ -557,3 +572,135 @@ def reconnect_on_failure():
 			return wrapped(*args, **kwargs)
 
 	return wrapper
+
+
+def parse_supervisor_status(output: str) -> list["SupervisorStatusEntry"]:
+	# Note: this function is verbose due to supervisor status being kinda
+	# unstructured, and I'm not entirely sure of all possible input formats.
+	#
+	# example lines:
+	# ```
+	#   frappe-bench-web:frappe-bench-frappe-web            RUNNING   pid 1327, uptime 23:13:00
+	# 	frappe-bench-workers:frappe-bench-frappe-worker-4   RUNNING   pid 3794915, uptime 68 days, 6:10:37
+	#   sshd                                                FATAL     Exited too quickly (process log may have details)
+	# ```
+
+	pid_rex = re.compile(r"^pid\s+\d+")
+
+	lines = output.split("\n")
+	parsed: list["SupervisorStatusEntry"] = []
+
+	for line in lines:
+		entry: "SupervisorStatusEntry" = {
+			"program": "",
+			"status": "",
+		}
+
+		splits = strip_split(line, maxsplit=1)
+		if len(splits) != 2:
+			continue
+
+		program, info = splits
+
+		# example: "code-server"
+		entry["program"] = program
+		entry["name"] = program
+
+		prog_splits = program.split(":")
+
+		if len(prog_splits) == 2:
+			# example: "frappe-bench-web:frappe-bench-frappe-web"
+			entry["group"] = prog_splits[0]
+			entry["name"] = prog_splits[1]
+
+		info_splits = strip_split(info, maxsplit=1)
+		if len(info_splits) != 2:
+			continue
+
+		# example: "STOPPED   Not started"
+		entry["status"] = info_splits[0].title()
+		if not pid_rex.match(info_splits[1]):
+			entry["message"] = info_splits[1]
+
+		else:
+			# example: "RUNNING   pid 9, uptime 150 days, 2:55:52"
+			pid, uptime = parse_pid_uptime(info_splits[1])
+			entry["pid"] = pid
+			entry["uptime"] = uptime
+
+		parsed.append(entry)
+
+	return parsed
+
+
+def parse_pid_uptime(s: str) -> tuple[Optional[int], Optional[float]]:
+	pid: Optional[int] = None
+	uptime: Optional[float] = None
+	splits = strip_split(s, ",", maxsplit=1)
+
+	if len(splits) != 2:
+		return pid, uptime
+
+	# example: "pid 9"
+	pid_split = splits[0]
+
+	# example: "uptime 150 days, 2:55:52"
+	uptime_split = splits[1]
+
+	pid_split, uptime_split = splits
+	pid_splits = strip_split(pid_split, maxsplit=1)
+
+	if len(pid_splits) == 2 and pid_splits[0] == "pid":
+		pid = int(pid_splits[1])
+
+	uptime_splits = strip_split(uptime_split, maxsplit=1)
+	if len(uptime_splits) == 2 and uptime_splits[0] == "uptime":
+		uptime = parse_uptime(uptime_splits[1])
+
+	return pid, uptime
+
+
+def parse_uptime(s: str) -> Optional[float]:
+	# example `s`: "uptime 68 days, 6:10:37"
+	days = 0
+	hours = 0
+	minutes = 0
+	seconds = 0
+
+	t_string = ""
+	splits = strip_split(s, sep=",", maxsplit=1)
+
+	# Uptime has date info too
+	if len(splits) == 2 and (splits[0].endswith("days") or splits[0].endswith("day")):
+		t_string = splits[1]
+		d_string = splits[0].split(" ")[0]
+		days = float(d_string)
+
+	# Uptime less than a day
+	elif len(splits) == 1:
+		t_string = splits[0]
+	else:
+		return None
+
+	# Time string format hh:mm:ss
+	t_splits = t_string.split(":")
+	if len(t_splits) == 3:
+		hours = float(t_splits[0])
+		minutes = float(t_splits[1])
+		seconds = float(t_splits[2])
+
+	return timedelta(
+		days=days,
+		hours=hours,
+		minutes=minutes,
+		seconds=seconds,
+	).total_seconds()
+
+
+def strip_split(string: str, sep: str = " ", maxsplit: int = -1) -> list[str]:
+	splits: list[str] = []
+	for part in string.split(sep, maxsplit):
+		if p_stripped := part.strip():
+			splits.append(p_stripped)
+
+	return splits

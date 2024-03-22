@@ -17,7 +17,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 	create_bench_shell_log,
 )
 from press.press.doctype.site.site import Site
-from press.utils import log_error
+from press.utils import log_error, parse_supervisor_status
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[
@@ -561,6 +561,15 @@ class Bench(Document):
 			action,
 			programs,
 		)
+
+	def supervisorctl_status(self):
+		result = self.docker_execute("supervisorctl status")
+		if result["status"] != "Success" or not result["output"]:
+			# Check Bench Shell Log for traceback if present
+			raise Exception("Could not fetch supervisorctl status")
+
+		output = result["output"]
+		return parse_supervisor_status(output)
 
 
 class StagingSite(Site):
