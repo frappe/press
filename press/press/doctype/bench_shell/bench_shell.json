@@ -48,8 +48,8 @@
    "label": "Command"
   },
   {
-   "default": "1",
-   "description": "If checked output will be saved in the <i>Bench Shell Log</i>",
+   "default": "0",
+   "description": "If checked output will be saved in the <i>Bench Shell Log</i>.\n<br>\n<b>Do not save the output</b> unless you need it for future reference.",
    "fieldname": "save_output",
    "fieldtype": "Check",
    "label": "Save Output"
@@ -127,7 +127,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-21 12:46:33.651545",
+ "modified": "2024-03-22 12:26:17.147623",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench Shell",
