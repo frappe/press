@@ -54,12 +54,13 @@ export default {
 			{
 				label: 'Version',
 				fieldname: 'version',
-				class: 'text-gray-600',
+				class: 'text-gray-700',
 				width: 0.5
 			},
 			{
 				label: 'Apps',
 				fieldname: 'app',
+				class: 'text-gray-700',
 				format: (value, row) => {
 					return (row.apps || []).map(d => d.app).join(', ');
 				},

@@ -74,6 +74,7 @@ export default {
 				label: 'Plan',
 				fieldname: 'plan',
 				width: 1,
+				class: 'text-gray-700',
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
@@ -93,6 +94,7 @@ export default {
 				label: 'Cluster',
 				fieldname: 'cluster',
 				width: 1,
+				class: 'text-gray-700',
 				format(value, row) {
 					return row.cluster_title || value;
 				},
@@ -107,6 +109,7 @@ export default {
 			{
 				label: 'Bench',
 				fieldname: 'group',
+				class: 'text-gray-700',
 				width: 1,
 				format(value, row) {
 					return row.group_public ? 'Shared' : row.group_title || value;
@@ -116,7 +119,7 @@ export default {
 				label: 'Version',
 				fieldname: 'version',
 				width: 1,
-				class: 'text-gray-600'
+				class: 'text-gray-700'
 			}
 		],
 		primaryAction({ listResource: sites }) {
