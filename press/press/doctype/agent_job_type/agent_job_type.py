@@ -26,7 +26,6 @@ class AgentJobType(Document):
 		steps: DF.Table[AgentJobTypeStep]
 	# end: auto-generated types
 
-	pass
 	def on_update(self):
 		get_retryable_job_types_and_max_retry_count.cache.invalidate()
 
