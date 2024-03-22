@@ -85,6 +85,7 @@
   {
    "fieldname": "date",
    "fieldtype": "Date",
+   "search_index": 1,
    "label": "Date"
   },
   {

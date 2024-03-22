@@ -15,6 +15,32 @@ from press.utils import get_current_team
 
 
 class AppSource(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.app_source_version.app_source_version import AppSourceVersion
+
+		app: DF.Link
+		app_title: DF.Data
+		branch: DF.Data
+		enabled: DF.Check
+		frappe: DF.Check
+		github_installation_id: DF.Data | None
+		last_github_poll_failed: DF.Check
+		last_github_response: DF.Code | None
+		last_synced: DF.Datetime | None
+		public: DF.Check
+		repository: DF.Data | None
+		repository_owner: DF.Data | None
+		repository_url: DF.Data
+		team: DF.Link
+		versions: DF.Table[AppSourceVersion]
+	# end: auto-generated types
+
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
 		self.name = make_autoname(series)

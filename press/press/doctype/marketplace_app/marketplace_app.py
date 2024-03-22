@@ -24,6 +24,69 @@ from frappe.utils.safe_exec import safe_exec
 
 
 class MarketplaceApp(WebsiteGenerator):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.marketplace_app_categories.marketplace_app_categories import (
+			MarketplaceAppCategories,
+		)
+		from press.press.doctype.marketplace_app_screenshot.marketplace_app_screenshot import (
+			MarketplaceAppScreenshot,
+		)
+		from press.press.doctype.marketplace_app_version.marketplace_app_version import (
+			MarketplaceAppVersion,
+		)
+
+		after_install_script: DF.Code | None
+		after_uninstall_script: DF.Code | None
+		app: DF.Link
+		categories: DF.Table[MarketplaceAppCategories]
+		custom_verify_template: DF.Check
+		description: DF.SmallText
+		documentation: DF.Data | None
+		frappe_approved: DF.Check
+		image: DF.AttachImage | None
+		long_description: DF.TextEditor | None
+		message: DF.TextEditor | None
+		outgoing_email: DF.Data | None
+		outgoing_sender_name: DF.Data | None
+		poll_method: DF.Data | None
+		privacy_policy: DF.Data | None
+		published: DF.Check
+		review_stage: DF.Literal[
+			"Not Started",
+			"Description Missing",
+			"Logo Missing",
+			"App Release Not Reviewed",
+			"Ready for Review",
+			"Ready to Publish",
+			"Rejected",
+		]
+		route: DF.Data | None
+		run_after_install_script: DF.Check
+		run_after_uninstall_script: DF.Check
+		screenshots: DF.Table[MarketplaceAppScreenshot]
+		signature: DF.TextEditor | None
+		site_config: DF.JSON | None
+		sources: DF.Table[MarketplaceAppVersion]
+		status: DF.Literal[
+			"Draft", "Published", "In Review", "Attention Required", "Rejected"
+		]
+		stop_auto_review: DF.Check
+		subject: DF.Data | None
+		subscription_type: DF.Literal["Free", "Paid", "Freemium"]
+		subscription_update_hook: DF.Data | None
+		support: DF.Data | None
+		team: DF.Link | None
+		terms_of_service: DF.Data | None
+		title: DF.Data
+		website: DF.Data | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"image",
 		"title",
@@ -81,19 +144,20 @@ class MarketplaceApp(WebsiteGenerator):
 			)
 
 	def create_app_and_source_if_needed(self):
-		if frappe.db.exists("App", self.name):
-			app_doc = frappe.get_doc("App", self.name)
+		if frappe.db.exists("App", self.app):
+			app_doc = frappe.get_doc("App", self.app)
 		else:
 			app_doc = new_app_doc(self.name, self.title)
 
-		source = app_doc.add_source(
-			self.version,
-			self.repository_url,
-			self.branch,
-			self.team,
-		)
-		self.app = source.app
-		self.append("sources", {"version": self.version, "source": source})
+		if not self.sources:
+			source = app_doc.add_source(
+				self.version,
+				self.repository_url,
+				self.branch,
+				self.team,
+			)
+			self.app = source.app
+			self.append("sources", {"version": self.version, "source": source})
 
 	def validate(self):
 		self.published = self.status == "Published"
@@ -543,7 +607,6 @@ def get_plans_for_app(
 		fields=[
 			"name",
 			"title",
-			"plan",
 			"enabled",
 			"price_inr",
 			"price_usd",
@@ -591,3 +654,18 @@ def run_script(app, site, op):
 		script = frappe.db.get_value("Marketplace App", app, script)
 		local = {"doc": frappe.get_doc("Site", site)}
 		safe_exec(script, _locals=local)
+
+
+def get_total_installs_by_app():
+	total_installs = frappe.cache.get_value("total_installs_by_app")
+	if not total_installs:
+		total_installs = frappe.db.get_all(
+			"Site App",
+			fields=["app", "count(*) as count"],
+			group_by="app",
+		)
+		total_installs = {installs["app"]: installs["count"] for installs in total_installs}
+		frappe.cache.set_value(
+			"total_installs_by_app", total_installs, expires_in_sec=60 * 60 * 24
+		)
+	return total_installs

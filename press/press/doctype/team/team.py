@@ -27,6 +27,68 @@ from press.utils.telemetry import capture
 
 
 class Team(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.child_team_member.child_team_member import ChildTeamMember
+		from press.press.doctype.communication_email.communication_email import (
+			CommunicationEmail,
+		)
+		from press.press.doctype.invoice_discount.invoice_discount import InvoiceDiscount
+		from press.press.doctype.team_member.team_member import TeamMember
+
+		account_request: DF.Link | None
+		benches_enabled: DF.Check
+		billing_address: DF.Link | None
+		billing_name: DF.Data | None
+		billing_team: DF.Link | None
+		child_team_members: DF.Table[ChildTeamMember]
+		code_servers_enabled: DF.Check
+		communication_emails: DF.Table[CommunicationEmail]
+		country: DF.Link | None
+		currency: DF.Link | None
+		database_access_enabled: DF.Check
+		default_payment_method: DF.Link | None
+		default_to_new_dashboard: DF.Check
+		discounts: DF.Table[InvoiceDiscount]
+		enabled: DF.Check
+		erpnext_partner: DF.Check
+		frappe_partnership_date: DF.Date | None
+		free_account: DF.Check
+		free_credits_allocated: DF.Check
+		github_access_token: DF.Data | None
+		is_code_server_user: DF.Check
+		is_developer: DF.Check
+		is_saas_user: DF.Check
+		is_us_eu: DF.Check
+		last_used_team: DF.Link | None
+		notify_email: DF.Data | None
+		parent_team: DF.Link | None
+		partner_email: DF.Data | None
+		partner_referral_code: DF.Data | None
+		partnership_date: DF.Date | None
+		payment_mode: DF.Literal[
+			"", "Card", "Prepaid Credits", "Partner Credits", "Paid By Partner"
+		]
+		razorpay_enabled: DF.Check
+		referrer_id: DF.Data | None
+		security_portal_enabled: DF.Check
+		self_hosted_servers_enabled: DF.Check
+		send_notifications: DF.Check
+		servers_enabled: DF.Check
+		skip_backups: DF.Check
+		ssh_access_enabled: DF.Check
+		stripe_customer_id: DF.Data | None
+		team_members: DF.Table[TeamMember]
+		team_title: DF.Data | None
+		user: DF.Link | None
+		via_erpnext: DF.Check
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"enabled",
 		"team_title",
@@ -810,6 +872,10 @@ class Team(Document):
 			else:
 				why = "You have already created trial site in the past"
 
+		if not self.payment_mode:
+			why = "You cannot create a new site because your account doesn't have a valid payment method."
+			return (False, why)
+
 		if self.payment_mode == "Partner Credits":
 			if self.get_available_partner_credits() > 0:
 				return allow
@@ -875,9 +941,7 @@ class Team(Document):
 		return billing_details
 
 	def get_onboarding(self):
-		if self.payment_mode == "Partner Credits":
-			billing_setup = True
-		elif self.payment_mode == "Prepaid Credits":
+		if self.payment_mode in ("Partner Credits", "Prepaid Credits", "Paid By Partner"):
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
@@ -1125,7 +1189,7 @@ def get_team_members(team):
 				from `tabUser` u
 				left join `tabHas Role` r
 				on (r.parent = u.name)
-				where ifnull(u.name, '') in %s
+				where u.name in %s
 				group by u.name
 			""",
 			[member_emails],
@@ -1155,7 +1219,7 @@ def get_child_team_members(team):
 			"""
 				select t.name, t.team_title, t.parent_team, t.user
 				from `tabTeam` t
-				where ifnull(t.name, '') in %s
+				where t.name in %s
 				and t.enabled = 1
 			""",
 			[child_team_members],

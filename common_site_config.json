@@ -27,6 +27,9 @@
 	"workers": {
 		"sync": {
 			"timeout": 300
+		},
+		"build": {
+			"timeout": 2400
 		}
 	}
 }

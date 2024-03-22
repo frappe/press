@@ -14,13 +14,16 @@ from frappe.utils import flt, sbool
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.app_source.app_source import AppSource
 from press.press.doctype.cluster.cluster import Cluster
+from press.press.doctype.marketplace_app.marketplace_app import (
+	get_total_installs_by_app,
+)
 from press.press.doctype.release_group.release_group import (
 	ReleaseGroup,
 	new_release_group,
 )
-from press.press.doctype.app_patch.app_patch import create_app_patch
 from press.press.doctype.team.team import get_child_team_members
 from press.utils import (
 	get_app_tag,
@@ -421,6 +424,57 @@ def installable_apps(name):
 	version = find(versions, lambda x: x["name"] == release_group.version)
 	apps = version["apps"] if version else []
 	return [app for app in apps if app["name"] not in installed_apps]
+
+
+@frappe.whitelist()
+@protected("Release Group")
+def all_apps(name):
+	"""Return all apps in the marketplace that are not installed in the release group for adding new apps"""
+
+	release_group = frappe.get_doc("Release Group", name)
+	installed_apps = [app.app for app in release_group.apps]
+	marketplace_apps = frappe.get_all(
+		"Marketplace App",
+		filters={"status": "Published", "app": ("not in", installed_apps)},
+		fields=["name", "title", "image"],
+	)
+
+	AppSource = frappe.qb.DocType("App Source")
+	AppSourceVersion = frappe.qb.DocType("App Source Version")
+	marketplace_app_sources = (
+		frappe.qb.from_(AppSource)
+		.left_join(AppSourceVersion)
+		.on(AppSourceVersion.parent == AppSource.name)
+		.select(
+			AppSource.name,
+			AppSource.branch,
+			AppSource.repository,
+			AppSource.repository_owner,
+			AppSource.app,
+			AppSourceVersion.version,
+		)
+		.where(
+			(AppSource.app.isin([app.name for app in marketplace_apps]))
+			& (AppSource.enabled == 1)
+			& (AppSource.public == 1)
+		)
+	).run(as_dict=1)
+
+	total_installs_by_app = get_total_installs_by_app()
+
+	for app in marketplace_apps:
+		app["sources"] = find_all(
+			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
+			lambda x: x.app == app.name,
+		)
+		# for fetching repo details
+		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
+		app["repo"] = (
+			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
+		)
+		app["total_installs"] = total_installs_by_app.get(app["name"], 0)
+
+	return marketplace_apps
 
 
 @frappe.whitelist()

@@ -14,6 +14,32 @@ from datetime import date
 
 
 class PayoutOrder(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.payout_order_item.payout_order_item import PayoutOrderItem
+
+		amended_from: DF.Link | None
+		due_date: DF.Date | None
+		frappe_purchase_order: DF.Data | None
+		ignore_commission: DF.Check
+		items: DF.Table[PayoutOrderItem]
+		mode_of_payment: DF.Literal["Cash", "Credits", "Internal"]
+		net_total_inr: DF.Currency
+		net_total_usd: DF.Currency
+		notes: DF.SmallText | None
+		period_end: DF.Date | None
+		period_start: DF.Date | None
+		recipient: DF.Link
+		recipient_currency: DF.Data | None
+		status: DF.Literal["Draft", "Paid", "Commissioned"]
+		type: DF.Literal["Marketplace", "SaaS"]
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"period_end",
 		"recipient",

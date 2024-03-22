@@ -3,26 +3,40 @@
 
 import json
 import shutil
+
 import frappe
-from frappe.model.document import Document
-
-import wrapt
-from ansible import context
-from ansible import constants
-
+from ansible import constants, context
+from ansible.executor.task_queue_manager import TaskQueueManager
 from ansible.inventory.manager import InventoryManager
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.parsing.dataloader import DataLoader
-
+from ansible.playbook.play import Play
 from ansible.plugins.callback import CallbackBase
 from ansible.vars.manager import VariableManager
-from pymysql.err import InterfaceError
-from ansible.playbook.play import Play
-from ansible.executor.task_queue_manager import TaskQueueManager
+from frappe.model.document import Document
 from frappe.utils import get_timedelta
+from press.utils import reconnect_on_failure
 
 
 class AnsibleConsole(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.ansible_console_output.ansible_console_output import (
+			AnsibleConsoleOutput,
+		)
+
+		command: DF.Code | None
+		error: DF.Code | None
+		inventory: DF.Code | None
+		nonce: DF.Data | None
+		output: DF.Table[AnsibleConsoleOutput]
+	# end: auto-generated types
+
 	def run(self):
 		frappe.only_for("System Manager")
 		try:
@@ -52,18 +66,6 @@ def _execute_command(doc):
 	console = frappe.get_doc(json.loads(doc))
 	console.run()
 	return console.as_dict()
-
-
-def reconnect_on_failure():
-	@wrapt.decorator
-	def wrapper(wrapped, instance, args, kwargs):
-		try:
-			return wrapped(*args, **kwargs)
-		except InterfaceError:
-			frappe.db.connect()
-			return wrapped(*args, **kwargs)
-
-	return wrapper
 
 
 class AnsibleCallback(CallbackBase):

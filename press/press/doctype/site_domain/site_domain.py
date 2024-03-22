@@ -12,7 +12,26 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class SiteDomain(Document):
-	dashboard_fields = ["domain", "status", "dns_type", "site"]
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		dns_type: DF.Literal["A", "NS", "CNAME"]
+		domain: DF.Data
+		redirect_to_primary: DF.Check
+		retry_count: DF.Int
+		site: DF.Link
+		ssl: DF.Check
+		status: DF.Literal["Pending", "In Progress", "Active", "Broken"]
+		team: DF.Link
+		tls_certificate: DF.Link | None
+	# end: auto-generated types
+
+	dashboard_fields = ["domain", "status", "dns_type", "site", "redirect_to_primary"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):

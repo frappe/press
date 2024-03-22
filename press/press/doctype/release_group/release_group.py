@@ -6,7 +6,7 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, List
+from typing import List, TYPE_CHECKING
 
 import frappe
 import semantic_version as sv
@@ -29,9 +29,6 @@ from press.utils import (
 	log_error,
 )
 
-if TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
-	from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -42,7 +39,74 @@ DEFAULT_DEPENDENCIES = [
 ]
 
 
+if TYPE_CHECKING:
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+
+
 class ReleaseGroup(Document, TagHelpers):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.common_site_config.common_site_config import CommonSiteConfig
+		from press.press.doctype.release_group_app.release_group_app import ReleaseGroupApp
+		from press.press.doctype.release_group_dependency.release_group_dependency import (
+			ReleaseGroupDependency,
+		)
+		from press.press.doctype.release_group_mount.release_group_mount import (
+			ReleaseGroupMount,
+		)
+		from press.press.doctype.release_group_package.release_group_package import (
+			ReleaseGroupPackage,
+		)
+		from press.press.doctype.release_group_server.release_group_server import (
+			ReleaseGroupServer,
+		)
+		from press.press.doctype.release_group_variable.release_group_variable import (
+			ReleaseGroupVariable,
+		)
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+
+		apps: DF.Table[ReleaseGroupApp]
+		bench_config: DF.Code | None
+		central_bench: DF.Check
+		common_site_config: DF.Code | None
+		common_site_config_table: DF.Table[CommonSiteConfig]
+		compress_app_cache: DF.Check
+		default: DF.Check
+		dependencies: DF.Table[ReleaseGroupDependency]
+		docker_remote_builder_server: DF.Link | None
+		enabled: DF.Check
+		environment_variables: DF.Table[ReleaseGroupVariable]
+		gunicorn_threads_per_worker: DF.Int
+		is_code_server_enabled: DF.Check
+		is_push_to_deploy_enabled: DF.Check
+		is_redisearch_enabled: DF.Check
+		last_dependency_update: DF.Datetime | None
+		max_background_workers: DF.Int
+		max_gunicorn_workers: DF.Int
+		merge_all_rq_queues: DF.Check
+		merge_default_and_short_rq_queues: DF.Check
+		min_background_workers: DF.Int
+		min_gunicorn_workers: DF.Int
+		mounts: DF.Table[ReleaseGroupMount]
+		packages: DF.Table[ReleaseGroupPackage]
+		public: DF.Check
+		saas_app: DF.Link | None
+		saas_bench: DF.Check
+		servers: DF.Table[ReleaseGroupServer]
+		tags: DF.Table[ResourceTag]
+		team: DF.Link
+		title: DF.Data
+		use_app_cache: DF.Check
+		use_delta_builds: DF.Check
+		use_rq_workerpool: DF.Check
+		version: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = ["title", "version", "apps", "team", "public"]
 	dashboard_actions = [
 		"add_app",
@@ -206,7 +270,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				continue
+				frappe.throw(
+					_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated")
+				)
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"
@@ -616,7 +682,7 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for version in deployed_versions:
 			version.has_app_patch_applied = version.name in benches_with_patches
-			version.has_ssh_access = version.is_ssh_proxy_setup and cur_user_ssh_key
+			version.has_ssh_access = version.is_ssh_proxy_setup and len(cur_user_ssh_key) > 0
 			version.sites = find_all(sites_in_group_details, lambda x: x.bench == version.name)
 			for site in version.sites:
 				site.version = rg_version
@@ -657,15 +723,22 @@ class ReleaseGroup(Document, TagHelpers):
 	@frappe.whitelist()
 	def generate_certificate(self):
 		user_ssh_key = frappe.get_all(
-			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-		)[0]
+			"User SSH Key",
+			{"user": frappe.session.user, "is_default": True},
+			pluck="name",
+			limit=1,
+		)
+
+		if not user_ssh_key:
+			frappe.throw(_("Please set a SSH key to generate certificate"))
+
 		return frappe.get_doc(
 			{
 				"doctype": "SSH Certificate",
 				"certificate_type": "User",
 				"group": self.name,
 				"user": frappe.session.user,
-				"user_ssh_key": user_ssh_key,
+				"user_ssh_key": user_ssh_key[0],
 				"validity": "6h",
 			}
 		).insert()

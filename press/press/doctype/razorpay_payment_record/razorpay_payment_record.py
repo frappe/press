@@ -11,6 +11,22 @@ from press.press.doctype.team.team import enqueue_finalize_unpaid_for_team
 
 
 class RazorpayPaymentRecord(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		failure_reason: DF.SmallText | None
+		order_id: DF.Data | None
+		payment_id: DF.Data | None
+		signature: DF.Data | None
+		status: DF.Literal["Captured", "Failed", "Pending"]
+		team: DF.Link | None
+	# end: auto-generated types
+
 	def on_update(self):
 		if self.has_value_changed("status") and self.status == "Captured":
 			self.process_prepaid_credits()

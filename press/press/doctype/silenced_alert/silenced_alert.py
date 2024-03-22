@@ -12,6 +12,26 @@ import json
 
 
 class SilencedAlert(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		alert_comment: DF.SmallText
+		alert_previews: DF.Code | None
+		duration: DF.Data | None
+		from_time: DF.Datetime
+		instance: DF.DynamicLink
+		instance_type: DF.Link | None
+		silence_id: DF.Data | None
+		status: DF.Literal["", "Preview", "Active", "Expired"]
+		to_time: DF.Datetime
+		total_alerts: DF.Data | None
+	# end: auto-generated types
+
 	def validate(self):
 		self.get_duration()
 

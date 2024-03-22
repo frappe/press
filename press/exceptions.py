@@ -15,3 +15,7 @@ class CannotChangePlan(ValidationError):
 
 class OngoingAgentJob(ValidationError):
 	pass
+
+
+class MissingAppsInBench(ValidationError):
+	pass

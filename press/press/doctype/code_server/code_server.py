@@ -11,6 +11,26 @@ from press.utils.dns import create_dns_record, _change_dns_record
 
 
 class CodeServer(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		bench: DF.Link
+		cluster: DF.Link | None
+		domain: DF.Link
+		group: DF.Link | None
+		password: DF.Password | None
+		proxy_server: DF.Link
+		server: DF.Link | None
+		status: DF.Literal["Pending", "Running", "Stopped", "Broken", "Archived"]
+		subdomain: DF.Data
+		team: DF.Link | None
+	# end: auto-generated types
+
 	def autoname(self):
 		self.name = self.subdomain + "." + self.domain
 

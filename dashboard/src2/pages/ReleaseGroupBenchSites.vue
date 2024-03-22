@@ -29,7 +29,7 @@
 	</div>
 </template>
 <script>
-import { h } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
 import GenericList from '../components/GenericList.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
@@ -215,6 +215,21 @@ export default {
 											}
 										},
 										{
+											label: 'View Logs',
+											condition: () => row.status === 'Active',
+											onClick: () => {
+												let BenchLogsDialog = defineAsyncComponent(() =>
+													import('../components/bench/BenchLogsDialog.vue')
+												);
+
+												renderDialog(
+													h(BenchLogsDialog, {
+														bench: row.name
+													})
+												);
+											}
+										},
+										{
 											label: 'Update All Sites',
 											condition: () =>
 												row.status === 'Active' &&
@@ -302,7 +317,7 @@ export default {
 																	loading: 'Rebuilding assets...',
 																	success: () => {
 																		hide();
-																		return 'Assets rebuilt';
+																		return 'Assets will be rebuilt in the background. This may take a few minutes.';
 																	},
 																	error: 'Failed to rebuild assets',
 																	duration: 1000

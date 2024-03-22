@@ -18,6 +18,32 @@ def handle_exception(self):
 
 
 class TeamDeletionRequest(PersonalDataDeletionRequest):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from frappe.website.doctype.personal_data_deletion_step.personal_data_deletion_step import (
+			PersonalDataDeletionStep,
+		)
+		from press.press.doctype.team_member_deletion_request.team_member_deletion_request import (
+			TeamMemberDeletionRequest,
+		)
+
+		data_anonymized: DF.Check
+		deletion_steps: DF.Table[PersonalDataDeletionStep]
+		frappeio_data_deleted: DF.Check
+		status: DF.Literal[
+			"Pending Verification", "Deletion Verified", "Processing Deletion", "Deleted"
+		]
+		stripe_data_deleted: DF.Check
+		team: DF.Link
+		team_disabled: DF.Check
+		users_anonymized: DF.Table[TeamMemberDeletionRequest]
+	# end: auto-generated types
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.email = frappe.db.get_value("Team", self.team, "user")

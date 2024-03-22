@@ -144,6 +144,24 @@ def delete_remote_backup_objects(remote_files):
 
 
 class RemoteFile(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		bucket: DF.Data | None
+		file_name: DF.Data | None
+		file_path: DF.Data | None
+		file_size: DF.Data | None
+		file_type: DF.Data | None
+		site: DF.Link | None
+		status: DF.Literal["Available", "Unavailable"]
+		url: DF.Code | None
+	# end: auto-generated types
+
 	@property
 	def s3_client(self):
 		if not self.bucket:

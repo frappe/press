@@ -3,14 +3,13 @@
 # For license information, please see license.txt
 
 
-from contextlib import suppress
 from typing import TYPE_CHECKING
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.exceptions import CannotChangePlan, OngoingAgentJob
+from press.exceptions import CannotChangePlan, MissingAppsInBench, OngoingAgentJob
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -39,7 +38,34 @@ def get_ongoing_migration(site: str, scheduled=False):
 
 
 class SiteMigration(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.site_migration_step.site_migration_step import (
+			SiteMigrationStep,
+		)
+
+		backup: DF.Link | None
+		destination_bench: DF.Link
+		destination_cluster: DF.Link
+		destination_server: DF.Link
+		migration_type: DF.Literal["", "Bench", "Server", "Cluster"]
+		scheduled_time: DF.Datetime | None
+		site: DF.Link
+		skip_failing_patches: DF.Check
+		source_bench: DF.Link
+		source_cluster: DF.Link
+		source_server: DF.Link
+		status: DF.Literal["Scheduled", "Pending", "Running", "Success", "Failure"]
+		steps: DF.Table[SiteMigrationStep]
+	# end: auto-generated types
+
 	def before_insert(self):
+		self.validate_apps()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
 
@@ -48,9 +74,6 @@ class SiteMigration(Document):
 		self.add_steps()
 		self.save()
 
-	def validate(self):
-		self.validate_apps()
-
 	def validate_apps(self):
 		site_apps = [app.app for app in frappe.get_doc("Site", self.site).apps]
 		bench_apps = [app.app for app in frappe.get_doc("Bench", self.destination_bench).apps]
@@ -58,11 +81,12 @@ class SiteMigration(Document):
 		if diff := set(site_apps) - set(bench_apps):
 			frappe.throw(
 				f"Bench {self.destination_bench} doesn't have some of the apps installed on {self.site}: {', '.join(diff)}",
-				frappe.ValidationError,
+				MissingAppsInBench,
 			)
 
 	def start(self):
 		self.check_for_ongoing_agent_jobs()
+		self.validate_apps()
 		self.db_set("status", "Pending")
 		frappe.db.commit()
 		self.run_next_step()
@@ -225,7 +249,7 @@ class SiteMigration(Document):
 			lambda x: x.method_name == self.restore_site_on_destination_server.__name__,
 		).status in ["Success", "Failure"]
 
-	def fail(self, cleanup=True):
+	def fail(self, cleanup=True, reason=None, activate=False):
 		self.set_pending_steps_to_skipped()
 		if (
 			cleanup and not self.archived_site_on_source and self.restore_on_destination_happened
@@ -242,17 +266,18 @@ class SiteMigration(Document):
 			return
 		self.status = "Failure"
 		self.save()
-		self.send_fail_notification()
-		self.activate_site_if_appropriate()
+		self.send_fail_notification(reason)
+		self.activate_site_if_appropriate(force=activate)
 
 	@property
 	def failed_step(self):
 		return find(self.steps, lambda x: x.status == "Failure")
 
-	def activate_site_if_appropriate(self):
+	def activate_site_if_appropriate(self, force=False):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		if (
-			self.failed_step.method_name
+			force
+			or self.failed_step.method_name
 			in [
 				self.backup_source_site.__name__,
 				self.restore_site_on_destination_server.__name__,
@@ -265,13 +290,17 @@ class SiteMigration(Document):
 			if self.migration_type == "Cluster":
 				site.create_dns_record()
 
-	def send_fail_notification(self):
+	def send_fail_notification(self, reason: str = None):
 		site = frappe.get_doc("Site", self.site)
 
 		message = (
 			f"Site Migration ({self.migration_type}) for site <b>{site.host_name}</b> failed"
 		)
-		agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+		if reason:
+			message += f" due to {reason}"
+			agent_job_id = None
+		else:
+			agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
 
 		create_new_notification(
 			site.team,
@@ -472,6 +501,7 @@ class SiteMigration(Document):
 		"""Archive site on source"""
 		agent = Agent(self.source_server)
 		site = frappe.get_doc("Site", self.site)
+		site.bench = self.source_bench  # for sanity
 		return agent.archive_site(site)
 
 	def update_site_record_fields(self):
@@ -544,6 +574,7 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name != site_migration.next_step.step_job:
 		log_error("Extra Job found during Site Migration", job=job.as_dict())
+		return
 
 	process_required_job_callbacks(job)
 	site_migration.update_next_step_status(job.status)
@@ -567,9 +598,13 @@ def run_scheduled_migrations():
 		{"scheduled_time": ("<=", frappe.utils.now()), "status": "Scheduled"},
 	)
 	for migration in migrations:
-		site_migration = frappe.get_doc("Site Migration", migration)
-		with suppress(OngoingAgentJob):
+		site_migration: SiteMigration = frappe.get_doc("Site Migration", migration)
+		try:
 			site_migration.start()
+		except OngoingAgentJob:
+			pass
+		except MissingAppsInBench as e:
+			site_migration.fail(reason=str(e), activate=True)
 
 
 def on_doctype_update():

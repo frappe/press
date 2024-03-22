@@ -161,10 +161,11 @@
 				/>
 				<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 			</div>
-			<div v-if="selectedVersion && cluster && plan">
+			<div v-if="selectedVersion && cluster && plan && subdomain">
 				<Button
 					class="w-full"
 					variant="solid"
+					:disabled="!agreedToRegionConsent"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
 				>
@@ -259,9 +260,11 @@ export default {
 		subdomainExists() {
 			return {
 				url: 'press.api.site.exists',
-				params: {
-					domain: this.options?.domain,
-					subdomain: this.subdomain
+				makeParams() {
+					return {
+						domain: this.options?.domain,
+						subdomain: this.subdomain
+					};
 				},
 				validate() {
 					return validateSubdomain(this.subdomain);
@@ -276,29 +279,32 @@ export default {
 
 			return {
 				url: 'press.api.client.insert',
-				params: {
-					doc: {
-						doctype: 'Site',
-						team: this.$team.doc.name,
-						subdomain: this.subdomain,
-						apps: [
-							{ app: 'frappe' },
-							...this.apps.filter(app => app.app).map(app => ({ app: app.app }))
-						],
-						app_plans: this.apps.length
-							? Object.assign(
-									...this.apps
-										.filter(a => a.plan)
-										.map(app => ({
-											[app.app]: app.plan
-										}))
-							  )
-							: {},
-						cluster: this.cluster,
-						bench: this.selectedVersion.group.bench,
-						subscription_plan: this.plan,
-						share_details_consent: this.shareDetailsConsent
+				makeParams() {
+					let appPlans = {};
+					for (let app of this.apps) {
+						if (app.plan) {
+							appPlans[app.app] = app.plan;
+						}
 					}
+
+					return {
+						doc: {
+							doctype: 'Site',
+							team: this.$team.doc.name,
+							subdomain: this.subdomain,
+							apps: [
+								{ app: 'frappe' },
+								...this.apps
+									.filter(app => app.app)
+									.map(app => ({ app: app.app }))
+							],
+							app_plans: appPlans,
+							cluster: this.cluster,
+							bench: this.selectedVersion.group.bench,
+							subscription_plan: this.plan.name,
+							share_details_consent: this.shareDetailsConsent
+						}
+					};
 				},
 				validate() {
 					if (!this.subdomain) {

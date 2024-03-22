@@ -152,11 +152,11 @@ const sshKeyListOptions = computed(() => ({
 			width: 0.1
 		}
 	],
-	primaryAction() {
+	primaryAction({ listResource }) {
 		return {
 			label: 'Add SSH Key',
 			slots: { prefix: icon('plus') },
-			onClick: renderAddNewKeyDialog
+			onClick: () => renderAddNewKeyDialog(listResource)
 		};
 	},
 	rowActions({ row }) {
@@ -185,7 +185,7 @@ const sshKeyListOptions = computed(() => ({
 	}
 }));
 
-function renderAddNewKeyDialog() {
+function renderAddNewKeyDialog(listResource) {
 	confirmDialog({
 		title: 'Add New SSH Key',
 		message: 'Add a new SSH Key to your account',
@@ -213,6 +213,7 @@ function renderAddNewKeyDialog() {
 						}
 					})
 					.then(() => {
+						listResource.reload();
 						hide();
 					})
 					.catch(error => {

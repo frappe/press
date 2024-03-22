@@ -32,6 +32,40 @@ from press.utils import log_error
 
 
 class AgentJob(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		bench: DF.Link | None
+		code_server: DF.Link | None
+		data: DF.Code | None
+		duration: DF.Time | None
+		end: DF.Datetime | None
+		host: DF.Link | None
+		job_id: DF.Int
+		job_type: DF.Link
+		next_retry_at: DF.Datetime | None
+		output: DF.Code | None
+		request_data: DF.Code
+		request_files: DF.Code | None
+		request_method: DF.Literal["GET", "POST", "DELETE"]
+		request_path: DF.Data
+		retry_count: DF.Int
+		server: DF.DynamicLink
+		server_type: DF.Link
+		site: DF.Link | None
+		start: DF.Datetime | None
+		status: DF.Literal[
+			"Undelivered", "Pending", "Running", "Success", "Failure", "Delivery Failure"
+		]
+		traceback: DF.Code | None
+		upstream: DF.Link | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"name",
 		"job_type",

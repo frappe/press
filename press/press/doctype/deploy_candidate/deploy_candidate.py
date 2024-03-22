@@ -34,13 +34,73 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
-from press.utils import get_current_team, log_error
+from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_release.app_release import AppRelease
 
 
 class DeployCandidate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.deploy_candidate_app.deploy_candidate_app import (
+			DeployCandidateApp,
+		)
+		from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
+			DeployCandidateBuildStep,
+		)
+		from press.press.doctype.deploy_candidate_dependency.deploy_candidate_dependency import (
+			DeployCandidateDependency,
+		)
+		from press.press.doctype.deploy_candidate_package.deploy_candidate_package import (
+			DeployCandidatePackage,
+		)
+		from press.press.doctype.deploy_candidate_variable.deploy_candidate_variable import (
+			DeployCandidateVariable,
+		)
+
+		apps: DF.Table[DeployCandidateApp]
+		build_command: DF.SmallText | None
+		build_directory: DF.Data | None
+		build_duration: DF.Time | None
+		build_end: DF.Datetime | None
+		build_output: DF.Code | None
+		build_start: DF.Datetime | None
+		build_steps: DF.Table[DeployCandidateBuildStep]
+		compress_app_cache: DF.Check
+		dependencies: DF.Table[DeployCandidateDependency]
+		docker_image: DF.Data | None
+		docker_image_id: DF.Data | None
+		docker_image_repository: DF.Data | None
+		docker_image_tag: DF.Data | None
+		environment_variables: DF.Table[DeployCandidateVariable]
+		group: DF.Link
+		gunicorn_threads_per_worker: DF.Int
+		is_docker_remote_builder_used: DF.Check
+		is_redisearch_enabled: DF.Check
+		is_single_container: DF.Check
+		is_ssh_enabled: DF.Check
+		merge_all_rq_queues: DF.Check
+		merge_default_and_short_rq_queues: DF.Check
+		packages: DF.Table[DeployCandidatePackage]
+		scheduled_time: DF.Datetime | None
+		staged: DF.Check
+		status: DF.Literal[
+			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
+		]
+		team: DF.Link
+		use_app_cache: DF.Check
+		use_rq_workerpool: DF.Check
+		user_certificate: DF.Code | None
+		user_private_key: DF.Code | None
+		user_public_key: DF.Code | None
+	# end: auto-generated types
+
 	command = "docker build"
 	dashboard_fields = [
 		"name",
@@ -144,8 +204,16 @@ class DeployCandidate(Document):
 			get_current_team(True),
 		)
 		frappe.set_user(frappe.get_value("Team", team.name, "user"))
+		queue = "default" if frappe.conf.developer_mode else "build"
+
 		frappe.enqueue_doc(
-			self.doctype, self.name, method, timeout=2400, enqueue_after_commit=True, **kwargs
+			self.doctype,
+			self.name,
+			method,
+			queue=queue,
+			timeout=2400,
+			enqueue_after_commit=True,
+			**kwargs,
 		)
 		frappe.set_user(user)
 		frappe.session.data = session_data
@@ -259,10 +327,10 @@ class DeployCandidate(Document):
 				deploy_after_build,
 				deploy_to_staging,
 			)
-		except Exception:
+		except Exception as exc:
 			self._build_failed()
 			self._build_end()
-			create_build_failed_notification(self)
+			create_build_failed_notification(self, exc)
 			log_error(
 				"Deploy Candidate Build Exception",
 				name=self.name,
@@ -410,6 +478,7 @@ class DeployCandidate(Document):
 		self.save()
 		frappe.db.commit()
 
+	@reconnect_on_failure()
 	def _build_failed(self):
 		self.status = "Failure"
 		bench_update = frappe.get_all(
@@ -476,10 +545,6 @@ class DeployCandidate(Document):
 
 	def _set_app_cached_flags(self) -> None:
 		for app in self.apps:
-			if app.app == "hrms":
-				app.use_cached = False
-				continue
-
 			app.use_cached = bool(self.use_app_cache)
 
 	def _prepare_build_directory(self):
@@ -843,12 +908,16 @@ class DeployCandidate(Document):
 			return {}
 
 		try:
-			from tomli import load
+			from tomli import TOMLDecodeError, load
 		except ImportError:
-			from tomllib import load
+			from tomllib import TOMLDecodeError, load
 
 		with open(pyproject_path, "rb") as f:
-			return load(f)
+			try:
+				return load(f)
+			except TOMLDecodeError:
+				# Do not edit without updating deploy_notifications.py
+				raise Exception("App has invalid pyproject.toml file", app) from None
 
 	def _run_docker_build(self, no_cache: bool = False):
 		self._update_build_command(no_cache)

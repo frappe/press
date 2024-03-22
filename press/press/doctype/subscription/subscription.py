@@ -6,7 +6,7 @@
 from typing import List
 
 from frappe.query_builder.functions import Coalesce, Count
-from press.press.doctype.plan.plan import Plan
+from press.press.doctype.site_plan.site_plan import SitePlan
 
 import frappe
 from frappe.model.document import Document
@@ -15,6 +15,25 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class Subscription(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		document_name: DF.DynamicLink
+		document_type: DF.Link
+		enabled: DF.Check
+		interval: DF.Literal["Daily", "Monthly"]
+		marketplace_app_subscription: DF.Link | None
+		plan: DF.DynamicLink
+		plan_type: DF.Link
+		site: DF.Link | None
+		team: DF.Link
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"site",
 		"enabled",
@@ -195,7 +214,7 @@ class Subscription(Document):
 
 	@classmethod
 	def get_sites_without_offsite_backups(cls) -> List[str]:
-		plans = Plan.get_ones_without_offsite_backups()
+		plans = SitePlan.get_ones_without_offsite_backups()
 		return frappe.get_all(
 			"Subscription",
 			filters={"document_type": "Site", "plan": ("in", plans)},
@@ -217,6 +236,7 @@ def create_usage_records():
 			"document_name": ("not in", free_sites),
 		},
 		pluck="name",
+		order_by=None,
 		limit=2000,
 	)
 	for name in subscriptions:
@@ -277,6 +297,7 @@ def created_usage_records(free_sites, date=None):
 			"document_name": ("not in", free_sites),
 		},
 		pluck="subscription",
+		order_by=None,
 		ignore_ifnull=True,
 	)
 

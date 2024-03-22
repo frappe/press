@@ -10,7 +10,6 @@
   "enabled",
   "title",
   "app",
-  "plan",
   "interval",
   "section_break_2",
   "price_inr",
@@ -24,11 +23,15 @@
  ],
  "fields": [
   {
-   "fieldname": "plan",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Plan",
-   "options": "Site Plan"
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title"
   },
   {
    "fieldname": "app",
@@ -41,49 +44,16 @@
    "reqd": 1
   },
   {
-   "fieldname": "features",
-   "fieldtype": "Table",
-   "label": "Features",
-   "options": "Plan Feature",
-   "reqd": 1
-  },
-  {
-   "default": "1",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "plan_features_section",
-   "fieldtype": "Section Break",
-   "label": "Plan Features"
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_2",
-   "fieldtype": "Section Break",
-   "label": "Pricing"
-  },
-  {
-   "fieldname": "available_on_versions",
-   "fieldtype": "Table",
-   "label": "Available On Versions",
-   "options": "App Plan Version"
-  },
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "label": "Title"
-  },
-  {
    "default": "Daily",
    "fieldname": "interval",
    "fieldtype": "Select",
    "label": "Interval",
    "options": "Daily\nMonthly\nYearly"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
   },
   {
    "fieldname": "price_inr",
@@ -92,22 +62,37 @@
    "reqd": 1
   },
   {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "price_usd",
    "fieldtype": "Currency",
    "label": "Price (USD)",
    "reqd": 1
   },
   {
+   "fieldname": "plan_features_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Features"
+  },
+  {
+   "fieldname": "available_on_versions",
+   "fieldtype": "Table",
+   "label": "Available On Versions",
+   "options": "App Plan Version"
+  },
+  {
+   "fieldname": "features",
+   "fieldtype": "Table",
+   "label": "Features",
+   "options": "Plan Feature",
+   "reqd": 1
+  },
+  {
    "fieldname": "allowed_roles_section",
    "fieldtype": "Section Break",
    "label": "Allowed Roles"
-  },
-  {
-   "default": "Daily",
-   "fieldname": "interval",
-   "fieldtype": "Select",
-   "label": "Interval",
-   "options": "Daily\nMonthly\nYearly"
   },
   {
    "fieldname": "roles",
@@ -118,7 +103,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-21 21:05:19.586189",
+ "modified": "2024-03-21 13:11:26.446979",
  "modified_by": "Administrator",
  "module": "Marketplace",
  "name": "Marketplace App Plan",
@@ -140,6 +125,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "plan"
+ "states": []
 }

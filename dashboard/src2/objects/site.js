@@ -9,15 +9,16 @@ import { toast } from 'vue-sonner';
 import AddDomainDialog from '../components/AddDomainDialog.vue';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
-import { getTeam } from '../data/team';
+import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { bytes, duration, date, plural } from '../utils/format';
-import { dayjsLocal } from '../utils/dayjs';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
+import { logsTab } from './tabs/site/logs';
+import { trialDays } from '../utils/site';
 
 export default {
 	doctype: 'Site',
@@ -41,6 +42,9 @@ export default {
 		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
+		redirectToPrimary: 'set_redirect',
+		removeRedirect: 'unset_redirect',
+		setPrimaryDomain: 'set_host_name',
 		restoreSite: 'restore_site',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
@@ -73,24 +77,10 @@ export default {
 				label: 'Plan',
 				fieldname: 'plan',
 				width: 1,
+				class: 'text-gray-700',
 				format(value, row) {
 					if (row.trial_end_date) {
-						let trialEndDate = dayjsLocal(row.trial_end_date);
-						let today = dayjsLocal();
-						let diffHours = trialEndDate.diff(today, 'hours');
-						let endsIn = '';
-						if (diffHours < 24) {
-							endsIn = `today`;
-						} else {
-							let days = Math.round(diffHours / 24);
-							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
-						}
-						if (
-							trialEndDate.isAfter(today) ||
-							trialEndDate.isSame(today, 'day')
-						) {
-							return `Trial ends ${endsIn}`;
-						}
+						return trialDays(row.trial_end_date);
 					}
 					let $team = getTeam();
 					if (row.price_usd > 0) {
@@ -107,6 +97,7 @@ export default {
 				label: 'Cluster',
 				fieldname: 'cluster',
 				width: 1,
+				class: 'text-gray-700',
 				format(value, row) {
 					return row.cluster_title || value;
 				},
@@ -121,6 +112,7 @@ export default {
 			{
 				label: 'Bench',
 				fieldname: 'group',
+				class: 'text-gray-700',
 				width: 1,
 				format(value, row) {
 					return row.group_public ? 'Shared' : row.group_title || value;
@@ -130,7 +122,7 @@ export default {
 				label: 'Version',
 				fieldname: 'version',
 				width: 1,
-				class: 'text-gray-600'
+				class: 'text-gray-700'
 			}
 		],
 		primaryAction({ listResource: sites }) {
@@ -602,6 +594,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Site Domain',
+					fields: ['redirect_to_primary'],
 					filters: site => {
 						return { site: site.doc.name };
 					},
@@ -648,26 +641,125 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: domains, documentResource: site }) {
-						if (row.domain === site.doc.name) return;
 						return [
 							{
 								label: 'Remove',
+								condition: () => row.domain !== site.doc.name,
 								onClick() {
-									if (site.removeDomain.loading) return;
-									toast.promise(
-										site.removeDomain.submit({
-											domain: row.domain
-										}),
-										{
-											loading: 'Removing domain...',
-											success: () => 'Domain removed',
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: `Remove Domain`,
+										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeDomain.loading) return;
+											toast.promise(
+												site.removeDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing domain...',
+													success: () => {
+														hide();
+														return 'Domain removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
+								}
+							},
+							{
+								label: 'Set Primary',
+								condition: () => !row.primary,
+								onClick() {
+									confirmDialog({
+										title: `Set Primary Domain`,
+										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.setPrimaryDomain.loading) return;
+											toast.promise(
+												site.setPrimaryDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Setting primary domain...',
+													success: () => {
+														hide();
+														return 'Primary domain set';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Redirect to Primary',
+								condition: () => !row.primary && !row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Redirect Domain`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.redirectToPrimary.loading) return;
+											toast.promise(
+												site.redirectToPrimary.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Redirecting domain...',
+													success: () => {
+														hide();
+														return 'Domain redirected';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Remove Redirect',
+								condition: () => !row.primary && row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Remove Redirect`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeRedirect.loading) return;
+											toast.promise(
+												site.removeRedirect.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing redirect...',
+													success: () => {
+														hide();
+														return 'Redirect removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
 								}
 							}
 						];
@@ -1060,6 +1152,7 @@ export default {
 					]
 				}
 			},
+			logsTab(),
 			tagTab()
 		],
 		actions(context) {
@@ -1119,7 +1212,7 @@ export default {
 					condition: () =>
 						$team.doc.is_desk_user && site.doc.team != $team.name,
 					onClick() {
-						window.location.href = `/dashboard-beta/impersonate/${site.doc.team}`;
+						switchToTeam(site.doc.team);
 					}
 				},
 				{
@@ -1200,6 +1293,11 @@ export default {
 			name: 'Site Job',
 			path: 'job/:id',
 			component: () => import('../pages/JobPage.vue')
+		},
+		{
+			name: 'Site Log',
+			path: 'logs/:logName',
+			component: () => import('../pages/LogPage.vue')
 		}
 	]
 };

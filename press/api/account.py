@@ -9,7 +9,8 @@ import frappe
 from frappe import _
 from frappe.core.doctype.user.user import update_password
 from frappe.exceptions import DoesNotExistError
-from frappe.utils import get_url, random_string
+from frappe.utils.data import sha256_hash
+from frappe.utils import get_url
 from frappe.utils.oauth import get_oauth2_authorize_url, get_oauth_keys
 from frappe.website.utils import build_response
 from frappe.core.utils import find
@@ -697,10 +698,23 @@ def send_reset_password_email(email):
 	frappe.utils.validate_email_address(email, True)
 
 	email = email.strip()
-	key = random_string(32)
+	key = frappe.generate_hash()
+	hashed_key = sha256_hash(key)
 	if frappe.db.exists("User", email):
-		frappe.db.set_value("User", email, "reset_password_key", key)
+		frappe.db.set_value(
+			"User",
+			email,
+			{
+				"reset_password_key": hashed_key,
+				"last_reset_password_key_generated_on": frappe.utils.now_datetime(),
+			},
+		)
 		url = get_url("/dashboard/reset-password/" + key)
+		if frappe.conf.developer_mode:
+			print(f"\nReset password URL for {email}:")
+			print(url)
+			print()
+			return
 		frappe.sendmail(
 			recipients=email,
 			subject="Reset Password",
@@ -722,7 +736,8 @@ def get_user_for_reset_password_key(key):
 	if not key or not isinstance(key, str):
 		frappe.throw(_("Invalid Key"))
 
-	return frappe.db.get_value("User", {"reset_password_key": key}, "name")
+	hashed_key = sha256_hash(key)
+	return frappe.db.get_value("User", {"reset_password_key": hashed_key}, "name")
 
 
 @frappe.whitelist()
@@ -864,28 +879,32 @@ def user_prompts():
 @frappe.whitelist()
 def get_site_request(product):
 	team = frappe.local.team()
-	requests = frappe.db.get_all(
+	requests = frappe.qb.get_query(
 		"SaaS Product Site Request",
-		{
+		filters={
 			"team": team.name,
 			"saas_product": product,
 		},
-		["name", "status"],
+		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
 		order_by="creation desc",
-		limit=1,
-	)
+	).run(as_dict=1)
 	if not requests:
 		site_request = frappe.new_doc(
 			"SaaS Product Site Request",
 			saas_product=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return site_request.name
+		return {"pending": site_request.name}
 	else:
-		site_request = requests[0]
-		if site_request.status in ["Pending", "Wait for Site", "Error"]:
-			return site_request.name
-		frappe.throw("You have already created a trial site for this product")
+		pending = [
+			d
+			for d in requests
+			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
+		]
+		return {
+			"pending": pending[0].name if pending else None,
+			"completed": [d for d in requests if d.site and d.status == "Site Created"],
+		}
 
 
 def redirect_to(location):

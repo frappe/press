@@ -7,6 +7,23 @@ from frappe.model.document import Document
 
 
 class ERPNextSiteSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		emails: DF.Int
+		expiry: DF.Date
+		plan: DF.Data | None
+		site: DF.Link
+		space: DF.Int
+		support_expiry: DF.Date | None
+		users: DF.Int
+	# end: auto-generated types
+
 	def on_update(self):
 		config_keys = ("users", "expiry", "emails", "space", "current_plan")
 		values = (self.users, self.expiry, self.emails, self.space, self.plan)

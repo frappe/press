@@ -10,6 +10,27 @@ from frappe.utils import now_datetime
 
 
 class SecurityUpdate(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		change_log: DF.Code | None
+		datetime: DF.Datetime | None
+		job_status: DF.Literal["Pending", "WIP", "Completed"]
+		package: DF.Data | None
+		package_meta: DF.Code | None
+		priority: DF.Literal["High", "Medium", "Low"]
+		priority_level: DF.Literal["1", "2", "3"]
+		security_update_status: DF.Literal["Pending", "Implemented"]
+		server: DF.DynamicLink | None
+		server_type: DF.Literal["Server", "Database Server", "Proxy Server"]
+		version: DF.Data | None
+	# end: auto-generated types
+
 	@staticmethod
 	def fetch_security_updates(server_obj):
 		"""Fetch security updates"""

@@ -10,6 +10,25 @@ from press.overrides import get_permission_query_conditions_for_doctype
 
 
 class DeployCandidateDifference(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.deploy_candidate_difference_app.deploy_candidate_difference_app import (
+			DeployCandidateDifferenceApp,
+		)
+
+		apps: DF.Table[DeployCandidateDifferenceApp]
+		deploy_type: DF.Literal["Pull", "Migrate"]
+		destination: DF.Link
+		group: DF.Link
+		source: DF.Link
+		team: DF.Link
+	# end: auto-generated types
+
 	def validate(self):
 		if self.source == self.destination:
 			frappe.throw(

@@ -8,6 +8,49 @@ from frappe.query_builder.functions import Now
 
 
 class SiteAnalytics(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.site_analytics_active.site_analytics_active import (
+			SiteAnalyticsActive,
+		)
+		from press.press.doctype.site_analytics_app.site_analytics_app import SiteAnalyticsApp
+		from press.press.doctype.site_analytics_doctype.site_analytics_doctype import (
+			SiteAnalyticsDocType,
+		)
+		from press.press.doctype.site_analytics_login.site_analytics_login import (
+			SiteAnalyticsLogin,
+		)
+		from press.press.doctype.site_analytics_user.site_analytics_user import (
+			SiteAnalyticsUser,
+		)
+
+		activation_level: DF.Int
+		backup_size: DF.Int
+		company: DF.Data | None
+		country: DF.Data | None
+		database_size: DF.Int
+		domain: DF.Data | None
+		emails_sent: DF.Int
+		files_size: DF.Int
+		installed_apps: DF.Table[SiteAnalyticsApp]
+		language: DF.Data | None
+		last_active: DF.Table[SiteAnalyticsActive]
+		last_logins: DF.Table[SiteAnalyticsLogin]
+		sales_data: DF.Table[SiteAnalyticsDocType]
+		scheduler_enabled: DF.Check
+		setup_complete: DF.Check
+		site: DF.Link
+		space_used: DF.Int
+		time_zone: DF.Data | None
+		timestamp: DF.Datetime
+		users: DF.Table[SiteAnalyticsUser]
+	# end: auto-generated types
+
 	@staticmethod
 	def clear_old_logs(days=30):
 		tables = [

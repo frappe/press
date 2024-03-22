@@ -44,6 +44,42 @@ PAST_ALERT_COVER_MINUTES = (
 
 
 class Incident(WebsiteGenerator):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.incident_alerts.incident_alerts import IncidentAlerts
+		from press.press.doctype.incident_updates.incident_updates import IncidentUpdates
+
+		acknowledged_by: DF.Link | None
+		alert: DF.Link | None
+		alerts: DF.Table[IncidentAlerts]
+		bench: DF.Link | None
+		cluster: DF.Link | None
+		description: DF.TextEditor | None
+		phone_call: DF.Check
+		resolved_by: DF.Link | None
+		route: DF.Data | None
+		server: DF.Link | None
+		show_in_website: DF.Check
+		sms_sent: DF.Check
+		status: DF.Literal[
+			"Validating",
+			"Confirmed",
+			"Acknowledged",
+			"Investigating",
+			"Resolved",
+			"Auto-Resolved",
+			"Press-Resolved",
+		]
+		subject: DF.Data | None
+		type: DF.Literal["Site Down", "Bench Down", "Server Down"]
+		updates: DF.Table[IncidentUpdates]
+	# end: auto-generated types
+
 	def validate(self):
 		if not hasattr(self, "phone_call") and self.global_phone_call_enabled:
 			self.phone_call = True
@@ -210,7 +246,7 @@ Incident URL: {incident_link}"""
 
 	def get_email_message(self):
 		acknowledged_by = "An engineer"
-		if self.status == "Acknowledged":
+		if self.acknowledged_by:
 			acknowledged_by = frappe.db.get_value("User", self.acknowledged_by, "first_name")
 		message = {
 			"Validating": "We are noticing some issues with sites on your server. We are giving it a few minutes to confirm before escalating this incident to our engineers.",
@@ -379,3 +415,7 @@ def resolve_incidents():
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Incident", ["server", "status"])

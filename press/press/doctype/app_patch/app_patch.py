@@ -37,6 +37,26 @@ if typing.TYPE_CHECKING:
 
 
 class AppPatch(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		app: DF.Link
+		app_release: DF.Link
+		bench: DF.Link
+		build_assets: DF.Check
+		filename: DF.Data
+		group: DF.Link
+		name: DF.Int | None
+		patch: DF.Code
+		status: DF.Literal["Not Applied", "In Process", "Failed", "Applied"]
+		url: DF.Data | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"name",
 		"app",

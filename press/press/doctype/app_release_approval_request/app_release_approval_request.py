@@ -15,6 +15,30 @@ from press.press.doctype.app_release.app_release import AppRelease
 
 
 class AppReleaseApprovalRequest(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		app: DF.Link | None
+		app_release: DF.Link
+		baseline_request: DF.Data | None
+		baseline_requirements: DF.Code | None
+		baseline_result: DF.Code | None
+		marketplace_app: DF.Link
+		reason_for_rejection: DF.TextEditor | None
+		requirements: DF.Code | None
+		result: DF.Code | None
+		result_html: DF.Code | None
+		reviewed_by: DF.Link | None
+		screening_status: DF.Literal["Not Started", "Screening", "Complete"]
+		status: DF.Literal["Open", "Cancelled", "Approved", "Rejected"]
+		team: DF.Link | None
+	# end: auto-generated types
+
 	def before_save(self):
 		apps = frappe.get_all("Featured App", {"parent": "Marketplace Settings"}, pluck="app")
 		teams = frappe.get_all(

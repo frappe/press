@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from . import __version__ as app_version
 from press.api.account import get_frappe_io_auth_url
+
+from . import __version__ as app_version
 
 app_name = "press"
 app_title = "Press"
@@ -279,7 +280,7 @@ scheduler_events = {
 	},
 }
 
-deploy_hours = [1, 2, 3, 4]
+deploy_hours = [1, 2, 3, 4, 5, 21, 22, 23]  # Purposefully avoiding 0
 
 fixtures = [
 	"Agent Job Type",
@@ -327,3 +328,5 @@ user_data_fields = [
 auth_hooks = ["press.auth.hook"]
 
 page_renderer = ["press.metrics.MetricsRenderer"]
+
+export_python_type_annotations = True

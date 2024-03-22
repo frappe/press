@@ -19,6 +19,27 @@ from press.utils import developer_mode_only
 
 
 class CertificateAuthority(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		common_name: DF.Data
+		decoded_certificate: DF.Code | None
+		directory: DF.Data
+		expires_on: DF.Datetime | None
+		is_root_ca: DF.Check
+		issued_on: DF.Datetime | None
+		organization: DF.Data
+		organizational_unit: DF.Data
+		parent_authority: DF.Link | None
+		rsa_key_size: DF.Literal["2048", "3072", "4096"]
+		validity_days: DF.Int
+	# end: auto-generated types
+
 	def onload(self):
 		developer_mode_only()
 

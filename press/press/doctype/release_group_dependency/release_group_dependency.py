@@ -7,6 +7,21 @@ from press.api.client import is_owned_by_team
 
 
 class ReleaseGroupDependency(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		dependency: DF.Data
+		parent: DF.Data
+		parentfield: DF.Data
+		parenttype: DF.Data
+		version: DF.Data
+	# end: auto-generated types
+
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
 		RGDependency = frappe.qb.DocType("Release Group Dependency")

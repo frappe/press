@@ -93,9 +93,8 @@ class TestPressPermissionGroup(FrappeTestCase):
 
 	def test_most_permissive_permission_should_be_allowed(self):
 		frappe.set_user("Administrator")
-		perm_group2 = create_permission_group(self.team.name)
-		perm_group2.add_user(self.team_member.name)
-		perm_group2.update_permissions({"Site": {"*": {"*": False}}})
+		self.perm_group2.add_user(self.team_member.name)
+		self.perm_group2.update_permissions({"Site": {"*": {"*": False}}})
 		self.perm_group.add_user(self.team_member.name)
 		self.perm_group.update_permissions({"Site": {"*": {"*": True}}})
 		frappe.set_user(self.team_member.name)
@@ -103,9 +102,8 @@ class TestPressPermissionGroup(FrappeTestCase):
 
 	def test_specific_permission_should_be_allowed(self):
 		frappe.set_user("Administrator")
-		perm_group2 = create_permission_group(self.team.name)
-		perm_group2.add_user(self.team_member.name)
-		perm_group2.update_permissions({"Site": {"*": {"*": False}}})
+		self.perm_group2.add_user(self.team_member.name)
+		self.perm_group2.update_permissions({"Site": {"*": {"*": False}}})
 		self.perm_group.add_user(self.team_member.name)
 		self.perm_group.update_permissions({"Site": {"site1.test": {"reinstall": True}}})
 		frappe.set_user(self.team_member.name)

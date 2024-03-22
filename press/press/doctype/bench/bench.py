@@ -3,8 +3,8 @@
 # For license information, please see license.txt
 
 import json
-from datetime import datetime, timedelta
 from functools import cached_property
+from typing import TYPE_CHECKING, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
@@ -12,11 +12,70 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
+from press.press.doctype.bench_shell_log.bench_shell_log import (
+	ExecuteResult,
+	create_bench_shell_log,
+)
 from press.press.doctype.site.site import Site
 from press.utils import log_error
 
+if TYPE_CHECKING:
+	SupervisorctlActions = Literal[
+		"start",
+		"stop",
+		"restart",
+		"clear",
+		"update",
+		"remove",
+	]
+
 
 class Bench(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.bench_app.bench_app import BenchApp
+		from press.press.doctype.bench_mount.bench_mount import BenchMount
+		from press.press.doctype.bench_variable.bench_variable import BenchVariable
+
+		apps: DF.Table[BenchApp]
+		auto_scale_workers: DF.Check
+		background_workers: DF.Int
+		bench_config: DF.Code | None
+		candidate: DF.Link
+		cluster: DF.Link
+		config: DF.Code | None
+		database_server: DF.Link | None
+		docker_image: DF.Data
+		environment_variables: DF.Table[BenchVariable]
+		group: DF.Link
+		gunicorn_threads_per_worker: DF.Int
+		gunicorn_workers: DF.Int
+		is_code_server_enabled: DF.Check
+		is_single_container: DF.Check
+		is_ssh_enabled: DF.Check
+		is_ssh_proxy_setup: DF.Check
+		last_archive_failure: DF.Datetime | None
+		memory_high: DF.Int
+		memory_max: DF.Int
+		memory_swap: DF.Int
+		merge_all_rq_queues: DF.Check
+		merge_default_and_short_rq_queues: DF.Check
+		mounts: DF.Table[BenchMount]
+		port_offset: DF.Int
+		server: DF.Link
+		skip_memory_limits: DF.Check
+		staging: DF.Check
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		team: DF.Link
+		use_rq_workerpool: DF.Check
+		vcpu: DF.Int
+	# end: auto-generated types
+
 	dashboard_fields = ["name", "group", "status"]
 
 	@staticmethod
@@ -461,6 +520,48 @@ class Bench(Document):
 		self.save()
 		return self.gunicorn_workers, self.background_workers
 
+	def docker_execute(
+		self,
+		cmd: str,
+		subdir: Optional[str] = None,
+		save_output: bool = True,
+		create_log: bool = True,
+	) -> ExecuteResult:
+		if self.status not in ["Active", "Broken"]:
+			raise Exception(
+				f"Bench {self.name} has status {self.status}, docker_execute cannot be run"
+			)
+
+		data = {"command": cmd}
+		if subdir:
+			data["subdir"] = subdir
+
+		result: ExecuteResult = Agent(self.server).post(
+			f"benches/{self.name}/docker_execute", data
+		)
+
+		if create_log:
+			create_bench_shell_log(result, self.name, cmd, subdir, save_output)
+		return result
+
+	def supervisorctl(
+		self,
+		action: "SupervisorctlActions",
+		programs: str | list[str] = "all",
+	) -> None:
+		"""
+		If programs list is empty then all programs are selected
+		For reference check: http://supervisord.org/running.html#supervisorctl-actions
+		"""
+		if type(programs) is str:
+			programs = [programs]
+
+		return Agent(self.server).call_supervisorctl(
+			self.name,
+			action,
+			programs,
+		)
+
 
 class StagingSite(Site):
 	def __init__(self, bench: Bench):
@@ -485,7 +586,7 @@ class StagingSite(Site):
 		expiry = frappe.db.get_single_value("Press Settings", "staging_expiry") or 24
 		sites = frappe.get_all(
 			"Site",
-			{"staging": True, "creation": ("<", datetime.now() - timedelta(hours=expiry))},
+			{"staging": True, "creation": ("<", frappe.utils.add_to_date(None, hours=-expiry))},
 		)
 		for site_name in sites:
 			site = frappe.get_doc("Site", site_name)

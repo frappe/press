@@ -14,6 +14,22 @@ from frappe.utils import convert_utc_to_system_timezone, add_to_date, now_dateti
 
 
 class MariaDBStalk(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.mariadb_stalk_diagnostic.mariadb_stalk_diagnostic import (
+			MariaDBStalkDiagnostic,
+		)
+
+		diagnostics: DF.Table[MariaDBStalkDiagnostic]
+		server: DF.Link | None
+		timestamp: DF.Datetime | None
+	# end: auto-generated types
+
 	@staticmethod
 	def clear_old_logs(days=30):
 		table = frappe.qb.DocType("MariaDB Stalk")
@@ -64,6 +80,9 @@ def fetch_server_stalks(server):
 		).replace(tzinfo=None)
 		# To avoid fetching incomplete stalks, wait for 5 minutes
 		if not now_datetime() > add_to_date(timestamp, minutes=5):
+			continue
+		# Don't fetch old stalks
+		if now_datetime() > add_to_date(timestamp, days=15):
 			continue
 		if frappe.db.exists("MariaDB Stalk", {"server": server.name, "timestamp": timestamp}):
 			continue

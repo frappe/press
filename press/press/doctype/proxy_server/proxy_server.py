@@ -15,6 +15,58 @@ import boto3
 
 
 class ProxyServer(BaseServer):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.proxy_server_domain.proxy_server_domain import (
+			ProxyServerDomain,
+		)
+
+		agent_password: DF.Password | None
+		cluster: DF.Link | None
+		domain: DF.Link | None
+		domains: DF.Table[ProxyServerDomain]
+		enabled_default_routing: DF.Check
+		frappe_public_key: DF.Code | None
+		frappe_user_password: DF.Password | None
+		hostname: DF.Data
+		hostname_abbreviation: DF.Data | None
+		ip: DF.Data | None
+		is_primary: DF.Check
+		is_proxysql_setup: DF.Check
+		is_replication_setup: DF.Check
+		is_self_hosted: DF.Check
+		is_server_setup: DF.Check
+		is_ssh_proxy_setup: DF.Check
+		is_wireguard_setup: DF.Check
+		primary: DF.Link | None
+		private_ip: DF.Data | None
+		private_ip_interface_id: DF.Data | None
+		private_mac_address: DF.Data | None
+		private_vlan_id: DF.Data | None
+		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
+		proxysql_admin_password: DF.Password | None
+		proxysql_monitor_password: DF.Password | None
+		root_public_key: DF.Code | None
+		self_hosted_server_domain: DF.Data | None
+		ssh_certificate_authority: DF.Link | None
+		ssh_port: DF.Int
+		ssh_user: DF.Data | None
+		status: DF.Literal["Pending", "Installing", "Active", "Broken", "Archived"]
+		team: DF.Link | None
+		virtual_machine: DF.Link | None
+		wireguard_interface_id: DF.Data | None
+		wireguard_network: DF.Data | None
+		wireguard_network_ip: DF.Data | None
+		wireguard_port: DF.Int
+		wireguard_private_key: DF.Password | None
+		wireguard_public_key: DF.Password | None
+	# end: auto-generated types
+
 	def validate(self):
 		super().validate()
 		self.validate_domains()

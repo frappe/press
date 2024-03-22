@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
-
 import frappe
 
 
 def unlink_remote_files_from_site():
 	"""Remove any remote files attached to the Site doc if older than 12 hours."""
-	half_day = datetime.now() - timedelta(hours=12)
+	half_day = frappe.utils.add_to_date(None, hours=-12)
 	or_filters = [
 		["remote_config_file", "!=", ""],
 		["remote_database_file", "!=", ""],

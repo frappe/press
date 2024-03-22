@@ -48,7 +48,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
-from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
@@ -64,6 +64,85 @@ from press.utils.dns import _change_dns_record, create_dns_record
 
 
 class Site(Document, TagHelpers):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+		from press.press.doctype.resource_tag.resource_tag import ResourceTag
+		from press.press.doctype.site_app.site_app import SiteApp
+		from press.press.doctype.site_config.site_config import SiteConfig
+
+		_keys_removed_in_last_update: DF.Data | None
+		_site_usages: DF.Data | None
+		account_request: DF.Link | None
+		admin_password: DF.Password | None
+		apps: DF.Table[SiteApp]
+		archive_failed: DF.Check
+		auto_update_last_triggered_on: DF.Datetime | None
+		auto_updates_scheduled: DF.Check
+		bench: DF.Link
+		cluster: DF.Link
+		config: DF.Code | None
+		configuration: DF.Table[SiteConfig]
+		current_cpu_usage: DF.Int
+		current_database_usage: DF.Int
+		current_disk_usage: DF.Int
+		database_access_mode: DF.Literal["", "read_only", "read_write"]
+		database_access_password: DF.Password | None
+		database_access_user: DF.Data | None
+		database_name: DF.Data | None
+		domain: DF.Link | None
+		erpnext_consultant: DF.Link | None
+		free: DF.Check
+		group: DF.Link
+		hide_config: DF.Check
+		host_name: DF.Data | None
+		hybrid_saas_pool: DF.Link | None
+		is_database_access_enabled: DF.Check
+		is_erpnext_setup: DF.Check
+		is_standby: DF.Check
+		notify_email: DF.Data | None
+		plan: DF.Link | None
+		remote_config_file: DF.Link | None
+		remote_database_file: DF.Link | None
+		remote_private_file: DF.Link | None
+		remote_public_file: DF.Link | None
+		server: DF.Link
+		setup_wizard_complete: DF.Check
+		skip_auto_updates: DF.Check
+		skip_failing_patches: DF.Check
+		skip_scheduled_backups: DF.Check
+		staging: DF.Check
+		standby_for: DF.Link | None
+		standby_for_product: DF.Link | None
+		status: DF.Literal[
+			"Pending",
+			"Installing",
+			"Updating",
+			"Active",
+			"Inactive",
+			"Broken",
+			"Archived",
+			"Suspended",
+		]
+		status_before_update: DF.Data | None
+		subdomain: DF.Data
+		tags: DF.Table[ResourceTag]
+		team: DF.Link
+		timezone: DF.Data | None
+		trial_end_date: DF.Date | None
+		update_end_of_month: DF.Check
+		update_on_day_of_month: DF.Int
+		update_on_weekday: DF.Literal[
+			"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+		]
+		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
+		update_trigger_time: DF.Time | None
+	# end: auto-generated types
+
 	dashboard_fields = [
 		"ip",
 		"status",
@@ -92,11 +171,15 @@ class Site(Document, TagHelpers):
 		"login_as_admin",
 		"reinstall",
 		"remove_domain",
+		"set_host_name",
+		"set_redirect",
+		"unset_redirect",
 		"restore_site",
 		"schedule_update",
 		"set_plan",
 		"update_config",
 		"delete_config",
+		"send_change_team_request",
 	]
 
 	@staticmethod
@@ -146,9 +229,12 @@ class Site(Document, TagHelpers):
 				)
 				if user_type == "System User":
 					return func(inst, *args, **kwargs)
-				if inst.status not in allowed_status:
+				if (
+					status := frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
+					not in allowed_status
+				):
 					frappe.throw(
-						f"Site action not allowed for site with status: {frappe.bold(inst.status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
+						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
 					)
 				return func(inst, *args, **kwargs)
 
@@ -725,6 +811,7 @@ class Site(Document, TagHelpers):
 		self._check_if_domain_belongs_to_site(self.host_name)
 		self._check_if_domain_is_active(self.host_name)
 
+	@frappe.whitelist()
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
 		self.host_name = domain
@@ -759,12 +846,14 @@ class Site(Document, TagHelpers):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
 
+	@frappe.whitelist()
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
+	@frappe.whitelist()
 	def unset_redirect(self, domain: str):
 		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
@@ -1140,7 +1229,9 @@ class Site(Document, TagHelpers):
 		sanitized_config = {}
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				continue
+				frappe.throw(
+					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
+				)
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"
@@ -1461,6 +1552,8 @@ class Site(Document, TagHelpers):
 			plan = self.subscription_plan if hasattr(self, "subscription_plan") else self.plan
 		if not plan:
 			return {}
+		if plan and not isinstance(plan, str):
+			frappe.throw("Site.subscription_plan must be a string")
 		return get_plan_config(plan)
 
 	def _set_latest_bench(self):
@@ -1706,9 +1799,7 @@ class Site(Document, TagHelpers):
 		hours_left_today = flt(time_diff_in_hours(today_end, now), 2)
 
 		return {
-			"cpu": round(
-				get_current_cpu_usage(self.name) / (100000 * 60 * 60), 4
-			),  # micro seconds to hours
+			"cpu": flt(get_current_cpu_usage(self.name) / (3.6 * (10**9)), 5),
 			"storage": usage.get("public", 0) + usage.get("private", 0),
 			"database": usage.get("database", 0),
 			"hours_until_cpu_usage_resets": hours_left_today,
@@ -1930,6 +2021,41 @@ class Site(Document, TagHelpers):
 				benches_with_this_site.append(bench["name"])
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
+
+	@frappe.whitelist()
+	def forcefully_remove_site(self, bench):
+		"""Bypass all agent/press callbacks and just remove this site from the target bench/server"""
+
+		frappe.only_for("System Manager")
+
+		if bench == self.bench:
+			frappe.throw("Use <b>Archive Site</b> action to remove site from current bench")
+
+		# Mimic archive_site method in the agent.py
+		server, database_server = frappe.db.get_value(
+			"Bench", bench, ["server", "database_server"]
+		)
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+			"force": True,
+		}
+
+		response = {"server": server, "bench": bench}
+		agent = Agent(server)
+		result = agent.request(
+			"POST", f"benches/{bench}/sites/{self.name}/archive", data, raises=False
+		)
+		if "job" in result:
+			job = result["job"]
+			response["job"] = job
+		else:
+			response["error"] = result["error"]
+		self.add_comment(
+			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
+		)
+		return response
 
 
 def site_cleanup_after_archive(site):

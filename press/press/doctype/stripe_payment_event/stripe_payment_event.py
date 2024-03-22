@@ -9,6 +9,22 @@ from press.utils.billing import convert_stripe_money
 
 
 class StripePaymentEvent(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		event_type: DF.Literal["Finalized", "Failed", "Succeeded"]
+		invoice: DF.Link | None
+		payment_status: DF.Literal["Paid", "Unpaid"]
+		stripe_invoice_id: DF.Data | None
+		stripe_invoice_object: DF.Code | None
+		team: DF.Link | None
+	# end: auto-generated types
+
 	def after_insert(self):
 		if self.event_type == "Finalized":
 			self.handle_finalized()

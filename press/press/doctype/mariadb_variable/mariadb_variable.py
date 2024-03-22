@@ -8,6 +8,22 @@ from press.press.doctype.database_server.database_server import DatabaseServer
 
 
 class MariaDBVariable(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		datatype: DF.Literal["Int", "Bool", "Float", "Str"]
+		default_value: DF.Data | None
+		doc_section: DF.Literal["server", "replication-and-binary-log", "innodb"]
+		dynamic: DF.Check
+		set_on_new_servers: DF.Check
+		skippable: DF.Check
+	# end: auto-generated types
+
 	def get_default_value(self):
 		if not (value := self.default_value):
 			frappe.throw("Default Value is required")

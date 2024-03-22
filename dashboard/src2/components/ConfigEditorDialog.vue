@@ -160,10 +160,12 @@ export default {
 					onSuccess: () => {
 						this.$emit('success');
 						this.showDialog = false;
+					},
+					onError: error => {
+						this.error = error;
 					}
 				}
 			);
-			this.error = this.docResource.updateConfig.error;
 		}
 	},
 	computed: {

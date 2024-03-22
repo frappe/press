@@ -12,6 +12,20 @@ from press.press.doctype.deploy_candidate.deploy_candidate import ansi_escape
 
 
 class SerialConsoleLog(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		output: DF.Code | None
+		server: DF.DynamicLink
+		server_type: DF.Link
+		virtual_machine: DF.Link
+	# end: auto-generated types
+
 	@frappe.whitelist()
 	def run_reboot(self):
 		frappe.enqueue_doc(

@@ -9,6 +9,23 @@ ALLOWED_CONFIG_PERMS = ["global", "restricted"]
 
 
 class PressUserPermission(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		action: DF.Data | None
+		config: DF.JSON | None
+		document_name: DF.DynamicLink | None
+		document_type: DF.Link | None
+		group: DF.Link | None
+		type: DF.Literal["User", "Group", "Config"]
+		user: DF.Link | None
+	# end: auto-generated types
+
 	def validate(self):
 		if self.type == "Config":
 			self.validate_config()

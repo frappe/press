@@ -9,6 +9,19 @@ from press.utils.billing import get_razorpay_client
 
 
 class RazorpayWebhookLog(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		event: DF.Data | None
+		payload: DF.Code | None
+		payment_id: DF.Data | None
+	# end: auto-generated types
+
 	def after_insert(self):
 		payment_record = frappe.get_doc("Razorpay Payment Record", {"order_id": self.name})
 
