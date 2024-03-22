@@ -134,6 +134,46 @@ def get_uptime(site, timezone, timespan, timegrain):
 	return buckets
 
 
+def get_stacked_histogram_chart_result(search: Search, query_type: str):
+	aggs = search.execute().aggregations
+	labels = set()
+	try:
+		for path_bucket in aggs.method_path.buckets:
+			for hist_bucket in path_bucket.histogram_of_method.buckets:
+				labels.add(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
+		labels = sorted(list(labels))
+	except AttributeError:
+		return {"datasets": [], "labels": []}
+	# method_path has buckets of timestamps with method(eg: avg) of that duration
+	datasets = []
+
+	for path_bucket in aggs.method_path.buckets:
+		path_data = frappe._dict(
+			{
+				"path": path_bucket.key,
+				"values": [0] * len(labels),
+				"stack": "path",
+			}
+		)
+		for hist_bucket in path_bucket.histogram_of_method.buckets:
+			path_data["values"][
+				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
+			] = (
+				(flt(hist_bucket.avg_of_duration.value) / 1e6)
+				if query_type == "average_duration"
+				else (
+					flt(hist_bucket.sum_of_duration.value) / 1e6
+					if query_type == "duration"
+					else hist_bucket.doc_count
+					if query_type == "count"
+					else 0
+				)
+			)
+		datasets.append(path_data)
+
+	return {"datasets": datasets, "labels": labels}
+
+
 def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	MAX_NO_OF_PATHS = 10
 
@@ -202,41 +242,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
-	response = search.execute()
-	aggs = response.aggregations
-	labels = set()
-	for path_bucket in aggs.method_path.buckets:
-		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			labels.add(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-	labels = sorted(list(labels))
-	# method_path has buckets of timestamps with method(eg: avg) of that duration
-	datasets = []
-
-	for path_bucket in aggs.method_path.buckets:
-		path_data = frappe._dict(
-			{
-				"path": path_bucket.key,
-				"values": [0] * len(labels),
-				"stack": "path",
-			}
-		)
-		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			path_data["values"][
-				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-			] = (
-				(flt(hist_bucket.avg_of_duration.value) / 1e6)
-				if query_type == "average_duration"
-				else (
-					flt(hist_bucket.sum_of_duration.value) / 1e6
-					if query_type == "duration"
-					else hist_bucket.doc_count
-					if query_type == "count"
-					else 0
-				)
-			)
-		datasets.append(path_data)
-
-	return {"datasets": datasets, "labels": labels}
+	return get_stacked_histogram_chart_result(search, query_type)
 
 
 def get_slow_logs(site, query_type, timezone, timespan, timegrain):
@@ -293,37 +299,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	response = search.execute()
-	aggs = response.aggregations
-	labels = set()
-	for path_bucket in aggs.method_path.buckets:
-		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			labels.add(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-	labels = sorted(list(labels))
-	# method_path has buckets of timestamps with method(eg: avg) of that duration
-	datasets = []
-
-	for path_bucket in aggs.method_path.buckets:
-		path_data = frappe._dict(
-			{
-				"path": path_bucket.key,
-				"values": [0] * len(labels),
-				"stack": "path",
-			}
-		)
-		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			path_data["values"][
-				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-			] = (
-				flt(hist_bucket.sum_of_duration.value) / 1e6
-				if query_type == "duration"
-				else hist_bucket.doc_count
-				if query_type == "count"
-				else 0
-			)
-		datasets.append(path_data)
-
-	return {"datasets": datasets, "labels": labels}
+	return get_stacked_histogram_chart_result(search, query_type)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):
