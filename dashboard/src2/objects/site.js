@@ -42,6 +42,9 @@ export default {
 		loginAsAdmin: 'login_as_admin',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
+		redirectToPrimary: 'set_redirect',
+		removeRedirect: 'unset_redirect',
+		setPrimaryDomain: 'set_host_name',
 		restoreSite: 'restore_site',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
@@ -591,6 +594,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Site Domain',
+					fields: ['redirect_to_primary'],
 					filters: site => {
 						return { site: site.doc.name };
 					},
@@ -637,26 +641,125 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: domains, documentResource: site }) {
-						if (row.domain === site.doc.name) return;
 						return [
 							{
 								label: 'Remove',
+								condition: () => row.domain !== site.doc.name,
 								onClick() {
-									if (site.removeDomain.loading) return;
-									toast.promise(
-										site.removeDomain.submit({
-											domain: row.domain
-										}),
-										{
-											loading: 'Removing domain...',
-											success: () => 'Domain removed',
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: `Remove Domain`,
+										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeDomain.loading) return;
+											toast.promise(
+												site.removeDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing domain...',
+													success: () => {
+														hide();
+														return 'Domain removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
+								}
+							},
+							{
+								label: 'Set Primary',
+								condition: () => !row.primary,
+								onClick() {
+									confirmDialog({
+										title: `Set Primary Domain`,
+										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.setPrimaryDomain.loading) return;
+											toast.promise(
+												site.setPrimaryDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Setting primary domain...',
+													success: () => {
+														hide();
+														return 'Primary domain set';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Redirect to Primary',
+								condition: () => !row.primary && !row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Redirect Domain`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.redirectToPrimary.loading) return;
+											toast.promise(
+												site.redirectToPrimary.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Redirecting domain...',
+													success: () => {
+														hide();
+														return 'Domain redirected';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Remove Redirect',
+								condition: () => !row.primary && row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Remove Redirect`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeRedirect.loading) return;
+											toast.promise(
+												site.removeRedirect.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing redirect...',
+													success: () => {
+														hide();
+														return 'Redirect removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
 								}
 							}
 						];

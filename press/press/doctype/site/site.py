@@ -171,6 +171,9 @@ class Site(Document, TagHelpers):
 		"login_as_admin",
 		"reinstall",
 		"remove_domain",
+		"set_host_name",
+		"set_redirect",
+		"unset_redirect",
 		"restore_site",
 		"schedule_update",
 		"set_plan",
@@ -808,6 +811,7 @@ class Site(Document, TagHelpers):
 		self._check_if_domain_belongs_to_site(self.host_name)
 		self._check_if_domain_is_active(self.host_name)
 
+	@frappe.whitelist()
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
 		self.host_name = domain
@@ -842,12 +846,14 @@ class Site(Document, TagHelpers):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
 
+	@frappe.whitelist()
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
+	@frappe.whitelist()
 	def unset_redirect(self, domain: str):
 		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
