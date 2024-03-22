@@ -3,7 +3,6 @@
 # For license information, please see license.txt
 
 import json
-from datetime import datetime, timedelta
 from functools import cached_property
 from typing import TYPE_CHECKING, Literal, Optional
 
@@ -587,7 +586,7 @@ class StagingSite(Site):
 		expiry = frappe.db.get_single_value("Press Settings", "staging_expiry") or 24
 		sites = frappe.get_all(
 			"Site",
-			{"staging": True, "creation": ("<", datetime.now() - timedelta(hours=expiry))},
+			{"staging": True, "creation": ("<", frappe.utils.add_to_date(None, hours=-expiry))},
 		)
 		for site_name in sites:
 			site = frappe.get_doc("Site", site_name)

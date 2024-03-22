@@ -48,7 +48,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
-from press.press.doctype.plan.plan import get_plan_config
+from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
@@ -2013,6 +2013,41 @@ class Site(Document, TagHelpers):
 				benches_with_this_site.append(bench["name"])
 		if len(benches_with_this_site) == 1:
 			frappe.db.set_value("Site", self.name, "bench", benches_with_this_site[0])
+
+	@frappe.whitelist()
+	def forcefully_remove_site(self, bench):
+		"""Bypass all agent/press callbacks and just remove this site from the target bench/server"""
+
+		frappe.only_for("System Manager")
+
+		if bench == self.bench:
+			frappe.throw("Use <b>Archive Site</b> action to remove site from current bench")
+
+		# Mimic archive_site method in the agent.py
+		server, database_server = frappe.db.get_value(
+			"Bench", bench, ["server", "database_server"]
+		)
+		data = {
+			"mariadb_root_password": get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			),
+			"force": True,
+		}
+
+		response = {"server": server, "bench": bench}
+		agent = Agent(server)
+		result = agent.request(
+			"POST", f"benches/{bench}/sites/{self.name}/archive", data, raises=False
+		)
+		if "job" in result:
+			job = result["job"]
+			response["job"] = job
+		else:
+			response["error"] = result["error"]
+		self.add_comment(
+			text=f"{frappe.session.user} attempted to forcefully remove site from {bench}.<br><pre>{json.dumps(response, indent=1)}</pre>"
+		)
+		return response
 
 
 def site_cleanup_after_archive(site):

@@ -163,7 +163,7 @@
 					{
 						label: 'Proceed',
 						variant: 'solid',
-						onClick: handlePlanSelection
+						onClick: $resources.installApp.submit
 					}
 				]
 			}"
@@ -195,7 +195,7 @@
 					{
 						label: 'Change Plan',
 						variant: 'solid',
-						onClick: handlePlanChange,
+						onClick: switchToNewPlan,
 						loading: $resources.changePlan.loading
 					}
 				]
@@ -217,37 +217,11 @@
 				/>
 			</template>
 		</Dialog>
-
-		<Dialog
-			v-model="showCheckoutDialog"
-			:options="{ title: 'Checkout Details' }"
-			:dismissable="true"
-		>
-			<template v-slot:body-content>
-				<MarketplacePrepaidCredits
-					v-if="newAppPlan"
-					:subscription="currentSubscription"
-					:app="appToChangePlan.name"
-					:appTitle="appToChangePlan.title"
-					:site="site.name"
-					:plan="newAppPlan"
-				/>
-
-				<MarketplacePrepaidCredits
-					v-if="selectedPlan"
-					:app="appToInstall.app"
-					:appTitle="appToInstall.title"
-					:site="site.name"
-					:plan="selectedPlan"
-				/>
-			</template>
-		</Dialog>
 	</Card>
 </template>
 <script>
 import CommitTag from '@/components/utils/CommitTag.vue';
 import ChangeAppPlanSelector from '@/components/ChangeAppPlanSelector.vue';
-import MarketplacePrepaidCredits from '../marketplace/MarketplacePrepaidCredits.vue';
 import Fuse from 'fuse.js/dist/fuse.basic.esm';
 import { notify } from '@/utils/toast';
 
@@ -259,7 +233,6 @@ export default {
 			showInstallAppsDialog: false,
 			showPlanSelectionDialog: false,
 			showAppPlanChangeDialog: false,
-			showCheckoutDialog: false,
 			appToChangePlan: null,
 			newAppPlan: '',
 			appToInstall: null,
@@ -271,8 +244,7 @@ export default {
 	},
 	components: {
 		ChangeAppPlanSelector,
-		CommitTag,
-		MarketplacePrepaidCredits
+		CommitTag
 	},
 	resources: {
 		marketplaceSubscriptions() {
@@ -398,23 +370,10 @@ export default {
 			this.showAppPlanChangeDialog = true;
 		},
 
-		handlePlanChange() {
-			if (
-				this.appToChangePlan.billing_type == 'prepaid' &&
-				!this.newAppPlanIsFree
-			) {
-				if (this.$account.hasBillingInfo) {
-					this.showAppPlanChangeDialog = false;
-					this.showCheckoutDialog = true;
-				} else {
-					window.location = '/dashboard/billing';
-				}
-			} else {
-				this.switchToNewPlan();
-			}
-		},
-
 		switchToNewPlan() {
+			if (!this.$account.hasBillingInfo) {
+				window.location = '/dashboard/billing';
+			}
 			if (this.currentAppPlan !== this.newAppPlan) {
 				this.$resources.changePlan.submit({
 					subscription: this.appToChangePlan.subscription,
@@ -441,19 +400,7 @@ export default {
 			});
 		},
 		handlePlanSelection() {
-			if (
-				this.appToInstall.billing_type == 'prepaid' &&
-				!this.selectedPlanIsFree
-			) {
-				if (this.$account.hasBillingInfo) {
-					this.showPlanSelectionDialog = false;
-					this.showCheckoutDialog = true;
-				} else {
-					window.location = '/dashboard/billing';
-				}
-			} else {
-				this.$resources.installApp.submit();
-			}
+			this.$resources.installApp.submit();
 		},
 		dropdownItems(app) {
 			return [

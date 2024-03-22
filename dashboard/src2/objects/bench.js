@@ -300,7 +300,8 @@ export default {
 							onClick() {
 								renderDialog(
 									h(AddAppDialog, {
-										benchName: releaseGroup.name,
+										groupName: releaseGroup.name,
+										groupVersion: releaseGroup.doc.version,
 										onAppAdd() {
 											apps.reload();
 											releaseGroup.reload();

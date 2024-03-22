@@ -607,7 +607,6 @@ def get_plans_for_app(
 		fields=[
 			"name",
 			"title",
-			"plan",
 			"enabled",
 			"price_inr",
 			"price_usd",

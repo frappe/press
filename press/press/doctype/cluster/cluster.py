@@ -39,7 +39,7 @@ from press.utils import get_current_team, unique
 import typing
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.plan.plan import Plan
+	from press.press.doctype.server_plan.server_plan import ServerPlan
 	from press.press.doctype.press_settings.press_settings import PressSettings
 	from press.press.doctype.virtual_machine.virtual_machine import VirtualMachine
 
@@ -715,7 +715,7 @@ class Cluster(Document):
 		self,
 		doctype: str,
 		title: str,
-		plan: "Plan" = None,
+		plan: "ServerPlan" = None,
 		domain: str = None,
 		team: str = None,
 		create_subscription=True,

@@ -643,13 +643,13 @@ class Agent:
 	def cleanup_unused_files(self):
 		return self.create_agent_job("Cleanup Unused Files", "server/cleanup", {})
 
-	def get(self, path):
-		return self.request("GET", path)
+	def get(self, path, raises=True):
+		return self.request("GET", path, raises=raises)
 
-	def post(self, path, data=None):
-		return self.request("POST", path, data)
+	def post(self, path, data=None, raises=True):
+		return self.request("POST", path, data, raises=raises)
 
-	def request(self, method, path, data=None, files=None, agent_job=None):
+	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
 		url = None
@@ -686,7 +686,8 @@ class Agent:
 			json_response = None
 			try:
 				json_response = result.json()
-				result.raise_for_status()
+				if raises:
+					result.raise_for_status()
 				return json_response
 			except Exception:
 				self.handle_request_failure(agent_job, result)
@@ -711,6 +712,8 @@ class Agent:
 			)
 
 	def handle_request_failure(self, agent_job, result):
+		if not agent_job:
+			return
 		message = f"""
 			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
 			Response: {getattr(result, 'text', 'Unknown')}

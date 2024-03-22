@@ -1,7 +1,7 @@
 <template>
 	<Dialog
 		:options="{
-			title: 'Add app',
+			title: 'Add Marketplace App',
 			size: '6xl'
 		}"
 		v-model="showDialog"
@@ -76,30 +76,42 @@
 							:key="row.name"
 						>
 							<template v-slot="{ column, item }">
-								<Dropdown
-									:options="dropdownItems(row)"
-									right
-									v-if="column.type === 'select'"
-								>
-									<template v-slot="{ open }">
-										<Button type="white" icon-right="chevron-down">
-											<span>{{ row.source.branch }}</span>
-										</Button>
-									</template>
-								</Dropdown>
-								<Button
-									v-else-if="column.type === 'Button'"
-									label="Add"
-									@click="addApp(row)"
-									:icon-left="
-										selectedAppSources.includes(row) ? 'check' : 'plus'
-									"
-									:class="{
-										'pointer-events-none': selectedAppSources.includes(row)
-									}"
-								/>
-								<div v-else class="truncate text-base" :class="column.class">
-									{{ formattedValue(column, item) }}
+								<div class="flex items-center">
+									<div v-if="column.prefix" class="mr-2">
+										<component :is="column.prefix(row)" />
+									</div>
+									<Dropdown
+										:options="dropdownItems(row)"
+										right
+										v-if="column.type === 'select'"
+									>
+										<template v-slot="{ open }">
+											<Button
+												v-if="row.source.branch"
+												type="white"
+												icon-right="chevron-down"
+											>
+												<span>{{ row.source.branch }}</span>
+											</Button>
+										</template>
+									</Dropdown>
+									<Button
+										v-else-if="column.type === 'Button'"
+										label="Add"
+										@click="addApp(row)"
+										:icon-left="addedApps.includes(row) ? 'check' : 'plus'"
+										:disabled="!row.compatible"
+										:class="{
+											'pointer-events-none': addedApps.includes(row)
+										}"
+									/>
+									<Badge
+										v-else-if="column.type === 'Badge'"
+										v-bind="formattedValue(column, item, row)"
+									/>
+									<div v-else class="truncate text-base" :class="column.class">
+										{{ formattedValue(column, item, row) }}
+									</div>
 								</div>
 							</template>
 						</ListRow>
@@ -133,11 +145,12 @@ import {
 	TextInput
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import { h } from 'vue';
 import NewAppDialog from '../NewAppDialog.vue';
 
 export default {
 	name: 'AddAppDialog',
-	props: ['benchName'],
+	props: ['groupName', 'groupVersion'],
 	components: {
 		ListView,
 		ListHeader,
@@ -156,24 +169,40 @@ export default {
 			selectedAppSources: [],
 			selectedBranch: '',
 			showDialog: true,
+			addedApps: [],
 			columns: [
 				{
 					label: 'Title',
 					key: 'title',
-					class: 'font-medium'
+					class: 'font-medium',
+					prefix(row) {
+						return row.image
+							? h('img', {
+									src: row.image,
+									class: 'w-6 h-6 rounded',
+									alt: row.title
+							  })
+							: h(
+									'div',
+									{
+										class:
+											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
+									},
+									row.title[0].toUpperCase()
+							  );
+					}
 				},
 				{
 					label: 'Repository',
-					key: 'source',
+					key: 'repo',
 					class: 'text-gray-600',
-					format(value, row) {
-						return value.repository_owner + '/' + value.repository;
-					}
+					width: '15rem'
 				},
 				{
 					label: 'Branch',
 					type: 'select',
 					key: 'sources',
+					width: '15rem',
 					format(value, row) {
 						return row.sources.map(s => {
 							return {
@@ -181,6 +210,18 @@ export default {
 								value: s.name
 							};
 						});
+					}
+				},
+				{
+					label: '',
+					key: 'compatible',
+					type: 'Badge',
+					width: '10rem',
+					format(value) {
+						return {
+							label: value ? 'Compatible' : 'Incompatible',
+							theme: value ? 'green' : 'red'
+						};
 					}
 				},
 				{
@@ -203,9 +244,16 @@ export default {
 		},
 		installableApps() {
 			return {
-				url: 'press.api.bench.installable_apps',
+				url: 'press.api.bench.all_apps',
 				params: {
-					name: this.benchName
+					name: this.groupName
+				},
+				transform(data) {
+					return data.map(app => {
+						app.compatible = app.sources.length > 0;
+						app.source = app.sources.length > 0 ? app.sources[0] : {};
+						return app;
+					});
 				},
 				auto: true,
 				initialData: []
@@ -217,10 +265,23 @@ export default {
 			return this.$resources.installableApps.data;
 		},
 		filteredRows() {
-			if (!this.searchQuery) return this.rows;
+			let rows = this.rows.sort((a, b) => {
+				// Sort by compatible first, then by total installs
+				if (a.compatible && !b.compatible) {
+					return -1;
+				} else if (!a.compatible && b.compatible) {
+					return 1;
+				} else if (a.total_installs != b.total_installs) {
+					return b.total_installs - a.total_installs;
+				} else {
+					return a.title.localeCompare(b.title);
+				}
+			});
+
+			if (!this.searchQuery) return rows;
 			let query = this.searchQuery.toLowerCase();
 
-			return this.rows.filter(row => {
+			return rows.filter(row => {
 				let values = this.columns.map(column => {
 					let value = row[column.key];
 					if (column.format) {
@@ -245,7 +306,7 @@ export default {
 	},
 	methods: {
 		addAppFromGithub(app) {
-			app.group = this.benchName;
+			app.group = this.groupName;
 			this.$emit('new-app', app);
 		},
 		addApp(row) {
@@ -254,11 +315,15 @@ export default {
 
 			let app = this.selectedAppSources.find(app => app.name === row.name);
 
-			this.$resources.addApp.submit({
-				name: this.benchName,
-				source: app.source.name,
-				app: app.name
-			});
+			this.$resources.addApp
+				.submit({
+					name: this.groupName,
+					source: app.source.name,
+					app: app.name
+				})
+				.then(() => {
+					this.addedApps.push(app);
+				});
 		},
 		dropdownItems(row) {
 			return row.sources.map(source => ({
@@ -278,8 +343,8 @@ export default {
 				return _app;
 			});
 		},
-		formattedValue(column, value) {
-			let formattedValue = column.format ? column.format(value) : value;
+		formattedValue(column, value, row) {
+			let formattedValue = column.format ? column.format(value, row) : value;
 			if (formattedValue == null) {
 				formattedValue = '';
 			}
