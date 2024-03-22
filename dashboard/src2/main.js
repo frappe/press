@@ -59,7 +59,7 @@ function getInitialData() {
 }
 
 function importGlobals() {
-	return import('./globals.js').then(globals => {
+	return import('./globals.ts').then(globals => {
 		app.use(globals.default);
 	});
 }
