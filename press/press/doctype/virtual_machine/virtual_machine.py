@@ -495,6 +495,7 @@ class VirtualMachine(Document):
 			self.public_dns_name = instance.get("PublicDnsName")
 			self.private_dns_name = instance.get("PrivateDnsName")
 
+			attached_volumes = []
 			for volume in self.get_volumes():
 				existing_volume = find(self.volumes, lambda v: v.volume_id == volume["VolumeId"])
 				if existing_volume:
@@ -502,6 +503,7 @@ class VirtualMachine(Document):
 				else:
 					row = frappe._dict()
 				row.volume_id = volume["VolumeId"]
+				attached_volumes.append(row.volume_id)
 				row.volume_type = volume["VolumeType"]
 				row.size = volume["Size"]
 				row.iops = volume["Iops"]
@@ -510,6 +512,10 @@ class VirtualMachine(Document):
 
 				if not existing_volume:
 					self.append("volumes", row)
+
+			for volume in list(self.volumes):
+				if volume.volume_id not in attached_volumes:
+					self.remove(volume)
 
 			self.disk_size = self.volumes[0].size
 
