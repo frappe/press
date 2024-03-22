@@ -415,3 +415,7 @@ def resolve_incidents():
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Incident", ["server", "status"])
