@@ -51,9 +51,11 @@ export default {
 			return {
 				url: 'press.api.site.exists',
 				debounce: 500,
-				params: {
-					domain: this.domain,
-					subdomain: this.subdomain
+				makeParams() {
+					return {
+						domain: this.domain,
+						subdomain: this.subdomain
+					};
 				},
 				validate() {
 					return validateSubdomain(this.subdomain);
