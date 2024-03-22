@@ -653,10 +653,10 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: domains, documentResource: site }) {
-						if (row.domain === site.doc.name) return;
 						return [
 							{
 								label: 'Remove',
+								condition: () => row.domain !== site.doc.name,
 								onClick() {
 									confirmDialog({
 										title: `Remove Domain`,
