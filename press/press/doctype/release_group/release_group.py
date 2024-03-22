@@ -270,7 +270,9 @@ class ReleaseGroup(Document, TagHelpers):
 
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				continue
+				frappe.throw(
+					_(f"The key <b>{key}</b> is blacklisted or is internal and cannot be updated")
+				)
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"

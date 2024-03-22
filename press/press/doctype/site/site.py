@@ -1229,7 +1229,9 @@ class Site(Document, TagHelpers):
 		sanitized_config = {}
 		for key, value in config.items():
 			if key in get_client_blacklisted_keys():
-				continue
+				frappe.throw(
+					_(f"The key <b>{key}</b> is blacklisted or internal and cannot be updated")
+				)
 
 			if isinstance(value, (dict, list)):
 				_type = "JSON"
