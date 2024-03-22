@@ -49,6 +49,7 @@
 							onSuccess: () => {
 								$site.reload();
 								show = false;
+								$router.push({ name: 'Site Detail Updates' });
 							}
 						}
 					)
