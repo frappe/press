@@ -259,6 +259,7 @@ class Site(Document, TagHelpers):
 		self.validate_host_name()
 		self.validate_site_config()
 		self.validate_auto_update_fields()
+		self.validate_site_plan_if_private_bench()
 
 	def before_insert(self):
 		if not self.bench and self.group:
@@ -332,6 +333,17 @@ class Site(Document, TagHelpers):
 		# Validate day of month
 		if not (1 <= self.update_on_day_of_month <= 31):
 			frappe.throw("Day of the month must be between 1 and 31 (included)!")
+
+	def validate_site_plan_if_private_bench(self):
+		site_in_public_group = frappe.get_value("Release Group", self.group, "public")
+		if not site_in_public_group:
+			plan_supports_private_bench = frappe.get_value(
+				"Site Plan", self.plan, "private_benches"
+			)
+			if not plan_supports_private_bench:
+				frappe.throw(
+					_("You cannot select this plan while creating a site on a private bench")
+				)
 
 	def on_update(self):
 		if self.status == "Active" and self.has_value_changed("host_name"):
