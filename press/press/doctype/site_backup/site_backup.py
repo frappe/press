@@ -210,3 +210,7 @@ def get_backup_bucket(cluster, region=False):
 		return bucket_for_cluster[0] if bucket_for_cluster else default_bucket
 	else:
 		return bucket_for_cluster[0]["name"] if bucket_for_cluster else default_bucket
+
+
+def on_doctype_update():
+	frappe.db.add_index("Site Backup", ["files_availability", "job"])
