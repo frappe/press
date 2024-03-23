@@ -1406,6 +1406,22 @@ class Site(Document, TagHelpers):
 			self.trial_end_date = ""
 			self.save()
 
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"revoke_database_access_on_plan_change",
+			enqueue_after_commit=True,
+		)
+
+	def revoke_database_access_on_plan_change(self):
+		# If the new plan doesn't have database access, disable it
+		if not self.is_database_access_enabled:
+			return
+		if frappe.db.get_value("Site Plan", self.plan, "database_access"):
+			return
+
+		self.disable_database_access()
+
 	def unsuspend_if_applicable(self):
 		try:
 			usage = frappe.get_last_doc("Site Usage", {"site": self.name})
