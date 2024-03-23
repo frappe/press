@@ -477,18 +477,18 @@ def fail_old_jobs():
 	)
 	update_status(failed_jobs, "Failure")
 
-	undelivered_jobs = frappe.db.get_values(
+	delivery_failed_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"job_id": 0,
 			"creation": ("<", add_days(None, -2)),
-			"status": ("!=", "Undelivered"),
+			"status": ("!=", "Delivery Failure"),
 		},
 		"name",
 		pluck=True,
 	)
 
-	update_status(undelivered_jobs, "Undelivered")
+	update_status(delivery_failed_jobs, "Delivery Failure")
 
 
 def get_pair_jobs() -> tuple[str]:
