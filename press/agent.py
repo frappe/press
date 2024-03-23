@@ -796,7 +796,7 @@ class Agent:
 	):
 		"""Deduplicate jobs in execution state"""
 
-		filteres = {
+		filters = {
 			"server_type": self.server_type,
 			"server": self.server,
 			"job_type": job_type,
@@ -806,21 +806,21 @@ class Agent:
 		}
 
 		if bench:
-			filteres["bench"] = bench
+			filters["bench"] = bench
 
 		if site:
-			filteres["site"] = site
+			filters["site"] = site
 
 		if code_server:
-			filteres["code_server"] = code_server
+			filters["code_server"] = code_server
 
 		if upstream:
-			filteres["upstream"] = upstream
+			filters["upstream"] = upstream
 
 		if host:
-			filteres["host"] = host
+			filters["host"] = host
 
-		job = frappe.db.get_value("Agent Job", filteres, "name")
+		job = frappe.db.get_value("Agent Job", filters, "name")
 
 		return frappe.get_doc("Agent Job", job) if job else False
 
