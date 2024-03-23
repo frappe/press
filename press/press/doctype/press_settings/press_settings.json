@@ -180,8 +180,10 @@
   "feature_flags_tab",
   "verify_cards_with_micro_charge",
   "enable_google_oauth",
-  "column_break_biqm",
   "realtime_job_updates",
+  "column_break_rdlr",
+  "disable_auto_retry",
+  "disable_agent_job_deduplication",
   "code_spaces_tab",
   "spaces_domain",
   "hybrid_server_tab",
@@ -1124,7 +1126,7 @@
    "label": "Compress App Cache"
   },
   {
-   "fieldname": "column_break_biqm",
+   "fieldname": "column_break_rdlr",
    "fieldtype": "Column Break"
   },
   {
@@ -1167,11 +1169,23 @@
    "fieldtype": "Link",
    "label": "Hybrid Domain",
    "options": "Root Domain"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disable Auto Retry"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_agent_job_deduplication",
+   "fieldtype": "Check",
+   "label": "Disable Agent Job Deduplication"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-03-05 15:51:49.055544",
+ "modified": "2024-03-22 12:30:21.968896",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

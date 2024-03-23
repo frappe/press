@@ -16,7 +16,7 @@ from press.press.doctype.remote_file.remote_file import RemoteFile
 from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
-
+from press.press.doctype.site.site import Site
 from press.press.doctype.site.test_site import create_test_bench, create_test_site
 from press.press.doctype.site_migration.site_migration import (
 	SiteMigration,
@@ -65,7 +65,10 @@ class TestSiteMigration(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_in_cluster_site_migration_goes_through_all_steps_and_updates_site(self):
-		site = create_test_site()
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			"""Patching these methods as its creating issue with duplicate agent job check"""
+			site = create_test_site()
+
 		bench = create_test_bench()
 		site_migration = frappe.get_doc(
 			{
@@ -75,7 +78,7 @@ class TestSiteMigration(FrappeTestCase):
 			}
 		).insert()
 
-		with fake_agent_job("Update Site Configuration"), fake_agent_job(
+		with fake_agent_job("Update Site Configuration", "Success"), fake_agent_job(
 			"Backup Site",
 			data=BACKUP_JOB_RES,
 		), fake_agent_job("New Site from Backup"), fake_agent_job(
@@ -91,11 +94,13 @@ class TestSiteMigration(FrappeTestCase):
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
+			site_migration.reload()
+			self.assertEqual(site_migration.status, "Running")
+
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			site_migration.reload()
-			self.assertEqual(site_migration.status, "Running")
 			poll_pending_jobs()
 		site_migration.reload()
 		self.assertEqual(site_migration.status, "Success")
@@ -105,7 +110,9 @@ class TestSiteMigration(FrappeTestCase):
 		self.assertEqual(site.server, bench.server)
 
 	def test_site_is_activated_on_failure_when_possible(self):
-		site = create_test_site()
+		with patch.object(Site, "after_insert"), patch.object(Site, "on_update"):
+			"""Patching these methods as its creating issue with duplicate agent job check"""
+			site = create_test_site()
 		bench = create_test_bench()
 		site_migration: SiteMigration = frappe.get_doc(
 			{
@@ -185,6 +192,7 @@ class TestSiteMigration(FrappeTestCase):
 			"Add Site to Upstream", "Failure"
 		):
 			site_migration.start()
+			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()
 			poll_pending_jobs()  # restore on destination
