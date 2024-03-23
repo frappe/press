@@ -475,7 +475,7 @@ class DeployCandidate(Document):
 
 	def _build_run(self):
 		self.status = "Running"
-		self.save()
+		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -488,7 +488,7 @@ class DeployCandidate(Document):
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
 
 		self._fail_last_running_step()
-		self.save()
+		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	def _build_successful(self):
@@ -498,7 +498,7 @@ class DeployCandidate(Document):
 		)
 		if bench_update:
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
-		self.save()
+		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	def _build_end(self):
