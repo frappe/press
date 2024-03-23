@@ -193,7 +193,6 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
-		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
