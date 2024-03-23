@@ -182,18 +182,25 @@ class AgentJob(Document):
 
 	def set_status_and_next_retry_at(self):
 		try:
-			if not self.retry_count:
-				self.retry_count = 1
-
 			next_retry_at = get_next_retry_at(self.retry_count)
+			self._update_retry_fields(next_retry_at)
 
-			self.status = "Undelivered"
-			self.next_retry_at = next_retry_at
-			self.save()
-			frappe.db.commit()
+		except frappe.TimestampMismatchError:
+			self.reload()
+			self._update_retry_fields(next_retry_at)
 
 		except Exception:
 			log_error("Agent Job Set Next Retry Timing", job=self)
+
+	def _update_retry_fields(self, next_retry_at):
+		if not self.retry_count:
+			self.retry_count = 1
+
+		self.status = "Undelivered"
+		self.next_retry_at = next_retry_at
+
+		self.save()
+		frappe.db.commit()
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
