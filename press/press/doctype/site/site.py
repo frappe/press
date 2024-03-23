@@ -1040,6 +1040,7 @@ class Site(Document, TagHelpers):
 			"backups": last_usage.backups,
 			"public": last_usage.public,
 			"private": last_usage.private,
+			"creation": last_usage.creation,
 		}
 
 	def _sync_config_info(self, fetched_config: Dict) -> bool:
@@ -1098,6 +1099,8 @@ class Site(Document, TagHelpers):
 				if frappe.db.exists(
 					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
 				):
+					return
+				if equivalent_site_time < current_usages["creation"]:
 					return
 
 			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
