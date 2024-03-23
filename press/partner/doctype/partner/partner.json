@@ -1,0 +1,231 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:company_name",
+ "creation": "2024-02-26 14:31:23.724105",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "partner_details_section",
+  "partner_name",
+  "company_name",
+  "partner_type",
+  "team",
+  "column_break_unzp",
+  "email",
+  "country",
+  "territory",
+  "currency",
+  "partner_revenue_contributions_section",
+  "last_months_contribution",
+  "column_break_tlma",
+  "current_months_contribution",
+  "upcoming_partner_tier",
+  "contract_details_section",
+  "contract_start_date",
+  "contract_end_date",
+  "website_tab",
+  "website_details_section",
+  "show_on_website",
+  "logo",
+  "route",
+  "partner_website",
+  "column_break_rsld",
+  "website_info",
+  "domain_expert",
+  "members_tab",
+  "partner_member_details_section",
+  "partner_members"
+ ],
+ "fields": [
+  {
+   "fieldname": "partner_details_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Details"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "partner_name",
+   "fieldtype": "Data",
+   "label": "Partner Name"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name",
+   "unique": 1
+  },
+  {
+   "default": "Entry",
+   "fieldname": "partner_type",
+   "fieldtype": "Select",
+   "label": "Partner Type",
+   "options": "Entry\nBronze\nSilver\nGold"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team"
+  },
+  {
+   "fieldname": "column_break_unzp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Data",
+   "label": "Country"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory"
+  },
+  {
+   "fetch_from": "team.currency",
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "partner_revenue_contributions_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Revenue Contributions"
+  },
+  {
+   "fieldname": "last_months_contribution",
+   "fieldtype": "Float",
+   "label": "Last Month's Contribution"
+  },
+  {
+   "fieldname": "current_months_contribution",
+   "fieldtype": "Float",
+   "label": "Current Month's Contribution"
+  },
+  {
+   "fieldname": "upcoming_partner_tier",
+   "fieldtype": "Select",
+   "label": "Upcoming Partner Tier",
+   "options": "Entry\nBronze\nSilver\nGold"
+  },
+  {
+   "fieldname": "column_break_tlma",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contract_details_section",
+   "fieldtype": "Section Break",
+   "label": "Contract Details"
+  },
+  {
+   "fieldname": "contract_start_date",
+   "fieldtype": "Date",
+   "label": "Contract Start Date"
+  },
+  {
+   "fieldname": "contract_end_date",
+   "fieldtype": "Date",
+   "label": "Contract End Date"
+  },
+  {
+   "fieldname": "website_tab",
+   "fieldtype": "Tab Break",
+   "label": "Website"
+  },
+  {
+   "fieldname": "website_details_section",
+   "fieldtype": "Section Break",
+   "label": "Website Details"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_on_website",
+   "fieldtype": "Check",
+   "label": "Show on Website"
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Data",
+   "label": "Route"
+  },
+  {
+   "fieldname": "partner_website",
+   "fieldtype": "Data",
+   "label": "Partner Website"
+  },
+  {
+   "fieldname": "column_break_rsld",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "website_info",
+   "fieldtype": "Small Text",
+   "label": "Website Info"
+  },
+  {
+   "fieldname": "domain_expert",
+   "fieldtype": "Table MultiSelect",
+   "label": "Domain Expert",
+   "options": "Partner Domain Item"
+  },
+  {
+   "fieldname": "members_tab",
+   "fieldtype": "Tab Break",
+   "label": "Members"
+  },
+  {
+   "fieldname": "partner_member_details_section",
+   "fieldtype": "Section Break",
+   "label": "Partner Member Details"
+  },
+  {
+   "fieldname": "partner_members",
+   "fieldtype": "Table",
+   "label": "Partner Members",
+   "options": "Partner Member"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-02-27 15:09:47.429839",
+ "modified_by": "Administrator",
+ "module": "Partner",
+ "name": "Partner",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

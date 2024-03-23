@@ -136,7 +136,8 @@ import {
 	TextInput,
 	FeatherIcon,
 	Tooltip,
-	ErrorMessage
+	ErrorMessage,
+	FormControl
 } from 'frappe-ui';
 
 let subscribed = {};
@@ -158,7 +159,8 @@ export default {
 		TextInput,
 		FeatherIcon,
 		Tooltip,
-		ErrorMessage
+		ErrorMessage,
+		FormControl
 	},
 	data() {
 		return {
