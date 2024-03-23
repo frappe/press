@@ -66,8 +66,6 @@ def update_disk_usages():
 				ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
 			FROM
 				`tabSite Usage`
-			WHERE
-				`site` NOT LIKE '%cloud.archived%'
 		),
 		joined AS (
 			SELECT
@@ -93,7 +91,8 @@ def update_disk_usages():
 			WHERE
 				`rank` = 1 AND
 				s.`document_type` = 'Site' AND
-				s.`enabled`
+				s.`enabled` AND
+				site.`status` != "Archived"
 		)
 		SELECT
 			j.site,
