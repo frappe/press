@@ -58,7 +58,7 @@ def update_disk_usages():
 	"""Update Storage and Database Usages fields Site.current_database_usage and Site.current_disk_usage for sites that have Site Usage documents"""
 
 	latest_disk_usages = frappe.db.sql(
-		r"""WITH disk_usage AS (
+		"""WITH disk_usage AS (
 			SELECT
 				`site`,
 				`database`,
@@ -66,6 +66,8 @@ def update_disk_usages():
 				ROW_NUMBER() OVER (PARTITION BY `site` ORDER BY `creation` DESC) AS 'rank'
 			FROM
 				`tabSite Usage`
+			WHERE
+				`creation` > %s
 		),
 		joined AS (
 			SELECT
@@ -104,6 +106,7 @@ def update_disk_usages():
 			ABS(j.latest_database_usage - j.current_database_usage ) > 1 OR
 			ABS(j.latest_disk_usage - j.current_disk_usage) > 1
 	""",
+		values=(frappe.utils.add_to_date(frappe.utils.now(), hours=-12),),
 		as_dict=True,
 	)
 
