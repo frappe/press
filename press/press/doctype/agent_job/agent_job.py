@@ -442,15 +442,14 @@ def populate_output_cache(polled_job, job):
 def poll_pending_jobs():
 	servers = frappe.get_all(
 		"Agent Job",
-		fields=["server", "server_type", "count(*) as count"],
+		fields=["server", "server_type"],
 		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
 		group_by="server",
-		order_by="count desc",
+		order_by="",
 		ignore_ifnull=True,
 	)
 
 	for server in servers:
-		server.pop("count")
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
