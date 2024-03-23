@@ -50,6 +50,8 @@ class MariaDBStalk(Document):
 		filename = f"mariadb-stalk-{self.server}-{self.timestamp}.json.gz"
 		encoded = frappe.safe_encode(self.as_json())
 		compressed = gzip.compress(encoded)
+		if frappe.db.exists("File", {"file_name": filename}):
+			return
 		file = frappe.get_doc(
 			{
 				"doctype": "File",
