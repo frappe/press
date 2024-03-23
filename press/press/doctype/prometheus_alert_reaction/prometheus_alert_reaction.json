@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-14 15:37:55.027631",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "alert",
+  "instance_type",
+  "instance",
+  "column_break_vvtx",
+  "method_name",
+  "job_type",
+  "job",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_vvtx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Dynamic Link",
+   "label": "Job",
+   "options": "job_type"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status"
+  },
+  {
+   "fieldname": "instance_type",
+   "fieldtype": "Link",
+   "label": "Instance Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "instance",
+   "fieldtype": "Dynamic Link",
+   "label": "Instance",
+   "options": "instance_type"
+  },
+  {
+   "fieldname": "method_name",
+   "fieldtype": "Data",
+   "label": "Method Name"
+  },
+  {
+   "fieldname": "alert",
+   "fieldtype": "Link",
+   "label": "Alert",
+   "options": "Prometheus Alert Rule"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-03-14 17:50:32.653434",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Prometheus Alert Reaction",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
