@@ -470,7 +470,7 @@ def fail_old_jobs():
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"modified": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -2)),
 		},
 		"name",
 		pluck=True,
@@ -481,7 +481,7 @@ def fail_old_jobs():
 		"Agent Job",
 		{
 			"job_id": 0,
-			"modified": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -2)),
 			"status": ("!=", "Undelivered"),
 		},
 		"name",
@@ -938,3 +938,6 @@ def update_job_step_status():
 
 def on_doctype_update():
 	frappe.db.add_index("Agent Job", ["status", "server"])
+	# We don't need modified index, it's harmful on constantly updating tables
+	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
+	frappe.db.add_index("Agent Job", ["creation"])
