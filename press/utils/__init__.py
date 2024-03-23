@@ -44,7 +44,6 @@ def log_error(title, **kwargs):
 		message=message,
 		reference_doctype=reference_doctype,
 		reference_name=reference_name,
-		defer_insert=True,
 	)
 
 
