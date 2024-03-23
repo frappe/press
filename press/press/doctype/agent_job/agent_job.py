@@ -935,3 +935,7 @@ def update_job_step_status():
 			)
 			.set(agent_job_step.status, step.job_status)
 		).run()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Agent Job", ["status", "server"])
