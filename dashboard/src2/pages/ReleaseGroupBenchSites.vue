@@ -48,7 +48,8 @@ export default {
 				type: 'list',
 				doctype: 'Bench',
 				filters: {
-					group: this.$releaseGroup.name
+					group: this.$releaseGroup.name,
+					skip_team_filter_for_system_user: true
 				},
 				fields: ['name', 'status'],
 				orderBy: 'creation desc',
@@ -74,7 +75,7 @@ export default {
 					'cluster.image as cluster_image',
 					'cluster.title as cluster_title'
 				],
-				orderBy: 'creation desc',
+				orderBy: 'creation desc, bench desc',
 				pageLength: 50,
 				transform(data) {
 					return this.groupSitesByBench(data);
@@ -112,7 +113,7 @@ export default {
 				searchField: 'name',
 				columns: [
 					{
-						label: 'Site Name',
+						label: 'Site',
 						fieldname: 'name',
 						prefix() {
 							return h('div', { class: 'ml-2 w-3.5 h-3.5' });

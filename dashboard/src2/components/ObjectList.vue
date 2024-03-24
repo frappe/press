@@ -154,7 +154,7 @@ export default {
 				if (value) {
 					this.$list.update({
 						filters: {
-							...this.options.filters,
+							...this.$list.filters,
 							[this.options.searchField]: ['like', `%${value.toLowerCase()}%`]
 						},
 						start: 0,
@@ -163,7 +163,7 @@ export default {
 				} else {
 					this.$list.update({
 						filters: {
-							...this.options.filters,
+							...this.$list.filters,
 							[this.options.searchField]: undefined
 						},
 						start: 0,
