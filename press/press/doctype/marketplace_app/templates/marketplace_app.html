@@ -52,7 +52,7 @@ five_star_rating -%}
 		</div>
 	</div>
 	<div class="container mx-auto">
-		<div class="px-4 sm:px-8 flex flex-col pt-4 pb-8 md:flex-row md:space-x-10">
+		<div class="px-4 sm:px-8 flex flex-col mt-6 pb-8 md:flex-row md:space-x-10">
 		{{ sidebar() }} {{ main() }}
 		</div>
 	</div>
@@ -119,7 +119,7 @@ five_star_rating -%}
 <div class="w-full border-b md:w-10/12 md:border-b-0">
 	<!-- Screenshots (if any) -->
 	{%- if app.screenshots -%}
-	<div class="flex mt-6 space-x-4 overflow-y-auto">
+	<div class="flex space-x-4 overflow-y-auto">
 		{%- for image in app.screenshots -%}
 		<div class="flex-shrink-0 overflow-hidden border rounded-md h-60 w-80">
 			<a href="{{ image.image }}">
