@@ -3,7 +3,7 @@
 		<ObjectList class="mt-3" :options="listOptions" />
 		<div class="px-2 py-2 text-right">
 			<Button
-				v-if="$resources.sites.next && $resources.sites.hasNextPage"
+				v-if="$resources.sites.hasNextPage"
 				@click="$resources.sites.next()"
 				:loading="$resources.sites.loading"
 			>
@@ -62,10 +62,7 @@ export default {
 				fields: ['name', 'status'],
 				orderBy: 'creation desc',
 				pageLength: 99999,
-				auto: true,
-				onSuccess() {
-					this.makeSitesGroupedByBench();
-				}
+				auto: true
 			};
 		},
 		sites() {
@@ -87,10 +84,9 @@ export default {
 					'cluster.title as cluster_title'
 				],
 				orderBy: 'creation desc',
-				auto: true,
 				pageLength: 50,
-				onSuccess() {
-					this.makeSitesGroupedByBench();
+				transform(data) {
+					return this.groupSitesByBench(data);
 				}
 			};
 		}
@@ -98,7 +94,7 @@ export default {
 	computed: {
 		listOptions() {
 			return {
-				data: () => this.sitesGroupedByBench,
+				list: this.$resources.sites,
 				groupHeader: ({ group }) => {
 					let options = this.benchOptions(group);
 					let IconHash = icon('hash', 'w-3 h-3');
@@ -122,6 +118,7 @@ export default {
 						</div>
 					);
 				},
+				searchField: 'name',
 				columns: [
 					{
 						label: 'Site Name',
@@ -230,12 +227,10 @@ export default {
 		}
 	},
 	methods: {
-		makeSitesGroupedByBench() {
-			if (!this.$resources.benches.data) return;
-			this.sitesGroupedByBench = this.$resources.benches.data.map(bench => {
-				let sites = (this.$resources.sites.data || []).filter(
-					site => site.bench === bench.name
-				);
+		groupSitesByBench(data) {
+			if (!this.$resources.benches.data) return [];
+			return this.$resources.benches.data.map(bench => {
+				let sites = (data || []).filter(site => site.bench === bench.name);
 				return {
 					...bench,
 					collapsed: false,

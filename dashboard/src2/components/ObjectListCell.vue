@@ -3,7 +3,7 @@
 		:is="column.link ? 'a' : 'div'"
 		:href="column.link ? column.link(value, row) : undefined"
 		:target="column.link ? '_blank' : undefined"
-		class="flex items-center text-gray-900"
+		class="flex items-center"
 		:class="{
 			'text-gray-900 outline-gray-400 hover:text-gray-700': column.link,
 			'justify-end': column.align === 'right',

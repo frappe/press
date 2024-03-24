@@ -10,6 +10,7 @@ import PatchAppDialog from '../components/bench/PatchAppDialog.vue';
 import AddAppDialog from '../components/bench/AddAppDialog.vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import LucideRocket from '~icons/lucide/rocket';
+import LucideHardDriveDownload from '~icons/lucide/hard-drive-download';
 import { tagTab } from './common/tags';
 import patches from './tabs/patches';
 
@@ -39,6 +40,7 @@ export default {
 		route: '/benches',
 		title: 'Benches',
 		fields: [{ apps: ['app'] }],
+		searchField: 'title',
 		columns: [
 			{ label: 'Title', fieldname: 'title' },
 			{
@@ -54,13 +56,11 @@ export default {
 			{
 				label: 'Version',
 				fieldname: 'version',
-				class: 'text-gray-700',
 				width: 0.5
 			},
 			{
 				label: 'Apps',
 				fieldname: 'app',
-				class: 'text-gray-700',
 				format: (value, row) => {
 					return (row.apps || []).map(d => d.app).join(', ');
 				},
@@ -118,6 +118,7 @@ export default {
 							parent: releaseGroup.doc.name
 						};
 					},
+					pageLength: 99999,
 					columns: [
 						{
 							label: 'App',
@@ -469,6 +470,7 @@ export default {
 							params: { id: row.name }
 						};
 					},
+					searchField: 'job_type',
 					fields: ['end'],
 					orderBy: 'creation desc',
 					columns: [
@@ -481,23 +483,20 @@ export default {
 							label: 'Status',
 							fieldname: 'status',
 							type: 'Badge',
-							width: '7rem'
+							width: '8rem'
 						},
 						{
 							label: 'Site',
-							fieldname: 'site',
-							class: 'text-gray-700'
+							fieldname: 'site'
 						},
 						{
 							label: 'Job ID',
 							fieldname: 'job_id',
-							class: 'text-gray-700',
 							width: '7rem'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-700',
 							width: '4rem',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
@@ -507,8 +506,7 @@ export default {
 						{
 							label: 'Created By',
 							fieldname: 'owner',
-							width: '10rem',
-							class: 'text-gray-700'
+							width: '10rem'
 						},
 						{
 							label: '',
@@ -890,7 +888,7 @@ export default {
 				{
 					label: 'Update Available',
 					slots: {
-						prefix: icon('alert-circle')
+						prefix: icon(LucideHardDriveDownload)
 					},
 					variant: 'solid',
 					condition: () =>

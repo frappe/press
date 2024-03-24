@@ -67,7 +67,14 @@
 					<component :is="options.groupHeader({ ...context, group })" />
 				</template>
 				<template #cell="{ item, row, column }">
-					<ObjectListCell :row="row" :column="column" :context="context" />
+					<ObjectListCell
+						:class="[
+							column == columns[0] ? ' text-gray-900' : ' text-gray-700'
+						]"
+						:row="row"
+						:column="column"
+						:context="context"
+					/>
 				</template>
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
@@ -140,6 +147,32 @@ export default {
 			lastRefreshed: null,
 			searchQuery: ''
 		};
+	},
+	watch: {
+		searchQuery(value) {
+			if (this.options.searchField && this.$list?.list) {
+				if (value) {
+					this.$list.update({
+						filters: {
+							...this.options.filters,
+							[this.options.searchField]: ['like', `%${value.toLowerCase()}%`]
+						},
+						start: 0,
+						pageLength: this.options.pageLength || 20
+					});
+				} else {
+					this.$list.update({
+						filters: {
+							...this.options.filters,
+							[this.options.searchField]: undefined
+						},
+						start: 0,
+						pageLength: this.options.pageLength || 20
+					});
+				}
+				this.$list.reload();
+			}
+		}
 	},
 	resources: {
 		list() {
@@ -251,27 +284,31 @@ export default {
 			return this.$list.data || [];
 		},
 		filteredRows() {
-			if (!this.searchQuery) return this.rows;
+			if (this.options.searchField || !this.searchQuery) return this.rows;
 			let query = this.searchQuery.toLowerCase();
 
-			return this.rows.map(row => {
-				if (row.rows) {
-					// group
-					return {
-						...row,
-						rows: row.rows.filter(row => this.filterRow(query, row))
-					};
-				}
-				if (this.filterRow(query, row)) {
-					return row;
-				}
-				return false;
-			});
+			return this.rows
+				.map(row => {
+					if (row.rows && row.group) {
+						// group
+						return {
+							...row,
+							rows: row.rows.filter(row => this.filterRow(query, row))
+						};
+					}
+					if (this.filterRow(query, row)) {
+						return row;
+					}
+					return false;
+				})
+				.filter(Boolean);
 		},
 		searchQuerySummary() {
-			let result;
+			if (this.options.searchField) return;
+
+			let summary;
 			if (this.filteredRows.length === 0) {
-				result = 'No results';
+				summary = 'No results';
 			} else if (this.filteredRows[0].rows) {
 				let total = this.rows.reduce(
 					(acc, group) => acc + group.rows.length,
@@ -281,11 +318,11 @@ export default {
 					(acc, group) => acc + group.rows.length,
 					0
 				);
-				result = `${filtered} of ${total}`;
+				summary = `${filtered} of ${total}`;
 			} else {
-				result = `${this.filteredRows.length} of ${rows.length}`;
+				summary = `${this.filteredRows.length} of ${this.rows.length}`;
 			}
-			return result;
+			return summary;
 		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;

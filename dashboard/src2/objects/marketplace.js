@@ -54,7 +54,6 @@ export default {
 			{
 				label: 'Description',
 				fieldname: 'description',
-				class: 'text-gray-700',
 				width: 1.0
 			}
 		],
