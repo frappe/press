@@ -33,7 +33,7 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.creation) }}
+							{{ $format.date(deploy.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
@@ -46,20 +46,22 @@
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
 							{{
-								deploy.build_end ? $format.duration(deploy.build_duration) : ''
+								deploy.build_end ? $format.duration(deploy.build_duration) : '-'
 							}}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.build_start, 'llll') }}
+							{{ $format.date(deploy.build_start, 'lll') }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">End</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.build_end, 'llll') }}
+							{{
+								deploy.build_end ? $format.date(deploy.build_end, 'lll') : '-'
+							}}
 						</div>
 					</div>
 				</div>

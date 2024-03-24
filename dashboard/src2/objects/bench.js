@@ -486,18 +486,18 @@ export default {
 						{
 							label: 'Site',
 							fieldname: 'site',
-							class: 'text-gray-600'
+							class: 'text-gray-700'
 						},
 						{
 							label: 'Job ID',
 							fieldname: 'job_id',
-							class: 'text-gray-600',
+							class: 'text-gray-700',
 							width: '7rem'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
+							class: 'text-gray-700',
 							width: '4rem',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
@@ -507,7 +507,8 @@ export default {
 						{
 							label: 'Created By',
 							fieldname: 'owner',
-							width: '10rem'
+							width: '10rem',
+							class: 'text-gray-700'
 						},
 						{
 							label: '',
@@ -925,12 +926,6 @@ export default {
 				},
 				{
 					label: 'Options',
-					button: {
-						label: 'Options',
-						slots: {
-							icon: icon('more-horizontal')
-						}
-					},
 					options: [
 						{
 							label: 'View in Desk',

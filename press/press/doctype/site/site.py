@@ -152,6 +152,8 @@ class Site(Document, TagHelpers):
 		"plan",
 		"archive_failed",
 		"cluster",
+		"bench",
+		"group",
 		"is_database_access_enabled",
 		"trial_end_date",
 	]
@@ -185,9 +187,7 @@ class Site(Document, TagHelpers):
 	@staticmethod
 	def get_list_query(query):
 		Site = frappe.qb.DocType("Site")
-		query = query.where(Site.status != "Archived").where(
-			Site.team == frappe.local.team().name
-		)
+		query = query.where(Site.status != "Archived")
 		return query
 
 	@staticmethod

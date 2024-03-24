@@ -13,11 +13,7 @@
 					</template>
 					<template #suffix>
 						<span class="text-sm text-gray-500" v-if="searchQuery">
-							{{
-								filteredRows.length === 0
-									? 'No results'
-									: `${filteredRows.length} of ${rows.length}`
-							}}
+							{{ searchQuerySummary }}
 						</span>
 					</template>
 				</TextInput>
@@ -62,38 +58,17 @@
 						: () => {},
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
-						: null
+						: null,
+					emptyState: {}
 				}"
 				row-key="name"
 			>
-				<ListHeader>
-					<ListHeaderItem
-						class="whitespace-nowrap"
-						v-for="column in columns"
-						:key="column.key"
-						:item="column"
-					>
-						<template #prefix>
-							<FeatherIcon
-								v-if="column.icon"
-								:name="column.icon"
-								class="h-4 w-4"
-							/>
-						</template>
-					</ListHeaderItem>
-				</ListHeader>
-				<ListRows>
-					<ListRow v-for="(row, i) in filteredRows" :row="row" :key="row.name">
-						<template v-slot="{ column, item }">
-							<ObjectListCell
-								:row="row"
-								:column="column"
-								:idx="i"
-								:context="context"
-							/>
-						</template>
-					</ListRow>
-				</ListRows>
+				<template v-if="options.groupHeader" #group-header="{ group }">
+					<component :is="options.groupHeader({ ...context, group })" />
+				</template>
+				<template #cell="{ item, row, column }">
+					<ObjectListCell :row="row" :column="column" :context="context" />
+				</template>
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
@@ -279,21 +254,38 @@ export default {
 			if (!this.searchQuery) return this.rows;
 			let query = this.searchQuery.toLowerCase();
 
-			return this.rows.filter(row => {
-				let values = this.options.columns.map(column => {
-					let value = row[column.fieldname];
-					if (column.format) {
-						value = column.format(value, row);
-					}
-					return value;
-				});
-				for (let value of values) {
-					if (value && value.toLowerCase?.().includes(query)) {
-						return true;
-					}
+			return this.rows.map(row => {
+				if (row.rows) {
+					// group
+					return {
+						...row,
+						rows: row.rows.filter(row => this.filterRow(query, row))
+					};
+				}
+				if (this.filterRow(query, row)) {
+					return row;
 				}
 				return false;
 			});
+		},
+		searchQuerySummary() {
+			let result;
+			if (this.filteredRows.length === 0) {
+				result = 'No results';
+			} else if (this.filteredRows[0].rows) {
+				let total = this.rows.reduce(
+					(acc, group) => acc + group.rows.length,
+					0
+				);
+				let filtered = this.filteredRows.reduce(
+					(acc, group) => acc + group.rows.length,
+					0
+				);
+				result = `${filtered} of ${total}`;
+			} else {
+				result = `${this.filteredRows.length} of ${rows.length}`;
+			}
+			return result;
 		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
@@ -319,6 +311,23 @@ export default {
 		},
 		hideControls() {
 			return !this.options.hideControls;
+		}
+	},
+	methods: {
+		filterRow(query, row) {
+			let values = this.options.columns.map(column => {
+				let value = row[column.fieldname];
+				if (column.format) {
+					value = column.format(value, row);
+				}
+				return value;
+			});
+			for (let value of values) {
+				if (value && value.toLowerCase?.().includes(query)) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 };

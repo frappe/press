@@ -13,6 +13,7 @@
 </template>
 <script>
 import { Button, Dropdown } from 'frappe-ui';
+import { icon } from '../utils/components';
 
 export default {
 	name: 'ActionButton',
@@ -32,6 +33,13 @@ export default {
 				if (!this.$attrs.condition(this.$attrs.context)) return null;
 			}
 			return {
+				button: {
+					label: 'Options',
+					variant: 'ghost',
+					slots: {
+						icon: icon('more-horizontal')
+					}
+				},
 				...this.$attrs,
 				label: this.$attrs.label,
 				options: this.$attrs.options

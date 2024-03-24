@@ -29,7 +29,7 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Creation</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.creation) }}
+								{{ $format.date(job.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
@@ -41,19 +41,19 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Duration</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ job.end ? $format.duration(job.duration) : '' }}
+								{{ job.end ? $format.duration(job.duration) : '-' }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">Start</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.start) }}
+								{{ $format.date(job.start, 'lll') }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">End</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.end) }}
+								{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 							</div>
 						</div>
 					</div>

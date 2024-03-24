@@ -12,7 +12,7 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, plural } from '../utils/format';
+import { bytes, duration, date, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
@@ -85,10 +85,11 @@ export default {
 					let $team = getTeam();
 					if (row.price_usd > 0) {
 						let india = $team.doc.country == 'India';
-						let currencySymbol = $team.doc.currency == 'INR' ? '₹' : '$';
-						return `${currencySymbol}${
-							india ? row.price_inr : row.price_usd
-						} /mo`;
+						let formattedValue = userCurrency(
+							india ? row.price_inr : row.price_usd,
+							0
+						);
+						return `${formattedValue} /mo`;
 					}
 					return row.plan_title;
 				}
@@ -1227,12 +1228,6 @@ export default {
 				},
 				{
 					label: 'Options',
-					button: {
-						label: 'Options',
-						slots: {
-							icon: icon('more-horizontal')
-						}
-					},
 					context,
 					options: [
 						{
