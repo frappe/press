@@ -72,16 +72,17 @@ def get_context(context):
 
 
 @frappe.whitelist(allow_guest=True)
-def search(query):
-	return frappe.get_all(
+def search(query, offset=0, limit=20):
+	return frappe.qb.get_query(
 		"Marketplace App",
-		{
+		filters={
 			"status": "Published",
 			"title": ("like", f"%{query}%"),
 		},
-		["name", "image", "title", "description", "image", "route"],
-		limit=12,
-	)
+		fields=["name", "image", "title", "description", "image", "route"],
+		offset=offset,
+		limit=limit,
+	).run(as_dict=1)
 
 
 @frappe.whitelist(allow_guest=True)

@@ -77,6 +77,14 @@
 				<h2 id="result-title" class="mt-8 text-xl font-bold text-gray-800"></h2>
 				<div id="result-apps" class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-2 sm:grid-cols-2">
 				</div>
+				<div id="load-more" class="flex w-full justify-end mt-4">
+					<button
+						type="button"
+						onclick="search(loadMore=true)"
+						class="inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-gray-800 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus-visible:ring focus-visible:ring-gray-400 h-7 text-sm px-2 rounded">
+						Load More
+					</button>
+				</div>
 			</div>
 
 			<!-- Loading Indicator -->
@@ -155,23 +163,32 @@
 		})
 	}
 
-	function search() {
+	function search(loadMore=false) {
 		const query = document.getElementById('search-input').value
-		toggleLoadingIndicator('show')
+		let offset = document.getElementById('result-apps').childElementCount
+
+		if (offset == 0) {
+			toggleLoadingIndicator('show')
+		}
 
 		return frappe.call({
 			method: "press.www.marketplace.index.search",
 			args: {
-				query: query
+				query: query,
+				offset: offset
 			},
 			type: "POST",
 		}).then(r => {
 			toggleLoadingIndicator('hide')
-			showApps(r.message, query)
+			showApps(r.message, query, offset=offset)
+			if (offset > 0 && r.message.length == 0) {
+				$('#load-more').hide()
+				$('#no-results-message').hide()
+			}
 		})
 	}
 
-	function showApps(apps, query) {
+	function showApps(apps, query, offset) {
 		toggleShowResults('show')
 
 		if (apps.length === 0) {
@@ -183,7 +200,9 @@
 		if (query != '') {
 			$('#result-title').text('Showing results for: ' + query);
 		}
-		$('#result-apps').empty();
+		if (offset == 0) {
+			$('#result-apps').empty();
+		}
 		$('#result-apps').append(apps.map(app => {
 			return `
 			<a href="/${app.route}" id="${app.name}" data-title="${app.title}"
