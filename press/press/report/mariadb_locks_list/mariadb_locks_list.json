@@ -13,12 +13,20 @@
    "mandatory": 1,
    "options": "Database Server",
    "wildcard_filter": 0
+  },
+  {
+   "default": "0",
+   "fieldname": "poll",
+   "fieldtype": "Check",
+   "label": "Poll every 5 seconds",
+   "mandatory": 0,
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2024-03-24 11:50:52.078540",
+ "modified": "2024-03-24 12:46:56.826427",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "MariaDB Locks List",
