@@ -1,15 +1,6 @@
 <template>
 	<div>
 		<ObjectList class="mt-3" :options="listOptions" />
-		<div class="px-2 py-2 text-right">
-			<Button
-				v-if="$resources.sites.hasNextPage"
-				@click="$resources.sites.next()"
-				:loading="$resources.sites.loading"
-			>
-				Load more
-			</Button>
-		</div>
 		<Dialog
 			v-model="showAppVersionDialog"
 			:options="{ title: 'Apps', size: '3xl' }"
