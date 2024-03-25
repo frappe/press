@@ -61,7 +61,7 @@ five_star_rating -%}
 
 
 {% macro sidebar() %}
-<div class="order-1 w-full md:order-none md:w-2/12 space-y-9">
+<div class="order-1 w-full md:order-none md:w-2/12 space-y-9 hidden sm:block">
 	{%- if publisher_profile -%}
 	<div>
 		<h5 class="text-base font-semibold text-gray-900">Built by</h5>
@@ -116,7 +116,7 @@ five_star_rating -%}
 
 
 {% macro main() %}
-<div class="w-full border-b md:w-10/12 md:border-b-0">
+<div class="w-full md:w-10/12 md:border-b-0">
 	<!-- Screenshots (if any) -->
 	{%- if app.screenshots -%}
 	<div class="flex space-x-4 overflow-y-auto">
