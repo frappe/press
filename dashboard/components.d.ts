@@ -110,8 +110,6 @@ declare module 'vue' {
     ILucideHelpCircle: typeof import('~icons/lucide/help-circle')['default']
     ILucideInfo: typeof import('~icons/lucide/info')['default']
     ILucideMenu: typeof import('~icons/lucide/menu')['default']
-    ILucideMoreHorizontal: typeof import('~icons/lucide/more-horizontal')['default']
-    ILucidePlus: typeof import('~icons/lucide/plus')['default']
     ILucideRefreshCcw: typeof import('~icons/lucide/refresh-ccw')['default']
     ILucideSearch: typeof import('~icons/lucide/search')['default']
     ILucideX: typeof import('~icons/lucide/x')['default']

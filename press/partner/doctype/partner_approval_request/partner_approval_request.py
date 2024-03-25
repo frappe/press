@@ -7,6 +7,21 @@ from frappe.utils import get_url
 
 
 class PartnerApprovalRequest(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		key: DF.Data | None
+		partner: DF.Link | None
+		requested_by: DF.Link | None
+		send_mail: DF.Check
+		status: DF.Literal["Pending", "Approved", "Rejected"]
+	# end: auto-generated types
+
 	dashboard_fields = ["requested_by", "partner", "status"]
 	dashboard_actions = ["approve_partner_request"]
 
