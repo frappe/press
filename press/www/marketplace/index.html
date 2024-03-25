@@ -1,78 +1,273 @@
-{% extends "templates/marketplace/base.html" %} {%- block body -%}
-<div class="px-4 sm:px-8">
-	<div class="pt-20 pb-12 text-center">
-		<h1 class="text-3xl font-bold text-gray-900">
-			One Click Apps for your Frappe Sites
-		</h1>
-		<p class="max-w-lg mx-auto mt-4 text-gray-600">
-			Extend functionality of your Frappe sites by finding an app that suits you
-			and install it in a few steps.
-		</p>
-	</div>
+{% extends "templates/marketplace/base.html" %} {%- block content -%}
 
-<div class="flex pb-36">
-	<div class="w-80 hidden sm:block">
-		<h2 class="text-xl text-gray-800 font-semibold">Categories</h2>
-		<div class="flex flex-col mt-4">
-			{%- for category in categories -%}
-			<div class="relative -left-2 mr-8 text-base transition hover:bg-gray-50 text-gray-700 rounded-lg">
-				<button
-				id="category-button"
-				class="w-full text-left rounded py-1 pl-2" value="{{ category }}">
-					{{ category }}
-				</button>
+<div class="pt-20 pb-12 text-center bg-gray-50">
+	<h1 style="font-size: 24px;" class="text-4xl font-bold text-gray-900">
+		One Click Apps for your Frappe Sites
+	</h1>
+	<p class="max-w-lg mx-auto mt-4 text-gray-600">
+		Extend functionality of your Frappe sites by finding an app that suits you
+		and install it in a few steps.
+	</p>
+</div>
+
+<div class="container mx-auto ">
+	<div class="px-4 sm:px-8 flex pb-36 ">
+		<!-- Categories -->
+		<div class="z-10 w-80 mt-10 hidden sm:block">
+			<h2 class="text-lg text-gray-800 font-semibold">Categories</h2>
+			<div class="flex flex-col mt-4">
+				{%- for category in categories -%}
+				<div class="relative -left-2 mr-8 text-base transition hover:bg-gray-50 text-gray-700 rounded-lg">
+					<button
+						onclick="setCategory(event, '{{ category }}')"
+						id="category-button"
+						class="w-full text-left rounded py-1 pl-2" value="{{ category }}">
+						{{ category }}
+					</button>
+				</div>
+				{%- endfor -%}
 			</div>
-			{%- endfor -%}
 		</div>
-	</div>
 
-	<div class="w-full pb-36">
-		<div>
+		<div class="w-full pb-36 ">
+			<!-- Search -->
 			<div class="flex flex-col sm:flex-row sm:justify-between">
-				<h2 class="text-xl font-bold text-gray-800">Apps</h2>
+				<div></div>
 				<div class="flex flex-row mt-3">
-					<button id="remove-category" class="hidden flex bg-gray-100 border-gray-700 text-sm text-gray-700 items-center px-2 mx-2 rounded-lg transition hover:shadow">
+					<button onclick="removeCategory()" id="remove-category" class="hidden bg-gray-100 border-gray-700 text-sm text-gray-700 items-center px-2 mx-2 rounded-lg transition hover:shadow">
+						<div class="flex flex-row">
 						<span id="remove-category-name" class="block items-center mr-1"></span>
 						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+						</div>
 					</button>
 					<input type="text"
 						class="placeholder-gray-500 rounded-md border-0 bg-gray-100 py-1 px-2 text-base leading-5 focus:bg-gray-200 focus:shadow-none focus:ring-0 block w-full sm:mt-0 sm:w-60 h-8"
-						id="app-search-input" placeholder="Search for apps" />
+						id="search-input" placeholder="Search for apps" />
+					<button id="search-button" onClick="search()" class="ml-2 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-white bg-gray-900 hover:bg-gray-800 active:bg-gray-700 focus-visible:ring focus-visible:ring-gray-400 text-sm px-2 rounded-md" type="button">
+						Search
+					</button>
 				</div>
 			</div>
-			<div id="all-apps-list" class="grid grid-cols-1 gap-8 mt-8 md:grid-cols-2 lg:grid-cols-3 sm:grid-cols-2">
-				{%- for app in apps -%}
-				<a href="/{{ app.route }}" id="{{app.name}}" data-title="{{ app.title }}"
-					data-description="{{ app.description }}"
-		 			data-categories="{{ app.categories }}"
-					class="app-card flex flex-col justify-between p-6 border border-gray-100 rounded-lg shadow cursor-pointer transition hover:shadow-lg focus:outline-none focus:border-gray-500 focus:shadow-outline">
-					<div>
+
+			<div id="all-apps-list">
+				{%- for title, app_list in apps.items() -%}
+				<h2 class="mt-8 text-xl font-bold text-gray-800">{{ title }}</h2>
+				<div class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-2 sm:grid-cols-2">
+					{%- for app in app_list -%}
+					<a href="/{{ app.route }}" id="{{app.name}}" data-title="{{ app.title }}"
+						data-description="{{ app.description }}"
+						data-categories="{{ app.categories }}"
+						class="no-underline group app-card flex justify-start p-4 border border-gray-100 rounded cursor-pointer transition hover:bg-gray-50 focus:outline-none focus:border-gray-500 focus:shadow-outline">
 						<img alt="{{app.title}} Logo" src="{{ app.image }}"
-							class="w-10 h-10 border border-gray-200 rounded-lg" />
-						<h3 class="mt-4 font-semibold">{{ app.title }}</h3>
-						<p class="mt-2 text-base text-gray-600 line-clamp">
-							{{ app.description }}
-						</p>
-					</div>
-					<span class="flex flex-row text-sm mt-2 text-gray-600">
-						<i class="w-4 h-4 mr-2" data-feather="download"></i>
-						<span>{{ app.total_installs | number_k_format }} {{ 'install' if
-							app.total_installs == 1 else 'installs' }}</span>
-					</span>
-				</a>
+							class="group-hover:shadow-lg w-12 h-12 mr-4 border border-gray-200 rounded-lg" />
+						<div>
+							<span class="font-semibold text-lg">{{ app.title }}</span>
+							<p class="mt-2 text-base text-gray-600 line-clamp">
+								{{ app.description }}
+							</p>
+						</div>
+					</a>
+					{%- endfor -%}
+				</div>
 				{%- endfor -%}
+			</div>
+
+			<!-- Result from category filter or search -->
+			<div id="search-results" style="display: none;">
+				<h2 id="result-title" class="mt-8 text-xl font-bold text-gray-800"></h2>
+				<div id="result-apps" class="grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-2 sm:grid-cols-2">
+				</div>
+				<div id="load-more" class="flex w-full justify-end mt-4">
+					<button
+						id="load-more-button"
+						type="button"
+						onclick="search(loadMore=true)"
+						class="inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-gray-800 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus-visible:ring focus-visible:ring-gray-400 h-7 text-sm px-2 rounded">
+						Load More
+					</button>
+				</div>
+			</div>
+
+			<!-- Loading Indicator -->
+			<div id="loading-indicator" style="display: none;">
+				<div id="loading-spinner" class="grid min-h-[140px] w-full place-items-center overflow-x-scroll rounded-lg p-6 lg:overflow-visible">
+				  <svg class="text-gray-300 animate-spin mr-2" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"
+					width="18" height="18">
+					<path
+					  d="M32 3C35.8083 3 39.5794 3.75011 43.0978 5.20749C46.6163 6.66488 49.8132 8.80101 52.5061 11.4939C55.199 14.1868 57.3351 17.3837 58.7925 20.9022C60.2499 24.4206 61 28.1917 61 32C61 35.8083 60.2499 39.5794 58.7925 43.0978C57.3351 46.6163 55.199 49.8132 52.5061 52.5061C49.8132 55.199 46.6163 57.3351 43.0978 58.7925C39.5794 60.2499 35.8083 61 32 61C28.1917 61 24.4206 60.2499 20.9022 58.7925C17.3837 57.3351 14.1868 55.199 11.4939 52.5061C8.801 49.8132 6.66487 46.6163 5.20749 43.0978C3.7501 39.5794 3 35.8083 3 32C3 28.1917 3.75011 24.4206 5.2075 20.9022C6.66489 17.3837 8.80101 14.1868 11.4939 11.4939C14.1868 8.80099 17.3838 6.66487 20.9022 5.20749C24.4206 3.7501 28.1917 3 32 3L32 3Z"
+					  stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+					<path
+					  d="M32 3C36.5778 3 41.0906 4.08374 45.1692 6.16256C49.2477 8.24138 52.7762 11.2562 55.466 14.9605C58.1558 18.6647 59.9304 22.9531 60.6448 27.4748C61.3591 31.9965 60.9928 36.6232 59.5759 40.9762"
+					  stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-900">
+					</path>
+				  </svg>
+				</div>
 			</div>
 
 			<div id="no-results-message" style="display: none;">
 				<p class="text-gray-700">No apps found.</p>
 			</div>
+			<div id="toast" class="hidden fixed bottom-0 right-0 mb-4 mr-4 p-4 bg-gray-800 text-white rounded shadow">
+			  This is a toast message.
+			</div>
 		</div>
 	</div>
-
 </div>
+{%- endblock -%}
 
-</div>
-<span class="bg-gray-200"></span>
+{%- block script -%}
+<script>
+	$(document).ready(function(){
+		$("#search-input").on("input", function() {
+			const category = new URLSearchParams(window.location.search).get('category');
+			if (!category) {
+				if ($(this).val() === "") {
+					toggleShowResults('hide')
+					$('#no-results-message').hide()
+				}
+			}
+		});
+	});
+	filterByCategory()
 
-{{ include_script('marketplace.bundle.js') }}
+	function setCategory(event, category) {
+		window.location.replace(
+			location.origin + location.pathname + `?category=${category}`,
+		);
+		$('#remove-category').show()
+		$('#remove-category-name').text(category)
+	}
+
+	function removeCategory() {
+		window.location.replace(location.origin + location.pathname)
+	}
+
+	function filterByCategory() {
+		const category = new URLSearchParams(window.location.search).get('category');
+		if (!category) {
+			$('#all-apps-list').show()
+			return;
+		}
+		toggleLoadingIndicator('show')
+
+		return frappe.call({
+			method: "press.www.marketplace.index.filter_by_category",
+			args: {
+				category: category
+			},
+			type: "POST",
+		}).then(r => {
+			toggleLoadingIndicator('hide')
+			showApps(r.message, '')
+			$('#remove-category').show()
+			$('#remove-category-name').text(category)
+		})
+	}
+
+	function disableButtons(disable=false) {
+		let loadingIndicator = (text) => {
+			const spinner = $('#loading-spinner').html()
+			return `
+			<div class="flex">
+			 ${spinner} ${text}
+			</div>
+			`
+		}
+		if (disable) {
+			$('#search-button').prop('disabled', true);
+			$('#load-more-button').prop('disabled', true);
+			$('#search-button').html(loadingIndicator(' Searching...'));
+			$('#load-more-button').html(loadingIndicator(' Loading...'));
+		} else {
+			$('#search-button').prop('disabled', false);
+			$("#search-button").html('Search');
+			$('#load-more-button').prop('disabled', false);
+			$("#load-more-button").html('Load More');
+		}
+
+	}
+
+	function search(loadMore=false) {
+		disableButtons(true)
+		const query = document.getElementById('search-input').value
+		let offset = document.getElementById('result-apps').childElementCount
+
+		if (offset == 0) {
+			toggleLoadingIndicator('show')
+		}
+
+		return frappe.call({
+			method: "press.www.marketplace.index.search",
+			args: {
+				query: query,
+				offset: offset
+			},
+			type: "POST",
+		}).then(r => {
+			toggleLoadingIndicator('hide')
+			showApps(r.message, query, offset=offset)
+			if (offset > 0 && r.message.length == 0) {
+				$('#load-more').hide()
+				$('#no-results-message').hide()
+			}
+			disableButtons(false)
+		})
+	}
+
+	function showApps(apps, query, offset) {
+		toggleShowResults('show')
+
+		if (apps.length === 0) {
+			$('#no-results-message').show()
+			return;
+		}
+
+		// update title
+		if (query != '') {
+			$('#result-title').text('Showing results for: ' + query);
+		}
+		if (offset == 0) {
+			$('#result-apps').empty();
+		}
+		$('#result-apps').append(apps.map(app => {
+			return `
+			<a href="/${app.route}" id="${app.name}" data-title="${app.title}"
+				data-description="${app.description}"
+				data-categories="${app.categories}"
+				class="no-underline group app-card flex justify-start p-4 border border-gray-100 rounded cursor-pointer transition hover:bg-gray-50 focus:outline-none focus:border-gray-500 focus:shadow-outline">
+				<img alt="${app.title} Logo" src="${app.image}"
+					class="group-hover:shadow-lg w-12 h-12 mr-4 border border-gray-200 rounded-lg" />
+				<div>
+					<span class="font-semibold text-lg">${app.title}</span>
+					<p class="mt-2 text-base text-gray-600 line-clamp">
+						${app.description}
+					</p>
+				</div>
+			</a>
+			`
+		}))
+	}
+
+	function toggleLoadingIndicator(state) {
+		if (state == 'show') {
+			$('#loading-indicator').show()
+			$('#all-apps-list').hide()
+			$('#search-results').hide()
+		} else {
+			$('#loading-indicator').hide()
+			$('#all-apps-list').show()
+			$('#search-results').show()
+		}
+	}
+
+	function toggleShowResults(state) {
+		if (state == 'show') {
+			$('#all-apps-list').hide()
+			$('#search-results').show()
+		} else {
+			$('#all-apps-list').show()
+			$('#search-results').hide()
+		}
+	}
+</script>
 {%- endblock -%}

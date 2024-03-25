@@ -180,7 +180,7 @@ def update_from_site_update():
 				)
 			version_upgrade.save()
 			frappe.db.commit()
-		except Exception as e:
+		except Exception:
 			frappe.log_error(f"Error while updating Version Upgrade {version_upgrade.name}")
 			frappe.db.rollback()
 
