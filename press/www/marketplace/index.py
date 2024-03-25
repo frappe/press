@@ -5,7 +5,6 @@ import frappe
 
 
 def get_context(context):
-	# TODO: Caching, Pagination, Filtering, Sorting
 	context.no_cache = 1
 	context.apps = {}
 

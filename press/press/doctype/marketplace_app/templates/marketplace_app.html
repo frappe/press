@@ -14,8 +14,8 @@ five_star_rating -%}
 				{{ breadcrumbs([ { 'label': 'Apps', 'url': '/marketplace' }, { 'label':
 				app.title, 'url': '' } ]) }}
 			</div>
-			<div class="px-4 sm:px-8 flex justify-between">
-				<div class="mt-10 mb-12 flex">
+			<div class="px-4 sm:px-8 flex flex-col md:flex-row justify-between">
+				<div class="mt-10 mb-8 sm:mb-12 flex">
 						{{ app_image(app, 'hidden md:block') }}
 					<div class="mr-2 md:hidden">{{ app_image(app) }}</div>
 					<div class="flex flex-col">
@@ -28,7 +28,7 @@ five_star_rating -%}
 							{%- endif -%}
 						</h1>
 						<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
-						<div>
+						<div class="hidden sm:block">
 							<!-- Hard-coded for now -->
 							 {%- for category in
 							app.categories -%}
@@ -40,7 +40,7 @@ five_star_rating -%}
 					</div>
 				</div>
 
-				<div class="flex flex-col h-full my-auto justify-items-center">
+				<div class="flex flex-row sm:flex-col pb-4 sm:pb-0 h-full w-fit my-auto justify-items-center">
 					{{ button('Install Now', '/dashboard/install-app/' + app.name, 'primary') }}
 					<div class="mt-2 flex flex-row text-sm text-gray-600 justify-items-end">
 						<i class="w-4 h-4 mx-2" data-feather="download"></i>
