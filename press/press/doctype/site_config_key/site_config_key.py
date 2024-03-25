@@ -22,7 +22,7 @@ class SiteConfigKey(Document):
 		type: DF.Literal["Password", "String", "Number", "Boolean", "JSON"]
 	# end: auto-generated types
 
-	dashboard_fields = ["key", "title", "description", "type"]
+	dashboard_fields = ["key", "title", "description", "type", "internal"]
 
 	def validate(self):
 		import frappe

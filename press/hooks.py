@@ -193,7 +193,6 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
-		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
@@ -224,7 +223,6 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
-			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",

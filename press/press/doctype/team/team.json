@@ -137,7 +137,8 @@
    "fieldname": "free_account",
    "fieldtype": "Check",
    "in_standard_filter": 1,
-   "label": "Free Account"
+   "label": "Free Account",
+   "search_index": 1
   },
   {
    "fieldname": "address_html",
@@ -470,7 +471,7 @@
    "link_fieldname": "team"
   }
  ],
- "modified": "2024-03-13 14:52:15.325393",
+ "modified": "2024-03-23 14:15:04.526141",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Team",

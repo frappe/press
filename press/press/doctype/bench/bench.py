@@ -76,7 +76,32 @@ class Bench(Document):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = ["name", "group", "status"]
+	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup", "proxy_server"]
+	dashboard_actions = ["restart", "rebuild", "update_all_sites"]
+
+	@staticmethod
+	def get_list_query(query):
+		Bench = frappe.qb.DocType("Bench")
+		benches = (
+			query.select(Bench.is_ssh_proxy_setup)
+			.where(Bench.status != "Archived")
+			.run(as_dict=1)
+		)
+		benches_with_patches = frappe.get_all(
+			"App Patch",
+			fields=["bench"],
+			filters={"bench": ["in", [d.name for d in benches]], "status": "Applied"},
+			pluck="bench",
+		)
+		for bench in benches:
+			bench.has_app_patch_applied = bench.name in benches_with_patches
+		return benches
+
+	def get_doc(self, doc):
+		user_ssh_key = frappe.db.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
+		)
+		doc.user_ssh_key = bool(user_ssh_key)
 
 	@staticmethod
 	def with_sites(name: str):

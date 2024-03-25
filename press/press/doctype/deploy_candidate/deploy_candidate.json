@@ -67,7 +67,8 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Draft\nScheduled\nPending\nPreparing\nRunning\nSuccess\nFailure",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "section_break_4",
@@ -319,7 +320,7 @@
   }
  ],
  "links": [],
- "modified": "2024-02-29 13:32:52.946943",
+ "modified": "2024-03-23 14:14:42.979823",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

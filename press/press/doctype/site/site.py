@@ -152,6 +152,8 @@ class Site(Document, TagHelpers):
 		"plan",
 		"archive_failed",
 		"cluster",
+		"bench",
+		"group",
 		"is_database_access_enabled",
 		"trial_end_date",
 	]
@@ -185,9 +187,7 @@ class Site(Document, TagHelpers):
 	@staticmethod
 	def get_list_query(query):
 		Site = frappe.qb.DocType("Site")
-		query = query.where(Site.status != "Archived").where(
-			Site.team == frappe.local.team().name
-		)
+		query = query.where(Site.status != "Archived")
 		return query
 
 	@staticmethod
@@ -1040,6 +1040,7 @@ class Site(Document, TagHelpers):
 			"backups": last_usage.backups,
 			"public": last_usage.public,
 			"private": last_usage.private,
+			"creation": last_usage.creation,
 		}
 
 	def _sync_config_info(self, fetched_config: Dict) -> bool:
@@ -1098,6 +1099,8 @@ class Site(Document, TagHelpers):
 				if frappe.db.exists(
 					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
 				):
+					return
+				if equivalent_site_time < current_usages["creation"]:
 					return
 
 			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
@@ -1402,6 +1405,22 @@ class Site(Document, TagHelpers):
 			self.reload()
 			self.trial_end_date = ""
 			self.save()
+
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"revoke_database_access_on_plan_change",
+			enqueue_after_commit=True,
+		)
+
+	def revoke_database_access_on_plan_change(self):
+		# If the new plan doesn't have database access, disable it
+		if not self.is_database_access_enabled:
+			return
+		if frappe.db.get_value("Site Plan", self.plan, "database_access"):
+			return
+
+		self.disable_database_access()
 
 	def unsuspend_if_applicable(self):
 		try:

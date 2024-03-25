@@ -700,8 +700,8 @@ class Agent:
 					headers=headers,
 					result=json_response or result.text,
 				)
-		except Exception as exce:
-			self.handle_exception(agent_job, exce)
+		except Exception as exc:
+			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -714,6 +714,7 @@ class Agent:
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
 			return
+
 		message = f"""
 			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
 			Response: {getattr(result, 'text', 'Unknown')}
@@ -744,6 +745,24 @@ class Agent:
 		upstream=None,
 		host=None,
 	):
+
+		"""
+		Check if job already exists in Undelivered, Pending, Running state
+		don't add new job until its gets comleted
+		"""
+
+		disable_agent_job_deduplication = frappe.db.get_single_value(
+			"Press Settings", "disable_agent_job_deduplication", cache=True
+		)
+
+		if not disable_agent_job_deduplication:
+			job = self.get_similar_in_execution_job(
+				job_type, path, bench, site, code_server, upstream, host, method
+			)
+
+			if job:
+				return job
+
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -763,6 +782,47 @@ class Agent:
 			}
 		).insert()
 		return job
+
+	def get_similar_in_execution_job(
+		self,
+		job_type,
+		path,
+		bench=None,
+		site=None,
+		code_server=None,
+		upstream=None,
+		host=None,
+		method="POST",
+	):
+		"""Deduplicate jobs in execution state"""
+
+		filters = {
+			"server_type": self.server_type,
+			"server": self.server,
+			"job_type": job_type,
+			"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+			"request_method": method,
+			"request_path": path,
+		}
+
+		if bench:
+			filters["bench"] = bench
+
+		if site:
+			filters["site"] = site
+
+		if code_server:
+			filters["code_server"] = code_server
+
+		if upstream:
+			filters["upstream"] = upstream
+
+		if host:
+			filters["host"] = host
+
+		job = frappe.db.get_value("Agent Job", filters, "name")
+
+		return frappe.get_doc("Agent Job", job) if job else False
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}

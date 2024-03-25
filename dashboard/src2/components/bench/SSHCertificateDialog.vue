@@ -6,29 +6,8 @@
 		}"
 		v-model="show"
 	>
-		<template #body-content>
-			<div v-if="!bench.hasSSHAcess" class="space-y-4">
-				<p class="mb-4 text-base">
-					It looks like you haven't added your SSH public key.<br />
-					Please go to
-					<router-link
-						:to="{ name: 'SettingsDeveloper' }"
-						class="underline"
-						@click="show = false"
-					>
-						Developer Settings
-					</router-link>
-					and add your SSH public key.
-				</p>
-				<p class="text-base">
-					Please refer to the
-					<a href="/docs/benches/ssh" class="underline" target="_blank"
-						>SSH Access documentation</a
-					>
-					for more details.
-				</p>
-			</div>
-			<div v-else-if="certificate" class="space-y-4">
+		<template #body-content v-if="$bench.doc">
+			<div v-if="certificate" class="space-y-4">
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
 					<div class="space-y-1">
@@ -39,7 +18,6 @@
 						<ClickToCopyField :textContent="certificateCommand" />
 					</div>
 				</div>
-
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">Step 2</h4>
 					<div class="space-y-1">
@@ -50,22 +28,44 @@
 					</div>
 				</div>
 			</div>
-			<div v-else>
-				<p class="mb-4 text-base">
+			<div class="space-y-2 text-p-base text-gray-700" v-else>
+				<p v-if="!$bench.doc.user_ssh_key">
+					It looks like you haven't added your SSH public key. Go to
+					<router-link
+						:to="{ name: 'SettingsDeveloper' }"
+						class="underline"
+						@click="show = false"
+					>
+						Developer Settings</router-link
+					>
+					to add your SSH public key.
+				</p>
+				<p v-else-if="!$bench.doc.is_ssh_proxy_setup">
+					SSH access is not enabled for this bench. Please contact support to
+					enable access.
+				</p>
+				<p v-else>
 					You will need an SSH certificate to get SSH access to your bench. This
 					certificate will work only with your public-private key pair and will
 					be valid for 6 hours.
 				</p>
-				<p class="text-base">
+				<p>
 					Please refer to the
-					<a href="/docs/benches/ssh" class="underline"
+					<a href="/docs/benches/ssh" class="underline" target="_blank"
 						>SSH Access documentation</a
 					>
 					for more details.
 				</p>
 			</div>
 		</template>
-		<template #actions v-if="!certificate && bench.hasSSHAcess">
+		<template
+			#actions
+			v-if="
+				!certificate &&
+				$bench.doc?.is_ssh_proxy_setup &&
+				$bench.doc?.user_ssh_key
+			"
+		>
 			<Button
 				:loading="$releaseGroup.generateCertificate.loading"
 				@click="
@@ -88,7 +88,6 @@
 
 <script>
 import { getCachedDocumentResource } from 'frappe-ui';
-import bench from '../../objects/bench';
 
 export default {
 	props: ['bench', 'releaseGroup'],
@@ -97,10 +96,24 @@ export default {
 			show: true
 		};
 	},
-	mounted() {
-		this.$releaseGroup.getCertificate.submit();
+	resources: {
+		bench() {
+			return {
+				type: 'document',
+				doctype: 'Bench',
+				name: this.bench,
+				onSuccess(doc) {
+					if (doc.is_ssh_proxy_setup && doc.user_ssh_key) {
+						this.$releaseGroup.getCertificate.reload();
+					}
+				}
+			};
+		}
 	},
 	computed: {
+		$bench() {
+			return this.$resources.bench;
+		},
 		$releaseGroup() {
 			return getCachedDocumentResource('Release Group', this.releaseGroup);
 		},
@@ -108,7 +121,8 @@ export default {
 			return this.$releaseGroup.getCertificate.data;
 		},
 		sshCommand() {
-			return `ssh ${this.bench?.name}@${this.bench?.proxyServer} -p 2222`;
+			if (!this.$bench.doc) return;
+			return `ssh ${this.$bench.doc.name}@${this.$bench.doc.proxy_server} -p 2222`;
 		},
 		certificateCommand() {
 			if (this.certificate) {

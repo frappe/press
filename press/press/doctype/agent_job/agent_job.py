@@ -17,6 +17,8 @@ from frappe.utils import (
 	convert_utc_to_system_timezone,
 	create_batch,
 	cstr,
+	get_datetime,
+	now_datetime,
 )
 
 from press.agent import Agent
@@ -29,6 +31,10 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 )
 from press.utils import log_error
+
+from press.press.doctype.agent_job_type.agent_job_type import (
+	get_retryable_job_types_and_max_retry_count,
+)
 
 
 class AgentJob(Document):
@@ -162,44 +168,39 @@ class AgentJob(Document):
 
 			self.status = "Pending"
 			self.save()
+
 		except Exception:
-			self.status = "Failure"
-			self.save()
+			if 400 <= cint(self.flags.get("status_code", 0)) <= 499:
+				self.status = "Failure"
+				self.save()
+				frappe.db.commit()
 
-			process_job_updates(self.name)
+				process_job_updates(self.name)
 
-			self.reload()
-			self.set_status_and_next_retry_at()
+			else:
+				self.set_status_and_next_retry_at()
 
 	def set_status_and_next_retry_at(self):
-		if 400 <= cint(self.flags.status_code) <= 499:
-			return
-
 		try:
-
 			next_retry_at = get_next_retry_at(self.retry_count)
+			self._update_retry_fields(next_retry_at)
 
-			if not self.retry_count:
-				self.retry_count = 1
-
-			frappe.db.set_value(
-				"Agent Job",
-				self.name,
-				{
-					"status": "Undelivered",
-					"next_retry_at": next_retry_at,
-					"retry_count": self.retry_count,
-				},
-				update_modified=False,
-			)
+		except frappe.TimestampMismatchError:
+			self.reload()
+			self._update_retry_fields(next_retry_at)
 
 		except Exception:
-			log_error(
-				"Agent Job Set Status Exception",
-				job=self,
-				reference_doctype="Agent Job",
-				reference_name=self.name,
-			)
+			log_error("Agent Job Set Next Retry Timing", job=self)
+
+	def _update_retry_fields(self, next_retry_at):
+		if not self.retry_count:
+			self.retry_count = 1
+
+		self.status = "Undelivered"
+		self.next_retry_at = next_retry_at
+
+		self.save()
+		frappe.db.commit()
 
 	def create_agent_job_steps(self):
 		job_type = frappe.get_doc("Agent Job Type", self.job_type)
@@ -380,6 +381,7 @@ def poll_pending_jobs_server(server):
 	)
 
 	if not pending_jobs:
+		retry_undelivered_jobs(server)
 		return
 
 	agent = Agent(server.server, server_type=server.server_type)
@@ -389,6 +391,7 @@ def poll_pending_jobs_server(server):
 	polled_jobs = agent.get_jobs_status(random_pending_ids)
 
 	if not polled_jobs:
+		retry_undelivered_jobs(server)
 		return
 
 	for polled_job in polled_jobs:
@@ -421,6 +424,8 @@ def poll_pending_jobs_server(server):
 			)
 			frappe.db.rollback()
 
+	retry_undelivered_jobs(server)
+
 
 def populate_output_cache(polled_job, job):
 	if not cint(frappe.get_cached_value("Press Settings", None, "realtime_job_updates")):
@@ -444,15 +449,14 @@ def populate_output_cache(polled_job, job):
 def poll_pending_jobs():
 	servers = frappe.get_all(
 		"Agent Job",
-		fields=["server", "server_type", "count(*) as count"],
-		filters={"status": ("in", ["Pending", "Running"]), "job_id": ("!=", 0)},
+		fields=["server", "server_type"],
+		filters={"status": ("in", ["Pending", "Running", "Undelivered"])},
 		group_by="server",
-		order_by="count desc",
+		order_by="",
 		ignore_ifnull=True,
 	)
 
 	for server in servers:
-		server.pop("count")
 		frappe.enqueue(
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs_server",
 			queue="short",
@@ -473,25 +477,25 @@ def fail_old_jobs():
 		{
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
-			"modified": ("<", add_days(None, -2)),
+			"creation": ("<", add_days(None, -2)),
 		},
 		"name",
 		pluck=True,
 	)
 	update_status(failed_jobs, "Failure")
 
-	undelivered_jobs = frappe.db.get_values(
+	delivery_failed_jobs = frappe.db.get_values(
 		"Agent Job",
 		{
 			"job_id": 0,
-			"modified": ("<", add_days(None, -2)),
-			"status": ("!=", "Undelivered"),
+			"creation": ("<", add_days(None, -2)),
+			"status": ("!=", "Delivery Failure"),
 		},
 		"name",
 		pluck=True,
 	)
 
-	update_status(undelivered_jobs, "Undelivered")
+	update_status(delivery_failed_jobs, "Delivery Failure")
 
 
 def get_pair_jobs() -> tuple[str]:
@@ -626,15 +630,21 @@ def skip_pending_steps(job_name):
 def get_next_retry_at(job_retry_count):
 	from frappe.utils import add_to_date, now_datetime
 
-	backoff_in_seconds = 2
+	backoff_in_seconds = 5
 	retry_in_seconds = job_retry_count**backoff_in_seconds
 
 	return add_to_date(now_datetime(), seconds=retry_in_seconds)
 
 
-def retry_undelivered_jobs():
+def retry_undelivered_jobs(server):
+	"""Retry undelivered jobs and update job status if max retry count is reached"""
+
+	if auto_retry_disabled(server):
+		return
+
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
-	server_jobs = get_server_wise_undelivered_jobs(job_types)
+	server_jobs = get_undelivered_jobs_for_server(server, job_types)
+	nowtime = now_datetime()
 
 	for server in server_jobs:
 		delivered_jobs = get_jobs_delivered_to_server(server, server_jobs[server])
@@ -646,12 +656,12 @@ def retry_undelivered_jobs():
 
 		for job in undelivered_jobs:
 			job_doc = frappe.get_doc("Agent Job", job)
-			max_retry_count = max_retry_per_job_type[job_doc.job_type]
+			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
-			if not max_retry_count:
+			if not job_doc.next_retry_at or get_datetime(job_doc.next_retry_at) > nowtime:
 				continue
 
-			if job_doc.retry_count < max_retry_count:
+			if job_doc.retry_count <= max_retry_count:
 				retry = job_doc.retry_count + 1
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
 				job_doc.retry_in_place()
@@ -659,17 +669,26 @@ def retry_undelivered_jobs():
 				update_job_and_step_status(job)
 
 
-def get_retryable_job_types_and_max_retry_count():
-	job_types, max_retry_per_job_type = [], {}
-	for job_type in frappe.get_all(
-		"Agent Job Type",
-		filters={"disabled_auto_retry": 0, "max_retry_count": [">", 0]},
-		fields=["name", "max_retry_count"],
-	):
-		job_types.append(job_type["name"])
-		max_retry_per_job_type[job_type["name"]] = job_type["max_retry_count"]
+def auto_retry_disabled(server):
+	"""Check if auto retry is disabled for the server"""
+	_auto_retry_disabled = False
 
-	return job_types, max_retry_per_job_type
+	# Global Config
+	_auto_retry_disabled = frappe.db.get_single_value(
+		"Press Settings", "disable_auto_retry", cache=True
+	)
+	if _auto_retry_disabled:
+		return True
+
+	# Server Config
+	try:
+		_auto_retry_disabled = frappe.db.get_value(
+			server.server_type, server.server, "disable_agent_job_auto_retry", cache=True
+		)
+	except Exception:
+		_auto_retry_disabled = False
+
+	return _auto_retry_disabled
 
 
 def update_job_and_step_status(job):
@@ -682,6 +701,29 @@ def update_job_and_step_status(job):
 	frappe.qb.update(agent_job_step).set(agent_job_step.status, "Delivery Failure").where(
 		agent_job_step.agent_job == job
 	).run()
+
+
+def get_undelivered_jobs_for_server(server, job_types):
+	jobs = frappe._dict()
+
+	if not job_types:
+		return jobs
+
+	for job in frappe.get_all(
+		"Agent Job",
+		{
+			"status": "Undelivered",
+			"job_id": 0,
+			"server": server.server,
+			"server_type": server.server_type,
+			"job_type": ("in", job_types),
+		},
+		["name", "job_type"],
+		ignore_ifnull=True,  # job type is mandatory and next_retry_at has to be set for retry
+	):
+		jobs.setdefault((server.server, server.server_type), []).append(job["name"])
+
+	return jobs
 
 
 def get_server_wise_undelivered_jobs(job_types):
@@ -899,3 +941,10 @@ def update_job_step_status():
 			)
 			.set(agent_job_step.status, step.job_status)
 		).run()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Agent Job", ["status", "server"])
+	# We don't need modified index, it's harmful on constantly updating tables
+	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
+	frappe.db.add_index("Agent Job", ["creation"])

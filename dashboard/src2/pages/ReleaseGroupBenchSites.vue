@@ -1,20 +1,6 @@
 <template>
 	<div>
-		<div class="flex items-center justify-between">
-			<div></div>
-			<Button
-				:route="{
-					name: 'Bench New Site',
-					params: { bench: this.releaseGroup }
-				}"
-			>
-				<template #prefix>
-					<i-lucide-plus class="h-4 w-4 text-gray-600" />
-				</template>
-				New Site
-			</Button>
-		</div>
-		<GenericList class="mt-3" :options="options" />
+		<ObjectList class="mt-3" :options="listOptions" />
 		<Dialog
 			v-model="showAppVersionDialog"
 			:options="{ title: 'Apps', size: '3xl' }"
@@ -28,75 +14,109 @@
 		</Dialog>
 	</div>
 </template>
-<script>
+<script lang="jsx">
 import { defineAsyncComponent, h } from 'vue';
-import { getCachedDocumentResource, Tooltip } from 'frappe-ui';
+import {
+	getCachedDocumentResource,
+	Tooltip,
+	createDocumentResource
+} from 'frappe-ui';
 import GenericList from '../components/GenericList.vue';
+import ObjectList from '../components/ObjectList.vue';
+import Badge from '@/components/global/Badge.vue';
+import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
 import { toast } from 'vue-sonner';
-import SSHCertificateDialog from '../components/bench/SSHCertificateDialog.vue';
+import { trialDays } from '../utils/site';
+import { getTeam } from '../data/team';
+import { userCurrency } from '../utils/format';
+import ActionButton from '../components/ActionButton.vue';
 
 export default {
 	name: 'ReleaseGroupBenchSites',
 	props: ['releaseGroup'],
+	components: { GenericList, ObjectList },
 	data() {
 		return {
-			showAppVersionDialog: false
+			showAppVersionDialog: false,
+			sitesGroupedByBench: []
 		};
 	},
-	mounted() {
-		this.$releaseGroup.deployedVersions.fetch();
+	resources: {
+		benches() {
+			return {
+				type: 'list',
+				doctype: 'Bench',
+				filters: {
+					group: this.$releaseGroup.name,
+					skip_team_filter_for_system_user: true
+				},
+				fields: ['name', 'status'],
+				orderBy: 'creation desc',
+				pageLength: 99999,
+				auto: true
+			};
+		},
+		sites() {
+			return {
+				type: 'list',
+				doctype: 'Site',
+				filters: {
+					group: this.$releaseGroup.name,
+					skip_team_filter_for_system_user: true
+				},
+				fields: [
+					'name',
+					'status',
+					'bench',
+					'plan.plan_title as plan_title',
+					'plan.price_usd as price_usd',
+					'plan.price_inr as price_inr',
+					'cluster.image as cluster_image',
+					'cluster.title as cluster_title'
+				],
+				orderBy: 'creation desc, bench desc',
+				pageLength: 50,
+				transform(data) {
+					return this.groupSitesByBench(data);
+				}
+			};
+		}
 	},
 	computed: {
-		options() {
-			let data = [];
-			for (let version of this.deployedVersions.data || []) {
-				data.push({
-					name: version.name,
-					status: version.status,
-					proxyServer: version.proxy_server,
-					hasSSHAcess: version.has_ssh_access,
-					hasAppPatchApplied: version.has_app_patch_applied,
-					isBench: true
-				});
-				for (let site of version.sites) {
-					data.push(site);
-				}
-				if (version.sites.length === 0) {
-					data.push({
-						name: 'No sites'
-					});
-				}
-			}
-
+		listOptions() {
 			return {
-				data,
+				list: this.$resources.sites,
+				groupHeader: ({ group }) => {
+					let options = this.benchOptions(group);
+					let IconHash = icon('hash', 'w-3 h-3');
+					return (
+						<div class="flex items-center">
+							<div class="text-base font-medium leading-6 text-gray-900">
+								{group.group}
+							</div>
+							<Badge class="ml-4" label={group.status} />
+							{group.has_app_patch_applied && (
+								<Tooltip
+									text="Apps in this deploy have been patched"
+									placement="top"
+								>
+									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
+										<IconHash />
+									</div>
+								</Tooltip>
+							)}
+							<ActionButton class="ml-auto" options={options} />
+						</div>
+					);
+				},
+				searchField: 'name',
 				columns: [
 					{
 						label: 'Site',
 						fieldname: 'name',
-						width: 2,
-						class({ row }) {
-							return row.isBench
-								? 'text-gray-900 font-medium'
-								: row.name == 'No sites'
-								? 'text-gray-600 pl-2'
-								: 'text-gray-900 pl-2';
-						},
-						suffix(row) {
-							if (!row.hasAppPatchApplied) {
-								return;
-							}
-
-							return h(
-								Tooltip,
-								{
-									text: 'Apps in this deploy have been patched',
-									placement: 'top',
-									class: 'rounded-full bg-gray-100 p-1'
-								},
-								() => h(icon('alert-circle', 'w-3 h-3'))
-							);
+						prefix() {
+							return h('div', { class: 'ml-2 w-3.5 h-3.5' });
 						}
 					},
 					{
@@ -106,237 +126,49 @@ export default {
 					},
 					{
 						label: 'Region',
-						fieldname: 'server_region_info',
-						format(value) {
-							return value?.title || '';
-						},
+						fieldname: 'cluster_title',
 						prefix(row) {
-							if (row.server_region_info)
+							if (row.cluster_title)
 								return h('img', {
-									src: row.server_region_info.image,
+									src: row.cluster_image,
 									class: 'w-4 h-4',
-									alt: row.server_region_info.title
+									alt: row.cluster_title
 								});
 						}
 					},
 					{
 						label: 'Plan',
-						fieldname: 'plan',
-						format: value => {
-							if (!value) return '';
-							if (value.price_usd > 0) {
-								let india = this.$team.doc.country == 'India';
-								let currencySymbol =
-									this.$team.doc.currency == 'INR' ? '₹' : '$';
-								return `${currencySymbol}${
-									india ? value.price_inr : value.price_usd
-								} /mo`;
+						format(value, row) {
+							if (row.trial_end_date) {
+								return trialDays(row.trial_end_date);
 							}
-							return value.plan_title;
-						}
-					},
-					{
-						label: '',
-						type: 'Button',
-						align: 'right',
-						width: '44px',
-						Button: ({ row }) => {
-							let rowIndex = data.findIndex(r => r === row);
-
-							if (!row.isBench)
-								return {
-									label: 'Options',
-									button: {
-										label: 'Options',
-										variant: 'ghost',
-										slots: {
-											default: icon('more-horizontal')
-										}
-									},
-									options: [
-										{
-											label: 'Visit Site',
-											condition: () => row.status === 'Active',
-											onClick: () =>
-												window.open(`https://${row.name}`, '_blank')
-										}
-									]
-								};
-							else
-								return {
-									label: 'Options',
-									button: {
-										label: 'Options',
-										variant: 'ghost',
-										slots: {
-											default: icon('more-horizontal')
-										}
-									},
-									options: [
-										{
-											label: 'View in Desk',
-											condition: () => this.$team.doc.is_desk_user,
-											onClick: () =>
-												window.open(
-													`${window.location.protocol}//${window.location.host}/app/bench/${row.name}`,
-													'_blank'
-												)
-										},
-										{
-											label: 'Show Apps',
-											onClick: () => {
-												toast.promise(
-													this.$releaseGroup.getAppVersions
-														.submit({
-															bench: row.name
-														})
-														.then(() => {
-															this.showAppVersionDialog = true;
-														}),
-													{
-														loading: 'Fetching apps...',
-														success: 'Fetched apps with versions',
-														error: 'Failed to fetch apps',
-														duration: 1000
-													}
-												);
-											}
-										},
-										{
-											label: 'SSH Access',
-											condition: () => row.status === 'Active',
-											onClick: () => {
-												renderDialog(
-													h(SSHCertificateDialog, {
-														bench: row,
-														releaseGroup: this.$releaseGroup.name
-													})
-												);
-											}
-										},
-										{
-											label: 'View Logs',
-											condition: () => row.status === 'Active',
-											onClick: () => {
-												let BenchLogsDialog = defineAsyncComponent(() =>
-													import('../components/bench/BenchLogsDialog.vue')
-												);
-
-												renderDialog(
-													h(BenchLogsDialog, {
-														bench: row.name
-													})
-												);
-											}
-										},
-										{
-											label: 'Update All Sites',
-											condition: () =>
-												row.status === 'Active' &&
-												rowIndex !== 0 &&
-												data[rowIndex + 1]?.name !== 'No sites', // check for empty bench
-											onClick: () => {
-												confirmDialog({
-													title: 'Update All Sites',
-													message: `Are you sure you want to update all sites in the bench <b>${row.name}</b> to the latest bench?`,
-													primaryAction: {
-														label: 'Update',
-														variant: 'solid',
-														onClick: ({ hide }) => {
-															toast.promise(
-																this.$resources.updateAllSites.submit({
-																	name: row.name
-																}),
-																{
-																	loading: 'Updating sites...',
-																	success: () => {
-																		hide();
-																		return 'Sites updated';
-																	},
-																	error: 'Failed to update sites',
-																	duration: 1000
-																}
-															);
-														}
-													}
-												});
-											}
-										},
-										{
-											label: 'Restart Bench',
-											condition: () => row.status === 'Active',
-											onClick: () => {
-												confirmDialog({
-													title: 'Restart Bench',
-													message: `Are you sure you want to restart the bench <b>${row.name}</b>?`,
-													primaryAction: {
-														label: 'Restart',
-														variant: 'solid',
-														theme: 'red',
-														onClick: ({ hide }) => {
-															toast.promise(
-																this.$resources.restartBench.submit({
-																	name: row.name
-																}),
-																{
-																	loading: 'Restarting bench...',
-																	success: () => {
-																		hide();
-																		return 'Bench restarted';
-																	},
-																	error: 'Failed to restart bench',
-																	duration: 1000
-																}
-															);
-														}
-													}
-												});
-											}
-										},
-										{
-											label: 'Rebuild Assets',
-											condition: () =>
-												row.status === 'Active' &&
-												(Number(this.$releaseGroup.doc.version.split(' ')[1]) >
-													13 ||
-													this.$releaseGroup.doc.version === 'Nightly'),
-											onClick: () => {
-												confirmDialog({
-													title: 'Rebuild Assets',
-													message: `Are you sure you want to rebuild assets for the bench <b>${row.name}</b>?`,
-													primaryAction: {
-														label: 'Rebuild',
-														variant: 'solid',
-														theme: 'red',
-														onClick: ({ hide }) => {
-															toast.promise(
-																this.$resources.rebuildBench.submit({
-																	name: row.name
-																}),
-																{
-																	loading: 'Rebuilding assets...',
-																	success: () => {
-																		hide();
-																		return 'Assets will be rebuilt in the background. This may take a few minutes.';
-																	},
-																	error: 'Failed to rebuild assets',
-																	duration: 1000
-																}
-															);
-														}
-													}
-												});
-											}
-										}
-									]
-								};
+							let $team = getTeam();
+							if (row.price_usd > 0) {
+								let india = $team.doc.country == 'India';
+								let formattedValue = userCurrency(
+									india ? row.price_inr : row.price_usd,
+									0
+								);
+								return `${formattedValue} /mo`;
+							}
+							return row.plan_title;
 						}
 					}
 				],
 				route(row) {
-					if (!row.isBench && row.name != 'No sites') {
-						return { name: 'Site Detail', params: { name: row.name } };
-					}
+					return { name: 'Site Detail', params: { name: row.name } };
+				},
+				primaryAction: () => {
+					return {
+						label: 'New Site',
+						slots: {
+							prefix: icon('plus', 'w-4 h-4')
+						},
+						route: {
+							name: 'Bench New Site',
+							params: { bench: this.releaseGroup }
+						}
+					};
 				}
 			};
 		},
@@ -382,31 +214,176 @@ export default {
 				data: this.$releaseGroup.getAppVersions.data
 			};
 		},
-		deployedVersions() {
-			return this.$releaseGroup.deployedVersions;
-		},
 		$releaseGroup() {
 			return getCachedDocumentResource('Release Group', this.releaseGroup);
 		}
 	},
-	components: { GenericList },
-	resources: {
-		// TODO: Use bench doctype instead
-		// faced infinity api calls when using bench doctype
-		restartBench() {
-			return {
-				url: 'press.api.bench.restart'
-			};
+	methods: {
+		groupSitesByBench(data) {
+			if (!this.$resources.benches.data) return [];
+			return this.$resources.benches.data.map(bench => {
+				let sites = (data || []).filter(site => site.bench === bench.name);
+				return {
+					...bench,
+					collapsed: false,
+					group: bench.name,
+					rows: sites
+				};
+			});
 		},
-		rebuildBench() {
-			return {
-				url: 'press.api.bench.rebuild'
-			};
+		benchOptions(bench) {
+			return [
+				{
+					label: 'View in Desk',
+					condition: () => this.$team.doc.is_desk_user,
+					onClick: () =>
+						window.open(
+							`${window.location.protocol}//${window.location.host}/app/bench/${bench.name}`,
+							'_blank'
+						)
+				},
+				{
+					label: 'Show Apps',
+					onClick: () => {
+						toast.promise(
+							this.$releaseGroup.getAppVersions
+								.submit({ bench: bench.name })
+								.then(() => {
+									this.showAppVersionDialog = true;
+								}),
+							{
+								loading: 'Fetching apps...',
+								success: 'Fetched apps with versions',
+								error: 'Failed to fetch apps',
+								duration: 1000
+							}
+						);
+					}
+				},
+				{
+					label: 'SSH Access',
+					condition: () => bench.status === 'Active',
+					onClick: () => {
+						renderDialog(
+							h(SSHCertificateDialog, {
+								bench: bench.name,
+								releaseGroup: this.$releaseGroup.name
+							})
+						);
+					}
+				},
+				{
+					label: 'View Logs',
+					condition: () => bench.status === 'Active',
+					onClick: () => {
+						let BenchLogsDialog = defineAsyncComponent(() =>
+							import('../components/bench/BenchLogsDialog.vue')
+						);
+
+						renderDialog(
+							h(BenchLogsDialog, {
+								bench: bench.name
+							})
+						);
+					}
+				},
+				{
+					label: 'Update All Sites',
+					condition: () => bench.status === 'Active' && bench.rows.length > 0,
+					onClick: () => {
+						confirmDialog({
+							title: 'Update All Sites',
+							message: `Are you sure you want to update all sites in the bench <b>${bench.name}</b> to the latest bench?`,
+							primaryAction: {
+								label: 'Update',
+								variant: 'solid',
+								onClick: ({ hide }) => {
+									toast.promise(
+										this.$bench(bench.name).updateAllSites.submit(),
+										{
+											loading: 'Updating sites...',
+											success: () => {
+												hide();
+												return 'Sites updated';
+											},
+											error: 'Failed to update sites',
+											duration: 1000
+										}
+									);
+								}
+							}
+						});
+					}
+				},
+				{
+					label: 'Restart Bench',
+					condition: () => bench.status === 'Active',
+					onClick: () => {
+						confirmDialog({
+							title: 'Restart Bench',
+							message: `Are you sure you want to restart the bench <b>${bench.name}</b>?`,
+							primaryAction: {
+								label: 'Restart',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									toast.promise(this.$bench(bench.name).restart.submit(), {
+										loading: 'Restarting bench...',
+										success: () => {
+											hide();
+											return 'Bench restarted';
+										},
+										error: 'Failed to restart bench',
+										duration: 1000
+									});
+								}
+							}
+						});
+					}
+				},
+				{
+					label: 'Rebuild Assets',
+					condition: () =>
+						bench.status === 'Active' &&
+						(Number(this.$releaseGroup.doc.version.split(' ')[1]) > 13 ||
+							this.$releaseGroup.doc.version === 'Nightly'),
+					onClick: () => {
+						confirmDialog({
+							title: 'Rebuild Assets',
+							message: `Are you sure you want to rebuild assets for the bench <b>${bench.name}</b>?`,
+							primaryAction: {
+								label: 'Rebuild',
+								variant: 'solid',
+								theme: 'red',
+								onClick: ({ hide }) => {
+									toast.promise(this.$bench(bench.name).rebuild.submit(), {
+										loading: 'Rebuilding assets...',
+										success: () => {
+											hide();
+											return 'Assets will be rebuilt in the background. This may take a few minutes.';
+										},
+										error: 'Failed to rebuild assets',
+										duration: 1000
+									});
+								}
+							}
+						});
+					}
+				}
+			];
 		},
-		updateAllSites() {
-			return {
-				url: 'press.api.bench.update'
-			};
+		$bench(name) {
+			let $bench = createDocumentResource({
+				doctype: 'Bench',
+				name: name,
+				whitelistedMethods: {
+					restart: 'restart',
+					rebuild: 'rebuild',
+					updateAllSites: 'update_all_sites'
+				},
+				auto: false
+			});
+			return $bench;
 		}
 	}
 };

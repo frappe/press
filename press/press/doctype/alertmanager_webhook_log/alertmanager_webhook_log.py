@@ -99,12 +99,13 @@ class AlertmanagerWebhookLog(Document):
 				"severity": self.severity,
 				"status": self.status,
 				"group_key": ("like", f"%{self.incident_scope}%"),
-				"creation": [
+				"modified": [
 					">",
 					add_to_date(frappe.utils.now(), hours=-self.get_repeat_interval()),
 				],
 			},
 			group_by="group_key",
+			ignore_ifnull=True,
 		)  # get site down alerts grouped by benches
 
 		instances = []

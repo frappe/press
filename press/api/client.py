@@ -83,8 +83,10 @@ def get_list(
 	if meta.istable and not (filters.get("parenttype") and filters.get("parent")):
 		frappe.throw("parenttype and parent are required to get child records")
 
-	if meta.has_field("team"):
-		valid_filters = valid_filters or frappe._dict()
+	apply_team_filter = not (
+		filters.get("skip_team_filter_for_system_user") and frappe.local.system_user()
+	)
+	if apply_team_filter and meta.has_field("team"):
 		valid_filters.team = frappe.local.team().name
 
 	query = frappe.qb.get_query(
@@ -287,7 +289,7 @@ def apply_custom_filters(doctype, query, **list_args):
 def validate_filters(doctype, filters):
 	"""Filter filters based on permissions"""
 	if not filters:
-		return filters
+		filters = {}
 
 	out = frappe._dict()
 	for fieldname, value in filters.items():

@@ -50,6 +50,8 @@ class PressSettings(Document):
 		data_40: DF.Data | None
 		default_outgoing_id: DF.Data | None
 		default_outgoing_pass: DF.Data | None
+		disable_agent_job_deduplication: DF.Check
+		disable_auto_retry: DF.Check
 		docker_registry_namespace: DF.Data | None
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None

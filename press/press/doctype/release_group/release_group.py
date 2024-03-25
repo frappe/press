@@ -745,15 +745,12 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def get_certificate(self):
-		user_ssh_key = (
-			frappe.get_all(
-				"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
-			)
-			or [None]
-		)[0]
+		user_ssh_key = frappe.db.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
+		)
 		if not user_ssh_key:
 			return False
-		certificates = frappe.get_all(
+		certificates = frappe.db.get_all(
 			"SSH Certificate",
 			{
 				"user": frappe.session.user,

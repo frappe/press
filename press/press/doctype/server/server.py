@@ -736,6 +736,7 @@ class Server(BaseServer):
 		agent_password: DF.Password | None
 		cluster: DF.Link | None
 		database_server: DF.Link | None
+		disable_agent_job_auto_retry: DF.Check
 		domain: DF.Link | None
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Password | None

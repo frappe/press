@@ -94,7 +94,7 @@
 					</div>
 				</div>
 				<div class="mt-2">
-					<SitePlansCards v-model="plan" />
+					<SitePlansCards v-model="plan" :isBenchSite="!!bench" />
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
