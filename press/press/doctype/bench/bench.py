@@ -76,7 +76,7 @@ class Bench(Document):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup", "proxy_server"]
+	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
 	dashboard_actions = ["restart", "rebuild", "update_all_sites"]
 
 	@staticmethod
@@ -102,6 +102,7 @@ class Bench(Document):
 			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
 		)
 		doc.user_ssh_key = bool(user_ssh_key)
+		doc.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
 	@staticmethod
 	def with_sites(name: str):

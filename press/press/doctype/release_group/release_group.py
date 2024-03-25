@@ -748,7 +748,7 @@ class ReleaseGroup(Document, TagHelpers):
 		user_ssh_key = frappe.db.get_all(
 			"User SSH Key", {"user": frappe.session.user, "is_default": True}, pluck="name"
 		)
-		if not user_ssh_key:
+		if not len(user_ssh_key):
 			return False
 		certificates = frappe.db.get_all(
 			"SSH Certificate",
@@ -756,7 +756,7 @@ class ReleaseGroup(Document, TagHelpers):
 				"user": frappe.session.user,
 				"valid_until": [">", frappe.utils.now()],
 				"group": self.name,
-				"user_ssh_key": user_ssh_key,
+				"user_ssh_key": user_ssh_key[0],
 			},
 			pluck="name",
 			limit=1,
