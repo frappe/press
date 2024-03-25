@@ -151,10 +151,10 @@
 				</div>
 			</div>
 			<div class="mt-6">
-				<span class="font-medium text-base">Summary</span>
+				<span class="font-medium text-base">Description</span>
 				<FormControl
 					class="mt-4"
-					label="Description"
+					label="Summary"
 					type="textarea"
 					@input="editing = true"
 					v-model="marketplaceApp.description"
