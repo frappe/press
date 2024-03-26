@@ -1,10 +1,7 @@
-import HelpIcon from '~icons/lucide/help-circle';
 import { defineAsyncComponent, h } from 'vue';
-import { Button } from 'frappe-ui';
 import ServerActions from '../components/server/ServerActions.vue';
-import { userCurrency, bytes, pricePerDay, planTitle } from '../utils/format';
+import { planTitle, duration } from '../utils/format';
 import { icon } from '../utils/components';
-import { duration } from '../utils/format';
 import { getTeam } from '../data/team';
 import { tagTab } from './common/tags';
 import router from '../router';
