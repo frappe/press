@@ -47,7 +47,7 @@ export default {
 				transform: data => {
 					return data.map(option => ({
 						label: option.label || option.value,
-						description: option.description,
+						description: option.label ? option.value : undefined,
 						value: option.value
 					}));
 				}
