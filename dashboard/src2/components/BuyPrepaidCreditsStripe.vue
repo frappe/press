@@ -48,6 +48,7 @@
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import { toast } from 'vue-sonner';
 
 export default {
 	name: 'BuyPrepaidCreditsStripe',
@@ -127,16 +128,6 @@ export default {
 					});
 				}
 			};
-		},
-		confirmPaymentIntent() {
-			return {
-				url: 'press.api.billing.confirm_payment_intent_for_buying_credits',
-				makeParams({ paymentIntentId }) {
-					return {
-						payment_intent_id: paymentIntentId
-					};
-				}
-			};
 		}
 	},
 	methods: {
@@ -155,17 +146,11 @@ export default {
 				this.errorMessage = payload.error.message;
 				this.paymentInProgress = false;
 			} else {
-				this.$resources.confirmPaymentIntent.submit(
-					{
-						paymentIntentId: payload.paymentIntent.id
-					},
-					{
-						onSuccess() {
-							this.paymentInProgress = false;
-							this.$emit('success');
-						}
-					}
+				toast.success(
+					'Payment processed successfully, we will update your account shortly on confirmation from Stripe'
 				);
+				this.paymentInProgress = false;
+				this.$emit('success');
 				this.errorMessage = null;
 			}
 		}
