@@ -41,6 +41,7 @@ export default {
 					doctype: this.options.doctype,
 					order_by: this.options.orderBy,
 					page_length: this.options.pageLength || 10,
+					filters: this.options.filters,
 					query: this.query
 				},
 				auto: true,

@@ -112,6 +112,17 @@ export default {
 						'Virginia',
 						'Zurich'
 					]
+				},
+				{
+					type: 'link',
+					label: 'Tag',
+					fieldname: 'tags.tag',
+					options: {
+						doctype: 'Press Tag',
+						filters: {
+							doctype_name: 'Site'
+						}
+					}
 				}
 			];
 		},

@@ -107,7 +107,7 @@ class ReleaseGroup(Document, TagHelpers):
 		version: DF.Link
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "version", "apps", "team", "public"]
+	dashboard_fields = ["title", "version", "apps", "team", "public", "tags"]
 	dashboard_actions = [
 		"add_app",
 		"remove_app",

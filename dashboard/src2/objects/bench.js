@@ -50,6 +50,17 @@ export default {
 					options: {
 						doctype: 'Frappe Version'
 					}
+				},
+				{
+					type: 'link',
+					label: 'Tag',
+					fieldname: 'tags.tag',
+					options: {
+						doctype: 'Press Tag',
+						filters: {
+							doctype_name: 'Release Group'
+						}
+					}
 				}
 			];
 		},

@@ -224,12 +224,14 @@ def run_doc_method(dt, dn, method, args=None):
 
 
 @frappe.whitelist()
-def search_link(doctype, query=None, order_by=None, page_length=None):
+def search_link(doctype, query=None, filters=None, order_by=None, page_length=None):
 	check_permissions(doctype)
 	meta = frappe.get_meta(doctype)
 	DocType = frappe.qb.DocType(doctype)
+	valid_filters = validate_filters(doctype, filters)
 	q = frappe.qb.get_query(
 		doctype,
+		filters=valid_filters,
 		offset=0,
 		limit=page_length or 10,
 		order_by=order_by or "modified desc",

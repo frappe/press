@@ -156,6 +156,7 @@ class Site(Document, TagHelpers):
 		"group",
 		"is_database_access_enabled",
 		"trial_end_date",
+		"tags",
 	]
 	dashboard_actions = [
 		"activate",
