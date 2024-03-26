@@ -48,6 +48,11 @@
 				title="Load Average"
 				:key="loadAverageData"
 				:data="loadAverageData"
+				:chartTheme="[
+					$theme.colors.green[500],
+					$theme.colors.yellow[400],
+					$theme.colors.red[500]
+				]"
 				:loading="$resources.loadavg.loading"
 				:error="$resources.loadavg.error"
 			/>
@@ -199,6 +204,10 @@ export default {
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;
+
+			loadavg.datasets.sort(
+				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2])
+			);
 
 			return this.transformMultiLineChartData(loadavg);
 		},
