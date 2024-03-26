@@ -2,12 +2,19 @@
 	<div class="rounded-md border">
 		<div class="flex h-12 items-center justify-between border-b px-5">
 			<h2 class="text-lg font-medium text-gray-900">Load Average</h2>
-			<router-link
-				class="text-base text-gray-600 hover:text-gray-700"
-				:to="{ name: 'Server Detail Analytics', params: { name: server } }"
-			>
-				All analytics →
-			</router-link>
+			<div class="flex items-center space-x-2">
+				<Button
+					icon="help-circle"
+					variant="ghost"
+					:link="'https://frappecloud.com/docs/server-analytics#load-average'"
+				/>
+				<router-link
+					class="text-base text-gray-600 hover:text-gray-700"
+					:to="{ name: 'Server Detail Analytics', params: { name: server } }"
+				>
+					All analytics →
+				</router-link>
+			</div>
 		</div>
 		<LineChart
 			class="h-52 p-2"
