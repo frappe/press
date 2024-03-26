@@ -15,6 +15,7 @@ from press.utils import log_error, sanitize_config
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
+	from io import BufferedReader
 
 
 class Agent:
@@ -948,10 +949,12 @@ class Agent:
 			data=data,
 		)
 
-	def upload_build_context_for_docker_build(self, file):
-		return self.request("POST", "builder/upload", files={"build_context_file": file}).get(
-			"filename"
-		)
+	def upload_build_context_for_docker_build(self, file: "BufferedReader", name: str):
+		return self.request(
+			"POST",
+			f"builder/upload/{name}",
+			files={"build_context_file": file},
+		).get("filename")
 
 	def build_docker_image(self, data: dict):
 		return self.create_agent_job("Docker Image Build", "builder/build", data=data)

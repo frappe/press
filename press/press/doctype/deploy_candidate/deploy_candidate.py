@@ -391,53 +391,34 @@ class DeployCandidate(Document):
 		agent = Agent(remote_build_server)
 		self.is_docker_remote_builder_used = True
 
-		# Upload build context to remote docker builder
-		build_context_archive_filepath = self._tar_build_context()
-		uploaded_filename = None
-
-		with open(build_context_archive_filepath, "rb") as f:
-			uploaded_filename = agent.upload_build_context_for_docker_build(f)
-		if not uploaded_filename:
-			raise Exception("Failed to upload build context to remote docker builder")
-
+		uploaded_filename = self._upload_build_context(remote_build_server)
 		settings = self._fetch_registry_settings()
 		agent.build_docker_image(
 			{
-				"deploy_candidate": self.name,
-				# Next two values are not used by agent but are
-				# read in `process_docker_image_build_job_update`
-				# to trigger deploy after a remote build
-				"deploy_after_build": deploy_after_build,
-				"deploy_to_staging": deploy_to_staging,
 				"filename": uploaded_filename,
 				"image_repository": self.docker_image_repository,
 				"image_tag": self.docker_image_tag,
-				"no_cache": no_cache,
 				"registry": {
-					"password": settings.docker_registry_password,
 					"url": settings.docker_registry_url,
 					"username": settings.docker_registry_username,
+					"password": settings.docker_registry_password,
 				},
-				"build_steps": [
-					{
-						"stage": step.stage,
-						"stage_slug": step.stage_slug,
-						"step": step.step,
-						"step_slug": step.step_slug,
-						"status": step.status,
-						"duration": step.duration,
-						"cached": step.cached,
-						"step_index": step.step_index,
-						"hash": step.hash,
-						"command": step.command,
-						"output": step.output,
-						"lines": step.lines,
-					}
-					for step in self.build_steps
-				],
+				"no_cache": no_cache,
+				# Next few values are not used by agent but are
+				# read in `process_docker_image_build_job_update`
+				"deploy_candidate": self.name,
+				"deploy_after_build": deploy_after_build,
+				"deploy_to_staging": deploy_to_staging,
 			}
 		)
 		self._build_run()
+
+	def _upload_build_context(self, remote_build_server):
+		build_context_archive_filepath = self._tar_build_context()
+
+		agent = Agent(remote_build_server)
+		with open(build_context_archive_filepath, "rb") as file:
+			return agent.upload_build_context_for_docker_build(file, self.name)
 
 	def _update_docker_image_metadata(self):
 		settings = self._fetch_registry_settings()
@@ -1590,7 +1571,9 @@ def run_scheduled_builds():
 
 def process_docker_image_build_job_update(job):
 	request_data = json.loads(job.request_data)
-	deploy_candidate = frappe.get_doc("Deploy Candidate", request_data["deploy_candidate"])
+	deploy_candidate: "DeployCandidate" = frappe.get_doc(
+		"Deploy Candidate", request_data["deploy_candidate"]
+	)
 	deploy_candidate.process_docker_image_build_job_update(job)
 
 
