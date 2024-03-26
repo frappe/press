@@ -183,6 +183,7 @@ class Site(Document, TagHelpers):
 		"update_config",
 		"delete_config",
 		"send_change_team_request",
+		"is_setup_wizard_complete",
 	]
 
 	@staticmethod
@@ -1156,6 +1157,7 @@ class Site(Document, TagHelpers):
 			analytics = self.fetch_analytics()
 		create_site_analytics(self.name, analytics)
 
+	@frappe.whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True

@@ -3,6 +3,21 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
+		<AlertBanner
+			v-if="!isSetupWizardComplete"
+			class="col-span-1 lg:col-span-2"
+			title="Please login and complete the setup wizard on your site. Analytics will be
+			collected only after setup is complete."
+		>
+			<Button
+				class="ml-auto"
+				variant="outline"
+				@click="loginAsAdmin"
+				:loading="$site.loginAsAdmin.loading"
+			>
+				Login
+			</Button>
+		</AlertBanner>
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -140,11 +155,24 @@ import { h, defineAsyncComponent } from 'vue';
 import { getCachedDocumentResource, Progress } from 'frappe-ui';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
+import AlertBanner from './AlertBanner.vue';
 
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
-	components: { SiteDailyUsage, Progress },
+	components: { SiteDailyUsage, Progress, AlertBanner },
+	data() {
+		return {
+			isSetupWizardComplete: true
+		};
+	},
+	mounted() {
+		if (this.$site) {
+			this.$site.isSetupWizardComplete.submit().then(res => {
+				this.isSetupWizardComplete = res;
+			});
+		}
+	},
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(() =>
@@ -154,6 +182,9 @@ export default {
 		},
 		formatBytes(v) {
 			return this.$format.bytes(v, 0, 2);
+		},
+		loginAsAdmin() {
+			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
 		}
 	},
 	computed: {
