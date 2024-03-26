@@ -61,14 +61,18 @@ def get_erpnext_com_connection():
 	from frappe.frappeclient import FrappeClient
 
 	press_settings = frappe.get_single("Press Settings")
-	erpnext_api_secret = press_settings.get_password(
-		"erpnext_api_secret", raise_exception=False
-	)
-
 	if not (
-		press_settings.erpnext_api_key and press_settings.erpnext_url and erpnext_api_secret
+		press_settings.erpnext_api_key
+		and press_settings.erpnext_url
+		and (
+			erpnext_api_secret := press_settings.get_password(
+				"erpnext_api_secret", raise_exception=False
+			)
+		)
 	):
-		frappe.throw("ERPNext.com URL not set up in Press Settings", exc=CentralServerNotSet)
+		frappe.throw(
+			"ERPNext.com Creds not set up in Press Settings", exc=CentralServerNotSet
+		)
 
 	return FrappeClient(
 		press_settings.erpnext_url,
@@ -85,18 +89,22 @@ def get_frappe_io_connection():
 
 	press_settings = frappe.get_single("Press Settings")
 	frappe_api_key = press_settings.frappeio_api_key
-	frappe_api_secret = press_settings.get_password(
-		"frappeio_api_secret", raise_exception=False
-	)
-
-	if not (frappe_api_key and frappe_api_secret and press_settings.frappe_url):
-		frappe.throw("Frappe.io URL not set up in Press Settings", exc=FrappeioServerNotSet)
+	if not (
+		frappe_api_key
+		and press_settings.frappe_url
+		and (
+			frappe_api_secret := press_settings.get_password(
+				"frappeio_api_secret", raise_exception=False
+			)
+		)
+	):
+		frappe.throw("Frappe.io Creds not set up in Press Settings", exc=FrappeioServerNotSet)
 
 	frappe.local.press_frappeio_conn = FrappeClient(
 		press_settings.frappe_url, api_key=frappe_api_key, api_secret=frappe_api_secret
 	)
 
-	return get_frappe_io_connection()
+	return frappe.local.press_frappeio_conn
 
 
 def make_formatted_doc(doc, fieldtypes=None):
