@@ -1731,8 +1731,6 @@ def clone_group(name, new_group_title):
 			"version": group.version,
 			"dependencies": group.dependencies,
 			"is_redisearch_enabled": group.is_redisearch_enabled,
-			"merge_all_rq_queues": group.merge_all_rq_queues,
-			"merge_default_and_short_rq_queues": group.merge_default_and_short_rq_queues,
 			"servers": [{"server": site.server, "default": False}],
 		}
 	)
