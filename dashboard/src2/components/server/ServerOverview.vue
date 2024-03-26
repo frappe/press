@@ -18,9 +18,7 @@
 						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 					>
 						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-						<div class="w-2/3 text-base font-medium">
-							{{ d.value }}
-						</div>
+						<div class="w-2/3 text-base font-medium" v-html="d.value" />
 					</div>
 				</div>
 				<div v-else class="flex items-center justify-center p-3">
@@ -43,9 +41,7 @@
 						class="flex items-center px-5 py-3 last:pb-5 even:bg-gray-50/70"
 					>
 						<div class="w-1/3 text-base text-gray-700">{{ d.label }}</div>
-						<div class="w-2/3 text-base font-medium">
-							{{ d.value }}
-						</div>
+						<div class="w-2/3 text-base font-medium" v-html="d.value" />
 					</div>
 				</div>
 				<div v-else class="flex items-center justify-center p-3">
@@ -110,6 +106,11 @@ export default {
 					? this.$appServer.doc.usage
 					: this.$dbServer.doc.usage;
 
+			let diskSize =
+				serverType === 'Server'
+					? this.$appServer.doc.disk_size
+					: this.$dbServer.doc.disk_size;
+
 			let planDescription = '';
 			if (currentPlan.price_usd > 0) {
 				if (this.$team.doc.currency === 'INR') {
@@ -140,7 +141,15 @@ export default {
 				},
 				{
 					label: 'Storage',
-					value: `${currentUsage.disk || 0} GB / ${currentPlan.disk} GB`
+					value: `${currentUsage.disk || 0} GB / ${
+						diskSize ? diskSize : currentPlan.disk
+					} GB ${
+						diskSize
+							? `<span class="text-gray-600">(${currentPlan.disk} GB + ${
+									diskSize - currentPlan.disk
+							  }) GB</span>`
+							: ''
+					}`
 				}
 			];
 		}

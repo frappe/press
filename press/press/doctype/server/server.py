@@ -64,6 +64,9 @@ class BaseServer(Document, TagHelpers):
 		doc.current_plan = get("Server Plan", self.plan) if self.plan else None
 		doc.usage = usage(self.name)
 		doc.actions = self.get_actions()
+		doc.disk_size = frappe.db.get_value(
+			"Virtual Machine", self.virtual_machine, "disk_size"
+		)
 
 		return doc
 
