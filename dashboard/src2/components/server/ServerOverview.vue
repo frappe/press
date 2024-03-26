@@ -102,6 +102,9 @@ export default {
 			);
 		},
 		currentUsage(serverType) {
+			if (!this.$appServer.doc) return [];
+			if (!this.$dbServer.doc) return [];
+
 			let formatBytes = v => this.$format.bytes(v, 0, 2);
 
 			let currentPlan =
