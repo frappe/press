@@ -101,7 +101,6 @@ class DeployCandidate(Document):
 		user_public_key: DF.Code | None
 	# end: auto-generated types
 
-	command = "docker build"
 	dashboard_fields = [
 		"name",
 		"status",
@@ -901,10 +900,10 @@ class DeployCandidate(Document):
 				raise Exception("App has invalid pyproject.toml file", app) from None
 
 	def _run_docker_build(self, no_cache: bool = False):
-		self._update_build_command(no_cache)
+		command = self._get_build_command(no_cache)
 		environment = self._get_build_environment()
 		result = self.run(
-			self.command,
+			command,
 			environment,
 		)
 		self._parse_docker_build_result(result)
@@ -926,24 +925,25 @@ class DeployCandidate(Document):
 
 		return environment
 
-	def _update_build_command(self, no_cache: bool):
+	def _get_build_command(self, no_cache: bool):
+		command = "docker build"
 		import platform
 
 		# check if it's running on apple silicon mac
-
 		is_apple_silicon = (
 			platform.machine() == "arm64"
 			and platform.system() == "Darwin"
 			and platform.processor() == "arm"
 		)
 		if is_apple_silicon:
-			self.command = f"{self.command}x build --platform linux/amd64"
+			command = f"{command}x build --platform linux/amd64"
 
 		if no_cache:
-			self.command += " --no-cache"
+			command += " --no-cache"
 
-		self.command += f" -t {self.docker_image}"
-		self.command += " ."
+		command += f" -t {self.docker_image}"
+		command += " ."
+		return command
 
 	def _parse_docker_build_result(self, result):
 		lines = []
