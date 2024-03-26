@@ -17,6 +17,7 @@ export default function globals(app) {
 	app.config.globalProperties.$format = formatters;
 	app.config.globalProperties.$log = console.log;
 	app.config.globalProperties.$debounce = debounce;
+	app.config.globalProperties.$isMobile = isMobile();
 
 	// legacy globals for old dashboard
 	// TODO: remove later
@@ -37,4 +38,8 @@ function getPlatform(): Platform {
 	}
 
 	return 'unknown';
+}
+
+function isMobile(): boolean {
+	return window.innerWidth < 640;
 }

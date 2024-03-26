@@ -41,8 +41,20 @@ export default {
 		title: 'Benches',
 		fields: [{ apps: ['app'] }],
 		searchField: 'title',
+		filterControls() {
+			return [
+				{
+					type: 'link',
+					label: 'Version',
+					fieldname: 'version',
+					options: {
+						doctype: 'Frappe Version'
+					}
+				}
+			];
+		},
 		columns: [
-			{ label: 'Title', fieldname: 'title' },
+			{ label: 'Title', fieldname: 'title', class: 'font-medium' },
 			{
 				label: 'Status',
 				fieldname: 'active_benches',
@@ -351,6 +363,25 @@ export default {
 					},
 					orderBy: 'creation desc',
 					fields: [{ apps: ['app'] }],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Draft',
+									'Scheduled',
+									'Pending',
+									'Preparing',
+									'Running',
+									'Success',
+									'Failure'
+								]
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Deploy',
@@ -473,6 +504,34 @@ export default {
 					searchField: 'job_type',
 					fields: ['end'],
 					orderBy: 'creation desc',
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Undelivered',
+									'Pending',
+									'Running',
+									'Success',
+									'Failure',
+									'Delivery Failure'
+								]
+							},
+							{
+								type: 'link',
+								label: 'Type',
+								fieldname: 'job_type',
+								options: {
+									doctype: 'Agent Job Type',
+									orderBy: 'name asc',
+									pageLength: 100
+								}
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Job Type',

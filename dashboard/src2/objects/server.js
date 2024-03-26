@@ -37,6 +37,7 @@ export default {
 				label: 'Server',
 				fieldname: 'name',
 				width: 1.5,
+				class: 'font-medium',
 				format(value, row) {
 					return row.title || value;
 				}
@@ -186,7 +187,6 @@ export default {
 						{
 							label: 'Version',
 							fieldname: 'version',
-							class: 'text-gray-600',
 							width: 0.5
 						},
 						{
@@ -200,7 +200,6 @@ export default {
 						{
 							label: 'Sites',
 							fieldname: 'site_count',
-							class: 'text-gray-600',
 							width: 0.25
 						}
 					],
@@ -258,13 +257,11 @@ export default {
 						},
 						{
 							label: 'Job ID',
-							fieldname: 'job_id',
-							class: 'text-gray-600'
+							fieldname: 'job_id'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -325,7 +322,6 @@ export default {
 							label: 'Duration',
 							fieldname: 'duration',
 							width: 0.5,
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);

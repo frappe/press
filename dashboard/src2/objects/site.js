@@ -71,8 +71,52 @@ export default {
 		],
 		orderBy: 'creation desc',
 		searchField: 'name',
+		filterControls() {
+			return [
+				{
+					type: 'select',
+					label: 'Status',
+					fieldname: 'status',
+					options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+				},
+				{
+					type: 'link',
+					label: 'Version',
+					fieldname: 'group.version',
+					options: {
+						doctype: 'Frappe Version'
+					}
+				},
+				{
+					type: 'link',
+					label: 'Bench',
+					fieldname: 'group',
+					options: {
+						doctype: 'Release Group'
+					}
+				},
+				{
+					type: 'select',
+					label: 'Region',
+					fieldname: 'cluster',
+					options: [
+						'',
+						'Bahrain',
+						'Cape Town',
+						'Frankfurt',
+						'KSA',
+						'London',
+						'Mumbai',
+						'Singapore',
+						'UAE',
+						'Virginia',
+						'Zurich'
+					]
+				}
+			];
+		},
 		columns: [
-			{ label: 'Site', fieldname: 'name', width: 1.5 },
+			{ label: 'Site', fieldname: 'name', width: 1.5, class: 'font-medium' },
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
 				label: 'Plan',
@@ -840,6 +884,15 @@ export default {
 							}
 						}
 					],
+					filterControls() {
+						return [
+							{
+								type: 'checkbox',
+								label: 'Offsite Backups',
+								fieldname: 'offsite'
+							}
+						];
+					},
 					rowActions({ row }) {
 						if (row.status != 'Success') return;
 
@@ -1074,10 +1127,39 @@ export default {
 					orderBy: 'creation desc',
 					searchField: 'job_type',
 					fields: ['site', 'end'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Undelivered',
+									'Pending',
+									'Running',
+									'Success',
+									'Failure',
+									'Delivery Failure'
+								]
+							},
+							{
+								type: 'link',
+								label: 'Type',
+								fieldname: 'job_type',
+								options: {
+									doctype: 'Agent Job Type',
+									orderBy: 'name asc',
+									pageLength: 100
+								}
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Job Type',
 							fieldname: 'job_type',
+							class: 'font-medium',
 							width: 2
 						},
 						{
@@ -1087,13 +1169,11 @@ export default {
 						},
 						{
 							label: 'Job ID',
-							fieldname: 'job_id',
-							class: 'text-gray-600'
+							fieldname: 'job_id'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);

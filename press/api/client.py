@@ -41,6 +41,7 @@ ALLOWED_DOCTYPES = [
 	"Deploy Candidate Difference",
 	"Deploy Candidate Difference App",
 	"Agent Job",
+	"Agent Job Type",
 	"Common Site Config",
 	"Server",
 	"Database Server",
@@ -61,6 +62,7 @@ ALLOWED_DOCTYPES = [
 	"SaaS Product",
 	"Press Notification",
 	"User SSH Key",
+	"Frappe Version",
 ]
 
 
@@ -219,6 +221,34 @@ def run_doc_method(dt, dn, method, args=None):
 
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
+
+
+@frappe.whitelist()
+def search_link(doctype, query=None, order_by=None, page_length=None):
+	check_permissions(doctype)
+	meta = frappe.get_meta(doctype)
+	DocType = frappe.qb.DocType(doctype)
+	q = frappe.qb.get_query(
+		doctype,
+		offset=0,
+		limit=page_length or 10,
+		order_by=order_by or "modified desc",
+	)
+	q = q.select(DocType.name.as_("value"))
+	if meta.title_field:
+		q = q.select(DocType[meta.title_field].as_("label"))
+	if meta.has_field("enabled"):
+		q = q.where(DocType.enabled == 1)
+	if meta.has_field("disabled"):
+		q = q.where(DocType.disabled != 1)
+	if meta.has_field("team") and (not frappe.local.system_user() or 1):
+		q = q.where(DocType.team == frappe.local.team().name)
+	if query:
+		condition = DocType.name.like(f"%{query}%")
+		if meta.title_field:
+			condition = condition | DocType[meta.title_field].like(f"%{query}%")
+		q = q.where(condition)
+	return q.run(as_dict=1)
 
 
 def check_team_access(doctype: str, name: str):

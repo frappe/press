@@ -2,21 +2,28 @@
 	<div>
 		<div v-if="hideControls" class="flex items-center justify-between">
 			<slot name="header-left" v-bind="context">
-				<TextInput
-					placeholder="Search"
-					class="w-[20rem]"
-					:debounce="500"
-					v-model="searchQuery"
-				>
-					<template #prefix>
-						<i-lucide-search class="h-4 w-4 text-gray-500" />
-					</template>
-					<template #suffix>
-						<span class="text-sm text-gray-500" v-if="searchQuery">
-							{{ searchQuerySummary }}
-						</span>
-					</template>
-				</TextInput>
+				<div class="flex items-center space-x-2">
+					<TextInput
+						placeholder="Search"
+						class="max-w-[20rem]"
+						:debounce="500"
+						v-model="searchQuery"
+					>
+						<template #prefix>
+							<i-lucide-search class="h-4 w-4 text-gray-500" />
+						</template>
+						<template #suffix>
+							<span class="text-sm text-gray-500" v-if="searchQuery">
+								{{ searchQuerySummary }}
+							</span>
+						</template>
+					</TextInput>
+					<ObjectListFilters
+						v-if="filterControls.length"
+						:filterControls="filterControls"
+						@update:filter="onFilterControlChange"
+					/>
+				</div>
 			</slot>
 			<div class="ml-2 flex shrink-0 items-center space-x-2">
 				<slot name="header-right" v-bind="context" />
@@ -104,8 +111,10 @@
 	</div>
 </template>
 <script>
+import { reactive } from 'vue';
 import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
+import ObjectListFilters from './ObjectListFilters.vue';
 import {
 	Dropdown,
 	ListView,
@@ -129,6 +138,7 @@ export default {
 	components: {
 		ActionButton,
 		ObjectListCell,
+		ObjectListFilters,
 		Dropdown,
 		ListView,
 		ListHeader,
@@ -324,6 +334,15 @@ export default {
 			}
 			return summary;
 		},
+		filterControls() {
+			if (!this.options.filterControls) return [];
+			let controls = this.options.filterControls(this.context);
+			return controls
+				.filter(control => control.fieldname)
+				.map(control => {
+					return reactive({ ...control, value: control.default || undefined });
+				});
+		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;
 			let props = this.options.primaryAction(this.context);
@@ -365,6 +384,18 @@ export default {
 				}
 			}
 			return false;
+		},
+		onFilterControlChange(control) {
+			let filters = { ...this.$list.filters };
+			for (let c of this.filterControls) {
+				filters[c.fieldname] = c.value;
+			}
+			this.$list.update({
+				filters,
+				start: 0,
+				pageLength: this.options.pageLength || 20
+			});
+			this.$list.reload();
 		}
 	}
 };

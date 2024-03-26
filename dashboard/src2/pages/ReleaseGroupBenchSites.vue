@@ -155,6 +155,34 @@ export default {
 						}
 					}
 				],
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Status',
+							fieldname: 'status',
+							options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+						},
+						{
+							type: 'select',
+							label: 'Region',
+							fieldname: 'cluster',
+							options: [
+								'',
+								'Bahrain',
+								'Cape Town',
+								'Frankfurt',
+								'KSA',
+								'London',
+								'Mumbai',
+								'Singapore',
+								'UAE',
+								'Virginia',
+								'Zurich'
+							]
+						}
+					];
+				},
 				route(row) {
 					return { name: 'Site Detail', params: { name: row.name } };
 				},

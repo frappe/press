@@ -105,6 +105,7 @@ declare module 'vue' {
     ILucideCheck: typeof import('~icons/lucide/check')['default']
     ILucideCheckCircle: typeof import('~icons/lucide/check-circle')['default']
     ILucideChevronDown: typeof import('~icons/lucide/chevron-down')['default']
+    ILucideFilter: typeof import('~icons/lucide/filter')['default']
     ILucideFlaskConical: typeof import('~icons/lucide/flask-conical')['default']
     ILucideGithub: typeof import('~icons/lucide/github')['default']
     ILucideHelpCircle: typeof import('~icons/lucide/help-circle')['default']
