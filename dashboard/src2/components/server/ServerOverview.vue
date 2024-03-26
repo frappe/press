@@ -122,7 +122,9 @@ export default {
 					: this.$dbServer.doc.disk_size;
 
 			let planDescription = '';
-			if (currentPlan.price_usd > 0) {
+			if (!currentPlan) {
+				planDescription = 'No plan selected';
+			} else if (currentPlan.price_usd > 0) {
 				if (this.$team.doc.currency === 'INR') {
 					planDescription = `₹${currentPlan.price_inr} /month`;
 				} else {
@@ -144,28 +146,39 @@ export default {
 				{
 					label: 'CPU',
 					type: 'progress',
-					progress_value: (currentUsage.vcpu / currentPlan.vcpu) * 100,
-					value: `${currentUsage.vcpu || 0} vCPU / ${
-						currentPlan.vcpu
-					} ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
+					progress_value: currentPlan
+						? (currentUsage.vcpu / currentPlan.vcpu) * 100
+						: 0,
+					value: currentPlan
+						? `${currentUsage.vcpu || 0} vCPU / ${
+								currentPlan.vcpu
+						  } ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
+						: '- vCPUs / - vCPUs'
 				},
 				{
 					label: 'Memory',
 					type: 'progress',
-					progress_value: (currentUsage.memory / currentPlan.memory) * 100,
-					value: `${formatBytes(currentUsage.memory || 0)} / ${formatBytes(
-						currentPlan.memory
-					)}`
+					progress_value: currentPlan
+						? (currentUsage.memory / currentPlan.memory) * 100
+						: 0,
+					value: currentPlan
+						? `${formatBytes(currentUsage.memory || 0)} / ${formatBytes(
+								currentPlan.memory
+						  )}`
+						: ' - GB / - GB'
 				},
 				{
 					label: 'Storage',
 					type: 'progress',
-					progress_value:
-						(currentUsage.disk / (diskSize ? diskSize : currentPlan.disk)) *
-						100,
-					value: `${currentUsage.disk || 0} GB / ${
-						diskSize ? diskSize : currentPlan.disk
-					} GB`
+					progress_value: currentPlan
+						? (currentUsage.disk / (diskSize ? diskSize : currentPlan.disk)) *
+						  100
+						: 0,
+					value: currentPlan
+						? `${currentUsage.disk || 0} GB / ${
+								diskSize ? diskSize : currentPlan.disk
+						  } GB`
+						: '- GB / - GB'
 				}
 			];
 		}
