@@ -3,7 +3,8 @@ import typing
 
 import dockerfile
 import frappe
-from frappe.utils import now_datetime
+from frappe.core.utils import find
+from frappe.utils import now_datetime, rounded
 from press.utils import log_error
 
 # Reference:
@@ -13,6 +14,7 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 if typing.TYPE_CHECKING:
 	from re import Match
 	from typing import Any, Generator, TypedDict
+	from frappe.types import DF
 
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
@@ -20,6 +22,7 @@ if typing.TYPE_CHECKING:
 	)
 
 	BuildOutput = list[str] | Generator[str, Any, None]
+	PushOutput = list[dict] | Generator[dict, Any, None]
 	IndexSplit = TypedDict(
 		"IndexSplit",
 		{
@@ -208,9 +211,81 @@ def get_name_and_slugs(name: str, match: "Match[str]") -> tuple[str, str, str]:
 	return name, stage_slug, step_slug
 
 
-class DockerPushOutputParser:
-	def __init__(self, dc: "DeployCandidate") -> None:
-		pass
+class UploadStepUpdater:
+	upload_step: "DeployCandidateBuildStep"
 
-	def parse_and_update(self, output: list):
-		pass
+	def __init__(self, dc: "DeployCandidate") -> None:
+		self.dc = dc
+		self.is_remote = dc.is_docker_remote_builder_used
+		self.output: list[dict] = []
+
+		# Used only if not remote
+		self.start_time = now_datetime()
+		self.last_updated = now_datetime()
+
+	def start(self):
+		self.upload_step = self.dc.get_first_step("stage_slug", "upload")
+		if self.upload_step.status == "Running":
+			pass
+
+		self.upload_step.status = "Running"
+		self._update_upload_step_output()
+
+	def process(self, output: "PushOutput"):
+		for line in output:
+			self._process_single_line(line)
+
+		# If remote, duration is accumulated
+		if self.is_remote:
+			duration = (now_datetime() - self.dc.last_updated).total_seconds()
+			self.upload_step.duration += rounded(duration, 1)
+
+		# If not remote, duration is calculated once
+		else:
+			duration = (now_datetime() - self.start_time).total_seconds()
+			self.upload_step.duration = rounded(duration, 1)
+
+			# If remote, this has to be set on Agent Job success
+			self.upload_step.status = "Success"
+		self._update_upload_step_output()
+
+	def end(self, status: 'DF.Literal["Success", "Failure"]'):
+		# Used only if the build is running locally
+		self.upload_step.status = status
+		self._update_upload_step_output()
+
+	def _process_single_line(self, line: dict):
+		self._update_output(line)
+		if self.is_remote:
+			return
+
+		# If not remote, upload step output is updated every 1 second
+		now = now_datetime()
+		if (now - self.last_updated).total_seconds() <= 1:
+			return
+
+		self._update_upload_step_output()
+		self.last_updated = now
+
+	def _update_output(self, line: dict):
+		line_id = line.get("id")
+		if not line_id:
+			return
+
+		line_status = line.get("status", "")
+		line_progress = line.get("progress", "")
+		line_str = f"{line_id}: {line_status} {line_progress}"
+
+		if existing := find(
+			self.output,
+			lambda x: x["id"] == line_id,
+		):
+			existing["output"] = line_str
+		else:
+			self.output.append({"id": line_id, "output": line_str})
+
+	def _update_upload_step_output(self):
+		output_lines = [line["output"] for line in self.output]
+		self.upload_step.output = "\n".join(output_lines)
+		self.dc.save(ignore_version=True)
+		frappe.db.commit()

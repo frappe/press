@@ -16,7 +16,6 @@ from subprocess import Popen
 from typing import List, Optional, Tuple
 
 import docker
-import dockerfile
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -34,7 +33,7 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 )
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
-	DockerPushOutputParser,
+	UploadStepUpdater,
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
@@ -445,11 +444,16 @@ class DeployCandidate(Document):
 		output_data = json.loads(response_data.get("data", "{}"))
 
 		# TODO: Error Handling
+		upload_step_updater = UploadStepUpdater(self)
 		if push_output := output_data.get("push", []):
-			DockerPushOutputParser(self).parse_and_update(push_output)
+			upload_step_updater.start()
+			upload_step_updater.process(push_output)
 		elif build_output := output_data.get("build", []):
 			DockerBuildOutputParser(self).parse_and_update(build_output)
 		self._update_status_from_remote_build_job(job)
+
+		if job.status == "Success":
+			upload_step_updater.end("Success")
 
 		if job.status == "Success" and request_data.get("deploy_after_build"):
 			staging = request_data.get("deploy_to_staging")
@@ -969,7 +973,6 @@ class DeployCandidate(Document):
 			environment,
 		)
 		DockerBuildOutputParser(self).parse_and_update(output)
-		# self._parse_docker_build_result(output)
 
 	def _get_build_environment(self):
 		environment = os.environ.copy()
@@ -1008,100 +1011,6 @@ class DeployCandidate(Document):
 		command += " ."
 		return command
 
-	def _parse_docker_build_result(self, result):
-		lines = []
-		last_update = now()
-		steps = frappe._dict()
-		for line in result:
-			line = ansi_escape(line)
-			lines.append(line)
-
-			# Strip appended newline
-			line = line.strip()
-
-			# Skip blank lines
-			if not line:
-				continue
-
-			unusual_line = False
-			try:
-				# Remove step index from line
-				step_index, line = line.split(maxsplit=1)
-				try:
-					step_index = int(step_index[1:])
-				except ValueError:
-					line = step_index + " " + line
-					step_index = sorted(steps)[-1]
-					unusual_line = True
-
-				# Parse first line and add step to steps dict
-				if step_index not in steps and line.startswith("[stage-"):
-					name = line.split("]", maxsplit=1)[1].strip()
-					match = re.search("`#stage-(.*)`", name)
-					if name.startswith("RUN") and match:
-						flags = dockerfile.parse_string(name)[0].flags
-						if flags:
-							name = name.replace(flags[0], "")
-						name = name.replace(match.group(0), "").strip().replace("   ", " \\\n  ")[4:]
-						stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
-						step = find(
-							self.build_steps,
-							lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
-						)
-
-						step.step_index = step_index
-						step.command = name
-						step.status = "Running"
-						step.output = ""
-
-						if stage_slug == "apps":
-							step.command = f"bench get-app {step_slug}"
-						steps[step_index] = step
-
-				elif step_index in steps:
-					# Parse rest of the lines
-					step = find(self.build_steps, lambda x: x.step_index == step_index)
-					# step = steps[step_index]
-					if line.startswith("sha256:"):
-						step.hash = line[7:]
-					elif line.startswith("DONE"):
-						step.status = "Success"
-						step.duration = float(line.split()[1][:-1])
-					elif line == "CACHED":
-						step.status = "Success"
-						step.cached = True
-					elif line.startswith("ERROR"):
-						step.status = "Failure"
-						step.output += line[7:] + "\n"
-
-					else:
-						if unusual_line:
-							# This line doesn't contain any docker step info
-							output = line
-						else:
-							# Preserve additional whitespaces while splitting
-							time, _, output = line.partition(" ")
-						step.output += output + "\n"
-				elif line.startswith("writing image"):
-					self.docker_image_id = line.split()[2].split(":")[1]
-
-				# Publish Progress
-				if (now() - last_update).total_seconds() > 1:
-					self.build_output = "".join(lines)
-					self.save(ignore_version=True)
-					frappe.db.commit()
-
-					last_update = now()
-			except Exception:
-				import traceback
-
-				print("Error in parsing line:", line)
-				traceback.print_exc()
-
-		self.build_output = "".join(lines)
-		self.save()
-		frappe.db.commit()
-
 	def run(self, command, environment=None, directory=None):
 		process = Popen(
 			shlex.split(command),
@@ -1119,74 +1028,43 @@ class DeployCandidate(Document):
 			raise subprocess.CalledProcessError(return_code, command)
 
 	def _push_docker_image(self):
-		step = find(self.build_steps, lambda x: x.stage_slug == "upload")
-		step.status = "Running"
-		start_time = now()
-		# publish progress
-		self.save()
-		frappe.db.commit()
-
-		try:
-			settings = frappe.db.get_value(
-				"Press Settings",
-				None,
-				[
-					"docker_registry_url",
-					"docker_registry_username",
-					"docker_registry_password",
-					"docker_remote_builder_ssh",
-				],
-				as_dict=True,
+		settings = frappe.db.get_value(
+			"Press Settings",
+			None,
+			[
+				"docker_registry_url",
+				"docker_registry_username",
+				"docker_registry_password",
+				"docker_remote_builder_ssh",
+			],
+			as_dict=True,
+		)
+		environment = os.environ.copy()
+		if settings.docker_remote_builder_ssh:
+			# Connect to Remote Docker Host if configured
+			environment.update(
+				{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
 			)
-			environment = os.environ.copy()
-			if settings.docker_remote_builder_ssh:
-				# Connect to Remote Docker Host if configured
-				environment.update(
-					{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
-				)
 
-			client = docker.from_env(environment=environment)
+		client = docker.from_env(environment=environment)
+		upload_step_updater = UploadStepUpdater(self)
+		upload_step_updater.start()
+		try:
 			client.login(
 				registry=settings.docker_registry_url,
 				username=settings.docker_registry_username,
 				password=settings.docker_registry_password,
 			)
-
-			step.output = ""
-			output = []
-			last_update = now()
-
-			for line in client.images.push(
-				self.docker_image_repository, self.docker_image_tag, stream=True, decode=True
-			):
-				if "id" not in line.keys():
-					continue
-
-				line_output = f'{line["id"]}: {line["status"]} {line.get("progress", "")}'
-
-				existing = find(output, lambda x: x["id"] == line["id"])
-				if existing:
-					existing["output"] = line_output
-				else:
-					output.append({"id": line["id"], "output": line_output})
-
-				if (now() - last_update).total_seconds() > 1:
-					step.output = "\n".join(ll["output"] for ll in output)
-					self.save(ignore_version=True)
-					frappe.db.commit()
-					last_update = now()
-
-			end_time = now()
-			step.output = "\n".join(ll["output"] for ll in output)
-			step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
-			step.status = "Success"
-
-			self.save()
-			frappe.db.commit()
+			output = client.images.push(
+				self.docker_image_repository,
+				self.docker_image_tag,
+				stream=True,
+				decode=True,
+			)
+			upload_step_updater.process(output)
 		except Exception:
-			step.status = "Failure"
-			self.save()
-			frappe.db.commit()
+			upload_step_updater.end("Failure")
+			log_error("Push Docker Image Failed", doc=self)
 			raise
 
 	def generate_ssh_keys(self):
@@ -1402,7 +1280,7 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
-		failed_step = self.get_first_step_of_given_status(["Failure"])
+		failed_step = self.get_first_step("status", ["Failure"])
 		failed = len(errors) > 0 or failed_step is not None
 
 		if failed and msgprint:
@@ -1414,7 +1292,7 @@ class DeployCandidate(Document):
 		if self.status not in ["Pending", "Preparing", "Running"]:
 			return False
 
-		stuck_step = self.get_first_step_of_given_status(["Pending", "Running"])
+		stuck_step = self.get_first_step("status", ["Pending", "Running"])
 		if not stuck_step:
 			return False
 
@@ -1445,9 +1323,14 @@ class DeployCandidate(Document):
 
 		return success
 
-	def get_first_step_of_given_status(self, status: list[str]) -> Optional[Document]:
+	def get_first_step(
+		self, key: str, value: str | list[str]
+	) -> "Optional[DeployCandidateBuildStep]":
+		if isinstance(value, str):
+			value = [value]
+
 		for build_step in self.build_steps:
-			if build_step.status not in status:
+			if build_step.get(key) not in value:
 				continue
 			return build_step
 		return None
