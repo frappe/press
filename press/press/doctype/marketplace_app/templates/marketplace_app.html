@@ -15,7 +15,7 @@ five_star_rating -%}
 				app.title, 'url': '' } ]) }}
 			</div>
 			<div class="px-4 sm:px-8 flex flex-col md:flex-row justify-between">
-				<div class="mt-10 mb-8 sm:mb-12 flex">
+				<div class="mt-8 mb-8 sm:mb-12 flex">
 						{{ app_image(app, 'hidden md:block') }}
 					<div class="mr-2 md:hidden">{{ app_image(app) }}</div>
 					<div class="flex flex-col">
@@ -81,7 +81,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-base font-semibold text-gray-900">Resources</h5>
-		<ul class="flex flex-col mt-4 space-y-3">
+		<ul class="flex flex-col mt-4 space-y-2">
 			{%- for label, icon, href in [ ('Visit Website', 'external-link',
 			app.website), ('Support', 'life-buoy', app.support), ('Documentation',
 			'file-text', app.documentation), ('Privacy Policy', 'lock',
@@ -99,7 +99,7 @@ five_star_rating -%}
 
 	<div>
 		<h5 class="text-base font-semibold text-gray-900">Supported versions</h5>
-		<ul class="mt-4 space-y-1 text-sm text-gray-600">
+		<ul class="mt-4 space-y-2 text-sm text-gray-600">
 			{%- for supported_version in supported_versions -%}
 			<li>
 				{{
@@ -136,7 +136,7 @@ five_star_rating -%}
 	<!-- App Reviews Section -->
 	<div class="max-w-4xl">
 		<div>
-			<div class="flex flex-row justify-between border-t pt-8" style="margin-bottom: 2.25rem;">
+			<div class="flex flex-row justify-between border-t pt-8" style="margin-bottom: 0.8rem;">
 				<h2 class="text-2xl text-gray-900 font-bold">User Reviews</h2>
 				{{ button('Write a review', link='/dashboard/user-review/' + app.name + '?title=' + app.title) }}
 			</div>
