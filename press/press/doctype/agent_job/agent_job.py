@@ -5,9 +5,6 @@
 import json
 import random
 
-from press.press.doctype.deploy_candidate.deploy_candidate import (
-	process_docker_image_build_job_update,
-)
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -20,9 +17,11 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-
 from press.agent import Agent
 from press.api.client import is_owned_by_team
+from press.press.doctype.agent_job_type.agent_job_type import (
+	get_retryable_job_types_and_max_retry_count,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -31,10 +30,6 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 )
 from press.utils import log_error
-
-from press.press.doctype.agent_job_type.agent_job_type import (
-	get_retryable_job_types_and_max_retry_count,
-)
 
 
 class AgentJob(Document):
@@ -774,8 +769,9 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 
 
 def process_job_updates(job_name):
-	job = frappe.get_doc("Agent Job", job_name)
+	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	try:
+		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
 			process_add_ssh_user_job_update,
 			process_archive_bench_job_update,
@@ -788,6 +784,7 @@ def process_job_updates(job_name):
 			process_start_code_server_job_update,
 			process_stop_code_server_job_update,
 		)
+		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -815,7 +812,6 @@ def process_job_updates(job_name):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
-		from press.press.doctype.app_patch.app_patch import AppPatch
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -895,8 +891,8 @@ def process_job_updates(job_name):
 			process_move_site_to_bench_job_update(job)
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
-		elif job.job_type == "Docker Image Build":
-			process_docker_image_build_job_update(job)
+		elif job.job_type == "Run Remote Builder":
+			DeployCandidate.process_run_remote_builder(job)
 
 	except Exception as e:
 		log_error(

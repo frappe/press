@@ -37,6 +37,7 @@ from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
+	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 
 
@@ -328,7 +329,6 @@ class DeployCandidate(Document):
 			)
 		except Exception as exc:
 			self._build_failed()
-			self._build_end()
 			create_build_failed_notification(self, exc)
 			log_error(
 				"Deploy Candidate Build Exception",
@@ -360,11 +360,13 @@ class DeployCandidate(Document):
 
 		# Build runs on remote server
 		if remote_build_server := self._get_docker_remote_builder_server():
-			self._run_remote_docker_build(
+			self._run_remote_builder(
 				remote_build_server,
 				deploy_after_build,
 				deploy_to_staging,
 				no_cache,
+				no_push,
+				no_build,
 			)
 			return
 
@@ -378,21 +380,26 @@ class DeployCandidate(Document):
 			self._push_docker_image()
 
 		self._build_successful()
-		self._build_end()
 
-	def _run_remote_docker_build(
+	def _run_remote_builder(
 		self,
 		remote_build_server: str,
 		deploy_after_build: bool,
 		deploy_to_staging: bool,
 		no_cache: bool,
+		no_push: bool,
+		no_build: bool,
 	):
-		agent = Agent(remote_build_server)
 		self.is_docker_remote_builder_used = True
 
 		uploaded_filename = self._upload_build_context(remote_build_server)
 		settings = self._fetch_registry_settings()
-		agent.build_docker_image(
+
+		if no_build:
+			self._build_successful()
+			return
+
+		Agent(remote_build_server).run_remote_builder(
 			{
 				"filename": uploaded_filename,
 				"image_repository": self.docker_image_repository,
@@ -403,6 +410,7 @@ class DeployCandidate(Document):
 					"password": settings.docker_registry_password,
 				},
 				"no_cache": no_cache,
+				"no_push": no_push,
 				# Next few values are not used by agent but are
 				# read in `process_docker_image_build_job_update`
 				"deploy_candidate": self.name,
@@ -418,6 +426,41 @@ class DeployCandidate(Document):
 		agent = Agent(remote_build_server)
 		with open(build_context_archive_filepath, "rb") as file:
 			return agent.upload_build_context_for_docker_build(file, self.name)
+
+	@staticmethod
+	def process_run_remote_builder(job: "AgentJob"):
+		request_data = json.loads(job.request_data)
+		frappe.get_doc(
+			"Deploy Candidate",
+			request_data["deploy_candidate"],
+		)._process_docker_image_build_job_update(job, request_data)
+
+	def _process_run_remote_builder(self, job: "AgentJob", request_data: dict):
+		# TODO: Error Handling
+		self._update_build_output_from_remote_build_job(job)
+		self._update_build_steps_from_remote_build_job(job)
+		self._update_status_from_remote_build_job(job)
+
+		if job.status == "Success" and request_data.get("deploy_after_build"):
+			staging = request_data.get("deploy_to_staging")
+			self.create_deploy(staging)
+
+	def _update_build_output_from_remote_build_job(self, job: "AgentJob"):
+		pass
+
+	def _update_build_steps_from_remote_build_job(self, job: "AgentJob"):
+		pass
+
+	def _update_status_from_remote_build_job(self, job: "AgentJob"):
+		match job.status:
+			case "Pending" | "Running":
+				return self._build_run()
+			case "Failure" | "Undelivered" | "Delivery Failure":
+				return self._build_failed()
+			case "Success":
+				return self._build_successful()
+			case _:
+				raise Exception("unreachable code execution")
 
 	def _update_docker_image_metadata(self):
 		settings = self._fetch_registry_settings()
@@ -448,18 +491,27 @@ class DeployCandidate(Document):
 		)
 
 	def _build_start(self):
+		if self.build_start or self.status == "Preparing":
+			pass
+
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
 		frappe.db.commit()
 
 	def _build_run(self):
+		if self.status == "Running":
+			return
+
 		self.status = "Running"
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
 	def _build_failed(self):
+		if self.status == "Failure":
+			return
+
 		self.status = "Failure"
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
@@ -468,24 +520,30 @@ class DeployCandidate(Document):
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
 
 		self._fail_last_running_step()
+		self._build_end()
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	def _build_successful(self):
+		if self.status == "Success":
+			return
+
 		self.status = "Success"
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
 		)
 		if bench_update:
 			frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
+		self._build_end()
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	def _build_end(self):
+		if self.build_end and self.build_duration:
+			return
+
 		self.build_end = now()
 		self.build_duration = self.build_end - self.build_start
-		self.save()
-		frappe.db.commit()
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:
@@ -1315,46 +1373,6 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def process_docker_image_build_job_update(self, job):
-		job = job.get_doc(job.as_dict())
-		request_data = json.loads(job.request_data)
-		data = find(job["steps"], lambda x: x["step_name"] == "Docker Image Build")["output"]
-		if data:
-			data = json.loads(data)
-		else:
-			data = {}
-		# Update build output
-		self.build_output = data.get("build_output", "")
-		# Update build steps
-		for step_update in data.get("build_steps", []):
-			step = find(
-				self.build_steps,
-				lambda x: x.stage_slug == step_update["stage_slug"]
-				and x.step_slug == step_update["step_slug"],
-			)
-			step.status = step_update["status"]
-			step.cached = step_update["cached"]
-			step.command = step_update["command"]
-			step.duration = step_update["duration"]
-			step.hash = step_update["hash"]
-			step.lines = step_update["lines"]
-			step.output = step_update["output"]
-			step.step_index = step_update["step_index"]
-
-		if job.status == "Running":
-			self._build_run()
-		elif job.status == "Failure":
-			self._build_failed()
-			self._build_end()
-		elif job.status == "Success":
-			self.docker_image_id = data.get("docker_image_id", "")
-			self._build_successful()
-			self._build_end()
-
-			# Check if deployment required
-			if request_data.get("deploy_after_build"):
-				self.create_deploy(request_data.get("deploy_to_staging"))
-
 	def can_use_remote_build_server(self):
 		return bool(self._get_docker_remote_builder_server())
 
@@ -1567,14 +1585,6 @@ def run_scheduled_builds():
 		except Exception:
 			frappe.db.rollback()
 			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)
-
-
-def process_docker_image_build_job_update(job):
-	request_data = json.loads(job.request_data)
-	deploy_candidate: "DeployCandidate" = frappe.get_doc(
-		"Deploy Candidate", request_data["deploy_candidate"]
-	)
-	deploy_candidate.process_docker_image_build_job_update(job)
 
 
 # Key: stage_slug
