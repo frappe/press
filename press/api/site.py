@@ -665,17 +665,19 @@ def get_plans(name=None, rg=None):
 		)
 
 		site_server = frappe.db.get_value("Site", site_name, "server")
-		is_dedicated_server_site = is_dedicated_server(site_server)
+		on_dedicated_server = is_dedicated_server(site_server)
 
 	else:
-		is_dedicated_server_site = None
+		on_dedicated_server = None
 		is_paywalled_bench = False
 
 	out = []
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
 			continue
-		if not is_dedicated_server_site and plan.dedicated_server_plan:
+		if not on_dedicated_server and plan.dedicated_server_plan:
+			continue
+		if on_dedicated_server and not plan.dedicated_server_plan:
 			continue
 		out.append(plan)
 
