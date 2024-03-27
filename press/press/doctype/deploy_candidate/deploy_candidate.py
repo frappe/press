@@ -85,6 +85,7 @@ class DeployCandidate(Document):
 		is_redisearch_enabled: DF.Check
 		is_single_container: DF.Check
 		is_ssh_enabled: DF.Check
+		last_updated: DF.Datetime | None
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
@@ -417,6 +418,7 @@ class DeployCandidate(Document):
 				"deploy_to_staging": deploy_to_staging,
 			}
 		)
+		self.last_updated = now()
 		self._build_run()
 
 	def _upload_build_context(self, remote_build_server):
@@ -435,19 +437,26 @@ class DeployCandidate(Document):
 		)._process_run_remote_builder(job, request_data)
 
 	def _process_run_remote_builder(self, job: "AgentJob", request_data: dict):
+		response_data = json.loads(job.data)
+		output_data = json.loads(response_data.get("data", "{}"))
+		build_output = output_data.get("build", [])
+		push_output = output_data.get("push", [])
+
 		# TODO: Error Handling
-		self._update_build_output_from_remote_build_job(job)
-		self._update_build_steps_from_remote_build_job(job)
+		if push_output:
+			self._process_push_output_lines(push_output)
+		elif build_output:
+			self._process_build_output_lines(build_output)
 		self._update_status_from_remote_build_job(job)
 
 		if job.status == "Success" and request_data.get("deploy_after_build"):
 			staging = request_data.get("deploy_to_staging")
 			self.create_deploy(staging)
 
-	def _update_build_output_from_remote_build_job(self, job: "AgentJob"):
+	def _process_push_output_lines(self, lines: list):
 		pass
 
-	def _update_build_steps_from_remote_build_job(self, job: "AgentJob"):
+	def _process_build_output_lines(self, lines: list):
 		pass
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob"):
