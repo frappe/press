@@ -24,7 +24,6 @@ const listOptions = ref({
 			label: 'Members',
 			type: 'Component',
 			component: ({ row }) => {
-				console.log(JSON.stringify(row.users[0].full_name));
 				return (
 					<div
 						onClick={e => {
