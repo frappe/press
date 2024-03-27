@@ -32,6 +32,10 @@ from press.press.doctype.app_release.app_release import (
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
+from press.press.doctype.deploy_candidate.docker_output_parsers import (
+	DockerBuildOutputParser,
+	DockerPushOutputParser,
+)
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
@@ -412,7 +416,7 @@ class DeployCandidate(Document):
 				"no_cache": no_cache,
 				"no_push": no_push,
 				# Next few values are not used by agent but are
-				# read in `process_docker_image_build_job_update`
+				# read in `process_run_remote_builder`
 				"deploy_candidate": self.name,
 				"deploy_after_build": deploy_after_build,
 				"deploy_to_staging": deploy_to_staging,
@@ -439,25 +443,17 @@ class DeployCandidate(Document):
 	def _process_run_remote_builder(self, job: "AgentJob", request_data: dict):
 		response_data = json.loads(job.data)
 		output_data = json.loads(response_data.get("data", "{}"))
-		build_output = output_data.get("build", [])
-		push_output = output_data.get("push", [])
 
 		# TODO: Error Handling
-		if push_output:
-			self._process_push_output_lines(push_output)
-		elif build_output:
-			self._process_build_output_lines(build_output)
+		if push_output := output_data.get("push", []):
+			DockerPushOutputParser(self).parse_and_update(push_output)
+		elif build_output := output_data.get("build", []):
+			DockerBuildOutputParser(self).parse_and_update(build_output)
 		self._update_status_from_remote_build_job(job)
 
 		if job.status == "Success" and request_data.get("deploy_after_build"):
 			staging = request_data.get("deploy_to_staging")
 			self.create_deploy(staging)
-
-	def _process_push_output_lines(self, lines: list):
-		pass
-
-	def _process_build_output_lines(self, lines: list):
-		pass
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob"):
 		match job.status:
@@ -968,11 +964,12 @@ class DeployCandidate(Document):
 	def _run_docker_build(self, no_cache: bool = False):
 		command = self._get_build_command(no_cache)
 		environment = self._get_build_environment()
-		result = self.run(
+		output = self.run(
 			command,
 			environment,
 		)
-		self._parse_docker_build_result(result)
+		DockerBuildOutputParser(self).parse_and_update(output)
+		# self._parse_docker_build_result(output)
 
 	def _get_build_environment(self):
 		environment = os.environ.copy()
