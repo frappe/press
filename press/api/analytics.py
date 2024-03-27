@@ -250,7 +250,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
+	if not log_server or not database_name:
 		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/"
