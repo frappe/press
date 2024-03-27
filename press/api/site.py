@@ -4,6 +4,7 @@
 
 import json
 from frappe.utils.user import is_system_user
+from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 import wrapt
 import frappe
@@ -663,12 +664,8 @@ def get_plans(name=None, rg=None):
 			is_private_bench and release_group.creation > paywall_date and not is_system_user
 		)
 
-		site_team = frappe.db.get_value("Site", site_name, "team")
 		site_server = frappe.db.get_value("Site", site_name, "server")
-		server_team = frappe.db.get_value("Server", site_server, "team")
-		is_dedicated_server_site = "@erpnext.com" in server_team
-		if site_team != server_team:
-			pass
+		is_dedicated_server_site = is_dedicated_server(site_server)
 
 	else:
 		is_dedicated_server_site = None
@@ -818,7 +815,7 @@ def get(name):
 	)
 
 	server = frappe.db.get_value(
-		"Server", site.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
+		"Server", site.server, ["name", "ip", "is_standalone", "proxy_server", "team"], as_dict=True
 	)
 	if server.is_standalone:
 		ip = server.ip
@@ -858,6 +855,8 @@ def get(name):
 	else:
 		version_upgrade = None
 
+	on_dedicated_server = is_dedicated_server(server.name)
+
 	return {
 		"name": site.name,
 		"host_name": site.host_name,
@@ -874,7 +873,7 @@ def get(name):
 		"frappe_version": frappe_version,
 		"server": site.server,
 		"server_region_info": get_server_region_info(site),
-		"can_change_plan": server.team != team,
+		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
