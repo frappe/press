@@ -1,6 +1,6 @@
 import { toast } from 'vue-sonner';
 import { dayjsLocal } from './utils/dayjs';
-import session from './data/session';
+import { session } from './data/session';
 import theme from '../tailwind.theme.json';
 import { debounce } from 'frappe-ui';
 import { getTeam } from './data/team';

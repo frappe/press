@@ -1,17 +1,28 @@
 <template>
+	<Button :route="{ name: 'SettingsPermissionRoles' }" class="mb-4">
+		<template #prefix>
+			<i-lucide-arrow-left class="h-4 w-4 text-gray-600" />
+		</template>
+		All roles
+	</Button>
 	<ObjectList :options="listOptions">
 		<template #header-left="{ listResource }">
-			<Dropdown :options="getDropdownOptions(listResource)">
-				<Button>
-					<template #prefix>
-						<LucideAppWindow class="h-4 w-4 text-gray-500" />
-					</template>
-					{{ currentDropdownOption.label }}
-					<template #suffix>
-						<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
-					</template>
-				</Button>
-			</Dropdown>
+			<div class="flex items-center space-x-4">
+				<h3 class="text-lg font-medium text-gray-900">
+					{{ permissionGroup.doc?.title }}
+				</h3>
+				<Dropdown :options="getDropdownOptions(listResource)">
+					<Button>
+						<template #prefix>
+							<LucideAppWindow class="h-4 w-4 text-gray-500" />
+						</template>
+						{{ currentDropdownOption.label }}
+						<template #suffix>
+							<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
+						</template>
+					</Button>
+				</Dropdown>
+			</div>
 		</template>
 
 		<template #header-right="{ listResource }">
@@ -26,7 +37,7 @@
 				]"
 			>
 				<Button>
-					Bulk Update
+					Bulk Apply
 					<template #suffix>
 						<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
 					</template>
@@ -48,27 +59,13 @@ const props = defineProps({
 	groupId: { type: String, required: true }
 });
 
-const breadcrumbs = inject('breadcrumbs');
-breadcrumbs.value = [
-	{ label: 'Settings', route: '/settings' },
-	{ label: 'Permissions', route: '/settings/permissions' },
-	{ label: 'Groups', route: '/settings/permissions/groups' },
-	{
-		label: props.groupId,
-		to: `/settings/permissions/groups/${props.groupId}`
-	}
-];
-
 const permissionGroup = createDocumentResource({
 	doctype: 'Press Permission Group',
 	name: props.groupId,
 	auto: true,
 	whitelistedMethods: {
+		getUsers: 'get_users',
 		updatePermissions: 'update_permissions'
-	},
-	onSuccess(doc) {
-		if (!breadcrumbs.value?.[3]) return;
-		breadcrumbs.value[3].label = doc.title;
 	}
 });
 
@@ -91,6 +88,7 @@ function getDropdownOptions(listResource) {
 
 const listOptions = ref({
 	onRowClick: () => {},
+	rowHeight: 'unset',
 	resource() {
 		return {
 			auto: true,

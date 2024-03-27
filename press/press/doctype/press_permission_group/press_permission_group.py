@@ -27,14 +27,31 @@ class PressPermissionGroup(Document):
 		users: DF.Table[PressPermissionGroupUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title"]
+	dashboard_fields = ["title", "users"]
 	dashboard_actions = [
 		"get_users",
 		"add_user",
 		"remove_user",
 		"update_permissions",
 		"get_all_document_permissions",
+		"delete",
 	]
+
+	def get_doc(self, doc):
+		if doc.users:
+			values = {
+				d.name: d
+				for d in frappe.db.get_all(
+					"User",
+					filters={"name": ["in", [user.user for user in doc.users]]},
+					fields=["name", "full_name", "user_image"],
+				)
+			}
+			doc.users = [d.as_dict() for d in doc.users]
+			for user in doc.users:
+				user.full_name = values.get(user.user, {}).get("full_name")
+				user.user_image = values.get(user.user, {}).get("user_image")
+		return doc
 
 	def validate(self):
 		self.validate_permissions()
@@ -141,7 +158,7 @@ class PressPermissionGroup(Document):
 		user = frappe.session.user
 		user_belongs_to_group = self.get("users", {"user": user})
 		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
-		if not user_belongs_to_group and user != "Administrator" and not user_is_team_owner:
+		if not (frappe.local.system_user() or user_belongs_to_group or user_is_team_owner):
 			frappe.throw(f"{user} does not belong to {self.name}")
 
 		if doctype not in get_all_restrictable_doctypes():
@@ -309,6 +326,7 @@ def get_all_restrictable_methods(doctype: str) -> list:
 	methods = {
 		"Site": {
 			# method: label,
+			"get_doc": " View",  # so that this comes up first in sort order
 			"archive": "Drop",
 			"migrate": "Migrate",
 			"activate": "Activate",
@@ -318,6 +336,7 @@ def get_all_restrictable_methods(doctype: str) -> list:
 			"restore_site_from_files": "Restore",
 		},
 		"Release Group": {
+			"get_doc": " View",
 			"restart": "Restart",
 		},
 	}

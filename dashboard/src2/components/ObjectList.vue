@@ -49,6 +49,12 @@
 						</template>
 					</Button>
 				</Tooltip>
+				<ActionButton
+					v-for="button in actions"
+					v-bind="button"
+					:key="button.label"
+					:context="context"
+				/>
 				<ActionButton v-bind="secondaryAction" :context="context" />
 				<ActionButton v-bind="primaryAction" :context="context" />
 			</div>
@@ -65,6 +71,7 @@
 					getRowRoute: this.options.route
 						? row => this.options.route(row)
 						: null,
+					rowHeight: this.options.rowHeight,
 					emptyState: {}
 				}"
 				row-key="name"
@@ -351,6 +358,16 @@ export default {
 				.map(control => {
 					return reactive({ ...control, value: control.default || undefined });
 				});
+		},
+		actions() {
+			if (!this.options.actions) return [];
+			let actions = this.options.actions(this.context);
+			return actions.filter(action => {
+				if (action.condition) {
+					return action.condition(this.context);
+				}
+				return true;
+			});
 		},
 		primaryAction() {
 			if (!this.options.primaryAction) return null;

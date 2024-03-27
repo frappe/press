@@ -135,6 +135,9 @@ def get_list(
 @frappe.whitelist()
 def get(doctype, name):
 	check_permissions(doctype)
+	check_method_permissions(
+		doctype, name, "get_doc", "You don't have permission to view this document"
+	)
 	try:
 		doc = frappe.get_doc(doctype, name)
 	except frappe.DoesNotExistError:
@@ -416,13 +419,13 @@ def check_permissions(doctype):
 	return True
 
 
-def check_method_permissions(doctype, docname, method) -> None:
+def check_method_permissions(doctype, docname, method, error_message=None) -> None:
 	from press.press.doctype.press_permission_group.press_permission_group import (
 		has_method_permission,
 	)
 
 	if not has_method_permission(doctype, docname, method):
-		frappe.throw(f"{method} is not permitted on {doctype} {docname}")
+		frappe.throw(error_message or f"{method} is not permitted on {doctype} {docname}")
 	return True
 
 
