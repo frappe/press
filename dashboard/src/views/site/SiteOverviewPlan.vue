@@ -49,7 +49,7 @@
 					</h4>
 					<p
 						class="text-base text-gray-700"
-						v-if="plan.current_plan.name != 'Unlimited'"
+						v-if="plan.current_plan.dedicated_server_plan"
 					>
 						{{ plan.current_plan.cpu_time_per_day }}
 						{{ $plural(plan.current_plan.cpu_time_per_day, 'hour', 'hours') }}
@@ -67,13 +67,13 @@
 				<div v-for="d in usage" :key="d.label">
 					<ProgressArc
 						:percentage="
-							plan.current_plan.name === 'Unlimited' ? 33 : d.percentage
+							plan.current_plan.dedicated_server_plan ? 33 : d.percentage
 						"
 					/>
 					<div class="mt-2 text-base font-medium text-gray-900">
 						{{ d.label }}
 						{{
-							isNaN(d.percentage) || plan.current_plan.name === 'Unlimited'
+							isNaN(d.percentage) || plan.current_plan.dedicated_server_plan
 								? ''
 								: `(${Number(d.percentage).toFixed(1)}%)`
 						}}
@@ -234,7 +234,7 @@ export default {
 				{
 					label: 'CPU',
 					value:
-						this.plan.current_plan.name === 'Unlimited'
+						this.plan.current_plan.dedicated_server_plan
 							? `${this.plan.total_cpu_usage_hours} ${this.$plural(
 									this.plan.current_plan.cpu_time_per_day,
 									'hour',
@@ -255,7 +255,7 @@ export default {
 				{
 					label: 'Database',
 					value:
-						this.plan.current_plan.name === 'Unlimited'
+						this.plan.current_plan.dedicated_server_plan
 							? f(this.plan.total_database_usage)
 							: `${f(this.plan.total_database_usage)} / ${f(
 									this.plan.current_plan.max_database_usage
@@ -268,7 +268,7 @@ export default {
 				{
 					label: 'Storage',
 					value:
-						this.plan.current_plan.name === 'Unlimited'
+						this.plan.current_plan.dedicated_server_plan
 							? f(this.plan.total_storage_usage)
 							: `${f(this.plan.total_storage_usage)} / ${f(
 									this.plan.current_plan.max_storage_usage

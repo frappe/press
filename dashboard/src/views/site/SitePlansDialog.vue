@@ -111,7 +111,7 @@ export default {
 		},
 		plans() {
 			let processedPlans = this.$resources.plans.data.map(plan => {
-				if (this.belowCurrentUsage(plan)) {
+				if (!plan.dedicated_server_plan && this.belowCurrentUsage(plan)) {
 					plan.disabled = true;
 				}
 
