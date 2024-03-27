@@ -2,41 +2,42 @@
 	<ObjectList :options="listOptions" />
 </template>
 
-<script setup>
-import { h, inject, ref } from 'vue';
+<script setup lang="jsx">
+import { h, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import { icon, renderDialog, confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
-import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';
-import PermissionGroupUserCell from './PermissionGroupUserCell.vue';
 import PermissionGroupMembersDialog from './PermissionGroupMembersDialog.vue';
-
-const breadcrumbs = inject('breadcrumbs');
-breadcrumbs.value = [
-	{ label: 'Settings', route: '/settings' },
-	{ label: 'Permissions', route: '/settings/permissions' },
-	{ label: 'Groups', route: '/settings/permissions/groups' }
-];
+import router from '../../router';
+import UserAvatarGroup from '../AvatarGroup.vue';
 
 const listOptions = ref({
-	resource() {
-		return {
-			type: 'list',
-			doctype: 'Press Permission Group',
-			fields: ['title', 'name'],
-			auto: true
-		};
-	},
+	doctype: 'Press Permission Group',
+	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
 	columns: [
 		{
-			label: 'Title',
+			label: 'Role',
 			fieldname: 'title',
 			width: 1
 		},
 		{
-			label: 'Users',
+			label: 'Members',
 			type: 'Component',
 			component: ({ row }) => {
-				return h(PermissionGroupUserCell, { groupId: row.name });
+				return (
+					<div
+						onClick={e => {
+							e.preventDefault();
+							manageMembers(row);
+						}}
+						class="flex h-6 items-center space-x-2"
+					>
+						<UserAvatarGroup users={row.users} />
+						<Button label="Add Member">
+							{{ icon: () => <i-lucide-plus class="h-4 w-4 text-gray-600" /> }}
+						</Button>
+					</div>
+				);
 			},
 			width: 1
 		}
@@ -44,10 +45,17 @@ const listOptions = ref({
 	rowActions({ row, listResource: groupsListResource }) {
 		return [
 			{
-				label: 'Manage Group',
+				label: 'Edit Permissions',
 				onClick() {
-					renderDialog(h(PermissionGroupMembersDialog, { groupId: row.name }));
+					router.push({
+						name: 'SettingsPermissionRolePermissions',
+						params: { groupId: row.name }
+					});
 				}
+			},
+			{
+				label: 'Manage Members',
+				onClick: () => manageMembers(row)
 			},
 			{
 				label: 'Delete Group',
@@ -76,25 +84,43 @@ const listOptions = ref({
 	},
 	route(row) {
 		return {
-			name: 'SettingsPermissionGroupPermissions',
+			name: 'SettingsPermissionRolePermissions',
 			params: { groupId: row.name }
 		};
 	},
 	primaryAction({ listResource: groups }) {
 		return {
-			label: 'New Permission Group',
+			label: 'New Role',
 			variant: 'solid',
 			slots: {
 				prefix: icon('plus')
 			},
 			onClick() {
-				renderDialog(
-					h(NewPermissionGroupDialog, {
-						onGroupCreated: () => groups.reload()
-					})
-				);
+				confirmDialog({
+					title: 'Create Role',
+					fields: [
+						{
+							fieldname: 'title',
+							label: 'Role',
+							autocomplete: 'off'
+						}
+					],
+					onSuccess({ hide, values }) {
+						if (values.title) {
+							return groups.insert.submit(
+								{ title: values.title },
+								{ onSuccess: hide }
+							);
+						}
+						return null;
+					}
+				});
 			}
 		};
 	}
 });
+
+function manageMembers(row) {
+	renderDialog(h(PermissionGroupMembersDialog, { groupId: row.name }));
+}
 </script>

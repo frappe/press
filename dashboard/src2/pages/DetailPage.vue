@@ -42,13 +42,11 @@
 			</template>
 		</TabsWithRouter>
 		<div
-			v-else-if="
-				$resources.document.get.error?.message?.includes('DoesNotExistError')
-			"
-			class="mx-auto mt-60 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+			v-else-if="$resources.document.get.error"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 		>
-			<LucideFrown class="mx-auto mb-4 h-8 w-8" />
-			{{ $resources.document.doctype }} not found
+			<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+			<ErrorMessage :message="$resources.document.get.error" />
 		</div>
 	</div>
 </template>

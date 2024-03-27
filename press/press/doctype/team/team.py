@@ -111,6 +111,7 @@ class Team(Document):
 	]
 	dashboard_actions = [
 		"get_team_members",
+		"invite_team_member",
 		"remove_team_member",
 		"change_default_dashboard",
 	]
@@ -787,10 +788,10 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@frappe.whitelist()
-	def invite_team_member(self, email):
+	def invite_team_member(self, email, new_dashboard=False):
 		from press.api.account import add_team_member
 
-		add_team_member(email)
+		add_team_member(email, new_dashboard)
 
 	@frappe.whitelist()
 	def get_balance(self):

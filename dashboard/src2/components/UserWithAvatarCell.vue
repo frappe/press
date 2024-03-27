@@ -7,7 +7,7 @@
 			<div class="text-sm font-medium text-gray-900">
 				{{ fullName }}
 			</div>
-			<div class="text-sm text-gray-500">
+			<div class="mt-0.5 text-sm text-gray-600">
 				{{ email }}
 			</div>
 		</div>

@@ -51,7 +51,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-04 23:59:12.348668",
+ "modified": "2024-03-27 06:03:36.540752",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Permission Group",
@@ -98,5 +98,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "title"
+ "title_field": "title",
+ "track_changes": 1
 }

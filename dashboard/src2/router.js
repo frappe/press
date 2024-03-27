@@ -128,19 +128,19 @@ let router = createRouter({
 					path: 'permissions',
 					component: () =>
 						import('./components/settings/PermissionsSettings.vue'),
-					redirect: { name: 'SettingsPermissionGroupList' },
+					redirect: { name: 'SettingsPermissionRoles' },
 					children: [
 						{
 							path: 'groups',
-							name: 'SettingsPermissionGroupList',
+							name: 'SettingsPermissionRoles',
 							component: () =>
-								import('./components/settings/PermissionGroupList.vue')
+								import('./components/settings/PermissionRoles.vue')
 						},
 						{
-							name: 'SettingsPermissionGroupPermissions',
+							name: 'SettingsPermissionRolePermissions',
 							path: 'groups/:groupId',
 							component: () =>
-								import('./components/settings/PermissionGroupPermissions.vue'),
+								import('./components/settings/RolePermissions.vue'),
 							props: true
 						}
 					]
