@@ -51,6 +51,8 @@ class AgentJob(Document):
 		job_type: DF.Link
 		next_retry_at: DF.Datetime | None
 		output: DF.Code | None
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		request_data: DF.Code
 		request_files: DF.Code | None
 		request_method: DF.Literal["GET", "POST", "DELETE"]

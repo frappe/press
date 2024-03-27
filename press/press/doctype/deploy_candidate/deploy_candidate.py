@@ -433,7 +433,7 @@ class DeployCandidate(Document):
 		frappe.get_doc(
 			"Deploy Candidate",
 			request_data["deploy_candidate"],
-		)._process_docker_image_build_job_update(job, request_data)
+		)._process_run_remote_builder(job, request_data)
 
 	def _process_run_remote_builder(self, job: "AgentJob", request_data: dict):
 		# TODO: Error Handling
