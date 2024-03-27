@@ -66,7 +66,6 @@ class DeployCandidate(Document):
 		)
 
 		apps: DF.Table[DeployCandidateApp]
-		build_command: DF.SmallText | None
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None

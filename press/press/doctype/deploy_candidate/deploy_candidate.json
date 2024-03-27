@@ -319,8 +319,17 @@
    "read_only": 1
   }
  ],
- "links": [],
- "modified": "2024-03-23 14:14:42.979823",
+ "links": [
+  {
+   "link_doctype": "Agent Job",
+   "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Error Log",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2024-03-27 11:04:49.907685",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

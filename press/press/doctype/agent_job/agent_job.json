@@ -258,8 +258,13 @@
   }
  ],
  "in_create": 1,
- "links": [],
- "modified": "2024-03-27 10:46:14.207720",
+ "links": [
+  {
+   "link_doctype": "Error Log",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2024-03-27 11:05:48.861690",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
