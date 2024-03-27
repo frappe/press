@@ -624,6 +624,7 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_plans(name=None, rg=None):
+	site_name = name
 	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
@@ -639,14 +640,15 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
+			"dedicated_server_plan"
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
 
-	if name or rg:
+	if site_name or rg:
 		team = get_current_team()
-		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
+		release_group_name = rg if rg else frappe.db.get_value("Site", site_name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
 		is_system_user = (
@@ -660,12 +662,23 @@ def get_plans(name=None, rg=None):
 		is_paywalled_bench = (
 			is_private_bench and release_group.creation > paywall_date and not is_system_user
 		)
+
+		site_team = frappe.db.get_value("Site", site_name, "team")
+		site_server = frappe.db.get_value("Site", site_name, "server")
+		server_team = frappe.db.get_value("Server", site_server, "team")
+		is_dedicated_server_site = "@erpnext.com" in server_team
+		if site_team != server_team:
+			pass
+
 	else:
+		is_dedicated_server_site = None
 		is_paywalled_bench = False
 
 	out = []
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
+			continue
+		if not is_dedicated_server_site and plan.dedicated_server_plan:
 			continue
 		out.append(plan)
 
