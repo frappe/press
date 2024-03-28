@@ -1312,3 +1312,10 @@ def get_hostname_abbreviation(hostname):
 		abbr += part[0]
 
 	return abbr
+
+
+def is_dedicated_server(server_name):
+	if not isinstance(server_name, str):
+		frappe.throw("Invalid argument")
+	team = frappe.db.get_value("Server", server_name, "team") or ""
+	return "@erpnext.com" not in team

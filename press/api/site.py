@@ -4,6 +4,7 @@
 
 import json
 from frappe.utils.user import is_system_user
+from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
 import wrapt
 import frappe
@@ -624,6 +625,7 @@ def get_new_site_options(group: str = None):
 
 @frappe.whitelist()
 def get_plans(name=None, rg=None):
+	site_name = name
 	plans = Plan.get_plans(
 		doctype="Site Plan",
 		fields=[
@@ -639,14 +641,15 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
+			"dedicated_server_plan"
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
 	)
 
-	if name or rg:
+	if site_name or rg:
 		team = get_current_team()
-		release_group_name = rg if rg else frappe.db.get_value("Site", name, "group")
+		release_group_name = rg if rg else frappe.db.get_value("Site", site_name, "group")
 		release_group = frappe.get_doc("Release Group", release_group_name)
 		is_private_bench = release_group.team == team and not release_group.public
 		is_system_user = (
@@ -660,12 +663,21 @@ def get_plans(name=None, rg=None):
 		is_paywalled_bench = (
 			is_private_bench and release_group.creation > paywall_date and not is_system_user
 		)
+
+		site_server = frappe.db.get_value("Site", site_name, "server")
+		on_dedicated_server = is_dedicated_server(site_server)
+
 	else:
+		on_dedicated_server = None
 		is_paywalled_bench = False
 
 	out = []
 	for plan in plans:
 		if is_paywalled_bench and plan.price_usd == 10:
+			continue
+		if not on_dedicated_server and plan.dedicated_server_plan:
+			continue
+		if on_dedicated_server and not plan.dedicated_server_plan:
 			continue
 		out.append(plan)
 
@@ -805,7 +817,7 @@ def get(name):
 	)
 
 	server = frappe.db.get_value(
-		"Server", site.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
+		"Server", site.server, ["name", "ip", "is_standalone", "proxy_server", "team"], as_dict=True
 	)
 	if server.is_standalone:
 		ip = server.ip
@@ -845,6 +857,8 @@ def get(name):
 	else:
 		version_upgrade = None
 
+	on_dedicated_server = is_dedicated_server(server.name)
+
 	return {
 		"name": site.name,
 		"host_name": site.host_name,
@@ -861,7 +875,7 @@ def get(name):
 		"frappe_version": frappe_version,
 		"server": site.server,
 		"server_region_info": get_server_region_info(site),
-		"can_change_plan": server.team != team,
+		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
