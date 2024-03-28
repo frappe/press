@@ -150,10 +150,10 @@ export default {
 						? (currentUsage.vcpu / currentPlan.vcpu) * 100
 						: 0,
 					value: currentPlan
-						? `${currentUsage.vcpu || 0} vCPU / ${
+						? `${currentUsage.vcpu || 0} vCPU of ${
 								currentPlan.vcpu
 						  } ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
-						: '- vCPUs / - vCPUs'
+						: 'vCPU'
 				},
 				{
 					label: 'Memory',
@@ -162,10 +162,10 @@ export default {
 						? (currentUsage.memory / currentPlan.memory) * 100
 						: 0,
 					value: currentPlan
-						? `${formatBytes(currentUsage.memory || 0)} / ${formatBytes(
+						? `${formatBytes(currentUsage.memory || 0)} of ${formatBytes(
 								currentPlan.memory
 						  )}`
-						: ' - GB / - GB'
+						: 'GB'
 				},
 				{
 					label: 'Storage',
@@ -175,10 +175,10 @@ export default {
 						  100
 						: 0,
 					value: currentPlan
-						? `${currentUsage.disk || 0} GB / ${
+						? `${currentUsage.disk || 0} GB of ${
 								diskSize ? diskSize : currentPlan.disk
 						  } GB`
-						: '- GB / - GB'
+						: 'GB'
 				}
 			];
 		}
