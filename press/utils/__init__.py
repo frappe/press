@@ -35,6 +35,11 @@ def log_error(title, **kwargs):
 		del kwargs["reference_doctype"]
 		del kwargs["reference_name"]
 
+	if doc := kwargs.get("doc"):
+		reference_doctype = doc.doctype
+		reference_name = doc.name
+		del kwargs["doc"]
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"

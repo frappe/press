@@ -14,7 +14,9 @@ from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
 
 if typing.TYPE_CHECKING:
-	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
+	from io import BufferedReader
+
+	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
 
 
 class Agent:
@@ -744,6 +746,8 @@ class Agent:
 		code_server=None,
 		upstream=None,
 		host=None,
+		reference_doctype=None,
+		reference_name=None,
 	):
 
 		"""
@@ -779,6 +783,8 @@ class Agent:
 				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
 				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
 				"job_type": job_type,
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_name,
 			}
 		).insert()
 		return job
@@ -940,21 +946,34 @@ class Agent:
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)
 
-	def patch_app(self, bench: str, app: str, data: "AgentPatchConfig"):
+	def patch_app(self, app_patch: "AppPatch", data: "AgentPatchConfig"):
+		bench = app_patch.bench
+		app = app_patch.app
 		return self.create_agent_job(
 			"Patch App",
 			f"benches/{bench}/patch/{app}",
 			bench=bench,
 			data=data,
+			reference_doctype="App Patch",
+			reference_name=app_patch.name,
 		)
 
-	def upload_build_context_for_docker_build(self, file):
-		return self.request("POST", "builder/upload", files={"build_context_file": file}).get(
-			"filename"
-		)
+	def upload_build_context_for_docker_build(self, file: "BufferedReader", name: str):
+		return self.request(
+			"POST",
+			f"builder/upload/{name}",
+			files={"build_context_file": file},
+		).get("filename")
 
-	def build_docker_image(self, data: dict):
-		return self.create_agent_job("Docker Image Build", "builder/build", data=data)
+	def run_remote_builder(self, data: dict):
+		reference_name = data.get("deploy_candidate")
+		return self.create_agent_job(
+			"Run Remote Builder",
+			"builder/build",
+			data=data,
+			reference_doctype="Deploy Candidate",
+			reference_name=reference_name,
+		)
 
 	def call_supervisorctl(self, bench: str, action: str, programs: list[str]):
 		return self.create_agent_job(
