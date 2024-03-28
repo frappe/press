@@ -73,7 +73,7 @@ class DockerBuildOutputParser:
 		try:
 			log_error(
 				title="Build Output Parse Error",
-				message=f"Error in parsing line: `{raw_line}`",
+				message=f"Error when parsing line: `{raw_line}`",
 				doc=self.dc,
 			)
 		except Exception:
@@ -88,7 +88,7 @@ class DockerBuildOutputParser:
 			return
 
 		self.build_output = "".join(self.lines)
-		self.save(ignore_version=True)
+		self.dc.save(ignore_version=True)
 		frappe.db.commit()
 
 		self.last_update = now_datetime()
@@ -98,10 +98,10 @@ class DockerBuildOutputParser:
 
 		# append before stripping to preserve '\n'
 		self.lines.append(escaped_line)
-		if not escaped_line:
-			return
 
 		stripped_line = escaped_line.strip()
+		if not stripped_line:
+			return
 
 		# Separate step index from line
 		split = self._get_step_index_split(stripped_line)
@@ -181,7 +181,7 @@ class DockerBuildOutputParser:
 	def _get_step_index_split(self, line: str) -> "IndexSplit":
 		splits = line.split(maxsplit=1)
 		if len(splits) != 2:
-			index = (sorted(self.steps)[-1],)
+			index = sorted(self.steps)[-1]
 			return dict(index=index, line=line, is_unusual=True)
 
 		index_str, line = splits
@@ -189,7 +189,7 @@ class DockerBuildOutputParser:
 			index = int(index_str[1:])
 			return dict(index=index, line=line, is_unusual=False)
 		except ValueError:
-			index = (sorted(self.steps)[-1],)
+			index = sorted(self.steps)[-1]
 			return dict(index=index, line=line, is_unusual=True)
 
 
@@ -212,6 +212,15 @@ def get_name_and_slugs(name: str, match: "Match[str]") -> tuple[str, str, str]:
 
 
 class UploadStepUpdater:
+	"""
+	Processes the output of `client.images.push` and uses it to update
+	the last `build_step` which pertains to uploading the image to the
+	registry.
+
+	Similar to DockerBuildOutputParser, this can process the output from
+	a remote (agent) or local (press) builder docker push.
+	"""
+
 	upload_step: "DeployCandidateBuildStep"
 
 	def __init__(self, dc: "DeployCandidate") -> None:

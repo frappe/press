@@ -444,12 +444,21 @@ class DeployCandidate(Document):
 		output_data = json.loads(response_data.get("data", "{}"))
 
 		# TODO: Error Handling
+		"""
+		Due to how agent - press communication takes place, every time an
+		output is published all of it has to be re-parsed from the start.
+
+		This is due to a method of streaming agent output to press not
+		existing.
+		"""
 		upload_step_updater = UploadStepUpdater(self)
+		if build_output := output_data.get("build", []):
+			DockerBuildOutputParser(self).parse_and_update(build_output)
+
 		if push_output := output_data.get("push", []):
 			upload_step_updater.start()
 			upload_step_updater.process(push_output)
-		elif build_output := output_data.get("build", []):
-			DockerBuildOutputParser(self).parse_and_update(build_output)
+
 		self._update_status_from_remote_build_job(job)
 
 		if job.status == "Success":
