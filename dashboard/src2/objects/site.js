@@ -1311,7 +1311,7 @@ export default {
 					slots: {
 						prefix: icon('external-link')
 					},
-					condition: () => site.doc.status === 'Active',
+					condition: () => site.doc.status !== 'Archived',
 					onClick() {
 						window.open(`https://${site.name}`, '_blank');
 					}
