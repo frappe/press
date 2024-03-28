@@ -244,6 +244,8 @@ export default {
 	},
 	methods: {
 		transformSingleLineChartData(data, percentage = false) {
+			if (!data.datasets?.length) return;
+
 			let dataset = [];
 			const name = data.datasets ? data.datasets[0]?.name : null;
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
@@ -259,6 +261,8 @@ export default {
 			};
 		},
 		transformMultiLineChartData(data, stack = null, percentage = false) {
+			if (!data.datasets?.length) return;
+
 			let total = [];
 			if (percentage) {
 				// the sum of each cpu values tends to differ by few values
