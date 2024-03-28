@@ -181,7 +181,7 @@ export default {
 			renderDialog(h(SitePlansDialog, { site: this.site }));
 		},
 		formatBytes(v) {
-			return this.$format.bytes(v, 0, 2);
+			return this.$format.bytes(v, 2, 2);
 		},
 		loginAsAdmin() {
 			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
