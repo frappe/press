@@ -110,12 +110,11 @@
 								v-for="c in [
 									{
 										name: 'Standard',
-										description:
-											'Suggested for small and medium sized companies'
+										description: 'Includes standard support and SLAs'
 									},
 									{
 										name: 'Premium',
-										description: 'Suggested for enterprise business'
+										description: 'Includes enterprise support and SLAs'
 									}
 								]"
 								:key="c.name"
