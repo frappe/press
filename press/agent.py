@@ -960,12 +960,17 @@ class Agent:
 			reference_name=app_patch.name,
 		)
 
-	def upload_build_context_for_docker_build(self, file: "BufferedReader", name: str):
-		return self.request(
-			"POST",
-			f"builder/upload/{name}",
-			files={"build_context_file": file},
-		).get("filename")
+	def upload_build_context_for_docker_build(
+		self,
+		file: "BufferedReader",
+		dc_name: str,
+	) -> str | None:
+		if res := self.request(
+			"POST", f"builder/upload/{dc_name}", files={"build_context_file": file}
+		):
+			return res.get("filename")
+
+		return None
 
 	def run_remote_builder(self, data: dict):
 		reference_name = data.get("deploy_candidate")

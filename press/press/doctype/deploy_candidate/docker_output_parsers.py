@@ -221,7 +221,7 @@ class UploadStepUpdater:
 	a remote (agent) or local (press) builder docker push.
 	"""
 
-	upload_step: "DeployCandidateBuildStep"
+	_upload_step: "DeployCandidateBuildStep | None"
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
@@ -232,8 +232,13 @@ class UploadStepUpdater:
 		self.start_time = now_datetime()
 		self.last_updated = now_datetime()
 
+	@property
+	def upload_step(self) -> "DeployCandidateBuildStep":
+		if not self._upload_step:
+			self._upload_step = self.dc.get_first_step("stage_slug", "upload")
+		return self._upload_step
+
 	def start(self):
-		self.upload_step = self.dc.get_first_step("stage_slug", "upload")
 		if self.upload_step.status == "Running":
 			pass
 

@@ -594,9 +594,14 @@ def update_steps(job_name, job):
 	)
 	for polled_step in job["steps"]:
 		step = find(steps, lambda x: x.step_name == polled_step["name"])
-		if step and step.status != polled_step["status"]:
-			lock_doc_updated_by_job(job_name)
-			update_step(step.name, polled_step)
+		if not step:
+			continue
+
+		if step.status == polled_step["status"]:
+			continue
+
+		lock_doc_updated_by_job(job_name)
+		update_step(step.name, polled_step)
 
 
 def update_step(step_name, step):

@@ -333,12 +333,7 @@ class DeployCandidate(Document):
 		except Exception as exc:
 			self._build_failed()
 			create_build_failed_notification(self, exc)
-			log_error(
-				"Deploy Candidate Build Exception",
-				name=self.name,
-				reference_doctype="Deploy Candidate",
-				reference_name=self.name,
-			)
+			log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
 			raise
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
@@ -429,7 +424,11 @@ class DeployCandidate(Document):
 
 		agent = Agent(remote_build_server)
 		with open(build_context_archive_filepath, "rb") as file:
-			return agent.upload_build_context_for_docker_build(file, self.name)
+			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
+
+		if not upload_filename:
+			raise Exception("Failed to upload build context to remote docker builder")
+		return upload_filename
 
 	@staticmethod
 	def process_run_remote_builder(job: "AgentJob"):
