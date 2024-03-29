@@ -128,9 +128,15 @@ export default {
 		};
 	},
 	mounted() {
+		this.$socket.emit('doctype_subscribe', 'App Release');
+		this.$socket.on('list_update', this.releaseStateUpdate);
 		if (this.sources.length > 0) {
 			this.selectedSource = this.sources[0].source;
 		}
+	},
+	beforeMount() {
+		this.$socket.emit('doctype_unsubscribe', 'App Source');
+		this.$socket.off('list_update', this.releaseStateUpdate);
 	},
 	resources: {
 		releases() {
@@ -258,6 +264,11 @@ export default {
 		},
 		getCommitUrl(releaseHash) {
 			return this.repoUrl ? `${this.repoUrl}/commit/${releaseHash}` : '';
+		},
+		releaseStateUpdate(data) {
+			if (this.selectedSource && data.source == this.selectedSource) {
+				this.resetReleaseListState();
+			}
 		}
 	},
 	computed: {
