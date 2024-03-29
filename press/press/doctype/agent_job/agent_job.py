@@ -334,6 +334,15 @@ def publish_update(job):
 		event="agent_job_update", doctype="Agent Job", docname=job, message=message
 	)
 
+	# publish event for site to show job running on dashboard
+	if message["site"]:
+		frappe.publish_realtime(
+			event="agent_job_update_for_site",
+			doctype="Site",
+			docname=message["site"],
+			message=message,
+		)
+
 
 def suspend_sites():
 	"""Suspend sites if they have exceeded database or disk limits"""
