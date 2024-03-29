@@ -63,7 +63,9 @@ def create_build_failed_notification(
 	doc.insert()
 	frappe.db.commit()
 
-	frappe.publish_realtime("press_notification", {"team": dc.team})
+	frappe.publish_realtime(
+		"press_notification", doctype="Press Notification", message={"team": dc.team}
+	)
 
 
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":

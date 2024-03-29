@@ -105,6 +105,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
 		this.$socket.on('agent_job_update', data => {
 			if (data.id === this.id) {
 				this.reload();
@@ -116,6 +117,7 @@ export default {
 		}, 1000 * 60);
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id);
 		this.$socket.off('agent_job_update');
 		clearInterval(this.reloadInterval);
 	},
