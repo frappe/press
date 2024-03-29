@@ -135,6 +135,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
 		this.$socket.on(`bench_deploy:${this.id}:steps`, data => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
 				this.$resources.deploy.reload();
@@ -150,6 +151,7 @@ export default {
 		});
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate', this.id);
 		this.$socket.off(`bench_deploy:${this.id}:steps`);
 	},
 	computed: {

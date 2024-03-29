@@ -128,8 +128,6 @@ export default {
 		};
 	},
 	mounted() {
-		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
-		this.$socket.on('request_status_changed', this.releaseStateUpdate);
 		if (this.sources.length > 0) {
 			this.selectedSource = this.sources[0].source;
 		}
@@ -260,11 +258,6 @@ export default {
 		},
 		getCommitUrl(releaseHash) {
 			return this.repoUrl ? `${this.repoUrl}/commit/${releaseHash}` : '';
-		},
-		releaseStateUpdate(data) {
-			if (this.selectedSource && data.source == this.selectedSource) {
-				this.resetReleaseListState();
-			}
 		}
 	},
 	computed: {

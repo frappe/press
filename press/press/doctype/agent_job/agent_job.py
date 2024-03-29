@@ -330,8 +330,9 @@ def job_detail(job):
 
 def publish_update(job):
 	message = job_detail(job)
-	job_owner = frappe.db.get_value("Agent Job", job, "owner")
-	frappe.publish_realtime(event="agent_job_update", message=message, user=job_owner)
+	frappe.publish_realtime(
+		event="agent_job_update", doctype="Agent Job", docname=job, message=message
+	)
 
 
 def suspend_sites():
