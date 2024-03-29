@@ -701,6 +701,7 @@ class Agent:
 					files=files,
 					headers=headers,
 					result=json_response or result.text,
+					doc=agent_job,
 				)
 		except Exception as exc:
 			self.handle_exception(agent_job, exc)
@@ -711,6 +712,7 @@ class Agent:
 				data=data,
 				files=files,
 				headers=headers,
+				doc=agent_job,
 			)
 
 	def handle_request_failure(self, agent_job, result):
