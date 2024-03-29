@@ -135,7 +135,7 @@ export default {
 		}
 	},
 	beforeMount() {
-		this.$socket.emit('doctype_unsubscribe', 'App Source');
+		this.$socket.emit('doctype_unsubscribe', 'App Release');
 		this.$socket.off('list_update', this.releaseStateUpdate);
 	},
 	resources: {
