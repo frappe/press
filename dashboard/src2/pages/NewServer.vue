@@ -84,6 +84,61 @@
 						</div>
 					</div>
 				</div>
+				<div
+					v-if="serverRegion && options.app_premium_plans.length > 0"
+					class="flex flex-col"
+				>
+					<div class="flex items-center justify-between">
+						<h2 class="text-sm font-medium leading-6 text-gray-900">
+							Plan Type
+						</h2>
+						<div>
+							<Button
+								link="https://frappecloud.com/pricing#dedicated"
+								variant="ghost"
+							>
+								<template #prefix>
+									<i-lucide-help-circle class="h-4 w-4 text-gray-700" />
+								</template>
+								Help
+							</Button>
+						</div>
+					</div>
+					<div class="mt-2 w-full space-y-2">
+						<div class="grid grid-cols-2 gap-3">
+							<button
+								v-for="c in [
+									{
+										name: 'Standard',
+										description:
+											'Suggested for small and medium sized companies'
+									},
+									{
+										name: 'Premium',
+										description: 'Suggested for enterprise business'
+									}
+								]"
+								:key="c.name"
+								@click="planType = c.name"
+								:class="[
+									planType === c.name
+										? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
+										: 'border-gray-400 bg-white text-gray-900 ring-gray-200 hover:bg-gray-50',
+									'flex w-full items-center rounded border p-3 text-left text-base text-gray-900'
+								]"
+							>
+								<div class="flex w-full items-center justify-between space-x-2">
+									<span class="text-sm font-medium">
+										{{ c.name }}
+									</span>
+									<Tooltip :text="c.description">
+										<i-lucide-info class="h-4 w-4 text-gray-500" />
+									</Tooltip>
+								</div>
+							</button>
+						</div>
+					</div>
+				</div>
 				<div v-if="serverRegion">
 					<div class="flex flex-col" v-if="options?.app_plans.length">
 						<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -93,7 +148,10 @@
 							<ServerPlansCards
 								v-model="appServerPlan"
 								:plans="
-									options.app_plans.filter(p => p.cluster === serverRegion)
+									(planType === 'Standard'
+										? options.app_plans
+										: options.app_premium_plans
+									).filter(p => p.cluster === serverRegion)
 								"
 							/>
 						</div>
@@ -106,9 +164,13 @@
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<ServerPlansCards
+								v-if="options.db_plans"
 								v-model="dbServerPlan"
 								:plans="
-									options.db_plans.filter(p => p.cluster === serverRegion)
+									(planType === 'Standard'
+										? options.db_plans
+										: options.db_premium_plans
+									).filter(p => p.cluster === serverRegion)
 								"
 							/>
 						</div>
@@ -279,6 +341,7 @@ export default {
 			appPrivateIP: '',
 			dbPublicIP: '',
 			dbPrivateIP: '',
+			planType: 'Standard',
 			serverEnabled: true,
 			agreedToRegionConsent: false
 		};
@@ -292,6 +355,10 @@ export default {
 			this.appPrivateIP = '';
 			this.dbPublicIP = '';
 			this.dbPrivateIP = '';
+		},
+		planType() {
+			this.appServerPlan = '';
+			this.dbServerPlan = '';
 		}
 	},
 	resources: {
@@ -316,8 +383,10 @@ export default {
 							}
 						],
 						regions: data.regions,
-						app_plans: data.app_plans,
-						db_plans: data.db_plans
+						app_plans: data.app_plans.filter(p => p.premium == 0),
+						db_plans: data.db_plans.filter(p => p.premium == 0),
+						app_premium_plans: data.app_plans.filter(p => p.premium == 1),
+						db_premium_plans: data.db_plans.filter(p => p.premium == 1)
 					};
 				},
 				onError(error) {
@@ -403,6 +472,7 @@ export default {
 			let currencyField =
 				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
 			if (this.serverType === 'dedicated') {
+				console.log(currencyField, this.appServerPlan, this.dbServerPlan);
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
 				);
