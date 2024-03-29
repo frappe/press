@@ -43,6 +43,7 @@ export function plural(number, singular, plural) {
 }
 
 export function planTitle(plan) {
+	if (plan === undefined) return;
 	let $team = getTeam();
 	let india = $team.doc.country == 'India';
 	let price_field = india ? 'price_inr' : 'price_usd';

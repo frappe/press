@@ -387,6 +387,7 @@ def plans(name, cluster=None):
 			"disk",
 			"cluster",
 			"instance_type",
+			"premium",
 		],
 		filters={"server_type": name, "cluster": cluster}
 		if cluster
