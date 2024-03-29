@@ -641,7 +641,7 @@ def get_plans(name=None, rg=None):
 			"offsite_backups",
 			"private_benches",
 			"monitor_access",
-			"dedicated_server_plan"
+			"dedicated_server_plan",
 		],
 		# TODO: Remove later, temporary change because site plan has all document_type plans
 		filters={"document_type": "Site"},
@@ -664,8 +664,8 @@ def get_plans(name=None, rg=None):
 			is_private_bench and release_group.creation > paywall_date and not is_system_user
 		)
 
-		site_server = frappe.db.get_value("Site", site_name, "server")
-		on_dedicated_server = is_dedicated_server(site_server)
+		site_server = frappe.db.get_value("Site", site_name, "server") if site_name else None
+		on_dedicated_server = is_dedicated_server(site_server) if site_server else None
 
 	else:
 		on_dedicated_server = None
@@ -817,7 +817,10 @@ def get(name):
 	)
 
 	server = frappe.db.get_value(
-		"Server", site.server, ["name", "ip", "is_standalone", "proxy_server", "team"], as_dict=True
+		"Server",
+		site.server,
+		["name", "ip", "is_standalone", "proxy_server", "team"],
+		as_dict=True,
 	)
 	if server.is_standalone:
 		ip = server.ip
@@ -875,7 +878,8 @@ def get(name):
 		"frappe_version": frappe_version,
 		"server": site.server,
 		"server_region_info": get_server_region_info(site),
-		"can_change_plan": server.team != team or (on_dedicated_server and server.team == team),
+		"can_change_plan": server.team != team
+		or (on_dedicated_server and server.team == team),
 		"hide_config": site.hide_config,
 		"notify_email": site.notify_email,
 		"ip": ip,
