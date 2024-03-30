@@ -913,7 +913,7 @@ export default {
 							// file: database, public, or private
 							if (backup.offsite) {
 								site.getBackupDownloadLink.submit(
-									{ name: backup.name, file },
+									{ backup: backup.name, file },
 									{
 										onSuccess(link) {
 											window.open(link);
