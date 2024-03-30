@@ -912,7 +912,7 @@ export default {
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
 							if (backup.offsite) {
-								site.getBackupDownloadLink(
+								site.getBackupDownloadLink.submit(
 									{ name: backup.name, file },
 									{
 										onSuccess(link) {
