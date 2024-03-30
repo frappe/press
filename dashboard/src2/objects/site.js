@@ -915,8 +915,11 @@ export default {
 								site.getBackupDownloadLink.submit(
 									{ backup: backup.name, file },
 									{
-										onSuccess(link) {
-											window.open(link);
+										onSuccess(r) {
+											// TODO: fix this in documentResource, it should return message directly
+											if (r.message) {
+												window.open(r.message);
+											}
 										}
 									}
 								);
