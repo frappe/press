@@ -53,7 +53,8 @@ export default {
 		deleteConfig: 'delete_config',
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		getBackupDownloadLink: 'get_backup_download_link'
 	},
 	list: {
 		route: '/sites',
@@ -905,19 +906,23 @@ export default {
 							}
 						];
 					},
-					rowActions({ row }) {
+					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
-							let link = backup.offsite
-								? await frappeRequest('press.api.site.get_backup_link', {
-										name: backup.site,
-										backup: backup.name,
-										file
-								  })
-								: backup[file + '_url'];
-							window.open(link);
+							if (backup.offsite) {
+								site.getBackupDownloadLink(
+									{ name: backup.name, file },
+									{
+										onSuccess(link) {
+											window.open(link);
+										}
+									}
+								);
+							} else {
+								window.open(backup[file + '_url']);
+							}
 						}
 
 						return [

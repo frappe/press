@@ -184,6 +184,7 @@ class Site(Document, TagHelpers):
 		"delete_config",
 		"send_change_team_request",
 		"is_setup_wizard_complete",
+		"get_backup_download_link",
 	]
 
 	@staticmethod
@@ -659,6 +660,21 @@ class Site(Document, TagHelpers):
 				"force": force,
 			}
 		).insert()
+
+	@frappe.whitelist()
+	def get_backup_download_link(self, backup, file):
+		from botocore.exceptions import ClientError
+
+		if file not in ["database", "public", "private", "config"]:
+			frappe.throw("Invalid file type")
+
+		try:
+			remote_file = frappe.db.get_value(
+				"Site Backup", {"name": backup, "site": self.name}, f"remote_{file}_file"
+			)
+			return frappe.get_doc("Remote File", remote_file).download_link
+		except ClientError:
+			log_error(title="Offsite Backup Response Exception")
 
 	@frappe.whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
