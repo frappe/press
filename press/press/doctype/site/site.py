@@ -665,7 +665,7 @@ class Site(Document, TagHelpers):
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
-		if file not in ["database", "public", "private", "config_file"]:
+		if file not in ["database", "public", "private", "config"]:
 			frappe.throw("Invalid file type")
 
 		try:

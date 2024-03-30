@@ -924,7 +924,11 @@ export default {
 									}
 								);
 							} else {
-								window.open(backup[file + '_url']);
+								let url =
+									file == 'config'
+										? backup.config_file_url
+										: backup[file + '_url'];
+								window.open(url);
 							}
 						}
 
@@ -952,7 +956,7 @@ export default {
 							{
 								label: 'Download Config',
 								onClick() {
-									return downloadBackup(row, 'config_file');
+									return downloadBackup(row, 'config');
 								},
 								condition: () => row.config_file_url
 							}
