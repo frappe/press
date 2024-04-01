@@ -27,9 +27,7 @@
 				v-if="siteOnPublicBench"
 				class="mt-4 rounded-md border p-4 text-base text-gray-600"
 			>
-				<div class="font-medium text-gray-700">
-					Version Information of Selected Apps
-				</div>
+				<div class="font-medium text-gray-700">Version Compatibility</div>
 				<template v-for="(apps, version) in versionAppsMap">
 					<div class="mt-2">
 						<span class="text-gray-700">{{ version }}</span> -
