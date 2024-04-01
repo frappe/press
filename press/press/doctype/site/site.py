@@ -546,11 +546,10 @@ class Site(Document, TagHelpers):
 			frappe.db.get_single_value("Press Settings", "backup_interval") or 6
 		)
 		onsite_files_backup_size = public_size + private_size
-		return (
-			space_for_download
-			+ max(space_for_extracted_file, onsite_files_backup_size)
-			+ backups_per_day * db_size  # for daily backups
-		)
+		return max(
+			space_for_download + space_for_extracted_file,
+			onsite_files_backup_size + backups_per_day * db_size,
+		)  # for daily backups
 
 	@property
 	def space_required_on_db_server(self):
