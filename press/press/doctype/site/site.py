@@ -48,6 +48,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
+from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
@@ -221,6 +222,7 @@ class Site(Document, TagHelpers):
 			"Server", self.server, ["ip", "proxy_server"]
 		)
 		doc.inbound_ip = frappe.get_value("Proxy Server", proxy_server, "ip")
+		doc.is_dedicated_server = is_dedicated_server(self.server)
 		return doc
 
 	def site_action(allowed_status: List[str]):

@@ -490,6 +490,16 @@ def options_for_new(for_bench: str = None):
 		)
 		version.group = release_group
 		if version.group:
+			if for_bench:
+				version.group.is_dedicated_server = is_dedicated_server(
+					frappe.get_all(
+						"Release Group Server",
+						filters={"parent": release_group.name, "parenttype": "Release Group"},
+						pluck="server",
+						limit=1,
+					)[0]
+				)
+
 			# here we get the last created bench for the release group
 			# assuming the last created bench is the latest one
 			bench = frappe.db.get_value(
@@ -682,6 +692,30 @@ def get_new_site_options(group: str = None):
 		"versions": versions,
 		"marketplace_apps": {row.app: row for row in marketplace_apps},
 	}
+
+
+@frappe.whitelist()
+def get_site_plans():
+	return Plan.get_plans(
+		doctype="Site Plan",
+		fields=[
+			"name",
+			"plan_title",
+			"price_usd",
+			"price_inr",
+			"cpu_time_per_day",
+			"max_storage_usage",
+			"max_database_usage",
+			"database_access",
+			"support_included",
+			"offsite_backups",
+			"private_benches",
+			"monitor_access",
+			"dedicated_server_plan",
+		],
+		# TODO: Remove later, temporary change because site plan has all document_type plans
+		filters={"document_type": "Site"},
+	)
 
 
 @frappe.whitelist()
