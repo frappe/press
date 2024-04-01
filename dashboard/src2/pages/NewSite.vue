@@ -338,7 +338,10 @@ export default {
 			return this.options?.versions.find(v => v.name === this.version);
 		},
 		availableVersions() {
-			if (!this.apps.length || this.bench) return this.options.versions;
+			if (!this.apps.length || this.bench)
+				return this.options.versions.sort((a, b) =>
+					b.name.localeCompare(a.name)
+				);
 
 			let commonVersions = this.apps.reduce((acc, app) => {
 				if (!acc) return app.sources.map(s => s.version);
