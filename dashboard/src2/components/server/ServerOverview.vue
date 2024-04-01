@@ -150,7 +150,7 @@ export default {
 						? (currentUsage.vcpu / currentPlan.vcpu) * 100
 						: 0,
 					value: currentPlan
-						? `${currentUsage.vcpu || 0} vCPU of ${
+						? `${((currentUsage.vcpu || 0) / currentPlan.vcpu) * 100}% of ${
 								currentPlan.vcpu
 						  } ${this.$format.plural(currentPlan.vcpu, 'vCPU', 'vCPUs')}`
 						: 'vCPU'
