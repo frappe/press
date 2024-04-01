@@ -13,7 +13,7 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Literal
 
 import docker
 import frappe
@@ -431,14 +431,19 @@ class DeployCandidate(Document):
 		return upload_filename
 
 	@staticmethod
-	def process_run_remote_builder(job: "AgentJob"):
+	def process_run_remote_builder(job: "AgentJob", response_data: "Optional[dict]"):
 		request_data = json.loads(job.request_data)
 		frappe.get_doc(
 			"Deploy Candidate",
 			request_data["deploy_candidate"],
-		)._process_run_remote_builder(job, request_data)
+		)._process_run_remote_builder(job, request_data, response_data)
 
-	def _process_run_remote_builder(self, job: "AgentJob", request_data: dict):
+	def _process_run_remote_builder(
+		self,
+		job: "AgentJob",
+		request_data: dict,
+		response_data: Optional[dict],
+	):
 		response_data = json.loads(job.data)
 		output_data = json.loads(response_data.get("data", "{}"))
 
@@ -450,13 +455,21 @@ class DeployCandidate(Document):
 		This is due to a method of streaming agent output to press not
 		existing.
 		"""
-		upload_step_updater = UploadStepUpdater(self)
-		if build_output := output_data.get("build", []):
-			DockerBuildOutputParser(self).parse_and_update(build_output)
+		if output := get_remote_step_output(
+			"build",
+			output_data,
+			response_data,
+		):
+			DockerBuildOutputParser(self).parse_and_update(output)
 
-		if push_output := output_data.get("push", []):
+		upload_step_updater = UploadStepUpdater(self)
+		if output := get_remote_step_output(
+			"push",
+			output_data,
+			response_data,
+		):
 			upload_step_updater.start()
-			upload_step_updater.process(push_output)
+			upload_step_updater.process(output)
 
 		self._update_status_from_remote_build_job(job)
 
@@ -1565,3 +1578,41 @@ def msgprint_build_stuck(stuck_step: Document, delta: timedelta) -> None:
 
 def is_suspended() -> bool:
 	return bool(frappe.db.get_single_value("Press Settings", "suspend_builds"))
+
+
+def get_remote_step_output(
+	step: Literal["build", "push"],
+	output_data: dict,
+	response_data: Optional[dict],
+):
+	if output := output_data.get(step):
+		return output
+
+	if not isinstance(response_data, dict):
+		return None
+
+	job_step_name = "Build Image" if step == "build" else "Push Docker Image"
+	for step in response_data.get("step", []):
+		if step.get("name") != job_step_name:
+			continue
+
+		commands = step.get("commands", [])
+		if (
+			not isinstance(commands, list)
+			or len(commands) == 0
+			or not isinstance(commands[0], dict)
+		):
+			continue
+
+		output = commands[0].get("output")
+		if not isinstance(output, str):
+			continue
+
+		try:
+			return json.loads(output).get(step, [])
+		except AttributeError:
+			continue
+		except json.JSONDecodeError:
+			continue
+
+	return None

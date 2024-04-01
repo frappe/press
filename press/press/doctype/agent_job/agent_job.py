@@ -30,6 +30,7 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 )
 from press.utils import log_error
+from typing import Optional
 
 
 class AgentJob(Document):
@@ -405,7 +406,7 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			process_job_updates(job.name)
+			process_job_updates(job.name, polled_job)
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
 
@@ -775,7 +776,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name):
+def process_job_updates(job_name, response_data: "Optional[dict]"):
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	try:
 		from press.press.doctype.app_patch.app_patch import AppPatch
@@ -899,7 +900,7 @@ def process_job_updates(job_name):
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
 		elif job.job_type == "Run Remote Builder":
-			DeployCandidate.process_run_remote_builder(job)
+			DeployCandidate.process_run_remote_builder(job, response_data)
 
 	except Exception as e:
 		log_error(

@@ -231,6 +231,7 @@ class UploadStepUpdater:
 		# Used only if not remote
 		self.start_time = now_datetime()
 		self.last_updated = now_datetime()
+		self._upload_step = None
 
 	@property
 	def upload_step(self) -> "DeployCandidateBuildStep":
