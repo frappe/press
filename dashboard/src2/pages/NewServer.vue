@@ -417,7 +417,7 @@ export default {
 						return 'Please select an App Server Plan';
 					} else if (!server.db_plan) {
 						return 'Please select a Database Server Plan';
-					} else if (this.$team.doc.billing_details) {
+					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						return "You don't have billing details added. Please add billing details from settings to continue.";
 					} else if (
 						this.$team.doc.balance >= 200 ||
