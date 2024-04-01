@@ -87,10 +87,9 @@ export default {
 				for (let app of this.apps) {
 					let appVersions = app.sources.map(s => s.version);
 					for (let version of appVersions) {
-						if (!problemAppVersions[version]) {
-							problemAppVersions[version] = [];
+						if (problemAppVersions[version]) {
+							problemAppVersions[version].push(app.app_title);
 						}
-						problemAppVersions[version].push(app.app_title);
 					}
 				}
 			return problemAppVersions;
