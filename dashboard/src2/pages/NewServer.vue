@@ -425,7 +425,7 @@ export default {
 						(this.$team.doc.currency == 'INR' &&
 							this.$team.doc.balance <= 16000)
 					) {
-						return 'You need to have $200 worth of credits to enable this feature.';
+						return 'You need to have $200 worth of credits to create a server.';
 					}
 				},
 				onSuccess(server) {
