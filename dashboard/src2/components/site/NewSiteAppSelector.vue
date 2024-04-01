@@ -152,7 +152,7 @@ export default {
 										class: 'h-3 w-3'
 									}),
 									h('span', { class: 'ml-0.5 leading-3' }, [
-										this.$format.numberK(row.total_installs || '')
+										this.$format.numberK(row.total_installs || '0')
 									])
 								]
 							);
