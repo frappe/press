@@ -381,27 +381,37 @@ def get_partner_name(partner_email):
 
 @frappe.whitelist()
 def transfer_credits(amount, customer, partner):
+	# partner discount map
+	DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
+	partner_level, legacy_contract = partner_doc.get_partner_level()
+	# no discount for partners on legacy contract
+	# TODO: remove legacy contract check
+	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
 		frappe.throw("Insufficient Credits to transfer")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
+	amt -= amt * discount_percent
 	if customer_doc.currency != partner_doc.currency:
 		if partner_doc.currency == "USD":
-			credits_to_transfer = amt * 83
+			credits_to_transfer = credits_to_transfer * 83
 		else:
-			credits_to_transfer = amt / 83
+			credits_to_transfer = credits_to_transfer / 83
 
 	try:
 		customer_doc.allocate_credit_amount(
-			credits_to_transfer, "Transferred Credits", f"From {partner_doc.name}"
+			credits_to_transfer,
+			"Transferred Credits",
+			f"Transferred Credits from {partner_doc.name}",
 		)
 		partner_doc.allocate_credit_amount(
-			amt * -1, "Transferred Credits", f"To {customer_doc.name}"
+			amt * -1, "Transferred Credits", f"Transferred Credits to {customer_doc.name}"
 		)
 		frappe.db.commit()
 	except Exception:
