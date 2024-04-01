@@ -581,7 +581,6 @@ class Site(Document, TagHelpers):
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		if self.remote_database_file:
-			self.check_enough_space_on_server()
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
 			agent.new_site(self)
@@ -672,7 +671,6 @@ class Site(Document, TagHelpers):
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
 			)
 
-		self.check_enough_space_on_server()
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
