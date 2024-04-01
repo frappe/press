@@ -363,12 +363,17 @@ export default {
 			)?.title;
 		},
 		selectedVersionApps() {
-			if (!this.bench) return this.options.app_source_details;
+			let apps = [];
 
-			if (!this.selectedVersion?.group?.bench_app_sources) return [];
-			// sorted by total installs and then by name
-			return this.selectedVersion.group.bench_app_sources
-				.map(app_source => {
+			if (!this.bench)
+				apps = this.options.app_source_details.sort((a, b) =>
+					a.total_installs !== b.total_installs
+						? b.total_installs - a.total_installs
+						: a.app.localeCompare(b.app)
+				);
+			else if (!this.selectedVersion?.group?.bench_app_sources) apps = [];
+			else
+				apps = this.selectedVersion.group.bench_app_sources.map(app_source => {
 					let app_source_details = this.options.app_source_details[app_source];
 					let marketplace_details = app_source_details
 						? this.options.marketplace_details[app_source_details.app]
@@ -378,16 +383,18 @@ export default {
 						...app_source_details,
 						...marketplace_details
 					};
-				})
-				.sort((a, b) => {
-					if (a.total_installs > b.total_installs) {
-						return -1;
-					} else if (a.total_installs < b.total_installs) {
-						return 1;
-					} else {
-						return a.app_title.localeCompare(b.app_title);
-					}
 				});
+
+			// sorted by total installs and then by name
+			return apps.sort((a, b) => {
+				if (a.total_installs > b.total_installs) {
+					return -1;
+				} else if (a.total_installs < b.total_installs) {
+					return 1;
+				} else {
+					return a.app_title.localeCompare(b.app_title);
+				}
+			});
 		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);
