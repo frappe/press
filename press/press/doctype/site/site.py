@@ -576,13 +576,13 @@ class Site(Document, TagHelpers):
 		)
 		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
 			frappe.throw(
-				f"Insufficient space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
+				f"Insufficient estimated space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(abs(diff))})",
 				InsufficientSpaceOnServer,
 			)
 
 		if (diff := db_server_free_space - self.space_required_on_db_server) <= 0:
 			frappe.throw(
-				f"Insufficient space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db_server_free_space)} (Need {human_readable(abs(diff))})",
+				f"Insufficient estimated space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db_server_free_space)} (Need {human_readable(abs(diff))})",
 				InsufficientSpaceOnServer,
 			)
 
