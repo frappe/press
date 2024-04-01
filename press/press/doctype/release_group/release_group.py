@@ -167,6 +167,12 @@ class ReleaseGroup(Document, TagHelpers):
 	def get_doc(self, doc):
 		doc.deploy_information = self.deploy_information()
 		doc.status = self.status
+		if len(self.servers) == 1:
+			server = frappe.db.get_value(
+				"Server", self.servers[0].server, ["team", "title"], as_dict=True
+			)
+			doc.server = server.title or self.servers[0].server
+			doc.server_team = server.team
 
 	def validate(self):
 		self.validate_title()

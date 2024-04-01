@@ -96,24 +96,7 @@ export default {
 				type: 'document',
 				doctype: 'Deploy Candidate',
 				name: this.id,
-				transform(deploy) {
-					for (let step of deploy.build_steps) {
-						if (step.status === 'Running') {
-							step.isOpen = true;
-						}
-						step.title = `${step.stage} - ${step.step}`;
-						step.output =
-							step.command || step.output
-								? `${step.command || ''}\n${step.output || ''}`.trim()
-								: '';
-						step.duration = ['Success', 'Failure'].includes(step.status)
-							? step.cached
-								? 'Cached'
-								: `${step.duration}s`
-							: null;
-					}
-					return deploy;
-				}
+				transform: this.transformDeploy
 			};
 		},
 		errors() {
@@ -135,9 +118,12 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
 		this.$socket.on(`bench_deploy:${this.id}:steps`, data => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
-				this.$resources.deploy.reload();
+				this.$resources.deploy.doc.build_steps = this.transformDeploy({
+					build_steps: data.steps
+				})?.build_steps;
 			}
 		});
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
@@ -150,6 +136,7 @@ export default {
 		});
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate', this.id);
 		this.$socket.off(`bench_deploy:${this.id}:steps`);
 	},
 	computed: {
@@ -161,6 +148,26 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		}
+	},
+	methods: {
+		transformDeploy(deploy) {
+			for (let step of deploy.build_steps) {
+				if (step.status === 'Running') {
+					step.isOpen = true;
+				}
+				step.title = `${step.stage} - ${step.step}`;
+				step.output =
+					step.command || step.output
+						? `${step.command || ''}\n${step.output || ''}`.trim()
+						: '';
+				step.duration = ['Success', 'Failure'].includes(step.status)
+					? step.cached
+						? 'Cached'
+						: `${step.duration}s`
+					: null;
+			}
+			return deploy;
 		}
 	}
 };

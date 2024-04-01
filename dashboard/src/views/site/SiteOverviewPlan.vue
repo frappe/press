@@ -224,7 +224,7 @@ export default {
 		},
 		usage() {
 			let f = value => {
-				return this.formatBytes(value, 0, 2);
+				return this.formatBytes(value, 2, 2);
 			};
 
 			if (!this.plan.current_plan || this.site.status === 'Suspended') {
@@ -233,20 +233,19 @@ export default {
 			return [
 				{
 					label: 'CPU',
-					value:
-						this.plan.current_plan.dedicated_server_plan
-							? `${this.plan.total_cpu_usage_hours} ${this.$plural(
-									this.plan.current_plan.cpu_time_per_day,
-									'hour',
-									'hours'
-							  )}`
-							: `${this.plan.total_cpu_usage_hours} / ${
-									this.plan.current_plan.cpu_time_per_day
-							  } ${this.$plural(
-									this.plan.current_plan.cpu_time_per_day,
-									'hour',
-									'hours'
-							  )}`,
+					value: this.plan.current_plan.dedicated_server_plan
+						? `${this.plan.total_cpu_usage_hours} ${this.$plural(
+								this.plan.current_plan.cpu_time_per_day,
+								'hour',
+								'hours'
+						  )}`
+						: `${this.plan.total_cpu_usage_hours} / ${
+								this.plan.current_plan.cpu_time_per_day
+						  } ${this.$plural(
+								this.plan.current_plan.cpu_time_per_day,
+								'hour',
+								'hours'
+						  )}`,
 					percentage:
 						(this.plan.total_cpu_usage_hours /
 							this.plan.current_plan.cpu_time_per_day) *
@@ -254,12 +253,11 @@ export default {
 				},
 				{
 					label: 'Database',
-					value:
-						this.plan.current_plan.dedicated_server_plan
-							? f(this.plan.total_database_usage)
-							: `${f(this.plan.total_database_usage)} / ${f(
-									this.plan.current_plan.max_database_usage
-							  )}`,
+					value: this.plan.current_plan.dedicated_server_plan
+						? f(this.plan.total_database_usage)
+						: `${f(this.plan.total_database_usage)} / ${f(
+								this.plan.current_plan.max_database_usage
+						  )}`,
 					percentage:
 						(this.plan.total_database_usage /
 							this.plan.current_plan.max_database_usage) *
@@ -267,12 +265,11 @@ export default {
 				},
 				{
 					label: 'Storage',
-					value:
-						this.plan.current_plan.dedicated_server_plan
-							? f(this.plan.total_storage_usage)
-							: `${f(this.plan.total_storage_usage)} / ${f(
-									this.plan.current_plan.max_storage_usage
-							  )}`,
+					value: this.plan.current_plan.dedicated_server_plan
+						? f(this.plan.total_storage_usage)
+						: `${f(this.plan.total_storage_usage)} / ${f(
+								this.plan.current_plan.max_storage_usage
+						  )}`,
 					percentage:
 						(this.plan.total_storage_usage /
 							this.plan.current_plan.max_storage_usage) *

@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import frappe
 import requests
@@ -11,7 +11,7 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from press.api.github import get_access_token
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.utils import get_current_team
+from press.utils import get_current_team, log_error
 
 
 class AppSource(Document):
@@ -98,73 +98,97 @@ class AppSource(Document):
 		if self.last_github_poll_failed and not force:
 			return
 
-		github_response = None
+		if not (response := self.poll_github_for_branch_info()):
+			return
+
 		try:
-			token = None
-			if self.github_installation_id:
-				token = get_access_token(self.github_installation_id)
-			else:
-				token = frappe.get_value("Press Settings", None, "github_access_token")
-
-			if token:
-				headers = {
-					"Authorization": f"token {token}",
-				}
-			else:
-				headers = {}
-
-			github_response = requests.get(
-				f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
-				headers=headers,
-			)
-
-			branch = github_response.json()
-			hash = branch["commit"]["sha"]
-			timestamp = branch["commit"]["commit"]["author"]["date"].replace("Z", "+00:00")
-			if not frappe.db.exists(
-				"App Release", {"app": self.app, "source": self.name, "hash": hash}
-			):
-				is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
-				frappe.get_doc(
-					{
-						"doctype": "App Release",
-						"app": self.app,
-						"source": self.name,
-						"hash": hash,
-						"team": self.team,
-						"message": branch["commit"]["commit"]["message"],
-						"author": branch["commit"]["commit"]["author"]["name"],
-						"timestamp": datetime.fromisoformat(timestamp).strftime("%Y-%m-%d %H:%M:%S"),
-						"deployable": bool(is_first_release),
-					}
-				).insert()
-			frappe.db.set_value(
-				"App Source",
-				self.name,
-				{
-					"last_github_response": "",
-					"last_github_poll_failed": False,
-					"last_synced": frappe.utils.now(),
-				},
-			)
+			self.create_release_from_branch_info(response)
 		except Exception:
-			github_response = github_response.text if (github_response is not None) else None
-			frappe.db.set_value(
-				"App Source",
-				self.name,
-				{
-					"last_github_response": github_response,
-					"last_github_poll_failed": True,
-					"last_synced": frappe.utils.now(),
-				},
+			log_error("Create Release Error", doc=self)
+
+	def create_release_from_branch_info(self, response):
+		response_data = response.json()
+		hash = response_data["commit"]["sha"]
+		if frappe.db.exists(
+			"App Release", {"app": self.app, "source": self.name, "hash": hash}
+		):
+			# No need to create a new release
+			return
+
+		timestamp_str = response_data["commit"]["commit"]["author"]["date"].replace(
+			"Z", "+00:00"
+		)
+		timestamp = datetime.fromisoformat(timestamp_str).strftime("%Y-%m-%d %H:%M:%S")
+		is_first_release = 0  # frappe.db.count("App Release", {"app": self.name}) == 0
+		frappe.get_doc(
+			{
+				"doctype": "App Release",
+				"app": self.app,
+				"source": self.name,
+				"hash": hash,
+				"team": self.team,
+				"message": response_data["commit"]["commit"]["message"],
+				"author": response_data["commit"]["commit"]["author"]["name"],
+				"timestamp": timestamp,
+				"deployable": bool(is_first_release),
+			}
+		).insert()
+
+	def poll_github_for_branch_info(self):
+		headers = self.get_auth_headers()
+		response = requests.get(
+			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
+			headers=headers,
+		)
+
+		if not response.ok:
+			self.set_poll_failed(response.text)
+			log_error(
+				"Create Release Error",
+				response_status_code=response.status_code,
+				response_text=response.text,
+				doc=self,
 			)
-			self.add_comment(
-				text=f"""Exception occured in create_release:
-{frappe.get_traceback()}
-user: {frappe.session.user}
-team: {frappe.local.team()}
-"""
-			)
+			return
+
+		self.set_poll_succeeded()
+		return response
+
+	def set_poll_succeeded(self):
+		frappe.db.set_value(
+			"App Source",
+			self.name,
+			{
+				"last_github_response": "",
+				"last_github_poll_failed": False,
+				"last_synced": frappe.utils.now(),
+			},
+		)
+
+	def set_poll_failed(self, response_text: str):
+		pass
+		frappe.db.set_value(
+			"App Source",
+			self.name,
+			{
+				"last_github_response": response_text or "",
+				"last_github_poll_failed": True,
+				"last_synced": frappe.utils.now(),
+			},
+		)
+
+	def get_auth_headers(self) -> dict:
+		token = self.get_access_token()
+		if not token:
+			return {}
+
+		return {"Authorization": f"token {token}"}
+
+	def get_access_token(self) -> Optional[str]:
+		if self.github_installation_id:
+			return get_access_token(self.github_installation_id)
+
+		return frappe.get_value("Press Settings", None, "github_access_token")
 
 
 def create_app_source(

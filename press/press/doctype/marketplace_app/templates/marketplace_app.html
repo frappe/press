@@ -10,16 +10,16 @@ five_star_rating -%}
 <div>
 	<div class="bg-gray-50">
 		<div class="container mx-auto pt-4">
-			<div class="pb-4 px-4 sm:px-8">
+			<div class="pb-0 sm:pb-4 px-4 sm:px-8">
 				{{ breadcrumbs([ { 'label': 'Apps', 'url': '/marketplace' }, { 'label':
 				app.title, 'url': '' } ]) }}
 			</div>
 			<div class="px-4 sm:px-8 flex flex-col md:flex-row justify-between">
-				<div class="mt-8 mb-8 sm:mb-12 flex">
+				<div class="mt-4 sm:mt-8 mb-8 sm:mb-12 flex">
 						{{ app_image(app, 'hidden md:block') }}
 					<div class="mr-2 md:hidden">{{ app_image(app) }}</div>
 					<div class="flex flex-col">
-						<h1 style="font-size: 20px;" class="flex mb-2 font-semibold text-gray-900 md:text-5xl">
+						<h1 style="font-size: 20px;" class="flex font-semibold text-gray-900 md:text-5xl">
 							{{ app.title }}
 							{%- if app.frappe_approved -%}
 								<div class="ml-1 flex items-center justify-center">
@@ -27,7 +27,7 @@ five_star_rating -%}
 								</div>
 							{%- endif -%}
 						</h1>
-						<p class="mt-2 text-base text-gray-700 md:mt-0">{{ app.description }}</p>
+						<p class="text-base text-gray-700 md:mt-0">{{ app.description }}</p>
 						<div class="hidden sm:block">
 							<!-- Hard-coded for now -->
 							 {%- for category in
@@ -119,7 +119,7 @@ five_star_rating -%}
 <div class="w-full md:w-10/12 md:border-b-0">
 	<!-- Screenshots (if any) -->
 	{%- if app.screenshots -%}
-	<div class="flex space-x-4 overflow-y-auto">
+	<div class="flex space-x-4 mb-6 overflow-y-auto">
 		{%- for image in app.screenshots -%}
 		<div class="flex-shrink-0 overflow-hidden border rounded-md h-60 w-80">
 			<a href="{{ image.image }}">
@@ -129,7 +129,7 @@ five_star_rating -%}
 		{%- endfor -%}
 	</div>
 	{%- endif -%}
-	<div class="w-full pb-8 mt-6 prose prose-sm max-w-none text-gray-900">
+	<div class="w-full pb-8 prose prose-sm max-w-none text-gray-900">
 		{{ frappe.utils.md_to_html(app.long_description) }}
 	</div>
 

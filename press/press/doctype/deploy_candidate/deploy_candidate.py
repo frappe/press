@@ -1249,10 +1249,17 @@ class DeployCandidate(Document):
 	def on_update(self):
 		if self.status == "Running":
 			frappe.publish_realtime(
-				f"bench_deploy:{self.name}:steps", {"steps": self.build_steps, "name": self.name}
+				f"bench_deploy:{self.name}:steps",
+				doctype=self.doctype,
+				docname=self.name,
+				message={"steps": self.build_steps, "name": self.name},
 			)
 		else:
-			frappe.publish_realtime(f"bench_deploy:{self.name}:finished")
+			frappe.publish_realtime(
+				f"bench_deploy:{self.name}:finished",
+				doctype=self.doctype,
+				docname=self.name,
+			)
 
 	def get_dependency_version(self, dependency):
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version

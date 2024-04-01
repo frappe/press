@@ -13,6 +13,11 @@
 			<div class="py-4 text-base text-gray-600">Something went wrong</div>
 		</div>
 		<div v-else-if="options" class="space-y-12 pb-[50vh] pt-12">
+			<NewSiteAppSelector
+				:availableApps="selectedVersionApps"
+				:siteOnPublicBench="!bench"
+				v-model="apps"
+			/>
 			<div v-if="!bench">
 				<div class="flex items-center justify-between">
 					<h2 class="text-base font-medium leading-6 text-gray-900">
@@ -22,12 +27,13 @@
 				<div class="mt-2">
 					<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<button
-							v-for="v in options.versions"
+							v-for="v in availableVersions"
 							:key="v.name"
 							:class="[
 								version === v.name
 									? 'border-gray-900 ring-1 ring-gray-900 hover:bg-gray-100'
 									: 'bg-white text-gray-900  hover:bg-gray-50',
+								v.disabled && 'pointer-events-none opacity-50',
 								'flex cursor-pointer items-center justify-between rounded border border-gray-400 p-3 text-sm focus:outline-none'
 							]"
 							@click="version = v.name"
@@ -40,12 +46,6 @@
 					</div>
 				</div>
 			</div>
-			<NewSiteAppSelector
-				v-if="version"
-				:availableApps="selectedVersionApps"
-				:siteOnPublicBench="!bench"
-				v-model="apps"
-			/>
 			<div
 				class="flex flex-col"
 				v-if="selectedVersion?.group?.clusters?.length"
@@ -94,7 +94,11 @@
 					</div>
 				</div>
 				<div class="mt-2">
-					<SitePlansCards v-model="plan" :isBenchSite="!!bench" />
+					<SitePlansCards
+						v-model="plan"
+						:isBenchSite="!!bench"
+						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
+					/>
 				</div>
 			</div>
 			<div v-if="selectedVersion && plan && cluster">
@@ -191,7 +195,7 @@ import SitePlansCards from '../components/SitePlansCards.vue';
 import { validateSubdomain } from '../../src/utils.js';
 import Header from '../components/Header.vue';
 import router from '../router';
-import { getPlans, plans } from '../data/plans';
+import { plans } from '../data/plans';
 import NewSiteAppSelector from '../components/site/NewSiteAppSelector.vue';
 import Summary from '../components/Summary.vue';
 
@@ -220,16 +224,19 @@ export default {
 			apps: [],
 			appPlans: {},
 			selectedApp: null,
+			closestCluster: null,
 			showAppPlanSelectorDialog: false,
 			shareDetailsConsent: false,
 			agreedToRegionConsent: false
 		};
 	},
 	watch: {
-		version() {
-			// reset all selections when version changes
-			this.apps = [];
-			this.cluster = null;
+		apps() {
+			this.version = this.autoSelectVersion();
+			this.agreedToRegionConsent = false;
+		},
+		async version() {
+			this.cluster = await this.getClosestCluster();
 			this.agreedToRegionConsent = false;
 		},
 		subdomain: {
@@ -240,6 +247,9 @@ export default {
 					this.$resources.subdomainExists.submit();
 				}
 			}, 500)
+		},
+		closestCluster() {
+			this.cluster = this.closestCluster;
 		}
 	},
 	resources: {
@@ -331,16 +341,39 @@ export default {
 		selectedVersion() {
 			return this.options?.versions.find(v => v.name === this.version);
 		},
+		availableVersions() {
+			if (!this.apps.length || this.bench)
+				return this.options.versions.sort((a, b) =>
+					b.name.localeCompare(a.name)
+				);
+
+			let commonVersions = this.apps.reduce((acc, app) => {
+				if (!acc) return app.sources.map(s => s.version);
+				return acc.filter(v => app.sources.map(s => s.version).includes(v));
+			}, null);
+
+			return this.options.versions.map(v => ({
+				...v,
+				disabled: !commonVersions.includes(v.name)
+			}));
+		},
 		selectedClusterTitle() {
 			return this.selectedVersion?.group?.clusters?.find(
 				c => c.name === this.cluster
 			)?.title;
 		},
 		selectedVersionApps() {
-			if (!this.selectedVersion?.group?.bench_app_sources) return [];
-			// sorted by total installs and then by name
-			return this.selectedVersion.group.bench_app_sources
-				.map(app_source => {
+			let apps = [];
+
+			if (!this.bench)
+				apps = this.options.app_source_details.sort((a, b) =>
+					a.total_installs !== b.total_installs
+						? b.total_installs - a.total_installs
+						: a.app.localeCompare(b.app)
+				);
+			else if (!this.selectedVersion?.group?.bench_app_sources) apps = [];
+			else
+				apps = this.selectedVersion.group.bench_app_sources.map(app_source => {
 					let app_source_details = this.options.app_source_details[app_source];
 					let marketplace_details = app_source_details
 						? this.options.marketplace_details[app_source_details.app]
@@ -350,16 +383,18 @@ export default {
 						...app_source_details,
 						...marketplace_details
 					};
-				})
-				.sort((a, b) => {
-					if (a.total_installs > b.total_installs) {
-						return -1;
-					} else if (a.total_installs < b.total_installs) {
-						return 1;
-					} else {
-						return a.app_title.localeCompare(b.app_title);
-					}
 				});
+
+			// sorted by total installs and then by name
+			return apps.sort((a, b) => {
+				if (a.total_installs > b.total_installs) {
+					return -1;
+				} else if (a.total_installs < b.total_installs) {
+					return 1;
+				} else {
+					return a.app_title.localeCompare(b.app_title);
+				}
+			});
 		},
 		selectedVersionPublicApps() {
 			return this.selectedVersionApps.filter(app => app.public);
@@ -421,13 +456,10 @@ export default {
 		},
 		siteSummaryOptions() {
 			let appPlans = [];
-			for (let app of this.apps.filter(app => app.plan)) {
+			for (let app of this.apps) {
 				appPlans.push(
-					`${
-						this.selectedVersionPublicApps.find(a => a.app === app.app)
-							.app_title
-					} ${
-						app.plan.price_inr
+					`${this.selectedVersionApps.find(a => a.app === app.app).app_title} ${
+						app.plan?.price_inr
 							? `- <span class="text-gray-600">${this.$format.userCurrency(
 									this.$team.doc.currency == 'INR'
 										? app.plan.price_inr
@@ -475,6 +507,53 @@ export default {
 					condition: () => this._totalPerMonth
 				}
 			];
+		}
+	},
+	methods: {
+		async getClosestCluster() {
+			if (this.closestCluster) return this.closestCluster;
+			let proxyServers = this.selectedVersion?.group?.clusters
+				.flatMap(c => c.proxy_server || [])
+				.map(server => server.name);
+
+			if (proxyServers.length > 0) {
+				this.findingClosestServer = true;
+				let promises = proxyServers.map(server => this.getPingTime(server));
+				let results = await Promise.allSettled(promises);
+				let fastestServer = results.reduce((a, b) =>
+					a.value.pingTime < b.value.pingTime ? a : b
+				);
+				let closestServer = fastestServer.value.server;
+				let closestCluster = this.selectedVersion?.group?.clusters.find(
+					c => c.proxy_server?.name === closestServer
+				);
+				if (!this.closestCluster) {
+					this.closestCluster = closestCluster.name;
+				}
+				this.findingClosestServer = false;
+			} else if (proxyServers.length === 1) {
+				this.closestCluster = this.selectedVersion?.group?.clusters[0].name;
+			}
+			return this.closestCluster;
+		},
+		async getPingTime(server) {
+			let pingTime = 999999;
+			try {
+				let t1 = new Date().getTime();
+				let r = await fetch(`https://${server}`);
+				let t2 = new Date().getTime();
+				pingTime = t2 - t1;
+			} catch (error) {
+				console.warn(error);
+			}
+			return { server, pingTime };
+		},
+		autoSelectVersion() {
+			if (!this.availableVersions) return null;
+
+			return this.availableVersions
+				.sort((a, b) => b.name.localeCompare(a.name))
+				.find(v => !v.disabled)?.name;
 		}
 	}
 };

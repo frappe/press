@@ -103,6 +103,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Ansible Play', this.id);
 		this.$socket.on('ansible_play_update', data => {
 			if (data.id === this.id) {
 				this.reload();
@@ -114,6 +115,7 @@ export default {
 		}, 1000 * 60);
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Ansible Play', this.id);
 		this.$socket.off('ansible_play_update');
 		clearInterval(this.reloadInterval);
 	},

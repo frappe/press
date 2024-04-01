@@ -71,14 +71,8 @@ class AppRelease(Document):
 			self.status = "Approved"
 
 	def after_insert(self):
-		self.publish_created()
 		self.create_release_differences()
 		self.auto_deploy()
-
-	def publish_created(self):
-		frappe.publish_realtime(
-			event="new_app_release_created", message={"source": self.source}
-		)
 
 	def get_source(self) -> AppSource:
 		"""Return the `App Source` associated with this `App Release`"""

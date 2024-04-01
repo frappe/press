@@ -90,6 +90,18 @@ export default {
 				label: server.doc.status
 			};
 		},
+		breadcrumbs({ documentResource: server }) {
+			return [
+				{
+					label: 'Servers',
+					route: '/servers'
+				},
+				{
+					label: server.doc.title || server.doc.name,
+					route: `/servers/${server.doc.name}`
+				}
+			];
+		},
 		actions({ documentResource: server }) {
 			let $team = getTeam();
 
