@@ -417,6 +417,16 @@ export default {
 						return 'Please select an App Server Plan';
 					} else if (!server.db_plan) {
 						return 'Please select a Database Server Plan';
+					} else if (this.$team.doc.billing_details) {
+						return "You don't have billing details added. Please add billing details from settings to continue.";
+					} else if (
+						this.$team.doc.balance >= 200 ||
+						(this.$team.doc.currency == 'INR' &&
+							this.$team.doc.balance >= 16000)
+					) {
+						return 'You need to have $200 worth of credits to enable this feature.';
+					} else if (!this.$team.doc.billing_info.has_unpaid_invoices) {
+						return 'You have unpaid invoices. Please clear them to enable this feature.';
 					}
 				},
 				onSuccess(server) {
@@ -471,7 +481,6 @@ export default {
 			let currencyField =
 				this.$team.doc.currency == 'INR' ? 'price_inr' : 'price_usd';
 			if (this.serverType === 'dedicated') {
-				console.log(currencyField, this.appServerPlan, this.dbServerPlan);
 				return (
 					this.appServerPlan[currencyField] + this.dbServerPlan[currencyField]
 				);
