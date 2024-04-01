@@ -128,6 +128,8 @@ export default {
 					},
 					items[1]
 				);
+			} else {
+				breadcrumbs.push(...items);
 			}
 			return breadcrumbs;
 		},
