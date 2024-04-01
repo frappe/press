@@ -426,7 +426,9 @@ def app_details_for_new_public_site():
 		filters={"status": "Published", "frappe_approved": 1},
 	).run(as_dict=True)
 
-	marketplace_app_sources = [app["sources"][0]["source"] for app in marketplace_apps]
+	marketplace_app_sources = [
+		app["sources"][0]["source"] for app in marketplace_apps if app["sources"]
+	]
 
 	app_source_details = frappe.db.get_all(
 		"App Source",
