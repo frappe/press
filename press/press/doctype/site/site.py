@@ -158,6 +158,7 @@ class Site(Document, TagHelpers):
 		"is_database_access_enabled",
 		"trial_end_date",
 		"tags",
+		"server",
 	]
 	dashboard_actions = [
 		"activate",
@@ -208,9 +209,10 @@ class Site(Document, TagHelpers):
 		from press.api.client import get
 
 		group = frappe.db.get_value(
-			"Release Group", self.group, ["title", "public"], as_dict=1
+			"Release Group", self.group, ["title", "public", "team"], as_dict=1
 		)
 		doc.group_title = group.title
+		doc.group_team = group.team
 		doc.group_public = group.public
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
@@ -218,10 +220,13 @@ class Site(Document, TagHelpers):
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		doc.outbound_ip, proxy_server = frappe.get_value(
-			"Server", self.server, ["ip", "proxy_server"]
+		server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1
 		)
-		doc.inbound_ip = frappe.get_value("Proxy Server", proxy_server, "ip")
+		doc.outbound_ip = server.ip
+		doc.server_team = server.team
+		doc.server_title = server.title
+		doc.inbound_ip = frappe.get_value("Proxy Server", server.proxy_server, "ip")
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		return doc
 

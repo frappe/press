@@ -114,6 +114,23 @@ export default {
 		statusBadge({ documentResource: releaseGroup }) {
 			return { label: releaseGroup.doc.status };
 		},
+		breadcrumbs({ items, documentResource: releaseGroup }) {
+			if (!releaseGroup.doc.server_team) return items;
+
+			let breadcrumbs = [];
+			let $team = getTeam();
+
+			if (releaseGroup.doc.server_team == $team.doc.name) {
+				breadcrumbs.push(
+					{
+						label: releaseGroup.doc?.server_title || releaseGroup.doc?.server,
+						route: `/servers/${releaseGroup.doc?.server}`
+					},
+					items[1]
+				);
+			}
+			return breadcrumbs;
+		},
 		route: '/benches/:name',
 		tabs: [
 			{
