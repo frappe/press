@@ -95,15 +95,9 @@
 											</Button>
 										</template>
 									</Dropdown>
-									<Button
-										v-else-if="column.type === 'Button'"
-										label="Add"
-										@click="addApp(row)"
-										:icon-left="addedApps.includes(row) ? 'check' : 'plus'"
-										:disabled="!row.compatible"
-										:class="{
-											'pointer-events-none': addedApps.includes(row)
-										}"
+									<component
+										v-else-if="column.type === 'Component'"
+										:is="column.component(row)"
 									/>
 									<Badge
 										v-else-if="column.type === 'Badge'"
@@ -142,7 +136,9 @@ import {
 	ListRow,
 	ListRows,
 	ListRowItem,
-	TextInput
+	TextInput,
+	Badge,
+	Button
 } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { h } from 'vue';
@@ -167,69 +163,8 @@ export default {
 			searchQuery: '',
 			showNewAppDialog: false,
 			selectedAppSources: [],
-			selectedBranch: '',
 			showDialog: true,
-			addedApps: [],
-			columns: [
-				{
-					label: 'Title',
-					key: 'title',
-					class: 'font-medium',
-					prefix(row) {
-						return row.image
-							? h('img', {
-									src: row.image,
-									class: 'w-6 h-6 rounded',
-									alt: row.title
-							  })
-							: h(
-									'div',
-									{
-										class:
-											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
-									},
-									row.title[0].toUpperCase()
-							  );
-					}
-				},
-				{
-					label: 'Repository',
-					key: 'repo',
-					class: 'text-gray-600',
-					width: '15rem'
-				},
-				{
-					label: 'Branch',
-					type: 'select',
-					key: 'sources',
-					width: '15rem',
-					format(value, row) {
-						return row.sources.map(s => {
-							return {
-								label: s.branch,
-								value: s.name
-							};
-						});
-					}
-				},
-				{
-					label: '',
-					key: 'compatible',
-					type: 'Badge',
-					width: '10rem',
-					format(value) {
-						return {
-							label: value ? 'Compatible' : 'Incompatible',
-							theme: value ? 'green' : 'red'
-						};
-					}
-				},
-				{
-					label: '',
-					type: 'Button',
-					width: '5rem'
-				}
-			]
+			addedApps: []
 		};
 	},
 	resources: {
@@ -263,6 +198,80 @@ export default {
 	computed: {
 		rows() {
 			return this.$resources.installableApps.data;
+		},
+		columns() {
+			return [
+				{
+					label: 'Title',
+					key: 'title',
+					class: 'font-medium',
+					prefix(row) {
+						return row.image
+							? h('img', {
+									src: row.image,
+									class: 'w-6 h-6 rounded',
+									alt: row.title
+							  })
+							: h(
+									'div',
+									{
+										class:
+											'w-6 h-6 rounded bg-gray-300 text-gray-600 flex items-center justify-center'
+									},
+									row.title[0].toUpperCase()
+							  );
+					}
+				},
+				{
+					label: 'Repository',
+					key: 'repo',
+					class: 'text-gray-600',
+					width: '15rem',
+					format(value, row) {
+						if (!row.sources.length) return value;
+						return `${row.source.repository_owner}/${row.source.repository}`;
+					}
+				},
+				{
+					label: 'Branch',
+					type: 'select',
+					key: 'sources',
+					width: '15rem',
+					format(value, row) {
+						return row.sources.map(s => {
+							return {
+								label: s.branch,
+								value: s.name
+							};
+						});
+					}
+				},
+				{
+					label: '',
+					type: 'Component',
+					width: '8rem',
+					component: row => {
+						if (row.compatible)
+							return h(Button, {
+								label: 'Add',
+								iconLeft: this.addedApps.includes(row) ? 'check' : 'plus',
+
+								disabled: !row.compatible,
+								class: {
+									'ml-auto': true,
+									'pointer-events-none': this.addedApps.includes(row)
+								},
+								onClick: () => this.addApp(row)
+							});
+						else
+							return h(Badge, {
+								class: 'ml-auto',
+								label: 'Not Compatible',
+								theme: 'red'
+							});
+					}
+				}
+			];
 		},
 		filteredRows() {
 			let rows = this.rows.sort((a, b) => {
