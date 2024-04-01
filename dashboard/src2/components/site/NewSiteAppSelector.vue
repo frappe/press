@@ -1,5 +1,5 @@
 <template>
-	<div class="space-y-12">
+	<div v-if="availableApps.length" class="space-y-12">
 		<div v-if="publicApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
 				{{
