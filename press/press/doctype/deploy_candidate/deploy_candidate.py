@@ -444,8 +444,8 @@ class DeployCandidate(Document):
 		request_data: dict,
 		response_data: Optional[dict],
 	):
-		response_data = json.loads(job.data)
-		output_data = json.loads(response_data.get("data", "{}"))
+		job_data = json.loads(job.data or "{}")
+		output_data = json.loads(job_data.get("output", "{}"))
 
 		# TODO: Error Handling
 		"""
@@ -1581,18 +1581,18 @@ def is_suspended() -> bool:
 
 
 def get_remote_step_output(
-	step: Literal["build", "push"],
+	step_name: Literal["build", "push"],
 	output_data: dict,
 	response_data: Optional[dict],
 ):
-	if output := output_data.get(step):
+	if output := output_data.get(step_name):
 		return output
 
 	if not isinstance(response_data, dict):
 		return None
 
-	job_step_name = "Build Image" if step == "build" else "Push Docker Image"
-	for step in response_data.get("step", []):
+	job_step_name = "Build Image" if step_name == "build" else "Push Docker Image"
+	for step in response_data.get("steps", []):
 		if step.get("name") != job_step_name:
 			continue
 
@@ -1609,7 +1609,7 @@ def get_remote_step_output(
 			continue
 
 		try:
-			return json.loads(output).get(step, [])
+			return json.loads(output).get(step_name, [])
 		except AttributeError:
 			continue
 		except json.JSONDecodeError:

@@ -776,7 +776,7 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name, response_data: "Optional[dict]"):
+def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	try:
 		from press.press.doctype.app_patch.app_patch import AppPatch
