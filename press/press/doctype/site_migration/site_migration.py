@@ -598,8 +598,9 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	if job.status == "Success":
 		try:
 			site_migration.run_next_step()
-		except Exception:
-			log_error("Site Migration Step Error")
+		except Exception as e:
+			log_error("Site Migration Step Error", doc=site_migration)
+			site_migration.fail(reason=str(e), activate=True)
 	elif job.status in ["Failure", "Delivery Failure"]:
 		site_migration.fail()
 
