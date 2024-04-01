@@ -420,13 +420,12 @@ export default {
 					} else if (Object.keys(this.$team.doc.billing_details).length === 0) {
 						return "You don't have billing details added. Please add billing details from settings to continue.";
 					} else if (
-						this.$team.doc.balance >= 200 ||
+						(this.$team.doc.currency == 'USD' &&
+							this.$team.doc.balance <= 200) ||
 						(this.$team.doc.currency == 'INR' &&
-							this.$team.doc.balance >= 16000)
+							this.$team.doc.balance <= 16000)
 					) {
 						return 'You need to have $200 worth of credits to enable this feature.';
-					} else if (!this.$team.doc.billing_info.has_unpaid_invoices) {
-						return 'You have unpaid invoices. Please clear them to enable this feature.';
 					}
 				},
 				onSuccess(server) {
