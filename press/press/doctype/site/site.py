@@ -58,6 +58,7 @@ from press.utils import (
 	get_client_blacklisted_keys,
 	get_current_team,
 	guess_type,
+	human_readable,
 	log_error,
 	unique,
 )
@@ -565,15 +566,15 @@ class Site(Document, TagHelpers):
 		db_server_free_space = self.fetch_free_space(
 			frappe.db.get_value("Server", self.server, "database_server")
 		)
-		if (diff := app_server_free_space - self.space_required_on_app_server) < 0:
+		if (diff := app_server_free_space - self.space_required_on_app_server) <= 0:
 			frappe.throw(
-				f"Insufficient space on Application server to create site. Required: {self.space_required_on_app_server}, Available: {app_server_free_space} (Need {diff})",
+				f"Insufficient space on Application server to create site. Required: {human_readable(self.space_required_on_app_server)}, Available: {human_readable(app_server_free_space)} (Need {human_readable(diff)})",
 				InsufficientSpaceOnServer,
 			)
 
-		if (diff := db_server_free_space - self.space_required_on_db_server) < 0:
+		if (diff := db_server_free_space - self.space_required_on_db_server) <= 0:
 			frappe.throw(
-				f"Insufficient space on Database server to create site. Required: {self.space_required_on_db_server}, Available: {db_server_free_space} (Need {diff})",
+				f"Insufficient space on Database server to create site. Required: {human_readable(self.space_required_on_db_server)}, Available: {human_readable(db_server_free_space)} (Need {human_readable(diff)})",
 				InsufficientSpaceOnServer,
 			)
 

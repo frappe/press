@@ -409,8 +409,8 @@ def developer_mode_only():
 
 
 def human_readable(num: int) -> str:
-	"""Assumes int data to describe size is in MiB"""
-	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+	"""Assumes int data to describe size is in Bytes"""
+	for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
 		if abs(num) < 1024:
 			return f"{num:3.1f}{unit}B"
 		num /= 1024
