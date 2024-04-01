@@ -241,6 +241,21 @@ class RemoteFile(Document):
 			obj = self.s3_client.get_object(Bucket=self.bucket, Key=self.file_path)
 			return json.loads(obj["Body"].read().decode("utf-8"))
 
+	@property
+	def size(self):
+		"""
+		Get the size of file in bytes
+
+		Sets the file_size field if not already set
+		"""
+		if self.file_size:
+			return self.file_size
+		else:
+			response = requests.head(self.url)
+			self.file_size = int(response.headers.get("content-length"))
+			self.save()
+			return self.file_size
+
 
 def delete_s3_files(buckets):
 	"""Delete specified files from s3 buckets"""

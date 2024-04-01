@@ -27,8 +27,9 @@ from frappe.utils import (
 	time_diff_in_hours,
 	sbool,
 )
+from press.api.server import prometheus_query
 
-from press.exceptions import CannotChangePlan
+from press.exceptions import CannotChangePlan, InsufficientSpaceOnServer
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	MarketplaceAppPlan,
 )
@@ -520,9 +521,66 @@ class Site(Document, TagHelpers):
 			method="DELETE", domain=domain, proxy_server=proxy_server, record_name=site
 		)
 
+	@property
+	def space_required_on_app_server(self):
+		db_size, public_size, private_size = (
+			frappe.get_doc("Remote File", file_name).size
+			for file_name in (
+				self.remote_database_file,
+				self.remote_public_file,
+				self.remote_private_file,
+			)
+		)
+		space_for_download = db_size + public_size + private_size
+		space_for_extracted_file = 8 * db_size  # 8 times db size for extraction; estimated
+		backups_per_day = 24 / (
+			frappe.db.get_single_value("Press Settings", "backup_interval") or 6
+		)
+		onsite_files_backup_size = public_size + private_size
+		return (
+			space_for_download
+			+ max(space_for_extracted_file, onsite_files_backup_size)
+			+ backups_per_day * db_size  # for daily backups
+		)
+
+	@property
+	def space_required_on_db_server(self):
+		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
+		return 8 * db_size * 2  # double extracted db size for binlog
+
+	def fetch_free_space(self, server: str):
+		response = prometheus_query(
+			f"""node_filesystem_avail_bytes{{instance="{server}", job="node", mountpoint="/"}}""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if response:
+			return response[0]["values"][-1]
+		return 50 * 1024 * 1024 * 1024  # Assume 50GB free space
+
+	def check_enough_space_on_server(self):
+		app_server_free_space = self.fetch_free_space(self.server)
+		db_server_free_space = self.fetch_free_space(
+			frappe.db.get_value("Server", self.server, "database_server")
+		)
+		if (diff := app_server_free_space - self.space_required_on_app_server) < 0:
+			frappe.throw(
+				f"Insufficient space on Application server to create site. Required: {self.space_required_on_app_server}, Available: {app_server_free_space} (Need {diff})",
+				InsufficientSpaceOnServer,
+			)
+
+		if (diff := db_server_free_space - self.space_required_on_db_server) < 0:
+			frappe.throw(
+				f"Insufficient space on Database server to create site. Required: {self.space_required_on_db_server}, Available: {db_server_free_space} (Need {diff})",
+				InsufficientSpaceOnServer,
+			)
+
 	def create_agent_request(self):
 		agent = Agent(self.server)
 		if self.remote_database_file:
+			self.check_enough_space_on_server()
 			agent.new_site_from_backup(self, skip_failing_patches=self.skip_failing_patches)
 		else:
 			agent.new_site(self)

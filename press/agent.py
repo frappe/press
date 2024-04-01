@@ -15,6 +15,7 @@ from press.utils import log_error, sanitize_config
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
+	from press.press.doctype.site.site import Site
 
 
 class Agent:
@@ -182,7 +183,7 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site, skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
