@@ -672,6 +672,7 @@ class Site(Document, TagHelpers):
 				"Remote File {0} is unavailable on S3".format(self.remote_database_file)
 			)
 
+		self.check_enough_space_on_server()
 		log_site_activity(self.name, "Restore")
 		agent = Agent(self.server)
 		job = agent.restore_site(self, skip_failing_patches=skip_failing_patches)
