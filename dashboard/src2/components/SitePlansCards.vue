@@ -8,7 +8,7 @@ import { getPlans } from '../data/plans';
 
 export default {
 	name: 'SitePlansCards',
-	props: ['modelValue', 'isBenchSite'],
+	props: ['modelValue', 'isBenchSite', 'isDedicatedServerSite'],
 	emits: ['update:modelValue'],
 	components: {
 		PlansCards
@@ -25,6 +25,9 @@ export default {
 		plans() {
 			let plans = getPlans();
 			if (this.isBenchSite) plans = plans.filter(plan => plan.private_benches);
+			if (this.isDedicatedServerSite)
+				plans = plans.filter(plan => plan.dedicated_server_plan);
+			else plans = plans.filter(plan => !plan.dedicated_server_plan);
 
 			return plans.map(plan => {
 				return {
