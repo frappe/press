@@ -13,6 +13,7 @@
   "column_break_sjmg",
   "price_usd",
   "section_break_nifk",
+  "premium",
   "server_type",
   "cluster",
   "instance_type",
@@ -111,11 +112,17 @@
    "fieldtype": "Table",
    "label": "Roles",
    "options": "Has Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "premium",
+   "fieldtype": "Check",
+   "label": "Premium"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-02-24 10:54:20.322655",
+ "modified": "2024-03-29 12:19:06.709403",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server Plan",

@@ -217,18 +217,6 @@
  },
  {
   "datatype": "Str",
-  "default_value": "10800",
-  "doc_section": "server",
-  "docstatus": 0,
-  "doctype": "MariaDB Variable",
-  "dynamic": 1,
-  "modified": "2023-09-22 13:52:43.002171",
-  "name": "max_statement_time",
-  "set_on_new_servers": 1,
-  "skippable": 0
- },
- {
-  "datatype": "Str",
   "default_value": "5",
   "doc_section": "server",
   "docstatus": 0,
@@ -285,6 +273,18 @@
   "modified": "2024-03-05 12:59:31.069472",
   "name": "binlog_expire_logs_seconds",
   "set_on_new_servers": 0,
+  "skippable": 0
+ },
+ {
+  "datatype": "Str",
+  "default_value": "3600",
+  "doc_section": "server",
+  "docstatus": 0,
+  "doctype": "MariaDB Variable",
+  "dynamic": 1,
+  "modified": "2024-03-28 15:23:30.635417",
+  "name": "max_statement_time",
+  "set_on_new_servers": 1,
   "skippable": 0
  }
 ]

@@ -42,14 +42,11 @@
 				"
 				v-model="targetGroup"
 			/>
-			<p v-else class="text-md text-base text-gray-800">
+			<p v-else-if="!errorMessage" class="text-md text-base text-gray-800">
 				There are no other benches that you own for this site to move to. You
 				can clone this bench to move the site.
 			</p>
-			<ErrorMessage
-				class="mt-3"
-				:message="$resources.changeGroup.error || $resources.cloneGroup.error"
-			/>
+			<ErrorMessage class="mt-3" :message="errorMessage" />
 		</template>
 	</Dialog>
 	<Dialog
@@ -99,6 +96,13 @@ export default {
 			set(value) {
 				this.$emit('update:modelValue', value);
 			}
+		},
+		errorMessage() {
+			return (
+				this.$resources.changeGroupOptions.error ||
+				this.$resources.changeGroup.error ||
+				this.$resources.cloneGroup.error
+			);
 		}
 	},
 	resources: {

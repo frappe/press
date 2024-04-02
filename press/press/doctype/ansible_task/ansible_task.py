@@ -33,4 +33,9 @@ class AnsibleTask(Document):
 	# end: auto-generated types
 
 	def on_update(self):
-		frappe.publish_realtime("ansible_play_update", {"id": self.play})
+		frappe.publish_realtime(
+			"ansible_play_update",
+			doctype="Ansible Play",
+			docname=self.play,
+			message={"id": self.play},
+		)

@@ -293,10 +293,12 @@ export default {
 		installApp() {
 			return {
 				url: 'press.api.site.install_app',
-				params: {
-					name: this.siteName,
-					app: this.appToInstall?.app,
-					plan: this.selectedPlan
+				makeParams() {
+					return {
+						name: this.siteName,
+						app: this.appToInstall?.app,
+						plan: this.selectedPlan
+					};
 				},
 				validate() {
 					if (this.showPlanSelectionDialog && !this.selectedPlan) {

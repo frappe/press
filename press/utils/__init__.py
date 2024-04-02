@@ -40,16 +40,25 @@ def log_error(title, **kwargs):
 		reference_name = doc.name
 		del kwargs["doc"]
 
+	try:
+		kwargs["user"] = frappe.session.user
+		kwargs["team"] = frappe.local.team()
+	except Exception:
+		pass
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 
-	frappe.log_error(
-		title=title,
-		message=message,
-		reference_doctype=reference_doctype,
-		reference_name=reference_name,
-	)
+	try:
+		frappe.log_error(
+			title=title,
+			message=message,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+	except Exception:
+		pass
 
 
 def get_current_team(get_doc=False):

@@ -467,7 +467,7 @@ def all_apps(name):
 			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
 			lambda x: x.app == app.name,
 		)
-		# for fetching repo details
+		# for fetching repo details for incompatible apps
 		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
 		app["repo"] = (
 			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None

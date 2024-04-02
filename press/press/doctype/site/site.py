@@ -48,6 +48,7 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	marketplace_app_hook,
 )
+from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
@@ -157,6 +158,7 @@ class Site(Document, TagHelpers):
 		"is_database_access_enabled",
 		"trial_end_date",
 		"tags",
+		"server",
 	]
 	dashboard_actions = [
 		"activate",
@@ -183,6 +185,8 @@ class Site(Document, TagHelpers):
 		"update_config",
 		"delete_config",
 		"send_change_team_request",
+		"is_setup_wizard_complete",
+		"get_backup_download_link",
 	]
 
 	@staticmethod
@@ -205,9 +209,10 @@ class Site(Document, TagHelpers):
 		from press.api.client import get
 
 		group = frappe.db.get_value(
-			"Release Group", self.group, ["title", "public"], as_dict=1
+			"Release Group", self.group, ["title", "public", "team"], as_dict=1
 		)
 		doc.group_title = group.title
+		doc.group_team = group.team
 		doc.group_public = group.public
 		doc.owner_email = frappe.db.get_value("Team", self.team, "user")
 		doc.current_usage = self.current_usage
@@ -215,10 +220,14 @@ class Site(Document, TagHelpers):
 		doc.last_updated = self.last_updated
 		doc.update_information = self.get_update_information()
 		doc.actions = self.get_actions()
-		doc.outbound_ip, proxy_server = frappe.get_value(
-			"Server", self.server, ["ip", "proxy_server"]
+		server = frappe.get_value(
+			"Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1
 		)
-		doc.inbound_ip = frappe.get_value("Proxy Server", proxy_server, "ip")
+		doc.outbound_ip = server.ip
+		doc.server_team = server.team
+		doc.server_title = server.title
+		doc.inbound_ip = frappe.get_value("Proxy Server", server.proxy_server, "ip")
+		doc.is_dedicated_server = is_dedicated_server(self.server)
 		return doc
 
 	def site_action(allowed_status: List[str]):
@@ -658,6 +667,21 @@ class Site(Document, TagHelpers):
 				"force": force,
 			}
 		).insert()
+
+	@frappe.whitelist()
+	def get_backup_download_link(self, backup, file):
+		from botocore.exceptions import ClientError
+
+		if file not in ["database", "public", "private", "config"]:
+			frappe.throw("Invalid file type")
+
+		try:
+			remote_file = frappe.db.get_value(
+				"Site Backup", {"name": backup, "site": self.name}, f"remote_{file}_file"
+			)
+			return frappe.get_doc("Remote File", remote_file).download_link
+		except ClientError:
+			log_error(title="Offsite Backup Response Exception")
 
 	@frappe.whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
@@ -1156,6 +1180,7 @@ class Site(Document, TagHelpers):
 			analytics = self.fetch_analytics()
 		create_site_analytics(self.name, analytics)
 
+	@frappe.whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True

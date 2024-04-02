@@ -47,6 +47,7 @@ export default {
 		this.fetchJob();
 	},
 	unmounted() {
+		this.$socket.emit('doc_unsubscribe', 'Press Job', this.creationJob.name);
 		this.$socket.off('press_job_update', this.onPressJobUpdate);
 	},
 	methods: {
@@ -72,6 +73,7 @@ export default {
 			jobs.forEach(job => {
 				if (job.job_type === 'Create Server') {
 					this.creationJob = job;
+					this.$socket.emit('doc_subscribe', 'Press Job', job.name);
 				}
 			});
 			if (this.creationJob?.status === 'Success') {

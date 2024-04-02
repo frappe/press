@@ -40,6 +40,7 @@ export default {
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
 		loginAsAdmin: 'login_as_admin',
+		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
 		redirectToPrimary: 'set_redirect',
@@ -52,7 +53,8 @@ export default {
 		deleteConfig: 'delete_config',
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		getBackupDownloadLink: 'get_backup_download_link'
 	},
 	list: {
 		route: '/sites',
@@ -198,20 +200,27 @@ export default {
 			return { label: site.doc.status };
 		},
 		breadcrumbs({ items, documentResource: site }) {
-			// if (site.doc?.group_public) {
-			// 	return items;
-			// }
+			let breadcrumbs = [];
 			let $team = getTeam();
+
+			if (site.doc.server_team == $team.doc.name) {
+				breadcrumbs.push({
+					label: site.doc?.server_title || site.doc?.server,
+					route: `/servers/${site.doc?.server}`
+				});
+			}
 			if (site.doc.group_team == $team.doc.name) {
-				return [
+				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
 						route: `/benches/${site.doc?.group}`
 					},
 					items[1]
-				];
+				);
+			} else {
+				breadcrumbs.push(...items);
 			}
-			return items;
+			return breadcrumbs;
 		},
 		tabs: [
 			{
@@ -904,19 +913,30 @@ export default {
 							}
 						];
 					},
-					rowActions({ row }) {
+					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
-							let link = backup.offsite
-								? await frappeRequest('press.api.site.get_backup_link', {
-										name: backup.site,
-										backup: backup.name,
-										file
-								  })
-								: backup[file + '_url'];
-							window.open(link);
+							if (backup.offsite) {
+								site.getBackupDownloadLink.submit(
+									{ backup: backup.name, file },
+									{
+										onSuccess(r) {
+											// TODO: fix this in documentResource, it should return message directly
+											if (r.message) {
+												window.open(r.message);
+											}
+										}
+									}
+								);
+							} else {
+								let url =
+									file == 'config'
+										? backup.config_file_url
+										: backup[file + '_url'];
+								window.open(url);
+							}
 						}
 
 						return [
@@ -943,7 +963,7 @@ export default {
 							{
 								label: 'Download Config',
 								onClick() {
-									return downloadBackup(row, 'config_file');
+									return downloadBackup(row, 'config');
 								},
 								condition: () => row.config_file_url
 							}
@@ -1310,7 +1330,7 @@ export default {
 					slots: {
 						prefix: icon('external-link')
 					},
-					condition: () => site.doc.status === 'Active',
+					condition: () => site.doc.status !== 'Archived',
 					onClick() {
 						window.open(`https://${site.name}`, '_blank');
 					}

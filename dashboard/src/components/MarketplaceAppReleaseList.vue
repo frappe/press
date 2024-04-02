@@ -128,11 +128,15 @@ export default {
 		};
 	},
 	mounted() {
-		this.$socket.on('new_app_release_created', this.releaseStateUpdate);
-		this.$socket.on('request_status_changed', this.releaseStateUpdate);
+		this.$socket.emit('doctype_subscribe', 'App Release');
+		this.$socket.on('list_update', this.releaseStateUpdate);
 		if (this.sources.length > 0) {
 			this.selectedSource = this.sources[0].source;
 		}
+	},
+	beforeMount() {
+		this.$socket.emit('doctype_unsubscribe', 'App Release');
+		this.$socket.off('list_update', this.releaseStateUpdate);
 	},
 	resources: {
 		releases() {

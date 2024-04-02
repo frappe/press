@@ -334,7 +334,12 @@ export default {
 												hide();
 												return 'Sites updated';
 											},
-											error: 'Failed to update sites',
+											error: e => {
+												hide();
+												return e.messages.length
+													? e.messages.join('\n')
+													: 'Failed to update sites';
+											},
 											duration: 1000
 										}
 									);
@@ -361,7 +366,12 @@ export default {
 											hide();
 											return 'Bench restarted';
 										},
-										error: 'Failed to restart bench',
+										error: e => {
+											hide();
+											return e.messages.length
+												? e.messages.join('\n')
+												: 'Failed to restart bench';
+										},
 										duration: 1000
 									});
 								}
@@ -390,7 +400,12 @@ export default {
 											hide();
 											return 'Assets will be rebuilt in the background. This may take a few minutes.';
 										},
-										error: 'Failed to rebuild assets',
+										error: e => {
+											hide();
+											return e.messages.length
+												? e.messages.join('\n')
+												: 'Failed to rebuild assets';
+										},
 										duration: 1000
 									});
 								}

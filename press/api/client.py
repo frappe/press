@@ -77,6 +77,8 @@ def get_list(
 	parent=None,
 	debug=False,
 ):
+	if filters is None:
+		filters = {}
 	check_permissions(doctype)
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)

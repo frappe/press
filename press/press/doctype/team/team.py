@@ -1277,8 +1277,6 @@ def handle_payment_intent_succeeded(payment_intent):
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
 
-	# team.allocate_free_credits()
-
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)
 	team.remove_subscription_config_in_trial_sites()
