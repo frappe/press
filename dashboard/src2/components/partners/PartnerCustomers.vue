@@ -54,6 +54,21 @@
 				</Button>
 			</template>
 		</Dialog>
+		<Dialog
+			v-model="showConfirmationDialog"
+			:modelValue="false"
+			:options="{ title: 'Credits Transferred Successfully' }"
+		>
+			<template #body-content>
+				<p class="text-p-base">
+					{{ formatCurrency(amount) }} credits have been transferred to
+					<strong>{{ customerTeam.billing_name }}</strong>
+				</p>
+				<span class="text-base text-gray-700 font-medium"
+					>Credits available: {{ creditBalance() }}</span
+				>
+			</template>
+		</Dialog>
 	</div>
 </template>
 <script>
@@ -61,6 +76,7 @@ import ObjectList from '../ObjectList.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
+import { userCurrency } from '../../utils/format';
 export default {
 	name: 'PartnerCustomers',
 	components: {
@@ -75,7 +91,8 @@ export default {
 			showInvoice: null,
 			transferCreditsDialog: false,
 			customerTeam: null,
-			amount: 0.0
+			amount: 0.0,
+			showConfirmationDialog: false
 		};
 	},
 	resources: {
@@ -84,9 +101,14 @@ export default {
 				url: 'press.api.account.transfer_credits',
 				onSuccess() {
 					this.transferCreditsDialog = false;
+					this.showConfirmationDialog = true;
 					toast.success('Credits Transferred');
 				}
 			};
+		},
+		getBalance: {
+			url: 'press.api.billing.get_balance_credit',
+			auto: true
 		}
 	},
 	computed: {
@@ -136,6 +158,17 @@ export default {
 					erpnext_partner: 0
 				}
 			};
+		}
+	},
+	methods: {
+		formatCurrency(value) {
+			if (value === 0) {
+				return '';
+			}
+			return userCurrency(value);
+		},
+		creditBalance() {
+			return this.formatCurrency(this.$resources.getBalance.data - this.amount);
 		}
 	}
 };
