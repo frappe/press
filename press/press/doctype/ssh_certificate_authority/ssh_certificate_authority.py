@@ -12,6 +12,8 @@ import docker
 from frappe.model.document import Document
 from frappe.utils import cint
 
+from press.utils import log_error
+
 
 class SSHCertificateAuthority(Document):
 	# begin: auto-generated types
@@ -42,9 +44,13 @@ class SSHCertificateAuthority(Document):
 			os.mkdir(self.directory)
 
 	def run(self, command, directory, environment=None):
-		return subprocess.check_output(
-			shlex.split(command), cwd=directory, env=environment
-		).decode()
+		try:
+			return subprocess.check_output(
+				shlex.split(command), cwd=directory, env=environment, stderr=subprocess.STDOUT
+			).decode()
+		except subprocess.CalledProcessError as e:
+			log_error(f"Command failed with error: {e} {e.output.decode()}", doc=self)
+			raise
 
 	def generate_key_pair(self):
 		if not os.path.exists(self.private_key_file) and not os.path.exists(

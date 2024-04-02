@@ -12,6 +12,15 @@ import subprocess
 import frappe
 from frappe.model.document import Document
 
+from typing import TYPE_CHECKING
+
+from press.utils import log_error
+
+if TYPE_CHECKING:
+	from press.press.doctype.ssh_certificate_authority.ssh_certificate_authority import (
+		SSHCertificateAuthority,
+	)
+
 
 class SSHCertificate(Document):
 	# begin: auto-generated types
@@ -97,7 +106,9 @@ class SSHCertificate(Document):
 		self.save()
 
 	def generate_certificate(self):
-		ca = frappe.get_doc("SSH Certificate Authority", self.ssh_certificate_authority)
+		ca: "SSHCertificateAuthority" = frappe.get_doc(
+			"SSH Certificate Authority", self.ssh_certificate_authority
+		)
 		ca.sign(
 			self.user,
 			[self.group],
@@ -108,7 +119,13 @@ class SSHCertificate(Document):
 		self.read_certificate()
 
 	def run(self, command):
-		return subprocess.check_output(shlex.split(command)).decode()
+		try:
+			return subprocess.check_output(
+				shlex.split(command), stderr=subprocess.STDOUT
+			).decode()
+		except subprocess.CalledProcessError as e:
+			log_error(f"Command failed with error: {e} {e.output.decode()}", doc=self)
+			raise
 
 	def extract_certificate_details(self):
 		self.certificate_details = self.run(f"ssh-keygen -Lf {self.certificate_file}")
