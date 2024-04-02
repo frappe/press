@@ -86,7 +86,8 @@ export default {
 					for (let step of job.steps) {
 						step.title = step.step_name;
 						step.duration = duration(step.duration);
-						step.isOpen = false;
+						step.isOpen =
+							this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
 					}
 					return job;
 				},
@@ -111,7 +112,8 @@ export default {
 				data.steps = data.steps.map(step => {
 					step.title = step.step_name;
 					step.duration = duration(step.duration);
-					step.isOpen = false;
+					step.isOpen =
+						this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
 					return step;
 				});
 
