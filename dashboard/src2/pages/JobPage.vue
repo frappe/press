@@ -108,7 +108,17 @@ export default {
 		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
 		this.$socket.on('agent_job_update', data => {
 			if (data.id === this.id) {
-				this.reload();
+				data.steps = data.steps.map(step => {
+					step.title = step.step_name;
+					step.duration = duration(step.duration);
+					step.isOpen = false;
+					return step;
+				});
+
+				this.$resources.job.doc = {
+					...this.$resources.job.doc,
+					...data
+				};
 			}
 		});
 		// reload job every minute, in case socket is not working
