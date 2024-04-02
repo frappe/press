@@ -14,8 +14,8 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 if typing.TYPE_CHECKING:
 	from re import Match
 	from typing import Any, Generator, TypedDict
-	from frappe.types import DF
 
+	from frappe.types import DF
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 	from press.press.doctype.deploy_candidate_build_step.deploy_candidate_build_step import (
 		DeployCandidateBuildStep,
@@ -236,7 +236,7 @@ class UploadStepUpdater:
 	@property
 	def upload_step(self) -> "DeployCandidateBuildStep":
 		if not self._upload_step:
-			self._upload_step = self.dc.get_first_step("stage_slug", "upload")
+			self._upload_step = self.dc.get_step("upload", "image")
 		return self._upload_step
 
 	def start(self):
