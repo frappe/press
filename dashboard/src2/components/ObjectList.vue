@@ -30,18 +30,17 @@
 				<Tooltip
 					v-if="options.experimental"
 					text="This is an experimental feature"
-					class="rounded-md bg-purple-100 p-1.5"
 				>
-					<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+					<div class="rounded-md bg-purple-100 p-1.5">
+						<i-lucide-flask-conical class="h-4 w-4 text-purple-500" />
+					</div>
 				</Tooltip>
-				<Tooltip
-					v-if="options.documentation"
-					text="View documentation"
-					class="rounded-md bg-gray-100 p-1.5"
-				>
-					<a :href="options.documentation" target="_blank">
-						<FeatherIcon class="h-4 w-4" name="help-circle" />
-					</a>
+				<Tooltip v-if="options.documentation" text="View documentation">
+					<div class="rounded-md bg-gray-100 p-1.5">
+						<a :href="options.documentation" target="_blank">
+							<FeatherIcon class="h-4 w-4" name="help-circle" />
+						</a>
+					</div>
 				</Tooltip>
 				<Tooltip text="Refresh" v-if="$list">
 					<Button label="Refresh" @click="$list.reload()" :loading="isLoading">
@@ -234,7 +233,7 @@ export default {
 		if (this.options.data) return;
 		if (this.options.list) {
 			let resource = this.$list.list || this.$list;
-			if (!resource.fetched && !resource.loading) {
+			if (!resource.fetched && !resource.loading && this.$list.auto != false) {
 				resource.fetch();
 			}
 		}
