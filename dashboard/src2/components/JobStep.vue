@@ -6,6 +6,11 @@
 			:class="step.isOpen ? 'rounded-b-none' : ''"
 		>
 			<div class="flex items-center space-x-2">
+				<FeatherIcon
+					:name="step.isOpen ? 'chevron-down' : 'chevron-right'"
+					class="h-3 w-3"
+					:stroke-width="3"
+				/>
 				<Tooltip :text="step.status">
 					<div
 						class="grid h-4 w-4 place-items-center rounded-full"
