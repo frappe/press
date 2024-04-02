@@ -940,6 +940,24 @@ class Team(Document):
 
 		return billing_details
 
+	def get_partner_level(self):
+		# fetch partner level from frappe.io
+		client = get_frappe_io_connection()
+		response = client.session.get(
+			f"{client.url}/api/method/get_partner_level",
+			headers=client.headers,
+			params={"email": self.partner_email},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_level = res.get("message")
+			legacy_contract = res.get("legacy_contract")
+			if partner_level:
+				return partner_level, legacy_contract
+		else:
+			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
+
 	def get_onboarding(self):
 		if self.payment_mode in ("Partner Credits", "Prepaid Credits", "Paid By Partner"):
 			billing_setup = True

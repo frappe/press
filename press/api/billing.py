@@ -51,6 +51,12 @@ def upcoming_invoice():
 
 
 @frappe.whitelist()
+def get_balance_credit():
+	team = get_current_team(True)
+	return team.get_balance()
+
+
+@frappe.whitelist()
 def past_invoices():
 	return get_current_team(True).get_past_invoices()
 

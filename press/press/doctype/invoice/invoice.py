@@ -577,7 +577,8 @@ class Invoice(Document):
 			else "New Partner Discount"
 		)
 
-		partner_level, legacy_contract = self.get_partner_level()
+		team = frappe.get_cached_doc("Team", self.team)
+		partner_level, legacy_contract = team.get_partner_level()
 		# give 10% discount for partners
 		discount_percent = 0.1 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
@@ -602,24 +603,6 @@ class Invoice(Document):
 
 		self.save()
 		self.reload()
-
-	def get_partner_level(self):
-		# fetch partner level from frappe.io
-		client = self.get_frappeio_connection()
-		response = client.session.get(
-			f"{client.url}/api/method/get_partner_level",
-			headers=client.headers,
-			params={"email": self.partner_email},
-		)
-
-		if response.ok:
-			res = response.json()
-			partner_level = res.get("message")
-			legacy_contract = res.get("legacy_contract")
-			if partner_level:
-				return partner_level, legacy_contract
-		else:
-			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
 	def set_total_and_discount(self):
 		total_discount_amount = 0
