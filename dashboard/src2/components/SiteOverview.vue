@@ -167,7 +167,7 @@ export default {
 		};
 	},
 	mounted() {
-		if (this.$site) {
+		if (this.$site?.doc?.status === 'Active') {
 			this.$site.isSetupWizardComplete.submit().then(res => {
 				this.isSetupWizardComplete = res;
 			});

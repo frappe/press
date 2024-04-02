@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
 	from io import BufferedReader
 
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.site.site import Site
 
 
 class Agent:
@@ -125,7 +126,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def restore_site(self, site, skip_failing_patches=False):
+	def restore_site(self, site: "Site", skip_failing_patches=False):
+		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
@@ -184,7 +186,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site, skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
