@@ -38,6 +38,7 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
+from typing import Any
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -81,6 +82,7 @@ class DeployCandidate(Document):
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
 		docker_image_tag: DF.Data | None
+		docker_remote_builder_server: DF.Link | None
 		environment_variables: DF.Table[DeployCandidateVariable]
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
@@ -199,6 +201,7 @@ class DeployCandidate(Document):
 			return
 
 		self.status = "Pending"
+		self.set_remote_build_flags()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -221,6 +224,15 @@ class DeployCandidate(Document):
 		frappe.set_user(user)
 		frappe.session.data = session_data
 		frappe.db.commit()
+
+	def set_remote_build_flags(self):
+		if not self.docker_remote_builder_server:
+			self.docker_remote_builder_server = self._get_docker_remote_builder_server()
+
+		if not self.docker_remote_builder_server:
+			return
+
+		self.is_docker_remote_builder_used = True
 
 	def validate_pre_build(self):
 		if self.status == "Running" and self.is_docker_remote_builder_used:
@@ -278,7 +290,7 @@ class DeployCandidate(Document):
 		if self.status == "Scheduled" and not running_scheduled:
 			return
 
-		if not is_suspended() or self.can_use_remote_build_server():
+		if not is_suspended() or self.is_docker_remote_builder_used:
 			self.build_and_deploy(staging=False)
 			return
 
@@ -357,9 +369,8 @@ class DeployCandidate(Document):
 		self._update_docker_image_metadata()
 
 		# Build runs on remote server
-		if remote_build_server := self._get_docker_remote_builder_server():
+		if self.is_docker_remote_builder_used:
 			self._run_remote_builder(
-				remote_build_server,
 				deploy_after_build,
 				deploy_to_staging,
 				no_cache,
@@ -381,16 +392,20 @@ class DeployCandidate(Document):
 
 	def _run_remote_builder(
 		self,
-		remote_build_server: str,
 		deploy_after_build: bool,
 		deploy_to_staging: bool,
 		no_cache: bool,
 		no_push: bool,
 		no_build: bool,
-	):
-		self.is_docker_remote_builder_used = True
+	) -> None:
+		if not (remote_build_server := self.docker_remote_builder_server):
+			return
 
-		uploaded_filename = self._upload_build_context(remote_build_server)
+		context_filepath = self._package_build_context()
+		context_filename = self._upload_build_context(
+			context_filepath,
+			remote_build_server,
+		)
 		settings = self._fetch_registry_settings()
 
 		if no_build:
@@ -399,7 +414,7 @@ class DeployCandidate(Document):
 
 		Agent(remote_build_server).run_remote_builder(
 			{
-				"filename": uploaded_filename,
+				"filename": context_filename,
 				"image_repository": self.docker_image_repository,
 				"image_tag": self.docker_image_tag,
 				"registry": {
@@ -418,16 +433,38 @@ class DeployCandidate(Document):
 		)
 		self.last_updated = now()
 		self._build_run()
+		return
 
-	def _upload_build_context(self, remote_build_server):
-		build_context_archive_filepath = self._tar_build_context()
+	def _package_build_context(self) -> str:
+		"""Creates a tarball of the build context and returns the path to it."""
+		step = self.get_step("package", "context") or frappe._dict()
+		step.status = "Running"
+		start = now()
+
+		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
+		with tarfile.open(tmp_file_path, "w:gz") as tar:
+			tar.add(self.build_directory, arcname=".")
+
+		step.status = "Success"
+		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
+		return tmp_file_path
+
+	def _upload_build_context(self, context_filepath: str, remote_build_server: str):
+		step = self.get_step("upload", "context") or frappe._dict()
+		step.status = "Running"
+		start = now()
 
 		agent = Agent(remote_build_server)
-		with open(build_context_archive_filepath, "rb") as file:
+		with open(context_filepath, "rb") as file:
 			upload_filename = agent.upload_build_context_for_docker_build(file, self.name)
 
 		if not upload_filename:
+			step.status = "Failure"
 			raise Exception("Failed to upload build context to remote docker builder")
+		else:
+			step.status = "Success"
+
+		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
 		return upload_filename
 
 	@staticmethod
@@ -600,14 +637,32 @@ class DeployCandidate(Document):
 		for app in self.apps:
 			step_slug = app.app
 			stage, step = get_build_stage_and_step(stage_slug, step_slug, app_titles)
-			step = dict(
+			step_dict = dict(
 				status="Pending",
 				stage_slug=stage_slug,
 				step_slug=step_slug,
 				stage=stage,
 				step=step,
 			)
-			self.append("build_steps", step)
+			self.append("build_steps", step_dict)
+
+		# Additional steps for remote builder since generating and uploading
+		# context take time due to tar-ing and network
+		remote_build_stage_slugs = []
+		if self.is_docker_remote_builder_used:
+			remote_build_stage_slugs = ["package", "upload"]
+
+		for stage_slug in remote_build_stage_slugs:
+			step_slug = "context"
+			stage, step = get_build_stage_and_step(stage_slug, step_slug)
+			step_dict = dict(
+				status="Pending",
+				stage_slug=stage_slug,
+				step_slug=step_slug,
+				stage=stage,
+				step=step,
+			)
+			self.append("build_steps", step_dict)
 		self.save()
 
 	def _set_app_cached_flags(self) -> None:
@@ -672,11 +727,12 @@ class DeployCandidate(Document):
 		os.mkdir(apps_directory)
 
 		for app in self.apps:
+			step = self.get_step("clone", app.app)
+			if not step:
+				continue
+
 			source, cloned = frappe.db.get_value(
 				"App Release", app.release, ["clone_directory", "cloned"]
-			)
-			step = find(
-				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.app
 			)
 			step.command = f"git clone {app.app}"
 
@@ -961,13 +1017,6 @@ class DeployCandidate(Document):
 
 		return app
 
-	def _tar_build_context(self) -> str:
-		"""Creates a tarball of the build context and returns the path to it."""
-		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
-		with tarfile.open(tmp_file_path, "w:gz") as tar:
-			tar.add(self.build_directory, arcname=".")
-		return tmp_file_path
-
 	def _get_app_pyproject(self, app):
 		apps_path = os.path.join(self.build_directory, "apps")
 		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
@@ -1157,6 +1206,22 @@ class DeployCandidate(Document):
 			"id_rsa-cert.pub": self.user_certificate,
 		}
 
+	def update_step(self, stage_slug: str, step_slug: str, update_dict: dict[str, Any]):
+		step = self.get_step(stage_slug, step_slug)
+		if not step:
+			return
+
+		for key, value in update_dict.items():
+			step.set(key, value)
+
+	def get_step(
+		self, stage_slug: str, step_slug: str
+	) -> "Optional[DeployCandidateBuildStep]":
+		return find(
+			self.build_steps,
+			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
+		)
+
 	def create_deploy(self, staging: bool = False):
 		deploy_doc = None
 		if staging:
@@ -1283,9 +1348,6 @@ class DeployCandidate(Document):
 
 			pull_update[app_name] = pair
 		return pull_update
-
-	def can_use_remote_build_server(self):
-		return bool(self._get_docker_remote_builder_server())
 
 	def _get_docker_remote_builder_server(self):
 		server = frappe.get_value("Release Group", self.group, "docker_remote_builder_server")
@@ -1514,6 +1576,7 @@ STAGE_SLUG_MAP = {
 	"validate": "Run Validations",
 	"pull": "Pull Updates",
 	"mounts": "Setup Mounts",
+	"package": "Package",
 	"upload": "Upload",
 }
 
@@ -1533,6 +1596,8 @@ STEP_SLUG_MAP = {
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
+	("package", "context"): "Build Context",
+	("upload", "context"): "Build Context",
 }
 
 
