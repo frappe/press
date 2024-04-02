@@ -1811,7 +1811,7 @@ def change_group_options(name):
 	team = get_current_team()
 	group, server, plan = frappe.db.get_value("Site", name, ["group", "server", "plan"])
 
-	if not frappe.db.get_value("Site Plan", plan, "private_benches"):
+	if plan and not frappe.db.get_value("Site Plan", plan, "private_benches"):
 		frappe.throw("You are not allowed to change the group of this site.")
 
 	version = frappe.db.get_value("Release Group", group, "version")
