@@ -30,7 +30,9 @@ function fetchJobStatus(jobId) {
 
 let runningJobs = reactive({});
 export function subscribeToJobUpdates(socket) {
-	socket.on('agent_job_update_for_site', data => {
+	// listening to site's doc_update event
+	// check agent_job.py for more details
+	socket.on('doc_update', data => {
 		let job = runningJobs[data.id];
 		if (!job) {
 			job = data;
