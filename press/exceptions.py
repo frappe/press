@@ -19,3 +19,7 @@ class OngoingAgentJob(ValidationError):
 
 class MissingAppsInBench(ValidationError):
 	pass
+
+
+class InsufficientSpaceOnServer(ValidationError):
+	pass

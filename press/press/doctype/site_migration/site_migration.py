@@ -9,7 +9,12 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.exceptions import CannotChangePlan, MissingAppsInBench, OngoingAgentJob
+from press.exceptions import (
+	CannotChangePlan,
+	InsufficientSpaceOnServer,
+	MissingAppsInBench,
+	OngoingAgentJob,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -66,8 +71,14 @@ class SiteMigration(Document):
 
 	def before_insert(self):
 		self.validate_apps()
+		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+
+	def check_enough_space_on_destination_server(self):
+		site: "Site" = frappe.get_doc("Site", self.site)
+		site.server = self.destination_server
+		site.check_enough_space_on_server(self.destination_server)
 
 	def after_insert(self):
 		self.set_migration_type()
@@ -87,6 +98,7 @@ class SiteMigration(Document):
 	def start(self):
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
+		self.check_enough_space_on_destination_server()
 		self.db_set("status", "Pending")
 		frappe.db.commit()
 		self.run_next_step()
@@ -586,8 +598,9 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	if job.status == "Success":
 		try:
 			site_migration.run_next_step()
-		except Exception:
-			log_error("Site Migration Step Error")
+		except Exception as e:
+			log_error("Site Migration Step Error", doc=site_migration)
+			site_migration.fail(reason=str(e), activate=True)
 	elif job.status in ["Failure", "Delivery Failure"]:
 		site_migration.fail()
 
@@ -604,6 +617,8 @@ def run_scheduled_migrations():
 		except OngoingAgentJob:
 			pass
 		except MissingAppsInBench as e:
+			site_migration.fail(reason=str(e), activate=True)
+		except InsufficientSpaceOnServer as e:
 			site_migration.fail(reason=str(e), activate=True)
 
 
