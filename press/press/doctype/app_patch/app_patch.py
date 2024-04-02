@@ -120,7 +120,7 @@ class AppPatch(Document):
 			build_assets=self.build_assets,
 			revert=revert,
 		)
-		Agent(server).patch_app(self.bench, self.app, data)
+		Agent(server).patch_app(self, data)
 		self.status = "In Process"
 		self.save()
 

@@ -1972,5 +1972,35 @@
     "step_name": "Run Supervisorctl Command"
    }
   ]
+ },
+ {
+  "disabled_auto_retry": 1,
+  "docstatus": 0,
+  "doctype": "Agent Job Type",
+  "max_retry_count": 3,
+  "modified": "2024-03-26 10:28:39.750285",
+  "name": "Run Remote Builder",
+  "request_method": "POST",
+  "request_path": "/builder/build",
+  "steps": [
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Build Image"
+   },
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Push Docker Image"
+   },
+   {
+    "parent": "Run Remote Builder",
+    "parentfield": "steps",
+    "parenttype": "Agent Job Type",
+    "step_name": "Cleanup Context"
+   }
+  ]
  }
 ]

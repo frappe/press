@@ -5,9 +5,6 @@
 import json
 import random
 
-from press.press.doctype.deploy_candidate.deploy_candidate import (
-	process_docker_image_build_job_update,
-)
 import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
@@ -20,9 +17,11 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-
 from press.agent import Agent
 from press.api.client import is_owned_by_team
+from press.press.doctype.agent_job_type.agent_job_type import (
+	get_retryable_job_types_and_max_retry_count,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -31,10 +30,7 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 )
 from press.utils import log_error
-
-from press.press.doctype.agent_job_type.agent_job_type import (
-	get_retryable_job_types_and_max_retry_count,
-)
+from typing import Optional
 
 
 class AgentJob(Document):
@@ -56,6 +52,8 @@ class AgentJob(Document):
 		job_type: DF.Link
 		next_retry_at: DF.Datetime | None
 		output: DF.Code | None
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		request_data: DF.Code
 		request_files: DF.Code | None
 		request_method: DF.Literal["GET", "POST", "DELETE"]
@@ -424,7 +422,7 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			process_job_updates(job.name)
+			process_job_updates(job.name, polled_job)
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
 
@@ -613,9 +611,14 @@ def update_steps(job_name, job):
 	)
 	for polled_step in job["steps"]:
 		step = find(steps, lambda x: x.step_name == polled_step["name"])
-		if step and step.status != polled_step["status"]:
-			lock_doc_updated_by_job(job_name)
-			update_step(step.name, polled_step)
+		if not step:
+			continue
+
+		if step.status == polled_step["status"]:
+			continue
+
+		lock_doc_updated_by_job(job_name)
+		update_step(step.name, polled_step)
 
 
 def update_step(step_name, step):
@@ -789,9 +792,10 @@ def update_job_ids_for_delivered_jobs(delivered_jobs):
 		)
 
 
-def process_job_updates(job_name):
-	job = frappe.get_doc("Agent Job", job_name)
+def process_job_updates(job_name, response_data: "Optional[dict]" = None):
+	job: "AgentJob" = frappe.get_doc("Agent Job", job_name)
 	try:
+		from press.press.doctype.app_patch.app_patch import AppPatch
 		from press.press.doctype.bench.bench import (
 			process_add_ssh_user_job_update,
 			process_archive_bench_job_update,
@@ -804,6 +808,7 @@ def process_job_updates(job_name):
 			process_start_code_server_job_update,
 			process_stop_code_server_job_update,
 		)
+		from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 		from press.press.doctype.proxy_server.proxy_server import (
 			process_update_nginx_job_update,
 		)
@@ -831,7 +836,6 @@ def process_job_updates(job_name):
 			process_update_site_job_update,
 			process_update_site_recover_job_update,
 		)
-		from press.press.doctype.app_patch.app_patch import AppPatch
 
 		site_migration = get_ongoing_migration(job.site)
 		if site_migration:
@@ -911,8 +915,8 @@ def process_job_updates(job_name):
 			process_move_site_to_bench_job_update(job)
 		elif job.job_type == "Patch App":
 			AppPatch.process_patch_app(job)
-		elif job.job_type == "Docker Image Build":
-			process_docker_image_build_job_update(job)
+		elif job.job_type == "Run Remote Builder":
+			DeployCandidate.process_run_remote_builder(job, response_data)
 
 	except Exception as e:
 		log_error(
