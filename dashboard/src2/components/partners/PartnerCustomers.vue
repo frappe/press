@@ -168,7 +168,9 @@ export default {
 			return userCurrency(value);
 		},
 		creditBalance() {
-			return this.formatCurrency(this.$resources.getBalance.data - this.amount);
+			return this.formatCurrency(
+				parseFloat(this.$resources.getBalance.data) - parseFloat(this.amount)
+			);
 		}
 	}
 };
