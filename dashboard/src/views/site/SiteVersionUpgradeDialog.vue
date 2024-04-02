@@ -12,6 +12,7 @@
 				</p>
 				<FormControl
 					v-else-if="privateReleaseGroups.length > 0 && nextVersion"
+					variant="outline"
 					:label="`Please select a ${nextVersion} bench to upgrade your site from ${site.frappe_version}`"
 					class="w-full"
 					type="select"
@@ -25,13 +26,16 @@
 							})
 					"
 				/>
-				<FormControl
-					class="mt-4"
+				<DateTimeControl
 					v-if="(site.group_public && nextVersion) || benchHasCommonServer"
-					label="Schedule Site Migration"
-					type="datetime-local"
-					:min="new Date().toISOString().slice(0, 16)"
 					v-model="targetDateTime"
+					label="Schedule Time"
+				/>
+				<FormControl
+					v-if="(site.group_public && nextVersion) || benchHasCommonServer"
+					label="Skip failing patches if any"
+					type="checkbox"
+					v-model="skipFailingPatches"
 				/>
 				<p v-if="message" class="text-sm text-gray-700">
 					{{ message }}
@@ -79,15 +83,18 @@
 
 <script>
 import { notify } from '@/utils/toast';
+import DateTimeControl from '../../../src2/components/DateTimeControl.vue';
 
 export default {
 	name: 'SiteVersionUpgradeDialog',
 	props: ['site', 'modelValue'],
 	emits: ['update:modelValue'],
+	components: { DateTimeControl },
 	data() {
 		return {
 			targetDateTime: null,
 			privateReleaseGroup: '',
+			skipFailingPatches: false,
 			benchHasCommonServer: false
 		};
 	},
@@ -147,6 +154,7 @@ export default {
 				params: {
 					name: this.site?.name,
 					destination_group: this.privateReleaseGroup,
+					skip_failing_patches: this.skipFailingPatches,
 					scheduled_datetime: this.datetimeInIST
 				},
 				onSuccess() {
