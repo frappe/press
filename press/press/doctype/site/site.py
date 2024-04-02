@@ -541,20 +541,15 @@ class Site(Document, TagHelpers):
 			)
 		)
 		space_for_download = db_size + public_size + private_size
-		space_for_extracted_file = 8 * db_size  # 8 times db size for extraction; estimated
-		backups_per_day = 24 / (
-			frappe.db.get_single_value("Press Settings", "backup_interval") or 6
-		)
-		onsite_files_backup_size = public_size + private_size
-		return max(
-			space_for_download + space_for_extracted_file,
-			onsite_files_backup_size + backups_per_day * db_size,
-		)  # for daily backups
+		space_for_extracted_files = (
+			8 * db_size + public_size + private_size
+		)  # 8 times db size for extraction; estimated
+		return space_for_download + space_for_extracted_files
 
 	@property
 	def space_required_on_db_server(self):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
-		return 8 * db_size * 2  # double extracted db size for binlog
+		return 8 * db_size * 2  # double extracted size for binlog
 
 	def fetch_free_space(self, server: str):
 		response = prometheus_query(
