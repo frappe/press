@@ -97,6 +97,7 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
+import { routes as oldDashboardRoutes } from '../../src/router';
 import { toast } from 'vue-sonner';
 
 export default {
@@ -124,20 +125,70 @@ export default {
 				'_blank'
 			);
 		},
+		isCommonRoute() {
+			let routes = oldDashboardRoutes.flatMap(route => {
+				let path = [route.path];
+				if (route.children) {
+					let childRoutes = route.children.flatMap(child => {
+						if (child.path.includes('?')) {
+							// for optional routes
+							return [
+								`${route.path}/${child.path.split('/')[0]}`,
+								`${route.path}/${child.path}`
+							];
+						}
+						return `${route.path}/${child.path}`;
+					});
+
+					path.push(...childRoutes);
+				}
+				return path;
+			});
+
+			return routes.some(route => {
+				const routePathSegments = route.split('/');
+				const currentPathSegments = this.$route.path.split('/');
+
+				if (routePathSegments.length !== currentPathSegments.length)
+					return false;
+
+				return routePathSegments.every((segment, index) => {
+					return (
+						segment.startsWith(':') || segment === currentPathSegments[index]
+					);
+				});
+			});
+		},
 		switchToOldDashboard() {
+			let isCommonRoute = this.isCommonRoute();
+
 			toast.promise(
 				this.$team.changeDefaultDashboard.submit(
 					{ new_dashboard: false },
 					{
 						onSuccess() {
-							window.location.href = '/dashboard-old';
+							if (isCommonRoute) {
+								window.location.href = window.location.href.replace(
+									'dashboard',
+									'dashboard-old'
+								);
+							} else {
+								window.location.href = window.location.href
+									.split('/') // remove last segment
+									.slice(0, -1)
+									.join('/')
+									.replace('dashboard', 'dashboard-old');
+							}
 						}
 					}
 				),
 				{
 					loading: 'Switching to old dashboard...',
 					success: () => 'Switching to old dashboard...',
-					error: e => 'Failed to switch to old dashboard'
+					error: e => {
+						console.error(e);
+						return 'Failed to switch to old dashboard';
+					}
 				}
 			);
 		}
