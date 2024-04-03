@@ -126,6 +126,7 @@ export default {
 			);
 		},
 		isCommonRoute() {
+			// TODO: remove once old dashboard is scrapped
 			let routes = oldDashboardRoutes.flatMap(route => {
 				let path = [route.path];
 				if (route.children) {
