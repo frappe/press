@@ -21,7 +21,7 @@ const colors = {
 };
 
 export default {
-	name: 'AlertAddPaymentMode',
+	name: 'AlertBanner',
 	props: {
 		title: String,
 		type: {
