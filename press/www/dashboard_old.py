@@ -6,7 +6,7 @@
 
 from .dashboard import _get_context
 
-base_template_path = "templates/www/dashboard-beta.html"
+base_template_path = "templates/www/dashboard-old.html"
 no_cache = 1
 
 

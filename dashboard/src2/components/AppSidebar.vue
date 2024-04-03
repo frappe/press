@@ -130,7 +130,7 @@ export default {
 					{ new_dashboard: false },
 					{
 						onSuccess() {
-							window.location.href = '/dashboard';
+							window.location.href = '/dashboard-old';
 						}
 					}
 				),

@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard-beta/'),
+	history: createWebHistory('/dashboard/'),
 	routes: [
 		{
 			path: '/',

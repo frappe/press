@@ -27,7 +27,7 @@ export default {
 	computed: {
 		referralLink() {
 			if (this.$account.team.referrer_id) {
-				return `${location.origin}/dashboard/signup?referrer=${this.$account.team.referrer_id}`;
+				return `${location.origin}/dashboard-old/signup?referrer=${this.$account.team.referrer_id}`;
 			}
 			return '';
 		},

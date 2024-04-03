@@ -42,5 +42,5 @@ function add_manage_subscription_link() {
 
 function get_subscription_url() {
 	let sitename = frappe.boot.sitename;
-	return `https://frappecloud.com/dashboard-beta/sites/${sitename}`;
+	return `https://frappecloud.com/dashboard/sites/${sitename}`;
 }

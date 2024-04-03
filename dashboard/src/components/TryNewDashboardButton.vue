@@ -74,7 +74,7 @@ export default {
 							return this.$resources.changeDefaultDashboard.submit(null, {
 								onSuccess() {
 									this.showNewDashboardDialog = false;
-									window.location.href = '/dashboard-beta';
+									window.location.href = '/dashboard';
 								}
 							});
 						}

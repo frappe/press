@@ -228,9 +228,9 @@ export default {
 						},
 						{
 							onSuccess: res => {
-								let loginRoute = `/dashboard-beta${res.dashboard_route || '/'}`;
+								let loginRoute = `/dashboard${res.dashboard_route || '/'}`;
 								if (this.$route.query.product) {
-									loginRoute = `/dashboard-beta/app-trial/${this.$route.query.product}`;
+									loginRoute = `/dashboard/app-trial/${this.$route.query.product}`;
 								}
 								window.location.href = loginRoute;
 							}

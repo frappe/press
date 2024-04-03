@@ -40,7 +40,7 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
-				dashboard_beta: path.resolve(__dirname, 'dashboard-beta.html')
+				dashboard_beta: path.resolve(__dirname, 'dashboard.html')
 			}
 		}
 	},
