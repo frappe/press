@@ -104,6 +104,7 @@ def filter_by_category(category):
 			marketplace.status = "Published"
 		AND
 			category.category = %s
+		ORDER BY marketplace.frappe_approved DESC
 	""",
 		category,
 		as_dict=True,

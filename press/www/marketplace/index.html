@@ -123,7 +123,6 @@
 			if (!category) {
 				if ($(this).val() === "") {
 					toggleShowResults('hide')
-					$('#no-results-message').hide()
 				}
 			}
 		});
@@ -190,7 +189,7 @@
 	function search(loadMore=false) {
 		disableButtons(true)
 		const query = document.getElementById('search-input').value
-		let offset = document.getElementById('result-apps').childElementCount
+		let offset = loadMore ? document.getElementById('result-apps').childElementCount : 0
 
 		if (offset == 0) {
 			toggleLoadingIndicator('show')
@@ -267,6 +266,8 @@
 		} else {
 			$('#all-apps-list').show()
 			$('#search-results').hide()
+			$('#result-apps').empty()
+			$('#no-results-message').hide()
 		}
 	}
 </script>
