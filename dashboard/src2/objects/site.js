@@ -1398,7 +1398,7 @@ export default {
 	routes: [
 		{
 			name: 'Site Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{

@@ -1077,12 +1077,12 @@ export default {
 	routes: [
 		{
 			name: 'Bench Deploy',
-			path: 'deploy/:id',
+			path: 'deploys/:id',
 			component: () => import('../pages/BenchDeploy.vue')
 		},
 		{
 			name: 'Bench Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		}
 	]
