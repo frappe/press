@@ -13,7 +13,7 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import List, Optional, Tuple, Literal
+from typing import Any, List, Literal, Optional, Tuple
 
 import docker
 import frappe
@@ -38,7 +38,6 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
-from typing import Any
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.agent_job.agent_job import AgentJob
@@ -123,7 +122,7 @@ class DeployCandidate(Document):
 	@staticmethod
 	def get_list_query(query):
 		results = query.run(as_dict=True)
-		names = [r.name for r in results]
+		names = [r.name for r in results if r.status and r.status != "Success"]
 		notifications = frappe.get_all(
 			"Press Notification",
 			fields=["name", "document_name"],
