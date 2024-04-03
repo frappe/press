@@ -49,7 +49,7 @@ class SSHCertificateAuthority(Document):
 				shlex.split(command), cwd=directory, env=environment, stderr=subprocess.STDOUT
 			).decode()
 		except subprocess.CalledProcessError as e:
-			log_error(f"Command failed with error: {e} {e.output.decode()}", doc=self)
+			log_error("Command failed", output={e.output.decode()}, doc=self)
 			raise
 
 	def generate_key_pair(self):
