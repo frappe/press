@@ -54,7 +54,10 @@ export default {
 				fields: ['name', 'status'],
 				orderBy: 'creation desc',
 				pageLength: 99999,
-				auto: true
+				auto: true,
+				onSuccess() {
+					this.$resources.sites.fetch();
+				}
 			};
 		},
 		sites() {
@@ -79,7 +82,8 @@ export default {
 				pageLength: 50,
 				transform(data) {
 					return this.groupSitesByBench(data);
-				}
+				},
+				auto: false
 			};
 		}
 	},
@@ -95,12 +99,11 @@ export default {
 							<div class="text-base font-medium leading-6 text-gray-900">
 								{group.group}
 							</div>
-							<Badge class="ml-4" label={group.status} />
+							{group.status != 'Active' ? (
+								<Badge class="ml-4" label={group.status} />
+							) : null}
 							{group.has_app_patch_applied && (
-								<Tooltip
-									text="Apps in this deploy have been patched"
-									placement="top"
-								>
+								<Tooltip text="Apps in this deploy have been patched">
 									<div class="ml-2 rounded bg-gray-100 p-1 text-gray-700">
 										<IconHash />
 									</div>

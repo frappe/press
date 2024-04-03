@@ -124,7 +124,7 @@ class SSHCertificate(Document):
 				shlex.split(command), stderr=subprocess.STDOUT
 			).decode()
 		except subprocess.CalledProcessError as e:
-			log_error(f"Command failed with error: {e} {e.output.decode()}", doc=self)
+			log_error("Command failed", output={e.output.decode()}, doc=self)
 			raise
 
 	def extract_certificate_details(self):
