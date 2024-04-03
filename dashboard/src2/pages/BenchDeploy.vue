@@ -155,6 +155,10 @@ export default {
 			for (let step of deploy.build_steps) {
 				if (step.status === 'Running') {
 					step.isOpen = true;
+				} else {
+					step.isOpen = this.$resources.deploy?.doc?.build_steps?.find(
+						s => s.name === step.name
+					)?.isOpen;
 				}
 				step.title = `${step.stage} - ${step.step}`;
 				step.output =
