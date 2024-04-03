@@ -533,7 +533,7 @@ class Site(Document, TagHelpers):
 	@property
 	def space_required_on_app_server(self):
 		db_size, public_size, private_size = (
-			frappe.get_doc("Remote File", file_name).size
+			frappe.get_doc("Remote File", file_name).size if file_name else 0
 			for file_name in (
 				self.remote_database_file,
 				self.remote_public_file,
