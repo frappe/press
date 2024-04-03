@@ -10,7 +10,7 @@ def get_context(context):
 
 	featured = frappe.get_all(
 		"Featured App",
-		filters={"parent": "Marketplace Settings"},
+		filters={"parent": "Marketplace Settings", "parentfield": "featured_apps"},
 		pluck="app",
 		order_by="idx",
 	)
