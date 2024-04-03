@@ -52,7 +52,7 @@ class PartnerApprovalRequest(Document):
 
 			customer_team = frappe.get_doc("Team", self.requested_by)
 			customer_team.partner_email = partner.partner_email
-			customer_team.partnership_date = frappe.utils.now()
+			customer_team.partnership_date = frappe.utils.getdate()
 			team_members = [d.user for d in customer_team.team_members]
 			if partner.user not in team_members:
 				customer_team.append("team_members", {"user": partner.user})
