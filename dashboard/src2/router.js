@@ -227,6 +227,18 @@ router.beforeEach(async (to, from, next) => {
 		if (goingToLoginPage) {
 			next({ name: defaultRoute });
 		} else {
+			let routeMap = {
+				'settings/partner': 'partner',
+				'marketplace/apps': 'apps'
+			};
+			let pathToBeReplaced = Object.keys(routeMap).find(route =>
+				to.fullPath.includes(route)
+			);
+
+			if (pathToBeReplaced && to.name === '404') {
+				next(to.fullPath.replace(pathToBeReplaced, routeMap[pathToBeReplaced]));
+			}
+
 			next();
 		}
 	} else {
