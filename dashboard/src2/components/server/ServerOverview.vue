@@ -14,11 +14,11 @@
 						:class="{ 'border-r': i + 1 != currentUsage(server).length }"
 					>
 						<div
-							v-if="d.type === 'info'"
+							v-if="d.type === 'header'"
 							class="flex items-center justify-between"
 						>
 							<div
-								v-if="d.type === 'info'"
+								v-if="d.type === 'header'"
 								class="mt-2 flex flex-col space-y-2"
 							>
 								<div class="text-base text-gray-700">{{ d.label }}</div>
@@ -29,7 +29,7 @@
 								</div>
 							</div>
 							<Button
-								v-if="d.type === 'info'"
+								v-if="d.type === 'header' && !$appServer.doc.is_self_hosted"
 								@click="showPlanChangeDialog(server)"
 								label="Change"
 							/>
@@ -141,7 +141,7 @@ export default {
 							? 'Application Server Plan'
 							: 'Database Server Plan',
 					value: planDescription,
-					type: 'info'
+					type: 'header'
 				},
 				{
 					label: 'CPU',

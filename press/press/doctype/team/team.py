@@ -111,6 +111,7 @@ class Team(Document):
 	dashboard_actions = [
 		"get_team_members",
 		"remove_team_member",
+		"invite_team_member",
 	]
 
 	def get_doc(self, doc):
