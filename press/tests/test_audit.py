@@ -1,8 +1,8 @@
-import unittest
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.audit import BackupRecordCheck, OffsiteBackupCheck
 from press.press.doctype.agent_job.agent_job import AgentJob
@@ -14,14 +14,12 @@ from press.press.doctype.site_backup.test_site_backup import create_test_site_ba
 from press.telegram_utils import Telegram
 
 
-class TestAudit(unittest.TestCase):
+@patch.object(Telegram, "send", new=Mock())
+@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+class TestBackupRecordCheck(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-
-@patch.object(Telegram, "send", new=Mock())
-@patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestBackupRecordCheck(TestAudit):
 	older_than_interval = datetime.now() - timedelta(
 		hours=(BackupRecordCheck.interval + 2)
 	)
@@ -43,7 +41,9 @@ class TestBackupRecordCheck(TestAudit):
 		site = create_test_site(creation=self.older_than_interval)
 
 		create_test_site_backup(
-			site.name, creation=datetime.now() - timedelta(hours=BackupRecordCheck.interval - 1)
+			site.name,
+			creation=frappe.utils.now_datetime()
+			- timedelta(hours=BackupRecordCheck.interval - 1),
 		)
 		BackupRecordCheck()
 		audit_log = frappe.get_last_doc(
@@ -80,7 +80,10 @@ class TestBackupRecordCheck(TestAudit):
 
 @patch.object(Telegram, "send", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
-class TestOffsiteBackupCheck(TestAudit):
+class TestOffsiteBackupCheck(FrappeTestCase):
+	def tearDown(self):
+		frappe.db.rollback()
+
 	def test_audit_succeeds_when_all_remote_files_are_in_remote(self):
 		create_test_press_settings()
 		site = create_test_site()
