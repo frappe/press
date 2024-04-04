@@ -78,7 +78,7 @@ class SiteMigration(Document):
 	def check_enough_space_on_destination_server(self):
 		site: "Site" = frappe.get_doc("Site", self.site)
 		site.server = self.destination_server
-		site.check_enough_space_on_server(self.destination_server)
+		site.check_enough_space_on_server()
 
 	def after_insert(self):
 		self.set_migration_type()
