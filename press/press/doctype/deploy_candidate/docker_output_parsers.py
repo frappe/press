@@ -13,7 +13,7 @@ ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 if typing.TYPE_CHECKING:
 	from re import Match
-	from typing import Any, Generator, TypedDict
+	from typing import Any, Generator, Optional, TypedDict
 
 	from frappe.types import DF
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -44,6 +44,8 @@ class DockerBuildOutputParser:
 	lines are updated when agent is polled, and so output is looped N! times.
 	"""
 
+	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"
+
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
 		self.is_remote = dc.is_docker_remote_builder_used
@@ -52,9 +54,16 @@ class DockerBuildOutputParser:
 		# Used to generate output and track parser state
 		self.lines: list[str] = []
 		self.steps: dict[int, "DeployCandidateBuildStep"] = frappe._dict()
+		self._steps_by_step_slug = None
 
-		# Convenience map used to update build steps
-		self.steps_by_step_slug = {bs.step_slug: bs for bs in dc.build_steps}
+	# Convenience map used to update build steps
+	@property
+	def steps_by_step_slug(self):
+		if not self._steps_by_step_slug:
+			self._steps_by_step_slug = {
+				(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps
+			}
+		return self._steps_by_step_slug
 
 	# `output` can be from local or remote build
 	def parse_and_update(self, output: "BuildOutput"):
@@ -67,6 +76,7 @@ class DockerBuildOutputParser:
 			self._parse_line(raw_line)
 			self._update_dc_build_output()
 		except Exception:
+			self.flush_output()
 			self._log_error(raw_line)
 
 	def _log_error(self, raw_line: str):
@@ -89,7 +99,7 @@ class DockerBuildOutputParser:
 		self.last_update = now_datetime()
 
 	def flush_output(self, commit: bool = True):
-		self.build_output = "".join(self.lines)
+		self.dc.build_output = "".join(self.lines)
 		self.dc.save(ignore_version=True)
 		if commit:
 			frappe.db.commit()
@@ -105,7 +115,9 @@ class DockerBuildOutputParser:
 			return
 
 		# Separate step index from line
-		split = self._get_step_index_split(stripped_line)
+		if not (split := self._get_step_index_split(stripped_line)):
+			return
+
 		line = split["line"]
 
 		# Final stage of the build
@@ -166,8 +178,8 @@ class DockerBuildOutputParser:
 		if not (match := re.search("`#stage-(.*)`", name)):
 			return
 
-		name, _, step_slug = get_name_and_slugs(name, match)
-		step = self.steps_by_step_slug.get(step_slug)
+		name, stage_slug, step_slug = get_name_and_slugs(name, match)
+		step = self.steps_by_step_slug.get((stage_slug, step_slug))
 		if not step:
 			return
 
@@ -179,19 +191,18 @@ class DockerBuildOutputParser:
 
 		self.steps[index] = step
 
-	def _get_step_index_split(self, line: str) -> "IndexSplit":
+	def _get_step_index_split(self, line: str) -> "Optional[IndexSplit]":
 		splits = line.split(maxsplit=1)
-		if len(splits) != 2:
-			index = sorted(self.steps)[-1]
-			return dict(index=index, line=line, is_unusual=True)
+		keys = sorted(self.steps)
+		if len(splits) != 2 and len(keys) == 0:
+			return None
 
-		index_str, line = splits
 		try:
+			index_str, line = splits
 			index = int(index_str[1:])
 			return dict(index=index, line=line, is_unusual=False)
 		except ValueError:
-			index = sorted(self.steps)[-1]
-			return dict(index=index, line=line, is_unusual=True)
+			return dict(index=keys[-1], line=line, is_unusual=True)
 
 
 def ansi_escape(text: str) -> str:
@@ -301,6 +312,9 @@ class UploadStepUpdater:
 			self.output.append({"id": line_id, "output": line_str})
 
 	def flush_output(self, commit: bool = True):
+		if not self.upload_step:
+			return
+
 		output_lines = [line["output"] for line in self.output]
 		self.upload_step.output = "\n".join(output_lines)
 		self.dc.save(ignore_version=True)
