@@ -113,6 +113,7 @@ class Team(Document):
 		"get_team_members",
 		"remove_team_member",
 		"change_default_dashboard",
+		"invite_team_member",
 	]
 
 	def get_doc(self, doc):

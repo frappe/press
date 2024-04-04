@@ -316,7 +316,7 @@ def analytics(name, query, timezone, duration):
 def prometheus_query(query, function, timezone, timespan, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
-		return []
+		return {"datasets": [], "labels": []}
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")

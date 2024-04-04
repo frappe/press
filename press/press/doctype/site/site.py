@@ -228,7 +228,7 @@ class Site(Document, TagHelpers):
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
-		doc.inbound_ip = frappe.get_value("Proxy Server", server.proxy_server, "ip")
+		doc.inbound_ip = self.inbound_ip
 		doc.is_dedicated_server = is_dedicated_server(self.server)
 		return doc
 
@@ -533,7 +533,7 @@ class Site(Document, TagHelpers):
 	@property
 	def space_required_on_app_server(self):
 		db_size, public_size, private_size = (
-			frappe.get_doc("Remote File", file_name).size
+			frappe.get_doc("Remote File", file_name).size if file_name else 0
 			for file_name in (
 				self.remote_database_file,
 				self.remote_public_file,
@@ -1867,7 +1867,7 @@ class Site(Document, TagHelpers):
 		)
 
 	@property
-	def ip(self):
+	def inbound_ip(self):
 		server = frappe.db.get_value(
 			"Server", self.server, ["ip", "is_standalone", "proxy_server", "team"], as_dict=True
 		)

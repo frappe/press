@@ -38,7 +38,7 @@ const showDialog = ref(true);
 const memberEmail = ref('');
 
 const addMember = createResource({
-	url: 'run_doc_method',
+	url: 'press.api.client.run_doc_method',
 	makeParams() {
 		return {
 			dt: 'Team',

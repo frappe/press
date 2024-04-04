@@ -33,6 +33,7 @@ class BaseServer(Document, TagHelpers):
 		"status",
 		"team",
 		"database_server",
+		"is_self_hosted",
 	]
 	dashboard_actions = ["change_plan", "reboot", "rename", "drop_server"]
 

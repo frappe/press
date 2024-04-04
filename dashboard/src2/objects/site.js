@@ -203,7 +203,10 @@ export default {
 			let breadcrumbs = [];
 			let $team = getTeam();
 
-			if (site.doc.server_team == $team.doc.name) {
+			if (
+				site.doc.server_team == $team.doc.name &&
+				site.doc.group_team == $team.doc.name
+			) {
 				breadcrumbs.push({
 					label: site.doc?.server_title || site.doc?.server,
 					route: `/servers/${site.doc?.server}`
@@ -1395,7 +1398,7 @@ export default {
 	routes: [
 		{
 			name: 'Site Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{
