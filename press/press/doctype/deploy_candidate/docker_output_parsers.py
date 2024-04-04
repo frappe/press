@@ -70,16 +70,14 @@ class DockerBuildOutputParser:
 			self._log_error(raw_line)
 
 	def _log_error(self, raw_line: str):
-		try:
-			log_error(
-				title="Build Output Parse Error",
-				message=f"Error when parsing line: `{raw_line}`",
-				doc=self.dc,
-			)
-		except Exception:
-			pass
+		log_error(
+			title="Build Output Parse Error",
+			message=f"Error when parsing line: `{raw_line}`",
+			doc=self.dc,
+		)
 
 	def _update_dc_build_output(self):
+		# Output saved at the end of parsing all lines
 		if self.is_remote:
 			return
 
@@ -87,11 +85,14 @@ class DockerBuildOutputParser:
 		if sec_since_last_update <= 1:
 			return
 
+		self.flush_output()
+		self.last_update = now_datetime()
+
+	def flush_output(self, commit: bool = True):
 		self.build_output = "".join(self.lines)
 		self.dc.save(ignore_version=True)
-		frappe.db.commit()
-
-		self.last_update = now_datetime()
+		if commit:
+			frappe.db.commit()
 
 	def _parse_line(self, raw_line: str):
 		escaped_line = ansi_escape(raw_line)
@@ -244,7 +245,7 @@ class UploadStepUpdater:
 			pass
 
 		self.upload_step.status = "Running"
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def process(self, output: "PushOutput"):
 		for line in output:
@@ -262,12 +263,12 @@ class UploadStepUpdater:
 
 			# If remote, this has to be set on Agent Job success
 			self.upload_step.status = "Success"
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def end(self, status: 'DF.Literal["Success", "Failure"]'):
 		# Used only if the build is running locally
 		self.upload_step.status = status
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def _process_single_line(self, line: dict):
 		self._update_output(line)
@@ -279,7 +280,7 @@ class UploadStepUpdater:
 		if (now - self.last_updated).total_seconds() <= 1:
 			return
 
-		self._update_upload_step_output()
+		self.flush_output()
 		self.last_updated = now
 
 	def _update_output(self, line: dict):
@@ -299,8 +300,9 @@ class UploadStepUpdater:
 		else:
 			self.output.append({"id": line_id, "output": line_str})
 
-	def _update_upload_step_output(self):
+	def flush_output(self, commit: bool = True):
 		output_lines = [line["output"] for line in self.output]
 		self.upload_step.output = "\n".join(output_lines)
 		self.dc.save(ignore_version=True)
-		frappe.db.commit()
+		if commit:
+			frappe.db.commit()
