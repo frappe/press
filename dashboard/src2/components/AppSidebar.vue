@@ -21,7 +21,7 @@
 						onClick: feedback
 					},
 					{
-						label: 'Switch to old dashboard',
+						label: 'Switch to Old Dashboard',
 						icon: 'repeat',
 						onClick: switchToOldDashboard
 					},
