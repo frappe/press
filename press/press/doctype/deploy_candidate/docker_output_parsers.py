@@ -12,8 +12,7 @@ from press.utils import log_error
 ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 if typing.TYPE_CHECKING:
-	from re import Match
-	from typing import Any, Generator, TypedDict
+	from typing import Any, Generator, Optional, TypedDict
 
 	from frappe.types import DF
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -44,6 +43,8 @@ class DockerBuildOutputParser:
 	lines are updated when agent is polled, and so output is looped N! times.
 	"""
 
+	_steps_by_step_slug: "Optional[dict[tuple[str, str], DeployCandidateBuildStep]]"
+
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
 		self.is_remote = dc.is_docker_remote_builder_used
@@ -52,9 +53,16 @@ class DockerBuildOutputParser:
 		# Used to generate output and track parser state
 		self.lines: list[str] = []
 		self.steps: dict[int, "DeployCandidateBuildStep"] = frappe._dict()
+		self._steps_by_step_slug = None
 
-		# Convenience map used to update build steps
-		self.steps_by_step_slug = {bs.step_slug: bs for bs in dc.build_steps}
+	# Convenience map used to update build steps
+	@property
+	def steps_by_step_slug(self):
+		if not self._steps_by_step_slug:
+			self._steps_by_step_slug = {
+				(bs.stage_slug, bs.step_slug): bs for bs in self.dc.build_steps
+			}
+		return self._steps_by_step_slug
 
 	# `output` can be from local or remote build
 	def parse_and_update(self, output: "BuildOutput"):
@@ -67,19 +75,18 @@ class DockerBuildOutputParser:
 			self._parse_line(raw_line)
 			self._update_dc_build_output()
 		except Exception:
+			self.flush_output()
 			self._log_error(raw_line)
 
 	def _log_error(self, raw_line: str):
-		try:
-			log_error(
-				title="Build Output Parse Error",
-				message=f"Error when parsing line: `{raw_line}`",
-				doc=self.dc,
-			)
-		except Exception:
-			pass
+		log_error(
+			title="Build Output Parse Error",
+			message=f"Error when parsing line: `{raw_line}`",
+			doc=self.dc,
+		)
 
 	def _update_dc_build_output(self):
+		# Output saved at the end of parsing all lines
 		if self.is_remote:
 			return
 
@@ -87,11 +94,14 @@ class DockerBuildOutputParser:
 		if sec_since_last_update <= 1:
 			return
 
-		self.build_output = "".join(self.lines)
-		self.dc.save(ignore_version=True)
-		frappe.db.commit()
-
+		self.flush_output()
 		self.last_update = now_datetime()
+
+	def flush_output(self, commit: bool = True):
+		self.dc.build_output = "".join(self.lines)
+		self.dc.save(ignore_version=True)
+		if commit:
+			frappe.db.commit()
 
 	def _parse_line(self, raw_line: str):
 		escaped_line = ansi_escape(raw_line)
@@ -104,7 +114,9 @@ class DockerBuildOutputParser:
 			return
 
 		# Separate step index from line
-		split = self._get_step_index_split(stripped_line)
+		if not (split := self._get_step_index_split(stripped_line)):
+			return
+
 		line = split["line"]
 
 		# Final stage of the build
@@ -165,50 +177,44 @@ class DockerBuildOutputParser:
 		if not (match := re.search("`#stage-(.*)`", name)):
 			return
 
-		name, _, step_slug = get_name_and_slugs(name, match)
-		step = self.steps_by_step_slug.get(step_slug)
+		stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
+		step = self.steps_by_step_slug.get((stage_slug, step_slug))
 		if not step:
 			return
 
 		index = split["index"]
 		step.step_index = index
-		step.command = name
+		step.command = get_command(name)
 		step.status = "Running"
 		step.output = ""
 
 		self.steps[index] = step
 
-	def _get_step_index_split(self, line: str) -> "IndexSplit":
+	def _get_step_index_split(self, line: str) -> "Optional[IndexSplit]":
 		splits = line.split(maxsplit=1)
-		if len(splits) != 2:
-			index = sorted(self.steps)[-1]
-			return dict(index=index, line=line, is_unusual=True)
+		keys = sorted(self.steps)
+		if len(splits) != 2 and len(keys) == 0:
+			return None
 
-		index_str, line = splits
 		try:
+			index_str, line = splits
 			index = int(index_str[1:])
 			return dict(index=index, line=line, is_unusual=False)
 		except ValueError:
-			index = sorted(self.steps)[-1]
-			return dict(index=index, line=line, is_unusual=True)
+			return dict(index=keys[-1], line=line, is_unusual=True)
 
 
 def ansi_escape(text: str) -> str:
 	return ansi_escape_rx.sub("", text)
 
 
-def get_name_and_slugs(name: str, match: "Match[str]") -> tuple[str, str, str]:
-	# Returns: name, stage_slug, step_slug
-	if flags := dockerfile.parse_string(name)[0].flags:
-		name = name.replace(flags[0], "")
-
-	old = match.group(0)
-	name = name.replace(old, "")
-	name = name.strip()
-	name = name.replace("   ", " \\\n  ")[4:]
-
-	stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
-	return name, stage_slug, step_slug
+def get_command(name: str) -> str:
+	# Strip docker flags and commands from the line
+	line = dockerfile.parse_string(name)[0]
+	name = " ".join(line.value).strip()
+	if not name:
+		name = line.original.split(maxsplit=1)[1]
+	return name.split("`#stage-", maxsplit=1)[0]
 
 
 class UploadStepUpdater:
@@ -244,7 +250,7 @@ class UploadStepUpdater:
 			pass
 
 		self.upload_step.status = "Running"
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def process(self, output: "PushOutput"):
 		for line in output:
@@ -262,12 +268,12 @@ class UploadStepUpdater:
 
 			# If remote, this has to be set on Agent Job success
 			self.upload_step.status = "Success"
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def end(self, status: 'DF.Literal["Success", "Failure"]'):
 		# Used only if the build is running locally
 		self.upload_step.status = status
-		self._update_upload_step_output()
+		self.flush_output()
 
 	def _process_single_line(self, line: dict):
 		self._update_output(line)
@@ -279,7 +285,7 @@ class UploadStepUpdater:
 		if (now - self.last_updated).total_seconds() <= 1:
 			return
 
-		self._update_upload_step_output()
+		self.flush_output()
 		self.last_updated = now
 
 	def _update_output(self, line: dict):
@@ -299,8 +305,12 @@ class UploadStepUpdater:
 		else:
 			self.output.append({"id": line_id, "output": line_str})
 
-	def _update_upload_step_output(self):
+	def flush_output(self, commit: bool = True):
+		if not self.upload_step:
+			return
+
 		output_lines = [line["output"] for line in self.output]
 		self.upload_step.output = "\n".join(output_lines)
 		self.dc.save(ignore_version=True)
-		frappe.db.commit()
+		if commit:
+			frappe.db.commit()
