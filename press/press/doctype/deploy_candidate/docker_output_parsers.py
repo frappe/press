@@ -12,7 +12,6 @@ from press.utils import log_error
 ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 if typing.TYPE_CHECKING:
-	from re import Match
 	from typing import Any, Generator, Optional, TypedDict
 
 	from frappe.types import DF
@@ -178,14 +177,14 @@ class DockerBuildOutputParser:
 		if not (match := re.search("`#stage-(.*)`", name)):
 			return
 
-		name, stage_slug, step_slug = get_name_and_slugs(name, match)
+		stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
 		step = self.steps_by_step_slug.get((stage_slug, step_slug))
 		if not step:
 			return
 
 		index = split["index"]
 		step.step_index = index
-		step.command = name
+		step.command = get_command(name)
 		step.status = "Running"
 		step.output = ""
 
@@ -209,18 +208,13 @@ def ansi_escape(text: str) -> str:
 	return ansi_escape_rx.sub("", text)
 
 
-def get_name_and_slugs(name: str, match: "Match[str]") -> tuple[str, str, str]:
-	# Returns: name, stage_slug, step_slug
-	if flags := dockerfile.parse_string(name)[0].flags:
-		name = name.replace(flags[0], "")
-
-	old = match.group(0)
-	name = name.replace(old, "")
-	name = name.strip()
-	name = name.replace("   ", " \\\n  ")[4:]
-
-	stage_slug, step_slug = match.group(1).split("-", maxsplit=1)
-	return name, stage_slug, step_slug
+def get_command(name: str) -> str:
+	# Strip docker flags and commands from the line
+	line = dockerfile.parse_string(name)[0]
+	name = " ".join(line.value).strip()
+	if not name:
+		name = line.original.split(maxsplit=1)[1]
+	return name.split("`#stage-", maxsplit=1)[0]
 
 
 class UploadStepUpdater:
