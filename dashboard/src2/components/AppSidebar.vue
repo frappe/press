@@ -21,6 +21,11 @@
 						onClick: feedback
 					},
 					{
+						label: 'Switch to old dashboard',
+						icon: 'repeat',
+						onClick: switchToOldDashboard
+					},
+					{
 						label: 'Logout',
 						icon: 'log-out',
 						onClick: $session.logout.submit
@@ -82,11 +87,6 @@
 				</template>
 			</NavigationItems>
 		</nav>
-		<div class="mt-auto p-2">
-			<Button variant="ghost" @click="switchToOldDashboard">
-				Switch to old dashboard
-			</Button>
-		</div>
 		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
@@ -98,7 +98,6 @@ import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
 import { routes as oldDashboardRoutes } from '../../src/router';
-import { toast } from 'vue-sonner';
 
 export default {
 	name: 'AppSidebar',
@@ -161,37 +160,18 @@ export default {
 			});
 		},
 		switchToOldDashboard() {
-			let isCommonRoute = this.isCommonRoute();
-
-			toast.promise(
-				this.$team.changeDefaultDashboard.submit(
-					{ new_dashboard: false },
-					{
-						onSuccess() {
-							if (isCommonRoute) {
-								window.location.href = window.location.href.replace(
-									'dashboard',
-									'dashboard-old'
-								);
-							} else {
-								window.location.href = window.location.href
-									.split('/') // remove last segment
-									.slice(0, -1)
-									.join('/')
-									.replace('dashboard', 'dashboard-old');
-							}
-						}
-					}
-				),
-				{
-					loading: 'Switching to old dashboard...',
-					success: () => 'Switching to old dashboard...',
-					error: e => {
-						console.error(e);
-						return 'Failed to switch to old dashboard';
-					}
-				}
-			);
+			if (this.isCommonRoute()) {
+				window.location.href = window.location.href.replace(
+					'dashboard',
+					'dashboard-old'
+				);
+			} else {
+				window.location.href = window.location.href
+					.split('/') // remove last path segment
+					.slice(0, -1)
+					.join('/')
+					.replace('dashboard', 'dashboard-old');
+			}
 		}
 	}
 };

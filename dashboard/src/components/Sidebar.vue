@@ -102,7 +102,6 @@
 				</router-link>
 			</div>
 		</div>
-		<TryNewDashboardButton />
 
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
@@ -114,15 +113,14 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
-import TryNewDashboardButton from './TryNewDashboardButton.vue';
+import { routes as newDashboardRoutes } from '../../src2/router';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
 		SwitchTeamDialog,
-		CommandPalette,
-		TryNewDashboardButton
+		CommandPalette
 	},
 	data() {
 		return {
@@ -138,6 +136,11 @@ export default {
 					label: 'Support & Docs',
 					icon: 'help-circle',
 					onClick: () => (window.location.href = '/support')
+				},
+				{
+					label: 'Switch to New Dashboard',
+					icon: 'repeat',
+					onClick: this.switchToNewDashboard
 				},
 				{
 					label: 'Logout',
@@ -250,6 +253,57 @@ export default {
 					icon: FCIcons.SettingsIcon
 				}
 			].filter(d => (d.condition ? d.condition() : true));
+		}
+	},
+	methods: {
+		switchToNewDashboard() {
+			if (this.isCommonRoute()) {
+				window.location.href = window.location.href.replace(
+					'dashboard-old',
+					'dashboard'
+				);
+			} else {
+				window.location.href = window.location.href
+					.split('/') // remove last path segment
+					.slice(0, -1)
+					.join('/')
+					.replace('dashboard-old', 'dashboard');
+			}
+		},
+		isCommonRoute() {
+			// TODO: remove once old dashboard is scrapped
+			let routes = newDashboardRoutes.flatMap(route => {
+				let path = [route.path];
+				if (route.children) {
+					let childRoutes = route.children.flatMap(child => {
+						if (child.path.includes('?')) {
+							// for optional routes
+							return [
+								`${route.path}/${child.path.split('/')[0]}`,
+								`${route.path}/${child.path}`
+							];
+						}
+						return `${route.path}/${child.path}`;
+					});
+
+					path.push(...childRoutes);
+				}
+				return path;
+			});
+
+			return routes.some(route => {
+				const routePathSegments = route.split('/');
+				const currentPathSegments = this.$route.path.split('/');
+
+				if (routePathSegments.length !== currentPathSegments.length)
+					return false;
+
+				return routePathSegments.every((segment, index) => {
+					return (
+						segment.startsWith(':') || segment === currentPathSegments[index]
+					);
+				});
+			});
 		}
 	}
 };
