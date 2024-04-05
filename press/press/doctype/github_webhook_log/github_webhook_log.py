@@ -95,10 +95,9 @@ class GitHubWebhookLog(Document):
 			self.handle_installation_deletion(payload)
 
 	def handle_repository_installation_event(self):
+		payload = self.get_parsed_payload()
 		if payload["action"] not in ["added", "removed"]:
 			return
-
-		payload = self.get_parsed_payload()
 		owner = payload["installation"]["account"]["login"]
 
 		for repo in payload.get("repositories_added", []):
