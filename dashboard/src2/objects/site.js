@@ -72,7 +72,7 @@ export default {
 			'trial_end_date'
 		],
 		orderBy: 'creation desc',
-		searchField: 'name',
+		searchField: 'host_name',
 		filterControls() {
 			return [
 				{
@@ -129,7 +129,12 @@ export default {
 			];
 		},
 		columns: [
-			{ label: 'Site', fieldname: 'name', width: 1.5, class: 'font-medium' },
+			{
+				label: 'Site',
+				fieldname: 'host_name',
+				width: 1.5,
+				class: 'font-medium'
+			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
 				label: 'Plan',
@@ -202,6 +207,10 @@ export default {
 		breadcrumbs({ items, documentResource: site }) {
 			let breadcrumbs = [];
 			let $team = getTeam();
+			let siteCrumb = {
+				label: site.doc.host_name || site.doc.name,
+				route: `/sites/${site.doc.name}`
+			};
 
 			if (
 				site.doc.server_team == $team.doc.name &&
@@ -218,10 +227,10 @@ export default {
 						label: site.doc?.group_title,
 						route: `/benches/${site.doc?.group}`
 					},
-					items[1]
+					siteCrumb
 				);
 			} else {
-				breadcrumbs.push(...items);
+				breadcrumbs.push(...items.slice(0, -1), siteCrumb);
 			}
 			return breadcrumbs;
 		},
