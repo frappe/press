@@ -67,15 +67,32 @@ class GitHubWebhookLog(Document):
 		self.payload = json.dumps(payload, indent=4, sort_keys=True)
 
 	def after_insert(self):
-		payload = self.parsed_payload
-		if self.event == "push":
-			if self.git_reference_type == "branch":
-				self.create_app_release(payload)
-			elif self.git_reference_type == "tag":
-				self.create_app_tag(payload)
+		match self.event:
+			case "push":
+				self.handle_push_event()
+			case "installation":
+				self.handle_installation_event()
+			case _:
+				return
 
-	@property
-	def parsed_payload(self):
+	def handle_push_event(self):
+		payload = self.get_parsed_payload()
+		if self.git_reference_type == "branch":
+			self.create_app_release(payload)
+		elif self.git_reference_type == "tag":
+			self.create_app_tag(payload)
+
+	def handle_installation_event(self):
+		payload = self.get_parsed_payload()
+		if payload.get("action") == "deleted":
+			self.handle_installation_deletion(payload)
+
+	def handle_installation_deletion(self, payload):
+		owner = payload["installation"]["account"]["login"]
+		for repo in payload.get("repositories", []):
+			set_uninstalled(owner, repo["name"])
+
+	def get_parsed_payload(self):
 		return frappe.parse_json(self.payload)
 
 	def create_app_release(self, payload):
@@ -132,3 +149,19 @@ class GitHubWebhookLog(Document):
 	def clear_old_logs(days=30):
 		table = frappe.qb.DocType("GitHub Webhook Log")
 		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
+
+
+def set_uninstalled(owner: str, repository: str):
+	sources = frappe.db.get_all(
+		"App Source",
+		filters={
+			"repository_owner": owner,
+			"repository": repository,
+		},
+		pluck="name",
+	)
+
+	for name in sources:
+		frappe.db.set_value("App Source", name, "uninstalled", True)
+
+	frappe.db.commit()
