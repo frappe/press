@@ -3,14 +3,19 @@
 # For license information, please see license.txt
 
 
-import frappe
-import hmac
 import hashlib
+import hmac
 import json
+
+import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from press.utils import log_error
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.app_source.app_source import AppSource
 
 
 class GitHubWebhookLog(Document):
@@ -67,13 +72,10 @@ class GitHubWebhookLog(Document):
 		self.payload = json.dumps(payload, indent=4, sort_keys=True)
 
 	def after_insert(self):
-		match self.event:
-			case "push":
-				self.handle_push_event()
-			case "installation":
-				self.handle_installation_event()
-			case _:
-				return
+		if self.event == "push":
+			self.handle_push_event()
+		elif self.event == "installation":
+			self.handle_installation_event()
 
 	def handle_push_event(self):
 		payload = self.get_parsed_payload()
@@ -84,13 +86,40 @@ class GitHubWebhookLog(Document):
 
 	def handle_installation_event(self):
 		payload = self.get_parsed_payload()
+		if payload.get("action") == "created":
+			self.handle_installation_created(payload)
 		if payload.get("action") == "deleted":
 			self.handle_installation_deletion(payload)
+
+	def handle_installation_created(self, payload):
+		owner = payload["installation"]["account"]["login"]
+		for repo in payload.get("repositories", []):
+			self.update_installation_ids(owner, repo["name"])
 
 	def handle_installation_deletion(self, payload):
 		owner = payload["installation"]["account"]["login"]
 		for repo in payload.get("repositories", []):
 			set_uninstalled(owner, repo["name"])
+
+	def update_installation_ids(self, owner: str, repository: str):
+		for name in get_sources(owner, repository):
+			doc: "AppSource" = frappe.get_doc("App Source", name)
+			if not self.should_update_app_source(doc):
+				continue
+
+			doc.github_installation_id = self.github_installation_id
+			doc.uninstalled = False
+			doc.poll_github_for_branch_info()
+		frappe.db.commit()
+
+	def should_update_app_source(self, doc: "AppSource"):
+		if doc.uninstalled or doc.last_github_poll_failed:
+			return True
+
+		if doc.github_installation_id != self.github_installation_id:
+			return True
+
+		return False
 
 	def get_parsed_payload(self):
 		return frappe.parse_json(self.payload)
@@ -152,7 +181,13 @@ class GitHubWebhookLog(Document):
 
 
 def set_uninstalled(owner: str, repository: str):
-	sources = frappe.db.get_all(
+	for name in get_sources(owner, repository):
+		frappe.db.set_value("App Source", name, "uninstalled", True)
+	frappe.db.commit()
+
+
+def get_sources(owner: str, repository: str) -> "list[str]":
+	return frappe.db.get_all(
 		"App Source",
 		filters={
 			"repository_owner": owner,
@@ -160,8 +195,3 @@ def set_uninstalled(owner: str, repository: str):
 		},
 		pluck="name",
 	)
-
-	for name in sources:
-		frappe.db.set_value("App Source", name, "uninstalled", True)
-
-	frappe.db.commit()
