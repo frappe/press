@@ -133,7 +133,10 @@ export default {
 				label: 'Site',
 				fieldname: 'host_name',
 				width: 1.5,
-				class: 'font-medium'
+				class: 'font-medium',
+				format(value, row) {
+					return value || row.name;
+				}
 			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
