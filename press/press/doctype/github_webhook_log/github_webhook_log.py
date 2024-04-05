@@ -76,6 +76,8 @@ class GitHubWebhookLog(Document):
 			self.handle_push_event()
 		elif self.event == "installation":
 			self.handle_installation_event()
+		elif self.event == "installation_repositories":
+			self.handle_repository_installation_event()
 
 	def handle_push_event(self):
 		payload = self.get_parsed_payload()
@@ -86,10 +88,24 @@ class GitHubWebhookLog(Document):
 
 	def handle_installation_event(self):
 		payload = self.get_parsed_payload()
-		if payload.get("action") == "created":
+		action = payload.get("action")
+		if action == "created":
 			self.handle_installation_created(payload)
-		if payload.get("action") == "deleted":
+		elif action == "deleted":
 			self.handle_installation_deletion(payload)
+
+	def handle_repository_installation_event(self):
+		if payload["action"] not in ["added", "removed"]:
+			return
+
+		payload = self.get_parsed_payload()
+		owner = payload["installation"]["account"]["login"]
+
+		for repo in payload.get("repositories_added", []):
+			self.update_installation_ids(owner, repo["name"])
+
+		for repo in payload.get("repositories_removed", []):
+			set_uninstalled(owner, repo["name"])
 
 	def handle_installation_created(self, payload):
 		owner = payload["installation"]["account"]["login"]
