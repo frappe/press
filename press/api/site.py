@@ -1873,13 +1873,13 @@ def clone_group(name, new_group_title):
 
 @frappe.whitelist()
 @protected("Site")
-def change_group(name, group):
+def change_group(name, group, skip_failing_patches=False):
 	team = frappe.db.get_value("Release Group", group, "team")
 	if team != get_current_team():
 		frappe.throw(f"Bench {group} does not belong to your team")
 
 	site = frappe.get_doc("Site", name)
-	site.move_to_group(group)
+	site.move_to_group(group, skip_failing_patches=skip_failing_patches)
 
 
 @frappe.whitelist()
@@ -1901,7 +1901,7 @@ def change_region_options(name):
 
 @frappe.whitelist()
 @protected("Site")
-def change_region(name, cluster, scheduled_datetime=None):
+def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=False):
 	group = frappe.db.get_value("Site", name, "group")
 	bench_vals = frappe.db.get_value(
 		"Bench", {"group": group, "cluster": cluster}, ["name", "server"]
@@ -1921,6 +1921,7 @@ def change_region(name, cluster, scheduled_datetime=None):
 			"destination_server": server,
 			"destination_cluster": cluster,
 			"scheduled_time": scheduled_datetime,
+			"skip_failing_patches": skip_failing_patches,
 		}
 	).insert()
 
@@ -1959,7 +1960,9 @@ def get_private_groups_for_upgrade(name, version):
 
 @frappe.whitelist()
 @protected("Site")
-def version_upgrade(name, destination_group, scheduled_datetime=None):
+def version_upgrade(
+	name, destination_group, scheduled_datetime=None, skip_failing_patches=False
+):
 	site = frappe.get_doc("Site", name)
 	current_version, shared_site = frappe.db.get_value(
 		"Release Group", site.group, ["version", "public"]
@@ -1980,6 +1983,7 @@ def version_upgrade(name, destination_group, scheduled_datetime=None):
 			"site": name,
 			"destination_group": destination_group,
 			"scheduled_time": scheduled_datetime,
+			"skip_failing_patches": skip_failing_patches,
 		}
 	).insert()
 
@@ -2010,7 +2014,7 @@ def is_server_added_in_group(name, server):
 
 @frappe.whitelist()
 @protected("Site")
-def change_server(name, server, scheduled_datetime=None):
+def change_server(name, server, scheduled_datetime=None, skip_failing_patches=False):
 	group = frappe.db.get_value("Site", name, "group")
 	bench = frappe.db.get_value(
 		"Bench", {"group": group, "status": "Active", "server": server}, "name"
@@ -2022,6 +2026,7 @@ def change_server(name, server, scheduled_datetime=None):
 			"site": name,
 			"destination_bench": bench,
 			"scheduled_time": scheduled_datetime,
+			"skip_failing_patches": skip_failing_patches,
 		}
 	).insert()
 

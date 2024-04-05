@@ -12,7 +12,8 @@
 						$resources.changeRegion.submit({
 							name: site?.name,
 							cluster: selectedRegion?.value,
-							scheduled_datetime: datetimeInIST
+							scheduled_datetime: datetimeInIST,
+							skip_failing_patches: skipFailingPatches
 						})
 				}
 			]
@@ -25,8 +26,9 @@
 				class="mx-auto h-4 w-4"
 				v-if="$resources.changeRegionOptions.loading"
 			/>
-			<div v-else>
+			<div v-else class="space-y-4">
 				<FormControl
+					variant="outline"
 					type="autocomplete"
 					label="Choose Region"
 					v-model="selectedRegion"
@@ -45,17 +47,20 @@
 						<img v-if="option?.image" :src="option.image" class="mr-2 h-4" />
 					</template>
 				</FormControl>
-				<FormControl
-					class="mt-4"
+				<div
+					class="space-y-4"
 					v-if="
 						$resources.changeRegionOptions.data?.regions?.length > 0 &&
 						selectedRegion
 					"
-					label="Schedule Site Migration"
-					type="datetime-local"
-					:min="new Date().toISOString().slice(0, 16)"
-					v-model="targetDateTime"
-				/>
+				>
+					<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
+					<FormControl
+						label="Skip failing patches if any"
+						type="checkbox"
+						v-model="skipFailingPatches"
+					/>
+				</div>
 				<p v-else class="mt-4 text-sm text-gray-600">
 					If the region you're looking for isn't available, please add from the
 					Bench dashboard.
@@ -68,15 +73,20 @@
 
 <script>
 import { notify } from '@/utils/toast';
+import DateTimeControl from '../../../src2/components/DateTimeControl.vue';
 
 export default {
 	name: 'SiteChangeRegionDialog',
 	props: ['site', 'modelValue'],
 	emits: ['update:modelValue'],
+	components: {
+		DateTimeControl
+	},
 	data() {
 		return {
 			targetDateTime: null,
-			selectedRegion: null
+			selectedRegion: null,
+			skipFailingPatches: false
 		};
 	},
 	computed: {
@@ -91,7 +101,7 @@ export default {
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;
 			const datetimeInIST = this.$dayjs(this.targetDateTime)
-				.tz('Asia/Tokyo')
+				.tz('Asia/Kolkata')
 				.format('YYYY-MM-DDTHH:mm');
 
 			return datetimeInIST;
