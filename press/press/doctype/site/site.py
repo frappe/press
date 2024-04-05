@@ -161,6 +161,7 @@ class Site(Document, TagHelpers):
 		"trial_end_date",
 		"tags",
 		"server",
+		"host_name",
 	]
 	dashboard_actions = [
 		"activate",

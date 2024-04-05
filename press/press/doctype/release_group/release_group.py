@@ -171,7 +171,8 @@ class ReleaseGroup(Document, TagHelpers):
 			server = frappe.db.get_value(
 				"Server", self.servers[0].server, ["team", "title"], as_dict=True
 			)
-			doc.server = server.title or self.servers[0].server
+			doc.server = self.servers[0].server
+			doc.server_title = server.title
 			doc.server_team = server.team
 
 	def validate(self):

@@ -55,19 +55,26 @@ class PressNotification(Document):
 		if frappe.local.dev_server:
 			return
 
-		if self.type == "Bench Deploy":
-			group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
-			rg_title = frappe.db.get_value("Release Group", group_name, "title")
+		user = frappe.db.get_value("Team", self.team, "user")
+		if user == "Administrator":
+			return
 
-			frappe.sendmail(
-				recipients=[frappe.db.get_value("Team", self.team, "user")],
-				subject=f"Bench Deploy Failed - {rg_title}",
-				template="bench_deploy_failure",
-				args={
-					"message": self.message,
-					"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
-				},
-			)
+		if self.type == "Bench Deploy":
+			self.send_bench_deploy_failed(user)
+
+	def send_bench_deploy_failed(self, user: str):
+		group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
+		rg_title = frappe.db.get_value("Release Group", group_name, "title")
+
+		frappe.sendmail(
+			recipients=[user],
+			subject=f"Bench Deploy Failed - {rg_title}",
+			template="bench_deploy_failure",
+			args={
+				"message": self.message,
+				"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
+			},
+		)
 
 	@frappe.whitelist()
 	def mark_as_addressed(self):

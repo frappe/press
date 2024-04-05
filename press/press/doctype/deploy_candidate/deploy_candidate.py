@@ -40,6 +40,8 @@ from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
+	from typing import Generator, Never
+
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
 
@@ -104,7 +106,12 @@ class DeployCandidate(Document):
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
-	# end: auto-generated types
+		# end: auto-generated types
+
+		# Used for local builds, for remote builds instances
+		# are created when handling job update
+		build_output_parser: Optional[DockerBuildOutputParser]
+		upload_step_updater: Optional[UploadStepUpdater]
 
 	dashboard_fields = [
 		"name",
@@ -332,6 +339,7 @@ class DeployCandidate(Document):
 		self.is_ssh_enabled = True
 
 		self._build_start()
+		self._set_output_parsers()
 		try:
 			self._prepare_build(no_cache, no_push)
 			self._start_build(
@@ -342,10 +350,25 @@ class DeployCandidate(Document):
 				deploy_to_staging,
 			)
 		except Exception as exc:
-			self._build_failed()
-			create_build_failed_notification(self, exc)
-			log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
-			raise
+			self._handle_build_exception(exc)
+
+	def _handle_build_exception(self, exc: Exception) -> "Never":
+		self._flush_output_parsers()
+		self._build_failed()
+		create_build_failed_notification(self, exc)
+		log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
+		raise
+
+	def _set_output_parsers(self):
+		self.build_output_parser = DockerBuildOutputParser(self)
+		self.upload_step_updater = UploadStepUpdater(self)
+
+	def _flush_output_parsers(self):
+		if self.build_output_parser:
+			self.build_output_parser.flush_output(False)
+
+		if self.upload_step_updater:
+			self.upload_step_updater.flush_output(False)
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
 		if not no_cache:
@@ -1041,7 +1064,12 @@ class DeployCandidate(Document):
 			command,
 			environment,
 		)
-		DockerBuildOutputParser(self).parse_and_update(output)
+		self._parse_build_output(output)
+
+	def _parse_build_output(self, output: "Generator[str, Any, None]"):
+		if not self.build_output_parser:
+			self.build_output_parser = DockerBuildOutputParser(self)
+		self.build_output_parser.parse_and_update(output)
 
 	def _get_build_environment(self):
 		environment = os.environ.copy()
@@ -1116,8 +1144,9 @@ class DeployCandidate(Document):
 			)
 
 		client = docker.from_env(environment=environment)
-		upload_step_updater = UploadStepUpdater(self)
-		upload_step_updater.start()
+		if not self.upload_step_updater:
+			self.upload_step_updater = UploadStepUpdater(self)
+		self.upload_step_updater.start()
 		try:
 			client.login(
 				registry=settings.docker_registry_url,
@@ -1130,9 +1159,9 @@ class DeployCandidate(Document):
 				stream=True,
 				decode=True,
 			)
-			upload_step_updater.process(output)
+			self.upload_step_updater.process(output)
 		except Exception:
-			upload_step_updater.end("Failure")
+			self.upload_step_updater.end("Failure")
 			log_error("Push Docker Image Failed", doc=self)
 			raise
 

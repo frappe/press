@@ -523,7 +523,7 @@ def options_for_new(for_bench: str = None):
 				)
 				clusters = frappe.db.get_all(
 					"Cluster",
-					filters={"name": ("in", cluster_names), "public": True},
+					filters={"name": ("in", cluster_names)},
 					fields=["name", "title", "image", "beta"],
 				)
 				if not for_bench:
