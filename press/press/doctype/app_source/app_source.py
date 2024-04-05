@@ -38,6 +38,7 @@ class AppSource(Document):
 		repository_owner: DF.Data | None
 		repository_url: DF.Data
 		team: DF.Link
+		uninstalled: DF.Check
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
 
