@@ -76,9 +76,19 @@ class SiteMigration(Document):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
 
 	def check_enough_space_on_destination_server(self):
-		site: "Site" = frappe.get_doc("Site", self.site)
-		site.server = self.destination_server
-		site.check_enough_space_on_server()
+		try:
+			backup = frappe.get_last_doc(  # approximation with last backup
+				"Site Backup", {"site": self.site, "with_files": True, "status": "Success"}
+			)
+		except frappe.DoesNotExistError:
+			pass
+		else:
+			site: "Site" = frappe.get_doc("Site", self.site)
+			site.server = self.destination_server
+			site.remote_database_file = backup.remote_database_file
+			site.remote_public_file = backup.remote_public_file
+			site.remote_private_file = backup.remote_private_file
+			site.check_enough_space_on_server()
 
 	def after_insert(self):
 		self.set_migration_type()
