@@ -95,8 +95,11 @@ class AppSource(Document):
 		# self.create_release()
 
 	def create_gitlab_release(self, force=False):
-		gitlab_project_id = self.gitlab_project_id
-		url = f"https://gitlab.com/api/v4/projects/{gitlab_project_id}/repository/branches/{self.branch}"
+		from urllib.parse import urlparse
+
+		repo_url = urlparse(self.repository_url)
+		api_path = f"/api/v4/projects/{self.gitlab_project_id}/repository/branches/{self.branch}"
+		url = f"{repo_url.scheme}://{repo_url.netloc}{api_path}"
 
 		headers = {}
 		# if gitlab_token := frappe.get_value("Press Settings", None, "gitlab_access_token"):
@@ -134,7 +137,7 @@ class AppSource(Document):
 
 	@frappe.whitelist()
 	def create_release(self, force=False):
-		if self.repository_url.startswith("https://gitlab.com"):
+		if self.gitlab_project_id:
 			self.create_gitlab_release(force)
 			return
 
