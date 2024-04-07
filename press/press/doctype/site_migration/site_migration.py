@@ -322,7 +322,7 @@ class SiteMigration(Document):
 			message += f" due to {reason}"
 			agent_job_id = None
 		else:
-			agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
 
 		create_new_notification(
 			site.team,
