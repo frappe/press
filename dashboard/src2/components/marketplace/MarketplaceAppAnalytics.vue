@@ -73,18 +73,7 @@
 				:chartTheme="[$theme.colors.purple[500]]"
 				:loading="$resources.plausible_analytics.loading"
 				:error="$resources.plausible_analytics.error"
-			>
-				<template #actions>
-					<a
-						v-if="app"
-						class="text-base text-gray-700 hover:text-gray-800"
-						:href="`/marketplace/apps/${app}`"
-						target="_blank"
-					>
-						View Page →
-					</a>
-				</template>
-			</LineChart>
+			/>
 			<LineChart
 				title="Unique Visitors"
 				type="time"
