@@ -79,7 +79,7 @@ export default {
 					'cluster.title as cluster_title'
 				],
 				orderBy: 'creation desc, bench desc',
-				pageLength: 50,
+				pageLength: 99999,
 				transform(data) {
 					return this.groupSitesByBench(data);
 				},
