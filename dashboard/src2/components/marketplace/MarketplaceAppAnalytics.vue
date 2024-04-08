@@ -1,6 +1,6 @@
 <template>
 	<div v-if="$resources.analytics.data">
-		<div class="mb-5 col-span-2 rounded-md border">
+		<div class="col-span-2 mb-5 rounded-md border">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
 					<div class="text-base text-gray-700">Total Installs</div>
@@ -58,7 +58,7 @@
 
 		<div
 			v-if="$resources.plausible_analytics.data"
-			class="grid grid-cols-1 lg:grid-cols-2 gap-5"
+			class="grid grid-cols-1 gap-5 lg:grid-cols-2"
 		>
 			<LineChart
 				title="Pageviews"
@@ -78,7 +78,7 @@
 					<a
 						v-if="app"
 						class="text-base text-gray-700 hover:text-gray-800"
-						:href="`/marketplace/apps/${app.app}`"
+						:href="`/marketplace/apps/${app}`"
 						target="_blank"
 					>
 						View Page →
