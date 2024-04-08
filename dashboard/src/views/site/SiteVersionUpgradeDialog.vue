@@ -37,17 +37,10 @@
 					type="checkbox"
 					v-model="skipFailingPatches"
 				/>
-				<p v-if="message" class="text-sm text-gray-700">
+				<p v-if="message && !errorMessage" class="text-sm text-gray-700">
 					{{ message }}
 				</p>
-				<ErrorMessage
-					:message="
-						$resources.versionUpgrade.error ||
-						$resources.validateGroupforUpgrade.error ||
-						$resources.addServerToReleaseGroup.error ||
-						$resources.getPrivateGroups.error
-					"
-				/>
+				<ErrorMessage :message="errorMessage" />
 			</div>
 		</template>
 		<template v-if="site?.group_public || privateReleaseGroups.length" #actions>
@@ -145,6 +138,14 @@ export default {
 				.format('YYYY-MM-DDTHH:mm');
 
 			return datetimeInIST;
+		},
+		errorMessage() {
+			return (
+				this.$resources.versionUpgrade.error ||
+				this.$resources.validateGroupforUpgrade.error ||
+				this.$resources.addServerToReleaseGroup.error ||
+				this.$resources.getPrivateGroups.error
+			);
 		}
 	},
 	resources: {

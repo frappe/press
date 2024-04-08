@@ -59,17 +59,10 @@
 					v-model="skipFailingPatches"
 				/>
 			</div>
-			<p class="mt-4 text-sm text-gray-700">
+			<p v-if="message && !errorMessage" class="mt-4 text-sm text-gray-700">
 				{{ message }}
 			</p>
-			<ErrorMessage
-				class="mt-4"
-				:message="
-					$resources.changeServer.error ||
-					$resources.isServerAddedInGroup.error ||
-					$resources.addServerToReleaseGroup.error
-				"
-			/>
+			<ErrorMessage class="mt-4" :message="errorMessage" />
 		</template>
 	</Dialog>
 </template>
@@ -113,6 +106,14 @@ export default {
 			) {
 				return 'The chosen server is already added to the bench. You can now migrate the site to the server.';
 			} else return '';
+		},
+		errorMessage() {
+			return (
+				this.$resources.versionUpgrade.error ||
+				this.$resources.validateGroupforUpgrade.error ||
+				this.$resources.addServerToReleaseGroup.error ||
+				this.$resources.getPrivateGroups.error
+			);
 		},
 		datetimeInIST() {
 			if (!this.targetDateTime) return null;
