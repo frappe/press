@@ -2,25 +2,27 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from base64 import b64decode
+from typing import Dict, List
+
 import frappe
 import requests
-
-from typing import Dict, List
-from base64 import b64decode
-from press.press.doctype.app_release_approval_request.app_release_approval_request import (
-	AppReleaseApprovalRequest,
-)
-from press.utils import get_last_doc
-from press.api.github import get_access_token
 from frappe.query_builder.functions import Cast_
+from frappe.utils.caching import redis_cache
+from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
+
+from press.api.github import get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
-from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.press.doctype.app.app import new_app as new_app_doc
-from frappe.utils.safe_exec import safe_exec
+from press.press.doctype.app_release_approval_request.app_release_approval_request import (
+	AppReleaseApprovalRequest,
+)
+from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
+from press.utils import get_last_doc
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -656,16 +658,11 @@ def run_script(app, site, op):
 		safe_exec(script, _locals=local)
 
 
+@redis_cache(ttl=60 * 60 * 24)
 def get_total_installs_by_app():
-	total_installs = frappe.cache.get_value("total_installs_by_app")
-	if not total_installs:
-		total_installs = frappe.db.get_all(
-			"Site App",
-			fields=["app", "count(*) as count"],
-			group_by="app",
-		)
-		total_installs = {installs["app"]: installs["count"] for installs in total_installs}
-		frappe.cache.set_value(
-			"total_installs_by_app", total_installs, expires_in_sec=60 * 60 * 24
-		)
-	return total_installs
+	total_installs = frappe.db.get_all(
+		"Site App",
+		fields=["app", "count(*) as count"],
+		group_by="app",
+	)
+	return {installs["app"]: installs["count"] for installs in total_installs}
