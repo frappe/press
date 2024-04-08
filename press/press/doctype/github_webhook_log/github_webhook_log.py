@@ -44,7 +44,7 @@ class GitHubWebhookLog(Document):
 		if not hmac.compare_digest(digest.hexdigest(), self.signature):
 			frappe.throw("Invalid Signature")
 
-		payload = self.parsed_payload
+		payload = self.get_parsed_payload()
 		repository = payload.repository
 		installation = payload.installation
 		if installation:

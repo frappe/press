@@ -297,9 +297,10 @@ class SiteMigration(Document):
 
 	def activate_site_if_appropriate(self, force=False):
 		site: "Site" = frappe.get_doc("Site", self.site)
+		failed_step_method_name = (self.failed_step or {}).get("method_name", "__NOT_SET__")
 		if (
 			force
-			or self.failed_step.method_name
+			or failed_step_method_name
 			in [
 				self.backup_source_site.__name__,
 				self.restore_site_on_destination_server.__name__,
