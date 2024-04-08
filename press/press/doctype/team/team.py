@@ -766,7 +766,7 @@ class Team(Document):
 			self.payment_mode = (
 				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
 			)
-			self.save()
+			self.save(ignore_permissions=True)
 		return doc
 
 	def get_available_credits(self):
