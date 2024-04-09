@@ -79,3 +79,11 @@ class TestUserSSHKey(FrappeTestCase):
 		user = frappe.get_doc("User", team.user)
 		with self.assertRaisesRegex(frappe.ValidationError, "Key type has to be one of.*"):
 			create_test_user_ssh_key(user.name, "ssh-ed25519-cert-v01@openssh.com FAKE_KEY")
+
+	def test_adding_single_word_fails(self):
+		team = create_test_press_admin_team()
+		user = frappe.get_doc("User", team.user)
+		with self.assertRaisesRegex(
+			frappe.ValidationError, "You must supply a key in OpenSSH public key format"
+		):
+			create_test_user_ssh_key(user.name, "ubuntu@frappe.cloud")
