@@ -109,9 +109,26 @@ class SiteMigration(Document):
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
-		self.db_set("status", "Pending")
+		self.remove_archive_on_destination_step_if_exists()  # case of continuing failed migration
+		frappe.db.set_value(
+			"Site",
+			self.site,
+			"status_before_update",
+			frappe.get_value("Site", self.site, "status"),
+		)
+		self.status = "Pending"
+		self.save()
 		frappe.db.commit()
 		self.run_next_step()
+
+	def remove_archive_on_destination_step_if_exists(self):
+		"""Remove Archive on Destination step if exists"""
+		archive_on_destination_step = find(
+			self.steps,
+			lambda x: x.method_name == self.archive_site_on_destination_server.__name__,
+		)
+		if archive_on_destination_step:
+			self.steps.remove(archive_on_destination_step)
 
 	def check_for_ongoing_agent_jobs(self):
 		if frappe.db.exists(
@@ -458,8 +475,7 @@ class SiteMigration(Document):
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
-		site = frappe.get_doc("Site", self.site)
-		site.status_before_update = site.status
+		site: Site = frappe.get_doc("Site", self.site)
 		site.status = "Inactive"
 		return site.update_site_config({"maintenance_mode": 1})  # saves doc
 
