@@ -146,8 +146,8 @@ class MarketplaceApp(WebsiteGenerator):
 			)
 
 	def create_app_and_source_if_needed(self):
-		if frappe.db.exists("App", self.app):
-			app_doc = frappe.get_doc("App", self.app)
+		if frappe.db.exists("App", self.app or self.name):
+			app_doc = frappe.get_doc("App", self.app or self.name)
 		else:
 			app_doc = new_app_doc(self.name, self.title)
 
@@ -159,7 +159,7 @@ class MarketplaceApp(WebsiteGenerator):
 				self.team,
 			)
 			self.app = source.app
-			self.append("sources", {"version": self.version, "source": source})
+			self.append("sources", {"version": self.version, "source": source.name})
 
 	def validate(self):
 		self.published = self.status == "Published"

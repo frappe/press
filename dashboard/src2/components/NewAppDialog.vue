@@ -9,6 +9,7 @@
 					variant: 'solid',
 					onClick() {
 						app.version = selectedVersion.value || options.versions[0].name;
+						app.branch = selectedBranch.value;
 						$emit('app-added', app);
 						show = false;
 					}
@@ -169,15 +170,15 @@
 									<FeatherIcon name="git-branch" class="mr-2 h-4 w-4" />
 								</template>
 							</FormControl>
-							<FormControl
-								v-if="showVersionSelector"
-								type="autocomplete"
-								label="Choose Version"
-								:options="options.versions.map(v => v.name)"
-								v-model="selectedVersion"
-							/>
 						</div>
 					</div>
+					<FormControl
+						v-if="showVersionSelector && selectedBranch"
+						type="autocomplete"
+						label="Choose Version"
+						:options="options.versions.map(v => v.name)"
+						v-model="selectedVersion"
+					/>
 					<div class="mt-4 space-y-2">
 						<div
 							v-if="$resources.validateApp.loading && !appValidated"
@@ -219,7 +220,7 @@ export default {
 	data() {
 		return {
 			show: true,
-			app: null,
+			app: {},
 			tabIndex: 0,
 			githubAppLink: '',
 			selectedBranch: '',
