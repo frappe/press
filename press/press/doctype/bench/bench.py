@@ -640,6 +640,7 @@ def process_new_bench_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	if updated_status != bench.status:
@@ -672,6 +673,7 @@ def process_archive_bench_job_update(job):
 		"Running": "Pending",
 		"Success": "Archived",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	if job.status == "Failure":
