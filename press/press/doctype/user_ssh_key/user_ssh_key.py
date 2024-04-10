@@ -62,7 +62,7 @@ class UserSSHKey(Document):
 				)
 			key_bytes = base64.b64decode(key)
 			self.check_embedded_key_type(key_type, key_bytes)
-			self.generate_ssh_fingerprint(key_bytes)
+			self.generate_ssh_fingerprint(self.ssh_public_key.encode())
 		except SSHKeyValueError as e:
 			frappe.throw(
 				f"{str(e)}\n{msg}",
