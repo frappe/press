@@ -96,7 +96,7 @@
 				<div class="mt-2">
 					<SitePlansCards
 						v-model="plan"
-						:isBenchSite="!!bench"
+						:isPrivateBenchSite="!!bench"
 						:isDedicatedServerSite="selectedVersion.group.is_dedicated_server"
 					/>
 				</div>
