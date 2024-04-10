@@ -102,8 +102,15 @@ class AppSource(Document):
 		url = f"{repo_url.scheme}://{repo_url.netloc}{api_path}"
 
 		headers = {}
-		# if gitlab_token := frappe.get_value("Press Settings", None, "gitlab_access_token"):
-		# 	headers["Authorization"] = f"Bearer {gitlab_token}"
+
+		gitlab_token = ""
+		if self.get("gitlab_access_token"):
+			gitlab_token = gitlab_token or self.get_password("gitlab_access_token")
+		# gitlab_token = gitlab_token or frappe.db.get_single_value("Press Settings", None, "gitlab_access_token")
+
+		if gitlab_token:
+			headers["Authorization"] = f"Bearer {gitlab_token}"
+
 		res = requests.get(url, headers=headers).json()
 
 		frappe.db.set_value(

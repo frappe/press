@@ -22,6 +22,7 @@
   "github_installation_id",
   "uninstalled",
   "gitlab_project_id",
+  "gitlab_access_token",
   "section_break_12",
   "versions",
   "github_section",
@@ -82,6 +83,12 @@
    "fieldname": "gitlab_project_id",
    "fieldtype": "Data",
    "label": "GitLab Project ID"
+  },
+  {
+   "depends_on": "eval:doc.gitlab_project_id",
+   "fieldname": "gitlab_access_token",
+   "fieldtype": "Password",
+   "label": "GitLab Access Token"
   },
   {
    "fieldname": "data_3",
