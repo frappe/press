@@ -369,6 +369,8 @@ class SelfHostedServer(Document):
 			if not frappe.flags.in_test:
 				db_server.create_dns_record()
 
+			frappe.db.commit()
+
 			frappe.msgprint(f"Databse server record {db_server.name} created")
 		except Exception:
 			frappe.throw("Adding Server to Database Server Doctype failed")
@@ -444,6 +446,8 @@ class SelfHostedServer(Document):
 
 			if not frappe.flags.in_test:
 				server.create_dns_record()
+
+			frappe.db.commit()
 
 		except Exception as e:
 			self.status = "Broken"
