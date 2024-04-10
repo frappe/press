@@ -87,3 +87,17 @@ class TestUserSSHKey(FrappeTestCase):
 			frappe.ValidationError, "You must supply a key in OpenSSH public key format"
 		):
 			create_test_user_ssh_key(user.name, "ubuntu@frappe.cloud")
+
+	def test_adding_partial_of_valid_key_with_valid_number_of_data_characters_fails(
+		self,
+	):
+		team = create_test_press_admin_team()
+		user = frappe.get_doc("User", team.user)
+		with self.assertRaisesRegex(
+			frappe.ValidationError,
+			"copy/pasting the key using one of the commands in documentation",
+		):
+			create_test_user_ssh_key(
+				user.name,
+				"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDB3zVjTzHQSEHQG7OD3bYi7V1xk+PCwko0W3+d1fSUvSDCxSMKtR31+CfMKmjnvoHubOHYI9wvLpx6KdZUl2uO",
+			)

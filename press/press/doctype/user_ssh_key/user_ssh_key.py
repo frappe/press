@@ -1,15 +1,19 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import shlex
+import subprocess
 import frappe
 import base64
-import hashlib
 import struct
-from frappe import safe_decode
 from frappe.model.document import Document
 
 
 class SSHKeyValueError(ValueError):
+	pass
+
+
+class SSHFingerprintError(ValueError):
 	pass
 
 
@@ -49,6 +53,7 @@ class UserSSHKey(Document):
 			raise SSHKeyValueError(f"Key type {key_type} does not match key")
 
 	def validate(self):
+		msg = "You must supply a key in OpenSSH public key format. Please try copy/pasting the key using one of the commands in documentation."
 		try:
 			key_type, key, *comment = self.ssh_public_key.strip().split()
 			if key_type not in self.valid_key_types:
@@ -59,9 +64,11 @@ class UserSSHKey(Document):
 			self.check_embedded_key_type(key_type, key_bytes)
 			self.generate_ssh_fingerprint(key_bytes)
 		except SSHKeyValueError as e:
-			frappe.throw(str(e))
+			frappe.throw(
+				f"{str(e)}\n{msg}",
+			)
 		except Exception:
-			frappe.throw("Key is invalid. You must supply a key in OpenSSH public key format")
+			frappe.throw(msg)
 
 	def after_insert(self):
 		if self.is_default:
@@ -80,6 +87,13 @@ class UserSSHKey(Document):
 		)
 
 	def generate_ssh_fingerprint(self, key_bytes: bytes):
-		sha256_sum = hashlib.sha256()
-		sha256_sum.update(key_bytes)
-		self.ssh_fingerprint = safe_decode(base64.b64encode(sha256_sum.digest()))
+		try:
+			return (
+				subprocess.check_output(
+					shlex.split("ssh-keygen -lf -"), stderr=subprocess.STDOUT, input=key_bytes
+				)
+				.decode()
+				.split()[1]
+			)
+		except subprocess.CalledProcessError as e:
+			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}")
