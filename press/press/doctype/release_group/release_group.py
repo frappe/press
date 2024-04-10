@@ -6,7 +6,7 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import frappe
 import semantic_version as sv
@@ -17,8 +17,8 @@ from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and, cstr, flt, sbool
 from press.overrides import get_permission_query_conditions_for_doctype
-from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.app.app import new_app
+from press.press.doctype.app_source.app_source import AppSource, create_app_source
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.press.doctype.server.server import Server
 from press.utils import (
@@ -28,7 +28,6 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
-
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -977,9 +976,39 @@ class ReleaseGroup(Document, TagHelpers):
 
 		return removed_apps
 
-	def append_source(self, source):
+	def append_source(self, source: "AppSource"):
+		self.remove_app_if_invalid(source)
 		self.append("apps", {"source": source.name, "app": source.app})
 		self.save()
+
+	def remove_app_if_invalid(self, source: "AppSource"):
+		"""
+		Remove app if previously added app has an invalid
+		repository URL and GitHub responds with a 404 when
+		fetching the app information.
+		"""
+		matching_apps = [a for a in self.apps if a.app == source.app]
+		if not matching_apps:
+			return
+
+		rg_app = matching_apps[0]
+		value = frappe.get_value(
+			"App Source",
+			rg_app.source,
+			["last_github_poll_failed", "last_github_response", "repository_url"],
+			as_dict=True,
+		)
+
+		if value.repository_url == source.repository_url:
+			return
+
+		if not value.last_github_poll_failed or not value.last_github_response:
+			return
+
+		if '"Not Found"' not in value.last_github_response:
+			return
+
+		self.remove_app(source.app)
 
 	@frappe.whitelist()
 	def change_app_branch(self, app: str, to_branch: str) -> None:
