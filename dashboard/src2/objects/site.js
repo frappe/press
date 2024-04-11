@@ -1274,7 +1274,61 @@ export default {
 							type: 'Timestamp',
 							align: 'right'
 						}
-					]
+					],
+					primaryAction({ documentResource: site }) {
+						return {
+							label: 'Change Notification Email',
+							slots: {
+								prefix: icon('mail')
+							},
+							onClick: () => {
+								confirmDialog({
+									title: 'Change Notification Email',
+									fields: [
+										{
+											type: 'email',
+											label: 'Email',
+											fieldname: 'email',
+											default: site.doc.notify_email
+										}
+									],
+									onSuccess({ hide, values }) {
+										return site.setValue.submit(
+											{
+												notify_email: values.email
+											},
+											{
+												validate: doc => {
+													function validateEmail(email) {
+														const re = /\S+@\S+\.\S+/;
+														return re.test(email);
+													}
+
+													let email = doc?.fieldname?.notify_email;
+													if (!email) {
+														return 'Email is required';
+													} else if (!validateEmail(email)) {
+														return 'Enter a valid email address';
+													}
+												},
+												onSuccess() {
+													hide();
+													toast.success('Email updated successfully');
+												},
+												onError(e) {
+													throw new Error(
+														e.messages
+															? e.messages.join('\n')
+															: e.message || 'Error updating email'
+													);
+												}
+											}
+										);
+									}
+								});
+							}
+						};
+					}
 				}
 			},
 			logsTab(),

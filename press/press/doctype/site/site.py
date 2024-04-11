@@ -190,6 +190,7 @@ class Site(Document, TagHelpers):
 		"send_change_team_request",
 		"is_setup_wizard_complete",
 		"get_backup_download_link",
+		"notify_email",
 	]
 
 	@staticmethod
