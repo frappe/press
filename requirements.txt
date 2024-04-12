@@ -2,7 +2,7 @@ ansible==2.10.7
 beautifulsoup4
 Click
 coverage
-dnspython==1.16.0
+dnspython==2.6.1
 docker==6.1.2
 dockerfile==3.1.0
 oci==2.116.0
