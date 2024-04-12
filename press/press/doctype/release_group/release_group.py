@@ -782,6 +782,7 @@ class ReleaseGroup(Document, TagHelpers):
 	@property
 	def deploy_in_progress(self):
 		return self.last_dc_info and self.last_dc_info.status in (
+			"Pending",
 			"Running",
 			"Scheduled",
 			"Preparing",
