@@ -283,7 +283,7 @@ def _get_app_name_and_title_from_hooks(
 			headers=headers,
 		).json()
 		if "content" not in hooks:
-			reason_for_invalidation = f"File {frappe.bold("hooks.py")} could not be fetched."
+			reason_for_invalidation = f"File {frappe.bold('hooks.py')} could not be fetched."
 			continue
 
 		content = b64decode(hooks["content"]).decode()
