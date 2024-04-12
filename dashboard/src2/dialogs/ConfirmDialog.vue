@@ -30,7 +30,12 @@ export default {
 			show: true,
 			error: null,
 			isLoading: false,
-			values: {}
+			values:
+				// set default values for fields
+				this.fields.reduce((acc, field) => {
+					acc[field.fieldname] = field.default || '';
+					return acc;
+				}, {})
 		};
 	},
 	components: { FormControl, ErrorMessage },

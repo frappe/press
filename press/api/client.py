@@ -7,7 +7,7 @@ import inspect
 
 import frappe
 from frappe import is_whitelisted
-from frappe.client import delete_doc
+from frappe.client import delete_doc, set_value as _set_value
 from frappe.handler import get_attr
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
@@ -203,7 +203,14 @@ def insert(doc=None):
 
 @frappe.whitelist(methods=["POST", "PUT"])
 def set_value(doctype, name, fieldname, value=None):
-	pass
+	check_permissions(doctype)
+	check_team_access(doctype, name)
+
+	for field in fieldname.keys():
+		# fields mentioned in whitelisted_actions are allowed to be set via set_value
+		check_dashboard_actions(doctype, field)
+
+	return _set_value(doctype, name, fieldname, value)
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])
