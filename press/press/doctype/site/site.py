@@ -227,6 +227,9 @@ class Site(Document, TagHelpers):
 		server = frappe.get_value(
 			"Server", self.server, ["ip", "proxy_server", "team", "title"], as_dict=1
 		)
+		doc.cluster = frappe.db.get_value(
+			"Cluster", self.cluster, ["title", "image"], as_dict=1
+		)
 		doc.outbound_ip = server.ip
 		doc.server_team = server.team
 		doc.server_title = server.title
