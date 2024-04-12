@@ -267,7 +267,7 @@ def _get_app_name_and_title_from_hooks(
 ) -> "tuple[str, str]":
 	reason_for_invalidation = ""
 	for directory, files in tree.items():
-		if files and "hooks.py" not in files or "patches.txt" not in files:
+		if files and ("hooks.py" not in files or "patches.txt" not in files):
 			reason_for_invalidation = (
 				f"Files {frappe.bold('hooks.py or patches.txt')} does not exist"
 				f" inside {directory}/{directory} directory."
