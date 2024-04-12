@@ -265,18 +265,20 @@ def _get_app_name_and_title_from_hooks(
 	headers,
 	tree,
 ) -> "tuple[str, str]":
-	reason_for_invalidation = ""
+	reason_for_invalidation = f"Files {frappe.bold('hooks.py or patches.txt')} not found"
 	for directory, files in tree.items():
-		if files and ("hooks.py" not in files or "patches.txt" not in files):
+		if not files:
+			continue
+
+		if ("hooks.py" not in files) or ("patches.txt" not in files):
 			reason_for_invalidation = (
 				f"Files {frappe.bold('hooks.py or patches.txt')} does not exist"
 				f" inside {directory}/{directory} directory."
 			)
 			continue
 
-		app_name = directory
 		hooks = requests.get(
-			f"https://api.github.com/repos/{owner}/{repository}/contents/{app_name}/hooks.py",
+			f"https://api.github.com/repos/{owner}/{repository}/contents/{directory}/hooks.py",
 			params={"ref": branch_info["name"]},
 			headers=headers,
 		).json()
@@ -284,7 +286,7 @@ def _get_app_name_and_title_from_hooks(
 		match = re.search(r"""app_title = ["'](.*)["']""", content)
 
 		if match:
-			return app_name, match.group(1)
+			return directory, match.group(1)
 
 		reason_for_invalidation = (
 			f"File {frappe.bold('hooks.py')} does not have {frappe.bold('app_title')} defined."
