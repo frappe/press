@@ -54,6 +54,7 @@ from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.api.client import dashboard_whitelist
 from press.utils import (
 	convert,
 	get_client_blacklisted_keys,
@@ -168,7 +169,6 @@ class Site(Document, TagHelpers):
 		"add_domain",
 		"archive",
 		"backup",
-		"clear_site_cache",
 		"deactivate",
 		"enable_database_access",
 		"disable_database_access",
@@ -442,7 +442,7 @@ class Site(Document, TagHelpers):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
@@ -664,7 +664,7 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def clear_site_cache(self):
 		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
@@ -1549,7 +1549,7 @@ class Site(Document, TagHelpers):
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("deactivated")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
