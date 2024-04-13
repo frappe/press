@@ -299,6 +299,7 @@ export default {
 							repository_url:
 								this.githubAppLink ||
 								`https://github.com/${this.selectedGithubUser.label}/${data.name}`,
+							github_installation_id: this.selectedGithubUser.value.id,
 							branch: this.selectedBranch.value
 						};
 					}
