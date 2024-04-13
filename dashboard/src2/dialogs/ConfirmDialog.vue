@@ -33,7 +33,7 @@ export default {
 			values:
 				// set default values for fields
 				this.fields.reduce((acc, field) => {
-					acc[field.fieldname] = field.default || '';
+					acc[field.fieldname] = field.default || null;
 					return acc;
 				}, {})
 		};
