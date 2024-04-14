@@ -177,8 +177,8 @@ class DeployCandidate(Document):
 
 		clone_steps, app_install_steps = [], []
 		for app in self.apps:
-			clone_steps.append(("clone", app.app, "Clone Repositories", app.title))
-			app_install_steps.append(("apps", app.app, "Install Apps", app.title))
+			clone_steps.append(("clone", app.title, "Clone Repositories", app.title))
+			app_install_steps.append(("apps", app.title, "Install Apps", app.title))
 
 		steps = clone_steps + preparation_steps + app_install_steps
 
@@ -238,9 +238,9 @@ class DeployCandidate(Document):
 				"App Release", app.release, ["clone_directory", "cloned"]
 			)
 			step = find(
-				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.app
+				self.build_steps, lambda x: x.stage_slug == "clone" and x.step_slug == app.title
 			)
-			step.command = f"git clone {app.app}"
+			step.command = f"git clone {app.title}"
 
 			if cloned:
 				step.cached = True

@@ -113,6 +113,8 @@ class Bench(Document):
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
 			"single_container": bool(self.is_single_container),
+			"codeserver_port" : 16000,
+			"is_code_server_enabled": 1,
 		}
 
 		release_group_bench_config = frappe.db.get_value(

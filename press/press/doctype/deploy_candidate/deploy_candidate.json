@@ -101,8 +101,7 @@
    "fieldname": "build_steps",
    "fieldtype": "Table",
    "label": "Build Steps",
-   "options": "Deploy Candidate Build Step",
-   "read_only": 1
+   "options": "Deploy Candidate Build Step"
   },
   {
    "fieldname": "build_output",
@@ -278,7 +277,7 @@
   }
  ],
  "links": [],
- "modified": "2023-06-16 13:20:01.684522",
+ "modified": "2024-03-26 17:18:47.614696",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

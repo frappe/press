@@ -500,15 +500,17 @@ def get_new_site_options(group: str = None):
 		filters.update({"name": group, "team": team})
 	else:
 		filters.update({"public": True})
-
 	for version in versions:
+		
 		filters.update({"version": version.name})
+		print(filters)
 		rg = frappe.get_all(
 			"Release Group",
 			fields=["name", "`default`", "title"],
 			filters=filters,
 			limit=1,
 		)
+		print(rg, version.name)
 		if not rg:
 			continue
 		else:

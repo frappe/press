@@ -670,7 +670,7 @@ class Agent:
 		return status
 
 	def get_site_sid(self, site):
-		frappe.log_error("site", site)
+		frappe.log_error("site", site.bench)
 		return self.get(f"benches/{site.bench}/sites/{site.name}/sid")["sid"]
 
 	def get_site_info(self, site):

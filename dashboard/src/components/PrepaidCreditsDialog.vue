@@ -213,7 +213,9 @@ export default {
 			return {
 				method: 'optibizpro.utils.create_midtrans_token',
 				params: {
-					amount: this.creditsToBuy
+					amount: this.creditsToBuy,
+					customer_name : this.$account.user.full_name,
+					customer_email : this.$account.user.email
 				},
 				onSuccess(data) {
 					this.processMidTransOrder(data); //this initializes the midtrans snap.js inline checkout
@@ -258,6 +260,8 @@ export default {
 					
 					// alert("payment success!");
 					result["team"] = this.$account.team.name
+					result["user"] = this.$account.user.full_name
+					result["email"] = this.$account.user.email
 					this.$resources.MidTransPaymentSuccess.submit({result});
 
 				},

@@ -37,7 +37,7 @@ DEFAULT_DEPENDENCIES = [
 class ReleaseGroup(Document):
 	def validate(self):
 		self.validate_title()
-		self.validate_frappe_app()
+		#self.validate_frappe_app()
 		self.validate_duplicate_app()
 		self.validate_app_versions()
 		self.validate_servers()

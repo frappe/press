@@ -123,8 +123,8 @@
 		</Button>
 		<Button
 			appearance="primary"
-			@click="$resources.changePlan.submit()"
-			:loading="$resources.changePlan.loading"
+			:loading="$resources.createMidTransToken.loading"
+			@click="buyCreditsWithMidTrans"
 		>
 			Pay Amount
 		</Button>
@@ -159,6 +159,7 @@
 
 	<!--Add Card Details, Stripe Step-->
 	<div v-if="step == 'Add Card Details'" class="text-sm">Card Details</div>
+			
 	<div
 		v-if="step == 'Add Card Details'"
 		class="form-input my-2 block w-full py-2 pl-3"
@@ -223,7 +224,9 @@
 
 <script>
 import StripeLogo from '@/components/StripeLogo.vue';
+import MidTransLogo from '@/components/MidtransLogo.vue';
 import { loadStripe } from '@stripe/stripe-js';
+import MidtransCard from '@/components/MidtransCard.vue';
 import { utils } from '@/utils';
 
 export default {
@@ -241,7 +244,7 @@ export default {
 		}
 	},
 	components: {
-		StripeLogo
+		StripeLogo,
 	},
 	data() {
 		return {
@@ -259,11 +262,36 @@ export default {
 			subtotal: 0
 		};
 	},
-	mounted() {
+	async mounted() {
 		if (!this.renewal) {
 			this.$resources.plan.submit();
 		} else if (this.renewal) {
 			this.$resources.subscriptions.submit();
+		}
+
+		let client_key = await this.$call(
+			'optibizpro.utils.get_client_key'
+		);
+		
+
+		//get midtrans checkout
+		const midtransCheckoutJS = document.createElement('script');
+		midtransCheckoutJS.setAttribute(
+			'src',
+			'https://app.sandbox.midtrans.com/snap/snap.js'
+		);
+		midtransCheckoutJS.setAttribute(
+			'data-client-key',
+			client_key
+		);
+		midtransCheckoutJS.async = true;
+		document.head.appendChild(midtransCheckoutJS);
+
+		if (
+			this.$account.team.currency === 'USD' &&
+			!this.$account.team.razorpay_enabled && !this.$account.team.midtrans_enabled
+		) {
+			this.paymentGateway = null; //default to null not stripe
 		}
 	},
 	watch: {
@@ -330,7 +358,43 @@ export default {
 			}
 			return false;
 		},
+		buyCreditsWithMidTrans(){
+			console.log("credits")
+			this.$resources.createMidTransToken.submit();
+		},
+		processMidTransOrder(data){
+			var transaction_token = data.token
+			window.snap.pay(transaction_token, {
+				onSuccess: (result) => {
+					/* You may add your own implementation here */
+					
+					// alert("payment success!");
+					console.log(result)
+					result["team"] = this.$account.team.name
+					result["user"] = this.$account.user.full_name
+					result["email"] = this.$account.user.email
+					result["invoice_type"] = "Subscription"
+					this.$resources.MidTransPaymentSuccess.submit({result});
+					this.showCheckoutDialog = false;
+					
+				},
+				onPending: function(result){
+					/* You may add your own implementation here */
+					alert("awaiting  payment!"); console.log(result);
+				},
+				onError: function(result){
+					/* You may add your own implementation here */
+					result["team"] = this.$account.team.name
+					this.$resources.MidTransPaymentFailed.submit({result});
 
+					// alert("payment failed!"); console.log(result);
+				},
+				onClose: function(){
+					/* You may add your own implementation here */
+					alert('you closed the popup without finishing the payment');
+				}
+			})
+		},
 		async authenticateCard() {
 			// Event handler to prompt a customer to authenticate a previously provided card
 			this.step = 'Setting up Stripe';
@@ -488,6 +552,46 @@ export default {
 				},
 				onSuccess(r) {
 					window.location.reload();
+				}
+			};
+		},
+		createMidTransToken(){
+			return {
+				method: 'optibizpro.utils.create_midtrans_token',
+				params: {
+					amount: this.totalAmount,
+					customer_name : this.$account.user.full_name,
+					customer_email : this.$account.user.email,
+					interval: this.selectedOption
+				},
+				onSuccess(data) {
+
+					this.processMidTransOrder(data); //this initializes the midtrans snap.js inline checkout
+				},
+				
+				onError(e){
+					this.$notify({
+						title: e,
+						icon: 'x',
+						color: 'red'
+					});
+				}
+			};
+		},
+		MidTransPaymentSuccess() {
+			console.log("MidTransPaymentSuccess")
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_success',
+				onSuccess() {
+					this.$emit('success');
+				}
+			};
+		},
+		MidTransPaymentFailed() {
+			return {
+				method: 'optibizpro.utils.handle_midtrans_payment_failed',
+				onSuccess() {
+					console.log('Payment Failed.');
 				}
 			};
 		},
