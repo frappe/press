@@ -292,17 +292,23 @@ export default {
 				url: 'press.api.github.app',
 				onSuccess(data) {
 					this.appValidated = true;
-					if (data) {
-						this.app = {
-							name: data.name,
-							title: data.title,
-							repository_url:
-								this.githubAppLink ||
-								`https://github.com/${this.selectedGithubUser.label}/${data.name}`,
-							github_installation_id: this.selectedGithubUser?.value.id,
-							branch: this.selectedBranch.value
-						};
+					if (!data) {
+						return;
 					}
+
+					let repository_url = this.githubAppLink;
+					if (!repository_url) {
+						var repo = this.selectedGithubRepository?.label || data.name;
+						repository_url = `https://github.com/${this.selectedGithubUser.label}/${repo}`;
+					}
+
+					this.app = {
+						name: data.name,
+						title: data.title,
+						repository_url,
+						github_installation_id: this.selectedGithubUser?.value.id,
+						branch: this.selectedBranch.value
+					};
 				}
 			};
 		},
