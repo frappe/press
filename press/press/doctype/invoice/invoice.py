@@ -695,8 +695,13 @@ class Invoice(Document):
 		# sort by ascending for FIFO
 		unallocated_balances.reverse()
 
-		total_allocated = 0
 		due = self.total
+		if (
+			self.status == "Unpaid" and self.payment_mode == "Card" and self.total_before_tax > 0
+		):
+			# consider total before tax for card invoices and tax already applied
+			due = self.total_before_tax
+		total_allocated = 0
 		for balance in unallocated_balances:
 			if due == 0:
 				break
