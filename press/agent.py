@@ -3,17 +3,17 @@
 # For license information, please see license.txt
 import json
 import os
-import typing
 from datetime import date
 from typing import List
 
 import _io
 import frappe
 import requests
+from typing import TYPE_CHECKING
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
 	from io import BufferedReader
 
 	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
@@ -21,6 +21,12 @@ if typing.TYPE_CHECKING:
 
 
 class Agent:
+	if TYPE_CHECKING:
+		from requests import Response
+		from typing import Optional
+
+		response: "Optional[Response]"
+
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
@@ -655,6 +661,7 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
 		url = None
@@ -681,21 +688,21 @@ class Agent:
 					for key, value in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, files=file_objects, verify=verify
 				)
 			else:
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
 				)
 			json_response = None
 			try:
-				json_response = result.json()
+				json_response = self.response.json()
 				if raises:
-					result.raise_for_status()
+					self.response.raise_for_status()
 				return json_response
 			except Exception:
-				self.handle_request_failure(agent_job, result)
+				self.handle_request_failure(agent_job, self.response)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -703,7 +710,7 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=json_response or result.text,
+					result=json_response or self.response.text,
 					doc=agent_job,
 				)
 		except Exception as exc:

@@ -579,27 +579,18 @@ class DeployCandidate(Document):
 		)
 
 	def _build_start(self):
-		if self.build_start or self.status == "Preparing":
-			pass
-
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
 		frappe.db.commit()
 
 	def _build_run(self):
-		if self.status == "Running":
-			return
-
 		self.status = "Running"
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
 	def _build_failed(self):
-		if self.status == "Failure":
-			return
-
 		self.status = "Failure"
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
@@ -613,9 +604,6 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def _build_successful(self):
-		if self.status == "Success":
-			return
-
 		self.status = "Success"
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
@@ -627,9 +615,6 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def _build_end(self):
-		if self.build_end and self.build_duration:
-			return
-
 		self.build_end = now()
 		self.build_duration = self.build_end - self.build_start
 
