@@ -1936,7 +1936,7 @@ def get_private_groups_for_upgrade(name, version):
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
 		"Frappe Version",
-		{"number": version_number + 1, "status": "Stable"},
+		{"number": version_number + 1, "public": True},
 		"name",
 	)
 
