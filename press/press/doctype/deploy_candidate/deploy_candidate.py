@@ -209,6 +209,7 @@ class DeployCandidate(Document):
 
 		self.status = "Pending"
 		self.set_remote_build_flags()
+		self.reset_build_state()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -628,6 +629,16 @@ class DeployCandidate(Document):
 				step.status = "Failure"
 				break
 
+	def reset_build_state(self):
+		self.build_steps.clear()
+		self.build_error = ""
+		self.build_output = ""
+		self.build_start = None
+		self.build_end = None
+		self.last_updated = None
+		self.build_duration = None
+		self.build_directory = None
+
 	def add_pre_build_steps(self):
 		"""
 		This function just adds build steps that occur before
@@ -636,10 +647,6 @@ class DeployCandidate(Document):
 		- `_update_build_steps`
 		- `_update_post_build_steps`
 		"""
-		if self.build_steps:
-			self.build_output = ""
-			self.build_steps.clear()
-
 		app_titles = {a.app: a.title for a in self.apps}
 		stage_slug = "clone"
 		for app in self.apps:
