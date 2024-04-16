@@ -123,6 +123,7 @@ class DeployCandidate(Document):
 		"build_start",
 		"build_end",
 		"build_duration",
+		"build_error",
 		"apps",
 		"group",
 	]
