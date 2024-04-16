@@ -74,6 +74,7 @@ class DeployCandidate(Document):
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
+		build_error: DF.Code | None
 		build_output: DF.Code | None
 		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]

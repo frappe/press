@@ -52,6 +52,7 @@ class DockerBuildOutputParser:
 
 		# Used to generate output and track parser state
 		self.lines: list[str] = []
+		self.error_lines: list[str] = []
 		self.steps: dict[int, "DeployCandidateBuildStep"] = frappe._dict()
 		self._steps_by_step_slug = None
 
@@ -99,6 +100,8 @@ class DockerBuildOutputParser:
 
 	def flush_output(self, commit: bool = True):
 		self.dc.build_output = "".join(self.lines)
+		self.dc.build_error = "".join(self.error_lines)
+
 		self.dc.save(ignore_version=True)
 		if commit:
 			frappe.db.commit()
@@ -108,6 +111,9 @@ class DockerBuildOutputParser:
 
 		# append before stripping to preserve '\n'
 		self.lines.append(escaped_line)
+
+		# check if line is part of build error and append
+		self._append_error_line(escaped_line)
 
 		stripped_line = escaped_line.strip()
 		if not stripped_line:
@@ -131,13 +137,27 @@ class DockerBuildOutputParser:
 		else:
 			self._add_step_to_steps_dict(split)
 
+	def _append_error_line(self, escaped_line: str):
+		no_errors = len(self.error_lines) == 0
+		if no_errors and "ERROR:" not in escaped_line:
+			return
+
+		splits = escaped_line.split(" ", maxsplit=1)
+
+		# If no_errors then first "ERROR:" is the start of error log.
+		if no_errors and len(splits) > 1 and splits[1].startswith("ERROR:"):
+			self.error_lines.append(splits[1])
+
+		# Build error ends the build, once an error is encountered
+		# remaining build output lines belong to the error log.
+		else:
+			self.error_lines.append(escaped_line)
+
 	def _end_parsing(self):
 		if self.is_remote:
 			self.dc.last_updated = now_datetime()
 
-		self.dc.build_output = "".join(self.lines)
-		self.dc.save()
-		frappe.db.commit()
+		self.flush_output(True)
 
 	def _set_docker_image_id(self, line: str):
 		self.dc.docker_image_id = line.split()[2].split(":")[1]
