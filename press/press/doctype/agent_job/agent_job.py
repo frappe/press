@@ -629,6 +629,13 @@ def update_steps(job_name, job):
 
 def update_step(step_name, step):
 	step_data = json.dumps(step["data"], indent=4, sort_keys=True)
+
+	output = None
+	traceback = None
+	if isinstance(output, dict):
+		traceback = output.get("traceback")
+		output = output.get("output")
+
 	frappe.db.set_value(
 		"Agent Job Step",
 		step_name,
@@ -638,8 +645,8 @@ def update_step(step_name, step):
 			"duration": step["duration"],
 			"status": step["status"],
 			"data": step_data,
-			"output": step["data"].get("output"),
-			"traceback": step["data"].get("traceback"),
+			"output": output,
+			"traceback": traceback,
 		},
 	)
 

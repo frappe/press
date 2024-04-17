@@ -271,19 +271,25 @@ class UploadStepUpdater:
 		self._upload_step = None
 
 	@property
-	def upload_step(self) -> "DeployCandidateBuildStep":
+	def upload_step(self) -> "DeployCandidateBuildStep | None":
 		if not self._upload_step:
 			self._upload_step = self.dc.get_step("upload", "image")
 		return self._upload_step
 
 	def start(self):
+		if not self.upload_step:
+			return
+
 		if self.upload_step.status == "Running":
-			pass
+			return
 
 		self.upload_step.status = "Running"
 		self.flush_output()
 
 	def process(self, output: "PushOutput"):
+		if not self.upload_step:
+			return
+
 		for line in output:
 			self._process_single_line(line)
 
@@ -302,6 +308,9 @@ class UploadStepUpdater:
 		self.flush_output()
 
 	def end(self, status: 'DF.Literal["Success", "Failure"]'):
+		if not self.upload_step:
+			return
+
 		# Used only if the build is running locally
 		self.upload_step.status = status
 		self.flush_output()
