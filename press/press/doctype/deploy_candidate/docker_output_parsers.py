@@ -10,6 +10,7 @@ from press.utils import log_error
 # Reference:
 # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
 ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
 	from typing import Any, Generator, Optional, TypedDict
@@ -139,6 +140,11 @@ class DockerBuildOutputParser:
 
 	def _append_error_line(self, escaped_line: str):
 		no_errors = len(self.error_lines) == 0
+
+		# Recorded errors not build failing errors
+		if not no_errors and re.match(done_check_rx, escaped_line):
+			self.error_lines = []
+
 		if no_errors and "ERROR:" not in escaped_line:
 			return
 

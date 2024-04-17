@@ -533,7 +533,7 @@ class DeployCandidate(Document):
 			upload_step_updater.start()
 			upload_step_updater.process(output)
 
-		self._update_status_from_remote_build_job(job)
+		self._update_status_from_remote_build_job(job, job_data)
 
 		if job.status == "Success":
 			upload_step_updater.end("Success")
@@ -542,7 +542,11 @@ class DeployCandidate(Document):
 			staging = request_data.get("deploy_to_staging")
 			self.create_deploy(staging)
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob"):
+	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
+		# build_failed can be None if the build has not ended
+		if job_data.get("build_failed") is True:
+			return self._build_failed()
+
 		match job.status:
 			case "Pending" | "Running":
 				return self._build_run()
@@ -608,6 +612,7 @@ class DeployCandidate(Document):
 
 	def _build_successful(self):
 		self.status = "Success"
+		self.build_error = None
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
 		)
