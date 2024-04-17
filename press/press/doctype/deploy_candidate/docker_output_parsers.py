@@ -237,10 +237,15 @@ def ansi_escape(text: str) -> str:
 def get_command(name: str) -> str:
 	# Strip docker flags and commands from the line
 	line = dockerfile.parse_string(name)[0]
-	name = " ".join(line.value).strip()
-	if not name:
-		name = line.original.split(maxsplit=1)[1]
-	return name.split("`#stage-", maxsplit=1)[0]
+	command = " ".join(line.value).strip()
+	if not command:
+		command: str = line.original.split(maxsplit=1)[1]
+	command = command.split("`#stage-", maxsplit=1)[0]
+
+	# Remove line fold slashes
+	splits = [p.strip() for p in command.split(" \\\n")]
+
+	return "\n".join([p for p in splits if len(p)])
 
 
 class UploadStepUpdater:
