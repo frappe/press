@@ -30,8 +30,6 @@ export default defineComponent({
 			return `Build Step Failed - "${this.failedStepTitle}"`;
 		},
 		body(): string {
-			// @ts-ignore
-			window.d = this;
 			var splits = this.build_error
 				.trim()
 				.split('\n')

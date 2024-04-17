@@ -69,7 +69,7 @@
 		</div>
 
 		<!-- Build Failure -->
-		<div class="mt-8" v-if="deploy.build_error">
+		<div class="mt-8" v-if="deploy.build_error && deploy.status === 'Failure'">
 			<BuildError
 				:build_error="deploy.build_error"
 				:build_steps="deploy.build_steps"
