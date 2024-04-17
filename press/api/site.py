@@ -1938,7 +1938,7 @@ def get_private_groups_for_upgrade(name, version):
 		"Frappe Version",
 		{
 			"number": version_number + 1,
-			"status": ("=", ("Stable", "End of Life")),
+			"status": ("in", ("Stable", "End of Life")),
 			"public": True,
 		},
 		"name",
