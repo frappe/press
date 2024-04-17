@@ -1,28 +1,29 @@
 <template>
-	<Button :route="{ name: 'SettingsPermissionRoles' }" class="mb-4">
-		<template #prefix>
-			<i-lucide-arrow-left class="h-4 w-4 text-gray-600" />
-		</template>
-		All roles
-	</Button>
+	<div class="mb-5 flex items-center gap-2">
+		<Tooltip text="All Roles">
+			<Button :route="{ name: 'SettingsPermissionRoles' }" class="">
+				<template #icon>
+					<i-lucide-arrow-left class="h-4 w-4 text-gray-700" />
+				</template>
+			</Button>
+		</Tooltip>
+		<h3 class="text-lg font-medium text-gray-900">
+			{{ permissionGroup.doc?.title }}
+		</h3>
+	</div>
 	<ObjectList :options="listOptions">
 		<template #header-left="{ listResource }">
-			<div class="flex items-center space-x-4">
-				<h3 class="text-lg font-medium text-gray-900">
-					{{ permissionGroup.doc?.title }}
-				</h3>
-				<Dropdown :options="getDropdownOptions(listResource)">
-					<Button>
-						<template #prefix>
-							<LucideAppWindow class="h-4 w-4 text-gray-500" />
-						</template>
-						{{ currentDropdownOption.label }}
-						<template #suffix>
-							<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
-						</template>
-					</Button>
-				</Dropdown>
-			</div>
+			<Dropdown :options="getDropdownOptions(listResource)">
+				<Button>
+					<template #prefix>
+						<LucideAppWindow class="h-4 w-4 text-gray-500" />
+					</template>
+					{{ currentDropdownOption.label }}
+					<template #suffix>
+						<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
+					</template>
+				</Button>
+			</Dropdown>
 		</template>
 
 		<template #header-right="{ listResource }">
