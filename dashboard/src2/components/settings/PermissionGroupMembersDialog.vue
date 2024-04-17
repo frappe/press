@@ -1,13 +1,12 @@
 <template>
 	<Dialog
-		v-if="groupResource.doc"
-		:options="{ title: `Manage ${groupResource.doc.title}` }"
+		v-if="permissionGroup.doc"
+		:options="{ title: `${permissionGroup.doc.title}` }"
 		v-model="show"
 		@after-leave="() => (this.memberEmail = '')"
 	>
 		<template v-slot:body-content>
-			<LoadingText v-if="groupResource.getUsers.loading" />
-			<div v-else class="text-base">
+			<div class="text-base">
 				<div class="mb-4 flex gap-2">
 					<div class="flex-1">
 						<Autocomplete
@@ -20,7 +19,7 @@
 						variant="solid"
 						label="Add Member"
 						:disabled="!member?.value"
-						:loading="groupResource.addUser.loading"
+						:loading="permissionGroup.addUser?.loading"
 						@click="() => addUser(member.value)"
 					/>
 				</div>
@@ -30,7 +29,8 @@
 					v-if="groupUsers.length === 0"
 					class="rounded border border-dashed p-4 text-center text-gray-500"
 				>
-					No members added to this group.
+					<LoadingText v-if="permissionGroup.getUsers.loading" />
+					<span v-else>No members added to this role.</span>
 				</div>
 				<div v-else class="flex flex-col divide-y">
 					<div v-for="user in groupUsers" class="flex justify-between py-2.5">
@@ -40,10 +40,11 @@
 							:email="user.name"
 							:key="user.name"
 						/>
-						<Button
-							icon="trash"
-							@click="() => removeUser(user.name)"
-						/>
+						<Button @click="() => removeUser(user.name)">
+							<template #icon>
+								<i-lucide-x class="h-4 w-4 text-gray-600" />
+							</template>
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -64,7 +65,7 @@ const props = defineProps({
 const member = ref({});
 const show = ref(true);
 
-const groupResource = createDocumentResource({
+const permissionGroup = createDocumentResource({
 	doctype: 'Press Permission Group',
 	name: props.groupId,
 	auto: true,
@@ -74,10 +75,10 @@ const groupResource = createDocumentResource({
 		removeUser: 'remove_user'
 	},
 	onSuccess() {
-		groupResource.getUsers.submit();
+		permissionGroup.getUsers.submit();
 	}
 });
-const groupUsers = computed(() => groupResource.getUsers.data || []);
+const groupUsers = computed(() => permissionGroup.getUsers.data || []);
 
 const team = getTeam();
 const autoCompleteList = computed(() => {
@@ -89,23 +90,23 @@ const autoCompleteList = computed(() => {
 });
 
 function addUser(user) {
-	return toast.promise(groupResource.addUser.submit({ user }), {
-		loading: `Adding ${user} to ${groupResource.doc.title}`,
+	return toast.promise(permissionGroup.addUser.submit({ user }), {
+		loading: `Adding ${user} to ${permissionGroup.doc.title}`,
 		success: () => {
-			groupResource.getUsers.submit();
+			permissionGroup.getUsers.submit();
 			member.value = {};
-			return `${user} added to ${groupResource.doc.title}`;
+			return `${user} added to ${permissionGroup.doc.title}`;
 		},
 		error: e => (e.messages.length ? e.messages.join('\n') : e.message)
 	});
 }
 
 function removeUser(user) {
-	return toast.promise(groupResource.removeUser.submit({ user }), {
-		loading: `Removing ${user} from ${groupResource.doc.title}`,
+	return toast.promise(permissionGroup.removeUser.submit({ user }), {
+		loading: `Removing ${user} from ${permissionGroup.doc.title}`,
 		success: () => {
-			groupResource.getUsers.submit();
-			return `${user} removed from ${groupResource.doc.title}`;
+			permissionGroup.getUsers.submit();
+			return `${user} removed from ${permissionGroup.doc.title}`;
 		},
 		error: e => (e.messages.length ? e.messages.join('\n') : e.message)
 	});

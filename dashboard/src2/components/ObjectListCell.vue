@@ -45,6 +45,9 @@
 				</Tooltip>
 			</div>
 		</div>
+		<div class="text-base" v-else-if="column.type == 'Date'">
+			{{ formattedDate }}
+		</div>
 		<div v-else-if="column.type == 'Actions'">
 			<Dropdown v-if="showDropdown" :options="actions">
 				<button
@@ -96,6 +99,13 @@ export default {
 			return typeof formattedValue === 'object'
 				? formattedValue
 				: String(formattedValue);
+		},
+		formattedDate() {
+			if (!this.value) return '';
+			if (this.value.includes(' ')) {
+				return this.$format.date(this.value, 'lll');
+			}
+			return this.$format.date(this.value, 'll');
 		},
 		icon() {
 			return this.column.type === 'Icon' && this.column.Icon(this.value);
