@@ -4,12 +4,11 @@
 import json
 import os
 from datetime import date
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import _io
 import frappe
 import requests
-from typing import TYPE_CHECKING
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
 
@@ -22,8 +21,9 @@ if TYPE_CHECKING:
 
 class Agent:
 	if TYPE_CHECKING:
-		from requests import Response
 		from typing import Optional
+
+		from requests import Response
 
 		response: "Optional[Response]"
 
@@ -997,4 +997,28 @@ class Agent:
 			"Call Bench Supervisorctl",
 			f"/benches/{bench}/supervisorctl",
 			data={"command": action, "programs": programs},
+		)
+
+	def run_command_in_docker_cache(
+		self,
+		command: str = "ls -A",
+		cache_target: str = "/home/frappe/.cache",
+		remove_image: bool = True,
+	):
+		data = dict(
+			command=command,
+			cache_target=cache_target,
+			remove_image=remove_image,
+		)
+		return self.request(
+			"POST",
+			"docker_cache_utils/run_command_in_docker_cache",
+			data=data,
+		)
+
+	def get_cached_apps(self):
+		return self.request(
+			"POST",
+			"docker_cache_utils/get_cached_apps",
+			data={},
 		)
