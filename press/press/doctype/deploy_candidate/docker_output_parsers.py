@@ -10,6 +10,7 @@ from press.utils import log_error
 # Reference:
 # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
 ansi_escape_rx = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+done_check_rx = re.compile(r"#\d+\sDONE\s\d+\.\d+")
 
 if typing.TYPE_CHECKING:
 	from typing import Any, Generator, Optional, TypedDict
@@ -52,6 +53,7 @@ class DockerBuildOutputParser:
 
 		# Used to generate output and track parser state
 		self.lines: list[str] = []
+		self.error_lines: list[str] = []
 		self.steps: dict[int, "DeployCandidateBuildStep"] = frappe._dict()
 		self._steps_by_step_slug = None
 
@@ -99,6 +101,8 @@ class DockerBuildOutputParser:
 
 	def flush_output(self, commit: bool = True):
 		self.dc.build_output = "".join(self.lines)
+		self.dc.build_error = "".join(self.error_lines)
+
 		self.dc.save(ignore_version=True)
 		if commit:
 			frappe.db.commit()
@@ -108,6 +112,9 @@ class DockerBuildOutputParser:
 
 		# append before stripping to preserve '\n'
 		self.lines.append(escaped_line)
+
+		# check if line is part of build error and append
+		self._append_error_line(escaped_line)
 
 		stripped_line = escaped_line.strip()
 		if not stripped_line:
@@ -131,13 +138,33 @@ class DockerBuildOutputParser:
 		else:
 			self._add_step_to_steps_dict(split)
 
+	def _append_error_line(self, escaped_line: str):
+		no_errors = len(self.error_lines) == 0
+
+		# Recorded errors not build failing errors
+		if not no_errors and re.match(done_check_rx, escaped_line):
+			self.error_lines = []
+			return
+
+		if no_errors and "ERROR:" not in escaped_line:
+			return
+
+		splits = escaped_line.split(" ", maxsplit=1)
+
+		# If no_errors then first "ERROR:" is the start of error log.
+		if no_errors and len(splits) > 1 and splits[1].startswith("ERROR:"):
+			self.error_lines.append(splits[1])
+
+		# Build error ends the build, once an error is encountered
+		# remaining build output lines belong to the error log.
+		else:
+			self.error_lines.append(escaped_line)
+
 	def _end_parsing(self):
 		if self.is_remote:
 			self.dc.last_updated = now_datetime()
 
-		self.dc.build_output = "".join(self.lines)
-		self.dc.save()
-		frappe.db.commit()
+		self.flush_output(True)
 
 	def _set_docker_image_id(self, line: str):
 		self.dc.docker_image_id = line.split()[2].split(":")[1]
@@ -211,10 +238,20 @@ def ansi_escape(text: str) -> str:
 def get_command(name: str) -> str:
 	# Strip docker flags and commands from the line
 	line = dockerfile.parse_string(name)[0]
-	name = " ".join(line.value).strip()
-	if not name:
-		name = line.original.split(maxsplit=1)[1]
-	return name.split("`#stage-", maxsplit=1)[0]
+	command = " ".join(line.value).strip()
+	if not command:
+		command: str = line.original.split(maxsplit=1)[1]
+	command = command.split("`#stage-", maxsplit=1)[0]
+
+	# Remove line fold slashes
+	splits = [p.strip() for p in command.split(" \\\n")]
+
+	# Strip multiple internal whitespaces
+	for i in range(len(splits)):
+		s = splits[i]
+		splits[i] = " ".join([p.strip() for p in s.split() if len(p)])
+
+	return "\n".join([p for p in splits if len(p)])
 
 
 class UploadStepUpdater:
@@ -240,19 +277,25 @@ class UploadStepUpdater:
 		self._upload_step = None
 
 	@property
-	def upload_step(self) -> "DeployCandidateBuildStep":
+	def upload_step(self) -> "DeployCandidateBuildStep | None":
 		if not self._upload_step:
 			self._upload_step = self.dc.get_step("upload", "image")
 		return self._upload_step
 
 	def start(self):
+		if not self.upload_step:
+			return
+
 		if self.upload_step.status == "Running":
-			pass
+			return
 
 		self.upload_step.status = "Running"
 		self.flush_output()
 
 	def process(self, output: "PushOutput"):
+		if not self.upload_step:
+			return
+
 		for line in output:
 			self._process_single_line(line)
 
@@ -271,6 +314,9 @@ class UploadStepUpdater:
 		self.flush_output()
 
 	def end(self, status: 'DF.Literal["Success", "Failure"]'):
+		if not self.upload_step:
+			return
+
 		# Used only if the build is running locally
 		self.upload_step.status = status
 		self.flush_output()

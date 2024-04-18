@@ -45,6 +45,7 @@
   "environment_variables",
   "output_tab",
   "section_break_9",
+  "build_error",
   "build_steps",
   "build_output",
   "ssh_tab",
@@ -343,7 +344,7 @@
   {
    "fieldname": "parameters_tab",
    "fieldtype": "Tab Break",
-   "label": "Parameters"
+   "label": "Bench Params"
   },
   {
    "fieldname": "output_tab",
@@ -354,6 +355,13 @@
    "fieldname": "ssh_tab",
    "fieldtype": "Tab Break",
    "label": "SSH"
+  },
+  {
+   "depends_on": "eval:doc.build_error",
+   "fieldname": "build_error",
+   "fieldtype": "Code",
+   "label": "Build Error",
+   "read_only": 1
   }
  ],
  "links": [
@@ -366,7 +374,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-04-02 10:17:58.386383",
+ "modified": "2024-04-16 11:27:12.314611",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

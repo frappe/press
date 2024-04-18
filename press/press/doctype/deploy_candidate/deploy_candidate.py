@@ -11,7 +11,6 @@ import subprocess
 import tarfile
 import tempfile
 import typing
-from datetime import datetime, timedelta
 from subprocess import Popen
 from typing import Any, List, Literal, Optional, Tuple
 
@@ -20,7 +19,6 @@ import frappe
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from frappe.utils import format_duration
 from frappe.utils import now_datetime as now
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -74,6 +72,7 @@ class DeployCandidate(Document):
 		build_directory: DF.Data | None
 		build_duration: DF.Time | None
 		build_end: DF.Datetime | None
+		build_error: DF.Code | None
 		build_output: DF.Code | None
 		build_start: DF.Datetime | None
 		build_steps: DF.Table[DeployCandidateBuildStep]
@@ -122,6 +121,7 @@ class DeployCandidate(Document):
 		"build_start",
 		"build_end",
 		"build_duration",
+		"build_error",
 		"apps",
 		"group",
 	]
@@ -208,6 +208,7 @@ class DeployCandidate(Document):
 
 		self.status = "Pending"
 		self.set_remote_build_flags()
+		self.reset_build_state()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -245,23 +246,6 @@ class DeployCandidate(Document):
 			server = self._get_docker_remote_builder_server()
 			frappe.msgprint(f"Build is running on remote server <b>{server}<b/>")
 			return False
-		return True
-
-	@frappe.whitelist()
-	def is_build_okay(self):
-		"""
-		These status checks are a best-ish guess.
-		"""
-		if self.check_if_build_failed(True):
-			return False
-
-		if self.check_if_build_stuck(True):
-			return False
-
-		if self.check_if_build_succeeded(True):
-			return True
-
-		frappe.msgprint("Build seems to be running fine")
 		return True
 
 	@frappe.whitelist()
@@ -530,7 +514,7 @@ class DeployCandidate(Document):
 			upload_step_updater.start()
 			upload_step_updater.process(output)
 
-		self._update_status_from_remote_build_job(job)
+		self._update_status_from_remote_build_job(job, job_data)
 
 		if job.status == "Success":
 			upload_step_updater.end("Success")
@@ -539,7 +523,11 @@ class DeployCandidate(Document):
 			staging = request_data.get("deploy_to_staging")
 			self.create_deploy(staging)
 
-	def _update_status_from_remote_build_job(self, job: "AgentJob"):
+	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
+		# build_failed can be None if the build has not ended
+		if job_data.get("build_failed") is True:
+			return self._build_failed()
+
 		match job.status:
 			case "Pending" | "Running":
 				return self._build_run()
@@ -579,27 +567,18 @@ class DeployCandidate(Document):
 		)
 
 	def _build_start(self):
-		if self.build_start or self.status == "Preparing":
-			pass
-
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
 		frappe.db.commit()
 
 	def _build_run(self):
-		if self.status == "Running":
-			return
-
 		self.status = "Running"
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
 	def _build_failed(self):
-		if self.status == "Failure":
-			return
-
 		self.status = "Failure"
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
@@ -613,10 +592,8 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def _build_successful(self):
-		if self.status == "Success":
-			return
-
 		self.status = "Success"
+		self.build_error = None
 		bench_update = frappe.get_all(
 			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
 		)
@@ -627,9 +604,6 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def _build_end(self):
-		if self.build_end and self.build_duration:
-			return
-
 		self.build_end = now()
 		self.build_duration = self.build_end - self.build_start
 
@@ -642,6 +616,16 @@ class DeployCandidate(Document):
 				step.status = "Failure"
 				break
 
+	def reset_build_state(self):
+		self.build_steps.clear()
+		self.build_error = ""
+		self.build_output = ""
+		self.build_start = None
+		self.build_end = None
+		self.last_updated = None
+		self.build_duration = None
+		self.build_directory = None
+
 	def add_pre_build_steps(self):
 		"""
 		This function just adds build steps that occur before
@@ -650,10 +634,6 @@ class DeployCandidate(Document):
 		- `_update_build_steps`
 		- `_update_post_build_steps`
 		"""
-		if self.build_steps:
-			self.build_output = ""
-			self.build_steps.clear()
-
 		app_titles = {a.app: a.title for a in self.apps}
 		stage_slug = "clone"
 		for app in self.apps:
@@ -1089,22 +1069,11 @@ class DeployCandidate(Document):
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
-		command = "docker build"
-		import platform
-
-		# check if it's running on apple silicon mac
-		is_apple_silicon = (
-			platform.machine() == "arm64"
-			and platform.system() == "Darwin"
-			and platform.processor() == "arm"
-		)
-		if is_apple_silicon:
-			command = f"{command}x build --platform linux/amd64"
-
+		command = "docker buildx build --platform linux/amd64"
 		if no_cache:
 			command += " --no-cache"
 
-		command += f" -t {self.docker_image}"
+		command += f" --tag {self.docker_image}"
 		command += " ."
 		return command
 
@@ -1383,64 +1352,6 @@ class DeployCandidate(Document):
 			server = frappe.get_value("Press Settings", None, "docker_remote_builder_server")
 		return server
 
-	def check_if_build_failed(self, msgprint: bool = False) -> bool:
-		if self.status == "Failure":
-			return True
-
-		errors = frappe.db.sql(
-			"""
-				select `name`, `method`, `creation` from `tabError Log`
-				where `tabError Log`.`error` like %s
-				and `tabError Log`.`modified` > %s
-				order by modified
-			""",
-			(f"%{self.name}%", self.modified),
-			as_dict=True,
-		)
-
-		failed_step = self.get_first_step("status", ["Failure"])
-		failed = len(errors) > 0 or failed_step is not None
-
-		if failed and msgprint:
-			msgprint_build_failed(self, errors, failed_step)
-
-		return failed
-
-	def check_if_build_stuck(self, msgprint: bool = False) -> bool:
-		if self.status not in ["Pending", "Preparing", "Running"]:
-			return False
-
-		stuck_step = self.get_first_step("status", ["Pending", "Running"])
-		if not stuck_step:
-			return False
-
-		modified = stuck_step.modified
-		if isinstance(modified, str):
-			modified = datetime.fromisoformat(modified)
-
-		delta: timedelta = now() - modified
-		stuck = delta.seconds > 600  # 10 minutes
-
-		if stuck and msgprint:
-			msgprint_build_stuck(stuck_step, delta)
-
-		return stuck
-
-	def check_if_build_succeeded(self, msgprint: bool = False) -> bool:
-		if self.status == "Success":
-			return True
-
-		last_step = self.build_steps[-1]
-		success = last_step.stage_slug == "upload" and last_step.status == "Success"
-
-		if msgprint and success:
-			frappe.msgprint(
-				f"Last step {last_step.stage} {last_step.step} has succeeded.",
-				title="Build might have succeeded",
-			)
-
-		return success
-
 	def get_first_step(
 		self, key: str, value: str | list[str]
 	) -> "Optional[DeployCandidateBuildStep]":
@@ -1639,41 +1550,6 @@ def get_build_stage_and_step(
 	else:
 		step = STEP_SLUG_MAP.get((stage_slug, step_slug), step_slug)
 	return (stage, step)
-
-
-def msgprint_build_failed(
-	dc: DeployCandidate, errors: list[dict], failed_step: Optional[Document]
-) -> None:
-	errors.reverse()
-	msg = ""
-	if failed_step:
-		msg += f"Build step no. {failed_step.idx} <b>{failed_step.stage} {failed_step.step}</b> has failed. "
-
-	if not errors:
-		return frappe.msgprint(msg, title="Failed Step")
-
-	msg += f"The following errors were found associated with <b>{dc.name}</b>:"
-
-	right_now = now()
-	msg += "<ul>"
-	for e in errors:
-		delta = format_duration((right_now - e.creation).seconds)
-		msg += f"""
-		<li style="">
-			<a href="/app/error-log/{e.name}" target="_blank">{e.method}</a>
-			<p style="font-size: 0.8rem">{delta} ago</p>
-		</li>"""
-	msg += "</ul>"
-	frappe.msgprint(msg, title="Build might have failed")
-
-
-def msgprint_build_stuck(stuck_step: Document, delta: timedelta) -> None:
-	frappe.msgprint(
-		f"Build step no. {stuck_step.idx} <b>{stuck_step.stage} {stuck_step.step}</b> "
-		f"with status <b>{stuck_step.status}</b> "
-		f"was last updated <b>{format_duration(delta.seconds)} ago</b>.",
-		title="Build might be stuck",
-	)
 
 
 def is_suspended() -> bool:
