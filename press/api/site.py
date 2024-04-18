@@ -209,7 +209,10 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 
 def validate_plan(server, plan):
-	if frappe.db.get_value("Site Plan", plan, "price_usd") > 0:
+	if (
+		frappe.db.get_value("Site Plan", plan, "price_usd") > 0
+		or frappe.db.get_value("Site Plan", plan, "dedicated_server_plan") == 1
+	):
 		return
 	if (
 		frappe.session.data.user_type == "System User"
