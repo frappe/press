@@ -245,6 +245,11 @@ def get_command(name: str) -> str:
 	# Remove line fold slashes
 	splits = [p.strip() for p in command.split(" \\\n")]
 
+	# Strip multiple internal whitespaces
+	for i in range(len(splits)):
+		s = splits[i]
+		splits[i] = " ".join([p.strip() for p in s.split() if len(p)])
+
 	return "\n".join([p for p in splits if len(p)])
 
 

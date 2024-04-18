@@ -23,17 +23,18 @@ export default defineComponent({
 	components: { FoldStep },
 	computed: {
 		title(): string {
-			if (!this.failedStepTitle) {
+			if (!this.failedStep || !this.failedStep.title) {
 				return 'Build Failed';
 			}
 
-			return `Build Step Failed - "${this.failedStepTitle}"`;
+			return `Build Step Failed - "${this.failedStep.title}"`;
 		},
 		body(): string {
-			var splits = this.build_error
+			let splits = this.build_error
 				.trim()
 				.split('\n')
 				.map(s => s.trim());
+			let command = this.failedStep?.command ?? '';
 
 			// Remove first ERROR: line
 			if (splits.at(0)?.startsWith('ERROR:')) {
@@ -52,8 +53,8 @@ export default defineComponent({
 
 			// Remove docker output from stage command line
 			if (splits.at(0).startsWith('> [stage-')) {
-				splits[0] = `# Build Step Command\n${parseStageLine(splits[0])}\n\n`;
-				splits[1] = `# Build Step Output\n${stripDurationStamp(splits[1])}`;
+				command = command || parseStageLine(splits[0]);
+				splits = splits.slice(1);
 			}
 
 			// Remove Dockerfile line end delimiter
@@ -67,29 +68,64 @@ export default defineComponent({
 				splits = splits.slice(0, index - 1);
 			}
 
-			return splits.map(s => stripDurationStamp(s)).join('\n');
-		},
-		failedStepTitle(): string {
-			for (const step of this.build_steps ?? []) {
-				if (step.status === 'Failure') return step.title;
+			// Incase stage line lies after error body
+			const out = getCommandAndSplits(splits);
+			splits = out.splits;
+
+			if (!command) {
+				command = out.command;
 			}
 
-			return '';
+			let output = splits.map(s => stripLinePrefix(s)).join('\n');
+			if (command) {
+				return `# Step Command\n${command}\n\n# Step Output\n${output}\n`;
+			}
+
+			return output;
+		},
+		failedStep() {
+			for (const step of this.build_steps ?? []) {
+				if (step.status === 'Failure') return step;
+			}
+
+			return null;
 		}
 	}
 });
 
-function stripDurationStamp(line: string): string {
-	const match = line.match(/^\d+\.\d+\s/)?.[0];
+function getCommandAndSplits(splits: string[]): {
+	command: string;
+	splits: string[];
+} {
+	let command = '';
+	for (let i = 0; i < splits.length; i++) {
+		const line = splits[i];
+		if (!line.startsWith('> [stage-')) continue;
+
+		command = parseStageLine(line);
+		const index = i - 2;
+		if (index <= 0) {
+			break;
+		}
+
+		splits = splits.slice(0, index);
+	}
+
+	return { command, splits };
+}
+
+function stripLinePrefix(line: string): string {
+	// Match example: "#35 2.678 "
+	const match = line.match(/^(#\d+\s)?\d+\.\d+\s?/)?.[0];
 	if (!match) {
 		return line;
 	}
 
-	return line.split(match)[1].trim();
+	return line.split(match)[1].trimEnd();
 }
 
 function parseStageLine(line: string): string {
-	var splits = line.split(/\[stage-[^]+\]/);
+	let splits = line.split(/\[stage-[^]+\]/);
 	if (splits.length < 2) {
 		return line;
 	}
