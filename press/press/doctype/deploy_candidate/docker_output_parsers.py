@@ -144,6 +144,7 @@ class DockerBuildOutputParser:
 		# Recorded errors not build failing errors
 		if not no_errors and re.match(done_check_rx, escaped_line):
 			self.error_lines = []
+			return
 
 		if no_errors and "ERROR:" not in escaped_line:
 			return
