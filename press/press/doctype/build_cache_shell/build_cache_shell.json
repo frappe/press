@@ -1,0 +1,117 @@
+{
+ "actions": [
+  {
+   "action": "press.press.doctype.build_cache_shell.build_cache_shell.run_command",
+   "action_type": "Server Action",
+   "hidden": 1,
+   "label": "Run"
+  }
+ ],
+ "allow_rename": 1,
+ "creation": "2024-04-18 11:55:45.595311",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "command",
+  "cache_target",
+  "build_server",
+  "output_section",
+  "output",
+  "meta_section",
+  "cwd",
+  "image_tag",
+  "column_break_zdbf",
+  "returncode"
+ ],
+ "fields": [
+  {
+   "default": "ls -lAh",
+   "fieldname": "command",
+   "fieldtype": "Code",
+   "in_list_view": 1,
+   "label": "Command",
+   "reqd": 1
+  },
+  {
+   "default": "/home/frappe/.cache",
+   "description": "Sets the <code>mount=type=cache</code> target and the <code>WORKDIR</code> of where the command is run.",
+   "fieldname": "cache_target",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Cache Target",
+   "reqd": 1
+  },
+  {
+   "description": "If set, command will be run in a remote build server and not locally.",
+   "fieldname": "build_server",
+   "fieldtype": "Link",
+   "label": "Build Server",
+   "options": "Server"
+  },
+  {
+   "fieldname": "output_section",
+   "fieldtype": "Section Break",
+   "label": "Output"
+  },
+  {
+   "depends_on": "eval:doc.output",
+   "fieldname": "output",
+   "fieldtype": "Code",
+   "label": "Output",
+   "read_only": 1
+  },
+  {
+   "fieldname": "meta_section",
+   "fieldtype": "Section Break",
+   "label": "Meta"
+  },
+  {
+   "depends_on": "eval:doc.cwd",
+   "fieldname": "cwd",
+   "fieldtype": "Data",
+   "label": "CWD",
+   "read_only": 1
+  },
+  {
+   "fieldname": "image_tag",
+   "fieldtype": "Data",
+   "label": "Image Tag",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zdbf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.output",
+   "fieldname": "returncode",
+   "fieldtype": "Int",
+   "label": "Return Code",
+   "read_only": 1
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-04-18 12:20:57.277931",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Build Cache Shell",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
