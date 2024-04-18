@@ -1069,22 +1069,11 @@ class DeployCandidate(Document):
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
-		command = "docker build"
-		import platform
-
-		# check if it's running on apple silicon mac
-		is_apple_silicon = (
-			platform.machine() == "arm64"
-			and platform.system() == "Darwin"
-			and platform.processor() == "arm"
-		)
-		if is_apple_silicon:
-			command = f"{command}x build --platform linux/amd64"
-
+		command = "docker buildx build --platform linux/amd64"
 		if no_cache:
 			command += " --no-cache"
 
-		command += f" -t {self.docker_image}"
+		command += f" --tag {self.docker_image}"
 		command += " ."
 		return command
 
