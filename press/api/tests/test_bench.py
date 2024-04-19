@@ -642,5 +642,11 @@ def set_press_settings_for_docker_build() -> None:
 
 
 def patch_dc_command_for_ci():
-	DeployCandidate.command = "docker buildx build"
-	DeployCandidate.command += " --cache-from type=gha --cache-to type=gha,mode=max --load"
+	DeployCandidate.base_build_command = " ".join(
+		[
+			DeployCandidate.base_build_command,
+			"--cache-from type=gha",
+			"--cache-to type=gha,mode=max",
+			"--load",
+		]
+	)

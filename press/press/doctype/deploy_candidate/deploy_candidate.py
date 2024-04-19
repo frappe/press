@@ -45,6 +45,9 @@ if typing.TYPE_CHECKING:
 
 
 class DeployCandidate(Document):
+	# This is altered in CI
+	base_build_command: str = "docker buildx build --platform linux/amd64"
+
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -1072,7 +1075,7 @@ class DeployCandidate(Document):
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
-		command = "docker buildx build --platform linux/amd64"
+		command = self.base_build_command
 		if no_cache:
 			command += " --no-cache"
 
