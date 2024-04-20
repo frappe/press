@@ -255,7 +255,7 @@ export default {
 			clientSecret: null,
 			paymentMethod: null,
 			publishableKey: null,
-			paymentOptions: ['Monthly', 'Annual'],
+			paymentOptions: ['Monthly'],
 			selectedOption: 'Monthly',
 			planData: null,
 			discount_percent: 0,
