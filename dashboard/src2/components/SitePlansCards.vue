@@ -62,8 +62,7 @@ export default {
 						{
 							value: plan.monitor_access ? 'Advanced Monitoring' : ''
 						}
-					],
-					disabled: Object.keys(this.$team.doc.billing_details).length === 0
+					]
 				};
 			});
 		}
