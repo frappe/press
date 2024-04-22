@@ -11,6 +11,7 @@ import subprocess
 import tarfile
 import tempfile
 import typing
+from datetime import datetime, timedelta
 from subprocess import Popen
 from typing import Any, List, Literal, Optional, Tuple
 
@@ -45,6 +46,9 @@ if typing.TYPE_CHECKING:
 
 
 class DeployCandidate(Document):
+	# This is altered in CI
+	base_build_command: str = "docker buildx build --platform linux/amd64"
+
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -583,32 +587,48 @@ class DeployCandidate(Document):
 	@reconnect_on_failure()
 	def _build_failed(self):
 		self.status = "Failure"
-		bench_update = frappe.get_all(
-			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
-		)
-		if bench_update:
-			frappe.db.set_value("Bench Update", bench_update[0], "status", "Failure")
-
 		self._fail_last_running_step()
 		self._build_end()
 		self.save(ignore_version=True)
+		self._update_bench_status()
 		frappe.db.commit()
 
 	def _build_successful(self):
 		self.status = "Success"
 		self.build_error = None
-		bench_update = frappe.get_all(
-			"Bench Update", {"status": "Running", "candidate": self.name}, pluck="name"
-		)
-		if bench_update:
-			frappe.db.set_value("Bench Update", bench_update[0], "status", "Build Successful")
 		self._build_end()
 		self.save(ignore_version=True)
+		self._update_bench_status()
 		frappe.db.commit()
+
+	def _update_bench_status(self):
+		if self.status == "Failure":
+			status = "Failure"
+		elif self.status == "Success":
+			status = "Build Successful"
+		else:
+			return
+
+		bench_update = frappe.get_all(
+			"Bench Update",
+			{"status": "Running", "candidate": self.name},
+			pluck="name",
+		)
+		if not bench_update:
+			return
+
+		frappe.db.set_value("Bench Update", bench_update[0], "status", status)
 
 	def _build_end(self):
 		self.build_end = now()
-		self.build_duration = self.build_end - self.build_start
+		if not isinstance(self.build_start, datetime):
+			return
+
+		build_duration = self.build_end - self.build_start
+		max_duration = timedelta(hours=23, minutes=59, seconds=59)
+
+		# build_duration is a Time field, >= 1 day is invalid
+		self.build_duration = min(build_duration, max_duration)
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:
@@ -1072,7 +1092,7 @@ class DeployCandidate(Document):
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
-		command = "docker buildx build --platform linux/amd64"
+		command = self.base_build_command
 		if no_cache:
 			command += " --no-cache"
 

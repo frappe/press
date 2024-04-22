@@ -223,12 +223,18 @@ class DockerBuildOutputParser:
 		if len(splits) != 2 and len(keys) == 0:
 			return None
 
+		index_str, line = splits
 		try:
-			index_str, line = splits
+			is_unusual = False
 			index = int(index_str[1:])
-			return dict(index=index, line=line, is_unusual=False)
 		except ValueError:
-			return dict(index=keys[-1], line=line, is_unusual=True)
+			is_unusual = True
+			index = keys[-1] if len(keys) else -1
+
+		if index == -1:
+			return None
+
+		return dict(index=index, line=line, is_unusual=is_unusual)
 
 
 def ansi_escape(text: str) -> str:
