@@ -187,7 +187,7 @@ class PressPermissionGroup(Document):
 			options.append(
 				{
 					"document_type": doctype,
-					"document_name": doc.name,
+					"document_name": doc.title or doc.name,
 					"permissions": doc_perms,
 				}
 			)
