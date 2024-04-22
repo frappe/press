@@ -646,7 +646,7 @@ def patch_dc_command_for_ci():
 		[
 			DeployCandidate.base_build_command,
 			"--cache-from type=gha",
-			"--cache-to type=gha,mode=max",
+			"--cache-to type=gha,mode=max,ignore-error=true",
 			"--load",
 		]
 	)
