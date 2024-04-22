@@ -1422,6 +1422,13 @@ class Site(Document, TagHelpers):
 			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
 			subscription_doc.disable()
 
+		subscriptions = frappe.get_all(
+			"Subscription", {"site": self.name, "enabled": 1}, pluck="name"
+		)
+		for subscription in subscriptions:
+			subscription_doc = frappe.get_doc("Subscription", subscription)
+			subscription_doc.disable()
+
 	def can_change_plan(self, ignore_card_setup):
 		if is_system_user(frappe.session.user):
 			return
