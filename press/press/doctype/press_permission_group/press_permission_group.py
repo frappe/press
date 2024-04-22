@@ -170,7 +170,7 @@ class PressPermissionGroup(Document):
 
 		options = []
 		fields = ["name", "title"] if doctype != "Site" else ["name"]
-		docs = get_list(doctype=doctype, fields=fields)
+		docs = get_list(doctype=doctype, fields=fields, limit=9999)
 
 		for doc in docs:
 			permitted_methods = get_permitted_methods(doctype, doc.name, group_names=[self.name])
