@@ -220,15 +220,13 @@ def set_value(doctype, name, fieldname, value=None):
 
 @frappe.whitelist(methods=["DELETE", "POST"])
 def delete(doctype, name):
+	method = "delete"
+
 	check_permissions(doctype)
 	check_team_access(doctype, name)
+	check_dashboard_actions(doctype, name, method)
 
-	doc = frappe.get_doc(doctype, name)
-	method_obj = getattr(doc, "delete")
-	fn = getattr(method_obj, "__func__", method_obj)
-	is_dashboard_whitelisted(fn)
-
-	doc.delete()
+	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
 
 
 @frappe.whitelist()
@@ -236,11 +234,7 @@ def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
 	check_team_access(dt, dn)
 	check_method_permissions(dt, dn, method)
-
-	doc = frappe.get_doc(dt, dn)
-	method_obj = getattr(doc, method)
-	fn = getattr(method_obj, "__func__", method_obj)
-	is_dashboard_whitelisted(fn)
+	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
@@ -297,6 +291,15 @@ def check_team_access(doctype: str, name: str):
 		return
 
 	raise_not_permitted()
+
+
+def check_dashboard_actions(doctype, name, method):
+	doc = frappe.get_doc(doctype, name)
+	method_obj = getattr(doc, method)
+	fn = getattr(method_obj, "__func__", method_obj)
+
+	if fn not in whitelisted_methods:
+		raise_not_permitted()
 
 
 @frappe.whitelist()
@@ -460,8 +463,3 @@ def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
 		return decorated_func
 
 	return wrapper
-
-
-def is_dashboard_whitelisted(method):
-	if method not in whitelisted_methods:
-		raise_not_permitted()
