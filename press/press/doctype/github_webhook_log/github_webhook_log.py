@@ -212,8 +212,11 @@ def get_repository_details_from_payload(payload: dict):
 	repo = r.get("name")
 	owner = r.get("owner", {}).get("login")
 
-	if not repo and (repos := payload.get("repositories_added")):
+	repos = payload.get("repositories_added")
+	if not repo and len(repos) == 1:
 		repo = repos[0].get("name")
+
+	if not owner and repos:
 		owner = repos[0].get("full_name", "").split("/")[0] or None
 
 	if not owner:
