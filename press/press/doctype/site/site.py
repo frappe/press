@@ -1216,17 +1216,25 @@ class Site(Document, TagHelpers):
 
 		sid = self.get_login_sid()
 		conn = FrappeClient(f"https://{self.name}?sid={sid}")
-		value = conn.get_value("System Settings", "setup_complete", "System Settings")
-		if value:
-			setup_complete = cint(value["setup_complete"])
-			self.setup_wizard_complete = setup_complete
 
-			if self.team == "Administrator":
-				user = frappe.db.get_value("Account Request", self.account_request, "email")
-				self.team = frappe.db.get_value("Team", {"user": user}, "name")
+		try:
+			value = conn.get_value("System Settings", "setup_complete", "System Settings")
+		except Exception:
+			log_error("Fetching Setup Status Failed", doc=self)
+			return
 
-			self.save()
-			return setup_complete
+		if not value:
+			return
+
+		setup_complete = cint(value["setup_complete"])
+		self.setup_wizard_complete = setup_complete
+
+		if self.team == "Administrator":
+			user = frappe.db.get_value("Account Request", self.account_request, "email")
+			self.team = frappe.db.get_value("Team", {"user": user}, "name")
+
+		self.save()
+		return setup_complete
 
 	def _set_configuration(self, config):
 		"""Similar to _update_configuration but will replace full configuration at once
@@ -1384,6 +1392,13 @@ class Site(Document, TagHelpers):
 
 		for subscription in app_subscriptions:
 			subscription_doc = frappe.get_doc("Marketplace App Subscription", subscription)
+			subscription_doc.disable()
+
+		subscriptions = frappe.get_all(
+			"Subscription", {"site": self.name, "enabled": 1}, pluck="name"
+		)
+		for subscription in subscriptions:
+			subscription_doc = frappe.get_doc("Subscription", subscription)
 			subscription_doc.disable()
 
 	def can_change_plan(self, ignore_card_setup):

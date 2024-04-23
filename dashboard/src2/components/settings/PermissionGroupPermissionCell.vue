@@ -1,6 +1,8 @@
 <template>
-	<div class="flex flex-wrap gap-x-4 gap-y-2 text-base max-w-[36rem] lg:max-w-[56rem]">
-		<div class="mb-2 mr-4 flex w-[12rem] items-center truncate">
+	<div
+		class="flex max-w-[36rem] flex-wrap gap-x-4 gap-y-2 py-4 text-base lg:max-w-[56rem]"
+	>
+		<div class="flex w-[12rem] items-center truncate">
 			<FormControl
 				type="checkbox"
 				:label="hasAllPermissions ? 'Deny All' : 'Allow All'"
@@ -13,7 +15,7 @@
 		<div
 			v-for="(perm, idx) in permissions"
 			:key="idx"
-			class="mb-2 mr-4 flex w-[12rem] items-center truncate"
+			class="flex w-[12rem] items-center truncate"
 		>
 			<FormControl
 				type="checkbox"

@@ -8,7 +8,7 @@ ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
 
 # Install essential packages
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   # Essentials
   build-essential \
@@ -60,7 +60,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
 COPY --chown=root:root supervisord.conf /etc/supervisor/supervisord.conf
 
 # Install Redis from PPA
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
+RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.io/gpg | gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg \
   && echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb focal main" | tee /etc/apt/sources.list.d/redis.list \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -69,7 +69,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt curl -fsSL https://p
 
 # Install Python from DeadSnakes PPA
 ENV {{ doc.get_dependency_version("PYTHON_VERSION") }}
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
+RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
   python${PYTHON_VERSION} \
@@ -124,7 +124,7 @@ RUN useradd -ms /bin/bash frappe
 
 # Run before install scripts
 {% if p.prerequisites %}
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.prerequisites }} \
+RUN --mount=type=cache,target=/var/cache/apt {{ p.prerequisites }} \
   `#stage-pre_before-{{ p.package }}`
 {% endif %}
 
@@ -135,7 +135,7 @@ RUN {{ p.package_manager }} install {{ p.package }} \
 
 # Install Ubuntu packages
 {% else %}
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
+RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends {{ p.package }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre-{{ p.package }}`
@@ -143,7 +143,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt apt-get update \
 
 # Run after install scripts
 {% if p.after_install %}
-RUN  --mount=type=cache,sharing=locked,target=/var/cache/apt {{ p.after_install }} \
+RUN  --mount=type=cache,target=/var/cache/apt {{ p.after_install }} \
   && rm -rf /var/lib/apt/lists/* \
   `#stage-pre_after-{{ p.package }}`
 {% endif %}
@@ -177,7 +177,7 @@ RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh
 ENV PATH "$PATH:/home/frappe/.nvm/versions/node/v${NODE_VERSION}/bin"
 
 # Install Yarn
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install -g yarn `#stage-pre-yarn`
 
 
 # Install Bench
@@ -185,10 +185,10 @@ ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
 ENV {{ doc.get_dependency_version("BENCH_VERSION") }}
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade setuptools
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade setuptools
 
 RUN git config --global advice.detachedHead false
 
@@ -206,7 +206,7 @@ ENV {{v.key}} {{ v.value }}
 RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 --mount=type=bind,source=apps/frappe,target=/home/frappe/context/apps/frappe bench init --python /usr/bin/python${PYTHON_VERSION} --no-backups --frappe-path file:///home/frappe/context/apps/frappe frappe-bench `#stage-apps-frappe`
 WORKDIR /home/frappe/frappe-bench
 
-RUN --mount=type=cache,sharing=locked,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
+RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 /home/frappe/frappe-bench/env/bin/pip install pycups==2.0.1
 
 # Install Redisearch 2.0 from precompiled binaries
 COPY --chown=frappe:frappe redis /home/frappe/frappe-bench/redis

@@ -173,6 +173,7 @@ scheduler_events = {
 	"daily": [
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
+		"press.press.doctype.log_counter.log_counter.record_counts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",

@@ -783,10 +783,10 @@ class Team(Document):
 		return get_team_members(self.name)
 
 	@dashboard_whitelist()
-	def invite_team_member(self, email):
+	def invite_team_member(self, email, new_dashboard=False):
 		from press.api.account import add_team_member
 
-		add_team_member(email)
+		add_team_member(email, new_dashboard)
 
 	@frappe.whitelist()
 	def get_balance(self):

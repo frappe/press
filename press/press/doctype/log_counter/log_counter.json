@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "creation": "2024-04-19 11:57:50.263215",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "logtype",
+  "groupby",
+  "column_break_nyqx",
+  "date",
+  "section_break_epfa",
+  "counts",
+  "total"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Collection Date",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_nyqx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_epfa",
+   "fieldtype": "Section Break",
+   "label": "Counts"
+  },
+  {
+   "fieldname": "counts",
+   "fieldtype": "JSON",
+   "label": "Counts",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total",
+   "non_negative": 1,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "groupby",
+   "fieldtype": "Data",
+   "label": "Group By",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "logtype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Log Type",
+   "options": "DocType",
+   "read_only": 1,
+   "reqd": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-04-19 13:17:13.153028",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Log Counter",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

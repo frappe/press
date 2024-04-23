@@ -5,26 +5,19 @@
 </template>
 
 <script setup>
-import { computed, h, inject, ref } from 'vue';
+import { h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { getTeam } from '../../data/team';
-import { confirmDialog, renderDialog } from '../../utils/components';
+import { confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
-import AddTeamMemberDialog from './AddTeamMemberDialog.vue';
-import NewPermissionGroupDialog from './NewPermissionGroupDialog.vue';
-import PermissionGroupUserCell from './PermissionGroupUserCell.vue';
-
-const breadcrumbs = inject('breadcrumbs');
-breadcrumbs.value = [
-	{ label: 'Settings', route: '/settings' },
-	{ label: 'Team', route: '/settings/team' }
-];
+import router from '../../router';
 
 const team = getTeam();
 team.getTeamMembers.submit();
 const teamMembersListOptions = ref({
 	onRowClick: () => {},
+	rowHeight: 50,
 	list: team.getTeamMembers,
 	columns: [
 		{
@@ -44,6 +37,14 @@ const teamMembersListOptions = ref({
 		let team = getTeam();
 		if (row.name === team.doc.user) return [];
 		return [
+			{
+				label: 'Manage Permissions',
+				onClick() {
+					router.push({
+						name: 'SettingsPermissionRoles'
+					});
+				}
+			},
 			{
 				label: 'Remove Member',
 				condition: () => row.name !== team.doc.user,
@@ -73,23 +74,42 @@ const teamMembersListOptions = ref({
 			}
 		];
 	},
-	primaryAction({ listResource }) {
+	primaryAction() {
 		return {
 			label: 'Add Member',
 			variant: 'solid',
 			iconLeft: 'plus',
 			onClick() {
-				handleNewMemberClick(listResource);
+				inviteMemberByEmail();
 			}
 		};
 	}
 });
 
-function handleNewMemberClick(membersListResource) {
-	renderDialog(
-		h(AddTeamMemberDialog, {
-			onMemberAdded: () => membersListResource.reload()
-		})
-	);
+function inviteMemberByEmail() {
+	confirmDialog({
+		title: 'Add New Member',
+		message: 'Enter the email address of your teammate to invite them',
+		fields: [
+			{
+				label: 'Email',
+				fieldname: 'email',
+				autocomplete: 'off'
+			}
+		],
+		async onSuccess({ hide, values }) {
+			if (values.email) {
+				return team.inviteTeamMember.submit(
+					{ email: values.email, new_dashboard: true },
+					{
+						onSuccess() {
+							hide();
+							toast.success('Invite Sent!');
+						}
+					}
+				);
+			}
+		}
+	});
 }
 </script>

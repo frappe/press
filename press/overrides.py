@@ -134,6 +134,15 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
+	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+
+	@staticmethod
+	def get_list_query(query):
+		team = frappe.local.team()
+		allowed_users = [d.user for d in team.team_members]
+		User = frappe.qb.DocType("User")
+		return query.where(User.name.isin(allowed_users))
+
 	def after_rename(self, old_name, new_name, merge=False):
 		"""
 		Changes:

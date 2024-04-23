@@ -191,6 +191,7 @@ export default {
 					});
 				},
 				auto: true,
+				cache: 'benchInstallableApps',
 				initialData: []
 			};
 		}

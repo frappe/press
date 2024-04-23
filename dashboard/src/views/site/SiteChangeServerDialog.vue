@@ -109,10 +109,10 @@ export default {
 		},
 		errorMessage() {
 			return (
-				this.$resources.versionUpgrade.error ||
-				this.$resources.validateGroupforUpgrade.error ||
 				this.$resources.addServerToReleaseGroup.error ||
-				this.$resources.getPrivateGroups.error
+				this.$resources.isServerAddedInGroup.error ||
+				this.$resources.changeServerOptions.error ||
+				this.$resources.changeServer.error
 			);
 		},
 		datetimeInIST() {

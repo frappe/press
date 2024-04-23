@@ -209,7 +209,10 @@ def _new(site, server: str = None, ignore_plan_validation: bool = False):
 
 
 def validate_plan(server, plan):
-	if frappe.db.get_value("Site Plan", plan, "price_usd") > 0:
+	if (
+		frappe.db.get_value("Site Plan", plan, "price_usd") > 0
+		or frappe.db.get_value("Site Plan", plan, "dedicated_server_plan") == 1
+	):
 		return
 	if (
 		frappe.session.data.user_type == "System User"
@@ -1936,7 +1939,11 @@ def get_private_groups_for_upgrade(name, version):
 	version_number = frappe.db.get_value("Frappe Version", version, "number")
 	next_version = frappe.db.get_value(
 		"Frappe Version",
-		{"number": version_number + 1, "status": "Stable", "public": True},
+		{
+			"number": version_number + 1,
+			"status": ("in", ("Stable", "End of Life")),
+			"public": True,
+		},
 		"name",
 	)
 
