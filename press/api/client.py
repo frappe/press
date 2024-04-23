@@ -7,7 +7,7 @@ import inspect
 
 import frappe
 from frappe import is_whitelisted
-from frappe.client import delete_doc, set_value as _set_value
+from frappe.client import set_value as _set_value
 from frappe.handler import get_attr
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
@@ -222,9 +222,13 @@ def set_value(doctype, name, fieldname, value=None):
 def delete(doctype, name):
 	check_permissions(doctype)
 	check_team_access(doctype, name)
-	check_dashboard_actions(doctype, "delete")
 
-	delete_doc(doctype, name)
+	doc = frappe.get_doc(doctype, name)
+	method_obj = getattr(doc, "delete")
+	fn = getattr(method_obj, "__func__", method_obj)
+	is_dashboard_whitelisted(fn)
+
+	doc.delete()
 
 
 @frappe.whitelist()

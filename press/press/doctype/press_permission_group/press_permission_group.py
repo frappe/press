@@ -30,7 +30,6 @@ class PressPermissionGroup(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["title", "users"]
-	dashboard_actions = ["delete"]
 
 	def get_doc(self, doc):
 		if doc.users:
@@ -93,6 +92,10 @@ class PressPermissionGroup(Document):
 			)
 			if not user_belongs_to_team:
 				frappe.throw(f"{user.user} does not belong to {self.team}")
+
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()
 
 	@dashboard_whitelist()
 	def get_users(self):

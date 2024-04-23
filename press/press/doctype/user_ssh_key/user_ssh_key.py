@@ -8,6 +8,8 @@ import base64
 import struct
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 
 class SSHKeyValueError(ValueError):
 	pass
@@ -33,7 +35,6 @@ class UserSSHKey(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["ssh_fingerprint", "is_default", "user"]
-	dashboard_actions = ["delete"]
 
 	valid_key_types = [
 		"ssh-rsa",
@@ -77,6 +78,12 @@ class UserSSHKey(Document):
 	def on_update(self):
 		if self.has_value_changed("is_default") and self.is_default:
 			self.make_other_keys_non_default()
+
+	@dashboard_whitelist()
+	def delete(self):
+		if self.is_default:
+			frappe.throw("Cannot delete default key")
+		super().delete()
 
 	def make_other_keys_non_default(self):
 		frappe.db.set_value(

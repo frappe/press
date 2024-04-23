@@ -70,7 +70,6 @@ class AppPatch(Document):
 		"url",
 		"status",
 	]
-	dashboard_actions = ["delete"]
 
 	def validate(self):
 		self.validate_bench()
@@ -94,6 +93,10 @@ class AppPatch(Document):
 
 	def after_insert(self):
 		self.apply_patch()
+
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()
 
 	@dashboard_whitelist()
 	def apply_patch(self):
