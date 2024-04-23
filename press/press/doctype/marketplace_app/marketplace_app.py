@@ -94,6 +94,7 @@ class MarketplaceApp(WebsiteGenerator):
 		"title",
 		"status",
 		"description",
+		"review_stage",
 	]
 	dashboard_actions = [
 		"remove_version",
@@ -103,6 +104,7 @@ class MarketplaceApp(WebsiteGenerator):
 		"cancel_approval_request",
 		"update_listing",
 		"listing_details",
+		"mark_app_ready_for_review",
 	]
 
 	def autoname(self):
@@ -547,6 +549,11 @@ class MarketplaceApp(WebsiteGenerator):
 			"long_description": self.long_description,
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
 		}
+
+	@frappe.whitelist()
+	def mark_app_ready_for_review(self):
+		self.review_stage = "Ready for Review"
+		self.save()
 
 	@frappe.whitelist()
 	def update_listing(self, *args):
