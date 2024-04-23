@@ -6,13 +6,13 @@
 import hashlib
 import hmac
 import json
+from typing import TYPE_CHECKING, Optional
 
 import frappe
 from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from press.utils import log_error
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from press.press.doctype.app_source.app_source import AppSource
@@ -99,25 +99,22 @@ class GitHubWebhookLog(Document):
 		if payload["action"] not in ["added", "removed"]:
 			return
 		owner = payload["installation"]["account"]["login"]
-
-		for repo in payload.get("repositories_added", []):
-			self.update_installation_ids(owner, repo["name"])
+		self.update_installation_ids(owner)
 
 		for repo in payload.get("repositories_removed", []):
 			set_uninstalled(owner, repo["name"])
 
 	def handle_installation_created(self, payload):
 		owner = payload["installation"]["account"]["login"]
-		for repo in payload.get("repositories", []):
-			self.update_installation_ids(owner, repo["name"])
+		self.update_installation_ids(owner)
 
 	def handle_installation_deletion(self, payload):
 		owner = payload["installation"]["account"]["login"]
 		for repo in payload.get("repositories", []):
 			set_uninstalled(owner, repo["name"])
 
-	def update_installation_ids(self, owner: str, repository: str):
-		for name in get_sources(owner, repository):
+	def update_installation_ids(self, owner: str):
+		for name in get_sources(owner):
 			doc: "AppSource" = frappe.get_doc("App Source", name)
 			if not self.should_update_app_source(doc):
 				continue
@@ -201,12 +198,13 @@ def set_uninstalled(owner: str, repository: str):
 	frappe.db.commit()
 
 
-def get_sources(owner: str, repository: str) -> "list[str]":
+def get_sources(owner: str, repository: Optional[str]) -> "list[str]":
+	filters = {"repository_owner": owner}
+	if repository:
+		filters["repository"] = repository
+
 	return frappe.db.get_all(
 		"App Source",
-		filters={
-			"repository_owner": owner,
-			"repository": repository,
-		},
+		filters=filters,
 		pluck="name",
 	)
