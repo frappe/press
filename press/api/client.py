@@ -212,8 +212,8 @@ def set_value(doctype, name, fieldname, value=None):
 	check_team_access(doctype, name)
 
 	for field in fieldname.keys():
-		# fields mentioned in whitelisted_actions are allowed to be set via set_value
-		check_dashboard_actions(doctype, field)
+		# fields mentioned in dashboard_fields are allowed to be set via set_value
+		is_allowed_field(doctype, field)
 
 	return _set_value(doctype, name, fieldname, value)
 
@@ -294,15 +294,6 @@ def check_team_access(doctype: str, name: str):
 		return
 
 	if team == frappe.local.team().name:
-		return
-
-	raise_not_permitted()
-
-
-def check_dashboard_actions(doctype, method):
-	controller = get_controller(doctype)
-	dashboard_actions = getattr(controller, "dashboard_actions", [])
-	if method in dashboard_actions:
 		return
 
 	raise_not_permitted()
