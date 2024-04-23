@@ -9,6 +9,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 
 PatchConfig = TypedDict(
 	"PatchConfig",
@@ -69,7 +70,7 @@ class AppPatch(Document):
 		"url",
 		"status",
 	]
-	dashboard_actions = ["apply_patch", "revert_patch", "delete"]
+	dashboard_actions = ["delete"]
 
 	def validate(self):
 		self.validate_bench()
@@ -94,11 +95,11 @@ class AppPatch(Document):
 	def after_insert(self):
 		self.apply_patch()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def apply_patch(self):
 		self.patch_app(revert=False)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def revert_patch(self):
 		self.patch_app(revert=True)
 

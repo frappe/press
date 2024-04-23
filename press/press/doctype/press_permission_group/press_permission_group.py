@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 DEFAULT_PERMISSIONS = {
 	"*": {"*": {"*": True}}  # all doctypes  # all documents  # all methods
 }
@@ -28,13 +30,6 @@ class PressPermissionGroup(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["title"]
-	dashboard_actions = [
-		"get_users",
-		"add_user",
-		"remove_user",
-		"update_permissions",
-		"get_all_document_permissions",
-	]
 
 	def validate(self):
 		self.validate_permissions()
@@ -82,7 +77,7 @@ class PressPermissionGroup(Document):
 			if not user_belongs_to_team:
 				frappe.throw(f"{user.user} does not belong to {self.team}")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_users(self):
 		user_names = [user.user for user in self.users]
 		if not user_names:
@@ -101,7 +96,7 @@ class PressPermissionGroup(Document):
 			],
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def add_user(self, user):
 		user_belongs_to_group = self.get("users", {"user": user})
 		if user_belongs_to_group:
@@ -116,7 +111,7 @@ class PressPermissionGroup(Document):
 		self.append("users", {"user": user})
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_user(self, user):
 		user_belongs_to_group = self.get("users", {"user": user})
 		if not user_belongs_to_group:
@@ -128,7 +123,7 @@ class PressPermissionGroup(Document):
 				break
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_all_document_permissions(self, doctype: str) -> list:
 		"""
 		Get the permissions for the specified document type or all restrictable document types.
@@ -177,7 +172,7 @@ class PressPermissionGroup(Document):
 
 		return options
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def update_permissions(self, updated_permissions):
 		cur_permissions = frappe.parse_json(self.permissions)
 		for updated_doctype, updated_doctype_perms in updated_permissions.items():
