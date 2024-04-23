@@ -45,14 +45,11 @@ class GitHubWebhookLog(Document):
 			frappe.throw("Invalid Signature")
 
 		payload = self.get_parsed_payload()
-		repository = payload.repository
-		installation = payload.installation
-		if installation:
-			self.github_installation_id = installation["id"]
+		self.github_installation_id = payload.get("installation", {}).get("id")
 
-		if payload.repository:
-			self.repository = repository["name"]
-			self.repository_owner = repository["owner"]["login"]
+		repository_detail = get_repository_details_from_payload(payload)
+		self.repository = repository_detail["name"]
+		self.repository_owner = repository_detail["owner"]
 
 		if self.event == "push":
 			ref_types = {"tags": "tag", "heads": "branch"}
@@ -208,3 +205,21 @@ def get_sources(owner: str, repository: Optional[str]) -> "list[str]":
 		filters=filters,
 		pluck="name",
 	)
+
+
+def get_repository_details_from_payload(payload: dict):
+	r = payload.get("repository", {})
+	repo = r.get("name")
+	owner = r.get("owner", {}).get("login")
+
+	repos = payload.get("repositories_added")
+	if not repo and len(repos) == 1:
+		repo = repos[0].get("name")
+
+	if not owner and repos:
+		owner = repos[0].get("full_name", "").split("/")[0] or None
+
+	if not owner:
+		owner = payload.get("installation", {}).get("account", {}).get("login")
+
+	return dict(name=repo, owner=owner)

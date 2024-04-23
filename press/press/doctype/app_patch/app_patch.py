@@ -104,7 +104,6 @@ class AppPatch(Document):
 
 	@frappe.whitelist()
 	def delete_patch(self):
-		print("delete patch called")
 		if self.status != "Not Applied":
 			frappe.throw(
 				f"Cannot delete patch if status is not 'Not Applied'. Current status is '{self.status}'"
