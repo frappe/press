@@ -465,7 +465,9 @@ class Site(Document, TagHelpers):
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
+			MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 
 	@frappe.whitelist()
 	@site_action(["Active"])
@@ -514,7 +516,7 @@ class Site(Document, TagHelpers):
 		if hasattr(self, "app_plans") and self.app_plans:
 			for app, plan in self.app_plans.items():
 				MarketplaceAppPlan.create_marketplace_app_subscription(
-					self.name, app, plan["name"], True
+					self.name, app, plan["name"], self.team, True
 				)
 
 		# log activity
