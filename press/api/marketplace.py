@@ -998,7 +998,10 @@ def review_steps(name):
 		{
 			"step": "Publish a release for version",
 			"completed": True
-			if frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+			if (
+				frappe.db.exists("App Release Approval Request", {"marketplace_app": name})
+				or frappe.db.exists("App Release", {"app": name, "status": "Approved"})
+			)
 			else False,
 		},
 	]
