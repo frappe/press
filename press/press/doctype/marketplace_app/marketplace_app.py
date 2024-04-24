@@ -23,6 +23,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.utils import get_last_doc
+from press.api.client import dashboard_whitelist
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -96,26 +97,16 @@ class MarketplaceApp(WebsiteGenerator):
 		"description",
 		"review_stage",
 	]
-	dashboard_actions = [
-		"remove_version",
-		"add_version",
-		"site_installs",
-		"create_approval_request",
-		"cancel_approval_request",
-		"update_listing",
-		"listing_details",
-		"mark_app_ready_for_review",
-	]
 
 	def autoname(self):
 		self.name = self.app
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):
 		"""Create a new Approval Request for given `app_release`"""
 		AppReleaseApprovalRequest.create(self.app, app_release)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def cancel_approval_request(self, app_release: str):
 		approval_requests = frappe.get_all(
 			"App Release Approval Request",
@@ -225,7 +216,7 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc.branch = to_branch
 			source_doc.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def add_version(self, version, branch):
 		existing_source = frappe.db.exists(
 			"App Source",
@@ -263,7 +254,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.append("sources", {"version": version, "source": source_doc.name})
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_version(self, version):
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
@@ -515,7 +506,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
@@ -537,7 +528,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return query.run(as_dict=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def listing_details(self):
 		return {
 			"support": self.support,
@@ -550,12 +541,12 @@ class MarketplaceApp(WebsiteGenerator):
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
 		}
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def mark_app_ready_for_review(self):
 		self.review_stage = "Ready for Review"
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def update_listing(self, *args):
 		data = frappe._dict(args[0])
 		self.title = data.get("title") or self.title

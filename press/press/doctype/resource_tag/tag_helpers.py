@@ -3,13 +3,11 @@
 from __future__ import unicode_literals
 import frappe
 
+from press.api.client import dashboard_whitelist
+
 
 class TagHelpers:
-	def __new__(self, *args, **kwargs):
-		self.dashboard_actions += ["add_resource_tag", "remove_resource_tag"]
-		return super(TagHelpers, self).__new__(self)
-
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def add_resource_tag(self, tag):
 		team = frappe.local.team().name
 		existing_tags = [row.tag_name for row in self.tags]
@@ -31,7 +29,7 @@ class TagHelpers:
 		self.append("tags", {"tag": tag_doc.name})
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_resource_tag(self, tag):
 		self.tags = [row for row in self.tags if row.tag_name != tag]
 		self.save()

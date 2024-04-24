@@ -4,13 +4,13 @@
 import frappe
 from frappe.model.document import Document
 from press.saas.doctype.saas_product.saas_product import SaaSProduct
+from press.api.client import dashboard_whitelist
 
 
 class SaaSProductSiteRequest(Document):
 	dashboard_fields = ["site", "status", "saas_product"]
-	dashboard_actions = ["create_site", "get_progress", "get_login_sid"]
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def create_site(self, subdomain, plan, cluster=None):
 		product: SaaSProduct = frappe.get_doc("SaaS Product", self.saas_product)
 		site = product.setup_trial_site(subdomain, self.team, cluster)
@@ -34,12 +34,12 @@ class SaaSProductSiteRequest(Document):
 		self.status = "Wait for Site"
 		self.save(ignore_permissions=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_login_sid(self):
 		email = frappe.db.get_value("Team", self.team, "user")
 		return frappe.get_doc("Site", self.site).get_login_sid(user=email)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_progress(self, current_progress=None):
 		current_progress = current_progress or 0
 		if self.agent_job:

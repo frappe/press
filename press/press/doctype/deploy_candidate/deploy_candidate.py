@@ -4,6 +4,7 @@
 
 import json
 import os
+import glob
 import re
 import shlex
 import shutil
@@ -1453,6 +1454,14 @@ def cleanup_build_directories():
 			log_error(
 				title="Deploy Candidate Build Cleanup Error", exception=e, candidate=candidate
 			)
+
+	# Delete all temporary files created by the build process
+	glob_path = os.path.join(tempfile.gettempdir(), f"{tempfile.gettempprefix()}*.tar.gz")
+	six_hours_ago = frappe.utils.add_to_date(None, hours=-6)
+	for file in glob.glob(glob_path):
+		# Use local time to compare timestamps
+		if os.stat(file).st_ctime < six_hours_ago.timestamp():
+			os.remove(file)
 
 
 def ansi_escape(text):

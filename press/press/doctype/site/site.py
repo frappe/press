@@ -54,6 +54,7 @@ from press.press.doctype.site_plan.site_plan import get_plan_config
 from press.press.doctype.site_activity.site_activity import log_site_activity
 from press.press.doctype.site_analytics.site_analytics import create_site_analytics
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
+from press.api.client import dashboard_whitelist
 from press.utils import (
 	convert,
 	get_client_blacklisted_keys,
@@ -162,35 +163,6 @@ class Site(Document, TagHelpers):
 		"tags",
 		"server",
 		"host_name",
-	]
-	dashboard_actions = [
-		"activate",
-		"add_domain",
-		"archive",
-		"backup",
-		"clear_site_cache",
-		"deactivate",
-		"enable_database_access",
-		"disable_database_access",
-		"get_database_credentials",
-		"install_app",
-		"uninstall_app",
-		"migrate",
-		"login_as_admin",
-		"reinstall",
-		"remove_domain",
-		"set_host_name",
-		"set_redirect",
-		"unset_redirect",
-		"restore_site",
-		"schedule_update",
-		"set_plan",
-		"update_config",
-		"delete_config",
-		"send_change_team_request",
-		"is_setup_wizard_complete",
-		"get_backup_download_link",
-		"notify_email",
 	]
 
 	@staticmethod
@@ -442,7 +414,7 @@ class Site(Document, TagHelpers):
 
 		self.config = json.dumps(new_config, indent=4)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def install_app(self, app, plan=None):
 		if plan:
@@ -465,9 +437,11 @@ class Site(Document, TagHelpers):
 			marketplace_app_hook(app=app, site=self.name, op="install")
 
 		if plan:
-			MarketplaceAppPlan.create_marketplace_app_subscription(self.name, app, plan)
+			MarketplaceAppPlan.create_marketplace_app_subscription(
+				self.name, app, plan, self.team
+			)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def uninstall_app(self, app):
 		log_site_activity(self.name, "Uninstall App")
@@ -514,7 +488,7 @@ class Site(Document, TagHelpers):
 		if hasattr(self, "app_plans") and self.app_plans:
 			for app, plan in self.app_plans.items():
 				MarketplaceAppPlan.create_marketplace_app_subscription(
-					self.name, app, plan["name"], True
+					self.name, app, plan["name"], self.team, True
 				)
 
 		# log activity
@@ -599,7 +573,7 @@ class Site(Document, TagHelpers):
 		agent = Agent(server.proxy_server, server_type="Proxy Server")
 		agent.new_upstream_file(server=self.server, site=self.name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def reinstall(self):
 		log_site_activity(self.name, "Reinstall")
@@ -609,7 +583,7 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def migrate(self, skip_failing_patches=False):
 		log_site_activity(self.name, "Migrate")
@@ -664,13 +638,13 @@ class Site(Document, TagHelpers):
 		self.status = "Pending"
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def clear_site_cache(self):
 		log_site_activity(self.name, "Clear Cache")
 		agent = Agent(self.server)
 		agent.clear_site_cache(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site(self, skip_failing_patches=False):
 		if not frappe.get_doc("Remote File", self.remote_database_file).exists():
@@ -695,7 +669,7 @@ class Site(Document, TagHelpers):
 		self.reload()
 		return self.restore_site(skip_failing_patches=skip_failing_patches)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def backup(self, with_files=False, offsite=False, force=False):
 		if self.status == "Suspended":
 			activity = frappe.db.get_all(
@@ -725,7 +699,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_backup_download_link(self, backup, file):
 		from botocore.exceptions import ClientError
 
@@ -740,7 +714,7 @@ class Site(Document, TagHelpers):
 		except ClientError:
 			log_error(title="Offsite Backup Response Exception")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(
 		self, skip_failing_patches=False, skip_backups=False, scheduled_time=None
@@ -804,7 +778,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def add_domain(self, domain):
 		domain = domain.lower().strip(".")
 		if check_dns(self.name, domain)["matched"]:
@@ -849,7 +823,7 @@ class Site(Document, TagHelpers):
 		agent = Agent(self.server)
 		agent.remove_domain(self, domain)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_domain(self, domain):
 		if domain == self.name:
 			frappe.throw("Cannot delete default site_domain")
@@ -893,7 +867,7 @@ class Site(Document, TagHelpers):
 		self._check_if_domain_belongs_to_site(self.host_name)
 		self._check_if_domain_is_active(self.host_name)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def set_host_name(self, domain: str):
 		"""Set host_name/primary domain of site."""
 		self.host_name = domain
@@ -928,21 +902,21 @@ class Site(Document, TagHelpers):
 		agent = Agent(proxy_server, server_type="Proxy Server")
 		agent.remove_redirects(self.name, domains)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def set_redirect(self, domain: str):
 		"""Enable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.setup_redirect()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def unset_redirect(self, domain: str):
 		"""Disable redirect to primary for domain."""
 		self._check_if_domain_belongs_to_site(domain)
 		site_domain = frappe.get_doc("Site Domain", domain)
 		site_domain.remove_redirect()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken", "Suspended"])
 	def archive(self, site_name=None, reason=None, force=False, skip_reload=False):
 		log_site_activity(self.name, "Archive", reason)
@@ -1012,7 +986,7 @@ class Site(Document, TagHelpers):
 
 		return delete_remote_backup_objects(sites_remote_files)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def send_change_team_request(self, team_mail_id: str, reason: str):
 		"""Send email to team to accept site transfer request"""
 
@@ -1069,7 +1043,7 @@ class Site(Document, TagHelpers):
 			},
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def login_as_admin(self, reason=None):
 		sid = self.login(reason=reason)
@@ -1237,7 +1211,7 @@ class Site(Document, TagHelpers):
 			analytics = self.fetch_analytics()
 		create_site_analytics(self.name, analytics)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
 		if self.setup_wizard_complete:
 			return True
@@ -1311,7 +1285,7 @@ class Site(Document, TagHelpers):
 		if save:
 			self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def update_config(self, config=None):
 		"""Updates site.configuration, meant for dashboard and API users"""
@@ -1350,7 +1324,7 @@ class Site(Document, TagHelpers):
 
 		self.update_site_config(sanitized_config)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def delete_config(self, key):
 		"""Deletes a key from site configuration, meant for dashboard and API users"""
@@ -1462,7 +1436,7 @@ class Site(Document, TagHelpers):
 			)
 
 	# TODO: rename to change_plan and remove the need for ignore_card_setup param
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def set_plan(self, plan):
 		from press.api.site import validate_plan
 
@@ -1547,7 +1521,7 @@ class Site(Document, TagHelpers):
 			) * 100
 			self.unsuspend(reason="Plan Upgraded")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		plan = frappe.db.get_value(
@@ -1564,7 +1538,7 @@ class Site(Document, TagHelpers):
 		self.update_site_config({"maintenance_mode": 1})
 		self.update_site_status_on_proxy("deactivated")
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Inactive", "Broken"])
 	def activate(self):
 		log_site_activity(self.name, "Activate Site")
@@ -1728,7 +1702,7 @@ class Site(Document, TagHelpers):
 			}
 		).insert(ignore_permissions=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def enable_database_access(self, mode="read_only"):
 		if not frappe.db.get_value("Site Plan", self.plan, "database_access"):
@@ -1759,7 +1733,7 @@ class Site(Document, TagHelpers):
 		# serverscripts that rely on the return value of this function
 		return job.name
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active"])
 	def disable_database_access(self):
 		log_site_activity(self.name, "Disable Database Access")
@@ -1778,7 +1752,7 @@ class Site(Document, TagHelpers):
 		self.save()
 		return agent.remove_proxysql_user(self, user)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_database_credentials(self):
 		proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 		config = self.fetch_info()["config"]
