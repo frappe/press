@@ -7,7 +7,7 @@ import inspect
 
 import frappe
 from frappe import is_whitelisted
-from frappe.client import delete_doc, set_value as _set_value
+from frappe.client import set_value as _set_value
 from frappe.handler import get_attr
 from frappe.handler import run_doc_method as _run_doc_method
 from frappe.model import child_table_fields, default_fields
@@ -64,6 +64,8 @@ ALLOWED_DOCTYPES = [
 	"User SSH Key",
 	"Frappe Version",
 ]
+
+whitelisted_methods = set()
 
 
 @frappe.whitelist()
@@ -210,27 +212,29 @@ def set_value(doctype, name, fieldname, value=None):
 	check_team_access(doctype, name)
 
 	for field in fieldname.keys():
-		# fields mentioned in whitelisted_actions are allowed to be set via set_value
-		check_dashboard_actions(doctype, field)
+		# fields mentioned in dashboard_fields are allowed to be set via set_value
+		is_allowed_field(doctype, field)
 
 	return _set_value(doctype, name, fieldname, value)
 
 
 @frappe.whitelist(methods=["DELETE", "POST"])
 def delete(doctype, name):
+	method = "delete"
+
 	check_permissions(doctype)
 	check_team_access(doctype, name)
-	check_dashboard_actions(doctype, "delete")
+	check_dashboard_actions(doctype, name, method)
 
-	delete_doc(doctype, name)
+	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
 
 
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
 	check_team_access(dt, dn)
-	check_dashboard_actions(dt, method)
 	check_method_permissions(dt, dn, method)
+	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
 	frappe.response.docs = [get(dt, dn)]
@@ -289,13 +293,13 @@ def check_team_access(doctype: str, name: str):
 	raise_not_permitted()
 
 
-def check_dashboard_actions(doctype, method):
-	controller = get_controller(doctype)
-	dashboard_actions = getattr(controller, "dashboard_actions", [])
-	if method in dashboard_actions:
-		return
+def check_dashboard_actions(doctype, name, method):
+	doc = frappe.get_doc(doctype, name)
+	method_obj = getattr(doc, method)
+	fn = getattr(method_obj, "__func__", method_obj)
 
-	raise_not_permitted()
+	if fn not in whitelisted_methods:
+		raise_not_permitted()
 
 
 @frappe.whitelist()
@@ -442,3 +446,20 @@ def is_owned_by_team(doctype, docname, raise_exception=True):
 
 def raise_not_permitted():
 	frappe.throw("Not permitted", frappe.PermissionError)
+
+
+def dashboard_whitelist(allow_guest=False, xss_safe=False, methods=None):
+	def wrapper(func):
+		global whitelisted_methods
+
+		decorated_func = frappe.whitelist(
+			allow_guest=allow_guest, xss_safe=xss_safe, methods=methods
+		)(func)
+
+		def inner(*args, **kwargs):
+			return decorated_func(*args, **kwargs)
+
+		whitelisted_methods.add(decorated_func)
+		return decorated_func
+
+	return wrapper
