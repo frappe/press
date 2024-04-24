@@ -543,6 +543,7 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def mark_app_ready_for_review(self):
+		# TODO: Start security check and auto deploy process here
 		self.review_stage = "Ready for Review"
 		self.save()
 

@@ -1009,11 +1009,9 @@ def review_steps(name):
 
 @protected("Marketplace App")
 @frappe.whitelist()
-def start_review(name):
-	# TODO: Start security check and auto deploy process here
+def mark_app_ready_for_review(name):
 	app = frappe.get_doc("Marketplace App", name)
-	app.status = "In Review"
-	app.save(ignore_permissions=True)
+	app.mark_app_ready_for_review()
 
 
 @protected("Marketplace App")

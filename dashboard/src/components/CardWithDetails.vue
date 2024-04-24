@@ -8,6 +8,9 @@
 			:style="{ height: viewportWidth > 768 ? 'calc(100vh - 12rem)' : null }"
 		>
 			<slot></slot>
+			<template #actions>
+				<slot name="actions"></slot>
+			</template>
 		</Card>
 		<slot name="details"></slot>
 	</div>
