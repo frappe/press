@@ -7,6 +7,9 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV OPENBLAS_NUM_THREADS 1
 ENV MKL_NUM_THREADS 1
 
+#update replace archive.ubuntu.com by sg.archive.ubuntu.com in source.list
+RUN sed -i -e "s/archive\.ubuntu\.com/sg\.archive\.ubuntu\.com/" /etc/apt/sources.list
+
 # Install essential packages
 RUN --mount=type=cache,target=/var/cache/apt apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
