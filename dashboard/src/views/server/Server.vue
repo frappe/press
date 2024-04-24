@@ -187,16 +187,20 @@ export default {
 					icon: 'edit',
 					onClick: () => (this.showEditTitleDialog = true)
 				},
-				['Active', 'Updating'].includes(this.server.status) && {
+				{
 					label: 'Visit Server',
 					icon: 'external-link',
+					condition: () =>
+						['Active', 'Updating'].includes(this.server.status) &&
+						this.$account.user.user_type === 'System User',
 					onClick: () => {
 						window.open(`https://${this.server.name}`, '_blank');
 					}
 				},
-				this.$account.user.user_type == 'System User' && {
+				{
 					label: 'View in Desk',
 					icon: 'external-link',
+					condition: () => this.$account.user.user_type == 'System User',
 					onClick: () => {
 						window.open(
 							`${window.location.protocol}//${window.location.host}/app/${this.server.type}/${this.server.name}`,
@@ -204,21 +208,24 @@ export default {
 						);
 					}
 				},
-				this.server.status === 'Active' &&
-					this.$account.hasPermission(
-						this.server.name,
-						'press.api.server.reboot'
-					) && {
-						label: 'Reboot',
-						icon: 'tool',
-						loading: this.$resources.reboot.loading,
-						onClick: () => {
-							return this.$resources.reboot.submit();
-						}
-					},
-				this.$account.user.user_type == 'System User' && {
+				{
+					label: 'Reboot',
+					icon: 'tool',
+					condition: () =>
+						this.server.status === 'Active' &&
+						this.$account.hasPermission(
+							this.server.name,
+							'press.api.server.reboot'
+						),
+					loading: this.$resources.reboot.loading,
+					onClick: () => {
+						return this.$resources.reboot.submit();
+					}
+				},
+				{
 					label: 'Impersonate Team',
 					icon: 'tool',
+					condition: () => this.$account.user.user_type == 'System User',
 					onClick: async () => {
 						await this.$account.switchTeam(this.server.team);
 						notify({
@@ -229,7 +236,7 @@ export default {
 						});
 					}
 				}
-			].filter(Boolean);
+			];
 		},
 
 		tabs() {
