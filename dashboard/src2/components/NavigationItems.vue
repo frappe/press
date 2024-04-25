@@ -14,6 +14,7 @@ import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import Globe from '~icons/lucide/globe';
 import Notification from '~icons/lucide/inbox';
+import { unreadNotificationsCount } from '../data/notifications';
 
 export default {
 	name: 'NavigationItems',
@@ -36,6 +37,17 @@ export default {
 					route: '/notifications',
 					isActive: routeName === 'Press Notification List',
 					condition: this.$team.doc.onboarding.complete,
+					badge: () =>
+						h(
+							'span',
+							{
+								class:
+									'!ml-auto rounded bg-gray-400 px-1.5 py-0.5 text-xs text-white'
+							},
+							unreadNotificationsCount.data > 99
+								? '99+'
+								: unreadNotificationsCount.data
+						),
 					disabled
 				},
 				{
@@ -101,6 +113,17 @@ export default {
 				}
 			].filter(item => item.condition !== false);
 		}
+	},
+	mounted() {
+		this.$socket.emit('doctype_subscribe', 'Press Notification');
+		this.$socket.on('press_notification', data => {
+			if (data.team === this.$team.doc.name) {
+				unreadNotificationsCount.setData(data => data + 1);
+			}
+		});
+	},
+	unmounted() {
+		this.$socket.off('press_notification');
 	}
 };
 </script>
