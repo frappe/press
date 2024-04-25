@@ -52,7 +52,6 @@
 </template>
 
 <script>
-import LucideFrown from '~icons/lucide/frown';
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
@@ -76,7 +75,6 @@ export default {
 	},
 	components: {
 		Header,
-		LucideFrown,
 		ActionButton,
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
