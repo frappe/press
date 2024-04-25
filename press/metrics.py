@@ -70,8 +70,6 @@ class MetricsRenderer:
 			"press_agent_job_total", "Agent Job", filters={"status": ("!=", "Success")}
 		)
 
-		self.get_status("press_error_log_total", "Error Log", "method")
-
 		return generate_latest(self.registry).decode("utf-8")
 
 	def can_render(self):

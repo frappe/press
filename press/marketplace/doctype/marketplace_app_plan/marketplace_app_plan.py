@@ -20,7 +20,7 @@ class MarketplaceAppPlan(Plan):
 
 	@staticmethod
 	def create_marketplace_app_subscription(
-		site_name, app_name, plan_name, while_site_creation=False
+		site_name, app_name, plan_name, team_name, while_site_creation=False
 	):
 		marketplace_app = frappe.db.get_value("Marketplace App", {"app": app_name})
 		subscription = frappe.db.exists(
@@ -55,7 +55,7 @@ class MarketplaceAppPlan(Plan):
 				"plan_type": "Marketplace App Plan",
 				"plan": plan_name,
 				"site": site_name,
-				"team": frappe.local.team().name,
+				"team": team_name,
 			}
 		).insert(ignore_permissions=True)
 

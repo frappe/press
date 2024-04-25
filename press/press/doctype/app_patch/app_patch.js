@@ -6,7 +6,7 @@ frappe.ui.form.on('App Patch', {
 		const custom_buttons = [
 			[__('Apply Patch'), 'apply_patch', frm.doc.status !== 'In Process'],
 			[__('Revert Patch'), 'revert_patch', frm.doc.status !== 'In Process'],
-			// [__('Revert All Patches'), 'revert_all_patches', true],
+			[__('Delete Patch'), 'delete_patch', frm.doc.status !== 'Not Applied'],
 		];
 
 		for (const [label, method, show] of custom_buttons) {

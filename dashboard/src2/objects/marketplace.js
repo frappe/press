@@ -17,7 +17,8 @@ export default {
 		siteInstalls: 'site_installs',
 		createApprovalRequest: 'create_approval_request',
 		cancelApprovalRequest: 'cancel_approval_request',
-		updateListing: 'update_listing'
+		updateListing: 'update_listing',
+		markAppReadyForReview: 'mark_app_ready_for_review'
 	},
 	list: {
 		route: '/apps',
@@ -570,71 +571,14 @@ export default {
 					},
 					condition: () => app.doc.status === 'Draft',
 					onClick() {
-						renderDialog(
-							h(
-								GenericDialog,
-								{
-									options: {
-										title: 'Steps to complete before the app can be published',
-										size: '2xl',
-										message:
-											'Please complete the following steps before publishing the app. Once all steps are completed, the app will be reviewed and published.'
-									}
-								},
-								{
-									default: () =>
-										h(ObjectList, {
-											options: {
-												label: 'Steps',
-												fieldname: 'steps',
-												fieldtype: 'ListSelection',
-												hideControls: true,
-												columns: [
-													{
-														label: 'Step',
-														fieldname: 'step',
-														width: 0.8
-													},
-													{
-														label: 'Completed',
-														fieldname: 'completed',
-														type: 'Icon',
-														width: 0.3,
-														Icon(value) {
-															return value ? 'check' : '';
-														}
-													},
-													{
-														label: 'Update Now',
-														type: 'Button',
-														width: 0.2,
-														Button({ row }) {
-															let route = `/apps/${app.doc.name}/`;
-															route += row.step.includes('Publish')
-																? 'versions'
-																: 'listing';
+						let AppListingStepsDialog = defineAsyncComponent(() =>
+							import('../components/marketplace/AppListingStepsDialog.vue')
+						);
 
-															return {
-																label: 'View',
-																variant: 'ghost',
-																route
-															};
-														}
-													}
-												],
-												resource() {
-													return {
-														url: 'press.api.marketplace.review_steps',
-														params: {
-															name: app.doc.name
-														},
-														auto: true
-													};
-												}
-											}
-										})
-								}
-							)
+						renderDialog(
+							h(AppListingStepsDialog, {
+								app: app.doc.name
+							})
 						);
 					}
 				}

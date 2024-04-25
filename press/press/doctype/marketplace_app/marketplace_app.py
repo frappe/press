@@ -2,25 +2,28 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+from base64 import b64decode
+from typing import Dict, List
+
 import frappe
 import requests
-
-from typing import Dict, List
-from base64 import b64decode
-from press.press.doctype.app_release_approval_request.app_release_approval_request import (
-	AppReleaseApprovalRequest,
-)
-from press.utils import get_last_doc
-from press.api.github import get_access_token
 from frappe.query_builder.functions import Cast_
+from frappe.utils.caching import redis_cache
+from frappe.utils.safe_exec import safe_exec
 from frappe.website.utils import cleanup_page_name
 from frappe.website.website_generator import WebsiteGenerator
+
+from press.api.github import get_access_token
 from press.marketplace.doctype.marketplace_app_plan.marketplace_app_plan import (
 	get_app_plan_features,
 )
-from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
 from press.press.doctype.app.app import new_app as new_app_doc
-from frappe.utils.safe_exec import safe_exec
+from press.press.doctype.app_release_approval_request.app_release_approval_request import (
+	AppReleaseApprovalRequest,
+)
+from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
+from press.utils import get_last_doc
+from press.api.client import dashboard_whitelist
 
 
 class MarketplaceApp(WebsiteGenerator):
@@ -92,26 +95,18 @@ class MarketplaceApp(WebsiteGenerator):
 		"title",
 		"status",
 		"description",
-	]
-	dashboard_actions = [
-		"remove_version",
-		"add_version",
-		"site_installs",
-		"create_approval_request",
-		"cancel_approval_request",
-		"update_listing",
-		"listing_details",
+		"review_stage",
 	]
 
 	def autoname(self):
 		self.name = self.app
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):
 		"""Create a new Approval Request for given `app_release`"""
 		AppReleaseApprovalRequest.create(self.app, app_release)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def cancel_approval_request(self, app_release: str):
 		approval_requests = frappe.get_all(
 			"App Release Approval Request",
@@ -144,8 +139,8 @@ class MarketplaceApp(WebsiteGenerator):
 			)
 
 	def create_app_and_source_if_needed(self):
-		if frappe.db.exists("App", self.app):
-			app_doc = frappe.get_doc("App", self.app)
+		if frappe.db.exists("App", self.app or self.name):
+			app_doc = frappe.get_doc("App", self.app or self.name)
 		else:
 			app_doc = new_app_doc(self.name, self.title)
 
@@ -157,7 +152,7 @@ class MarketplaceApp(WebsiteGenerator):
 				self.team,
 			)
 			self.app = source.app
-			self.append("sources", {"version": self.version, "source": source})
+			self.append("sources", {"version": self.version, "source": source.name})
 
 	def validate(self):
 		self.published = self.status == "Published"
@@ -221,7 +216,7 @@ class MarketplaceApp(WebsiteGenerator):
 			source_doc.branch = to_branch
 			source_doc.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def add_version(self, version, branch):
 		existing_source = frappe.db.exists(
 			"App Source",
@@ -259,7 +254,7 @@ class MarketplaceApp(WebsiteGenerator):
 		self.append("sources", {"version": version, "source": source_doc.name})
 		self.save()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_version(self, version):
 		if self.status == "Published" and len(self.sources) == 1:
 			frappe.throw("Failed to remove. Need at least 1 version for a published app")
@@ -511,7 +506,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return payout[0] if payout else {"usd_amount": 0, "inr_amount": 0}
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def site_installs(self):
 		site = frappe.qb.DocType("Site")
 		site_app = frappe.qb.DocType("Site App")
@@ -533,7 +528,7 @@ class MarketplaceApp(WebsiteGenerator):
 		)
 		return query.run(as_dict=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def listing_details(self):
 		return {
 			"support": self.support,
@@ -546,7 +541,13 @@ class MarketplaceApp(WebsiteGenerator):
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
 		}
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	def mark_app_ready_for_review(self):
+		# TODO: Start security check and auto deploy process here
+		self.review_stage = "Ready for Review"
+		self.save()
+
+	@dashboard_whitelist()
 	def update_listing(self, *args):
 		data = frappe._dict(args[0])
 		self.title = data.get("title") or self.title
@@ -656,16 +657,11 @@ def run_script(app, site, op):
 		safe_exec(script, _locals=local)
 
 
+@redis_cache(ttl=60 * 60 * 24)
 def get_total_installs_by_app():
-	total_installs = frappe.cache.get_value("total_installs_by_app")
-	if not total_installs:
-		total_installs = frappe.db.get_all(
-			"Site App",
-			fields=["app", "count(*) as count"],
-			group_by="app",
-		)
-		total_installs = {installs["app"]: installs["count"] for installs in total_installs}
-		frappe.cache.set_value(
-			"total_installs_by_app", total_installs, expires_in_sec=60 * 60 * 24
-		)
-	return total_installs
+	total_installs = frappe.db.get_all(
+		"Site App",
+		fields=["app", "count(*) as count"],
+		group_by="app",
+	)
+	return {installs["app"]: installs["count"] for installs in total_installs}

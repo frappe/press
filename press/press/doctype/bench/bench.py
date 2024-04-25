@@ -18,6 +18,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
+from press.api.client import dashboard_whitelist
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[
@@ -77,7 +78,6 @@ class Bench(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
-	dashboard_actions = ["restart", "rebuild", "update_all_sites"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -375,7 +375,7 @@ class Bench(Document):
 				)
 				frappe.db.rollback()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def update_all_sites(self):
 		sites = frappe.get_all(
 			"Site",
@@ -481,11 +481,11 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		candidate._create_deploy([self.server])
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def rebuild(self):
 		return Agent(self.server).rebuild_bench(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
@@ -640,6 +640,7 @@ def process_new_bench_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	if updated_status != bench.status:
@@ -672,6 +673,7 @@ def process_archive_bench_job_update(job):
 		"Running": "Pending",
 		"Success": "Archived",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	if job.status == "Failure":

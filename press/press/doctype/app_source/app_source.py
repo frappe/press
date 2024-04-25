@@ -9,7 +9,7 @@ import frappe
 import requests
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
-from press.api.github import get_access_token
+from press.api.github import get_access_token, get_auth_headers
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import get_current_team, log_error
 
@@ -38,6 +38,7 @@ class AppSource(Document):
 		repository_owner: DF.Data | None
 		repository_url: DF.Data
 		team: DF.Link
+		uninstalled: DF.Check
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
 
@@ -135,12 +136,7 @@ class AppSource(Document):
 		).insert()
 
 	def poll_github_for_branch_info(self):
-		headers = self.get_auth_headers()
-		response = requests.get(
-			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
-			headers=headers,
-		)
-
+		response = self.get_poll_response()
 		if not response.ok:
 			self.set_poll_failed(response.text)
 			log_error(
@@ -153,6 +149,13 @@ class AppSource(Document):
 
 		self.set_poll_succeeded()
 		return response
+
+	def get_poll_response(self):
+		headers = self.get_auth_headers()
+		return requests.get(
+			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",
+			headers=headers,
+		)
 
 	def set_poll_succeeded(self):
 		frappe.db.set_value(
@@ -178,11 +181,7 @@ class AppSource(Document):
 		)
 
 	def get_auth_headers(self) -> dict:
-		token = self.get_access_token()
-		if not token:
-			return {}
-
-		return {"Authorization": f"token {token}"}
+		return get_auth_headers(self.github_installation_id)
 
 	def get_access_token(self) -> Optional[str]:
 		if self.github_installation_id:

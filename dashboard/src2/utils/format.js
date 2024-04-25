@@ -45,7 +45,7 @@ export function plural(number, singular, plural) {
 export function planTitle(plan) {
 	if (plan === undefined) return;
 	let $team = getTeam();
-	let india = $team.doc.country == 'India';
+	let india = $team.doc.currency == 'INR';
 	let price_field = india ? 'price_inr' : 'price_usd';
 	let price =
 		plan?.block_monthly == 1 ? plan[price_field] * 12 : plan[price_field];

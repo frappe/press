@@ -20,7 +20,7 @@
 <script setup>
 import { Button, createResource, Tooltip } from 'frappe-ui';
 import { getTeam } from '../data/team';
-import session from '../data/session';
+import { session } from '../data/session';
 
 defineOptions({ inheritAttrs: false });
 

@@ -24,6 +24,7 @@ from press.utils.billing import (
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
+from press.api.client import dashboard_whitelist
 
 
 class Team(Document):
@@ -107,11 +108,6 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 		"partner_referral_code",
-	]
-	dashboard_actions = [
-		"get_team_members",
-		"remove_team_member",
-		"invite_team_member",
 	]
 
 	def get_doc(self, doc):
@@ -313,7 +309,7 @@ class Team(Document):
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -764,7 +760,7 @@ class Team(Document):
 			self.payment_mode = (
 				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
 			)
-			self.save()
+			self.save(ignore_permissions=True)
 		return doc
 
 	def get_available_credits(self):
@@ -781,15 +777,15 @@ class Team(Document):
 		balance = (customer_object["balance"] * -1) / 100
 		return balance
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_team_members(self):
 		return get_team_members(self.name)
 
-	@frappe.whitelist()
-	def invite_team_member(self, email):
+	@dashboard_whitelist()
+	def invite_team_member(self, email, new_dashboard=False):
 		from press.api.account import add_team_member
 
-		add_team_member(email)
+		add_team_member(email, new_dashboard)
 
 	@frappe.whitelist()
 	def get_balance(self):

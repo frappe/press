@@ -317,6 +317,7 @@ def validate_request_key(key, timezone=None):
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
+			"invited_by": account_request.invited_by,
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
 			"saas_product": {
@@ -751,7 +752,7 @@ def get_user_for_reset_password_key(key):
 
 
 @frappe.whitelist()
-def add_team_member(email):
+def add_team_member(email, new_dashboard=False):
 	frappe.utils.validate_email_address(email, True)
 
 	team = get_current_team(True)
@@ -762,6 +763,7 @@ def add_team_member(email):
 			"email": email,
 			"role": "Press Member",
 			"invited_by": team.user,
+			"new_signup_flow": new_dashboard,
 			"send_email": True,
 		}
 	).insert()

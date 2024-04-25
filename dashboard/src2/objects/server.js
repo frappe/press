@@ -133,7 +133,8 @@ export default {
 						{
 							label: 'Visit Server',
 							icon: icon('external-link'),
-							condition: () => server.doc.status === 'Active',
+							condition: () =>
+								server.doc.status === 'Active' && $team.doc.is_desk_user,
 							onClick() {
 								window.open(`https://${server.doc.name}`, '_blank');
 							}

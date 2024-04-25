@@ -1,7 +1,7 @@
 <template>
 	<Header class="sticky top-0 z-10 bg-white">
 		<div class="flex items-center space-x-2">
-			<Breadcrumbs :items="breadcrumbs" />
+			<Breadcrumbs :items="[{ label: 'Settings', route: '/settings' }]" />
 		</div>
 	</Header>
 	<div>
@@ -19,6 +19,11 @@ import { Breadcrumbs } from 'frappe-ui';
 import { provide, ref } from 'vue';
 import { icon } from '../utils/components';
 import TabsWithRouter from '../components/TabsWithRouter.vue';
+import { getTeam } from '../data/team';
+import { session } from '../data/session';
+
+let $team = getTeam();
+let $session = session;
 
 const tabs = [
 	{
@@ -29,24 +34,23 @@ const tabs = [
 	{
 		label: 'Team',
 		icon: icon('users'),
-		routeName: 'SettingsTeam'
-	},
-	{
-		label: 'Developer',
-		icon: icon('code'),
-		routeName: 'SettingsDeveloper'
+		routeName: 'SettingsTeam',
+		condition: () => $team.doc.user === $session.user || $session.isSystemUser
 	},
 	{
 		label: 'Permissions',
 		icon: icon('lock'),
 		routeName: 'SettingsPermission',
 		childrenRoutes: [
-			'SettingsPermissionGroupList',
-			'SettingsPermissionGroupPermissions'
-		]
+			'SettingsPermissionRoles',
+			'SettingsPermissionRolePermissions'
+		],
+		condition: () => $team.doc.user === $session.user || $session.isSystemUser
+	},
+	{
+		label: 'Developer',
+		icon: icon('code'),
+		routeName: 'SettingsDeveloper'
 	}
 ];
-
-const breadcrumbs = ref([{ label: 'Settings', route: '/settings' }]);
-provide('breadcrumbs', breadcrumbs);
 </script>

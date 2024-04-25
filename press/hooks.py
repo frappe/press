@@ -173,6 +173,7 @@ scheduler_events = {
 	"daily": [
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
+		"press.press.doctype.log_counter.log_counter.record_counts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -314,6 +315,8 @@ on_session_creation = "press.overrides.on_session_creation"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
+after_request = "press.overrides.after_request"
+after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 

@@ -20,6 +20,7 @@ from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.utils import log_error
+from press.api.client import dashboard_whitelist
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
@@ -35,7 +36,6 @@ class BaseServer(Document, TagHelpers):
 		"database_server",
 		"is_self_hosted",
 	]
-	dashboard_actions = ["change_plan", "reboot", "rename", "drop_server"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -101,7 +101,7 @@ class BaseServer(Document, TagHelpers):
 		]
 		return [action for action in actions if action.get("condition", True)]
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def drop_server(self):
 		if self.doctype == "Database Server":
 			app_server_name = frappe.db.get_value(
@@ -495,7 +495,7 @@ class BaseServer(Document, TagHelpers):
 				"Cannot change plan because you haven't added a card and not have enough balance"
 			)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def change_plan(self, plan, ignore_card_setup=False):
 		self.can_change_plan(ignore_card_setup)
 		plan = frappe.get_doc("Server Plan", plan)
@@ -697,13 +697,13 @@ class BaseServer(Document, TagHelpers):
 			console.reload()
 			console.run_reboot()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def reboot(self):
 		if self.provider in ("AWS EC2", "OCI"):
 			virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 			virtual_machine.reboot()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def rename(self, title):
 		self.title = title
 		self.save()

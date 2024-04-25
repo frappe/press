@@ -15,12 +15,6 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
-		if (window.dev_server) {
-			frm.add_custom_button('Check Status', () =>
-				frm.call('is_build_okay').then((r) => frm.refresh()),
-			);
-		}
-
 		const actions = [
 			[
 				__('Generate Build Context'),
