@@ -95,12 +95,13 @@ class UserSSHKey(Document):
 
 	def generate_ssh_fingerprint(self, key_bytes: bytes):
 		try:
-			return (
+			self.ssh_fingerprint = (
 				subprocess.check_output(
 					shlex.split("ssh-keygen -lf -"), stderr=subprocess.STDOUT, input=key_bytes
 				)
 				.decode()
 				.split()[1]
+				.split(":")[1]
 			)
 		except subprocess.CalledProcessError as e:
 			raise SSHKeyValueError(f"Error generating fingerprint: {e.output.decode()}")
