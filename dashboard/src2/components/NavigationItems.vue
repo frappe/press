@@ -76,18 +76,18 @@ export default {
 					disabled
 				},
 				{
-					name: 'Settings',
-					icon: () => h(Settings),
-					route: '/settings',
-					isActive: routeName.startsWith('Settings'),
-					disabled
-				},
-				{
 					name: 'Partners',
 					icon: () => h(Globe),
 					route: '/partners',
 					isActive: routeName.startsWith('Partners'),
 					condition: Boolean(this.$team.doc.erpnext_partner),
+					disabled
+				},
+				{
+					name: 'Settings',
+					icon: () => h(Settings),
+					route: '/settings',
+					isActive: routeName.startsWith('Settings'),
 					disabled
 				}
 				// {
