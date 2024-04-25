@@ -50,6 +50,13 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	def on_update(self):
+		if self.is_new():
+			return
+
+		if self.has_value_changed("rsa_key_size"):
+			self.obtain_certificate()
+
 	@frappe.whitelist()
 	def obtain_certificate(self):
 		user, session_data, team, = (
