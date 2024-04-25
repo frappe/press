@@ -2,7 +2,11 @@
 	<CardWithDetails
 		v-if="reviewStages"
 		title="Review Steps"
-		subtitle="Complete all the steps before submitting for a review"
+		:subtitle="
+			app.review_stage === 'Not Started'
+				? 'Complete all the steps before submitting for a review'
+				: 'App is sent for review'
+		"
 	>
 		<ListItem v-for="step in reviewStages" :key="step.step" :title="step.step">
 			<template #actions>
@@ -11,8 +15,14 @@
 			</template>
 		</ListItem>
 		<template #actions>
-			<Button v-if="showButton()" @click="$resources.startReview.submit()">
-				Ready for Review
+			<Button
+				v-if="app.status === 'Draft' && app.review_stage === 'Not Started'"
+				:disabled="reviewStages.some(step => !step.completed)"
+				:loading="$resources.startReview.isLoading"
+				@click="$resources.startReview.submit()"
+				class="py-5"
+			>
+				Submit for Review
 			</Button>
 		</template>
 		<template #details>
@@ -92,12 +102,6 @@ export default {
 		};
 	},
 	methods: {
-		showButton() {
-			return (
-				!Object.values(this.reviewStages).some(val => val === false) &&
-				this.app.status === 'Draft'
-			);
-		},
 		getFormattedDateTime(time) {
 			const date = new Date(time);
 			return date.toLocaleString(undefined, {
@@ -109,7 +113,7 @@ export default {
 	resources: {
 		startReview() {
 			return {
-				url: 'press.api.marketplace.start_review',
+				url: 'press.api.marketplace.mark_app_ready_for_review',
 				params: {
 					name: this.appName
 				},

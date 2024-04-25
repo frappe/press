@@ -95,6 +95,7 @@ class MarketplaceApp(WebsiteGenerator):
 		"title",
 		"status",
 		"description",
+		"review_stage",
 	]
 
 	def autoname(self):
@@ -539,6 +540,12 @@ class MarketplaceApp(WebsiteGenerator):
 			"long_description": self.long_description,
 			"screenshots": [screenshot.image for screenshot in self.screenshots],
 		}
+
+	@dashboard_whitelist()
+	def mark_app_ready_for_review(self):
+		# TODO: Start security check and auto deploy process here
+		self.review_stage = "Ready for Review"
+		self.save()
 
 	@dashboard_whitelist()
 	def update_listing(self, *args):
