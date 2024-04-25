@@ -315,6 +315,8 @@ on_session_creation = "press.overrides.on_session_creation"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
+after_request = "press.overrides.after_request"
+after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 

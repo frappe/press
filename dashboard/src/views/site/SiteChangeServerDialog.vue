@@ -51,7 +51,7 @@
 						})
 				"
 			/>
-			<div v-if="$resources.isServerAddedInGroup.data" class="space-y-4">
+			<div v-if="$resources.isServerAddedInGroup.data" class="mt-4 space-y-4">
 				<DateTimeControl v-model="targetDateTime" label="Schedule Time" />
 				<FormControl
 					label="Skip failing patches if any"

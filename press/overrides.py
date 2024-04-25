@@ -9,6 +9,8 @@ from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
 from press.utils import _get_current_team, _system_user
+from press.runner import constants
+from ansible.utils.path import cleanup_tmp_file
 
 
 @frappe.whitelist(allow_guest=True)
@@ -82,6 +84,20 @@ def before_job():
 def before_request():
 	frappe.local.team = _get_current_team
 	frappe.local.system_user = _system_user
+
+
+def cleanup_ansible_tmp_files():
+	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		print("Cleaning up ansible tmp files", constants.DEFAULT_LOCAL_TMP)
+		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+
+
+def after_job():
+	cleanup_ansible_tmp_files()
+
+
+def after_request():
+	cleanup_ansible_tmp_files()
 
 
 def update_website_context(context):
