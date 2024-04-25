@@ -1156,7 +1156,7 @@ class Site(Document, TagHelpers):
 					"Site Usage", {"site": self.name, "creation": equivalent_site_time}
 				):
 					return
-				if current_usages and equivalent_site_time < current_usages["creation"]:
+				if current_usages["creation"] and equivalent_site_time < current_usages["creation"]:
 					return
 
 			site_usage = frappe.get_doc({"doctype": "Site Usage", **site_usage_data}).insert()
