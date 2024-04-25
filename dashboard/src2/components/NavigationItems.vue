@@ -13,6 +13,7 @@ import WalletCards from '~icons/lucide/wallet-cards';
 import Settings from '~icons/lucide/settings';
 import App from '~icons/lucide/layout-grid';
 import Globe from '~icons/lucide/globe';
+import Notification from '~icons/lucide/inbox';
 
 export default {
 	name: 'NavigationItems',
@@ -28,6 +29,14 @@ export default {
 					route: '/welcome',
 					isActive: routeName === 'Welcome',
 					condition: !this.$team.doc.onboarding.complete
+				},
+				{
+					name: 'Notifications',
+					icon: () => h(Notification),
+					route: '/notifications',
+					isActive: routeName === 'Press Notification List',
+					condition: this.$team.doc.onboarding.complete,
+					disabled
 				},
 				{
 					name: 'Sites',
@@ -90,13 +99,6 @@ export default {
 					isActive: routeName.startsWith('Settings'),
 					disabled
 				}
-				// {
-				// 	name: 'Notifications',
-				// 	icon: () => h(Notification),
-				// 	route: '/notifications',
-				// 	isActive: routeName.startsWith('Notification'),
-				// 	disabled
-				// }
 			].filter(item => item.condition !== false);
 		}
 	}
