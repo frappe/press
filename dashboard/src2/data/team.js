@@ -9,10 +9,8 @@ export function getTeam() {
 			name: getCurrentTeam(),
 			whitelistedMethods: {
 				getTeamMembers: 'get_team_members',
-				removeTeamMember: 'remove_team_member'
-				inviteTeamMember: 'invite_team_member',
 				removeTeamMember: 'remove_team_member',
-				changeDefaultDashboard: 'change_default_dashboard'
+				inviteTeamMember: 'invite_team_member'
 			}
 		});
 	}
