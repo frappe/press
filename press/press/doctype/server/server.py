@@ -596,6 +596,9 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
 		try:
 			ansible = Ansible(playbook="glass_file.yml", server=self)
 			ansible.run()
@@ -624,9 +627,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_mysqldump")
 
 	def _setup_mysqldump(self):
 		try:
@@ -640,9 +641,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def set_swappiness(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_set_swappiness")
 
 	def _set_swappiness(self):
 		try:
