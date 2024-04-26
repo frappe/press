@@ -50,6 +50,9 @@ def log_error(title, **kwargs):
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 
+	enable_telemetry = frappe.get_system_settings("enable_telemetry")
+	frappe.local.system_settings.enable_telemetry = 0
+
 	try:
 		frappe.log_error(
 			title=title,
@@ -59,6 +62,8 @@ def log_error(title, **kwargs):
 		)
 	except Exception:
 		pass
+
+	frappe.local.system_settings.enable_telemetry = enable_telemetry
 
 
 def get_current_team(get_doc=False):
