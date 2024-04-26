@@ -636,8 +636,8 @@ def update_step(step_name, step):
 	output = None
 	traceback = None
 	if isinstance(step["data"], dict):
-		traceback = step["data"].get("traceback")
-		output = step["data"].get("output")
+		traceback = to_str(step["data"].get("traceback", ""))
+		output = to_str(step["data"].get("output", ""))
 
 	frappe.db.set_value(
 		"Agent Job Step",
@@ -984,3 +984,18 @@ def on_doctype_update():
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
 	frappe.db.add_index("Agent Job", ["creation"])
+
+
+def to_str(data) -> str:
+	if isinstance(data, str):
+		return data
+
+	try:
+		return json.dumps(data, default=str)
+	except Exception:
+		pass
+
+	try:
+		return str(data)
+	except Exception:
+		return ""
