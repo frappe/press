@@ -83,6 +83,10 @@ class PressNotification(Document):
 		self.save()
 		frappe.db.commit()
 
+	@dashboard_whitelist()
+	def mark_as_read(self):
+		self.db_set("read", True)
+
 
 def create_new_notification(team, type, document_type, document_name, message):
 	if not frappe.db.exists("Press Notification", {"document_name": document_name}):

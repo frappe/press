@@ -3,22 +3,33 @@ from press.utils import get_current_team
 
 
 @frappe.whitelist()
-def get_notifications(filters=None):
+def get_notifications(
+	filters=None, order_by="creation desc", limit_start=None, limit_page_length=None
+):
 	if not filters:
 		filters = {}
+	if filters.get("read") == "Unread":
+		filters["read"] = False
+	elif filters.get("read") == "Read":
+		filters["read"] = True
 	notifications = frappe.get_all(
 		"Press Notification",
 		filters=filters,
 		fields=[
 			"name",
 			"type",
+			"read",
+			"title",
 			"message",
 			"creation",
-			"read",
+			"is_addressed",
+			"is_actionable",
 			"document_type",
 			"document_name",
 		],
-		order_by="creation desc",
+		order_by=order_by,
+		start=limit_start,
+		limit=limit_page_length,
 	)
 
 	for notification in notifications:
