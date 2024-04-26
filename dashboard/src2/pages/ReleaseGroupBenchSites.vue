@@ -72,6 +72,7 @@ export default {
 					'name',
 					'status',
 					'bench',
+					'host_name',
 					'plan.plan_title as plan_title',
 					'plan.price_usd as price_usd',
 					'plan.price_inr as price_inr',
@@ -113,11 +114,14 @@ export default {
 						</div>
 					);
 				},
-				searchField: 'name',
+				searchField: 'host_name',
 				columns: [
 					{
 						label: 'Site',
-						fieldname: 'name',
+						fieldname: 'host_name',
+						format(value, row) {
+							return value || row.name;
+						},
 						prefix() {
 							return h('div', { class: 'ml-2 w-3.5 h-3.5' });
 						}
