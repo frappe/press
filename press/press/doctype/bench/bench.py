@@ -359,6 +359,8 @@ class Bench(Document):
 	def sync_analytics(self):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
+		if not data:
+			return
 		for site, analytics in data.items():
 			if not frappe.db.exists("Site", site):
 				return
@@ -884,6 +886,9 @@ def sync_analytics():
 
 def sync_bench_analytics(name):
 	bench = frappe.get_doc("Bench", name)
+	# Skip syncing analytics for benches that have been archived (after the job was enqueued)
+	if bench.status != "Active":
+		return
 	try:
 		bench.sync_analytics()
 		frappe.db.commit()
