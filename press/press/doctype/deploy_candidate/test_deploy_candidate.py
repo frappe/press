@@ -220,6 +220,7 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(second_candidate.apps[0].release, first_candidate.apps[0].release)
 		self.assertNotEqual(second_candidate.apps[1].release, first_candidate.apps[1].release)
 
+	@unittest.skip("Docker Build broken with `duplicate cache exports [gha]`")
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,

@@ -2,11 +2,11 @@
 # For license information, please see license.txt
 
 import datetime
+import json
 from typing import Optional, TypedDict
 
 import frappe
 import frappe.utils
-import json
 from frappe.model.document import Document
 from frappe.query_builder import DocType
 from frappe.query_builder.functions import Count
@@ -113,3 +113,28 @@ def get_name(doctype: str, date: datetime.date):
 	dt_stub = doctype.lower().replace(" ", "_")
 	date_iso = date.isoformat().replace("-", "_")
 	return f"{dt_stub}-{date_iso}"
+
+
+def top_k(
+	k: int = 5,
+	log_type: str = "Error Log",
+	since: Optional[datetime.date] = None,
+):
+	if not since:
+		since = frappe.utils.now_datetime().date() - datetime.timedelta(days=30)
+
+	res = frappe.get_all(
+		"Log Counter",
+		fields=["total", "date", "counts"],
+		filters={
+			"logtype": log_type,
+			"creation": [">", since],
+		},
+	)
+	for r in res:
+		counts = json.loads(r["counts"])
+		counts = [{"error": k, "count": i} for k, i in counts.items()]
+		counts.sort(key=lambda x: x["count"], reverse=True)
+		r["counts"] = counts[:k]
+
+	return res
