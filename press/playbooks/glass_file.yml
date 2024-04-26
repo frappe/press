@@ -1,5 +1,5 @@
 ---
-- name: Adds dummy 250MB file for deletion purposes
+- name: Adds dummy 200MB file for deletion purposes
   hosts: all
   become: yes
   become_user: root
