@@ -635,9 +635,9 @@ def update_step(step_name, step):
 
 	output = None
 	traceback = None
-	if isinstance(output, dict):
-		traceback = output.get("traceback")
-		output = output.get("output")
+	if isinstance(step["data"], dict):
+		traceback = step["data"].get("traceback")
+		output = step["data"].get("output")
 
 	frappe.db.set_value(
 		"Agent Job Step",
