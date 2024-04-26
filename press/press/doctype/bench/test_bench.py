@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import MagicMock, Mock, patch
 
 import frappe
+from frappe.tests.utils import FrappeTestCase
 
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
@@ -43,7 +44,7 @@ class TestStagingSite(unittest.TestCase):
 
 @patch.object(AgentJob, "after_insert", new=Mock())
 @patch("press.press.doctype.server.server.frappe.db.commit", new=MagicMock)
-class TestBench(unittest.TestCase):
+class TestBench(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
@@ -274,6 +275,7 @@ class TestBench(unittest.TestCase):
 
 
 @patch("press.press.doctype.bench.bench.frappe.db.commit", new=MagicMock)
+@patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=Mock())
 class TestArchiveObsoleteBenches(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback()
