@@ -4,6 +4,7 @@
 
 
 import json
+import shlex
 import typing
 from functools import cached_property
 from typing import List, Union
@@ -12,6 +13,7 @@ import boto3
 import frappe
 from frappe import _
 from frappe.core.utils import find
+from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
 
@@ -380,8 +382,16 @@ class BaseServer(Document, TagHelpers):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
+			subprocess.check_output(
+				shlex.split(
+					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{self.ip} -t rm /root/glass"
+				),
+				stderr=subprocess.STDOUT,
+			)
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
+		except subprocess.CalledProcessError as e:
+			log_error(f"Error removing glassfile: {e.output.decode()}")
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
@@ -592,6 +602,16 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
+	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", server=self.as_dict())
+
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
@@ -614,9 +634,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_mysqldump")
 
 	def _setup_mysqldump(self):
 		try:
@@ -630,9 +648,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def set_swappiness(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_set_swappiness")
 
 	def _set_swappiness(self):
 		try:
