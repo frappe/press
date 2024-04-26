@@ -6,5 +6,5 @@
   gather_facts: no
 
   tasks:
-    - name: Add 250MB file
-      command: 'fallocate -l 250M /root/glass'
+    - name: Add 200MB file
+      command: 'fallocate -l 200M /root/glass'
