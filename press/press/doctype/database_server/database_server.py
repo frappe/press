@@ -744,7 +744,7 @@ class DatabaseServer(BaseServer):
 
 	def get_stalks(self):
 		result = self.agent.get("database/stalks", raises=False)
-		if result and "error" in result:
+		if (not result) or ("error" in result):
 			return []
 		return result
 
