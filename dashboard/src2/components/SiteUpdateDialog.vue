@@ -18,7 +18,7 @@
 							v-model="skipFailingPatches"
 						/>
 						<FormControl
-							label="Skip backups"
+							label="Skip taking backup for this update"
 							type="checkbox"
 							v-model="skipBackups"
 						/>

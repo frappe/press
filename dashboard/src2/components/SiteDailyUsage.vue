@@ -19,7 +19,7 @@
 			:loading="$resources.requestCounter.loading"
 			:error="$resources.requestCounter.error"
 			:showCard="false"
-			class="h-52 p-2"
+			class="h-[15.55rem] p-2 pb-3"
 		/>
 	</div>
 </template>

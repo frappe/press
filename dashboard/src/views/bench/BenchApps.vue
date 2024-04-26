@@ -43,7 +43,7 @@
 									placement="top"
 								>
 									<a
-										href="https://frappecloud.com/docs/faq/custom_apps#why-does-it-show-attention-required-next-to-my-custom-app"
+										href="https://frappecloud.com/docs/faq/app-installation-issue"
 										target="_blank"
 									>
 										<FeatherIcon

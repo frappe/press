@@ -9,6 +9,7 @@ from press.api.billing import get_stripe
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils import log_error
+from press.api.client import dashboard_whitelist
 
 
 class StripePaymentMethod(Document):
@@ -40,12 +41,15 @@ class StripePaymentMethod(Document):
 		"name_on_card",
 		"last_4",
 	]
-	dashboard_actions = ["set_default", "delete"]
 
 	def onload(self):
 		load_address_and_contact(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()
+
+	@dashboard_whitelist()
 	def set_default(self):
 		stripe = get_stripe()
 		# set default payment method on stripe

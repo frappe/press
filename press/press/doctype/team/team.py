@@ -24,6 +24,7 @@ from press.utils.billing import (
 	process_micro_debit_test_charge,
 )
 from press.utils.telemetry import capture
+from press.api.client import dashboard_whitelist
 
 
 class Team(Document):
@@ -108,11 +109,6 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 		"partner_referral_code",
-	]
-	dashboard_actions = [
-		"get_team_members",
-		"remove_team_member",
-		"change_default_dashboard",
 	]
 
 	def get_doc(self, doc):
@@ -314,7 +310,7 @@ class Team(Document):
 		self.append("team_members", {"user": user.name})
 		self.save(ignore_permissions=True)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def remove_team_member(self, member):
 		member_to_remove = find(self.team_members, lambda x: x.user == member)
 		if member_to_remove:
@@ -765,7 +761,7 @@ class Team(Document):
 			self.payment_mode = (
 				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
 			)
-			self.save()
+			self.save(ignore_permissions=True)
 		return doc
 
 	def get_available_credits(self):
@@ -782,15 +778,15 @@ class Team(Document):
 		balance = (customer_object["balance"] * -1) / 100
 		return balance
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def get_team_members(self):
 		return get_team_members(self.name)
 
-	@frappe.whitelist()
-	def invite_team_member(self, email):
+	@dashboard_whitelist()
+	def invite_team_member(self, email, new_dashboard=False):
 		from press.api.account import add_team_member
 
-		add_team_member(email)
+		add_team_member(email, new_dashboard)
 
 	@frappe.whitelist()
 	def get_balance(self):
@@ -939,6 +935,24 @@ class Team(Document):
 			billing_details.country = get_country_from_timezone(timezone)
 
 		return billing_details
+
+	def get_partner_level(self):
+		# fetch partner level from frappe.io
+		client = get_frappe_io_connection()
+		response = client.session.get(
+			f"{client.url}/api/method/get_partner_level",
+			headers=client.headers,
+			params={"email": self.partner_email},
+		)
+
+		if response.ok:
+			res = response.json()
+			partner_level = res.get("message")
+			legacy_contract = res.get("legacy_contract")
+			if partner_level:
+				return partner_level, legacy_contract
+		else:
+			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
 	def get_onboarding(self):
 		if self.payment_mode in ("Partner Credits", "Prepaid Credits", "Paid By Partner"):
@@ -1158,7 +1172,7 @@ class Team(Document):
 			},
 		)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def change_default_dashboard(self, new_dashboard=None):
 		if new_dashboard is not None:
 			self.default_to_new_dashboard = new_dashboard
@@ -1276,8 +1290,6 @@ def handle_payment_intent_succeeded(payment_intent):
 	balance_transaction = team.allocate_credit_amount(
 		amount - gst if gst else amount, source="Prepaid Credits", remark=payment_intent["id"]
 	)
-
-	# team.allocate_free_credits()
 
 	# Telemetry: Added prepaid credits
 	capture("added_card_or_prepaid_credits", "fc_signup", team.account_request)

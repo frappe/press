@@ -57,7 +57,7 @@ export default {
 			return {
 				...this.object.list,
 				doctype: this.object.doctype,
-				route: this.getRoute
+				route: this.object.detail ? this.getRoute : null
 			};
 		}
 	}

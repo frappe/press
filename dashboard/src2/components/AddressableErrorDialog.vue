@@ -57,7 +57,6 @@ import { Button, Dialog, FeatherIcon } from 'frappe-ui';
 import ErrorMessage from 'frappe-ui/src/components/ErrorMessage.vue';
 
 export default {
-	name: 'PatchAppDialog',
 	props: {
 		name: String
 	},

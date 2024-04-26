@@ -9,7 +9,12 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 
 from press.agent import Agent
-from press.exceptions import CannotChangePlan, MissingAppsInBench, OngoingAgentJob
+from press.exceptions import (
+	CannotChangePlan,
+	InsufficientSpaceOnServer,
+	MissingAppsInBench,
+	OngoingAgentJob,
+)
 from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
@@ -66,8 +71,24 @@ class SiteMigration(Document):
 
 	def before_insert(self):
 		self.validate_apps()
+		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+
+	def check_enough_space_on_destination_server(self):
+		try:
+			backup = frappe.get_last_doc(  # approximation with last backup
+				"Site Backup", {"site": self.site, "with_files": True, "status": "Success"}
+			)
+		except frappe.DoesNotExistError:
+			pass
+		else:
+			site: "Site" = frappe.get_doc("Site", self.site)
+			site.server = self.destination_server
+			site.remote_database_file = backup.remote_database_file
+			site.remote_public_file = backup.remote_public_file
+			site.remote_private_file = backup.remote_private_file
+			site.check_enough_space_on_server()
 
 	def after_insert(self):
 		self.set_migration_type()
@@ -87,9 +108,27 @@ class SiteMigration(Document):
 	def start(self):
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
-		self.db_set("status", "Pending")
+		self.check_enough_space_on_destination_server()
+		self.remove_archive_on_destination_step_if_exists()  # case of continuing failed migration
+		frappe.db.set_value(
+			"Site",
+			self.site,
+			"status_before_update",
+			frappe.get_value("Site", self.site, "status"),
+		)
+		self.status = "Pending"
+		self.save()
 		frappe.db.commit()
 		self.run_next_step()
+
+	def remove_archive_on_destination_step_if_exists(self):
+		"""Remove Archive on Destination step if exists"""
+		archive_on_destination_step = find(
+			self.steps,
+			lambda x: x.method_name == self.archive_site_on_destination_server.__name__,
+		)
+		if archive_on_destination_step:
+			self.steps.remove(archive_on_destination_step)
 
 	def check_for_ongoing_agent_jobs(self):
 		if frappe.db.exists(
@@ -275,9 +314,10 @@ class SiteMigration(Document):
 
 	def activate_site_if_appropriate(self, force=False):
 		site: "Site" = frappe.get_doc("Site", self.site)
+		failed_step_method_name = (self.failed_step or {}).get("method_name", "__NOT_SET__")
 		if (
 			force
-			or self.failed_step.method_name
+			or failed_step_method_name
 			in [
 				self.backup_source_site.__name__,
 				self.restore_site_on_destination_server.__name__,
@@ -300,7 +340,7 @@ class SiteMigration(Document):
 			message += f" due to {reason}"
 			agent_job_id = None
 		else:
-			agent_job_id = find(self.steps, lambda x: x.status == "Failure").step_job
+			agent_job_id = find(self.steps, lambda x: x.status == "Failure").get("step_job")
 
 		create_new_notification(
 			site.team,
@@ -435,8 +475,7 @@ class SiteMigration(Document):
 
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
-		site = frappe.get_doc("Site", self.site)
-		site.status_before_update = site.status
+		site: Site = frappe.get_doc("Site", self.site)
 		site.status = "Inactive"
 		return site.update_site_config({"maintenance_mode": 1})  # saves doc
 
@@ -586,8 +625,9 @@ def process_site_migration_job_update(job, site_migration_name: str):
 	if job.status == "Success":
 		try:
 			site_migration.run_next_step()
-		except Exception:
-			log_error("Site Migration Step Error")
+		except Exception as e:
+			log_error("Site Migration Step Error", doc=site_migration)
+			site_migration.fail(reason=str(e), activate=True)
 	elif job.status in ["Failure", "Delivery Failure"]:
 		site_migration.fail()
 
@@ -604,6 +644,8 @@ def run_scheduled_migrations():
 		except OngoingAgentJob:
 			pass
 		except MissingAppsInBench as e:
+			site_migration.fail(reason=str(e), activate=True)
+		except InsufficientSpaceOnServer as e:
 			site_migration.fail(reason=str(e), activate=True)
 
 

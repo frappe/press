@@ -126,7 +126,7 @@ export default {
 	},
 	data() {
 		return {
-			duration: '7d',
+			duration: '24h',
 			durationOptions: [
 				{ label: '1 hour', value: '1h' },
 				{ label: '6 hours', value: '6h' },

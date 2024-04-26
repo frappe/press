@@ -513,11 +513,11 @@ class VirtualMachine(Document):
 				if not existing_volume:
 					self.append("volumes", row)
 
+			self.disk_size = self.volumes[0].size if self.volumes else self.disk_size
+
 			for volume in list(self.volumes):
 				if volume.volume_id not in attached_volumes:
 					self.remove(volume)
-
-			self.disk_size = self.volumes[0].size
 
 			self.termination_protection = self.client().describe_instance_attribute(
 				InstanceId=self.instance_id, Attribute="disableApiTermination"

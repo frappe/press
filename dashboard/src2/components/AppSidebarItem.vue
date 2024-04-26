@@ -15,6 +15,7 @@
 					<component :is="item.icon" class="h-4 w-4 text-gray-500" />
 				</span>
 				<span class="text-sm">{{ item.name }}</span>
+				<component :is="item.badge" />
 			</div>
 		</a>
 	</router-link>

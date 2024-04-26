@@ -2,7 +2,7 @@ import { computed, reactive } from 'vue';
 import { createResource } from 'frappe-ui';
 import router from '../router';
 
-let session = reactive({
+export let session = reactive({
 	login: createResource({
 		url: 'login',
 		makeParams({ email, password }) {
@@ -22,16 +22,21 @@ let session = reactive({
 		}
 	}),
 	user: getSessionUser(),
-	isLoggedIn: computed(() => !!session.user)
+	isLoggedIn: computed(() => !!session.user),
+	isSystemUser: getSessionCookies().get('system_user') === 'yes'
 });
 
 export default session;
 
 export function getSessionUser() {
-	let cookies = new URLSearchParams(document.cookie.split('; ').join('&'));
+	let cookies = getSessionCookies();
 	let sessionUser = cookies.get('user_id');
 	if (!sessionUser || sessionUser === 'Guest') {
 		sessionUser = null;
 	}
 	return sessionUser;
+}
+
+function getSessionCookies() {
+	return new URLSearchParams(document.cookie.split('; ').join('&'));
 }

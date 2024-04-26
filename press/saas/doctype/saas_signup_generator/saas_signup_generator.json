@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "allow_guest_to_view": 1,
  "autoname": "field:app",
  "creation": "2022-06-08 18:24:06.174595",
  "doctype": "DocType",
@@ -61,7 +62,7 @@
  "has_web_view": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-08-24 15:44:59.671817",
+ "modified": "2024-03-28 15:44:59.671817",
  "modified_by": "Administrator",
  "module": "SaaS",
  "name": "Saas Signup Generator",

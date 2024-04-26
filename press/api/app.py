@@ -7,6 +7,11 @@ import json
 import frappe
 from press.utils import get_current_team
 from press.press.doctype.app.app import new_app
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.app.app import App
+	from press.press.doctype.release_group.release_group import ReleaseGroup
 
 
 @frappe.whitelist()
@@ -18,10 +23,10 @@ def new(app):
 	team = get_current_team()
 
 	if frappe.db.exists("App", name):
-		app_doc = frappe.get_doc("App", name)
+		app_doc: "App" = frappe.get_doc("App", name)
 	else:
-		app_doc = new_app(name, app["title"])
-	group = frappe.get_doc("Release Group", app["group"])
+		app_doc: "App" = new_app(name, app["title"])
+	group: "ReleaseGroup" = frappe.get_doc("Release Group", app["group"])
 
 	source = app_doc.add_source(
 		group.version,

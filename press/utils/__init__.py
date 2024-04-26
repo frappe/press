@@ -50,16 +50,30 @@ def log_error(title, **kwargs):
 		del kwargs["reference_doctype"]
 		del kwargs["reference_name"]
 
+	if doc := kwargs.get("doc"):
+		reference_doctype = doc.doctype
+		reference_name = doc.name
+		del kwargs["doc"]
+
+	try:
+		kwargs["user"] = frappe.session.user
+		kwargs["team"] = frappe.local.team()
+	except Exception:
+		pass
+
 	traceback = frappe.get_traceback(with_context=True)
 	serialized = json.dumps(kwargs, indent=4, sort_keys=True, default=str, skipkeys=True)
 	message = f"Data:\n{serialized}\nException:\n{traceback}"
 
-	frappe.log_error(
-		title=title,
-		message=message,
-		reference_doctype=reference_doctype,
-		reference_name=reference_name,
-	)
+	try:
+		frappe.log_error(
+			title=title,
+			message=message,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+		)
+	except Exception:
+		pass
 
 
 def get_current_team(get_doc=False):
@@ -424,8 +438,8 @@ def developer_mode_only():
 
 
 def human_readable(num: int) -> str:
-	"""Assumes int data to describe size is in MiB"""
-	for unit in ["Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+	"""Assumes int data to describe size is in Bytes"""
+	for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
 		if abs(num) < 1024:
 			return f"{num:3.1f}{unit}B"
 		num /= 1024

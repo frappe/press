@@ -133,6 +133,10 @@ def get(name):
 def overview(name):
 	server = poly_get_doc(["Server", "Database Server"], name)
 	plan = frappe.get_doc("Server Plan", server.plan) if server.plan else None
+	if plan:
+		# override plan disk size with the actual disk size
+		# TODO: Remove this once we remove old dashboard
+		plan.disk = frappe.db.get_value("Virtual Machine", name, "disk_size")
 
 	return {
 		"plan": plan if plan else None,
@@ -316,7 +320,7 @@ def analytics(name, query, timezone, duration):
 def prometheus_query(query, function, timezone, timespan, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
-		return []
+		return {"datasets": [], "labels": []}
 
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
@@ -387,6 +391,7 @@ def plans(name, cluster=None):
 			"disk",
 			"cluster",
 			"instance_type",
+			"premium",
 		],
 		filters={"server_type": name, "cluster": cluster}
 		if cluster

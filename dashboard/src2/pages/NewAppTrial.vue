@@ -8,107 +8,141 @@
 			/>
 			<div
 				class="flex w-full items-start justify-center pt-32"
-				v-if="$resources.siteRequestId.error"
+				v-if="$resources.getSiteRequest.error"
 			>
 				<div class="rounded-md bg-white p-5 sm:shadow-xl">
 					<div class="text-lg text-red-600">
-						{{ $resources.siteRequestId.error.messages[0] }}
+						{{ $resources.getSiteRequest.error.messages[0] }}
 					</div>
 				</div>
 			</div>
-			<div class="relative w-full" v-if="siteRequest?.doc && saasProduct">
+			<div class="relative w-full" v-if="saasProduct">
 				<LoginBox
 					:title="
-						siteRequest.doc.status == 'Pending'
+						siteRequest?.doc?.status == 'Pending'
 							? `Create your ${saasProduct.title} site`
 							: ''
 					"
 				>
-					<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
-						<FormControl
-							label="Your Email"
-							:modelValue="$team.doc.user"
-							:disabled="true"
-						/>
-						<div class="cursor-pointer" @click.stop="showPlanDialog = true">
-							<label class="text-xs text-gray-600">Choose a plan</label>
-							<Button class="w-full">
-								<span class="text-base text-gray-900" v-if="plan">
-									{{ selectedPlanDescription }}
-								</span>
-								<span class="text-base text-gray-600" v-else>
-									No plan selected
-								</span>
-							</Button>
-							<div class="mt-1 text-xs text-gray-600">
+					<div v-if="completedSites">
+						<div>
+							<div class="text-base text-gray-900">
 								{{
-									plan === 'Trial'
-										? ''
-										: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
+									completedSites.length > 1
+										? 'You have already created the following sites:'
+										: 'You have already created the following site:'
+								}}
+							</div>
+							<ul class="mt-2">
+								<li
+									v-for="site in completedSites"
+									:key="site"
+									class="whitespace-nowrap rounded p-2.5 text-base focus-within:ring focus-within:ring-gray-200 hover:bg-gray-100"
+								>
+									<a
+										:href="`https://${site.site}`"
+										class="block font-medium text-gray-900 underline focus:outline-none"
+										target="_blank"
+									>
+										{{ site.site }}
+									</a>
+									<div class="mt-1.5 text-base text-gray-600">
+										{{ trialDays(site.trial_end_date) }}
+									</div>
+								</li>
+							</ul>
+						</div>
+						<!-- {{ completedSites }} -->
+					</div>
+					<div v-if="siteRequest?.doc">
+						<div class="space-y-3" v-if="siteRequest.doc.status == 'Pending'">
+							<FormControl
+								label="Your Email"
+								:modelValue="$team.doc.user"
+								:disabled="true"
+							/>
+							<div class="cursor-pointer" @click.stop="showPlanDialog = true">
+								<label class="text-xs text-gray-600">Choose a plan</label>
+								<Button class="w-full">
+									<span class="text-base text-gray-900" v-if="plan">
+										{{ selectedPlanDescription }}
+									</span>
+									<span class="text-base text-gray-600" v-else>
+										No plan selected
+									</span>
+								</Button>
+								<div class="mt-1 text-xs text-gray-600">
+									{{
+										plan === 'Trial'
+											? ''
+											: `You won't be charged during the ${saasProduct.trial_days}-day trial period`
+									}}
+								</div>
+							</div>
+							<FormControl
+								class="subdomain mt-2"
+								label="Site Name"
+								v-model="subdomain"
+								@keydown.enter="createSite"
+							>
+								<template #suffix>
+									<div
+										ref="domainSuffix"
+										v-element-size="onResize"
+										class="flex select-none items-center text-base text-gray-600"
+									>
+										.{{ saasProduct.domain || 'frappe.cloud' }}
+									</div>
+								</template>
+							</FormControl>
+							<ErrorMessage :message="siteRequest.createSite.error" />
+							<Button
+								class="w-full"
+								variant="solid"
+								@click="createSite"
+								:loading="
+									findingClosestServer || siteRequest.createSite.loading
+								"
+							>
+								Create
+							</Button>
+						</div>
+						<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
+							<Progress
+								label="Creating site"
+								:value="siteRequest.getProgress.data?.progress || 0"
+								size="md"
+							/>
+							<ErrorMessage class="mt-2" :message="progressError" />
+							<Button
+								class="mt-2"
+								v-if="siteRequest.getProgress.error && progressErrorCount > 9"
+								route="/"
+							>
+								&#8592; Back to Dashboard
+							</Button>
+						</div>
+						<div v-else-if="siteRequest.doc.status == 'Site Created'">
+							<div class="text-base text-gray-900">
+								Your site
+								<span class="font-semibold text-gray-900">{{
+									siteRequest.doc.site
+								}}</span>
+								is ready.
+							</div>
+							<div class="py-3 text-base text-gray-900">
+								{{
+									siteRequest.getLoginSid.loading
+										? 'Logging in to your site...'
+										: ''
 								}}
 							</div>
 						</div>
-						<FormControl
-							class="subdomain mt-2"
-							label="Site Name"
-							v-model="subdomain"
-							@keydown.enter="createSite"
-						>
-							<template #suffix>
-								<div
-									ref="domainSuffix"
-									v-element-size="onResize"
-									class="flex select-none items-center text-base text-gray-600"
-								>
-									.{{ saasProduct.domain || 'frappe.cloud' }}
-								</div>
-							</template>
-						</FormControl>
-						<ErrorMessage :message="siteRequest.createSite.error" />
-						<Button
-							class="w-full"
-							variant="solid"
-							@click="createSite"
-							:loading="findingClosestServer || siteRequest.createSite.loading"
-						>
-							Create
-						</Button>
-					</div>
-					<div v-else-if="siteRequest.doc.status == 'Wait for Site'">
-						<Progress
-							label="Creating site"
-							:value="siteRequest.getProgress.data?.progress || 0"
-							size="md"
-						/>
-						<ErrorMessage class="mt-2" :message="progressError" />
-						<Button
-							class="mt-2"
-							v-if="siteRequest.getProgress.error && progressErrorCount > 9"
-							route="/"
-						>
-							&#8592; Back to Dashboard
-						</Button>
-					</div>
-					<div v-else-if="siteRequest.doc.status == 'Site Created'">
-						<div class="text-base text-gray-900">
-							Your site
-							<span class="font-semibold text-gray-900">{{
-								siteRequest.doc.site
-							}}</span>
-							is ready.
-						</div>
-						<div class="py-3 text-base text-gray-900">
-							{{
-								siteRequest.getLoginSid.loading
-									? 'Logging in to your site...'
-									: ''
-							}}
-						</div>
-					</div>
-					<div v-else-if="siteRequest.doc.status == 'Error'">
-						<div class="text-p-base text-red-600">
-							There was an error creating your site. Please contact
-							<a class="underline" href="/support">Frappe Cloud Support</a>.
+						<div v-else-if="siteRequest.doc.status == 'Error'">
+							<div class="text-p-base text-red-600">
+								There was an error creating your site. Please contact
+								<a class="underline" href="/support">Frappe Cloud Support</a>.
+							</div>
 						</div>
 					</div>
 				</LoginBox>
@@ -198,6 +232,7 @@ import { validateSubdomain } from '@/utils';
 import SitePlansCards from '../components/SitePlansCards.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
 import { getPlans } from '../data/plans';
+import { trialDays } from '../utils/site';
 
 export default {
 	name: 'NewAppTrial',
@@ -223,7 +258,7 @@ export default {
 		};
 	},
 	resources: {
-		siteRequestId() {
+		getSiteRequest() {
 			return {
 				url: 'press.api.account.get_site_request',
 				params: { product: this.productId },
@@ -238,11 +273,11 @@ export default {
 			};
 		},
 		siteRequest() {
-			if (!this.$resources.siteRequestId.data) return;
+			if (!this.pendingSiteRequest || this.completedSites.length) return;
 			return {
 				type: 'document',
 				doctype: 'SaaS Product Site Request',
-				name: this.$resources.siteRequestId.data,
+				name: this.pendingSiteRequest,
 				realtime: true,
 				onSuccess(doc) {
 					if (doc.status == 'Wait for Site') {
@@ -343,9 +378,16 @@ export default {
 		},
 		goToDashboard() {
 			window.location.reload();
-		}
+		},
+		trialDays
 	},
 	computed: {
+		pendingSiteRequest() {
+			return this.$resources.getSiteRequest.data?.pending || null;
+		},
+		completedSites() {
+			return this.$resources.getSiteRequest.data?.completed || [];
+		},
 		siteRequest() {
 			return this.$resources.siteRequest;
 		},

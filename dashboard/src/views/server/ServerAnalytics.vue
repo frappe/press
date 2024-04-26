@@ -48,6 +48,11 @@
 				title="Load Average"
 				:key="loadAverageData"
 				:data="loadAverageData"
+				:chartTheme="[
+					$theme.colors.green[500],
+					$theme.colors.yellow[400],
+					$theme.colors.red[500]
+				]"
 				:loading="$resources.loadavg.loading"
 				:error="$resources.loadavg.error"
 			/>
@@ -200,6 +205,10 @@ export default {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;
 
+			loadavg.datasets.sort(
+				(a, b) => Number(a.name.split(' ')[2]) - Number(b.name.split(' ')[2])
+			);
+
 			return this.transformMultiLineChartData(loadavg);
 		},
 		cpuData() {
@@ -235,6 +244,8 @@ export default {
 	},
 	methods: {
 		transformSingleLineChartData(data, percentage = false) {
+			if (!data.datasets?.length) return;
+
 			let dataset = [];
 			const name = data.datasets ? data.datasets[0]?.name : null;
 			for (let index = 0; index < data.datasets[0].values.length; index++) {
@@ -250,6 +261,8 @@ export default {
 			};
 		},
 		transformMultiLineChartData(data, stack = null, percentage = false) {
+			if (!data.datasets?.length) return;
+
 			let total = [];
 			if (percentage) {
 				// the sum of each cpu values tends to differ by few values

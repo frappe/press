@@ -1,6 +1,7 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
 import frappeui from 'frappe-ui/vite';
 import pluginRewriteAll from 'vite-plugin-rewrite-all';
 import Components from 'unplugin-vue-components/vite';
@@ -10,6 +11,7 @@ import IconsResolver from 'unplugin-icons/resolver';
 export default defineConfig({
 	plugins: [
 		vue(),
+		vueJsx(),
 		pluginRewriteAll(),
 		frappeui(),
 		Components({

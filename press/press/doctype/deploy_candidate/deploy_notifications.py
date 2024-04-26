@@ -63,7 +63,9 @@ def create_build_failed_notification(
 	doc.insert()
 	frappe.db.commit()
 
-	frappe.publish_realtime("press_notification", {"team": dc.team})
+	frappe.publish_realtime(
+		"press_notification", doctype="Press Notification", message={"team": dc.team}
+	)
 
 
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
@@ -128,7 +130,7 @@ def update_with_github_token_error(
 ):
 	if len(exc.args) > 1:
 		app = exc.args[1]
-	elif (failed_step := dc.get_first_step_of_given_status("Failure")) is not None:
+	elif (failed_step := dc.get_first_step("status", "Failure")) is not None:
 		app = failed_step.step_slug
 
 	if not app:
@@ -179,7 +181,7 @@ def get_default_title(dc: "DeployCandidate") -> str:
 
 
 def get_default_message(dc: "DeployCandidate") -> str:
-	failed_step = dc.get_first_step_of_given_status("Failure")
+	failed_step = dc.get_first_step("status", "Failure")
 	if failed_step:
 		return f"Image build failed at step <b>{failed_step.stage} - {failed_step.step}</b>."
 	return "Image build failed."

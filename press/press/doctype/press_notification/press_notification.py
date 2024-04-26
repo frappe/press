@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 
 class PressNotification(Document):
 	# begin: auto-generated types
@@ -49,32 +51,41 @@ class PressNotification(Document):
 		"assistance_url",
 	]
 
-	dashboard_actions = ["mark_as_addressed"]
-
 	def after_insert(self):
 		if frappe.local.dev_server:
 			return
 
+		user = frappe.db.get_value("Team", self.team, "user")
+		if user == "Administrator":
+			return
+
 		if self.type == "Bench Deploy":
-			group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
-			rg_title = frappe.db.get_value("Release Group", group_name, "title")
+			self.send_bench_deploy_failed(user)
 
-			frappe.sendmail(
-				recipients=[frappe.db.get_value("Team", self.team, "user")],
-				subject=f"Bench Deploy Failed - {rg_title}",
-				template="bench_deploy_failure",
-				args={
-					"message": self.message,
-					"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
-				},
-			)
+	def send_bench_deploy_failed(self, user: str):
+		group_name = frappe.db.get_value("Deploy Candidate", self.document_name, "group")
+		rg_title = frappe.db.get_value("Release Group", group_name, "title")
 
-	@frappe.whitelist()
+		frappe.sendmail(
+			recipients=[user],
+			subject=f"Bench Deploy Failed - {rg_title}",
+			template="bench_deploy_failure",
+			args={
+				"message": self.message,
+				"link": f"dashboard/benches/{group_name}/deploys/{self.document_name}",
+			},
+		)
+
+	@dashboard_whitelist()
 	def mark_as_addressed(self):
 		self.read = True
 		self.is_addressed = True
 		self.save()
 		frappe.db.commit()
+
+	@dashboard_whitelist()
+	def mark_as_read(self):
+		self.db_set("read", True)
 
 
 def create_new_notification(team, type, document_type, document_name, message):
@@ -89,4 +100,6 @@ def create_new_notification(team, type, document_type, document_name, message):
 				"message": message,
 			}
 		).insert()
-		frappe.publish_realtime("press_notification", {"team": team})
+		frappe.publish_realtime(
+			"press_notification", doctype="Press Notification", message={"team": team}
+		)

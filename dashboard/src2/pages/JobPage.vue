@@ -29,7 +29,7 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Creation</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.creation) }}
+								{{ $format.date(job.creation, 'lll') }}
 							</div>
 						</div>
 						<div>
@@ -41,19 +41,19 @@
 						<div>
 							<div class="text-sm font-medium text-gray-500">Duration</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ job.end ? $format.duration(job.duration) : '' }}
+								{{ job.end ? $format.duration(job.duration) : '-' }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">Start</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.start) }}
+								{{ $format.date(job.start, 'lll') }}
 							</div>
 						</div>
 						<div>
 							<div class="text-sm font-medium text-gray-500">End</div>
 							<div class="mt-2 text-sm text-gray-900">
-								{{ $format.date(job.end) }}
+								{{ job.end ? $format.date(job.end, 'lll') : '-' }}
 							</div>
 						</div>
 					</div>
@@ -86,7 +86,8 @@ export default {
 					for (let step of job.steps) {
 						step.title = step.step_name;
 						step.duration = duration(step.duration);
-						step.isOpen = false;
+						step.isOpen =
+							this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
 					}
 					return job;
 				},
@@ -105,9 +106,21 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Agent Job', this.id);
 		this.$socket.on('agent_job_update', data => {
 			if (data.id === this.id) {
-				this.reload();
+				data.steps = data.steps.map(step => {
+					step.title = step.step_name;
+					step.duration = duration(step.duration);
+					step.isOpen =
+						this.job?.steps?.find(s => s.name === step.name)?.isOpen || false;
+					return step;
+				});
+
+				this.$resources.job.doc = {
+					...this.$resources.job.doc,
+					...data
+				};
 			}
 		});
 		// reload job every minute, in case socket is not working
@@ -116,6 +129,7 @@ export default {
 		}, 1000 * 60);
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Agent Job', this.id);
 		this.$socket.off('agent_job_update');
 		clearInterval(this.reloadInterval);
 	},

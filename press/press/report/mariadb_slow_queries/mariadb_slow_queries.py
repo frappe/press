@@ -236,8 +236,14 @@ class OptimizeDatabaseQuery:
 
 		for table in tables:
 			stats = _fetch_table_stats(self.site, table)
+			if not stats:
+				# Old framework version
+				return
 			db_table = DBTable.from_frappe_ouput(stats)
 			column_stats = _fetch_column_stats(self.site, table)
+			if not column_stats:
+				# Failing due to large size, TODO: move this to a job
+				return
 			db_table.update_cardinality(column_stats)
 			optimizer.update_table_data(db_table)
 

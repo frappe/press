@@ -21,6 +21,7 @@ def create_test_remote_file(
 			"status": "Available",
 			"site": site,
 			"file_path": file_path,
+			"file_size": 1024,
 		}
 	).insert(ignore_if_duplicate=True)
 	remote_file.db_set("creation", creation)

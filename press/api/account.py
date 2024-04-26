@@ -317,6 +317,7 @@ def validate_request_key(key, timezone=None):
 			"user_exists": frappe.db.exists("User", account_request.email),
 			"team": account_request.team,
 			"is_invitation": frappe.db.get_value("Team", account_request.team, "enabled"),
+			"invited_by": account_request.invited_by,
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
 			"saas_product": {
@@ -381,27 +382,37 @@ def get_partner_name(partner_email):
 
 @frappe.whitelist()
 def transfer_credits(amount, customer, partner):
+	# partner discount map
+	DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
+
 	amt = frappe.utils.flt(amount)
 	partner_doc = frappe.get_doc("Team", partner)
 	credits_available = partner_doc.get_balance()
+	partner_level, legacy_contract = partner_doc.get_partner_level()
+	# no discount for partners on legacy contract
+	# TODO: remove legacy contract check
+	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
 		frappe.throw("Insufficient Credits to transfer")
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
+	amt -= amt * discount_percent
 	if customer_doc.currency != partner_doc.currency:
 		if partner_doc.currency == "USD":
-			credits_to_transfer = amt * 83
+			credits_to_transfer = credits_to_transfer * 83
 		else:
-			credits_to_transfer = amt / 83
+			credits_to_transfer = credits_to_transfer / 83
 
 	try:
 		customer_doc.allocate_credit_amount(
-			credits_to_transfer, "Transferred Credits", f"From {partner_doc.name}"
+			credits_to_transfer,
+			"Transferred Credits",
+			f"Transferred Credits from {partner_doc.name}",
 		)
 		partner_doc.allocate_credit_amount(
-			amt * -1, "Transferred Credits", f"To {customer_doc.name}"
+			amt * -1, "Transferred Credits", f"Transferred Credits to {customer_doc.name}"
 		)
 		frappe.db.commit()
 	except Exception:
@@ -741,7 +752,7 @@ def get_user_for_reset_password_key(key):
 
 
 @frappe.whitelist()
-def add_team_member(email):
+def add_team_member(email, new_dashboard=False):
 	frappe.utils.validate_email_address(email, True)
 
 	team = get_current_team(True)
@@ -752,6 +763,7 @@ def add_team_member(email):
 			"email": email,
 			"role": "Press Member",
 			"invited_by": team.user,
+			"new_signup_flow": new_dashboard,
 			"send_email": True,
 		}
 	).insert()
@@ -879,28 +891,32 @@ def user_prompts():
 @frappe.whitelist()
 def get_site_request(product):
 	team = frappe.local.team()
-	requests = frappe.db.get_all(
+	requests = frappe.qb.get_query(
 		"SaaS Product Site Request",
-		{
+		filters={
 			"team": team.name,
 			"saas_product": product,
 		},
-		["name", "status"],
+		fields=["name", "status", "site", "site.trial_end_date as trial_end_date"],
 		order_by="creation desc",
-		limit=1,
-	)
+	).run(as_dict=1)
 	if not requests:
 		site_request = frappe.new_doc(
 			"SaaS Product Site Request",
 			saas_product=product,
 			team=team.name,
 		).insert(ignore_permissions=True)
-		return site_request.name
+		return {"pending": site_request.name}
 	else:
-		site_request = requests[0]
-		if site_request.status in ["Pending", "Wait for Site", "Error"]:
-			return site_request.name
-		frappe.throw("You have already created a trial site for this product")
+		pending = [
+			d
+			for d in requests
+			if not d.site or d.status in ["Pending", "Wait for Site", "Error"]
+		]
+		return {
+			"pending": pending[0].name if pending else None,
+			"completed": [d for d in requests if d.site and d.status == "Site Created"],
+		}
 
 
 def redirect_to(location):

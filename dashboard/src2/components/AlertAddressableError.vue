@@ -8,7 +8,7 @@ import AlertBanner from './AlertBanner.vue';
 import { addressableErrorDialog } from '../utils/components';
 
 export default {
-	name: 'AlertAddPaymentMode',
+	name: 'AlertAddressableError',
 	components: { AlertBanner },
 	emits: ['done'],
 	props: {

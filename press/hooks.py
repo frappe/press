@@ -173,6 +173,7 @@ scheduler_events = {
 	"daily": [
 		"press.press.doctype.tls_certificate.tls_certificate.renew_tls_certificates",
 		"press.experimental.doctype.referral_bonus.referral_bonus.credit_referral_bonuses",
+		"press.press.doctype.log_counter.log_counter.record_counts",
 	],
 	"daily_long": [
 		"press.press.audit.check_bench_fields",
@@ -193,7 +194,6 @@ scheduler_events = {
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
-		"press.press.doctype.subscription.subscription.create_usage_records",
 		"press.press.doctype.usage_record.usage_record.link_unlinked_usage_records",
 		"press.press.doctype.bench.bench.sync_benches",
 		"press.press.doctype.invoice.invoice.finalize_draft_invoices",
@@ -224,7 +224,6 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
-			"press.press.doctype.agent_job.agent_job.retry_undelivered_jobs",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
@@ -287,7 +286,6 @@ fixtures = [
 	"Frappe Version",
 	"MariaDB Variable",
 	"Cloud Region",
-	"Plan",
 	{"dt": "Role", "filters": [["role_name", "like", "Press%"]]},
 	"Site Config Key Blacklist",
 	"Press Method Permission",
@@ -317,6 +315,7 @@ on_session_creation = "press.overrides.on_session_creation"
 
 before_request = "press.overrides.before_request"
 before_job = "press.overrides.before_job"
+after_job = "press.overrides.after_job"
 
 # Data Deletion Privacy Docs
 

@@ -18,6 +18,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error, parse_supervisor_status
+from press.api.client import dashboard_whitelist
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[
@@ -76,7 +77,32 @@ class Bench(Document):
 		vcpu: DF.Int
 	# end: auto-generated types
 
-	dashboard_fields = ["name", "group", "status"]
+	dashboard_fields = ["name", "group", "status", "is_ssh_proxy_setup"]
+
+	@staticmethod
+	def get_list_query(query):
+		Bench = frappe.qb.DocType("Bench")
+		benches = (
+			query.select(Bench.is_ssh_proxy_setup)
+			.where(Bench.status != "Archived")
+			.run(as_dict=1)
+		)
+		benches_with_patches = frappe.get_all(
+			"App Patch",
+			fields=["bench"],
+			filters={"bench": ["in", [d.name for d in benches]], "status": "Applied"},
+			pluck="bench",
+		)
+		for bench in benches:
+			bench.has_app_patch_applied = bench.name in benches_with_patches
+		return benches
+
+	def get_doc(self, doc):
+		user_ssh_key = frappe.db.get_all(
+			"User SSH Key", {"user": frappe.session.user, "is_default": 1}, limit=1
+		)
+		doc.user_ssh_key = bool(user_ssh_key)
+		doc.proxy_server = frappe.db.get_value("Server", self.server, "proxy_server")
 
 	@staticmethod
 	def with_sites(name: str):
@@ -333,6 +359,8 @@ class Bench(Document):
 	def sync_analytics(self):
 		agent = Agent(self.server)
 		data = agent.get_sites_analytics(self)
+		if not data:
+			return
 		for site, analytics in data.items():
 			if not frappe.db.exists("Site", site):
 				return
@@ -349,7 +377,7 @@ class Bench(Document):
 				)
 				frappe.db.rollback()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def update_all_sites(self):
 		sites = frappe.get_all(
 			"Site",
@@ -455,11 +483,11 @@ class Bench(Document):
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		candidate._create_deploy([self.server])
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def rebuild(self):
 		return Agent(self.server).rebuild_bench(self)
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def restart(self, web_only=False):
 		agent = Agent(self.server)
 		agent.restart_bench(self, web_only=web_only)
@@ -623,6 +651,7 @@ def process_new_bench_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	if updated_status != bench.status:
@@ -655,6 +684,7 @@ def process_archive_bench_job_update(job):
 		"Running": "Pending",
 		"Success": "Archived",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	if job.status == "Failure":
@@ -731,11 +761,37 @@ def get_unfinished_site_migrations(bench: str):
 	)
 
 
+def try_archive(bench: str):
+	try:
+		frappe.get_doc("Bench", bench).archive()
+		frappe.db.commit()
+		return True
+	except Exception:
+		log_error(
+			"Bench Archival Error",
+			bench=bench,
+			reference_doctype="Bench",
+			reference_name=bench,
+		)
+		frappe.db.rollback()
+		return False
+
+
 def archive_obsolete_benches():
-	benches = frappe.get_all(
-		"Bench",
-		fields=["name", "candidate", "last_archive_failure"],
-		filters={"status": "Active"},
+	benches = frappe.db.sql(
+		"""
+		SELECT
+			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+		FROM
+			tabBench bench
+		LEFT JOIN
+			`tabRelease Group` g
+		ON
+			bench.group = g.name
+		WHERE
+			bench.status = "Active"
+	""",
+		as_dict=True,
 	)
 	for bench in benches:
 		if (
@@ -760,36 +816,29 @@ def archive_obsolete_benches():
 		# Don't try archiving benches with sites
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue
+
+		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
+			try_archive(bench.name)
+			continue
+
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
-		if not frappe.db.exists("Deploy Candidate Difference", {"source": bench.candidate}):
+
+		differences = frappe.db.get_all(
+			"Deploy Candidate Difference", ["destination"], {"source": bench.candidate}
+		)
+		if not differences:
 			continue
 
 		# This bench isn't most recent.
 		# But if none of the recent versions of this bench are yet active then this bench is still useful.
 
 		# If any of the recent versions are active then, this bench can be safely archived.
-		differences = frappe.get_all(
-			"Deploy Candidate Difference",
-			fields=["destination"],
-			filters={"source": bench.candidate},
-		)
 		for difference in differences:
 			if frappe.db.exists(
 				"Bench", {"candidate": difference.destination, "status": "Active"}
-			):
-				try:
-					frappe.get_doc("Bench", bench.name).archive()
-					frappe.db.commit()
-					break
-				except Exception:
-					log_error(
-						"Bench Archival Error",
-						bench=bench.name,
-						reference_doctype="Bench",
-						reference_name=bench.name,
-					)
-					frappe.db.rollback()
+			) and try_archive(bench.name):
+				break
 
 
 def sync_benches():
@@ -846,6 +895,9 @@ def sync_analytics():
 
 def sync_bench_analytics(name):
 	bench = frappe.get_doc("Bench", name)
+	# Skip syncing analytics for benches that have been archived (after the job was enqueued)
+	if bench.status != "Active":
+		return
 	try:
 		bench.sync_analytics()
 		frappe.db.commit()

@@ -33,7 +33,7 @@
 							<strong>A</strong> record from
 							<strong>{{ newDomain }}</strong>
 							to
-							<strong>{{ site.ip }}</strong>
+							<strong>{{ site.inbound_ip }}</strong>
 						</li>
 					</ul>
 				</div>

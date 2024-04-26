@@ -151,16 +151,16 @@
 				</div>
 			</div>
 			<div class="mt-6">
-				<span class="font-medium text-base">Descriptions</span>
+				<span class="font-medium text-base">Description</span>
 				<FormControl
 					class="mt-4"
-					label="Description"
+					label="Summary"
 					type="textarea"
 					@input="editing = true"
 					v-model="marketplaceApp.description"
 				/>
 				<div class="mt-4">
-					<span class="text-gray-600 text-xs">Long Description</span>
+					<span class="text-gray-600 text-xs">Description</span>
 					<TextEditor
 						class="mt-1 text-base rounded py-1.5 px-2 border border-gray-100 bg-gray-100 placeholder-gray-500 hover:border-gray-200 hover:bg-gray-200 focus:bg-white focus:border-gray-500 focus:shadow-sm focus:ring-0 focus-visible:ring-2 focus-visible:ring-gray-400 text-gray-800 transition-colors w-full block"
 						ref="textEditor"

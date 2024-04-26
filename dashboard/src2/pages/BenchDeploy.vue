@@ -33,7 +33,7 @@
 					<div>
 						<div class="text-sm font-medium text-gray-500">Creation</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.creation) }}
+							{{ $format.date(deploy.creation, 'lll') }}
 						</div>
 					</div>
 					<div>
@@ -46,27 +46,39 @@
 						<div class="text-sm font-medium text-gray-500">Duration</div>
 						<div class="mt-2 text-sm text-gray-900">
 							{{
-								deploy.build_end ? $format.duration(deploy.build_duration) : ''
+								deploy.build_end ? $format.duration(deploy.build_duration) : '-'
 							}}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">Start</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.build_start, 'llll') }}
+							{{ $format.date(deploy.build_start, 'lll') }}
 						</div>
 					</div>
 					<div>
 						<div class="text-sm font-medium text-gray-500">End</div>
 						<div class="mt-2 text-sm text-gray-900">
-							{{ $format.date(deploy.build_end, 'llll') }}
+							{{
+								deploy.build_end ? $format.date(deploy.build_end, 'lll') : '-'
+							}}
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="mt-8 space-y-4">
+		<!-- Build Failure -->
+		<div class="mt-8" v-if="deploy.build_error && deploy.status === 'Failure'">
+			<BuildError
+				:build_error="deploy.build_error"
+				:build_steps="deploy.build_steps"
+			/>
+			<hr class="mt-4" />
+		</div>
+
+		<!-- Build Steps -->
+		<div :class="deploy.build_error ? 'mt-4' : 'mt-8'" class="space-y-4">
 			<JobStep
 				v-for="step in deploy.build_steps"
 				:step="step"
@@ -80,12 +92,14 @@ import { getCachedDocumentResource } from 'frappe-ui';
 import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
+import BuildError from '../components/BuildError.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,
+		BuildError,
 		AlertAddressableError
 	},
 	resources: {
@@ -94,24 +108,7 @@ export default {
 				type: 'document',
 				doctype: 'Deploy Candidate',
 				name: this.id,
-				transform(deploy) {
-					for (let step of deploy.build_steps) {
-						if (step.status === 'Running') {
-							step.isOpen = true;
-						}
-						step.title = `${step.stage} - ${step.step}`;
-						step.output =
-							step.command || step.output
-								? `${step.command || ''}\n${step.output || ''}`.trim()
-								: '';
-						step.duration = ['Success', 'Failure'].includes(step.status)
-							? step.cached
-								? 'Cached'
-								: `${step.duration}s`
-							: null;
-					}
-					return deploy;
-				}
+				transform: this.transformDeploy
 			};
 		},
 		errors() {
@@ -133,9 +130,12 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Deploy Candidate', this.id);
 		this.$socket.on(`bench_deploy:${this.id}:steps`, data => {
 			if (data.name === this.id && this.$resources.deploy.doc) {
-				this.$resources.deploy.reload();
+				this.$resources.deploy.doc.build_steps = this.transformDeploy({
+					build_steps: data.steps
+				})?.build_steps;
 			}
 		});
 		this.$socket.on(`bench_deploy:${this.id}:finished`, () => {
@@ -148,6 +148,7 @@ export default {
 		});
 	},
 	beforeUnmount() {
+		this.$socket.emit('doc_unsubscribe', 'Deploy Candidate', this.id);
 		this.$socket.off(`bench_deploy:${this.id}:steps`);
 	},
 	computed: {
@@ -159,6 +160,30 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		}
+	},
+	methods: {
+		transformDeploy(deploy) {
+			for (let step of deploy.build_steps) {
+				if (step.status === 'Running') {
+					step.isOpen = true;
+				} else {
+					step.isOpen = this.$resources.deploy?.doc?.build_steps?.find(
+						s => s.name === step.name
+					)?.isOpen;
+				}
+				step.title = `${step.stage} - ${step.step}`;
+				step.output =
+					step.command || step.output
+						? `${step.command || ''}\n${step.output || ''}`.trim()
+						: '';
+				step.duration = ['Success', 'Failure'].includes(step.status)
+					? step.cached
+						? 'Cached'
+						: `${step.duration}s`
+					: null;
+			}
+			return deploy;
 		}
 	}
 };

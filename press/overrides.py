@@ -9,6 +9,8 @@ from frappe.handler import is_whitelisted
 from functools import partial
 from frappe.core.doctype.user.user import User
 from press.utils import _get_current_team, _system_user
+from press.runner import constants
+from ansible.utils.path import cleanup_tmp_file
 
 
 @frappe.whitelist(allow_guest=True)
@@ -84,6 +86,15 @@ def before_request():
 	frappe.local.system_user = _system_user
 
 
+def cleanup_ansible_tmp_files():
+	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
+		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
+
+
+def after_job():
+	cleanup_ansible_tmp_files()
+
+
 def update_website_context(context):
 	if frappe.request.path.startswith("/docs") and not frappe.db.get_single_value(
 		"Press Settings", "publish_docs"
@@ -134,6 +145,15 @@ def get_permission_query_conditions_for_doctype(doctype):
 
 
 class CustomUser(User):
+	dashboard_fields = ["full_name", "email", "user_image", "enabled", "user_type"]
+
+	@staticmethod
+	def get_list_query(query):
+		team = frappe.local.team()
+		allowed_users = [d.user for d in team.team_members]
+		User = frappe.qb.DocType("User")
+		return query.where(User.name.isin(allowed_users))
+
 	def after_rename(self, old_name, new_name, merge=False):
 		"""
 		Changes:

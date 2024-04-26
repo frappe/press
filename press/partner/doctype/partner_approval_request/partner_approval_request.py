@@ -4,11 +4,26 @@
 import frappe
 from frappe.model.document import Document
 from frappe.utils import get_url
+from press.api.client import dashboard_whitelist
 
 
 class PartnerApprovalRequest(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		key: DF.Data | None
+		partner: DF.Link | None
+		requested_by: DF.Link | None
+		send_mail: DF.Check
+		status: DF.Literal["Pending", "Approved", "Rejected"]
+	# end: auto-generated types
+
 	dashboard_fields = ["requested_by", "partner", "status"]
-	dashboard_actions = ["approve_partner_request"]
 
 	@staticmethod
 	def get_list_query(query, filters=None, **list_args):
@@ -25,7 +40,7 @@ class PartnerApprovalRequest(Document):
 		if self.send_mail:
 			self.send_approval_request_email()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def approve_partner_request(self):
 		if self.status == "Pending":
 			self.status = "Approved"
@@ -37,7 +52,7 @@ class PartnerApprovalRequest(Document):
 
 			customer_team = frappe.get_doc("Team", self.requested_by)
 			customer_team.partner_email = partner.partner_email
-			customer_team.partnership_date = frappe.utils.now()
+			customer_team.partnership_date = frappe.utils.getdate()
 			team_members = [d.user for d in customer_team.team_members]
 			if partner.user not in team_members:
 				customer_team.append("team_members", {"user": partner.user})

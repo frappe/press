@@ -14,6 +14,7 @@ from frappe.utils.caching import site_cache
 
 from press.agent import Agent
 from press.utils import log_error
+from press.api.client import dashboard_whitelist
 
 
 class SiteUpdate(Document):
@@ -58,8 +59,6 @@ class SiteUpdate(Document):
 		"scheduled_time",
 		"creation",
 	]
-
-	dashboard_actions = ["start"]
 
 	@staticmethod
 	def get_list_query(query):
@@ -176,7 +175,7 @@ class SiteUpdate(Document):
 		if not self.scheduled_time:
 			self.start()
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	def start(self):
 		site = frappe.get_doc("Site", self.site)
 		if site.status in ["Updating", "Pending", "Installing"]:
@@ -505,7 +504,7 @@ def process_update_site_job_update(job):
 		frappe.db.set_value("Site Update", site_update.name, "status", updated_status)
 		if updated_status == "Running":
 			frappe.db.set_value("Site", job.site, "status", "Updating")
-		elif updated_status == "Success":
+		elif updated_status in ("Success", "Delivery Failure"):
 			frappe.get_doc("Site", job.site).reset_previous_status()
 		elif updated_status == "Failure":
 			frappe.db.set_value("Site", job.site, "status", "Broken")

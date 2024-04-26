@@ -33,8 +33,7 @@ export default {
 							label: 'Instance Type',
 							value: plan.instance_type
 						}
-					],
-					disabled: Object.keys(this.$team.doc.billing_details).length === 0
+					]
 				};
 			});
 		},

@@ -12,13 +12,13 @@ import ObjectList from '../components/ObjectList.vue';
 import { getTeam, switchToTeam } from '../data/team';
 import router from '../router';
 import { confirmDialog, icon, renderDialog } from '../utils/components';
-import { bytes, duration, date, plural } from '../utils/format';
-import { dayjsLocal } from '../utils/dayjs';
+import { bytes, duration, date, userCurrency } from '../utils/format';
 import { getRunningJobs } from '../utils/agentJob';
 import SiteActions from '../components/SiteActions.vue';
 import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
 import { logsTab } from './tabs/site/logs';
+import { trialDays } from '../utils/site';
 
 export default {
 	doctype: 'Site',
@@ -40,8 +40,12 @@ export default {
 		moveToBench: 'move_to_bench',
 		moveToGroup: 'move_to_group',
 		loginAsAdmin: 'login_as_admin',
+		isSetupWizardComplete: 'is_setup_wizard_complete',
 		reinstall: 'reinstall',
 		removeDomain: 'remove_domain',
+		redirectToPrimary: 'set_redirect',
+		removeRedirect: 'unset_redirect',
+		setPrimaryDomain: 'set_host_name',
 		restoreSite: 'restore_site',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
@@ -49,7 +53,8 @@ export default {
 		deleteConfig: 'delete_config',
 		sendTransferRequest: 'send_change_team_request',
 		addTag: 'add_resource_tag',
-		removeTag: 'remove_resource_tag'
+		removeTag: 'remove_resource_tag',
+		getBackupDownloadLink: 'get_backup_download_link'
 	},
 	list: {
 		route: '/sites',
@@ -67,8 +72,72 @@ export default {
 			'trial_end_date'
 		],
 		orderBy: 'creation desc',
+		searchField: 'host_name',
+		filterControls() {
+			return [
+				{
+					type: 'select',
+					label: 'Status',
+					fieldname: 'status',
+					options: ['', 'Active', 'Inactive', 'Suspended', 'Broken']
+				},
+				{
+					type: 'link',
+					label: 'Version',
+					fieldname: 'group.version',
+					options: {
+						doctype: 'Frappe Version'
+					}
+				},
+				{
+					type: 'link',
+					label: 'Bench',
+					fieldname: 'group',
+					options: {
+						doctype: 'Release Group'
+					}
+				},
+				{
+					type: 'select',
+					label: 'Region',
+					fieldname: 'cluster',
+					options: [
+						'',
+						'Bahrain',
+						'Cape Town',
+						'Frankfurt',
+						'KSA',
+						'London',
+						'Mumbai',
+						'Singapore',
+						'UAE',
+						'Virginia',
+						'Zurich'
+					]
+				},
+				{
+					type: 'link',
+					label: 'Tag',
+					fieldname: 'tags.tag',
+					options: {
+						doctype: 'Press Tag',
+						filters: {
+							doctype_name: 'Site'
+						}
+					}
+				}
+			];
+		},
 		columns: [
-			{ label: 'Site', fieldname: 'name', width: 1.5 },
+			{
+				label: 'Site',
+				fieldname: 'host_name',
+				width: 1.5,
+				class: 'font-medium',
+				format(value, row) {
+					return value || row.name;
+				}
+			},
 			{ label: 'Status', fieldname: 'status', type: 'Badge', width: 0.8 },
 			{
 				label: 'Plan',
@@ -76,30 +145,16 @@ export default {
 				width: 1,
 				format(value, row) {
 					if (row.trial_end_date) {
-						let trialEndDate = dayjsLocal(row.trial_end_date);
-						let today = dayjsLocal();
-						let diffHours = trialEndDate.diff(today, 'hours');
-						let endsIn = '';
-						if (diffHours < 24) {
-							endsIn = `today`;
-						} else {
-							let days = Math.round(diffHours / 24);
-							endsIn = `in ${days} ${plural(days, 'day', 'days')}`;
-						}
-						if (
-							trialEndDate.isAfter(today) ||
-							trialEndDate.isSame(today, 'day')
-						) {
-							return `Trial ends ${endsIn}`;
-						}
+						return trialDays(row.trial_end_date);
 					}
 					let $team = getTeam();
 					if (row.price_usd > 0) {
 						let india = $team.doc.country == 'India';
-						let currencySymbol = $team.doc.currency == 'INR' ? '₹' : '$';
-						return `${currencySymbol}${
-							india ? row.price_inr : row.price_usd
-						} /mo`;
+						let formattedValue = userCurrency(
+							india ? row.price_inr : row.price_usd,
+							0
+						);
+						return `${formattedValue} /mo`;
 					}
 					return row.plan_title;
 				}
@@ -130,8 +185,7 @@ export default {
 			{
 				label: 'Version',
 				fieldname: 'version',
-				width: 1,
-				class: 'text-gray-600'
+				width: 1
 			}
 		],
 		primaryAction({ listResource: sites }) {
@@ -154,20 +208,34 @@ export default {
 			return { label: site.doc.status };
 		},
 		breadcrumbs({ items, documentResource: site }) {
-			// if (site.doc?.group_public) {
-			// 	return items;
-			// }
+			let breadcrumbs = [];
 			let $team = getTeam();
+			let siteCrumb = {
+				label: site.doc.host_name || site.doc.name,
+				route: `/sites/${site.doc.name}`
+			};
+
+			if (
+				site.doc.server_team == $team.doc.name &&
+				site.doc.group_team == $team.doc.name
+			) {
+				breadcrumbs.push({
+					label: site.doc?.server_title || site.doc?.server,
+					route: `/servers/${site.doc?.server}`
+				});
+			}
 			if (site.doc.group_team == $team.doc.name) {
-				return [
+				breadcrumbs.push(
 					{
 						label: site.doc?.group_title,
 						route: `/benches/${site.doc?.group}`
 					},
-					items[1]
-				];
+					siteCrumb
+				);
+			} else {
+				breadcrumbs.push(...items.slice(0, -1), siteCrumb);
 			}
-			return items;
+			return breadcrumbs;
 		},
 		tabs: [
 			{
@@ -603,6 +671,7 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Site Domain',
+					fields: ['redirect_to_primary'],
 					filters: site => {
 						return { site: site.doc.name };
 					},
@@ -649,26 +718,125 @@ export default {
 						};
 					},
 					rowActions({ row, listResource: domains, documentResource: site }) {
-						if (row.domain === site.doc.name) return;
 						return [
 							{
 								label: 'Remove',
+								condition: () => row.domain !== site.doc.name,
 								onClick() {
-									if (site.removeDomain.loading) return;
-									toast.promise(
-										site.removeDomain.submit({
-											domain: row.domain
-										}),
-										{
-											loading: 'Removing domain...',
-											success: () => 'Domain removed',
-											error: e => {
-												return e.messages.length
-													? e.messages.join('\n')
-													: e.message;
-											}
+									confirmDialog({
+										title: `Remove Domain`,
+										message: `Are you sure you want to remove the domain <b>${row.domain}</b> from the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeDomain.loading) return;
+											toast.promise(
+												site.removeDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing domain...',
+													success: () => {
+														hide();
+														return 'Domain removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
 										}
-									);
+									});
+								}
+							},
+							{
+								label: 'Set Primary',
+								condition: () => !row.primary,
+								onClick() {
+									confirmDialog({
+										title: `Set Primary Domain`,
+										message: `Are you sure you want to set the domain <b>${row.domain}</b> as the primary domain for the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.setPrimaryDomain.loading) return;
+											toast.promise(
+												site.setPrimaryDomain.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Setting primary domain...',
+													success: () => {
+														hide();
+														return 'Primary domain set';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Redirect to Primary',
+								condition: () => !row.primary && !row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Redirect Domain`,
+										message: `Are you sure you want to redirect the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.redirectToPrimary.loading) return;
+											toast.promise(
+												site.redirectToPrimary.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Redirecting domain...',
+													success: () => {
+														hide();
+														return 'Domain redirected';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
+								}
+							},
+							{
+								label: 'Remove Redirect',
+								condition: () => !row.primary && row.redirect_to_primary,
+								onClick() {
+									confirmDialog({
+										title: `Remove Redirect`,
+										message: `Are you sure you want to remove the redirect from the domain <b>${row.domain}</b> to the primary domain of the site <b>${site.doc.name}</b>?`,
+										onSuccess({ hide }) {
+											if (site.removeRedirect.loading) return;
+											toast.promise(
+												site.removeRedirect.submit({
+													domain: row.domain
+												}),
+												{
+													loading: 'Removing redirect...',
+													success: () => {
+														hide();
+														return 'Redirect removed';
+													},
+													error: e => {
+														return e.messages.length
+															? e.messages.join('\n')
+															: e.message;
+													}
+												}
+											);
+										}
+									});
 								}
 							}
 						];
@@ -751,19 +919,39 @@ export default {
 							}
 						}
 					],
-					rowActions({ row }) {
+					filterControls() {
+						return [
+							{
+								type: 'checkbox',
+								label: 'Offsite Backups',
+								fieldname: 'offsite'
+							}
+						];
+					},
+					rowActions({ row, documentResource: site }) {
 						if (row.status != 'Success') return;
 
 						async function downloadBackup(backup, file) {
 							// file: database, public, or private
-							let link = backup.offsite
-								? await frappeRequest('press.api.site.get_backup_link', {
-										name: backup.site,
-										backup: backup.name,
-										file
-								  })
-								: backup[file + '_url'];
-							window.open(link);
+							if (backup.offsite) {
+								site.getBackupDownloadLink.submit(
+									{ backup: backup.name, file },
+									{
+										onSuccess(r) {
+											// TODO: fix this in documentResource, it should return message directly
+											if (r.message) {
+												window.open(r.message);
+											}
+										}
+									}
+								);
+							} else {
+								let url =
+									file == 'config'
+										? backup.config_file_url
+										: backup[file + '_url'];
+								window.open(url);
+							}
 						}
 
 						return [
@@ -790,7 +978,7 @@ export default {
 							{
 								label: 'Download Config',
 								onClick() {
-									return downloadBackup(row, 'config_file');
+									return downloadBackup(row, 'config');
 								},
 								condition: () => row.config_file_url
 							}
@@ -983,11 +1171,41 @@ export default {
 						};
 					},
 					orderBy: 'creation desc',
+					searchField: 'job_type',
 					fields: ['site', 'end'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								fieldname: 'status',
+								options: [
+									'',
+									'Undelivered',
+									'Pending',
+									'Running',
+									'Success',
+									'Failure',
+									'Delivery Failure'
+								]
+							},
+							{
+								type: 'link',
+								label: 'Type',
+								fieldname: 'job_type',
+								options: {
+									doctype: 'Agent Job Type',
+									orderBy: 'name asc',
+									pageLength: 100
+								}
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Job Type',
 							fieldname: 'job_type',
+							class: 'font-medium',
 							width: 2
 						},
 						{
@@ -997,13 +1215,11 @@ export default {
 						},
 						{
 							label: 'Job ID',
-							fieldname: 'job_id',
-							class: 'text-gray-600'
+							fieldname: 'job_id'
 						},
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							class: 'text-gray-600',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -1058,7 +1274,61 @@ export default {
 							type: 'Timestamp',
 							align: 'right'
 						}
-					]
+					],
+					primaryAction({ documentResource: site }) {
+						return {
+							label: 'Change Notification Email',
+							slots: {
+								prefix: icon('mail')
+							},
+							onClick: () => {
+								confirmDialog({
+									title: 'Change Notification Email',
+									fields: [
+										{
+											type: 'email',
+											label: 'Email',
+											fieldname: 'email',
+											default: site.doc.notify_email
+										}
+									],
+									onSuccess({ hide, values }) {
+										return site.setValue.submit(
+											{
+												notify_email: values.email
+											},
+											{
+												validate: doc => {
+													function validateEmail(email) {
+														const re = /\S+@\S+\.\S+/;
+														return re.test(email);
+													}
+
+													let email = doc?.fieldname?.notify_email;
+													if (!email) {
+														return 'Email is required';
+													} else if (!validateEmail(email)) {
+														return 'Enter a valid email address';
+													}
+												},
+												onSuccess() {
+													hide();
+													toast.success('Email updated successfully');
+												},
+												onError(e) {
+													throw new Error(
+														e.messages
+															? e.messages.join('\n')
+															: e.message || 'Error updating email'
+													);
+												}
+											}
+										);
+									}
+								});
+							}
+						};
+					}
 				}
 			},
 			logsTab(),
@@ -1129,19 +1399,13 @@ export default {
 					slots: {
 						prefix: icon('external-link')
 					},
-					condition: () => site.doc.status === 'Active',
+					condition: () => site.doc.status !== 'Archived',
 					onClick() {
 						window.open(`https://${site.name}`, '_blank');
 					}
 				},
 				{
 					label: 'Options',
-					button: {
-						label: 'Options',
-						slots: {
-							icon: icon('more-horizontal')
-						}
-					},
 					context,
 					options: [
 						{
@@ -1170,15 +1434,19 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Login as Administrator',
-									fields: [
-										{
-											label: 'Reason',
-											type: 'textarea',
-											fieldname: 'reason'
-										}
-									],
+									message: `Are you sure you want to login as administrator on the site <b>${site.doc.name}</b>?`,
+									fields:
+										$team.name !== site.doc.team
+											? [
+													{
+														label: 'Reason',
+														type: 'textarea',
+														fieldname: 'reason'
+													}
+											  ]
+											: [],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && $team.name != site.doc.team) {
+										if (!values.reason && $team.name !== site.doc.team) {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin
@@ -1200,7 +1468,7 @@ export default {
 	routes: [
 		{
 			name: 'Site Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{

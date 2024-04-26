@@ -3,9 +3,8 @@
 # For license information, please see license.txt
 import json
 import os
-import typing
 from datetime import date
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import _io
 import frappe
@@ -13,11 +12,21 @@ import requests
 from frappe.utils.password import get_decrypted_password
 from press.utils import log_error, sanitize_config
 
-if typing.TYPE_CHECKING:
-	from press.press.doctype.app_patch.app_patch import AgentPatchConfig
+if TYPE_CHECKING:
+	from io import BufferedReader
+
+	from press.press.doctype.app_patch.app_patch import AgentPatchConfig, AppPatch
+	from press.press.doctype.site.site import Site
 
 
 class Agent:
+	if TYPE_CHECKING:
+		from typing import Optional
+
+		from requests import Response
+
+		response: "Optional[Response]"
+
 	def __init__(self, server, server_type="Server"):
 		self.server_type = server_type
 		self.server = server
@@ -123,7 +132,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def restore_site(self, site, skip_failing_patches=False):
+	def restore_site(self, site: "Site", skip_failing_patches=False):
+		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
@@ -182,7 +192,8 @@ class Agent:
 			site=site.name,
 		)
 
-	def new_site_from_backup(self, site, skip_failing_patches=False):
+	def new_site_from_backup(self, site: "Site", skip_failing_patches=False):
+		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
 
 		def sanitized_site_config(site):
@@ -650,6 +661,7 @@ class Agent:
 		return self.request("POST", path, data, raises=raises)
 
 	def request(self, method, path, data=None, files=None, agent_job=None, raises=True):
+		self.response = None
 		agent_job_id = agent_job.name if agent_job else None
 		headers = None
 		url = None
@@ -676,21 +688,21 @@ class Agent:
 					for key, value in files.items()
 				}
 				file_objects["json"] = json.dumps(data).encode()
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, files=file_objects, verify=verify
 				)
 			else:
-				result = requests.request(
+				self.response = requests.request(
 					method, url, headers=headers, json=data, verify=verify, timeout=(10, 30)
 				)
 			json_response = None
 			try:
-				json_response = result.json()
+				json_response = self.response.json()
 				if raises:
-					result.raise_for_status()
+					self.response.raise_for_status()
 				return json_response
 			except Exception:
-				self.handle_request_failure(agent_job, result)
+				self.handle_request_failure(agent_job, self.response)
 				log_error(
 					title="Agent Request Result Exception",
 					method=method,
@@ -698,10 +710,11 @@ class Agent:
 					data=data,
 					files=files,
 					headers=headers,
-					result=json_response or result.text,
+					result=json_response or self.response.text,
+					doc=agent_job,
 				)
-		except Exception as exce:
-			self.handle_exception(agent_job, exce)
+		except Exception as exc:
+			self.handle_exception(agent_job, exc)
 			log_error(
 				title="Agent Request Exception",
 				method=method,
@@ -709,11 +722,13 @@ class Agent:
 				data=data,
 				files=files,
 				headers=headers,
+				doc=agent_job,
 			)
 
 	def handle_request_failure(self, agent_job, result):
 		if not agent_job:
 			return
+
 		message = f"""
 			Status Code: {getattr(result, 'status_code', 'Unknown')} \n
 			Response: {getattr(result, 'text', 'Unknown')}
@@ -743,7 +758,27 @@ class Agent:
 		code_server=None,
 		upstream=None,
 		host=None,
+		reference_doctype=None,
+		reference_name=None,
 	):
+
+		"""
+		Check if job already exists in Undelivered, Pending, Running state
+		don't add new job until its gets comleted
+		"""
+
+		disable_agent_job_deduplication = frappe.db.get_single_value(
+			"Press Settings", "disable_agent_job_deduplication", cache=True
+		)
+
+		if not disable_agent_job_deduplication:
+			job = self.get_similar_in_execution_job(
+				job_type, path, bench, site, code_server, upstream, host, method
+			)
+
+			if job:
+				return job
+
 		job = frappe.get_doc(
 			{
 				"doctype": "Agent Job",
@@ -760,9 +795,52 @@ class Agent:
 				"request_data": json.dumps(data or {}, indent=4, sort_keys=True),
 				"request_files": json.dumps(files or {}, indent=4, sort_keys=True),
 				"job_type": job_type,
+				"reference_doctype": reference_doctype,
+				"reference_name": reference_name,
 			}
 		).insert()
 		return job
+
+	def get_similar_in_execution_job(
+		self,
+		job_type,
+		path,
+		bench=None,
+		site=None,
+		code_server=None,
+		upstream=None,
+		host=None,
+		method="POST",
+	):
+		"""Deduplicate jobs in execution state"""
+
+		filters = {
+			"server_type": self.server_type,
+			"server": self.server,
+			"job_type": job_type,
+			"status": ("not in", ("Success", "Failure", "Delivery Failure")),
+			"request_method": method,
+			"request_path": path,
+		}
+
+		if bench:
+			filters["bench"] = bench
+
+		if site:
+			filters["site"] = site
+
+		if code_server:
+			filters["code_server"] = code_server
+
+		if upstream:
+			filters["upstream"] = upstream
+
+		if host:
+			filters["host"] = host
+
+		job = frappe.db.get_value("Agent Job", filters, "name")
+
+		return frappe.get_doc("Agent Job", job) if job else False
 
 	def update_monitor_rules(self, rules, routes):
 		data = {"rules": rules, "routes": routes}
@@ -880,25 +958,67 @@ class Agent:
 			"Force Update Bench Limits", f"benches/{bench}/limits", bench=bench, data=data
 		)
 
-	def patch_app(self, bench: str, app: str, data: "AgentPatchConfig"):
+	def patch_app(self, app_patch: "AppPatch", data: "AgentPatchConfig"):
+		bench = app_patch.bench
+		app = app_patch.app
 		return self.create_agent_job(
 			"Patch App",
 			f"benches/{bench}/patch/{app}",
 			bench=bench,
 			data=data,
+			reference_doctype="App Patch",
+			reference_name=app_patch.name,
 		)
 
-	def upload_build_context_for_docker_build(self, file):
-		return self.request("POST", "builder/upload", files={"build_context_file": file}).get(
-			"filename"
-		)
+	def upload_build_context_for_docker_build(
+		self,
+		file: "BufferedReader",
+		dc_name: str,
+	) -> str | None:
+		if res := self.request(
+			"POST", f"builder/upload/{dc_name}", files={"build_context_file": file}
+		):
+			return res.get("filename")
 
-	def build_docker_image(self, data: dict):
-		return self.create_agent_job("Docker Image Build", "builder/build", data=data)
+		return None
+
+	def run_remote_builder(self, data: dict):
+		reference_name = data.get("deploy_candidate")
+		return self.create_agent_job(
+			"Run Remote Builder",
+			"builder/build",
+			data=data,
+			reference_doctype="Deploy Candidate",
+			reference_name=reference_name,
+		)
 
 	def call_supervisorctl(self, bench: str, action: str, programs: list[str]):
 		return self.create_agent_job(
 			"Call Bench Supervisorctl",
 			f"/benches/{bench}/supervisorctl",
 			data={"command": action, "programs": programs},
+		)
+
+	def run_command_in_docker_cache(
+		self,
+		command: str = "ls -A",
+		cache_target: str = "/home/frappe/.cache",
+		remove_image: bool = True,
+	):
+		data = dict(
+			command=command,
+			cache_target=cache_target,
+			remove_image=remove_image,
+		)
+		return self.request(
+			"POST",
+			"docker_cache_utils/run_command_in_docker_cache",
+			data=data,
+		)
+
+	def get_cached_apps(self):
+		return self.request(
+			"POST",
+			"docker_cache_utils/get_cached_apps",
+			data={},
 		)

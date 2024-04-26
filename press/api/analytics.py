@@ -134,7 +134,9 @@ def get_uptime(site, timezone, timespan, timegrain):
 	return buckets
 
 
-def get_stacked_histogram_chart_result(search: Search, query_type: str):
+def get_stacked_histogram_chart_result(
+	search: Search, query_type: str, to_s_divisor=1e6
+):
 	aggs = search.execute().aggregations
 	labels = set()
 	try:
@@ -159,10 +161,10 @@ def get_stacked_histogram_chart_result(search: Search, query_type: str):
 			path_data["values"][
 				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
 			] = (
-				(flt(hist_bucket.avg_of_duration.value) / 1e6)
+				(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
 				if query_type == "average_duration"
 				else (
-					flt(hist_bucket.sum_of_duration.value) / 1e6
+					flt(hist_bucket.sum_of_duration.value) / to_s_divisor
 					if query_type == "duration"
 					else hist_bucket.doc_count
 					if query_type == "count"
@@ -250,7 +252,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
-	if not log_server:
+	if not log_server or not database_name:
 		return {"datasets": [], "labels": []}
 
 	url = f"https://{log_server}/elasticsearch/"
@@ -299,7 +301,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	return get_stacked_histogram_chart_result(search, query_type)
+	return get_stacked_histogram_chart_result(search, query_type, to_s_divisor=1e9)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):

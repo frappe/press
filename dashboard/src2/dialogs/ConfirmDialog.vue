@@ -1,5 +1,5 @@
 <template>
-	<Dialog v-model="show" :options="{ title }">
+	<Dialog v-model="showDialog" :options="{ title }">
 		<template #body-content>
 			<div class="space-y-4">
 				<p class="text-p-base text-gray-800" v-if="message" v-html="message" />
@@ -25,19 +25,24 @@ import { ErrorMessage, FormControl } from 'frappe-ui';
 export default {
 	name: 'ConfirmDialog',
 	props: ['title', 'message', 'fields', 'primaryAction', 'onSuccess'],
+	expose: ['show', 'hide'],
 	data() {
 		return {
-			show: true,
+			showDialog: true,
 			error: null,
 			isLoading: false,
-			values: {}
+			values:
+				// set default values for fields
+				this.fields.reduce((acc, field) => {
+					acc[field.fieldname] = field.default || null;
+					return acc;
+				}, {})
 		};
 	},
 	components: { FormControl, ErrorMessage },
 	methods: {
 		onConfirm() {
 			this.error = null;
-			this.isLoading = true;
 			try {
 				let primaryActionHandler =
 					this.primaryAction?.onClick || this.onSuccess;
@@ -46,6 +51,7 @@ export default {
 					values: this.values
 				});
 				if (result?.then) {
+					this.isLoading = true;
 					result
 						.then(() => (this.isLoading = false))
 						.catch(error => {
@@ -58,8 +64,11 @@ export default {
 				this.isLoading = false;
 			}
 		},
+		show() {
+			this.showDialog = true;
+		},
 		hide() {
-			this.show = false;
+			this.showDialog = false;
 		}
 	},
 	computed: {

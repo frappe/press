@@ -19,6 +19,7 @@ class ServerPlan(Plan):
 		enabled: DF.Check
 		instance_type: DF.Data | None
 		memory: DF.Int
+		premium: DF.Check
 		price_inr: DF.Currency
 		price_usd: DF.Currency
 		roles: DF.Table[HasRole]

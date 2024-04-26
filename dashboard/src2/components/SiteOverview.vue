@@ -3,6 +3,21 @@
 		v-if="$site?.doc"
 		class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2"
 	>
+		<AlertBanner
+			v-if="!isSetupWizardComplete"
+			class="col-span-1 lg:col-span-2"
+			title="Please login and complete the setup wizard on your site. Analytics will be
+			collected only after setup is complete."
+		>
+			<Button
+				class="ml-auto"
+				variant="outline"
+				@click="loginAsAdmin"
+				:loading="$site.loginAsAdmin.loading"
+			>
+				Login
+			</Button>
+		</AlertBanner>
 		<div class="col-span-1 rounded-md border lg:col-span-2">
 			<div class="grid grid-cols-2 lg:grid-cols-4">
 				<div class="border-b border-r p-5 lg:border-b-0">
@@ -120,13 +135,14 @@
 					<div
 						class="flex w-2/3 items-center space-x-2 text-base text-gray-900"
 					>
+						<div v-if="d.prefix">
+							<component :is="d.prefix" />
+						</div>
 						<span>
 							{{ d.value }}
 						</span>
-						<div v-if="d.help">
-							<Tooltip :text="d.help">
-								<i-lucide-info class="h-4 w-4 text-gray-500" />
-							</Tooltip>
+						<div v-if="d.suffix">
+							<component :is="d.suffix" />
 						</div>
 					</div>
 				</div>
@@ -137,14 +153,28 @@
 </template>
 <script>
 import { h, defineAsyncComponent } from 'vue';
-import { getCachedDocumentResource, Progress } from 'frappe-ui';
+import { getCachedDocumentResource, Progress, Tooltip } from 'frappe-ui';
+import InfoIcon from '~icons/lucide/info';
 import { renderDialog } from '../utils/components';
 import SiteDailyUsage from './SiteDailyUsage.vue';
+import AlertBanner from './AlertBanner.vue';
 
 export default {
 	name: 'SiteOverview',
 	props: ['site'],
-	components: { SiteDailyUsage, Progress },
+	components: { SiteDailyUsage, Progress, AlertBanner },
+	data() {
+		return {
+			isSetupWizardComplete: true
+		};
+	},
+	mounted() {
+		if (this.$site?.doc?.status === 'Active') {
+			this.$site.isSetupWizardComplete.submit().then(res => {
+				this.isSetupWizardComplete = res;
+			});
+		}
+	},
 	methods: {
 		showPlanChangeDialog() {
 			let SitePlansDialog = defineAsyncComponent(() =>
@@ -153,7 +183,10 @@ export default {
 			renderDialog(h(SitePlansDialog, { site: this.site }));
 		},
 		formatBytes(v) {
-			return this.$format.bytes(v, 0, 2);
+			return this.$format.bytes(v, 2, 2);
+		},
+		loginAsAdmin() {
+			this.$site.loginAsAdmin.submit().then(url => window.open(url, '_blank'));
 		}
 	},
 	computed: {
@@ -172,14 +205,35 @@ export default {
 					value: this.$format.date(this.$site.doc.creation)
 				},
 				{
+					label: 'Region',
+					value: this.$site.doc.cluster.title,
+					prefix: h('img', {
+						src: this.$site.doc.cluster.image,
+						alt: this.$site.doc.cluster.title,
+						class: 'h-4 w-4'
+					})
+				},
+				{
 					label: 'Inbound IP',
 					value: this.$site.doc.inbound_ip,
-					help: 'Use this for adding A records for your site'
+					suffix: h(
+						Tooltip,
+						{
+							text: 'Use this for adding A records for your site'
+						},
+						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' })
+					)
 				},
 				{
 					label: 'Outbound IP',
 					value: this.$site.doc.outbound_ip,
-					help: 'Use this for whitelisting our server on a 3rd party service'
+					suffix: h(
+						Tooltip,
+						{
+							text: 'Use this for whitelisting our server on a 3rd party service'
+						},
+						() => h(InfoIcon, { class: 'h-4 w-4 text-gray-500' })
+					)
 				}
 			];
 		},

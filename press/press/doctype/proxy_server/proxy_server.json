@@ -26,6 +26,8 @@
   "private_vlan_id",
   "agent_section",
   "agent_password",
+  "column_break_mznm",
+  "disable_agent_job_auto_retry",
   "replica_section",
   "is_primary",
   "primary",
@@ -378,10 +380,20 @@
    "fieldtype": "Check",
    "label": "Enabled Default Routing",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_mznm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "disable_agent_job_auto_retry",
+   "fieldtype": "Check",
+   "label": "Disable Agent Job Auto Retry"
   }
  ],
  "links": [],
- "modified": "2023-12-13 15:08:59.597053",
+ "modified": "2024-03-22 12:13:59.734423",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Proxy Server",

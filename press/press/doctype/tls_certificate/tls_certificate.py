@@ -6,6 +6,7 @@
 import os
 import shlex
 import subprocess
+import time
 from datetime import datetime
 
 import frappe
@@ -50,6 +51,13 @@ class TLSCertificate(Document):
 	def after_insert(self):
 		self.obtain_certificate()
 
+	def on_update(self):
+		if self.is_new():
+			return
+
+		if self.has_value_changed("rsa_key_size"):
+			self.obtain_certificate()
+
 	@frappe.whitelist()
 	def obtain_certificate(self):
 		user, session_data, team, = (
@@ -79,7 +87,16 @@ class TLSCertificate(Document):
 			)
 			self._extract_certificate_details()
 			self.status = "Active"
-		except Exception:
+		except Exception as e:
+			# If certbot is already running, retry after 5 seconds
+			# TODO: Move this to a queue
+			if (
+				e.output and "Another instance of Certbot is already running" in e.output.decode()
+			):
+				time.sleep(5)
+				frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
+				return
+
 			self.status = "Failure"
 			log_error("TLS Certificate Exception", certificate=self.name)
 		self.save()

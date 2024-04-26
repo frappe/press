@@ -3,14 +3,14 @@
 		<div class="h-full flex-1">
 			<div class="flex h-full">
 				<div
-					v-if="!isMobile"
+					v-if="!$isMobile"
 					class="relative block min-h-0 flex-shrink-0 overflow-hidden hover:overflow-auto"
 				>
 					<AppSidebar v-if="$session.user && $route.name != 'NewAppTrial'" />
 				</div>
 				<div class="w-full overflow-auto" id="scrollContainer">
 					<MobileNav
-						v-if="isMobile && $session.user && $route.name != 'NewAppTrial'"
+						v-if="$isMobile && $session.user && $route.name != 'NewAppTrial'"
 					/>
 					<div
 						v-if="!$session.user && !$route.meta.isLoginPage"
@@ -33,10 +33,6 @@
 import { defineAsyncComponent, computed } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { dialogs } from './utils/components';
-import { useWindowSize } from '@vueuse/core';
-
-const { width } = useWindowSize();
-const isMobile = computed(() => width.value < 640);
 
 const AppSidebar = defineAsyncComponent(() =>
 	import('./components/AppSidebar.vue')

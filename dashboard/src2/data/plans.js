@@ -1,7 +1,7 @@
 import { createResource } from 'frappe-ui';
 
 export let plans = createResource({
-	url: 'press.api.site.get_plans',
+	url: 'press.api.site.get_site_plans',
 	cache: 'site.plans',
 	initialData: []
 });

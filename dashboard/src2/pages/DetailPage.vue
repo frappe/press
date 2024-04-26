@@ -42,19 +42,16 @@
 			</template>
 		</TabsWithRouter>
 		<div
-			v-else-if="
-				$resources.document.get.error?.message?.includes('DoesNotExistError')
-			"
-			class="mx-auto mt-60 w-fit rounded border-2 border-dashed px-12 py-8 text-center text-gray-600"
+			v-else-if="$resources.document.get.error"
+			class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
 		>
-			<LucideFrown class="mx-auto mb-4 h-8 w-8" />
-			{{ $resources.document.doctype }} not found
+			<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+			<ErrorMessage :message="$resources.document.get.error" />
 		</div>
 	</div>
 </template>
 
 <script>
-import LucideFrown from '~icons/lucide/frown';
 import Header from '../components/Header.vue';
 import ActionButton from '../components/ActionButton.vue';
 import { Breadcrumbs } from 'frappe-ui';
@@ -78,15 +75,9 @@ export default {
 	},
 	components: {
 		Header,
-		LucideFrown,
 		ActionButton,
 		TabsWithRouter,
 		FBreadcrumbs: Breadcrumbs
-	},
-	data() {
-		return {
-			lastRefreshed: null
-		};
 	},
 	resources: {
 		document() {
@@ -95,9 +86,6 @@ export default {
 				doctype: this.object.doctype,
 				name: this.name,
 				whitelistedMethods: this.object.whitelistedMethods || {},
-				onSuccess() {
-					this.lastRefreshed = new Date();
-				},
 				onError(error) {
 					for (let message of error?.messages || []) {
 						if (message.redirect) {
@@ -110,27 +98,21 @@ export default {
 		}
 	},
 	mounted() {
-		if (!subscribed[this.object.doctype]) {
-			this.$socket.emit('doctype_subscribe', this.object.doctype);
-			subscribed[this.object.doctype] = true;
+		if (!subscribed[`${this.object.doctype}:${this.name}`]) {
+			this.$socket.emit('doc_subscribe', this.object.doctype, this.name);
+			subscribed[`${this.object.doctype}:${this.name}`] = true;
 		}
-		this.$socket.on('list_update', data => {
-			if (
-				data.doctype === this.object.doctype &&
-				data.name === this.name &&
-				// update document if last refreshed is more than 5 seconds ago
-				new Date() - this.lastRefreshed > 5000
-			) {
-				console.log('reloading', this.object.doctype, this.name);
+		this.$socket.on('doc_update', data => {
+			if (data.doctype === this.object.doctype && data.name === this.name) {
 				this.$resources.document.reload();
 			}
 		});
 	},
 	beforeUnmount() {
-		if (subscribed[this.object.doctype]) {
-			let doctype = this.object.doctype;
-			this.$socket.emit('doctype_unsubscribe', doctype);
-			subscribed[doctype] = false;
+		let doctype = this.object.doctype;
+		if (subscribed[`${doctype}:${this.name}`]) {
+			this.$socket.emit('doc_unsubscribe', doctype, this.name);
+			subscribed[`${doctype}:${this.name}`] = false;
 		}
 	},
 	computed: {

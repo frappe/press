@@ -64,9 +64,11 @@ export default {
 		}
 	},
 	mounted() {
+		this.$socket.emit('doc_subscribe', 'Ansible Play', this.playName);
 		this.$socket.on('ansible_play_update', this.onAnsiblePlayUpdate);
 	},
 	unmounted() {
+		this.$socket.emit('doc_unsubscribe', 'Ansible Play', this.playName);
 		this.$socket.off('ansible_play_update', this.onAnsiblePlayUpdate);
 		this.runningPlay = null;
 	},

@@ -302,17 +302,17 @@ from
 			name,
 			status,
 			group_key,
-			creation,
+			modified,
 			ROW_NUMBER() OVER (
 				PARTITION BY
 					`group_key`
 				ORDER BY
-					`creation` DESC
+					`modified` DESC
 			) AS rank
 		from
 			`tabAlertmanager Webhook Log`
 		where
-			creation >= "{self.creation - timedelta(minutes=PAST_ALERT_COVER_MINUTES)}"
+			modified >= "{self.creation - timedelta(minutes=PAST_ALERT_COVER_MINUTES)}"
 			and group_key like "%%{self.incident_scope}%%"
 	) last_alert_per_group
 where
@@ -415,3 +415,7 @@ def resolve_incidents():
 		incident.check_resolved()
 		if incident.time_to_call_for_help or incident.time_to_call_for_help_again:
 			incident.call_humans()
+
+
+def on_doctype_update():
+	frappe.db.add_index("Incident", ["server", "status"])

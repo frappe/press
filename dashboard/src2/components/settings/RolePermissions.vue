@@ -1,4 +1,16 @@
 <template>
+	<div class="mb-5 flex items-center gap-2">
+		<Tooltip text="All Roles">
+			<Button :route="{ name: 'SettingsPermissionRoles' }" class="">
+				<template #icon>
+					<i-lucide-arrow-left class="h-4 w-4 text-gray-700" />
+				</template>
+			</Button>
+		</Tooltip>
+		<h3 class="text-lg font-medium text-gray-900">
+			{{ permissionGroup.doc?.title }}
+		</h3>
+	</div>
 	<ObjectList :options="listOptions">
 		<template #header-left="{ listResource }">
 			<Dropdown :options="getDropdownOptions(listResource)">
@@ -26,7 +38,7 @@
 				]"
 			>
 				<Button>
-					Bulk Update
+					Bulk Apply
 					<template #suffix>
 						<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
 					</template>
@@ -48,27 +60,13 @@ const props = defineProps({
 	groupId: { type: String, required: true }
 });
 
-const breadcrumbs = inject('breadcrumbs');
-breadcrumbs.value = [
-	{ label: 'Settings', route: '/settings' },
-	{ label: 'Permissions', route: '/settings/permissions' },
-	{ label: 'Groups', route: '/settings/permissions/groups' },
-	{
-		label: props.groupId,
-		to: `/settings/permissions/groups/${props.groupId}`
-	}
-];
-
 const permissionGroup = createDocumentResource({
 	doctype: 'Press Permission Group',
 	name: props.groupId,
 	auto: true,
 	whitelistedMethods: {
+		getUsers: 'get_users',
 		updatePermissions: 'update_permissions'
-	},
-	onSuccess(doc) {
-		if (!breadcrumbs.value?.[3]) return;
-		breadcrumbs.value[3].label = doc.title;
 	}
 });
 
@@ -91,6 +89,7 @@ function getDropdownOptions(listResource) {
 
 const listOptions = ref({
 	onRowClick: () => {},
+	rowHeight: 'unset',
 	resource() {
 		return {
 			auto: true,
