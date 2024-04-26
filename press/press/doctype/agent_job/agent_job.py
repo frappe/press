@@ -428,9 +428,12 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			process_job_updates(job.name, polled_job)
+
+			# Some callbacks rely on step statuses, e.g. archive_site
+			# so update step status before callbacks are processed
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
+			process_job_updates(job.name, polled_job)
 
 			frappe.db.commit()
 			publish_update(job.name)
@@ -632,9 +635,9 @@ def update_step(step_name, step):
 
 	output = None
 	traceback = None
-	if isinstance(output, dict):
-		traceback = output.get("traceback")
-		output = output.get("output")
+	if isinstance(step["data"], dict):
+		traceback = step["data"].get("traceback")
+		output = step["data"].get("output")
 
 	frappe.db.set_value(
 		"Agent Job Step",

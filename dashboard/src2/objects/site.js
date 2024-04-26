@@ -1434,15 +1434,19 @@ export default {
 							onClick: () => {
 								confirmDialog({
 									title: 'Login as Administrator',
-									fields: [
-										{
-											label: 'Reason',
-											type: 'textarea',
-											fieldname: 'reason'
-										}
-									],
+									message: `Are you sure you want to login as administrator on the site <b>${site.doc.name}</b>?`,
+									fields:
+										$team.name !== site.doc.team
+											? [
+													{
+														label: 'Reason',
+														type: 'textarea',
+														fieldname: 'reason'
+													}
+											  ]
+											: [],
 									onSuccess: ({ hide, values }) => {
-										if (!values.reason && $team.name != site.doc.team) {
+										if (!values.reason && $team.name !== site.doc.team) {
 											throw new Error('Reason is required');
 										}
 										return site.loginAsAdmin
