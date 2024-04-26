@@ -750,11 +750,37 @@ def get_unfinished_site_migrations(bench: str):
 	)
 
 
+def try_archive(bench: str):
+	try:
+		frappe.get_doc("Bench", bench).archive()
+		frappe.db.commit()
+		return True
+	except Exception:
+		log_error(
+			"Bench Archival Error",
+			bench=bench,
+			reference_doctype="Bench",
+			reference_name=bench,
+		)
+		frappe.db.rollback()
+		return False
+
+
 def archive_obsolete_benches():
-	benches = frappe.get_all(
-		"Bench",
-		fields=["name", "candidate", "last_archive_failure"],
-		filters={"status": "Active"},
+	benches = frappe.db.sql(
+		"""
+		SELECT
+			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+		FROM
+			tabBench bench
+		LEFT JOIN
+			`tabRelease Group` g
+		ON
+			bench.group = g.name
+		WHERE
+			bench.status = "Active"
+	""",
+		as_dict=True,
 	)
 	for bench in benches:
 		if (
@@ -779,36 +805,29 @@ def archive_obsolete_benches():
 		# Don't try archiving benches with sites
 		if frappe.db.count("Site", {"bench": bench.name, "status": ("!=", "Archived")}):
 			continue
+
+		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
+			try_archive(bench.name)
+			continue
+
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
-		if not frappe.db.exists("Deploy Candidate Difference", {"source": bench.candidate}):
+
+		differences = frappe.db.get_all(
+			"Deploy Candidate Difference", ["destination"], {"source": bench.candidate}
+		)
+		if not differences:
 			continue
 
 		# This bench isn't most recent.
 		# But if none of the recent versions of this bench are yet active then this bench is still useful.
 
 		# If any of the recent versions are active then, this bench can be safely archived.
-		differences = frappe.get_all(
-			"Deploy Candidate Difference",
-			fields=["destination"],
-			filters={"source": bench.candidate},
-		)
 		for difference in differences:
 			if frappe.db.exists(
 				"Bench", {"candidate": difference.destination, "status": "Active"}
-			):
-				try:
-					frappe.get_doc("Bench", bench.name).archive()
-					frappe.db.commit()
-					break
-				except Exception:
-					log_error(
-						"Bench Archival Error",
-						bench=bench.name,
-						reference_doctype="Bench",
-						reference_name=bench.name,
-					)
-					frappe.db.rollback()
+			) and try_archive(bench.name):
+				break
 
 
 def sync_benches():
