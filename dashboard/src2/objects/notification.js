@@ -82,7 +82,7 @@ export default {
 				component({ row }) {
 					return h('div', {
 						class: 'truncate text-base text-gray-600',
-						innerHTML: row.message
+						innerHTML: row.message.split('\n')[0]
 					});
 				}
 			},
