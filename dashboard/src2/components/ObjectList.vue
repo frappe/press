@@ -317,10 +317,16 @@ export default {
 				.map(row => {
 					if (row.rows && row.group) {
 						// group
-						return {
-							...row,
-							rows: row.rows.filter(row => this.filterRow(query, row))
-						};
+						let filteredRows = row.rows.filter(row =>
+							this.filterRow(query, row)
+						);
+
+						if (filteredRows.length) {
+							return {
+								...row,
+								rows: row.rows.filter(row => this.filterRow(query, row))
+							};
+						}
 					}
 					if (this.filterRow(query, row)) {
 						return row;

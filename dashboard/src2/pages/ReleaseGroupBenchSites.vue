@@ -114,7 +114,6 @@ export default {
 						</div>
 					);
 				},
-				searchField: 'host_name',
 				columns: [
 					{
 						label: 'Site',
