@@ -385,10 +385,13 @@ class BaseServer(Document, TagHelpers):
 			subprocess.check_output(
 				shlex.split(
 					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{self.ip} -t rm /root/glass"
-				)
+				),
+				stderr=subprocess.STDOUT,
 			)
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
+		except subprocess.CalledProcessError as e:
+			log_error(f"Error removing glassfile: {e.output.decode()}")
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
