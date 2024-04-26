@@ -195,7 +195,7 @@ def set_uninstalled(owner: str, repository: str):
 	frappe.db.commit()
 
 
-def get_sources(owner: str, repository: Optional[str]) -> "list[str]":
+def get_sources(owner: str, repository: Optional[str] = None) -> "list[str]":
 	filters = {"repository_owner": owner}
 	if repository:
 		filters["repository"] = repository
