@@ -223,8 +223,8 @@ class DockerBuildOutputParser:
 		if len(splits) != 2 and len(keys) == 0:
 			return None
 
-		index_str, line = splits
 		try:
+			index_str, line = splits
 			is_unusual = False
 			index = int(index_str[1:])
 		except ValueError:
