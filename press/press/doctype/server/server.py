@@ -382,7 +382,11 @@ class BaseServer(Document, TagHelpers):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
-			subprocess.check_output(shlex.split(f"ssh root@{self.ip} -t rm /root/glass"))
+			subprocess.check_output(
+				shlex.split(
+					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{self.ip} -t rm /root/glass"
+				)
+			)
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
 		except Exception:
