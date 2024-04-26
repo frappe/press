@@ -595,6 +595,13 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
+	def add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", server=self.as_dict())
+
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
