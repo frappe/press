@@ -18,10 +18,12 @@ def get_notifications(
 		fields=[
 			"name",
 			"type",
+			"read",
 			"title",
 			"message",
 			"creation",
-			"read",
+			"is_addressed",
+			"is_actionable",
 			"document_type",
 			"document_name",
 		],
