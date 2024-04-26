@@ -3,18 +3,22 @@ import router from '../router';
 import { getDocResource } from '../utils/resource';
 import { Tooltip } from 'frappe-ui';
 import { icon } from '../utils/components';
+import { getTeam } from '../data/team';
 
 export default {
 	doctype: 'Press Notification',
 	whitelistedMethods: {},
 	list: {
 		resource() {
+			let $team = getTeam();
 			return {
 				type: 'list',
 				doctype: 'Press Notification',
 				url: 'press.api.notifications.get_notifications',
 				auto: true,
-				filters: {},
+				filters: {
+					team: $team.name
+				},
 				cache: ['Notifications']
 			};
 		},
