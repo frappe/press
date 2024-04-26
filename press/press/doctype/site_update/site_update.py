@@ -425,24 +425,30 @@ def should_not_skip_auto_updates(site):
 
 def should_try_update(site):
 	source = frappe.db.get_value("Bench", site.bench, "candidate")
-	destination = frappe.get_all(
-		"Deploy Candidate Difference",
-		fields=["destination"],
-		filters={"source": source},
-		limit=1,
-	)[0].destination
+	candidates = frappe.get_all(
+		"Deploy Candidate Difference", filters={"source": source}, pluck="destination"
+	)
 
 	source_apps = [app.app for app in frappe.get_cached_doc("Site", site.name).apps]
 	dest_apps = []
-	destination_bench = frappe.get_all(
+	destinations = frappe.get_all(
 		"Bench",
-		{"candidate": destination, "status": "Active"},
+		["name", "candidate"],
+		{
+			"candidate": ("in", candidates),
+			"status": "Active",
+			"server": site.server,
+		},
 		limit=1,
+		ignore_ifnull=True,
 		order_by="creation DESC",
 	)
-	if destination_bench:
-		destination_bench = frappe.get_cached_doc("Bench", destination_bench[0].name)
-		dest_apps = [app.app for app in destination_bench.apps]
+	# Most recent active bench is the destination bench
+	if not destinations:
+		return False
+
+	destination_bench = frappe.get_cached_doc("Bench", destinations[0].name)
+	dest_apps = [app.app for app in destination_bench.apps]
 
 	if set(source_apps) - set(dest_apps):
 		return False
@@ -452,7 +458,7 @@ def should_try_update(site):
 		{
 			"site": site.name,
 			"source_candidate": source,
-			"destination_candidate": destination,
+			"destination_candidate": destination_bench.candidate,
 			"cause_of_failure_is_resolved": False,
 		},
 	)
