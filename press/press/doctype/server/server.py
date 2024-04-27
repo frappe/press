@@ -388,12 +388,14 @@ class BaseServer(Document, TagHelpers):
 				),
 				stderr=subprocess.STDOUT,
 			)
-			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
-			ansible.run()
 		except subprocess.CalledProcessError as e:
 			log_error(f"Error removing glassfile: {e.output.decode()}")
-		except Exception:
-			log_error("EC2 Volume Extend Exception", server=self.as_dict())
+		else:
+			try:
+				ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
+				ansible.run()
+			except Exception:
+				log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):

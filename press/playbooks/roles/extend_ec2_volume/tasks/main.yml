@@ -7,6 +7,8 @@
 
 - name: Extend Partition
   command: growpart /dev/nvme0n1 1
+  retries: 3
+  delay: 3
 
 - name: Show Modified Block Devices
   command: lsblk
