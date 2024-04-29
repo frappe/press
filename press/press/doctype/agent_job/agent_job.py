@@ -28,6 +28,7 @@ from press.press.doctype.press_notification.press_notification import (
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
+	job_matches_site_migration,
 )
 from press.utils import log_error
 from typing import Optional
@@ -854,7 +855,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 		)
 
 		site_migration = get_ongoing_migration(job.site)
-		if site_migration:
+		if site_migration and job_matches_site_migration(job, site_migration):
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)

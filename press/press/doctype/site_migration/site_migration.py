@@ -609,6 +609,11 @@ def process_required_job_callbacks(job):
 		process_backup_site_job_update(job)
 
 
+def job_matches_site_migration(job, site_migration_name: str):
+	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
+	return job.name == site_migration.next_step.step_job
+
+
 def process_site_migration_job_update(job, site_migration_name: str):
 	site_migration: SiteMigration = frappe.get_doc("Site Migration", site_migration_name)
 	if job.name != site_migration.next_step.step_job:
