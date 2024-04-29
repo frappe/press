@@ -219,6 +219,36 @@ def update_server_tls_certifcate(server, certificate):
 		log_error("TLS Setup Exception", server=server.as_dict())
 
 
+def retrigger_failed_wildcard_tls_callbacks():
+	server_doctypes = [
+		"Proxy Server",
+		"Server",
+		"Database Server",
+		"Log Server",
+		"Monitor Server",
+		"Registry Server",
+		"Analytics Server",
+		"Trace Server",
+	]
+	for server_doctype in server_doctypes:
+		servers = frappe.get_all(server_doctype, {"status": "Active"}, pluck="name")
+		for server in servers:
+			plays = frappe.get_all(
+				"Ansible Play",
+				{"play": "Setup TLS Certificates", "server": server},
+				pluck="status",
+				limit=1,
+				order_by="creation DESC",
+			)
+			if plays and plays[0] != "Success":
+				server_doc = frappe.get_doc(server_doctype, server)
+				frappe.enqueue(
+					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
+					server=server_doc,
+					certificate=server.get_certificate(),
+				)
+
+
 class BaseCA:
 	def __init__(self, settings):
 		self.settings = settings
