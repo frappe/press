@@ -2251,9 +2251,14 @@ def process_archive_site_job_update(job):
 		"Archive Site": "Remove Site from Upstream",
 	}[job.job_type]
 
-	other_job = frappe.get_last_doc(
-		"Agent Job", filters={"job_type": other_job_type, "site": job.site}, for_update=True
-	)
+	try:
+		other_job = frappe.get_last_doc(
+			"Agent Job", filters={"job_type": other_job_type, "site": job.site}, for_update=True
+		)
+	except frappe.DoesNotExistError:
+		# Site is already renamed, the other job beat us to it
+		# Our work is done
+		return
 
 	first = get_remove_step_status(job)
 	second = get_remove_step_status(other_job)
