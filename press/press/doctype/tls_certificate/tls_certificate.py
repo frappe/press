@@ -354,7 +354,10 @@ class LetsEncrypt(BaseCA):
 				shlex.split(command), stderr=subprocess.STDOUT, env=environment
 			)
 		except Exception as e:
-			log_error("Certbot Exception", command=command, output=e.output.decode())
+			if not (
+				e.output and "Another instance of Certbot is already running" in e.output.decode()
+			):
+				log_error("Certbot Exception", command=command, output=e.output.decode())
 			raise e
 
 	@property
