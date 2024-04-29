@@ -2397,11 +2397,17 @@ def process_rename_site_job_update(job):
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
-	other_job = frappe.get_last_doc(
-		"Agent Job",
-		filters={"job_type": other_job_type, "site": job.site},
-		for_update=True,
-	)
+	try:
+		other_job = frappe.get_last_doc(
+			"Agent Job",
+			filters={"job_type": other_job_type, "site": job.site},
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		# Site is already renamed, he other job beat us to it
+		# Our work is done
+		return
+
 	first = get_rename_step_status(job)
 	second = get_rename_step_status(other_job)
 
