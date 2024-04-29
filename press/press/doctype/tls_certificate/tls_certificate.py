@@ -91,7 +91,9 @@ class TLSCertificate(Document):
 			# If certbot is already running, retry after 5 seconds
 			# TODO: Move this to a queue
 			if (
-				e.output and "Another instance of Certbot is already running" in e.output.decode()
+				hasattr(e, "output")
+				and e.output
+				and ("Another instance of Certbot is already running" in e.output.decode())
 			):
 				time.sleep(5)
 				frappe.enqueue_doc(self.doctype, self.name, "_obtain_certificate")
@@ -355,7 +357,9 @@ class LetsEncrypt(BaseCA):
 			)
 		except Exception as e:
 			if not (
-				e.output and "Another instance of Certbot is already running" in e.output.decode()
+				hasattr(e, "output")
+				and e.output
+				and "Another instance of Certbot is already running" in e.output.decode()
 			):
 				log_error("Certbot Exception", command=command, output=e.output.decode())
 			raise e
