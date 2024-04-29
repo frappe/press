@@ -245,7 +245,7 @@ def retrigger_failed_wildcard_tls_callbacks():
 				frappe.enqueue(
 					"press.press.doctype.tls_certificate.tls_certificate.update_server_tls_certifcate",
 					server=server_doc,
-					certificate=server.get_certificate(),
+					certificate=server_doc.get_certificate(),
 				)
 
 
