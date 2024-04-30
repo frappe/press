@@ -532,7 +532,7 @@ def process_update_nginx_job_update(job):
 	proxy_server = frappe.get_doc("Proxy Server", job.server)
 	if job.status == "Success":
 		proxy_server.status = "Active"
-	elif job.status in ["Failure", "Undelivered"]:
+	elif job.status in ["Failure", "Undelivered", "Delivery Failure"]:
 		proxy_server.status = "Broken"
 	elif job.status in ["Pending", "Running"]:
 		proxy_server.status = "Installing"

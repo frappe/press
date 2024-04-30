@@ -173,6 +173,7 @@ def process_new_host_job_update(job):
 		"Running": "In Progress",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Broken",
 	}[job.status]
 
 	if updated_status != domain_status:
