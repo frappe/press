@@ -467,6 +467,9 @@ erpnext 0.8.3	    HEAD
 		new=Mock(),
 	)
 	@patch("press.press.doctype.site.site.create_dns_record", new=Mock())
+	@patch(
+		"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
+	)
 	def test_site_change_region(self):
 		from press.api.site import change_region, change_region_options
 
@@ -582,6 +585,9 @@ erpnext 0.8.3	    HEAD
 	@patch(
 		"press.press.doctype.agent_job.agent_job.process_site_migration_job_update",
 		new=Mock(),
+	)
+	@patch(
+		"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
 	)
 	def test_site_change_server(self):
 		from press.api.site import (
