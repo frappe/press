@@ -425,6 +425,7 @@ class DeployCandidate(Document):
 			context_filepath,
 			remote_build_server,
 		)
+		os.remove(context_filepath)
 		settings = self._fetch_registry_settings()
 
 		if no_build:
