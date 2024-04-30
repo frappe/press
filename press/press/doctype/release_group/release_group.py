@@ -102,6 +102,7 @@ class ReleaseGroup(Document, TagHelpers):
 		merge_default_and_short_rq_queues: DF.Check
 		min_background_workers: DF.Int
 		min_gunicorn_workers: DF.Int
+		mirror_server: DF.Link | None
 		mounts: DF.Table[ReleaseGroupMount]
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
@@ -114,6 +115,7 @@ class ReleaseGroup(Document, TagHelpers):
 		title: DF.Data
 		use_app_cache: DF.Check
 		use_delta_builds: DF.Check
+		use_local_mirror: DF.Check
 		use_rq_workerpool: DF.Check
 		version: DF.Link
 	# end: auto-generated types
