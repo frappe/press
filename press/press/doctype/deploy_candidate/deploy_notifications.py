@@ -6,6 +6,7 @@ from textwrap import dedent
 from typing import Optional, TypedDict
 
 import frappe
+import frappe.utils
 
 if typing.TYPE_CHECKING:
 	from frappe import Document
@@ -37,16 +38,19 @@ Details = TypedDict(
 DOC_URLS = {
 	"app-installation-issue": "https://frappecloud.com/docs/faq/app-installation-issue",
 	"invalid-pyproject-file": "https://frappecloud.com/docs/common-issues/invalid-pyprojecttoml-file",
+	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
 }
 
 
 def create_build_failed_notification(
 	dc: "DeployCandidate", exc: "BaseException"
-) -> None:
+) -> bool:
 	"""
 	Used to create press notifications on Build failures. If the notification
 	is actionable then it will be displayed on the dashboard and will block
 	further builds until the user has resolved it.
+
+	Returns if build failure is_actionable
 	"""
 
 	details = get_details(dc, exc)
@@ -66,6 +70,8 @@ def create_build_failed_notification(
 	frappe.publish_realtime(
 		"press_notification", doctype="Press Notification", message={"team": dc.team}
 	)
+
+	return details["is_actionable"]
 
 
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
@@ -96,6 +102,10 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	# Pyproject file could not be parsed by tomllib
 	elif "App has invalid pyproject.toml file" in tb:
 		update_with_invalid_pyproject_error(details, dc, exc)
+
+	# Release Group Node version is incompatible with required version
+	elif 'engine "node" is incompatible with this module' in dc.build_output:
+		update_with_incompatible_node(details, dc)
 	return details
 
 
@@ -156,6 +166,60 @@ def update_with_github_token_error(
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["app-installation-issue"]
+
+
+def update_with_incompatible_node(
+	details: "Details",
+	dc: "DeployCandidate",
+) -> None:
+	# Example line:
+	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
+	line = get_build_output_line(dc, '"node" is incompatible with this module')
+	app = get_app_from_incompatible_build_output_line(line)
+	version = get_version_from_incompatible_build_output_line(line)
+
+	details["is_actionable"] = True
+	details["title"] = "Incompatible Node version"
+	message = f"""
+	<p>{details['message']}</p>
+
+	<p><b>{app}</b> installation failed due to incompatible Node versions. {version}
+	Please set the correct Node Version on your Bench.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	""".strip()
+	details["message"] = dedent(message)
+	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def get_build_output_line(dc: "DeployCandidate", needle: str):
+	for line in dc.build_output.split("\n"):
+		if needle in line:
+			return line
+	return ""
+
+
+def get_version_from_incompatible_build_output_line(line: str):
+	if "Expected" not in line:
+		return ""
+
+	idx = line.index("Expected")
+	return line[idx:] + "."
+
+
+def get_app_from_incompatible_build_output_line(line: str):
+	splits = line.split()
+	if "error" not in splits:
+		return ""
+
+	idx = splits.index("error") + 1
+	if len(splits) <= idx:
+		return ""
+
+	return splits[idx][:-1].split("@")[0]
 
 
 def is_installation_token_none(dc: "DeployCandidate", app: str) -> bool:
