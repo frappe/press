@@ -157,6 +157,7 @@ class TestAPISite(FrappeTestCase):
 		new=MagicMock(),
 	)
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())
+	@patch("press.press.doctype.deploy.deploy.frappe.db.commit", new=MagicMock())
 	def _setup_site_update(self):
 		version = "Version 13"
 		app = create_test_app()
