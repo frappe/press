@@ -139,12 +139,6 @@ class AppSource(Document):
 		response = self.get_poll_response()
 		if not response.ok:
 			self.set_poll_failed(response.text)
-			log_error(
-				"Create Release Error",
-				response_status_code=response.status_code,
-				response_text=response.text,
-				doc=self,
-			)
 			return
 
 		self.set_poll_succeeded()
