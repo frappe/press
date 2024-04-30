@@ -137,10 +137,10 @@ class AppSource(Document):
 
 	def poll_github_for_branch_info(self):
 		response = self.get_poll_response()
-		if not response.ok:
-			self.set_poll_failed(response.text)
-			return
 
+		if not response.ok:
+			self.set_poll_failed(response)
+			return
 		self.set_poll_succeeded()
 		return response
 
@@ -162,17 +162,24 @@ class AppSource(Document):
 			},
 		)
 
-	def set_poll_failed(self, response_text: str):
-		pass
+	def set_poll_failed(self, response):
 		frappe.db.set_value(
 			"App Source",
 			self.name,
 			{
-				"last_github_response": response_text or "",
+				"last_github_response": response.text or "",
 				"last_github_poll_failed": True,
 				"last_synced": frappe.utils.now(),
 			},
 		)
+
+		if response.status_code != 404:
+			log_error(
+				"Create Release Error",
+				response_status_code=response.status_code,
+				response_text=response.text,
+				doc=self,
+			)
 
 	def get_auth_headers(self) -> dict:
 		return get_auth_headers(self.github_installation_id)
