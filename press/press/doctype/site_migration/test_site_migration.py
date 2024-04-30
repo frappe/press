@@ -3,7 +3,7 @@
 # See license.txt
 
 import frappe
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from frappe.core.utils import find
 from press.press.doctype.app.test_app import create_test_app
@@ -60,6 +60,9 @@ BACKUP_JOB_RES = {
 
 
 @patch.object(RemoteFile, "download_link", new="http://test.com")
+@patch(
+	"press.press.doctype.site_migration.site_migration.frappe.db.commit", new=MagicMock
+)
 class TestSiteMigration(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()

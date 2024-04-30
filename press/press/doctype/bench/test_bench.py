@@ -289,7 +289,10 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 			archive_obsolete_benches()
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
-		self.assertEqual(benches_before - benches_after, 1)
+		self.assertEqual(
+			benches_before - benches_after,
+			1,
+		)
 
 	def test_old_public_benches_not_archived(self):
 		pub_group = create_test_release_group(apps=[create_test_app()], public=True)
@@ -301,7 +304,6 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)  # nothing got archived
-
 		bench2 = create_test_bench(group=pub_group, server=bench1.server)
 		create_deploy_candidate_differences(bench2)
 		with fake_agent_job("Archive Bench"):
