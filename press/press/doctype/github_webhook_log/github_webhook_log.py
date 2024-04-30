@@ -134,54 +134,58 @@ class GitHubWebhookLog(Document):
 		return frappe.parse_json(self.payload)
 
 	def create_app_release(self, payload):
+		source = frappe.get_value(
+			"App Source",
+			{
+				"branch": self.branch,
+				"repository": self.repository,
+				"repository_owner": self.repository_owner,
+			},
+			["name", "app"],
+			as_dict=True,
+		)
+
+		commit = payload.get("head_commit", {})
+		if not source or not commit or not commit.get("id"):
+			return
+
+		release = frappe.get_doc(
+			{
+				"doctype": "App Release",
+				"app": source.app,
+				"source": source.name,
+				"hash": commit.get("id"),
+				"message": commit.get("message", "MESSAGE NOT FOUND"),
+				"author": commit.get("author", {}).get("name", "AUTHOR NOT FOUND"),
+			}
+		)
+
 		try:
-			source = frappe.get_value(
-				"App Source",
-				{
-					"branch": self.branch,
-					"repository": self.repository,
-					"repository_owner": self.repository_owner,
-				},
-				["name", "app"],
-				as_dict=True,
-			)
-			if source:
-				commit = payload.head_commit
-				if frappe.db.exists(
-					"App Release", {"app": source.app, "source": source.name, "hash": commit["id"]}
-				):
-					return
-				release = frappe.get_doc(
-					{
-						"doctype": "App Release",
-						"app": source.app,
-						"source": source.name,
-						"hash": commit["id"],
-						"message": commit["message"],
-						"author": commit["author"]["name"],
-					}
-				)
-				release.insert()
+			release.insert()
 		except Exception:
-			log_error("App Release Creation Error", payload=payload)
+			log_error("App Release Creation Error", payload=payload, doc=self)
 
 	def create_app_tag(self, payload):
+		commit = payload.get("head_commit", {})
+		if not commit or not commit.get("id"):
+			return
+
+		tag = frappe.get_doc(
+			{
+				"doctype": "App Tag",
+				"tag": self.tag,
+				"hash": commit.get("id"),
+				"timestamp": commit.get("timestamp"),
+				"repository": self.repository,
+				"repository_owner": self.repository_owner,
+				"github_installation_id": self.github_installation_id,
+			}
+		)
+
 		try:
-			commit = payload.head_commit
-			tag = frappe.get_doc(
-				{
-					"doctype": "App Tag",
-					"tag": self.tag,
-					"hash": commit["id"],
-					"timestamp": commit["timestamp"],
-					"repository": self.repository,
-					"repository_owner": self.repository_owner,
-					"github_installation_id": self.github_installation_id,
-				}
-			)
 			tag.insert()
 		except Exception:
-			log_error("App Tag Creation Error", payload=payload)
+			log_error("App Tag Creation Error", payload=payload, doc=self)
 
 	@staticmethod
 	def clear_old_logs(days=30):
