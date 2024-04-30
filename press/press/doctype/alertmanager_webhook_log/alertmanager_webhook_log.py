@@ -54,6 +54,14 @@ class AlertmanagerWebhookLog(Document):
 		truncated_alerts: DF.Int
 	# end: auto-generated types
 
+	@staticmethod
+	def clear_old_logs(days=10):
+		from frappe.query_builder import Interval
+		from frappe.query_builder.functions import Now
+
+		table = frappe.qb.DocType("Alertmanager Webhook Log")
+		frappe.db.delete(table, filters=(table.modified < (Now() - Interval(days=days))))
+
 	def validate(self):
 		self.parsed = json.loads(self.payload)
 		self.alert = self.parsed["groupLabels"]["alertname"]
