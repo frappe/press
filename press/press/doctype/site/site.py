@@ -2338,10 +2338,13 @@ def process_restore_job_update(job, force=False):
 	site_status = frappe.get_value("Site", job.site, "status")
 	if force or updated_status != site_status:
 		if job.status == "Success":
-			apps = [line.split()[0] for line in job.output.splitlines() if line]
+			apps: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
 			site = frappe.get_doc("Site", job.site)
 			site.apps = []
+			bench_apps = frappe.get_doc("Bench", site.bench).apps
 			for app in apps:
+				if not find(bench_apps, lambda x: x.app == app):
+					continue
 				site.append("apps", {"app": app})
 			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
