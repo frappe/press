@@ -1,0 +1,8 @@
+---
+- name: Create Mirror Directories
+  become: yes
+  become_user: frappe
+  file:
+    path: /home/frappe/mirror/
+    state: directory
+    mode: 0755
