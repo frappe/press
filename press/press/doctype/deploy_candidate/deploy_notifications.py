@@ -42,11 +42,13 @@ DOC_URLS = {
 
 def create_build_failed_notification(
 	dc: "DeployCandidate", exc: "BaseException"
-) -> None:
+) -> bool:
 	"""
 	Used to create press notifications on Build failures. If the notification
 	is actionable then it will be displayed on the dashboard and will block
 	further builds until the user has resolved it.
+
+	Returns if build failure is_actionable
 	"""
 
 	details = get_details(dc, exc)
@@ -66,6 +68,8 @@ def create_build_failed_notification(
 	frappe.publish_realtime(
 		"press_notification", doctype="Press Notification", message={"team": dc.team}
 	)
+
+	return details["is_actionable"]
 
 
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":

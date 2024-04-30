@@ -40,7 +40,7 @@ from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
-	from typing import Generator, Never
+	from typing import Generator
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -299,10 +299,11 @@ class DeployCandidate(Document):
 		self.pre_build(method="_build_and_deploy", staging=staging)
 
 	def _build_and_deploy(self, staging: bool):
-		self._build(deploy_after_build=True, deploy_to_staging=staging)
+		success = self._build(deploy_after_build=True, deploy_to_staging=staging)
+		if not success or self.is_docker_remote_builder_used:
+			return
 
-		if not self.is_docker_remote_builder_used:
-			self._deploy(staging)
+		self._deploy(staging)
 
 	def _deploy(self, staging=False):
 		try:
@@ -340,11 +341,18 @@ class DeployCandidate(Document):
 			)
 		except Exception as exc:
 			self._handle_build_exception(exc)
+			return False
 
-	def _handle_build_exception(self, exc: Exception) -> "Never":
+		return self.status == "Success"
+
+	def _handle_build_exception(self, exc: Exception) -> None:
 		self._flush_output_parsers()
 		self._build_failed()
-		create_build_failed_notification(self, exc)
+
+		if create_build_failed_notification(self, exc):
+			# Skip log and raise error if build failure is actionable
+			return
+
 		log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
 		raise
 
