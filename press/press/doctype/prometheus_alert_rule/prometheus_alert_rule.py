@@ -26,6 +26,7 @@ class PrometheusAlertRule(Document):
 		group_interval: DF.Data
 		group_wait: DF.Data
 		labels: DF.Code
+		press_job_type: DF.Link | None
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
 		severity: DF.Literal["Critical", "Warning", "Information"]
@@ -98,3 +99,22 @@ class PrometheusAlertRule(Document):
 			routes_dict["route"]["routes"].append(rule_doc.get_route())
 
 		return routes_dict
+
+	def react(self, instance_type: str, instance: str):
+		return self.run_press_job(self.press_job_type, instance_type, instance)
+
+	def run_press_job(
+		self, job_name: str, server_type: str, server_name: str, arguments: None
+	):
+		if arguments is None:
+			arguments = {}
+		return frappe.get_doc(
+			{
+				"doctype": "Press Job",
+				"job_type": job_name,
+				"server_type": server_type,
+				"server": server_name,
+				"virtual_machine": frappe.get_value(server_type, server_name, "virtual_machine"),
+				"arguments": json.dumps(arguments, indent=2, sort_keys=True),
+			}
+		).insert()

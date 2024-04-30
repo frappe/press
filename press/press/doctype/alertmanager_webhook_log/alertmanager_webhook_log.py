@@ -41,6 +41,9 @@ class AlertmanagerWebhookLog(Document):
 
 	if TYPE_CHECKING:
 		from frappe.types import DF
+		from press.press.doctype.alertmanager_webhook_log_reaction_job.alertmanager_webhook_log_reaction_job import (
+			AlertmanagerWebhookLogReactionJob,
+		)
 
 		alert: DF.Link
 		combined_alerts: DF.Int
@@ -49,6 +52,7 @@ class AlertmanagerWebhookLog(Document):
 		group_key: DF.Code
 		group_labels: DF.Code
 		payload: DF.Code
+		reaction_jobs: DF.Table[AlertmanagerWebhookLogReactionJob]
 		severity: DF.Literal["Critical", "Warning", "Information"]
 		status: DF.Literal["Firing", "Resolved"]
 		truncated_alerts: DF.Int
@@ -97,7 +101,9 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
-		if frappe.db.get_value("Prometheus Alert Rule", self.alert, "enable_reactions"):
+		if frappe.db.get_cached_value(
+			"Prometheus Alert Rule", self.alert, "enable_reactions"
+		):
 			enqueue_doc(
 				self.doctype,
 				self.name,
@@ -120,22 +126,15 @@ class AlertmanagerWebhookLog(Document):
 		)
 		return bool(ongoing_incident_status)
 
+	def react_for_instance(self, instance):
+		instance_type = self.guess_doctype(instance)
+		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		rule.react(instance_type, instance)
+
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.react_for_instance(instance)
-
-	def react_for_instance(self, instance):
-		if self.ongoing_reaction_exists(instance):
-			return
-
-		instance_type = self.guess_doctype(instance)
-
-		frappe.new_doc(
-			"Prometheus Alert Reaction",
-			rule=self.name,
-			instance_type=instance_type,
-			instance=instance,
-		).insert()
+			self.reactions.append(self.react_for_instance(instance))
+		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
 		instances = []

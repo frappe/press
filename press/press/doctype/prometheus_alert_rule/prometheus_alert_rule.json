@@ -27,11 +27,7 @@
   "column_break_21",
   "route_preview",
   "reaction_tab",
-  "reaction_section",
-  "reaction_wait_time",
-  "reaction_method",
-  "column_break_ijmn",
-  "enable_reactions"
+  "press_job_type"
  ],
  "fields": [
   {
@@ -161,29 +157,10 @@
    "label": "Reaction"
   },
   {
-   "fieldname": "reaction_section",
-   "fieldtype": "Section Break",
-   "label": "Reaction"
-  },
-  {
-   "fieldname": "column_break_ijmn",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "reaction_method",
-   "fieldtype": "Data",
-   "label": "Reaction Method"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_reactions",
-   "fieldtype": "Check",
-   "label": "Enable Reactions"
-  },
-  {
-   "fieldname": "reaction_wait_time",
-   "fieldtype": "Duration",
-   "label": "Reaction Wait Time"
+   "fieldname": "press_job_type",
+   "fieldtype": "Link",
+   "label": "Press Job Type",
+   "options": "Press Job Type"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -193,7 +170,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2024-03-14 16:43:59.724170",
+ "modified": "2024-04-30 14:16:22.276020",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",
