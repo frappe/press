@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
+  "user_addressable_failure",
   "is_single_container",
   "is_ssh_enabled",
   "staged",
@@ -362,6 +363,14 @@
    "fieldtype": "Code",
    "label": "Build Error",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.user_addressable_failure",
+   "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
+   "fieldname": "user_addressable_failure",
+   "fieldtype": "Check",
+   "label": "User Addressable Failure"
   }
  ],
  "links": [
@@ -374,7 +383,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-04-16 11:27:12.314611",
+ "modified": "2024-05-01 09:37:45.162767",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

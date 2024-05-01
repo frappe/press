@@ -2,9 +2,9 @@
 # Copyright (c) 2021, Frappe and contributors
 # For license information, please see license.txt
 
+import glob
 import json
 import os
-import glob
 import re
 import shlex
 import shutil
@@ -107,6 +107,7 @@ class DeployCandidate(Document):
 		team: DF.Link
 		use_app_cache: DF.Check
 		use_rq_workerpool: DF.Check
+		user_addressable_failure: DF.Check
 		user_certificate: DF.Code | None
 		user_private_key: DF.Code | None
 		user_public_key: DF.Code | None
@@ -350,9 +351,11 @@ class DeployCandidate(Document):
 		self._build_failed()
 
 		if create_build_failed_notification(self, exc):
-			# Skip log and raise error if build failure is actionable
+			self.user_addressable_failure = True
+			frappe.db.commit()
 			return
 
+		# Log and raise error if build failure is not actionable
 		log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
 		raise
 
