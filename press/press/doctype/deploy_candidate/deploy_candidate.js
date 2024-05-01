@@ -15,28 +15,29 @@ frappe.ui.form.on('Deploy Candidate', {
 			};
 		};
 
+		const can_build = ['Draft', 'Failure', 'Success'].includes(frm.doc.status);
 		const actions = [
-			[__('Complete'), 'build', true, __('Build')],
+			[__('Complete'), 'build', can_build, __('Build')],
 			[
 				__('Generate Context'),
 				'generate_build_context',
-				window.dev_server,
+				can_build,
 				__('Build'),
 			],
-			[__('Without Cache'), 'build_without_cache', true, __('Build')],
-			[
-				__('Without Push'),
-				'build_without_push',
-				window.dev_server,
-				__('Build'),
-			],
+			[__('Without Cache'), 'build_without_cache', can_build, __('Build')],
+			[__('Without Push'), 'build_without_push', can_build, __('Build')],
 			[
 				__('Cleanup Directory'),
 				'cleanup_build_directory',
 				frm.doc.status !== 'Draft',
 				__('Build'),
 			],
-			[__('Deploy to Production'), 'deploy_to_production', true, __('Deploy')],
+			[
+				__('Schedule Build and Deploy'),
+				'schedule_build_and_deploy',
+				can_build,
+				__('Deploy'),
+			],
 		];
 
 		for (const [label, method, show, group] of actions) {

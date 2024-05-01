@@ -285,11 +285,19 @@ class DeployCandidate(Document):
 		return dc
 
 	@frappe.whitelist()
-	def deploy_to_production(self, running_scheduled=False):
-		if self.status == "Scheduled" and not running_scheduled:
+	def schedule_build_and_deploy(self, is_running_scheduled=False):
+		"""
+		If Builds are suspended (Press Settings > Suspend Builds) then this
+		puts the build into scheduled mode.
+
+		Execution will be retried on scheduler tick from `run_scheduled_builds`
+
+		To bypass this run `build_and_deploy` directly.
+		"""
+		if self.status == "Scheduled" and not is_running_scheduled:
 			return
 
-		if not is_suspended() or self.is_docker_remote_builder_used:
+		if not is_suspended():
 			self.build_and_deploy()
 			return
 
@@ -1556,7 +1564,7 @@ def run_scheduled_builds():
 	for candidate in candidates:
 		try:
 			candidate: "DeployCandidate" = frappe.get_doc("Deploy Candidate", candidate)
-			candidate.deploy_to_production(running_scheduled=True)
+			candidate.schedule_build_and_deploy(is_running_scheduled=True)
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()

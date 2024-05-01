@@ -178,7 +178,7 @@ class TestDeployCandidate(unittest.TestCase):
 		self.assertEqual(candidate.apps[1].release, release.name)
 
 	@patch("press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc")
-	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
 	def test_creating_new_app_release_with_auto_deploy_deploys_that_app(
 		self, mock_enqueue_doc, mock_commit
 	):

@@ -8,7 +8,6 @@ from functools import cached_property
 from itertools import chain
 from typing import TYPE_CHECKING, List, Optional
 
-
 import frappe
 import semantic_version as sv
 from frappe import _
@@ -17,6 +16,7 @@ from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import comma_and, cstr, flt, sbool
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
 from press.press.doctype.app_source.app_source import AppSource, create_app_source
@@ -29,7 +29,6 @@ from press.utils import (
 	get_last_doc,
 	log_error,
 )
-from press.api.client import dashboard_whitelist
 
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
@@ -465,7 +464,7 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def redeploy(self):
 		dc = self.create_duplicate_deploy_candidate()
-		dc.deploy_to_production()
+		dc.schedule_build_and_deploy()
 
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_update=None) -> "Optional[DeployCandidate]":

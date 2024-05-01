@@ -1,42 +1,40 @@
 import json
 import os
 import time
-import requests
 from unittest.mock import Mock, patch
 
+import docker
 import frappe
+import requests
 from frappe.core.utils import find
 from frappe.tests.utils import FrappeTestCase, timeout
-from press.press.doctype.agent_job.agent_job import AgentJob
-from press.press.doctype.app.test_app import create_test_app
-
-
 from press.api.bench import (
+	all,
+	bench_config,
 	dependencies,
 	deploy,
 	deploy_and_update,
 	deploy_information,
 	get,
 	new,
-	all,
 	update_config,
-	bench_config,
 	update_dependencies,
 )
+from press.press.doctype.agent_job.agent_job import AgentJob
+from press.press.doctype.app.test_app import create_test_app
 from press.press.doctype.app_release.test_app_release import create_test_app_release
+from press.press.doctype.bench.test_bench import create_test_bench
 from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 from press.press.doctype.press_settings.test_press_settings import (
 	create_test_press_settings,
 )
-from press.press.doctype.bench.test_bench import create_test_bench
-from press.press.doctype.server.test_server import create_test_server
-from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.press.doctype.release_group.test_release_group import (
 	create_test_release_group,
 )
+from press.press.doctype.server.test_server import create_test_server
+from press.press.doctype.team.test_team import create_test_press_admin_team
 from press.utils import get_current_team
 from press.utils.test import foreground_enqueue_doc
-import docker
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -122,7 +120,7 @@ class TestAPIBench(FrappeTestCase):
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.enqueue_doc",
 		new=foreground_enqueue_doc,
 	)
-	@patch.object(DeployCandidate, "deploy_to_production", new=Mock())
+	@patch.object(DeployCandidate, "schedule_build_and_deploy", new=Mock())
 	@patch(
 		"press.press.doctype.deploy_candidate.deploy_candidate.frappe.db.commit", new=Mock()
 	)

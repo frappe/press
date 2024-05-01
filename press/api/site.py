@@ -3,37 +3,37 @@
 # For license information, please see license.txt
 
 import json
-from frappe.utils.user import is_system_user
-from press.press.doctype.server.server import is_dedicated_server
-from press.press.doctype.marketplace_app.marketplace_app import get_plans_for_app
-import wrapt
-import frappe
-from dns.resolver import Resolver
-import dns.exception
-
 from typing import Dict
+
+import dns.exception
+import frappe
+import wrapt
 from boto3 import client
-from frappe.core.utils import find
 from botocore.exceptions import ClientError
+from dns.resolver import Resolver
+from frappe.core.utils import find
 from frappe.desk.doctype.tag.tag import add_tag
-from frappe.utils import flt, time_diff_in_hours, sbool
+from frappe.utils import flt, sbool, time_diff_in_hours
 from frappe.utils.password import get_decrypted_password
+from frappe.utils.user import is_system_user
 from press.press.doctype.agent_job.agent_job import job_detail
+from press.press.doctype.marketplace_app.marketplace_app import (
+	get_plans_for_app,
+	get_total_installs_by_app,
+)
 from press.press.doctype.press_user_permission.press_user_permission import (
 	has_user_permission,
 )
 from press.press.doctype.remote_file.remote_file import get_remote_key
+from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.plan import Plan
 from press.press.doctype.site_update.site_update import benches_with_available_update
-from press.press.doctype.marketplace_app.marketplace_app import (
-	get_total_installs_by_app,
-)
 from press.utils import (
-	get_current_team,
-	log_error,
-	get_last_doc,
-	get_frappe_backups,
 	get_client_blacklisted_keys,
+	get_current_team,
+	get_frappe_backups,
+	get_last_doc,
+	log_error,
 	unique,
 )
 
@@ -1866,7 +1866,7 @@ def clone_group(name, new_group_title):
 	cloned_group.insert()
 
 	candidate = cloned_group.create_deploy_candidate()
-	candidate.deploy_to_production()
+	candidate.schedule_build_and_deploy()
 
 	return {
 		"bench_name": cloned_group.name,
