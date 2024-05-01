@@ -736,8 +736,7 @@ class DeployCandidate(Document):
 			self.save()
 
 	def _update_app_releases(self) -> None:
-		should_update = frappe.get_value("Release Group", self.group, "use_delta_builds")
-		if not should_update:
+		if not frappe.get_value("Release Group", self.group, "use_delta_builds"):
 			return
 
 		try:
@@ -765,59 +764,8 @@ class DeployCandidate(Document):
 			app.pullable_release = release_pair["new"]["name"]
 
 	def _prepare_build_context(self, no_push: bool):
-		# Create apps directory
-		apps_directory = os.path.join(self.build_directory, "apps")
-		os.mkdir(apps_directory)
-
-		for app in self.apps:
-			step = self.get_step("clone", app.app)
-			if not step:
-				continue
-
-			source, cloned = frappe.db.get_value(
-				"App Release", app.release, ["clone_directory", "cloned"]
-			)
-			step.command = f"git clone {app.app}"
-
-			if cloned:
-				step.cached = True
-				step.status = "Success"
-			else:
-				step.status = "Running"
-				start_time = now()
-
-				self.save(ignore_version=True)
-				frappe.db.commit()
-
-				release: "AppRelease" = frappe.get_doc("App Release", app.release, for_update=True)
-				release._clone()
-				source = release.clone_directory
-
-				end_time = now()
-				step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
-				step.output = release.output
-				step.status = "Success"
-
-			target = os.path.join(self.build_directory, "apps", app.app)
-			shutil.copytree(source, target, symlinks=True)
-			app.app_name = self._get_app_name(app.app)
-
-			"""
-			Pullable updates don't need cloning as they get cloned when
-			the app is checked for possible pullable updates in:
-
-			self.get_pull_update_dict
-				└─ app_release.get_changed_files_between_hashes
-			"""
-			if app.pullable_release:
-				update_source = frappe.get_value(
-					"App Release", app.pullable_release, "clone_directory"
-				)
-				update_target = os.path.join(self.build_directory, "app_updates", app.app)
-				shutil.copytree(update_source, update_target, symlinks=True)
-
-			self.save(ignore_version=True)
-			frappe.db.commit()
+		self._clone_repos()
+		self._validate_cloned_repos()
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml
@@ -840,6 +788,98 @@ class DeployCandidate(Document):
 		self._generate_supervisor_config()
 		self._generate_apps_txt()
 		self.generate_ssh_keys()
+
+	def _clone_repos(self):
+		apps_directory = os.path.join(self.build_directory, "apps")
+		os.mkdir(apps_directory)
+
+		repo_path_map: dict[str, str] = {}
+
+		for app in self.apps:
+			repo_path_map[app.app] = self._clone_app_repo(app)
+			app.app_name = self._get_app_name(app.app)
+			self.save(ignore_version=True)
+			frappe.db.commit()
+
+		return repo_path_map
+
+	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
+		"""
+		Clones the app repository if it has not been cloned and
+		copies it into the build context directory.
+
+		Returned path points to the repository that needs to be
+		validated.
+		"""
+		if not (step := self.get_step("clone", app.app)):
+			raise f"App {app.app} clone step not found"
+
+		if not self.build_directory:
+			raise "Build Directory not set"
+
+		step.command = f"git clone {app.app}"
+		source, cloned = frappe.db.get_value(
+			"App Release",
+			app.release,
+			["clone_directory", "cloned"],
+		)
+
+		if cloned:
+			step.cached = True
+			step.status = "Success"
+		else:
+			source = self._clone_release_update_step(app.release, step)
+
+		target = os.path.join(self.build_directory, "apps", app.app)
+		shutil.copytree(source, target, symlinks=True)
+
+		"""
+		Pullable updates don't need cloning as they get cloned when
+		the app is checked for possible pullable updates in:
+
+		self.get_pull_update_dict
+			└─ app_release.get_changed_files_between_hashes
+		"""
+		if app.pullable_release:
+			source = frappe.get_value("App Release", app.pullable_release, "clone_directory")
+			target = os.path.join(self.build_directory, "app_updates", app.app)
+			shutil.copytree(source, target, symlinks=True)
+
+		return target
+
+	def _clone_release_update_step(self, release: str, step: "DeployCandidateBuildStep"):
+		step.status = "Running"
+		start_time = now()
+
+		self.save(ignore_version=True)
+		frappe.db.commit()
+
+		release: "AppRelease" = frappe.get_doc(
+			"App Release",
+			release,
+			for_update=True,
+		)
+		release._clone()
+
+		end_time = now()
+		step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+		step.output = release.output
+		step.status = "Success"
+		return release.clone_directory
+
+	def _validate_cloned_repos(self):
+		self._validate_syntax()
+		self._validate_node_requirement()
+		self._validate_frappe_dependencies()
+
+	def _validate_syntax(self):
+		pass
+
+	def _validate_node_requirement(self):
+		pass
+
+	def _validate_frappe_dependencies(self):
+		pass
 
 	def _update_packages(self):
 		existing_apt_packages = set()
