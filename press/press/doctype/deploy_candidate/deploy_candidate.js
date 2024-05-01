@@ -16,38 +16,36 @@ frappe.ui.form.on('Deploy Candidate', {
 		};
 
 		const actions = [
+			[__('Complete'), 'build', true, __('Build')],
 			[
-				__('Generate Build Context'),
+				__('Generate Context'),
 				'generate_build_context',
 				window.dev_server,
+				__('Build'),
 			],
-			[__('Build'), 'build', true],
-			[__('Build without cache'), 'build_without_cache', true],
-			[__('Build without push'), 'build_without_push', window.dev_server],
-			[__('Deploy to Staging'), 'deploy_to_staging', true],
-			[__('Promote to Production'), 'promote_to_production', frm.doc.staged],
+			[__('Without Cache'), 'build_without_cache', true, __('Build')],
 			[
-				__('Deploy to Production (build and deploy)'),
-				'deploy_to_production',
-				true,
+				__('Without Push'),
+				'build_without_push',
+				window.dev_server,
+				__('Build'),
 			],
 			[
-				__('Cleanup Build Directory'),
+				__('Cleanup Directory'),
 				'cleanup_build_directory',
 				frm.doc.status !== 'Draft',
+				__('Build'),
 			],
+			[__('Deploy to Production'), 'deploy_to_production', true, __('Deploy')],
 		];
 
-		for (const [label, method, show] of actions) {
+		for (const [label, method, show, group] of actions) {
 			if (!show) {
 				continue;
 			}
 
-			frm.add_custom_button(
-				label,
-				() => frm.call(method).then((r) => frm.refresh()),
-				__('Actions'),
-			);
+			const callback = () => frm.call(method).then(() => frm.refresh());
+			frm.add_custom_button(label, callback, group);
 		}
 
 		add_redeploy(frm);
@@ -69,7 +67,7 @@ function add_redeploy(frm) {
 		label = __('Redeploy');
 	}
 
-	frm.add_custom_button(label, handler, __('Actions'));
+	frm.add_custom_button(label, handler, __('Deploy'));
 	async function handler() {
 		const { message } = await frm.call(method);
 

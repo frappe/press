@@ -36,7 +36,6 @@ from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	UploadStepUpdater,
 )
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.press.doctype.server.server import Server
 from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
@@ -100,7 +99,6 @@ class DeployCandidate(Document):
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
 		scheduled_time: DF.Datetime | None
-		staged: DF.Check
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
 		]
@@ -271,11 +269,6 @@ class DeployCandidate(Document):
 		self.pre_build(method="_build", no_push=True)
 
 	@frappe.whitelist()
-	def deploy_to_staging(self):
-		"""Deploy a bench on staging server and also create a staging site."""
-		self.build_and_deploy(staging=True)
-
-	@frappe.whitelist()
 	def fail_and_redeploy(self):
 		if self.status == "Draft" or self.status == "Failure" or self.status == "Success":
 			return
@@ -292,18 +285,12 @@ class DeployCandidate(Document):
 		return dc
 
 	@frappe.whitelist()
-	def promote_to_production(self):
-		if not self.staged:
-			frappe.throw("Cannot promote unstaged candidate to production")
-		self._deploy()
-
-	@frappe.whitelist()
 	def deploy_to_production(self, running_scheduled=False):
 		if self.status == "Scheduled" and not running_scheduled:
 			return
 
 		if not is_suspended() or self.is_docker_remote_builder_used:
-			self.build_and_deploy(staging=False)
+			self.build_and_deploy()
 			return
 
 		# Schedule build to be run ASAP.
@@ -312,19 +299,19 @@ class DeployCandidate(Document):
 		self.save()
 		frappe.db.commit()
 
-	def build_and_deploy(self, staging: bool = False):
-		self.pre_build(method="_build_and_deploy", staging=staging)
+	def build_and_deploy(self):
+		self.pre_build(method="_build_and_deploy")
 
-	def _build_and_deploy(self, staging: bool):
-		success = self._build(deploy_after_build=True, deploy_to_staging=staging)
+	def _build_and_deploy(self):
+		success = self._build(deploy_after_build=True)
 		if not success or self.is_docker_remote_builder_used:
 			return
 
-		self._deploy(staging)
+		self._deploy()
 
-	def _deploy(self, staging=False):
+	def _deploy(self):
 		try:
-			self.create_deploy(staging)
+			self.create_deploy()
 		except Exception:
 			log_error(
 				"Deploy Creation Error",
@@ -340,7 +327,6 @@ class DeployCandidate(Document):
 		no_build: bool = False,
 		# Used for docker remote build
 		deploy_after_build: bool = False,
-		deploy_to_staging: bool = False,
 	):
 		self.is_single_container = True
 		self.is_ssh_enabled = True
@@ -354,7 +340,6 @@ class DeployCandidate(Document):
 				no_push,
 				no_build,
 				deploy_after_build,
-				deploy_to_staging,
 			)
 		except Exception as exc:
 			self._handle_build_exception(exc)
@@ -403,7 +388,6 @@ class DeployCandidate(Document):
 		no_push: bool = False,
 		no_build: bool = False,
 		deploy_after_build: bool = False,
-		deploy_to_staging: bool = False,
 	):
 		self._update_docker_image_metadata()
 
@@ -411,7 +395,6 @@ class DeployCandidate(Document):
 		if self.is_docker_remote_builder_used:
 			self._run_remote_builder(
 				deploy_after_build,
-				deploy_to_staging,
 				no_cache,
 				no_push,
 				no_build,
@@ -432,7 +415,6 @@ class DeployCandidate(Document):
 	def _run_remote_builder(
 		self,
 		deploy_after_build: bool,
-		deploy_to_staging: bool,
 		no_cache: bool,
 		no_push: bool,
 		no_build: bool,
@@ -468,7 +450,6 @@ class DeployCandidate(Document):
 				# read in `process_run_remote_builder`
 				"deploy_candidate": self.name,
 				"deploy_after_build": deploy_after_build,
-				"deploy_to_staging": deploy_to_staging,
 			}
 		)
 		self.last_updated = now()
@@ -557,8 +538,7 @@ class DeployCandidate(Document):
 			upload_step_updater.end("Success")
 
 		if job.status == "Success" and request_data.get("deploy_after_build"):
-			staging = request_data.get("deploy_to_staging")
-			self.create_deploy(staging)
+			self.create_deploy()
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
 		# build_failed can be None if the build has not ended
@@ -1272,36 +1252,28 @@ class DeployCandidate(Document):
 			lambda x: x.stage_slug == stage_slug and x.step_slug == step_slug,
 		)
 
-	def create_deploy(self, staging: bool = False):
+	def create_deploy(self):
 		deploy_doc = None
-		if staging:
-			servers = [Server.get_one_staging()]
-			if not servers:
-				frappe.log_error(title="Staging Server for new benches not found")
-		else:
-			servers = frappe.get_doc("Release Group", self.group).servers
-			servers = [server.server for server in servers]
-			deploy_doc = frappe.db.exists(
-				"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
-			)
+		servers = frappe.get_doc("Release Group", self.group).servers
+		servers = [server.server for server in servers]
+		deploy_doc = frappe.db.exists(
+			"Deploy", {"group": self.group, "candidate": self.name, "staging": False}
+		)
 
 		if deploy_doc or not servers:
 			return
 
-		return self._create_deploy(servers, staging)
+		return self._create_deploy(servers)
 
-	def _create_deploy(self, servers: List[str], staging=False):
+	def _create_deploy(self, servers: List[str]):
 		deploy = frappe.get_doc(
 			{
 				"doctype": "Deploy",
 				"group": self.group,
 				"candidate": self.name,
 				"benches": [{"server": server} for server in servers],
-				"staging": staging,
 			}
 		).insert()
-		if staging:
-			self.db_set("staged", True)
 		return deploy
 
 	def on_update(self):

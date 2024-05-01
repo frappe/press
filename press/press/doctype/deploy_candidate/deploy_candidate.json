@@ -9,7 +9,6 @@
   "user_addressable_failure",
   "is_single_container",
   "is_ssh_enabled",
-  "staged",
   "is_docker_remote_builder_used",
   "column_break_2",
   "group",
@@ -204,14 +203,6 @@
   },
   {
    "default": "0",
-   "fieldname": "staged",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Staged"
-  },
-  {
-   "default": "0",
    "fieldname": "is_ssh_enabled",
    "fieldtype": "Check",
    "label": "Is SSH Enabled",
@@ -383,7 +374,7 @@
    "link_fieldname": "reference_name"
   }
  ],
- "modified": "2024-05-01 09:37:45.162767",
+ "modified": "2024-05-01 10:38:45.034681",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
