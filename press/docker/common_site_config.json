@@ -4,6 +4,5 @@
     "redis_queue": "redis://localhost:11000",
     "redis_socketio": "redis://localhost:13000",
     "shallow_clone": true,
-    "socketio_port": 9000,
-    "webserver_port": 8000
+    "socketio_port": 9000
 }
