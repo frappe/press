@@ -6,7 +6,8 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
+
 
 import frappe
 import semantic_version as sv
@@ -467,7 +468,7 @@ class ReleaseGroup(Document, TagHelpers):
 		dc.deploy_to_production()
 
 	@frappe.whitelist()
-	def create_deploy_candidate(self, apps_to_update=None) -> "DeployCandidate":
+	def create_deploy_candidate(self, apps_to_update=None) -> "Optional[DeployCandidate]":
 		if not self.enabled:
 			return
 

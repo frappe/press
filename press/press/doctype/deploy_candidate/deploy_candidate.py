@@ -276,6 +276,22 @@ class DeployCandidate(Document):
 		self.build_and_deploy(staging=True)
 
 	@frappe.whitelist()
+	def fail_and_redeploy(self):
+		if self.status == "Draft" or self.status == "Failure" or self.status == "Success":
+			return
+
+		self._set_status_failure()
+		return self.redeploy()
+
+	@frappe.whitelist()
+	def redeploy(self):
+		if not (dc := self.get_duplicate_dc()):
+			return
+
+		dc.build_and_deploy()
+		return dc
+
+	@frappe.whitelist()
 	def promote_to_production(self):
 		if not self.staged:
 			frappe.throw("Cannot promote unstaged candidate to production")
@@ -329,7 +345,7 @@ class DeployCandidate(Document):
 		self.is_single_container = True
 		self.is_ssh_enabled = True
 
-		self._build_start()
+		self._set_status_preparing()
 		self._set_output_parsers()
 		try:
 			self._prepare_build(no_cache, no_push)
@@ -348,10 +364,11 @@ class DeployCandidate(Document):
 
 	def _handle_build_exception(self, exc: Exception) -> None:
 		self._flush_output_parsers()
-		self._build_failed()
+		self._set_status_failure()
 
 		if create_build_failed_notification(self, exc):
 			self.user_addressable_failure = True
+			self.save(ignore_version=True, ignore_permissions=True)
 			frappe.db.commit()
 			return
 
@@ -402,7 +419,7 @@ class DeployCandidate(Document):
 			return
 
 		# Build Runs locally
-		self._build_run()
+		self._set_status_running()
 
 		if not no_build:
 			self._run_docker_build(no_cache)
@@ -410,7 +427,7 @@ class DeployCandidate(Document):
 		if not no_build and not no_push:
 			self._push_docker_image()
 
-		self._build_successful()
+		self._set_status_success()
 
 	def _run_remote_builder(
 		self,
@@ -432,7 +449,7 @@ class DeployCandidate(Document):
 		settings = self._fetch_registry_settings()
 
 		if no_build:
-			self._build_successful()
+			self._set_status_success()
 			return
 
 		Agent(remote_build_server).run_remote_builder(
@@ -455,7 +472,7 @@ class DeployCandidate(Document):
 			}
 		)
 		self.last_updated = now()
-		self._build_run()
+		self._set_status_running()
 		return
 
 	def _package_build_context(self) -> str:
@@ -546,15 +563,15 @@ class DeployCandidate(Document):
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
 		# build_failed can be None if the build has not ended
 		if job_data.get("build_failed") is True:
-			return self._build_failed()
+			return self._set_status_failure()
 
 		match job.status:
 			case "Pending" | "Running":
-				return self._build_run()
+				return self._set_status_running()
 			case "Failure" | "Undelivered" | "Delivery Failure":
-				return self._build_failed()
+				return self._set_status_failure()
 			case "Success":
-				return self._build_successful()
+				return self._set_status_success()
 			case _:
 				raise Exception("unreachable code execution")
 
@@ -586,30 +603,30 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
-	def _build_start(self):
+	def _set_status_preparing(self):
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
 		frappe.db.commit()
 
-	def _build_run(self):
+	def _set_status_running(self):
 		self.status = "Running"
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
-	def _build_failed(self):
+	def _set_status_failure(self):
 		self.status = "Failure"
 		self._fail_last_running_step()
-		self._build_end()
+		self._set_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
 
-	def _build_successful(self):
+	def _set_status_success(self):
 		self.status = "Success"
 		self.build_error = None
-		self._build_end()
+		self._set_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
@@ -632,7 +649,7 @@ class DeployCandidate(Document):
 
 		frappe.db.set_value("Bench Update", bench_update[0], "status", status)
 
-	def _build_end(self):
+	def _set_duration(self):
 		self.build_end = now()
 		if not isinstance(self.build_start, datetime):
 			return
@@ -1399,6 +1416,32 @@ class DeployCandidate(Document):
 				continue
 			return build_step
 		return None
+
+	def get_duplicate_dc(self) -> "Optional[DeployCandidate]":
+		rg: "ReleaseGroup" = frappe.get_doc("Release Group", self.group)
+		if not (dc := rg.create_deploy_candidate()):
+			return
+
+		# Set new DC apps to pull from the same sources
+		new_app_map = {a.app: a for a in dc.apps}
+		for app in self.apps:
+			if not (new_app := new_app_map.get(app.app)):
+				continue
+
+			new_app.hash = app.hash
+			new_app.release = app.release
+			new_app.source = app.source
+
+		# Remove apps from new DC if they aren't in the old DC
+		old_app_map = {a.app: a for a in self.apps}
+		for app in dc.apps:
+			if old_app_map.get(app.app):
+				continue
+
+			dc.remove(app)
+
+		self.save()
+		return dc
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
