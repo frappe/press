@@ -812,10 +812,10 @@ class DeployCandidate(Document):
 		validated.
 		"""
 		if not (step := self.get_step("clone", app.app)):
-			raise f"App {app.app} clone step not found"
+			raise frappe.ValidationError(f"App {app.app} clone step not found")
 
 		if not self.build_directory:
-			raise "Build Directory not set"
+			raise frappe.ValidationError("Build Directory not set")
 
 		step.command = f"git clone {app.app}"
 		source, cloned = frappe.db.get_value(
