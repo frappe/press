@@ -101,9 +101,7 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
-		if frappe.db.get_cached_value(
-			"Prometheus Alert Rule", self.alert, "enable_reactions"
-		):
+		if frappe.get_cached_value("Prometheus Alert Rule", self.alert, "enable_reactions"):
 			enqueue_doc(
 				self.doctype,
 				self.name,
