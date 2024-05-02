@@ -730,6 +730,43 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
 
+	@property
+	def space_available_in_6_hours(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""predict_linear(
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*3600
+			)""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if not response:
+			return -20 * 1024 * 1024 * 1024
+		return response[0]["values"][-1]
+
+	@property
+	def disk_capacity(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if response:
+			return response[0]["values"][-1]
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+
+	def get_size_to_increase_by_for_20_percent_available(self):
+		return (
+			0 or (self.space_available_in_6_hours * 5 - self.disk_capacity) / 1024 / 1024 / 1024
+		)
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
