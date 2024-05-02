@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 from functools import cached_property
+from typing import TYPE_CHECKING
 import frappe
 import json
 from frappe.model.document import Document
@@ -12,6 +13,11 @@ from press.utils import log_error
 from frappe.utils import get_url_to_form
 from frappe.utils.data import add_to_date
 
+if TYPE_CHECKING:
+	from press.press.doctype.prometheus_alert_rule.prometheus_alert_rule import (
+		PrometheusAlertRule,
+	)
+	from press.press.doctype.press_job.press_job import PressJob
 
 TELEGRAM_NOTIFICATION_TEMPLATE = """
 *{{ status }}* - *{{ severity }}*: {{ rule.name }} on {{ combined_alerts }} instances
@@ -101,7 +107,7 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
-		if frappe.get_cached_value("Prometheus Alert Rule", self.alert, "enable_reactions"):
+		if frappe.get_cached_value("Prometheus Alert Rule", self.alert, "press_job_type"):
 			enqueue_doc(
 				self.doctype,
 				self.name,
@@ -124,14 +130,14 @@ class AlertmanagerWebhookLog(Document):
 		)
 		return bool(ongoing_incident_status)
 
-	def react_for_instance(self, instance):
+	def react_for_instance(self, instance) -> "PressJob":
 		instance_type = self.guess_doctype(instance)
-		rule = frappe.get_doc("Prometheus Alert Rule", self.alert)
+		rule: "PrometheusAlertRule" = frappe.get_doc("Prometheus Alert Rule", self.alert)
 		rule.react(instance_type, instance)
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.reactions.append(self.react_for_instance(instance))
+			self.reaction_jobs.append(self.react_for_instance(instance))
 		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
