@@ -762,9 +762,17 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return response[0]["values"][-1]
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
 
-	def get_size_to_increase_by_for_20_percent_available(self):
-		return (
-			0 or (self.space_available_in_6_hours * 5 - self.disk_capacity) / 1024 / 1024 / 1024
+	def get_size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
+		return max(
+			50,
+			min(
+				abs(self.disk_capacity - self.space_available_in_6_hours * 5)
+				/ 4
+				/ 1024
+				/ 1024
+				/ 1024,
+				250,
+			),
 		)
 
 
