@@ -1,5 +1,6 @@
 import semantic_version as sv
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 from press.press.doctype.deploy_candidate.utils import (
 	PackageManagers,
 	PackageManagerFiles,
@@ -63,8 +64,8 @@ class PreBuildValidations:
 
 	def _check_frappe_dependencies(self, app: str, frappe_deps: dict[str, str]):
 		for dep_app, actual in frappe_deps.items():
-			expected = get_app_version(dep_app)
-			if sv.Version(expected) in sv.SimpleSpec(actual):
+			expected = self._get_app_version(dep_app)
+			if not expected or sv.Version(expected) in sv.SimpleSpec(actual):
 				continue
 
 			# Do not change args without updating deploy_notifications.py
@@ -76,7 +77,26 @@ class PreBuildValidations:
 				expected,
 			)
 
+	def _get_app_version(self, app: str) -> Optional[str]:
+		pm = self.pmf[app]
+		pyproject = pm["pyproject"] or {}
+		version = pyproject.get("project", {}).get("version")
 
-def get_app_version(app: str) -> str:
-	# TODO: Complete this
-	return "0.0.0"
+		if isinstance(version, str):
+			return version
+
+		init_path = Path(pm["repo_path"]) / app / "__init__.py"
+		if not init_path.is_file():
+			return None
+
+		with init_path.open("r", encoding="utf-8") as init:
+			for line in init:
+				if not (line.startswith("__version__ =") or line.startswith("VERSION =")):
+					continue
+
+				if version := line.split("=")[1].strip().strip("\"'"):
+					return version
+
+				break
+
+		return None
