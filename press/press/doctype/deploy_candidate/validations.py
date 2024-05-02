@@ -51,4 +51,32 @@ class PreBuildValidations:
 			)
 
 	def _validate_frappe_dependencies(self):
-		pass
+		for app, pm in self.pmf.items():
+			if (pypr := pm["pyproject"]) is None:
+				continue
+
+			frappe_deps = pypr.get("tool", {}).get("bench", {}).get("frappe-dependencies")
+			if not frappe_deps:
+				continue
+
+			self._check_frappe_dependencies(app, frappe_deps)
+
+	def _check_frappe_dependencies(self, app: str, frappe_deps: dict[str, str]):
+		for dep_app, actual in frappe_deps.items():
+			expected = get_app_version(dep_app)
+			if sv.Version(expected) in sv.SimpleSpec(actual):
+				continue
+
+			# Do not change args without updating deploy_notifications.py
+			raise Exception(
+				"Incompatible app version found",
+				app,
+				dep_app,
+				actual,
+				expected,
+			)
+
+
+def get_app_version(app: str) -> str:
+	# TODO: Complete this
+	return "0.0.0"

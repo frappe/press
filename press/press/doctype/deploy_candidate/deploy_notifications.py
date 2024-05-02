@@ -113,7 +113,11 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 
 	# Node version is incompatible (from `PreBuildValidations`)
 	elif "Incompatible Node version found" in tb:
-		update_with_incompatible_node_prebuild(details, dc, exc)
+		update_with_incompatible_node_prebuild(details, exc)
+
+	# App version is incompatible (from `PreBuildValidations`)
+	elif "Incompatible app version found" in tb:
+		update_with_incompatible_app_prebuild(details, exc)
 
 	return details
 
@@ -233,7 +237,6 @@ def update_with_incompatible_node(
 
 def update_with_incompatible_node_prebuild(
 	details: "Details",
-	dc: "DeployCandidate",
 	exc: "BaseException",
 ) -> None:
 	if len(exc.args) < 5:
@@ -241,21 +244,46 @@ def update_with_incompatible_node_prebuild(
 
 	_, app, actual, expected, package_name = exc.args
 
-	version_str = f'Expected version is "{expected}". Bench version is "{actual}"'
+	package_name_str = ""
 	if isinstance(package_name, str):
-		version_str = f'Expected version for package {package_name} in {app} is "{expected}". Bench version is "{actual}"'
+		package_name_str = f"Version requirement comes from package <b>{package_name}</b>"
 
 	details["is_actionable"] = True
-	details["title"] = "Incompatible Node version"
+	details["title"] = "Validation Failed: Incompatible Node version"
 	message = f"""
-	<p>Validation of <b>{app}</b> failed due to incompatible Node versions. {version_str}
+	<p><b>{app}</b> requires Node version <b>{expected}</b>, found version is <b>{actual}</b>.
+	{package_name_str}
 
-	Please set the correct Node Version on your Bench.</p>
+	Please set the correct Node version on your Bench.</p>
 
 	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def update_with_incompatible_app_prebuild(
+	details: "Details",
+	exc: "BaseException",
+) -> None:
+	if len(exc.args) < 5:
+		return
+
+	_, app, dep_app, actual, expected = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Incompatible  version"
+
+	message = f"""
+	<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
+	Found version is <b>{actual}</b></p>
+
+	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
+	""".strip()
+	details["message"] = dedent(message)
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
