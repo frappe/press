@@ -908,7 +908,11 @@ class VirtualMachine(Document):
 				},
 			)
 			frappe.enqueue_doc(
-				machine.doctype, machine.name, method="bulk_sync_aws_cluster", queue="sync"
+				machine.doctype,
+				machine.name,
+				method="bulk_sync_aws_cluster",
+				queue="sync",
+				job_id=f"bulk_sync_aws:{machine.cluster}",
 			)
 
 	def bulk_sync_aws_cluster(self):
