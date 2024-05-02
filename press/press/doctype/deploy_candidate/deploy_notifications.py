@@ -110,6 +110,11 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	# Release Group Node version is incompatible with required version
 	elif 'engine "node" is incompatible with this module' in dc.build_output:
 		update_with_incompatible_node(details, dc)
+
+	# Node version is incompatible (from `PreBuildValidations`)
+	elif "Incompatible Node version found" in tb:
+		update_with_incompatible_node_prebuild(details, dc, exc)
+
 	return details
 
 
@@ -215,6 +220,36 @@ def update_with_incompatible_node(
 	<p>{details['message']}</p>
 
 	<p><b>{app}</b> installation failed due to incompatible Node versions. {version}
+	Please set the correct Node Version on your Bench.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	""".strip()
+	details["message"] = dedent(message)
+	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def update_with_incompatible_node_prebuild(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+) -> None:
+	if len(exc.args) < 5:
+		return
+
+	_, app, actual, expected, package_name = exc.args
+
+	version_str = f'Expected version is "{expected}". Bench version is "{actual}"'
+	if isinstance(package_name, str):
+		version_str = f'Expected version for package {package_name} in {app} is "{expected}". Bench version is "{actual}"'
+
+	details["is_actionable"] = True
+	details["title"] = "Incompatible Node version"
+	message = f"""
+	<p>Validation of <b>{app}</b> failed due to incompatible Node versions. {version_str}
+
 	Please set the correct Node Version on your Bench.</p>
 
 	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
