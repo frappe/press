@@ -62,6 +62,8 @@ class BenchUpdate(Document):
 			return
 
 		for site in self.sites:
+			if site.server != server:
+				continue
 
 			# Don't try to update if the site is already on another bench
 			# It already could be on newest bench and Site Update couldn't be scheduled
@@ -75,7 +77,7 @@ class BenchUpdate(Document):
 				frappe.db.commit()
 				continue
 
-			if site.server == server and site.status == "Pending" and not site.site_update:
+			if site.status == "Pending" and not site.site_update:
 				try:
 					if frappe.get_all(
 						"Site Update",
