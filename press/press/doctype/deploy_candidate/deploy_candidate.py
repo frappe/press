@@ -32,9 +32,11 @@ from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
 from press.press.doctype.deploy_candidate.utils import (
+	load_pyproject,
 	get_package_manager_files,
 	PackageManagerFiles,
 )
+from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
@@ -772,7 +774,13 @@ class DeployCandidate(Document):
 	def _prepare_build_context(self, no_push: bool):
 		repo_path_map = self._clone_repos()
 		pmf = get_package_manager_files(repo_path_map)
-		self._validate_cloned_repos(pmf)
+
+		"""
+		Errors thrown here will be caught by a function up the
+		stack, since they should be from expected invalids, they
+		should also be user addressable.
+		"""
+		PreBuildValidations(self, pmf).validate()
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml
@@ -873,20 +881,6 @@ class DeployCandidate(Document):
 		step.output = release.output
 		step.status = "Success"
 		return release.clone_directory
-
-	def _validate_cloned_repos(self, pmf: PackageManagerFiles):
-		self._validate_syntax()
-		self._validate_node_requirement()
-		self._validate_frappe_dependencies()
-
-	def _validate_syntax(self):
-		pass
-
-	def _validate_node_requirement(self):
-		pass
-
-	def _validate_frappe_dependencies(self):
-		pass
 
 	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()
@@ -1107,6 +1101,14 @@ class DeployCandidate(Document):
 			return app_name
 
 		return app
+
+	def _get_app_pyproject(self, app):
+		apps_path = os.path.join(self.build_directory, "apps")
+		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
+		if not os.path.exists(pyproject_path):
+			return {}
+
+		return load_pyproject(app, pyproject_path)
 
 	def _run_docker_build(self, no_cache: bool = False):
 		command = self._get_build_command(no_cache)

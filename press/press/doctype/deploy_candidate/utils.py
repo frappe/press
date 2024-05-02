@@ -6,6 +6,7 @@ from typing import Any, Optional, TypedDict
 PackageManagers = TypedDict(
 	"PackageManagers",
 	{
+		"repo_path": str,
 		"pyproject": Optional[dict[str, Any]],
 		"packagejsons": list[dict[str, Any]],
 	},
@@ -29,6 +30,7 @@ def get_package_manager_files_from_repo(app: str, repo_path: str):
 	)
 
 	pm: PackageManagers = {
+		"repo_path": repo_path,
 		"pyproject": None,
 		"packagejsons": [],
 	}
