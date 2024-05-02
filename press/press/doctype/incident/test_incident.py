@@ -82,10 +82,6 @@ class MockTwilioClient:
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
 @patch("press.press.doctype.press_settings.press_settings.Client", new=MockTwilioClient)
 @patch("press.press.doctype.incident.incident.enqueue_doc", new=foreground_enqueue_doc)
-@patch(
-	"press.press.doctype.alertmanager_webhook_log.alertmanager_webhook_log.react",
-	new=Mock(),
-)
 class TestIncident(FrappeTestCase):
 	def setUp(self):
 		self.from_ = "+911234567892"
