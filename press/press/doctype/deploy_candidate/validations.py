@@ -35,7 +35,7 @@ class PreBuildValidations:
 
 	def _validate_node_version(self, app: str, actual: str, pm: PackageManagers):
 		for pckj in pm["packagejsons"]:
-			expected = pckj.get("engine", {}).get("node")
+			expected = pckj.get("engines", {}).get("node")
 			if expected is None or sv.Version(actual) in sv.SimpleSpec(expected):
 				continue
 
