@@ -143,7 +143,11 @@ export default {
 					filters: app => {
 						return { parent: app.doc.name, parenttype: 'Marketplace App' };
 					},
-					fields: ['name', 'version', 'source'],
+					fields: [
+						'source.repository_owner as repository_owner',
+						'source.repository as repository',
+						'source.branch as branch'
+					],
 					columns: [
 						{
 							label: 'Version',
@@ -157,10 +161,9 @@ export default {
 						},
 						{
 							label: 'Repository',
-							fieldname: 'repository_owner',
 							width: 0.5,
 							format: (value, row) => {
-								return `${value}/${row.repository}`;
+								return `${row.repository_owner}/${row.repository}`;
 							}
 						},
 						{

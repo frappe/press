@@ -42,6 +42,8 @@ class AppSource(Document):
 		versions: DF.Table[AppSourceVersion]
 	# end: auto-generated types
 
+	dashboard_fields = ["repository_owner", "repository", "branch"]
+
 	def autoname(self):
 		series = f"SRC-{self.app}-.###"
 		self.name = make_autoname(series)
