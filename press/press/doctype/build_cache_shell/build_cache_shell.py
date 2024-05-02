@@ -33,7 +33,7 @@ class BuildCacheShell(Document):
 	def run_command(self):
 		frappe.only_for("System Manager")
 		result = self._run_command()
-		self.output = result.get("output")
+		self.output = result.get("output", "# no-output")
 		self.cwd = result.get("cwd")
 		self.image_tag = result.get("image_tag")
 		self.returncode = result.get("returncode")
