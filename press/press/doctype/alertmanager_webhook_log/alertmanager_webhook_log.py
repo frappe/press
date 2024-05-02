@@ -139,7 +139,7 @@ class AlertmanagerWebhookLog(Document):
 
 	def react(self):
 		for instance in self.get_instances_from_alerts_payload(self.payload):
-			self.reaction_jobs.append(self.react_for_instance(instance))
+			self.append("reaction_jobs", self.react_for_instance(instance))
 		self.save()
 
 	def get_instances_from_alerts_payload(self, payload: str) -> [str]:
