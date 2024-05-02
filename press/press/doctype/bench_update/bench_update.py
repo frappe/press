@@ -58,6 +58,8 @@ class BenchUpdate(Document):
 		return candidate.name
 
 	def update_sites_on_server(self, bench, server):
+		# This method gets called multiple times concurrently when a new candidate is deployed
+		# Avoid saving the doc to avoid TimestampMismatchError
 		if frappe.get_value("Bench", bench, "status") != "Active":
 			return
 
@@ -72,8 +74,7 @@ class BenchUpdate(Document):
 			if row.source_candidate != frappe.get_value(
 				"Bench", current_site_bench, "candidate"
 			):
-				row.status = "Success"
-				self.save(ignore_permissions=True)
+				frappe.db.set_value("Bench Site Update", row.name, "status", "Success")
 				frappe.db.commit()
 				continue
 
@@ -89,14 +90,14 @@ class BenchUpdate(Document):
 					site_update = frappe.get_doc("Site", row.site).schedule_update(
 						skip_failing_patches=row.skip_failing_patches, skip_backups=row.skip_backups
 					)
-					row.site_update = site_update
-					self.save(ignore_permissions=True)
+					frappe.db.set_value("Bench Site Update", row.name, "site_update", site_update)
 					frappe.db.commit()
 				except Exception as e:
+					# Rollback the failed attempt and set status to Failure
+					# So, we don't try again
 					log_error("Bench Update: Failed to create Site Update", exception=e)
 					frappe.db.rollback()
-					row.status = "Failure"
-					self.save(ignore_permissions=True)
+					frappe.db.set_value("Bench Site Update", row.name, "status", "Failure")
 					traceback = frappe.get_traceback(with_context=True)
 					comment = f"Failed to schedule update for {row.site} <br><br><pre><code>{traceback}</pre></code>"
 					self.add_comment(text=comment)
