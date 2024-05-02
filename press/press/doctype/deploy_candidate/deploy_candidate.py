@@ -14,7 +14,7 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, List, Literal, Optional, Tuple, Generator
 
 import docker
 import frappe
@@ -31,6 +31,10 @@ from press.press.doctype.app_release.app_release import (
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
+from press.press.doctype.deploy_candidate.utils import (
+	get_package_manager_files,
+	PackageManagerFiles,
+)
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
@@ -39,7 +43,6 @@ from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
 
 if typing.TYPE_CHECKING:
-	from typing import Generator
 
 	from press.press.doctype.agent_job.agent_job import AgentJob
 	from press.press.doctype.app_release.app_release import AppRelease
@@ -207,7 +210,7 @@ class DeployCandidate(Document):
 		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
-		if not self.validate_pre_build():
+		if not self.validate_status():
 			return
 
 		self.status = "Pending"
@@ -245,12 +248,15 @@ class DeployCandidate(Document):
 
 		self.is_docker_remote_builder_used = True
 
-	def validate_pre_build(self):
-		if self.status == "Running" and self.is_docker_remote_builder_used:
-			server = self._get_docker_remote_builder_server()
-			frappe.msgprint(f"Build is running on remote server <b>{server}<b/>")
-			return False
-		return True
+	def validate_status(self):
+		if self.status in ["Draft", "Success", "Failure"]:
+			return True
+
+		frappe.msgprint(
+			f"Build is in <b>{self.status}</b> state. "
+			"Please wait for build to succeed or fail before retrying."
+		)
+		return False
 
 	@frappe.whitelist()
 	def generate_build_context(self):
@@ -764,15 +770,16 @@ class DeployCandidate(Document):
 			app.pullable_release = release_pair["new"]["name"]
 
 	def _prepare_build_context(self, no_push: bool):
-		self._clone_repos()
-		self._validate_cloned_repos()
+		repo_path_map = self._clone_repos()
+		pmf = get_package_manager_files(repo_path_map)
+		self._validate_cloned_repos(pmf)
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml
 		file, _update_packages() needs to run after the repos
 		have been cloned.
 		"""
-		self._update_packages()
+		self._update_packages(pmf)
 		self.save(ignore_version=True)
 
 		# Set props used when generating the Dockerfile
@@ -867,7 +874,7 @@ class DeployCandidate(Document):
 		step.status = "Success"
 		return release.clone_directory
 
-	def _validate_cloned_repos(self):
+	def _validate_cloned_repos(self, pmf: PackageManagerFiles):
 		self._validate_syntax()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
@@ -881,7 +888,7 @@ class DeployCandidate(Document):
 	def _validate_frappe_dependencies(self):
 		pass
 
-	def _update_packages(self):
+	def _update_packages(self, pmf: PackageManagerFiles):
 		existing_apt_packages = set()
 		for pkgs in self.packages:
 			if pkgs.package_manager != "apt":
@@ -905,7 +912,8 @@ class DeployCandidate(Document):
 		For each app, these are grouped together into a single package row.
 		"""
 		for app in self.apps:
-			deps = self._get_app_pyproject(app.app).get("deploy", {}).get("dependencies", {})
+			pyproject = pmf[app.app]["pyproject"] or {}
+			deps = pyproject.get("deploy", {}).get("dependencies", {})
 			pkgs = deps.get("apt", {}).get("packages", [])
 
 			app_packages = []
@@ -1099,24 +1107,6 @@ class DeployCandidate(Document):
 			return app_name
 
 		return app
-
-	def _get_app_pyproject(self, app):
-		apps_path = os.path.join(self.build_directory, "apps")
-		pyproject_path = os.path.join(apps_path, app, "pyproject.toml")
-		if not os.path.exists(pyproject_path):
-			return {}
-
-		try:
-			from tomli import TOMLDecodeError, load
-		except ImportError:
-			from tomllib import TOMLDecodeError, load
-
-		with open(pyproject_path, "rb") as f:
-			try:
-				return load(f)
-			except TOMLDecodeError:
-				# Do not edit without updating deploy_notifications.py
-				raise Exception("App has invalid pyproject.toml file", app) from None
 
 	def _run_docker_build(self, no_cache: bool = False):
 		command = self._get_build_command(no_cache)

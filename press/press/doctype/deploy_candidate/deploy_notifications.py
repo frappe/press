@@ -103,6 +103,10 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "App has invalid pyproject.toml file" in tb:
 		update_with_invalid_pyproject_error(details, dc, exc)
 
+	# Package JSON file could not be parsed by json.load
+	elif "App has invalid package.json file" in tb:
+		update_with_invalid_package_json_error(details, dc, exc)
+
 	# Release Group Node version is incompatible with required version
 	elif 'engine "node" is incompatible with this module' in dc.build_output:
 		update_with_incompatible_node(details, dc)
@@ -130,6 +134,33 @@ def update_with_invalid_pyproject_error(
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+
+
+def update_with_invalid_package_json_error(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+	if len(exc.args) <= 1 or not (app := exc.args[1]):
+		return
+
+	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
+	app_name = build_step.step
+
+	loc_str = ""
+	if len(exc.args) >= 2 and isinstance(exc.args[2], str):
+		loc_str = f"<p>File was found at path <b>{exc.args[2]}</b>.</p>"
+
+	details["is_actionable"] = True
+	details["title"] = f"{app_name} has an invalid package.json file"
+	message = f"""
+	<p>The <b>package.json</b> file in the <b>{app_name}</b> repository could not be
+	decoded by <code>json.load</code>.</p>
+	{loc_str}
+
+	<p>To rectify this issue, please fix the <b>pyproject.json</b> file.</p>
+	""".strip()
+	details["message"] = dedent(message)
 
 
 def update_with_github_token_error(
