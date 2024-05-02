@@ -68,7 +68,7 @@ RUN --mount=type=cache,target=/var/cache/apt curl -fsSL https://packages.redis.i
   && rm -rf /var/lib/apt/lists/* `#stage-pre-redis`
 
 # Install Python from DeadSnakes PPA
-ENV {{ doc.get_dependency_version("PYTHON_VERSION") }}
+ENV {{ doc.get_dependency_version("python", True) }}
 RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/ppa \
   && apt-get update \
   && apt-get install --yes --no-install-suggests --no-install-recommends \
@@ -81,18 +81,18 @@ RUN --mount=type=cache,target=/var/cache/apt add-apt-repository ppa:deadsnakes/p
 
 
 # Install wkhtmltopdf
-ENV {{ doc.get_dependency_version("WKHTMLTOPDF_VERSION") }}
-{% if doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.6' %}
+ENV {{ doc.get_dependency_version("wkhtmltopdf", True) }}
+{% if doc.get_dependency_version("wkhtmltopdf") == '0.12.6' %}
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb \
   && rm wkhtmltox_0.12.6-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
-{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.5' %}
+{% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.5' %}
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
   && dpkg -i wkhtmltox_0.12.5-1.focal_amd64.deb \
   && rm wkhtmltox_0.12.5-1.focal_amd64.deb \
   `#stage-pre-wkhtmltopdf`
-{% elif doc.get_dependency_version("WKHTMLTOPDF_VERSION").split(" ")[1] == '0.12.4' %}
+{% elif doc.get_dependency_version("wkhtmltopdf") == '0.12.4' %}
 RUN wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
   && tar -xvf wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
   && mv wkhtmltox/bin/wkhtmlto* /usr/local/bin/ \
@@ -161,8 +161,8 @@ WORKDIR /home/frappe
 
 # Install Node using NVM
 ENV NVM_DIR /home/frappe/.nvm
-ENV {{ doc.get_dependency_version("NVM_VERSION") }}
-ENV {{ doc.get_dependency_version("NODE_VERSION") }}
+ENV {{ doc.get_dependency_version("nvm", True) }}
+ENV {{ doc.get_dependency_version("node", True) }}
 
 RUN wget https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh \
   && bash install.sh \
@@ -184,7 +184,7 @@ RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 npm install 
 ENV PATH "$PATH:/home/frappe/.local/bin"
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python${PYTHON_VERSION} get-pip.py `#stage-pre-pip`
-ENV {{ doc.get_dependency_version("BENCH_VERSION") }}
+ENV {{ doc.get_dependency_version("bench", True) }}
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install --upgrade frappe-bench==${BENCH_VERSION} `#stage-bench-bench`
 
 RUN --mount=type=cache,target=/home/frappe/.cache,uid=1000,gid=1000 python${PYTHON_VERSION} -m pip install Jinja2~=3.0.3

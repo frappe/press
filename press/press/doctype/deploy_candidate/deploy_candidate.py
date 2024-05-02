@@ -1331,9 +1331,16 @@ class DeployCandidate(Document):
 				docname=self.name,
 			)
 
-	def get_dependency_version(self, dependency):
+	def get_dependency_version(self, dependency: str, as_env: bool = False):
+		if dependency.islower():
+			dependency = dependency.upper() + "_VERSION"
+
 		version = find(self.dependencies, lambda x: x.dependency == dependency).version
-		return f"{dependency} {version}"
+
+		if as_env:
+			return f"{dependency} {version}"
+
+		return version
 
 	def get_pull_update_dict(self) -> dict[str, AppReleasePair]:
 		"""
