@@ -1174,7 +1174,7 @@ class Server(BaseServer):
 			pluck="name",
 		)
 		for bench_name in benches:
-			bench = frappe.get_doc("Bench", bench_name, for_update=True)
+			bench = frappe.get_doc("Bench", bench_name)
 			bench_workloads[bench] = bench.workload
 		return bench_workloads
 
@@ -1201,6 +1201,7 @@ class Server(BaseServer):
 	def _auto_scale_workers_new(self, commit):
 		for bench in self.bench_workloads.keys():
 			try:
+				bench.reload()
 				bench.allocate_workers(
 					self.workload,
 					self.max_gunicorn_workers,
