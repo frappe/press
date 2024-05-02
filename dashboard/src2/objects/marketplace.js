@@ -185,7 +185,7 @@ export default {
 										GenericDialog,
 										{
 											options: {
-												title: `Add version support for ${app.doc.name}`,
+												title: `Add version support for ${app.doc.title}`,
 												size: '2xl'
 											}
 										},
