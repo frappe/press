@@ -659,7 +659,7 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
