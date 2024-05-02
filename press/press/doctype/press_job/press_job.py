@@ -27,6 +27,21 @@ class PressJob(Document):
 		virtual_machine: DF.Link | None
 	# end: auto-generated types
 
+	def before_insert(self):
+		frappe.db.get_value(self.server_type, self.server, "status", for_update=True)
+		if existing_jobs := frappe.db.get_all(
+			self.doctype,
+			{
+				"status": ("in", ["Pending", "Running"]),
+				"server_type": self.server_type,
+				"server": self.server,
+			},
+			["job_type", "status"],
+		):
+			frappe.throw(
+				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
+			)
+
 	def after_insert(self):
 		self.create_press_job_steps()
 		self.execute()

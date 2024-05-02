@@ -77,6 +77,7 @@ class MockTwilioClient:
 	new=foreground_enqueue_doc,
 )
 @patch.object(AlertmanagerWebhookLog, "send_telegram_notification", new=Mock())
+@patch.object(AlertmanagerWebhookLog, "react", new=Mock())
 @patch("press.press.doctype.incident.incident.frappe.db.commit", new=Mock())
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
 @patch("press.press.doctype.site.site._change_dns_record", new=Mock())
@@ -367,7 +368,6 @@ class TestIncident(FrappeTestCase):
 		resolve_incidents()
 		mock_calls_create.assert_not_called()
 		incident.reload()  # datetime conversion
-		# breakpoint()
 		incident.db_set(
 			"modified",
 			incident.modified - timedelta(seconds=CALL_REPEAT_INTERVAL_NIGHT + 10),

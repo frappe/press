@@ -529,20 +529,6 @@ class BaseServer(Document, TagHelpers):
 		self.run_press_job("Create Server Snapshot")
 
 	def run_press_job(self, job_name, arguments=None):
-		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
-		if existing_jobs := frappe.db.get_all(
-			"Press Job",
-			{
-				"status": ("in", ["Pending", "Running"]),
-				"server_type": self.doctype,
-				"server": self.name,
-			},
-			["job_type", "status"],
-		):
-			frappe.throw(
-				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
-			)
-
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(
@@ -742,6 +728,55 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
+
+	@property
+	def space_available_in_6_hours(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""predict_linear(
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*3600
+			)""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if not response:
+			return -20 * 1024 * 1024 * 1024
+		return response[0]["values"][-1]
+
+	@property
+	def disk_capacity(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if response:
+			return response[0]["values"][-1]
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+
+	@property
+	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
+		return max(
+			50,
+			min(
+				abs(self.disk_capacity - self.space_available_in_6_hours * 5)
+				/ 4
+				/ 1024
+				/ 1024
+				/ 1024,
+				250,
+			),
+		)
+
+	def calculated_increase_disk_size(self):
+		self.increase_disk_size(self.size_to_increase_by_for_20_percent_available)
 
 
 class Server(BaseServer):

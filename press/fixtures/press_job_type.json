@@ -310,5 +310,29 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-05-02 14:10:42.413476",
+  "name": "Increase Disk Size",
+  "steps": [
+   {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\nserver.calculated_increase_disk_size()",
+    "step_name": "Increase Disk Size",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Increase Disk Size",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "step_name": "Wait for partition to resize",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]

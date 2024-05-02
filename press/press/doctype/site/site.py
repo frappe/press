@@ -530,7 +530,7 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def fetch_free_space(self, server: str):
+	def fetch_free_space(self, server: str) -> int:
 		response = prometheus_query(
 			f"""node_filesystem_avail_bytes{{instance="{server}", job="node", mountpoint="/"}}""",
 			lambda x: x["mountpoint"],
