@@ -248,6 +248,35 @@ Password: ${r.message.password}
 		);
 
 		frm.add_custom_button(
+			__('Update DNS Record'),
+			() => {
+				const dialog = new frappe.ui.Dialog({
+					title: __('Update DNS Record'),
+					fields: [
+						{
+							fieldtype: 'Data',
+							fieldname: 'value',
+							label: 'Value',
+							description: "Site's CNAME record will point to this value",
+							reqd: 1,
+						},
+					],
+					primary_action(args) {
+						frm
+							.call('update_dns_record', {
+								value: args.value,
+							})
+							.then(() => {
+								dialog.hide();
+							});
+					},
+				});
+				dialog.show();
+			},
+			__('Dangerous Actions'),
+		);
+
+		frm.add_custom_button(
 			__('Move to Group'),
 			() => {
 				const dialog = new frappe.ui.Dialog({

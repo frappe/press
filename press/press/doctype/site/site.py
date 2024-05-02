@@ -798,6 +798,12 @@ class Site(Document, TagHelpers):
 	def create_dns_record(self):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
 
+	@frappe.whitelist()
+	def update_dns_record(self, value):
+		domain = frappe.get_doc("Root Domain", self.domain)
+		record_name = self._get_site_name(self.subdomain)
+		_change_dns_record("UPSERT", domain, value, record_name)
+
 	def get_config_value_for_key(self, key: str) -> Any:
 		"""
 		Get site config value configuration child table for given key.
