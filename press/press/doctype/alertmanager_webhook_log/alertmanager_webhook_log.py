@@ -115,7 +115,7 @@ class AlertmanagerWebhookLog(Document):
 				self.name,
 				"react",
 				enqueue_after_commit=True,
-				job_id=f"react:{self.alert}",
+				job_id=f"react:{self.alert}:{self.server}",
 				deduplicate=True,
 			)
 
