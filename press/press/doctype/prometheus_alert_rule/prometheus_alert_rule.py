@@ -104,7 +104,7 @@ class PrometheusAlertRule(Document):
 		return self.run_press_job(self.press_job_type, instance_type, instance)
 
 	def run_press_job(
-		self, job_name: str, server_type: str, server_name: str, arguments: None
+		self, job_name: str, server_type: str, server_name: str, arguments=None
 	):
 		if arguments is None:
 			arguments = {}
