@@ -19,6 +19,7 @@ import { tagTab } from './common/tags';
 import { getDocResource } from '../utils/resource';
 import { logsTab } from './tabs/site/logs';
 import { trialDays } from '../utils/site';
+import dayjs from '../utils/dayjs';
 
 export default {
 	doctype: 'Site',
@@ -47,6 +48,7 @@ export default {
 		removeRedirect: 'unset_redirect',
 		setPrimaryDomain: 'set_host_name',
 		restoreSite: 'restore_site',
+		restoreSiteFromFiles: 'restore_site_from_files',
 		scheduleUpdate: 'schedule_update',
 		setPlan: 'set_plan',
 		updateConfig: 'update_config',
@@ -864,7 +866,11 @@ export default {
 						'public_url',
 						'private_url',
 						'config_file_url',
-						'site'
+						'site',
+						'remote_database_file',
+						'remote_public_file',
+						'remote_private_file',
+						'remote_config_file'
 					],
 					columns: [
 						{
@@ -956,33 +962,127 @@ export default {
 
 						return [
 							{
-								label: 'Download Database',
-								onClick() {
-									return downloadBackup(row, 'database');
-								}
+								group: 'Download',
+								items: [
+									{
+										label: 'Download Database',
+										onClick() {
+											return downloadBackup(row, 'database');
+										}
+									},
+									{
+										label: 'Download Public',
+										onClick() {
+											return downloadBackup(row, 'public');
+										},
+										condition: () => row.public_url
+									},
+									{
+										label: 'Download Private',
+										onClick() {
+											return downloadBackup(row, 'private');
+										},
+										condition: () => row.private_url
+									},
+									{
+										label: 'Download Config',
+										onClick() {
+											return downloadBackup(row, 'config');
+										},
+										condition: () => row.config_file_url
+									}
+								]
 							},
 							{
-								label: 'Download Public',
-								onClick() {
-									return downloadBackup(row, 'public');
-								},
-								condition: () => row.public_url
-							},
-							{
-								label: 'Download Private',
-								onClick() {
-									return downloadBackup(row, 'private');
-								},
-								condition: () => row.private_url
-							},
-							{
-								label: 'Download Config',
-								onClick() {
-									return downloadBackup(row, 'config');
-								},
-								condition: () => row.config_file_url
+								group: 'Restore',
+								condition: () => row.offsite,
+								items: [
+									{
+										label: 'Restore Backup',
+										onClick() {
+											confirmDialog({
+												title: 'Restore Backup',
+												message: `Are you sure you want to restore your site to this offsite backup from <b>${dayjs(
+													row.creation
+												).format('lll')}</b> ?`,
+												onSuccess({ hide }) {
+													toast.promise(
+														site.restoreSiteFromFiles.submit({
+															files: {
+																database: row.remote_database_file,
+																public: row.remote_public_file,
+																private: row.remote_private_file,
+																config: row.remote_config_file
+															}
+														}),
+														{
+															loading: 'Scheduling backup restore...',
+															success: restoreJobId => {
+																hide();
+																router.push({
+																	name: 'Site Job',
+																	params: {
+																		name: site.name,
+																		id: restoreJobId
+																	}
+																});
+																return 'Backup restore scheduled successfully.';
+															},
+															error: e => {
+																return e.messages.length
+																	? e.messages.join('\n')
+																	: e.message;
+															}
+														}
+													);
+												}
+											});
+										}
+									},
+									{
+										label: 'Restore Backup on another Site',
+										onClick() {
+											let SelectSiteForRestore = defineAsyncComponent(() =>
+												import('../components/site/SelectSiteForRestore.vue')
+											);
+											renderDialog(
+												h(SelectSiteForRestore, {
+													site: site.name,
+													onRestore(siteName) {
+														return toast.promise(
+															frappeRequest({
+																url: 'press.api.site.restore',
+																params: {
+																	name: siteName,
+																	files: {
+																		database: row.remote_database_file,
+																		public: row.remote_public_file,
+																		private: row.remote_private_file,
+																		config: row.remote_config_file
+																	}
+																}
+															})
+																.then(restoreJobId => {
+																	router.push({
+																		name: 'Site Job',
+																		params: { name: siteName, id: restoreJobId }
+																	});
+																	return 'Backup restore scheduled successfully.';
+																})
+																.catch(e => {
+																	return e.messages.length
+																		? e.messages.join('\n')
+																		: e.message;
+																})
+														);
+													}
+												})
+											);
+										}
+									}
+								]
 							}
-						];
+						].filter(d => (d.condition ? d.condition() : true));
 					},
 					primaryAction({ listResource: backups, documentResource: site }) {
 						return {

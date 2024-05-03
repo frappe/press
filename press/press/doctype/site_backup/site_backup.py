@@ -63,6 +63,10 @@ class SiteBackup(Document):
 		"with_files",
 		"offsite",
 		"files_availability",
+		"remote_database_file",
+		"remote_public_file",
+		"remote_private_file",
+		"remote_config_file",
 	]
 
 	def before_insert(self):
