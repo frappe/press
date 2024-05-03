@@ -675,7 +675,7 @@ def get_next_retry_at(job_retry_count):
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
-	if auto_retry_disabled(server):
+	if is_auto_retry_disabled(server):
 		return
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
@@ -694,7 +694,11 @@ def retry_undelivered_jobs(server):
 			job_doc = frappe.get_doc("Agent Job", job)
 			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
-			if not job_doc.next_retry_at or get_datetime(job_doc.next_retry_at) > nowtime:
+			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
+				job_doc.set_status_and_next_retry_at()
+				continue
+
+			if get_datetime(job_doc.next_retry_at) > nowtime:
 				continue
 
 			if job_doc.retry_count <= max_retry_count:
@@ -705,7 +709,13 @@ def retry_undelivered_jobs(server):
 				update_job_and_step_status(job)
 
 
-def auto_retry_disabled(server):
+def queued_jobs():
+	from frappe.utils.background_jobs import get_jobs
+
+	return get_jobs(site=frappe.local.site, queue="default", key="name")[frappe.local.site]
+
+
+def is_auto_retry_disabled(server):
 	"""Check if auto retry is disabled for the server"""
 	_auto_retry_disabled = False
 
