@@ -52,7 +52,8 @@ export default {
 			selectedFiles: {
 				database: null,
 				public: null,
-				private: null
+				private: null,
+				config: null
 			},
 			skipFailingPatches: false
 		};

@@ -1381,6 +1381,7 @@ def restore(name, files, skip_failing_patches=False):
 	site.remote_database_file = files["database"]
 	site.remote_public_file = files["public"]
 	site.remote_private_file = files["private"]
+	site.remote_config_file = files["config"]
 	site.save()
 	site.reload()
 	return site.restore_site(skip_failing_patches=skip_failing_patches)
