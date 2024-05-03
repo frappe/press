@@ -1422,7 +1422,8 @@ export default {
 						{
 							label: 'Manage Bench',
 							icon: 'tool',
-							condition: () => site.doc?.group,
+							condition: () =>
+								site.doc?.group && site.doc?.group_team === $team.name,
 							onClick: () => {
 								router.push(`/benches/${site.doc?.group}`);
 							}
