@@ -25,7 +25,7 @@
 				:options="
 					($resources.sites.data || []).map(site => {
 						return {
-							label: site.host_name,
+							label: site.host_name || site.name,
 							value: site.name
 						};
 					})
