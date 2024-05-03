@@ -4,6 +4,7 @@
 
 
 import json
+import shlex
 import typing
 from functools import cached_property
 from typing import List, Union
@@ -12,6 +13,7 @@ import boto3
 import frappe
 from frappe import _
 from frappe.core.utils import find
+from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
 
@@ -380,6 +382,15 @@ class BaseServer(Document, TagHelpers):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		try:
+			subprocess.check_output(
+				shlex.split(
+					f"ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{self.ip} -t rm /root/glass"
+				),
+				stderr=subprocess.STDOUT,
+			)
+		except subprocess.CalledProcessError as e:
+			log_error(f"Error removing glassfile: {e.output.decode()}")
+		try:
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
 		except Exception:
@@ -518,20 +529,6 @@ class BaseServer(Document, TagHelpers):
 		self.run_press_job("Create Server Snapshot")
 
 	def run_press_job(self, job_name, arguments=None):
-		frappe.db.get_value(self.doctype, self.name, "status", for_update=True)
-		if existing_jobs := frappe.db.get_all(
-			"Press Job",
-			{
-				"status": ("in", ["Pending", "Running"]),
-				"server_type": self.doctype,
-				"server": self.name,
-			},
-			["job_type", "status"],
-		):
-			frappe.throw(
-				f"A {existing_jobs[0].job_type} job is already {existing_jobs[0].status}. Please wait for the same."
-			)
-
 		if arguments is None:
 			arguments = {}
 		return frappe.get_doc(
@@ -592,6 +589,16 @@ class BaseServer(Document, TagHelpers):
 			**{"swap_size": swap_size},
 		)
 
+	def add_glass_file(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_add_glass_file")
+
+	def _add_glass_file(self):
+		try:
+			ansible = Ansible(playbook="glass_file.yml", server=self)
+			ansible.run()
+		except Exception:
+			log_error("Add Glass File Exception", server=self.as_dict())
+
 	def _increase_swap(self, swap_size=4):
 		"""Increase swap by size defined in playbook"""
 		from press.api.server import calculate_swap
@@ -614,9 +621,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def setup_mysqldump(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_setup_mysqldump", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_mysqldump")
 
 	def _setup_mysqldump(self):
 		try:
@@ -630,9 +635,7 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def set_swappiness(self):
-		frappe.enqueue_doc(
-			self.doctype, self.name, "_set_swappiness", queue="long", timeout=2400
-		)
+		frappe.enqueue_doc(self.doctype, self.name, "_set_swappiness")
 
 	def _set_swappiness(self):
 		try:
@@ -725,6 +728,57 @@ class BaseServer(Document, TagHelpers):
 			ansible.run()
 		except Exception:
 			log_error("Cloud Init Wait Exception", server=self.as_dict())
+
+	@property
+	def space_available_in_6_hours(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""predict_linear(
+node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*3600
+			)""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if not response:
+			return -20 * 1024 * 1024 * 1024
+		return response[0]["values"][-1]
+
+	@property
+	def disk_capacity(self):
+		from press.api.server import prometheus_query
+
+		response = prometheus_query(
+			f"""node_filesystem_size_bytes{{instance="{self.name}", job="node", mountpoint="/"}}""",
+			lambda x: x["mountpoint"],
+			"Asia/Kolkata",
+			120,
+			120,
+		)["datasets"]
+		if response:
+			return response[0]["values"][-1]
+		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
+
+	@property
+	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
+		return int(
+			max(
+				50,
+				min(
+					abs(self.disk_capacity - self.space_available_in_6_hours * 5)
+					/ 4
+					/ 1024
+					/ 1024
+					/ 1024,
+					250,
+				),
+			)
+		)
+
+	def calculated_increase_disk_size(self):
+		self.increase_disk_size(self.size_to_increase_by_for_20_percent_available)
 
 
 class Server(BaseServer):
@@ -1156,7 +1210,7 @@ class Server(BaseServer):
 			pluck="name",
 		)
 		for bench_name in benches:
-			bench = frappe.get_doc("Bench", bench_name, for_update=True)
+			bench = frappe.get_doc("Bench", bench_name)
 			bench_workloads[bench] = bench.workload
 		return bench_workloads
 
@@ -1183,6 +1237,7 @@ class Server(BaseServer):
 	def _auto_scale_workers_new(self, commit):
 		for bench in self.bench_workloads.keys():
 			try:
+				bench.reload()
 				bench.allocate_workers(
 					self.workload,
 					self.max_gunicorn_workers,

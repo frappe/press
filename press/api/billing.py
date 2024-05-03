@@ -214,7 +214,7 @@ def get_customer_details(team):
 def create_payment_intent_for_micro_debit(payment_method_name):
 	team = get_current_team(True)
 	stripe = get_stripe()
-	amount = 50 if team.currency == "USD" else 5000
+	amount = 100 if team.currency == "USD" else 10000
 
 	intent = stripe.PaymentIntent.create(
 		amount=amount,

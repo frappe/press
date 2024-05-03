@@ -28,6 +28,7 @@ from press.press.doctype.press_notification.press_notification import (
 from press.press.doctype.site_migration.site_migration import (
 	get_ongoing_migration,
 	process_site_migration_job_update,
+	job_matches_site_migration,
 )
 from press.utils import log_error
 from typing import Optional
@@ -428,9 +429,12 @@ def poll_pending_jobs_server(server):
 			# Update Steps' Status
 			update_steps(job.name, polled_job)
 			populate_output_cache(polled_job, job)
-			process_job_updates(job.name, polled_job)
+
+			# Some callbacks rely on step statuses, e.g. archive_site
+			# so update step status before callbacks are processed
 			if polled_job["status"] in ("Success", "Failure", "Undelivered"):
 				skip_pending_steps(job.name)
+			process_job_updates(job.name, polled_job)
 
 			frappe.db.commit()
 			publish_update(job.name)
@@ -632,9 +636,9 @@ def update_step(step_name, step):
 
 	output = None
 	traceback = None
-	if isinstance(output, dict):
-		traceback = output.get("traceback")
-		output = output.get("output")
+	if isinstance(step["data"], dict):
+		traceback = to_str(step["data"].get("traceback", ""))
+		output = to_str(step["data"].get("output", ""))
 
 	frappe.db.set_value(
 		"Agent Job Step",
@@ -671,7 +675,7 @@ def get_next_retry_at(job_retry_count):
 def retry_undelivered_jobs(server):
 	"""Retry undelivered jobs and update job status if max retry count is reached"""
 
-	if auto_retry_disabled(server):
+	if is_auto_retry_disabled(server):
 		return
 
 	job_types, max_retry_per_job_type = get_retryable_job_types_and_max_retry_count()
@@ -690,7 +694,11 @@ def retry_undelivered_jobs(server):
 			job_doc = frappe.get_doc("Agent Job", job)
 			max_retry_count = max_retry_per_job_type[job_doc.job_type] or 0
 
-			if not job_doc.next_retry_at or get_datetime(job_doc.next_retry_at) > nowtime:
+			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
+				job_doc.set_status_and_next_retry_at()
+				continue
+
+			if get_datetime(job_doc.next_retry_at) > nowtime:
 				continue
 
 			if job_doc.retry_count <= max_retry_count:
@@ -701,7 +709,13 @@ def retry_undelivered_jobs(server):
 				update_job_and_step_status(job)
 
 
-def auto_retry_disabled(server):
+def queued_jobs():
+	from frappe.utils.background_jobs import get_jobs
+
+	return get_jobs(site=frappe.local.site, queue="default", key="name")[frappe.local.site]
+
+
+def is_auto_retry_disabled(server):
 	"""Check if auto retry is disabled for the server"""
 	_auto_retry_disabled = False
 
@@ -851,7 +865,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 		)
 
 		site_migration = get_ongoing_migration(job.site)
-		if site_migration:
+		if site_migration and job_matches_site_migration(job, site_migration):
 			process_site_migration_job_update(job, site_migration)
 		elif job.job_type == "Add Upstream to Proxy":
 			process_new_server_job_update(job)
@@ -981,3 +995,18 @@ def on_doctype_update():
 	# We don't need modified index, it's harmful on constantly updating tables
 	frappe.db.sql_ddl("drop index if exists modified on `tabAgent Job`")
 	frappe.db.add_index("Agent Job", ["creation"])
+
+
+def to_str(data) -> str:
+	if isinstance(data, str):
+		return data
+
+	try:
+		return json.dumps(data, default=str)
+	except Exception:
+		pass
+
+	try:
+		return str(data)
+	except Exception:
+		return ""

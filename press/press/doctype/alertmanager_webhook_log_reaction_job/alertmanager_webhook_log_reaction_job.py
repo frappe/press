@@ -1,11 +1,11 @@
-# Copyright (c) 2021, Frappe and contributors
+# Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
 # import frappe
 from frappe.model.document import Document
 
 
-class MarketplaceAppVersion(Document):
+class AlertmanagerWebhookLogReactionJob(Document):
 	# begin: auto-generated types
 	# This code is auto-generated. Do not modify anything in this block.
 
@@ -17,8 +17,8 @@ class MarketplaceAppVersion(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
-		source: DF.Link
-		version: DF.Link
+		press_job: DF.Link | None
+		press_job_type: DF.Link | None
 	# end: auto-generated types
 
-	dashboard_fields = ["name", "version", "source"]
+	pass

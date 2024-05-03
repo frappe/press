@@ -25,7 +25,9 @@
   "preview_section",
   "alert_preview",
   "column_break_21",
-  "route_preview"
+  "route_preview",
+  "reaction_tab",
+  "press_job_type"
  ],
  "fields": [
   {
@@ -148,6 +150,17 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enabled"
+  },
+  {
+   "fieldname": "reaction_tab",
+   "fieldtype": "Tab Break",
+   "label": "Reaction"
+  },
+  {
+   "fieldname": "press_job_type",
+   "fieldtype": "Link",
+   "label": "Press Job Type",
+   "options": "Press Job Type"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -157,7 +170,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2024-01-31 13:35:32.987624",
+ "modified": "2024-04-30 14:16:22.276020",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",

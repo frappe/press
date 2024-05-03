@@ -586,7 +586,7 @@ export default {
 						{
 							label: 'Duration',
 							fieldname: 'duration',
-							width: '4rem',
+							width: '5rem',
 							format(value, row) {
 								if (row.job_id === 0 || !row.end) return;
 								return duration(value);
@@ -601,6 +601,7 @@ export default {
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
+							width: '7rem',
 							align: 'right'
 						}
 					]

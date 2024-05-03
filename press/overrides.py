@@ -88,15 +88,10 @@ def before_request():
 
 def cleanup_ansible_tmp_files():
 	if hasattr(constants, "DEFAULT_LOCAL_TMP"):
-		print("Cleaning up ansible tmp files", constants.DEFAULT_LOCAL_TMP)
 		cleanup_tmp_file(constants.DEFAULT_LOCAL_TMP)
 
 
 def after_job():
-	cleanup_ansible_tmp_files()
-
-
-def after_request():
 	cleanup_ansible_tmp_files()
 
 

@@ -857,7 +857,7 @@ class Agent:
 			result = self.post(f"benches/{site.bench}/sites/{site.name}/sid", data=data)
 		else:
 			result = self.get(f"benches/{site.bench}/sites/{site.name}/sid")
-		return result.get("sid")
+		return result and result.get("sid")
 
 	def get_site_info(self, site):
 		return self.get(f"benches/{site.bench}/sites/{site.name}/info")["data"]

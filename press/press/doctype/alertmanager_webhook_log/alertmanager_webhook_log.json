@@ -18,7 +18,9 @@
   "column_break_8",
   "common_labels",
   "section_break_10",
-  "payload"
+  "payload",
+  "reactions_tab",
+  "reaction_jobs"
  ],
  "fields": [
   {
@@ -117,12 +119,24 @@
    "label": "Alert",
    "options": "Prometheus Alert Rule",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "reactions_tab",
+   "fieldtype": "Tab Break",
+   "label": "Reactions"
+  },
+  {
+   "fieldname": "reaction_jobs",
+   "fieldtype": "Table",
+   "label": "Reaction Jobs",
+   "options": "Alertmanager Webhook Log Reaction Job"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-06-09 13:58:25.722766",
+ "modified": "2024-04-30 15:39:21.126637",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Alertmanager Webhook Log",
@@ -142,5 +156,6 @@
   }
  ],
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

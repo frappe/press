@@ -530,7 +530,7 @@ class Site(Document, TagHelpers):
 		db_size = frappe.get_doc("Remote File", self.remote_database_file).size
 		return 8 * db_size * 2  # double extracted size for binlog
 
-	def fetch_free_space(self, server: str):
+	def fetch_free_space(self, server: str) -> int:
 		response = prometheus_query(
 			f"""node_filesystem_avail_bytes{{instance="{server}", job="node", mountpoint="/"}}""",
 			lambda x: x["mountpoint"],
@@ -659,7 +659,7 @@ class Site(Document, TagHelpers):
 		self.save()
 		return job.name
 
-	@frappe.whitelist()
+	@dashboard_whitelist()
 	@site_action(["Active", "Broken"])
 	def restore_site_from_files(self, files, skip_failing_patches=False):
 		self.remote_database_file = files["database"]
@@ -797,6 +797,12 @@ class Site(Document, TagHelpers):
 	@frappe.whitelist()
 	def create_dns_record(self):
 		create_dns_record(doc=self, record_name=self._get_site_name(self.subdomain))
+
+	@frappe.whitelist()
+	def update_dns_record(self, value):
+		domain = frappe.get_doc("Root Domain", self.domain)
+		record_name = self._get_site_name(self.subdomain)
+		_change_dns_record("UPSERT", domain, value, record_name)
 
 	def get_config_value_for_key(self, key: str) -> Any:
 		"""
@@ -2207,6 +2213,8 @@ def process_new_site_job_update(job):
 		marketplace_app_hook(site=job.site, op="install")
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
+	elif "Delivery Failure" in (first, second):
+		updated_status = "Broken"
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -2251,9 +2259,14 @@ def process_archive_site_job_update(job):
 		"Archive Site": "Remove Site from Upstream",
 	}[job.job_type]
 
-	other_job = frappe.get_last_doc(
-		"Agent Job", filters={"job_type": other_job_type, "site": job.site}, for_update=True
-	)
+	try:
+		other_job = frappe.get_last_doc(
+			"Agent Job", filters={"job_type": other_job_type, "site": job.site}, for_update=True
+		)
+	except frappe.DoesNotExistError:
+		# Site is already renamed, the other job beat us to it
+		# Our work is done
+		return
 
 	first = get_remove_step_status(job)
 	second = get_remove_step_status(other_job)
@@ -2265,6 +2278,10 @@ def process_archive_site_job_update(job):
 	):
 		updated_status = "Archived"
 	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Delivery Failure" == first == second:
+		updated_status = "Active"
+	elif "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	else:
 		updated_status = "Pending"
@@ -2285,6 +2302,7 @@ def process_install_app_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2305,6 +2323,7 @@ def process_uninstall_app_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2328,15 +2347,19 @@ def process_restore_job_update(job, force=False):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
 	if force or updated_status != site_status:
 		if job.status == "Success":
-			apps = [line.split()[0] for line in job.output.splitlines() if line]
+			apps: list[str] = [line.split()[0] for line in job.output.splitlines() if line]
 			site = frappe.get_doc("Site", job.site)
 			site.apps = []
+			bench_apps = frappe.get_doc("Bench", site.bench).apps
 			for app in apps:
+				if not find(bench_apps, lambda x: x.app == app):
+					continue
 				site.append("apps", {"app": app})
 			site.save()
 		frappe.db.set_value("Site", job.site, "status", updated_status)
@@ -2348,6 +2371,7 @@ def process_reinstall_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2363,6 +2387,7 @@ def process_migrate_site_job_update(job):
 		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	if updated_status == "Active":
@@ -2397,11 +2422,17 @@ def process_rename_site_job_update(job):
 		"Rename Site on Upstream": "Rename Site",
 	}[job.job_type]
 
-	other_job = frappe.get_last_doc(
-		"Agent Job",
-		filters={"job_type": other_job_type, "site": job.site},
-		for_update=True,
-	)
+	try:
+		other_job = frappe.get_last_doc(
+			"Agent Job",
+			filters={"job_type": other_job_type, "site": job.site},
+			for_update=True,
+		)
+	except frappe.DoesNotExistError:
+		# Site is already renamed, he other job beat us to it
+		# Our work is done
+		return
+
 	first = get_rename_step_status(job)
 	second = get_rename_step_status(other_job)
 
@@ -2415,6 +2446,10 @@ def process_rename_site_job_update(job):
 		create_pooled_sites()
 
 	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Delivery Failure" == first == second:
+		updated_status = "Active"
+	elif "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
 		updated_status = "Updating"

@@ -80,28 +80,18 @@ class RootDomain(Document):
 		except Exception:
 			log_error("Route 53 Pagination Error", domain=self.name)
 
-	def delete_dns_records(self, records: List[str], proxy: str):
+	def delete_dns_records(self, records: List[str]):
 		try:
 			changes = []
 			for record in records:
-				changes.append(
-					{
-						"Action": "DELETE",
-						"ResourceRecordSet": {
-							"Name": record["name"],
-							"Type": "CNAME",
-							"TTL": record["ttl"],
-							"ResourceRecords": [{"Value": proxy}],
-						},
-					}
-				)
+				changes.append({"Action": "DELETE", "ResourceRecordSet": record})
 
 			self.boto3_client.change_resource_record_sets(
 				ChangeBatch={"Changes": changes}, HostedZoneId=self.hosted_zone
 			)
 
 		except Exception:
-			log_error("Route 53 Record Deletion Error", domain=self.name, proxy=proxy)
+			log_error("Route 53 Record Deletion Error", domain=self.name)
 
 	def get_sites_being_renamed(self):
 		# get sites renamed in Server but doc not renamed in press
@@ -120,7 +110,8 @@ class RootDomain(Document):
 		active_sites.extend(self.get_sites_being_renamed())
 		return active_sites
 
-	def remove_unused_cname_records(self, proxy: str):
+	def remove_unused_cname_records(self):
+		proxies = frappe.get_all("Proxy Server", {"status": "Active"}, pluck="name")
 		for page in self.get_dns_record_pages():
 			to_delete = []
 
@@ -128,18 +119,17 @@ class RootDomain(Document):
 			active = self.get_active_domains()
 
 			for record in page["ResourceRecordSets"]:
-				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] == proxy:
+				if record["Type"] == "CNAME" and record["ResourceRecords"][0]["Value"] in proxies:
 					domain = record["Name"].strip(".")
 					if domain not in active:
-						to_delete.append({"name": domain, "ttl": record["TTL"]})
+						record["Name"] = domain
+						to_delete.append(record)
 			if to_delete:
-				self.delete_dns_records(to_delete, proxy)
+				self.delete_dns_records(to_delete)
 
 
 def cleanup_cname_records():
 	domains = frappe.get_all("Root Domain", pluck="name")
-	proxies = frappe.get_all("Proxy Server", pluck="name")
-	for proxy in proxies:
-		for domain_name in domains:
-			domain = frappe.get_doc("Root Domain", domain_name)
-			domain.remove_unused_cname_records(proxy)
+	for domain_name in domains:
+		domain = frappe.get_doc("Root Domain", domain_name)
+		domain.remove_unused_cname_records()
