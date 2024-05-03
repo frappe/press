@@ -526,6 +526,7 @@ def process_update_site_recover_job_update(job):
 		"Running": "Running",
 		"Success": "Recovered",
 		"Failure": "Fatal",
+		"Delivery Failure": "Fatal",
 	}[job.status]
 	site_update = frappe.get_all(
 		"Site Update",

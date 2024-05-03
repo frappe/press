@@ -2213,6 +2213,8 @@ def process_new_site_job_update(job):
 		marketplace_app_hook(site=job.site, op="install")
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
+	elif "Delivery Failure" in (first, second):
+		updated_status = "Broken"
 	elif "Running" in (first, second):
 		updated_status = "Installing"
 	else:
@@ -2277,6 +2279,10 @@ def process_archive_site_job_update(job):
 		updated_status = "Archived"
 	elif "Failure" in (first, second):
 		updated_status = "Broken"
+	elif "Delivery Failure" == first == second:
+		updated_status = "Active"
+	elif "Delivery Failure" in (first, second):
+		updated_status = "Broken"
 	else:
 		updated_status = "Pending"
 
@@ -2296,6 +2302,7 @@ def process_install_app_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2316,6 +2323,7 @@ def process_uninstall_app_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Active",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2339,6 +2347,7 @@ def process_restore_job_update(job, force=False):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2362,6 +2371,7 @@ def process_reinstall_site_job_update(job):
 		"Running": "Installing",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	site_status = frappe.get_value("Site", job.site, "status")
@@ -2377,6 +2387,7 @@ def process_migrate_site_job_update(job):
 		"Running": "Updating",
 		"Success": "Active",
 		"Failure": "Broken",
+		"Delivery Failure": "Active",
 	}[job.status]
 
 	if updated_status == "Active":
@@ -2435,6 +2446,10 @@ def process_rename_site_job_update(job):
 		create_pooled_sites()
 
 	elif "Failure" in (first, second):
+		updated_status = "Broken"
+	elif "Delivery Failure" == first == second:
+		updated_status = "Active"
+	elif "Delivery Failure" in (first, second):
 		updated_status = "Broken"
 	elif "Running" in (first, second):
 		updated_status = "Updating"
