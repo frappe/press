@@ -26,6 +26,53 @@ from press.utils.billing import get_frappe_io_connection
 
 
 @frappe.whitelist()
+def get_install_app_options(marketplace_app: str):
+	"""Get options for installing a marketplace app"""
+
+	site_plan = frappe.db.get_value(
+		"Site Plan", {"private_benches": 0, "price_usd": 10}, "name"
+	)
+
+	clusters = frappe.db.get_all(
+		"Cluster",
+		filters={"public": 1},
+		fields=["name", "title", "image", "beta"],
+	)
+	for cluster in clusters:
+		latest_stable_version = frappe.get_all(
+			"Frappe Version", "max(name) as latest_version", pluck="latest_version"
+		)[0]
+		latest_public_group = frappe.db.get_value(
+			"Release Group",
+			filters={"public": 1, "version": latest_stable_version},
+		)
+		cluster["bench"] = frappe.db.get_value(
+			"Bench",
+			filters={
+				"cluster": cluster["name"],
+				"status": "Active",
+				"group": latest_public_group,
+			},
+		)
+		proxy_servers = frappe.db.get_all(
+			"Proxy Server",
+			{
+				"is_primary": 1,
+			},
+			["name", "cluster"],
+		)
+
+		cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
+
+	return {
+		"plans": get_plans_for_app(marketplace_app),
+		"site_plan": site_plan,
+		"clusters": clusters,
+		"domain": frappe.db.get_single_value("Press Settings", "domain"),
+	}
+
+
+@frappe.whitelist()
 def options_for_quick_install(marketplace_app: str):
 	app_name, title, frappe_approved = frappe.db.get_value(
 		"Marketplace App", marketplace_app, ["app", "title", "frappe_approved"]
