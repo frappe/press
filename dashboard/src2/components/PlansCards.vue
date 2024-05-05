@@ -56,6 +56,7 @@
 					<div v-for="feature in plan.features">
 						<div v-if="feature.value" class="flex space-x-2">
 							<component
+								v-if="feature.icon"
 								:is="_icon(feature.icon, 'mt-1 h-3 w-4 shrink-0 text-gray-900')"
 							/>
 							<span>{{ feature.value }} </span>
