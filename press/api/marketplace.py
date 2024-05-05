@@ -30,7 +30,7 @@ def get_install_app_options(marketplace_app: str):
 	"""Get options for installing a marketplace app"""
 
 	site_plan = frappe.db.get_value(
-		"Site Plan", {"private_benches": 0, "price_usd": 10}, "name"
+		"Site Plan", {"private_benches": 0, "price_usd": 10, "document_type": "Site"}
 	)
 
 	clusters = frappe.db.get_all(
