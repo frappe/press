@@ -53,6 +53,7 @@ def get_install_app_options(marketplace_app: str):
 				"status": "Active",
 				"group": latest_public_group,
 			},
+			order_by="creation desc",
 		)
 		proxy_servers = frappe.db.get_all(
 			"Proxy Server",
