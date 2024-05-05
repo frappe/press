@@ -152,7 +152,9 @@
 							class="checkbox"
 							type="checkbox"
 							v-model="agreedToRegionConsent"
-							:label="`I agree that the laws of the region selected by me (${this.cluster}) shall stand applicable to me and Frappe.`"
+							:label="`I agree that the laws of the region selected by me ${
+								this.cluster ? `(${this.cluster})` : ''
+							} shall stand applicable to me and Frappe.`"
 						/>
 						<ErrorMessage class="my-2" :message="$resources.newSite.error" />
 						<Button
