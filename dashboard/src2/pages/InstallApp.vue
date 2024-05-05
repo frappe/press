@@ -10,8 +10,14 @@
 			/>
 		</Header>
 
-		<div class="mx-auto mt-12 max-w-2xl px-5">
-			<div class="space-y-6">
+		<div class="m-12 mx-auto max-w-2xl px-5">
+			<div
+				v-if="$resources.installAppOptions.loading"
+				class="py-4 text-base text-gray-600"
+			>
+				Loading...
+			</div>
+			<div v-else class="space-y-6">
 				<div class="mb-12 flex">
 					<img
 						:src="appDoc.image"
@@ -38,12 +44,41 @@
 
 					<div>
 						<h2 class="text-base font-medium leading-6 text-gray-900">
+							Select Bench
+							<span
+								v-if="options.is_app_featured"
+								class="text-sm text-gray-500"
+							>
+								(Optional)
+							</span>
+						</h2>
+						<div class="mt-2 w-full space-y-2">
+							<FormControl
+								type="autocomplete"
+								:options="
+									options.private_groups.map(b => ({
+										label: b.title,
+										value: b.name
+									}))
+								"
+								v-model="selectedGroup"
+							/>
+						</div>
+					</div>
+
+					<div
+						v-if="
+							options.is_app_featured ||
+							(!options.is_app_featured && selectedGroup)
+						"
+					>
+						<h2 class="text-base font-medium leading-6 text-gray-900">
 							Select Region
 						</h2>
 						<div class="mt-2 w-full space-y-2">
 							<div class="grid grid-cols-2 gap-3">
 								<button
-									v-for="c in options.clusters"
+									v-for="c in regions"
 									:key="c.name"
 									@click="cluster = c.name"
 									:class="[
@@ -178,7 +213,7 @@ export default {
 			subdomain: '',
 			cluster: null,
 			selectedPlan: null,
-			selectedBench: null,
+			selectedGroup: null,
 			agreedToRegionConsent: false
 		};
 	},
@@ -192,7 +227,10 @@ export default {
 				},
 				initialData: {
 					domain: '',
-					plans: []
+					plans: [],
+					clusters: [],
+					is_app_featured: false,
+					private_groups: []
 				},
 				async onSuccess() {
 					this.cluster = await this.getClosestCluster();
@@ -222,7 +260,6 @@ export default {
 			return {
 				url: 'press.api.client.insert',
 				makeParams() {
-					console.log(this.options.clusters.find(c => c.name === this.cluster));
 					return {
 						doc: {
 							doctype: 'Site',
@@ -233,17 +270,22 @@ export default {
 								[this.app]: this.selectedPlan
 							},
 							cluster: this.cluster,
-							bench: this.options.clusters.find(c => c.name === this.cluster)
-								.bench,
-							subscription_plan: this.options.site_plan
+							bench: this.options.is_app_featured
+								? this.options.clusters.find(c => c.name === this.cluster).bench
+								: this.regions.find(r => r.name === this.cluster).bench,
+							group: this.selectedGroup?.value,
+							subscription_plan: this.options.site_plan,
+							domain: this.options.domain
 						}
 					};
 				},
 				validate() {
+					if (!this.selectedPlan) {
+						return 'Please select a plan';
+					}
 					if (!this.subdomain) {
 						return 'Please enter a subdomain';
 					}
-
 					if (!this.agreedToRegionConsent) {
 						return 'Please agree to the above consent to create site';
 					}
@@ -325,6 +367,15 @@ export default {
 					icon: 'check-circle'
 				}))
 			}));
+		},
+		regions() {
+			if (!this.selectedGroup) {
+				return this.options.clusters;
+			} else {
+				return this.options.private_groups.find(
+					g => g.name === this.selectedGroup.value
+				).clusters;
+			}
 		}
 	}
 };
