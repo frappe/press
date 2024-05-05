@@ -78,10 +78,18 @@ def get_install_app_options(marketplace_app: str):
 
 			cluster.proxy_server = find(proxy_servers, lambda x: x.cluster == cluster.name)
 
-	private_groups = frappe.db.get_list(
-		"Release Group",
-		["name", "title"],
-		{"enabled": 1, "team": get_current_team(), "public": 0},
+	ReleasGroup = frappe.qb.DocType("Release Group")
+	ReleasGroupApp = frappe.qb.DocType("Release Group App")
+	private_groups = (
+		frappe.qb.from_(ReleasGroup)
+		.left_join(ReleasGroupApp)
+		.on(ReleasGroup.name == ReleasGroupApp.parent)
+		.select(ReleasGroup.name, ReleasGroup.title)
+		.where(ReleasGroup.enabled == 1)
+		.where(ReleasGroup.team == get_current_team())
+		.where(ReleasGroup.public == 0)
+		.where(ReleasGroupApp.app == marketplace_app)
+		.run(as_dict=True)
 	)
 
 	for group in private_groups:
