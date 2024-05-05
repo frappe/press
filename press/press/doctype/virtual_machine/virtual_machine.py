@@ -913,6 +913,7 @@ class VirtualMachine(Document):
 				method="bulk_sync_aws_cluster",
 				queue="sync",
 				job_id=f"bulk_sync_aws:{machine.cluster}",
+				deduplicate=True,
 			)
 
 	def bulk_sync_aws_cluster(self):
