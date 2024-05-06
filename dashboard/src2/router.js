@@ -180,6 +180,12 @@ export let routes = [
 		component: () => import('./pages/Impersonate.vue'),
 		props: true
 	},
+  {
+    name: 'InstallApp',
+    path: '/install-app/:app',
+    component: () => import('./pages/InstallApp.vue'),
+    props: true
+  },
 	...generateRoutes(),
 	{
 		path: '/:pathMatch(.*)*',

@@ -3,7 +3,6 @@
 
 import frappe
 from frappe.model.document import Document
-
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import log_error
 
@@ -50,7 +49,7 @@ class BenchUpdate(Document):
 	def deploy(self):
 		rg: ReleaseGroup = frappe.get_doc("Release Group", self.group)
 		candidate = rg.create_deploy_candidate(self.apps)
-		candidate.deploy_to_production()
+		candidate.schedule_build_and_deploy()
 
 		self.status = "Running"
 		self.candidate = candidate.name

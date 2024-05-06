@@ -10,7 +10,6 @@ import frappe
 from frappe.core.utils import find, find_all
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import flt, sbool
-
 from press.api.github import branches
 from press.api.site import protected
 from press.press.doctype.agent_job.agent_job import job_detail
@@ -685,7 +684,7 @@ def deploy(name, apps):
 		frappe.throw("A deploy for this bench is already in progress")
 
 	candidate = rg.create_deploy_candidate(apps)
-	candidate.deploy_to_production()
+	candidate.schedule_build_and_deploy()
 
 	return candidate.name
 

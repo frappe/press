@@ -396,13 +396,16 @@ class BaseServer(Document, TagHelpers):
 		except Exception:
 			log_error("EC2 Volume Extend Exception", server=self.as_dict())
 
+	def enqueue_extend_ec2_volume(self):
+		frappe.enqueue_doc(self.doctype, self.name, "extend_ec2_volume")
+
 	@frappe.whitelist()
 	def increase_disk_size(self, increment=50):
 		if self.provider not in ("AWS EC2", "OCI"):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
-		self.extend_ec2_volume()
+		self.enqueue_extend_ec2_volume()
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
