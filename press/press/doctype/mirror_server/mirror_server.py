@@ -26,6 +26,7 @@ class MirrorServer(BaseServer):
 		hostname: DF.Data | None
 		ip: DF.Data | None
 		is_server_setup: DF.Check
+		mirror_sync_status: DF.Literal["Syncing", "Completed", "Broken"]
 		os: DF.Data | None
 		os_version: DF.Data | None
 		private_ip: DF.Data | None

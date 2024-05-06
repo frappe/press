@@ -17,8 +17,9 @@
   "ip",
   "column_break_mrkw",
   "private_ip",
-  "mirror_detail_section",
+  "mirror_info_section",
   "os",
+  "mirror_sync_status",
   "column_break_zjsf",
   "os_version",
   "agent_section",
@@ -136,11 +137,6 @@
    "label": "Root Public Key"
   },
   {
-   "fieldname": "mirror_detail_section",
-   "fieldtype": "Section Break",
-   "label": "Mirror Detail"
-  },
-  {
    "fieldname": "os",
    "fieldtype": "Data",
    "label": "OS"
@@ -158,11 +154,22 @@
    "fieldname": "ip",
    "fieldtype": "Data",
    "label": "Public IP"
+  },
+  {
+   "fieldname": "mirror_info_section",
+   "fieldtype": "Section Break",
+   "label": "Mirror Info"
+  },
+  {
+   "fieldname": "mirror_sync_status",
+   "fieldtype": "Select",
+   "label": "Mirror Sync Status",
+   "options": "Syncing\nCompleted\nBroken"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-06 08:55:55.391648",
+ "modified": "2024-05-06 12:23:43.249066",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mirror Server",

@@ -12,6 +12,16 @@
     package: apt-mirror
     state: present
 
+- name: Test for apt-mirror access via frappe user
+  shell: grep -c "apt-mirror" /etc/sudoers.d/frappe || true
+  register: apt_mirror_permissions
+
+- name: Update sudoers
+  lineinfile:
+    dest: /etc/sudoers.d/frappe
+    line: 'frappe ALL = (root) NOPASSWD: /usr/bin/apt-mirror'
+  when: apt_mirror_permissions.stdout == '0'
+
 - name: Backup Mirror List
   copy:
     src: /etc/apt/mirror.list
@@ -22,3 +32,11 @@
   template:
     src: mirror.list.j2
     dest: /etc/apt/mirror.list
+
+- name: Start mirroring
+  become: yes
+  become_user: frappe
+  shell: 'nohup apt-mirror > nohup.out 2>&1 &'
+  args:
+    chdir: /home/frappe
+    executable: /bin/bash
