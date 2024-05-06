@@ -1,5 +1,5 @@
 <template>
-	<div class="sticky top-0 z-10 shrink-0">
+	<div class="top-0 z-10 shrink-0">
 		<Header>
 			<FBreadcrumbs
 				:items="[
