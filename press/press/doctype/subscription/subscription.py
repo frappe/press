@@ -50,6 +50,7 @@ class Subscription(Document):
 		price_field = (
 			Plan.price_inr if frappe.local.team().currency == "INR" else Plan.price_usd
 		)
+		filters = list_args.get("filters", {})
 
 		query = (
 			frappe.qb.from_(Subscription)
@@ -66,12 +67,16 @@ class Subscription(Document):
 			)
 			.where(
 				(Subscription.document_type == "Marketplace App")
-				& (Subscription.document_name == list_args["filters"]["document_name"])
+				& (Subscription.document_name == filters["document_name"])
 				& (Subscription.site != "")
 				& (price_field > 0)
 			)
 			.limit(list_args["limit"])
 		)
+
+		if filters.get("enabled"):
+			enabled = 1 if filters["enabled"] == "Active" else 0
+			query = query.where(Subscription.enabled == enabled)
 
 		return query.run(as_dict=True)
 

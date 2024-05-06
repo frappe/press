@@ -514,6 +514,17 @@ export default {
 						};
 					},
 					fields: ['site', 'enabled', 'team'],
+					filterControls() {
+						return [
+							{
+								type: 'select',
+								label: 'Status',
+								class: 'w-24',
+								fieldname: 'enabled',
+								options: ['', 'Active', 'Disabled']
+							}
+						];
+					},
 					columns: [
 						{
 							label: 'Site',
