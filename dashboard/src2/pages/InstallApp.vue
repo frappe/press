@@ -31,7 +31,7 @@
 				</div>
 
 				<div class="space-y-12">
-					<div>
+					<div v-if="plans.length">
 						<div class="flex items-center justify-between">
 							<h2 class="text-base font-medium leading-6 text-gray-900">
 								Select Plan
@@ -42,7 +42,7 @@
 						</div>
 					</div>
 
-					<div>
+					<div v-if="options.private_groups.length">
 						<h2 class="text-base font-medium leading-6 text-gray-900">
 							Select Bench
 							<span
@@ -282,7 +282,7 @@ export default {
 					};
 				},
 				validate() {
-					if (!this.selectedPlan) {
+					if (!this.selectedPlan && this.plans.length > 0) {
 						return 'Please select a plan';
 					}
 					if (!this.subdomain) {
