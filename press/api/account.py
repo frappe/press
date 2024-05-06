@@ -128,6 +128,7 @@ def setup_account(
 			password=password,
 			country=country,
 			user_exists=bool(user_exists),
+			default_to_new_dashboard=True,
 		)
 		if invited_by_parent_team:
 			doc = frappe.get_doc("Team", account_request.invited_by)
