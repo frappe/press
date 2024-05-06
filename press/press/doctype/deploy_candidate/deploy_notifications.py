@@ -103,9 +103,22 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "App has invalid pyproject.toml file" in tb:
 		update_with_invalid_pyproject_error(details, dc, exc)
 
+	# Package JSON file could not be parsed by json.load
+	elif "App has invalid package.json file" in tb:
+		update_with_invalid_package_json_error(details, dc, exc)
+
 	# Release Group Node version is incompatible with required version
 	elif 'engine "node" is incompatible with this module' in dc.build_output:
 		update_with_incompatible_node(details, dc)
+
+	# Node version is incompatible (from `PreBuildValidations`)
+	elif "Incompatible Node version found" in tb:
+		update_with_incompatible_node_prebuild(details, exc)
+
+	# App version is incompatible (from `PreBuildValidations`)
+	elif "Incompatible app version found" in tb:
+		update_with_incompatible_app_prebuild(details, exc)
+
 	return details
 
 
@@ -130,6 +143,33 @@ def update_with_invalid_pyproject_error(
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+
+
+def update_with_invalid_package_json_error(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+	if len(exc.args) <= 1 or not (app := exc.args[1]):
+		return
+
+	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
+	app_name = build_step.step
+
+	loc_str = ""
+	if len(exc.args) >= 2 and isinstance(exc.args[2], str):
+		loc_str = f"<p>File was found at path <b>{exc.args[2]}</b>.</p>"
+
+	details["is_actionable"] = True
+	details["title"] = f"{app_name} has an invalid package.json file"
+	message = f"""
+	<p>The <b>package.json</b> file in the <b>{app_name}</b> repository could not be
+	decoded by <code>json.load</code>.</p>
+	{loc_str}
+
+	<p>To rectify this issue, please fix the <b>pyproject.json</b> file.</p>
+	""".strip()
+	details["message"] = dedent(message)
 
 
 def update_with_github_token_error(
@@ -190,6 +230,60 @@ def update_with_incompatible_node(
 	""".strip()
 	details["message"] = dedent(message)
 	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def update_with_incompatible_node_prebuild(
+	details: "Details",
+	exc: "BaseException",
+) -> None:
+	if len(exc.args) < 5:
+		return
+
+	_, app, actual, expected, package_name = exc.args
+
+	package_name_str = ""
+	if isinstance(package_name, str):
+		package_name_str = f"Version requirement comes from package <b>{package_name}</b>"
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Incompatible Node version"
+	message = f"""
+	<p><b>{app}</b> requires Node version <b>{expected}</b>, found version is <b>{actual}</b>.
+	{package_name_str}
+
+	Please set the correct Node version on your Bench.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	""".strip()
+	details["message"] = dedent(message)
+	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def update_with_incompatible_app_prebuild(
+	details: "Details",
+	exc: "BaseException",
+) -> None:
+	if len(exc.args) < 5:
+		return
+
+	_, app, dep_app, actual, expected = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Incompatible  version"
+
+	message = f"""
+	<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
+	Found version is <b>{actual}</b></p>
+
+	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
+	""".strip()
+	details["message"] = dedent(message)
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None

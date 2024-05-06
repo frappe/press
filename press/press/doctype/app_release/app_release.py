@@ -219,7 +219,7 @@ class AppRelease(Document):
 			apps = [app.as_dict() for app in group.apps if app.enable_auto_deploy]
 			candidate = group.create_deploy_candidate(apps)
 			if candidate:
-				candidate.deploy_to_production()
+				candidate.schedule_build_and_deploy()
 
 
 def cleanup_unused_releases():
