@@ -234,6 +234,7 @@ class Team(Document):
 		is_us_eu: bool = False,
 		via_erpnext: bool = False,
 		user_exists: bool = False,
+		default_to_new_dashboard=True,
 	):
 		"""Create new team along with user (user created first)."""
 		team = frappe.get_doc(
@@ -245,6 +246,7 @@ class Team(Document):
 				"via_erpnext": via_erpnext,
 				"is_us_eu": is_us_eu,
 				"account_request": account_request.name,
+				"default_to_new_dashboard": default_to_new_dashboard,
 			}
 		)
 
