@@ -6,7 +6,8 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, List, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional, TypedDict
 
 import frappe
 import semantic_version as sv
@@ -30,6 +31,7 @@ from press.utils import (
 	log_error,
 )
 
+
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
@@ -37,6 +39,15 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.15.2"},
 ]
+
+LastDeployInfo = TypedDict(
+	"LastDeployInfo",
+	{
+		"name": str,
+		"status": str,
+		"creation": datetime,
+	},
+)
 
 
 if TYPE_CHECKING:
@@ -764,12 +775,19 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@property
 	def deploy_in_progress(self):
-		return self.last_dc_info and self.last_dc_info.status in (
-			"Pending",
-			"Running",
-			"Scheduled",
-			"Preparing",
+		from press.press.doctype.deploy_candidate.deploy_candidate import (
+			TRANSITORY_STATES as DC_TRANSITORY,
 		)
+
+		from press.press.doctype.bench.bench import TRANSITORY_STATES as BENCH_TRANSITORY
+
+		if not self.last_dc_info:
+			return False
+
+		if self.last_dc_info.status in DC_TRANSITORY:
+			return True
+
+		return any(i["status"] in BENCH_TRANSITORY for i in self.last_benches_info)
 
 	@property
 	def status(self):
@@ -779,7 +797,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self):
+	def last_dc_info(self) -> "Optional[LastDeployInfo]":
 		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (
@@ -794,6 +812,21 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if len(results) > 0:
 			return results[0]
+
+	@cached_property
+	def last_benches_info(self) -> "list[LastDeployInfo]":
+		if not (name := (self.last_dc_info or {}).get("name")):
+			return []
+
+		b = frappe.qb.DocType("Bench")
+		query = (
+			frappe.qb.from_(b)
+			.where(b.candidate == name)
+			.select(b.name, b.status, b.creation)
+			.orderby(b.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		return query.run(as_dict=True)
 
 	def get_app_updates(self, current_apps):
 		next_apps = self.get_next_apps(current_apps)

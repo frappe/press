@@ -14,7 +14,7 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import Any, List, Literal, Optional, Tuple, Generator
+from typing import Any, Generator, List, Literal, Optional, Tuple
 
 import docker
 import frappe
@@ -31,18 +31,21 @@ from press.press.doctype.app_release.app_release import (
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
-from press.press.doctype.deploy_candidate.utils import (
-	load_pyproject,
-	get_package_manager_files,
-	PackageManagerFiles,
-)
-from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
+from press.press.doctype.deploy_candidate.utils import (
+	PackageManagerFiles,
+	get_package_manager_files,
+	load_pyproject,
+)
+from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
+
+TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
+RESTING_STATES = ["Draft", "Success", "Failure"]
 
 if typing.TYPE_CHECKING:
 
