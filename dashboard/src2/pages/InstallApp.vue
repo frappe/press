@@ -276,7 +276,9 @@ export default {
 								? this.options.clusters.find(c => c.name === this.cluster).bench
 								: this.regions.find(r => r.name === this.cluster).bench,
 							group: this.selectedGroup?.value,
-							subscription_plan: this.options.site_plan,
+							subscription_plan: this.selectedGroup
+								? this.options.private_site_plan
+								: this.options.public_site_plan,
 							domain: this.options.domain
 						}
 					};

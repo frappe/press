@@ -36,10 +36,15 @@ def get_install_app_options(marketplace_app: str):
 		"Marketplace App", marketplace_app, "frappe_approved"
 	)
 
-	private_bench = 0 if is_app_approved else 1
-	site_plan = frappe.db.get_value(
+	private_site_plan = frappe.db.get_value(
 		"Site Plan",
-		{"private_benches": private_bench, "document_type": "Site", "price_inr": ["!=", 0]},
+		{"private_benches": 1, "document_type": "Site", "price_inr": ["!=", 0]},
+		order_by="price_inr asc",
+	)
+
+	public_site_plan = frappe.db.get_value(
+		"Site Plan",
+		{"private_benches": 0, "document_type": "Site", "price_inr": ["!=", 0]},
 		order_by="price_inr asc",
 	)
 
@@ -122,7 +127,8 @@ def get_install_app_options(marketplace_app: str):
 
 	return {
 		"plans": get_plans_for_app(marketplace_app),
-		"site_plan": site_plan,
+		"private_site_plan": private_site_plan,
+		"public_site_plan": public_site_plan,
 		"is_app_featured": is_app_approved,
 		"private_groups": private_groups,
 		"clusters": clusters,
