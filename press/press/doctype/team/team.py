@@ -1337,7 +1337,12 @@ def enqueue_finalize_unpaid_for_team(team: str):
 	# get a list of unpaid invoices for the team
 	invoices = frappe.get_all(
 		"Invoice",
-		filters={"team": team, "status": "Unpaid", "type": "Subscription"},
+		filters={
+			"team": team,
+			"status": "Unpaid",
+			"type": "Subscription",
+			"payment_mode": "Prepaid Credits",
+		},
 		pluck="name",
 	)
 

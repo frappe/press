@@ -209,6 +209,30 @@ class Invoice(Document):
 			self.apply_partner_credits()
 			return
 
+		if self.payment_mode == "Card":
+			try:
+				self.create_stripe_invoice()
+			except Exception:
+				frappe.db.rollback()
+				self.reload()
+
+				# log the traceback as comment
+				msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
+				self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
+
+				if not self.stripe_invoice_id:
+					# if stripe invoice was created, find it and set it
+					# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
+					stripe_invoice_id = self.find_stripe_invoice()
+					if stripe_invoice_id:
+						self.stripe_invoice_id = stripe_invoice_id
+						self.status = "Invoice Created"
+						self.save()
+
+				frappe.db.commit()
+
+				raise
+
 		self.apply_credit_balance()
 		if self.amount_due == 0:
 			self.status = "Paid"
@@ -227,29 +251,6 @@ class Invoice(Document):
 				"Not enough credits for this invoice. Change payment mode to Card to"
 				" pay using Stripe."
 			)
-
-		try:
-			self.create_stripe_invoice()
-		except Exception:
-			frappe.db.rollback()
-			self.reload()
-
-			# log the traceback as comment
-			msg = "<pre><code>" + frappe.get_traceback() + "</pre></code>"
-			self.add_comment("Comment", _("Stripe Invoice Creation Failed") + "<br><br>" + msg)
-
-			if not self.stripe_invoice_id:
-				# if stripe invoice was created, find it and set it
-				# so that we avoid scenarios where Stripe Invoice was created but not set in Frappe Cloud
-				stripe_invoice_id = self.find_stripe_invoice()
-				if stripe_invoice_id:
-					self.stripe_invoice_id = stripe_invoice_id
-					self.status = "Invoice Created"
-					self.save()
-
-			frappe.db.commit()
-
-			raise
 
 		self.save()
 
@@ -674,6 +675,8 @@ class Invoice(Document):
 			)
 
 	def apply_credit_balance(self):
+		if self.payment_mode == "Card":
+			return
 		# cancel applied credits to re-apply available credits
 		self.cancel_applied_credits()
 
