@@ -268,9 +268,11 @@ export default {
 							team: this.$team.doc.name,
 							subdomain: this.subdomain,
 							apps: [{ app: 'frappe' }, { app: this.app }],
-							app_plans: {
-								[this.app]: this.selectedPlan
-							},
+							app_plans: this.selectedPlan
+								? {
+										[this.app]: this.selectedPlan
+								  }
+								: null,
 							cluster: this.cluster,
 							bench: this.options.is_app_featured
 								? this.options.clusters.find(c => c.name === this.cluster).bench
