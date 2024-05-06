@@ -14,7 +14,7 @@
   "virtual_machine",
   "is_server_setup",
   "networking_section",
-  "public_ip",
+  "ip",
   "column_break_mrkw",
   "private_ip",
   "mirror_detail_section",
@@ -81,11 +81,6 @@
    "fieldname": "networking_section",
    "fieldtype": "Section Break",
    "label": "Networking"
-  },
-  {
-   "fieldname": "public_ip",
-   "fieldtype": "Data",
-   "label": "Public IP"
   },
   {
    "fieldname": "column_break_mrkw",
@@ -158,11 +153,16 @@
    "fieldname": "os_version",
    "fieldtype": "Data",
    "label": "OS Version"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "Public IP"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-04-26 11:37:36.704985",
+ "modified": "2024-05-06 08:55:55.391648",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Mirror Server",

@@ -3,6 +3,22 @@
   become: yes
   become_user: frappe
   file:
-    path: /home/frappe/mirror/
+    path: /home/frappe/ubuntu/
     state: directory
     mode: 0755
+
+- name: Install apt-mirror
+  apt:
+    package: apt-mirror
+    state: present
+
+- name: Backup Mirror List
+  copy:
+    src: /etc/apt/mirror.list
+    dest: /etc/apt/mirror.list-back
+    remote_src: true
+
+- name: Setup mirror config
+  template:
+    src: mirror.list.j2
+    dest: /etc/apt/mirror.list

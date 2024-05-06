@@ -24,12 +24,12 @@ class MirrorServer(BaseServer):
 		frappe_public_key: DF.Code | None
 		frappe_user_password: DF.Data | None
 		hostname: DF.Data | None
+		ip: DF.Data | None
 		is_server_setup: DF.Check
 		os: DF.Data | None
 		os_version: DF.Data | None
 		private_ip: DF.Data | None
 		provider: DF.Literal["Generic", "Scaleway", "AWS EC2", "OCI"]
-		public_ip: DF.Data | None
 		root_public_key: DF.Code | None
 		ssh_port: DF.Int
 		ssh_user: DF.Data | None
@@ -61,7 +61,7 @@ class MirrorServer(BaseServer):
 
 		try:
 			ansible = Ansible(
-				playbook="mirrors.yml",
+				playbook="mirror.yml",
 				server=self,
 				user=self.ssh_user or "root",
 				port=self.ssh_port or 22,
@@ -89,5 +89,5 @@ class MirrorServer(BaseServer):
 				self.status = "Broken"
 		except Exception:
 			self.status = "Broken"
-			log_error("Database Server Setup Exception", server=self.as_dict())
+			log_error("Mirror Server Setup Exception", server=self.as_dict())
 		self.save()
