@@ -18,13 +18,15 @@
    "fieldname": "server_type",
    "fieldtype": "Select",
    "label": "Server Type",
-   "options": "Database Server\nServer\nProxy Server"
+   "options": "Database Server\nServer\nProxy Server",
+   "search_index": 1
   },
   {
    "fieldname": "server",
    "fieldtype": "Dynamic Link",
    "label": "Server",
-   "options": "server_type"
+   "options": "server_type",
+   "search_index": 1
   },
   {
    "fieldname": "column_break_azah",
@@ -34,7 +36,8 @@
    "fieldname": "agent_job",
    "fieldtype": "Link",
    "label": "Agent Job",
-   "options": "Agent Job"
+   "options": "Agent Job",
+   "search_index": 1
   },
   {
    "fieldname": "retried_at",
@@ -53,7 +56,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-07 19:42:27.148406",
+ "modified": "2024-05-07 19:56:56.789282",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Retry Log",

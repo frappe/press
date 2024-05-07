@@ -704,18 +704,37 @@ def retry_undelivered_jobs(server):
 
 			if not job_doc.next_retry_at and job_doc.name not in queued_jobs():
 				job_doc.set_status_and_next_retry_at()
+				log_retry(server, job_doc, "Setting Next Retry", nowtime)
 				continue
 
 			if get_datetime(job_doc.next_retry_at) > nowtime:
+				log_retry(server, job_doc, "Future retry time", nowtime)
 				continue
 
 			if job_doc.retry_count <= max_retry_count:
 				retry = job_doc.retry_count + 1
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
 				job_doc.retry_in_place()
+
+				log_retry(server, job_doc, "Retried", nowtime)
 			else:
+				log_retry(server, job_doc, "Max retry level reached", nowtime)
 				update_job_and_step_status(job)
 				process_job_updates(job.name)
+
+
+def log_retry(server, job, log, retried_at):
+	retry_log = frappe.new_doc("Agent Job Retry Log")
+
+	retry_log.update(
+		{
+			"server_type": server[1],
+			"server": server[0],
+			"agent_job": job.name,
+			"retry_log": log,
+			"retried_at": retried_at,
+		}
+	).insert()
 
 
 def queued_jobs():
