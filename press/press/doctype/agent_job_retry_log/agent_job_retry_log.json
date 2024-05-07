@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2024-05-07 19:37:41.664822",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_type",
+  "server",
+  "column_break_azah",
+  "agent_job",
+  "retried_at",
+  "section_break_nvbq",
+  "retry_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "server_type",
+   "fieldtype": "Select",
+   "label": "Server Type",
+   "options": "Database Server\nServer\nProxy Server"
+  },
+  {
+   "fieldname": "server",
+   "fieldtype": "Dynamic Link",
+   "label": "Server",
+   "options": "server_type"
+  },
+  {
+   "fieldname": "column_break_azah",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agent_job",
+   "fieldtype": "Link",
+   "label": "Agent Job",
+   "options": "Agent Job"
+  },
+  {
+   "fieldname": "retried_at",
+   "fieldtype": "Datetime",
+   "label": "Retried At"
+  },
+  {
+   "fieldname": "section_break_nvbq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "retry_log",
+   "fieldtype": "Code",
+   "label": "Retry Log"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-05-07 19:42:27.148406",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Agent Job Retry Log",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
