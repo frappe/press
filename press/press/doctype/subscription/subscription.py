@@ -72,6 +72,7 @@ class Subscription(Document):
 				& (price_field > 0)
 			)
 			.limit(list_args["limit"])
+			.offset(list_args["start"])
 		)
 
 		if filters.get("enabled"):
