@@ -10,6 +10,8 @@ import router from './router';
 import { initSocket } from './socket';
 import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
+import * as Sentry from '@sentry/vue';
+import { BrowserTracing } from '@sentry/tracing';
 
 let request = options => {
 	let _options = options || {};
@@ -42,6 +44,20 @@ getInitialData().then(() => {
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
 	fetchPlans();
+
+	if (window.press_dashboard_sentry_dsn.includes('https://')) {
+		Sentry.init({
+			app,
+			dsn: window.press_dashboard_sentry_dsn,
+			integrations: [
+				new BrowserTracing({
+					routingInstrumentation: Sentry.vueRouterInstrumentation(router),
+					tracingOrigins: ['localhost', /^\//]
+				})
+			],
+			tracesSampleRate: 1.0
+		});
+	}
 
 	importGlobals().then(() => {
 		app.mount('#app');
