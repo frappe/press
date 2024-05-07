@@ -557,17 +557,18 @@ class SiteMigration(Document):
 		site = frappe.get_doc("Site", self.site)
 		if site.status_before_update in ["Inactive", "Suspended"]:
 			self.update_next_step_status("Skipped")
-			self.run_next_step()
 			job = None
 		else:
 			job = site.update_site_config(
 				{"maintenance_mode": 0}
 			)  # will do run_next_step in callback
 		site.reload()
-		site.status = site.status_before_update
+		site.status = site.status_before_update or "Active"
 		site.status_before_update = None
 		site.save()
-		return job
+		if job:
+			return job
+		self.run_next_step()
 
 	def activate_site_on_destination_proxy(self):
 		"""Activate site on destination proxy"""
@@ -580,7 +581,7 @@ class SiteMigration(Document):
 
 	def adjust_plan_if_required(self):
 		"""Change Plan to Unlimited if Migrated to Dedicated Server"""
-		site = frappe.get_doc("Site", self.site)
+		site: "Site" = frappe.get_doc("Site", self.site)
 		dest_server: Server = frappe.get_doc("Server", self.destination_server)
 		if not dest_server.is_shared and site.team == dest_server.team:
 			try:
