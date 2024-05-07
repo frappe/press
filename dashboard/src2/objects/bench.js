@@ -601,7 +601,7 @@ export default {
 							label: '',
 							fieldname: 'creation',
 							type: 'Timestamp',
-							width: '7rem',
+							width: '8rem',
 							align: 'right'
 						}
 					]
