@@ -24,6 +24,7 @@
   {
    "fieldname": "server",
    "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
    "label": "Server",
    "options": "server_type",
    "search_index": 1
@@ -35,6 +36,7 @@
   {
    "fieldname": "agent_job",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Agent Job",
    "options": "Agent Job",
    "search_index": 1
@@ -56,7 +58,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-07 19:56:56.789282",
+ "modified": "2024-05-07 20:00:53.135514",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Retry Log",
