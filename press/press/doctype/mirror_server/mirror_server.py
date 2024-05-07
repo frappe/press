@@ -68,7 +68,8 @@ class MirrorServer(BaseServer):
 				port=self.ssh_port or 22,
 				variables={
 					"server": self.name,
-					"workers": "2",
+					"workers": "1",
+					"mirror_server": True,
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
 					"monitoring_password": monitoring_password,
