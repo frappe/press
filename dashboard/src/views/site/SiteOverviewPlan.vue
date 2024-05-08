@@ -125,6 +125,8 @@ export default {
 	},
 	watch: {
 		async selectedPlan(value) {
+			if (!value) return;
+
 			try {
 				// custom plan validation for frappe support
 				let result = await this.$call('validate_plan_change', {
