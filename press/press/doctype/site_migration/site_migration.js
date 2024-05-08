@@ -30,7 +30,7 @@ frappe.ui.form.on('Site Migration', {
 					`Are you sure you want to continue from next Pending step?
 
 					<b>Note: This could cause data loss if you don't know what you're doing</b>`,
-					() => frm.call('run_next_step'),
+					() => frm.call('continue_from_next_pending'),
 				);
 			});
 		}
