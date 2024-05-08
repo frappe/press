@@ -712,11 +712,12 @@ def retry_undelivered_jobs(server):
 				continue
 
 			if job_doc.retry_count <= max_retry_count:
+				log_retry(server, job_doc, "Retried", nowtime)
+
 				retry = job_doc.retry_count + 1
 				frappe.db.set_value("Agent Job", job, "retry_count", retry, update_modified=False)
 				job_doc.retry_in_place()
 
-				log_retry(server, job_doc, "Retried", nowtime)
 			else:
 				log_retry(server, job_doc, "Max retry level reached", nowtime)
 				update_job_and_step_status(job)
