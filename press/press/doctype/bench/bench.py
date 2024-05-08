@@ -649,11 +649,13 @@ def process_new_bench_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
 			StagingSite.create_if_needed(bench)
+			bench = frappe.get_doc("Bench", job.bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
+				job_id=f"archive_obsolete_benches:{bench.group}:{bench.server}",
+				deduplicate=True,
 			)
-			bench = frappe.get_doc("Bench", job.bench)
 			bench.add_ssh_user()
 
 			bench_update = frappe.get_all(
@@ -768,9 +770,12 @@ def try_archive(bench: str):
 		return False
 
 
-def archive_obsolete_benches():
+def archive_obsolete_benches(group: str = None, server: str = None):
+	query_substr = ""
+	if group and server:
+		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"
 	benches = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
 		FROM
@@ -780,7 +785,7 @@ def archive_obsolete_benches():
 		ON
 			bench.group = g.name
 		WHERE
-			bench.status = "Active"
+			bench.status = "Active" {query_substr}
 	""",
 		as_dict=True,
 	)
