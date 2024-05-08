@@ -428,6 +428,7 @@ class DatabaseServer(BaseServer):
 				playbook="primary.yml",
 				server=self,
 				variables={
+					"backup_path": "/tmp/replica",
 					"mariadb_root_password": mariadb_root_password,
 					"secondary_root_public_key": secondary_root_public_key,
 				},
@@ -483,6 +484,34 @@ class DatabaseServer(BaseServer):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_setup_replication", queue="long", timeout=18000
 		)
+
+	@frappe.whitelist()
+	def perform_physical_backup(self, path):
+		if not path:
+			frappe.throw("Provide a path to store the physical backup")
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_perform_physical_backup",
+			queue="long",
+			timeout=18000,
+			path=path,
+		)
+
+	def _perform_physical_backup(self, path):
+		mariadb_root_password = self.get_password("mariadb_root_password")
+		try:
+			ansible = Ansible(
+				playbook="mariadb_physical_backup.yml",
+				server=self,
+				variables={
+					"mariadb_root_password": mariadb_root_password,
+					"backup_path": path,
+				},
+			)
+			ansible.run()
+		except Exception:
+			log_error("MariaDB Physical Backup Exception", server=self.as_dict())
 
 	def _trigger_failover(self):
 		try:

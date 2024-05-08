@@ -5,7 +5,7 @@
 
 - name: Create Directory for Database Dump
   file:
-    dest: /tmp/replica
+    dest: '{{ backup_path }}'
     state: directory
 
 - name: Count Number of IBData Files
@@ -33,16 +33,16 @@
 
 - name: Delete MariaBackup Directory
   file:
-    path: /tmp/replica
+    path: '{{ backup_path }}'
     state: absent
 
 - name: Start MariaBackup
-  command: mariabackup --backup --rsync --target-dir /tmp/replica --user root --password "{{ mariadb_root_password }}" --open-files-limit {{ open_files_limit }} --parallel 4 --compress-threads 4
+  command: 'mariabackup --backup --rsync --target-dir {{ backup_path }} --user root --password {{ mariadb_root_password }} --open-files-limit {{ open_files_limit }} --parallel 4 --compress-threads 4'
   async: 3600
   poll: 5
 
 - name: Prepare MariaBackup
-  command: mariabackup --prepare --target-dir /tmp/replica --open-files-limit {{ open_files_limit }}
+  command: 'mariabackup --prepare --target-dir {{ backup_path }} --open-files-limit {{ open_files_limit }}'
   async: 3600
   poll: 5
 
@@ -51,3 +51,4 @@
     user: root
     key: '{{ secondary_root_public_key }}'
     state: present
+  when: secondary_root_public_key is defined

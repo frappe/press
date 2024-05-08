@@ -206,6 +206,33 @@ frappe.ui.form.on('Database Server', {
 				},
 				__('Actions'),
 			);
+			frm.add_custom_button(
+				__('Perform Physical Backup'),
+				() => {
+					const dialog = new frappe.ui.Dialog({
+						title: __('Perform Physical Backup'),
+						fields: [
+							{
+								fieldtype: 'Data',
+								label: __('Backup Path'),
+								description: __('Absolute path to store the backup'),
+								default: '/tmp/replica',
+								fieldname: 'path',
+								reqd: 1,
+							},
+						],
+					});
+
+					dialog.set_primary_action(__('Backup'), (args) => {
+						frm.call('perform_physical_backup', args).then(() => {
+							dialog.hide();
+							frm.refresh();
+						});
+					});
+					dialog.show();
+				},
+				__('Actions'),
+			);
 		}
 	},
 
