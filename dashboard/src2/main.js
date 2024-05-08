@@ -12,7 +12,7 @@ import { subscribeToJobUpdates } from './utils/agentJob';
 import { fetchPlans } from './data/plans.js';
 import * as Sentry from '@sentry/vue';
 import { BrowserTracing } from '@sentry/tracing';
-import { getSessionUser } from './data/session.js';
+import { session } from './data/session.js';
 
 let request = options => {
 	let _options = options || {};
@@ -44,7 +44,7 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
-	if (getSessionUser()) fetchPlans();
+	if (session.isLoggedIn) fetchPlans();
 
 	if (window.press_dashboard_sentry_dsn.includes('https://')) {
 		Sentry.init({
