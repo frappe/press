@@ -19,7 +19,10 @@ from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
 from press.press.doctype.server.server import Server
-from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+from press.press.doctype.site_backup.site_backup import (
+	SiteBackup,
+	process_backup_site_job_update,
+)
 from press.utils import log_error
 from press.utils.dns import create_dns_record
 
@@ -77,8 +80,9 @@ class SiteMigration(Document):
 
 	def check_enough_space_on_destination_server(self):
 		try:
-			backup = frappe.get_last_doc(  # approximation with last backup
-				"Site Backup", {"site": self.site, "with_files": True, "status": "Success"}
+			backup: SiteBackup = frappe.get_last_doc(  # approximation with last backup
+				"Site Backup",
+				{"site": self.site, "with_files": True, "offsite": True, "status": "Success"},
 			)
 		except frappe.DoesNotExistError:
 			pass
@@ -109,7 +113,6 @@ class SiteMigration(Document):
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
-		self.remove_archive_on_destination_step_if_exists()  # case of continuing failed migration
 		frappe.db.set_value(
 			"Site",
 			self.site,
@@ -119,6 +122,11 @@ class SiteMigration(Document):
 		self.status = "Pending"
 		self.save()
 		frappe.db.commit()
+		self.run_next_step()
+
+	@frappe.whitelist()
+	def continue_from_next_pending(self):
+		self.remove_archive_on_destination_step_if_exists()
 		self.run_next_step()
 
 	def remove_archive_on_destination_step_if_exists(self):
