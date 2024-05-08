@@ -415,7 +415,7 @@ def check_permissions(doctype):
 	if doctype not in ALLOWED_DOCTYPES:
 		raise_not_permitted()
 
-	if not frappe.local.team():
+	if not hasattr(frappe.local, "team") or not frappe.local.team():
 		frappe.throw(
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)
