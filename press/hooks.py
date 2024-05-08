@@ -204,6 +204,7 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
 	],
 	"all": [
 		"press.auth.flush",
@@ -237,7 +238,6 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
-			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",
