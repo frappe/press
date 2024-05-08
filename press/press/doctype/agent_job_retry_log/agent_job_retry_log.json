@@ -19,6 +19,7 @@
    "fieldtype": "Select",
    "label": "Server Type",
    "options": "Database Server\nServer\nProxy Server",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -27,6 +28,7 @@
    "in_list_view": 1,
    "label": "Server",
    "options": "server_type",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -39,16 +41,19 @@
    "in_list_view": 1,
    "label": "Agent Job",
    "options": "Agent Job",
+   "read_only": 1,
    "search_index": 1
   },
   {
    "fieldname": "retried_at",
    "fieldtype": "Datetime",
-   "label": "Retried At"
+   "label": "Retried At",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_nvbq",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "read_only": 1
   },
   {
    "fieldname": "retry_log",
@@ -58,7 +63,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-07 20:00:53.135514",
+ "modified": "2024-05-08 19:42:34.075710",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job Retry Log",
