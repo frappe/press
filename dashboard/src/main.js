@@ -47,8 +47,7 @@ if (window.press_frontend_sentry_dsn?.includes('https://')) {
 				tracingOrigins: ['localhost', /^\//]
 			})
 		],
-		logErrors: true,
-		tracesSampleRate: 1.0
+		logErrors: true
 	});
 }
 

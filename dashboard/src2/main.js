@@ -55,7 +55,7 @@ getInitialData().then(() => {
 					tracingOrigins: ['localhost', /^\//]
 				})
 			],
-			tracesSampleRate: 1.0
+			logErrors: true
 		});
 	}
 
