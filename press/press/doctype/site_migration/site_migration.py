@@ -19,7 +19,10 @@ from press.press.doctype.press_notification.press_notification import (
 	create_new_notification,
 )
 from press.press.doctype.server.server import Server
-from press.press.doctype.site_backup.site_backup import process_backup_site_job_update
+from press.press.doctype.site_backup.site_backup import (
+	SiteBackup,
+	process_backup_site_job_update,
+)
 from press.utils import log_error
 from press.utils.dns import create_dns_record
 
@@ -77,8 +80,9 @@ class SiteMigration(Document):
 
 	def check_enough_space_on_destination_server(self):
 		try:
-			backup = frappe.get_last_doc(  # approximation with last backup
-				"Site Backup", {"site": self.site, "with_files": True, "status": "Success"}
+			backup: SiteBackup = frappe.get_last_doc(  # approximation with last backup
+				"Site Backup",
+				{"site": self.site, "with_files": True, "offsite": True, "status": "Success"},
 			)
 		except frappe.DoesNotExistError:
 			pass
