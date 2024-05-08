@@ -14,22 +14,22 @@
 
 - name: Calculate Open Files Limit
   set_fact:
-    open_files_limit: "{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}"
+    open_files_limit: '{{ [ibdata_file_count.stdout|int + 10000, 65535] | max }}'
 
 - name: Set Soft Limit on Open Files in Linux
   pam_limits:
-    domain: "*"
-    limit_type: "soft"
-    limit_item: "nofile"
-    value: "{{ open_files_limit }}"
+    domain: '*'
+    limit_type: 'soft'
+    limit_item: 'nofile'
+    value: '{{ open_files_limit }}'
     backup: yes
 
 - name: Set Hard Limit on Open Files in Linux
   pam_limits:
-    domain: "*"
-    limit_type: "hard"
-    limit_item: "nofile"
-    value: "{{ open_files_limit|int * 2 }}"
+    domain: '*'
+    limit_type: 'hard'
+    limit_item: 'nofile'
+    value: '{{ open_files_limit|int * 2 }}'
 
 - name: Delete MariaBackup Directory
   file:
@@ -49,5 +49,5 @@
 - name: Add Secondary Public Key to Authorized Keys
   authorized_key:
     user: root
-    key: "{{ secondary_root_public_key }}"
+    key: '{{ secondary_root_public_key }}'
     state: present
