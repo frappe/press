@@ -48,7 +48,7 @@
   become: yes
   become_user: frappe
   template:
-    src: ../../sentry/templates/sentry.config.yml
+    src: ../../sentry/templates/sentry.yml.jinja2
     dest: /home/frappe/sentry/sentry/config.yml
 
 - name: Install Sentry

@@ -41,7 +41,7 @@
   become: yes
   become_user: frappe
   template:
-    src: sentry.config.yml
+    src: sentry.yml.jinja2
     dest: /home/frappe/sentry/sentry/config.yml
 
 - name: Install Sentry
@@ -78,4 +78,3 @@
   command: /home/frappe/agent/env/bin/agent setup trace
   args:
     chdir: /home/frappe/agent
-  
