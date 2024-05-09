@@ -1229,7 +1229,9 @@ class Site(Document, TagHelpers):
 		try:
 			value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		except Exception:
-			log_error("Fetching Setup Status Failed", doc=self)
+			if self.ping().status_code == requests.codes.ok:
+				# Site is up but setup status fetch failed
+				log_error("Fetching Setup Status Failed", doc=self)
 			return
 
 		if not value:
@@ -1244,6 +1246,9 @@ class Site(Document, TagHelpers):
 
 		self.save()
 		return setup_complete
+
+	def ping(self):
+		return requests.get(f"https://{self.name}/api/method/ping")
 
 	def _set_configuration(self, config):
 		"""Similar to _update_configuration but will replace full configuration at once
