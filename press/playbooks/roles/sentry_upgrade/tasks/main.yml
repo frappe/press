@@ -55,7 +55,7 @@
   become: yes
   become_user: frappe
   shell:
-    cmd: bash install.sh
+    cmd: echo "no" | bash install.sh --no-report-self-hosted-issues
     chdir: /home/frappe/sentry
 
 - name: Create Sentry Python Config File
