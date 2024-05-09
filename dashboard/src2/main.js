@@ -57,7 +57,8 @@ getInitialData().then(() => {
 				})
 			],
 			ignoreErrors: [
-				'Failed to fetch dynamically imported module',
+				'/api/method/press.api.client',
+				'dynamically imported module',
 				'NetworkError when attempting to fetch resource'
 			],
 			logErrors: true

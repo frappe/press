@@ -48,8 +48,7 @@ if (window.press_frontend_sentry_dsn?.includes('https://')) {
 			})
 		],
 		ignoreErrors: [
-			'/api/method/press.api.client',
-			'Failed to fetch dynamically imported module',
+			'dynamically imported module',
 			'NetworkError when attempting to fetch resource'
 		],
 		logErrors: true
