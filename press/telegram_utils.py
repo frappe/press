@@ -85,7 +85,8 @@ class Telegram:
 
 		command = text.replace(mention, "")
 		response = self.process(command.strip())
-		self.send(response)
+		if response:
+			self.send(response)
 
 	def process(self, command):
 		arguments = command.split(" ")
