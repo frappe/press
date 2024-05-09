@@ -260,7 +260,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 
 
 def get_background_job_by_method(site, query_type, timezone, timespan, timegrain):
-	MAX_NO_OF_METHODS = 10
+	MAX_NO_OF_PATHS = 10
 
 	log_server = frappe.db.get_single_value("Press Settings", "log_server")
 	if not log_server:
@@ -290,41 +290,41 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 
 	if query_type == "count":
 		search.aggs.bucket(
-			"method_method",
+			"method_path",
 			"terms",
 			field="json.job.method",
-			size=MAX_NO_OF_METHODS,
+			size=MAX_NO_OF_PATHS,
 			order={"method_count": "desc"},
 		).bucket("histogram_of_method", histogram_of_method)
 
-		search.aggs["method_method"].bucket(
+		search.aggs["method_path"].bucket(
 			"method_count", "value_count", field="json.job.method"
 		)
 
 	elif query_type == "duration":
 		search.aggs.bucket(
-			"method_method",
+			"method_path",
 			"terms",
 			field="json.job.method",
-			size=MAX_NO_OF_METHODS,
+			size=MAX_NO_OF_PATHS,
 			order={"outside_sum": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket(
 			"sum_of_duration", sum_of_duration
 		)
-		search.aggs["method_method"].bucket("outside_sum", sum_of_duration)  # for sorting
+		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)  # for sorting
 
 	elif query_type == "average_duration":
 		search.aggs.bucket(
-			"method_method",
+			"method_path",
 			"terms",
 			field="json.job.method",
-			size=MAX_NO_OF_METHODS,
+			size=MAX_NO_OF_PATHS,
 			order={"outside_avg": "desc"},
 		).bucket("histogram_of_method", histogram_of_method).bucket(
 			"avg_of_duration", avg_of_duration
 		)
 
-		search.aggs["method_method"].bucket("outside_avg", avg_of_duration)  # for sorting
+		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
 	return get_stacked_histogram_chart_result(search, query_type)
 
