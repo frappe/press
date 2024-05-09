@@ -762,6 +762,7 @@ def get_undelivered_jobs_for_server(server, job_types):
 			"job_id": 0,
 			"server": server.server,
 			"server_type": server.server_type,
+			"retry_count": (">", 0),
 			"job_type": ("in", job_types),
 		},
 		["name", "job_type"],
