@@ -112,5 +112,41 @@ class TraceServer(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def upgrade_server(self):
+		self.status = "Installing"
+		self.save()
+		frappe.enqueue_doc(
+			self.doctype, self.name, "_upgrade_server", queue="long", timeout=2400
+		)
+
+	def _upgrade_server(self):
+		try:
+			ansible = Ansible(
+				playbook="trace_upgrade.yml",
+				server=self,
+				variables={
+					"server": self.name,
+					"sentry_admin_email": self.sentry_admin_email,
+					"sentry_mail_server": self.sentry_mail_server,
+					"sentry_mail_port": self.sentry_mail_port,
+					"sentry_mail_login": self.sentry_mail_login,
+					"sentry_mail_password": self.get_password("sentry_mail_password"),
+					"sentry_oauth_server_url": self.sentry_oauth_server_url,
+					"sentry_oauth_client_id": self.sentry_oauth_client_id,
+					"sentry_oauth_client_secret": self.get_password("sentry_oauth_client_secret"),
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+			else:
+				self.status = "Broken"
+		except Exception:
+			self.status = "Broken"
+			log_error("Trace Server Upgrade Exception", server=self.as_dict())
+		self.save()
+
+	@frappe.whitelist()
 	def show_sentry_password(self):
 		return self.get_password("sentry_admin_password")

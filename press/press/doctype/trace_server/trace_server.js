@@ -10,6 +10,7 @@ frappe.ui.form.on('Trace Server', {
 			[__('Update Agent'), 'update_agent', true, frm.doc.is_server_setup],
 			[__('Prepare Server'), 'prepare_server', true, !frm.doc.is_server_setup],
 			[__('Setup Server'), 'setup_server', true, !frm.doc.is_server_setup],
+			[__('Upgrade Server'), 'upgrade_server', true, frm.doc.is_server_setup],
 			[
 				__('Reconfigure Monitor Server'),
 				'reconfigure_monitor_server',
