@@ -1215,7 +1215,8 @@ class Site(Document, TagHelpers):
 	def sync_analytics(self, analytics=None):
 		if not analytics:
 			analytics = self.fetch_analytics()
-		create_site_analytics(self.name, analytics)
+		if analytics:
+			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
