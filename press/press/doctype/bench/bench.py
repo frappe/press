@@ -756,6 +756,22 @@ def get_unfinished_site_migrations(bench: str):
 	)
 
 
+def get_scheduled_version_upgrades(bench: dict):
+	frappe.db.commit()
+	sites = frappe.qb.DocType("Site")
+	version_upgrades = frappe.qb.DocType("Version Upgrade")
+	return (
+		frappe.qb.from_(sites)
+		.join(version_upgrades)
+		.on(sites.name == version_upgrades.site)
+		.select("name")
+		.where(sites.server == bench.server)
+		.where(version_upgrades.destination_group == bench.group)
+		.where(version_upgrades.status.isin(["Scheduled", "Pending", "Running"]))
+		.run()
+	)
+
+
 def try_archive(bench: str):
 	try:
 		frappe.get_doc("Bench", bench).archive()
@@ -779,7 +795,7 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 	benches = frappe.db.sql(
 		f"""
 		SELECT
-			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, g.public
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -816,6 +832,8 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 			continue
 
 		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
+			if get_scheduled_version_upgrades(bench):
+				continue
 			try_archive(bench.name)
 			continue
 
