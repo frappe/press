@@ -2013,6 +2013,8 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def get_actions(self):
+		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
+
 		actions = [
 			{
 				"action": "Deactivate site",
@@ -2096,7 +2098,7 @@ class Site(Document, TagHelpers):
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status == "Active",
+				"condition": self.status == "Active" and not is_group_public,
 			},
 			{
 				"action": "Clear cache",
