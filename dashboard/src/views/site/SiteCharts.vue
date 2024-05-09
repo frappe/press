@@ -88,6 +88,35 @@
 				:chartTheme="requestChartColors"
 				:loading="$resources.analytics.loading"
 			/>
+
+			<BarChart
+				class="sm:col-span-2"
+				title="Background Job Count by Method"
+				:key="backgroundJobCountByMethodData"
+				:data="backgroundJobCountByMethodData"
+				unit="jobs"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+			<BarChart
+				class="sm:col-span-2"
+				title="Background Job Duration by Method"
+				:key="backgroundJobDurationByMethodData"
+				:data="backgroundJobDurationByMethodData"
+				unit="seconds"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+			<BarChart
+				class="sm:col-span-2"
+				title="Average Background Job Duration by Method"
+				:key="averageBackgroundJobDurationByMethodData"
+				:data="averageBackgroundJobDurationByMethodData"
+				unit="seconds"
+				:chartTheme="requestChartColors"
+				:loading="$resources.analytics.loading"
+			/>
+
 			<BarChart
 				class="sm:col-span-2"
 				title="Slow Logs by Count"
@@ -220,6 +249,28 @@ export default {
 			if (!averageRequestDurationByPath) return;
 
 			return averageRequestDurationByPath;
+		},
+		backgroundJobCountByMethodData() {
+			let backgroundJobCountByMethod =
+				this.$resources.analytics.data?.background_job_count_by_method;
+			if (!backgroundJobCountByMethod) return;
+
+			return backgroundJobCountByMethod;
+		},
+		backgroundJobDurationByMethodData() {
+			let backgroundJobDurationByMethod =
+				this.$resources.analytics.data?.background_job_duration_by_method;
+			if (!backgroundJobDurationByMethod) return;
+
+			return backgroundJobDurationByMethod;
+		},
+		averageBackgroundJobDurationByMethodData() {
+			let averageBackgroundJobDurationByMethod =
+				this.$resources.analytics.data
+					?.average_background_job_duration_by_method;
+			if (!averageBackgroundJobDurationByMethod) return;
+
+			return averageBackgroundJobDurationByMethod;
 		},
 		slowLogsByCountData() {
 			let slowLogsByCount = this.$resources.analytics.data?.slow_logs_by_count;
