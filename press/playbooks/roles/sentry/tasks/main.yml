@@ -10,7 +10,7 @@
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/getsentry/self-hosted/archive/refs/tags/22.6.0.tar.gz
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/23.6.2.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -18,7 +18,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: /tmp/self-hosted-22.6.0/
+    src: /tmp/self-hosted-23.6.2/
     dest: /home/frappe/sentry
     remote_src: yes
 
@@ -47,8 +47,8 @@
 - name: Install Sentry
   become: yes
   become_user: frappe
-  command: bash install.sh --skip-user-prompt
-  args:
+  shell:
+    cmd: echo "no" | bash install.sh --no-report-self-hosted-issues --skip-user-prompt
     chdir: /home/frappe/sentry
 
 - name: Create Sentry Python Config File
