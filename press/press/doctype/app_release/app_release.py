@@ -100,10 +100,16 @@ class AppRelease(Document):
 		self.save(ignore_permissions=True)
 
 	def validate_repo(self):
-		if not self.clone_directory or os.path.isdir(self.clone_directory):
+		if (
+			self.invalid_release
+			or not self.clone_directory
+			or os.path.isdir(self.clone_directory)
+		):
 			return
 
 		if syntax_error := check_python_syntax(self.clone_directory):
+			self.set_invalid(syntax_error)
+		elif syntax_error := check_pyproject_syntax(self.clone_directory):
 			self.set_invalid(syntax_error)
 
 	def set_invalid(self, reason: str):
@@ -453,3 +459,21 @@ def check_python_syntax(dirpath: str) -> str:
 		return proc.stderr
 
 	return proc.stdout
+
+
+def check_pyproject_syntax(dirpath: str) -> str:
+	# tomllib does not report errors as expected
+	# instead returns empty dict
+	from tomli import TOMLDecodeError, load
+
+	pyproject_path = os.path.join(dirpath, "pyproject.toml")
+	if not os.path.isfile(pyproject_path):
+		return ""
+
+	with open(pyproject_path, "rb") as f:
+		try:
+			load(f)
+		except TOMLDecodeError as err:
+			return "Invalid pyproject.toml at project root\n".join(err.args)
+
+	return ""
