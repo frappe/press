@@ -56,6 +56,10 @@ getInitialData().then(() => {
 					tracingOrigins: ['localhost', /^\//]
 				})
 			],
+			ignoreErrors: [
+				'Failed to fetch dynamically imported module',
+				'NetworkError when attempting to fetch resource'
+			],
 			logErrors: true
 		});
 	}

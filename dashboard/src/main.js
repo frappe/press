@@ -47,6 +47,10 @@ if (window.press_frontend_sentry_dsn?.includes('https://')) {
 				tracingOrigins: ['localhost', /^\//]
 			})
 		],
+		ignoreErrors: [
+			'Failed to fetch dynamically imported module',
+			'NetworkError when attempting to fetch resource'
+		],
 		logErrors: true
 	});
 }
