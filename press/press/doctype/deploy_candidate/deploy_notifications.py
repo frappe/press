@@ -313,7 +313,7 @@ def update_with_incompatible_app_prebuild(
 	_, app, dep_app, actual, expected = exc.args
 
 	details["is_actionable"] = True
-	details["title"] = "Validation Failed: Incompatible  version"
+	details["title"] = "Validation Failed: Incompatible app version"
 
 	message = f"""
 	<p><b>{app}</b> depends on version <b>{expected}</b> of <b>{dep_app}</b>.
@@ -328,27 +328,6 @@ def update_with_incompatible_app_prebuild(
 
 
 def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException"):
-	if len(exc.args) != 3:
-		return
-
-	_, app, required_app = exc.args
-
-	details["is_actionable"] = True
-	details["title"] = "Validation Failed: Required app not found"
-	message = f"""
-	<p>App <b>{app}</b> has a dependency on the app <b>{required_app}</b>
-	which was not found on your bench</p>
-
-	<p>To rectify this issue, please add the required app to your Bench
-	and try again.</p>
-	"""
-	details["traceback"] = None
-	details["message"] = fmt(message)
-
-
-def update_with_required_app_not_found_prebuild(
-	details: "Details", exc: "BaseException"
-):
 	if len(exc.args) != 4:
 		return
 
@@ -360,12 +339,32 @@ def update_with_required_app_not_found_prebuild(
 	<p>App <b>{app}</b> has an invalid release with the commit hash
 	<b>{hash[:10]}</b></p>
 
-	<p>To rectify this issue, please fix the issue mentioned below and
+	<p>To rectify this, please fix the issue mentioned below and
 	push a new update.</p>
 	"""
 	details["traceback"] = invalidation_reason
 	details["message"] = fmt(message)
-	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+
+
+def update_with_required_app_not_found_prebuild(
+	details: "Details", exc: "BaseException"
+):
+	if len(exc.args) != 3:
+		return
+
+	_, app, required_app = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Required app not found"
+	message = f"""
+	<p><b>{app}</b> has a dependency on the app <b>{required_app}</b>
+	which was not found on your bench.</p>
+
+	<p>To rectify this issue, please add the required app to your Bench
+	and try again.</p>
+	"""
+	details["traceback"] = None
+	details["message"] = fmt(message)
 
 
 def fmt(message: str) -> str:

@@ -670,6 +670,7 @@ class DeployCandidate(Document):
 				break
 
 	def reset_build_state(self):
+		self.cleanup_build_directory()
 		self.build_steps.clear()
 		self.build_error = ""
 		self.build_output = ""
@@ -678,6 +679,7 @@ class DeployCandidate(Document):
 		self.last_updated = None
 		self.build_duration = None
 		self.build_directory = None
+		self.user_addressable_failure = False
 
 	def add_pre_build_steps(self):
 		"""
@@ -741,11 +743,14 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
-		if self.build_directory:
-			if os.path.exists(self.build_directory):
-				shutil.rmtree(self.build_directory)
-			self.build_directory = None
-			self.save()
+		if not self.build_directory:
+			return
+
+		if os.path.exists(self.build_directory):
+			shutil.rmtree(self.build_directory)
+
+		self.build_directory = None
+		self.save()
 
 	def _update_app_releases(self) -> None:
 		if not frappe.get_value("Release Group", self.group, "use_delta_builds"):
@@ -810,7 +815,7 @@ class DeployCandidate(Document):
 
 	def _clone_repos(self):
 		apps_directory = os.path.join(self.build_directory, "apps")
-		os.mkdir(apps_directory)
+		os.makedirs(apps_directory, exist_ok=True)
 
 		repo_path_map: dict[str, str] = {}
 
@@ -1480,7 +1485,7 @@ class DeployCandidate(Document):
 
 			owner = frappe.db.get_value(
 				"App Source",
-				app.release,
+				app.source,
 				"repository_owner",
 			)
 			return owner == org

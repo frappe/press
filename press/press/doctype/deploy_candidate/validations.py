@@ -27,6 +27,7 @@ class PreBuildValidations:
 		self._validate_python_requirement()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
+		self._validate_required_apps()
 
 	def _validate_repos(self):
 		for app in self.dc.apps:
