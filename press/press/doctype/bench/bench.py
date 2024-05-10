@@ -11,6 +11,7 @@ from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
@@ -18,7 +19,9 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
-from press.api.client import dashboard_whitelist
+
+TRANSITORY_STATES = ["Pending", "Installing"]
+FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[

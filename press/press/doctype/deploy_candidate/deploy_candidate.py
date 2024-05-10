@@ -14,7 +14,7 @@ import tempfile
 import typing
 from datetime import datetime, timedelta
 from subprocess import Popen
-from typing import Any, List, Literal, Optional, Tuple, Generator
+from typing import Any, Generator, List, Literal, Optional, Tuple
 
 import docker
 import frappe
@@ -31,18 +31,21 @@ from press.press.doctype.app_release.app_release import (
 from press.press.doctype.deploy_candidate.deploy_notifications import (
 	create_build_failed_notification,
 )
-from press.press.doctype.deploy_candidate.utils import (
-	load_pyproject,
-	get_package_manager_files,
-	PackageManagerFiles,
-)
-from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.deploy_candidate.docker_output_parsers import (
 	DockerBuildOutputParser,
 	UploadStepUpdater,
 )
+from press.press.doctype.deploy_candidate.utils import (
+	PackageManagerFiles,
+	get_package_manager_files,
+	load_pyproject,
+)
+from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
+
+TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
+RESTING_STATES = ["Draft", "Success", "Failure"]
 
 if typing.TYPE_CHECKING:
 
@@ -497,9 +500,10 @@ class DeployCandidate(Document):
 
 		if not upload_filename:
 			step.status = "Failure"
+			response_text = agent.response and agent.response.text
 			raise Exception(
 				"Failed to upload build context to remote docker builder"
-				+ f"\nagent response: `{agent.response.text}`",
+				+ f"\nagent response: `{response_text}`",
 			)
 		else:
 			step.status = "Success"
@@ -666,6 +670,7 @@ class DeployCandidate(Document):
 				break
 
 	def reset_build_state(self):
+		self.cleanup_build_directory()
 		self.build_steps.clear()
 		self.build_error = ""
 		self.build_output = ""
@@ -674,6 +679,7 @@ class DeployCandidate(Document):
 		self.last_updated = None
 		self.build_duration = None
 		self.build_directory = None
+		self.user_addressable_failure = False
 
 	def add_pre_build_steps(self):
 		"""
@@ -737,11 +743,14 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def cleanup_build_directory(self):
-		if self.build_directory:
-			if os.path.exists(self.build_directory):
-				shutil.rmtree(self.build_directory)
-			self.build_directory = None
-			self.save()
+		if not self.build_directory:
+			return
+
+		if os.path.exists(self.build_directory):
+			shutil.rmtree(self.build_directory)
+
+		self.build_directory = None
+		self.save()
 
 	def _update_app_releases(self) -> None:
 		if not frappe.get_value("Release Group", self.group, "use_delta_builds"):
@@ -806,7 +815,7 @@ class DeployCandidate(Document):
 
 	def _clone_repos(self):
 		apps_directory = os.path.join(self.build_directory, "apps")
-		os.mkdir(apps_directory)
+		os.makedirs(apps_directory, exist_ok=True)
 
 		repo_path_map: dict[str, str] = {}
 
@@ -1461,6 +1470,26 @@ class DeployCandidate(Document):
 
 		self.save()
 		return dc
+
+	def has_app(self, name: str) -> bool:
+		org = None
+		if "/" in name:
+			org, name = name.split("/")
+
+		for app in self.apps:
+			if app.app != name:
+				continue
+
+			if org is None:
+				return True
+
+			owner = frappe.db.get_value(
+				"App Source",
+				app.source,
+				"repository_owner",
+			)
+			return owner == org
+		return False
 
 
 def can_pull_update(file_paths: list[str]) -> bool:
