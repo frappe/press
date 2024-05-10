@@ -43,6 +43,27 @@ export default {
 			return {
 				doctype: 'Invoice',
 				fields: ['type', 'invoice_pdf'],
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Status',
+							class: 'w-36',
+							fieldname: 'status',
+							options: [
+								'',
+								'Draft',
+								'Invoice Created',
+								'Unpaid',
+								'Paid',
+								'Refunded',
+								'Uncollectible',
+								'Collected',
+								'Empty'
+							]
+						}
+					];
+				},
 				columns: [
 					{ label: 'Invoice', fieldname: 'name' },
 					{ label: 'Status', fieldname: 'status', type: 'Badge' },
