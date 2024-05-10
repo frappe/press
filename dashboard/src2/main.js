@@ -56,11 +56,19 @@ getInitialData().then(() => {
 					tracingOrigins: ['localhost', /^\//]
 				})
 			],
-			ignoreErrors: [
-				'/api/method/press.api.client',
-				'dynamically imported module',
-				'NetworkError when attempting to fetch resource'
-			],
+			beforeSend(event, hint) {
+				const ignoreErrors = [
+					/api\/method\/press.api.client/,
+					/dynamically imported module/,
+					/NetworkError when attempting to fetch resource/
+				];
+				const error = hint.originalException;
+
+				if (error?.message && ignoreErrors.some(re => re.test(error.message)))
+					return null;
+
+				return event;
+			},
 			logErrors: true
 		});
 	}
