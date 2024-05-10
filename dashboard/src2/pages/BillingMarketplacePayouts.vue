@@ -48,6 +48,17 @@ export default {
 					'net_total_inr',
 					'net_total_usd'
 				],
+				filterControls() {
+					return [
+						{
+							type: 'select',
+							label: 'Status',
+							class: 'w-36',
+							fieldname: 'status',
+							options: ['', 'Draft', 'Paid', 'Commissioned']
+						}
+					];
+				},
 				orderBy: 'creation desc',
 				columns: [
 					{
