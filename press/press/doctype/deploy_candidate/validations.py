@@ -48,7 +48,7 @@ class PreBuildValidations:
 			self._validate_python_version(app, actual, pm)
 
 	def _validate_python_version(self, app: str, actual: str, pm: PackageManagers):
-		expected = pm["pyproject"].get("project", {}).get("requires-python")
+		expected = (pm["pyproject"] or {}).get("project", {}).get("requires-python")
 		if expected is None or check_version(actual, expected):
 			return
 
