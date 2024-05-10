@@ -845,10 +845,9 @@ def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 			continue
 
 		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
-			if get_scheduled_version_upgrades(bench):
+			if not get_scheduled_version_upgrades(bench):
+				try_archive(bench.name)
 				continue
-			try_archive(bench.name)
-			continue
 
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
