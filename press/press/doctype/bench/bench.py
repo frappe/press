@@ -656,8 +656,6 @@ def process_new_bench_job_update(job):
 				enqueue_after_commit=True,
 				group=bench.group,
 				server=bench.server,
-				job_id=f"archive_obsolete_benches:{bench.group}:{bench.server}",
-				deduplicate=True,
 			)
 			bench.add_ssh_user()
 
