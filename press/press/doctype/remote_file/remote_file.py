@@ -154,7 +154,7 @@ class RemoteFile(Document):
 
 		bucket: DF.Data | None
 		file_name: DF.Data | None
-		file_path: DF.Data | None
+		file_path: DF.Text | None
 		file_size: DF.Data | None
 		file_type: DF.Data | None
 		site: DF.Link | None
