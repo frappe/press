@@ -7,11 +7,13 @@
  "engine": "InnoDB",
  "field_order": [
   "file_name",
-  "site",
   "status",
+  "column_break_uzdq",
+  "site",
   "section_break_5",
   "file_size",
   "file_path",
+  "column_break_scaf",
   "file_type",
   "bucket",
   "url"
@@ -76,14 +78,24 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Site",
    "options": "Site",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uzdq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_scaf",
+   "fieldtype": "Column Break"
   }
  ],
  "icon": "fa fa-file",
  "links": [],
- "modified": "2024-05-10 15:02:52.479943",
+ "modified": "2024-05-10 15:07:11.179229",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Remote File",
