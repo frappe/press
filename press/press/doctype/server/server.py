@@ -405,7 +405,10 @@ class BaseServer(Document, TagHelpers):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
-		self.enqueue_extend_ec2_volume()
+		if self.provider == "AWS EC2":
+			self.enqueue_extend_ec2_volume()
+		elif self.provider == "OCI":
+			self.reboot()
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
