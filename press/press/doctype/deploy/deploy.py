@@ -82,7 +82,7 @@ def create_deploy_candidate_differences(destination):
 		filters={
 			"status": ("!=", "Archived"),
 			"group": group,
-			"candidate": ("!=", destination),
+			"candidate": ("!=", destination.name),
 		},
 	)
 	candidates = list(set(candidates))
