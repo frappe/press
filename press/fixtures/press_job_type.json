@@ -314,14 +314,14 @@
  {
   "docstatus": 0,
   "doctype": "Press Job Type",
-  "modified": "2024-05-03 19:23:48.912506",
+  "modified": "2024-05-10 10:31:06.487431",
   "name": "Increase Disk Size",
   "steps": [
    {
     "parent": "Increase Disk Size",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing disk on {doc.server} by {server.size_to_increase_by_for_20_percent_available}G\")\nserver.calculated_increase_disk_size()\n    ",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Increasing disk on [{server.name}]({frappe.get_url_to_form(server.doctype, server.name)}) by {server.size_to_increase_by_for_20_percent_available}G\")\nserver.calculated_increase_disk_size()\n    ",
     "step_name": "Increase Disk Size",
     "wait_until_true": 0
    },
@@ -329,7 +329,7 @@
     "parent": "Increase Disk Size",
     "parentfield": "steps",
     "parenttype": "Press Job Type",
-    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")",
+    "script": "if frappe.db.get_value(doc.server_type, doc.server, \"provider\") == \"AWS EC2\":\n    plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Extend EC2 Volume\"}, [\"status\"], order_by=\"creation desc\", limit=1)\n    result = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\nelse:\n    result = (True, False)",
     "step_name": "Wait for partition to resize",
     "wait_until_true": 1
    }
