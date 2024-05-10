@@ -818,7 +818,7 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 			queue="long",
 			job_id=f"archive_obsolete_benches:{server_benches[0]}",
 			deduplicate=True,
-			benches=server_benches[1],
+			benches=list(server_benches[1]),
 		)
 
 
