@@ -119,7 +119,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Incompatible app version found" in tb:
 		update_with_incompatible_app_prebuild(details, exc)
 
-	elif "Invalid release found":
+	elif "Invalid release found" in tb:
 		update_with_invalid_release_prebuild(details, exc)
 
 	return details
