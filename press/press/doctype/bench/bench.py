@@ -2,9 +2,10 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from itertools import groupby
 import json
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
@@ -658,8 +659,6 @@ def process_new_bench_job_update(job):
 				enqueue_after_commit=True,
 				group=bench.group,
 				server=bench.server,
-				job_id=f"archive_obsolete_benches:{bench.group}:{bench.server}",
-				deduplicate=True,
 			)
 			bench.add_ssh_user()
 
@@ -807,9 +806,23 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 			bench.group = g.name
 		WHERE
 			bench.status = "Active" {query_substr}
+		ORDER BY
+			bench.server
 	""",
 		as_dict=True,
 	)
+	benches_by_server = groupby(benches, lambda x: x.server)
+	for server_benches in benches_by_server:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
+			queue="long",
+			job_id=f"archive_obsolete_benches:{server_benches[0]}",
+			deduplicate=True,
+			benches=server_benches[1],
+		)
+
+
+def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
 		if (
 			bench.last_archive_failure
@@ -835,10 +848,9 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 			continue
 
 		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
-			if get_scheduled_version_upgrades(bench):
+			if not get_scheduled_version_upgrades(bench):
+				try_archive(bench.name)
 				continue
-			try_archive(bench.name)
-			continue
 
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.

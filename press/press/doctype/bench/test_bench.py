@@ -12,7 +12,12 @@ from frappe.tests.utils import FrappeTestCase
 from press.press.doctype.agent_job.agent_job import AgentJob, poll_pending_jobs
 from press.press.doctype.agent_job.test_agent_job import fake_agent_job
 from press.press.doctype.app.test_app import create_test_app
-from press.press.doctype.bench.bench import Bench, StagingSite, archive_obsolete_benches
+from press.press.doctype.bench.bench import (
+	Bench,
+	StagingSite,
+	archive_obsolete_benches,
+	archive_obsolete_benches_for_server,
+)
 from press.press.doctype.deploy_candidate_difference.test_deploy_candidate_difference import (
 	create_test_deploy_candidate_differences,
 )
@@ -26,6 +31,7 @@ from press.press.doctype.subscription.test_subscription import create_test_subsc
 from press.press.doctype.version_upgrade.test_version_upgrade import (
 	create_test_version_upgrade,
 )
+from press.utils.test import foreground_enqueue
 
 
 @patch.object(AgentJob, "enqueue_http_request", new=Mock())
@@ -298,7 +304,7 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 			1,
 		)
 
-	def test_old_public_benches_not_archived(self):
+	def test_old_public_benches_without_sites_archived(self):
 		pub_group = create_test_release_group(apps=[create_test_app()], public=True)
 
 		bench1 = create_test_bench(group=pub_group, creation=frappe.utils.add_days(None, -10))
@@ -331,3 +337,24 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 			poll_pending_jobs()
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)
+
+	@patch(
+		"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
+		wraps=archive_obsolete_benches_for_server,
+	)
+	@patch("press.press.doctype.bench.bench.frappe.enqueue", new=foreground_enqueue)
+	def test_benches_archived_for_multiple_servers_via_multiple_jobs(
+		self, mock_archive_by_server: MagicMock
+	):
+		priv_group = create_test_release_group(apps=[create_test_app()], public=False)
+		create_test_bench(group=priv_group, creation=frappe.utils.add_days(None, -10))
+		priv_group2 = create_test_release_group(apps=[create_test_app()], public=False)
+		create_test_bench(group=priv_group2, creation=frappe.utils.add_days(None, -10))
+
+		benches_before = frappe.db.count("Bench", {"status": "Active"})
+		with fake_agent_job("Archive Bench"):
+			archive_obsolete_benches()
+			poll_pending_jobs()
+		benches_after = frappe.db.count("Bench", {"status": "Active"})
+		self.assertEqual(benches_before - benches_after, 2)
+		self.assertEqual(mock_archive_by_server.call_count, 2)
