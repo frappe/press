@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -7,6 +8,7 @@ from press.press.doctype.deploy_candidate.utils import (
 	PackageManagerFiles,
 	PackageManagers,
 )
+from press.utils import get_filepath, log_error
 
 if TYPE_CHECKING:
 	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
@@ -90,6 +92,40 @@ class PreBuildValidations:
 
 			self._check_frappe_dependencies(app, frappe_deps)
 
+	def _validate_required_apps(self):
+		for app, pm in self.pmf.items():
+			hooks_path = get_filepath(
+				pm["repo_path"],
+				"hooks.py",
+				2,
+			)
+			if hooks_path is None:
+				continue
+
+			try:
+				required_apps = get_required_apps_from_hookpy(hooks_path)
+			except Exception:
+				log_error(
+					"Failed to get required apps from hooks.py",
+					hooks_path=hooks_path,
+					doc=self.dc,
+				)
+				continue
+
+			self._check_required_apps(app, required_apps)
+
+	def _check_required_apps(self, app: str, required_apps: list[str]):
+		for ra in required_apps:
+			if self.dc.has_app(ra):
+				continue
+
+			# Do not change args without updating deploy_notifications.py
+			raise Exception(
+				"Required app not found",
+				app,
+				ra,
+			)
+
 	def _check_frappe_dependencies(self, app: str, frappe_deps: dict[str, str]):
 		for dep_app, actual in frappe_deps.items():
 			expected = self._get_app_version(dep_app)
@@ -139,3 +175,29 @@ def check_version(actual: str, expected: str) -> bool:
 	sv_expected = sv.SimpleSpec(expected)
 
 	return sv_actual in sv_expected
+
+
+def get_required_apps_from_hookpy(hooks_path: str) -> list[str]:
+	"""
+	Returns required_apps from an app's hooks.py file.
+	"""
+
+	with open(hooks_path) as f:
+		hooks = f.read()
+
+	for assign in ast.parse(hooks).body:
+		if not hasattr(assign, "targets") or not len(assign.targets):
+			continue
+
+		if not hasattr(assign.targets[0], "id"):
+			continue
+
+		if not assign.targets[0].id == "required_apps":
+			continue
+
+		if not isinstance(assign.value, ast.List):
+			return []
+
+		return [v.value for v in assign.value.elts]
+
+	return []

@@ -1466,6 +1466,26 @@ class DeployCandidate(Document):
 		self.save()
 		return dc
 
+	def has_app(self, name: str) -> bool:
+		org = None
+		if "/" in name:
+			org, name = name.split("/")
+
+		for app in self.apps:
+			if app.app != name:
+				continue
+
+			if org is None:
+				return True
+
+			owner = frappe.db.get_value(
+				"App Source",
+				app.release,
+				"repository_owner",
+			)
+			return owner == org
+		return False
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""

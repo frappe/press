@@ -129,6 +129,10 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Invalid release found" in tb:
 		update_with_invalid_release_prebuild(details, exc)
 
+	# Required app (from hooks.py) not found
+	elif "Required app not found" in tb:
+		update_with_required_app_not_found_prebuild(details, exc)
+
 	return details
 
 
@@ -324,6 +328,27 @@ def update_with_incompatible_app_prebuild(
 
 
 def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException"):
+	if len(exc.args) != 3:
+		return
+
+	_, app, required_app = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Required app not found"
+	message = f"""
+	<p>App <b>{app}</b> has a dependency on the app <b>{required_app}</b>
+	which was not found on your bench</p>
+
+	<p>To rectify this issue, please add the required app to your Bench
+	and try again.</p>
+	"""
+	details["traceback"] = None
+	details["message"] = fmt(message)
+
+
+def update_with_required_app_not_found_prebuild(
+	details: "Details", exc: "BaseException"
+):
 	if len(exc.args) != 4:
 		return
 
