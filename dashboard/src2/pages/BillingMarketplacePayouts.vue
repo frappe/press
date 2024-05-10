@@ -48,6 +48,7 @@ export default {
 					'net_total_inr',
 					'net_total_usd'
 				],
+				orderBy: 'creation desc',
 				columns: [
 					{
 						label: 'Date',
