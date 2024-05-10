@@ -191,6 +191,7 @@ scheduler_events = {
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
@@ -204,7 +205,6 @@ scheduler_events = {
 		"press.press.doctype.deploy_candidate.deploy_candidate.delete_draft_candidates",
 		"press.press.doctype.virtual_disk_snapshot.virtual_disk_snapshot.delete_old_snapshots",
 		"press.press.doctype.app_release.app_release.cleanup_unused_releases",
-		"press.press.doctype.bench.bench.archive_obsolete_benches",
 	],
 	"all": [
 		"press.auth.flush",

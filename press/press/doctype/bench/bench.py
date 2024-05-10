@@ -2,9 +2,10 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from itertools import groupby
 import json
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
@@ -804,9 +805,23 @@ def archive_obsolete_benches(group: str = None, server: str = None):
 			bench.group = g.name
 		WHERE
 			bench.status = "Active" {query_substr}
+		ORDER BY
+			bench.server
 	""",
 		as_dict=True,
 	)
+	benches_by_server = groupby(benches, lambda x: x.server)
+	for server_benches in benches_by_server:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
+			queue="long",
+			job_id=f"archive_obsolete_benches:{server_benches[0]}",
+			deduplicate=True,
+			benches=server_benches[1],
+		)
+
+
+def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
 		if (
 			bench.last_archive_failure
