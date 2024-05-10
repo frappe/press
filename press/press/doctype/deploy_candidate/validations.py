@@ -22,6 +22,7 @@ class PreBuildValidations:
 
 	def validate(self):
 		self._validate_repos()
+		self._validate_python_requirement()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
 
@@ -37,6 +38,24 @@ class PreBuildValidations:
 					app.hash,
 					reason,
 				)
+
+	def _validate_python_requirement(self):
+		actual = self.dc.get_dependency_version("python")
+		for app, pm in self.pmf.items():
+			self._validate_python_version(app, actual, pm)
+
+	def _validate_python_version(self, app: str, actual: str, pm: PackageManagers):
+		expected = pm["pyproject"].get("project", {}).get("requires-python")
+		if expected is None or sv.Version(actual) in sv.SimpleSpec(expected):
+			return
+
+		# Do not change args without updating deploy_notifications.py
+		raise Exception(
+			"Incompatible Python version found",
+			app,
+			actual,
+			expected,
+		)
 
 	def _validate_node_requirement(self):
 		actual = self.dc.get_dependency_version("node")

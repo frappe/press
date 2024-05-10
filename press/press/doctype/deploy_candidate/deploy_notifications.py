@@ -39,6 +39,7 @@ DOC_URLS = {
 	"app-installation-issue": "https://frappecloud.com/docs/faq/app-installation-issue",
 	"invalid-pyproject-file": "https://frappecloud.com/docs/common-issues/invalid-pyprojecttoml-file",
 	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
+	"incompatible-dependency-version": "https://frappecloud.com/docs/common-issues/incompatible-dependency-version",
 }
 
 
@@ -115,10 +116,15 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Incompatible Node version found" in tb:
 		update_with_incompatible_node_prebuild(details, exc)
 
+	# Python version is incompatible (from `PreBuildValidations`)
+	elif "Incompatible Python version found" in tb:
+		update_with_incompatible_python_prebuild(details, exc)
+
 	# App version is incompatible (from `PreBuildValidations`)
 	elif "Incompatible app version found" in tb:
 		update_with_incompatible_app_prebuild(details, exc)
 
+	# Release is invalid (from `PreBuildValidations`)
 	elif "Invalid release found" in tb:
 		update_with_invalid_release_prebuild(details, exc)
 
@@ -263,6 +269,31 @@ def update_with_incompatible_node_prebuild(
 	"""
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
+
+	# Traceback is not pertinent to issue
+	details["traceback"] = None
+
+
+def update_with_incompatible_python_prebuild(
+	details: "Details",
+	exc: "BaseException",
+) -> None:
+	if len(exc.args) != 4:
+		return
+
+	_, app, actual, expected = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Incompatible Python version"
+	message = f"""
+	<p><b>{app}</b> requires Python version <b>{expected}</b>, found version is <b>{actual}</b>.
+
+	Please set the correct Python version on your Bench.</p>
+
+	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
+	"""
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["incompatible-dependency-version"]
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
