@@ -1,16 +1,15 @@
-import semantic_version as sv
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
+
+import frappe
+import semantic_version as sv
 from press.press.doctype.deploy_candidate.utils import (
-	PackageManagers,
 	PackageManagerFiles,
+	PackageManagers,
 )
 
-
 if TYPE_CHECKING:
-	from press.press.doctype.deploy_candidate.deploy_candidate import (
-		DeployCandidate,
-	)
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 
 class PreBuildValidations:
@@ -22,12 +21,22 @@ class PreBuildValidations:
 		self.pmf = pmf
 
 	def validate(self):
-		self._validate_syntax()
+		self._validate_repos()
 		self._validate_node_requirement()
 		self._validate_frappe_dependencies()
 
-	def _validate_syntax(self):
-		pass
+	def _validate_repos(self):
+		for app in self.dc.apps:
+			if frappe.get_value(app.release, "invalid_release"):
+				reason = frappe.get_value(app.release, "invalidation_reason")
+
+				# Do not change message without updating deploy_notifications.py
+				raise Exception(
+					"Invalid release found",
+					app.app,
+					app.hash,
+					reason,
+				)
 
 	def _validate_node_requirement(self):
 		actual = self.dc.get_dependency_version("node")

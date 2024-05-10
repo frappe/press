@@ -119,6 +119,9 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Incompatible app version found" in tb:
 		update_with_incompatible_app_prebuild(details, exc)
 
+	elif "Invalid release found":
+		update_with_invalid_release_prebuild(details, exc)
+
 	return details
 
 
@@ -134,14 +137,14 @@ def update_with_invalid_pyproject_error(
 	app_name = build_step.step
 
 	details["is_actionable"] = True
-	details["title"] = f"{app_name} has an invalid pyproject.toml file"
+	details["title"] = "Invalid pyproject.toml file found"
 	message = f"""
 	<p>The <b>pyproject.toml</b> file in the <b>{app_name}</b> repository could not be
 	decoded by <code>tomllib</code> due to syntax errors.</p>
 
 	<p>To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
 
 
@@ -161,15 +164,15 @@ def update_with_invalid_package_json_error(
 		loc_str = f"<p>File was found at path <b>{exc.args[2]}</b>.</p>"
 
 	details["is_actionable"] = True
-	details["title"] = f"{app_name} has an invalid package.json file"
+	details["title"] = "Invalid package.json file found"
 	message = f"""
 	<p>The <b>package.json</b> file in the <b>{app_name}</b> repository could not be
 	decoded by <code>json.load</code>.</p>
 	{loc_str}
 
 	<p>To rectify this issue, please fix the <b>pyproject.json</b> file.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 
 
 def update_with_github_token_error(
@@ -203,8 +206,8 @@ def update_with_github_token_error(
 
 	<p><b>{app_name}</b> installation access token could not be fetched from GitHub.
 	To rectify this issue, please follow the steps mentioned in <i>Help</i>.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["app-installation-issue"]
 
 
@@ -227,8 +230,8 @@ def update_with_incompatible_node(
 	Please set the correct Node Version on your Bench.</p>
 
 	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
 
 	# Traceback is not pertinent to issue
@@ -239,7 +242,7 @@ def update_with_incompatible_node_prebuild(
 	details: "Details",
 	exc: "BaseException",
 ) -> None:
-	if len(exc.args) < 5:
+	if len(exc.args) != 5:
 		return
 
 	_, app, actual, expected, package_name = exc.args
@@ -257,8 +260,8 @@ def update_with_incompatible_node_prebuild(
 	Please set the correct Node version on your Bench.</p>
 
 	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["incompatible-node-version"]
 
 	# Traceback is not pertinent to issue
@@ -269,7 +272,7 @@ def update_with_incompatible_app_prebuild(
 	details: "Details",
 	exc: "BaseException",
 ) -> None:
-	if len(exc.args) < 5:
+	if len(exc.args) != 5:
 		return
 
 	_, app, dep_app, actual, expected = exc.args
@@ -282,11 +285,35 @@ def update_with_incompatible_app_prebuild(
 	Found version is <b>{actual}</b></p>
 
 	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
-	""".strip()
-	details["message"] = dedent(message)
+	"""
+	details["message"] = fmt(message)
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
+
+
+def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException"):
+	if len(exc.args) != 4:
+		return
+
+	_, app, hash, invalidation_reason = exc.args
+
+	details["is_actionable"] = True
+	details["title"] = "Validation Failed: Invalid app release"
+	message = f"""
+	<p>App <b>{app}</b> has an invalid release with the commit hash
+	<b>{hash[:10]}</b></p>
+
+	<p>To rectify this issue, please fix the issue mentioned below and
+	push a new update.</p>
+	"""
+	details["traceback"] = invalidation_reason
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+
+
+def fmt(message: str) -> str:
+	return dedent(message.strip()).replace("\n", " ")
 
 
 def get_build_output_line(dc: "DeployCandidate", needle: str):
