@@ -46,7 +46,7 @@ class PreBuildValidations:
 
 	def _validate_python_version(self, app: str, actual: str, pm: PackageManagers):
 		expected = pm["pyproject"].get("project", {}).get("requires-python")
-		if expected is None or sv.Version(actual) in sv.SimpleSpec(expected):
+		if expected is None or check_version(actual, expected):
 			return
 
 		# Do not change args without updating deploy_notifications.py
@@ -65,7 +65,7 @@ class PreBuildValidations:
 	def _validate_node_version(self, app: str, actual: str, pm: PackageManagers):
 		for pckj in pm["packagejsons"]:
 			expected = pckj.get("engines", {}).get("node")
-			if expected is None or sv.Version(actual) in sv.SimpleSpec(expected):
+			if expected is None or check_version(actual, expected):
 				continue
 
 			package_name = pckj.get("name")
@@ -128,3 +128,14 @@ class PreBuildValidations:
 				break
 
 		return None
+
+
+def check_version(actual: str, expected: str) -> bool:
+	# Python version mentions on press dont mention the patch version.
+	if actual.count(".") == 1:
+		actual += ".0"
+
+	sv_actual = sv.Version(actual)
+	sv_expected = sv.SimpleSpec(expected)
+
+	return sv_actual in sv_expected

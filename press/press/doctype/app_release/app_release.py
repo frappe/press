@@ -103,7 +103,7 @@ class AppRelease(Document):
 		if (
 			self.invalid_release
 			or not self.clone_directory
-			or os.path.isdir(self.clone_directory)
+			or not os.path.isdir(self.clone_directory)
 		):
 			return
 
@@ -474,6 +474,6 @@ def check_pyproject_syntax(dirpath: str) -> str:
 		try:
 			load(f)
 		except TOMLDecodeError as err:
-			return "Invalid pyproject.toml at project root\n".join(err.args)
+			return "Invalid pyproject.toml at project root\n" + "\n".join(err.args)
 
 	return ""

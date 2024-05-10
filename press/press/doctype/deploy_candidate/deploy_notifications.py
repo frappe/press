@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import typing
+import re
 from textwrap import dedent
 from typing import Optional, TypedDict
 
@@ -287,7 +288,6 @@ def update_with_incompatible_python_prebuild(
 	details["title"] = "Validation Failed: Incompatible Python version"
 	message = f"""
 	<p><b>{app}</b> requires Python version <b>{expected}</b>, found version is <b>{actual}</b>.
-
 	Please set the correct Python version on your Bench.</p>
 
 	<p>To rectify this issue, please follow the the steps mentioned in <i>Help</i>.</p>
@@ -344,7 +344,9 @@ def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException
 
 
 def fmt(message: str) -> str:
-	return dedent(message.strip()).replace("\n", " ")
+	message = message.strip()
+	message = dedent(message)
+	return re.sub(r"\s+", " ", message)
 
 
 def get_build_output_line(dc: "DeployCandidate", needle: str):
