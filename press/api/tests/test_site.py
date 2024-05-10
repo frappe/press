@@ -174,7 +174,7 @@ class TestAPISite(FrappeTestCase):
 		self.assertNotEqual(self.bench1, self.bench2)
 		# No need to create app release differences as it'll get autofilled by geo.json
 		create_test_deploy_candidate_differences(
-			self.bench2
+			self.bench2.candidate
 		)  # for site update to be available
 
 	@patch.object(AgentJob, "enqueue_http_request", new=Mock())

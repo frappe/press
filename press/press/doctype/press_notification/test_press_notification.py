@@ -32,7 +32,9 @@ class TestPressNotification(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_test_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 

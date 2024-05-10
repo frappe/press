@@ -55,7 +55,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_test_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
@@ -80,7 +82,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2 = create_test_bench(group=group, server=bench1.server)
 		self.assertNotEqual(bench1, bench2)
 
-		create_test_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		site.schedule_update()
@@ -106,7 +110,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench2.apps.pop()
 		bench2.save()
 
-		create_test_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 
@@ -128,7 +134,9 @@ class TestSiteUpdate(FrappeTestCase):
 		bench1 = create_test_bench(group=group)
 		bench2 = create_test_bench(group=group, server=bench1.server)
 
-		create_test_deploy_candidate_differences(bench2)  # for site update to be available
+		create_test_deploy_candidate_differences(
+			bench2.candidate
+		)  # for site update to be available
 
 		site = create_test_site(bench=bench1.name)
 		plan = create_test_plan(site.doctype, cpu_time=8)

@@ -315,7 +315,7 @@ class TestArchiveObsoleteBenches(unittest.TestCase):
 		benches_after = frappe.db.count("Bench", {"status": "Active"})
 		self.assertEqual(benches_after, benches_before)  # nothing got archived
 		bench2 = create_test_bench(group=pub_group, server=bench1.server)
-		create_test_deploy_candidate_differences(bench2)
+		create_test_deploy_candidate_differences(bench2.candidate)
 		with fake_agent_job("Archive Bench"):
 			archive_obsolete_benches()
 			poll_pending_jobs()
