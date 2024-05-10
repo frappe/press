@@ -17,7 +17,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-from press.agent import Agent
+from press.agent import Agent, AgentCallbackException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
@@ -438,6 +438,10 @@ def poll_pending_jobs_server(server):
 
 			frappe.db.commit()
 			publish_update(job.name)
+		except AgentCallbackException:
+			# Don't log error for AgentCallbackException
+			# it's already logged
+			frappe.db.rollback()
 		except Exception:
 			log_error(
 				"Agent Job Poll Exception",
@@ -953,7 +957,7 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			reference_doctype="Agent Job",
 			reference_name=job_name,
 		)
-		raise e
+		raise AgentCallbackException from e
 
 
 def update_job_step_status():

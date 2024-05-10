@@ -1022,3 +1022,7 @@ class Agent:
 			"docker_cache_utils/get_cached_apps",
 			data={},
 		)
+
+
+class AgentCallbackException(Exception):
+	pass
