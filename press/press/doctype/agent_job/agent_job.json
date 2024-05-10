@@ -6,38 +6,33 @@
  "engine": "InnoDB",
  "field_order": [
   "job_type",
-  "server_type",
-  "column_break_5",
   "status",
+  "server_type",
   "server",
-  "reference_section",
+  "column_break_5",
   "bench",
-  "reference_doctype",
-  "upstream",
-  "code_server",
-  "column_break_pxnl",
   "site",
-  "reference_name",
+  "code_server",
+  "upstream",
   "host",
   "request_section",
   "job_id",
-  "request_method",
-  "column_break_10",
   "request_path",
-  "duration_section",
-  "start",
-  "duration",
-  "column_break_lngp",
-  "end",
+  "request_method",
   "retry_count",
   "next_retry_at",
+  "column_break_10",
+  "start",
+  "end",
+  "duration",
   "data_19",
   "output",
   "data",
   "traceback",
-  "request_data_section",
   "request_data",
-  "request_files"
+  "request_files",
+  "callback_section",
+  "callback_failure_count"
  ],
  "fields": [
   {
@@ -168,8 +163,7 @@
   },
   {
    "fieldname": "request_section",
-   "fieldtype": "Section Break",
-   "label": "Request"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "column_break_10",
@@ -181,8 +175,7 @@
   },
   {
    "fieldname": "data_19",
-   "fieldtype": "Section Break",
-   "label": "Response Data"
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "host",
@@ -218,53 +211,21 @@
    "read_only": 1
   },
   {
-   "fieldname": "reference_section",
+   "collapsible": 1,
+   "fieldname": "callback_section",
    "fieldtype": "Section Break",
-   "label": "References"
+   "label": "Callback"
   },
   {
-   "depends_on": "eval:doc.reference_doctype",
-   "fieldname": "reference_doctype",
-   "fieldtype": "Link",
-   "label": "Reference DocType",
-   "options": "DocType",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_pxnl",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.reference_name",
-   "fieldname": "reference_name",
-   "fieldtype": "Dynamic Link",
-   "label": "Reference Name",
-   "options": "reference_doctype",
-   "read_only": 1
-  },
-  {
-   "fieldname": "duration_section",
-   "fieldtype": "Section Break",
-   "label": "Duration"
-  },
-  {
-   "fieldname": "column_break_lngp",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "request_data_section",
-   "fieldtype": "Section Break",
-   "label": "Request Data"
+   "default": "0",
+   "fieldname": "callback_failure_count",
+   "fieldtype": "Int",
+   "label": "Callback Failure Count"
   }
  ],
  "in_create": 1,
- "links": [
-  {
-   "link_doctype": "Error Log",
-   "link_fieldname": "reference_name"
-  }
- ],
- "modified": "2024-03-27 11:05:48.861690",
+ "links": [],
+ "modified": "2024-05-10 12:00:30.670508",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Agent Job",
@@ -300,7 +261,7 @@
   }
  ],
  "quick_entry": 1,
- "sort_field": "creation",
+ "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
  "title_field": "job_type",

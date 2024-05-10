@@ -44,6 +44,7 @@ class AgentJob(Document):
 		from frappe.types import DF
 
 		bench: DF.Link | None
+		callback_failure_count: DF.Int
 		code_server: DF.Link | None
 		data: DF.Code | None
 		duration: DF.Time | None
@@ -53,8 +54,6 @@ class AgentJob(Document):
 		job_type: DF.Link
 		next_retry_at: DF.Datetime | None
 		output: DF.Code | None
-		reference_doctype: DF.Link | None
-		reference_name: DF.DynamicLink | None
 		request_data: DF.Code
 		request_files: DF.Code | None
 		request_method: DF.Literal["GET", "POST", "DELETE"]
@@ -391,7 +390,7 @@ def poll_pending_jobs_server(server):
 
 	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "job_id", "status"],
+		fields=["name", "job_id", "status", "callback_failure_count"],
 		filters={
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
@@ -441,7 +440,12 @@ def poll_pending_jobs_server(server):
 		except AgentCallbackException:
 			# Don't log error for AgentCallbackException
 			# it's already logged
+			# Rollback all other changes and increment the failure count
 			frappe.db.rollback()
+			frappe.db.set_value(
+				"Agent Job", job.name, "callback_failure_count", job.callback_failure_count + 1
+			)
+			frappe.db.commit()
 		except Exception:
 			log_error(
 				"Agent Job Poll Exception",
@@ -951,12 +955,14 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			DeployCandidate.process_run_remote_builder(job, response_data)
 
 	except Exception as e:
-		log_error(
-			"Agent Job Callback Exception",
-			job=job.as_dict(),
-			reference_doctype="Agent Job",
-			reference_name=job_name,
-		)
+		failure_count = job.callback_failure_count + 1
+		if failure_count in set([10, 100]) or failure_count % 1000 == 0:
+			log_error(
+				"Agent Job Callback Exception",
+				job=job.as_dict(),
+				reference_doctype="Agent Job",
+				reference_name=job_name,
+			)
 		raise AgentCallbackException from e
 
 
