@@ -1,8 +1,9 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
+from frappe.utils import nowdate, add_days
 
 
 class AgentJobRetryLog(Document):
@@ -22,3 +23,9 @@ class AgentJobRetryLog(Document):
 	# end: auto-generated types
 
 	pass
+
+
+def remove_stale_logs():
+	frappe.db.delete(
+		"Agent Job Retry Log", {"creation": ("<=", add_days(nowdate(), days=-3))}
+	)
