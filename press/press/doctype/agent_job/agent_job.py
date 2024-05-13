@@ -715,6 +715,7 @@ def retry_undelivered_jobs(server):
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
+				process_job_updates(job.name)
 
 
 def queued_jobs():
