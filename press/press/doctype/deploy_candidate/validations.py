@@ -143,7 +143,10 @@ class PreBuildValidations:
 			)
 
 	def _get_app_version(self, app: str) -> Optional[str]:
-		pm = self.pmf[app]
+		pm = self.pmf.get(app)
+		if not pm:
+			return None
+
 		pyproject = pm["pyproject"] or {}
 		version = pyproject.get("project", {}).get("version")
 
