@@ -345,6 +345,9 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		Search(using=es, index="filebeat-*")
 		.filter("match", mysql__slowlog__current_user=database_name)
 		.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+		.exclude(
+			"wildcard", mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*"  # noqa
+		)
 		.extra(size=0)
 	)
 
