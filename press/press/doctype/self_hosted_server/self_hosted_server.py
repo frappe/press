@@ -33,6 +33,7 @@ class SelfHostedServer(Document):
 		cluster: DF.Link | None
 		database_plan: DF.Link | None
 		database_server: DF.Link | None
+		database_service: DF.Literal["AWS - RDS"]
 		database_setup: DF.Check
 		db_ram: DF.Data | None
 		db_total_storage: DF.Data | None
@@ -46,6 +47,7 @@ class SelfHostedServer(Document):
 		hostname: DF.Data | None
 		instance_type: DF.Data | None
 		ip: DF.Data
+		is_managed_database: DF.Check
 		mariadb_ip: DF.Data | None
 		mariadb_private_ip: DF.Data | None
 		mariadb_root_password: DF.Password
