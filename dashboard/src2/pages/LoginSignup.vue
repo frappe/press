@@ -48,6 +48,7 @@
 								required
 							/>
 							<FormControl
+								v-if="isOauthLogin()"
 								class="mt-4"
 								label="Password"
 								type="password"
@@ -57,7 +58,7 @@
 								autocomplete="current-password"
 								required
 							/>
-							<div class="mt-2" v-if="isLogin">
+							<div class="mt-2" v-if="isLogin && isOauthLogin()">
 								<router-link
 									class="text-sm"
 									:to="{
@@ -68,7 +69,12 @@
 									Forgot Password?
 								</router-link>
 							</div>
-							<Button class="mt-4" variant="solid"> Log in with email </Button>
+							<Button v-if="isOauthLogin()" class="mt-4" variant="solid">
+								Log in with email
+							</Button>
+							<Button v-else class="mt-4" variant="solid">
+								Log in with {{ oauthProvider(oauthEmailDomain) }}
+							</Button>
 							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
 						<template v-else>
@@ -90,7 +96,10 @@
 						</template>
 						<ErrorMessage class="mt-2" :message="$resources.signup.error" />
 					</form>
-					<div class="flex flex-col" v-if="!hasForgotPassword">
+					<div
+						class="flex flex-col"
+						v-if="!hasForgotPassword && isOauthLogin()"
+					>
 						<div class="-mb-2 mt-6 border-t text-center">
 							<div class="-translate-y-1/2 transform">
 								<span
@@ -152,6 +161,8 @@
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
+import { getCustomOauths, oauthProviders } from '../data/logins';
+import { debounce } from 'lodash';
 
 export default {
 	name: 'Signup',
@@ -165,8 +176,20 @@ export default {
 			email: null,
 			password: null,
 			signupEmailSent: false,
-			resetPasswordEmailSent: false
+			resetPasswordEmailSent: false,
+			oauthEmailDomain: null
 		};
+	},
+	watch: {
+		email: {
+			handler: debounce(function (value) {
+				let domain = value.split('@').pop();
+				this.oauthEmailDomain =
+					this.oauthEmailDomains.has(domain) && domain.length > 0
+						? domain
+						: null;
+			}, 200)
+		}
 	},
 	resources: {
 		signup() {
@@ -180,6 +203,14 @@ export default {
 				},
 				onSuccess() {
 					this.signupEmailSent = true;
+				}
+			};
+		},
+		oauthLogin() {
+			return {
+				url: 'press.api.oauth.oauth_authorize_url',
+				onSuccess(url) {
+					window.location.href = url;
 				}
 			};
 		},
@@ -218,6 +249,12 @@ export default {
 		}
 	},
 	methods: {
+		isOauthLogin() {
+			return this.oauthEmailDomain === null;
+		},
+		oauthProvider(emailDomain) {
+			return oauthProviders()[emailDomain].provider_name;
+		},
 		async submitForm() {
 			if (this.isLogin) {
 				if (this.email && this.password) {
@@ -236,6 +273,10 @@ export default {
 							}
 						}
 					);
+				} else if (this.oauthEmailDomain != null) {
+					this.$resources.oauthLogin.submit({
+						provider: oauthProviders()[this.oauthEmailDomain].social_login_key
+					});
 				}
 			} else if (this.hasForgotPassword) {
 				this.$resources.resetPassword.submit();
@@ -255,6 +296,10 @@ export default {
 		},
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;
+		},
+		oauthEmailDomains() {
+			console.log('computing');
+			return new Set(getCustomOauths().map(el => el.email_domain));
 		},
 		hasForgotPassword() {
 			return this.$route.name == 'Login' && this.$route.query.forgot;
