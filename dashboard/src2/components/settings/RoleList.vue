@@ -7,12 +7,12 @@ import { h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { icon, renderDialog, confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
-import PermissionGroupMembersDialog from './PermissionGroupMembersDialog.vue';
+import RoleMembersDialog from './RoleMembersDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
 
 const listOptions = ref({
-	doctype: 'Press Permission Group',
+	doctype: 'Press Role',
 	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
 	columns: [
 		{
@@ -42,14 +42,14 @@ const listOptions = ref({
 			width: 1
 		}
 	],
-	rowActions({ row, listResource: groupsListResource }) {
+	rowActions({ row, listResource: roleListResource }) {
 		return [
 			{
 				label: 'Edit Permissions',
 				onClick() {
 					router.push({
 						name: 'SettingsPermissionRolePermissions',
-						params: { groupId: row.name }
+						params: { roleId: row.name }
 					});
 				}
 			},
@@ -60,17 +60,17 @@ const listOptions = ref({
 			{
 				label: 'Delete Group',
 				onClick() {
-					if (groupsListResource.delete.loading) return;
+					if (roleListResource.delete.loading) return;
 					confirmDialog({
 						title: 'Delete Permission Group',
 						message: `Are you sure you want to delete the permission group <b>${row.title}</b>?`,
 						onSuccess({ hide }) {
-							if (groupsListResource.delete.loading) return;
-							toast.promise(groupsListResource.delete.submit(row.name), {
+							if (roleListResource.delete.loading) return;
+							toast.promise(roleListResource.delete.submit(row.name), {
 								loading: 'Deleting Group...',
 								success: () => {
 									`Permission Group ${row.title} Deleted`;
-									groupsListResource.reload();
+									roleListResource.reload();
 									hide();
 								},
 								error: e =>
@@ -85,7 +85,7 @@ const listOptions = ref({
 	route(row) {
 		return {
 			name: 'SettingsPermissionRolePermissions',
-			params: { groupId: row.name }
+			params: { roleId: row.name }
 		};
 	},
 	primaryAction({ listResource: groups }) {
@@ -121,6 +121,6 @@ const listOptions = ref({
 });
 
 function manageMembers(row) {
-	renderDialog(h(PermissionGroupMembersDialog, { groupId: row.name }));
+	renderDialog(h(RoleMembersDialog, { roleId: row.name }));
 }
 </script>

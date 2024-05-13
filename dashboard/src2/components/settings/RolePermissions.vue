@@ -8,10 +8,10 @@
 			</Button>
 		</Tooltip>
 		<h3 class="text-lg font-medium text-gray-900">
-			{{ permissionGroup.doc?.title }}
+			{{ role.doc?.title }}
 		</h3>
 	</div>
-	<ObjectList :options="listOptions">
+	<ObjectList :options="rolePermissions">
 		<template #header-left="{ listResource }">
 			<Dropdown :options="getDropdownOptions(listResource)">
 				<Button>
@@ -26,7 +26,7 @@
 			</Dropdown>
 		</template>
 
-		<template #header-right="{ listResource }">
+		<!-- <template #header-right="{ listResource }">
 			<Dropdown
 				:options="[
 					{ label: 'Allow All', onClick: () => toggleAll(listResource, true) },
@@ -44,7 +44,7 @@
 					</template>
 				</Button>
 			</Dropdown>
-		</template>
+		</template> -->
 	</ObjectList>
 </template>
 
@@ -55,14 +55,15 @@ import LucideAppWindow from '~icons/lucide/app-window';
 import ObjectList from '../ObjectList.vue';
 import PermissionGroupPermissionCell from './PermissionGroupPermissionCell.vue';
 import { toast } from 'vue-sonner';
+import { confirmDialog, icon } from '../../utils/components';
 
 const props = defineProps({
-	groupId: { type: String, required: true }
+	roleId: { type: String, required: true }
 });
 
-const permissionGroup = createDocumentResource({
-	doctype: 'Press Permission Group',
-	name: props.groupId,
+const role = createDocumentResource({
+	doctype: 'Press Role',
+	name: props.roleId,
 	auto: true,
 	whitelistedMethods: {
 		getUsers: 'get_users',
@@ -71,8 +72,9 @@ const permissionGroup = createDocumentResource({
 });
 
 const dropdownOptions = [
-	{ label: 'Site Permissions', doctype: 'Site' },
-	{ label: 'Bench Permissions', doctype: 'Release Group' }
+	{ label: 'Allowed Sites', doctype: 'Site' },
+	{ label: 'Allowed Benches', doctype: 'Release Group' },
+	{ label: 'Allowed Servers', doctype: 'Server' }
 ];
 const currentDropdownOption = ref(dropdownOptions[0]);
 function getDropdownOptions(listResource) {
@@ -81,11 +83,75 @@ function getDropdownOptions(listResource) {
 			...option,
 			onClick: () => {
 				currentDropdownOption.value = option;
+				let filters = {
+					role: props.roleId
+				};
+				if (option.doctype === 'Site') {
+					filters.site = ['is', 'set'];
+				}
+				if (option.doctype === 'Release Group') {
+					filters.release_group = ['is', 'set'];
+				}
+				if (option.doctype === 'Server') {
+					filters.server = ['is', 'set'];
+				}
+				listResource.update({ filters });
 				listResource.reload();
 			}
 		};
 	});
 }
+
+const rolePermissions = ref({
+	doctype: 'Press Role Permission',
+	fields: [
+		'site',
+		'release_group',
+		'release_group.title as release_group_title',
+		'server',
+		'server.title as server_title'
+	],
+	filters: {
+		role: props.roleId,
+		site: ['is', 'set']
+	},
+	columns: [{ label: 'Site', fieldname: 'site', width: 200 }],
+	actions() {
+		return [
+			{
+				label: 'Add',
+				slots: {
+					prefix: icon('plus')
+				},
+				onClick() {
+					confirmDialog({
+						title: 'Add Permission',
+						message: '',
+						fields: [
+							{
+								label: `Select ${currentDropdownOption.value.doctype.replace(
+									'Release Group',
+									'Bench'
+								)}`,
+								type: 'link',
+								fieldname: 'document_name',
+								options: {
+									doctype: currentDropdownOption.value.doctype
+								}
+							}
+						],
+						primaryAction: {
+							label: 'Add',
+							onClick({ values }) {
+								console.log(values);
+							}
+						}
+					});
+				}
+			}
+		];
+	}
+});
 
 const listOptions = ref({
 	onRowClick: () => {},
@@ -97,7 +163,7 @@ const listOptions = ref({
 			makeParams() {
 				return {
 					dt: 'Press Permission Group',
-					dn: props.groupId,
+					dn: props.roleId,
 					method: 'get_all_document_permissions',
 					args: {
 						doctype: currentDropdownOption.value.doctype
@@ -157,7 +223,7 @@ const listOptions = ref({
 
 const updatedPermissions = ref({});
 function updatePermissions() {
-	return permissionGroup.updatePermissions
+	return role.updatePermissions
 		.submit({
 			updated_permissions: updatedPermissions.value
 		})

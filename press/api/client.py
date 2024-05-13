@@ -35,6 +35,8 @@ ALLOWED_DOCTYPES = [
 	"Release Group Dependency",
 	"Cluster",
 	"Press Permission Group",
+	"Press Role",
+	"Press Role Permission",
 	"Team",
 	"SaaS Product Site Request",
 	"Deploy Candidate",
