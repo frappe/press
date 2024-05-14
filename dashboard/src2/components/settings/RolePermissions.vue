@@ -38,11 +38,12 @@ import {
 	createDocumentResource,
 	createResource
 } from 'frappe-ui';
-import { computed, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import ObjectList from '../ObjectList.vue';
 import { toast } from 'vue-sonner';
-import { confirmDialog, icon } from '../../utils/components';
+import { confirmDialog, icon, renderDialog } from '../../utils/components';
+import RoleConfigureDialog from './RoleConfigureDialog.vue';
 
 let selectedItems = ref(new Set());
 
@@ -128,6 +129,15 @@ const rolePermissions = ref({
 	],
 	actions({ listResource: permissions }) {
 		return [
+			{
+				label: 'Configure',
+				slots: {
+					prefix: icon('settings')
+				},
+				onClick() {
+					renderDialog(h(RoleConfigureDialog, { roleId: props.roleId }));
+				}
+			},
 			{
 				label: 'Remove',
 				slots: {

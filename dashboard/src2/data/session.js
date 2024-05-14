@@ -23,7 +23,7 @@ export let session = reactive({
 	}),
 	roles: createListResource({
 		doctype: 'Press Role',
-		fields: ['name', 'enable_billing'],
+		fields: ['name', 'enable_billing', 'enable_apps'],
 		filters: {
 			team: localStorage.getItem('current_team')
 		},

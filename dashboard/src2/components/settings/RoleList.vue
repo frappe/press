@@ -7,7 +7,7 @@ import { h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { icon, renderDialog, confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
-import RoleMembersDialog from './RoleMembersDialog.vue';
+import RoleConfigureDialog from './RoleConfigureDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
 
@@ -28,7 +28,7 @@ const listOptions = ref({
 					<div
 						onClick={e => {
 							e.preventDefault();
-							manageMembers(row);
+							configureRole(row);
 						}}
 						class="flex h-6 items-center space-x-2"
 					>
@@ -54,8 +54,8 @@ const listOptions = ref({
 				}
 			},
 			{
-				label: 'Manage Members',
-				onClick: () => manageMembers(row)
+				label: 'Configure Role',
+				onClick: () => configureRole(row)
 			},
 			{
 				label: 'Delete Role',
@@ -120,7 +120,8 @@ const listOptions = ref({
 	}
 });
 
-function manageMembers(row) {
-	renderDialog(h(RoleMembersDialog, { roleId: row.name }));
+function configureRole(row) {
+	console.log(row);
+	renderDialog(h(RoleConfigureDialog, { roleId: row.name }));
 }
 </script>

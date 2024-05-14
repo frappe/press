@@ -23,28 +23,44 @@
 						@click="() => addUser(member.value)"
 					/>
 				</div>
-
-				<div class="mb-1 text-gray-600">Members</div>
-				<div
-					v-if="roleUsers.length === 0"
-					class="rounded border border-dashed p-4 text-center text-gray-500"
-				>
-					<span>No members added to this role.</span>
-				</div>
-				<div v-else class="flex flex-col divide-y">
-					<div v-for="user in roleUsers" class="flex justify-between py-2.5">
-						<UserWithAvatarCell
-							:avatarImage="user.user_image"
-							:fullName="user.full_name"
-							:email="user.user"
-							:key="user.user"
-						/>
-						<Button @click="() => removeUser(user.user)">
-							<template #icon>
-								<i-lucide-x class="h-4 w-4 text-gray-600" />
-							</template>
-						</Button>
+				<div class="rounded border-2 border-dashed p-3">
+					<div class="mb-1 text-gray-600">Members</div>
+					<div
+						v-if="roleUsers.length === 0"
+						class="p-4 text-center text-gray-500"
+					>
+						<span>No members added to this role.</span>
 					</div>
+					<div v-else class="flex flex-col divide-y">
+						<div v-for="user in roleUsers" class="flex justify-between py-2.5">
+							<UserWithAvatarCell
+								:avatarImage="user.user_image"
+								:fullName="user.full_name"
+								:email="user.user"
+								:key="user.user"
+							/>
+							<Button @click="() => removeUser(user.user)">
+								<template #icon>
+									<i-lucide-x class="h-4 w-4 text-gray-600" />
+								</template>
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="mt-4 rounded border-2 border-dashed p-3 text-base">
+				<div class="mb-2 text-gray-600">Global Permissions</div>
+				<div class="flex flex-col space-y-2">
+					<FormControl
+						type="checkbox"
+						v-model="enableBilling"
+						label="Enable Billing"
+					/>
+					<FormControl
+						type="checkbox"
+						v-model="enableApps"
+						label="Enable Apps"
+					/>
 				</div>
 			</div>
 		</template>
@@ -53,7 +69,7 @@
 
 <script setup>
 import { createDocumentResource } from 'frappe-ui';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { getTeam } from '../../data/team';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { toast } from 'vue-sonner';
@@ -74,6 +90,16 @@ const role = createDocumentResource({
 	}
 });
 const roleUsers = computed(() => role.doc.users || []);
+const enableBilling = ref(role.doc?.enable_billing);
+const enableApps = ref(role.doc?.enable_apps);
+
+// using a watcher instead of event listener to avoid multiple api calls
+watch(enableBilling, () => {
+	role.setValue.submit({ enable_billing: enableBilling.value });
+});
+watch(enableApps, () => {
+	role.setValue.submit({ enable_apps: enableApps.value });
+});
 
 const team = getTeam();
 const autoCompleteList = computed(() => {
