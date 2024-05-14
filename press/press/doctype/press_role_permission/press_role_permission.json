@@ -8,8 +8,6 @@
   "team",
   "role",
   "column_break_ayow",
-  "document_type",
-  "document_name",
   "site",
   "release_group",
   "server"
@@ -26,18 +24,6 @@
   {
    "fieldname": "column_break_ayow",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "document_type",
-   "fieldtype": "Link",
-   "label": "Document Type",
-   "options": "DocType"
-  },
-  {
-   "fieldname": "document_name",
-   "fieldtype": "Dynamic Link",
-   "label": "Document Name",
-   "options": "document_type"
   },
   {
    "fieldname": "role",
@@ -68,7 +54,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-13 12:44:08.181111",
+ "modified": "2024-05-13 15:00:49.588077",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role Permission",

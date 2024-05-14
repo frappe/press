@@ -29,12 +29,6 @@ class PressRole(Document):
 		if user_exists:
 			frappe.throw(f"{user} already belongs to {self.title}")
 
-		user_is_team_owner = frappe.db.exists("Team", {"name": self.team, "user": user})
-		if user_is_team_owner:
-			frappe.throw(
-				f"{user} cannot be added to {self.title} because they are the owner of {self.team}"
-			)
-
 		self.append("users", {"user": user})
 		self.save()
 

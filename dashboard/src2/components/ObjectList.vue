@@ -89,6 +89,12 @@
 						:context="context"
 					/>
 				</template>
+				<template
+					v-if="options.selectable && options.selectBannerOptions"
+					#actions
+				>
+					<component :is="options.selectBannerOptions({ ...context })" />
+				</template>
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
 				<div
@@ -122,14 +128,9 @@ import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	Dropdown,
 	ListView,
 	ListHeader,
-	ListHeaderItem,
-	ListRows,
 	ListRow,
-	ListRowItem,
-	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
 	Tooltip,
@@ -145,14 +146,9 @@ export default {
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
-		Dropdown,
 		ListView,
 		ListHeader,
-		ListHeaderItem,
-		ListRows,
 		ListRow,
-		ListRowItem,
-		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
 		Tooltip,

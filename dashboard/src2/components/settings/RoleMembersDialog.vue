@@ -82,9 +82,8 @@ const roleUsers = computed(() => role.doc.users || []);
 const team = getTeam();
 const autoCompleteList = computed(() => {
 	const isNotGroupMember = u => !roleUsers.value.includes(u);
-	const isNotTeamOwner = u => u !== team.doc.user;
 	return team.doc.team_members
-		?.filter(({ user }) => isNotGroupMember(user) && isNotTeamOwner(user))
+		?.filter(({ user }) => isNotGroupMember(user))
 		.map(({ user }) => ({ label: user, value: user }));
 });
 

@@ -49,8 +49,13 @@
 </template>
 
 <script setup>
-import { Dropdown, createDocumentResource } from 'frappe-ui';
-import { computed, h, inject, ref } from 'vue';
+import {
+	Button,
+	Dropdown,
+	createDocumentResource,
+	createResource
+} from 'frappe-ui';
+import { computed, h, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import ObjectList from '../ObjectList.vue';
 import PermissionGroupPermissionCell from './PermissionGroupPermissionCell.vue';
@@ -71,10 +76,14 @@ const role = createDocumentResource({
 	}
 });
 
+const docInsert = createResource({
+	url: 'press.api.client.insert'
+});
+
 const dropdownOptions = [
-	{ label: 'Allowed Sites', doctype: 'Site' },
-	{ label: 'Allowed Benches', doctype: 'Release Group' },
-	{ label: 'Allowed Servers', doctype: 'Server' }
+	{ label: 'Allowed Sites', doctype: 'Site', dt: 'site' },
+	{ label: 'Allowed Benches', doctype: 'Release Group', dt: 'release_group' },
+	{ label: 'Allowed Servers', doctype: 'Server', dt: 'server' }
 ];
 const currentDropdownOption = ref(dropdownOptions[0]);
 function getDropdownOptions(listResource) {
@@ -106,6 +115,7 @@ const rolePermissions = ref({
 	doctype: 'Press Role Permission',
 	fields: [
 		'site',
+		'site.host_name as site_host_name',
 		'release_group',
 		'release_group.title as release_group_title',
 		'server',
@@ -115,8 +125,31 @@ const rolePermissions = ref({
 		role: props.roleId,
 		site: ['is', 'set']
 	},
-	columns: [{ label: 'Site', fieldname: 'site', width: 200 }],
-	actions() {
+	selectable: true,
+	columns: [
+		{
+			label: computed(() =>
+				currentDropdownOption.value.doctype.replace('Release Group', 'Bench')
+			),
+			format(_value, row) {
+				return (
+					row.site_host_name || row.release_group_title || row.server_title
+				);
+			}
+		}
+	],
+	selectBannerOptions(d) {
+		return h('div', { class: 'flex gap-2' }, [
+			h(Button, {
+				variant: 'ghost',
+				label: 'Delete',
+				slots: {
+					prefix: icon('trash')
+				}
+			})
+		]);
+	},
+	actions({ listResource: permissions }) {
 		return [
 			{
 				label: 'Add',
@@ -136,14 +169,44 @@ const rolePermissions = ref({
 								type: 'link',
 								fieldname: 'document_name',
 								options: {
-									doctype: currentDropdownOption.value.doctype
+									doctype: currentDropdownOption.value.doctype,
+									filters: {
+										name: [
+											'not in',
+											permissions.data.map(
+												p => p[currentDropdownOption.value.dt]
+											) || ''
+										],
+										status: ['!=', 'Archived']
+									}
 								}
 							}
 						],
 						primaryAction: {
 							label: 'Add',
 							onClick({ values }) {
-								console.log(values);
+								let key = currentDropdownOption.value.dt;
+
+								toast.promise(
+									docInsert.submit({
+										doc: {
+											doctype: 'Press Role Permission',
+											role: props.roleId,
+											[key]: values.document_name
+										}
+									}),
+									{
+										loading: 'Adding permission...',
+										success() {
+											permissions.reload();
+											return 'Permission added successfully';
+										},
+										error: e =>
+											e.messages.length
+												? e.messages.join('\n')
+												: 'An error occurred'
+									}
+								);
 							}
 						}
 					});
@@ -152,127 +215,4 @@ const rolePermissions = ref({
 		];
 	}
 });
-
-const listOptions = ref({
-	onRowClick: () => {},
-	rowHeight: 'unset',
-	resource() {
-		return {
-			auto: true,
-			url: 'press.api.client.run_doc_method',
-			makeParams() {
-				return {
-					dt: 'Press Permission Group',
-					dn: props.roleId,
-					method: 'get_all_document_permissions',
-					args: {
-						doctype: currentDropdownOption.value.doctype
-					}
-				};
-			},
-			transform: data => data.message
-		};
-	},
-	columns: [
-		{
-			label: computed(() => currentDropdownOption.value.label.split(' ')[0]),
-			fieldname: 'document_name',
-			width: 1
-		},
-		{
-			label: 'Permissions',
-			fieldname: 'permissions',
-			type: 'Component',
-			width: 3,
-			component: ({ row }) => {
-				return h(PermissionGroupPermissionCell, {
-					permissions: row.permissions,
-					onPermissionChange({ method, permitted }) {
-						row.permissions.some(perm => {
-							if (method === '*') {
-								perm.permitted = permitted;
-								return false; // to continue looping until all methods selected
-							}
-							if (perm.method === method) {
-								perm.permitted = permitted;
-								return true;
-							}
-						});
-						handlePermissionChange(
-							row.document_type,
-							row.document_name,
-							method,
-							permitted
-						);
-					}
-				});
-			}
-		}
-	],
-	primaryAction({ listResource }) {
-		return {
-			label: 'Update Permissions',
-			variant: 'solid',
-			disabled: Object.keys(updatedPermissions.value).length === 0,
-			onClick() {
-				updatePermissions().then(listResource.reload);
-			}
-		};
-	}
-});
-
-const updatedPermissions = ref({});
-function updatePermissions() {
-	return role.updatePermissions
-		.submit({
-			updated_permissions: updatedPermissions.value
-		})
-		.then(() => {
-			toast.success('Permissions Updated');
-			updatedPermissions.value = {};
-		});
-}
-
-const allDocAllMethodAllowedPerm = { '*': { '*': true } };
-const allDocAllMethodRestrictedPerm = { '*': { '*': false } };
-const allMethodAllowedPerm = { '*': true };
-const allMethodRestrictedPerm = { '*': false };
-
-function handlePermissionChange(doctype, doc_name, method, permitted) {
-	const updated = updatedPermissions.value;
-	if (method === '*') {
-		// allow all the methods for this document
-		updated[doctype] = updated[doctype] || {};
-		updated[doctype][doc_name] = permitted
-			? allMethodAllowedPerm
-			: allMethodRestrictedPerm;
-		return;
-	}
-	// allow only this method for this document
-	updated[doctype] = updated[doctype] || {};
-	updated[doctype][doc_name] = updated[doctype][doc_name] || {};
-	updated[doctype][doc_name][method] = permitted;
-
-	updatedPermissions.value = updated;
-}
-
-function toggleAll(listResource, value) {
-	if (!listResource.data?.length) return;
-	listResource.data.forEach(row => {
-		row.permissions.forEach(perm => {
-			perm.permitted = value;
-		});
-	});
-	const updated = updatedPermissions.value;
-	const doctype = currentDropdownOption.value.doctype;
-	updated[doctype] = value
-		? allDocAllMethodAllowedPerm
-		: allDocAllMethodRestrictedPerm;
-	updatedPermissions.value = updated;
-}
-
-function resetAll(listResource) {
-	updatePermissions.value = {};
-	listResource.reload();
-}
 </script>

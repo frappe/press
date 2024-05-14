@@ -1,7 +1,7 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -14,8 +14,6 @@ class PressRolePermission(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		document_name: DF.DynamicLink | None
-		document_type: DF.Link | None
 		release_group: DF.Link | None
 		role: DF.Link
 		server: DF.Link | None
@@ -24,3 +22,16 @@ class PressRolePermission(Document):
 	# end: auto-generated types
 
 	dashboard_fields = ["site", "release_group", "server"]
+
+	def before_insert(self):
+		if frappe.db.exists(
+			"Press Role Permission",
+			{
+				"role": self.role,
+				"team": self.team,
+				"site": self.site,
+				"release_group": self.release_group,
+				"server": self.server,
+			},
+		):
+			frappe.throw("Role Permission already exists")
