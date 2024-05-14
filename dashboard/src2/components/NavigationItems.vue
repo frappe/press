@@ -97,6 +97,10 @@ export default {
 					icon: () => h(WalletCards),
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
+					condition:
+						this.$team.doc.is_desk_user ||
+						this.$team.doc.user === this.$session.user ||
+						(this.$session.roles.data || []).some(role => role.enable_billing),
 					disabled
 				},
 				{
@@ -118,6 +122,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.$session.roles.fetch();
 		this.$socket.emit('doctype_subscribe', 'Press Notification');
 		this.$socket.on('press_notification', data => {
 			if (data.team === this.$team.doc.name) {

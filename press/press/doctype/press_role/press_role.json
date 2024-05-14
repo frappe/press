@@ -8,6 +8,8 @@
   "title",
   "column_break_qnnn",
   "team",
+  "section_break_yvqq",
+  "enable_billing",
   "section_break_zdiv",
   "users"
  ],
@@ -39,11 +41,21 @@
    "fieldtype": "Table",
    "label": "Users",
    "options": "Press Role User"
+  },
+  {
+   "fieldname": "section_break_yvqq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_billing",
+   "fieldtype": "Check",
+   "label": "Enable Billing"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-13 12:00:15.994347",
+ "modified": "2024-05-14 14:09:14.780989",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

@@ -13,12 +13,13 @@ class PressRole(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.model.document import Document
 		from frappe.types import DF
+		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
+		enable_billing: DF.Check
 		team: DF.Link
 		title: DF.Data
-		users: DF.Table[Document]
+		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
 	dashboard_fields = ["title", "users"]

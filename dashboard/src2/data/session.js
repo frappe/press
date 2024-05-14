@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue';
-import { createResource } from 'frappe-ui';
+import { createResource, createListResource } from 'frappe-ui';
 import router from '../router';
 
 export let session = reactive({
@@ -20,6 +20,15 @@ export let session = reactive({
 			localStorage.removeItem('current_team');
 			window.location.reload();
 		}
+	}),
+	roles: createListResource({
+		doctype: 'Press Role',
+		fields: ['name', 'enable_billing'],
+		filters: {
+			team: localStorage.getItem('current_team')
+		},
+		pageLength: 9999,
+		cache: ['roles', localStorage.getItem('current_team')]
 	}),
 	user: getSessionUser(),
 	isLoggedIn: computed(() => !!session.user),
