@@ -42,7 +42,14 @@ from press.press.doctype.deploy_candidate.utils import (
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.utils import get_current_team, log_error, reconnect_on_failure
+from press.utils import (
+	get_background_jobs,
+	get_current_team,
+	log_error,
+	reconnect_on_failure,
+	stop_background_job,
+)
+from rq.job import Job
 
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
@@ -281,11 +288,16 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
-		if self.status == "Draft" or self.status == "Failure" or self.status == "Success":
+		self.fail()
+		return self.redeploy()
+
+	@frappe.whitelist()
+	def fail(self):
+		if self.status in ["Draft", "Failure", "Success"]:
 			return
 
+		self.stop_build_jobs()
 		self._set_status_failure()
-		return self.redeploy()
 
 	@frappe.whitelist()
 	def redeploy(self):
@@ -551,15 +563,17 @@ class DeployCandidate(Document):
 			upload_step_updater.start()
 			upload_step_updater.process(output)
 
-		self._update_status_from_remote_build_job(job, job_data)
+		if (
+			job_data.get("build_failure") or upload_step_updater.upload_step.status == "Failure"
+		):
+			self._set_status_failure()
+		else:
+			self._update_status_from_remote_build_job(job, job_data)
+
 		if job.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
-		# build_failed can be None if the build has not ended
-		if job_data.get("build_failed") is True:
-			return self._set_status_failure()
-
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
@@ -1486,6 +1500,12 @@ class DeployCandidate(Document):
 			return owner == org
 		return False
 
+	def stop_build_jobs(self):
+		for job in get_background_jobs(self):
+			if not is_build_job(job):
+				continue
+			stop_background_job(job)
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1722,3 +1742,8 @@ def get_remote_step_output(
 			continue
 
 	return None
+
+
+def is_build_job(job: Job) -> bool:
+	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
+	return doc_method.startswith("_build")

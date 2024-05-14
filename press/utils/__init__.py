@@ -7,15 +7,22 @@ import json
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 from urllib.parse import urljoin
 
 import frappe
 import pytz
 import requests
 import wrapt
+from frappe import Document
+from frappe.core.doctype.rq_job.rq_job import fetch_job_ids
 from frappe.utils import get_datetime, get_system_timezone
+from frappe.utils.background_jobs import get_queues, get_redis_conn
 from frappe.utils.caching import site_cache
 from pymysql.err import InterfaceError
+from redis import Redis
+from rq.command import send_stop_job_command
+from rq.job import Job, JobStatus
 
 
 def log_error(title, **kwargs):
@@ -607,3 +614,58 @@ def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
 			max_depth - 1,
 		):
 			return possible_path
+
+
+def stop_background_job(job: Job):
+	try:
+		if job.get_status() == JobStatus.STARTED:
+			send_stop_job_command(job.connection, job.id)
+		elif job.get_status() in [JobStatus.QUEUED, JobStatus.SCHEDULED]:
+			job.cancel()
+	except Exception:
+		return
+
+
+def get_background_jobs(
+	doc: Document,
+	connection: "Optional[Redis]" = None,
+):
+	"""
+	Returns background jobs for a `doc` created using the `run_doc_method`
+	Returned jobs are in the QUEUED, SCHEDULED or STARTED state.
+	"""
+	connection = connection or get_redis_conn()
+	for q in get_queues(connection):
+
+		job_ids = [
+			*fetch_job_ids(q, JobStatus.QUEUED),
+			*fetch_job_ids(q, JobStatus.SCHEDULED),
+			*fetch_job_ids(q, JobStatus.STARTED),
+		]
+
+		for job_id in job_ids:
+			job = Job.fetch(job_id, connection=connection)
+			if not does_job_belong_to_doc(job, doc.doctype, doc.name):
+				continue
+
+			yield job
+
+
+def does_job_belong_to_doc(job: Job, doctype: str, name: str) -> bool:
+	site = job.kwargs.get("site")
+	if site and site != frappe.local.site:
+		return False
+
+	job_name = (
+		job.kwargs.get("job_type") or job.kwargs.get("job_name") or job.kwargs.get("method")
+	)
+	if job_name != "frappe.utils.background_jobs.run_doc_method":
+		return False
+
+	if job.kwargs.get("doctype") != doctype:
+		return False
+
+	if job.kwargs.get("name") != name:
+		return False
+
+	return True
