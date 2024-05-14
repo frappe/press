@@ -75,6 +75,7 @@
 					emptyState: {}
 				}"
 				row-key="name"
+				@update:selections="e => this.$emit('update:selections', e)"
 			>
 				<template v-if="options.groupHeader" #group-header="{ group }">
 					<component :is="options.groupHeader({ ...context, group })" />
@@ -88,12 +89,6 @@
 						:column="column"
 						:context="context"
 					/>
-				</template>
-				<template
-					v-if="options.selectable && options.selectBannerOptions"
-					#actions
-				>
-					<component :is="options.selectBannerOptions({ ...context })" />
 				</template>
 			</ListView>
 			<div class="px-5" v-if="filteredRows.length === 0">
@@ -142,6 +137,7 @@ let subscribed = {};
 export default {
 	name: 'ObjectList',
 	props: ['options'],
+	emits: ['update:selections'],
 	components: {
 		ActionButton,
 		ObjectListCell,

@@ -121,14 +121,15 @@ def get_list(
 		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
 
 		# check if user has a role and the role has any allowed items
-		if get_valid_permission_roles():
+		if roles := get_valid_permission_roles():
 			PressRolePermission = frappe.qb.DocType("Press Role Permission")
 			QueriedDocType = frappe.qb.DocType(doctype)
 
 			field = doctype.lower().replace(" ", "_")
 
 			query = query.join(PressRolePermission).on(
-				PressRolePermission[field] == QueriedDocType.name
+				PressRolePermission[field]
+				== QueriedDocType.name & PressRolePermission.role.isin(roles)
 			)
 
 	filters = frappe._dict(filters or {})
@@ -257,6 +258,20 @@ def delete(doctype, name):
 	check_dashboard_actions(doctype, name, method)
 
 	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
+
+
+@frappe.whitelist(methods=["DELETE", "POST"])
+def bulk_delete(doctype, names) -> None:
+	method = "delete"
+	if not names:
+		return
+
+	check_permissions(doctype)
+	check_dashboard_actions(doctype, names[0], method)
+
+	for name in names:
+		check_team_access(doctype, name)
+		_run_doc_method(dt=doctype, dn=name, method=method, args=None)
 
 
 @frappe.whitelist()

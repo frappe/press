@@ -4,6 +4,8 @@
 import frappe
 from frappe.model.document import Document
 
+from press.api.client import dashboard_whitelist
+
 
 class PressRolePermission(Document):
 	# begin: auto-generated types
@@ -35,3 +37,7 @@ class PressRolePermission(Document):
 			},
 		):
 			frappe.throw("Role Permission already exists")
+
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()

@@ -11,7 +11,10 @@
 			{{ role.doc?.title }}
 		</h3>
 	</div>
-	<ObjectList :options="rolePermissions">
+	<ObjectList
+		:options="rolePermissions"
+		@update:selections="e => (selectedItems = e)"
+	>
 		<template #header-left="{ listResource }">
 			<Dropdown :options="getDropdownOptions(listResource)">
 				<Button>
@@ -25,26 +28,6 @@
 				</Button>
 			</Dropdown>
 		</template>
-
-		<!-- <template #header-right="{ listResource }">
-			<Dropdown
-				:options="[
-					{ label: 'Allow All', onClick: () => toggleAll(listResource, true) },
-					{
-						label: 'Restrict All',
-						onClick: () => toggleAll(listResource, false)
-					},
-					{ label: 'Reset All', onClick: () => resetAll(listResource) }
-				]"
-			>
-				<Button>
-					Bulk Apply
-					<template #suffix>
-						<FeatherIcon name="chevron-down" class="h-4 w-4 text-gray-500" />
-					</template>
-				</Button>
-			</Dropdown>
-		</template> -->
 	</ObjectList>
 </template>
 
@@ -55,12 +38,13 @@ import {
 	createDocumentResource,
 	createResource
 } from 'frappe-ui';
-import { computed, h, ref } from 'vue';
+import { computed, ref } from 'vue';
 import LucideAppWindow from '~icons/lucide/app-window';
 import ObjectList from '../ObjectList.vue';
-import PermissionGroupPermissionCell from './PermissionGroupPermissionCell.vue';
 import { toast } from 'vue-sonner';
 import { confirmDialog, icon } from '../../utils/components';
+
+let selectedItems = ref(new Set());
 
 const props = defineProps({
 	roleId: { type: String, required: true }
@@ -78,6 +62,10 @@ const role = createDocumentResource({
 
 const docInsert = createResource({
 	url: 'press.api.client.insert'
+});
+
+const bulkDelete = createResource({
+	url: 'press.api.client.bulk_delete'
 });
 
 const dropdownOptions = [
@@ -138,19 +126,30 @@ const rolePermissions = ref({
 			}
 		}
 	],
-	selectBannerOptions(d) {
-		return h('div', { class: 'flex gap-2' }, [
-			h(Button, {
-				variant: 'ghost',
-				label: 'Delete',
-				slots: {
-					prefix: icon('trash')
-				}
-			})
-		]);
-	},
 	actions({ listResource: permissions }) {
 		return [
+			{
+				label: 'Remove',
+				slots: {
+					prefix: icon('trash-2')
+				},
+				disabled: selectedItems.value.size === 0,
+				onClick() {
+					bulkDelete.submit(
+						{
+							doctype: 'Press Role Permission',
+							names: Array.from(selectedItems.value)
+						},
+						{
+							onSuccess: () => {
+								toast.success('Items deleted successfully');
+								permissions.reload();
+								selectedItems.value.clear();
+							}
+						}
+					);
+				}
+			},
 			{
 				label: 'Add',
 				slots: {
