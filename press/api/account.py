@@ -583,6 +583,9 @@ def signup_settings(product=None):
 	return {
 		"enable_google_oauth": settings.enable_google_oauth,
 		"saas_product": saas_product,
+		"oauth_domains": frappe.get_all(
+			"OAuth Domain Mapping", ["email_domain", "social_login_key", "provider_name"]
+		),
 	}
 
 
