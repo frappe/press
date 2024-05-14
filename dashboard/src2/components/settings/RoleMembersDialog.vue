@@ -69,12 +69,8 @@ const role = createDocumentResource({
 	name: props.roleId,
 	auto: true,
 	whitelistedMethods: {
-		getUsers: 'get_users',
 		addUser: 'add_user',
 		removeUser: 'remove_user'
-	},
-	onSuccess() {
-		// permissionGroup.getUsers.submit();
 	}
 });
 const roleUsers = computed(() => role.doc.users || []);
@@ -91,7 +87,6 @@ function addUser(user) {
 	return toast.promise(role.addUser.submit({ user }), {
 		loading: `Adding ${user} to ${role.doc.title}`,
 		success: () => {
-			// role.getUsers.submit();
 			member.value = {};
 			return `${user} added to ${role.doc.title}`;
 		},
@@ -103,7 +98,6 @@ function removeUser(user) {
 	return toast.promise(role.removeUser.submit({ user }), {
 		loading: `Removing ${user} from ${role.doc.title}`,
 		success: () => {
-			// role.getUsers.submit();
 			return `${user} removed from ${role.doc.title}`;
 		},
 		error: e => (e.messages.length ? e.messages.join('\n') : e.message)
