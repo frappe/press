@@ -69,9 +69,9 @@ const listOptions = ref({
 							toast.promise(roleListResource.delete.submit(row.name), {
 								loading: 'Deleting Role...',
 								success: () => {
-									`Role ${row.title} Deleted`;
 									roleListResource.reload();
 									hide();
+									return `Role ${row.title} deleted`;
 								},
 								error: e =>
 									e.messages.length ? e.messages.join('\n') : e.message

@@ -43,3 +43,7 @@ class PressRole(Document):
 				self.remove(row)
 				break
 		self.save()
+
+	@dashboard_whitelist()
+	def delete(self):
+		super().delete()
