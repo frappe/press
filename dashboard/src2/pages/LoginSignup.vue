@@ -48,7 +48,7 @@
 								required
 							/>
 							<FormControl
-								v-if="isOauthLogin()"
+								v-if="!isOauthLogin()"
 								class="mt-4"
 								label="Password"
 								type="password"
@@ -58,7 +58,7 @@
 								autocomplete="current-password"
 								required
 							/>
-							<div class="mt-2" v-if="isLogin && isOauthLogin()">
+							<div class="mt-2" v-if="isLogin && !isOauthLogin()">
 								<router-link
 									class="text-sm"
 									:to="{
@@ -69,11 +69,11 @@
 									Forgot Password?
 								</router-link>
 							</div>
-							<Button v-if="isOauthLogin()" class="mt-4" variant="solid">
+							<Button v-if="!isOauthLogin()" class="mt-4" variant="solid">
 								Log in with email
 							</Button>
 							<Button v-else class="mt-4" variant="solid">
-								Log in with {{ oauthProvider(oauthEmailDomain) }}
+								Log in with {{ oauthProviderName }}
 							</Button>
 							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
@@ -98,7 +98,7 @@
 					</form>
 					<div
 						class="flex flex-col"
-						v-if="!hasForgotPassword && isOauthLogin()"
+						v-if="!hasForgotPassword && !isOauthLogin()"
 					>
 						<div class="-mb-2 mt-6 border-t text-center">
 							<div class="-translate-y-1/2 transform">
@@ -161,7 +161,6 @@
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { getCustomOauths, oauthProviders } from '../data/logins';
 import { debounce } from 'lodash';
 
 export default {
@@ -250,10 +249,7 @@ export default {
 	},
 	methods: {
 		isOauthLogin() {
-			return this.oauthEmailDomain === null;
-		},
-		oauthProvider(emailDomain) {
-			return oauthProviders()[emailDomain].provider_name;
+			return this.oauthEmailDomain != null;
 		},
 		async submitForm() {
 			if (this.isLogin) {
@@ -273,9 +269,9 @@ export default {
 							}
 						}
 					);
-				} else if (this.oauthEmailDomain != null) {
+				} else if (this.isOauthLogin()) {
 					this.$resources.oauthLogin.submit({
-						provider: oauthProviders()[this.oauthEmailDomain].social_login_key
+						provider: this.socialLoginKey
 					});
 				}
 			} else if (this.hasForgotPassword) {
@@ -297,12 +293,33 @@ export default {
 		isLogin() {
 			return this.$route.name == 'Login' && !this.$route.query.forgot;
 		},
-		oauthEmailDomains() {
-			console.log('computing');
-			return new Set(getCustomOauths().map(el => el.email_domain));
-		},
 		hasForgotPassword() {
 			return this.$route.name == 'Login' && this.$route.query.forgot;
+		},
+		oauthProviders() {
+			const domains = this.$resources.signupSettings.data?.oauth_domains;
+			let providers = {};
+
+			if (domains) {
+				domains.map(
+					d =>
+						(providers[d.email_domain] = {
+							social_login_key: d.social_login_key,
+							provider_name: d.provider_name
+						})
+				);
+			}
+
+			return providers;
+		},
+		oauthEmailDomains() {
+			return new Set(Object.keys(this.oauthProviders));
+		},
+		socialLoginKey() {
+			return this.oauthProviders[this.oauthEmailDomain].social_login_key;
+		},
+		oauthProviderName() {
+			return this.oauthProviders[this.oauthEmailDomain].provider_name;
 		},
 		title() {
 			if (this.hasForgotPassword) {

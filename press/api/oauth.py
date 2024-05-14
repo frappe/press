@@ -208,12 +208,5 @@ def saas_setup(key, app, country, subdomain):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_custom_oauths():
-	return frappe.get_all(
-		"Custom OAuth", ["email_domain", "social_login_key", "provider_name"]
-	)
-
-
-@frappe.whitelist(allow_guest=True)
 def oauth_authorize_url(provider):
 	return get_oauth2_authorize_url(provider, None)
