@@ -18,7 +18,7 @@
 								type="email"
 								placeholder="johndoe@mail.com"
 								autocomplete="email"
-								v-model="email"
+								:modelValue="email"
 								required
 							/>
 							<router-link
@@ -48,7 +48,7 @@
 								required
 							/>
 							<FormControl
-								v-if="!isOauthLogin()"
+								v-if="!isOauthLogin"
 								class="mt-4"
 								label="Password"
 								type="password"
@@ -58,7 +58,7 @@
 								autocomplete="current-password"
 								required
 							/>
-							<div class="mt-2" v-if="isLogin && !isOauthLogin()">
+							<div class="mt-2" v-if="isLogin && !isOauthLogin">
 								<router-link
 									class="text-sm"
 									:to="{
@@ -69,7 +69,7 @@
 									Forgot Password?
 								</router-link>
 							</div>
-							<Button v-if="!isOauthLogin()" class="mt-4" variant="solid">
+							<Button v-if="!isOauthLogin" class="mt-4" variant="solid">
 								Log in with email
 							</Button>
 							<Button v-else class="mt-4" variant="solid">
@@ -96,10 +96,7 @@
 						</template>
 						<ErrorMessage class="mt-2" :message="$resources.signup.error" />
 					</form>
-					<div
-						class="flex flex-col"
-						v-if="!hasForgotPassword && !isOauthLogin()"
-					>
+					<div class="flex flex-col" v-if="!hasForgotPassword && !isOauthLogin">
 						<div class="-mb-2 mt-6 border-t text-center">
 							<div class="-translate-y-1/2 transform">
 								<span
@@ -161,7 +158,6 @@
 import LoginBox from '@/views/partials/LoginBox.vue';
 import GoogleIconSolid from '@/components/icons/GoogleIconSolid.vue';
 import ProductSignupPitch from '../components/ProductSignupPitch.vue';
-import { debounce } from 'lodash';
 
 export default {
 	name: 'Signup',
@@ -175,20 +171,8 @@ export default {
 			email: null,
 			password: null,
 			signupEmailSent: false,
-			resetPasswordEmailSent: false,
-			oauthEmailDomain: null
+			resetPasswordEmailSent: false
 		};
-	},
-	watch: {
-		email: {
-			handler: debounce(function (value) {
-				let domain = value.split('@').pop();
-				this.oauthEmailDomain =
-					this.oauthEmailDomains.has(domain) && domain.length > 0
-						? domain
-						: null;
-			}, 200)
-		}
 	},
 	mounted() {
 		this.email = localStorage.getItem('login_email');
@@ -252,9 +236,6 @@ export default {
 		}
 	},
 	methods: {
-		isOauthLogin() {
-			return this.oauthEmailDomain != null;
-		},
 		async submitForm() {
 			if (this.isLogin) {
 				if (this.email && this.password) {
@@ -274,7 +255,7 @@ export default {
 							}
 						}
 					);
-				} else if (this.isOauthLogin()) {
+				} else if (this.isOauthLogin) {
 					this.$resources.oauthLogin.submit({
 						provider: this.socialLoginKey
 					});
@@ -301,6 +282,15 @@ export default {
 		hasForgotPassword() {
 			return this.$route.name == 'Login' && this.$route.query.forgot;
 		},
+		emailDomain() {
+			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
+		},
+		isOauthLogin() {
+			return (
+				this.oauthEmailDomains.has(this.emailDomain) &&
+				this.emailDomain.length > 0
+			);
+		},
 		oauthProviders() {
 			const domains = this.$resources.signupSettings.data?.oauth_domains;
 			let providers = {};
@@ -321,10 +311,10 @@ export default {
 			return new Set(Object.keys(this.oauthProviders));
 		},
 		socialLoginKey() {
-			return this.oauthProviders[this.oauthEmailDomain].social_login_key;
+			return this.oauthProviders[this.emailDomain].social_login_key;
 		},
 		oauthProviderName() {
-			return this.oauthProviders[this.oauthEmailDomain].provider_name;
+			return this.oauthProviders[this.emailDomain].provider_name;
 		},
 		title() {
 			if (this.hasForgotPassword) {
