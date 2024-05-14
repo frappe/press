@@ -119,24 +119,13 @@ def get_list(
 
 	if doctype in ["Site", "Release Group", "Server"]:
 		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
-		PressRolePermission = frappe.qb.DocType("Press Role Permission")
-		PressRoleUser = frappe.qb.DocType("Press Role User")
-		PressRole = frappe.qb.DocType("Press Role")
 
 		# check if user has a role and the role has any allowed items
-		if (
-			frappe.qb.from_(PressRole)
-			.select(PressRole.name)
-			.join(PressRoleUser)
-			.on(PressRoleUser.parent == PressRole.name)
-			.where(PressRoleUser.user == frappe.session.user)
-			.join(PressRolePermission)
-			.on(PressRolePermission.role == PressRole.name)
-			.groupby(PressRole.name)
-			.having(frappe.query_builder.functions.Count("*") > 0)
-		).run(as_dict=1, pluck="name"):
-			field = doctype.lower().replace(" ", "_")
+		if get_valid_permission_roles():
+			PressRolePermission = frappe.qb.DocType("Press Role Permission")
 			QueriedDocType = frappe.qb.DocType(doctype)
+
+			field = doctype.lower().replace(" ", "_")
 
 			query = query.join(PressRolePermission).on(
 				PressRolePermission[field] == QueriedDocType.name
@@ -164,9 +153,6 @@ def get_list(
 @frappe.whitelist()
 def get(doctype, name):
 	check_permissions(doctype)
-	check_method_permissions(
-		doctype, name, "get_doc", "You don't have permission to view this document"
-	)
 	try:
 		doc = frappe.get_doc(doctype, name)
 	except frappe.DoesNotExistError:
@@ -178,6 +164,24 @@ def get(doctype, name):
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
+
+	if doctype in ["Site", "Release Group", "Server"]:
+		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
+
+		# check if user has a role and the role has any allowed items
+		if roles := get_valid_permission_roles():
+			field = doctype.lower().replace(" ", "_")
+
+			is_permitted = frappe.get_all(
+				"Press Role Permission",
+				filters={
+					"role": ["in", roles],
+					field: name,
+				},
+				limit=1,
+			)
+			if not is_permitted:
+				raise_not_permitted()
 
 	fields = list(default_fields)
 	if hasattr(doc, "dashboard_fields"):
@@ -295,6 +299,26 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 			condition = condition | DocType[meta.title_field].like(f"%{query}%")
 		q = q.where(condition)
 	return q.run(as_dict=1)
+
+
+def get_valid_permission_roles() -> list[str]:
+	"""Returns the roles that the current user is part of and has atleast one permission assigned."""
+
+	PressRolePermission = frappe.qb.DocType("Press Role Permission")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	PressRole = frappe.qb.DocType("Press Role")
+
+	return (
+		frappe.qb.from_(PressRole)
+		.select(PressRole.name)
+		.join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.where(PressRoleUser.user == frappe.session.user)
+		.join(PressRolePermission)
+		.on(PressRolePermission.role == PressRole.name)
+		.groupby(PressRole.name)
+		.having(frappe.query_builder.functions.Count("*") > 0)
+	).run(as_dict=1, pluck="name")
 
 
 def check_team_access(doctype: str, name: str):
