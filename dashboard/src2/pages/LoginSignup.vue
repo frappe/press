@@ -190,6 +190,9 @@ export default {
 			}, 200)
 		}
 	},
+	mounted() {
+		this.email = localStorage.getItem('login_email');
+	},
 	resources: {
 		signup() {
 			return {
@@ -209,6 +212,7 @@ export default {
 			return {
 				url: 'press.api.oauth.oauth_authorize_url',
 				onSuccess(url) {
+					localStorage.setItem('login_email', this.email);
 					window.location.href = url;
 				}
 			};
@@ -265,6 +269,7 @@ export default {
 								if (this.$route.query.product) {
 									loginRoute = `/dashboard-beta/app-trial/${this.$route.query.product}`;
 								}
+								localStorage.setItem('login_email', this.email);
 								window.location.href = loginRoute;
 							}
 						}
