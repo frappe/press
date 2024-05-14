@@ -172,13 +172,12 @@ def get(doctype, name):
 		if roles := get_valid_permission_roles():
 			field = doctype.lower().replace(" ", "_")
 
-			is_permitted = frappe.get_all(
+			is_permitted = frappe.get_value(
 				"Press Role Permission",
 				filters={
 					"role": ["in", roles],
 					field: name,
 				},
-				limit=1,
 			)
 			if not is_permitted:
 				raise_not_permitted()
