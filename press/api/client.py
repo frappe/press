@@ -117,6 +117,31 @@ def get_list(
 				.where(ParentDocType.team == frappe.local.team().name)
 			)
 
+	if doctype in ["Site", "Release Group", "Server"]:
+		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+		PressRoleUser = frappe.qb.DocType("Press Role User")
+		PressRole = frappe.qb.DocType("Press Role")
+
+		# check if user has a role and the role has any allowed items
+		if (
+			frappe.qb.from_(PressRole)
+			.select(PressRole.name)
+			.join(PressRoleUser)
+			.on(PressRoleUser.parent == PressRole.name)
+			.where(PressRoleUser.user == frappe.session.user)
+			.join(PressRolePermission)
+			.on(PressRolePermission.role == PressRole.name)
+			.groupby(PressRole.name)
+			.having(frappe.query_builder.functions.Count("*") > 0)
+		).run(as_dict=1, pluck="name"):
+			field = doctype.lower().replace(" ", "_")
+			QueriedDocType = frappe.qb.DocType(doctype)
+
+			query = query.join(PressRolePermission).on(
+				PressRolePermission[field] == QueriedDocType.name
+			)
+
 	filters = frappe._dict(filters or {})
 	list_args = dict(
 		fields=fields,
