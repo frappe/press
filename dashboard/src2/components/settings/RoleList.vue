@@ -58,18 +58,18 @@ const listOptions = ref({
 				onClick: () => manageMembers(row)
 			},
 			{
-				label: 'Delete Group',
+				label: 'Delete Role',
 				onClick() {
 					if (roleListResource.delete.loading) return;
 					confirmDialog({
-						title: 'Delete Permission Group',
-						message: `Are you sure you want to delete the permission group <b>${row.title}</b>?`,
+						title: 'Delete Role',
+						message: `Are you sure you want to delete the role <b>${row.title}</b>?`,
 						onSuccess({ hide }) {
 							if (roleListResource.delete.loading) return;
 							toast.promise(roleListResource.delete.submit(row.name), {
-								loading: 'Deleting Group...',
+								loading: 'Deleting Role...',
 								success: () => {
-									`Permission Group ${row.title} Deleted`;
+									`Role ${row.title} Deleted`;
 									roleListResource.reload();
 									hide();
 								},
