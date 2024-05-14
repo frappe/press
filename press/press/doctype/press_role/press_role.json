@@ -10,6 +10,7 @@
   "team",
   "section_break_yvqq",
   "enable_billing",
+  "enable_apps",
   "section_break_zdiv",
   "users"
  ],
@@ -44,18 +45,25 @@
   },
   {
    "fieldname": "section_break_yvqq",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Global Permission"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "enable_billing",
    "fieldtype": "Check",
    "label": "Enable Billing"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_apps",
+   "fieldtype": "Check",
+   "label": "Enable Apps"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-14 14:09:14.780989",
+ "modified": "2024-05-14 22:35:53.062041",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

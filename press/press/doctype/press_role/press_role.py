@@ -16,13 +16,14 @@ class PressRole(Document):
 		from frappe.types import DF
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
+		enable_apps: DF.Check
 		enable_billing: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users"]
+	dashboard_fields = ["title", "users", "enable_billing", "enable_apps"]
 
 	@dashboard_whitelist()
 	def add_user(self, user):
