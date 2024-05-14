@@ -528,7 +528,6 @@ class DeployCandidate(Document):
 		job_data = json.loads(job.data or "{}")
 		output_data = json.loads(job_data.get("output", "{}"))
 
-		# TODO: Error Handling
 		"""
 		Due to how agent - press communication takes place, every time an
 		output is published all of it has to be re-parsed from the start.
@@ -553,10 +552,6 @@ class DeployCandidate(Document):
 			upload_step_updater.process(output)
 
 		self._update_status_from_remote_build_job(job, job_data)
-
-		if job.status == "Success":
-			upload_step_updater.end("Success")
-
 		if job.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
