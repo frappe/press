@@ -1638,11 +1638,11 @@ def toggle_builds(suspend):
 	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
 
 
-def run_scheduled_builds():
+def run_scheduled_builds(max_builds: int = 5):
 	candidates = frappe.get_all(
 		"Deploy Candidate",
 		{"status": "Scheduled", "scheduled_time": ("<=", frappe.utils.now_datetime())},
-		limit=1,
+		limit=max_builds,
 	)
 	for candidate in candidates:
 		try:
