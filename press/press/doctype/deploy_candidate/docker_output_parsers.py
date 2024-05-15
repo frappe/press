@@ -103,7 +103,7 @@ class DockerBuildOutputParser:
 		self.dc.build_output = "".join(self.lines)
 		self.dc.build_error = "".join(self.error_lines)
 
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()
 
@@ -375,6 +375,6 @@ class UploadStepUpdater:
 				self.upload_step.status = "Success"
 
 		self.upload_step.output = "\n".join(output_lines)
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()
