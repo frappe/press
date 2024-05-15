@@ -54,12 +54,12 @@
 					<FormControl
 						type="checkbox"
 						v-model="enableBilling"
-						label="Enable Billing"
+						label="Allow Access to Billing"
 					/>
 					<FormControl
 						type="checkbox"
 						v-model="enableApps"
-						label="Enable Apps"
+						label="Allow Access to Apps"
 					/>
 				</div>
 			</div>
