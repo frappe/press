@@ -274,9 +274,15 @@ def bulk_delete(doctype, names) -> None:
 	check_permissions(doctype)
 	check_dashboard_actions(doctype, names[0], method)
 
+	permitted_records = []
 	for name in names:
-		check_team_access(doctype, name)
-		_run_doc_method(dt=doctype, dn=name, method=method, args=None)
+		try:
+			check_team_access(doctype, name)
+			permitted_records.append(name)
+		except frappe.PermissionError:
+			continue
+
+	frappe.db.delete(doctype, {"name": ["in", permitted_records]})
 
 
 @frappe.whitelist()
