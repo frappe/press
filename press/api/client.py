@@ -121,16 +121,21 @@ def get_list(
 		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
 
 		# check if user has a role and the role has any allowed items
-		if roles := get_valid_permission_roles():
-			PressRolePermission = frappe.qb.DocType("Press Role Permission")
-			QueriedDocType = frappe.qb.DocType(doctype)
+		if roles := get_permission_roles():
+			if frappe.get_all(
+				"Press Role Permission",
+				fields=["name"],
+				filters={"role": ("in", roles)},
+			):
+				PressRolePermission = frappe.qb.DocType("Press Role Permission")
+				QueriedDocType = frappe.qb.DocType(doctype)
 
-			field = doctype.lower().replace(" ", "_")
+				field = doctype.lower().replace(" ", "_")
 
-			query = query.join(PressRolePermission).on(
-				PressRolePermission[field]
-				== QueriedDocType.name & PressRolePermission.role.isin(roles)
-			)
+				query = query.join(PressRolePermission).on(
+					PressRolePermission[field]
+					== QueriedDocType.name & PressRolePermission.role.isin(roles)
+				)
 
 	filters = frappe._dict(filters or {})
 	list_args = dict(
@@ -170,7 +175,7 @@ def get(doctype, name):
 		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
 
 		# check if user has a role and the role has any allowed items
-		if roles := get_valid_permission_roles():
+		if roles := get_permission_roles():
 			field = doctype.lower().replace(" ", "_")
 
 			is_permitted = frappe.get_value(
@@ -315,10 +320,9 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 	return q.run(as_dict=1)
 
 
-def get_valid_permission_roles() -> list[str]:
-	"""Returns the roles that the current user is part of and has atleast one permission assigned."""
+def get_permission_roles() -> list[str]:
+	"""Returns the roles that the current user is part of"""
 
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	PressRole = frappe.qb.DocType("Press Role")
 
@@ -328,10 +332,7 @@ def get_valid_permission_roles() -> list[str]:
 		.join(PressRoleUser)
 		.on(PressRoleUser.parent == PressRole.name)
 		.where(PressRoleUser.user == frappe.session.user)
-		.join(PressRolePermission)
-		.on(PressRolePermission.role == PressRole.name)
-		.groupby(PressRole.name)
-		.having(frappe.query_builder.functions.Count("*") > 0)
+		.where(PressRole.team == frappe.local.team().name)
 	).run(as_dict=1, pluck="name")
 
 
