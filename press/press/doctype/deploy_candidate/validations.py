@@ -128,9 +128,9 @@ class PreBuildValidations:
 			)
 
 	def _check_frappe_dependencies(self, app: str, frappe_deps: dict[str, str]):
-		for dep_app, actual in frappe_deps.items():
-			expected = self._get_app_version(dep_app)
-			if not expected or sv.Version(expected) in sv.SimpleSpec(actual):
+		for dep_app, expected in frappe_deps.items():
+			actual = self._get_app_version(dep_app)
+			if not actual or sv.Version(actual) in sv.SimpleSpec(expected):
 				continue
 
 			# Do not change args without updating deploy_notifications.py
