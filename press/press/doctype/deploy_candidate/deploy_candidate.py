@@ -43,12 +43,12 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import (
-	get_background_jobs,
 	get_current_team,
 	log_error,
 	reconnect_on_failure,
-	stop_background_job,
 )
+from press.utils.jobs import get_background_jobs, stop_background_job
+
 from rq.job import Job
 
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
@@ -1501,7 +1501,7 @@ class DeployCandidate(Document):
 		return False
 
 	def stop_build_jobs(self):
-		for job in get_background_jobs(self):
+		for job in get_background_jobs(self.doctype, self.name):
 			if not is_build_job(job):
 				continue
 			stop_background_job(job)
