@@ -16,7 +16,7 @@ from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import comma_and, cstr, flt, sbool
+from frappe.utils import cstr, flt, sbool
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -1176,23 +1176,6 @@ class ReleaseGroup(Document, TagHelpers):
 	@dashboard_whitelist()
 	def remove_app(self, app: str):
 		"""Remove app from release group"""
-
-		sites = frappe.get_all(
-			"Site", filters={"group": self.name, "status": ("!=", "Archived")}, pluck="name"
-		)
-
-		site_apps = frappe.get_all(
-			"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
-		)
-
-		if site_apps:
-			installed_on_sites = ", ".join(
-				frappe.bold(site_app["parent"]) for site_app in site_apps
-			)
-			frappe.throw(
-				"Cannot remove this app, it is already installed on the"
-				f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
-			)
 
 		app_doc_to_remove = find(self.apps, lambda x: x.app == app)
 		if app_doc_to_remove:
