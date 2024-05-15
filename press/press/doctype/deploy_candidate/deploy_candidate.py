@@ -261,7 +261,7 @@ class DeployCandidate(Document):
 		self.is_docker_remote_builder_used = True
 
 	def validate_status(self):
-		if self.status in ["Draft", "Success", "Failure"]:
+		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
 			return True
 
 		frappe.msgprint(
