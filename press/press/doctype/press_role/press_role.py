@@ -25,6 +25,9 @@ class PressRole(Document):
 
 	dashboard_fields = ["title", "users", "enable_billing", "enable_apps", "team"]
 
+	def on_trash(self):
+		frappe.db.delete("Press Role Permission", {"role": self.name})
+
 	@dashboard_whitelist()
 	def add_user(self, user):
 		user_exists = self.get("users", {"user": user})
