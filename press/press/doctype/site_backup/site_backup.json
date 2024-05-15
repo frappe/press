@@ -9,6 +9,7 @@
   "files_availability",
   "site",
   "job",
+  "team",
   "with_files",
   "offsite",
   "database",
@@ -237,10 +238,18 @@
    "label": "Remote File",
    "options": "Remote File",
    "read_only": 1
+  },
+  {
+   "fetch_from": "site.team",
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-12-06 17:33:23.890696",
+ "modified": "2024-05-15 12:20:00.892082",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site Backup",

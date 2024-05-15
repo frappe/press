@@ -40,6 +40,7 @@ class SiteActivity(Document):
 		]
 		reason: DF.SmallText | None
 		site: DF.Link
+		team: DF.Link | None
 	# end: auto-generated types
 
 	dashboard_fields = ["action", "reason", "site"]

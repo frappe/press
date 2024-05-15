@@ -46,6 +46,7 @@ class SiteBackup(Document):
 		site: DF.Link
 		size: DF.Data | None
 		status: DF.Literal["Pending", "Running", "Success", "Failure"]
+		team: DF.Link | None
 		url: DF.Data | None
 		with_files: DF.Check
 	# end: auto-generated types
