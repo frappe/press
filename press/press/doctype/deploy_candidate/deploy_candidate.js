@@ -48,8 +48,21 @@ frappe.ui.form.on('Deploy Candidate', {
 				continue;
 			}
 
-			const callback = () => frm.call(method).then(() => frm.refresh());
-			frm.add_custom_button(label, callback, group);
+			async function handler() {
+				const { message: data } = await frm.call(method);
+				if (data.error) {
+					frappe.msgprint({
+						title: __('Action Failed'),
+						indicator: 'yellow',
+						message: data.message || `Could not execute ${method}`,
+					});
+					return;
+				}
+
+				frm.refresh();
+			}
+
+			frm.add_custom_button(label, handler, group);
 		}
 
 		if (can_build || can_fail) {
@@ -75,12 +88,12 @@ function add_redeploy(frm) {
 
 	frm.add_custom_button(label, handler, __('Deploy'));
 	async function handler() {
-		const response = await frm.call(method);
-		if (!response.message) {
+		const { message: data } = await frm.call(method);
+		if (data.error) {
 			frappe.msgprint({
-				title: __('Cannot Redploy'),
+				title: __('Cannot Redeploy'),
 				indicator: 'yellow',
-				message: __(`Cannot redeploy current Deploy Candidate.`),
+				message: data.message,
 			});
 			return;
 		}
@@ -89,7 +102,7 @@ function add_redeploy(frm) {
 			title: __('Redeploy Triggered'),
 			indicator: 'green',
 			message: __(`Duplicate {0} created and redeploy triggered.`, [
-				`<a href="/app/deploy-candidate/${response.message.name}">Deploy Candidate</a>`,
+				`<a href="/app/deploy-candidate/${data.message}">Deploy Candidate</a>`,
 			]),
 		});
 

@@ -42,13 +42,8 @@ from press.press.doctype.deploy_candidate.utils import (
 )
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
-from press.utils import (
-	get_current_team,
-	log_error,
-	reconnect_on_failure,
-)
+from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
-
 from rq.job import Job
 
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
@@ -288,25 +283,30 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
-		if self.stop_and_fail():
-			return self.redeploy()
+		if (res := self.stop_and_fail()) and res["error"]:
+			return res
+		return self.redeploy()
 
 	@frappe.whitelist()
 	def stop_and_fail(self):
-		if self.status in ["Draft", "Failure", "Success", "Scheduled"]:
-			return False
+		not_failable = ["Draft", "Failure", "Success", "Scheduled"]
+		if self.status in not_failable:
+			return dict(
+				error=True,
+				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
+			)
 
 		self.stop_build_jobs()
 		self._set_status_failure()
-		return True
+		return dict(error=False, message="Failed successfully")
 
 	@frappe.whitelist()
 	def redeploy(self):
 		if not (dc := self.get_duplicate_dc()):
-			return
+			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
 		dc.build_and_deploy()
-		return dc
+		return dict(error=False, message=dc.name)
 
 	@frappe.whitelist()
 	def schedule_build_and_deploy(self, is_running_scheduled=False):
