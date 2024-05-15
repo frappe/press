@@ -16,8 +16,10 @@ frappe.ui.form.on('Deploy Candidate', {
 		};
 
 		const can_build = ['Draft', 'Failure', 'Success'].includes(frm.doc.status);
+		const can_fail =
+			!can_build && !['Pending', 'Preparing'].includes(frm.doc.status);
 		const actions = [
-			[__('Stop and Fail'), 'stop_and_fail', !can_build, __('Build')],
+			[__('Stop and Fail'), 'stop_and_fail', can_fail, __('Build')],
 			[__('Complete'), 'build', can_build, __('Build')],
 			[
 				__('Generate Context'),
@@ -50,7 +52,9 @@ frappe.ui.form.on('Deploy Candidate', {
 			frm.add_custom_button(label, callback, group);
 		}
 
-		add_redeploy(frm);
+		if (can_build || can_fail) {
+			add_redeploy(frm);
+		}
 	},
 });
 
@@ -71,13 +75,21 @@ function add_redeploy(frm) {
 
 	frm.add_custom_button(label, handler, __('Deploy'));
 	async function handler() {
-		const { message } = await frm.call(method);
+		const response = await frm.call(method);
+		if (!response.message) {
+			frappe.msgprint({
+				title: __('Cannot Redploy'),
+				indicator: 'yellow',
+				message: __(`Cannot redeploy current Deploy Candidate.`),
+			});
+			return;
+		}
 
 		frappe.msgprint({
 			title: __('Redeploy Triggered'),
 			indicator: 'green',
 			message: __(`Duplicate {0} created and redeploy triggered.`, [
-				`<a href="/app/deploy-candidate/${message.name}">Deploy Candidate</a>`,
+				`<a href="/app/deploy-candidate/${response.message.name}">Deploy Candidate</a>`,
 			]),
 		});
 
