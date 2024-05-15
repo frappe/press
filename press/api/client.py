@@ -81,6 +81,11 @@ def get_list(
 ):
 	if filters is None:
 		filters = {}
+
+	# team doctype doesn't have a team field to filter by
+	if doctype == "Team":
+		return []
+
 	check_permissions(doctype)
 	valid_fields = validate_fields(doctype, fields)
 	valid_filters = validate_filters(doctype, filters)
