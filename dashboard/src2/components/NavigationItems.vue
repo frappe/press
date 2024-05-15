@@ -90,9 +90,7 @@ export default {
 					icon: () => h(App),
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
-					condition:
-						this.$team.doc.is_desk_user ||
-						(this.$session.roles.data || []).some(role => role.enable_apps),
+					condition: this.$team.doc.is_desk_user || this.$session.hasAppsAccess,
 					disabled
 				},
 				{
@@ -101,8 +99,7 @@ export default {
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
 					condition:
-						this.$team.doc.is_desk_user ||
-						(this.$session.roles.data || []).some(role => role.enable_billing),
+						this.$team.doc.is_desk_user || this.$session.hasBillingAccess,
 					disabled
 				},
 				{
@@ -124,7 +121,6 @@ export default {
 		}
 	},
 	mounted() {
-		this.$session.roles.fetch();
 		this.$socket.emit('doctype_subscribe', 'Press Notification');
 		this.$socket.on('press_notification', data => {
 			if (data.team === this.$team.doc.name) {

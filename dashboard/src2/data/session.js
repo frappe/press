@@ -23,8 +23,15 @@ export let session = reactive({
 	}),
 	roles: createResource({
 		url: 'press.api.account.get_permission_roles',
-		cache: ['roles', localStorage.getItem('current_team')]
+		cache: ['roles', localStorage.getItem('current_team')],
+		initialData: []
 	}),
+	hasBillingAccess: computed(() =>
+		session.roles.data.some(role => role.enable_billing)
+	),
+	hasAppsAccess: computed(() =>
+		session.roles.data.some(role => role.enable_apps)
+	),
 	user: getSessionUser(),
 	isLoggedIn: computed(() => !!session.user),
 	isSystemUser: getSessionCookies().get('system_user') === 'yes'
