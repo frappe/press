@@ -364,9 +364,28 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def cleanup_unused_files(self):
+		if self.is_build_server():
+			return
+
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400
 		)
+
+	def is_build_server(self) -> bool:
+		name = frappe.db.get_single_value("Press Settings", "docker_remote_builder_server")
+		if name == self.name:
+			return True
+
+		count = frappe.db.count(
+			"Release Group",
+			{
+				"enabled": True,
+				"docker_remote_builder_server": self.name,
+			},
+		)
+		if isinstance(count, (int, float)):
+			return count > 0
+		return False
 
 	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
