@@ -147,7 +147,7 @@ const rolePermissions = ref({
 				slots: {
 					prefix: icon('trash-2')
 				},
-				disabled: selectedItems.value.size === 0,
+				condition: () => selectedItems.value.size > 0,
 				onClick() {
 					bulkDelete.submit(
 						{
@@ -225,7 +225,7 @@ const rolePermissions = ref({
 					});
 				}
 			}
-		];
+		].filter(action => (action.condition ? action.condition() : true));
 	}
 });
 </script>
