@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue';
-import { createResource, createListResource } from 'frappe-ui';
+import { createResource } from 'frappe-ui';
 import router from '../router';
 
 export let session = reactive({
@@ -21,13 +21,8 @@ export let session = reactive({
 			window.location.reload();
 		}
 	}),
-	roles: createListResource({
-		doctype: 'Press Role',
-		fields: ['name', 'enable_billing', 'enable_apps'],
-		filters: {
-			team: localStorage.getItem('current_team')
-		},
-		pageLength: 9999,
+	roles: createResource({
+		url: 'press.api.account.get_permission_roles',
 		cache: ['roles', localStorage.getItem('current_team')]
 	}),
 	user: getSessionUser(),

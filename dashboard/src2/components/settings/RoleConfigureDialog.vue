@@ -73,6 +73,7 @@ import { computed, ref, watch } from 'vue';
 import { getTeam } from '../../data/team';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
 import { toast } from 'vue-sonner';
+import session from '../../data/session';
 
 const props = defineProps({
 	roleId: { type: String, required: true }
@@ -95,10 +96,16 @@ const enableApps = ref(role.doc?.enable_apps);
 
 // using a watcher instead of event listener to avoid multiple api calls
 watch(enableBilling, () => {
-	role.setValue.submit({ enable_billing: enableBilling.value });
+	role.setValue.submit(
+		{ enable_billing: enableBilling.value },
+		{ onSuccess: session.roles.reload }
+	);
 });
 watch(enableApps, () => {
-	role.setValue.submit({ enable_apps: enableApps.value });
+	role.setValue.submit(
+		{ enable_apps: enableApps.value },
+		{ onSuccess: session.roles.reload }
+	);
 });
 
 const team = getTeam();

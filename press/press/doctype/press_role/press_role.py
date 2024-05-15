@@ -23,7 +23,7 @@ class PressRole(Document):
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users", "enable_billing", "enable_apps"]
+	dashboard_fields = ["title", "users", "enable_billing", "enable_apps", "team"]
 
 	@dashboard_whitelist()
 	def add_user(self, user):

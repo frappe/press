@@ -121,7 +121,6 @@ const listOptions = ref({
 });
 
 function configureRole(row) {
-	console.log(row);
 	renderDialog(h(RoleConfigureDialog, { roleId: row.name }));
 }
 </script>
