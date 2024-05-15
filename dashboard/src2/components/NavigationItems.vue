@@ -92,7 +92,6 @@ export default {
 					isActive: routeName.startsWith('Marketplace'),
 					condition:
 						this.$team.doc.is_desk_user ||
-						this.$team.doc.user === this.$session.user ||
 						(this.$session.roles.data || []).some(role => role.enable_apps),
 					disabled
 				},
@@ -103,7 +102,6 @@ export default {
 					isActive: routeName.startsWith('Billing'),
 					condition:
 						this.$team.doc.is_desk_user ||
-						this.$team.doc.user === this.$session.user ||
 						(this.$session.roles.data || []).some(role => role.enable_billing),
 					disabled
 				},

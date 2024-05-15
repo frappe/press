@@ -117,8 +117,7 @@ def get_list(
 				.where(ParentDocType.team == frappe.local.team().name)
 			)
 
-	if doctype in ["Site", "Release Group", "Server"]:
-		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
+	if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
 
 		# check if user has a role and the role has any allowed items
 		if roles := get_permission_roles():
@@ -136,6 +135,18 @@ def get_list(
 					PressRolePermission[field]
 					== QueriedDocType.name & PressRolePermission.role.isin(roles)
 				)
+
+	elif doctype == "Marketplace App" and not frappe.local.system_user():
+		if roles := get_permission_roles():
+			if not any(
+				frappe.get_all(
+					"Press Role",
+					fields=["enable_apps"],
+					filters={"name": ("in", roles)},
+					pluck="enable_apps",
+				)
+			):
+				raise_not_permitted()
 
 	filters = frappe._dict(filters or {})
 	list_args = dict(
@@ -171,8 +182,7 @@ def get(doctype, name):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
 
-	if doctype in ["Site", "Release Group", "Server"]:
-		# if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
+	if doctype in ["Site", "Release Group", "Server"] and not frappe.local.system_user():
 
 		# check if user has a role and the role has any allowed items
 		if roles := get_permission_roles():
@@ -186,6 +196,18 @@ def get(doctype, name):
 				},
 			)
 			if not is_permitted:
+				raise_not_permitted()
+
+	elif doctype == "Marketplace App" and not frappe.local.system_user():
+		if roles := get_permission_roles():
+			if not any(
+				frappe.get_all(
+					"Press Role",
+					fields=["enable_apps"],
+					filters={"name": ("in", roles)},
+					pluck="enable_apps",
+				)
+			):
 				raise_not_permitted()
 
 	fields = list(default_fields)
