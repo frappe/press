@@ -17,6 +17,7 @@ frappe.ui.form.on('Deploy Candidate', {
 
 		const can_build = ['Draft', 'Failure', 'Success'].includes(frm.doc.status);
 		const actions = [
+			[__('Stop and Fail'), 'stop_and_fail', !can_build, __('Build')],
 			[__('Complete'), 'build', can_build, __('Build')],
 			[
 				__('Generate Context'),
