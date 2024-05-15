@@ -6,10 +6,7 @@
 			/>
 		</Header>
 		<TabsWithRouter
-			v-if="
-				$team.doc.is_desk_user ||
-				($session.roles.data || []).some(role => role.enable_billing)
-			"
+			v-if="$team.doc.is_desk_user || $session.hasBillingAccess"
 			:tabs="tabs"
 		/>
 		<div
