@@ -605,6 +605,8 @@ class Invoice(Document):
 		self.reload()
 
 	def set_total_and_discount(self):
+		if not self.discounts:
+			return
 		total_discount_amount = 0
 
 		for invoice_discount in self.discounts:
