@@ -288,11 +288,11 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
-		self.fail()
+		self.stop_and_fail()
 		return self.redeploy()
 
 	@frappe.whitelist()
-	def fail(self):
+	def stop_and_fail(self):
 		if self.status in ["Draft", "Failure", "Success"]:
 			return
 
