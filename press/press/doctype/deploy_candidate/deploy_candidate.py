@@ -570,7 +570,11 @@ class DeployCandidate(Document):
 		else:
 			self._update_status_from_remote_build_job(job, job_data)
 
-		if job.status == "Success" and request_data.get("deploy_after_build"):
+		# Fallback case cause upload step can be left hanging
+		if self.status == "Success" and upload_step_updater.upload_step.status != "Success":
+			upload_step_updater.end("Success")
+
+		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
@@ -1224,6 +1228,7 @@ class DeployCandidate(Document):
 			self.upload_step_updater.end("Failure")
 			log_error("Push Docker Image Failed", doc=self)
 			raise
+		self.upload_step_updater.end("Success")
 
 	def generate_ssh_keys(self):
 		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
