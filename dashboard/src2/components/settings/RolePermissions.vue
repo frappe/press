@@ -70,9 +70,13 @@ const bulkDelete = createResource({
 });
 
 const dropdownOptions = [
-	{ label: 'Allowed Sites', doctype: 'Site', dt: 'site' },
-	{ label: 'Allowed Benches', doctype: 'Release Group', dt: 'release_group' },
-	{ label: 'Allowed Servers', doctype: 'Server', dt: 'server' }
+	{ label: 'Allowed Sites', doctype: 'Site', fieldname: 'site' },
+	{
+		label: 'Allowed Benches',
+		doctype: 'Release Group',
+		fieldname: 'release_group'
+	},
+	{ label: 'Allowed Servers', doctype: 'Server', fieldname: 'server' }
 ];
 const currentDropdownOption = ref(dropdownOptions[0]);
 function getDropdownOptions(listResource) {
@@ -139,7 +143,7 @@ const rolePermissions = ref({
 				}
 			},
 			{
-				label: 'Remove',
+				label: 'Delete',
 				slots: {
 					prefix: icon('trash-2')
 				},
@@ -183,7 +187,7 @@ const rolePermissions = ref({
 										name: [
 											'not in',
 											permissions.data.map(
-												p => p[currentDropdownOption.value.dt]
+												p => p[currentDropdownOption.value.fieldname]
 											) || ''
 										],
 										status: ['!=', 'Archived']
@@ -194,7 +198,7 @@ const rolePermissions = ref({
 						primaryAction: {
 							label: 'Add',
 							onClick({ values }) {
-								let key = currentDropdownOption.value.dt;
+								let key = currentDropdownOption.value.fieldname;
 
 								toast.promise(
 									docInsert.submit({
