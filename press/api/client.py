@@ -248,6 +248,9 @@ def run_doc_method(dt, dn, method, args=None):
 @frappe.whitelist()
 def search_link(doctype, query=None, filters=None, order_by=None, page_length=None):
 	check_permissions(doctype)
+	if doctype == "Team" and not frappe.local.system_user():
+		raise_not_permitted()
+
 	meta = frappe.get_meta(doctype)
 	DocType = frappe.qb.DocType(doctype)
 	valid_filters = validate_filters(doctype, filters)
