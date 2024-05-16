@@ -879,6 +879,8 @@ def sync_benches():
 			"press.press.doctype.bench.bench.sync_bench",
 			queue="sync",
 			name=bench,
+			job_id=f"sync_bench:{bench}",
+			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()

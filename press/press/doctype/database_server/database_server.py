@@ -347,25 +347,7 @@ class DatabaseServer(BaseServer):
 				self.server_id = 1
 
 	def _setup_server(self):
-		agent_password = self.get_password("agent_password")
-		agent_repository_url = self.get_agent_repository_url()
-		mariadb_root_password = self.get_password("mariadb_root_password")
-		certificate_name = frappe.db.get_value(
-			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
-		)
-		certificate = frappe.get_doc("TLS Certificate", certificate_name)
-		monitoring_password = frappe.get_doc("Cluster", self.cluster).get_password(
-			"monitoring_password"
-		)
-
-		log_server = frappe.db.get_single_value("Press Settings", "log_server")
-		if log_server:
-			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
-				"kibana_password"
-			)
-		else:
-			kibana_password = None
-
+		config = self._get_config()
 		try:
 			ansible = Ansible(
 				playbook="self_hosted_db.yml"
@@ -377,17 +359,17 @@ class DatabaseServer(BaseServer):
 				variables={
 					"server": self.name,
 					"workers": "2",
-					"agent_password": agent_password,
-					"agent_repository_url": agent_repository_url,
-					"monitoring_password": monitoring_password,
-					"log_server": log_server,
-					"kibana_password": kibana_password,
+					"agent_password": config.agent_password,
+					"agent_repository_url": config.agent_repository_url,
+					"monitoring_password": config.monitoring_password,
+					"log_server": config.log_server,
+					"kibana_password": config.kibana_password,
 					"private_ip": self.private_ip,
 					"server_id": self.server_id,
-					"mariadb_root_password": mariadb_root_password,
-					"certificate_private_key": certificate.private_key,
-					"certificate_full_chain": certificate.full_chain,
-					"certificate_intermediate_chain": certificate.intermediate_chain,
+					"mariadb_root_password": config.mariadb_root_password,
+					"certificate_private_key": config.certificate.private_key,
+					"certificate_full_chain": config.certificate.full_chain,
+					"certificate_intermediate_chain": config.certificate.intermediate_chain,
 				},
 			)
 			play = ansible.run()
@@ -402,6 +384,69 @@ class DatabaseServer(BaseServer):
 		except Exception:
 			self.status = "Broken"
 			log_error("Database Server Setup Exception", server=self.as_dict())
+		self.save()
+
+	def _get_config(self):
+		certificate_name = frappe.db.get_value(
+			"TLS Certificate", {"wildcard": True, "domain": self.domain}, "name"
+		)
+		certificate = frappe.get_doc("TLS Certificate", certificate_name)
+
+		log_server = frappe.db.get_single_value("Press Settings", "log_server")
+		if log_server:
+			kibana_password = frappe.get_doc("Log Server", log_server).get_password(
+				"kibana_password"
+			)
+		else:
+			kibana_password = None
+
+		return frappe._dict(
+			dict(
+				agent_password=self.get_password("agent_password"),
+				agent_repository_url=self.get_agent_repository_url(),
+				mariadb_root_password=self.get_password("mariadb_root_password"),
+				certificate=certificate,
+				monitoring_password=frappe.get_doc("Cluster", self.cluster).get_password(
+					"monitoring_password"
+				),
+				log_server=log_server,
+				kibana_password=kibana_password,
+			)
+		)
+
+	@frappe.whitelist()
+	def setup_essentials(self):
+		"""Setup missing esessiong after server setup"""
+		config = self._get_config()
+
+		try:
+			ansible = Ansible(
+				playbook="setup_essentials.yml",
+				server=self,
+				user=self.ssh_user or "root",
+				port=self.ssh_port or 22,
+				variables={
+					"server": self.name,
+					"workers": "2",
+					"agent_password": config.agent_password,
+					"agent_repository_url": config.agent_repository_url,
+					"monitoring_password": config.monitoring_password,
+					"log_server": config.log_server,
+					"kibana_password": config.kibana_password,
+					"private_ip": self.private_ip,
+					"server_id": self.server_id,
+					"certificate_private_key": config.certificate.private_key,
+					"certificate_full_chain": config.certificate.full_chain,
+					"certificate_intermediate_chain": config.certificate.intermediate_chain,
+				},
+			)
+			play = ansible.run()
+			self.reload()
+			if play.status == "Success":
+				self.status = "Active"
+		except Exception:
+			self.status = "Broken"
+			log_error("Setup failed for missing essentials", server=self.as_dict())
 		self.save()
 
 	def process_hybrid_server_setup(self):

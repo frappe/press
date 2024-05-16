@@ -48,7 +48,7 @@ class PreBuildValidations:
 			self._validate_python_version(app, actual, pm)
 
 	def _validate_python_version(self, app: str, actual: str, pm: PackageManagers):
-		expected = pm["pyproject"].get("project", {}).get("requires-python")
+		expected = (pm["pyproject"] or {}).get("project", {}).get("requires-python")
 		if expected is None or check_version(actual, expected):
 			return
 
@@ -128,9 +128,9 @@ class PreBuildValidations:
 			)
 
 	def _check_frappe_dependencies(self, app: str, frappe_deps: dict[str, str]):
-		for dep_app, actual in frappe_deps.items():
-			expected = self._get_app_version(dep_app)
-			if not expected or sv.Version(expected) in sv.SimpleSpec(actual):
+		for dep_app, expected in frappe_deps.items():
+			actual = self._get_app_version(dep_app)
+			if not actual or sv.Version(actual) in sv.SimpleSpec(expected):
 				continue
 
 			# Do not change args without updating deploy_notifications.py
@@ -143,7 +143,10 @@ class PreBuildValidations:
 			)
 
 	def _get_app_version(self, app: str) -> Optional[str]:
-		pm = self.pmf[app]
+		pm = self.pmf.get(app)
+		if not pm:
+			return None
+
 		pyproject = pm["pyproject"] or {}
 		version = pyproject.get("project", {}).get("version")
 

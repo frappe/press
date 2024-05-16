@@ -260,7 +260,7 @@ export default {
 					return { for_bench: this.bench };
 				},
 				onSuccess() {
-					if (this.bench) {
+					if (this.bench && this.options.versions.length > 0) {
 						this.version = this.options.versions[0].name;
 					}
 				},

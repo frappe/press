@@ -272,6 +272,12 @@ class Invoice(Document):
 				team = frappe.get_cached_doc("Team", self.team)
 				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
 
+	def calculate_total(self):
+		total = 0
+		for item in self.items:
+			total += item.amount
+		return total
+
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
 
@@ -551,11 +557,9 @@ class Invoice(Document):
 		if self.docstatus == 1:
 			return
 
-		total = 0
-		for item in self.items:
-			total += item.amount
-
+		total = self.calculate_total()
 		self.total_before_discount = total
+		self.total = total
 		self.set_total_and_discount()
 
 	def compute_free_credits(self):
@@ -605,6 +609,8 @@ class Invoice(Document):
 		self.reload()
 
 	def set_total_and_discount(self):
+		if not self.discounts:
+			return
 		total_discount_amount = 0
 
 		for invoice_discount in self.discounts:

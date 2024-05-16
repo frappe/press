@@ -18,7 +18,7 @@ from frappe.utils import (
 	get_system_timezone,
 )
 from frappe.utils.password import get_decrypted_password
-from datetime import datetime
+from datetime import datetime, timedelta
 from press.agent import Agent
 from press.press.report.binary_log_browser.binary_log_browser import (
 	get_files_in_timespan,
@@ -108,6 +108,29 @@ def daily_usage(name, timezone):
 	}
 
 
+def rounded_time(dt=None, round_to=60):
+	"""Round a datetime object to any time lapse in seconds
+	dt : datetime.datetime object, default now.
+	round_to : Closest number of seconds to round to, default 1 minute.
+	ref: https://stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object/10854034#10854034
+	"""
+	if dt is None:
+		dt = datetime.datetime.now()
+	seconds = (dt.replace(tzinfo=None) - dt.min).seconds
+	rounding = (seconds + round_to / 2) // round_to * round_to
+	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
+
+
+def get_rounded_boundaries(timespan: int, timegrain: int):
+	"""
+	Round the start and end time to the nearest interval, because Elasticsearch does this
+	"""
+	end = frappe.utils.now_datetime()
+	start = frappe.utils.add_to_date(end, seconds=-timespan)
+
+	return rounded_time(start, timegrain), rounded_time(end, timegrain)
+
+
 def get_uptime(site, timezone, timespan, timegrain):
 	monitor_server = frappe.db.get_single_value("Press Settings", "monitor_server")
 	if not monitor_server:
@@ -147,17 +170,17 @@ def get_uptime(site, timezone, timespan, timegrain):
 
 
 def get_stacked_histogram_chart_result(
-	search: Search, query_type: str, to_s_divisor=1e6
+	search: Search,
+	query_type: str,
+	start: datetime,
+	end: datetime,
+	timegrain: int,
+	to_s_divisor: int = 1e6,
 ):
 	aggs = search.execute().aggregations
-	labels = set()
-	try:
-		for path_bucket in aggs.method_path.buckets:
-			for hist_bucket in path_bucket.histogram_of_method.buckets:
-				labels.add(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-		labels = sorted(list(labels))
-	except AttributeError:
-		return {"datasets": [], "labels": []}
+
+	timegrain = timedelta(seconds=timegrain)
+	labels = [start + i * timegrain for i in range((end - start) // timegrain)]
 	# method_path has buckets of timestamps with method(eg: avg) of that duration
 	datasets = []
 
@@ -198,12 +221,22 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	url = f"https://{log_server}/elasticsearch"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
+	start, end = get_rounded_boundaries(timespan, timegrain)
+
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
 		.filter("match_phrase", json__site=site)
 		.filter("match_phrase", json__transaction_type="request")
-		.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+		.filter(
+			"range",
+			**{
+				"@timestamp": {
+					"gte": int(start.timestamp() * 1000),
+					"lte": int(end.timestamp() * 1000),
+				}
+			},
+		)
 		.exclude("match_phrase", json__request__path="/api/method/ping")
 		.extra(size=0)
 	)
@@ -256,7 +289,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
-	return get_stacked_histogram_chart_result(search, query_type)
+	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain)
 
 
 def get_background_job_by_method(site, query_type, timezone, timespan, timegrain):
@@ -269,12 +302,22 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 	url = f"https://{log_server}/elasticsearch"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
+	start, end = get_rounded_boundaries(timespan, timegrain)
+
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
 		.filter("match_phrase", json__site=site)
 		.filter("match_phrase", json__transaction_type="job")
-		.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+		.filter(
+			"range",
+			**{
+				"@timestamp": {
+					"gte": int(start.timestamp() * 1000),
+					"lte": int(end.timestamp() * 1000),
+				}
+			},
+		)
 		.extra(size=0)
 	)
 
@@ -326,7 +369,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 
 		search.aggs["method_path"].bucket("outside_avg", avg_of_duration)  # for sorting
 
-	return get_stacked_histogram_chart_result(search, query_type)
+	return get_stacked_histogram_chart_result(search, query_type, start, end, timegrain)
 
 
 def get_slow_logs(site, query_type, timezone, timespan, timegrain):
@@ -340,11 +383,24 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	url = f"https://{log_server}/elasticsearch/"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
+	start, end = get_rounded_boundaries(timespan, timegrain)
+
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
 		Search(using=es, index="filebeat-*")
 		.filter("match", mysql__slowlog__current_user=database_name)
-		.filter("range", **{"@timestamp": {"gte": f"now-{timespan}s", "lte": "now"}})
+		.filter(
+			"range",
+			**{
+				"@timestamp": {
+					"gte": int(start.timestamp() * 1000),
+					"lte": int(end.timestamp() * 1000),
+				}
+			},
+		)
+		.exclude(
+			"wildcard", mysql__slowlog__query="SELECT /\*!40001 SQL_NO_CACHE \*/*"  # noqa
+		)
 		.extra(size=0)
 	)
 
@@ -383,7 +439,9 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 		)
 		search.aggs["method_path"].bucket("outside_sum", sum_of_duration)
 
-	return get_stacked_histogram_chart_result(search, query_type, to_s_divisor=1e9)
+	return get_stacked_histogram_chart_result(
+		search, query_type, start, end, timegrain, to_s_divisor=1e9
+	)
 
 
 def get_usage(site, type, timezone, timespan, timegrain):

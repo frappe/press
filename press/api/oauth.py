@@ -1,6 +1,8 @@
 import json
 import frappe
 
+from frappe.utils.oauth import get_oauth2_authorize_url
+
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import Flow
@@ -203,3 +205,8 @@ def saas_setup(key, app, country, subdomain):
 	create_marketplace_subscription(signup_ar)
 
 	return get_url("/prepare-site?key=" + signup_ar.request_key + "&app=" + app)
+
+
+@frappe.whitelist(allow_guest=True)
+def oauth_authorize_url(provider):
+	return get_oauth2_authorize_url(provider, None)

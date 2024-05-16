@@ -43,6 +43,8 @@ from press.press.doctype.deploy_candidate.utils import (
 from press.press.doctype.deploy_candidate.validations import PreBuildValidations
 from press.press.doctype.release_group.release_group import ReleaseGroup
 from press.utils import get_current_team, log_error, reconnect_on_failure
+from press.utils.jobs import get_background_jobs, stop_background_job
+from rq.job import Job
 
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
@@ -254,7 +256,7 @@ class DeployCandidate(Document):
 		self.is_docker_remote_builder_used = True
 
 	def validate_status(self):
-		if self.status in ["Draft", "Success", "Failure"]:
+		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
 			return True
 
 		frappe.msgprint(
@@ -281,19 +283,30 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def fail_and_redeploy(self):
-		if self.status == "Draft" or self.status == "Failure" or self.status == "Success":
-			return
-
-		self._set_status_failure()
+		if (res := self.stop_and_fail()) and res["error"]:
+			return res
 		return self.redeploy()
+
+	@frappe.whitelist()
+	def stop_and_fail(self):
+		not_failable = ["Draft", "Failure", "Success"]
+		if self.status in not_failable:
+			return dict(
+				error=True,
+				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
+			)
+
+		self.stop_build_jobs()
+		self._set_status_failure()
+		return dict(error=False, message="Failed successfully")
 
 	@frappe.whitelist()
 	def redeploy(self):
 		if not (dc := self.get_duplicate_dc()):
-			return
+			return dict(error=True, message="Cannot create duplicate Deploy Candidate")
 
 		dc.build_and_deploy()
-		return dc
+		return dict(error=False, message=dc.name)
 
 	@frappe.whitelist()
 	def schedule_build_and_deploy(self, is_running_scheduled=False):
@@ -528,7 +541,6 @@ class DeployCandidate(Document):
 		job_data = json.loads(job.data or "{}")
 		output_data = json.loads(job_data.get("output", "{}"))
 
-		# TODO: Error Handling
 		"""
 		Due to how agent - press communication takes place, every time an
 		output is published all of it has to be re-parsed from the start.
@@ -552,19 +564,21 @@ class DeployCandidate(Document):
 			upload_step_updater.start()
 			upload_step_updater.process(output)
 
-		self._update_status_from_remote_build_job(job, job_data)
+		if (
+			job_data.get("build_failure") or upload_step_updater.upload_step.status == "Failure"
+		):
+			self._set_status_failure()
+		else:
+			self._update_status_from_remote_build_job(job, job_data)
 
-		if job.status == "Success":
+		# Fallback case cause upload step can be left hanging
+		if self.status == "Success" and upload_step_updater.upload_step.status != "Success":
 			upload_step_updater.end("Success")
 
-		if job.status == "Success" and request_data.get("deploy_after_build"):
+		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
-		# build_failed can be None if the build has not ended
-		if job_data.get("build_failed") is True:
-			return self._set_status_failure()
-
 		match job.status:
 			case "Pending" | "Running":
 				return self._set_status_running()
@@ -1215,6 +1229,7 @@ class DeployCandidate(Document):
 			self.upload_step_updater.end("Failure")
 			log_error("Push Docker Image Failed", doc=self)
 			raise
+		self.upload_step_updater.end("Success")
 
 	def generate_ssh_keys(self):
 		ca = frappe.get_value("Press Settings", None, "ssh_certificate_authority")
@@ -1491,6 +1506,12 @@ class DeployCandidate(Document):
 			return owner == org
 		return False
 
+	def stop_build_jobs(self):
+		for job in get_background_jobs(self.doctype, self.name, status="started"):
+			if not is_build_job(job):
+				continue
+			stop_background_job(job)
+
 
 def can_pull_update(file_paths: list[str]) -> bool:
 	"""
@@ -1623,11 +1644,11 @@ def toggle_builds(suspend):
 	frappe.db.set_single_value("Press Settings", "suspend_builds", suspend)
 
 
-def run_scheduled_builds():
+def run_scheduled_builds(max_builds: int = 5):
 	candidates = frappe.get_all(
 		"Deploy Candidate",
 		{"status": "Scheduled", "scheduled_time": ("<=", frappe.utils.now_datetime())},
-		limit=1,
+		limit=max_builds,
 	)
 	for candidate in candidates:
 		try:
@@ -1727,3 +1748,8 @@ def get_remote_step_output(
 			continue
 
 	return None
+
+
+def is_build_job(job: Job) -> bool:
+	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
+	return doc_method.startswith("_build")

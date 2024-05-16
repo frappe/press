@@ -18,7 +18,7 @@
 								type="email"
 								placeholder="johndoe@mail.com"
 								autocomplete="email"
-								v-model="email"
+								:modelValue="email"
 								required
 							/>
 							<router-link
@@ -48,6 +48,7 @@
 								required
 							/>
 							<FormControl
+								v-if="!isOauthLogin"
 								class="mt-4"
 								label="Password"
 								type="password"
@@ -57,7 +58,7 @@
 								autocomplete="current-password"
 								required
 							/>
-							<div class="mt-2" v-if="isLogin">
+							<div class="mt-2" v-if="isLogin && !isOauthLogin">
 								<router-link
 									class="text-sm"
 									:to="{
@@ -68,7 +69,12 @@
 									Forgot Password?
 								</router-link>
 							</div>
-							<Button class="mt-4" variant="solid"> Log in with email </Button>
+							<Button v-if="!isOauthLogin" class="mt-4" variant="solid">
+								Log in with email
+							</Button>
+							<Button v-else class="mt-4" variant="solid">
+								Log in with {{ oauthProviderName }}
+							</Button>
 							<ErrorMessage class="mt-2" :message="$session.login.error" />
 						</template>
 						<template v-else>
@@ -90,7 +96,7 @@
 						</template>
 						<ErrorMessage class="mt-2" :message="$resources.signup.error" />
 					</form>
-					<div class="flex flex-col" v-if="!hasForgotPassword">
+					<div class="flex flex-col" v-if="!hasForgotPassword && !isOauthLogin">
 						<div class="-mb-2 mt-6 border-t text-center">
 							<div class="-translate-y-1/2 transform">
 								<span
@@ -168,6 +174,9 @@ export default {
 			resetPasswordEmailSent: false
 		};
 	},
+	mounted() {
+		this.email = localStorage.getItem('login_email');
+	},
 	resources: {
 		signup() {
 			return {
@@ -180,6 +189,15 @@ export default {
 				},
 				onSuccess() {
 					this.signupEmailSent = true;
+				}
+			};
+		},
+		oauthLogin() {
+			return {
+				url: 'press.api.oauth.oauth_authorize_url',
+				onSuccess(url) {
+					localStorage.setItem('login_email', this.email);
+					window.location.href = url;
 				}
 			};
 		},
@@ -232,10 +250,15 @@ export default {
 								if (this.$route.query.product) {
 									loginRoute = `/dashboard-beta/app-trial/${this.$route.query.product}`;
 								}
+								localStorage.setItem('login_email', this.email);
 								window.location.href = loginRoute;
 							}
 						}
 					);
+				} else if (this.isOauthLogin) {
+					this.$resources.oauthLogin.submit({
+						provider: this.socialLoginKey
+					});
 				}
 			} else if (this.hasForgotPassword) {
 				this.$resources.resetPassword.submit();
@@ -258,6 +281,40 @@ export default {
 		},
 		hasForgotPassword() {
 			return this.$route.name == 'Login' && this.$route.query.forgot;
+		},
+		emailDomain() {
+			return this.email?.includes('@') ? this.email?.split('@').pop() : '';
+		},
+		isOauthLogin() {
+			return (
+				this.oauthEmailDomains.has(this.emailDomain) &&
+				this.emailDomain.length > 0
+			);
+		},
+		oauthProviders() {
+			const domains = this.$resources.signupSettings.data?.oauth_domains;
+			let providers = {};
+
+			if (domains) {
+				domains.map(
+					d =>
+						(providers[d.email_domain] = {
+							social_login_key: d.social_login_key,
+							provider_name: d.provider_name
+						})
+				);
+			}
+
+			return providers;
+		},
+		oauthEmailDomains() {
+			return new Set(Object.keys(this.oauthProviders));
+		},
+		socialLoginKey() {
+			return this.oauthProviders[this.emailDomain].social_login_key;
+		},
+		oauthProviderName() {
+			return this.oauthProviders[this.emailDomain].provider_name;
 		},
 		title() {
 			if (this.hasForgotPassword) {

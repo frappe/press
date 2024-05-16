@@ -5,7 +5,6 @@ import dockerfile
 import frappe
 from frappe.core.utils import find
 from frappe.utils import now_datetime, rounded
-from press.utils import log_error
 
 # Reference:
 # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
@@ -73,19 +72,8 @@ class DockerBuildOutputParser:
 		self._end_parsing()
 
 	def _parse_line_handle_exc(self, raw_line: str):
-		try:
-			self._parse_line(raw_line)
-			self._update_dc_build_output()
-		except Exception:
-			self.flush_output()
-			self._log_error(raw_line)
-
-	def _log_error(self, raw_line: str):
-		log_error(
-			title="Build Output Parse Error",
-			message=f"Error when parsing line: `{raw_line}`",
-			doc=self.dc,
-		)
+		self._parse_line(raw_line)
+		self._update_dc_build_output()
 
 	def _update_dc_build_output(self):
 		# Output saved at the end of parsing all lines
@@ -103,7 +91,7 @@ class DockerBuildOutputParser:
 		self.dc.build_output = "".join(self.lines)
 		self.dc.build_error = "".join(self.error_lines)
 
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()
 
@@ -306,20 +294,17 @@ class UploadStepUpdater:
 			self._process_single_line(line)
 
 		# If remote, duration is accumulated
-		if self.is_remote:
-			duration = (now_datetime() - self.dc.last_updated).total_seconds()
-			self.upload_step.duration += rounded(duration, 1)
+		last_update = self.start_time
 
 		# If not remote, duration is calculated once
-		else:
-			duration = (now_datetime() - self.start_time).total_seconds()
-			self.upload_step.duration = rounded(duration, 1)
+		if self.is_remote:
+			last_update = self.dc.last_updated
 
-			# If remote, this has to be set on Agent Job success
-			self.upload_step.status = "Success"
+		duration = (now_datetime() - last_update).total_seconds()
+		self.upload_step.duration = rounded(duration, 1)
 		self.flush_output()
 
-	def end(self, status: 'DF.Literal["Success", "Failure"]'):
+	def end(self, status: 'Optional[DF.Literal["Success", "Failure"]]'):
 		if not self.upload_step:
 			return
 
@@ -341,6 +326,12 @@ class UploadStepUpdater:
 		self.last_updated = now
 
 	def _update_output(self, line: dict):
+		if error := line.get("error"):
+			message = line.get("errorDetail", {}).get("message", error)
+			line_str = f"no_id: Error {message}"
+			self.output.append({"id": "no_id", "output": line_str, "status": "Error"})
+			return
+
 		line_id = line.get("id")
 		if not line_id:
 			return
@@ -355,14 +346,23 @@ class UploadStepUpdater:
 		):
 			existing["output"] = line_str
 		else:
-			self.output.append({"id": line_id, "output": line_str})
+			self.output.append({"id": line_id, "output": line_str, "status": line_status})
 
 	def flush_output(self, commit: bool = True):
 		if not self.upload_step:
 			return
 
-		output_lines = [line["output"] for line in self.output]
+		output_lines = []
+		for line in self.output:
+			output_lines.append(line["output"])
+			status = line.get("status")
+
+			if status == "Error":
+				self.upload_step.status = "Failure"
+			elif status == "Pushed":
+				self.upload_step.status = "Success"
+
 		self.upload_step.output = "\n".join(output_lines)
-		self.dc.save(ignore_version=True)
+		self.dc.save(ignore_version=True, ignore_permissions=True)
 		if commit:
 			frappe.db.commit()

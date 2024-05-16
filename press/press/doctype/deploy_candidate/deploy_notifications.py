@@ -41,6 +41,7 @@ DOC_URLS = {
 	"invalid-pyproject-file": "https://frappecloud.com/docs/common-issues/invalid-pyprojecttoml-file",
 	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
 	"incompatible-dependency-version": "https://frappecloud.com/docs/common-issues/incompatible-dependency-version",
+	"incompatible-app-version": "https://frappecloud.com/docs/common-issues/incompatible-app-version",
 }
 
 
@@ -322,6 +323,7 @@ def update_with_incompatible_app_prebuild(
 	<p>To fix this issue please set <b>{dep_app}</b> to version <b>{expected}</b>.</p>
 	"""
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["incompatible-app-version"]
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
