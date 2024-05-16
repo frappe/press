@@ -180,7 +180,7 @@ def get_stacked_histogram_chart_result(
 	aggs = search.execute().aggregations
 
 	timegrain = timedelta(seconds=timegrain)
-	labels = [start + i * timegrain for i in range((end - start) // timegrain)]
+	labels = [start + i * timegrain for i in range((end - start) // timegrain + 1)]
 	# method_path has buckets of timestamps with method(eg: avg) of that duration
 	datasets = []
 
