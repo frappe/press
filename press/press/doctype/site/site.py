@@ -87,6 +87,7 @@ class Site(Document, TagHelpers):
 		archive_failed: DF.Check
 		auto_update_last_triggered_on: DF.Datetime | None
 		auto_updates_scheduled: DF.Check
+		backup_time: DF.Time | None
 		bench: DF.Link
 		cluster: DF.Link
 		config: DF.Code | None
@@ -146,6 +147,8 @@ class Site(Document, TagHelpers):
 		update_trigger_frequency: DF.Literal["Daily", "Weekly", "Monthly"]
 		update_trigger_time: DF.Time | None
 	# end: auto-generated types
+
+	DOCTYPE = "Site"
 
 	dashboard_fields = [
 		"ip",
@@ -1918,6 +1921,16 @@ class Site(Document, TagHelpers):
 		return result[0] if result else None
 
 	@classmethod
+	def get_sites_with_backup_time(cls) -> list[dict]:
+		sites = frappe.qb.DocType(cls.DOCTYPE)
+		return (
+			frappe.qb.from_(sites)
+			.select(sites.name, sites.backup_time)
+			.where(sites.backup_time.notnull())
+			.run(as_dict=True)
+		)
+
+	@classmethod
 	def get_sites_for_backup(cls, interval: int):
 		sites = cls.get_sites_without_backup_in_interval(interval)
 		servers_with_backups = frappe.get_all(
@@ -1928,6 +1941,7 @@ class Site(Document, TagHelpers):
 			{
 				"name": ("in", sites),
 				"skip_scheduled_backups": False,
+				"backup_time": ("is", "not set"),
 				"server": ("in", servers_with_backups),
 			},
 			["name", "timezone", "server"],

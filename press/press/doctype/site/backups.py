@@ -279,6 +279,17 @@ class ScheduledBackupJob:
 			frappe.db.rollback()
 
 
+def schedule_for_sites_with_backup_time():
+	sites = Site.get_sites_with_backup_time()
+	now = frappe.utils.now_datetime()
+	for site in sites:
+		if now.hour != site.backup_time.total_seconds() // 3600:
+			continue
+		site_doc = frappe.get_doc("Site", site.name)
+		site_doc.backup(with_files=True, offsite=True)
+		frappe.db.commit()
+
+
 def schedule():
 	scheduled_backup_job = ScheduledBackupJob()
 	scheduled_backup_job.start()
