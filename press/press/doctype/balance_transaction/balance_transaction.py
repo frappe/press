@@ -50,14 +50,14 @@ class BalanceTransaction(Document):
 	def before_submit(self):
 		last_balance = frappe.db.get_all(
 			"Balance Transaction",
-			filters={"team": self.team, "docstatus": 1},
+			filters={"team": self.team, "docstatus": 1, "unallocated_amount": (">=", 0)},
 			fields=["sum(amount) as ending_balance"],
 			group_by="team",
 			pluck="ending_balance",
 		)
 		last_balance = last_balance[0] if last_balance else 0
 		if last_balance:
-			self.ending_balance = (last_balance or 0) + self.amount
+			self.ending_balance = frappe.utils.rounded((last_balance or 0) + self.amount, 2)
 		else:
 			self.ending_balance = self.amount
 
