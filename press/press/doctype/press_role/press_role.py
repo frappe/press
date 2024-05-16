@@ -70,3 +70,58 @@ class PressRole(Document):
 
 	def on_trash(self):
 		frappe.db.delete("Press Role Permission", {"role": self.name})
+
+
+def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
+	"""
+	Check if the user is permitted to access the document
+	Expects the function to throw error for `get` or return a list of permitted roles for `get_list`
+
+	:param doctype: Document type
+	:param name: Document name
+	:return: List of permitted roles or None
+	"""
+	if frappe.local.system_user():
+		return []
+
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	PressRole = frappe.qb.DocType("Press Role")
+
+	roles = (
+		frappe.qb.from_(PressRole)
+		.select(PressRole.name)
+		.join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.where(PressRoleUser.user == frappe.session.user)
+		.where(PressRole.team == frappe.local.team().name)
+	).run(as_dict=1, pluck="name")
+
+	if doctype in ["Site", "Release Group", "Server"]:
+		field = doctype.lower().replace(" ", "_")
+		if role_perms := frappe.get_all(
+			"Press Role Permission",
+			fields=["name", field],
+			filters={"role": ("in", roles)},
+		):
+			if name:
+				# throw error if the user is not permitted for the document
+				if not any(perm[field] == name for perm in role_perms):
+					frappe.throw("Not permitted", frappe.PermissionError)
+				else:
+					return roles
+			else:
+				return roles
+
+	# throw error if any of the roles don't have permission for apps
+	elif doctype == "Marketplace App":
+		if not any(
+			frappe.get_all(
+				"Press Role",
+				fields=["enable_apps"],
+				filters={"name": ("in", roles)},
+				pluck="enable_apps",
+			)
+		):
+			frappe.throw("Not permitted", frappe.PermissionError)
+
+	return []

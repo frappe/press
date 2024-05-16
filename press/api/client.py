@@ -81,6 +81,8 @@ def get_list(
 	parent=None,
 	debug=False,
 ):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	if filters is None:
 		filters = {}
 	check_permissions(doctype)
@@ -149,6 +151,8 @@ def get_list(
 
 @frappe.whitelist()
 def get(doctype, name):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	check_permissions(doctype)
 	try:
 		doc = frappe.get_doc(doctype, name)
@@ -280,63 +284,6 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 			condition = condition | DocType[meta.title_field].like(f"%{query}%")
 		q = q.where(condition)
 	return q.run(as_dict=1)
-
-
-def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
-	"""
-	Check if the user is permitted to access the document
-	Expects the function to throw error for `get` or return a list of permitted roles for `get_list`
-
-	:param doctype: Document type
-	:param name: Document name
-	:return: List of permitted roles or None
-	"""
-
-	if frappe.local.system_user():
-		return []
-
-	PressRoleUser = frappe.qb.DocType("Press Role User")
-	PressRole = frappe.qb.DocType("Press Role")
-
-	roles = (
-		frappe.qb.from_(PressRole)
-		.select(PressRole.name)
-		.join(PressRoleUser)
-		.on(PressRoleUser.parent == PressRole.name)
-		.where(PressRoleUser.user == frappe.session.user)
-		.where(PressRole.team == frappe.local.team().name)
-	).run(as_dict=1, pluck="name")
-
-	if doctype in ["Site", "Release Group", "Server"]:
-		filters = {"role": ("in", roles)}
-		if name:
-			field = doctype.lower().replace(" ", "_")
-			filters[field] = name
-
-		if is_permitted := frappe.get_all(
-			"Press Role Permission",
-			fields=["name"],
-			filters=filters,
-		):
-			# throw error if the user is not permitted for the document
-			if name and not is_permitted:
-				raise_not_permitted()
-			else:
-				return roles
-
-	# throw error if any of the roles don't have permission for apps
-	elif doctype == "Marketplace App":
-		if not any(
-			frappe.get_all(
-				"Press Role",
-				fields=["enable_apps"],
-				filters={"name": ("in", roles)},
-				pluck="enable_apps",
-			)
-		):
-			raise_not_permitted()
-
-	return []
 
 
 def check_team_access(doctype: str, name: str):

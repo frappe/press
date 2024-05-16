@@ -45,8 +45,9 @@ class PressRolePermission(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
-		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
-			"Team", self.team, "user"
+		if (
+			not frappe.local.system_user()
+			and frappe.session.user != frappe.db.get_cached_value("Team", self.team, "user")
 		):
 			frappe.throw("Only the team owner can delete this role permission")
 
