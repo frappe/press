@@ -158,6 +158,7 @@
   "infrastructure_tab",
   "agent_section",
   "agent_repository_owner",
+  "agent_sentry_dsn",
   "column_break_105",
   "agent_github_access_token",
   "lets_encrypt_section",
@@ -1181,11 +1182,16 @@
    "fieldname": "disable_agent_job_deduplication",
    "fieldtype": "Check",
    "label": "Disable Agent Job Deduplication"
+  },
+  {
+   "fieldname": "agent_sentry_dsn",
+   "fieldtype": "Data",
+   "label": "Agent Sentry DSN"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-03-22 12:30:21.968896",
+ "modified": "2024-05-16 16:41:34.055011",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

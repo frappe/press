@@ -26,6 +26,7 @@ class PressSettings(Document):
 
 		agent_github_access_token: DF.Data | None
 		agent_repository_owner: DF.Data | None
+		agent_sentry_dsn: DF.Data | None
 		allow_developer_account: DF.Check
 		app_include_script: DF.Data | None
 		auto_update_queue_size: DF.Int
