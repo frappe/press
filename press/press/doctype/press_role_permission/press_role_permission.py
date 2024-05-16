@@ -26,6 +26,11 @@ class PressRolePermission(Document):
 	dashboard_fields = ["site", "release_group", "server", "role"]
 
 	def before_insert(self):
+		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
+			"Team", self.team, "user"
+		):
+			frappe.throw("Only the team owner can create role permissions")
+
 		if frappe.db.exists(
 			"Press Role Permission",
 			{
@@ -40,4 +45,9 @@ class PressRolePermission(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
+		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
+			"Team", self.team, "user"
+		):
+			frappe.throw("Only the team owner can delete this role permission")
+
 		super().delete()
