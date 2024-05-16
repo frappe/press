@@ -151,6 +151,7 @@ class AgentJob(Document):
 			self.name,
 			"create_http_request",
 			timeout=600,
+			queue="short",
 			enqueue_after_commit=True,
 		)
 
