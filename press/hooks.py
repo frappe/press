@@ -192,6 +192,7 @@ scheduler_events = {
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
 		"press.press.doctype.bench.bench.archive_obsolete_benches",
+		"press.press.doctype.site.backups.schedule_for_sites_with_backup_time",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",

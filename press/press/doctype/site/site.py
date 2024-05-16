@@ -504,6 +504,10 @@ class Site(Document, TagHelpers):
 				ignore_permissions=True
 			)
 
+		if self.backup_time:
+			self.backup_time = None  # because FF by default sets it to current time
+			self.save()
+
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
 		_change_dns_record(
@@ -1926,7 +1930,7 @@ class Site(Document, TagHelpers):
 		return (
 			frappe.qb.from_(sites)
 			.select(sites.name, sites.backup_time)
-			.where(sites.backup_time.notnull())
+			.where(sites.backup_time.isnotnull())
 			.run(as_dict=True)
 		)
 

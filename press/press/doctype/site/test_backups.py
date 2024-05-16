@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from unittest.mock import MagicMock, Mock, patch
 
 from frappe.tests.utils import FrappeTestCase
@@ -32,7 +32,7 @@ class TestScheduledBackupJob(FrappeTestCase):
 		frappe.db.set_single_value("Press Settings", "backup_interval", 6)
 
 	def _interval_hrs_ago(self):
-		return datetime.now() - timedelta(hours=self.interval)
+		return frappe.utils.now_datetime() - timedelta(hours=self.interval)
 
 	def _create_site_requiring_backup(self, **kwargs):
 		return create_test_site(

@@ -280,6 +280,11 @@ class ScheduledBackupJob:
 
 
 def schedule_for_sites_with_backup_time():
+	"""
+	Schedule backups for sites with backup time.
+
+	Run this hourly only
+	"""
 	sites = Site.get_sites_with_backup_time()
 	now = frappe.utils.now_datetime()
 	for site in sites:
