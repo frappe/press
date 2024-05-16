@@ -289,7 +289,7 @@ class DeployCandidate(Document):
 
 	@frappe.whitelist()
 	def stop_and_fail(self):
-		not_failable = ["Draft", "Failure", "Success", "Scheduled"]
+		not_failable = ["Draft", "Failure", "Success"]
 		if self.status in not_failable:
 			return dict(
 				error=True,

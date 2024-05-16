@@ -5,7 +5,6 @@ import dockerfile
 import frappe
 from frappe.core.utils import find
 from frappe.utils import now_datetime, rounded
-from press.utils import log_error
 
 # Reference:
 # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
@@ -73,19 +72,8 @@ class DockerBuildOutputParser:
 		self._end_parsing()
 
 	def _parse_line_handle_exc(self, raw_line: str):
-		try:
-			self._parse_line(raw_line)
-			self._update_dc_build_output()
-		except Exception:
-			self.flush_output()
-			self._log_error(raw_line)
-
-	def _log_error(self, raw_line: str):
-		log_error(
-			title="Build Output Parse Error",
-			message=f"Error when parsing line: `{raw_line}`",
-			doc=self.dc,
-		)
+		self._parse_line(raw_line)
+		self._update_dc_build_output()
 
 	def _update_dc_build_output(self):
 		# Output saved at the end of parsing all lines
