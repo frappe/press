@@ -106,4 +106,4 @@ def create_new_notification(team, type, document_type, document_name, message):
 
 
 def on_doctype_update():
-	frappe.db.add_index("Press Notification", ["team", "`read`"])
+	frappe.db.add_index("Press Notification", ["team", "read"])
