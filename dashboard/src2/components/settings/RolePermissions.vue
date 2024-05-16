@@ -56,17 +56,12 @@ const role = createDocumentResource({
 	name: props.roleId,
 	auto: true,
 	whitelistedMethods: {
-		getUsers: 'get_users',
-		updatePermissions: 'update_permissions'
+		bulkDelete: 'delete_permissions'
 	}
 });
 
 const docInsert = createResource({
 	url: 'press.api.client.insert'
-});
-
-const bulkDelete = createResource({
-	url: 'press.api.client.bulk_delete'
 });
 
 const dropdownOptions = [
@@ -149,15 +144,13 @@ const rolePermissions = ref({
 				},
 				condition: () => selectedItems.value.size > 0,
 				onClick() {
-					bulkDelete.submit(
+					role.bulkDelete.submit(
 						{
-							doctype: 'Press Role Permission',
-							names: Array.from(selectedItems.value)
+							permissions: Array.from(selectedItems.value)
 						},
 						{
 							onSuccess: () => {
 								toast.success('Items deleted successfully');
-								permissions.reload();
 								selectedItems.value.clear();
 							}
 						}

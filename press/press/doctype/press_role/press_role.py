@@ -53,6 +53,13 @@ class PressRole(Document):
 		self.save()
 
 	@dashboard_whitelist()
+	def delete_permissions(self, permissions: list[str]) -> None:
+		for perm in permissions:
+			perm_doc = frappe.get_doc("Press Role Permission", perm)
+			if perm_doc.role == self.name:
+				perm_doc.delete()
+
+	@dashboard_whitelist()
 	def delete(self):
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
