@@ -1507,7 +1507,7 @@ class DeployCandidate(Document):
 		return False
 
 	def stop_build_jobs(self):
-		for job in get_background_jobs(self.doctype, self.name):
+		for job in get_background_jobs(self.doctype, self.name, status="started"):
 			if not is_build_job(job):
 				continue
 			stop_background_job(job)
