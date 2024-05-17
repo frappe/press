@@ -141,3 +141,5 @@ class TestScheduledBackupJob(FrappeTestCase):
 		with self.freeze_time("2021-01-01 00:00"):
 			schedule_for_sites_with_backup_time()
 		mock_backup.assert_called_once()
+		job = ScheduledBackupJob()
+		self.assertEqual(len(job.sites), 0)  # site with backup time should be skipped
