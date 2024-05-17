@@ -89,11 +89,15 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 		return []
 
 	PressRolePermission = frappe.qb.DocType("Press Role Permission")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
 	PressRole = frappe.qb.DocType("Press Role")
 
 	query = (
 		frappe.qb.from_(PressRole)
 		.select(PressRole.name)
+		.join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.where(PressRoleUser.user == frappe.session.user)
 		.where(PressRole.team == frappe.local.team().name)
 	)
 
