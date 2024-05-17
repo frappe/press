@@ -6,7 +6,7 @@
 		@after-leave="() => (this.memberEmail = '')"
 	>
 		<template v-slot:body-content>
-			<div class="text-base">
+			<div class="rounded border-2 border-dashed p-3 text-base">
 				<div class="mb-4 flex gap-2">
 					<div class="flex-1">
 						<Autocomplete
@@ -23,7 +23,7 @@
 						@click="() => addUser(member.value)"
 					/>
 				</div>
-				<div class="rounded border-2 border-dashed p-3">
+				<div>
 					<div class="mb-1 text-gray-600">Members</div>
 					<div
 						v-if="roleUsers.length === 0"
