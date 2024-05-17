@@ -4,70 +4,59 @@
 import frappe
 
 from press.utils import _system_user
-from frappe.model.document import bulk_insert
 
 
 def execute():
 	frappe.local.system_user = _system_user
 
-	teams = frappe.get_all("Team", pluck="name", filters={"enabled": 1})
-	for team in teams:
-		migrate_permissions(team)
-
-
-def migrate_permissions(team):
-
-	groups = frappe.get_all(
-		"Press Permission Group", fields=["name", "title"], filters={"team": team}
+	teams = frappe.get_all(
+		"Team",
+		filters={"enabled": 1},
+		pluck="name",
 	)
+	for team in teams:
+		migrate_group_permissions(team)
+
+
+def migrate_group_permissions(team):
+	groups = frappe.qb.get_query(
+		"Press Permission Group",
+		fields=["name", "title", "team", {"users": ["user"]}],
+		filters={"team": team},
+	).run(as_dict=1)
 
 	for group in groups:
-		group_doc = frappe.get_doc("Press Permission Group", group.name)
-
-		perms = frappe.get_all(
+		old_group_permissions = frappe.get_all(
 			"Press User Permission",
 			filters={"group": group.name, "type": "Group"},
 			fields=["document_type", "document_name"],
 			distinct=True,
 		)
 
-		if not perms:
+		if not old_group_permissions:
 			continue
 
-		if frappe.db.exists("Press Role", {"title": group_doc.title, "team": team}):
+		if frappe.db.exists("Press Role", {"title": group.title, "team": group.team}):
 			continue
 
 		role = frappe.new_doc("Press Role")
-		role.title = group_doc.title
+		role.title = group.title
 		role.team = team
-		for user in group_doc.users:
-			role.append("users", {"user": user.user})
+		role.enable_billing = 1
+		role.enable_apps = 1
+		for row in group.users:
+			role.append("users", {"user": row.user})
 		role.insert()
 
-		permissions = []
-		for perm in perms:
+		for perm in old_group_permissions:
 			if perm.document_type not in ["Site", "Release Group", "Server"]:
 				continue
-
-			# enable perms for all documents allowed in user permission for that particular role
-			role = frappe.get_value("Press Role", {"title": group.title, "team": team})
-			doc_field = perm.document_type.lower().replace(" ", "_")
-			# frappe.get_doc({
-			# 	"doctype": "Press Role Permission",
-			# 	"role": role,
-			# 	"team": group.team,
-			# 	doc_field: perm.document_name,
-			# }).insert()
-
-			permissions.append(
-				frappe.get_doc(
-					{
-						"doctype": "Press Role Permission",
-						"role": role,
-						"team": team,
-						doc_field: perm.document_name,
-					}
-				)
-			)
-
-		bulk_insert("Press Role Permission", permissions, ignore_duplicates=True)
+			fieldname = perm.document_type.lower().replace(" ", "_")
+			frappe.get_doc(
+				{
+					"doctype": "Press Role Permission",
+					"role": role.name,
+					"team": team,
+					fieldname: perm.document_name,
+				}
+			).insert()
