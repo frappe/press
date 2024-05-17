@@ -124,7 +124,9 @@ class Incident(WebsiteGenerator):
 		Returns a list of users who are in the incident team
 		"""
 		incident_settings = frappe.get_cached_doc("Incident Settings")
-		if frappe.db.exists("Self Hosted Server", {"server": self.server}):
+		if frappe.db.exists(
+			"Self Hosted Server", {"server": self.server}
+		) or frappe.db.get_value("Server", self.server, "is_self_hosted"):
 			users = incident_settings.self_hosted_users
 		users = incident_settings.users
 		ret = users
