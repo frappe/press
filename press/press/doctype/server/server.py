@@ -878,34 +878,37 @@ class Server(BaseServer):
 				bench.save()
 
 		if not self.is_new() and self.has_value_changed("team"):
+			self.update_subscription()
+			frappe.db.delete("Press Role Permission", {"server": self.name})
 
-			if self.subscription and self.subscription.team != self.team:
-				self.subscription.disable()
+	def update_subscription(self):
+		if self.subscription and self.subscription.team != self.team:
+			self.subscription.disable()
 
-				if subscription := frappe.db.get_value(
-					"Subscription",
-					{
-						"document_type": self.doctype,
-						"document_name": self.name,
-						"team": self.team,
-						"plan": self.plan,
-					},
-				):
-					frappe.db.set_value("Subscription", subscription, "enabled", 1)
-				else:
-					try:
-						# create new subscription
-						frappe.get_doc(
-							{
-								"doctype": "Subscription",
-								"document_type": self.doctype,
-								"document_name": self.name,
-								"team": self.team,
-								"plan": self.plan,
-							}
-						).insert()
-					except Exception:
-						frappe.log_error("Server Subscription Creation Error")
+			if subscription := frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan": self.plan,
+				},
+			):
+				frappe.db.set_value("Subscription", subscription, "enabled", 1)
+			else:
+				try:
+					# create new subscription
+					frappe.get_doc(
+						{
+							"doctype": "Subscription",
+							"document_type": self.doctype,
+							"document_name": self.name,
+							"team": self.team,
+							"plan": self.plan,
+						}
+					).insert()
+				except Exception:
+					frappe.log_error("Server Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
