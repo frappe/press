@@ -115,3 +115,4 @@ press.patches.v0_7_0.rename_plan_to_site_plan
 press.patches.v0_7_0.migrate_fields_from_plans_to_server_and_marketplace
 press.patches.v0_7_0.set_password_config_type
 press.press.doctype.agent_job.patches.update_status_for_undelivered_jobs #2024-04-23
+press.press.doctype.press_role.patches.migrate_permissions
