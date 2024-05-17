@@ -26,6 +26,11 @@ class PressRole(Document):
 	dashboard_fields = ["title", "users", "enable_billing", "enable_apps", "team"]
 
 	def before_insert(self):
+		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
+			frappe.throw(
+				"Role with title {0} already exists".format(self.title), frappe.DuplicateEntryError
+			)
+
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
 		):
