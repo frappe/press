@@ -74,8 +74,9 @@ class PressRole(Document):
 
 def check_role_permissions(doctype: str, name: str | None = None) -> list[str] | None:
 	"""
-	Check if the user is permitted to access the document
-	Expects the function to throw error for `get` or return a list of permitted roles for `get_list`
+	Check if the user is permitted to access the document based on the role permissions
+	Expects the function to throw error for `get` if no permission and return a list of permitted roles for `get_list`
+	Note: Empty list means no restrictions
 
 	:param doctype: Document type
 	:param name: Document name
