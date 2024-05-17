@@ -89,7 +89,6 @@ class TestPressRole(FrappeTestCase):
 
 		# no permissions added should show all records
 		self.assertCountEqual(get_list("Site"), [{"name": site1.name}, {"name": site2.name}])
-		return
 		frappe.set_user("Administrator")
 		perm = frappe.new_doc("Press Role Permission")
 		perm.role = self.perm_role.name
