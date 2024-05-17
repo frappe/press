@@ -103,12 +103,9 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 			fields=["name", field],
 			filters={"role": ("in", roles)},
 		):
-			if name:
-				# throw error if the user is not permitted for the document
-				if not any(perm[field] == name for perm in role_perms):
-					frappe.throw("Not permitted", frappe.PermissionError)
-				else:
-					return roles
+			# throw error if the user is not permitted for the document
+			if name and not any(perm[field] == name for perm in role_perms):
+				frappe.throw("Not permitted", frappe.PermissionError)
 			else:
 				return roles
 
