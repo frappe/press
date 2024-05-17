@@ -140,8 +140,10 @@ class TestPressRole(FrappeTestCase):
 
 # utils
 def create_permission_role(team):
+	import random
+
 	doc = frappe.new_doc("Press Role")
-	doc.title = "Test Role"
+	doc.title = "Test Role" + str(random.randint(1, 1000))
 	doc.team = team
 	doc.save()
 
