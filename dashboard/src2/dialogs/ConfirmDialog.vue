@@ -4,12 +4,18 @@
 			<div class="space-y-4">
 				<p class="text-p-base text-gray-800" v-if="message" v-html="message" />
 				<div class="space-y-4">
-					<FormControl
-						v-for="field in fields"
-						v-bind="field"
-						v-model="values[field.fieldname]"
-						:key="field.fieldname"
-					/>
+					<template v-for="field in fields" :key="field.fieldname">
+						<LinkControl
+							v-if="field.type == 'link'"
+							v-bind="field"
+							v-model="values[field.fieldname]"
+						/>
+						<FormControl
+							v-else
+							v-bind="field"
+							v-model="values[field.fieldname]"
+						/>
+					</template>
 				</div>
 			</div>
 			<ErrorMessage class="mt-2" :message="error" />
@@ -21,6 +27,7 @@
 </template>
 <script>
 import { ErrorMessage, FormControl } from 'frappe-ui';
+import LinkControl from '../components/LinkControl.vue';
 
 export default {
 	name: 'ConfirmDialog',
@@ -39,7 +46,7 @@ export default {
 				}, {})
 		};
 	},
-	components: { FormControl, ErrorMessage },
+	components: { FormControl, ErrorMessage, LinkControl },
 	methods: {
 		onConfirm() {
 			this.error = null;

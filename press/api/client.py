@@ -35,6 +35,8 @@ ALLOWED_DOCTYPES = [
 	"Release Group Dependency",
 	"Cluster",
 	"Press Permission Group",
+	"Press Role",
+	"Press Role Permission",
 	"Team",
 	"SaaS Product Site Request",
 	"Deploy Candidate",
@@ -79,6 +81,8 @@ def get_list(
 	parent=None,
 	debug=False,
 ):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	if filters is None:
 		filters = {}
 
@@ -120,6 +124,17 @@ def get_list(
 				.where(ParentDocType.team == frappe.local.team().name)
 			)
 
+	if roles := check_role_permissions(doctype):
+		PressRolePermission = frappe.qb.DocType("Press Role Permission")
+		QueriedDocType = frappe.qb.DocType(doctype)
+
+		field = doctype.lower().replace(" ", "_")
+
+		query = query.join(PressRolePermission).on(
+			PressRolePermission[field]
+			== QueriedDocType.name & PressRolePermission.role.isin(roles)
+		)
+
 	filters = frappe._dict(filters or {})
 	list_args = dict(
 		fields=fields,
@@ -141,10 +156,9 @@ def get_list(
 
 @frappe.whitelist()
 def get(doctype, name):
+	from press.press.doctype.press_role.press_role import check_role_permissions
+
 	check_permissions(doctype)
-	check_method_permissions(
-		doctype, name, "get_doc", "You don't have permission to view this document"
-	)
 	try:
 		doc = frappe.get_doc(doctype, name)
 	except frappe.DoesNotExistError:
@@ -156,6 +170,8 @@ def get(doctype, name):
 	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
+
+	check_role_permissions(doctype, name)
 
 	fields = list(default_fields)
 	if hasattr(doc, "dashboard_fields"):

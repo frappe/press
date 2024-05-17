@@ -1218,3 +1218,21 @@ def remove_permission_group_user(name, user):
 			doc.remove(group_user)
 			doc.save(ignore_permissions=True)
 			break
+
+
+@frappe.whitelist()
+def get_permission_roles():
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+
+	return (
+		frappe.qb.from_(PressRole)
+		.select(PressRole.name, PressRole.enable_billing, PressRole.enable_apps)
+		.join(PressRoleUser)
+		.on(
+			(PressRole.name == PressRoleUser.parent)
+			& (PressRoleUser.user == frappe.session.user)
+		)
+		.where(PressRole.team == get_current_team())
+		.run(as_dict=True)
+	)

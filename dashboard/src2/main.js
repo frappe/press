@@ -44,7 +44,10 @@ getInitialData().then(() => {
 	app.config.globalProperties.$socket = socket;
 	window.$socket = socket;
 	subscribeToJobUpdates(socket);
-	if (session.isLoggedIn) fetchPlans();
+	if (session.isLoggedIn) {
+		fetchPlans();
+		session.roles.fetch();
+	}
 
 	if (window.press_dashboard_sentry_dsn.includes('https://')) {
 		Sentry.init({
