@@ -88,20 +88,28 @@ const role = createDocumentResource({
 	whitelistedMethods: {
 		addUser: 'add_user',
 		removeUser: 'remove_user'
+	},
+	onSuccess: data => {
+		enableBilling.value = !!data.enable_billing;
+		enableApps.value = !!data.enable_apps;
 	}
 });
 const roleUsers = computed(() => role.doc.users || []);
-const enableBilling = ref(role.doc?.enable_billing);
-const enableApps = ref(role.doc?.enable_apps);
+const enableBilling = ref(!!role.doc?.enable_billing);
+const enableApps = ref(!!role.doc?.enable_apps);
 
 // using a watcher instead of event listener to avoid multiple api calls
 watch(enableBilling, () => {
+	if (enableBilling.value === !!role.doc.enable_billing) return;
+
 	role.setValue.submit(
 		{ enable_billing: enableBilling.value },
 		{ onSuccess: session.roles.reload }
 	);
 });
 watch(enableApps, () => {
+	if (enableApps.value === !!role.doc.enable_apps) return;
+
 	role.setValue.submit(
 		{ enable_apps: enableApps.value },
 		{ onSuccess: session.roles.reload }
