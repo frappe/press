@@ -373,9 +373,13 @@
   {
    "link_doctype": "Error Log",
    "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-10 16:24:07.654398",
+ "modified": "2024-05-17 11:58:51.866177",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
