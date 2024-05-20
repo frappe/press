@@ -11,14 +11,14 @@
 				<GenericList :options="listOptions" />
 				<div class="mt-4 flex flex-col space-y-4">
 					<DateTimeControl v-model="scheduledTime" label="Schedule Time" />
-					<div class="flex flex-col space-y-4">
+					<div class="flex flex-col space-y-2">
 						<FormControl
 							label="Skip failing patches if any"
 							type="checkbox"
 							v-model="skipFailingPatches"
 						/>
 						<FormControl
-							label="Skip taking backup for this update"
+							label="Skip taking backup for this update (If the update fails, rollback will not be happen)"
 							type="checkbox"
 							v-model="skipBackups"
 						/>
