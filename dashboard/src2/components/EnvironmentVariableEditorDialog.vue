@@ -1,10 +1,14 @@
 <template>
 	<Dialog
 		:options="{
-			title: environment_variable ? 'Edit Environment Variable' : 'Add Environment Variable',
+			title: environment_variable
+				? 'Edit Environment Variable'
+				: 'Add Environment Variable',
 			actions: [
 				{
-					label: environment_variable ? 'Edit Environment Variable' : 'Add Environment Variable',
+					label: environment_variable
+						? 'Edit Environment Variable'
+						: 'Add Environment Variable',
 					variant: 'solid',
 					loading: docResource?.updateEnvironmentVariable?.loading,
 					onClick: updateEnvironmentVariable
@@ -15,18 +19,16 @@
 	>
 		<template v-slot:body-content>
 			<div class="space-y-4">
-				<FormControl
-					type="text"
-					label="Key"
-					v-model="key"
-					autocomplete="off"
-				/>
-				<FormControl
-					label="Value"
-					v-model="value"
-					autocomplete="off"
-				/>
+				<FormControl type="text" label="Key" v-model="key" autocomplete="off" />
+				<FormControl label="Value" v-model="value" autocomplete="off" />
 				<ErrorMessage class="mt-2" :message="error" />
+				<div class="flex items-center">
+					<i-lucide-info class="mr-2 text-gray-500" />
+					<div class="text-sm text-gray-600">
+						Environment variable changes will only be reflected in the newer
+						deploys.
+					</div>
+				</div>
 			</div>
 		</template>
 	</Dialog>
@@ -85,6 +87,6 @@ export default {
 			);
 			this.error = this.docResource.updateEnvironmentVariable.error;
 		}
-	},
+	}
 };
 </script>
