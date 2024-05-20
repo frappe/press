@@ -1,6 +1,41 @@
 <template>
-	<div class="p-5">
-		<ObjectList :options="options" />
+	<div class="px-4">
+		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
+			<ListView
+				:columns="columns"
+				:rows="partnerCustomers"
+				:options="{
+					selectable: false,
+					onRowClick: row => {
+						showInvoice = row;
+						contributionDialog = true;
+					},
+					getRowRoute: null
+				}"
+				row-key="email"
+			>
+				<ListHeader>
+					<ListHeaderItem
+						v-for="column in columns"
+						:key="column.key"
+						:item="column"
+					/>
+				</ListHeader>
+				<ListRows>
+					<div
+						v-if="partnerCustomers.length === 0"
+						class="text-center text-sm leading-10 text-gray-500"
+					>
+						No results found
+					</div>
+					<ListRow v-for="(row, i) in rows" :row="row" :key="row.email">
+						<template v-slot="{ column, item }">
+							<ObjectListCell :row="row" :column="column" :idx="i" />
+						</template>
+					</ListRow>
+				</ListRows>
+			</ListView>
+		</div>
 		<Dialog
 			v-model="contributionDialog"
 			:options="{
@@ -73,8 +108,17 @@
 </template>
 <script>
 import ObjectList from '../ObjectList.vue';
+import ObjectListCell from '../ObjectListCell.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
-import { Dialog, ErrorMessage } from 'frappe-ui';
+import {
+	Dialog,
+	ErrorMessage,
+	ListHeader,
+	ListRow,
+	ListView,
+	ListHeaderItem,
+	ListRows
+} from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
 export default {
@@ -83,7 +127,13 @@ export default {
 		ObjectList,
 		PartnerCustomerInvoices,
 		Dialog,
-		ErrorMessage
+		ErrorMessage,
+		ListView,
+		ListHeader,
+		ListRow,
+		ListHeaderItem,
+		ListRows,
+		ObjectListCell
 	},
 	data() {
 		return {
@@ -92,10 +142,28 @@ export default {
 			transferCreditsDialog: false,
 			customerTeam: null,
 			amount: 0.0,
-			showConfirmationDialog: false
+			showConfirmationDialog: false,
+			partnerCustomers: []
 		};
 	},
 	resources: {
+		getPartnerCustomers() {
+			return {
+				url: 'press.api.account.get_partner_customers',
+				onSuccess(data) {
+					this.partnerCustomers = data.map(d => {
+						return {
+							email: d.user,
+							billing_name: d.billing_name || '',
+							payment_mode: d.payment_mode || '',
+							currency: d.currency,
+							name: d.name
+						};
+					});
+				},
+				auto: true
+			};
+		},
 		transferCredits() {
 			return {
 				url: 'press.api.account.transfer_credits',
@@ -112,6 +180,26 @@ export default {
 		}
 	},
 	computed: {
+		columns() {
+			return [
+				{
+					label: 'Name',
+					key: 'billing_name'
+				},
+				{
+					label: 'Email',
+					key: 'email'
+				},
+				{
+					label: 'Payment Mode',
+					key: 'payment_mode'
+				},
+				{
+					label: 'Currency',
+					key: 'currency'
+				}
+			];
+		},
 		options() {
 			return {
 				doctype: 'Team',
