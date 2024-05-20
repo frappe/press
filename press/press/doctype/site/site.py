@@ -1538,7 +1538,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		plan = frappe.db.get_value(
-			"Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
+			"Site Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
 		)
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(_("Cannot deactivate site on a trial plan"))
