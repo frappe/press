@@ -311,10 +311,10 @@ class Invoice(Document):
 		if self.payment_mode != "Card":
 			return
 
-		stripe = get_stripe()
-
 		if self.type == "Prepaid Credits":
 			return
+
+		stripe = get_stripe()
 
 		if self.status == "Paid":
 			# void an existing invoice if payment was done via credits
@@ -332,7 +332,12 @@ class Invoice(Document):
 			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			stripe_invoice_total = convert_stripe_money(invoice.total)
 			if self.amount_due == stripe_invoice_total:
-				# return if an invoice with the same amount is already created
+				# if an invoice with the same amount is already created
+				# then either the invoice is already paid or in pending payment
+				# no need to create stripe invoice here
+				if invoice.status == "paid":
+					self.update_transaction_details(invoice.charge)
+					self.status = "Paid"
 				return
 			else:
 				# if the amount is changed, void the stripe invoice and create a new one
@@ -351,18 +356,19 @@ class Invoice(Document):
 
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 		amount = int(self.amount_due * 100)
-		stripe.InvoiceItem.create(
-			customer=customer_id,
-			description=self.get_stripe_invoice_item_description(),
-			amount=amount,
-			currency=self.currency.lower(),
-			idempotency_key=f"invoiceitem:{self.name}:{amount}",
-		)
 		invoice = stripe.Invoice.create(
 			customer=customer_id,
 			collection_method="charge_automatically",
 			auto_advance=True,
 			idempotency_key=f"invoice:{self.name}:{amount}",
+		)
+		stripe.InvoiceItem.create(
+			customer=customer_id,
+			invoice=invoice["id"],
+			description=self.get_stripe_invoice_item_description(),
+			amount=amount,
+			currency=self.currency.lower(),
+			idempotency_key=f"invoiceitem:{self.name}:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
@@ -375,7 +381,10 @@ class Invoice(Document):
 		)
 		description = self.get_stripe_invoice_item_description()
 		for invoice in invoices.data:
-			if invoice.lines.data[0].description == description and invoice.status != "void":
+			line_items = invoice.lines.data
+			if (
+				line_items and line_items[0].description == description and invoice.status != "void"
+			):
 				return invoice["id"]
 
 	def get_stripe_invoice_item_description(self):
