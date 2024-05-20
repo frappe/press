@@ -1206,6 +1206,8 @@ class ReleaseGroup(Document, TagHelpers):
 		self.enabled = 0
 		self.save()
 
+		frappe.db.delete("Press Role Permission", {"release_group": self.name})
+
 	def set_default_app_cache_flags(self):
 		if self.use_app_cache:
 			return

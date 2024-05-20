@@ -496,6 +496,8 @@ class BaseServer(Document, TagHelpers):
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
 
+		frappe.db.delete("Press Role Permission", {"server": self.name})
+
 	def _archive(self):
 		self.run_press_job("Archive Server")
 
