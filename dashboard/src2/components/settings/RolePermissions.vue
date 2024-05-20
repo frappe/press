@@ -121,7 +121,10 @@ const rolePermissions = ref({
 			),
 			format(_value, row) {
 				return (
-					row.site_host_name || row.release_group_title || row.server_title
+					row.site_host_name ||
+					row.site ||
+					row.release_group_title ||
+					row.server_title
 				);
 			}
 		}
