@@ -27,10 +27,14 @@ export let session = reactive({
 		initialData: []
 	}),
 	hasBillingAccess: computed(() =>
-		session.roles.data.some(role => role.enable_billing)
+		session.roles.data.length
+			? session.roles.data.some(role => role.enable_billing)
+			: true
 	),
 	hasAppsAccess: computed(() =>
-		session.roles.data.some(role => role.enable_apps)
+		session.roles.data.length
+			? session.roles.data.some(role => role.enable_apps)
+			: true
 	),
 	user: getSessionUser(),
 	isLoggedIn: computed(() => !!session.user),
