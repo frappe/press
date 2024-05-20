@@ -254,7 +254,6 @@ def delete(doctype, name):
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
 	check_team_access(dt, dn)
-	check_method_permissions(dt, dn, method)
 	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
@@ -444,16 +443,6 @@ def check_permissions(doctype):
 			"current_team is not set. Use X-PRESS-TEAM header in the request to set it."
 		)
 
-	return True
-
-
-def check_method_permissions(doctype, docname, method, error_message=None) -> None:
-	from press.press.doctype.press_permission_group.press_permission_group import (
-		has_method_permission,
-	)
-
-	if not has_method_permission(doctype, docname, method):
-		frappe.throw(error_message or f"{method} is not permitted on {doctype} {docname}")
 	return True
 
 
