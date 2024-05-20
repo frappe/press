@@ -1,5 +1,5 @@
 import { defineAsyncComponent, h } from 'vue';
-import { icon, renderDialog } from '../utils/components';
+import { confirmDialog, icon, renderDialog } from '../utils/components';
 import GenericDialog from '../components/GenericDialog.vue';
 import ObjectList from '../components/ObjectList.vue';
 import NewAppDialog from '../components/NewAppDialog.vue';
@@ -560,9 +560,7 @@ export default {
 				}
 			}
 		],
-		actions(context) {
-			let { documentResource: app } = context;
-
+		actions({ documentResource: app }) {
 			return [
 				{
 					label: 'View in Marketplace',
@@ -595,6 +593,39 @@ export default {
 							})
 						);
 					}
+				},
+				,
+				{
+					label: 'Options',
+					condition: () => app.doc.status === 'Draft',
+					options: [
+						{
+							label: 'Delete',
+							icon: icon('trash-2'),
+							condition: () => app.doc.status === 'Draft',
+							onClick() {
+								confirmDialog({
+									title: `Delete App ${app.doc.title}`,
+									message: 'Are you sure you want to delete this app?',
+									onSuccess({ hide }) {
+										toast.promise(app.delete.submit(), {
+											loading: 'Deleting app...',
+											success: () => {
+												hide();
+												router.push({ name: 'Marketplace App List' });
+												return 'App deleted successfully';
+											},
+											error: e => {
+												return e.messages.length
+													? e.messages.join('\n')
+													: e.message;
+											}
+										});
+									}
+								});
+							}
+						}
+					]
 				}
 			];
 		}
