@@ -103,6 +103,9 @@ class MarketplaceApp(WebsiteGenerator):
 
 	@dashboard_whitelist()
 	def delete(self):
+		if self.status != "Draft":
+			frappe.throw("You can only delete an app in Draft status")
+
 		if get_current_team() != self.team:
 			frappe.throw("You are not authorized to delete this app")
 
