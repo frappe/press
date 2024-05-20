@@ -195,6 +195,18 @@ class Invoice(Document):
 		if self.partner_email and team.erpnext_partner:
 			self.apply_partner_discount()
 
+		if self.stripe_invoice_id:
+			# if stripe invoice is already created and paid,
+			# then update status and return early
+			stripe = get_stripe()
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			if invoice.status == "paid":
+				self.status = "Paid"
+				self.update_transaction_details(invoice.charge)
+				self.submit()
+				self.unsuspend_sites_if_applicable()
+				return
+
 		# set as unpaid by default
 		self.status = "Unpaid"
 
@@ -255,22 +267,24 @@ class Invoice(Document):
 
 		if self.status == "Paid":
 			self.submit()
+			self.unsuspend_sites_if_applicable()
 
-			if (
-				frappe.db.count(
-					"Invoice",
-					{
-						"status": "Unpaid",
-						"team": self.team,
-						"type": "Subscription",
-						"docstatus": ("<", 2),
-					},
-				)
-				== 0
-			):
-				# unsuspend sites only if all invoices are paid
-				team = frappe.get_cached_doc("Team", self.team)
-				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
+	def unsuspend_sites_if_applicable(self):
+		if (
+			frappe.db.count(
+				"Invoice",
+				{
+					"status": "Unpaid",
+					"team": self.team,
+					"type": "Subscription",
+					"docstatus": ("<", 2),
+				},
+			)
+			== 0
+		):
+			# unsuspend sites only if all invoices are paid
+			team = frappe.get_cached_doc("Team", self.team)
+			team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
 
 	def calculate_total(self):
 		total = 0
@@ -332,12 +346,7 @@ class Invoice(Document):
 			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
 			stripe_invoice_total = convert_stripe_money(invoice.total)
 			if self.amount_due == stripe_invoice_total:
-				# if an invoice with the same amount is already created
-				# then either the invoice is already paid or in pending payment
-				# no need to create stripe invoice here
-				if invoice.status == "paid":
-					self.update_transaction_details(invoice.charge)
-					self.status = "Paid"
+				# return if an invoice with the same amount is already created
 				return
 			else:
 				# if the amount is changed, void the stripe invoice and create a new one
