@@ -986,6 +986,22 @@ class Server(BaseServer):
 		self.save()
 
 	@frappe.whitelist()
+	def setup_agent_sentry(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_sentry")
+
+	def _setup_agent_sentry(self):
+		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		try:
+			ansible = Ansible(
+				playbook="agent_sentry.yml",
+				server=self,
+				variables={"agent_sentry_dsn": agent_sentry_dsn},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Sentry Setup Exception", server=self.as_dict())
+
+	@frappe.whitelist()
 	def whitelist_ipaddress(self):
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_whitelist_ip", queue="short", timeout=1200
