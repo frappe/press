@@ -883,6 +883,14 @@ class Server(BaseServer):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
+	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
+		super().after_insert()
+		add_permission_for_newly_created_doc(self)
+
 	def update_subscription(self):
 		if self.subscription and self.subscription.team != self.team:
 			self.subscription.disable()

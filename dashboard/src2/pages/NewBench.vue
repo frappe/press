@@ -27,7 +27,15 @@
 		</Header>
 	</div>
 
-	<div class="mx-auto max-w-2xl px-5">
+	<div
+		v-if="!$team.doc.is_desk_user && !$session.hasBenchCreationAccess"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<ErrorMessage message="You aren't permitted to create new benches" />
+	</div>
+
+	<div v-else class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div>
 				<div class="flex items-center justify-between">

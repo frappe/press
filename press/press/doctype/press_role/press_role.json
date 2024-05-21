@@ -9,8 +9,12 @@
   "column_break_qnnn",
   "team",
   "section_break_yvqq",
-  "enable_billing",
-  "enable_apps",
+  "allow_billing",
+  "allow_apps",
+  "column_break_todb",
+  "allow_site_creation",
+  "allow_bench_creation",
+  "allow_server_creation",
   "section_break_zdiv",
   "users"
  ],
@@ -46,24 +50,46 @@
   {
    "fieldname": "section_break_yvqq",
    "fieldtype": "Section Break",
-   "label": "Global Permission"
+   "label": "Additional Permissions"
+  },
+  {
+   "fieldname": "column_break_todb",
+   "fieldtype": "Column Break"
   },
   {
    "default": "1",
-   "fieldname": "enable_billing",
+   "fieldname": "allow_billing",
    "fieldtype": "Check",
-   "label": "Enable Billing"
+   "label": "Allow Billing"
   },
   {
    "default": "1",
-   "fieldname": "enable_apps",
+   "fieldname": "allow_apps",
    "fieldtype": "Check",
-   "label": "Enable Apps"
+   "label": "Allow Apps"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_site_creation",
+   "fieldtype": "Check",
+   "label": "Allow Site Creation"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_bench_creation",
+   "fieldtype": "Check",
+   "label": "Allow Bench Creation"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_server_creation",
+   "fieldtype": "Check",
+   "label": "Allow Server Creation"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-20 13:04:12.651901",
+ "modified": "2024-05-21 15:31:48.262656",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

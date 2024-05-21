@@ -88,7 +88,7 @@ class TestPressRole(FrappeTestCase):
 		frappe.set_user(self.team_user.name)
 
 		# no permissions added should show all records
-		self.assertCountEqual(get_list("Site"), [{"name": site1.name}, {"name": site2.name}])
+		self.assertCountEqual(get_list("Site"), [])
 		frappe.set_user("Administrator")
 		perm = frappe.new_doc("Press Role Permission")
 		perm.role = self.perm_role.name
@@ -120,9 +120,9 @@ class TestPressRole(FrappeTestCase):
 		self.perm_role.add_user(self.team_user.name)
 		frappe.set_user(self.team_user.name)
 
-		# no permissions added should show all records
-		self.assertEqual(get("Site", site.name).name, site.name)
-		self.assertEqual(get("Site", site2.name).name, site2.name)
+		# no permissions added should throw exception for both sites
+		self.assertRaises(Exception, get, "Site", site.name)
+		self.assertRaises(Exception, get, "Site", site2.name)
 
 		frappe.set_user("Administrator")
 		perm = frappe.new_doc("Press Role Permission")
@@ -134,17 +134,32 @@ class TestPressRole(FrappeTestCase):
 
 		# permission for site added in the role
 		self.assertEqual(get("Site", site.name).name, site.name)
-		with self.assertRaises(Exception):
-			get("Site", site2.name)
+		self.assertRaises(Exception, get, "Site", site2.name)
+
+	def test_newly_created_sites_are_permitted_for_roles_with_allow_site_creation_and_existing_perms(
+		self,
+	):
+		role = create_permission_role(self.team.name, allow_site_creation=1)
+
+		frappe.set_user("Administrator")
+
+		# creating this site to add a permission
+		site = create_test_site(team=self.team.name)
+		frappe.set_user(self.team_user.name)
+
+		self.assertTrue(
+			frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name})
+		)
 
 
 # utils
-def create_permission_role(team):
+def create_permission_role(team, allow_site_creation=0):
 	import random
 
 	doc = frappe.new_doc("Press Role")
 	doc.title = "Test Role" + str(random.randint(1, 1000))
 	doc.team = team
+	doc.allow_site_creation = allow_site_creation
 	doc.save()
 
 	return doc

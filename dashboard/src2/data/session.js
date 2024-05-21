@@ -28,12 +28,27 @@ export let session = reactive({
 	}),
 	hasBillingAccess: computed(() =>
 		session.roles.data.length
-			? session.roles.data.some(role => role.enable_billing)
+			? session.roles.data.some(role => role.allow_billing)
 			: true
 	),
 	hasAppsAccess: computed(() =>
 		session.roles.data.length
-			? session.roles.data.some(role => role.enable_apps)
+			? session.roles.data.some(role => role.allow_apps)
+			: true
+	),
+	hasSiteCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_site_creation)
+			: true
+	),
+	hasBenchCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_bench_creation)
+			: true
+	),
+	hasServerCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.allow_server_creation)
 			: true
 	),
 	user: getSessionUser(),

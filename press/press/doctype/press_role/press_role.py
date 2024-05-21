@@ -16,14 +16,26 @@ class PressRole(Document):
 		from frappe.types import DF
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
-		enable_apps: DF.Check
-		enable_billing: DF.Check
+		allow_apps: DF.Check
+		allow_bench_creation: DF.Check
+		allow_billing: DF.Check
+		allow_server_creation: DF.Check
+		allow_site_creation: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users", "enable_billing", "enable_apps", "team"]
+	dashboard_fields = [
+		"title",
+		"users",
+		"allow_billing",
+		"allow_apps",
+		"allow_site_creation",
+		"allow_bench_creation",
+		"allow_server_creation",
+		"team",
+	]
 
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):
@@ -93,7 +105,6 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	if frappe.local.system_user():
 		return []
 
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	PressRole = frappe.qb.DocType("Press Role")
 
@@ -107,22 +118,65 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	)
 
 	if doctype == "Marketplace App":
-		if roles := query.select(PressRole.enable_apps).run(as_dict=1):
+		if roles := query.select(PressRole.allow_apps).run(as_dict=1):
 			# throw error if any of the roles don't have permission for apps
-			if not any(perm.enable_apps for perm in roles):
+			if not any(perm.allow_apps for perm in roles):
 				frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")
-		if roles := (
-			query.select(PressRolePermission[field])
-			.join(PressRolePermission)
-			.on(PressRolePermission.role == PressRole.name)
-		).run(as_dict=1):
-			# throw error if the user is not permitted for the document
-			if name and not any(perm[field] == name for perm in roles):
+		if roles := query.run(as_dict=1, pluck="name"):
+			perms = frappe.db.get_all(
+				"Press Role Permission",
+				filters={"role": ["in", roles], field: name},
+			)
+			if not perms and name:
+				# throw error if the user is not permitted for the document
 				frappe.throw("Not permitted", frappe.PermissionError)
 			else:
-				return [perm["name"] for perm in roles]
+				return roles
 
 	return []
+
+
+def add_permission_for_newly_created_doc(doc: Document) -> None:
+	"""
+	Used to bulk insert permissions right after a site/release group/server is created
+	for users with create permission for respective doctype is enabled
+	"""
+
+	doctype = doc.doctype
+	if doctype not in ["Site", "Release Group", "Server"]:
+		return
+
+	role_fieldname = ""
+	fieldname = doctype.lower().replace(" ", "_")
+	if doctype == "Site":
+		role_fieldname = "allow_site_creation"
+	elif doctype == "Server":
+		role_fieldname = "allow_server_creation"
+	elif doctype == "Release Group":
+		role_fieldname = "allow_bench_creation"
+
+	new_perms = []
+	if roles := frappe.db.get_all(
+		"Press Role", filters={"team": doc.team, role_fieldname: 1}, pluck="name"
+	):
+		for role in roles:
+			new_perms.append(
+				(
+					frappe.generate_hash(length=12),
+					role,
+					doc.name,
+					doc.team,
+					frappe.utils.now(),
+					frappe.utils.now(),
+				)
+			)
+
+	if new_perms:
+		frappe.db.bulk_insert(
+			"Press Role Permission",
+			fields=["name", "role", fieldname, "team", "creation", "modified"],
+			values=set(new_perms),
+		)

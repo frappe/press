@@ -10,7 +10,15 @@
 		</Header>
 	</div>
 
-	<div v-if="serverEnabled" class="mx-auto max-w-2xl px-5">
+	<div
+		v-if="!$team.doc.is_desk_user && !$session.hasServerCreationAccess"
+		class="mx-auto mt-60 w-fit rounded border border-dashed px-12 py-8 text-center text-gray-600"
+	>
+		<i-lucide-alert-triangle class="mx-auto mb-4 h-6 w-6 text-red-600" />
+		<ErrorMessage message="You aren't permitted to create new servers" />
+	</div>
+
+	<div v-else-if="serverEnabled" class="mx-auto max-w-2xl px-5">
 		<div v-if="options" class="space-y-12 pb-[50vh] pt-12">
 			<div class="flex flex-col">
 				<h2 class="text-sm font-medium leading-6 text-gray-900">

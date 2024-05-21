@@ -185,6 +185,13 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
 
+	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
+		add_permission_for_newly_created_doc(self)
+
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
 		if self.flags.in_insert or self.is_new() or not old_doc:
