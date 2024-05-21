@@ -718,10 +718,14 @@ class BaseServer(Document, TagHelpers):
 			update_server_tls_certifcate,
 		)
 
-		certificate = frappe.get_last_doc(
-			"TLS Certificate",
-			{"wildcard": True, "domain": self.domain, "status": "Active"},
-		)
+		filters = {"wildcard": True, "status": "Active", "domain": self.domian}
+
+		if hasattr(self, "is_self_hosted") and self.is_self_hosted:
+			if self.domain != self.self_hosted_server_domain:
+				filters["domain"] = self.name
+
+		certificate = frappe.get_last_doc("TLS Certificate", filters)
+
 		update_server_tls_certifcate(self, certificate)
 
 	@frappe.whitelist()
