@@ -110,6 +110,7 @@ class DeployCandidate(Document):
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
+		pending_duration: DF.Time | None
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
@@ -222,7 +223,7 @@ class DeployCandidate(Document):
 		if not self.validate_status():
 			return
 
-		self.status = "Pending"
+		self._set_status_pending()
 		self.set_remote_build_flags()
 		self.reset_build_state()
 		self.add_pre_build_steps()
@@ -619,7 +620,14 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
+	def _set_status_pending(self):
+		self.status = "Pending"
+		self.last_updated = now()
+		self.save()
+		frappe.db.commit()
+
 	def _set_status_preparing(self):
+		self._set_pending_duration()
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
@@ -634,7 +642,7 @@ class DeployCandidate(Document):
 	def _set_status_failure(self):
 		self.status = "Failure"
 		self._fail_last_running_step()
-		self._set_duration()
+		self._set_build_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
@@ -642,7 +650,7 @@ class DeployCandidate(Document):
 	def _set_status_success(self):
 		self.status = "Success"
 		self.build_error = None
-		self._set_duration()
+		self._set_build_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
@@ -665,7 +673,7 @@ class DeployCandidate(Document):
 
 		frappe.db.set_value("Bench Update", bench_update[0], "status", status)
 
-	def _set_duration(self):
+	def _set_build_duration(self):
 		self.build_end = now()
 		if not isinstance(self.build_start, datetime):
 			return
@@ -675,6 +683,16 @@ class DeployCandidate(Document):
 
 		# build_duration is a Time field, >= 1 day is invalid
 		self.build_duration = min(build_duration, max_duration)
+
+	def _set_pending_duration(self):
+		if not isinstance(self.last_updated, datetime):
+			return
+
+		build_duration = now() - self.last_updated
+		max_duration = timedelta(hours=23, minutes=59, seconds=59)
+
+		# pending_duration is a Time field, >= 1 day is invalid
+		self.pending_duration = min(build_duration, max_duration)
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:

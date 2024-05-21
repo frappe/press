@@ -19,6 +19,7 @@
   "build_start",
   "build_end",
   "last_updated",
+  "pending_duration",
   "column_break_7",
   "build_directory",
   "build_duration",
@@ -382,6 +383,12 @@
    "fieldtype": "Data",
    "label": "Job Id",
    "read_only": 1
+  },
+  {
+   "description": "Time spent by the build in queue, i.e. in status Pending.",
+   "fieldname": "pending_duration",
+   "fieldtype": "Time",
+   "label": "Pending Duration"
   }
  ],
  "links": [
@@ -398,7 +405,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-21 15:42:46.834761",
+ "modified": "2024-05-21 15:52:31.488193",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
