@@ -243,7 +243,7 @@ Incident URL: {incident_link}"""
 
 	def get_email_subject(self):
 		title = frappe.db.get_value("Server", self.server, "title")
-		name = title.rstrip(" - Application") or self.server
+		name = title.removesuffix(" - Application") or self.server
 		return f"Incident on {name} - {self.alert}"
 
 	def get_email_message(self):
