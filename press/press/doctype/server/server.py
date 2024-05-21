@@ -886,23 +886,26 @@ class Server(BaseServer):
 	def after_insert(self):
 		super().after_insert()
 
+		new_perms = []
 		if roles := frappe.db.get_all(
 			"Press Role", filters={"team": self.team, "enable_server_creation": 1}, pluck="name"
 		):
-			new_perms = []
 			for role in roles:
 				new_perms.append(
 					(
-						frappe.generate_hash(length=24),
+						frappe.generate_hash(length=12),
 						role,
 						self.name,
 						self.team,
+						frappe.utils.now(),
+						frappe.utils.now(),
 					)
 				)
 
+		if new_perms:
 			frappe.db.bulk_insert(
 				"Press Role Permission",
-				fields=["name", "role", "server", "team"],
+				fields=["name", "role", "server", "team", "creation", "modified"],
 				values=set(new_perms),
 			)
 

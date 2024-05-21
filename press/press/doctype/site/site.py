@@ -502,23 +502,26 @@ class Site(Document, TagHelpers):
 				ignore_permissions=True
 			)
 
+		new_perms = []
 		if roles := frappe.db.get_all(
 			"Press Role", filters={"team": self.team, "enable_site_creation": 1}, pluck="name"
 		):
-			new_perms = []
 			for role in roles:
 				new_perms.append(
 					(
-						frappe.generate_hash(length=24),
+						frappe.generate_hash(length=10),
 						role,
 						self.name,
 						self.team,
+						frappe.utils.now(),
+						frappe.utils.now(),
 					)
 				)
 
+		if new_perms:
 			frappe.db.bulk_insert(
 				"Press Role Permission",
-				fields=["name", "role", "site", "team"],
+				fields=["name", "role", "site", "team", "creation", "modified"],
 				values=set(new_perms),
 			)
 
