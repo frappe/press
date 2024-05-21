@@ -14,8 +14,8 @@
 						value: 'members'
 					},
 					{
-						label: 'Additional Permissions',
-						value: 'additional-permissions'
+						label: 'Settings',
+						value: 'settings'
 					}
 				]"
 				v-model="tabIndex"
@@ -66,10 +66,7 @@
 						</div>
 					</div>
 				</div>
-				<div
-					v-else-if="tab.value === 'additional-permissions'"
-					class="mt-4 p-2 text-base"
-				>
+				<div v-else-if="tab.value === 'settings'" class="mt-4 p-2 text-base">
 					<div class="flex flex-col space-y-2">
 						<FormControl
 							type="checkbox"
