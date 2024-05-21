@@ -104,7 +104,9 @@ class DeployCandidate(Document):
 		is_redisearch_enabled: DF.Check
 		is_single_container: DF.Check
 		is_ssh_enabled: DF.Check
+		job_id: DF.Data | None
 		last_updated: DF.Datetime | None
+		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
@@ -295,7 +297,7 @@ class DeployCandidate(Document):
 				error=True,
 				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
 			)
-
+		self.manually_failed = True
 		self.stop_build_jobs()
 		self._set_status_failure()
 		return dict(error=False, message="Failed successfully")
@@ -694,6 +696,7 @@ class DeployCandidate(Document):
 		self.build_duration = None
 		self.build_directory = None
 		self.user_addressable_failure = False
+		self.manually_failed = False
 
 	def add_pre_build_steps(self):
 		"""

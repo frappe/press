@@ -7,6 +7,7 @@
  "field_order": [
   "status",
   "user_addressable_failure",
+  "manually_failed",
   "is_single_container",
   "is_ssh_enabled",
   "is_docker_remote_builder_used",
@@ -21,6 +22,7 @@
   "column_break_7",
   "build_directory",
   "build_duration",
+  "job_id",
   "section_break_11",
   "docker_image",
   "docker_image_id",
@@ -363,6 +365,23 @@
    "fieldtype": "Check",
    "label": "User Addressable Failure",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.manually_failed",
+   "description": "Set if the build was manually failed or cancelled.",
+   "fieldname": "manually_failed",
+   "fieldtype": "Check",
+   "label": "Manually Failed",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.job_id",
+   "description": "Id of the background job that runs the build. Used when job cancellation is required.",
+   "fieldname": "job_id",
+   "fieldtype": "Data",
+   "label": "Job Id",
+   "read_only": 1
   }
  ],
  "links": [
@@ -379,7 +398,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-17 11:58:51.866177",
+ "modified": "2024-05-21 15:42:46.834761",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
