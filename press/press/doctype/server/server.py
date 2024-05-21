@@ -148,19 +148,6 @@ class BaseServer(Document, TagHelpers):
 				self.create_dns_record()
 				self.update_virtual_machine_name()
 
-		if roles := frappe.db.get_all(
-			"Press Roles", filters={"team": self.team, "enable_server_creation": 1}, pluck="name"
-		):
-			for role in roles:
-				frappe.get_doc(
-					{
-						"doctype": "Press Role Permission",
-						"role": role,
-						"server": self.name,
-						"team": self.team,
-					}
-				).insert()
-
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)
@@ -895,6 +882,29 @@ class Server(BaseServer):
 		if not self.is_new() and self.has_value_changed("team"):
 			self.update_subscription()
 			frappe.db.delete("Press Role Permission", {"server": self.name})
+
+	def after_insert(self):
+		super().after_insert()
+
+		if roles := frappe.db.get_all(
+			"Press Role", filters={"team": self.team, "enable_server_creation": 1}, pluck="name"
+		):
+			new_perms = []
+			for role in roles:
+				new_perms.append(
+					(
+						frappe.generate_hash(length=24),
+						role,
+						self.name,
+						self.team,
+					)
+				)
+
+			frappe.db.bulk_insert(
+				"Press Role Permission",
+				fields=["name", "role", "server", "team"],
+				values=set(new_perms),
+			)
 
 	def update_subscription(self):
 		if self.subscription and self.subscription.team != self.team:

@@ -503,17 +503,24 @@ class Site(Document, TagHelpers):
 			)
 
 		if roles := frappe.db.get_all(
-			"Press Roles", filters={"team": self.team, "enable_site_creation": 1}, pluck="name"
+			"Press Role", filters={"team": self.team, "enable_site_creation": 1}, pluck="name"
 		):
+			new_perms = []
 			for role in roles:
-				frappe.get_doc(
-					{
-						"doctype": "Press Role Permission",
-						"role": role,
-						"site": self.name,
-						"team": self.team,
-					}
-				).insert()
+				new_perms.append(
+					(
+						frappe.generate_hash(length=24),
+						role,
+						self.name,
+						self.team,
+					)
+				)
+
+			frappe.db.bulk_insert(
+				"Press Role Permission",
+				fields=["name", "role", "site", "team"],
+				values=set(new_perms),
+			)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""

@@ -187,17 +187,24 @@ class ReleaseGroup(Document, TagHelpers):
 
 	def after_insert(self):
 		if roles := frappe.db.get_all(
-			"Press Roles", filters={"team": self.team, "enable_bench_creation": 1}, pluck="name"
+			"Press Role", filters={"team": self.team, "enable_bench_creation": 1}, pluck="name"
 		):
+			new_perms = []
 			for role in roles:
-				frappe.get_doc(
-					{
-						"doctype": "Press Role Permission",
-						"role": role,
-						"release_group": self.name,
-						"team": self.team,
-					}
-				).insert()
+				new_perms.append(
+					(
+						frappe.generate_hash(length=24),
+						role,
+						self.name,
+						self.team,
+					)
+				)
+
+			frappe.db.bulk_insert(
+				"Press Role Permission",
+				fields=["name", "role", "release_group", "team"],
+				values=set(new_perms),
+			)
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
