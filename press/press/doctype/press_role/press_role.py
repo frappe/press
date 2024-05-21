@@ -105,7 +105,6 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	if frappe.local.system_user():
 		return []
 
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	PressRole = frappe.qb.DocType("Press Role")
 
@@ -126,16 +125,16 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 
 	elif doctype in ["Site", "Release Group", "Server"]:
 		field = doctype.lower().replace(" ", "_")
-		if roles := (
-			query.select(PressRolePermission[field])
-			.join(PressRolePermission)
-			.on(PressRolePermission.role == PressRole.name)
-		).run(as_dict=1):
-			# throw error if the user is not permitted for the document
-			if name and not any(perm[field] == name for perm in roles):
+		if roles := query.run(as_dict=1, pluck="name"):
+			perms = frappe.db.get_all(
+				"Press Role Permission",
+				filters={"role": ["in", roles], field: name},
+			)
+			if not perms and name:
+				# throw error if the user is not permitted for the document
 				frappe.throw("Not permitted", frappe.PermissionError)
 			else:
-				return [perm["name"] for perm in roles]
+				return roles
 
 	return []
 
@@ -160,16 +159,8 @@ def add_permission_for_newly_created_doc(doc: Document) -> None:
 		role_fieldname = "allow_bench_creation"
 
 	new_perms = []
-	PressRole = frappe.qb.DocType("Press Role")
-	PressRolePermission = frappe.qb.DocType("Press Role Permission")
-	if roles := (
-		frappe.qb.from_(PressRole)
-		.join(PressRolePermission)
-		.on(PressRole.name == PressRolePermission.role)
-		.select(PressRole.name)
-		.where(PressRole.team == doc.team)
-		.where(PressRole[role_fieldname] == 1)
-		.run(as_dict=True, pluck="name")
+	if roles := frappe.db.get_all(
+		"Press Role", filters={"team": doc.team, role_fieldname: 1}, pluck="name"
 	):
 		for role in roles:
 			new_perms.append(
