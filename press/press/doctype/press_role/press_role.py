@@ -17,13 +17,25 @@ class PressRole(Document):
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
 		enable_apps: DF.Check
+		enable_bench_creation: DF.Check
 		enable_billing: DF.Check
+		enable_server_creation: DF.Check
+		enable_site_creation: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
 	# end: auto-generated types
 
-	dashboard_fields = ["title", "users", "enable_billing", "enable_apps", "team"]
+	dashboard_fields = [
+		"title",
+		"users",
+		"enable_billing",
+		"enable_apps",
+		"enable_site_creation",
+		"enable_bench_creation",
+		"enable_server_creation",
+		"team",
+	]
 
 	def before_insert(self):
 		if frappe.db.exists("Press Role", {"title": self.title, "team": self.team}):

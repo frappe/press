@@ -148,6 +148,19 @@ class BaseServer(Document, TagHelpers):
 				self.create_dns_record()
 				self.update_virtual_machine_name()
 
+		if roles := frappe.db.get_all(
+			"Press Roles", filters={"team": self.team, "enable_server_creation": 1}, pluck="name"
+		):
+			for role in roles:
+				frappe.get_doc(
+					{
+						"doctype": "Press Role Permission",
+						"role": role,
+						"server": self.name,
+						"team": self.team,
+					}
+				).insert()
+
 	def create_dns_record(self):
 		try:
 			domain = frappe.get_doc("Root Domain", self.domain)

@@ -185,6 +185,20 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
 
+	def after_insert(self):
+		if roles := frappe.db.get_all(
+			"Press Roles", filters={"team": self.team, "enable_bench_creation": 1}, pluck="name"
+		):
+			for role in roles:
+				frappe.get_doc(
+					{
+						"doctype": "Press Role Permission",
+						"role": role,
+						"release_group": self.name,
+						"team": self.team,
+					}
+				).insert()
+
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
 		if self.flags.in_insert or self.is_new() or not old_doc:

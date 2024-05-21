@@ -36,6 +36,21 @@ export let session = reactive({
 			? session.roles.data.some(role => role.enable_apps)
 			: true
 	),
+	hasSiteCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.enable_site_creation)
+			: true
+	),
+	hasBenchCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.enable_bench_creation)
+			: true
+	),
+	hasServerCreationAccess: computed(() =>
+		session.roles.data.length
+			? session.roles.data.some(role => role.enable_server_creation)
+			: true
+	),
 	user: getSessionUser(),
 	isLoggedIn: computed(() => !!session.user),
 	isSystemUser: getSessionCookies().get('system_user') === 'yes'
