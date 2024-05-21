@@ -16,11 +16,11 @@ class PressRole(Document):
 		from frappe.types import DF
 		from press.press.doctype.press_role_user.press_role_user import PressRoleUser
 
-		enable_apps: DF.Check
-		enable_bench_creation: DF.Check
-		enable_billing: DF.Check
-		enable_server_creation: DF.Check
-		enable_site_creation: DF.Check
+		allow_apps: DF.Check
+		allow_bench_creation: DF.Check
+		allow_billing: DF.Check
+		allow_server_creation: DF.Check
+		allow_site_creation: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
@@ -29,11 +29,11 @@ class PressRole(Document):
 	dashboard_fields = [
 		"title",
 		"users",
-		"enable_billing",
-		"enable_apps",
-		"enable_site_creation",
-		"enable_bench_creation",
-		"enable_server_creation",
+		"allow_billing",
+		"allow_apps",
+		"allow_site_creation",
+		"allow_bench_creation",
+		"allow_server_creation",
 		"team",
 	]
 
@@ -119,9 +119,9 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 	)
 
 	if doctype == "Marketplace App":
-		if roles := query.select(PressRole.enable_apps).run(as_dict=1):
+		if roles := query.select(PressRole.allow_apps).run(as_dict=1):
 			# throw error if any of the roles don't have permission for apps
-			if not any(perm.enable_apps for perm in roles):
+			if not any(perm.allow_apps for perm in roles):
 				frappe.throw("Not permitted", frappe.PermissionError)
 
 	elif doctype in ["Site", "Release Group", "Server"]:
@@ -153,11 +153,11 @@ def add_permission_for_newly_created_doc(doc: Document) -> None:
 	role_fieldname = ""
 	fieldname = doctype.lower().replace(" ", "_")
 	if doctype == "Site":
-		role_fieldname = "enable_site_creation"
+		role_fieldname = "allow_site_creation"
 	elif doctype == "Server":
-		role_fieldname = "enable_server_creation"
+		role_fieldname = "allow_server_creation"
 	elif doctype == "Release Group":
-		role_fieldname = "enable_bench_creation"
+		role_fieldname = "allow_bench_creation"
 
 	new_perms = []
 	PressRole = frappe.qb.DocType("Press Role")

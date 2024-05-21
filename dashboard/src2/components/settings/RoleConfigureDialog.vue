@@ -66,32 +66,32 @@
 						</div>
 					</div>
 				</div>
-				<div v-else-if="tab.value === 'settings'" class="mt-4 p-2 text-base">
-					<div class="flex flex-col space-y-2">
-						<FormControl
-							type="checkbox"
-							v-model="enableBilling"
-							label="Allow Access to Billing"
+				<div v-else-if="tab.value === 'settings'" class="mt-4 text-base">
+					<div class="flex flex-col space-y-3">
+						<Switch
+							v-model="allowBilling"
+							label="Allow Billing Access"
+							description="Grant users belonging to this role access to billing information"
 						/>
-						<FormControl
-							type="checkbox"
-							v-model="enableApps"
-							label="Allow Access to Apps"
+						<Switch
+							v-model="allowApps"
+							label="Allow Apps Access"
+							description="Grant users belonging to this role access to apps page"
 						/>
-						<FormControl
-							type="checkbox"
-							v-model="enableSiteCreation"
+						<Switch
+							v-model="allowSiteCreation"
 							label="Allow Site Creation"
+							description="Newly created sites will be given access to users of this role"
 						/>
-						<FormControl
-							type="checkbox"
-							v-model="enableBenchCreation"
+						<Switch
+							v-model="allowBenchCreation"
 							label="Allow Bench Creation"
+							description="Newly created benches will be given access to users of this role"
 						/>
-						<FormControl
-							type="checkbox"
-							v-model="enableServerCreation"
+						<Switch
+							v-model="allowServerCreation"
 							label="Allow Server Creation"
+							description="Newly created servers will be given access to users of this role"
 						/>
 					</div>
 				</div>
@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { createDocumentResource, Tabs } from 'frappe-ui';
+import { createDocumentResource, Switch, Tabs } from 'frappe-ui';
 import { computed, ref, watch } from 'vue';
 import { getTeam } from '../../data/team';
 import UserWithAvatarCell from '../UserWithAvatarCell.vue';
@@ -124,49 +124,49 @@ const role = createDocumentResource({
 		removeUser: 'remove_user'
 	},
 	onSuccess: data => {
-		enableBilling.value = !!data.enable_billing;
-		enableApps.value = !!data.enable_apps;
+		allowBilling.value = !!data.allow_billing;
+		allowApps.value = !!data.allow_apps;
 	}
 });
 const roleUsers = computed(() => role.doc.users || []);
-const enableBilling = ref(!!role.doc?.enable_billing);
-const enableApps = ref(!!role.doc?.enable_apps);
-const enableSiteCreation = ref(!!role.doc?.enable_site_creation);
-const enableBenchCreation = ref(!!role.doc?.enable_bench_creation);
-const enableServerCreation = ref(!!role.doc?.enable_server_creation);
+const allowBilling = ref(!!role.doc?.allow_billing);
+const allowApps = ref(!!role.doc?.allow_apps);
+const allowSiteCreation = ref(!!role.doc?.allow_site_creation);
+const allowBenchCreation = ref(!!role.doc?.allow_bench_creation);
+const allowServerCreation = ref(!!role.doc?.allow_server_creation);
 
 // using a watcher instead of event listener to avoid multiple api calls
 watch(
 	[
-		enableBilling,
-		enableApps,
-		enableSiteCreation,
-		enableBenchCreation,
-		enableServerCreation
+		allowBilling,
+		allowApps,
+		allowSiteCreation,
+		allowBenchCreation,
+		allowServerCreation
 	],
 	([
-		newEnableBilling,
-		newEnableApps,
-		newEnableSiteCreation,
-		newEnableBenchCreation,
-		newEnableServerCreation
+		newallowBilling,
+		newallowApps,
+		newallowSiteCreation,
+		newallowBenchCreation,
+		newallowServerCreation
 	]) => {
 		if (
-			newEnableBilling === !!role.doc.enable_billing &&
-			newEnableApps === !!role.doc.enable_apps &&
-			newEnableSiteCreation === !!role.doc.enable_site_creation &&
-			newEnableBenchCreation === !!role.doc.enable_bench_creation &&
-			newEnableServerCreation === !!role.doc.enable_server_creation
+			newallowBilling === !!role.doc.allow_billing &&
+			newallowApps === !!role.doc.allow_apps &&
+			newallowSiteCreation === !!role.doc.allow_site_creation &&
+			newallowBenchCreation === !!role.doc.allow_bench_creation &&
+			newallowServerCreation === !!role.doc.allow_server_creation
 		)
 			return;
 
 		role.setValue.submit(
 			{
-				enable_billing: newEnableBilling,
-				enable_apps: newEnableApps,
-				enable_site_creation: newEnableSiteCreation,
-				enable_bench_creation: newEnableBenchCreation,
-				enable_server_creation: newEnableServerCreation
+				allow_billing: newallowBilling,
+				allow_apps: newallowApps,
+				allow_site_creation: newallowSiteCreation,
+				allow_bench_creation: newallowBenchCreation,
+				allow_server_creation: newallowServerCreation
 			},
 			{ onSuccess: session.roles.reload }
 		);

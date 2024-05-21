@@ -137,10 +137,10 @@ class TestPressRole(FrappeTestCase):
 		with self.assertRaises(Exception):
 			get("Site", site2.name)
 
-	def test_newly_created_sites_are_permitted_for_roles_with_enable_site_creation_and_existing_perms(
+	def test_newly_created_sites_are_permitted_for_roles_with_allow_site_creation_and_existing_perms(
 		self,
 	):
-		role = create_permission_role(self.team.name, enable_site_creation=1)
+		role = create_permission_role(self.team.name, allow_site_creation=1)
 
 		frappe.set_user("Administrator")
 
@@ -164,13 +164,13 @@ class TestPressRole(FrappeTestCase):
 
 
 # utils
-def create_permission_role(team, enable_site_creation=0):
+def create_permission_role(team, allow_site_creation=0):
 	import random
 
 	doc = frappe.new_doc("Press Role")
 	doc.title = "Test Role" + str(random.randint(1, 1000))
 	doc.team = team
-	doc.enable_site_creation = enable_site_creation
+	doc.allow_site_creation = allow_site_creation
 	doc.save()
 
 	return doc
