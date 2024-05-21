@@ -71,7 +71,7 @@
 						<Switch
 							v-model="allowBilling"
 							label="Allow Billing Access"
-							description="Grant users belonging to this role access to billing information"
+							description="Grant users belonging to this role access to billing page"
 						/>
 						<Switch
 							v-model="allowApps"
