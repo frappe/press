@@ -298,6 +298,7 @@ export default {
 																source: row.source
 															},
 															fields: ['message', 'tag', 'author', 'status'],
+															orderBy: 'creation desc',
 															columns: [
 																{
 																	label: 'Commit Message',
