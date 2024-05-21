@@ -186,28 +186,11 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_delta_builds_flags()
 
 	def after_insert(self):
-		new_perms = []
-		if roles := frappe.db.get_all(
-			"Press Role", filters={"team": self.team, "enable_bench_creation": 1}, pluck="name"
-		):
-			for role in roles:
-				new_perms.append(
-					(
-						frappe.generate_hash(length=10),
-						role,
-						self.name,
-						self.team,
-						frappe.utils.now(),  # for prettier list view
-						frappe.utils.now(),
-					)
-				)
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
 
-		if new_perms:
-			frappe.db.bulk_insert(
-				"Press Role Permission",
-				fields=["name", "role", "release_group", "team", "creation", "modified"],
-				values=set(new_perms),
-			)
+		add_permission_for_newly_created_doc(self)
 
 	def on_update(self):
 		old_doc = self.get_doc_before_save()

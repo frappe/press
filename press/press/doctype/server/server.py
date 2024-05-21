@@ -884,30 +884,12 @@ class Server(BaseServer):
 			frappe.db.delete("Press Role Permission", {"server": self.name})
 
 	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
 		super().after_insert()
-
-		new_perms = []
-		if roles := frappe.db.get_all(
-			"Press Role", filters={"team": self.team, "enable_server_creation": 1}, pluck="name"
-		):
-			for role in roles:
-				new_perms.append(
-					(
-						frappe.generate_hash(length=12),
-						role,
-						self.name,
-						self.team,
-						frappe.utils.now(),
-						frappe.utils.now(),
-					)
-				)
-
-		if new_perms:
-			frappe.db.bulk_insert(
-				"Press Role Permission",
-				fields=["name", "role", "server", "team", "creation", "modified"],
-				values=set(new_perms),
-			)
+		add_permission_for_newly_created_doc(self)
 
 	def update_subscription(self):
 		if self.subscription and self.subscription.team != self.team:

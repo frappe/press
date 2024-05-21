@@ -138,3 +138,54 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 				return [perm["name"] for perm in roles]
 
 	return []
+
+
+def add_permission_for_newly_created_doc(doc: Document) -> None:
+	"""
+	Used to bulk insert permissions right after a site/release group/server is created
+	for users with create permission for respective doctype is enabled
+	"""
+
+	doctype = doc.doctype
+	if doctype not in ["Site", "Release Group", "Server"]:
+		return
+
+	role_fieldname = ""
+	fieldname = doctype.lower().replace(" ", "_")
+	if doctype == "Site":
+		role_fieldname = "enable_site_creation"
+	elif doctype == "Server":
+		role_fieldname = "enable_server_creation"
+	elif doctype == "Release Group":
+		role_fieldname = "enable_bench_creation"
+
+	new_perms = []
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRolePermission = frappe.qb.DocType("Press Role Permission")
+	if roles := (
+		frappe.qb.from_(PressRole)
+		.join(PressRolePermission)
+		.on(PressRole.name == PressRolePermission.role)
+		.select(PressRole.name)
+		.where(PressRole.team == doc.team)
+		.where(PressRole[role_fieldname] == 1)
+		.run(as_dict=True, pluck="name")
+	):
+		for role in roles:
+			new_perms.append(
+				(
+					frappe.generate_hash(length=12),
+					role,
+					doc.name,
+					doc.team,
+					frappe.utils.now(),
+					frappe.utils.now(),
+				)
+			)
+
+	if new_perms:
+		frappe.db.bulk_insert(
+			"Press Role Permission",
+			fields=["name", "role", fieldname, "team", "creation", "modified"],
+			values=set(new_perms),
+		)

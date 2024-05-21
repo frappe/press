@@ -479,6 +479,10 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
 			self.create_subscription(self.subscription_plan)
@@ -502,28 +506,7 @@ class Site(Document, TagHelpers):
 				ignore_permissions=True
 			)
 
-		new_perms = []
-		if roles := frappe.db.get_all(
-			"Press Role", filters={"team": self.team, "enable_site_creation": 1}, pluck="name"
-		):
-			for role in roles:
-				new_perms.append(
-					(
-						frappe.generate_hash(length=10),
-						role,
-						self.name,
-						self.team,
-						frappe.utils.now(),
-						frappe.utils.now(),
-					)
-				)
-
-		if new_perms:
-			frappe.db.bulk_insert(
-				"Press Role Permission",
-				fields=["name", "role", "site", "team", "creation", "modified"],
-				values=set(new_perms),
-			)
+		add_permission_for_newly_created_doc(self)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
