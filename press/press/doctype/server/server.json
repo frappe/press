@@ -477,7 +477,7 @@
   }
  ],
  "links": [],
- "modified": "2024-03-22 12:12:52.727223",
+ "modified": "2024-05-21 13:14:14.778837",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Server",
@@ -511,5 +511,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "title",
  "track_changes": 1
 }
