@@ -126,6 +126,9 @@ const role = createDocumentResource({
 	onSuccess: data => {
 		allowBilling.value = !!data.allow_billing;
 		allowApps.value = !!data.allow_apps;
+		allowSiteCreation.value = !!data.allow_site_creation;
+		allowBenchCreation.value = !!data.allow_bench_creation;
+		allowServerCreation.value = !!data.allow_server_creation;
 	}
 });
 const roleUsers = computed(() => role.doc.users || []);
