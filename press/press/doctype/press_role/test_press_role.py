@@ -137,14 +137,24 @@ class TestPressRole(FrappeTestCase):
 		with self.assertRaises(Exception):
 			get("Site", site2.name)
 
+	def test_newly_created_sites_are_permitted_for_roles_enable_site_creation(self):
+		role = create_permission_role(self.team.name, enable_site_creation=1)
+
+		frappe.set_user("Administrator")
+		site = create_test_site(team=self.team.name)
+		self.assertTrue(
+			frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name})
+		)
+
 
 # utils
-def create_permission_role(team):
+def create_permission_role(team, enable_site_creation=0):
 	import random
 
 	doc = frappe.new_doc("Press Role")
 	doc.title = "Test Role" + str(random.randint(1, 1000))
 	doc.team = team
+	doc.enable_site_creation = enable_site_creation
 	doc.save()
 
 	return doc
