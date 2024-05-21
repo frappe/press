@@ -47,6 +47,7 @@ ALLOWED_PATHS = [
 ALLOWED_WILDCARD_PATHS = [
 	"/api/method/press.api.",
 	"/api/method/wiki.",
+	"/api/method/frappe.integrations.oauth2_logins.",
 	"/api/method/press.www.marketplace.index.",
 ]
 

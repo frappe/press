@@ -97,6 +97,12 @@ frappe.ui.form.on('Server', {
 				frm.doc.is_server_setup,
 			],
 			[
+				__('Setup Agent Sentry'),
+				'setup_agent_sentry',
+				false,
+				frm.doc.is_server_setup,
+			],
+			[
 				__('Show Agent Password'),
 				'show_agent_password',
 				false,

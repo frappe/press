@@ -1400,6 +1400,27 @@ def setup_wizard_complete(name):
 	return frappe.get_doc("Site", name).is_setup_wizard_complete()
 
 
+def check_domain_allows_letsencrypt_certs(domain):
+	# Check if domain is allowed to get letsencrypt certificates
+	# This is a security measure to prevent unauthorized certificate issuance
+	from tldextract import extract
+
+	naked_domain = extract(domain).registered_domain
+	resolver = Resolver(configure=False)
+	resolver.nameservers = NAMESERVERS
+	try:
+		answer = resolver.query(naked_domain, "CAA")
+		for rdata in answer:
+			if "letsencrypt.org" in rdata.to_text():
+				return True
+	except dns.resolver.NoAnswer:
+		pass  # no CAA record. Anything goes
+	else:
+		frappe.throw(
+			f"Domain {naked_domain} does not allow Let's Encrypt certificates. Please review CAA record for the same."
+		)
+
+
 def check_dns_cname_a(name, domain):
 	def check_dns_cname(name, domain):
 		result = {"type": "CNAME", "matched": False, "answer": ""}
@@ -1438,6 +1459,7 @@ def check_dns_cname_a(name, domain):
 		finally:
 			return result
 
+	check_domain_allows_letsencrypt_certs(domain)
 	cname = check_dns_cname(name, domain)
 	result = {"CNAME": cname}
 	result.update(cname)

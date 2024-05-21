@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-05-13 11:44:03.637522",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "column_break_qnnn",
+  "team",
+  "section_break_yvqq",
+  "allow_billing",
+  "allow_apps",
+  "column_break_todb",
+  "allow_site_creation",
+  "allow_bench_creation",
+  "allow_server_creation",
+  "section_break_zdiv",
+  "users"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_qnnn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Team",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_zdiv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Table",
+   "label": "Users",
+   "options": "Press Role User"
+  },
+  {
+   "fieldname": "section_break_yvqq",
+   "fieldtype": "Section Break",
+   "label": "Additional Permissions"
+  },
+  {
+   "fieldname": "column_break_todb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_billing",
+   "fieldtype": "Check",
+   "label": "Allow Billing"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_apps",
+   "fieldtype": "Check",
+   "label": "Allow Apps"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_site_creation",
+   "fieldtype": "Check",
+   "label": "Allow Site Creation"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_bench_creation",
+   "fieldtype": "Check",
+   "label": "Allow Bench Creation"
+  },
+  {
+   "default": "1",
+   "fieldname": "allow_server_creation",
+   "fieldtype": "Check",
+   "label": "Allow Server Creation"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-05-21 15:31:48.262656",
+ "modified_by": "Administrator",
+ "module": "Press",
+ "name": "Press Role",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Press Member",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -22,7 +22,7 @@ from press.press.doctype.app_release_approval_request.app_release_approval_reque
 	AppReleaseApprovalRequest,
 )
 from press.press.doctype.marketplace_app.utils import get_rating_percentage_distribution
-from press.utils import get_last_doc
+from press.utils import get_last_doc, get_current_team
 from press.api.client import dashboard_whitelist
 
 
@@ -100,6 +100,23 @@ class MarketplaceApp(WebsiteGenerator):
 
 	def autoname(self):
 		self.name = self.app
+
+	@dashboard_whitelist()
+	def delete(self):
+		if self.status != "Draft":
+			frappe.throw("You can only delete an app in Draft status")
+
+		if get_current_team() != self.team:
+			frappe.throw("You are not authorized to delete this app")
+
+		super().delete()
+
+	def on_trash(self):
+		plans = frappe.get_all(
+			"Marketplace App Plan", filters={"app": self.app}, pluck="name"
+		)
+		for plan in plans:
+			frappe.delete_doc("Marketplace App Plan", plan)
 
 	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):

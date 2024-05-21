@@ -55,6 +55,18 @@ def _change_dns_record(
 			},
 			HostedZoneId=hosted_zone,
 		)
+	except client.exceptions.InvalidChangeBatch as e:
+		# If we're attempting to DELETE and record is not found, ignore the error
+		# e.response["Error"]["Message"] looks like
+		# [Tried to delete resource record set [name='xxx.frappe.cloud.', type='CNAME'] but it was not found]
+		if method == "DELETE" and "but it was not found" in e.response["Error"]["Message"]:
+			return
+		log_error(
+			"Route 53 Record Creation Error",
+			domain=domain.name,
+			site=record_name,
+			proxy_server=proxy_server,
+		)
 	except Exception:
 		log_error(
 			"Route 53 Record Creation Error",

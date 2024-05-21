@@ -191,6 +191,7 @@ scheduler_events = {
 	"hourly": [
 		"press.press.doctype.site.backups.cleanup_local",
 		"press.press.doctype.agent_job.agent_job.update_job_step_status",
+		"press.press.doctype.bench.bench.archive_obsolete_benches",
 	],
 	"hourly_long": [
 		"press.press.doctype.server.server.scale_workers",
@@ -237,7 +238,6 @@ scheduler_events = {
 			"press.press.doctype.site_update.site_update.run_scheduled_updates",
 			"press.press.doctype.site_migration.site_migration.run_scheduled_migrations",
 			"press.press.doctype.version_upgrade.version_upgrade.run_scheduled_upgrades",
-			"press.press.doctype.bench.bench.archive_obsolete_benches",
 			"press.press.doctype.subscription.subscription.create_usage_records",
 			"press.press.doctype.virtual_machine.virtual_machine.sync_virtual_machines",
 			"press.press.doctype.mariadb_stalk.mariadb_stalk.fetch_stalks",

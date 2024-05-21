@@ -235,7 +235,7 @@ def create_payment_intent_for_buying_credits(amount):
 	metadata = {"payment_for": "prepaid_credits"}
 	total_unpaid = total_unpaid_amount()
 
-	if amount < total_unpaid:
+	if amount < total_unpaid and not team.erpnext_partner:
 		frappe.throw(f"Amount {amount} is less than the total unpaid amount {total_unpaid}.")
 
 	if team.currency == "INR":

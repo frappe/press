@@ -39,6 +39,7 @@ def foreground_enqueue(
 	on_failure: Callable = None,
 	at_front: bool = False,
 	job_id: str = None,
+	deduplicate: bool = False,
 	**kwargs,
 ):
 	return frappe.call(method, **kwargs)

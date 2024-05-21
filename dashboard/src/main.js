@@ -47,8 +47,19 @@ if (window.press_frontend_sentry_dsn?.includes('https://')) {
 				tracingOrigins: ['localhost', /^\//]
 			})
 		],
-		logErrors: true,
-		tracesSampleRate: 1.0
+		beforeSend(event, hint) {
+			const ignoreErrors = [
+				/dynamically imported module/,
+				/NetworkError when attempting to fetch resource/
+			];
+			const error = hint.originalException;
+
+			if (error?.message && ignoreErrors.some(re => re.test(error.message)))
+				return null;
+
+			return event;
+		},
+		logErrors: true
 	});
 }
 

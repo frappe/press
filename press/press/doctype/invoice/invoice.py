@@ -195,6 +195,18 @@ class Invoice(Document):
 		if self.partner_email and team.erpnext_partner:
 			self.apply_partner_discount()
 
+		if self.stripe_invoice_id:
+			# if stripe invoice is already created and paid,
+			# then update status and return early
+			stripe = get_stripe()
+			invoice = stripe.Invoice.retrieve(self.stripe_invoice_id)
+			if invoice.status == "paid":
+				self.status = "Paid"
+				self.update_transaction_details(invoice.charge)
+				self.submit()
+				self.unsuspend_sites_if_applicable()
+				return
+
 		# set as unpaid by default
 		self.status = "Unpaid"
 
@@ -255,22 +267,30 @@ class Invoice(Document):
 
 		if self.status == "Paid":
 			self.submit()
+			self.unsuspend_sites_if_applicable()
 
-			if (
-				frappe.db.count(
-					"Invoice",
-					{
-						"status": "Unpaid",
-						"team": self.team,
-						"type": "Subscription",
-						"docstatus": ("<", 2),
-					},
-				)
-				== 0
-			):
-				# unsuspend sites only if all invoices are paid
-				team = frappe.get_cached_doc("Team", self.team)
-				team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
+	def unsuspend_sites_if_applicable(self):
+		if (
+			frappe.db.count(
+				"Invoice",
+				{
+					"status": "Unpaid",
+					"team": self.team,
+					"type": "Subscription",
+					"docstatus": ("<", 2),
+				},
+			)
+			== 0
+		):
+			# unsuspend sites only if all invoices are paid
+			team = frappe.get_cached_doc("Team", self.team)
+			team.unsuspend_sites(f"Invoice {self.name} Payment Successful.")
+
+	def calculate_total(self):
+		total = 0
+		for item in self.items:
+			total += item.amount
+		return total
 
 	def on_submit(self):
 		self.create_invoice_on_frappeio()
@@ -305,10 +325,10 @@ class Invoice(Document):
 		if self.payment_mode != "Card":
 			return
 
-		stripe = get_stripe()
-
 		if self.type == "Prepaid Credits":
 			return
+
+		stripe = get_stripe()
 
 		if self.status == "Paid":
 			# void an existing invoice if payment was done via credits
@@ -345,18 +365,19 @@ class Invoice(Document):
 
 		customer_id = frappe.db.get_value("Team", self.team, "stripe_customer_id")
 		amount = int(self.amount_due * 100)
-		stripe.InvoiceItem.create(
-			customer=customer_id,
-			description=self.get_stripe_invoice_item_description(),
-			amount=amount,
-			currency=self.currency.lower(),
-			idempotency_key=f"invoiceitem:{self.name}:{amount}",
-		)
 		invoice = stripe.Invoice.create(
 			customer=customer_id,
 			collection_method="charge_automatically",
 			auto_advance=True,
 			idempotency_key=f"invoice:{self.name}:{amount}",
+		)
+		stripe.InvoiceItem.create(
+			customer=customer_id,
+			invoice=invoice["id"],
+			description=self.get_stripe_invoice_item_description(),
+			amount=amount,
+			currency=self.currency.lower(),
+			idempotency_key=f"invoiceitem:{self.name}:{amount}",
 		)
 		self.stripe_invoice_id = invoice["id"]
 		self.status = "Invoice Created"
@@ -369,7 +390,10 @@ class Invoice(Document):
 		)
 		description = self.get_stripe_invoice_item_description()
 		for invoice in invoices.data:
-			if invoice.lines.data[0].description == description and invoice.status != "void":
+			line_items = invoice.lines.data
+			if (
+				line_items and line_items[0].description == description and invoice.status != "void"
+			):
 				return invoice["id"]
 
 	def get_stripe_invoice_item_description(self):
@@ -551,11 +575,9 @@ class Invoice(Document):
 		if self.docstatus == 1:
 			return
 
-		total = 0
-		for item in self.items:
-			total += item.amount
-
+		total = self.calculate_total()
 		self.total_before_discount = total
+		self.total = total
 		self.set_total_and_discount()
 
 	def compute_free_credits(self):
@@ -605,6 +627,8 @@ class Invoice(Document):
 		self.reload()
 
 	def set_total_and_discount(self):
+		if not self.discounts:
+			return
 		total_discount_amount = 0
 
 		for invoice_discount in self.discounts:

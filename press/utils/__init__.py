@@ -6,6 +6,7 @@ import functools
 import json
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 from urllib.parse import urljoin
 
 import frappe
@@ -571,3 +572,38 @@ def reconnect_on_failure():
 			return wrapped(*args, **kwargs)
 
 	return wrapper
+
+
+def get_filepath(root: str, filename: str, max_depth: int = 1):
+	"""
+	Returns the absolute path of a `filename` under `root`. If
+	it is not found, returns None.
+
+	Example: get_filepath("apps/hrms", "hooks.py", 2)
+
+	Depth of search under file tree can be set using `max_depth`.
+	"""
+	path = _get_filepath(
+		Path(root),
+		filename,
+		max_depth,
+	)
+
+	if path is None:
+		return path
+
+	return path.absolute().as_posix()
+
+
+def _get_filepath(root: Path, filename: str, max_depth: int) -> Path | None:
+	if root.name == filename:
+		return root
+	if max_depth == 0 or not root.is_dir():
+		return None
+	for new_root in root.iterdir():
+		if possible_path := _get_filepath(
+			new_root,
+			filename,
+			max_depth - 1,
+		):
+			return possible_path

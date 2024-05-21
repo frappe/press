@@ -216,7 +216,7 @@ def get_repository_details_from_payload(payload: dict):
 	repo = r.get("name")
 	owner = r.get("owner", {}).get("login")
 
-	repos = payload.get("repositories_added")
+	repos = payload.get("repositories_added", [])
 	if not repo and len(repos) == 1:
 		repo = repos[0].get("name")
 

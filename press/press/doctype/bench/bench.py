@@ -2,15 +2,17 @@
 # Copyright (c) 2019, Frappe and contributors
 # For license information, please see license.txt
 
+from itertools import groupby
 import json
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.bench_shell_log.bench_shell_log import (
 	ExecuteResult,
@@ -18,7 +20,9 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
-from press.api.client import dashboard_whitelist
+
+TRANSITORY_STATES = ["Pending", "Installing"]
+FINAL_STATES = ["Active", "Broken", "Archived"]
 
 if TYPE_CHECKING:
 	SupervisorctlActions = Literal[
@@ -649,11 +653,13 @@ def process_new_bench_job_update(job):
 		frappe.db.set_value("Bench", job.bench, "status", updated_status)
 		if updated_status == "Active":
 			StagingSite.create_if_needed(bench)
+			bench = frappe.get_doc("Bench", job.bench)
 			frappe.enqueue(
 				"press.press.doctype.bench.bench.archive_obsolete_benches",
 				enqueue_after_commit=True,
+				group=bench.group,
+				server=bench.server,
 			)
-			bench = frappe.get_doc("Bench", job.bench)
 			bench.add_ssh_user()
 
 			bench_update = frappe.get_all(
@@ -752,6 +758,22 @@ def get_unfinished_site_migrations(bench: str):
 	)
 
 
+def get_scheduled_version_upgrades(bench: dict):
+	frappe.db.commit()
+	sites = frappe.qb.DocType("Site")
+	version_upgrades = frappe.qb.DocType("Version Upgrade")
+	return (
+		frappe.qb.from_(sites)
+		.join(version_upgrades)
+		.on(sites.name == version_upgrades.site)
+		.select("name")
+		.where(sites.server == bench.server)
+		.where(version_upgrades.destination_group == bench.group)
+		.where(version_upgrades.status.isin(["Scheduled", "Pending", "Running"]))
+		.run()
+	)
+
+
 def try_archive(bench: str):
 	try:
 		frappe.get_doc("Bench", bench).archive()
@@ -768,11 +790,14 @@ def try_archive(bench: str):
 		return False
 
 
-def archive_obsolete_benches():
+def archive_obsolete_benches(group: str = None, server: str = None):
+	query_substr = ""
+	if group and server:
+		query_substr = f"AND bench.group = '{group}' AND bench.server = '{server}'"
 	benches = frappe.db.sql(
-		"""
+		f"""
 		SELECT
-			bench.name, bench.candidate, bench.creation, bench.last_archive_failure, g.public
+			bench.name, bench.server, bench.group, bench.candidate, bench.creation, bench.last_archive_failure, g.public
 		FROM
 			tabBench bench
 		LEFT JOIN
@@ -780,10 +805,24 @@ def archive_obsolete_benches():
 		ON
 			bench.group = g.name
 		WHERE
-			bench.status = "Active"
+			bench.status = "Active" {query_substr}
+		ORDER BY
+			bench.server
 	""",
 		as_dict=True,
 	)
+	benches_by_server = groupby(benches, lambda x: x.server)
+	for server_benches in benches_by_server:
+		frappe.enqueue(
+			"press.press.doctype.bench.bench.archive_obsolete_benches_for_server",
+			queue="long",
+			job_id=f"archive_obsolete_benches:{server_benches[0]}",
+			deduplicate=True,
+			benches=list(server_benches[1]),
+		)
+
+
+def archive_obsolete_benches_for_server(benches: Iterable[dict]):
 	for bench in benches:
 		if (
 			bench.last_archive_failure
@@ -809,8 +848,9 @@ def archive_obsolete_benches():
 			continue
 
 		if not bench.public and bench.creation < frappe.utils.add_days(None, -3):
-			try_archive(bench.name)
-			continue
+			if not get_scheduled_version_upgrades(bench):
+				try_archive(bench.name)
+				continue
 
 		# If there isn't a Deploy Candidate Difference with this bench's candidate as source
 		# That means this is the most recent bench and should be skipped.
@@ -839,6 +879,8 @@ def sync_benches():
 			"press.press.doctype.bench.bench.sync_bench",
 			queue="sync",
 			name=bench,
+			job_id=f"sync_bench:{bench}",
+			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()
@@ -879,6 +921,8 @@ def sync_analytics():
 			"press.press.doctype.bench.bench.sync_bench_analytics",
 			queue="sync",
 			name=bench,
+			job_id=f"sync_bench_analytics:{bench}",
+			deduplicate=True,
 			enqueue_after_commit=True,
 		)
 	frappe.db.commit()

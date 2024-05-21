@@ -1,7 +1,7 @@
 <template>
 	<Dialog :options="{ title: 'Change Team' }" v-model="show">
 		<template #body-content>
-			<div class="rounded bg-gray-100 px-2 py-3">
+			<div class="rounded bg-gray-100 px-3 py-2.5">
 				<div class="text-base text-gray-900">
 					You are logged in as
 					<span class="font-medium">{{ $session.user }}</span>
@@ -43,15 +43,32 @@
 					<Button v-else @click="switchToTeam(team.name)">Change</Button>
 				</div>
 			</div>
+			<div class="mt-6 flex items-end gap-2" v-if="$session.isSystemUser">
+				<LinkControl
+					class="w-full"
+					label="Select Team"
+					:options="{ doctype: 'Team', filters: { enabled: 1 } }"
+					v-model="selectedTeam"
+					description="This feature is only available to system users"
+				/>
+				<div class="pb-5">
+					<Button :disabled="!selectedTeam" @click="switchToTeam(selectedTeam)">
+						Change
+					</Button>
+				</div>
+			</div>
 		</template>
 	</Dialog>
 </template>
 <script>
 import { switchToTeam } from '../data/team';
+import LinkControl from './LinkControl.vue';
+
 export default {
 	name: 'SwitchTeamDialog',
 	props: ['modelValue'],
 	emits: ['update:modelValue'],
+	components: { LinkControl },
 	computed: {
 		show: {
 			get() {
@@ -61,6 +78,11 @@ export default {
 				this.$emit('update:modelValue', value);
 			}
 		}
+	},
+	data() {
+		return {
+			selectedTeam: null
+		};
 	},
 	methods: {
 		switchToTeam

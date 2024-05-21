@@ -17,7 +17,7 @@ from frappe.utils import (
 	get_datetime,
 	now_datetime,
 )
-from press.agent import Agent
+from press.agent import Agent, AgentCallbackException
 from press.api.client import is_owned_by_team
 from press.press.doctype.agent_job_type.agent_job_type import (
 	get_retryable_job_types_and_max_retry_count,
@@ -44,6 +44,7 @@ class AgentJob(Document):
 		from frappe.types import DF
 
 		bench: DF.Link | None
+		callback_failure_count: DF.Int
 		code_server: DF.Link | None
 		data: DF.Code | None
 		duration: DF.Time | None
@@ -152,6 +153,7 @@ class AgentJob(Document):
 			self.name,
 			"create_http_request",
 			timeout=600,
+			queue="short",
 			enqueue_after_commit=True,
 		)
 
@@ -391,7 +393,7 @@ def poll_pending_jobs_server(server):
 
 	pending_jobs = frappe.get_all(
 		"Agent Job",
-		fields=["name", "job_id", "status"],
+		fields=["name", "job_id", "status", "callback_failure_count"],
 		filters={
 			"status": ("in", ["Pending", "Running"]),
 			"job_id": ("!=", 0),
@@ -438,6 +440,15 @@ def poll_pending_jobs_server(server):
 
 			frappe.db.commit()
 			publish_update(job.name)
+		except AgentCallbackException:
+			# Don't log error for AgentCallbackException
+			# it's already logged
+			# Rollback all other changes and increment the failure count
+			frappe.db.rollback()
+			frappe.db.set_value(
+				"Agent Job", job.name, "callback_failure_count", job.callback_failure_count + 1
+			)
+			frappe.db.commit()
 		except Exception:
 			log_error(
 				"Agent Job Poll Exception",
@@ -707,6 +718,7 @@ def retry_undelivered_jobs(server):
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
+				process_job_updates(job)
 
 
 def queued_jobs():
@@ -762,6 +774,7 @@ def get_undelivered_jobs_for_server(server, job_types):
 			"job_id": 0,
 			"server": server.server,
 			"server_type": server.server_type,
+			"retry_count": (">", 0),
 			"job_type": ("in", job_types),
 		},
 		["name", "job_type"],
@@ -946,13 +959,15 @@ def process_job_updates(job_name, response_data: "Optional[dict]" = None):
 			DeployCandidate.process_run_remote_builder(job, response_data)
 
 	except Exception as e:
-		log_error(
-			"Agent Job Callback Exception",
-			job=job.as_dict(),
-			reference_doctype="Agent Job",
-			reference_name=job_name,
-		)
-		raise e
+		failure_count = job.callback_failure_count + 1
+		if failure_count in set([10, 100]) or failure_count % 1000 == 0:
+			log_error(
+				"Agent Job Callback Exception",
+				job=job.as_dict(),
+				reference_doctype="Agent Job",
+				reference_name=job_name,
+			)
+		raise AgentCallbackException from e
 
 
 def update_job_step_status():

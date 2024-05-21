@@ -28,6 +28,8 @@ class Telegram:
 		)
 
 	def send(self, message, html=False):
+		if not message:
+			return
 		try:
 			text = message[: telegram.MAX_MESSAGE_LENGTH]
 			parse_mode = self._get_parse_mode(html)
@@ -83,7 +85,8 @@ class Telegram:
 
 		command = text.replace(mention, "")
 		response = self.process(command.strip())
-		self.send(response)
+		if response:
+			self.send(response)
 
 	def process(self, command):
 		arguments = command.split(" ")

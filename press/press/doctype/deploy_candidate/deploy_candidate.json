@@ -361,7 +361,8 @@
    "description": "Set if the build failure is user addressable, i.e. the cause of failure is not FC.",
    "fieldname": "user_addressable_failure",
    "fieldtype": "Check",
-   "label": "User Addressable Failure"
+   "label": "User Addressable Failure",
+   "read_only": 1
   }
  ],
  "links": [
@@ -372,9 +373,13 @@
   {
    "link_doctype": "Error Log",
    "link_fieldname": "reference_name"
+  },
+  {
+   "link_doctype": "Press Notification",
+   "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-01 10:38:45.034681",
+ "modified": "2024-05-17 11:58:51.866177",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

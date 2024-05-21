@@ -6,7 +6,8 @@ import json
 from contextlib import suppress
 from functools import cached_property
 from itertools import chain
-from typing import TYPE_CHECKING, List, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional, TypedDict
 
 import frappe
 import semantic_version as sv
@@ -15,7 +16,7 @@ from frappe.core.doctype.version.version import get_diff
 from frappe.core.utils import find, find_all
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists
-from frappe.utils import comma_and, cstr, flt, sbool
+from frappe.utils import cstr, flt, sbool
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app.app import new_app
@@ -30,6 +31,7 @@ from press.utils import (
 	log_error,
 )
 
+
 DEFAULT_DEPENDENCIES = [
 	{"dependency": "NVM_VERSION", "version": "0.36.0"},
 	{"dependency": "NODE_VERSION", "version": "14.19.0"},
@@ -37,6 +39,15 @@ DEFAULT_DEPENDENCIES = [
 	{"dependency": "WKHTMLTOPDF_VERSION", "version": "0.12.5"},
 	{"dependency": "BENCH_VERSION", "version": "5.15.2"},
 ]
+
+LastDeployInfo = TypedDict(
+	"LastDeployInfo",
+	{
+		"name": str,
+		"status": str,
+		"creation": datetime,
+	},
+)
 
 
 if TYPE_CHECKING:
@@ -174,6 +185,13 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
 
+	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
+		add_permission_for_newly_created_doc(self)
+
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
 		if self.flags.in_insert or self.is_new() or not old_doc:
@@ -183,6 +201,8 @@ class ReleaseGroup(Document, TagHelpers):
 			if row[0] == "dependencies":
 				self.db_set("last_dependency_update", frappe.utils.now_datetime())
 				break
+		if self.has_value_changed("team"):
+			frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -764,12 +784,19 @@ class ReleaseGroup(Document, TagHelpers):
 
 	@property
 	def deploy_in_progress(self):
-		return self.last_dc_info and self.last_dc_info.status in (
-			"Pending",
-			"Running",
-			"Scheduled",
-			"Preparing",
+		from press.press.doctype.deploy_candidate.deploy_candidate import (
+			TRANSITORY_STATES as DC_TRANSITORY,
 		)
+
+		from press.press.doctype.bench.bench import TRANSITORY_STATES as BENCH_TRANSITORY
+
+		if not self.last_dc_info:
+			return False
+
+		if self.last_dc_info.status in DC_TRANSITORY:
+			return True
+
+		return any(i["status"] in BENCH_TRANSITORY for i in self.last_benches_info)
 
 	@property
 	def status(self):
@@ -779,7 +806,7 @@ class ReleaseGroup(Document, TagHelpers):
 		return "Active" if active_benches else "Awaiting Deploy"
 
 	@cached_property
-	def last_dc_info(self):
+	def last_dc_info(self) -> "Optional[LastDeployInfo]":
 		dc = frappe.qb.DocType("Deploy Candidate")
 
 		query = (
@@ -794,6 +821,21 @@ class ReleaseGroup(Document, TagHelpers):
 
 		if len(results) > 0:
 			return results[0]
+
+	@cached_property
+	def last_benches_info(self) -> "list[LastDeployInfo]":
+		if not (name := (self.last_dc_info or {}).get("name")):
+			return []
+
+		b = frappe.qb.DocType("Bench")
+		query = (
+			frappe.qb.from_(b)
+			.where(b.candidate == name)
+			.select(b.name, b.status, b.creation)
+			.orderby(b.creation, order=frappe.qb.desc)
+			.limit(1)
+		)
+		return query.run(as_dict=True)
 
 	def get_app_updates(self, current_apps):
 		next_apps = self.get_next_apps(current_apps)
@@ -1088,7 +1130,7 @@ class ReleaseGroup(Document, TagHelpers):
 		app_update_available = self.deploy_information().update_available
 		self.add_server(server, deploy=not app_update_available)
 
-	def get_last_successful_candidate(self) -> Document:
+	def get_last_successful_candidate(self) -> "DeployCandidate":
 		return frappe.get_last_doc(
 			"Deploy Candidate", {"status": "Success", "group": self.name}
 		)
@@ -1098,7 +1140,7 @@ class ReleaseGroup(Document, TagHelpers):
 		self.append("servers", {"server": server, "default": False})
 		self.save()
 		if deploy:
-			return self.get_last_successful_candidate()._create_deploy([server], staging=False)
+			return self.get_last_successful_candidate()._create_deploy([server])
 
 	@frappe.whitelist()
 	def change_server(self, server: str):
@@ -1144,23 +1186,6 @@ class ReleaseGroup(Document, TagHelpers):
 	def remove_app(self, app: str):
 		"""Remove app from release group"""
 
-		sites = frappe.get_all(
-			"Site", filters={"group": self.name, "status": ("!=", "Archived")}, pluck="name"
-		)
-
-		site_apps = frappe.get_all(
-			"Site App", filters={"parent": ("in", sites), "app": app}, fields=["parent"]
-		)
-
-		if site_apps:
-			installed_on_sites = ", ".join(
-				frappe.bold(site_app["parent"]) for site_app in site_apps
-			)
-			frappe.throw(
-				"Cannot remove this app, it is already installed on the"
-				f" site(s): {comma_and(installed_on_sites, add_quotes=False)}"
-			)
-
 		app_doc_to_remove = find(self.apps, lambda x: x.app == app)
 		if app_doc_to_remove:
 			self.remove(app_doc_to_remove)
@@ -1187,6 +1212,8 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		self.enabled = 0
 		self.save()
+
+		frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def set_default_app_cache_flags(self):
 		if self.use_app_cache:

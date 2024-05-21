@@ -4,11 +4,9 @@
 			<h3 class="text-base font-medium">{{ props.actionLabel }}</h3>
 			<p class="mt-1 text-p-base text-gray-600">{{ props.description }}</p>
 		</div>
-		<RestrictedAction
+		<Button
 			v-if="site?.doc"
-			:doctype="site.doc.doctype"
-			:docname="site.doc.name"
-			:method="props.method"
+			class="whitespace-nowrap"
 			:label="props.buttonLabel"
 			@click="getSiteActionHandler(props.actionLabel)"
 		/>
@@ -19,7 +17,6 @@
 import { getCachedDocumentResource } from 'frappe-ui';
 import { defineAsyncComponent, h } from 'vue';
 import { toast } from 'vue-sonner';
-import RestrictedAction from '../components/RestrictedAction.vue';
 import { confirmDialog, renderDialog } from '../utils/components';
 import router from '../router';
 

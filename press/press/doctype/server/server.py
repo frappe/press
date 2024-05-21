@@ -364,9 +364,28 @@ class BaseServer(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def cleanup_unused_files(self):
+		if self.is_build_server():
+			return
+
 		frappe.enqueue_doc(
 			self.doctype, self.name, "_cleanup_unused_files", queue="long", timeout=2400
 		)
+
+	def is_build_server(self) -> bool:
+		name = frappe.db.get_single_value("Press Settings", "docker_remote_builder_server")
+		if name == self.name:
+			return True
+
+		count = frappe.db.count(
+			"Release Group",
+			{
+				"enabled": True,
+				"docker_remote_builder_server": self.name,
+			},
+		)
+		if isinstance(count, (int, float)):
+			return count > 0
+		return False
 
 	def _cleanup_unused_files(self):
 		agent = Agent(self.name, self.doctype)
@@ -405,7 +424,10 @@ class BaseServer(Document, TagHelpers):
 			return
 		virtual_machine = frappe.get_doc("Virtual Machine", self.virtual_machine)
 		virtual_machine.increase_disk_size(increment)
-		self.enqueue_extend_ec2_volume()
+		if self.provider == "AWS EC2":
+			self.enqueue_extend_ec2_volume()
+		elif self.provider == "OCI":
+			self.reboot()
 
 	def update_virtual_machine_name(self):
 		if self.provider not in ("AWS EC2", "OCI"):
@@ -473,6 +495,8 @@ class BaseServer(Document, TagHelpers):
 		else:
 			frappe.enqueue_doc(self.doctype, self.name, "_archive", queue="long")
 		self.disable_subscription()
+
+		frappe.db.delete("Press Role Permission", {"server": self.name})
 
 	def _archive(self):
 		self.run_press_job("Archive Server")
@@ -764,7 +788,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			return response[0]["values"][-1]
 		return frappe.db.get_value("Virtual Machine", self.virtual_machine, "disk_size")
 
-	@property
+	@cached_property
 	def size_to_increase_by_for_20_percent_available(self):  # min 50 GB, max 250 GB
 		return int(
 			max(
@@ -856,34 +880,45 @@ class Server(BaseServer):
 				bench.save()
 
 		if not self.is_new() and self.has_value_changed("team"):
+			self.update_subscription()
+			frappe.db.delete("Press Role Permission", {"server": self.name})
 
-			if self.subscription and self.subscription.team != self.team:
-				self.subscription.disable()
+	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
 
-				if subscription := frappe.db.get_value(
-					"Subscription",
-					{
-						"document_type": self.doctype,
-						"document_name": self.name,
-						"team": self.team,
-						"plan": self.plan,
-					},
-				):
-					frappe.db.set_value("Subscription", subscription, "enabled", 1)
-				else:
-					try:
-						# create new subscription
-						frappe.get_doc(
-							{
-								"doctype": "Subscription",
-								"document_type": self.doctype,
-								"document_name": self.name,
-								"team": self.team,
-								"plan": self.plan,
-							}
-						).insert()
-					except Exception:
-						frappe.log_error("Server Subscription Creation Error")
+		super().after_insert()
+		add_permission_for_newly_created_doc(self)
+
+	def update_subscription(self):
+		if self.subscription and self.subscription.team != self.team:
+			self.subscription.disable()
+
+			if subscription := frappe.db.get_value(
+				"Subscription",
+				{
+					"document_type": self.doctype,
+					"document_name": self.name,
+					"team": self.team,
+					"plan": self.plan,
+				},
+			):
+				frappe.db.set_value("Subscription", subscription, "enabled", 1)
+			else:
+				try:
+					# create new subscription
+					frappe.get_doc(
+						{
+							"doctype": "Subscription",
+							"document_type": self.doctype,
+							"document_name": self.name,
+							"team": self.team,
+							"plan": self.plan,
+						}
+					).insert()
+				except Exception:
+					frappe.log_error("Server Subscription Creation Error")
 
 	@frappe.whitelist()
 	def add_upstream_to_proxy(self):
@@ -896,6 +931,7 @@ class Server(BaseServer):
 		certificate = self.get_certificate()
 		log_server, kibana_password = self.get_log_server()
 		proxy_ip = frappe.db.get_value("Proxy Server", self.proxy_server, "private_ip")
+		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
 
 		try:
 			ansible = Ansible(
@@ -912,6 +948,7 @@ class Server(BaseServer):
 					"workers": "2",
 					"agent_password": agent_password,
 					"agent_repository_url": agent_repository_url,
+					"agent_sentry_dsn": agent_sentry_dsn,
 					"monitoring_password": self.get_monitoring_password(),
 					"log_server": log_server,
 					"kibana_password": kibana_password,
@@ -957,6 +994,22 @@ class Server(BaseServer):
 		except Exception:
 			log_error("Standalone Server Setup Exception", server=self.as_dict())
 		self.save()
+
+	@frappe.whitelist()
+	def setup_agent_sentry(self):
+		frappe.enqueue_doc(self.doctype, self.name, "_setup_agent_sentry")
+
+	def _setup_agent_sentry(self):
+		agent_sentry_dsn = frappe.db.get_single_value("Press Settings", "agent_sentry_dsn")
+		try:
+			ansible = Ansible(
+				playbook="agent_sentry.yml",
+				server=self,
+				variables={"agent_sentry_dsn": agent_sentry_dsn},
+			)
+			ansible.run()
+		except Exception:
+			log_error("Agent Sentry Setup Exception", server=self.as_dict())
 
 	@frappe.whitelist()
 	def whitelist_ipaddress(self):

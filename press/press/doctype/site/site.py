@@ -218,10 +218,8 @@ class Site(Document, TagHelpers):
 				)
 				if user_type == "System User":
 					return func(inst, *args, **kwargs)
-				if (
-					status := frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
-					not in allowed_status
-				):
+				status = frappe.get_value(inst.doctype, inst.name, "status", for_update=True)
+				if status not in allowed_status:
 					frappe.throw(
 						f"Site action not allowed for site with status: {frappe.bold(status)}.\nAllowed status are: {frappe.bold(comma_and(allowed_status))}."
 					)
@@ -332,6 +330,7 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
@@ -480,6 +479,10 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
 			self.create_subscription(self.subscription_plan)
@@ -502,6 +505,8 @@ class Site(Document, TagHelpers):
 			frappe.get_doc(doctype="Partner Lead", team=self.team, site=self.name).insert(
 				ignore_permissions=True
 			)
+
+		add_permission_for_newly_created_doc(self)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -940,6 +945,8 @@ class Site(Document, TagHelpers):
 			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
 		)
 
+		frappe.db.delete("Press Role Permission", {"site": self.name})
+
 		self.db_set("host_name", None)
 
 		self.delete_offsite_backups()
@@ -1215,7 +1222,8 @@ class Site(Document, TagHelpers):
 	def sync_analytics(self, analytics=None):
 		if not analytics:
 			analytics = self.fetch_analytics()
-		create_site_analytics(self.name, analytics)
+		if analytics:
+			create_site_analytics(self.name, analytics)
 
 	@dashboard_whitelist()
 	def is_setup_wizard_complete(self):
@@ -1228,7 +1236,9 @@ class Site(Document, TagHelpers):
 		try:
 			value = conn.get_value("System Settings", "setup_complete", "System Settings")
 		except Exception:
-			log_error("Fetching Setup Status Failed", doc=self)
+			if self.ping().status_code == requests.codes.ok:
+				# Site is up but setup status fetch failed
+				log_error("Fetching Setup Status Failed", doc=self)
 			return
 
 		if not value:
@@ -1243,6 +1253,9 @@ class Site(Document, TagHelpers):
 
 		self.save()
 		return setup_complete
+
+	def ping(self):
+		return requests.get(f"https://{self.name}/api/method/ping")
 
 	def _set_configuration(self, config):
 		"""Similar to _update_configuration but will replace full configuration at once
@@ -1531,7 +1544,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		plan = frappe.db.get_value(
-			"Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
+			"Site Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
 		)
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(_("Cannot deactivate site on a trial plan"))
@@ -2007,6 +2020,8 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def get_actions(self):
+		is_group_public = frappe.get_cached_value("Release Group", self.group, "public")
+
 		actions = [
 			{
 				"action": "Deactivate site",
@@ -2090,7 +2105,7 @@ class Site(Document, TagHelpers):
 				"description": "Move your site to a different server",
 				"button_label": "Change",
 				"doc_method": "change_server",
-				"condition": self.status == "Active",
+				"condition": self.status == "Active" and not is_group_public,
 			},
 			{
 				"action": "Clear cache",

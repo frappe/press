@@ -80,7 +80,10 @@ export default {
 					amount: this.amount
 				},
 				validate() {
-					if (this.amount < this.minimumAmount) {
+					if (
+						this.amount < this.minimumAmount &&
+						!this.$team.doc.erpnext_partner
+					) {
 						return `Amount must be greater than ${this.minimumAmount}`;
 					}
 				},
