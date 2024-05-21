@@ -134,7 +134,9 @@ function onDropSite() {
 			variant: 'solid',
 			theme: 'red',
 			onClick: ({ hide, values }) => {
-				if (values.confirmSiteName !== site.doc.name) {
+				if (
+					![site.doc.name, site.doc.host_name].includes(values.confirmSiteName)
+				) {
 					throw new Error('Site name does not match.');
 				}
 				return site.archive.submit({ force: values.force }).then(() => {
