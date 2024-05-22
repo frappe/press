@@ -1,41 +1,6 @@
 <template>
-	<div class="px-4">
-		<div class="mt-3 min-h-0 flex-1 overflow-y-auto">
-			<ListView
-				:columns="columns"
-				:rows="partnerCustomers"
-				:options="{
-					selectable: false,
-					onRowClick: row => {
-						showInvoice = row;
-						contributionDialog = true;
-					},
-					getRowRoute: null
-				}"
-				row-key="email"
-			>
-				<ListHeader>
-					<ListHeaderItem
-						v-for="column in columns"
-						:key="column.key"
-						:item="column"
-					/>
-				</ListHeader>
-				<ListRows>
-					<div
-						v-if="partnerCustomers.length === 0"
-						class="text-center text-sm leading-10 text-gray-500"
-					>
-						No results found
-					</div>
-					<ListRow v-for="(row, i) in rows" :row="row" :key="row.email">
-						<template v-slot="{ column, item }">
-							<ObjectListCell :row="row" :column="column" :idx="i" />
-						</template>
-					</ListRow>
-				</ListRows>
-			</ListView>
-		</div>
+	<div class="p-4">
+		<GenericList :options="partnerCustomerList" />
 		<Dialog
 			v-model="contributionDialog"
 			:options="{
@@ -57,7 +22,6 @@
 		</Dialog>
 		<Dialog
 			v-model="transferCreditsDialog"
-			:modelValue="true"
 			:options="{ title: 'Transfer Credits' }"
 		>
 			<template #body-content>
@@ -91,7 +55,6 @@
 		</Dialog>
 		<Dialog
 			v-model="showConfirmationDialog"
-			:modelValue="false"
 			:options="{ title: 'Credits Transferred Successfully' }"
 		>
 			<template #body-content>
@@ -107,33 +70,18 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
-import ObjectListCell from '../ObjectListCell.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
-import {
-	Dialog,
-	ErrorMessage,
-	ListHeader,
-	ListRow,
-	ListView,
-	ListHeaderItem,
-	ListRows
-} from 'frappe-ui';
+import GenericList from '../GenericList.vue';
+import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
 export default {
 	name: 'PartnerCustomers',
 	components: {
-		ObjectList,
 		PartnerCustomerInvoices,
 		Dialog,
 		ErrorMessage,
-		ListView,
-		ListHeader,
-		ListRow,
-		ListHeaderItem,
-		ListRows,
-		ObjectListCell
+		GenericList
 	},
 	data() {
 		return {
@@ -180,30 +128,10 @@ export default {
 		}
 	},
 	computed: {
-		columns() {
-			return [
-				{
-					label: 'Name',
-					key: 'billing_name'
-				},
-				{
-					label: 'Email',
-					key: 'email'
-				},
-				{
-					label: 'Payment Mode',
-					key: 'payment_mode'
-				},
-				{
-					label: 'Currency',
-					key: 'currency'
-				}
-			];
-		},
-		options() {
+		partnerCustomerList() {
 			return {
-				doctype: 'Team',
-				fields: ['user', 'billing_name', 'payment_mode', 'currency', 'name'],
+				data: this.partnerCustomers,
+				selectable: false,
 				columns: [
 					{
 						label: 'Name',
@@ -211,7 +139,7 @@ export default {
 					},
 					{
 						label: 'Email',
-						fieldname: 'user'
+						fieldname: 'email'
 					},
 					{
 						label: 'Payment Mode',
@@ -219,32 +147,41 @@ export default {
 					},
 					{
 						label: 'Currency',
-						fieldname: 'currency'
-					}
-				],
-				rowActions: ({ row, listResource }) => {
-					return [
-						{
-							label: 'Transfer Credits',
-							onClick: () => {
-								this.transferCreditsDialog = true;
-								this.customerTeam = row;
-							}
-						},
-						{
-							label: 'View Contributions',
-							onClick: () => {
-								this.showInvoice = row;
-								this.contributionDialog = true;
-							}
+						fieldname: 'currency',
+						width: 0.5
+					},
+					{
+						label: 'Contributions',
+						type: 'Button',
+						width: 0.5,
+						align: 'center',
+						Button: ({ row }) => {
+							return {
+								label: 'View',
+								onClick: () => {
+									this.showInvoice = row;
+									this.contributionDialog = true;
+								}
+							};
 						}
-					];
-				},
-				filters: {
-					enabled: 1,
-					partner_email: this.$team.doc.partner_email,
-					erpnext_partner: 0
-				}
+					},
+					{
+						label: '',
+						type: 'Button',
+						width: 0.8,
+						align: 'right',
+						key: 'actions',
+						Button: ({ row }) => {
+							return {
+								label: 'Transfer Credits',
+								onClick: () => {
+									this.transferCreditsDialog = true;
+									this.customerTeam = row;
+								}
+							};
+						}
+					}
+				]
 			};
 		}
 	},
