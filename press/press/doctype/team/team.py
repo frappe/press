@@ -1332,7 +1332,16 @@ def handle_payment_intent_succeeded(payment_intent):
 		invoice.update_transaction_details(charge)
 		invoice.submit()
 
-	enqueue_finalize_unpaid_for_team(team.name)
+	_enqueue_finalize_unpaid_invoices_for_team(team.name)
+
+
+def _enqueue_finalize_unpaid_invoices_for_team(team: str):
+	# Enqueue a background job to call finalize_draft_invoice for unpaid invoices
+	frappe.enqueue(
+		"press.press.doctype.team.team.enqueue_finalize_unpaid_for_team",
+		team=team,
+		queue="long",
+	)
 
 
 def enqueue_finalize_unpaid_for_team(team: str):
@@ -1343,12 +1352,10 @@ def enqueue_finalize_unpaid_for_team(team: str):
 		pluck="name",
 	)
 
-	# Enqueue a background job to call finalize_draft_invoice
+	# Enqueue a background job to call finalize_invoice
 	for invoice in invoices:
-		frappe.enqueue(
-			"press.press.doctype.invoice.invoice.finalize_draft_invoice",
-			invoice=invoice,
-		)
+		doc = frappe.get_doc("Invoice", invoice)
+		doc.finalize_invoice()
 
 
 def get_permission_query_conditions(user):

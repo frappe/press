@@ -235,7 +235,7 @@ def get_app_subscriptions(app_plans, team: str):
 	for app_name, plan_name in app_plans.items():
 		is_free = frappe.db.get_value("Marketplace App Plan", plan_name, "is_free")
 		if not is_free:
-			team = get_current_team(get_doc=True)
+			team = frappe.get_doc("Team", team)
 			if not team.can_install_paid_apps():
 				frappe.throw(
 					"You cannot install a Paid app on Free Credits. Please buy credits before trying to install again."
