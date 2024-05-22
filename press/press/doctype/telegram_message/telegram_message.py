@@ -6,7 +6,7 @@ import traceback
 import frappe
 from frappe.model.document import Document
 from press.telegram_utils import Telegram
-from telegram.error import NetworkError
+from telegram.error import NetworkError, RetryAfter
 
 
 class TelegramMessage(Document):
@@ -32,6 +32,10 @@ class TelegramMessage(Document):
 			telegram = Telegram()
 			telegram.send(self.message)
 			self.status = "Sent"
+		except RetryAfter:
+			# Raise an exception that will be caught by the scheduler
+			# Try again after some time
+			raise
 		except NetworkError:
 			# Try again. Not more than 5 times
 			self.retry_count += 1
@@ -84,9 +88,18 @@ class TelegramMessage(Document):
 def send_telegram_message():
 	"""Send one queued telegram message"""
 
+	# Go through the queue till either of these things happen
+	# 1. There are no more queued messages
+	# 2. We successfully send a message
+	# 3. Telegram asks us to stop (RetryAfter)
+	# 4. We encounter an error that is not recoverable by retrying
+	# (attempt 5 retries and remove the message from queue)
 	while message := TelegramMessage.get_one():
 		try:
 			message.send()
+			return
+		except RetryAfter:
+			# Retry in the next invocation
 			return
 		except Exception:
 			# Try next message

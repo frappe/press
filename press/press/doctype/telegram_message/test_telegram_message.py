@@ -10,7 +10,7 @@ from press.press.doctype.telegram_message.telegram_message import (
 	send_telegram_message,
 )
 from press.telegram_utils import Telegram
-from telegram.error import TimedOut
+from telegram.error import TimedOut, RetryAfter
 
 
 @patch.object(Telegram, "send")
@@ -105,3 +105,28 @@ class TestTelegramMessage(FrappeTestCase):
 		self.assertRaises(TimedOut, TelegramMessage.send_one)
 		first.reload()
 		self.assertEqual(first.status, "Error")
+
+	def test_failed_send_retry_after_doesnt_change_anything(self, mock_send: Mock):
+		"""Test if failed send call because of rate limits doesn't change status"""
+		mock_send.side_effect = RetryAfter(10)
+		first = TelegramMessage.enqueue(message="Test Message")
+		self.assertRaises(RetryAfter, TelegramMessage.send_one)
+		first.reload()
+		self.assertEqual(first.status, "Queued")
+
+	def test_send_message_returns_on_empty_queue(self, mock_send: Mock):
+		"""Test if send_telegram_message returns on empty queue"""
+		first = TelegramMessage.enqueue(message="Test Message")
+		first.status = "Sent"
+		first.save()
+		send_telegram_message()
+		mock_send.assert_not_called()
+
+	def test_send_message_does_not_raise_on_failure(self, mock_send: Mock):
+		"""Test if send_telegram_message does not raise on failure"""
+		mock_send.side_effect = Exception()
+		first = TelegramMessage.enqueue(message="Test Message")
+		send_telegram_message()
+		first.reload()
+		self.assertEqual(first.status, "Error")
+		self.assertIn("Exception", first.error)
