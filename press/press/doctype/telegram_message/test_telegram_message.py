@@ -10,6 +10,7 @@ from press.press.doctype.telegram_message.telegram_message import (
 	send_telegram_message,
 )
 from press.telegram_utils import Telegram
+from telegram.error import TimedOut
 
 
 @patch.object(Telegram, "send")
@@ -85,3 +86,22 @@ class TestTelegramMessage(FrappeTestCase):
 		send_telegram_message()
 		self.assertEqual(TelegramMessage.get_one(), second)
 		send_telegram_message()
+
+	def test_failed_send_network_error_increases_retry(self, mock_send: Mock):
+		"""Test if failed send call because of network issues increases retry count"""
+		mock_send.side_effect = TimedOut()
+		first = TelegramMessage.enqueue(message="Test Message")
+		self.assertRaises(TimedOut, TelegramMessage.send_one)
+		first.reload()
+		self.assertEqual(first.status, "Queued")
+		self.assertEqual(first.retry_count, 1)
+
+	def test_test_failed_send_after_max_retries_sets_error_status(self, mock_send: Mock):
+		"""Test if failed send call after max_errors sets status to Error"""
+		mock_send.side_effect = TimedOut()
+		first = TelegramMessage.enqueue(message="Test Message")
+		first.retry_count = 4
+		first.save()
+		self.assertRaises(TimedOut, TelegramMessage.send_one)
+		first.reload()
+		self.assertEqual(first.status, "Error")

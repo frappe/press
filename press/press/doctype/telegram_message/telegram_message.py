@@ -6,6 +6,7 @@ import traceback
 import frappe
 from frappe.model.document import Document
 from press.telegram_utils import Telegram
+from telegram.error import NetworkError
 
 
 class TelegramMessage(Document):
@@ -22,7 +23,7 @@ class TelegramMessage(Document):
 		message: DF.Code
 		parse_mode: DF.Literal["Markdown", "HTML"]
 		priority: DF.Literal["High", "Medium", "Low"]
-		status: DF.Literal["Queued", "Sent", "Error", "Cancelled", "Skipped"]
+		retry_count: DF.Int
 		topic: DF.Data | None
 	# end: auto-generated types
 
@@ -31,6 +32,13 @@ class TelegramMessage(Document):
 			telegram = Telegram()
 			telegram.send(self.message)
 			self.status = "Sent"
+		except NetworkError:
+			# Try again. Not more than 5 times
+			self.retry_count += 1
+			self.error = traceback.format_exc()
+			if self.retry_count >= 5:
+				self.status = "Error"
+			raise
 		except Exception:
 			# It's unlinkely that this error will be resolved by retrying
 			# Fail immediately

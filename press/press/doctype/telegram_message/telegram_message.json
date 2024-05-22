@@ -14,7 +14,8 @@
   "section_break_ujme",
   "message",
   "section_break_njxf",
-  "error"
+  "error",
+  "retry_count"
  ],
  "fields": [
   {
@@ -77,6 +78,12 @@
    "fieldname": "error",
    "fieldtype": "Code",
    "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
    "read_only": 1
   }
  ],
