@@ -12,7 +12,9 @@
   "group",
   "parse_mode",
   "section_break_ujme",
-  "message"
+  "message",
+  "section_break_njxf",
+  "error"
  ],
  "fields": [
   {
@@ -70,6 +72,12 @@
   {
    "fieldname": "section_break_ujme",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Code",
+   "label": "Error",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
