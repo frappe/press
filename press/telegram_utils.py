@@ -23,6 +23,7 @@ class Telegram:
 		token, chat_id = telegram_group if telegram_group else (None, None)
 		self.token = token or settings.telegram_bot_token
 		self.chat_id = chat_id
+		self.topic = topic
 		self.topic_id = frappe.db.get_value(
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
 		)

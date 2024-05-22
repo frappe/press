@@ -29,7 +29,11 @@ class TelegramMessage(Document):
 
 	def send(self):
 		try:
-			telegram = Telegram()
+			telegram = Telegram(self.topic, self.group)
+			if not self.group:
+				self.group = telegram.group
+			if not self.topic:
+				self.topic = telegram.topic
 			telegram.send(self.message, reraise=True)
 			self.status = "Sent"
 		except RetryAfter:
@@ -55,6 +59,8 @@ class TelegramMessage(Document):
 	@staticmethod
 	def enqueue(
 		message: str,
+		topic: str | None = None,
+		group: str | None = None,
 		priority: str = "Medium",
 	):
 		"""Enqueue message for sending"""
@@ -63,6 +69,8 @@ class TelegramMessage(Document):
 				"doctype": "Telegram Message",
 				"message": message,
 				"priority": priority,
+				"topic": topic,
+				"group": group,
 			}
 		).insert(ignore_permissions=True)
 
