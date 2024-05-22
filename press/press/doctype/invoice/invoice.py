@@ -5,7 +5,6 @@
 import frappe
 
 from frappe import _
-from enum import Enum
 from press.utils import log_error
 from frappe.core.utils import find_all
 from frappe.utils import getdate, cint
@@ -16,12 +15,6 @@ from frappe.model.document import Document
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.utils.billing import get_frappe_io_connection, convert_stripe_money
 
-
-class InvoiceDiscountType(Enum):
-	FLAT_ON_TOTAL = "Flat On Total"
-
-
-discount_type_string_to_enum = {"Flat On Total": InvoiceDiscountType.FLAT_ON_TOTAL}
 
 DISCOUNT_MAP = {"Entry": 0, "Bronze": 0.05, "Silver": 0.1, "Gold": 0.15}
 
@@ -199,15 +192,6 @@ class Invoice(Document):
 		self.status = "Unpaid"
 
 		self.amount_due = self.total
-
-		if self.payment_mode == "Partner Credits":
-			self.payment_attempt_count += 1
-			self.save()
-			frappe.db.commit()
-
-			self.cancel_applied_credits()
-			self.apply_partner_credits()
-			return
 
 		self.apply_credit_balance()
 		if self.amount_due == 0:
@@ -614,32 +598,10 @@ class Invoice(Document):
 		total_discount_amount = 0
 
 		for invoice_discount in self.discounts:
-			discount_type = discount_type_string_to_enum[invoice_discount.discount_type]
-			if discount_type == InvoiceDiscountType.FLAT_ON_TOTAL:
-				total_discount_amount += self.get_flat_on_total_discount_amount(invoice_discount)
+			total_discount_amount += invoice_discount.amount
 
 		self.total_discount_amount = total_discount_amount
 		self.total = self.total_before_discount - total_discount_amount
-
-	def get_flat_on_total_discount_amount(self, invoice_discount):
-		discount_amount = 0
-
-		if invoice_discount.based_on == "Amount":
-			if invoice_discount.amount > self.total_before_discount:
-				frappe.throw(
-					f"Discount amount {invoice_discount.amount} cannot be"
-					f" greater than total amount {self.total_before_discount}"
-				)
-
-			discount_amount = invoice_discount.amount
-		elif invoice_discount.based_on == "Percent":
-			if invoice_discount.percent > 100:
-				frappe.throw(
-					f"Discount percentage {invoice_discount.percent} cannot be greater than 100%"
-				)
-			discount_amount = self.total_before_discount * (invoice_discount.percent / 100)
-
-		return discount_amount
 
 	def on_cancel(self):
 		# make reverse entries for credit allocations
@@ -655,29 +617,6 @@ class Invoice(Document):
 			)
 			doc.insert()
 			doc.submit()
-
-	def apply_partner_credits(self):
-		client = self.get_frappeio_connection()
-		response = client.session.post(
-			f"{client.url}/api/method/consume_credits_against_fc_invoice",
-			headers=client.headers,
-			data={"invoice": self.as_json()},
-		)
-
-		if response.ok:
-			res = response.json()
-			partner_order = res.get("message")
-
-			if partner_order:
-				self.frappe_partner_order = partner_order
-				self.amount_paid = self.amount_due
-				self.status = "Paid"
-				self.save()
-				self.submit()
-		else:
-			self.add_comment(
-				text="Failed to pay via Partner credits" + "<br><br>" + response.text
-			)
 
 	def apply_credit_balance(self):
 		# cancel applied credits to re-apply available credits
@@ -1059,7 +998,7 @@ def finalize_unpaid_prepaid_credit_invoices():
 			"status": "Unpaid",
 			"type": "Subscription",
 			"period_end": ("<=", today),
-			"payment_mode": ("in", ["Prepaid Credits", "Partner Credits"]),
+			"payment_mode": "Prepaid Credits",
 		},
 		pluck="name",
 	)

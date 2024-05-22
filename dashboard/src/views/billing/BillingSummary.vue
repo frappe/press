@@ -134,11 +134,6 @@ export default {
 	},
 	resources: {
 		upcomingInvoice: { url: 'press.api.billing.upcoming_invoice', auto: true },
-		availablePartnerCredits() {
-			return {
-				url: 'press.api.billing.get_partner_credits'
-			};
-		},
 		unpaidAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',
@@ -158,10 +153,6 @@ export default {
 		this.$socket.on('balance_updated', () =>
 			this.$resources.upcomingInvoice.reload()
 		);
-
-		if (this.$account.team.payment_mode === 'Partner Credits') {
-			this.$resources.availablePartnerCredits.submit();
-		}
 	},
 	unmounted() {
 		this.$socket.off('balance_updated');
@@ -201,10 +192,6 @@ export default {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;
 		},
 		availableCredits() {
-			if (this.$account.team.payment_mode === 'Partner Credits') {
-				return this.$resources.availablePartnerCredits.data;
-			}
-
 			return this.$resources.upcomingInvoice.data?.available_credits;
 		},
 		paymentDate() {
@@ -236,9 +223,6 @@ export default {
 				return `You will be charged from your account balance on ${this.paymentDate}.`;
 			}
 
-			if (payment_mode === 'Partner Credits') {
-				return `You will be charged from your Partner Credits on ${this.paymentDate}.`;
-			}
 			return '';
 		},
 		loading() {

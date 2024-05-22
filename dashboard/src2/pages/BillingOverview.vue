@@ -163,12 +163,6 @@ export default {
 	},
 	resources: {
 		upcomingInvoice: { url: 'press.api.billing.upcoming_invoice', auto: true },
-		availablePartnerCredits() {
-			return {
-				url: 'press.api.billing.get_partner_credits',
-				auto: this.$team.doc.payment_mode === 'Partner Credits'
-			};
-		},
 		unpaidAmountDue() {
 			return {
 				url: 'press.api.billing.total_unpaid_amount',
@@ -208,10 +202,6 @@ export default {
 			return this.$resources.upcomingInvoice.data?.upcoming_invoice;
 		},
 		availableCredits() {
-			if (this.$team.doc.payment_mode === 'Partner Credits') {
-				return this.$resources.availablePartnerCredits.data;
-			}
-
 			return this.$resources.upcomingInvoice.data?.available_credits;
 		},
 		billingDetailsSummary() {
