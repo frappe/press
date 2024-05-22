@@ -25,6 +25,7 @@ ALLOWED_PATHS = [
 	"/api/method/frappe.integrations.oauth2_logins.login_via_frappe",
 	"/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log",
 	"/api/method/get-user-sites-list-for-new-ticket",
+	"/api/method/ping",
 	"/api/method/login",
 	"/api/method/logout",
 	"/api/method/press.press.doctype.razorpay_webhook_log.razorpay_webhook_log.razorpay_webhook_handler",

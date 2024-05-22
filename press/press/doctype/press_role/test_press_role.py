@@ -141,15 +141,20 @@ class TestPressRole(FrappeTestCase):
 	):
 		role = create_permission_role(self.team.name, allow_site_creation=1)
 
+		# admin have insert perms (fw level), so adding admin as role user
+		role.add_user("Administrator")
+		role.add_user(self.team_user.name)
 		frappe.set_user("Administrator")
 
 		# creating this site to add a permission
 		site = create_test_site(team=self.team.name)
+
 		frappe.set_user(self.team_user.name)
 
 		self.assertTrue(
 			frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name})
 		)
+		frappe.delete_doc("Press Role", role.name, force=1)
 
 
 # utils

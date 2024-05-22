@@ -212,6 +212,7 @@ class TestAgentJob(unittest.TestCase):
 		Site > Bench > Server
 		"""
 		site = create_test_site()  # creates job
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 		doc_name = lock_doc_updated_by_job(job.name)
 		self.assertIsNone(doc_name)
@@ -243,6 +244,7 @@ class TestAgentJob(unittest.TestCase):
 
 	def test_no_duplicate_undelivered_job(self):
 		site = create_test_site()
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)
@@ -254,6 +256,7 @@ class TestAgentJob(unittest.TestCase):
 
 	def test_get_similar_in_execution_job(self):
 		site = create_test_site()
+		site.update_site_config({"maintenance_mode": "1"})
 		job = frappe.get_last_doc("Agent Job", {"job_type": "Update Site Configuration"})
 
 		frappe.db.set_single_value("Press Settings", "disable_agent_job_deduplication", False)

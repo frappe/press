@@ -1,6 +1,6 @@
 <template>
-	<div class="p-5">
-		<ObjectList :options="options" />
+	<div class="p-4">
+		<GenericList :options="partnerCustomerList" />
 		<Dialog
 			v-model="contributionDialog"
 			:options="{
@@ -22,7 +22,6 @@
 		</Dialog>
 		<Dialog
 			v-model="transferCreditsDialog"
-			:modelValue="true"
 			:options="{ title: 'Transfer Credits' }"
 		>
 			<template #body-content>
@@ -56,7 +55,6 @@
 		</Dialog>
 		<Dialog
 			v-model="showConfirmationDialog"
-			:modelValue="false"
 			:options="{ title: 'Credits Transferred Successfully' }"
 		>
 			<template #body-content>
@@ -72,18 +70,18 @@
 	</div>
 </template>
 <script>
-import ObjectList from '../ObjectList.vue';
 import PartnerCustomerInvoices from './PartnerCustomerInvoices.vue';
+import GenericList from '../GenericList.vue';
 import { Dialog, ErrorMessage } from 'frappe-ui';
 import { toast } from 'vue-sonner';
 import { userCurrency } from '../../utils/format';
 export default {
 	name: 'PartnerCustomers',
 	components: {
-		ObjectList,
 		PartnerCustomerInvoices,
 		Dialog,
-		ErrorMessage
+		ErrorMessage,
+		GenericList
 	},
 	data() {
 		return {
@@ -92,14 +90,33 @@ export default {
 			transferCreditsDialog: false,
 			customerTeam: null,
 			amount: 0.0,
-			showConfirmationDialog: false
+			showConfirmationDialog: false,
+			partnerCustomers: []
 		};
 	},
 	resources: {
+		getPartnerCustomers() {
+			return {
+				url: 'press.api.account.get_partner_customers',
+				onSuccess(data) {
+					this.partnerCustomers = data.map(d => {
+						return {
+							email: d.user,
+							billing_name: d.billing_name || '',
+							payment_mode: d.payment_mode || '',
+							currency: d.currency,
+							name: d.name
+						};
+					});
+				},
+				auto: true
+			};
+		},
 		transferCredits() {
 			return {
 				url: 'press.api.account.transfer_credits',
-				onSuccess() {
+				onSuccess(data) {
+					this.amount = data;
 					this.transferCreditsDialog = false;
 					this.showConfirmationDialog = true;
 					toast.success('Credits Transferred');
@@ -112,10 +129,10 @@ export default {
 		}
 	},
 	computed: {
-		options() {
+		partnerCustomerList() {
 			return {
-				doctype: 'Team',
-				fields: ['user', 'billing_name', 'payment_mode', 'currency', 'name'],
+				data: this.partnerCustomers,
+				selectable: false,
 				columns: [
 					{
 						label: 'Name',
@@ -123,7 +140,7 @@ export default {
 					},
 					{
 						label: 'Email',
-						fieldname: 'user'
+						fieldname: 'email'
 					},
 					{
 						label: 'Payment Mode',
@@ -131,32 +148,41 @@ export default {
 					},
 					{
 						label: 'Currency',
-						fieldname: 'currency'
-					}
-				],
-				rowActions: ({ row, listResource }) => {
-					return [
-						{
-							label: 'Transfer Credits',
-							onClick: () => {
-								this.transferCreditsDialog = true;
-								this.customerTeam = row;
-							}
-						},
-						{
-							label: 'View Contributions',
-							onClick: () => {
-								this.showInvoice = row;
-								this.contributionDialog = true;
-							}
+						fieldname: 'currency',
+						width: 0.5
+					},
+					{
+						label: 'Contributions',
+						type: 'Button',
+						width: 0.5,
+						align: 'center',
+						Button: ({ row }) => {
+							return {
+								label: 'View',
+								onClick: () => {
+									this.showInvoice = row;
+									this.contributionDialog = true;
+								}
+							};
 						}
-					];
-				},
-				filters: {
-					enabled: 1,
-					partner_email: this.$team.doc.partner_email,
-					erpnext_partner: 0
-				}
+					},
+					{
+						label: '',
+						type: 'Button',
+						width: 0.8,
+						align: 'right',
+						key: 'actions',
+						Button: ({ row }) => {
+							return {
+								label: 'Transfer Credits',
+								onClick: () => {
+									this.transferCreditsDialog = true;
+									this.customerTeam = row;
+								}
+							};
+						}
+					}
+				]
 			};
 		}
 	},

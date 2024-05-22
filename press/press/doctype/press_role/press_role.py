@@ -159,8 +159,17 @@ def add_permission_for_newly_created_doc(doc: Document) -> None:
 		role_fieldname = "allow_bench_creation"
 
 	new_perms = []
-	if roles := frappe.db.get_all(
-		"Press Role", filters={"team": doc.team, role_fieldname: 1}, pluck="name"
+	PressRole = frappe.qb.DocType("Press Role")
+	PressRoleUser = frappe.qb.DocType("Press Role User")
+	if roles := (
+		frappe.qb.from_(PressRole)
+		.select(PressRole.name)
+		.join(PressRoleUser)
+		.on(PressRoleUser.parent == PressRole.name)
+		.where(PressRoleUser.user == frappe.session.user)
+		.where(PressRole.team == doc.team)
+		.where(PressRole[role_fieldname] == 1)
+		.run(as_dict=1, pluck="name")
 	):
 		for role in roles:
 			new_perms.append(

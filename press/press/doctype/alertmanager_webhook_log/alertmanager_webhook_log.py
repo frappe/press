@@ -95,9 +95,6 @@ class AlertmanagerWebhookLog(Document):
 		return self.parsed_group_labels.get(INCIDENT_SCOPE)
 
 	def after_insert(self):
-		enqueue_doc(
-			self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
-		)
 		if self.alert == INCIDENT_ALERT:
 			enqueue_doc(
 				self.doctype,
@@ -106,6 +103,10 @@ class AlertmanagerWebhookLog(Document):
 				enqueue_after_commit=True,
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
+			)
+		else:
+			enqueue_doc(
+				self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 			)
 		if self.status == "Firing" and frappe.get_cached_value(
 			"Prometheus Alert Rule", self.alert, "press_job_type"

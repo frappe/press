@@ -79,6 +79,8 @@
   "column_break_63",
   "hybrid_saas_pool",
   "backups_section",
+  "backup_time",
+  "column_break_zgig",
   "skip_scheduled_backups",
   "tags_section",
   "tags"
@@ -579,6 +581,15 @@
    "fieldtype": "Link",
    "label": "Standby for Product",
    "options": "SaaS Product"
+  },
+  {
+   "fieldname": "backup_time",
+   "fieldtype": "Time",
+   "label": "Backup Time"
+  },
+  {
+   "fieldname": "column_break_zgig",
+   "fieldtype": "Column Break"
   }
  ],
  "links": [
@@ -643,7 +654,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-02-05 23:05:21.073454",
+ "modified": "2024-05-15 13:54:53.426648",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",
