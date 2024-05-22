@@ -154,6 +154,8 @@ class TestPressRole(FrappeTestCase):
 		self.assertTrue(
 			frappe.db.exists("Press Role Permission", {"site": site.name, "role": role.name})
 		)
+
+		frappe.set_user("Administrator")
 		frappe.delete_doc("Press Role", role.name, force=1)
 
 
