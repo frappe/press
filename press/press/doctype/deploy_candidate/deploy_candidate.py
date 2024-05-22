@@ -682,11 +682,11 @@ class DeployCandidate(Document):
 		if not isinstance(self.last_updated, datetime):
 			return
 
-		build_duration = now() - self.last_updated
+		pending_duration = now() - self.last_updated
 		max_duration = timedelta(hours=23, minutes=59, seconds=59)
 
 		# pending_duration is a Time field, >= 1 day is invalid
-		self.pending_duration = min(build_duration, max_duration)
+		self.pending_duration = min(pending_duration, max_duration)
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:

@@ -265,6 +265,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: doc.scheduled_time",
    "fieldname": "scheduled_time",
    "fieldtype": "Datetime",
    "label": "Scheduled Time",
@@ -324,7 +325,7 @@
   {
    "fieldname": "parameters_tab",
    "fieldtype": "Tab Break",
-   "label": "Bench Params"
+   "label": "Apps & Deps"
   },
   {
    "fieldname": "output_tab",
@@ -366,11 +367,13 @@
    "description": "Time spent by the build in queue, i.e. in status Pending.",
    "fieldname": "pending_duration",
    "fieldtype": "Time",
-   "label": "Pending Duration"
+   "label": "Pending Duration",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_xefr",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Failure"
   },
   {
    "fieldname": "column_break_rpow",
@@ -391,7 +394,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-22 11:19:41.438940",
+ "modified": "2024-05-22 11:40:29.417875",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

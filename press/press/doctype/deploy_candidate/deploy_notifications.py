@@ -134,7 +134,42 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Required app not found" in tb:
 		update_with_required_app_not_found_prebuild(details, exc)
 
+	# Syntax error in an app when
+	elif (
+		"SyntaxError" in dc.build_output
+		and "and is likely not a problem with pip" in dc.build_output
+	):
+		update_with_syntax_error_on_pip_install(details, dc)
+
 	return details
+
+
+def update_with_syntax_error_on_pip_install(
+	details: "Details",
+	dc: "DeployCandidate",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["is_actionable"] = True
+	details["title"] = "Syntax Error in app"
+
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> could not be installed due to syntax errors.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b> output to debug and fix the error.</p>
+		"""
+	else:
+		message = """
+		<p>An app could not be installed due to syntax errors.</p>
+
+		<p>Please view the failing step output to debug and fix the error.</p>
+		"""
+
+	details["message"] = fmt(message)
 
 
 def update_with_invalid_pyproject_error(
