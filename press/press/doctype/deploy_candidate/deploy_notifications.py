@@ -1,14 +1,13 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import typing
 import re
+import typing
 from textwrap import dedent
-from typing import Optional, TypedDict, Callable
+from typing import Callable, Optional, TypedDict
 
 import frappe
 import frappe.utils
-
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -130,6 +129,10 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 			"note: This error originates from a subprocess, and is likely not a problem with pip.",
 			update_with_error_on_pip_install,
 		),
+		(
+			"ModuleNotFoundError: No module named",
+			update_with_module_not_found,
+		),
 	]
 
 
@@ -201,6 +204,49 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	return details
 
 
+def update_with_module_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to missing module"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ModuleNotFoundError: No module named" in line
+	]
+	missing_module = None
+	if len(lines) > 1:
+		missing_module = lines[0].split(" ")[-1][1:-1]
+
+	if failed_step.stage_slug == "apps" and missing_module:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to imported module
+		<b>{missing_module}</b> not being found.</p>
+
+		<p>Please ensure all imported Frappe app dependencies have been added
+		to your bench and all Python dependencies have been added to your app's
+		<b>requirements.txt</b> or <b>pyproject.toml</b> file before retrying
+		the build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to an imported module not being found.</p>
+
+		<p>Please view the failing step output to debug and fix the error
+		before retrying build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	return True
+
+
 def update_with_error_on_pip_install(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -210,7 +256,7 @@ def update_with_error_on_pip_install(
 	failed_step = dc.get_first_step("status", "Failure")
 	app_name = None
 
-	details["title"] = "Pip install failed due to app errors"
+	details["title"] = "App installation failed due to errors"
 
 	if failed_step.stage_slug == "apps":
 		app_name = failed_step.step
