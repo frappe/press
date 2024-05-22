@@ -10,7 +10,6 @@
   "column_break_pube",
   "topic",
   "group",
-  "parse_mode",
   "section_break_ujme",
   "message",
   "section_break_njxf",
@@ -25,7 +24,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Queued\nSent\nError\nCancelled\nSkipped",
+   "options": "Queued\nSent\nError",
+   "read_only": 1,
    "reqd": 1,
    "search_index": 1
   },
@@ -36,6 +36,7 @@
    "in_standard_filter": 1,
    "label": "Priority",
    "options": "High\nMedium\nLow",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -43,27 +44,22 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Topic"
+   "label": "Topic",
+   "read_only": 1
   },
   {
    "fieldname": "group",
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Group"
+   "label": "Group",
+   "read_only": 1
   },
   {
    "fieldname": "message",
    "fieldtype": "Code",
    "label": "Message",
-   "reqd": 1
-  },
-  {
-   "default": "Markdown",
-   "fieldname": "parse_mode",
-   "fieldtype": "Select",
-   "label": "Parse Mode",
-   "options": "Markdown\nHTML",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -72,6 +68,10 @@
   },
   {
    "fieldname": "section_break_ujme",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_njxf",
    "fieldtype": "Section Break"
   },
   {
@@ -89,7 +89,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-21 17:00:47.887381",
+ "modified": "2024-05-22 15:25:47.007102",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Telegram Message",

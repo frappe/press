@@ -21,9 +21,9 @@ class TelegramMessage(Document):
 		error: DF.Code | None
 		group: DF.Data | None
 		message: DF.Code
-		parse_mode: DF.Literal["Markdown", "HTML"]
 		priority: DF.Literal["High", "Medium", "Low"]
 		retry_count: DF.Int
+		status: DF.Literal["Queued", "Sent", "Error"]
 		topic: DF.Data | None
 	# end: auto-generated types
 
