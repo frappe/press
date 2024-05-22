@@ -133,6 +133,10 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 			"ModuleNotFoundError: No module named",
 			update_with_module_not_found,
 		),
+		(
+			"No matching distribution found for",
+			update_with_dependency_not_found,
+		),
 	]
 
 
@@ -247,6 +251,50 @@ def update_with_module_not_found(
 	return True
 
 
+def update_with_dependency_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to dependency not being found"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "No matching distribution found for" in line
+	]
+	missing_dep = None
+	if len(lines) > 1:
+		missing_dep = lines[0].split(" ")[-1]
+
+	if failed_step.stage_slug == "apps" and missing_dep:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to dependency
+		<b>{missing_dep}</b> not being found.</p>
+
+		<p>Please specify a version of <b>{missing_dep}</b> installable by
+		<b>pip</b>.</p>
+
+		<p>Please view the failing step output for more info.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to pip not being able to find a
+		distribution of a dependency in your app.</p>
+
+		<p>Please view the failing step output to debug and fix the error
+		before retrying build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	return True
+
+
 def update_with_error_on_pip_install(
 	details: "Details",
 	dc: "DeployCandidate",
@@ -261,15 +309,19 @@ def update_with_error_on_pip_install(
 	if failed_step.stage_slug == "apps":
 		app_name = failed_step.step
 		message = f"""
-		<p>Dependency installation using pip for <b>{app_name}</b> failed due to errors originating in the app.</p>
+		<p>Dependency installation using pip for <b>{app_name}</b> failed due to
+		errors originating in the app.</p>
 
-		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b> output to debug and fix the error before retrying build.</p>
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
 		"""
 	else:
 		message = """
-		<p>Dependency installation using pip failed due to errors originating in an app on your Bench.</p>
+		<p>Dependency installation using pip failed due to errors originating in an
+		app on your Bench.</p>
 
-		<p>Please view the failing step output to debug and fix the error before retrying build.</p>
+		<p>Please view the failing step output to debug and fix the error before
+		retrying build.</p>
 		"""
 
 	details["message"] = fmt(message)
