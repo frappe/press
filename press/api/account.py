@@ -395,7 +395,9 @@ def transfer_credits(amount, customer, partner):
 	discount_percent = 0.0 if legacy_contract == 1 else DISCOUNT_MAP.get(partner_level)
 
 	if credits_available < amt:
-		frappe.throw("Insufficient Credits to transfer")
+		frappe.throw(
+			f"Insufficient Credits to transfer. Credits Available: {credits_available}"
+		)
 
 	customer_doc = frappe.get_doc("Team", customer)
 	credits_to_transfer = amt
@@ -416,6 +418,7 @@ def transfer_credits(amount, customer, partner):
 			amt * -1, "Transferred Credits", f"Transferred Credits to {customer_doc.name}"
 		)
 		frappe.db.commit()
+		return amt
 	except Exception:
 		frappe.throw("Error in transferring credits")
 		frappe.db.rollback()

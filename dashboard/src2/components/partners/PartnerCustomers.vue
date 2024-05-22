@@ -115,7 +115,8 @@ export default {
 		transferCredits() {
 			return {
 				url: 'press.api.account.transfer_credits',
-				onSuccess() {
+				onSuccess(data) {
+					this.amount = data;
 					this.transferCreditsDialog = false;
 					this.showConfirmationDialog = true;
 					toast.success('Credits Transferred');
