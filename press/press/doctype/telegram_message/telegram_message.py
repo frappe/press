@@ -1,7 +1,7 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
 
@@ -21,5 +21,17 @@ class TelegramMessage(Document):
 		status: DF.Literal["Queued", "Sent", "Error", "Cancelled", "Skipped"]
 		topic: DF.Data | None
 	# end: auto-generated types
+
+	@staticmethod
+	def enqueue(
+		message: str,
+	):
+		"""Enqueue message for sending"""
+		return frappe.get_doc(
+			{
+				"doctype": "Telegram Message",
+				"message": message,
+			}
+		).insert(ignore_permissions=True)
 
 	pass
