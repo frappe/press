@@ -165,7 +165,17 @@ class AppRelease(Document):
 			if "Repository not found." not in stdout:
 				raise e
 
-			# Do not edit without updating deploy_notifications.py
+			"""
+			Do not edit without updating deploy_notifications.py
+
+			If this is thrown, and the linked App Source has github_installation_id
+			set, manual attention might be required, because:
+			- Installation Id is set
+			- Installation Id is used to fetch token
+			- If token cannot be fetched, GitHub responds with an error
+			- If token is not received _get_repo_url throws
+			- Hence token was received, but app still cannot be cloned
+			"""
 			raise Exception("Repository could not be fetched", self.app)
 
 		self.output += self.run(f"git checkout {self.hash}")
