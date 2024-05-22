@@ -134,17 +134,17 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	elif "Required app not found" in tb:
 		update_with_required_app_not_found_prebuild(details, exc)
 
-	# Syntax error in an app when
+	# Catch all errors during app's pip install since they aren't FC caused
 	elif (
-		"SyntaxError" in dc.build_output
-		and "and is likely not a problem with pip" in dc.build_output
+		"note: This error originates from a subprocess, and is likely not a problem with pip."
+		in dc.build_output
 	):
-		update_with_syntax_error_on_pip_install(details, dc)
+		update_with_error_on_pip_install(details, dc)
 
 	return details
 
 
-def update_with_syntax_error_on_pip_install(
+def update_with_error_on_pip_install(
 	details: "Details",
 	dc: "DeployCandidate",
 ):
@@ -153,20 +153,20 @@ def update_with_syntax_error_on_pip_install(
 	app_name = None
 
 	details["is_actionable"] = True
-	details["title"] = "Syntax Error in app"
+	details["title"] = "Pip install failed due to app errors"
 
 	if failed_step.stage_slug == "apps":
 		app_name = failed_step.step
 		message = f"""
-		<p><b>{app_name}</b> could not be installed due to syntax errors.</p>
+		<p>Dependency installation using pip for <b>{app_name}</b> failed due to errors originating in the app.</p>
 
-		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b> output to debug and fix the error.</p>
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b> output to debug and fix the error before retrying build.</p>
 		"""
 	else:
 		message = """
-		<p>An app could not be installed due to syntax errors.</p>
+		<p>Dependency installation using pip failed due to errors originating in an app on your Bench.</p>
 
-		<p>Please view the failing step output to debug and fix the error.</p>
+		<p>Please view the failing step output to debug and fix the error before retrying build.</p>
 		"""
 
 	details["message"] = fmt(message)
