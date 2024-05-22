@@ -423,6 +423,8 @@ class TestInvoice(unittest.TestCase):
 			team.allocate_credit_amount(10, source="Prepaid Credits")
 			# transfer 5 credits
 			team.allocate_credit_amount(-5, source="Transferred Credits")
+			team.payment_mode = "Prepaid Credits"
+			team.save()
 
 			# consume 10 credits
 			invoice = frappe.get_doc(doctype="Invoice", team=team.name)
