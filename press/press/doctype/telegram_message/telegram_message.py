@@ -30,7 +30,7 @@ class TelegramMessage(Document):
 	def send(self):
 		try:
 			telegram = Telegram()
-			telegram.send(self.message)
+			telegram.send(self.message, reraise=True)
 			self.status = "Sent"
 		except RetryAfter:
 			# Raise an exception that will be caught by the scheduler

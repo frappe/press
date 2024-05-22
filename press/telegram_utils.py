@@ -27,7 +27,7 @@ class Telegram:
 			"Telegram Group Topic", {"parent": self.group, "topic": topic}, "topic_id"
 		)
 
-	def send(self, message, html=False):
+	def send(self, message, html=False, reraise=False):
 		if not message:
 			return
 		try:
@@ -40,6 +40,8 @@ class Telegram:
 				message_thread_id=self.topic_id,
 			)
 		except Exception:
+			if reraise:
+				raise
 			log_error(
 				"Telegram Bot Error",
 				message=message,
