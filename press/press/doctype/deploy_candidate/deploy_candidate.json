@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "is_single_container",
   "is_ssh_enabled",
   "is_docker_remote_builder_used",
   "column_break_2",
@@ -197,13 +196,6 @@
    "options": "Deploy Candidate Dependency",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_single_container",
-   "fieldtype": "Check",
-   "label": "Is Single Container",
-   "read_only": 1
   },
   {
    "default": "0",
@@ -407,7 +399,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-22 10:51:30.819247",
+ "modified": "2024-05-22 11:16:16.480666",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

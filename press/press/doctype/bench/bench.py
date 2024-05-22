@@ -61,7 +61,6 @@ class Bench(Document):
 		gunicorn_threads_per_worker: DF.Int
 		gunicorn_workers: DF.Int
 		is_code_server_enabled: DF.Check
-		is_single_container: DF.Check
 		is_ssh_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
@@ -165,7 +164,6 @@ class Bench(Document):
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		self.docker_image = candidate.docker_image
-		self.is_single_container = candidate.is_single_container
 		self.is_ssh_enabled = candidate.is_ssh_enabled
 
 		if not self.apps:
@@ -194,21 +192,13 @@ class Bench(Document):
 		config = {
 			"db_host": db_host,
 			"monitor": True,
-			"redis_cache": "redis://redis-cache:6379",
-			"redis_queue": "redis://redis-queue:6379",
-			"redis_socketio": "redis://redis-socketio:6379",
+			"redis_cache": "redis://localhost:13000",
+			"redis_queue": "redis://localhost:11000",
+			"redis_socketio": "redis://localhost:13000",
 			"socketio_port": 9000,
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
 		}
-		if self.is_single_container:
-			config.update(
-				{
-					"redis_cache": "redis://localhost:13000",
-					"redis_queue": "redis://localhost:11000",
-					"redis_socketio": "redis://localhost:13000",
-				}
-			)
 
 		press_settings_common_site_config = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"
@@ -234,7 +224,7 @@ class Bench(Document):
 			"merge_all_rq_queues": bool(self.merge_all_rq_queues),
 			"merge_default_and_short_rq_queues": bool(self.merge_default_and_short_rq_queues),
 			"environment_variables": self.get_environment_variables(),
-			"single_container": bool(self.is_single_container),
+			"single_container": True,
 			"gunicorn_threads_per_worker": self.gunicorn_threads_per_worker,
 			"is_code_server_enabled": self.is_code_server_enabled,
 			"use_rq_workerpool": self.use_rq_workerpool,

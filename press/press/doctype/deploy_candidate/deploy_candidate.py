@@ -102,7 +102,6 @@ class DeployCandidate(Document):
 		gunicorn_threads_per_worker: DF.Int
 		is_docker_remote_builder_used: DF.Check
 		is_redisearch_enabled: DF.Check
-		is_single_container: DF.Check
 		is_ssh_enabled: DF.Check
 		last_updated: DF.Datetime | None
 		manually_failed: DF.Check
@@ -362,7 +361,6 @@ class DeployCandidate(Document):
 		# Used for docker remote build
 		deploy_after_build: bool = False,
 	):
-		self.is_single_container = True
 		self.is_ssh_enabled = True
 
 		self._set_status_preparing()

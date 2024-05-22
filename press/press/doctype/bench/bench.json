@@ -24,7 +24,6 @@
   "port_offset",
   "auto_scale_workers",
   "skip_memory_limits",
-  "is_single_container",
   "is_ssh_enabled",
   "memory_high",
   "memory_max",
@@ -193,13 +192,6 @@
   },
   {
    "default": "0",
-   "fieldname": "is_single_container",
-   "fieldtype": "Check",
-   "label": "Is Single Container",
-   "read_only": 1
-  },
-  {
-   "default": "0",
    "fieldname": "staging",
    "fieldtype": "Check",
    "in_standard_filter": 1,
@@ -335,7 +327,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-18 14:52:55.486620",
+ "modified": "2024-05-22 11:17:42.027578",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",
