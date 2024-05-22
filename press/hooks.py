@@ -225,6 +225,7 @@ scheduler_events = {
 		],
 		"* * * * * 0/5": [
 			"press.press.doctype.agent_job.agent_job.poll_pending_jobs",
+			"press.press.doctype.telegram_message.telegram_message.send_telegram_message",
 		],
 		"0 */6 * * *": [
 			"press.press.doctype.server.server.cleanup_unused_files",
