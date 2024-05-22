@@ -17,13 +17,12 @@
   "scheduled_time",
   "section_break_6",
   "build_start",
-  "build_end",
-  "last_updated",
-  "pending_duration",
-  "column_break_7",
-  "build_directory",
   "build_duration",
-  "job_id",
+  "last_updated",
+  "column_break_7",
+  "build_end",
+  "build_directory",
+  "pending_duration",
   "section_break_11",
   "docker_image",
   "docker_image_id",
@@ -377,14 +376,6 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval: doc.job_id",
-   "description": "Id of the background job that runs the build. Used when job cancellation is required.",
-   "fieldname": "job_id",
-   "fieldtype": "Data",
-   "label": "Job Id",
-   "read_only": 1
-  },
-  {
    "description": "Time spent by the build in queue, i.e. in status Pending.",
    "fieldname": "pending_duration",
    "fieldtype": "Time",
@@ -405,7 +396,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-21 15:52:31.488193",
+ "modified": "2024-05-22 10:44:42.775131",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

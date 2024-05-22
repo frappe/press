@@ -104,7 +104,6 @@ class DeployCandidate(Document):
 		is_redisearch_enabled: DF.Check
 		is_single_container: DF.Check
 		is_ssh_enabled: DF.Check
-		job_id: DF.Data | None
 		last_updated: DF.Datetime | None
 		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
