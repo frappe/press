@@ -24,7 +24,6 @@
   "port_offset",
   "auto_scale_workers",
   "skip_memory_limits",
-  "is_ssh_enabled",
   "memory_high",
   "memory_max",
   "memory_swap",
@@ -198,13 +197,6 @@
    "label": "Staging"
   },
   {
-   "default": "0",
-   "fieldname": "is_ssh_enabled",
-   "fieldtype": "Check",
-   "label": "Is SSH Enabled",
-   "read_only": 1
-  },
-  {
    "collapsible": 1,
    "fieldname": "ssh_section",
    "fieldtype": "Section Break",
@@ -327,7 +319,7 @@
   }
  ],
  "links": [],
- "modified": "2024-05-22 11:17:42.027578",
+ "modified": "2024-05-22 11:19:35.156633",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Bench",

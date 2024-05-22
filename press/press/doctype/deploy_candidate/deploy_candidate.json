@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "is_ssh_enabled",
   "is_docker_remote_builder_used",
   "column_break_2",
   "group",
@@ -196,13 +195,6 @@
    "options": "Deploy Candidate Dependency",
    "read_only": 1,
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_ssh_enabled",
-   "fieldtype": "Check",
-   "label": "Is SSH Enabled",
-   "read_only": 1
   },
   {
    "fieldname": "ssh_section",
@@ -399,7 +391,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-22 11:16:16.480666",
+ "modified": "2024-05-22 11:19:41.438940",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

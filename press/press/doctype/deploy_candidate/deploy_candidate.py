@@ -102,7 +102,6 @@ class DeployCandidate(Document):
 		gunicorn_threads_per_worker: DF.Int
 		is_docker_remote_builder_used: DF.Check
 		is_redisearch_enabled: DF.Check
-		is_ssh_enabled: DF.Check
 		last_updated: DF.Datetime | None
 		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
@@ -361,8 +360,6 @@ class DeployCandidate(Document):
 		# Used for docker remote build
 		deploy_after_build: bool = False,
 	):
-		self.is_ssh_enabled = True
-
 		self._set_status_preparing()
 		self._set_output_parsers()
 		try:

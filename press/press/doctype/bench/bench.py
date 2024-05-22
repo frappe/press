@@ -61,7 +61,6 @@ class Bench(Document):
 		gunicorn_threads_per_worker: DF.Int
 		gunicorn_workers: DF.Int
 		is_code_server_enabled: DF.Check
-		is_ssh_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
 		memory_high: DF.Int
@@ -164,7 +163,6 @@ class Bench(Document):
 			self.candidate = candidate.name
 		candidate = frappe.get_doc("Deploy Candidate", self.candidate)
 		self.docker_image = candidate.docker_image
-		self.is_ssh_enabled = candidate.is_ssh_enabled
 
 		if not self.apps:
 			for release in candidate.apps:
@@ -216,7 +214,7 @@ class Bench(Document):
 			"private_ip": server_private_ip,
 			"ssh_port": 22000 + self.port_offset,
 			"codeserver_port": 16000 + self.port_offset,
-			"is_ssh_enabled": bool(self.is_ssh_enabled),
+			"is_ssh_enabled": True,
 			"gunicorn_workers": self.gunicorn_workers,
 			"background_workers": self.background_workers,
 			"http_timeout": 120,
