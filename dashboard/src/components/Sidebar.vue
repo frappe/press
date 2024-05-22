@@ -113,7 +113,6 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
-import { routes as newDashboardRoutes } from '../../src2/router';
 
 export default {
 	name: 'Sidebar',
