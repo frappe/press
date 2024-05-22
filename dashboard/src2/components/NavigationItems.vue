@@ -90,6 +90,7 @@ export default {
 					icon: () => h(App),
 					route: '/apps',
 					isActive: routeName.startsWith('Marketplace'),
+					condition: this.$team.doc.is_desk_user || this.$session.hasAppsAccess,
 					disabled
 				},
 				{
@@ -97,6 +98,8 @@ export default {
 					icon: () => h(WalletCards),
 					route: '/billing',
 					isActive: routeName.startsWith('Billing'),
+					condition:
+						this.$team.doc.is_desk_user || this.$session.hasBillingAccess,
 					disabled
 				},
 				{

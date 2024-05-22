@@ -1092,20 +1092,30 @@ export default {
 							},
 							loading: site.backup.loading,
 							onClick() {
-								return site.backup.submit(
-									{
-										with_files: true
-									},
-									{
-										onError(e) {
-											showErrorToast(e);
-										},
-										onSuccess() {
-											backups.reload();
-											toast.success('Backup scheduled');
-										}
+								confirmDialog({
+									title: 'Schedule Backup',
+									message:
+										'Are you sure you want to schedule a backup? This will create an onsite backup.',
+									onSuccess({ hide }) {
+										toast.promise(
+											site.backup.submit({
+												with_files: true
+											}),
+											{
+												loading: 'Scheduling backup...',
+												success: () => {
+													hide();
+													toast.success('Backup scheduled');
+												},
+												error: e => {
+													return e.messages.length
+														? e.messages.join('\n')
+														: e.message;
+												}
+											}
+										);
 									}
-								);
+								});
 							}
 						};
 					}

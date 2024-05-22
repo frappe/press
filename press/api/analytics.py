@@ -180,7 +180,7 @@ def get_stacked_histogram_chart_result(
 	aggs = search.execute().aggregations
 
 	timegrain = timedelta(seconds=timegrain)
-	labels = [start + i * timegrain for i in range((end - start) // timegrain)]
+	labels = [start + i * timegrain for i in range((end - start) // timegrain + 1)]
 	# method_path has buckets of timestamps with method(eg: avg) of that duration
 	datasets = []
 
@@ -193,19 +193,19 @@ def get_stacked_histogram_chart_result(
 			}
 		)
 		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			path_data["values"][
-				labels.index(get_datetime(hist_bucket.key_as_string).replace(tzinfo=None))
-			] = (
-				(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
-				if query_type == "average_duration"
-				else (
-					flt(hist_bucket.sum_of_duration.value) / to_s_divisor
-					if query_type == "duration"
-					else hist_bucket.doc_count
-					if query_type == "count"
-					else 0
+			label = get_datetime(hist_bucket.key_as_string).replace(tzinfo=None)
+			if label in labels:
+				path_data["values"][labels.index(label)] = (
+					(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
+					if query_type == "average_duration"
+					else (
+						flt(hist_bucket.sum_of_duration.value) / to_s_divisor
+						if query_type == "duration"
+						else hist_bucket.doc_count
+						if query_type == "count"
+						else 0
+					)
 				)
-			)
 		datasets.append(path_data)
 
 	return {"datasets": datasets, "labels": labels}

@@ -368,6 +368,7 @@ def schedule_updates():
 			server=server,
 			job_id=f"schedule_updates:{server}",
 			deduplicate=True,
+			queue="long",
 		)
 
 

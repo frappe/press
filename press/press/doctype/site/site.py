@@ -333,6 +333,7 @@ class Site(Document, TagHelpers):
 
 		if self.has_value_changed("team"):
 			frappe.db.set_value("Site Domain", {"site": self.name}, "team", self.team)
+			frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		if self.status not in ["Pending", "Archived", "Suspended"] and self.has_value_changed(
 			"subdomain"
@@ -481,6 +482,10 @@ class Site(Document, TagHelpers):
 		).insert(ignore_if_duplicate=True)
 
 	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
 		if hasattr(self, "subscription_plan") and self.subscription_plan:
 			# create subscription
 			self.create_subscription(self.subscription_plan)
@@ -507,6 +512,7 @@ class Site(Document, TagHelpers):
 		if self.backup_time:
 			self.backup_time = None  # because FF by default sets it to current time
 			self.save()
+		add_permission_for_newly_created_doc(self)
 
 	def remove_dns_record(self, domain: Document, proxy_server: str, site: str):
 		"""Remove dns record of site pointing to proxy."""
@@ -944,6 +950,8 @@ class Site(Document, TagHelpers):
 		agent.remove_upstream_file(
 			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
 		)
+
+		frappe.db.delete("Press Role Permission", {"site": self.name})
 
 		self.db_set("host_name", None)
 
@@ -1542,7 +1550,7 @@ class Site(Document, TagHelpers):
 	@site_action(["Active", "Broken"])
 	def deactivate(self):
 		plan = frappe.db.get_value(
-			"Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
+			"Site Plan", self.plan, ["is_frappe_plan", "is_trial_plan"], as_dict=True
 		)
 		if self.plan and plan.is_trial_plan:
 			frappe.throw(_("Cannot deactivate site on a trial plan"))

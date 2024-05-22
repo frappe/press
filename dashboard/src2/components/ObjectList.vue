@@ -75,6 +75,7 @@
 					emptyState: {}
 				}"
 				row-key="name"
+				@update:selections="e => this.$emit('update:selections', e)"
 			>
 				<template v-if="options.groupHeader" #group-header="{ group }">
 					<component :is="options.groupHeader({ ...context, group })" />
@@ -122,14 +123,9 @@ import ActionButton from './ActionButton.vue';
 import ObjectListCell from './ObjectListCell.vue';
 import ObjectListFilters from './ObjectListFilters.vue';
 import {
-	Dropdown,
 	ListView,
 	ListHeader,
-	ListHeaderItem,
-	ListRows,
 	ListRow,
-	ListRowItem,
-	ListSelectBanner,
 	TextInput,
 	FeatherIcon,
 	Tooltip,
@@ -141,18 +137,14 @@ let subscribed = {};
 export default {
 	name: 'ObjectList',
 	props: ['options'],
+	emits: ['update:selections'],
 	components: {
 		ActionButton,
 		ObjectListCell,
 		ObjectListFilters,
-		Dropdown,
 		ListView,
 		ListHeader,
-		ListHeaderItem,
-		ListRows,
 		ListRow,
-		ListRowItem,
-		ListSelectBanner,
 		TextInput,
 		FeatherIcon,
 		Tooltip,

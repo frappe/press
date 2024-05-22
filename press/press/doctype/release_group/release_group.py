@@ -185,6 +185,13 @@ class ReleaseGroup(Document, TagHelpers):
 		self.set_default_app_cache_flags()
 		self.set_default_delta_builds_flags()
 
+	def after_insert(self):
+		from press.press.doctype.press_role.press_role import (
+			add_permission_for_newly_created_doc,
+		)
+
+		add_permission_for_newly_created_doc(self)
+
 	def on_update(self):
 		old_doc = self.get_doc_before_save()
 		if self.flags.in_insert or self.is_new() or not old_doc:
@@ -194,6 +201,8 @@ class ReleaseGroup(Document, TagHelpers):
 			if row[0] == "dependencies":
 				self.db_set("last_dependency_update", frappe.utils.now_datetime())
 				break
+		if self.has_value_changed("team"):
+			frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def on_trash(self):
 		candidates = frappe.get_all("Deploy Candidate", {"group": self.name})
@@ -1203,6 +1212,8 @@ class ReleaseGroup(Document, TagHelpers):
 		)
 		self.enabled = 0
 		self.save()
+
+		frappe.db.delete("Press Role Permission", {"release_group": self.name})
 
 	def set_default_app_cache_flags(self):
 		if self.use_app_cache:

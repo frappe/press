@@ -116,3 +116,7 @@ class StripePaymentMethod(Document):
 get_permission_query_conditions = get_permission_query_conditions_for_doctype(
 	"Stripe Payment Method"
 )
+
+
+def on_doctype_update():
+	frappe.db.add_index("Stripe Payment Method", ["team", "is_verified_with_micro_charge"])

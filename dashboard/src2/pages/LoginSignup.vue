@@ -238,7 +238,11 @@ export default {
 	methods: {
 		async submitForm() {
 			if (this.isLogin) {
-				if (this.email && this.password) {
+				if (this.isOauthLogin) {
+					this.$resources.oauthLogin.submit({
+						provider: this.socialLoginKey
+					});
+				} else if (this.email && this.password) {
 					await this.$session.login.submit(
 						{
 							email: this.email,
@@ -255,10 +259,6 @@ export default {
 							}
 						}
 					);
-				} else if (this.isOauthLogin) {
-					this.$resources.oauthLogin.submit({
-						provider: this.socialLoginKey
-					});
 				}
 			} else if (this.hasForgotPassword) {
 				this.$resources.resetPassword.submit();

@@ -54,6 +54,8 @@ class AgentJob(Document):
 		job_type: DF.Link
 		next_retry_at: DF.Datetime | None
 		output: DF.Code | None
+		reference_doctype: DF.Link | None
+		reference_name: DF.DynamicLink | None
 		request_data: DF.Code
 		request_files: DF.Code | None
 		request_method: DF.Literal["GET", "POST", "DELETE"]
@@ -151,6 +153,7 @@ class AgentJob(Document):
 			self.name,
 			"create_http_request",
 			timeout=600,
+			queue="short",
 			enqueue_after_commit=True,
 		)
 
@@ -715,7 +718,7 @@ def retry_undelivered_jobs(server):
 				job_doc.retry_in_place()
 			else:
 				update_job_and_step_status(job)
-				process_job_updates(job.name)
+				process_job_updates(job)
 
 
 def queued_jobs():

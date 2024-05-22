@@ -1,0 +1,23 @@
+---
+- name: Install RQ Exporter Python Package
+  become: yes
+  become_user: frappe
+  pip:
+    name: rq-exporter
+    virtualenv: /home/frappe/frappe-bench/env
+    virtualenv_python: /home/frappe/frappe-bench/env/bin/python
+
+- name: Create RQ Exporter Systemd Service File
+  template:
+    src: rq-exporter.service
+    dest: /etc/systemd/system/rq-exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Start RQ Exporter Service
+  systemd:
+    daemon_reload: true
+    name: rq-exporter
+    enabled: yes
+    state: started

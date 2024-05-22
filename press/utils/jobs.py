@@ -21,6 +21,7 @@ def stop_background_job(job: Job):
 def get_background_jobs(
 	doctype: str,
 	name: str,
+	status: list[str] | None = None,
 	connection: "Optional[Redis]" = None,
 ) -> Generator[Job, Any, None]:
 	"""
@@ -28,7 +29,7 @@ def get_background_jobs(
 	Returned jobs are in the QUEUED, SCHEDULED or STARTED state.
 	"""
 	connection = connection or get_redis_conn()
-	status = ["queued", "scheduled", "started"]
+	status = status or ["queued", "scheduled", "started"]
 	for job_id in get_job_ids(status, connection):
 		try:
 			job = Job.fetch(job_id, connection=connection)

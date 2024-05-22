@@ -7,13 +7,16 @@ import { h, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import { icon, renderDialog, confirmDialog } from '../../utils/components';
 import ObjectList from '../ObjectList.vue';
-import PermissionGroupMembersDialog from './PermissionGroupMembersDialog.vue';
+import RoleConfigureDialog from './RoleConfigureDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
+import { getTeam } from '../../data/team';
 
 const listOptions = ref({
-	doctype: 'Press Permission Group',
+	doctype: 'Press Role',
 	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
+	filter: { team: getTeam().doc.name },
+	documentation: 'https://frappecloud.com/docs/role-permissions',
 	columns: [
 		{
 			label: 'Role',
@@ -28,7 +31,7 @@ const listOptions = ref({
 					<div
 						onClick={e => {
 							e.preventDefault();
-							manageMembers(row);
+							configureRole(row);
 						}}
 						class="flex h-6 items-center space-x-2"
 					>
@@ -42,36 +45,36 @@ const listOptions = ref({
 			width: 1
 		}
 	],
-	rowActions({ row, listResource: groupsListResource }) {
+	rowActions({ row, listResource: roleListResource }) {
 		return [
 			{
 				label: 'Edit Permissions',
 				onClick() {
 					router.push({
 						name: 'SettingsPermissionRolePermissions',
-						params: { groupId: row.name }
+						params: { roleId: row.name }
 					});
 				}
 			},
 			{
-				label: 'Manage Members',
-				onClick: () => manageMembers(row)
+				label: 'Configure Role',
+				onClick: () => configureRole(row)
 			},
 			{
-				label: 'Delete Group',
+				label: 'Delete Role',
 				onClick() {
-					if (groupsListResource.delete.loading) return;
+					if (roleListResource.delete.loading) return;
 					confirmDialog({
-						title: 'Delete Permission Group',
-						message: `Are you sure you want to delete the permission group <b>${row.title}</b>?`,
+						title: 'Delete Role',
+						message: `Are you sure you want to delete the role <b>${row.title}</b>?`,
 						onSuccess({ hide }) {
-							if (groupsListResource.delete.loading) return;
-							toast.promise(groupsListResource.delete.submit(row.name), {
-								loading: 'Deleting Group...',
+							if (roleListResource.delete.loading) return;
+							toast.promise(roleListResource.delete.submit(row.name), {
+								loading: 'Deleting Role...',
 								success: () => {
-									`Permission Group ${row.title} Deleted`;
-									groupsListResource.reload();
+									roleListResource.reload();
 									hide();
+									return `Role ${row.title} deleted`;
 								},
 								error: e =>
 									e.messages.length ? e.messages.join('\n') : e.message
@@ -85,7 +88,7 @@ const listOptions = ref({
 	route(row) {
 		return {
 			name: 'SettingsPermissionRolePermissions',
-			params: { groupId: row.name }
+			params: { roleId: row.name }
 		};
 	},
 	primaryAction({ listResource: groups }) {
@@ -120,7 +123,7 @@ const listOptions = ref({
 	}
 });
 
-function manageMembers(row) {
-	renderDialog(h(PermissionGroupMembersDialog, { groupId: row.name }));
+function configureRole(row) {
+	renderDialog(h(RoleConfigureDialog, { roleId: row.name }));
 }
 </script>

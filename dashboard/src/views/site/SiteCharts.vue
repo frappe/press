@@ -35,7 +35,7 @@
 			/>
 			<LineChart
 				type="time"
-				title="CPU Usage"
+				title="Requests CPU Usage"
 				:key="requestTimeData"
 				:data="requestTimeData"
 				unit="seconds"

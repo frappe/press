@@ -216,6 +216,9 @@ class PressPermissionGroup(Document):
 def has_method_permission(
 	doctype: str, name: str, method: str, group_names: list = None
 ):
+	if frappe.local.system_user():
+		return True
+
 	user = frappe.session.user
 
 	if doctype not in get_all_restrictable_doctypes():
