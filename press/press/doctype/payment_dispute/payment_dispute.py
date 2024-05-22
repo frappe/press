@@ -3,7 +3,7 @@
 
 # import frappe
 from frappe.model.document import Document
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
 class PaymentDispute(Document):
@@ -22,9 +22,7 @@ class PaymentDispute(Document):
 	# end: auto-generated types
 
 	def after_insert(self):
-		telegram = Telegram(topic="Disputes", group="Billing")
-		telegram.send(
-			f"""
+		message = f"""
 			Dispute Update!
 
 			Email: {self.email}
@@ -32,4 +30,4 @@ class PaymentDispute(Document):
 			Event: `{self.event_type}`
 			[Payment reference on Stripe Dashboard](https://dashboard.stripe.com/payments/{self.payment_intent})
 		"""
-		)
+		TelegramMessage.enqueue(message=message, topic="Disputes", group="Billing")

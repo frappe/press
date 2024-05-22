@@ -12,6 +12,7 @@ from frappe.utils import get_url
 
 from press.api.billing import get_stripe
 from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 
 
 class PressSettings(Document):
@@ -229,6 +230,10 @@ class PressSettings(Document):
 	@property
 	def telegram(self):
 		return Telegram
+
+	@property
+	def telegram_message(self):
+		return TelegramMessage
 
 	@property
 	def twilio_client(self) -> Client:
