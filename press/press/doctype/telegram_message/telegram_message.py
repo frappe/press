@@ -43,12 +43,14 @@ class TelegramMessage(Document):
 	@staticmethod
 	def enqueue(
 		message: str,
+		priority: str = "Medium",
 	):
 		"""Enqueue message for sending"""
 		return frappe.get_doc(
 			{
 				"doctype": "Telegram Message",
 				"message": message,
+				"priority": priority,
 			}
 		).insert(ignore_permissions=True)
 
@@ -57,6 +59,7 @@ class TelegramMessage(Document):
 		first = frappe.get_all(
 			"Telegram Message",
 			filters={"status": "Queued"},
+			order_by="FIELD(priority, 'High', 'Medium', 'Low'), creation ASC",
 			limit=1,
 			pluck="name",
 		)

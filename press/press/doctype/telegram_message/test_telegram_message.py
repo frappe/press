@@ -51,3 +51,37 @@ class TestTelegramMessage(FrappeTestCase):
 		first.reload()
 		self.assertEqual(first.status, "Error")
 		self.assertIn("Exception", first.error)
+
+	def test_sends_messages_in_priority_order(self, mock_send: Mock):
+		"""Test if messages are sent in priority order"""
+		high = TelegramMessage.enqueue(message="Test Message", priority="High")
+		medium = TelegramMessage.enqueue(message="Test Message", priority="Medium")
+		low = TelegramMessage.enqueue(message="Test Message", priority="Low")
+
+		self.assertEqual(TelegramMessage.get_one(), high)
+		send_telegram_message()
+		self.assertEqual(TelegramMessage.get_one(), medium)
+		send_telegram_message()
+		self.assertEqual(TelegramMessage.get_one(), low)
+		send_telegram_message()
+
+		low = TelegramMessage.enqueue(message="Test Message", priority="Low")
+		medium = TelegramMessage.enqueue(message="Test Message", priority="Medium")
+		high = TelegramMessage.enqueue(message="Test Message", priority="High")
+
+		self.assertEqual(TelegramMessage.get_one(), high)
+		send_telegram_message()
+		self.assertEqual(TelegramMessage.get_one(), medium)
+		send_telegram_message()
+		self.assertEqual(TelegramMessage.get_one(), low)
+		send_telegram_message()
+
+	def test_sends_messages_in_creation_order(self, mock_send: Mock):
+		"""Test if messages are sent in creation order"""
+		first = TelegramMessage.enqueue(message="Test Message")
+		second = TelegramMessage.enqueue(message="Test Message")
+
+		self.assertEqual(TelegramMessage.get_one(), first)
+		send_telegram_message()
+		self.assertEqual(TelegramMessage.get_one(), second)
+		send_telegram_message()
