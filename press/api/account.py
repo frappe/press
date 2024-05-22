@@ -1230,7 +1230,14 @@ def get_permission_roles():
 
 	return (
 		frappe.qb.from_(PressRole)
-		.select(PressRole.name, PressRole.enable_billing, PressRole.enable_apps)
+		.select(
+			PressRole.name,
+			PressRole.allow_billing,
+			PressRole.allow_apps,
+			PressRole.allow_site_creation,
+			PressRole.allow_bench_creation,
+			PressRole.allow_server_creation,
+		)
 		.join(PressRoleUser)
 		.on(
 			(PressRole.name == PressRoleUser.parent)
