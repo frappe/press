@@ -1,7 +1,7 @@
 import Home from '../views/general/Home.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
-export const routes = [
+const routes = [
 	{
 		path: '/',
 		name: 'Home',
@@ -573,21 +573,6 @@ export const routes = [
 const router = createRouter({
 	history: createWebHistory('/dashboard-old/'),
 	routes
-});
-
-router.beforeEach((to, from, next) => {
-	let routeMap = {
-		partner: 'settings/partner',
-		apps: 'marketplace/apps'
-	};
-	let pathToBeReplaced = Object.keys(routeMap).find(route =>
-		to.fullPath.split('/').includes(route)
-	);
-
-	if (pathToBeReplaced && to.name === 'NotFound') {
-		next(to.fullPath.replace(pathToBeReplaced, routeMap[pathToBeReplaced]));
-	}
-	next();
 });
 
 export default router;
