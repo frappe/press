@@ -30,7 +30,18 @@
 					</div>
 				</div>
 
-				<div class="space-y-12">
+				<div v-if="!options.is_app_featured && !options.private_groups.length">
+					<div
+						class="flex items-center space-x-2 rounded border border-gray-200 bg-gray-100 p-4 text-base text-gray-700"
+					>
+						<i-lucide-alert-circle class="inline-block h-5 w-5" />
+						<p>
+							This app isn't available in our public benches.<br />
+							Read below documentation to add it to your own bench.
+						</p>
+					</div>
+				</div>
+				<div v-else class="space-y-12">
 					<div v-if="plans.length">
 						<div class="flex items-center justify-between">
 							<h2 class="text-base font-medium leading-6 text-gray-900">
