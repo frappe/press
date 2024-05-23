@@ -137,6 +137,14 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 			"No matching distribution found for",
 			update_with_dependency_not_found,
 		),
+		(
+			"[ERROR] [plugin vue]",
+			update_with_vue_build_failed,
+		),
+		(
+			"[ERROR] [plugin frappe-vue-style]",
+			update_with_vue_build_failed,
+		),
 	]
 
 
@@ -206,6 +214,38 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 			details["assistance_url"] = None
 
 	return details
+
+
+def update_with_vue_build_failed(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to errors in frontend code"
+
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to errors in its
+		frontend (Vue.js) code.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation has failed due to errors in its frontend (Vue.js) code.</p>
+
+		<p>Please view the build output to debug and fix the error before retrying
+		build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	return True
 
 
 def update_with_module_not_found(
@@ -287,8 +327,8 @@ def update_with_dependency_not_found(
 		<p>App installation failed due to pip not being able to find a
 		distribution of a dependency in your app.</p>
 
-		<p>Please view the failing step output to debug and fix the error
-		before retrying build.</p>
+		<p>Please view the build output to debug and fix the error before
+		retrying build.</p>
 		"""
 
 	details["message"] = fmt(message)
@@ -320,8 +360,8 @@ def update_with_error_on_pip_install(
 		<p>Dependency installation using pip failed due to errors originating in an
 		app on your Bench.</p>
 
-		<p>Please view the failing step output to debug and fix the error before
-		retrying build.</p>
+		<p>Please view the build output to debug and fix the error before retrying
+		build.</p>
 		"""
 
 	details["message"] = fmt(message)
