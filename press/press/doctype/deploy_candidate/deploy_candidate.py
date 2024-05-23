@@ -18,6 +18,7 @@ from typing import Any, Generator, List, Literal, Optional, Tuple
 
 import docker
 import frappe
+from frappe.utils import rounded
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
@@ -489,20 +490,20 @@ class DeployCandidate(Document):
 		"""Creates a tarball of the build context and returns the path to it."""
 		step = self.get_step("package", "context") or frappe._dict()
 		step.status = "Running"
-		start = now()
+		start_time = now()
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
 		with tarfile.open(tmp_file_path, "w:gz") as tar:
 			tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
-		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
+		step.duration = get_duration(start_time)
 		return tmp_file_path
 
 	def _upload_build_context(self, context_filepath: str, remote_build_server: str):
 		step = self.get_step("upload", "context") or frappe._dict()
 		step.status = "Running"
-		start = now()
+		start_time = now()
 
 		agent = Agent(remote_build_server)
 		with open(context_filepath, "rb") as file:
@@ -518,7 +519,7 @@ class DeployCandidate(Document):
 		else:
 			step.status = "Success"
 
-		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
+		step.duration = get_duration(start_time)
 		return upload_filename
 
 	@staticmethod
@@ -719,28 +720,28 @@ class DeployCandidate(Document):
 		- `_update_post_build_steps`
 		"""
 		app_titles = {a.app: a.title for a in self.apps}
-		stage_slug = "clone"
-		for app in self.apps:
-			step_slug = app.app
-			stage, step = get_build_stage_and_step(stage_slug, step_slug, app_titles)
-			step_dict = dict(
-				status="Pending",
-				stage_slug=stage_slug,
-				step_slug=step_slug,
-				stage=stage,
-				step=step,
-			)
-			self.append("build_steps", step_dict)
 
-		# Additional steps for remote builder since generating and uploading
-		# context take time due to tar-ing and network
-		remote_build_stage_slugs = []
+		# Clone app slugs
+		slugs: list[tuple[str, str]] = [("clone", app.app) for app in self.apps]
+
+		# Pre-build validation slug
+		slugs.append(("validate", "pre-build"))
+
+		# Remote builder slugs
 		if self.is_docker_remote_builder_used:
-			remote_build_stage_slugs = ["package", "upload"]
+			slugs.extend(
+				[
+					("context", "package"),
+					("context", "upload"),
+				]
+			)
 
-		for stage_slug in remote_build_stage_slugs:
-			step_slug = "context"
-			stage, step = get_build_stage_and_step(stage_slug, step_slug)
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(
+				stage_slug,
+				step_slug,
+				app_titles,
+			)
 			step_dict = dict(
 				status="Pending",
 				stage_slug=stage_slug,
@@ -812,13 +813,7 @@ class DeployCandidate(Document):
 	def _prepare_build_context(self, no_push: bool):
 		repo_path_map = self._clone_repos()
 		pmf = get_package_manager_files(repo_path_map)
-
-		"""
-		Errors thrown here will be caught by a function up the
-		stack, since they should be from expected invalids, they
-		should also be user addressable.
-		"""
-		PreBuildValidations(self, pmf).validate()
+		self._run_prebuild_validations_and_update_step(pmf)
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml
@@ -856,6 +851,30 @@ class DeployCandidate(Document):
 
 		return repo_path_map
 
+	def _run_prebuild_validations_and_update_step(self, pmf: PackageManagerFiles):
+		"""
+		Errors thrown here will be caught by a function up the
+		stack.
+
+		Since they should be from expected invalids, they should
+		also be user addressable.
+		"""
+		if not (step := self.get_step("validate", "pre-build")):
+			raise frappe.ValidationError("Validate Pre-build step not found")
+
+		# Start step
+		step.status = "Running"
+		start_time = now()
+		self.save(ignore_version=True)
+		frappe.db.commit()
+
+		# Run Pre-build Validations
+		PreBuildValidations(self, pmf).validate()
+
+		# End step
+		step.duration = get_duration(start_time)
+		step.status = "Success"
+
 	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
 		"""
 		Clones the app repository if it has not been cloned and
@@ -881,7 +900,7 @@ class DeployCandidate(Document):
 			step.cached = True
 			step.status = "Success"
 		else:
-			source = self._clone_release_update_step(app.release, step)
+			source = self._clone_release_and_update_step(app.release, step)
 
 		target = os.path.join(self.build_directory, "apps", app.app)
 		shutil.copytree(source, target, symlinks=True)
@@ -900,13 +919,16 @@ class DeployCandidate(Document):
 
 		return target
 
-	def _clone_release_update_step(self, release: str, step: "DeployCandidateBuildStep"):
+	def _clone_release_and_update_step(
+		self, release: str, step: "DeployCandidateBuildStep"
+	):
+		# Start step
 		step.status = "Running"
 		start_time = now()
-
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
+		# Clone Release
 		release: "AppRelease" = frappe.get_doc(
 			"App Release",
 			release,
@@ -914,8 +936,8 @@ class DeployCandidate(Document):
 		)
 		release._clone()
 
-		end_time = now()
-		step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+		# End step
+		step.duration = get_duration(start_time)
 		step.output = release.output
 		step.status = "Success"
 		return release.clone_directory
@@ -1703,6 +1725,7 @@ STEP_SLUG_MAP = {
 	("pre", "code-server"): "Install Code Server",
 	("bench", "bench"): "Install Bench",
 	("bench", "env"): "Setup Virtual Environment",
+	("validate", "pre-build"): "Pre-build",
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
@@ -1768,3 +1791,10 @@ def get_remote_step_output(
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
+
+
+def get_duration(start_time: datetime, end_time: Optional[datetime]):
+	end_time = end_time or now()
+	seconds_elapsed = (end_time - start_time).total_seconds()
+	value = rounded(seconds_elapsed, 3)
+	return float(value)
