@@ -47,7 +47,7 @@ class DockerBuildOutputParser:
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_docker_remote_builder_used
+		self.is_remote = dc.is_remote_builder_used
 		self.last_updated = now_datetime()
 
 		# Used to generate output and track parser state
@@ -262,7 +262,7 @@ class UploadStepUpdater:
 
 	def __init__(self, dc: "DeployCandidate") -> None:
 		self.dc = dc
-		self.is_remote = dc.is_docker_remote_builder_used
+		self.is_remote = dc.is_remote_builder_used
 		self.output: list[dict] = []
 
 		# Used only if not remote

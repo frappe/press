@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "status",
-  "is_docker_remote_builder_used",
+  "is_remote_builder_used",
   "column_break_2",
   "group",
   "team",
@@ -303,13 +303,6 @@
    "label": "Compress App Cache"
   },
   {
-   "default": "0",
-   "fieldname": "is_docker_remote_builder_used",
-   "fieldtype": "Check",
-   "label": "Is Docker Remote Builder used",
-   "read_only": 1
-  },
-  {
    "description": "Used when parsing a remote builds output.",
    "fieldname": "last_updated",
    "fieldtype": "Datetime",
@@ -396,6 +389,13 @@
    "hidden": 1,
    "label": "Pending End",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_remote_builder_used",
+   "fieldtype": "Check",
+   "label": "Is Remote Builder Used",
+   "read_only": 1
   }
  ],
  "links": [
@@ -412,7 +412,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-23 13:37:29.076268",
+ "modified": "2024-05-23 13:40:26.098137",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

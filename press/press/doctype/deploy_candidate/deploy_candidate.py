@@ -103,8 +103,8 @@ class DeployCandidate(Document):
 		environment_variables: DF.Table[DeployCandidateVariable]
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
-		is_docker_remote_builder_used: DF.Check
 		is_redisearch_enabled: DF.Check
+		is_remote_builder_used: DF.Check
 		last_updated: DF.Datetime | None
 		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
@@ -261,7 +261,7 @@ class DeployCandidate(Document):
 		if not self.docker_remote_builder_server:
 			return
 
-		self.is_docker_remote_builder_used = True
+		self.is_remote_builder_used = True
 
 	def validate_status(self):
 		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -344,7 +344,7 @@ class DeployCandidate(Document):
 
 	def _build_and_deploy(self):
 		success = self._build(deploy_after_build=True)
-		if not success or self.is_docker_remote_builder_used:
+		if not success or self.is_remote_builder_used:
 			return
 
 		self._deploy()
@@ -429,7 +429,7 @@ class DeployCandidate(Document):
 		self._update_docker_image_metadata()
 
 		# Build runs on remote server
-		if self.is_docker_remote_builder_used:
+		if self.is_remote_builder_used:
 			self._run_remote_builder(
 				deploy_after_build,
 				no_cache,
@@ -742,7 +742,7 @@ class DeployCandidate(Document):
 		slugs.append(("validate", "pre-build"))
 
 		# Remote builder slugs
-		if self.is_docker_remote_builder_used:
+		if self.is_remote_builder_used:
 			slugs.extend(
 				[
 					("context", "package"),
