@@ -18,7 +18,7 @@
   "section_break_7",
   "servers",
   "section_break_keov",
-  "docker_remote_builder_server",
+  "remote_build_server",
   "apps_tab",
   "apps",
   "config_tab",
@@ -356,21 +356,21 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "docker_remote_builder_server",
-   "fieldtype": "Link",
-   "label": "Docker Remote Builder Server",
-   "options": "Server"
-  },
-  {
    "default": "0",
    "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
    "fieldname": "use_delta_builds",
    "fieldtype": "Check",
    "label": "Use Delta Builds"
+  },
+  {
+   "fieldname": "remote_build_server",
+   "fieldtype": "Link",
+   "label": "Remote Build Server",
+   "options": "Server"
   }
  ],
  "links": [],
- "modified": "2024-03-05 15:49:31.592217",
+ "modified": "2024-05-23 13:53:01.038192",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Release Group",

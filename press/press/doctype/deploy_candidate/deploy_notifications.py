@@ -1,17 +1,13 @@
 # Copyright (c) 2024, Frappe and contributors
 # For license information, please see license.txt
 
-import typing
 import re
+import typing
 from textwrap import dedent
-from typing import Optional, TypedDict
+from typing import Callable, Optional, TypedDict
 
 import frappe
 import frappe.utils
-
-if typing.TYPE_CHECKING:
-	from frappe import Document
-	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
 
 """
 Used to create notifications if the Deploy error is something that can
@@ -36,13 +32,125 @@ Details = TypedDict(
 	},
 )
 
+# These strings are checked against the traceback or build_output
+MatchStrings = str | list[str]
+
+if typing.TYPE_CHECKING:
+	from frappe import Document
+	from press.press.doctype.deploy_candidate.deploy_candidate import DeployCandidate
+
+	# TYPE_CHECKING guard for code below cause DeployCandidate
+	# might cause circular import.
+	UserAddressableHandler = Callable[
+		[
+			Details,
+			DeployCandidate,
+			BaseException,
+		],
+		bool,  # Return True if is_actionable
+	]
+	UserAddressableHandlerTuple = tuple[
+		MatchStrings,
+		UserAddressableHandler,
+	]
+
+
 DOC_URLS = {
 	"app-installation-issue": "https://frappecloud.com/docs/faq/app-installation-issue",
 	"invalid-pyproject-file": "https://frappecloud.com/docs/common-issues/invalid-pyprojecttoml-file",
 	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
 	"incompatible-dependency-version": "https://frappecloud.com/docs/common-issues/incompatible-dependency-version",
 	"incompatible-app-version": "https://frappecloud.com/docs/common-issues/incompatible-app-version",
+	"debugging-app-installs-locally": "https://frappecloud.com/docs/common-issues/debugging-app-installs-locally",
 }
+
+
+def handlers() -> "list[UserAddressableHandlerTuple]":
+	"""
+	Before adding anything here, view the type:
+	`UserAddressableHandlerTuple`
+
+	The first value of the tuple is `MatchStrings` which
+	a list of strings (or a single string) which if they
+	are present in the `traceback` or the `build_output`
+	then then second value i.e. `UserAddressableHandler`
+	is called.
+
+	`UserAddressableHandler` is used to update the details
+	used to create the Press Notification
+
+	`UserAddressableHandler` can return False if it isn't
+	user addressable, in this case the remaining handler
+	tuple will be checked.
+
+	Due to this order of the tuples matter.
+	"""
+	return [
+		(
+			"App installation token could not be fetched",
+			update_with_installation_token_not_fetchable,
+		),
+		(
+			"Repository could not be fetched",
+			update_with_repository_not_fetchable,
+		),
+		(
+			"App has invalid pyproject.toml file",
+			update_with_invalid_pyproject_error,
+		),
+		(
+			"App has invalid package.json file",
+			update_with_invalid_package_json_error,
+		),
+		(
+			'engine "node" is incompatible with this module',
+			update_with_incompatible_node,
+		),
+		(
+			"Incompatible Node version found",
+			update_with_incompatible_app_prebuild,
+		),
+		(
+			"Incompatible Python version found",
+			update_with_incompatible_python_prebuild,
+		),
+		(
+			"Incompatible app version found",
+			update_with_incompatible_app_prebuild,
+		),
+		(
+			"Invalid release found",
+			update_with_invalid_release_prebuild,
+		),
+		(
+			"Required app not found",
+			update_with_required_app_not_found_prebuild,
+		),
+		(
+			"note: This error originates from a subprocess, and is likely not a problem with pip.",
+			update_with_error_on_pip_install,
+		),
+		(
+			"ModuleNotFoundError: No module named",
+			update_with_module_not_found,
+		),
+		(
+			"ImportError: cannot import name",
+			update_with_import_error,
+		),
+		(
+			"No matching distribution found for",
+			update_with_dependency_not_found,
+		),
+		(
+			"[ERROR] [plugin vue]",
+			update_with_vue_build_failed,
+		),
+		(
+			"[ERROR] [plugin frappe-vue-style]",
+			update_with_vue_build_failed,
+		),
+	]
 
 
 def create_build_failed_notification(
@@ -53,7 +161,7 @@ def create_build_failed_notification(
 	is actionable then it will be displayed on the dashboard and will block
 	further builds until the user has resolved it.
 
-	Returns if build failure is_actionable
+	Returns True if build failure is_actionable
 	"""
 
 	details = get_details(dc, exc)
@@ -79,62 +187,241 @@ def create_build_failed_notification(
 
 def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 	tb = frappe.get_traceback(with_context=False)
+	default_title = get_default_title(dc)
+	default_message = (get_default_message(dc),)
+
 	details: "Details" = dict(
-		title=get_default_title(dc),
-		message=get_default_message(dc),
-		is_actionable=False,
+		title=default_title,
+		message=default_message,
 		traceback=tb,
+		is_actionable=False,
 		assistance_url=None,
 	)
 
-	"""
-	In the conditionals below:
-	- check if the error is a known one
-	- set the title, message, is_actionable, assistance_url fields
-	- ensure that no error is thrown
-	"""
+	for strs, handler in handlers():
+		if isinstance(strs, str):
+			strs = [strs]
 
-	# Failure in Clone Repositories step, raise in app_release.py
-	if "App installation token could not be fetched" in tb:
-		update_with_github_token_error(details, dc, exc)
+		if not (is_match := all(s in tb for s in strs)):
+			is_match = all(s in dc.build_output for s in strs)
 
-	# Failure in Clone Repositories step, raise in app_release.py
-	elif "Repository could not be fetched" in tb:
-		update_with_github_token_error(details, dc, exc, is_repo_not_found=True)
+		if not is_match:
+			continue
 
-	# Pyproject file could not be parsed by tomllib
-	elif "App has invalid pyproject.toml file" in tb:
-		update_with_invalid_pyproject_error(details, dc, exc)
-
-	# Package JSON file could not be parsed by json.load
-	elif "App has invalid package.json file" in tb:
-		update_with_invalid_package_json_error(details, dc, exc)
-
-	# Release Group Node version is incompatible with required version
-	elif 'engine "node" is incompatible with this module' in dc.build_output:
-		update_with_incompatible_node(details, dc)
-
-	# Node version is incompatible (from `PreBuildValidations`)
-	elif "Incompatible Node version found" in tb:
-		update_with_incompatible_node_prebuild(details, exc)
-
-	# Python version is incompatible (from `PreBuildValidations`)
-	elif "Incompatible Python version found" in tb:
-		update_with_incompatible_python_prebuild(details, exc)
-
-	# App version is incompatible (from `PreBuildValidations`)
-	elif "Incompatible app version found" in tb:
-		update_with_incompatible_app_prebuild(details, exc)
-
-	# Release is invalid (from `PreBuildValidations`)
-	elif "Invalid release found" in tb:
-		update_with_invalid_release_prebuild(details, exc)
-
-	# Required app (from hooks.py) not found
-	elif "Required app not found" in tb:
-		update_with_required_app_not_found_prebuild(details, exc)
+		if handler(details, dc, exc):
+			details["is_actionable"] = True
+			break
+		else:
+			details["title"] = default_title
+			details["message"] = default_message
+			details["traceback"] = tb
+			details["is_actionable"] = False
+			details["assistance_url"] = None
 
 	return details
+
+
+def update_with_vue_build_failed(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to errors in frontend code"
+
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to errors in its
+		frontend (Vue.js) code.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation has failed due to errors in its frontend (Vue.js) code.</p>
+
+		<p>Please view the build output to debug and fix the error before retrying
+		build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
+
+
+def update_with_import_error(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to invalid import"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ImportError: cannot import name" in line
+	]
+	invalid_import = None
+	if len(lines) > 1 and len(parts := lines[0].split("From")) > 1:
+		imported = parts[0].strip().split(" ")[-1][1:-1]
+		module = parts[1].strip().split(" ")[0][1:-1]
+		invalid_import = f"{imported} from {module}"
+
+	if failed_step.stage_slug == "apps" and invalid_import:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to invalid import
+		<b>{invalid_import}</b>.</p>
+
+		<p>Please ensure all Python dependencies are of the required
+		versions.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to an invalid import.</p>
+
+		<p>Please view the build output to debug and fix the error
+		before retrying build.</p>
+		"""
+
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	details["message"] = fmt(message)
+	return True
+
+
+def update_with_module_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to missing module"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ModuleNotFoundError: No module named" in line
+	]
+	missing_module = None
+	if len(lines) > 1:
+		missing_module = lines[0].split(" ")[-1][1:-1]
+
+	if failed_step.stage_slug == "apps" and missing_module:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to imported module
+		<b>{missing_module}</b> not being found.</p>
+
+		<p>Please ensure all imported Frappe app dependencies have been added
+		to your bench and all Python dependencies have been added to your app's
+		<b>requirements.txt</b> or <b>pyproject.toml</b> file before retrying
+		the build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to an imported module not being found.</p>
+
+		<p>Please view the failing step output to debug and fix the error
+		before retrying build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
+
+
+def update_with_dependency_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to dependency not being found"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "No matching distribution found for" in line
+	]
+	missing_dep = None
+	if len(lines) > 1:
+		missing_dep = lines[0].split(" ")[-1]
+
+	if failed_step.stage_slug == "apps" and missing_dep:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to dependency
+		<b>{missing_dep}</b> not being found.</p>
+
+		<p>Please specify a version of <b>{missing_dep}</b> installable by
+		<b>pip</b>.</p>
+
+		<p>Please view the failing step output for more info.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to pip not being able to find a
+		distribution of a dependency in your app.</p>
+
+		<p>Please view the build output to debug and fix the error before
+		retrying build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
+
+
+def update_with_error_on_pip_install(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to errors"
+
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p>Dependency installation using pip for <b>{app_name}</b> failed due to
+		errors originating in the app.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+		"""
+	else:
+		message = """
+		<p>Dependency installation using pip failed due to errors originating in an
+		app on your Bench.</p>
+
+		<p>Please view the build output to debug and fix the error before retrying
+		build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
 
 
 def update_with_invalid_pyproject_error(
@@ -143,12 +430,11 @@ def update_with_invalid_pyproject_error(
 	exc: "BaseException",
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
-		return
+		return False
 
 	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
 	app_name = build_step.step
 
-	details["is_actionable"] = True
 	details["title"] = "Invalid pyproject.toml file found"
 	message = f"""
 	<p>The <b>pyproject.toml</b> file in the <b>{app_name}</b> repository could not be
@@ -158,6 +444,7 @@ def update_with_invalid_pyproject_error(
 	"""
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["invalid-pyproject-file"]
+	return True
 
 
 def update_with_invalid_package_json_error(
@@ -166,7 +453,7 @@ def update_with_invalid_package_json_error(
 	exc: "BaseException",
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
-		return
+		return False
 
 	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
 	app_name = build_step.step
@@ -175,7 +462,6 @@ def update_with_invalid_package_json_error(
 	if len(exc.args) >= 2 and isinstance(exc.args[2], str):
 		loc_str = f"<p>File was found at path <b>{exc.args[2]}</b>.</p>"
 
-	details["is_actionable"] = True
 	details["title"] = "Invalid package.json file found"
 	message = f"""
 	<p>The <b>package.json</b> file in the <b>{app_name}</b> repository could not be
@@ -185,9 +471,27 @@ def update_with_invalid_package_json_error(
 	<p>To rectify this issue, please fix the <b>pyproject.json</b> file.</p>
 	"""
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
+	return True
 
 
-def update_with_github_token_error(
+def update_with_installation_token_not_fetchable(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	return _update_with_github_token_error(details, dc, exc, False)
+
+
+def update_with_repository_not_fetchable(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	return _update_with_github_token_error(details, dc, exc, True)
+
+
+def _update_with_github_token_error(
 	details: "Details",
 	dc: "DeployCandidate",
 	exc: BaseException,
@@ -199,18 +503,17 @@ def update_with_github_token_error(
 		app = failed_step.step_slug
 
 	if not app:
-		return
+		return False
 
 	# Ensure that installation token is None
 	if is_repo_not_found and not is_installation_token_none(dc, app):
-		return
-
-	details["is_actionable"] = True
-	details["title"] = "App access token could not be fetched"
+		return False
 
 	build_step = get_ct_row(dc, app, "build_steps", "step_slug")
 	if not build_step:
-		return
+		return False
+
+	details["title"] = "App access token could not be fetched"
 
 	app_name = build_step.step
 	message = f"""
@@ -221,11 +524,13 @@ def update_with_github_token_error(
 	"""
 	details["message"] = fmt(message)
 	details["assistance_url"] = DOC_URLS["app-installation-issue"]
+	return True
 
 
 def update_with_incompatible_node(
 	details: "Details",
 	dc: "DeployCandidate",
+	exc: BaseException,
 ) -> None:
 	# Example line:
 	# `#60 5.030 error customization_forms@1.0.0: The engine "node" is incompatible with this module. Expected version ">=18.0.0". Got "16.16.0"`
@@ -233,7 +538,6 @@ def update_with_incompatible_node(
 	app = get_app_from_incompatible_build_output_line(line)
 	version = get_version_from_incompatible_build_output_line(line)
 
-	details["is_actionable"] = True
 	details["title"] = "Incompatible Node version"
 	message = f"""
 	<p>{details['message']}</p>
@@ -248,14 +552,16 @@ def update_with_incompatible_node(
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
+	return True
 
 
 def update_with_incompatible_node_prebuild(
 	details: "Details",
-	exc: "BaseException",
+	dc: "DeployCandidate",
+	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 5:
-		return
+		return False
 
 	_, app, actual, expected, package_name = exc.args
 
@@ -263,7 +569,6 @@ def update_with_incompatible_node_prebuild(
 	if isinstance(package_name, str):
 		package_name_str = f"Version requirement comes from package <b>{package_name}</b>"
 
-	details["is_actionable"] = True
 	details["title"] = "Validation Failed: Incompatible Node version"
 	message = f"""
 	<p><b>{app}</b> requires Node version <b>{expected}</b>, found version is <b>{actual}</b>.
@@ -278,18 +583,19 @@ def update_with_incompatible_node_prebuild(
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
+	return True
 
 
 def update_with_incompatible_python_prebuild(
 	details: "Details",
-	exc: "BaseException",
+	dc: "DeployCandidate",
+	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 4:
-		return
+		return False
 
 	_, app, actual, expected = exc.args
 
-	details["is_actionable"] = True
 	details["title"] = "Validation Failed: Incompatible Python version"
 	message = f"""
 	<p><b>{app}</b> requires Python version <b>{expected}</b>, found version is <b>{actual}</b>.
@@ -302,18 +608,19 @@ def update_with_incompatible_python_prebuild(
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
+	return True
 
 
 def update_with_incompatible_app_prebuild(
 	details: "Details",
-	exc: "BaseException",
+	dc: "DeployCandidate",
+	exc: BaseException,
 ) -> None:
 	if len(exc.args) != 5:
-		return
+		return False
 
 	_, app, dep_app, actual, expected = exc.args
 
-	details["is_actionable"] = True
 	details["title"] = "Validation Failed: Incompatible app version"
 
 	message = f"""
@@ -327,15 +634,19 @@ def update_with_incompatible_app_prebuild(
 
 	# Traceback is not pertinent to issue
 	details["traceback"] = None
+	return True
 
 
-def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException"):
+def update_with_invalid_release_prebuild(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
 	if len(exc.args) != 4:
-		return
+		return False
 
 	_, app, hash, invalidation_reason = exc.args
 
-	details["is_actionable"] = True
 	details["title"] = "Validation Failed: Invalid app release"
 	message = f"""
 	<p>App <b>{app}</b> has an invalid release with the commit hash
@@ -346,17 +657,19 @@ def update_with_invalid_release_prebuild(details: "Details", exc: "BaseException
 	"""
 	details["traceback"] = invalidation_reason
 	details["message"] = fmt(message)
+	return True
 
 
 def update_with_required_app_not_found_prebuild(
-	details: "Details", exc: "BaseException"
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
 ):
 	if len(exc.args) != 3:
-		return
+		return False
 
 	_, app, required_app = exc.args
 
-	details["is_actionable"] = True
 	details["title"] = "Validation Failed: Required app not found"
 	message = f"""
 	<p><b>{app}</b> has a dependency on the app <b>{required_app}</b>
@@ -367,6 +680,7 @@ def update_with_required_app_not_found_prebuild(
 	"""
 	details["traceback"] = None
 	details["message"] = fmt(message)
+	return True
 
 
 def fmt(message: str) -> str:

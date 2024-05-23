@@ -22,6 +22,7 @@ from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
+from frappe.utils import rounded
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
@@ -46,6 +47,8 @@ from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
 from rq.job import Job
 
+# build_duration, pending_duration are Time fields, >= 1 day is invalid
+MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
@@ -96,18 +99,20 @@ class DeployCandidate(Document):
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
 		docker_image_tag: DF.Data | None
-		docker_remote_builder_server: DF.Link | None
 		environment_variables: DF.Table[DeployCandidateVariable]
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
-		is_docker_remote_builder_used: DF.Check
 		is_redisearch_enabled: DF.Check
-		is_single_container: DF.Check
-		is_ssh_enabled: DF.Check
+		is_remote_builder_used: DF.Check
 		last_updated: DF.Datetime | None
+		manually_failed: DF.Check
 		merge_all_rq_queues: DF.Check
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
+		pending_duration: DF.Time | None
+		pending_end: DF.Datetime | None
+		pending_start: DF.Datetime | None
+		remote_build_server: DF.Link | None
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
@@ -185,6 +190,7 @@ class DeployCandidate(Document):
 
 	def before_insert(self):
 		if self.status == "Draft":
+			self.pending_duration = 0
 			self.build_duration = 0
 
 	def on_trash(self):
@@ -217,12 +223,14 @@ class DeployCandidate(Document):
 		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
+		# This should always be the first call in pre-build
+		self.reset_build_state()
+
 		if not self.validate_status():
 			return
 
-		self.status = "Pending"
+		self._set_status_pending()
 		self.set_remote_build_flags()
-		self.reset_build_state()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -247,13 +255,13 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def set_remote_build_flags(self):
-		if not self.docker_remote_builder_server:
-			self.docker_remote_builder_server = self._get_docker_remote_builder_server()
+		if not self.remote_build_server:
+			self.remote_build_server = self._get_remote_build_server()
 
-		if not self.docker_remote_builder_server:
+		if not self.remote_build_server:
 			return
 
-		self.is_docker_remote_builder_used = True
+		self.is_remote_builder_used = True
 
 	def validate_status(self):
 		if self.status in ["Draft", "Success", "Failure", "Scheduled"]:
@@ -295,7 +303,7 @@ class DeployCandidate(Document):
 				error=True,
 				message=f"Cannot stop and fail if status one of [{', '.join(not_failable)}]",
 			)
-
+		self.manually_failed = True
 		self.stop_build_jobs()
 		self._set_status_failure()
 		return dict(error=False, message="Failed successfully")
@@ -336,7 +344,7 @@ class DeployCandidate(Document):
 
 	def _build_and_deploy(self):
 		success = self._build(deploy_after_build=True)
-		if not success or self.is_docker_remote_builder_used:
+		if not success or self.is_remote_builder_used:
 			return
 
 		self._deploy()
@@ -360,9 +368,6 @@ class DeployCandidate(Document):
 		# Used for docker remote build
 		deploy_after_build: bool = False,
 	):
-		self.is_single_container = True
-		self.is_ssh_enabled = True
-
 		self._set_status_preparing()
 		self._set_output_parsers()
 		try:
@@ -424,7 +429,7 @@ class DeployCandidate(Document):
 		self._update_docker_image_metadata()
 
 		# Build runs on remote server
-		if self.is_docker_remote_builder_used:
+		if self.is_remote_builder_used:
 			self._run_remote_builder(
 				deploy_after_build,
 				no_cache,
@@ -451,7 +456,7 @@ class DeployCandidate(Document):
 		no_push: bool,
 		no_build: bool,
 	) -> None:
-		if not (remote_build_server := self.docker_remote_builder_server):
+		if not (remote_build_server := self.remote_build_server):
 			return
 
 		context_filepath = self._package_build_context()
@@ -492,20 +497,20 @@ class DeployCandidate(Document):
 		"""Creates a tarball of the build context and returns the path to it."""
 		step = self.get_step("package", "context") or frappe._dict()
 		step.status = "Running"
-		start = now()
+		start_time = now()
 
 		tmp_file_path = tempfile.mkstemp(suffix=".tar.gz")[1]
 		with tarfile.open(tmp_file_path, "w:gz") as tar:
 			tar.add(self.build_directory, arcname=".")
 
 		step.status = "Success"
-		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
+		step.duration = get_duration(start_time)
 		return tmp_file_path
 
 	def _upload_build_context(self, context_filepath: str, remote_build_server: str):
 		step = self.get_step("upload", "context") or frappe._dict()
 		step.status = "Running"
-		start = now()
+		start_time = now()
 
 		agent = Agent(remote_build_server)
 		with open(context_filepath, "rb") as file:
@@ -521,7 +526,7 @@ class DeployCandidate(Document):
 		else:
 			step.status = "Success"
 
-		step.duration = frappe.utils.rounded((now() - start).total_seconds(), 1)
+		step.duration = get_duration(start_time)
 		return upload_filename
 
 	@staticmethod
@@ -617,7 +622,14 @@ class DeployCandidate(Document):
 			as_dict=True,
 		)
 
+	def _set_status_pending(self):
+		self.status = "Pending"
+		self.pending_start = now()
+		self.save()
+		frappe.db.commit()
+
 	def _set_status_preparing(self):
+		self._set_pending_duration()
 		self.status = "Preparing"
 		self.build_start = now()
 		self.save()
@@ -632,7 +644,7 @@ class DeployCandidate(Document):
 	def _set_status_failure(self):
 		self.status = "Failure"
 		self._fail_last_running_step()
-		self._set_duration()
+		self._set_build_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
@@ -640,7 +652,7 @@ class DeployCandidate(Document):
 	def _set_status_success(self):
 		self.status = "Success"
 		self.build_error = None
-		self._set_duration()
+		self._set_build_duration()
 		self.save(ignore_version=True)
 		self._update_bench_status()
 		frappe.db.commit()
@@ -663,16 +675,25 @@ class DeployCandidate(Document):
 
 		frappe.db.set_value("Bench Update", bench_update[0], "status", status)
 
-	def _set_duration(self):
+	def _set_build_duration(self):
 		self.build_end = now()
 		if not isinstance(self.build_start, datetime):
 			return
 
-		build_duration = self.build_end - self.build_start
-		max_duration = timedelta(hours=23, minutes=59, seconds=59)
+		self.build_duration = min(
+			self.build_end - self.build_start,
+			MAX_DURATION,
+		)
 
-		# build_duration is a Time field, >= 1 day is invalid
-		self.build_duration = min(build_duration, max_duration)
+	def _set_pending_duration(self):
+		self.pending_end = now()
+		if not isinstance(self.pending_start, datetime):
+			return
+
+		self.pending_duration = min(
+			self.pending_end - self.pending_start,
+			MAX_DURATION,
+		)
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:
@@ -684,16 +705,25 @@ class DeployCandidate(Document):
 				break
 
 	def reset_build_state(self):
+		# Build directory
 		self.cleanup_build_directory()
+		self.build_directory = None
+		# Build output
 		self.build_steps.clear()
 		self.build_error = ""
 		self.build_output = ""
+		self.last_updated = None
+		# Failure flags
+		self.user_addressable_failure = False
+		self.manually_failed = False
+		# Build times
 		self.build_start = None
 		self.build_end = None
-		self.last_updated = None
 		self.build_duration = None
-		self.build_directory = None
-		self.user_addressable_failure = False
+		# Pending times
+		self.pending_start = None
+		self.pending_end = None
+		self.pending_duration = None
 
 	def add_pre_build_steps(self):
 		"""
@@ -704,28 +734,28 @@ class DeployCandidate(Document):
 		- `_update_post_build_steps`
 		"""
 		app_titles = {a.app: a.title for a in self.apps}
-		stage_slug = "clone"
-		for app in self.apps:
-			step_slug = app.app
-			stage, step = get_build_stage_and_step(stage_slug, step_slug, app_titles)
-			step_dict = dict(
-				status="Pending",
-				stage_slug=stage_slug,
-				step_slug=step_slug,
-				stage=stage,
-				step=step,
+
+		# Clone app slugs
+		slugs: list[tuple[str, str]] = [("clone", app.app) for app in self.apps]
+
+		# Pre-build validation slug
+		slugs.append(("validate", "pre-build"))
+
+		# Remote builder slugs
+		if self.is_remote_builder_used:
+			slugs.extend(
+				[
+					("context", "package"),
+					("context", "upload"),
+				]
 			)
-			self.append("build_steps", step_dict)
 
-		# Additional steps for remote builder since generating and uploading
-		# context take time due to tar-ing and network
-		remote_build_stage_slugs = []
-		if self.is_docker_remote_builder_used:
-			remote_build_stage_slugs = ["package", "upload"]
-
-		for stage_slug in remote_build_stage_slugs:
-			step_slug = "context"
-			stage, step = get_build_stage_and_step(stage_slug, step_slug)
+		for stage_slug, step_slug in slugs:
+			stage, step = get_build_stage_and_step(
+				stage_slug,
+				step_slug,
+				app_titles,
+			)
 			step_dict = dict(
 				status="Pending",
 				stage_slug=stage_slug,
@@ -797,13 +827,7 @@ class DeployCandidate(Document):
 	def _prepare_build_context(self, no_push: bool):
 		repo_path_map = self._clone_repos()
 		pmf = get_package_manager_files(repo_path_map)
-
-		"""
-		Errors thrown here will be caught by a function up the
-		stack, since they should be from expected invalids, they
-		should also be user addressable.
-		"""
-		PreBuildValidations(self, pmf).validate()
+		self._run_prebuild_validations_and_update_step(pmf)
 
 		"""
 		Due to dependencies mentioned in an apps pyproject.toml
@@ -841,6 +865,31 @@ class DeployCandidate(Document):
 
 		return repo_path_map
 
+	def _run_prebuild_validations_and_update_step(self, pmf: PackageManagerFiles):
+		"""
+		Errors thrown here will be caught by a function up the
+		stack.
+
+		Since they should be from expected invalids, they should
+		also be user addressable.
+		"""
+		if not (step := self.get_step("validate", "pre-build")):
+			raise frappe.ValidationError("Validate Pre-build step not found")
+
+		# Start step
+		step.status = "Running"
+		start_time = now()
+		self.save(ignore_version=True)
+		frappe.db.commit()
+
+		# Run Pre-build Validations
+		PreBuildValidations(self, pmf).validate()
+
+		# End step
+		step.duration = get_duration(start_time)
+		step.output = "Pre-build validations passed"
+		step.status = "Success"
+
 	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
 		"""
 		Clones the app repository if it has not been cloned and
@@ -866,7 +915,7 @@ class DeployCandidate(Document):
 			step.cached = True
 			step.status = "Success"
 		else:
-			source = self._clone_release_update_step(app.release, step)
+			source = self._clone_release_and_update_step(app.release, step)
 
 		target = os.path.join(self.build_directory, "apps", app.app)
 		shutil.copytree(source, target, symlinks=True)
@@ -885,13 +934,16 @@ class DeployCandidate(Document):
 
 		return target
 
-	def _clone_release_update_step(self, release: str, step: "DeployCandidateBuildStep"):
+	def _clone_release_and_update_step(
+		self, release: str, step: "DeployCandidateBuildStep"
+	):
+		# Start step
 		step.status = "Running"
 		start_time = now()
-
 		self.save(ignore_version=True)
 		frappe.db.commit()
 
+		# Clone Release
 		release: "AppRelease" = frappe.get_doc(
 			"App Release",
 			release,
@@ -899,8 +951,8 @@ class DeployCandidate(Document):
 		)
 		release._clone()
 
-		end_time = now()
-		step.duration = frappe.utils.rounded((end_time - start_time).total_seconds(), 1)
+		# End step
+		step.duration = get_duration(start_time)
 		step.output = release.output
 		step.status = "Success"
 		return release.clone_directory
@@ -1152,16 +1204,6 @@ class DeployCandidate(Document):
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
-
-		docker_remote_builder_ssh = frappe.db.get_value(
-			"Press Settings",
-			None,
-			"docker_remote_builder_ssh",
-		)
-		if docker_remote_builder_ssh:
-			# Connect to Remote Docker Host if configured
-			environment.update({"DOCKER_HOST": f"ssh://root@{docker_remote_builder_ssh}"})
-
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
@@ -1197,17 +1239,10 @@ class DeployCandidate(Document):
 				"docker_registry_url",
 				"docker_registry_username",
 				"docker_registry_password",
-				"docker_remote_builder_ssh",
 			],
 			as_dict=True,
 		)
 		environment = os.environ.copy()
-		if settings.docker_remote_builder_ssh:
-			# Connect to Remote Docker Host if configured
-			environment.update(
-				{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
-			)
-
 		client = docker.from_env(environment=environment)
 		if not self.upload_step_updater:
 			self.upload_step_updater = UploadStepUpdater(self)
@@ -1442,10 +1477,10 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def _get_docker_remote_builder_server(self):
-		server = frappe.get_value("Release Group", self.group, "docker_remote_builder_server")
+	def _get_remote_build_server(self):
+		server = frappe.get_value("Release Group", self.group, "remote_build_server")
 		if not server:
-			server = frappe.get_value("Press Settings", None, "docker_remote_builder_server")
+			server = frappe.get_value("Press Settings", None, "remote_build_server")
 		return server
 
 	def get_first_step(
@@ -1688,6 +1723,7 @@ STEP_SLUG_MAP = {
 	("pre", "code-server"): "Install Code Server",
 	("bench", "bench"): "Install Bench",
 	("bench", "env"): "Setup Virtual Environment",
+	("validate", "pre-build"): "Pre-build",
 	("validate", "dependencies"): "Validate Dependencies",
 	("mounts", "create"): "Prepare Mounts",
 	("upload", "image"): "Docker Image",
@@ -1753,3 +1789,10 @@ def get_remote_step_output(
 def is_build_job(job: Job) -> bool:
 	doc_method: str = job.kwargs.get("kwargs", {}).get("doc_method", "")
 	return doc_method.startswith("_build")
+
+
+def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
+	end_time = end_time or now()
+	seconds_elapsed = (end_time - start_time).total_seconds()
+	value = rounded(seconds_elapsed, 3)
+	return float(value)
