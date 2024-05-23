@@ -58,7 +58,6 @@ class PressSettings(Document):
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
 		docker_remote_builder_server: DF.Link | None
-		docker_remote_builder_ssh: DF.Data | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_google_oauth: DF.Check

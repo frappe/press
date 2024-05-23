@@ -73,7 +73,6 @@
   "clone_directory",
   "build_directory",
   "docker_remote_builder_server",
-  "docker_remote_builder_ssh",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1143,11 +1142,6 @@
    "options": "Server"
   },
   {
-   "fieldname": "docker_remote_builder_ssh",
-   "fieldtype": "Data",
-   "label": "Docker Remote Builder (SSH)"
-  },
-  {
    "default": "0",
    "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
    "fieldname": "use_delta_builds",
@@ -1191,7 +1185,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-05-16 16:41:34.055011",
+ "modified": "2024-05-23 13:50:46.967979",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

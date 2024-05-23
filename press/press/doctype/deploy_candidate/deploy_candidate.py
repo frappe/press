@@ -1204,16 +1204,6 @@ class DeployCandidate(Document):
 		environment.update(
 			{"DOCKER_BUILDKIT": "1", "BUILDKIT_PROGRESS": "plain", "PROGRESS_NO_TRUNC": "1"}
 		)
-
-		docker_remote_builder_ssh = frappe.db.get_value(
-			"Press Settings",
-			None,
-			"docker_remote_builder_ssh",
-		)
-		if docker_remote_builder_ssh:
-			# Connect to Remote Docker Host if configured
-			environment.update({"DOCKER_HOST": f"ssh://root@{docker_remote_builder_ssh}"})
-
 		return environment
 
 	def _get_build_command(self, no_cache: bool):
@@ -1249,17 +1239,10 @@ class DeployCandidate(Document):
 				"docker_registry_url",
 				"docker_registry_username",
 				"docker_registry_password",
-				"docker_remote_builder_ssh",
 			],
 			as_dict=True,
 		)
 		environment = os.environ.copy()
-		if settings.docker_remote_builder_ssh:
-			# Connect to Remote Docker Host if configured
-			environment.update(
-				{"DOCKER_HOST": f"ssh://root@{settings.docker_remote_builder_ssh}"}
-			)
-
 		client = docker.from_env(environment=environment)
 		if not self.upload_step_updater:
 			self.upload_step_updater = UploadStepUpdater(self)
