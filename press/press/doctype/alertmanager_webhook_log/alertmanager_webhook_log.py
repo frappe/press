@@ -8,7 +8,7 @@ import json
 from frappe.model.document import Document
 from frappe.utils.background_jobs import enqueue_doc
 from press.press.doctype.incident.incident import INCIDENT_ALERT, INCIDENT_SCOPE
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from press.utils import log_error
 from frappe.utils import get_url_to_form
 from frappe.utils.data import add_to_date
@@ -248,8 +248,7 @@ class AlertmanagerWebhookLog(Document):
 
 	def send_telegram_notification(self):
 		message = self.generate_telegram_message()
-		client = Telegram(self.severity)
-		client.send(message)
+		TelegramMessage.enqueue(message=message, topic=self.severity)
 
 	@property
 	def bench(self):

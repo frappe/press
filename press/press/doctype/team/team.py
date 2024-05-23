@@ -12,7 +12,7 @@ from hashlib import blake2b
 from press.utils import log_error, get_valid_teams_for_user
 from frappe.utils import get_fullname
 from frappe.utils import get_url_to_form, random_string
-from press.telegram_utils import Telegram
+from press.press.doctype.telegram_message.telegram_message import TelegramMessage
 from frappe.model.document import Document
 from press.exceptions import FrappeioServerNotSet
 from frappe.contacts.address_and_contact import load_address_and_contact
@@ -1072,13 +1072,13 @@ class Team(Document):
 
 	@frappe.whitelist()
 	def send_telegram_alert_for_failed_payment(self, invoice):
-		telegram = Telegram()
 		team_url = get_url_to_form("Team", self.name)
 		invoice_url = get_url_to_form("Invoice", invoice)
-		telegram.send(
+		message = (
 			f"Failed Invoice Payment [{invoice}]({invoice_url}) of"
 			f" Partner: [{self.name}]({team_url})"
 		)
+		TelegramMessage.enqueue(message=message)
 
 	@frappe.whitelist()
 	def send_email_for_failed_payment(self, invoice, sites=None):
