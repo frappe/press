@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from press.utils import log_error
 from frappe.model.document import Document
 from press.utils.billing import get_razorpay_client
-from press.press.doctype.team.team import enqueue_finalize_unpaid_for_team
+from press.press.doctype.team.team import _enqueue_finalize_unpaid_invoices_for_team
 
 
 class RazorpayPaymentRecord(Document):
@@ -75,7 +75,7 @@ class RazorpayPaymentRecord(Document):
 		invoice.update_razorpay_transaction_details(payment)
 		invoice.submit()
 
-		enqueue_finalize_unpaid_for_team(team.name)
+		_enqueue_finalize_unpaid_invoices_for_team(team.name)
 
 	@frappe.whitelist()
 	def sync(self):

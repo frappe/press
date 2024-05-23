@@ -18,7 +18,6 @@ from press.exceptions import FrappeioServerNotSet
 from frappe.contacts.address_and_contact import load_address_and_contact
 from press.press.doctype.account_request.account_request import AccountRequest
 from press.utils.billing import (
-	get_erpnext_com_connection,
 	get_frappe_io_connection,
 	get_stripe,
 	process_micro_debit_test_charge,
@@ -282,10 +281,6 @@ class Team(Document):
 		if not team.via_erpnext:
 			if not account_request.invited_by_parent_team:
 				team.create_upcoming_invoice()
-			# TODO: Partner account moved to PRM
-			if team.has_partner_account_on_erpnext_com():
-				team.enable_erpnext_partner_privileges()
-
 		return team
 
 	@staticmethod
@@ -759,9 +754,7 @@ class Team(Document):
 		self.reload()
 		if not self.default_payment_method:
 			# change payment mode to prepaid credits if default is card or not set
-			self.payment_mode = (
-				"Prepaid Credits" if self.payment_mode != "Partner Credits" else self.payment_mode
-			)
+			self.payment_mode = self.payment_mode
 			self.save(ignore_permissions=True)
 		return doc
 
@@ -802,56 +795,6 @@ class Team(Document):
 			return 0
 		return res[0]
 
-	@frappe.whitelist()
-	def get_available_partner_credits(self):
-		client = get_frappe_io_connection()
-		response = client.session.post(
-			f"{client.url}/api/method/partner_relationship_management.api.get_partner_credit_balance",
-			data={"email": self.partner_email},
-			headers=client.headers,
-		)
-
-		if response.ok:
-			res = response.json()
-			message = res.get("message")
-
-			if message.get("credit_balance") is not None:
-				return message.get("credit_balance")
-			else:
-				error_message = message.get("error_message")
-				log_error(
-					"Partner Credit Fetch Error",
-					team=self.name,
-					email=self.partner_email,
-					error_message=error_message,
-				)
-				frappe.throw(error_message)
-
-		else:
-			log_error(
-				"Problem fetching partner credit balance from frappe.io",
-				team=self.name,
-				email=self.partner_email,
-				response=response.text,
-			)
-			frappe.throw("Problem fetching partner credit balance.")
-
-	def is_partner_and_has_enough_credits(self):
-		return self.erpnext_partner and self.get_balance() > 0
-
-	def has_partner_account_on_erpnext_com(self):
-		if frappe.conf.developer_mode:
-			return False
-		try:
-			erpnext_com = get_erpnext_com_connection()
-		except Exception:
-			self.log_error("Cannot connect to erpnext.com to check partner account")
-			return False
-		res = erpnext_com.get_value(
-			"ERPNext Partner", "name", filters={"email": self.user, "status": "Approved"}
-		)
-		return res["name"] if res else None
-
 	def can_create_site(self):
 		why = ""
 		allow = (True, "")
@@ -873,12 +816,6 @@ class Team(Document):
 			why = "You cannot create a new site because your account doesn't have a valid payment method."
 			return (False, why)
 
-		if self.payment_mode == "Partner Credits":
-			if self.get_available_partner_credits() > 0:
-				return allow
-			else:
-				why = "Cannot create site due to insufficient partner credits"
-
 		if self.payment_mode == "Prepaid Credits":
 			if self.get_balance() > 0:
 				return allow
@@ -894,7 +831,7 @@ class Team(Document):
 		return (False, why)
 
 	def can_install_paid_apps(self):
-		if self.free_account or self.payment_mode == "Partner Credits" or self.billing_team:
+		if self.free_account or self.billing_team:
 			return True
 
 		return bool(
@@ -956,7 +893,7 @@ class Team(Document):
 			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
 	def get_onboarding(self):
-		if self.payment_mode in ("Partner Credits", "Prepaid Credits", "Paid By Partner"):
+		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
 			billing_setup = True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
@@ -1323,7 +1260,16 @@ def handle_payment_intent_succeeded(payment_intent):
 		invoice.update_transaction_details(charge)
 		invoice.submit()
 
-	enqueue_finalize_unpaid_for_team(team.name)
+	_enqueue_finalize_unpaid_invoices_for_team(team.name)
+
+
+def _enqueue_finalize_unpaid_invoices_for_team(team: str):
+	# Enqueue a background job to call finalize_draft_invoice for unpaid invoices
+	frappe.enqueue(
+		"press.press.doctype.team.team.enqueue_finalize_unpaid_for_team",
+		team=team,
+		queue="long",
+	)
 
 
 def enqueue_finalize_unpaid_for_team(team: str):
@@ -1334,12 +1280,10 @@ def enqueue_finalize_unpaid_for_team(team: str):
 		pluck="name",
 	)
 
-	# Enqueue a background job to call finalize_draft_invoice
+	# Enqueue a background job to call finalize_invoice
 	for invoice in invoices:
-		frappe.enqueue(
-			"press.press.doctype.invoice.invoice.finalize_draft_invoice",
-			invoice=invoice,
-		)
+		doc = frappe.get_doc("Invoice", invoice)
+		doc.finalize_invoice()
 
 
 def get_permission_query_conditions(user):

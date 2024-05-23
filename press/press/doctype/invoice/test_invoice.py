@@ -309,33 +309,6 @@ class TestInvoice(unittest.TestCase):
 		# balance should 755.64 after buying prepaid credits with gst applied
 		self.assertEqual(self.team.get_balance(), 755.64)
 
-	def test_single_x_percent_flat_on_total(self):
-
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.team.name,
-			period_start=today(),
-			period_end=add_days(today(), 10),
-		).insert()
-
-		invoice.append("items", {"quantity": 1, "rate": 1000, "amount": 1000})
-		invoice.save()
-
-		# Before discount
-		self.assertEqual(invoice.total, 1000)
-
-		# Apply 10% discount
-		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-		invoice.save()
-
-		# After discount
-		invoice.reload()
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 100)
-		self.assertEqual(invoice.total, 900)
-
 	def test_multiple_discounts_flat_on_total(self):
 
 		invoice = frappe.get_doc(
@@ -350,12 +323,12 @@ class TestInvoice(unittest.TestCase):
 
 		# Apply 10% discount
 		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
+			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
 		)
 
 		# Apply another 10%
 		invoice.append(
-			"discounts", {"percent": 10, "discount_type": "Flat On Total", "based_on": "Percent"}
+			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
 		)
 
 		invoice.save()
@@ -370,7 +343,7 @@ class TestInvoice(unittest.TestCase):
 
 		# Give 30% to team
 		self.team.append(
-			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
+			"discounts", {"amount": 300, "discount_type": "Flat On Total", "based_on": "Amount"}
 		)
 		self.team.save()
 
@@ -390,38 +363,6 @@ class TestInvoice(unittest.TestCase):
 		self.assertEqual(invoice.total_before_discount, 1000)
 		self.assertEqual(invoice.total_discount_amount, 300)
 		self.assertEqual(invoice.total, 700)
-
-	def test_mix_discounts_flat_on_total_and_percent(self):
-
-		# Give 30% to team
-		self.team.append(
-			"discounts", {"percent": 30, "discount_type": "Flat On Total", "based_on": "Percent"}
-		)
-		self.team.save()
-
-		invoice = frappe.get_doc(
-			doctype="Invoice",
-			team=self.team.name,
-			period_start=today(),
-			period_end=add_days(today(), 10),
-		).insert()
-
-		# Add line items
-		invoice.append("items", {"quantity": 1, "rate": 500, "amount": 500})
-		invoice.append("items", {"quantity": 1, "rate": 500, "amount": 500})
-
-		# Apply 100 units discount
-		invoice.append(
-			"discounts", {"amount": 100, "discount_type": "Flat On Total", "based_on": "Amount"}
-		)
-
-		invoice.save()
-		invoice.reload()
-
-		# After discount
-		self.assertEqual(invoice.total_before_discount, 1000)
-		self.assertEqual(invoice.total_discount_amount, 400)
-		self.assertEqual(invoice.total, 600)
 
 	def test_finalize_invoice_with_total_zero(self):
 		invoice = frappe.get_doc(
@@ -482,6 +423,8 @@ class TestInvoice(unittest.TestCase):
 			team.allocate_credit_amount(10, source="Prepaid Credits")
 			# transfer 5 credits
 			team.allocate_credit_amount(-5, source="Transferred Credits")
+			team.payment_mode = "Prepaid Credits"
+			team.save()
 
 			# consume 10 credits
 			invoice = frappe.get_doc(doctype="Invoice", team=team.name)

@@ -40,6 +40,8 @@ class TestSubscription(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
 		frappe.set_user(self.team.user)
 
 	def tearDown(self):
