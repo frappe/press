@@ -30,7 +30,8 @@ export default {
 	},
 	data() {
 		return {
-			query: ''
+			query: '',
+			currentValueInOptions: null
 		};
 	},
 	resources: {
@@ -66,8 +67,13 @@ export default {
 			let currentValueInOptions = options.find(
 				o => o.value === this.modelValue
 			);
+
+			if (currentValueInOptions) {
+				this.currentValueInOptions = currentValueInOptions;
+			}
+
 			if (this.modelValue && !currentValueInOptions) {
-				options = [currentValueInOptions, ...options];
+				options = [this.currentValueInOptions, ...options];
 			}
 			return options;
 		}
