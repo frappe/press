@@ -39,8 +39,7 @@ export default defineConfig({
 		target: 'es2015',
 		rollupOptions: {
 			input: {
-				main: path.resolve(__dirname, 'index.html'),
-				dashboard_beta: path.resolve(__dirname, 'dashboard-beta.html')
+				main: path.resolve(__dirname, 'index.html')
 			}
 		}
 	},

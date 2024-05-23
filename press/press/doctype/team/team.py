@@ -53,7 +53,6 @@ class Team(Document):
 		currency: DF.Link | None
 		database_access_enabled: DF.Check
 		default_payment_method: DF.Link | None
-		default_to_new_dashboard: DF.Check
 		discounts: DF.Table[InvoiceDiscount]
 		enabled: DF.Check
 		erpnext_partner: DF.Check
@@ -1110,14 +1109,6 @@ class Team(Document):
 				"team": self,
 			},
 		)
-
-	@dashboard_whitelist()
-	def change_default_dashboard(self, new_dashboard=None):
-		if new_dashboard is not None:
-			self.default_to_new_dashboard = new_dashboard
-			self.save()
-			# invalidate account.get cache
-			frappe.cache.delete_value("cached-account.get", user=frappe.session.user)
 
 
 def get_team_members(team):

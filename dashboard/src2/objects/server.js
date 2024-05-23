@@ -362,12 +362,12 @@ export default {
 	routes: [
 		{
 			name: 'Server Job',
-			path: 'job/:id',
+			path: 'jobs/:id',
 			component: () => import('../pages/JobPage.vue')
 		},
 		{
 			name: 'Server Play',
-			path: 'play/:id',
+			path: 'plays/:id',
 			component: () => import('../pages/PlayPage.vue')
 		}
 	]

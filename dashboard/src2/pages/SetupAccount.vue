@@ -195,9 +195,9 @@ export default {
 					signup_values: this.signupValues
 				},
 				onSuccess() {
-					let path = '/dashboard-beta';
+					let path = '/dashboard';
 					if (this.saasProduct) {
-						path = `/dashboard-beta/app-trial/${this.saasProduct.name}`;
+						path = `/dashboard/app-trial/${this.saasProduct.name}`;
 					}
 					window.location.href = path;
 				}

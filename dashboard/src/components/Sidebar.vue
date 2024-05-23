@@ -102,7 +102,6 @@
 				</router-link>
 			</div>
 		</div>
-		<TryNewDashboardButton />
 
 		<SwitchTeamDialog v-model="showTeamSwitcher" />
 	</div>
@@ -114,15 +113,13 @@ import SwitchTeamDialog from './SwitchTeamDialog.vue';
 import FCLogo from '@/components/icons/FCLogo.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import { unreadNotificationsCount } from '@/data/notifications';
-import TryNewDashboardButton from './TryNewDashboardButton.vue';
 
 export default {
 	name: 'Sidebar',
 	components: {
 		FCLogo,
 		SwitchTeamDialog,
-		CommandPalette,
-		TryNewDashboardButton
+		CommandPalette
 	},
 	data() {
 		return {

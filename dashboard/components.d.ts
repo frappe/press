@@ -230,7 +230,6 @@ declare module 'vue' {
     Toast: typeof import('./node_modules/frappe-ui/src/components/Toast.vue')['default']
     Tooltip: typeof import('./node_modules/frappe-ui/src/components/Tooltip/Tooltip.vue')['default']
     'Tooltip.story': typeof import('./node_modules/frappe-ui/src/components/Tooltip/Tooltip.story.vue')['default']
-    TryNewDashboardButton: typeof import('./src/components/TryNewDashboardButton.vue')['default']
     Underline: typeof import('./node_modules/frappe-ui/src/components/TextEditor/icons/underline.vue')['default']
     UnionPay: typeof import('./src/components/icons/cards/UnionPay.vue')['default']
     UpdateBillingDetails: typeof import('./src/components/UpdateBillingDetails.vue')['default']

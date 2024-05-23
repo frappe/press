@@ -180,7 +180,7 @@ class Site(Document, TagHelpers):
 		site_name = frappe.db.get_value("Site Domain", name, "site")
 		if site_name:
 			frappe.response.message = {
-				"redirect": f"/dashboard-beta/sites/{site_name}",
+				"redirect": f"/dashboard/sites/{site_name}",
 			}
 		raise
 

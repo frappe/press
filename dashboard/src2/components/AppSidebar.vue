@@ -82,11 +82,6 @@
 				</template>
 			</NavigationItems>
 		</nav>
-		<div class="mt-auto p-2">
-			<Button variant="ghost" @click="switchToOldDashboard">
-				Switch to old dashboard
-			</Button>
-		</div>
 		<!-- TODO: update component name after dashboard-beta merges -->
 		<SwitchTeamDialog2 v-model="showTeamSwitcher" />
 	</div>
@@ -97,7 +92,6 @@ import { defineAsyncComponent } from 'vue';
 import AppSidebarItem from './AppSidebarItem.vue';
 import { Tooltip } from 'frappe-ui';
 import NavigationItems from './NavigationItems.vue';
-import { toast } from 'vue-sonner';
 
 export default {
 	name: 'AppSidebar',
@@ -122,23 +116,6 @@ export default {
 			window.open(
 				'https://frappecloud.com/frappe-cloud-feedback/new',
 				'_blank'
-			);
-		},
-		switchToOldDashboard() {
-			toast.promise(
-				this.$team.changeDefaultDashboard.submit(
-					{ new_dashboard: false },
-					{
-						onSuccess() {
-							window.location.href = '/dashboard';
-						}
-					}
-				),
-				{
-					loading: 'Switching to old dashboard...',
-					success: () => 'Switching to old dashboard...',
-					error: e => 'Failed to switch to old dashboard'
-				}
 			);
 		}
 	}

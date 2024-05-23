@@ -10,9 +10,6 @@ no_cache = 1
 
 
 def get_context():
-	if frappe.session.user != "Guest" and frappe.local.team().default_to_new_dashboard:
-		frappe.flags.redirect_location = "/dashboard-beta"
-		raise frappe.Redirect
 	return _get_context()
 
 

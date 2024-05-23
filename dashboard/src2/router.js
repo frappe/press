@@ -3,7 +3,7 @@ import { getTeam } from './data/team';
 import generateRoutes from './objects/generateRoutes';
 
 let router = createRouter({
-	history: createWebHistory('/dashboard-beta/'),
+	history: createWebHistory('/dashboard/'),
 	routes: [
 		{
 			path: '/',
@@ -131,13 +131,13 @@ let router = createRouter({
 					redirect: { name: 'SettingsPermissionRoles' },
 					children: [
 						{
-							path: 'groups',
+							path: 'roles',
 							name: 'SettingsPermissionRoles',
 							component: () => import('./components/settings/RoleList.vue')
 						},
 						{
 							name: 'SettingsPermissionRolePermissions',
-							path: 'groups/:roleId',
+							path: 'roles/:roleId',
 							component: () =>
 								import('./components/settings/RolePermissions.vue'),
 							props: true
