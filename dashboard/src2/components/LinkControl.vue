@@ -31,7 +31,7 @@ export default {
 	data() {
 		return {
 			query: '',
-			currentValueInOptions: null
+			currentValidValueInOptions: null
 		};
 	},
 	resources: {
@@ -69,11 +69,11 @@ export default {
 			);
 
 			if (currentValueInOptions) {
-				this.currentValueInOptions = currentValueInOptions;
+				this.currentValidValueInOptions = currentValueInOptions;
 			}
 
 			if (this.modelValue && !currentValueInOptions) {
-				options = [this.currentValueInOptions, ...options];
+				options = [this.currentValidValueInOptions, ...options];
 			}
 			return options;
 		}
