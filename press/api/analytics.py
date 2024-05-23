@@ -5,6 +5,7 @@
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
 import frappe
+from pytz import timezone as pytz_timezone
 import requests
 import json
 import sqlparse
@@ -121,11 +122,11 @@ def rounded_time(dt=None, round_to=60):
 	return dt + timedelta(0, rounding - seconds, -dt.microsecond)
 
 
-def get_rounded_boundaries(timespan: int, timegrain: int):
+def get_rounded_boundaries(timespan: int, timegrain: int, timezone: str = "UTC"):
 	"""
 	Round the start and end time to the nearest interval, because Elasticsearch does this
 	"""
-	end = frappe.utils.now_datetime()
+	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 
 	return rounded_time(start, timegrain), rounded_time(end, timegrain)
@@ -193,7 +194,7 @@ def get_stacked_histogram_chart_result(
 			}
 		)
 		for hist_bucket in path_bucket.histogram_of_method.buckets:
-			label = get_datetime(hist_bucket.key_as_string).replace(tzinfo=None)
+			label = get_datetime(hist_bucket.key_as_string)
 			if label in labels:
 				path_data["values"][labels.index(label)] = (
 					(flt(hist_bucket.avg_of_duration.value) / to_s_divisor)
@@ -208,6 +209,7 @@ def get_stacked_histogram_chart_result(
 				)
 		datasets.append(path_data)
 
+	labels = [label.replace(tzinfo=None) for label in labels]
 	return {"datasets": datasets, "labels": labels}
 
 
@@ -221,7 +223,7 @@ def get_request_by_path(site, query_type, timezone, timespan, timegrain):
 	url = f"https://{log_server}/elasticsearch"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
-	start, end = get_rounded_boundaries(timespan, timegrain)
+	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
 
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
@@ -302,7 +304,7 @@ def get_background_job_by_method(site, query_type, timezone, timespan, timegrain
 	url = f"https://{log_server}/elasticsearch"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
-	start, end = get_rounded_boundaries(timespan, timegrain)
+	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
 
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
@@ -383,7 +385,7 @@ def get_slow_logs(site, query_type, timezone, timespan, timegrain):
 	url = f"https://{log_server}/elasticsearch/"
 	password = get_decrypted_password("Log Server", log_server, "kibana_password")
 
-	start, end = get_rounded_boundaries(timespan, timegrain)
+	start, end = get_rounded_boundaries(timespan, timegrain, timezone)
 
 	es = Elasticsearch(url, basic_auth=("frappe", password))
 	search = (
