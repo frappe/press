@@ -89,7 +89,6 @@ class ReleaseGroup(Document, TagHelpers):
 		compress_app_cache: DF.Check
 		default: DF.Check
 		dependencies: DF.Table[ReleaseGroupDependency]
-		docker_remote_builder_server: DF.Link | None
 		enabled: DF.Check
 		environment_variables: DF.Table[ReleaseGroupVariable]
 		gunicorn_threads_per_worker: DF.Int
@@ -106,6 +105,7 @@ class ReleaseGroup(Document, TagHelpers):
 		mounts: DF.Table[ReleaseGroupMount]
 		packages: DF.Table[ReleaseGroupPackage]
 		public: DF.Check
+		remote_build_server: DF.Link | None
 		saas_app: DF.Link | None
 		saas_bench: DF.Check
 		servers: DF.Table[ReleaseGroupServer]

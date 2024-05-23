@@ -72,7 +72,7 @@
   "suspend_builds",
   "clone_directory",
   "build_directory",
-  "docker_remote_builder_server",
+  "remote_build_server",
   "column_break_66",
   "code_server",
   "code_server_password",
@@ -1136,12 +1136,6 @@
    "label": "Realtime Job Updates"
   },
   {
-   "fieldname": "docker_remote_builder_server",
-   "fieldtype": "Link",
-   "label": "Docker Remote Builder Server",
-   "options": "Server"
-  },
-  {
    "default": "0",
    "description": "Quickens builds by fetching app changes without rebuilding app if app rebuild is not required.",
    "fieldname": "use_delta_builds",
@@ -1181,11 +1175,17 @@
    "fieldname": "agent_sentry_dsn",
    "fieldtype": "Data",
    "label": "Agent Sentry DSN"
+  },
+  {
+   "fieldname": "remote_build_server",
+   "fieldtype": "Link",
+   "label": "Remote Build Server",
+   "options": "Server"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-05-23 13:50:46.967979",
+ "modified": "2024-05-23 13:52:31.570272",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Settings",

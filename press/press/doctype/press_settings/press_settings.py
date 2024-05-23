@@ -57,7 +57,6 @@ class PressSettings(Document):
 		docker_registry_password: DF.Data | None
 		docker_registry_url: DF.Data | None
 		docker_registry_username: DF.Data | None
-		docker_remote_builder_server: DF.Link | None
 		domain: DF.Link | None
 		eff_registration_email: DF.Data
 		enable_google_oauth: DF.Check
@@ -107,6 +106,7 @@ class PressSettings(Document):
 		razorpay_webhook_secret: DF.Data | None
 		realtime_job_updates: DF.Check
 		remote_access_key_id: DF.Data | None
+		remote_build_server: DF.Link | None
 		remote_link_expiry: DF.Int
 		remote_secret_access_key: DF.Password | None
 		remote_uploads_bucket: DF.Data | None

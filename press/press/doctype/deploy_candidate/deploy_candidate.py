@@ -99,7 +99,6 @@ class DeployCandidate(Document):
 		docker_image_id: DF.Data | None
 		docker_image_repository: DF.Data | None
 		docker_image_tag: DF.Data | None
-		docker_remote_builder_server: DF.Link | None
 		environment_variables: DF.Table[DeployCandidateVariable]
 		group: DF.Link
 		gunicorn_threads_per_worker: DF.Int
@@ -113,6 +112,7 @@ class DeployCandidate(Document):
 		pending_duration: DF.Time | None
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
+		remote_build_server: DF.Link | None
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
@@ -255,10 +255,10 @@ class DeployCandidate(Document):
 		frappe.db.commit()
 
 	def set_remote_build_flags(self):
-		if not self.docker_remote_builder_server:
-			self.docker_remote_builder_server = self._get_docker_remote_builder_server()
+		if not self.remote_build_server:
+			self.remote_build_server = self._get_remote_build_server()
 
-		if not self.docker_remote_builder_server:
+		if not self.remote_build_server:
 			return
 
 		self.is_remote_builder_used = True
@@ -456,7 +456,7 @@ class DeployCandidate(Document):
 		no_push: bool,
 		no_build: bool,
 	) -> None:
-		if not (remote_build_server := self.docker_remote_builder_server):
+		if not (remote_build_server := self.remote_build_server):
 			return
 
 		context_filepath = self._package_build_context()
@@ -1477,10 +1477,10 @@ class DeployCandidate(Document):
 			pull_update[app_name] = pair
 		return pull_update
 
-	def _get_docker_remote_builder_server(self):
-		server = frappe.get_value("Release Group", self.group, "docker_remote_builder_server")
+	def _get_remote_build_server(self):
+		server = frappe.get_value("Release Group", self.group, "remote_build_server")
 		if not server:
-			server = frappe.get_value("Press Settings", None, "docker_remote_builder_server")
+			server = frappe.get_value("Press Settings", None, "remote_build_server")
 		return server
 
 	def get_first_step(

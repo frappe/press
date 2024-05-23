@@ -16,13 +16,12 @@ from frappe.core.utils import find
 from frappe.installer import subprocess
 from frappe.model.document import Document
 from frappe.utils.user import is_system_user
-
 from press.agent import Agent
+from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.resource_tag.tag_helpers import TagHelpers
 from press.runner import Ansible
 from press.utils import log_error
-from press.api.client import dashboard_whitelist
 
 if typing.TYPE_CHECKING:
 	from press.press.doctype.press_job.press_job import Bench
@@ -372,7 +371,7 @@ class BaseServer(Document, TagHelpers):
 		)
 
 	def is_build_server(self) -> bool:
-		name = frappe.db.get_single_value("Press Settings", "docker_remote_builder_server")
+		name = frappe.db.get_single_value("Press Settings", "remote_build_server")
 		if name == self.name:
 			return True
 
@@ -380,7 +379,7 @@ class BaseServer(Document, TagHelpers):
 			"Release Group",
 			{
 				"enabled": True,
-				"docker_remote_builder_server": self.name,
+				"remote_build_server": self.name,
 			},
 		)
 		if isinstance(count, (int, float)):
