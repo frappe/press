@@ -61,6 +61,7 @@ DOC_URLS = {
 	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
 	"incompatible-dependency-version": "https://frappecloud.com/docs/common-issues/incompatible-dependency-version",
 	"incompatible-app-version": "https://frappecloud.com/docs/common-issues/incompatible-app-version",
+	"debugging-app-installs-locally": "https://frappecloud.com/docs/common-issues/debugging-app-installs-locally",
 }
 
 
@@ -249,6 +250,7 @@ def update_with_vue_build_failed(
 		"""
 
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	return True
 
 
@@ -294,6 +296,7 @@ def update_with_import_error(
 		before retrying build.</p>
 		"""
 
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	details["message"] = fmt(message)
 	return True
 
@@ -338,6 +341,7 @@ def update_with_module_not_found(
 		"""
 
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	return True
 
 
@@ -382,6 +386,7 @@ def update_with_dependency_not_found(
 		"""
 
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	return True
 
 
@@ -415,6 +420,7 @@ def update_with_error_on_pip_install(
 		"""
 
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	return True
 
 
@@ -465,6 +471,7 @@ def update_with_invalid_package_json_error(
 	<p>To rectify this issue, please fix the <b>pyproject.json</b> file.</p>
 	"""
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["debugging-app-installs-locally"]
 	return True
 
 

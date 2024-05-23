@@ -873,6 +873,7 @@ class DeployCandidate(Document):
 
 		# End step
 		step.duration = get_duration(start_time)
+		step.output = "Pre-build validations passed"
 		step.status = "Success"
 
 	def _clone_app_repo(self, app: "DeployCandidateApp") -> str:
