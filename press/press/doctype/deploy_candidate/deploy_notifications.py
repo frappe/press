@@ -134,6 +134,10 @@ def handlers() -> list[UserAddressableHandlerTuple]:
 			update_with_module_not_found,
 		),
 		(
+			"ImportError: cannot import name",
+			update_with_import_error,
+		),
+		(
 			"No matching distribution found for",
 			update_with_dependency_not_found,
 		),
@@ -242,6 +246,52 @@ def update_with_vue_build_failed(
 
 		<p>Please view the build output to debug and fix the error before retrying
 		build.</p>
+		"""
+
+	details["message"] = fmt(message)
+	return True
+
+
+def update_with_import_error(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: "BaseException",
+):
+
+	failed_step = dc.get_first_step("status", "Failure")
+	app_name = None
+
+	details["title"] = "App installation failed due to invalid import"
+
+	lines = [
+		line
+		for line in dc.build_output.split("\n")
+		if "ImportError: cannot import name" in line
+	]
+	invalid_import = None
+	if len(lines) > 1 and len(parts := lines[0].split("From")) > 1:
+		imported = parts[0].strip().split(" ")[-1][1:-1]
+		module = parts[1].strip().split(" ")[0][1:-1]
+		invalid_import = f"{imported} from {module}"
+
+	if failed_step.stage_slug == "apps" and invalid_import:
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due to invalid import
+		<b>{invalid_import}</b>.</p>
+
+		<p>Please ensure all Python dependencies are of the required
+		versions.</p>
+
+		<p>Please view the failing step <b>{failed_step.stage} - {failed_step.step}</b>
+		output to debug and fix the error before retrying build.</p>
+		"""
+	else:
+		message = """
+		<p>App installation failed due to an invalid import.</p>
+
+		<p>Please view the build output to debug and fix the error
+		before retrying build.</p>
 		"""
 
 	details["message"] = fmt(message)
