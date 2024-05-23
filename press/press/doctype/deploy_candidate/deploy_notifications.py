@@ -64,7 +64,7 @@ DOC_URLS = {
 }
 
 
-def handlers() -> list[UserAddressableHandlerTuple]:
+def handlers() -> "list[UserAddressableHandlerTuple]":
 	"""
 	Before adding anything here, view the type:
 	`UserAddressableHandlerTuple`
