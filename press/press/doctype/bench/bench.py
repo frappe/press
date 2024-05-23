@@ -5,12 +5,14 @@
 from itertools import groupby
 import json
 from functools import cached_property
+import pytz
 from typing import TYPE_CHECKING, Iterable, Literal, Optional
 
 import frappe
 from frappe.exceptions import DoesNotExistError
 from frappe.model.document import Document
 from frappe.model.naming import append_number_if_name_exists, make_autoname
+from frappe.utils import get_system_timezone
 from press.agent import Agent
 from press.api.client import dashboard_whitelist
 from press.overrides import get_permission_query_conditions_for_doctype
@@ -20,6 +22,7 @@ from press.press.doctype.bench_shell_log.bench_shell_log import (
 )
 from press.press.doctype.site.site import Site
 from press.utils import log_error
+
 
 TRANSITORY_STATES = ["Pending", "Installing"]
 FINAL_STATES = ["Active", "Broken", "Archived"]
@@ -316,14 +319,16 @@ class Bench(Document):
 				"Site", filters={"bench": self.name, "status": ("!=", "Archived")}, pluck="name"
 			)
 			last_synced_time = round(
-				frappe.get_all(
-					"Site Usage",
-					filters=[["site", "in", sites]],
-					limit_page_length=1,
-					order_by="creation desc",
-					pluck="creation",
-					ignore_ifnull=True,
-				)[0].timestamp()
+				convert_user_timezone_to_utc(
+					frappe.get_all(
+						"Site Usage",
+						filters=[["site", "in", sites]],
+						limit_page_length=1,
+						order_by="creation desc",
+						pluck="creation",
+						ignore_ifnull=True,
+					)[0]
+				).timestamp()
 			)
 		except IndexError:
 			last_synced_time = None
@@ -932,6 +937,11 @@ def sync_bench_analytics(name):
 			reference_name=bench.name,
 		)
 		frappe.db.rollback()
+
+
+def convert_user_timezone_to_utc(datetime):
+	timezone = pytz.timezone(get_system_timezone())
+	return timezone.localize(datetime).astimezone(pytz.utc)
 
 
 get_permission_query_conditions = get_permission_query_conditions_for_doctype("Bench")
