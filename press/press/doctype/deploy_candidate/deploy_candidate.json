@@ -18,10 +18,12 @@
   "section_break_6",
   "build_start",
   "build_duration",
-  "pending_duration",
+  "pending_start",
+  "build_directory",
   "column_break_7",
   "build_end",
-  "build_directory",
+  "pending_duration",
+  "pending_end",
   "last_updated",
   "section_break_11",
   "docker_image",
@@ -91,6 +93,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval: doc.status !== \"Draft\"",
    "fieldname": "build_duration",
    "fieldtype": "Time",
    "label": "Build Duration",
@@ -364,6 +367,7 @@
   },
   {
    "default": "0",
+   "depends_on": "eval: doc.status !== \"Draft\" && doc.status !== \"Pending\"",
    "description": "Time spent by the build in queue, i.e. in status Pending.",
    "fieldname": "pending_duration",
    "fieldtype": "Time",
@@ -378,6 +382,20 @@
   {
    "fieldname": "column_break_rpow",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pending_start",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Pending Start",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_end",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Pending End",
+   "read_only": 1
   }
  ],
  "links": [
@@ -394,7 +412,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-22 11:40:29.417875",
+ "modified": "2024-05-23 13:37:29.076268",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",

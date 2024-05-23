@@ -18,11 +18,11 @@ from typing import Any, Generator, List, Literal, Optional, Tuple
 
 import docker
 import frappe
-from frappe.utils import rounded
 from frappe.core.utils import find
 from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime as now
+from frappe.utils import rounded
 from press.agent import Agent
 from press.overrides import get_permission_query_conditions_for_doctype
 from press.press.doctype.app_release.app_release import (
@@ -47,6 +47,8 @@ from press.utils import get_current_team, log_error, reconnect_on_failure
 from press.utils.jobs import get_background_jobs, stop_background_job
 from rq.job import Job
 
+# build_duration, pending_duration are Time fields, >= 1 day is invalid
+MAX_DURATION = timedelta(hours=23, minutes=59, seconds=59)
 TRANSITORY_STATES = ["Scheduled", "Pending", "Preparing", "Running"]
 RESTING_STATES = ["Draft", "Success", "Failure"]
 
@@ -109,6 +111,8 @@ class DeployCandidate(Document):
 		merge_default_and_short_rq_queues: DF.Check
 		packages: DF.Table[DeployCandidatePackage]
 		pending_duration: DF.Time | None
+		pending_end: DF.Datetime | None
+		pending_start: DF.Datetime | None
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
@@ -186,6 +190,7 @@ class DeployCandidate(Document):
 
 	def before_insert(self):
 		if self.status == "Draft":
+			self.pending_duration = 0
 			self.build_duration = 0
 
 	def on_trash(self):
@@ -218,12 +223,14 @@ class DeployCandidate(Document):
 		return unpublished_releases
 
 	def pre_build(self, method, **kwargs):
+		# This should always be the first call in pre-build
+		self.reset_build_state()
+
 		if not self.validate_status():
 			return
 
 		self._set_status_pending()
 		self.set_remote_build_flags()
-		self.reset_build_state()
 		self.add_pre_build_steps()
 		self.save()
 		user, session_data, team, = (
@@ -617,7 +624,7 @@ class DeployCandidate(Document):
 
 	def _set_status_pending(self):
 		self.status = "Pending"
-		self.last_updated = now()
+		self.pending_start = now()
 		self.save()
 		frappe.db.commit()
 
@@ -673,21 +680,20 @@ class DeployCandidate(Document):
 		if not isinstance(self.build_start, datetime):
 			return
 
-		build_duration = self.build_end - self.build_start
-		max_duration = timedelta(hours=23, minutes=59, seconds=59)
-
-		# build_duration is a Time field, >= 1 day is invalid
-		self.build_duration = min(build_duration, max_duration)
+		self.build_duration = min(
+			self.build_end - self.build_start,
+			MAX_DURATION,
+		)
 
 	def _set_pending_duration(self):
-		if not isinstance(self.last_updated, datetime):
+		self.pending_end = now()
+		if not isinstance(self.pending_start, datetime):
 			return
 
-		pending_duration = now() - self.last_updated
-		max_duration = timedelta(hours=23, minutes=59, seconds=59)
-
-		# pending_duration is a Time field, >= 1 day is invalid
-		self.pending_duration = min(pending_duration, max_duration)
+		self.pending_duration = min(
+			self.pending_end - self.pending_start,
+			MAX_DURATION,
+		)
 
 	def _fail_last_running_step(self):
 		for step in self.build_steps:
@@ -699,17 +705,25 @@ class DeployCandidate(Document):
 				break
 
 	def reset_build_state(self):
+		# Build directory
 		self.cleanup_build_directory()
+		self.build_directory = None
+		# Build output
 		self.build_steps.clear()
 		self.build_error = ""
 		self.build_output = ""
-		self.build_start = None
-		self.build_end = None
 		self.last_updated = None
-		self.build_duration = None
-		self.build_directory = None
+		# Failure flags
 		self.user_addressable_failure = False
 		self.manually_failed = False
+		# Build times
+		self.build_start = None
+		self.build_end = None
+		self.build_duration = None
+		# Pending times
+		self.pending_start = None
+		self.pending_end = None
+		self.pending_duration = None
 
 	def add_pre_build_steps(self):
 		"""
