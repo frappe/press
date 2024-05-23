@@ -1791,7 +1791,7 @@ def is_build_job(job: Job) -> bool:
 	return doc_method.startswith("_build")
 
 
-def get_duration(start_time: datetime, end_time: Optional[datetime]):
+def get_duration(start_time: datetime, end_time: Optional[datetime] = None):
 	end_time = end_time or now()
 	seconds_elapsed = (end_time - start_time).total_seconds()
 	value = rounded(seconds_elapsed, 3)
