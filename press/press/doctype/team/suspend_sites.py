@@ -34,9 +34,6 @@ def execute():
 	for d in teams_with_unpaid_invoices[:30]:
 		team = frappe.get_doc("Team", d.team)
 
-		if team.payment_mode == "Partner Credits":
-			continue
-
 		# suspend sites
 		suspend_sites_and_send_email(team)
 

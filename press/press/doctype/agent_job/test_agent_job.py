@@ -173,6 +173,8 @@ class TestAgentJob(unittest.TestCase):
 	def setUp(self):
 		self.team = create_test_press_admin_team()
 		self.team.allocate_credit_amount(1000, source="Prepaid Credits", remark="Test")
+		self.team.payment_mode = "Prepaid Credits"
+		self.team.save()
 
 	def tearDown(self):
 		frappe.db.rollback()

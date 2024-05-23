@@ -84,10 +84,7 @@ export default class Account {
 		if (this.team.free_account || this.team.parent_team) {
 			return true;
 		}
-		if (
-			this.team.payment_mode === 'Paid By Partner' ||
-			this.team.payment_mode === 'Partner Credits'
-		) {
+		if (this.team.payment_mode === 'Paid By Partner') {
 			// partner credits shall be deprecated in few months
 			return true;
 		}
