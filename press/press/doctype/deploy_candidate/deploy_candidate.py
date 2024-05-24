@@ -320,12 +320,16 @@ class DeployCandidate(Document):
 	@frappe.whitelist()
 	def schedule_build_and_deploy(
 		self,
+		run_now: bool = True,
 		scheduled_time: Optional[datetime] = None,
 	):
 		if self.status == "Scheduled":
 			return
 
-		# Schedule build to be run ASAP.
+		if run_now and not is_suspended():
+			self.build_and_deploy()
+			return
+
 		self.status = "Scheduled"
 		self.scheduled_time = scheduled_time or now()
 		self.save()
@@ -416,9 +420,11 @@ class DeployCandidate(Document):
 	def schedule_build_retry(self):
 		self.reset_build_state()
 		self.retry_count += 1
-
 		scheduled_time = now() + timedelta(minutes=5)
-		self.schedule_build_and_deploy(scheduled_time=scheduled_time)
+		self.schedule_build_and_deploy(
+			run_now=False,
+			scheduled_time=scheduled_time,
+		)
 
 	def _set_output_parsers(self):
 		self.build_output_parser = DockerBuildOutputParser(self)
