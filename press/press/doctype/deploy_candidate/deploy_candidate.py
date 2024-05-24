@@ -387,7 +387,7 @@ class DeployCandidate(Document):
 	def _handle_build_exception(self, exc: Exception) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
-		should_retry = self.should_build_retry()
+		should_retry = self.should_build_retry(exc=exc)
 
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
@@ -406,7 +406,7 @@ class DeployCandidate(Document):
 		# Raise if cannot retry or is not user addressable
 		raise
 
-	def should_build_retry(self) -> bool:
+	def should_build_retry(self, exc: Exception) -> bool:
 		if self.status != "Failure":
 			return False
 
@@ -414,7 +414,14 @@ class DeployCandidate(Document):
 		if self.retry_count >= 2:
 			return False
 
-		# TODO: Add cases
+		# Build failed cause APT could not get lock.
+		if "Could not get lock /var/cache/apt/archives/lock" in self.build_output:
+			return True
+
+		# Failed to upload build context (Nginx VTS module issue, shouldn't occur if disabled)
+		if len(exc.args) > 0 and "Failed to upload build context" in exc.args[0]:
+			return True
+
 		return False
 
 	def schedule_build_retry(self):
