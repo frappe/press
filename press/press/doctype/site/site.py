@@ -1935,6 +1935,7 @@ class Site(Document, TagHelpers):
 			frappe.qb.from_(sites)
 			.select(sites.name, sites.backup_time)
 			.where(sites.backup_time.isnotnull())
+			.where(sites.skip_scheduled_backups == 0)
 			.run(as_dict=True)
 		)
 
