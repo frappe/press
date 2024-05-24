@@ -40,14 +40,17 @@ export default {
 								'compute hour',
 								'compute hours'
 							)} / day`,
+							condition: !plan.name.includes('Unlimited'),
 							value: plan.cpu_time_per_day
 						},
 						{
 							label: 'Database',
+							condition: !plan.name.includes('Unlimited'),
 							value: this.$format.bytes(plan.max_database_usage, 0, 2)
 						},
 						{
 							label: 'Disk',
+							condition: !plan.name.includes('Unlimited'),
 							value: this.$format.bytes(plan.max_storage_usage, 0, 2)
 						},
 						{
@@ -62,7 +65,7 @@ export default {
 						{
 							value: plan.monitor_access ? 'Advanced Monitoring' : ''
 						}
-					]
+					].filter(feature => feature.condition ?? true)
 				};
 			});
 		}
