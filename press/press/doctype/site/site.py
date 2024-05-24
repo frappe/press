@@ -1287,6 +1287,9 @@ class Site(Document, TagHelpers):
 				value = json.dumps(d.value)
 			else:
 				value = d.value
+			# Value is mandatory, skip None and empty strings
+			if d.value is None or cstr(d.value).strip() == "":
+				continue
 			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
 
