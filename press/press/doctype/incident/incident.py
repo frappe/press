@@ -8,7 +8,9 @@ from frappe.utils import cint
 from frappe.website.website_generator import WebsiteGenerator
 from tenacity import RetryError, retry, stop_after_attempt, wait_fixed
 from tenacity.retry import retry_if_not_result
+from twilio.base.exceptions import TwilioRestException
 
+from press.telegram_utils import Telegram
 from press.utils import log_error
 
 from typing import TYPE_CHECKING
@@ -163,17 +165,33 @@ class Incident(WebsiteGenerator):
 	def wait_for_pickup(self, call):
 		return call.fetch().status  # will eventually be no-answer
 
+	def notify_unable_to_reach_twilio(self):
+		telegram = Telegram()
+		telegram.send(
+			f"""Unable to reach Twilio for Incident in f{self.server}
+
+Likely due to insufficient balance or incorrect credentials""",
+			reraise=True,
+		)
+
+	def call_human(self, human: "IncidentSettingsUser | IncidentSettingsSelfHostedUser"):
+		try:
+			return self.twilio_client.calls.create(
+				url="http://demo.twilio.com/docs/voice.xml",
+				to=human.phone,
+				from_=self.twilio_phone_number,
+			)
+		except TwilioRestException:
+			self.notify_unable_to_reach_twilio()
+
 	def _call_humans(self):
 		if not self.phone_call or not self.global_phone_call_enabled:
 			return
 		if frappe.db.get_value("Server", self.server, "ignore_incidents"):
 			return
 		for human in self.get_humans():
-			call = self.twilio_client.calls.create(
-				url="http://demo.twilio.com/docs/voice.xml",
-				to=human.phone,
-				from_=self.twilio_phone_number,
-			)
+			if not (call := self.call_human(human)):
+				return  # can't twilio
 			acknowledged = False
 			status = call.status
 			try:
