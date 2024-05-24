@@ -1288,7 +1288,7 @@ class Site(Document, TagHelpers):
 			else:
 				value = d.value
 			# Value is mandatory, skip None and empty strings
-			if d.value is None or cstr(d.value).strip() == "":
+			if value is None or cstr(value).strip() == "":
 				continue
 			self.append("configuration", {"key": d.key, "value": value, "type": d.type})
 		self.save()
@@ -1304,11 +1304,14 @@ class Site(Document, TagHelpers):
 			_type = frappe.get_value("Site Config Key", {"key": key}, "type") or guess_type(
 				value
 			)
+			converted_value = convert(value)
+			if converted_value is None or cstr(converted_value).strip() == "":
+				continue
 			if key in keys:
-				self.configuration[keys[key]].value = convert(value)
+				self.configuration[keys[key]].value = converted_value
 				self.configuration[keys[key]].type = _type
 			else:
-				self.append("configuration", {"key": key, "value": convert(value), "type": _type})
+				self.append("configuration", {"key": key, "value": converted_value, "type": _type})
 
 		if save:
 			self.save()
