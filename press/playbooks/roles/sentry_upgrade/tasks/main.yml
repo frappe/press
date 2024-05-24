@@ -1,4 +1,13 @@
 ---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install Docker Compose
+  apt:
+    name: docker-compose-plugin
+    state: latest
+
 - name: Download Sentry Self Hosting Archive
   become: yes
   become_user: frappe
