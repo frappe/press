@@ -401,8 +401,9 @@ class VirtualMachine(Document):
 		elif self.cloud_provider == "OCI":
 			return self._sync_oci()
 
-	def _sync_oci(self):
-		instance = self.client().get_instance(instance_id=self.instance_id).data
+	def _sync_oci(self, instance=None):
+		if not instance:
+			instance = self.client().get_instance(instance_id=self.instance_id).data
 		if instance and instance.lifecycle_state != "TERMINATED":
 			cluster = frappe.get_doc("Cluster", self.cluster)
 
@@ -940,13 +941,39 @@ class VirtualMachine(Document):
 
 	@classmethod
 	def bulk_sync_oci(cls):
-		machines = frappe.get_all(
+		for cluster in frappe.get_all(
 			"Virtual Machine",
+			["cluster"],
 			{"status": ("not in", ("Terminated", "Draft")), "cloud_provider": "OCI"},
-		)
-		for machine in machines:
+			group_by="cluster",
+			pluck="cluster",
+		):
+			# Pick a random machine
+			# TODO: This probably should be a method on the Cluster
+			machine = frappe.get_doc(
+				"Virtual Machine",
+				{
+					"status": ("not in", ("Terminated", "Draft")),
+					"cloud_provider": "OCI",
+					"cluster": cluster,
+				},
+			)
+			frappe.enqueue_doc(
+				machine.doctype,
+				machine.name,
+				method="bulk_sync_oci_cluster",
+				queue="sync",
+				job_id=f"bulk_sync_oci:{machine.cluster}",
+				deduplicate=True,
+			)
+
+	def bulk_sync_oci_cluster(self):
+		cluster = frappe.get_doc("Cluster", self.cluster)
+		response = self.client().list_instances(compartment_id=cluster.oci_tenancy).data
+		for instance in response:
+			machine = frappe.get_doc("Virtual Machine", {"instance_id": instance.id})
 			try:
-				frappe.get_doc("Virtual Machine", machine.name).sync()
+				machine._sync_oci(instance)
 				frappe.db.commit()
 			except Exception:
 				log_error("Virtual Machine Sync Error", virtual_machine=machine.name)
