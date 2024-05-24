@@ -63,7 +63,9 @@
 								<div class="text-sm text-gray-600">
 									{{ currentUsage.cpu }}
 									{{ $format.plural(currentUsage.cpu, 'hour', 'hours') }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of {{ currentPlan?.cpu_time_per_day }} hours
 									</template>
 								</div>
@@ -86,7 +88,9 @@
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
 									{{ formatBytes(currentUsage.storage) }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of {{ formatBytes(currentPlan.max_storage_usage) }}
 									</template>
 								</div>
@@ -110,7 +114,9 @@
 							<div class="mt-2 flex justify-between">
 								<div class="text-sm text-gray-600">
 									{{ formatBytes(currentUsage.database) }}
-									<template v-if="currentPlan">
+									<template
+										v-if="currentPlan && !$site.doc.is_dedicated_server"
+									>
 										of
 										{{ formatBytes(currentPlan.max_database_usage) }}
 									</template>
