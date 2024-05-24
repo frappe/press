@@ -107,6 +107,7 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 		"partner_referral_code",
+		"parent_team",
 	]
 
 	def get_doc(self, doc):
