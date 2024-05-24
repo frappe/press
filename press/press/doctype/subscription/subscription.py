@@ -101,6 +101,8 @@ class Subscription(Document):
 			doc.save()
 
 	def enable(self):
+		if self.enabled:
+			return
 		try:
 			self.enabled = True
 			self.save()
@@ -108,6 +110,8 @@ class Subscription(Document):
 			frappe.log_error(title="Enable Subscription Error")
 
 	def disable(self):
+		if not self.enabled:
+			return
 		try:
 			self.enabled = False
 			self.save()
