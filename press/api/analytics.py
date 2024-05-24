@@ -140,7 +140,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 	url = f"https://{monitor_server}/prometheus/api/v1/query_range"
 	password = get_decrypted_password("Monitor Server", monitor_server, "grafana_password")
 
-	end = frappe.utils.now_datetime()
+	end = datetime.now(pytz_timezone(timezone))
 	start = frappe.utils.add_to_date(end, seconds=-timespan)
 	query = {
 		"query": (
@@ -160,9 +160,7 @@ def get_uptime(site, timezone, timespan, timegrain):
 		buckets.append(
 			frappe._dict(
 				{
-					"date": convert_utc_to_timezone(
-						datetime.fromtimestamp(timestamp).replace(tzinfo=None), timezone
-					),
+					"date": convert_utc_to_timezone(datetime.fromtimestamp(timestamp), timezone),
 					"value": float(value),
 				}
 			)
