@@ -49,7 +49,7 @@ def update_cpu_usages():
 				site_doc.current_cpu_usage = latest_cpu_usage
 				site_doc.save()
 				frappe.db.commit()
-			except Exception():
+			except Exception:
 				log_error("Site CPU Usage Update Error", cpu_usage=cpu_usage, cpu_limit=cpu_limit)
 				frappe.db.rollback()
 
