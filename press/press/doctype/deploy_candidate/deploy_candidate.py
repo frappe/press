@@ -113,6 +113,7 @@ class DeployCandidate(Document):
 		pending_end: DF.Datetime | None
 		pending_start: DF.Datetime | None
 		remote_build_server: DF.Link | None
+		retry_count: DF.Int
 		scheduled_time: DF.Datetime | None
 		status: DF.Literal[
 			"Draft", "Scheduled", "Pending", "Preparing", "Running", "Success", "Failure"
@@ -317,27 +318,27 @@ class DeployCandidate(Document):
 		return dict(error=False, message=dc.name)
 
 	@frappe.whitelist()
-	def schedule_build_and_deploy(self, is_running_scheduled=False):
-		"""
-		If Builds are suspended (Press Settings > Suspend Builds) then this
-		puts the build into scheduled mode.
-
-		Execution will be retried on scheduler tick from `run_scheduled_builds`
-
-		To bypass this run `build_and_deploy` directly.
-		"""
-		if self.status == "Scheduled" and not is_running_scheduled:
-			return
-
-		if not is_suspended():
-			self.build_and_deploy()
+	def schedule_build_and_deploy(
+		self,
+		scheduled_time: Optional[datetime] = None,
+	):
+		if self.status == "Scheduled":
 			return
 
 		# Schedule build to be run ASAP.
 		self.status = "Scheduled"
-		self.scheduled_time = frappe.utils.now_datetime()
+		self.scheduled_time = scheduled_time or now()
 		self.save()
 		frappe.db.commit()
+
+	def run_scheduled_build_and_deploy(self):
+		"""
+		Build and Deploy will run only if the build is Scheduled
+		and if builds have not been suspended.
+		"""
+		if self.status != "Scheduled" or is_suspended():
+			return
+		self.build_and_deploy()
 
 	def build_and_deploy(self):
 		self.pre_build(method="_build_and_deploy")
@@ -353,12 +354,7 @@ class DeployCandidate(Document):
 		try:
 			self.create_deploy()
 		except Exception:
-			log_error(
-				"Deploy Creation Error",
-				candidate=self.name,
-				reference_doctype="Deploy Candidate",
-				reference_name=self.name,
-			)
+			log_error("Deploy Creation Error", doc=self)
 
 	def _build(
 		self,
@@ -387,16 +383,42 @@ class DeployCandidate(Document):
 	def _handle_build_exception(self, exc: Exception) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
+		should_retry = self.should_build_retry()
 
-		if create_build_failed_notification(self, exc):
+		# Do not send a notification if the build is being retried.
+		if not should_retry and create_build_failed_notification(self, exc):
 			self.user_addressable_failure = True
 			self.save(ignore_version=True, ignore_permissions=True)
 			frappe.db.commit()
 			return
 
 		# Log and raise error if build failure is not actionable
-		log_error("Deploy Candidate Build Exception", name=self.name, doc=self)
+		log_error("Deploy Candidate Build Exception", doc=self)
+
+		if should_retry:
+			self.schedule_build_retry()
+			return
+
+		# Raise if cannot retry or is not user addressable
 		raise
+
+	def should_build_retry(self) -> bool:
+		if self.status != "Failure":
+			return False
+
+		# Retry twice before giving up
+		if self.retry_count >= 2:
+			return False
+
+		# TODO: Add cases
+		return False
+
+	def schedule_build_retry(self):
+		self.reset_build_state()
+		self.retry_count += 1
+
+		scheduled_time = now() + timedelta(minutes=5)
+		self.schedule_build_and_deploy(scheduled_time=scheduled_time)
 
 	def _set_output_parsers(self):
 		self.build_output_parser = DockerBuildOutputParser(self)
@@ -803,11 +825,7 @@ class DeployCandidate(Document):
 		try:
 			update = self.get_pull_update_dict()
 		except Exception:
-			log_error(
-				title="Failed to get Pull Update Dict",
-				reference_doctype="Deploy Candidate",
-				reference_name=self.name,
-			)
+			log_error(title="Failed to get Pull Update Dict", doc=self)
 			return
 
 		for app in self.apps:
@@ -1593,7 +1611,7 @@ def pull_update_file_filter(file_path: str) -> bool:
 
 def cleanup_build_directories():
 	# Cleanup Build Directories for Deploy Candidates older than a day
-	candidates = frappe.get_all(
+	dcs = frappe.get_all(
 		"Deploy Candidate",
 		{
 			"status": ("!=", "Draft"),
@@ -1604,15 +1622,14 @@ def cleanup_build_directories():
 		pluck="name",
 		limit=100,
 	)
-	for candidate in candidates:
+	for dc in dcs:
+		doc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc)
 		try:
-			frappe.get_doc("Deploy Candidate", candidate).cleanup_build_directory()
+			doc.cleanup_build_directory()
 			frappe.db.commit()
 		except Exception as e:
 			frappe.db.rollback()
-			log_error(
-				title="Deploy Candidate Build Cleanup Error", exception=e, candidate=candidate
-			)
+			log_error(title="Deploy Candidate Build Cleanup Error", exception=e, doc=doc)
 
 	# Delete all temporary files created by the build process
 	glob_path = os.path.join(tempfile.gettempdir(), f"{tempfile.gettempprefix()}*.tar.gz")
@@ -1641,7 +1658,7 @@ def desk_app(doctype, txt, searchfield, start, page_len, filters):
 
 
 def delete_draft_candidates():
-	candidates = frappe.get_all(
+	dcs = frappe.get_all(
 		"Deploy Candidate",
 		{
 			"status": "Draft",
@@ -1652,19 +1669,23 @@ def delete_draft_candidates():
 		limit=1000,
 	)
 
-	for candidate in candidates:
-		if frappe.db.exists("Bench", {"candidate": candidate}):
+	for dc in dcs:
+		if frappe.db.exists("Bench", {"candidate": dc}):
 			frappe.db.set_value(
-				"Deploy Candidate", candidate, "status", "Success", update_modified=False
+				"Deploy Candidate", dc, "status", "Success", update_modified=False
 			)
 			frappe.db.commit()
 			continue
 		else:
 			try:
-				frappe.delete_doc("Deploy Candidate", candidate, delete_permanently=True)
+				frappe.delete_doc("Deploy Candidate", dc, delete_permanently=True)
 				frappe.db.commit()
 			except Exception:
-				log_error("Draft Deploy Candidate Deletion Error", candidate=candidate)
+				log_error(
+					"Draft Deploy Candidate Deletion Error",
+					reference_doctype="Deploy Candidate",
+					reference_name=dc,
+				)
 				frappe.db.rollback()
 
 
@@ -1680,19 +1701,26 @@ def toggle_builds(suspend):
 
 
 def run_scheduled_builds(max_builds: int = 5):
-	candidates = frappe.get_all(
+	if is_suspended():
+		return
+
+	dcs = frappe.get_all(
 		"Deploy Candidate",
-		{"status": "Scheduled", "scheduled_time": ("<=", frappe.utils.now_datetime())},
+		{
+			"status": "Scheduled",
+			"scheduled_time": ("<=", frappe.utils.now_datetime()),
+		},
+		pluck="name",
 		limit=max_builds,
 	)
-	for candidate in candidates:
+	for dc in dcs:
+		doc: "DeployCandidate" = frappe.get_doc("Deploy Candidate", dc)
 		try:
-			candidate: "DeployCandidate" = frappe.get_doc("Deploy Candidate", candidate)
-			candidate.schedule_build_and_deploy(is_running_scheduled=True)
+			doc.run_scheduled_build_and_deploy()
 			frappe.db.commit()
 		except Exception:
 			frappe.db.rollback()
-			log_error(title="Scheduled Deploy Candidate Error", candidate=candidate)
+			log_error(title="Scheduled Deploy Candidate Error", doc=doc)
 
 
 # Key: stage_slug

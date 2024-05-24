@@ -13,6 +13,7 @@
   "scheduled_time",
   "section_break_xefr",
   "user_addressable_failure",
+  "retry_count",
   "column_break_rpow",
   "manually_failed",
   "section_break_6",
@@ -396,6 +397,15 @@
    "label": "Remote Build Server",
    "options": "Server",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: doc.retry_count",
+   "description": "Under certain failure conditions, a build will be retried.",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count",
+   "read_only": 1
   }
  ],
  "links": [
@@ -412,7 +422,7 @@
    "link_fieldname": "document_name"
   }
  ],
- "modified": "2024-05-23 13:53:35.698784",
+ "modified": "2024-05-24 11:50:55.127138",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Deploy Candidate",
