@@ -335,10 +335,10 @@ export default {
 									toast.promise(
 										this.$bench(bench.name).updateAllSites.submit(),
 										{
-											loading: 'Updating sites...',
+											loading: 'Scheduling updates for the sites...',
 											success: () => {
 												hide();
-												return 'Sites updated';
+												return 'Sites have been scheduled for update';
 											},
 											error: e => {
 												hide();
