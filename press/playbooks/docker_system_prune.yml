@@ -8,5 +8,5 @@
   tasks:
     - name: Prune docker system for last 24 hours
       command: 'docker system prune -f --filter "until=24h"'
-      async: 3600
+      async: 7200
       poll: 30

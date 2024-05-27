@@ -813,11 +813,10 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			self.name,
 			"_prune_docker_system",
 			queue="long",
-			timeout=4000,
+			timeout=8000,
 		)
 
 	def _prune_docker_system(self):
-		self.break_glass()
 		try:
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
