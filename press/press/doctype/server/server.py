@@ -824,7 +824,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 			)
 			ansible.run()
 		except Exception:
-			log_error("Prune Docker System Exception", server=self.as_dict())
+			log_error("Prune Docker System Exception", doc=self)
 
 
 class Server(BaseServer):
