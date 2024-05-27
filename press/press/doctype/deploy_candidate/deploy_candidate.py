@@ -553,11 +553,11 @@ class DeployCandidate(Document):
 
 		if not upload_filename:
 			step.status = "Failure"
-			response_text = agent.response and agent.response.text
-			raise Exception(
-				"Failed to upload build context to remote docker builder"
-				+ f"\nagent response: `{response_text}`",
-			)
+
+			message = "Failed to upload build context to remote docker builder"
+			if agent.response:
+				message += f"\nagent response: {agent.response.text}"
+			raise Exception(message)
 		else:
 			step.status = "Success"
 
