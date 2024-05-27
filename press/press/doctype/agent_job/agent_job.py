@@ -95,7 +95,7 @@ class AgentJob(Document):
 		if not (site or group or server):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site:
+		if site and "Press Support Agent" not in frappe.get_roles():
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:
