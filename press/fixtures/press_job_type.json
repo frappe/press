@@ -334,5 +334,29 @@
     "wait_until_true": 1
    }
   ]
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Press Job Type",
+  "modified": "2024-05-27 11:29:41.787719",
+  "name": "Prune Docker system",
+  "steps": [
+   {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "server = frappe.get_doc(doc.server_type, doc.server)\ntelegram = frappe.get_doc(\"Press Settings\").telegram(\"Information\")\ntelegram.send(f\"Pruning docker cache on [{server.name}]({frappe.utils.get_url_to_form(server.doctype, server.name)})\")\nserver.prune_docker_system()",
+    "step_name": "Prune Docker system",
+    "wait_until_true": 0
+   },
+   {
+    "parent": "Prune Docker system",
+    "parentfield": "steps",
+    "parenttype": "Press Job Type",
+    "script": "plays = frappe.get_all(\"Ansible Play\", {\"server\": doc.server, \"play\": \"Prune Docker System\"}, [\"status\"], order_by=\"creation desc\", limit=1)\nresult = (plays and plays[0].status == \"Success\", plays and plays[0].status == \"Failure\")\n",
+    "step_name": "Wait for docker system prune",
+    "wait_until_true": 1
+   }
+  ]
  }
 ]
