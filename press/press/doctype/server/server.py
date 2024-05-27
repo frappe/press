@@ -799,6 +799,25 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 	def calculated_increase_disk_size(self):
 		self.increase_disk_size(self.size_to_increase_by_for_20_percent_available)
 
+	def prune_docker_system(self):
+		frappe.enqueue_doc(
+			self.doctype,
+			self.name,
+			"_prune_docker_system",
+			queue="long",
+			timeout=4000,
+		)
+
+	def _prune_docker_system(self):
+		try:
+			ansible = Ansible(
+				playbook="docker_system_prune.yml",
+				server=self,
+			)
+			ansible.run()
+		except Exception:
+			log_error("Prune Docker System Exception", server=self.as_dict())
+
 
 class Server(BaseServer):
 	# begin: auto-generated types
