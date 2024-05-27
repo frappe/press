@@ -619,7 +619,9 @@ class ReleaseGroup(Document, TagHelpers):
 		out.sites = [
 			site.update({"skip_failing_patches": False, "skip_backups": False})
 			for site in frappe.get_all(
-				"Site", {"group": self.name, "status": "Active"}, ["name", "server", "bench"]
+				"Site",
+				{"group": self.name, "status": ("in", ["Active", "Broken"])},
+				["name", "server", "bench"],
 			)
 		]
 
