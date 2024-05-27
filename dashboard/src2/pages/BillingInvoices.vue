@@ -107,7 +107,11 @@ export default {
 									}
 								};
 							}
-							if (row.status !== 'Paid' && row.amount_due > 0) {
+							if (
+								row.status !== 'Paid' &&
+								row.amount_due > 0 &&
+								row.stripe_invoice_url
+							) {
 								return {
 									label: 'Pay Now',
 									slots: {

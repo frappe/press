@@ -117,6 +117,7 @@ class Invoice(Document):
 		"due_date",
 		"total_discount_amount",
 		"invoice_pdf",
+		"stripe_invoice_url",
 	]
 
 	@staticmethod
