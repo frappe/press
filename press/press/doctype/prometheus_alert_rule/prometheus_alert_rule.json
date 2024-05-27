@@ -28,9 +28,10 @@
   "route_preview",
   "reaction_tab",
   "press_job_type",
+  "ignore_on_clusters",
   "column_break_oetk",
   "only_on_shared",
-  "ignore_on_clusters"
+  "silent"
  ],
  "fields": [
   {
@@ -180,6 +181,13 @@
    "fieldtype": "Table MultiSelect",
    "label": "Ignore on Clusters",
    "options": "Prometheus Alert Rule Cluster"
+  },
+  {
+   "default": "0",
+   "description": "Don't forward to telegram (Only for reactions)",
+   "fieldname": "silent",
+   "fieldtype": "Check",
+   "label": "Silent"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -189,7 +197,7 @@
    "link_fieldname": "alert"
   }
  ],
- "modified": "2024-05-24 16:15:24.304916",
+ "modified": "2024-05-27 12:08:23.598999",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Prometheus Alert Rule",
