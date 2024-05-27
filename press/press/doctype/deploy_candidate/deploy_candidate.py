@@ -1714,7 +1714,6 @@ def toggle_builds(suspend):
 
 
 def run_scheduled_builds(max_builds: int = 5):
-	return
 	if is_suspended():
 		return
 
