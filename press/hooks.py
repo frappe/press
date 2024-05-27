@@ -208,6 +208,7 @@ scheduler_events = {
 	],
 	"all": [
 		"press.auth.flush",
+		"press.press.doctype.site.sync.sync_setup_wizard_status",
 	],
 	"cron": {
 		"1-59/2 * * * *": [

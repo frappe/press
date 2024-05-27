@@ -435,7 +435,7 @@ def all_apps(name):
 	marketplace_apps = frappe.get_all(
 		"Marketplace App",
 		filters={"status": "Published", "app": ("not in", installed_apps)},
-		fields=["name", "title", "image"],
+		fields=["name", "title", "image", "app"],
 	)
 
 	AppSource = frappe.qb.DocType("App Source")
@@ -453,7 +453,7 @@ def all_apps(name):
 			AppSourceVersion.version,
 		)
 		.where(
-			(AppSource.app.isin([app.name for app in marketplace_apps]))
+			(AppSource.app.isin([app.app for app in marketplace_apps]))
 			& (AppSource.enabled == 1)
 			& (AppSource.public == 1)
 		)
@@ -464,10 +464,10 @@ def all_apps(name):
 	for app in marketplace_apps:
 		app["sources"] = find_all(
 			list(filter(lambda x: x.version == release_group.version, marketplace_app_sources)),
-			lambda x: x.app == app.name,
+			lambda x: x.app == app.app,
 		)
 		# for fetching repo details for incompatible apps
-		app_source = find(marketplace_app_sources, lambda x: x.app == app.name)
+		app_source = find(marketplace_app_sources, lambda x: x.app == app.app)
 		app["repo"] = (
 			f"{app_source.repository_owner}/{app_source.repository}" if app_source else None
 		)

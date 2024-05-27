@@ -1,9 +1,18 @@
 ---
+- name: Update APT Cache
+  apt:
+    update_cache: yes
+
+- name: Install Docker Compose
+  apt:
+    name: docker-compose-plugin
+    state: latest
+
 - name: Download Sentry Self Hosting Archive
   become: yes
   become_user: frappe
   unarchive:
-    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.4.2.tar.gz
+    src: https://github.com/getsentry/self-hosted/archive/refs/tags/24.5.0.tar.gz
     dest: /tmp
     remote_src: yes
 
@@ -25,7 +34,7 @@
   become: yes
   become_user: frappe
   copy:
-    src: /tmp/self-hosted-24.4.2/
+    src: /tmp/self-hosted-24.5.0/
     dest: /home/frappe/sentry
     remote_src: yes
 

@@ -32,7 +32,7 @@ function getCurrentTeam() {
 			!window.is_system_user)
 	) {
 		currentTeam = window.default_team;
-		localStorage.setItem('current_team', currentTeam);
+		if (currentTeam) localStorage.setItem('current_team', currentTeam);
 	}
 	return currentTeam;
 }

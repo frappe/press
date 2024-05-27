@@ -107,6 +107,7 @@ class Team(Document):
 		"billing_name",
 		"referrer_id",
 		"partner_referral_code",
+		"parent_team",
 	]
 
 	def get_doc(self, doc):
@@ -891,15 +892,21 @@ class Team(Document):
 		else:
 			self.add_comment(text="Failed to fetch partner level" + "<br><br>" + response.text)
 
-	def get_onboarding(self):
+	def get_billing_setup(self):
 		if self.payment_mode in ("Prepaid Credits", "Paid By Partner"):
-			billing_setup = True
+			return True
 		elif (
 			self.payment_mode == "Card" and self.default_payment_method and self.billing_address
 		):
-			billing_setup = True
+			return True
 		else:
-			billing_setup = False
+			return False
+
+	def get_onboarding(self):
+		billing_setup = self.get_billing_setup()
+		if not billing_setup and self.parent_team:
+			parent_team = frappe.get_cached_doc("Team", self.parent_team)
+			billing_setup = parent_team.get_billing_setup()
 
 		site_created = frappe.db.count("Site", {"team": self.name}) > 0
 
