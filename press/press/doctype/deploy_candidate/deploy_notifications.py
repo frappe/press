@@ -61,6 +61,7 @@ DOC_URLS = {
 	"incompatible-node-version": "https://frappecloud.com/docs/common-issues/incompatible-node-version",
 	"incompatible-dependency-version": "https://frappecloud.com/docs/common-issues/incompatible-dependency-version",
 	"incompatible-app-version": "https://frappecloud.com/docs/common-issues/incompatible-app-version",
+	"required-app-not-found": "https://frappecloud.com/docs/common-issues/required-app-not-found",
 	"debugging-app-installs-locally": "https://frappecloud.com/docs/common-issues/debugging-app-installs-locally",
 }
 
@@ -680,6 +681,7 @@ def update_with_required_app_not_found_prebuild(
 	"""
 	details["traceback"] = None
 	details["message"] = fmt(message)
+	details["assistance_url"] = DOC_URLS["required-app-not-found"]
 	return True
 
 
