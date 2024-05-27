@@ -144,6 +144,7 @@ class DeployCandidate(Document):
 		"build_error",
 		"apps",
 		"group",
+		"retry_count",
 	]
 
 	@staticmethod
@@ -425,7 +426,6 @@ class DeployCandidate(Document):
 		return False
 
 	def schedule_build_retry(self):
-		self.reset_build_state()
 		self.retry_count += 1
 		scheduled_time = now() + timedelta(minutes=5)
 		self.schedule_build_and_deploy(
@@ -1714,6 +1714,7 @@ def toggle_builds(suspend):
 
 
 def run_scheduled_builds(max_builds: int = 5):
+	return
 	if is_suspended():
 		return
 

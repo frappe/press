@@ -7,6 +7,12 @@
 			:title="error.title"
 			@done="$resources.errors.reload()"
 		/>
+		<AlertBanner
+			v-if="alertMessage && !error"
+			:title="alertMessage"
+			type="warning"
+			class="mb-5"
+		/>
 		<Button :route="{ name: `${object.doctype} Detail Deploys` }">
 			<template #prefix>
 				<i-lucide-arrow-left class="inline-block h-4 w-4" />
@@ -93,12 +99,14 @@ import { getObject } from '../objects';
 import JobStep from '../components/JobStep.vue';
 import AlertAddressableError from '../components/AlertAddressableError.vue';
 import BuildError from '../components/BuildError.vue';
+import AlertBanner from '../components/AlertBanner.vue';
 
 export default {
 	name: 'BenchDeploy',
 	props: ['id', 'objectType'],
 	components: {
 		JobStep,
+		AlertBanner,
 		BuildError,
 		AlertAddressableError
 	},
@@ -159,6 +167,15 @@ export default {
 		},
 		error() {
 			return this.$resources.errors?.data?.[0] ?? null;
+		},
+		alertMessage() {
+			if (!this.deploy) {
+				return null;
+			}
+
+			if (this.deploy.retry_count > 0 && this.deploy.status === 'Scheduled') {
+				return 'Previous deploy failed, re-deploy will be attempted soon';
+			}
 		}
 	},
 	methods: {
