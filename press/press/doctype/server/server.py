@@ -395,10 +395,12 @@ class BaseServer(Document, TagHelpers):
 		for play in plays:
 			frappe.delete_doc("Ansible Play", play.name)
 
-	@frappe.whitelist()
-	def extend_ec2_volume(self):
-		if self.provider not in ("AWS EC2", "OCI"):
-			return
+	def break_glass(self):
+		"""
+		Remove glass file with simple ssh command to make free space
+
+		Space is required for playbooks to run, growpart command, etc.
+		"""
 		try:
 			subprocess.check_output(
 				shlex.split(
@@ -408,6 +410,12 @@ class BaseServer(Document, TagHelpers):
 			)
 		except subprocess.CalledProcessError as e:
 			log_error(f"Error removing glassfile: {e.output.decode()}")
+
+	@frappe.whitelist()
+	def extend_ec2_volume(self):
+		if self.provider not in ("AWS EC2", "OCI"):
+			return
+		self.break_glass()
 		try:
 			ansible = Ansible(playbook="extend_ec2_volume.yml", server=self)
 			ansible.run()
@@ -809,6 +817,7 @@ node_filesystem_avail_bytes{{instance="{self.name}", mountpoint="/"}}[3h], 6*360
 		)
 
 	def _prune_docker_system(self):
+		self.break_glass()
 		try:
 			ansible = Ansible(
 				playbook="docker_system_prune.yml",
