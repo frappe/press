@@ -41,6 +41,7 @@ class PrometheusAlertRule(Document):
 		repeat_interval: DF.Data
 		route_preview: DF.Code | None
 		severity: DF.Literal["Critical", "Warning", "Information"]
+		silent: DF.Check
 	# end: auto-generated types
 
 	def validate(self):
