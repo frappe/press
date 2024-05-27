@@ -74,9 +74,17 @@ class SiteMigration(Document):
 
 	def before_insert(self):
 		self.validate_apps()
+		self.validate_bench()
 		self.check_enough_space_on_destination_server()
 		if get_ongoing_migration(self.site, scheduled=True):
 			frappe.throw("Ongoing/Scheduled Site Migration for that site exists.")
+
+	def validate_bench(self):
+		if (
+			frappe.db.get_value("Bench", self.destination_bench, "status", for_update=True)
+			!= "Active"
+		):
+			frappe.throw("Destination bench does not exist")
 
 	def check_enough_space_on_destination_server(self):
 		try:
