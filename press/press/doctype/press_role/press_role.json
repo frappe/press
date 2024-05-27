@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "internal",
   "column_break_qnnn",
   "team",
   "section_break_yvqq",
@@ -85,11 +86,17 @@
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
    "label": "Allow Server Creation"
+  },
+  {
+   "default": "0",
+   "fieldname": "internal",
+   "fieldtype": "Check",
+   "label": "Internal"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-21 15:31:48.262656",
+ "modified": "2024-05-27 12:11:40.151298",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",
@@ -132,7 +139,9 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "title"
 }

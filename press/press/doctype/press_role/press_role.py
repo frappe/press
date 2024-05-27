@@ -21,6 +21,7 @@ class PressRole(Document):
 		allow_billing: DF.Check
 		allow_server_creation: DF.Check
 		allow_site_creation: DF.Check
+		internal: DF.Check
 		team: DF.Link
 		title: DF.Data
 		users: DF.Table[PressRoleUser]
@@ -29,6 +30,7 @@ class PressRole(Document):
 	dashboard_fields = [
 		"title",
 		"users",
+		"internal",
 		"allow_billing",
 		"allow_apps",
 		"allow_site_creation",
@@ -78,6 +80,9 @@ class PressRole(Document):
 
 	@dashboard_whitelist()
 	def delete(self):
+		if self.internal and not frappe.local.system_user():
+			frappe.throw("Internal roles cannot be deleted by users")
+
 		if not frappe.local.system_user() and frappe.session.user != frappe.db.get_value(
 			"Team", self.team, "user"
 		):
@@ -107,15 +112,17 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 
 	PressRoleUser = frappe.qb.DocType("Press Role User")
 	PressRole = frappe.qb.DocType("Press Role")
-
 	query = (
 		frappe.qb.from_(PressRole)
 		.select(PressRole.name)
 		.join(PressRoleUser)
 		.on(PressRoleUser.parent == PressRole.name)
 		.where(PressRoleUser.user == frappe.session.user)
-		.where(PressRole.team == frappe.local.team().name)
 	)
+
+	# special case for Press Support Agent, so that they can view sites
+	if "Press Support Agent" in frappe.get_roles():
+		query = query.where(PressRole.team == frappe.local.team().name)
 
 	if doctype == "Marketplace App":
 		if roles := query.select(PressRole.allow_apps).run(as_dict=1):

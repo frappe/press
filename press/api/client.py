@@ -167,7 +167,9 @@ def get(doctype, name):
 			return controller.on_not_found(name)
 		raise
 
-	if not frappe.local.system_user() and frappe.get_meta(doctype).has_field("team"):
+	if not (
+		frappe.local.system_user() or "Press Support Agent" in frappe.get_roles()
+	) and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
 

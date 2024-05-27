@@ -15,12 +15,11 @@ import RoleConfigureDialog from './RoleConfigureDialog.vue';
 import router from '../../router';
 import UserAvatarGroup from '../AvatarGroup.vue';
 import AlertBanner from '../AlertBanner.vue';
-import { getTeam } from '../../data/team';
 
 const listOptions = ref({
 	doctype: 'Press Role',
 	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
-	filter: { team: getTeam().doc.name },
+	filters: { internal: 0 },
 	documentation: 'https://frappecloud.com/docs/role-permissions',
 	columns: [
 		{
