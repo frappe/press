@@ -1930,7 +1930,7 @@ def change_region_options(name):
 def change_region(name, cluster, scheduled_datetime=None, skip_failing_patches=False):
 	group = frappe.db.get_value("Site", name, "group")
 	bench_vals = frappe.db.get_value(
-		"Bench", {"group": group, "cluster": cluster}, ["name", "server"]
+		"Bench", {"group": group, "cluster": cluster, "status": "Active"}, ["name", "server"]
 	)
 
 	if bench_vals is None:
