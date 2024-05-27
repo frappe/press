@@ -228,7 +228,7 @@ def update_with_vue_build_failed(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure")
+	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
 	app_name = None
 
 	details["title"] = "App installation failed due to errors in frontend code"
@@ -261,7 +261,7 @@ def update_with_import_error(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure")
+	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
 	app_name = None
 
 	details["title"] = "App installation failed due to invalid import"
@@ -308,7 +308,7 @@ def update_with_module_not_found(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure")
+	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
 	app_name = None
 
 	details["title"] = "App installation failed due to missing module"
@@ -352,7 +352,7 @@ def update_with_dependency_not_found(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure")
+	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
 	app_name = None
 
 	details["title"] = "App installation failed due to dependency not being found"
@@ -397,7 +397,7 @@ def update_with_error_on_pip_install(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure")
+	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
 	app_name = None
 
 	details["title"] = "App installation failed due to errors"
