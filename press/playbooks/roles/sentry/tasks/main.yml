@@ -46,6 +46,14 @@
     src: sentry.yml.jinja2
     dest: /home/frappe/sentry/sentry/config.yml
 
+- name: Fix Kafka/Zookeeper volume permissions
+  become: yes
+  become_user: frappe
+  replace:
+    path: /home/frappe/sentry/docker-compose.yml
+    regexp: '^((\s+)image: "confluentinc/cp-(zookeeper|kafka):.*")$'
+    replace: '\1\n\2user: "0:0"'  # \1 matches the whole line. \2 matches the indentation.
+
 - name: Install Sentry
   become: yes
   become_user: frappe
