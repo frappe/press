@@ -31,6 +31,20 @@
 				:buttonLabel="row.button_label"
 			/>
 		</div>
+		<div
+			class="py-3 first:pt-0 last:pb-0"
+			v-for="row in $dbReplicaServer?.doc?.actions || []"
+			:key="row.action"
+		>
+			<ServerActionCell
+				:serverName="$dbReplicaServer.doc.name"
+				serverType="Database Server"
+				:actionLabel="row.action"
+				:method="row.doc_method"
+				:description="row.description"
+				:buttonLabel="row.button_label"
+			/>
+		</div>
 	</div>
 </template>
 <script>
@@ -50,6 +64,17 @@ export default {
 			return getDocResource({
 				doctype: 'Database Server',
 				name: this.$appServer.doc.database_server,
+				whitelistedMethods: {
+					changePlan: 'change_plan',
+					reboot: 'reboot',
+					rename: 'rename'
+				}
+			});
+		},
+		$dbReplicaServer() {
+			return getDocResource({
+				doctype: 'Database Server',
+				name: this.$appServer.doc.replication_server,
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',
