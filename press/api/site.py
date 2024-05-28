@@ -60,10 +60,7 @@ def protected(doctypes):
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
 
-			if owner == team:
-				return wrapped(*args, **kwargs)
-
-			elif has_role("Press Support Agent"):
+			if owner == team or has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
