@@ -67,7 +67,10 @@ getInitialData().then(() => {
 				];
 				const error = hint.originalException;
 
-				if (error?.message && ignoreErrors.some(re => re.test(error.message)))
+				if (
+					error?.response?.status === 417 ||
+					(error?.message && ignoreErrors.some(re => re.test(error.message)))
+				)
 					return null;
 
 				return event;
