@@ -237,7 +237,7 @@ def insert(doc=None):
 @frappe.whitelist(methods=["POST", "PUT"])
 def set_value(doctype, name, fieldname, value=None):
 	check_permissions(doctype)
-	check_team_access(doctype, name)
+	check_document_access(doctype, name)
 
 	for field in fieldname.keys():
 		# fields mentioned in dashboard_fields are allowed to be set via set_value
@@ -251,7 +251,7 @@ def delete(doctype, name):
 	method = "delete"
 
 	check_permissions(doctype)
-	check_team_access(doctype, name)
+	check_document_access(doctype, name)
 	check_dashboard_actions(doctype, name, method)
 
 	_run_doc_method(dt=doctype, dn=name, method=method, args=None)
@@ -260,7 +260,7 @@ def delete(doctype, name):
 @frappe.whitelist()
 def run_doc_method(dt, dn, method, args=None):
 	check_permissions(dt)
-	check_team_access(dt, dn)
+	check_document_access(dt, dn)
 	check_dashboard_actions(dt, dn, method)
 
 	_run_doc_method(dt=dt, dn=dn, method=method, args=args)
@@ -300,7 +300,7 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 	return q.run(as_dict=1)
 
 
-def check_team_access(doctype: str, name: str):
+def check_document_access(doctype: str, name: str):
 	if frappe.local.system_user():
 		return
 
