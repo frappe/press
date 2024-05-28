@@ -230,16 +230,15 @@ export default {
 			});
 		},
 		$dbReplicaServer() {
-			if (this.$appServer.doc.replication_server)
-				return getDocResource({
-					doctype: 'Database Server',
-					name: this.$appServer.doc.replication_server,
-					whitelistedMethods: {
-						changePlan: 'change_plan',
-						reboot: 'reboot',
-						rename: 'rename'
-					}
-				});
+			return getDocResource({
+				doctype: 'Database Server',
+				name: this.$appServer.doc.replication_server,
+				whitelistedMethods: {
+					changePlan: 'change_plan',
+					reboot: 'reboot',
+					rename: 'rename'
+				}
+			});
 		}
 	}
 };

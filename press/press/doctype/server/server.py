@@ -88,21 +88,26 @@ class BaseServer(Document, TagHelpers):
 		raise
 
 	def get_actions(self):
+		server_type = ""
+		if self.doctype == "Server":
+			server_type = "application server"
+		elif self.doctype == "Database Server":
+			if self.is_replication_setup:
+				server_type = "replication server"
+			else:
+				server_type = "database server"
+
 		actions = [
 			{
 				"action": "Reboot server",
-				"description": "Reboot the application server"
-				if self.doctype == "Server"
-				else "Reboot the database server",
+				"description": f"Reboot the {server_type}",
 				"button_label": "Reboot",
 				"condition": self.status == "Active",
 				"doc_method": "reboot",
 			},
 			{
 				"action": "Rename server",
-				"description": "Rename the application server"
-				if self.doctype == "Server"
-				else "Rename the database server",
+				"description": f"Rename the {server_type}",
 				"button_label": "Rename",
 				"condition": self.status == "Active",
 				"doc_method": "rename",
