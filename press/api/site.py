@@ -21,9 +21,6 @@ from press.press.doctype.marketplace_app.marketplace_app import (
 	get_plans_for_app,
 	get_total_installs_by_app,
 )
-from press.press.doctype.press_user_permission.press_user_permission import (
-	has_user_permission,
-)
 from press.press.doctype.remote_file.remote_file import get_remote_key
 from press.press.doctype.server.server import is_dedicated_server
 from press.press.doctype.site_plan.plan import Plan
@@ -33,6 +30,7 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
+	has_role,
 	log_error,
 	unique,
 )
@@ -43,11 +41,6 @@ NAMESERVERS = ["1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4"]
 def protected(doctypes):
 	@wrapt.decorator
 	def wrapper(wrapped, instance, args, kwargs):
-		request_path = (
-			frappe.local.request.path.rsplit("/", 1)[-1]
-			if hasattr(frappe.local, "request")
-			else ""
-		)
 		user_type = frappe.session.data.user_type or frappe.get_cached_value(
 			"User", frappe.session.user, "user_type"
 		)
@@ -66,34 +59,11 @@ def protected(doctypes):
 
 		for doctype in doctypes:
 			owner = frappe.db.get_value(doctype, name, "team")
-			has_config_permissions = frappe.db.exists(
-				"Press User Permission", {"type": "Config", "user": frappe.session.user}
-			)
 
-			if owner == team or has_config_permissions:
-				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
-				if is_team_member and hasattr(frappe.local, "request"):
-					is_method_restrictable = frappe.db.exists(
-						"Press Method Permission", {"method": request_path}
-					)
-					if not is_method_restrictable:
-						return wrapped(*args, **kwargs)
+			if owner == team or has_role("Press Support Agent"):
+				return wrapped(*args, **kwargs)
 
-					if doctype == "Bench":
-						name = frappe.db.get_value(doctype, name, "group")
-						doctype = "Release Group"
-
-					if has_user_permission(doctype, name, request_path):
-						return wrapped(*args, **kwargs)
-
-					else:
-						# has access to everything
-						return wrapped(*args, **kwargs)
-				else:
-					# Logged in user is the team owner
-					return wrapped(*args, **kwargs)
-
-		raise frappe.PermissionError
+		frappe.throw("Not Permitted", frappe.PermissionError)
 
 	return wrapper
 
