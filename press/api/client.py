@@ -14,6 +14,7 @@ from frappe.model import child_table_fields, default_fields
 from frappe.model.base_document import get_controller
 from frappe.utils import cstr
 from pypika.queries import QueryBuilder
+from press.utils import has_role
 
 ALLOWED_DOCTYPES = [
 	"Site",
@@ -65,6 +66,10 @@ ALLOWED_DOCTYPES = [
 	"Press Notification",
 	"User SSH Key",
 	"Frappe Version",
+]
+
+ALLOWED_DOCTYPES_FOR_SUPPORT = [
+	"Site",
 ]
 
 whitelisted_methods = set()
@@ -168,7 +173,7 @@ def get(doctype, name):
 		raise
 
 	if not (
-		frappe.local.system_user() or "Press Support Agent" in frappe.get_roles()
+		frappe.local.system_user() or has_role("Press Support Agent")
 	) and frappe.get_meta(doctype).has_field("team"):
 		if doc.team != frappe.local.team().name:
 			raise_not_permitted()
@@ -297,6 +302,9 @@ def search_link(doctype, query=None, filters=None, order_by=None, page_length=No
 
 def check_team_access(doctype: str, name: str):
 	if frappe.local.system_user():
+		return
+
+	if has_role("Press Support Agent") and doctype in ALLOWED_DOCTYPES_FOR_SUPPORT:
 		return
 
 	team = ""
