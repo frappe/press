@@ -141,7 +141,7 @@ def has_role(role, user=None):
 	if not user:
 		user = frappe.session.user
 
-	return frappe.db.exists("Has Role", {"parent": user, "role": role})
+	return frappe.db.exists("Has Role", {"parenttype": "User", "parent": user, "role": role})
 
 
 @functools.lru_cache(maxsize=1024)
