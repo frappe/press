@@ -104,7 +104,7 @@ class AlertmanagerWebhookLog(Document):
 				job_id=f"validate_and_create_incident:{self.incident_scope}:{self.alert}",
 				deduplicate=True,
 			)
-		elif not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
+		if not frappe.get_cached_value("Prometheus Alert Rule", self.alert, "silent"):
 			enqueue_doc(
 				self.doctype, self.name, "send_telegram_notification", enqueue_after_commit=True
 			)

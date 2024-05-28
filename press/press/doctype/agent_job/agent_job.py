@@ -30,7 +30,7 @@ from press.press.doctype.site_migration.site_migration import (
 	process_site_migration_job_update,
 	job_matches_site_migration,
 )
-from press.utils import log_error
+from press.utils import log_error, has_role
 from typing import Optional
 
 
@@ -95,7 +95,7 @@ class AgentJob(Document):
 		if not (site or group or server):
 			frappe.throw("Not permitted", frappe.PermissionError)
 
-		if site and "Press Support Agent" not in frappe.get_roles():
+		if site and not has_role("Press Support Agent"):
 			is_owned_by_team("Site", site, raise_exception=True)
 
 		if group:

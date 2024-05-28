@@ -137,6 +137,13 @@ def _system_user():
 	)
 
 
+def has_role(role, user=None):
+	if not user:
+		user = frappe.session.user
+
+	return frappe.db.exists("Has Role", {"parenttype": "User", "parent": user, "role": role})
+
+
 @functools.lru_cache(maxsize=1024)
 def get_app_tag(repository, repository_owner, hash):
 	return frappe.db.get_value(

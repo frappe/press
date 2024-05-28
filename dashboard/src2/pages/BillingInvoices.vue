@@ -17,6 +17,16 @@
 				</template>
 			</template>
 		</Dialog>
+		<BuyPrepaidCreditsDialog
+			v-if="showBuyPrepaidCreditsDialog"
+			v-model="showBuyPrepaidCreditsDialog"
+			:minimumAmount="minimumAmount"
+			@success="
+				() => {
+					showBuyPrepaidCreditsDialog = false;
+				}
+			"
+		/>
 	</div>
 </template>
 <script>
@@ -24,25 +34,29 @@ import ObjectList from '../components/ObjectList.vue';
 import InvoiceTable from '../components/InvoiceTable.vue';
 import { userCurrency } from '../utils/format';
 import { icon } from '../utils/components';
+import BuyPrepaidCreditsDialog from '../components/BuyPrepaidCreditsDialog.vue';
 
 export default {
 	name: 'BillingInvoices',
 	props: ['tab'],
 	components: {
 		ObjectList,
-		InvoiceTable
+		InvoiceTable,
+		BuyPrepaidCreditsDialog
 	},
 	data() {
 		return {
 			invoiceDialog: false,
-			showInvoice: null
+			showInvoice: null,
+			showBuyPrepaidCreditsDialog: false,
+			minimumAmount: 0
 		};
 	},
 	computed: {
 		options() {
 			return {
 				doctype: 'Invoice',
-				fields: ['type', 'invoice_pdf'],
+				fields: ['type', 'invoice_pdf', 'payment_mode', 'stripe_invoice_url'],
 				filterControls() {
 					return [
 						{
@@ -95,7 +109,7 @@ export default {
 						label: '',
 						type: 'Button',
 						align: 'right',
-						Button({ row }) {
+						Button: ({ row }) => {
 							if (row.invoice_pdf) {
 								return {
 									label: 'Download Invoice',
@@ -107,20 +121,21 @@ export default {
 									}
 								};
 							}
-							if (
-								row.status !== 'Paid' &&
-								row.amount_due > 0 &&
-								row.stripe_invoice_url
-							) {
+							if (row.status !== 'Paid' && row.amount_due > 0) {
 								return {
 									label: 'Pay Now',
 									slots: {
 										prefix: icon('external-link')
 									},
 									onClick: () => {
-										window.open(
-											`/api/method/run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`
-										);
+										if (row.stripe_invoice_url && row.payment_mode == 'Card') {
+											window.open(
+												`/api/method/run_doc_method?dt=Invoice&dn=${row.name}&method=stripe_payment_url`
+											);
+										} else {
+											this.showBuyPrepaidCreditsDialog = true;
+											this.minimumAmount = row.amount_due;
+										}
 									}
 								};
 							}

@@ -4,7 +4,7 @@
 		class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2"
 	>
 		<div
-			v-for="server in ['Server', 'Database Server']"
+			v-for="server in ['Server', 'Database Server', 'Replication Server']"
 			class="col-span-1 rounded-md border lg:col-span-2"
 		>
 			<div class="grid grid-cols-2 lg:grid-cols-4">
@@ -107,19 +107,20 @@ export default {
 
 			let formatBytes = v => this.$format.bytes(v, 0, 2);
 
-			let currentPlan =
+			let doc =
 				serverType === 'Server'
-					? this.$appServer.doc.current_plan
-					: this.$dbServer.doc.current_plan;
-			let currentUsage =
-				serverType === 'Server'
-					? this.$appServer.doc.usage
-					: this.$dbServer.doc.usage;
+					? this.$appServer.doc
+					: serverType === 'Database Server'
+					? this.$dbServer.doc
+					: serverType === 'Replication Server'
+					? this.$dbReplicaServer
+					: null;
 
-			let diskSize =
-				serverType === 'Server'
-					? this.$appServer.doc.disk_size
-					: this.$dbServer.doc.disk_size;
+			if (!doc) return [];
+
+			let currentPlan = doc.current_plan;
+			let currentUsage = doc.usage;
+			let diskSize = doc.disk_size;
 
 			let planDescription = '';
 			if (!currentPlan) {
@@ -139,7 +140,9 @@ export default {
 					label:
 						serverType === 'Server'
 							? 'Application Server Plan'
-							: 'Database Server Plan',
+							: serverType === 'Database Server'
+							? 'Database Server Plan'
+							: 'Replication Server Plan',
 					value: planDescription,
 					type: 'header'
 				},
@@ -195,6 +198,10 @@ export default {
 					value: this.$appServer.doc.database_server
 				},
 				{
+					label: 'Replication server',
+					value: this.$appServer.doc.replication_server
+				},
+				{
 					label: 'Owned by',
 					value: this.$appServer.doc.team
 				},
@@ -206,7 +213,7 @@ export default {
 					label: 'Created on',
 					value: this.$format.date(this.$appServer.doc.creation)
 				}
-			];
+			].filter(d => d.value);
 		},
 		$appServer() {
 			return getCachedDocumentResource('Server', this.server);
@@ -215,6 +222,17 @@ export default {
 			return getDocResource({
 				doctype: 'Database Server',
 				name: this.$appServer.doc.database_server,
+				whitelistedMethods: {
+					changePlan: 'change_plan',
+					reboot: 'reboot',
+					rename: 'rename'
+				}
+			});
+		},
+		$dbReplicaServer() {
+			return getDocResource({
+				doctype: 'Database Server',
+				name: this.$appServer.doc.replication_server,
 				whitelistedMethods: {
 					changePlan: 'change_plan',
 					reboot: 'reboot',

@@ -1201,7 +1201,11 @@ class DeployCandidate(Document):
 		if not app_name and os.path.exists(setup_py_path):
 			# retrieve app name from setup.py as fallback
 			with open(setup_py_path, "rb") as f:
-				app_name = re.search(r'name\s*=\s*[\'"](.*)[\'"]', f.read().decode("utf-8"))[1]
+				contents = f.read().decode("utf-8")
+				search = re.search(r'name\s*=\s*[\'"](.*)[\'"]', contents)
+
+			if search:
+				app_name = search[1]
 
 		if app_name and app != app_name:
 			return app_name

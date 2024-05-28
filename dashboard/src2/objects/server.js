@@ -166,8 +166,7 @@ export default {
 				),
 				props: server => {
 					return {
-						serverName: server.doc.name,
-						dbServerName: server.doc.database_server
+						serverName: server.doc.name
 					};
 				}
 			},
@@ -298,9 +297,30 @@ export default {
 				type: 'list',
 				list: {
 					doctype: 'Ansible Play',
+					filterControls({ documentResource: server }) {
+						return [
+							{
+								type: 'select',
+								label: 'Server',
+								fieldname: 'server',
+								options: [
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							}
+						];
+					},
 					filters: server => {
 						return {
-							server: ['in', [server.doc.name, server.doc.database_server]]
+							server: [
+								'in',
+								[
+									server.doc.name,
+									server.doc.database_server,
+									server.doc.replication_server
+								].filter(Boolean)
+							]
 						};
 					},
 					route(row) {
