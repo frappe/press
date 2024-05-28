@@ -61,16 +61,7 @@ def protected(doctypes):
 			owner = frappe.db.get_value(doctype, name, "team")
 
 			if owner == team:
-				is_team_member = frappe.get_value("Team", team, "user") != frappe.session.user
-				if is_team_member and hasattr(frappe.local, "request"):
-					if doctype == "Bench":
-						name = frappe.db.get_value(doctype, name, "group")
-						doctype = "Release Group"
-
-					return wrapped(*args, **kwargs)
-				else:
-					# Logged in user is the team owner
-					return wrapped(*args, **kwargs)
+				return wrapped(*args, **kwargs)
 
 			elif has_role("Press Support Agent"):
 				return wrapped(*args, **kwargs)
