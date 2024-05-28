@@ -30,6 +30,7 @@ from press.utils import (
 	get_current_team,
 	get_frappe_backups,
 	get_last_doc,
+	has_role,
 	log_error,
 	unique,
 )
@@ -70,6 +71,9 @@ def protected(doctypes):
 				else:
 					# Logged in user is the team owner
 					return wrapped(*args, **kwargs)
+
+			elif has_role("Press Support Agent"):
+				return wrapped(*args, **kwargs)
 
 		frappe.throw("Not Permitted", frappe.PermissionError)
 
