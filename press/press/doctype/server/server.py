@@ -69,8 +69,23 @@ class BaseServer(Document, TagHelpers):
 		doc.disk_size = frappe.db.get_value(
 			"Virtual Machine", self.virtual_machine, "disk_size"
 		)
+		doc.replication_server = frappe.db.get_value(
+			"Database Server",
+			{"primary": doc.database_server, "is_replication_setup": 1},
+			"name",
+		)
 
 		return doc
+
+	@staticmethod
+	def on_not_found(name):
+		# If name is of a db server then redirect to the app server
+		app_server = frappe.db.get_value("Server", {"database_server": name}, "name")
+		if app_server:
+			frappe.response.message = {
+				"redirect": f"/dashboard/servers/{app_server}",
+			}
+		raise
 
 	def get_actions(self):
 		actions = [

@@ -2,14 +2,10 @@
 	<div class="space-y-4">
 		<div class="flex space-x-2">
 			<FormControl
-				v-if="dbServerName"
 				class="w-48"
 				label="Server"
 				type="select"
-				:options="[
-					{ label: 'Application Server', value: serverName },
-					{ label: 'Database Server', value: dbServerName }
-				]"
+				:options="serverOptions"
 				v-model="chosenServer"
 			/>
 			<FormControl
@@ -105,11 +101,12 @@
 
 <script>
 import { DateTime } from 'luxon';
+import { getCachedDocumentResource } from 'frappe-ui';
 import LineChart from '@/components/charts/LineChart.vue';
 
 export default {
 	name: 'ServerAnalytics',
-	props: ['serverName', 'dbServerName'],
+	props: ['serverName'],
 	components: {
 		LineChart
 	},
@@ -201,6 +198,25 @@ export default {
 		}
 	},
 	computed: {
+		$server() {
+			return getCachedDocumentResource('Server', this.serverName);
+		},
+		serverOptions() {
+			return [
+				{
+					label: this.$server.doc.name,
+					value: this.$server.doc.name
+				},
+				{
+					label: this.$server.doc.database_server,
+					value: this.$server.doc.database_server
+				},
+				{
+					label: this.$server.doc.replication_server,
+					value: this.$server.doc.replication_server
+				}
+			].filter(v => v.value);
+		},
 		loadAverageData() {
 			let loadavg = this.$resources.loadavg.data;
 			if (!loadavg) return;
