@@ -124,17 +124,16 @@
 							.{{ options.domain }}
 						</div>
 					</div>
+				</div>
+				<div class="mt-1">
 					<div
 						v-if="$resources.subdomainExists.loading"
 						class="text-base text-gray-600"
 					>
 						Checking...
 					</div>
-				</div>
-				<div class="mt-1">
-					<ErrorMessage :message="$resources.subdomainExists.error" />
 					<template
-						v-if="
+						v-else-if="
 							!$resources.subdomainExists.error &&
 							$resources.subdomainExists.data != null
 						"
@@ -149,6 +148,7 @@
 							{{ subdomain }}.{{ options.domain }} is not available
 						</div>
 					</template>
+					<ErrorMessage :message="$resources.subdomainExists.error" />
 				</div>
 			</div>
 			<Summary
@@ -180,6 +180,7 @@
 					:disabled="!agreedToRegionConsent"
 					@click="$resources.newSite.submit()"
 					:loading="$resources.newSite.loading"
+					:loadingText="'Creating site... This may take a while...'"
 				>
 					Create site
 				</Button>
@@ -318,7 +319,9 @@ export default {
 							],
 							app_plans: appPlans,
 							cluster: this.cluster,
-							bench: this.selectedVersion.group.bench,
+							bench: this.bench ? this.selectedVersion.group.bench : null,
+							group: this.selectedVersion.group.name,
+							domain: this.options.domain,
 							subscription_plan: this.plan.name,
 							share_details_consent: this.shareDetailsConsent
 						}
