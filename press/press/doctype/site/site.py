@@ -427,7 +427,7 @@ class Site(Document, TagHelpers):
 		self.config = json.dumps(new_config, indent=4)
 
 	def _get_managed_db_config(self):
-		if self.db_host and self.db_user and self.db_password:
+		if self.managed_database:
 			return {
 				"managed_database": self.managed_database,
 				"db_host": self.db_host,

@@ -117,11 +117,20 @@ class Agent:
 
 	def reinstall_site(self, site):
 		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
-		data = {
-			"mariadb_root_password": get_decrypted_password(
+
+		mariadb_root_password = (
+			site.get_password("db_password")
+			if site.managed_database
+			else get_decrypted_password(
 				"Database Server", database_server, "mariadb_root_password"
-			),
+			)
+		)
+
+		data = {
+			"mariadb_root_user": site.db_user,
+			"mariadb_root_password": mariadb_root_password,
 			"admin_password": site.get_password("admin_password"),
+			"managed_database": site.managed_database,
 		}
 
 		return self.create_agent_job(
@@ -141,16 +150,23 @@ class Agent:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
+
+		if site.managed_database:
+			mariadb_root_password = site.get_password("db_password")
+		else:
+			mariadb_root_password = get_decrypted_password(
+				"Database Server", database_server, "mariadb_root_password"
+			)
 		data = {
 			"apps": apps,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": mariadb_root_password,
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"managed_database": site.managed_database,
+			"mariadb_root_user": site.db_user,
 		}
 
 		return self.create_agent_job(
