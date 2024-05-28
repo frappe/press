@@ -5,7 +5,7 @@
 			v-model="contributionDialog"
 			:options="{
 				size: '3xl',
-				title: 'Last Month + Current Month\'s Contribution '
+				title: 'Last 6 Month\'s Contribution'
 			}"
 		>
 			<template #body-content>
