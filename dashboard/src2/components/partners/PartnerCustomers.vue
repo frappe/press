@@ -97,7 +97,7 @@ export default {
 	resources: {
 		getPartnerCustomers() {
 			return {
-				url: 'press.api.account.get_partner_customers',
+				url: 'press.api.partner.get_partner_customers',
 				onSuccess(data) {
 					this.partnerCustomers = data.map(d => {
 						return {
@@ -114,7 +114,7 @@ export default {
 		},
 		transferCredits() {
 			return {
-				url: 'press.api.account.transfer_credits',
+				url: 'press.api.partner.transfer_credits',
 				onSuccess(data) {
 					this.amount = data;
 					this.transferCreditsDialog = false;
