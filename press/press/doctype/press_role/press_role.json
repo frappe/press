@@ -6,7 +6,6 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "internal",
   "column_break_qnnn",
   "team",
   "section_break_yvqq",
@@ -86,17 +85,11 @@
    "fieldname": "allow_server_creation",
    "fieldtype": "Check",
    "label": "Allow Server Creation"
-  },
-  {
-   "default": "0",
-   "fieldname": "internal",
-   "fieldtype": "Check",
-   "label": "Internal"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-27 12:11:40.151298",
+ "modified": "2024-05-28 10:42:19.303119",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Press Role",

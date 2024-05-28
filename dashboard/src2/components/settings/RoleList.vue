@@ -19,7 +19,6 @@ import AlertBanner from '../AlertBanner.vue';
 const listOptions = ref({
 	doctype: 'Press Role',
 	fields: [{ users: ['user', 'user.full_name', 'user.user_image'] }],
-	filters: { internal: 0 },
 	documentation: 'https://frappecloud.com/docs/role-permissions',
 	columns: [
 		{
