@@ -77,6 +77,7 @@ def setup_account(
 	accepted_user_terms=False,
 	invited_by_parent_team=False,
 	oauth_signup=False,
+	oauth_domain=False,
 	signup_values=None,
 ):
 	account_request = get_account_request_from_key(key)
@@ -87,7 +88,7 @@ def setup_account(
 		if not first_name:
 			frappe.throw("First Name is required")
 
-		if not password and not oauth_signup:
+		if not password and not (oauth_signup or oauth_domain):
 			frappe.throw("Password is required")
 
 		if not is_invitation and not country:
@@ -321,6 +322,9 @@ def validate_request_key(key, timezone=None):
 			"invited_by": account_request.invited_by,
 			"invited_by_parent_team": account_request.invited_by_parent_team,
 			"oauth_signup": account_request.oauth_signup,
+			"oauth_domain": frappe.db.exists(
+				"OAuth Domain Mapping", {"email_domain": account_request.email.split("@")[1]}
+			),
 			"saas_product": {
 				"name": saas_product_doc.name,
 				"title": saas_product_doc.title,
