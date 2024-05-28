@@ -64,7 +64,7 @@ class PartnerApprovalRequest(Document):
 		customer = frappe.db.get_value("Team", self.requested_by, "user")
 
 		link = get_url(
-			f"/api/method/press.api.account.approve_partner_request?key={self.key}"
+			f"/api/method/press.api.partner.approve_partner_request?key={self.key}"
 		)
 
 		frappe.sendmail(

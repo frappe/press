@@ -83,7 +83,7 @@ export default {
 	resources: {
 		addPartner() {
 			return {
-				url: 'press.api.account.add_partner',
+				url: 'press.api.partner.add_partner',
 				params: {
 					referral_code: this.referralCode
 				},
@@ -103,7 +103,7 @@ export default {
 			let code = e.target.value;
 			this.partnerExists = false;
 
-			let result = await this.$call('press.api.account.validate_partner_code', {
+			let result = await this.$call('press.api.partner.validate_partner_code', {
 				code: code
 			});
 
