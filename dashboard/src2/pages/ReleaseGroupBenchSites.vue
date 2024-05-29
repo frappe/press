@@ -114,6 +114,9 @@ export default {
 						</div>
 					);
 				},
+				emptyStateMessage: this.$releaseGroup.doc.deploy_information.last_deploy
+					? 'No sites found'
+					: 'Create a deploy first to start creating sites',
 				columns: [
 					{
 						label: 'Site',
@@ -198,6 +201,7 @@ export default {
 						slots: {
 							prefix: icon('plus', 'w-4 h-4')
 						},
+						disabled: !this.$releaseGroup.doc?.deploy_information?.last_deploy,
 						route: {
 							name: 'Bench New Site',
 							params: { bench: this.releaseGroup }

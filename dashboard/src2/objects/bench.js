@@ -34,7 +34,8 @@ export default {
 		generateCertificate: 'generate_certificate',
 		addTag: 'add_resource_tag',
 		removeTag: 'remove_resource_tag',
-		redeploy: 'redeploy'
+		redeploy: 'redeploy',
+		initialDeploy: 'initial_deploy'
 	},
 	list: {
 		route: '/benches',
@@ -976,9 +977,13 @@ export default {
 
 			return [
 				{
-					label: 'Update Available',
+					label: bench.doc?.deploy_information?.last_deploy
+						? 'Update Available'
+						: 'Deploy Now',
 					slots: {
-						prefix: icon(LucideHardDriveDownload)
+						prefix: bench.doc?.deploy_information?.last_deploy
+							? icon(LucideHardDriveDownload)
+							: icon(LucideRocket)
 					},
 					variant: 'solid',
 					condition: () =>
@@ -986,18 +991,39 @@ export default {
 						bench.doc.deploy_information.update_available &&
 						['Awaiting Deploy', 'Active'].includes(bench.doc.status),
 					onClick() {
-						let UpdateBenchDialog = defineAsyncComponent(() =>
-							import('../components/bench/UpdateBenchDialog.vue')
-						);
-						renderDialog(
-							h(UpdateBenchDialog, {
-								bench: bench.name,
-								onSuccess(candidate) {
-									bench.doc.deploy_information.deploy_in_progress = true;
-									bench.doc.deploy_information.last_deploy.name = candidate;
+						if (bench.doc?.deploy_information?.last_deploy) {
+							let UpdateBenchDialog = defineAsyncComponent(() =>
+								import('../components/bench/UpdateBenchDialog.vue')
+							);
+							renderDialog(
+								h(UpdateBenchDialog, {
+									bench: bench.name,
+									onSuccess(candidate) {
+										bench.doc.deploy_information.deploy_in_progress = true;
+										bench.doc.deploy_information.last_deploy.name = candidate;
+									}
+								})
+							);
+						} else {
+							confirmDialog({
+								title: 'Deploy Bench',
+								message: "Let's deploy this bench now?",
+								onSuccess() {
+									toast.promise(
+										bench.initialDeploy.submit(null, {
+											onSuccess: () => {
+												bench.reload();
+											}
+										}),
+										{
+											success: 'Bench deployed successfully',
+											error: 'Failed to deploy bench',
+											loading: 'Deploying bench...'
+										}
+									);
 								}
-							})
-						);
+							});
+						}
 					}
 				},
 				{

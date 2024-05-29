@@ -486,6 +486,11 @@ class ReleaseGroup(Document, TagHelpers):
 		dc = self.create_duplicate_deploy_candidate()
 		dc.schedule_build_and_deploy()
 
+	@dashboard_whitelist()
+	def initial_deploy(self):
+		dc = self.create_deploy_candidate()
+		dc.schedule_build_and_deploy()
+
 	@frappe.whitelist()
 	def create_deploy_candidate(self, apps_to_update=None) -> "Optional[DeployCandidate]":
 		if not self.enabled:

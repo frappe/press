@@ -102,7 +102,7 @@
 					<ErrorMessage :message="$list.list.error" />
 				</div>
 				<div v-else class="text-center text-sm leading-10 text-gray-500">
-					No results found
+					{{ emptyStateMessage }}
 				</div>
 			</div>
 			<div class="px-2 py-2 text-right" v-if="$list">
@@ -391,6 +391,9 @@ export default {
 		},
 		hideControls() {
 			return !this.options.hideControls;
+		},
+		emptyStateMessage() {
+			return this.options.emptyStateMessage || 'No results found';
 		}
 	},
 	methods: {
