@@ -107,8 +107,14 @@ class GitHubWebhookLog(Document):
 
 	def handle_installation_deletion(self, payload):
 		owner = payload["installation"]["account"]["login"]
-		for repo in payload.get("repositories", []):
+		repositories = payload.get("repositories", [])
+
+		for repo in repositories:
 			set_uninstalled(owner, repo["name"])
+
+		if len(repositories) == 0:
+			# Set all sources as uninstalled
+			set_uninstalled(owner)
 
 	def update_installation_ids(self, owner: str):
 		for name in get_sources(owner):
