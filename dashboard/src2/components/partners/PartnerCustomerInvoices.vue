@@ -51,8 +51,7 @@ export default {
 						'>=',
 						dayjs().subtract(5, 'month').endOf('month').format('YYYY-MM-DD')
 					],
-					partner_customer: true,
-					type: "Subscription"
+					partner_customer: true
 				}
 			};
 		}
