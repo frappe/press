@@ -1061,19 +1061,22 @@ export default {
 																		config: row.remote_config_file
 																	}
 																}
-															})
-																.then(restoreJobId => {
+															}),
+															{
+																loading: 'Scheduling backup restore...',
+																success: restoreJobId => {
 																	router.push({
 																		name: 'Site Job',
 																		params: { name: siteName, id: restoreJobId }
 																	});
 																	return 'Backup restore scheduled successfully.';
-																})
-																.catch(e => {
+																},
+																error: e => {
 																	return e.messages.length
 																		? e.messages.join('\n')
 																		: e.message;
-																})
+																}
+															}
 														);
 													}
 												})
@@ -1106,6 +1109,10 @@ export default {
 												success: () => {
 													hide();
 													toast.success('Backup scheduled');
+													router.push({
+														name: 'Site Jobs',
+														params: { name: site.name }
+													});
 												},
 												error: e => {
 													return e.messages.length
