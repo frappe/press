@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:database_host",
  "creation": "2024-05-17 16:35:50.107617",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -29,7 +30,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Database Host",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "database_user",
@@ -44,7 +46,7 @@
   },
   {
    "fieldname": "database_password",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "in_list_view": 1,
    "label": "Database Password",
    "reqd": 1
@@ -75,10 +77,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-17 16:44:16.736186",
+ "modified": "2024-05-29 17:17:13.481696",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Managed Database Service",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

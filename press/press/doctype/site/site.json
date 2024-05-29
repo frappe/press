@@ -25,15 +25,6 @@
   "column_break_12",
   "database_name",
   "config",
-  "managed_database_settings_section",
-  "managed_database",
-  "database_service",
-  "db_host",
-  "db_port",
-  "column_break_dhub",
-  "db_user",
-  "db_password",
-  "db_name",
   "billing_tab",
   "team",
   "setup_wizard_complete",
@@ -599,55 +590,6 @@
   {
    "fieldname": "column_break_zgig",
    "fieldtype": "Column Break"
-  },
-  {
-   "collapsible": 1,
-   "collapsible_depends_on": "eval: doc.managed_database",
-   "fieldname": "managed_database_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Managed Database Settings"
-  },
-  {
-   "fieldname": "database_service",
-   "fieldtype": "Select",
-   "label": "Database Service",
-   "options": "AWS RDS"
-  },
-  {
-   "fieldname": "db_host",
-   "fieldtype": "Data",
-   "label": "DB Host"
-  },
-  {
-   "fieldname": "db_user",
-   "fieldtype": "Data",
-   "label": "DB User"
-  },
-  {
-   "fieldname": "column_break_dhub",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "db_password",
-   "fieldtype": "Password",
-   "label": "DB Password"
-  },
-  {
-   "default": "3306",
-   "fieldname": "db_port",
-   "fieldtype": "Data",
-   "label": "Port"
-  },
-  {
-   "default": "0",
-   "fieldname": "managed_database",
-   "fieldtype": "Check",
-   "label": "Managed Database"
-  },
-  {
-   "fieldname": "db_name",
-   "fieldtype": "Data",
-   "label": "DB Name"
   }
  ],
  "links": [
@@ -712,7 +654,7 @@
    "link_fieldname": "site"
   }
  ],
- "modified": "2024-05-28 11:44:18.390365",
+ "modified": "2024-05-29 17:14:50.884234",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Site",

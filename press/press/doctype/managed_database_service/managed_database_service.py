@@ -15,7 +15,7 @@ class ManagedDatabaseService(Document):
 		from frappe.types import DF
 
 		database_host: DF.Data
-		database_password: DF.Data
+		database_password: DF.Password
 		database_user: DF.Data
 		port: DF.Data | None
 		service_provider: DF.Literal["AWS RDS"]
