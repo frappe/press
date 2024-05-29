@@ -133,7 +133,11 @@ class Invoice(Document):
 				.select(
 					invoice.name, invoice.total, invoice.amount_due, invoice.status, invoice.due_date
 				)
-				.where((invoice.team == team_name) & (invoice.due_date >= due_date[1]))
+				.where(
+					(invoice.team == team_name)
+					& (invoice.due_date >= due_date[1])
+					& (invoice.type == "Subscription")
+				)
 			)
 		return query
 
