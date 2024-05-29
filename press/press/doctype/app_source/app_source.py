@@ -155,13 +155,11 @@ class AppSource(Document):
 		self.last_github_response = ""
 		self.last_github_poll_failed = False
 		self.last_synced = frappe.utils.now()
-		self.save()
 
 	def set_poll_failed(self, response):
 		self.last_github_response = response.text or ""
 		self.last_github_poll_failed = True
 		self.last_synced = frappe.utils.now()
-		self.save()
 
 		if response.status_code != 404:
 			log_error(
