@@ -119,6 +119,7 @@ class GitHubWebhookLog(Document):
 			doc.github_installation_id = self.github_installation_id
 			doc.uninstalled = False
 			doc.poll_github_for_branch_info()
+			doc.save(ignore_permissions=True, ignore_version=True)
 		frappe.db.commit()
 
 	def should_update_app_source(self, doc: "AppSource"):
