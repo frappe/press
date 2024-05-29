@@ -68,13 +68,14 @@ class GitHubWebhookLog(Document):
 
 		self.payload = json.dumps(payload, indent=4, sort_keys=True)
 
-	def after_insert(self):
+	def handle_events(self):
 		if self.event == "push":
 			self.handle_push_event()
 		elif self.event == "installation":
 			self.handle_installation_event()
 		elif self.event == "installation_repositories":
 			self.handle_repository_installation_event()
+		frappe.db.commit()
 
 	def handle_push_event(self):
 		payload = self.get_parsed_payload()
@@ -132,16 +133,12 @@ class GitHubWebhookLog(Document):
 			"""
 			doc.uninstalled = doc.poll_github_for_branch_info().status_code == 404
 			doc.save(ignore_permissions=True, ignore_version=True)
-		frappe.db.commit()
 
 	def should_update_app_source(self, doc: "AppSource"):
 		if doc.uninstalled or doc.last_github_poll_failed:
 			return True
 
-		if doc.github_installation_id != self.github_installation_id:
-			return True
-
-		return False
+		return doc.github_installation_id != self.github_installation_id
 
 	def get_parsed_payload(self):
 		return frappe.parse_json(self.payload)
@@ -209,7 +206,6 @@ class GitHubWebhookLog(Document):
 def set_uninstalled(owner: str, repository: Optional[str] = None):
 	for name in get_sources(owner, repository):
 		frappe.db.set_value("App Source", name, "uninstalled", True)
-	frappe.db.commit()
 
 
 def get_sources(owner: str, repository: Optional[str] = None) -> "list[str]":

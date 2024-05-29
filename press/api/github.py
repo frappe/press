@@ -14,30 +14,39 @@ from press.utils import get_current_team, log_error
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+	from press.press.doctype.github_webhook_log.github_webhook_log import GitHubWebhookLog
 	from typing import Optional
 
 
 @frappe.whitelist(allow_guest=True, xss_safe=True)
 def hook(*args, **kwargs):
-	try:
-		user = frappe.session.user
-		# set user to Administrator, to not have to do ignore_permissions everywhere
-		frappe.set_user("Administrator")
+	user = frappe.session.user
+	# set user to Administrator, to not have to do ignore_permissions everywhere
+	frappe.set_user("Administrator")
+	headers = frappe.request.headers
+	doc: "GitHubWebhookLog" = frappe.get_doc(
+		{
+			"doctype": "GitHub Webhook Log",
+			"name": headers.get("X-Github-Delivery"),
+			"event": headers.get("X-Github-Event"),
+			"signature": headers.get("X-Hub-Signature").split("=")[1],
+			"payload": frappe.request.get_data().decode(),
+		}
+	)
 
-		headers = frappe.request.headers
-		doc = frappe.get_doc(
-			{
-				"doctype": "GitHub Webhook Log",
-				"name": headers.get("X-Github-Delivery"),
-				"event": headers.get("X-Github-Event"),
-				"signature": headers.get("X-Hub-Signature").split("=")[1],
-				"payload": frappe.request.get_data().decode(),
-			}
-		)
+	try:
 		doc.insert()
+		frappe.db.commit()
 	except Exception:
 		frappe.set_user(user)
 		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
+		raise Exception
+
+	try:
+		doc.handle_events()
+	except Exception:
+		frappe.set_user(user)
+		log_error("GitHub Webhook Error", doc=doc)
 		raise Exception
 
 
