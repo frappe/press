@@ -152,26 +152,16 @@ class AppSource(Document):
 		)
 
 	def set_poll_succeeded(self):
-		frappe.db.set_value(
-			"App Source",
-			self.name,
-			{
-				"last_github_response": "",
-				"last_github_poll_failed": False,
-				"last_synced": frappe.utils.now(),
-			},
-		)
+		self.last_github_response = ""
+		self.last_github_poll_failed = False
+		self.last_synced = frappe.utils.now()
+		self.save()
 
 	def set_poll_failed(self, response):
-		frappe.db.set_value(
-			"App Source",
-			self.name,
-			{
-				"last_github_response": response.text or "",
-				"last_github_poll_failed": True,
-				"last_synced": frappe.utils.now(),
-			},
-		)
+		self.last_github_response = response.text or ""
+		self.last_github_poll_failed = True
+		self.last_synced = frappe.utils.now()
+		self.save()
 
 		if response.status_code != 404:
 			log_error(
