@@ -101,7 +101,7 @@ class AppSource(Document):
 		if self.last_github_poll_failed and not force:
 			return
 
-		if not (response := self.poll_github_for_branch_info()):
+		if not (response := self.poll_github_for_branch_info()).ok:
 			return
 
 		try:
@@ -137,16 +137,14 @@ class AppSource(Document):
 			}
 		).insert()
 
-	def poll_github_for_branch_info(self):
-		response = self.get_poll_response()
-
-		if not response.ok:
+	def poll_github_for_branch_info(self) -> requests.Response:
+		if (response := self.get_poll_response()).ok:
+			self.set_poll_succeeded()
+		else:
 			self.set_poll_failed(response)
-			return
-		self.set_poll_succeeded()
 		return response
 
-	def get_poll_response(self):
+	def get_poll_response(self) -> requests.Response:
 		headers = self.get_auth_headers()
 		return requests.get(
 			f"https://api.github.com/repos/{self.repository_owner}/{self.repository}/branches/{self.branch}",

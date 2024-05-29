@@ -86,9 +86,9 @@ class GitHubWebhookLog(Document):
 	def handle_installation_event(self):
 		payload = self.get_parsed_payload()
 		action = payload.get("action")
-		if action == "created":
+		if action == "created" or action == "unsuspend":
 			self.handle_installation_created(payload)
-		elif action == "deleted":
+		elif action == "deleted" or action == "suspend":
 			self.handle_installation_deletion(payload)
 
 	def handle_repository_installation_event(self):
@@ -117,8 +117,14 @@ class GitHubWebhookLog(Document):
 				continue
 
 			doc.github_installation_id = self.github_installation_id
-			doc.uninstalled = False
-			doc.poll_github_for_branch_info()
+			"""
+			If poll fails with 404 after updating the `github_installation_id` it
+			*probably* means that FC hasn't been granted access to this particular
+			app by the user.
+			
+			In this case the App Source is still in an uninstalled state.
+			"""
+			doc.uninstalled = doc.poll_github_for_branch_info().status_code == 404
 			doc.save(ignore_permissions=True, ignore_version=True)
 		frappe.db.commit()
 
