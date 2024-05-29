@@ -124,14 +124,7 @@ class GitHubWebhookLog(Document):
 				continue
 
 			doc.github_installation_id = self.github_installation_id
-			"""
-			If poll fails with 404 after updating the `github_installation_id` it
-			*probably* means that FC hasn't been granted access to this particular
-			app by the user.
-
-			In this case the App Source is still in an uninstalled state.
-			"""
-			doc.uninstalled = doc.poll_github_for_branch_info().status_code == 404
+			doc.save()
 
 	def should_update_app_source(self, doc: "AppSource"):
 		if doc.uninstalled or doc.last_github_poll_failed:

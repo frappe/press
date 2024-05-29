@@ -142,6 +142,9 @@ class AppSource(Document):
 			self.set_poll_succeeded()
 		else:
 			self.set_poll_failed(response)
+
+		# Will cause recursion of db.save is used
+		self.db_update()
 		return response
 
 	def get_poll_response(self) -> requests.Response:
@@ -155,11 +158,21 @@ class AppSource(Document):
 		self.last_github_response = ""
 		self.last_github_poll_failed = False
 		self.last_synced = frappe.utils.now()
+		self.uninstalled = False
 
 	def set_poll_failed(self, response):
 		self.last_github_response = response.text or ""
 		self.last_github_poll_failed = True
 		self.last_synced = frappe.utils.now()
+
+		"""
+		If poll fails with 404 after updating the `github_installation_id` it
+		*probably* means that FC hasn't been granted access to this particular
+		app by the user.
+
+		In this case the App Source is in an uninstalled state.
+		"""
+		self.uninstalled = response.status_code == 404
 
 		if response.status_code != 404:
 			log_error(
