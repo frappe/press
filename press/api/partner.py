@@ -126,7 +126,7 @@ def get_partner_contribution(partner_email):
 	month_end = frappe.utils.get_last_day(today())
 	invoices = frappe.get_all(
 		"Invoice",
-		{"partner_email": partner_email, "due_date": month_end},
+		{"partner_email": partner_email, "due_date": month_end, "type": "Subscription"},
 		["due_date", "customer_name", "total", "currency", "status"],
 	)
 	for d in invoices:
