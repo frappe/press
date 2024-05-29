@@ -206,7 +206,7 @@ class GitHubWebhookLog(Document):
 		frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
 
 
-def set_uninstalled(owner: str, repository: str):
+def set_uninstalled(owner: str, repository: Optional[str] = None):
 	for name in get_sources(owner, repository):
 		frappe.db.set_value("App Source", name, "uninstalled", True)
 	frappe.db.commit()
