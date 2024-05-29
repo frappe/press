@@ -131,8 +131,10 @@ class GitHubWebhookLog(Document):
 			doc.save(ignore_permissions=True, ignore_version=True)
 		except frappe.TimestampMismatchError:
 			doc.reload()
+ 			# assume False, correct value set when `create_release` is called
+			doc.uninstalled = False
 			doc.github_installation_id = self.github_installation_id
-			doc.save(ignore_permissions=True, ignore_version=True)
+			doc.db_update()
 
 	def should_update_app_source(self, doc: "AppSource"):
 		if doc.uninstalled or doc.last_github_poll_failed:
