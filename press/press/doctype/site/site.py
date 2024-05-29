@@ -99,12 +99,6 @@ class Site(Document, TagHelpers):
 		database_access_password: DF.Password | None
 		database_access_user: DF.Data | None
 		database_name: DF.Data | None
-		database_service: DF.Literal["AWS RDS"]
-		db_host: DF.Data | None
-		db_name: DF.Data | None
-		db_password: DF.Password | None
-		db_port: DF.Data | None
-		db_user: DF.Data | None
 		domain: DF.Link | None
 		erpnext_consultant: DF.Link | None
 		free: DF.Check
@@ -115,7 +109,6 @@ class Site(Document, TagHelpers):
 		is_database_access_enabled: DF.Check
 		is_erpnext_setup: DF.Check
 		is_standby: DF.Check
-		managed_database: DF.Check
 		notify_email: DF.Data | None
 		plan: DF.Link | None
 		remote_config_file: DF.Link | None
@@ -425,20 +418,6 @@ class Site(Document, TagHelpers):
 			new_config[row.key] = key_value
 
 		self.config = json.dumps(new_config, indent=4)
-
-	def _get_managed_db_config(self):
-		if self.managed_database:
-			return {
-				"managed_database": self.managed_database,
-				"db_host": self.db_host,
-				"db_user": self.db_user,
-				"db_name": self.db_name,
-				"db_password": self.get_password("db_password"),
-				"db_port": self.db_port,
-				"db_service": self.database_service,
-			}
-
-		return {}
 
 	@dashboard_whitelist()
 	@site_action(["Active"])

@@ -66,6 +66,7 @@ class Bench(Document):
 		is_code_server_enabled: DF.Check
 		is_ssh_proxy_setup: DF.Check
 		last_archive_failure: DF.Datetime | None
+		managed_database_service: DF.Link | None
 		memory_high: DF.Int
 		memory_max: DF.Int
 		memory_swap: DF.Int
@@ -200,6 +201,13 @@ class Bench(Document):
 			"webserver_port": 8000,
 			"restart_supervisor_on_update": True,
 		}
+
+		if not db_host and self.managed_database_service:
+			config["rds_db"] = 1
+			config["db_host"] = self.managed_database_service
+			config["db_port"] = frappe.db.get_value(
+				"Managed Database Service", self.managed_database_service, "port"
+			)
 
 		press_settings_common_site_config = frappe.db.get_single_value(
 			"Press Settings", "bench_configuration"

@@ -98,17 +98,45 @@ class Agent:
 			"Update Bench Configuration", f"benches/{bench.name}/config", data, bench=bench.name
 		)
 
+	def _get_mariadb_root_password(self, site):
+		database_server, managed_database_service = frappe.get_cached_value(
+			"Bench", site.bench, ["database_server", "managed_database_service"]
+		)
+
+		if database_server:
+			doctype = "Database Server"
+			name = database_server
+		else:
+			doctype = "Managed Database Service"
+			name = managed_database_service
+
+		return get_decrypted_password(doctype, name, "mariadb_root_password")
+
+	def _get_managed_db_config(self, site):
+		managed_database_service = frappe.get_cached_value(
+			"Bench", site.bench, "managed_database_service"
+		)
+
+		if not managed_database_service:
+			return {}
+
+		return frappe.get_cached_value(
+			"Managed Database Service",
+			managed_database_service,
+			["database_host", "database_user", "port"],
+			as_dict=1,
+		)
+
 	def new_site(self, site):
 		apps = [app.app for app in site.apps]
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
+
 		data = {
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -116,21 +144,11 @@ class Agent:
 		)
 
 	def reinstall_site(self, site):
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
-
-		mariadb_root_password = (
-			site.get_password("db_password")
-			if site.managed_database
-			else get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			)
-		)
-
 		data = {
-			"mariadb_root_user": site.db_user,
-			"mariadb_root_password": mariadb_root_password,
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"managed_database": site.managed_database,
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -144,29 +162,21 @@ class Agent:
 	def restore_site(self, site: "Site", skip_failing_patches=False):
 		site.check_enough_space_on_server()
 		apps = [app.app for app in site.apps]
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
 		if site.remote_public_file:
 			public_link = frappe.get_doc("Remote File", site.remote_public_file).download_link
 		if site.remote_private_file:
 			private_link = frappe.get_doc("Remote File", site.remote_private_file).download_link
 
-		if site.managed_database:
-			mariadb_root_password = site.get_password("db_password")
-		else:
-			mariadb_root_password = get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			)
 		data = {
 			"apps": apps,
-			"mariadb_root_password": mariadb_root_password,
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
-			"managed_database": site.managed_database,
-			"mariadb_root_user": site.db_user,
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
@@ -228,7 +238,6 @@ class Agent:
 
 			return json.dumps(sanitized_config)
 
-		database_server = frappe.db.get_value("Bench", site.bench, "database_server")
 		public_link, private_link = None, None
 
 		if site.remote_public_file:
@@ -240,15 +249,14 @@ class Agent:
 			"config": json.loads(site.config),
 			"apps": apps,
 			"name": site.name,
-			"mariadb_root_password": get_decrypted_password(
-				"Database Server", database_server, "mariadb_root_password"
-			),
+			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
 			"site_config": sanitized_site_config(site),
 			"database": frappe.get_doc("Remote File", site.remote_database_file).download_link,
 			"public": public_link,
 			"private": private_link,
 			"skip_failing_patches": skip_failing_patches,
+			"managed_database_config": self._get_managed_db_config(site),
 		}
 
 		return self.create_agent_job(
