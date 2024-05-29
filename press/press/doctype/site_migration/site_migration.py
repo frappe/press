@@ -121,12 +121,8 @@ class SiteMigration(Document):
 		self.check_for_ongoing_agent_jobs()
 		self.validate_apps()
 		self.check_enough_space_on_destination_server()
-		frappe.db.set_value(
-			"Site",
-			self.site,
-			"status_before_update",
-			frappe.get_value("Site", self.site, "status"),
-		)
+		site: Site = frappe.get_doc("Site", self.site)
+		site.ready_for_move()
 		self.status = "Pending"
 		self.save()
 		frappe.db.commit()
@@ -492,7 +488,7 @@ class SiteMigration(Document):
 	def deactivate_site_on_source_server(self):
 		"""Deactivate site on source"""
 		site: Site = frappe.get_doc("Site", self.site)
-		site.status = "Inactive"
+		site.status = "Pending"
 		return site.update_site_config({"maintenance_mode": 1})  # saves doc
 
 	def deactivate_site_on_source_proxy(self):

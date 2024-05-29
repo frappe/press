@@ -16,6 +16,11 @@ from press.agent import Agent
 from press.utils import log_error
 from press.api.client import dashboard_whitelist
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from press.press.doctype.site.site import Site
+
 
 class SiteUpdate(Document):
 	# begin: auto-generated types
@@ -126,7 +131,7 @@ class SiteUpdate(Document):
 			self.difference = difference.name
 			self.deploy_type = "Pull"
 			difference_doc = frappe.get_doc("Deploy Candidate Difference", self.difference)
-			site_doc = frappe.get_doc("Site", self.site)
+			site_doc: "Site" = frappe.get_doc("Site", self.site)
 			for site_app in site_doc.apps:
 				difference_app = find(difference_doc.apps, lambda x: x.app == site_app.app)
 				if difference_app and difference_app.deploy_type == "Migrate":
@@ -177,14 +182,8 @@ class SiteUpdate(Document):
 
 	@dashboard_whitelist()
 	def start(self):
-		site = frappe.get_doc("Site", self.site)
-		if site.status in ["Updating", "Pending", "Installing"]:
-			frappe.throw("Site is under maintenance. Cannot Update")
-
-		site.status_before_update = site.status
-		site.status = "Pending"
-		site.save()
-
+		site: "Site" = frappe.get_doc("Site", self.site)
+		site.ready_for_move()
 		self.create_agent_request()
 
 	def get_before_migrate_scripts(self, rollback=False):

@@ -725,6 +725,14 @@ class Site(Document, TagHelpers):
 		except ClientError:
 			log_error(title="Offsite Backup Response Exception")
 
+	def ready_for_move(self):
+		if self.status in ["Updating", "Pending", "Installing"]:
+			frappe.throw("Site is under maintenance. Cannot Update")
+
+		self.status_before_update = self.status
+		self.status = "Pending"
+		self.save()
+
 	@dashboard_whitelist()
 	@site_action(["Active", "Inactive", "Suspended"])
 	def schedule_update(
@@ -758,10 +766,8 @@ class Site(Document, TagHelpers):
 
 	@frappe.whitelist()
 	def move_to_bench(self, bench, deactivate=True, skip_failing_patches=False):
+		self.ready_for_move()
 		log_site_activity(self.name, "Update")
-		self.status_before_update = self.status
-		self.status = "Pending"
-		self.save()
 		agent = Agent(self.server)
 		agent.move_site_to_bench(self, bench, deactivate, skip_failing_patches)
 
