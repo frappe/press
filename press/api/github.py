@@ -39,7 +39,7 @@ def hook(*args, **kwargs):
 		frappe.db.commit()
 	except Exception:
 		frappe.set_user(user)
-		log_error("GitHub Webhook Error", args=args, kwargs=kwargs)
+		log_error("GitHub Webhook Insert Error", args=args, kwargs=kwargs)
 		raise Exception
 
 	try:
