@@ -112,11 +112,8 @@ class MarketplaceApp(WebsiteGenerator):
 		super().delete()
 
 	def on_trash(self):
-		plans = frappe.get_all(
-			"Marketplace App Plan", filters={"app": self.app}, pluck="name"
-		)
-		for plan in plans:
-			frappe.delete_doc("Marketplace App Plan", plan)
+		frappe.db.delete("Marketplace App Plan", {"app": self.name})
+		frappe.db.delete("App Release Approval Request", {"marketplace_app": self.name})
 
 	@dashboard_whitelist()
 	def create_approval_request(self, app_release: str):
