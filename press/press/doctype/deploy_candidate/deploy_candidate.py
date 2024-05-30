@@ -686,19 +686,19 @@ class DeployCandidate(Document):
 	def _set_status_pending(self):
 		self.status = "Pending"
 		self.pending_start = now()
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def _set_status_preparing(self):
 		self._set_pending_duration()
 		self.status = "Preparing"
 		self.build_start = now()
-		self.save()
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def _set_status_running(self):
 		self.status = "Running"
-		self.save(ignore_version=True)
+		self.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	@reconnect_on_failure()
@@ -710,11 +710,12 @@ class DeployCandidate(Document):
 		self._update_bench_status()
 		frappe.db.commit()
 
+	@reconnect_on_failure()
 	def _set_status_success(self):
 		self.status = "Success"
 		self.build_error = None
 		self._set_build_duration()
-		self.save(ignore_version=True)
+		self.save(ignore_permissions=True)
 		self._update_bench_status()
 		frappe.db.commit()
 
@@ -806,8 +807,8 @@ class DeployCandidate(Document):
 		if self.is_remote_builder_used:
 			slugs.extend(
 				[
-					("context", "package"),
-					("context", "upload"),
+					("package", "context"),
+					("upload", "context"),
 				]
 			)
 
