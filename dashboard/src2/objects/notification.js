@@ -52,7 +52,7 @@ export default {
 			{
 				label: 'Title',
 				fieldname: 'title',
-				width: '15rem',
+				width: '20rem',
 				format(value, row) {
 					return value || row.type;
 				},
@@ -62,7 +62,7 @@ export default {
 						return h(
 							Tooltip,
 							{
-								text: 'This notifcation requires your attention'
+								text: 'This notification requires your attention'
 							},
 							{
 								default: () =>
@@ -82,11 +82,14 @@ export default {
 				label: 'Message',
 				fieldname: 'message',
 				type: 'Component',
-				width: '65%',
+				width: '40rem',
 				component({ row }) {
 					return h('div', {
 						class: 'truncate text-base text-gray-600',
-						innerHTML: row.message.split('\n')[0]
+						// replace all html tags except <b>
+						innerHTML: row.message
+							.replace(/<(?!\/?b\b)[^>]*>/g, '')
+							.split('\n')[0]
 					});
 				}
 			},
