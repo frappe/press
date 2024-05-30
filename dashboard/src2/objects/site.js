@@ -144,7 +144,7 @@ export default {
 			{
 				label: 'Plan',
 				fieldname: 'plan',
-				width: 1,
+				width: 0.75,
 				format(value, row) {
 					if (row.trial_end_date) {
 						return trialDays(row.trial_end_date);
@@ -179,7 +179,7 @@ export default {
 			{
 				label: 'Bench',
 				fieldname: 'group',
-				width: 1,
+				width: '15rem',
 				format(value, row) {
 					return row.group_public ? 'Shared' : row.group_title || value;
 				}
@@ -187,7 +187,7 @@ export default {
 			{
 				label: 'Version',
 				fieldname: 'version',
-				width: 1
+				width: 0.5
 			}
 		],
 		primaryAction({ listResource: sites }) {
