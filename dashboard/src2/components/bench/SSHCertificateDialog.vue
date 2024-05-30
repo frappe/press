@@ -10,7 +10,7 @@
 			<div v-if="certificate" class="space-y-4">
 				<div class="space-y-2">
 					<h4 class="text-base font-semibold text-gray-700">Step 1</h4>
-					<div class="space-y-1">
+					<div class="space-y-2">
 						<p class="text-base">
 							Execute the following shell command to store the SSH certificate
 							locally.
