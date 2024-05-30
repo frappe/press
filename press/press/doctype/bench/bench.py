@@ -203,7 +203,7 @@ class Bench(Document):
 		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
 
 		if db_host:
-			config["db_host"] = self.managed_database_service
+			config["db_host"] = db_host
 			config["db_port"] = "3306"
 
 		if self.managed_database_service:
