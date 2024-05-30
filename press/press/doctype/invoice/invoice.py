@@ -403,6 +403,7 @@ class Invoice(Document):
 				{
 					"stripe_payment_intent_id": self.stripe_payment_intent_id,
 					"type": "Prepaid Credits",
+					"name": ("!=". self.name)
 				},
 			):
 				frappe.throw(
