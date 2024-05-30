@@ -166,6 +166,7 @@ class Site(Document, TagHelpers):
 		"tags",
 		"server",
 		"host_name",
+		"skip_auto_updates",
 	]
 
 	@staticmethod
