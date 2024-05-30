@@ -63,6 +63,7 @@ DOC_URLS = {
 	"incompatible-app-version": "https://frappecloud.com/docs/common-issues/incompatible-app-version",
 	"required-app-not-found": "https://frappecloud.com/docs/common-issues/required-app-not-found",
 	"debugging-app-installs-locally": "https://frappecloud.com/docs/common-issues/debugging-app-installs-locally",
+	"vite-not-found": "https://frappecloud.com/docs/common-issues/vite-not-found",
 }
 
 
@@ -151,6 +152,10 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 			"[ERROR] [plugin frappe-vue-style]",
 			update_with_vue_build_failed,
 		),
+		(
+			"vite: not found",
+			update_with_vite_not_found,
+		),
 	]
 
 
@@ -228,7 +233,7 @@ def update_with_vue_build_failed(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
+	failed_step = get_failed_step(dc)
 	app_name = None
 
 	details["title"] = "App installation failed due to errors in frontend code"
@@ -261,7 +266,7 @@ def update_with_import_error(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
+	failed_step = get_failed_step(dc)
 	app_name = None
 
 	details["title"] = "App installation failed due to invalid import"
@@ -308,7 +313,7 @@ def update_with_module_not_found(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
+	failed_step = get_failed_step(dc)
 	app_name = None
 
 	details["title"] = "App installation failed due to missing module"
@@ -352,7 +357,7 @@ def update_with_dependency_not_found(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
+	failed_step = get_failed_step(dc)
 	app_name = None
 
 	details["title"] = "App installation failed due to dependency not being found"
@@ -397,7 +402,7 @@ def update_with_error_on_pip_install(
 	exc: "BaseException",
 ):
 
-	failed_step = dc.get_first_step("status", "Failure") or frappe._dict()
+	failed_step = get_failed_step(dc)
 	app_name = None
 
 	details["title"] = "App installation failed due to errors"
@@ -685,6 +690,37 @@ def update_with_required_app_not_found_prebuild(
 	return True
 
 
+def update_with_vite_not_found(
+	details: "Details",
+	dc: "DeployCandidate",
+	exc: BaseException,
+):
+	details["title"] = "Vite not found"
+	failed_step = get_failed_step(dc)
+	if failed_step.stage_slug == "apps":
+		app_name = failed_step.step
+		message = f"""
+		<p><b>{app_name}</b> installation has failed due the build
+		dependency Vite not being found.</p>
+
+		<p>To rectify this issue, please follow the steps mentioned
+		in <i>Help</i>.</p>
+		"""
+	else:
+		message = """
+		<p>App installation has failed due the build dependency Vite
+		not being found.</p>
+
+		<p>To rectify this issue, please follow the steps mentioned
+		in <i>Help</i>.</p>
+		"""
+
+	details["message"] = fmt(message)
+	details["traceback"] = None
+	details["assistance_url"] = DOC_URLS["vite-not-found"]
+	return True
+
+
 def fmt(message: str) -> str:
 	message = message.strip()
 	message = dedent(message)
@@ -764,3 +800,7 @@ def get_ct_row(
 	for row in ct:
 		if row.get(ct_field) == match_value:
 			return row
+
+
+def get_failed_step(dc: "DeployCandidate"):
+	return dc.get_first_step("status", "Failure") or frappe._dict()
