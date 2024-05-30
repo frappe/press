@@ -133,7 +133,10 @@ def check_role_permissions(doctype: str, name: str | None = None) -> list[str] |
 			)
 			if not perms and name:
 				# throw error if the user is not permitted for the document
-				frappe.throw("Not permitted", frappe.PermissionError)
+				frappe.throw(
+					f"You don't have permission to this {doctype if doctype != 'Release Group' else 'Bench'}",
+					frappe.PermissionError,
+				)
 			else:
 				return roles
 
