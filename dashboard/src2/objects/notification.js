@@ -97,8 +97,7 @@ export default {
 				label: '',
 				fieldname: 'creation',
 				type: 'Timestamp',
-				align: 'right',
-				width: '10rem'
+				align: 'right'
 			}
 		]
 	},
