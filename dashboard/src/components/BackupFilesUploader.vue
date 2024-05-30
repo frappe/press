@@ -115,7 +115,8 @@ export default {
 		},
 		async databaseBackupChecker(file, type) {
 			if (type === 'database') {
-				if (!file.name.endsWith('.sql.gz') && !file.name.endsWith('.sql')) {
+				// valid strings are "database.sql.gz", "database.sql", "database.sql (1).gz", "database.sql (2).gz"
+				if (!/\.sql( \(\d\))?\.gz$|\.sql$/.test(file.name)) {
 					throw new Error(
 						'Database backup file should end with the name "database.sql.gz" or "database.sql"'
 					);
