@@ -407,6 +407,27 @@ export default {
 								}
 							}
 						];
+					},
+					actions({ documentResource: site }) {
+						return [
+							{
+								label: 'Configure',
+								slots: {
+									prefix: icon('settings')
+								},
+								onClick() {
+									let ConfigureAutoUpdateDialog = defineAsyncComponent(() =>
+										import('../components/site/ConfigureAutoUpdateDialog.vue')
+									);
+
+									renderDialog(
+										h(ConfigureAutoUpdateDialog, {
+											site: site.doc.name
+										})
+									);
+								}
+							}
+						];
 					}
 				}
 			},
