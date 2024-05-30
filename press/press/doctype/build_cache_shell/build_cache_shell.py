@@ -7,7 +7,6 @@ import frappe
 from frappe.model.document import Document
 from press.agent import Agent
 from press.press.doctype.deploy_candidate.cache_utils import (
-	CommandOutput,
 	run_command_in_docker_cache,
 )
 
@@ -32,14 +31,14 @@ class BuildCacheShell(Document):
 
 	def run_command(self):
 		frappe.only_for("System Manager")
-		result = self._run_command()
+		result = self._run_command() or {}
 		self.output = result.get("output", "# no-output")
 		self.cwd = result.get("cwd")
 		self.image_tag = result.get("image_tag")
 		self.returncode = result.get("returncode")
 		frappe.db.commit()
 
-	def _run_command(self) -> CommandOutput:
+	def _run_command(self):
 		if self.build_server:
 			return Agent(self.build_server).run_command_in_docker_cache(
 				self.command,
