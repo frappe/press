@@ -588,35 +588,61 @@ class DeployCandidate(Document):
 		This is due to a method of streaming agent output to press not
 		existing.
 		"""
+		self._set_output_parsers()
 		if output := get_remote_step_output(
 			"build",
 			output_data,
 			response_data,
 		):
-			DockerBuildOutputParser(self).parse_and_update(output)
+			self.build_output_parser.parse_and_update(output)
 
-		upload_step_updater = UploadStepUpdater(self)
 		if output := get_remote_step_output(
 			"push",
 			output_data,
 			response_data,
 		):
-			upload_step_updater.start()
-			upload_step_updater.process(output)
+			self.upload_step_updater.start()
+			self.upload_step_updater.process(output)
 
-		if (
-			job_data.get("build_failure") or upload_step_updater.upload_step.status == "Failure"
-		):
+		if self.has_remote_build_failed(job_data):
 			self._set_status_failure()
 		else:
 			self._update_status_from_remote_build_job(job, job_data)
 
 		# Fallback case cause upload step can be left hanging
-		if self.status == "Success" and upload_step_updater.upload_step.status != "Success":
-			upload_step_updater.end("Success")
+		self.correct_upload_step_status()
 
 		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
+
+	def has_remote_build_failed(self, job_data: dict) -> bool:
+		if job_data.get("build_failure"):
+			return True
+
+		if (
+			(usu := self.upload_step_updater)
+			and usu.upload_step
+			and usu.upload_step.status == "Failure"
+		):
+			return True
+
+		if self.get_first_step("status", "Failure"):
+			return True
+
+		return False
+
+	def correct_upload_step_status(self):
+		if not (usu := self.upload_step_updater) or not usu.upload_step:
+			return
+
+		if self.status == "Success" and usu.upload_step.status == "Running":
+			self.upload_step_updater.end("Success")
+
+		elif self.status == "Failure" and usu.upload_step.status not in [
+			"Failure",
+			"Pending",
+		]:
+			self.upload_step_updater.end("Pending")
 
 	def _update_status_from_remote_build_job(self, job: "AgentJob", job_data: dict):
 		match job.status:
