@@ -190,9 +190,7 @@ class Bench(Document):
 		if self.is_new():
 			self.port_offset = self.get_unused_port_offset()
 
-		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
 		config = {
-			"db_host": db_host,
 			"monitor": True,
 			"redis_cache": "redis://localhost:13000",
 			"redis_queue": "redis://localhost:11000",
@@ -202,7 +200,13 @@ class Bench(Document):
 			"restart_supervisor_on_update": True,
 		}
 
-		if not db_host and self.managed_database_service:
+		db_host = frappe.db.get_value("Database Server", self.database_server, "private_ip")
+
+		if db_host:
+			config["db_host"] = self.managed_database_service
+			config["db_port"] = "3306"
+
+		if self.managed_database_service:
 			config["rds_db"] = 1
 			config["db_host"] = self.managed_database_service
 			config["db_port"] = frappe.db.get_value(

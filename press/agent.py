@@ -149,7 +149,6 @@ class Agent:
 		data = {
 			"mariadb_root_password": self._get_mariadb_root_password(site),
 			"admin_password": site.get_password("admin_password"),
-			"managed_database": site.managed_database,
 			"managed_database_config": self._get_managed_db_config(site),
 		}
 
