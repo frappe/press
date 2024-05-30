@@ -1559,7 +1559,7 @@ class DeployCandidate(Document):
 	def has_app(self, name: str) -> bool:
 		org = None
 		if "/" in name:
-			org, name = name.split("/")
+			org, name = name.split("/", maxsplit=1)
 
 		for app in self.apps:
 			if app.app != name:
