@@ -106,11 +106,13 @@ class Agent:
 		if database_server:
 			doctype = "Database Server"
 			name = database_server
+			field = "mariadb_root_password"
 		else:
 			doctype = "Managed Database Service"
 			name = managed_database_service
+			field = "root_user_password"
 
-		return get_decrypted_password(doctype, name, "mariadb_root_password")
+		return get_decrypted_password(doctype, name, field)
 
 	def _get_managed_db_config(self, site):
 		managed_database_service = frappe.get_cached_value(
@@ -123,7 +125,7 @@ class Agent:
 		return frappe.get_cached_value(
 			"Managed Database Service",
 			managed_database_service,
-			["database_host", "database_user", "port"],
+			["database_host", "database_root_user", "port"],
 			as_dict=1,
 		)
 

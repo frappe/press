@@ -9,9 +9,9 @@
   "database_section",
   "service_provider",
   "database_host",
-  "database_user",
+  "database_root_user",
   "column_break_dboe",
-  "database_password",
+  "root_user_password",
   "port",
   "team_section",
   "team"
@@ -34,22 +34,8 @@
    "unique": 1
   },
   {
-   "fieldname": "database_user",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Database User",
-   "reqd": 1
-  },
-  {
    "fieldname": "column_break_dboe",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "database_password",
-   "fieldtype": "Password",
-   "in_list_view": 1,
-   "label": "Database Password",
-   "reqd": 1
   },
   {
    "default": "3306",
@@ -73,11 +59,25 @@
    "label": "Team",
    "options": "Team",
    "reqd": 1
+  },
+  {
+   "fieldname": "database_root_user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Database Root User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "root_user_password",
+   "fieldtype": "Password",
+   "in_list_view": 1,
+   "label": "Root User Password",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-29 17:17:13.481696",
+ "modified": "2024-05-29 19:11:14.644480",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Managed Database Service",

@@ -391,8 +391,6 @@ class Site(Document, TagHelpers):
 		"""Regenerates site.config on each site.validate from the site.configuration child table data"""
 		new_config = {}
 
-		new_config.update(self._get_managed_db_config())
-
 		# Update from site.configuration
 		for row in self.configuration:
 			# update internal flag from master
