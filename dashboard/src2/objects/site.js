@@ -409,6 +409,8 @@ export default {
 						];
 					},
 					actions({ documentResource: site }) {
+						if (site.doc.group_public) return [];
+
 						return [
 							{
 								label: 'Configure',
