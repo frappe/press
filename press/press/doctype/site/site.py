@@ -957,8 +957,6 @@ class Site(Document, TagHelpers):
 			server=self.server, site=self.name, site_name=site_name, skip_reload=skip_reload
 		)
 
-		frappe.db.delete("Press Role Permission", {"site": self.name})
-
 		self.db_set("host_name", None)
 
 		self.delete_offsite_backups()
@@ -2194,6 +2192,11 @@ def site_cleanup_after_archive(site):
 	delete_site_domains(site)
 	delete_site_subdomain(site)
 	release_name(site)
+	delete_permissions(site)
+
+
+def delete_permissions(site):
+	frappe.db.delete("Press Role Permission", {"site": site})
 
 
 def delete_site_subdomain(site):
