@@ -840,7 +840,7 @@ class Site(Document, TagHelpers):
 		agent.add_domain(self, domain)
 
 	def remove_domain_from_config(self, domain):
-		domains = self.get_config_value_for_key("domains")
+		domains = self.get_config_value_for_key("domains") or []
 		domains.remove(domain)
 		self._update_configuration({"domains": domains})
 		agent = Agent(self.server)
