@@ -22,19 +22,6 @@
 					}
 				"
 			/>
-
-			<div
-				v-if="siteOnPublicBench"
-				class="mt-4 rounded-md border p-4 text-base text-gray-600"
-			>
-				<div class="font-medium text-gray-700">Version Compatibility</div>
-				<template v-for="(apps, version) in versionAppsMap">
-					<div class="mt-2">
-						<span class="text-gray-700">{{ version }}</span> -
-						{{ $format.commaAnd(apps) }}
-					</div>
-				</template>
-			</div>
 		</div>
 		<div v-if="!siteOnPublicBench && privateApps">
 			<h2 class="text-sm font-medium leading-6 text-gray-900">
@@ -77,23 +64,6 @@ export default {
 				this.$emit('update:modelValue', newApps);
 			}
 		},
-		versionAppsMap() {
-			let problemAppVersions = {
-				'Version 15': ['Frappe'],
-				'Version 14': ['Frappe'],
-				Nightly: ['Frappe']
-			};
-			if (this.siteOnPublicBench)
-				for (let app of this.apps) {
-					let appVersions = app.sources.map(s => s.version);
-					for (let version of appVersions) {
-						if (problemAppVersions[version]) {
-							problemAppVersions[version].push(app.app_title);
-						}
-					}
-				}
-			return problemAppVersions;
-		},
 		publicApps() {
 			if (!this.availableApps) return;
 			let publicApps = this.availableApps.filter(
@@ -119,7 +89,7 @@ export default {
 								},
 								[
 									h('img', {
-										class: 'h-6 w-6',
+										class: 'h-6 w-6 rounded-sm',
 										src: row.image
 									}),
 									h('span', { class: 'ml-2' }, row.app_title),
