@@ -37,10 +37,12 @@
   "proxy_private_ip",
   "agent_password",
   "database_section",
+  "is_managed_database",
+  "database_setup",
   "mariadb_ip",
   "mariadb_root_user",
-  "database_setup",
   "database_server",
+  "database_service",
   "column_break_qvmo",
   "mariadb_private_ip",
   "mariadb_root_password",
@@ -112,12 +114,13 @@
    "label": "Database"
   },
   {
+   "depends_on": "eval:!doc.is_managed_database",
    "fieldname": "mariadb_root_user",
    "fieldtype": "Data",
    "label": "MariaDB Root User"
   },
   {
-   "depends_on": "eval:doc.different_database_server",
+   "depends_on": "eval:doc.different_database_server && !doc.is_managed_database",
    "fieldname": "mariadb_ip",
    "fieldtype": "Data",
    "label": "MariaDB Public IP"
@@ -127,6 +130,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:!doc.is_managed_database",
    "description": "This will be the MariaDB Root password if you're setting up a new server. If you're server already has a MariaDB root password, please put in the same password",
    "fieldname": "mariadb_root_password",
    "fieldtype": "Password",
@@ -228,7 +232,7 @@
    "label": "Database Setup"
   },
   {
-   "depends_on": "eval:doc.database_setup",
+   "depends_on": "eval:doc.database_setup && !doc.is_managed_database",
    "fieldname": "database_server",
    "fieldtype": "Link",
    "label": "Database Server",
@@ -385,7 +389,7 @@
    "label": "Proxy Private IP"
   },
   {
-   "depends_on": "eval:doc.different_database_server",
+   "depends_on": "eval:doc.different_database_server && !doc.is_managed_database",
    "fieldname": "mariadb_private_ip",
    "fieldtype": "Data",
    "label": "MariaDB Private IP"
@@ -430,10 +434,24 @@
    "fieldname": "db_ram",
    "fieldtype": "Data",
    "label": "RAM"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_managed_database",
+   "fieldtype": "Check",
+   "label": "Is Managed Database"
+  },
+  {
+   "default": "AWS - RDS",
+   "depends_on": "eval:doc.is_managed_database",
+   "fieldname": "database_service",
+   "fieldtype": "Select",
+   "label": "Database Service",
+   "options": "AWS - RDS"
   }
  ],
  "links": [],
- "modified": "2024-03-13 13:15:21.249527",
+ "modified": "2024-05-29 11:41:41.304954",
  "modified_by": "Administrator",
  "module": "Press",
  "name": "Self Hosted Server",

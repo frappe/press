@@ -871,6 +871,7 @@ class Server(BaseServer):
 		hostname_abbreviation: DF.Data | None
 		ignore_incidents: DF.Check
 		ip: DF.Data | None
+		is_managed_database: DF.Check
 		is_primary: DF.Check
 		is_replication_setup: DF.Check
 		is_self_hosted: DF.Check
@@ -880,6 +881,7 @@ class Server(BaseServer):
 		is_standalone: DF.Check
 		is_standalone_setup: DF.Check
 		is_upstream_setup: DF.Check
+		managed_database_service: DF.Link | None
 		new_worker_allocation: DF.Check
 		plan: DF.Link | None
 		primary: DF.Link | None
@@ -912,13 +914,17 @@ class Server(BaseServer):
 
 	def on_update(self):
 		# If Database Server is changed for the server then change it for all the benches
-		if not self.is_new() and self.has_value_changed("database_server"):
+		if not self.is_new() and (
+			self.has_value_changed("database_server")
+			or self.has_value_changed("managed_database_service")
+		):
 			benches = frappe.get_all(
 				"Bench", {"server": self.name, "status": ("!=", "Archived")}
 			)
 			for bench in benches:
 				bench = frappe.get_doc("Bench", bench)
 				bench.database_server = self.database_server
+				bench.managed_database_service = self.managed_database_service
 				bench.save()
 
 		if not self.is_new() and self.has_value_changed("team"):
