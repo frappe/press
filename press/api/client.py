@@ -135,9 +135,13 @@ def get_list(
 
 		field = doctype.lower().replace(" ", "_")
 
-		query = query.join(PressRolePermission).on(
-			PressRolePermission[field]
-			== QueriedDocType.name & PressRolePermission.role.isin(roles)
+		query = (
+			query.join(PressRolePermission)
+			.on(
+				PressRolePermission[field]
+				== QueriedDocType.name & PressRolePermission.role.isin(roles)
+			)
+			.distinct()
 		)
 
 	filters = frappe._dict(filters or {})
