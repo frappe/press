@@ -1907,7 +1907,8 @@ def correct_status(dc_name: str):
 
 		bs.status = "Pending"
 
-	if found_failed:
-		dc.status = "Failure"
+	if not found_failed:
+		return
 
+	dc.status = "Failure"
 	dc.save(ignore_permissions=True)
