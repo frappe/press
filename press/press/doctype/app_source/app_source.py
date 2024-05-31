@@ -135,7 +135,7 @@ class AppSource(Document):
 				"timestamp": timestamp,
 				"deployable": bool(is_first_release),
 			}
-		).insert()
+		).insert(ignore_permissions=True)
 
 	def poll_github_for_branch_info(self) -> requests.Response:
 		if (response := self.get_poll_response()).ok:

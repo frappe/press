@@ -127,13 +127,17 @@ class GitHubWebhookLog(Document):
 
 	def update_app_source_installation_id(self, doc: "AppSource"):
 		doc.github_installation_id = self.github_installation_id
-		try:
-			doc.save(ignore_permissions=True, ignore_version=True)
-		except frappe.TimestampMismatchError:
-			doc.reload()
-			doc.github_installation_id = self.github_installation_id
-			# Calls db_update
-			doc.poll_github_for_branch_info()
+		"""
+		These two are assumptions, they will be resolved when
+		`doc.create_release` is called.
+
+		It is not called here, because it requires polling GitHub
+		which if the repository owner has several apps gets us
+		rate limited.
+		"""
+		doc.uninstalled = False
+		doc.last_github_poll_failed = False
+		doc.db_update()
 
 	def should_update_app_source(self, doc: "AppSource"):
 		if doc.uninstalled or doc.last_github_poll_failed:
@@ -172,7 +176,7 @@ class GitHubWebhookLog(Document):
 		)
 
 		try:
-			release.insert()
+			release.insert(ignore_permissions=True)
 		except Exception:
 			log_error("App Release Creation Error", payload=payload, doc=self)
 
