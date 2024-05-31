@@ -778,7 +778,7 @@ class Invoice(Document):
 				headers=client.headers,
 				data={
 					"team": team.as_json(),
-					"address": address.as_json() if address else None,
+					"address": address.as_json() if address else '""',
 					"invoice": self.as_json(),
 				},
 			)
