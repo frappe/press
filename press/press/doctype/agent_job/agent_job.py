@@ -300,12 +300,13 @@ def job_detail(job):
 		frappe.get_all(
 			"Agent Job Step",
 			filters={"agent_job": job.name},
-			fields=["step_name", "status", "start", "end", "duration", "output"],
+			fields=["name", "step_name", "status", "start", "end", "duration", "output"],
 			order_by="creation",
 		)
 	):
 		step = {"name": job_step.step_name, "index": index, **job_step}
 		if job_step.status == "Running":
+			step["output"] = frappe.cache.hget("agent_job_step_output", job_step.name)
 			current = step
 		steps.append(step)
 
