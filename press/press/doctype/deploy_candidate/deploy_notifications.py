@@ -160,7 +160,8 @@ def handlers() -> "list[UserAddressableHandlerTuple]":
 
 
 def create_build_failed_notification(
-	dc: "DeployCandidate", exc: "BaseException"
+	dc: "DeployCandidate",
+	exc: BaseException | None,
 ) -> bool:
 	"""
 	Used to create press notifications on Build failures. If the notification
@@ -169,6 +170,10 @@ def create_build_failed_notification(
 
 	Returns True if build failure is_actionable
 	"""
+	if exc is None:
+		# Exception is not passed if called from
+		# build agent job update handler
+		exc = Exception("PLACEHOLDER_EXCEPTION")
 
 	details = get_details(dc, exc)
 	doc_dict = {
@@ -230,7 +235,7 @@ def get_details(dc: "DeployCandidate", exc: BaseException) -> "Details":
 def update_with_vue_build_failed(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 
 	failed_step = get_failed_step(dc)
@@ -263,7 +268,7 @@ def update_with_vue_build_failed(
 def update_with_import_error(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 
 	failed_step = get_failed_step(dc)
@@ -310,7 +315,7 @@ def update_with_import_error(
 def update_with_module_not_found(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 
 	failed_step = get_failed_step(dc)
@@ -354,7 +359,7 @@ def update_with_module_not_found(
 def update_with_dependency_not_found(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 
 	failed_step = get_failed_step(dc)
@@ -399,7 +404,7 @@ def update_with_dependency_not_found(
 def update_with_error_on_pip_install(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 
 	failed_step = get_failed_step(dc)
@@ -433,7 +438,7 @@ def update_with_error_on_pip_install(
 def update_with_invalid_pyproject_error(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False
@@ -456,7 +461,7 @@ def update_with_invalid_pyproject_error(
 def update_with_invalid_package_json_error(
 	details: "Details",
 	dc: "DeployCandidate",
-	exc: "BaseException",
+	exc: BaseException,
 ):
 	if len(exc.args) <= 1 or not (app := exc.args[1]):
 		return False

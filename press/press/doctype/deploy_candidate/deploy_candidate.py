@@ -380,12 +380,12 @@ class DeployCandidate(Document):
 				deploy_after_build,
 			)
 		except Exception as exc:
-			self._handle_build_exception(exc)
+			self.handle_build_failure(exc)
 			return False
 
 		return self.status == "Success"
 
-	def _handle_build_exception(self, exc: Exception) -> None:
+	def handle_build_failure(self, exc: Exception | None = None) -> None:
 		self._flush_output_parsers()
 		self._set_status_failure()
 		should_retry = self.should_build_retry(exc=exc)
@@ -393,7 +393,7 @@ class DeployCandidate(Document):
 		# Do not send a notification if the build is being retried.
 		if not should_retry and create_build_failed_notification(self, exc):
 			self.user_addressable_failure = True
-			self.save(ignore_version=True, ignore_permissions=True)
+			self.save(ignore_permissions=True)
 			frappe.db.commit()
 			return
 
@@ -404,10 +404,11 @@ class DeployCandidate(Document):
 			self.schedule_build_retry()
 			return
 
-		# Raise if cannot retry or is not user addressable
-		raise
+		# Raise if in except and cannot retry or is not user addressable
+		if exc:
+			raise
 
-	def should_build_retry(self, exc: Exception) -> bool:
+	def should_build_retry(self, exc: Exception | None) -> bool:
 		if self.status != "Failure":
 			return False
 
@@ -419,8 +420,8 @@ class DeployCandidate(Document):
 		if "Could not get lock /var/cache/apt/archives/lock" in self.build_output:
 			return True
 
-		# Failed to upload build context (Nginx VTS module issue, shouldn't occur if disabled)
-		if len(exc.args) > 0 and "Failed to upload build context" in exc.args[0]:
+		# Failed to upload build context (Mostly 502)
+		if exc and len(exc.args) > 0 and "Failed to upload build context" in exc.args[0]:
 			return True
 
 		return False
@@ -437,12 +438,12 @@ class DeployCandidate(Document):
 		self.build_output_parser = DockerBuildOutputParser(self)
 		self.upload_step_updater = UploadStepUpdater(self)
 
-	def _flush_output_parsers(self):
+	def _flush_output_parsers(self, commit=False):
 		if self.build_output_parser:
-			self.build_output_parser.flush_output(False)
+			self.build_output_parser.flush_output(commit)
 
 		if self.upload_step_updater:
-			self.upload_step_updater.flush_output(False)
+			self.upload_step_updater.flush_output(commit)
 
 	def _prepare_build(self, no_cache: bool = False, no_push: bool = False):
 		if not no_cache:
@@ -604,8 +605,8 @@ class DeployCandidate(Document):
 			self.upload_step_updater.start()
 			self.upload_step_updater.process(output)
 
-		if self.has_remote_build_failed(job_data):
-			self._set_status_failure()
+		if self.has_remote_build_failed(job, job_data):
+			self.handle_build_failure()
 		else:
 			self._update_status_from_remote_build_job(job, job_data)
 
@@ -615,7 +616,10 @@ class DeployCandidate(Document):
 		if self.status == "Success" and request_data.get("deploy_after_build"):
 			self.create_deploy()
 
-	def has_remote_build_failed(self, job_data: dict) -> bool:
+	def has_remote_build_failed(self, job: "AgentJob", job_data: dict) -> bool:
+		if job.status == "Failure":
+			return True
+
 		if job_data.get("build_failure"):
 			return True
 
@@ -706,7 +710,7 @@ class DeployCandidate(Document):
 		self.status = "Failure"
 		self._fail_last_running_step()
 		self._set_build_duration()
-		self.save(ignore_version=True)
+		self.save(ignore_permissions=True)
 		self._update_bench_status()
 		frappe.db.commit()
 
@@ -893,7 +897,7 @@ class DeployCandidate(Document):
 		have been cloned.
 		"""
 		self._update_packages(pmf)
-		self.save(ignore_version=True)
+		self.save(ignore_permissions=True)
 
 		# Set props used when generating the Dockerfile
 		self._set_additional_packages()
@@ -918,7 +922,7 @@ class DeployCandidate(Document):
 		for app in self.apps:
 			repo_path_map[app.app] = self._clone_app_repo(app)
 			app.app_name = self._get_app_name(app.app)
-			self.save(ignore_version=True)
+			self.save(ignore_permissions=True, ignore_version=True)
 			frappe.db.commit()
 
 		return repo_path_map
@@ -937,7 +941,7 @@ class DeployCandidate(Document):
 		# Start step
 		step.status = "Running"
 		start_time = now()
-		self.save(ignore_version=True)
+		self.save(ignore_permissions=True, ignore_version=True)
 		frappe.db.commit()
 
 		# Run Pre-build Validations
