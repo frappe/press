@@ -204,7 +204,7 @@ class Bench(Document):
 
 		if db_host:
 			config["db_host"] = db_host
-			config["db_port"] = "3306"
+			config["db_port"] = 3306
 
 		if self.managed_database_service:
 			config["rds_db"] = 1
